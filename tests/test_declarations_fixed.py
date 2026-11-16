@@ -26,3 +26,14 @@ def test_every_pinned_config_file_matches_its_hash():
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == want, rel
+
+
+def test_every_pinned_calibration_plan_matches_its_hash():
+    """From E-115: a calibration plan (a statistic's candidates, nulls, seeds and rules, declared before any run) is
+    pinned by its sha256 in a decision row like a family, and may not change after; a revision is a new file under a new
+    row. Earlier rows cite drafts as "..., LF sha256 ..." and are not pins."""
+    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    pins = re.findall(r"`(docs/calibration/[^`]+\.md)` sha256 `([0-9a-f]{64})`", log)
+    for rel, want in pins:
+        data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(data).hexdigest() == want, rel
