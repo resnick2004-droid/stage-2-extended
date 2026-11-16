@@ -121,10 +121,13 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-91b | The firms reading's one small edit (Q-88b's five minors); the addendum committed first | wt-firms | done: merged (E-072); the pin check Q-91c | Q-88b | light | 0 | E-067 |
 | Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | running (wt-features, E-072) | Q-76 | light | 0 | E-067 |
 | Q-101 | Q-94's heavy identity: U1's start rows with recording on, P-16 and P-14, every start (`--row E-068`) -- the heavy queue | lead | queued | Q-94 | heavy | 0 | E-068 |
-| Q-102 | The red team's read of reading PP's third draft | wt-payout | running | Q-92 | light | 0 | E-070 |
-| Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | running | Q-87 | light | 0 | E-071 |
-| Q-91c | A gatekeeper's pin check of the firms reading (a verdict and the pinning row) | lead | running | Q-91b | light | 0 | E-072 |
+| Q-102 | The red team's read of reading PP's third draft | wt-payout | done: a small redraft, remedies adopted (E-074); Q-92b | Q-92 | light | 0 | E-070 |
+| Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | done: REFUSE, seven text items (E-073); Q-87c | Q-87 | light | 0 | E-071 |
+| Q-91c | A gatekeeper's pin check of the firms reading (a verdict and the pinning row) | lead | done: REFUSE, narrow (E-075); Q-91d | Q-91b | light | 0 | E-072 |
 | Q-103 | Where components would meet (a supply count, no outcome): on P-16's and P-14's choice-block U1 replays, how often a new funded account's opening, an 08:30 resting ticket's reachable account and a 09:05-15:05 mark would contend for the same position or account | wt-user | queued (after Q-35's run) | Q-35, Q-94 | heavy | 0 | E-072 |
+| Q-87c | Family O's fourth text: the gatekeeper's seven items | wt-lit | running (its drafter) | Q-87b | light | 0 | E-073 |
+| Q-92b | Reading PP's small redraft (Q-102's M1 and seven minors); the review committed first | wt-payout | running (its drafter) | Q-102 | light | 0 | E-074 |
+| Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | running (its drafter) | Q-91c | light | 0 | E-075 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
