@@ -10,6 +10,8 @@ file, which does not exist yet -- and returns the problems it found; the test as
   with their sources; no number on the page that is not registered; the trace check passes on every number (and
   fails on a stale page and an edited file); the waiting state; the refusals; an approved limit read from a result
   file; the registered page is the writer's (its file names, designs and script).
+* `spend` (fast tier; Q-86) -- the money section from a synthetic `user_spend.csv`: built, traced, refused when it
+  should be, held to Stage 2's U1 start rows of the same records; the `page` case holds it waiting without the file.
 * `full` (slow tier) -- the same on all 19 of the writer's responses.
 * `u1` (slow tier) -- the build-time identity against Stage 2's U1 start rows holds on the writer's own scorecard of
   them and refuses the synthetic file.
@@ -43,6 +45,17 @@ def test_the_page_on_a_synthetic_readings_file(tmp_path):
     assert out["problems"] == [], json.dumps(out, indent=1)[:8000]
     assert out["journey_synth_claims"] > 400
     assert sorted(out["journey_synth_charts"]) == ["net_months.png", "responses.png"]
+
+
+def test_the_money_section_on_a_synthetic_money_file(tmp_path):
+    """Q-86: the money section from `results/user_spend.csv` (made by `extended.user_spend`'s own code from the same toy
+    events as the readings pair): shown after the designs' sections, every number traced to the money file, refused
+    when the file is not its writer's, not the readings file's replay, not its own summary's, or edited; held to Stage
+    2's U1 start rows of the same records at build time. (The waiting state is the `page` case's.)"""
+    out = run_case("spend", tmp_path)
+    assert out["problems"] == [], json.dumps(out, indent=1)[:8000]
+    assert out["spend_claims"] > 900 and out["spend_u1_positive"][1] == 0
+    assert out["spend_checks"]["cross"] > 0 and out["spend_checks"]["self"] > 0
 
 
 @pytest.mark.slow

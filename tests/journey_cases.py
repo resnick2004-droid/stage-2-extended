@@ -18,6 +18,14 @@ Cases:
 * `full` -- the same page on every one of the writer's 19 responses (seed 20266902).
 * `u1` -- the build-time identity: a summary whose verdict view is the writer's `scorecard_rows` on Stage 2's own U1
   start rows holds against Stage 2's file (every design, both arms, both blocks); the synthetic one does not.
+* `spend` (Q-86) -- the readings pair and Q-86's money file (`journey_synth.write_spend`, by `extended.user_spend`'s
+  own code from the same toy events): the page builds with the money section after the designs' sections, each
+  design's two tables for all start days and the judged block, the month ends, break-even lost and the as-traded arm
+  beside; every number of it a claim on the money file, none untraced; the trace check passes on every number and
+  fails on a stale money number and on an edited money file; the refusals (a money file by another writer, one whose
+  start rows are not the readings file's, one whose summary is not its start rows', an edited one); the build-time
+  identity against Stage 2's U1 start rows (made by the vendored `start_rows` from the same toy records) holds, and
+  is refused when a fee moves by a dollar. The `page` case holds the section waiting while the file does not exist.
 """
 from __future__ import annotations
 
@@ -84,7 +92,8 @@ def spec(name: str, **kw) -> R.JourneySpec:
     base = R.REPORTS["journey_scorecard"]
     args = dict(name=name, title=f"Synthetic journey page {name}", source="results/user_beside.csv",
                 starts="results/user_beside_starts.csv", designs=base.designs, writer=SY.SCRIPT, r_star="p14",
-                awaits="Q-69 test", identity_u1="", out=f"docs/report/{name}")
+                awaits="Q-69 test", identity_u1="", out=f"docs/report/{name}", spend="results/user_spend.csv",
+                spend_writer=SY.SCRIPT, spend_awaits="Q-86 test")
     args.update(kw)
     return R.JourneySpec(**args)
 
@@ -188,7 +197,7 @@ def check_page(base: Path, sp: R.JourneySpec, responses: tuple[str, ...]) -> tup
         problems.append(f"{sp.name}: the trace check did not pass on the built page: "
                         + "; ".join(f.message for f in rep.failures[:5]))
     kinds = sorted(k[1] for k in J._INDEX)
-    if kinds != sorted({c.kind for c in built.claims} & {"summary", "starts"}):
+    if kinds != sorted({c.kind for c in built.claims} & {"summary", "starts", "spend"}):
         problems.append(f"{sp.name}: the trace run parsed {kinds}, not each file once")
     if R.compose_text(sp, root=base) != R.compose_text(sp, root=base):
         problems.append(f"{sp.name}: the page is not the same twice")
@@ -367,6 +376,14 @@ def case_page(base: Path) -> None:
     if R.waiting(sp, base) is not None:
         problems.append("a page whose files exist is waiting")
     text, checks = check_page(base, sp, SY.FAST_RESPONSES)
+    # Q-86's section waits while its file does not exist: said, and no number of it
+    money = section(text, "\n## Money spent and the return on spend\n")
+    if "*Waiting: `results/user_spend.csv` is not written yet -- Q-86 test writes it from a clean run" not in money:
+        problems.append(f"the money section does not say it waits: {money[:300]!r}")
+    if any(c.kind == "spend" for c in J.compose(sp, J.load(sp, base), root=base).claims):
+        problems.append("a waiting money section carries a number")
+    if "Q-86's money file will have them" not in section(text, "## Not on this page"):
+        problems.append("'Not on this page' does not say the money waits for Q-86's file")
     stale_and_edited(base, sp, text, checks)
     waiting_checks(base)
     refusal_checks(base, sp)
@@ -380,6 +397,15 @@ def case_page(base: Path) -> None:
         problems.append("the registered page's designs, wait or identity are not the writer's")
     if any(not lim.pending for lim in J.LIMITS):
         problems.append("a declared limit carries a level: E-015's levels wait for the operator's approval")
+    # ... and its money section is Q-86's writer's file
+    import importlib.util
+
+    mspec = importlib.util.spec_from_file_location("s2x_user_spend_writer", ROOT / "scripts" / "user_spend.py")
+    MW = importlib.util.module_from_spec(mspec)
+    mspec.loader.exec_module(MW)
+    if (reg.spend, reg.spend_writer, reg.spend_awaits) != (f"results/{MW.RESULT}.csv", MW.SCRIPT, MW.TASK):
+        problems.append(f"the registered page's money file is {reg.spend} by {reg.spend_writer} ({reg.spend_awaits}); "
+                        f"the writer writes results/{MW.RESULT}.csv as {MW.SCRIPT} ({MW.TASK})")
 
 
 def case_full(base: Path) -> None:
@@ -429,7 +455,186 @@ def case_u1(base: Path) -> None:
         problems.append(f"u1: the writer's scorecard on Stage 2's rows does not hold ({len(bad)} of {n}): {bad[:3]}")
 
 
-CASES = {"page": case_page, "full": case_full, "u1": case_u1}
+# ------------------------------------------------------------------------------------------------ Q-86's money
+
+
+SPEND_RESPONSES = ("off", "denial_25")
+
+
+def _copy_pair(src: Path, dst: Path) -> None:
+    dst.mkdir(parents=True, exist_ok=True)
+    for name in ("user_beside.csv", "user_beside_starts.csv"):
+        for f in (name, f"{name}.manifest.json"):
+            shutil.copy(src / f, dst / f)
+
+
+def _rewrite_spend(base: Path, folder: str, change) -> Path:
+    """The money file read back, changed by `change(df)`, written with a proper manifest (the writer's script) beside
+    a copy of the readings pair: only the page's own checks can tell."""
+    from extended import user_spend as US
+
+    df = X.read_result(base / "results" / "user_spend.csv")
+    df = change(df)
+    target = base / folder / "results"
+    _copy_pair(base / "results", target)
+    X.write_result(df.loc[:, list(US.COLUMNS)], "user_spend", script=SY.SCRIPT, seed=1, parameters={},
+                   results_dir=target)
+    return base / folder
+
+
+def case_spend(base: Path) -> None:
+    import numpy as np
+    import pandas as pd
+
+    import extended.trace as T
+    from extended import user_spend as US
+
+    SY.write_pair(base / "results", SY.SEEDS[0], responses=SPEND_RESPONSES)
+    SY.write_spend(base / "results", SY.SEEDS[0])
+    sp = spec("journey_spend")
+    text, checks = check_page(base, sp, SPEND_RESPONSES)
+    money = section(text, "\n## Money spent and the return on spend\n")
+    if not money or "*Waiting" in money:
+        problems.append("spend: the money section is missing or waiting with its file there")
+    at = [text.find(f"\n## {sp.designs[-1].label}\n"), text.find("\n## Money spent and the return on spend\n"),
+          text.find("\n## How the numbers on this page are kept honest")]
+    if any(i < 0 for i in at) or at != sorted(at):
+        problems.append(f"spend: the money section is not after the designs' and before the last: {at}")
+    if "Q-86's money file has it" not in section(text, "## Not on this page"):
+        problems.append("spend: 'Not on this page' still says the cash before break-even is missing")
+    for words in ("**EXPLORATORY.**", "**Source.** `results/user_spend.csv`", "**The checks.**", "minus 100%"):
+        if words not in money:
+            problems.append(f"spend: the money section lacks {words!r}")
+    heads = ("**All start days: to the first pass, the first payout and break-even.**",
+             "**Judged block (from 2024): to the first pass, the first payout and break-even.**",
+             "**All start days: month by month.**", "**Judged block (from 2024): month by month.**",
+             "**Break-even lost again.**", "**Beside: the as-traded reading**")
+    for d in sp.designs:
+        part = section(money, f"### {d.short}: money spent and the return on spend", "\n### ")
+        if not part:
+            problems.append(f"spend: no money sub-section for {d.key}")
+            continue
+        at = [part.find(h) for h in heads]
+        if any(i < 0 for i in at) or at != sorted(at):
+            problems.append(f"spend {d.key}: tables missing or out of order: {[h for h, i in zip(heads, at) if i < 0]}")
+        for _, label, _, _ in J.SPEND_JOURNEY:
+            if part.count(f"| {label} |") != 2:
+                problems.append(f"spend {d.key}: {label!r} is not in both blocks' tables")
+        for mo in US.SPEND_MONTHS:
+            if part.count(f"| Month {mo} |") != 2:
+                problems.append(f"spend {d.key}: month {mo} is not in both blocks' tables")
+        for _, _, label, _, _ in J.SPEND_BESIDE:
+            if f"| {label} |" not in part:
+                problems.append(f"spend {d.key}: the as-traded table lacks {label!r}")
+    data = J.load(sp, base)
+    claims = J.compose(sp, data, root=base).claims
+    mine = [c for c in claims if c.kind == "spend"]
+    info["spend_claims"] = len(mine)
+    if len(mine) < 3 * 300 or any(Path(c.source).name != "user_spend.csv" for c in mine):
+        problems.append(f"spend: {len(mine)} money numbers, or one not on the money file")
+    if any(c.kind == "spend" for c in claims) and len([c for c in checks if "Q-86 |" in c.label]) != len(mine):
+        problems.append("spend: the trace check does not hold every money number")
+    # a few figures recomputed independently, from the per-start rows by plain numpy
+    t = data.spend.tables[("p14", "verdict")]
+    obs, fy = t["observed"].to_numpy(int), t["first_payout"].to_numpy(float)
+    e = (obs >= US.FIRST_WINDOW) & np.isfinite(fy) & (fy <= US.FIRST_WINDOW)
+    want = float(np.percentile(t["fees_at_first_payout"].to_numpy(float)[e], 50))
+    got = data.spend.get("p14", "verdict", "all", "fees_at_first_payout", "p50")[0]
+    if abs(want - got) > US.CENT_TOL:
+        problems.append(f"spend: the median fees by the first payout {got} is not the start rows' {want}")
+    e3 = obs >= 63
+    x = t["return_on_spend_month_3"].to_numpy(float)[e3]
+    if abs(float(np.percentile(x, 90)) - data.spend.get("p14", "verdict", "all", "return_on_spend_month_3", "p90")[0]) \
+            > 1e-9:
+        problems.append("spend: the p90 return on spend at month 3 is not the start rows'")
+    jd = t["start_date"].str[:4].astype(int).to_numpy() >= 2024
+    nb = int(((obs >= 252) & jd).sum())
+    if data.spend.get("p14", "verdict", "judged", "sessions_to_break_even", "share_never")[1] != nb:
+        problems.append("spend: the judged block's break-even reads the wrong start days")
+    info["spend_checks"] = data.spend_checks
+    if not data.spend_checks.get("cross"):
+        problems.append("spend: nothing compared with the readings file")
+    # a stale money number fails the trace check; an edited money file fails it and is never built
+    page = R.page_path(sp, base)
+    seen = [s for s, _, _ in _tokens(text)]
+    target = next(c for c in mine if c.decimals == 0 and not c.as_percent and abs(float(c.printed.replace(",", "")))
+                  > 300 and seen.count(c.printed) == 1 and f"| {c.printed} |" in text)
+    v = float(target.printed.replace(",", ""))
+    page.write_text(text.replace(f"| {target.printed} |", f"| {v + 7:,.0f} |", 1), encoding="utf-8")
+    rep = T.run([c for c in checks if c.label == f"{sp.name}: {target.label}"], results_dir=base / "results",
+                repo_root=base)
+    if rep.passed:
+        problems.append(f"spend: a stale money number passed the trace check ({target.label})")
+    page.write_text(text, encoding="utf-8")
+    src = base / "results" / "user_spend.csv"
+    raw = src.read_bytes()
+    src.write_bytes(raw.replace(b"p14", b"p41", 1))
+    sel = [c for c in checks if Path(c.source_csv).name == "user_spend.csv"][:3]
+    rep = T.run(sel, results_dir=base / "results", repo_root=base)
+    if rep.passed or not sel or not all("source file problem" in f.message for f in rep.failures):
+        problems.append("spend: an edited money file passed the trace check")
+    try:
+        R.build(sp, root=base, out=base / "edited_page")
+        problems.append("spend: an edited money file was built into a page")
+    except ValueError:
+        pass
+    src.write_bytes(raw)
+    # refusals: another writer; start rows not the readings file's; a summary not its start rows'
+    refused("spend: a money file by another writer", lambda: J.load(spec("sw", spend_writer="scripts/user_spend.py"),
+                                                                     base))
+
+    def moved(df: pd.DataFrame) -> pd.DataFrame:            # one design's fees moved, its summary made again
+        tabs = US.start_tables(df)
+        t = tabs[("p15", "verdict")]
+        t["fees_month_1"] = t["fees_month_1"] + 100.0
+        summ = [r for tb in tabs.values() for r in US.summary_rows(tb)]
+        idents = df[df["section"] == "identity"].to_dict("records")
+        return US.frame(idents, list(tabs.values()), summ, US.READING)
+
+    refused("spend: a money file whose start rows are not the readings file's",
+            lambda: J.load(sp, _rewrite_spend(base, "moved", moved)))
+
+    def summary_off(df: pd.DataFrame) -> pd.DataFrame:
+        i = df.index[(df["section"] == "summary") & (df["design"] == "p14") & (df["arm"] == "verdict")
+                     & (df["block"] == "all") & (df["measure"] == "fees_at_first_payout") & (df["stat"] == "p50")][0]
+        df.loc[i, "value"] = float(df.loc[i, "value"]) + 50.0
+        return df
+
+    refused("spend: a money file whose summary is not its start rows'",
+            lambda: J.load(sp, _rewrite_spend(base, "summary_off", summary_off)))
+    # the build-time identity against Stage 2's U1 start rows (the vendored `start_rows` of the same toy records)
+    u1 = SY.write_u1_starts(base / "u1toy", SY.SEEDS[0])
+    spu = spec("journey_spend_u1", identity_u1=str(u1))
+    n, bad = J.spend_u1_identity(spu, J.load(spu, base).spend, base)
+    info["spend_u1_positive"] = [n, len(bad)]
+    if bad or n < 3 * 2 * 130 * 16:
+        problems.append(f"spend: the U1 identity does not hold on Stage 2's rows of the same records ({n}): {bad[:3]}")
+    df = X.read_result(u1)
+    k = df.index[pd.to_numeric(df["fees_month_3"], errors="coerce").notna()][0]
+    df.loc[k, "fees_month_3"] = float(df.loc[k, "fees_month_3"]) + 1.0
+    u1bad, _ = X.write_result(df, "user_journey_toy", script=SY.SCRIPT, seed=1, parameters={},
+                              results_dir=base / "u1bad")
+    n, bad = J.spend_u1_identity(spec("journey_spend_u1bad", identity_u1=str(u1bad)), J.load(spu, base).spend, base)
+    info["spend_u1_negative"] = [n, bad[:2]]
+    if not (len(bad) == 1 and "fees_month_3: 1 of" in bad[0] and "differ from Stage 2's" in bad[0]):
+        problems.append(f"spend: a fee moved by a dollar in U1's rows is not refused as one difference: {bad[:3]}")
+    try:                                                      # the registered build runs both identities
+        built = R.build(spu, root=base, out=base / "u1_page")
+        if "Stage 2's own U1 start rows' (`" not in built.page.read_text(encoding="utf-8"):
+            problems.append("spend: the build with the identity does not say it held")
+        info["spend_u1_build"] = "holds"
+    except R.ReportError as exc:
+        info["spend_u1_build"] = str(exc)[:300]
+        if "Q-86" in str(exc):
+            problems.append(f"spend: the build refused the money file against Stage 2's rows: {str(exc)[:300]}")
+    try:
+        R.build(spec("journey_spend_u1bad", identity_u1=str(u1bad)), root=base, out=base / "u1bad_page")
+        problems.append("spend: a page was built whose money is not Stage 2's U1 rows")
+    except R.ReportError:
+        pass
+
+
+CASES = {"page": case_page, "full": case_full, "u1": case_u1, "spend": case_spend}
 
 
 def main() -> int:

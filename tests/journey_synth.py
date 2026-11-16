@@ -19,6 +19,10 @@ acts on) -- and how each response changes them, with common random numbers acros
 Late start days have fewer sessions left, so every reading's eligibility (63, 126, 252 sessions) is exercised, and the
 start dates straddle 2024-01-01 so the judged block has start days with the whole year left.
 
+Q-86's money file (`write_spend`, `results/user_spend.csv`) is made the same way, by `extended.user_spend`'s own code
+from the same toy events with every response off, and `write_u1_starts` writes Stage 2's U1 start rows of the same
+toy records (the vendored `user_journey.start_rows`) for the page's build-time identity.
+
 Seeds (Q-69 tests): 20266901, 20266902 -- fixed here, used nowhere else. Imports the vendored engine's pure modules:
 run it in a process of its own (`tests/journey_cases.py`).
 """
@@ -241,6 +245,88 @@ def frames(seed: int = SEEDS[0], *, starts: int = 130, full: int = 80, first: da
                   "break_even": "the first close k >= 1 with cumulative net at or above zero (to 1e-6)",
                   "months": "sessions 21(m-1)+1 .. 21m are month m; a payout belongs to the month its cash arrives in"}}
     return res, st, params
+
+
+def spend_outs(seed: int = SEEDS[0], *, starts: int = 130, full: int = 80, first: date = date(2023, 10, 2),
+               designs: tuple[str, ...] | None = None) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Q-86's per-start outputs (`extended.user_spend._task`'s form: the U1 record and the money) for every design and
+    arm with every response off, from the same toy events as the readings pair: each start day's fees and payouts
+    session by session, its evaluations' purchase days (every toy fee is an evaluation bought), its first pass and
+    first payout from the record (`one_start`'s, made by U1's `start_record`)."""
+    import numpy as np
+
+    from extended import user_beside as B
+    from extended import user_spend as US
+    from propedge.research import user_journey as U
+
+    W = writer()
+    designs = tuple(W.DESIGNS) if designs is None else designs
+    dates = _dates(starts, first)
+    obs = observed_days(starts, full)
+    off = B.BY_NAME["off"]
+    out = {}
+    for name in designs:
+        for arm in U.ARMS:
+            outs = []
+            for s in range(starts):
+                o = one_start(seed, name, arm, off, s, dates[s], obs[s])
+                ev = base_events(seed, name, arm, s, obs[s])
+                f, p = np.zeros(obs[s] + 1), np.zeros(obs[s] + 1)
+                for d, v in ev["fees"]:
+                    f[d] += v
+                for d, c, _ in ev["pays"]:
+                    p[d] += c
+                r = o["rec"]
+                outs.append({"rec": r, "differs": [], "spend": US.spend_record(f, p, [d for d, _ in ev["fees"]], [],
+                                                                                r["first_pass"], r["first_payout"])})
+            out[(name, arm)] = outs
+    return out
+
+
+def write_spend(results_dir: Path, seed: int = SEEDS[0], *, script: str = SCRIPT, exploratory: bool = True,
+                **kw) -> Path:
+    """Q-86's money file as `scripts/user_spend.py`'s `main` writes it (`extended.user_spend.frame`, the identity rows
+    mirrored from its `ident`, every check holding), through `extended.results.write_result`."""
+    from extended import user_beside as B
+    from extended import user_spend as US
+    from extended.results import write_result
+
+    outs = spend_outs(seed, **kw)
+    idents, tables, summary = [], [], []
+    for name in dict.fromkeys(n for n, _ in outs):
+        idents.append(US.identity_row(name, US.DESIGN_IDS[name], "", "the build (toy)", 2))
+        for arm in US.ARMS:
+            t = US.start_table(name, US.DESIGN_IDS[name], arm, outs[(name, arm)])
+            tables.append(t)
+            summary += US.summary_rows(t)
+            idents.append(US.identity_row(name, US.DESIGN_IDS[name], arm, "the replay (toy)", len(t)))
+    res = US.frame(idents, tables, summary, US.READING)
+    idents.append(US.identity_row("", "", "", "the written frame", len(res)))
+    res = US.frame(idents, tables, summary, US.READING)
+    bad = US.output_problems(res)
+    if bad:
+        raise RuntimeError("the synthetic money file fails the writer's own checks: " + "; ".join(bad[:4]))
+    csv, _ = write_result(res, "user_spend", script=script, seed=B.DENIAL_SEED, results_dir=results_dir,
+                          parameters={"task": "Q-86 test fixture", "generator": SCRIPT, "seed": seed},
+                          description="Q-86 test: a synthetic money file in the form of scripts/user_spend.py's",
+                          exploratory=exploratory, variant_count=len(outs), notes={"status": US.READING})
+    return csv
+
+
+def write_u1_starts(results_dir: Path, seed: int = SEEDS[0], **kw) -> Path:
+    """Stage 2's U1 start rows (`user_journey.start_rows`, the vendored script's own) for the toy records, as a result
+    file with its manifest -- the build-time identity's stand-in for `vendor/stage2/results/user_journey.csv`."""
+    import pandas as pd
+    import user_journey as UJ
+
+    from extended.results import write_result
+
+    rows = []
+    for (name, arm), outs in spend_outs(seed, **kw).items():
+        rows += UJ.start_rows({"config": name, "label": "", "cell": ""}, arm, outs)
+    csv, _ = write_result(pd.DataFrame(rows), "user_journey_toy", script=SCRIPT, seed=seed, results_dir=results_dir,
+                          parameters={"task": "Q-86 test fixture"}, description="Q-86 test: toy U1 start rows")
+    return csv
 
 
 def write_pair(results_dir: Path, seed: int = SEEDS[0], *, exploratory: bool = True, script: str = SCRIPT,

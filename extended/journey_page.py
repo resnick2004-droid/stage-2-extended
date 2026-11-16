@@ -45,6 +45,20 @@ everything else labelled beside):
   response the file holds (the denial ladder, forfeiture, the placement on, the Focused Trader models) and the
   as-traded arm.
 
+**Money spent and the return on spend (Q-86).** A section of its own from a third file, `results/user_spend.csv`
+(`JourneySpec.spend`, written by `scripts/user_spend.py`): shown when the file exists, saying it waits for Q-86
+otherwise (the page itself waits only for Q-44's two files). Read through `read_result` (its manifest checked first),
+its manifest must name its writer (`JourneySpec.spend_writer`), and it is **held before anything is composed**: its
+summary is its start rows' by the writer's own code (`extended.user_spend.cross_problems`: counts exactly, money
+within half a cent); its start days, their sessions observed, first pass, first payout and break-even, and the net cash
+at each month end both files hold, are the readings file's per-start rows' with every response off (`spend_cross`:
+the same replay, read twice); and, registered (`identity_u1`), its fees and net at months 1 to 6, first pass and first
+payout are Stage 2's own U1 start rows' for every start, design and arm (`spend_u1_identity`). Per design it shows, on
+all start days and the judged block, the sessions, fees paid and payouts received to the first pass, the first payout
+and break-even, the evaluations bought before the first pass and the cash out of pocket before break-even (p10, p25,
+median, p75, p90, the spread, the share never there inside the window); the fees, payouts and return on spend at each
+month end 1 to 6; the share of start days that lost break-even again; and the as-traded arm beside.
+
 Every number printed goes through `_Page.num`, which records a `Claim` (its file, an `ask` naming how it is derived);
 `traced_numbers` turns the claims into `TracedNumber` entries whose recompute derives the value from the file again.
 """
@@ -65,6 +79,7 @@ import pandas as pd  # noqa: E402
 from extended import user_beside as B  # noqa: E402
 from extended import user_measures as M  # noqa: E402
 from extended import user_readings as UR  # noqa: E402
+from extended import user_spend as US  # noqa: E402
 from extended.results import read_manifest, read_result  # noqa: E402
 from propedge.reporting.trace import TracedNumber  # noqa: E402
 from propedge.research import u_select as S  # noqa: E402
@@ -170,6 +185,15 @@ def starts_path(spec: Any, root: Path | str = ROOT) -> Path:
     return p if p.is_absolute() else Path(root) / p
 
 
+def spend_path(spec: Any, root: Path | str = ROOT) -> Path | None:
+    """Q-86's money file, or None when the spec names none."""
+    s = getattr(spec, "spend", "")
+    if not s:
+        return None
+    p = Path(s)
+    return p if p.is_absolute() else Path(root) / p
+
+
 def _limit_path(lim: Limit, root: Path | str) -> Path:
     p = Path(lim.source)
     return p if p.is_absolute() else Path(root) / p
@@ -235,6 +259,37 @@ class StartRows:
         return self.groups[k]
 
 
+class SpendIndex:
+    """Q-86's file (`extended.user_spend`'s frame): its summary by (design, arm, block, measure, stat) -> (value, n),
+    its start rows by (design, arm), its identity rows."""
+
+    def __init__(self, df: pd.DataFrame):
+        missing = [c for c in US.COLUMNS if c not in df.columns]
+        if missing:
+            raise ReportError(f"not Q-86's money file: no column {', '.join(missing[:6])}")
+        sec = df["section"].astype(str)
+        unknown = sorted(set(sec) - set(US.SECTIONS))
+        if unknown:
+            raise ReportError(f"Q-86's money file has unknown section(s) {unknown}")
+        try:
+            self.summary = US.summary_index(df)
+            self.tables = US.start_tables(df)
+        except (US.SpendRefused, ValueError, KeyError) as exc:
+            raise ReportError(f"Q-86's money file cannot be read: {exc}") from exc
+        ident = df[sec == "identity"]
+        self.identity = [float(v) for v in pd.to_numeric(ident["value"], errors="coerce")]
+        self.frame = df
+
+    def get(self, design: str, arm: str, block: str, measure: str, stat: str) -> tuple[float, float]:
+        k = (design, arm, block, measure, stat)
+        if k not in self.summary:
+            raise ReportError(f"Q-86's money file has no summary row {k}")
+        return self.summary[k]
+
+    def has(self, design: str, arm: str) -> bool:
+        return (design, arm) in self.tables
+
+
 @dataclass
 class Data:
     rows: Rows
@@ -245,6 +300,10 @@ class Data:
     starts_source: Path
     levels: dict[int, pd.DataFrame] = field(default_factory=dict)
     cross: int = 0
+    spend: SpendIndex | None = None
+    spend_manifest: Any = None
+    spend_source: Path | None = None
+    spend_checks: dict[str, int] = field(default_factory=dict)
 
 
 def _read(path: Path) -> pd.DataFrame:
@@ -314,10 +373,150 @@ def cross_problems(rows: Rows, starts: StartRows) -> tuple[int, list[str]]:
     return compared, out
 
 
+#: the per-month nets both Q-44's per-start file and Q-86's start rows hold (the latter as payouts less fees)
+SPEND_NET_MONTHS = tuple(m for m in NET_MONTHS if m in US.SPEND_MONTHS)
+#: the events and sessions observed both files hold per start, compared exactly
+SPEND_SAME_COLS = ("start_date", "observed", "first_pass", "first_payout", "break_even_day")
+#: two values each to the cent, their difference against a third to the cent
+NET_TOL = 0.015 + 1e-9
+
+
+def _num_eq(a: Any, b: Any) -> bool:
+    x, y = float(a), float(b)
+    return (math.isnan(x) and math.isnan(y)) or x == y
+
+
+def spend_schema_problems(spec: Any, sp: SpendIndex, sman: Any, ssrc: Path) -> list[str]:
+    """Why Q-86's file does not fit the page: another writer; a design of the page without its verdict-arm rows."""
+    out = []
+    if str(sman.script) != spec.spend_writer:
+        out.append(f"{ssrc.name} was written by {sman.script!r}, not {spec.spend_writer!r}")
+    for d in spec.designs:
+        if not sp.has(d.key, VERDICT):
+            out.append(f"{ssrc.name} has no verdict-arm start rows for the design {d.key!r}")
+    return out
+
+
+def spend_cross(starts: StartRows, sp: SpendIndex) -> tuple[int, list[str]]:
+    """Q-86's start rows against Q-44's per-start rows with every response off, design and arm by design and arm --
+    the same replay read twice: the same start days; their date, sessions observed, first pass, first payout and
+    break-even exactly; the net cash at each month end both hold (Q-86's payouts less fees, each to the cent) within a
+    cent and a half. (The comparisons made, the differences.)"""
+    compared, out = 0, []
+    for (d, a), t in sp.tables.items():
+        k = (d, a, OFF)
+        if k not in starts.groups:
+            if a == VERDICT:
+                out.append(f"{d} {a}: the readings file has no per-start rows with every response off")
+            continue
+        q = starts.groups[k].set_index("start_day")
+        mine = t.set_index("start_day")
+        if set(q.index) != set(mine.index):
+            out.append(f"{d} {a}: Q-86's start days are not the readings file's ({len(mine)} against {len(q)})")
+            continue
+        bad: dict[str, int] = {}
+        for c in SPEND_SAME_COLS:
+            if c not in q.columns:
+                continue
+            same = [(str(mine.at[s, c]) == str(q.at[s, c])) if c == "start_date" else _num_eq(mine.at[s, c], q.at[s, c])
+                    for s in mine.index]
+            compared += len(same)
+            if not all(same):
+                bad[c] = len(same) - sum(same)
+        for m in SPEND_NET_MONTHS:
+            c = f"net_month_{m}"
+            if c not in q.columns:
+                continue
+            net = mine[f"payouts_month_{m}"].astype(float) - mine[f"fees_month_{m}"].astype(float)
+            theirs = q[c].astype(float).reindex(mine.index)
+            ok = [(math.isnan(x) and math.isnan(y)) or abs(x - y) <= NET_TOL for x, y in zip(net, theirs)]
+            compared += len(ok)
+            if not all(ok):
+                bad[c] = len(ok) - sum(ok)
+        out += [f"{d} {a} {c}: {n} of {len(mine)} start days differ from the readings file" for c, n in bad.items()]
+    return compared, out
+
+
+def spend_u1_identity(spec: Any, sp: SpendIndex, root: Path | str = ROOT) -> tuple[int, list[str]]:
+    """Q-86's start rows against Stage 2's own U1 start rows (`spec.identity_u1`, section `start`), every design and
+    arm of the file: the same start days; date, sessions observed, first pass and first payout exactly; the fees paid
+    at months 1 to 6 within half a cent and the net (payouts less fees) within a cent and a half of U1's `fees_month_m`
+    and `net_month_m`. (The comparisons made, the differences.)"""
+    path = Path(spec.identity_u1)
+    path = path if path.is_absolute() else Path(root) / path
+    df = _read(path)
+    start = df[df["section"].astype(str) == "start"]
+    compared, out = 0, []
+    for (d, a), t in sp.tables.items():
+        u = start[(start["config"].astype(str) == d) & (start["arm"].astype(str) == a)].copy()
+        if not len(u):
+            out.append(f"{d} {a}: Stage 2's file has no start rows")
+            continue
+        u["start_day"] = pd.to_numeric(u["start_day"]).astype(int)
+        u = u.set_index("start_day")
+        mine = t.set_index("start_day")
+        if set(u.index) != set(mine.index):
+            out.append(f"{d} {a}: Q-86's start days are not Stage 2's ({len(mine)} against {len(u)})")
+            continue
+        bad: dict[str, int] = {}
+
+        def tally(col: str, ok: list[bool]) -> None:
+            nonlocal compared
+            compared += len(ok)
+            if not all(ok):
+                bad[col] = len(ok) - sum(ok)
+
+        tally("start_date", [str(mine.at[s, "start_date"]) == str(u.at[s, "start_date"]) for s in mine.index])
+        for c in ("observed", "first_pass", "first_payout"):
+            tally(c, [_num_eq(mine.at[s, c], pd.to_numeric(u.at[s, c])) for s in mine.index])
+        for m in US.SPEND_MONTHS:
+            f = mine[f"fees_month_{m}"].astype(float)
+            n = mine[f"payouts_month_{m}"].astype(float) - f
+            uf = pd.to_numeric(u[f"fees_month_{m}"]).astype(float).reindex(mine.index)
+            un = pd.to_numeric(u[f"net_month_{m}"]).astype(float).reindex(mine.index)
+            tally(f"fees_month_{m}", [(math.isnan(x) and math.isnan(y)) or abs(x - y) <= CENT_TOL
+                                      for x, y in zip(f, uf)])
+            tally(f"net_month_{m}", [(math.isnan(x) and math.isnan(y)) or abs(x - y) <= NET_TOL
+                                     for x, y in zip(n, un)])
+        out += [f"{d} {a} {c}: {k} of {len(mine)} start days differ from Stage 2's" for c, k in bad.items()]
+    return compared, out
+
+
+def load_spend(spec: Any, data: Data, root: Path | str = ROOT) -> None:
+    """Q-86's file into `data` when the spec names it and it exists (its manifest first), held to its writer, to
+    itself and to the readings file; refused with `ReportError` otherwise."""
+    ssrc = spend_path(spec, root)
+    if ssrc is None or not ssrc.exists():
+        return
+    df = _read(ssrc)                                   # verified against its manifest's sha256, every time
+    sman = read_manifest(ssrc)
+    key = (str(sman.sha256), str(data.starts_manifest.sha256))
+    if key not in _SPEND_PARSED:
+        sp = SpendIndex(df)
+        n_self, own = US.cross_problems(df)
+        n_cross, cross = spend_cross(data.starts, sp)
+        if len(_SPEND_PARSED) >= _PARSED_SIZE:
+            _SPEND_PARSED.pop(next(iter(_SPEND_PARSED)))
+        _SPEND_PARSED[key] = (sp, n_self, own, n_cross, cross)
+    sp, n_self, own, n_cross, cross = _SPEND_PARSED[key]
+    bad = spend_schema_problems(spec, sp, sman, ssrc)
+    if bad:
+        raise ReportError("Q-86's money file does not fit the page: " + "; ".join(bad[:6]))
+    if own:
+        raise ReportError(f"Q-86's money file's summary is not its start rows' ({len(own)} differ): "
+                          + "; ".join(own[:4]))
+    if cross:
+        raise ReportError("Q-86's money file is not the readings file's replay: " + "; ".join(cross[:4]))
+    data.spend, data.spend_manifest, data.spend_source = sp, sman, ssrc
+    data.spend_checks = {"self": n_self, "cross": n_cross}
+
+
 #: the two files' parse and cross-check, by the pair of sha256 their manifests record (each file verified against its
 #: own by `read_result` on every load): a pair of contents is parsed and held to each other once a process
 _PARSED: dict[tuple[str, str], tuple[Rows, StartRows, int, list[str]]] = {}
 _PARSED_SIZE = 4
+#: Q-86's file parsed and held to itself and to the readings file, by (its sha256, the per-start file's sha256)
+_SPEND_PARSED: dict[tuple[str, str], tuple[SpendIndex, int, list[str], int, list[str]]] = {}
 
 
 def load(spec: Any, root: Path | str = ROOT) -> Data:
@@ -343,6 +542,7 @@ def load(spec: Any, root: Path | str = ROOT) -> Data:
         raise ReportError(f"the per-start file does not give the summary's path and response rows ({len(cross)} "
                           "differ): " + "; ".join(cross[:4]))
     data = Data(rows, starts, man, sman, src, ssrc, cross=compared)
+    load_spend(spec, data, root)
     for i, lim in enumerate(limits_of(spec)):
         if lim.measure not in S.BY_KEY:
             raise ReportError(f"a limit on {lim.measure!r}, which is not a scorecard line")
@@ -445,6 +645,18 @@ def starts_value(starts: StartRows, ask: tuple) -> float:
     raise KeyError(ask)
 
 
+def spend_value(sp: SpendIndex, ask: tuple) -> float:
+    """A number of Q-86's file: a summary row's value (`row`) or count (`n`), or its identity rows' count."""
+    how, *a = ask
+    if how == "row":
+        return sp.get(*a)[0]
+    if how == "n":
+        return sp.get(*a)[1]
+    if how in ("ident_held", "ident_rows"):
+        return float(sum(1 for v in sp.identity if v == 1.0)) if how == "ident_held" else float(len(sp.identity))
+    raise KeyError(ask)
+
+
 def cell_value(df: pd.DataFrame, where: Sequence[tuple[str, Any]], column: str) -> float:
     """One cell of a limit's source file: the one row matching `where`."""
     m = pd.Series(True, index=df.index)
@@ -467,7 +679,8 @@ def _index(df: pd.DataFrame, kind: str) -> Any:
     key = df.attrs.get(READ_KEY)
     if key is not None and (key, kind) in _INDEX:
         return _INDEX[(key, kind)]
-    got = Rows(df) if kind == "summary" else StartRows(df) if kind == "starts" else df
+    got = Rows(df) if kind == "summary" else StartRows(df) if kind == "starts" else SpendIndex(df) if kind == "spend" \
+        else df
     if key is not None:
         if len(_INDEX) >= _INDEX_SIZE:
             _INDEX.pop(next(iter(_INDEX)))
@@ -481,6 +694,8 @@ def value_of(kind: str, ask: tuple, obj: Any) -> float:
         return summary_value(obj, ask)
     if kind == "starts":
         return starts_value(obj, ask)
+    if kind == "spend":
+        return spend_value(obj, ask)
     if kind == "limit":
         return cell_value(obj, ask[1], ask[2])
     raise KeyError(kind)
@@ -517,6 +732,8 @@ class _Page:
             return str(self.data.source)
         if kind == "starts":
             return str(self.data.starts_source)
+        if kind == "spend":
+            return str(self.data.spend_source)
         return str(ask[0])
 
     def obj(self, kind: str, ask: tuple) -> Any:
@@ -524,6 +741,8 @@ class _Page:
             return self.data.rows
         if kind == "starts":
             return self.data.starts
+        if kind == "spend":
+            return self.data.spend
         return self.data.levels[int(ask[3])]
 
     def get(self, kind: str, ask: tuple) -> float:
@@ -608,8 +827,162 @@ def _blocks(rows: Rows, d: str) -> list[tuple[str, str]]:
     return [(b, words[b]) for b in UR.BLOCKS if b in have]
 
 
-def compose(spec: Any, data: Data, *, root: Path | str = ROOT, identity: tuple[int, list[str]] | None = None
-            ) -> Composed:
+#: Q-86's journey rows: (measure, words, unit, window for a days percentile or None)
+SPEND_JOURNEY = (
+    ("sessions_to_first_pass", "Sessions to the first pass", "sessions", US.FIRST_WINDOW),
+    ("fees_at_first_pass", "Fees paid by the first pass ($)", "dollars", None),
+    ("payouts_at_first_pass", "Payouts received by the first pass ($)", "dollars", None),
+    ("evaluations_before_first_pass", "Evaluations bought before the first pass (the one that passed included)",
+     "stretch", None),
+    ("sessions_to_first_payout", "Sessions to the first payout", "sessions", US.FIRST_WINDOW),
+    ("fees_at_first_payout", "Fees paid by the first payout ($)", "dollars", None),
+    ("payouts_at_first_payout", "Payouts received by the first payout ($)", "dollars", None),
+    ("sessions_to_break_even", "Sessions to break-even", "sessions", US.YEAR_WINDOW),
+    ("fees_at_break_even", "Fees paid by break-even ($)", "dollars", None),
+    ("payouts_at_break_even", "Payouts received by break-even ($)", "dollars", None),
+    ("spent_before_break_even", "Cash out of pocket before break-even, at its deepest ($)", "dollars", None),
+)
+#: the units of a journey row's spread (a days spread is in sessions)
+SPEND_MONTH_COLS = (("fees", ("p10", "p50", "p90"), "dollars"), ("payouts", ("p10", "p50", "p90"), "dollars"),
+                    ("return_on_spend", (*US.QUANTILES, "spread"), "percent"))
+#: the as-traded arm beside: (measure, stat, words, unit, window for a days percentile or None)
+SPEND_BESIDE = (
+    ("fees_at_first_payout", "p50", "Fees paid by the first payout, middle ($)", "dollars", None),
+    ("payouts_at_first_payout", "p50", "Payouts received by the first payout, middle ($)", "dollars", None),
+    ("sessions_to_first_payout", "share_never", "Never paid inside the window", "percent", None),
+    ("sessions_to_break_even", "p50", "Sessions to break-even, middle", "sessions", US.YEAR_WINDOW),
+    ("spent_before_break_even", "p50", "Cash out of pocket before break-even, middle ($)", "dollars", None),
+    ("return_on_spend_month_3", "p50", "Return on spend at the end of month 3, middle", "percent", None),
+    ("return_on_spend_month_6", "p50", "Return on spend at the end of month 6, middle", "percent", None),
+)
+
+
+def _spend_section(P: _Page, spec: Any, data: Data, root: Path | str,
+                   spend_identity: tuple[int, list[str]] | None) -> None:
+    """Q-86's section: waiting while its file does not exist; else its source, how to read it, its checks and, per
+    design, the journey's money, the month ends and the as-traded arm beside -- every number a claim on its file."""
+    if not getattr(spec, "spend", ""):
+        return
+    P.add("## Money spent and the return on spend", "")
+    sp = data.spend
+    if sp is None:
+        task = getattr(spec, "spend_awaits", "") or "its task"
+        P.add(f"*Waiting: `{spec.spend}` is not written yet -- {task} writes it from a clean run "
+              f"(`{spec.spend_writer}`). When it is, this section shows, start day by start day and then spread across "
+              "start days, the fees paid and payouts received by the first pass, the first payout and break-even, the "
+              "evaluations bought before the first pass, the cash out of pocket before break-even, the return on "
+              "spend at each month end and whether break-even was lost again.*", "")
+        return
+    T_ = "spend"
+    sman = data.spend_manifest
+    ssrc = R._rel(data.spend_source, root)
+    commit = str(sman.git_commit)
+    count = getattr(sman, "variant_count", None)
+    if bool(getattr(sman, "exploratory", False)):
+        P.add("> **EXPLORATORY.** The money file's manifest marks it exploratory: beside the readings above, never "
+              "deciding; nothing is chosen from it.", "")
+    if commit.endswith("-dirty") or bool(getattr(sman, "git_dirty", False)):
+        P.add(f"> **NOT CITABLE.** The money file was written from a tree with uncommitted changes (`{commit}`).", "")
+    P.add(f"**Source.** `{ssrc}` (sha256 `{str(sman.sha256)[:12]}`), written by `{sman.script}` at commit "
+          f"`{commit[:12]}` on {str(sman.timestamp)[:10]}; the manifest checked before reading"
+          + (f"; readings in the file (variant count in its manifest): {count}" if count is not None else "")
+          + ". Q-86's reading: the same replay as the readings above, with the engine's day recorder on, every fee "
+          "and payout booked session by session.", "")
+    P.add("- **Fees paid** are every evaluation bought, every monthly rebill, every activation and every reset paid "
+          "so far; **payouts received** the cash arrived so far, after the firm's split and payout fee. Net cash is "
+          "payouts received less fees paid.",
+          "- **By an event** -- the first pass, the first payout, break-even -- means at the close of the session it "
+          "happens on, every fee and payout of that session counted.",
+          "- **Evaluations bought before the first pass** counts those bought before the session of the first pass, "
+          "the one that passed included.",
+          "- **The cash out of pocket before break-even** is the deepest net cash below zero before it came back.",
+          "- **Return on spend** at a month end is the net cash there over the fees paid by then: zero is "
+          "break-even, minus 100% is every dollar spent lost with nothing back.",
+          f"- The windows are the page's: {US.FIRST_WINDOW} sessions for the first pass and payout, {US.YEAR_WINDOW} "
+          f"for break-even; a month end m reads the start days with {US.MONTH} m sessions left.", "")
+    held = P.cell(T_, ("ident_held",), "count", "Q-86 | identity checks that hold")
+    total = P.cell(T_, ("ident_rows",), "count", "Q-86 | identity checks")
+    P.add(f"**The checks.** The writer refuses to write unless every one of its checks holds; the file records them: "
+          f"{held} of {total} hold -- with the day recorder on, the replay equals Stage 2's own U1 start rows on every "
+          "start and column; the fees and payouts session by session equal the engine's cash, its totals and its "
+          "accounts' own purchase, rebill, activation, reset and payout records; the fees and net at every month end, "
+          "the cash before the first pass and payout and the pay days equal U1's own columns. Checked when this page "
+          "was built: the file's summary is its start rows' by the writer's own code; its start days, their first "
+          "pass, first payout, break-even and net cash at each month end are the readings file's with every response "
+          "off" + (f", and its fees and net at each month end Stage 2's own U1 start rows' (`{spec.identity_u1}`) for "
+                   "every start, design and arm" if spend_identity is not None else "") + ".", "")
+    words = {ALL: "All start days", JUDGED: f"Judged block (from {S.JUDGED_FIRST_YEAR})"}
+    for d in spec.designs:
+        k = d.key
+        P.add(f"### {d.short}: money spent and the return on spend", "",
+              "The verdict view: the cautious reading, payouts never denied, placement off.", "")
+        for b in US.BLOCKS:
+            P.add(f"**{words[b]}: to the first pass, the first payout and break-even.**", "",
+                  "| What | Low end (p10) | p25 | Middle (median) | p75 | High end (p90) | Spread (p90 less p10) | "
+                  "Never there inside the window | Start days read |", "|---|" + "---:|" * 8)
+            for m, label, unit, window in SPEND_JOURNEY:
+                n = sp.get(k, VERDICT, b, m, "p50")[1]
+                tag = f"Q-86 | {d.short} | {b} | {m}"
+                cells = []
+                for st in US.QUANTILES:
+                    ask = ("row", k, VERDICT, b, m, st)
+                    cells.append(P.days(T_, ask, f"{tag} | {st}", window, n) if window is not None else
+                                 P.cell(T_, ask, unit, f"{tag} | {st}"))
+                cells.append(P.cell(T_, ("row", k, VERDICT, b, m, "spread"), unit, f"{tag} | spread"))
+                cells.append(P.cell(T_, ("row", k, VERDICT, b, m, "share_never"), "percent", f"{tag} | never"))
+                cells.append(P.num(n, "count", f"{tag} | start days read", T_, ("n", k, VERDICT, b, m, "p50"))
+                             if n else "0")
+                P.add(f"| {label} | " + " | ".join(cells) + " |")
+            P.add("")
+        P.add("*The sessions and the share never there read every start day with the window left; the money and the "
+              "evaluations read those that got there within it (the start days read). \"After session W\": more than "
+              "that share of the start days had not got there within the window. \"--\": nothing to read, or a spread "
+              "whose high end is after the window.*", "")
+        for b in US.BLOCKS:
+            P.add(f"**{words[b]}: month by month.**", "",
+                  "| Month end | Fees paid by then: low end | middle | high end | Payouts received by then: low end | "
+                  "middle | high end | Return on spend: low end (p10) | p25 | middle | p75 | high end (p90) | spread | "
+                  "Start days read |", "|---|" + "---:|" * 13)
+            for mo in US.SPEND_MONTHS:
+                cells = []
+                for c, stats, unit in SPEND_MONTH_COLS:
+                    m = f"{c}_month_{mo}"
+                    cells += [P.cell(T_, ("row", k, VERDICT, b, m, st), unit, f"Q-86 | {d.short} | {b} | {m} | {st}")
+                              for st in stats]
+                n = sp.get(k, VERDICT, b, f"fees_month_{mo}", "p50")[1]
+                cells.append(P.num(n, "count", f"Q-86 | {d.short} | {b} | month {mo} | start days read", T_,
+                                   ("n", k, VERDICT, b, f"fees_month_{mo}", "p50")) if n else "0")
+                P.add(f"| Month {mo} | " + " | ".join(cells) + " |")
+            P.add("")
+        lost = []
+        for b in US.BLOCKS:
+            n = sp.get(k, VERDICT, b, "break_even_lost", "share")[1]
+            share = P.cell(T_, ("row", k, VERDICT, b, "break_even_lost", "share"), "percent",
+                           f"Q-86 | {d.short} | {b} | break-even lost")
+            nn = P.num(n, "count", f"Q-86 | {d.short} | {b} | broken even within the year", T_,
+                       ("n", k, VERDICT, b, "break_even_lost", "share")) if n else "0"
+            lost.append(f"{share} of {nn} ({words[b].lower()})")
+        P.add(f"**Break-even lost again.** Of the start days back to break-even within {US.YEAR_WINDOW} sessions, the "
+              "share whose net cash later closed below zero: " + "; ".join(lost) + ".", "")
+        if sp.has(k, BESIDE):
+            P.add("**Beside: the as-traded reading** (all start days; Stage 2's point arm, payouts never denied, "
+                  "placement off).", "", "| What | Cautious (the verdict view) | As traded (beside) |",
+                  "|---|---:|---:|")
+            for m, st, label, unit, window in SPEND_BESIDE:
+                cells = []
+                for arm in (VERDICT, BESIDE):
+                    ask = ("row", k, arm, ALL, m, st)
+                    tag = f"Q-86 | {d.short} | {arm} | {m} | {st}"
+                    if window is not None:
+                        cells.append(P.days(T_, ask, tag, window, sp.get(k, arm, ALL, m, st)[1]))
+                    else:
+                        cells.append(P.cell(T_, ask, unit, tag))
+                P.add(f"| {label} | " + " | ".join(cells) + " |")
+            P.add("")
+
+
+def compose(spec: Any, data: Data, *, root: Path | str = ROOT, identity: tuple[int, list[str]] | None = None,
+            spend_identity: tuple[int, list[str]] | None = None) -> Composed:
     """The page's text, its claims and its charts from the two files' indexes."""
     P = _Page(data, root)
     rows, starts = data.rows, data.starts
@@ -708,8 +1081,12 @@ def compose(spec: Any, data: Data, *, root: Path | str = ROOT, identity: tuple[i
         P.add("How the readings were made (the file's manifest, `parameters.conventions`):", "")
         P.add(*[f"- **{k.replace('_', ' ')}**: {v}" for k, v in conv.items()], "")
     P.add("## Not on this page", "",
-          "- the cash out of pocket before break-even: the file records the cash before the first pass and before the "
-          "first payout, not the deepest point before break-even;",
+          ("- the cash out of pocket before break-even is not in the readings file (it records the cash before the "
+           "first pass and before the first payout); Q-86's money file has it -- below, under \"Money spent and the "
+           "return on spend\";" if data.spend is not None else
+           "- the cash out of pocket before break-even and the return on spend: the readings file records the cash "
+           "before the first pass and before the first payout, not the deepest point before break-even nor the fees "
+           "paid; Q-86's money file will have them (its section below waits for it);"),
           "- the trades' lift over the coin twin and Stage 2's long-run gate (growth on the required bankroll at the "
           "bound): they are each design's own files -- the pass line and a floor, never this page;",
           "- a calibrated uncertainty of P and the minimum detectable difference: the writer leaves it blank until "
@@ -1088,6 +1465,8 @@ def compose(spec: Any, data: Data, *, root: Path | str = ROOT, identity: tuple[i
                 P.add(f"| {key}: {words} | " + " | ".join(cells) + " |")
             P.add("")
 
+    _spend_section(P, spec, data, root, spend_identity)
+
     P.add("## How the numbers on this page are kept honest", "",
           "Every number above is computed from the two files when the page is built and registered in "
           "`extended/trace.py`; `python scripts/trace_check.py` recomputes each one from its file, after checking "
@@ -1207,13 +1586,18 @@ def build(spec: Any, *, root: Path | str = ROOT, out: Path | str | None = None) 
     """Read both files (manifests first), hold them to the writer, to each other and (registered) to Stage 2, compose
     the page, draw its charts, write `<out>/README.md`. Refuses (raises) before writing anything."""
     data = load(spec, root)
-    ident = None
+    ident = spend_ident = None
     if spec.identity_u1:
         ident = u1_identity(spec, data.rows, root)
         if ident[1]:
             raise ReportError(f"the verdict view is not Stage 2's U1 scorecard ({len(ident[1])} of {ident[0]} "
                               "differ): " + "; ".join(ident[1][:4]))
-    composed = compose(spec, data, root=root, identity=ident)
+        if data.spend is not None:
+            spend_ident = spend_u1_identity(spec, data.spend, root)
+            if spend_ident[1]:
+                raise ReportError(f"Q-86's money file is not Stage 2's U1 start rows ({len(spend_ident[1])} checks "
+                                  "differ): " + "; ".join(spend_ident[1][:4]))
+    composed = compose(spec, data, root=root, identity=ident, spend_identity=spend_ident)
     folder = Path(out) if out is not None else Path(root) / spec.out_dir
     folder.mkdir(parents=True, exist_ok=True)
     drawn: list[Path] = []
@@ -1251,6 +1635,7 @@ def traced_numbers(spec: Any, *, root: Path | str = ROOT) -> list[TracedNumber]:
                          tolerance=0.5 * 10 ** (-c.decimals)) for c in composed.claims]
 
 
-__all__ = ["LIMITS", "Limit", "Rows", "StartRows", "Data", "Claim", "load", "compose", "compose_text", "build",
-           "traced_numbers", "u1_identity", "cross_problems", "pairing_problems", "schema_problems",
-           "response_words", "summary_value", "starts_value", "starts_path"]
+__all__ = ["LIMITS", "Limit", "Rows", "StartRows", "SpendIndex", "Data", "Claim", "load", "load_spend", "compose",
+           "compose_text", "build", "traced_numbers", "u1_identity", "spend_u1_identity", "spend_cross",
+           "cross_problems", "pairing_problems", "schema_problems", "spend_schema_problems", "response_words",
+           "summary_value", "starts_value", "spend_value", "starts_path", "spend_path"]
