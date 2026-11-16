@@ -1,0 +1,151 @@
+{
+  "columns": [
+    "section",
+    "cell",
+    "holds",
+    "check",
+    "stop_ticks",
+    "stop_points",
+    "slot",
+    "slot_ct",
+    "walks",
+    "unresolved_worst_r",
+    "offered",
+    "unresolved_0.25",
+    "unresolved_1",
+    "unresolved_1.5",
+    "unresolved_2",
+    "unresolved_2.5",
+    "unresolved_3",
+    "window",
+    "window_ct",
+    "marks_offered",
+    "first_mark",
+    "last_mark",
+    "candidates",
+    "days",
+    "candidates_per_day",
+    "busiest_day",
+    "capacity",
+    "trades_taken_per_session",
+    "trades_taken_per_session_point",
+    "long_share",
+    "every_r_resolves",
+    "unresolved_worst_year_0.25",
+    "unresolved_0.5",
+    "unresolved_worst_year_0.5",
+    "unresolved_0.75",
+    "unresolved_worst_year_0.75",
+    "unresolved_worst_year_1",
+    "unresolved_1.25",
+    "unresolved_worst_year_1.25",
+    "unresolved_worst_year_1.5",
+    "unresolved_1.75",
+    "unresolved_worst_year_1.75",
+    "unresolved_worst_year_2",
+    "unresolved_2.25",
+    "unresolved_worst_year_2.25",
+    "unresolved_worst_year_2.5",
+    "unresolved_2.75",
+    "unresolved_worst_year_2.75",
+    "unresolved_worst_year_3",
+    "growth_on_required",
+    "growth_on_required_point",
+    "required_p90",
+    "growth_zero_edge_twin",
+    "share_payouts_exposed",
+    "break_even_denial_p50",
+    "mean_max_combine_purchases_21d",
+    "killed",
+    "reading",
+    "carried",
+    "shift",
+    "note"
+  ],
+  "description": "EXPLORATORY (D-525): family RC's re-entry screen -- a seeded coin offered every five minutes, admitted by D-212's resolution test at every offered R, taken by P-14's strict router when every account is flat, on FV3-C's 12.5 and 25-point rungs in four windows (all, asia, london, us), through P-14's engine call; NQ development 2020-01-01..2026-07-16; each cell's supply, growth at the bound with the kill line, the zero-edge twin and P-14 beside.",
+  "exploratory": true,
+  "git_commit": "cc7deb1ac7fd41fcf2f3ffd2322efa6de5265766",
+  "git_dirty": false,
+  "notes": {
+    "cutoff": "kind columns only (resolved_coin.mark_resolution refuses others)",
+    "status": "EXPLORATORY (D-525): family RC's re-entry screen; a kill line at the bound; no verdict",
+    "supersedes": "D-523's fixed-slot screen (results/rc_screen.csv) stays on record as D-521's scheduling fault (D-525 (1))",
+    "variant_count_rule": "one per cell, under D-525:rc_screen"
+  },
+  "parameters": {
+    "budget": [
+      20,
+      21
+    ],
+    "carried": "rc_s100_all",
+    "cell_seconds": {
+      "rc_s100_all": 377.5,
+      "rc_s100_asia": 559.4,
+      "rc_s100_london": 242.9,
+      "rc_s100_us": 243.1,
+      "rc_s50_all": 702.4,
+      "rc_s50_asia": 201.3,
+      "rc_s50_london": 254.1,
+      "rc_s50_us": 584.8
+    },
+    "coin_seed": 20261102,
+    "days": 1691,
+    "decision": "D-525",
+    "delay": 0,
+    "kill_line": "growth on the required bankroll at the bound (gate row, 0 %, placement off) <= 0 kills a cell",
+    "mark_step": 5,
+    "offered_rr": [
+      0.25,
+      1.0,
+      1.5,
+      2.0,
+      2.5,
+      3.0
+    ],
+    "paths": 500,
+    "plan": "state_dp_e-0.050_lamstar_noclose",
+    "rungs": [
+      50,
+      100
+    ],
+    "seconds": 3378.2,
+    "seed": 20261131,
+    "selection": "the surviving all-window cell with the higher growth at the bound (D-525 (6))",
+    "session_end_ct": "15:10",
+    "strict_gap": 5.0,
+    "unresolved_mark": 0.05,
+    "walks": 710368,
+    "window": [
+      "2020-01-02",
+      "2026-07-16"
+    ],
+    "windows": {
+      "all": [
+        "17:00",
+        "15:10"
+      ],
+      "asia": [
+        "18:00",
+        "02:00"
+      ],
+      "london": [
+        "02:00",
+        "08:30"
+      ],
+      "us": [
+        "08:30",
+        "15:10"
+      ]
+    },
+    "workers": 4
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "rc_reentry_screen.csv",
+  "rows": 545,
+  "script": "scripts/rc_reentry_screen.py",
+  "seed": 20261131,
+  "sha256": "dfd93c46deca5651e125ba63a8616b3b6f627beea87097593dbac27df4c37df1",
+  "timestamp": "2026-11-02T10:51:25+00:00",
+  "variant_count": 8
+}

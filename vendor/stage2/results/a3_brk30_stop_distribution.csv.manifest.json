@@ -1,0 +1,144 @@
+{
+  "columns": [
+    "market",
+    "stop_ticks",
+    "state",
+    "rr",
+    "exit",
+    "date"
+  ],
+  "description": "A3-BRK30's stops (D-494): one row per trade and state -- the Combine at the policy's fresh Combine R, the funded account at its fresh funded R, each where the event hour offers it -- its stop in MNQ ticks, the R, the exit its state's bracket took (a breakeven a stop) and its date; the policy's fresh decisions in the manifest.",
+  "exploratory": true,
+  "git_commit": "c290fddd5552978f7a24b2ea0bd2673c02ce1b65",
+  "git_dirty": false,
+  "notes": {
+    "seed": "none: a reading of the walk and of the policy D-492 fixed",
+    "status": "the card's stop distribution and the plan's facts (D-494); no campaign"
+  },
+  "parameters": {
+    "busiest_day": 44,
+    "cell": "brk30 follow",
+    "days": 1691,
+    "decision": "D-494",
+    "era_flagged": true,
+    "exit_mapping": "target at the state's R; flatten at 15:10; stop or breakeven -> stop",
+    "fresh": {
+      "combine": {
+        "abandon": false,
+        "max_trades": 1,
+        "regime": "combine / combine: balance >= $0 / cushion >= $2,000 / combine $2,000 1.5R",
+        "risk": 2000.0,
+        "rr": 1.5
+      },
+      "funded": {
+        "abandon": false,
+        "max_trades": 1,
+        "regime": "funded / funded: balance >= $0 / cushion >= $2,000 / request_day >= 0 / win_days >= 0 / funded $2,000 3R",
+        "risk": 2000.0,
+        "rr": 3.0
+      }
+    },
+    "hours_traded": 23,
+    "identity_with_screen": "holds (the row's facts, the edge and era rows, the rung walk's inputs, the rung rule and the policy)",
+    "long_share": 0.5250824279170632,
+    "model": "A3-BRK30",
+    "offered": {
+      "0.25": 45191,
+      "0.5": 45191,
+      "0.75": 45191,
+      "1": 45191,
+      "1.25": 45191,
+      "1.5": 45191,
+      "1.75": 42512,
+      "2": 39909,
+      "2.25": 39909,
+      "2.5": 39909,
+      "2.75": 34644,
+      "3": 34644
+    },
+    "policy_id": "state_dp_e-0.050_lamstar",
+    "realised_by_stop": {
+      "combine": {
+        "100 ticks": 2000.0,
+        "50 ticks": 1250.0
+      },
+      "funded": {
+        "100 ticks": 1000.0,
+        "50 ticks": 500.0
+      }
+    },
+    "resolution": {
+      "unresolved_0.25": 2.212829988272001e-05,
+      "unresolved_0.5": 0.0001991546989444801,
+      "unresolved_0.75": 0.0003761810980062402,
+      "unresolved_1": 0.0006417206965988803,
+      "unresolved_1.25": 0.0013498262928459206,
+      "unresolved_1.5": 0.002234958288154721,
+      "unresolved_1.75": 0.001858298833270606,
+      "unresolved_2": 0.0019293893607958104,
+      "unresolved_2.25": 0.002831441529479566,
+      "unresolved_2.5": 0.00410934876844822,
+      "unresolved_2.75": 0.0027133125505137976,
+      "unresolved_3": 0.0037524535273063156,
+      "unresolved_worst_year_0.25": 0.00014690759512266783,
+      "unresolved_worst_year_0.5": 0.001028353165858675,
+      "unresolved_worst_year_0.75": 0.0013221683561040105,
+      "unresolved_worst_year_1": 0.00205670633171735,
+      "unresolved_worst_year_1.25": 0.003819597473189364,
+      "unresolved_worst_year_1.5": 0.006610841780520053,
+      "unresolved_worst_year_1.75": 0.005791203631241196,
+      "unresolved_worst_year_2": 0.005833333333333334,
+      "unresolved_worst_year_2.25": 0.008357011532675915,
+      "unresolved_worst_year_2.5": 0.011699816145746281,
+      "unresolved_worst_year_2.75": 0.009697439875872769,
+      "unresolved_worst_year_3": 0.013188518231186967
+    },
+    "screen": "results/atlas_screen_a3.csv",
+    "screen_sha256": "f353658410aa0c5d5b71dd149cfc7f2d780c851378f66c52ee281213db25f7c5",
+    "sd_r": {
+      "0.25": 0.5139165719713779,
+      "0.5": 0.7115329812767813,
+      "0.75": 0.8609232087434969,
+      "1": 0.9868645363553491,
+      "1.25": 1.0958871008359647,
+      "1.5": 1.1930146734298148,
+      "1.75": 1.28560845066833,
+      "2": 1.368690704474447,
+      "2.25": 1.4455866703939277,
+      "2.5": 1.5167698839087773,
+      "2.75": 1.5817453965919948,
+      "3": 1.6453805545873121
+    },
+    "share_rung_50": 0.05917107388639331,
+    "stops_ticks": [
+      50,
+      100
+    ],
+    "trades": 45191,
+    "trades_per_day": 26.7244234180958,
+    "trades_per_day_capacity": 44,
+    "walk": {
+      "bars_parquet_sha256": "c391d97ad1c11db3ce0da0c65f0d0ac9df1582617666b37c00ad206c3add2041",
+      "code_sha256": "8e6bd9be4d16bb190788183d79a5be48e2d60fb1103617fda58324b6e5f035ae",
+      "config_sha256": "921a717fbc32f63f4e9318a8e69bbe4f03909eb46051733d79c2b793a58dc265",
+      "days": 1691,
+      "family": "A1",
+      "first": "2020-01-02",
+      "last": "2026-07-16",
+      "purpose": "development",
+      "rows_days": 1691,
+      "rows_events": 418586,
+      "rows_walks": 443740,
+      "section": "walk"
+    }
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "a3_brk30_stop_distribution.csv",
+  "rows": 79835,
+  "script": "scripts/a3_brk30.py",
+  "seed": null,
+  "sha256": "5836da394bf42dddb1dda352529cdaf833a665063f9595f35e523f32280fe640",
+  "timestamp": "2026-10-30T22:13:35+00:00",
+  "variant_count": null
+}
