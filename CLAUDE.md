@@ -17,10 +17,13 @@ vendored read-only. The charter is [`CHARTER.md`](CHARTER.md); the decision log 
 
 ## The objective (CHARTER section 2)
 
-**P** -- the mean share of start days ahead (net cash above zero) at months 1, 2 and 3 -- with Stage 2 D-621's guarded
-measures; **payouts per fee dollar (S3c) is the screening target**; the frontier on P, S1, S3a, S5a is reported, never
-one number. **R\* = P-14.** A design is CARRIED only by Stage 2 D-621 (3)'s rule at its family's level 0.05 / (k (k+1)),
-families numbered on from Stage 2's program U (this repository's first is k = 10, E-001).
+**Judged on trades first (the operator, E-008):** a design passes only if its trades' lift over the coin twin on the
+same brackets is above zero on the judged block at its family's level 0.05 / (k (k+1)) **by a calibrated statistic**,
+and its value-map price at that bound clears the family's declared bar; the long-run gate, resolution, verified rules
+and conduct tier 1 stay floors. **The user scorecard is reported beside, never the pass line:** P (the mean share of
+start days ahead at months 1-3), the guarded measures and the frontier against **R\* = P-14**, with the denial ladder,
+the placement on and E-007 (e)'s other readings. The verdict keeps 0 % payout denial and the placement off. Families
+are numbered on from Stage 2's program U: F-01 (k = 10) was withdrawn, k spent (E-007); the next is k = 11.
 
 ## Rules that have teeth
 

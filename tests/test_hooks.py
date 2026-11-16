@@ -179,9 +179,15 @@ def test_rewriting_an_existing_row_warns():
     assert msg["hookSpecificOutput"]["hookEventName"] == "PreToolUse"
 
 
-def test_an_append_anchored_on_the_last_row_is_silent():
+def test_an_append_anchored_on_the_last_row_is_silent(tmp_path):
+    # A stand-in for the main tree (`.git` a directory), so the test holds whichever tree the suite runs in -- from a
+    # worktree (`.git` a file) the hook rightly adds its single-writer warning (E-008: this test failed in every
+    # worktree and refused their commits).
+    main = tmp_path / "main"
+    (main / ".git").mkdir(parents=True)
     new = ROW4 + "\n| E-006 | 2026-11-16 | **new** | basis |"
-    code, out, _ = invoke("decisions_append_only.py", pre("Edit", "DECISIONS.md", old_string=ROW4, new_string=new))
+    code, out, _ = invoke("decisions_append_only.py",
+                          pre("Edit", str(main / "DECISIONS.md"), cwd=main, old_string=ROW4, new_string=new))
     assert code == ALLOW
     assert out.strip() == ""
 

@@ -14,6 +14,7 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 | `%LOCALAPPDATA%\<repo>-wt\<name>` | `%LOCALAPPDATA%\stage2-extended-wt\<name>` (branch `wt/<name>`) |
 | `%LOCALAPPDATA%\<repo>-runs\` | `%LOCALAPPDATA%\stage2-extended-runs\` |
 | the row to beat P-14, the family level 0.05/(k(k+1)) | as `CHARTER.md` section 3 fixes them (E-001: this repository's first family is k = 10) |
+| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008):** a design is judged on its trades first (lift over the coin twin, calibrated, at the family's level); P, the guarded measures and the frontier are reported beside against P-14; the verdict keeps 0 % denial with the placement off; hand entry only stays |
 
 ---
 

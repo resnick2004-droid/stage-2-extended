@@ -34,17 +34,20 @@ D-620, D-621) and are used unchanged here.
 | S1 | cash spent before the first payout, p90 (bankroll needed) | lower | guarded |
 | S3a | share of starts paid by session 21 | higher | guarded |
 | S3b | sessions to the first payout, p90 | lower | guarded |
-| S3c | payouts received per fee dollar at month 3, pooled | higher | guarded; **the screening target** |
+| S3c | payouts received per fee dollar at month 3, pooled | higher | guarded; reported (the screening target under E-001; see below) |
 | S4a, S4b | shares ahead at months 6 and 12 | higher | guarded |
 | S5a | month-3 net of the unlucky tenth of starts (p10) | higher | guarded |
 | S5b | longest gap between payouts within 126 sessions, p90 | lower | guarded |
 | S5c | month-6 concentration (best quarter's net over all) | lower | guarded |
 | S2, S3d, S6, Q | first pass; first payout's cash; luck against design; quit-rule values | -- | reported, never selected on |
 
-**Why S3c screens.** Across Stage 2's designs, what a funded account pays back per fee dollar is the measure that
-moves P; speed and bankroll barely do (`results/user_drivers.csv`, section `between_designs`; the regression beside
-it). So a cheap screen ranks by S3c and its components (a won funded opening; the five winning days after it), and only
-the campaign stage reads P.
+**Why S3c screened (E-001), and its role from E-008.** Across Stage 2's designs, what a funded account pays back per
+fee dollar is the measure that moves P; speed and bankroll barely do (`results/user_drivers.csv`, section
+`between_designs`; the regression beside it). The audit (E-007) found that association partly arithmetic (S3c - 1 is
+the mean month-3 net over mean fees) and carried by failed families across designs, while within one trade stream S3c
+does track P (the red team). From E-008 a design is screened and judged by its trades' lift over the coin twin
+(section 3); S3c and its components (a won funded opening; the five winning days after it) are reported with the user
+scorecard, compared only within one trade stream.
 
 **The frontier, not one number.** A user's first quarter is mostly the day they start, not the design
 (`results/user_drivers.csv`, section `design_vs_luck`): the honest promise is a distribution. Every campaign reading
@@ -59,7 +62,27 @@ the read. A middle ground is searched by fixing those limits first and maximisin
 no-closure state table, at most 20 evaluation purchases in 21 sessions). Each guarded measure's own row to beat is the
 best of P-14, P-15 and P-16 in that file, reported beside.
 
-A design is **CARRIED** only by Stage 2 D-621 (3)'s rule, used unchanged (E-001): on the judged block of start days
+**Amended by the operator (E-008, 2026-11-15): new designs are judged on their trades first.** The Phase 0 audit
+(E-007) found that the judged block holds only a few dozen independent start days, so once its bound is calibrated a
+rule on P can carry nothing but near-P-14 variants or very large contract-shape effects. So, from E-008:
+
+- **The pass line is direction on the design's own trades:** the lift over the coin twin on the same brackets (the
+  same entries with a fair coin's side, so supply, cost and schedule cancel), on the judged block, its one-sided lower
+  bound above zero at the family's level 0.05 / (k (k + 1)) **by a statistic calibrated to deliver that level**
+  (TASK_QUEUE Q-16), and its value -- the lift priced by Stage 2's value map where the family uses it -- at that
+  bound at least the bar the family declares.
+- **Floors that still bind:** the long-run gate (growth on the required bankroll at the bound above zero, Stage 2
+  D-145), every offered R resolving, every firm rule verified, conduct tier 1.
+- **The user scorecard is reported beside every judgement, never as the pass line:** P and the guarded measures
+  against R\* = P-14, the frontier, and the readings E-007 (e) names (the denial ladder, the placement on, the
+  Focused Trader models, P by month, mean net, CVaR10, P under a bankroll limit, the effective sample size and the
+  minimum detectable difference). **Payout denial stays at 0 % with the placement off in the verdict** (the operator,
+  E-008; Stage 2 D-234, D-289), the rest beside it.
+
+The rule below, Stage 2 D-621 (3), is kept on record as E-001 adopted it; it no longer decides a design. Its line (i)
+was found not to deliver its stated level (E-007).
+
+*As adopted by E-001:* a design is **CARRIED** only by Stage 2 D-621 (3)'s rule, used unchanged: on the judged block of start days
 (starts from the first session of 2024, chosen on the starts of 2020-2023), (i) its paired difference in P from R\* is
 above zero with the moving-block bootstrap interval (63-session blocks, seed 20261700, 2,000 draws) excluding zero at
 its family's level; (ii) on no guarded measure is it worse than R\* by more than five percentage points on a share or
@@ -81,10 +104,14 @@ Stage 2's handoff section 2, unchanged: the firm rules in Stage 2's verified led
 one's zero-edge ceilings as oracles (an output outside them is an engine error); the execution rules -- at least five
 minutes from alert to order (a resting order may go live five minutes after its ticket and then fill at its level),
 one position at a time per firm with five minutes flat between trades, every trade resolving (at most 5 % reach the
-15:10 CT flatten, no time stops), realised risk matching intended (Stage 2 D-308), no entry before 07:35 CT on a BLS
-08:30 release day and FOMC days out, each account carrying its own trades; and the three conduct tiers (Stage 2
-D-145: no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into major news, nothing
-that conceals a pattern). No automated or API order entry: the operator and a signal service's users trade by hand.
+15:10 CT flatten, Stage 2 D-212 as D-308 raised it from 2 %; no time stops), realised risk matching intended (at least
+90 % of trades within 10 % of the state's risk in whole micros, Stage 2 D-212), no entry before 07:35:00 CT on a BLS
+08:30 release day (strictly after it, E-007) and FOMC days out, each account carrying its own trades; and the three
+conduct tiers (Stage 2 D-145: no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into
+major news, nothing that conceals a pattern). No automated or API order entry -- **the operator's rule** (Topstep's
+pages permit automation through its paid API; the operator kept hand entry, E-008): every trade is placed by hand at
+least five minutes after its alert. Designs are for one user's own accounts; a signal service whose users place the
+same tickets is out (Topstep's coordinated-trading prohibition, E-007 (c)).
 
 ## 5. Exit criterion -- either is a valid close
 
