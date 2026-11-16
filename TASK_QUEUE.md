@@ -135,14 +135,17 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-105 | Reading PP's build (the adapter, the counters' channel T-10, `identity/pp_identity.py`, T-1..T-11) | wt-payout | built (E-088); merge after Q-106's read | Q-92c | light | 0 | E-082 |
 | Q-105b | RD-02's runner (section 14: cells x arms x blocks, counts, the honesty table, the menu) | wt-payout | built (E-096); merge after Q-106b | Q-105 | light | 0 | E-088 |
 | Q-106 | The red team's read of RD-02's build before its merge | wt-payout (read-only) | done: fix first, code and tests only (E-090); Q-105c | Q-105 | light | 0 | E-088 |
-| Q-104b | RD-01's runner (scorecard, beside reports, 9.3's counts, A-10's price grid) | wt-firms | running (its drafter) | Q-104 | light | 0 | E-089 |
+| Q-104b | RD-01's runner (scorecard, beside reports, 9.3's counts, A-10's price grid) | wt-firms | built (E-097); merge after Q-107b; completion Q-104d | Q-104 | light | 0 | E-089 |
 | Q-107 | The red team's read of RD-01's build before its merge | wt-firms (read-only) | done: fix first, three MATERIAL, code only (E-092); Q-104c | Q-104 | light | 0 | E-089 |
 | Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | done: fixes in (E-096); merge after Q-106b | Q-106 | light | 0 | E-090 |
-| Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | running (its drafter) | Q-107 | light | 0 | E-092 |
+| Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | done: fixes in (E-097); merge after Q-107b | Q-107 | light | 0 | E-092 |
 | Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | running | Q-83 | light | 0 | E-093 |
 | Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | queued (after Q-82b) | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
 | Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | queued | E-095 | light | 0 | E-095 |
-| Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | running | Q-105c | light | 0 | E-096 |
+| Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | done: the build's fixes hold; the runner fix first (E-098); Q-105d | Q-105c | light | 0 | E-096 |
+| Q-107b | The red team re-reads RD-01's fixes and its runner (a diff read) | wt-firms (read-only) | done: the fixes hold; the runner fix first (E-099); Q-104d | Q-104c | light | 0 | E-097 |
+| Q-104d | RD-01's runner completed (G-10, the must-be-zero checks, the remaining counts, the menu's flags), after Q-107b | wt-firms | running (a fresh builder, E-099) | Q-107b | light | 0 | E-097 |
+| Q-105d | RD-02's runner fixed and completed (Q-106b's R1-R5, r1-r5, notes) | wt-payout | running | Q-106b | light | 0 | E-098 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
