@@ -6,6 +6,13 @@ Scout note for TASK_QUEUE Q-12, the groundwork for family C (bootstrap 6.3 C; St
 `config/rules_extended.yaml` / `docs/RULES_CURRENCY.md` under a decision row (CLAUDE.md, "Firm rules"). This note is
 the source list for that work.
 
+> **Struck under E-020 (Q-34, 2026-11-16).** Eight firms' own terms forbid automated retrieval: Tradeify, The Trading
+> Pit, Goat, Alpha, The Futures Desk, FunderPro, Aqua and FundedNext. What the readers collected from them is struck:
+> their saved pages are deleted, their files in `firms_2026-11-15/firms/` and their Appendix A sections are stubs
+> naming the clause (each clause is listed under "How the pages were read"), and their quotes are gone from this
+> body. Their screen verdicts and this body's unquoted readings of their terms stay, as a scout's reading only. The
+> machine-check counts below are those of 2026-11-15, before the strike.
+
 ## The question
 
 Which prop firms sell a futures evaluation comparable to Topstep's $50K (CME index micros and minis, an evaluation
@@ -34,7 +41,7 @@ contract-fit read that comes next?
   band, and each carries a caveat that the arithmetic cannot see:
   - FunderPro: a 50 % funded consistency rule and a clause against linked accounts.
   - DayTraders: a 30 % funded consistency rule, and the fee's billing basis is not stated.
-  - The Trading Pit: "One Account Per IP / Network".
+  - The Trading Pit: a clause against using several accounts from one IP address or network.
   - Aqua: a rule against account rolling.
 
   Lucid, Stage 2's verified second firm, is mid-table at list price and in that band at its coupon price.
@@ -65,20 +72,33 @@ contract-fit read that comes next?
   - DayTraders: split, drawdown, cap.
   - The Trading Pit: split, drawdown.
   - Aqua Daily: cap, drawdown, target.
-- **Some sites' own terms forbid automated reading.** These terms forbid automated retrieval, crawling or scraping
-  of the site:
-  - Tradeify: "use any robot, spider, scraper or other automatic device ... to access, harvest, monitor, copy or use
-    the Site" without permission.
+- **Eight firms' own terms forbid automated retrieval, and what the readers collected from them is struck (E-020).**
+  Their saved pages are deleted, their files in `firms_2026-11-15/firms/` and their Appendix A sections are stubs,
+  and their quotes are gone from this body (Q-34, 2026-11-16). Each firm's clause, as recorded:
+  - Tradeify, Terms of Use: "use any robot, spider, scraper or other automatic device ... to access, harvest,
+    monitor, copy or use the Site" without permission (E-009; struck, E-020).
   - The Trading Pit, GTC 4.5.2: "automated retrieval or extraction of data (scraping, crawling, or similar methods)
-    without our express written permission".
+    without our express written permission" (E-009; struck, E-020).
   - Goat: "Harvesting, scraping, or otherwise collecting any information from the Sites ... without our prior
-    written consent".
-  - Alpha Futures: "any automated use of the system, such as ... web scraping robots".
-  - The Futures Desk: the readers report a "crawl" clause; it is in a script-rendered page and not quoted here.
+    written consent" (E-009; struck, E-020).
+  - Alpha Futures: "any automated use of the system, such as ... web scraping robots" (E-009; struck, E-020).
+  - The Futures Desk, Terms & Conditions: "Using manual or automated software, devices, or processes to "crawl" or
+    "spider" any web pages within the Sites or Services." (E-009; struck, E-020).
+  - FunderPro Futures, Terms & Conditions 12.5.6: "to use automated means to view, display or collect information
+    available through the Website or Services" (Q-26, `config/rules_extended.yaml`; struck, E-020).
+  - Aqua Futures, Terms of Service: "You are expressly prohibited from scraping, crawling, framing, posting
+    unauthorized links to, aggregating, hacking, performing denial of service (DOS) attacks on, reverse engineering,
+    or circumventing technological protection measures of the Services or the Company website." (Q-26; struck,
+    E-020).
+  - FundedNext Futures, Terms of Service 13.3(c): "The User is expressly prohibited, directly or indirectly, in
+    whole or in part, without the Provider's prior written authorisation, from: ... (c) engaging in scraping,
+    crawling, harvesting, data mining or using robots, scripts or automated systems to access the Website/Services,
+    extract data" (Q-26; struck, E-020).
 
-  These reads were a few dozen public GETs at one a second, and readers stopped fetching from a site once they saw
-  its clause. **Future re-reads of these sites should go through the operator's browser** (as Stage 2 D-574/D-575
-  did for Lucid's prices) or with the firm's written permission. This is recorded here, not resolved.
+  The readers saw the first five clauses on 2026-11-15 and stopped fetching from a site once they saw its clause;
+  the last three were found in Q-26, after the readers had fetched those sites' pages. **These firms' plans are read,
+  if ever, only through the operator's browser** (as Stage 2 D-574/D-575 did for Lucid's prices) **or with the
+  firm's written permission** (E-020 (2)).
 
 ## 1. The candidates and the screen
 
@@ -97,27 +117,27 @@ irrelevant to them.
 | firm (plan read) | funded drawdown | consistency: evaluation / funded | funded seats | conduct that bears on our designs | verdict |
 |---|---|---|---|---|---|
 | Lucid (LucidFlex 50K) | EOD trailing, locks start + $100; a payout request forces the lock | 40 % (50 % add-on) / none | 5 per household | hedging banned across firms and correlated assets (ES against NQ); news allowed on Flex; the live move closes every sim account | **PASS** (Stage 2's verified second firm, D-561/D-575; re-read today, unchanged) |
-| FunderPro Futures (Beginner, Mid-Level 50K) | EOD trailing, locks at start after the first reward | 40 % / **50 %** | 5 | GTC 13.4 bars "shared IP addresses, or any other technical or operational setup that enables coordinated, linked, or non-independent trading behaviour, whether between accounts owned by the same Client"; >30 % of margin on one idea deemed excessive; Beginner funded ±2 min news (GTC: all plans) | **PASS** |
+| FunderPro Futures (Beginner, Mid-Level 50K) | EOD trailing, locks at start after the first reward | 40 % / **50 %** | 5 | GTC 13.4 bars shared devices or IP addresses and any setup enabling linked or non-independent trading, including between one client's own accounts; >30 % of margin on one idea deemed excessive; Beginner funded ±2 min news (GTC: all plans) | **PASS** (material struck, E-020) |
 | DayTraders.com (EOD 50K) | EOD trailing, stops at start | 50 % / **30 % per cycle** | 5 EOD Pro (15 sim in all; one login per household) | hedging banned incl. correlated; news allowed; Martingale banned; on a live call the sim accounts close and excess sim balance is generally forfeited | **PASS** |
-| The Trading Pit (Futures Prime 50K) | EOD trailing $2,000 | 40 % / none | 5 | **"One Account Per IP / Network -- accessing multiple accounts from the same IP address or network is not allowed."**; news: help centre "allowed" vs GTC ±2 min; gambling policy; > 50 % of profit from trades ≤ 15 s flagged | **PASS** (the IP clause needs a written answer before any multi-seat use) |
-| Aqua Futures (Daily 50K; Flex Daily Loss 50K) | EOD trailing | 40 % (Daily), 50 % (Flex) / none | 5 | bots banned (hand entry fine); ≥ 50 % of trades and profit held > 10 s; average reward-to-risk ≥ 0.3; < 100 trades a day; "Account Rolling"/"Account Stacking" banned; 7 days without a trade closes the account | **PASS** |
-| Alpha Futures (Standard 50K; Advanced 50K) | EOD trailing, stops at start | Std 50 % / **40 %**; Adv 40 % / none | Std 5, Adv **3** per household (pages conflict) | bots banned (hand entry fine); Standard funded ±2 min red-folder news; "All or Nothing", rolling/stacking banned; tight-bracket fill exploitation and < 10-tick/< 2-min scalping banned; T&C 1.3.2: "maintain the same level of risk" | **PASS** |
-| Tradeify (Select 50K) | EOD trailing $2,000 | 40 % / none | 5 per individual and household | Funded Trader Agreement: opposite positions banned "without regard to intent" incl. the Equity Index group and other firms; "avoid maximum or larger contract sizes", "consistent ... size, stops, and targets"; help centre (which governs) unreadable | **PASS** (11 terms UNVERIFIED) |
+| The Trading Pit (Futures Prime 50K) | EOD trailing $2,000 | 40 % / none | 5 | **a clause bars using several accounts from one IP address or network**; news: allowed by the help centre vs GTC ±2 min; gambling policy; > 50 % of profit from trades ≤ 15 s flagged | **PASS** (the IP clause needs a written answer before any multi-seat use; material struck, E-020) |
+| Aqua Futures (Daily 50K; Flex Daily Loss 50K) | EOD trailing | 40 % (Daily), 50 % (Flex) / none | 5 | bots banned (hand entry fine); ≥ 50 % of trades and profit held > 10 s; average reward-to-risk ≥ 0.3; < 100 trades a day; account rolling and stacking banned; 7 days without a trade closes the account | **PASS** (material struck, E-020) |
+| Alpha Futures (Standard 50K; Advanced 50K) | EOD trailing, stops at start | Std 50 % / **40 %**; Adv 40 % / none | Std 5, Adv **3** per household (pages conflict) | bots banned (hand entry fine); Standard funded ±2 min red-folder news; an all-or-nothing rule; rolling/stacking banned; tight-bracket fill exploitation and < 10-tick/< 2-min scalping banned; T&C 1.3.2: risk kept at the evaluation level | **PASS** (material struck, E-020) |
+| Tradeify (Select 50K) | EOD trailing $2,000 | 40 % / none | 5 per individual and household | Funded Trader Agreement: opposite positions banned whatever the intent, incl. the Equity Index group and other firms; very large sizes discouraged, and consistent sizes, stops and targets expected; help centre (which governs) unreadable | **PASS** (11 terms UNVERIFIED; material struck, E-020) |
 | BluSky (Launch 50K; Orbit 50K) | Launch: **static** ($3,000 start, $100 floor); Orbit: EOD trailing, locks at start | Launch 50 % (55 % on the homepage), then a 34 % Buffer / none; Orbit none / 40 % | **3** | hedging banned incl. correlated and across firms; a 3-breach clause can cut the trader to 1 account; $10,000 total profit forces a Brokerage Review | **PASS** |
 | Earn2Trade (Gauntlet Mini 50K -> LiveSim) | EOD trailing (Live is intraday) | 30 % / none | **3** (at most 1 Live) | "copy-trading and batch execution across multiple accounts is not permitted" (enter each account separately); news allowed | **PASS** |
-| FundedNext Futures (Flex 50K) | EOD trailing $1,500, locks $50,100; the first payout resets it there | 40 % / none | 5 per user and household; 10 issued a month | "Account rolling" banned; tight-bracket fill exploitation banned; trades < 10 s making ≥ 40 % of cycle profit deducted; the Disciplined Trader Program bans news | **PASS** |
+| FundedNext Futures (Flex 50K) | EOD trailing $1,500, locks $50,100; the first payout resets it there | 40 % / none | 5 per user and household; 10 issued a month | account rolling banned; tight-bracket fill exploitation banned; trades < 10 s making ≥ 40 % of cycle profit deducted; the Disciplined Trader Program bans news | **PASS** (material struck, E-020) |
 | TradeDay (Fast Pass EOD 50K; Quick Pay EOD 50K) | Fast Pass: EOD trailing; Quick Pay: **intraday** | FP 45 % / **45 %** (accounts from 2026-07-26); QP 30 % / none | 5 Funded Sim | "auto-liquidate all open positions 2 minutes before TradeDay's tier 1 economic data releases"; no third-party bots or API; > 200 trades a day banned | **PASS** (QP on the no-consistency leg) |
 | Top One Futures (Elite Daily V2 50K) | EOD trailing, locks start + $100 | 40 % / none | 5 per household, **evaluations included** | funded ±2 min: "Your trade must not be closed by any means during the restricted news window"; 10-second minimum hold; batch-buying evaluations and letting most fail banned; automation banned (hand entry required); live move disables the other accounts | **PASS** |
 | FXIFY Futures / Futureify (Flex 50K) | EOD trailing, locks at start after the first payout | 50 % / **40 %** | 5 **in total, evaluations included** | tight-bracket exploitation and < 10-tick micro-scalping banned; rolling banned; homepage says "Live account credentials", FAQ says simulated | **PASS** |
 | Funded Futures Network (STEADY 50K) | EOD trailing, locks start + $100 | 52 % / none | 5 | funded: "no positions or orders (including limit orders) ... 1 minute before and 1 minute after the release"; flat by 4:50 PM ET; Live Review after 4 payouts closes every sim account | **PASS** (rules page and help centre unreadable) |
 | My Funded Futures (Rapid EOD 50K; Pro 50K) | EOD trailing, locks + $100 (Pro: static at $50,100 after the first payout) | Rapid EOD 30 % / none; Pro 50 % / no numeric rule | Rapid EOD **3**; 5 across 25K/50K | Rapid EOD funded: no positions or orders ±2 min of Tier 1 releases; "tight brackets to gain from favorable fills" banned; help allows copying, Terms 23.1.3.3 bar it "in a manner that provides an unfair advantage"; a $10,000 day moves you Live and suspends every sim account | **PASS** |
 | Phidias (Premium 50K; Express to Live 50K) | EOD trailing, stops at $50,100 (E2L static $650) | none / **30 %** (E2L none) | 5 per plan type, 15 per household/company/IP | robots banned (hand entry fine); consistent position sizes required; a discretionary live move that cannot be refused | **PASS** |
-| Goat Funded Futures (Flex 50K) | EOD trailing, locks at start | 50 % / none | 5 Flex | **1-minute rule**: ≥ 70 % of closed trades and ≥ 70 % of net profit from trades held > 1 minute, else the cycle's sub-minute profit is deducted (rule from 9-10 Nov 2026); funded ±2 min news; VPS banned, "you personally place and manage your trades"; payouts only on the 5th-8th and 20th-23rd, 3 % fee | **PASS** |
+| Goat Funded Futures (Flex 50K) | EOD trailing, locks at start | 50 % / none | 5 Flex | **1-minute rule**: ≥ 70 % of closed trades and ≥ 70 % of net profit from trades held > 1 minute, else the cycle's sub-minute profit is deducted (rule from 9-10 Nov 2026); funded ±2 min news; VPS banned (the trader must place and manage each trade in person); payouts only on the 5th-8th and 20th-23rd, 3 % fee | **PASS** (material struck, E-020) |
 | Bulenox (Qualification 50K Option 2 -> Master) | EOD (the option carries to Master) | not stated / a Master consistency rule, % UNVERIFIED | 5 Master-level | copiers and news allowed; Terms (Oct 2026): third-party trading technology needs approval | **PASS** (16 terms UNVERIFIED; help centre unreadable) |
 | Take Profit Trader (50K Test -> PRO) | **intraday** trailing (PRO+, live, is EOD) | 50 % / none | 5; 10 activations per 30 days | "No trading bots" (hand entry is what they want); PRO flat with no open orders 1 min around major news; max 50 executions a day; no counter positions | **PASS on the no-consistency leg only** (13 terms UNVERIFIED; terms and help centre blocked) |
 | Legends Trading (Elite 50K) | EOD (Master stage) | 40 % / 30 % gates payouts | "multiple", up to $1.5M | conduct rules all on a blocked knowledge base | **UNDETERMINED** |
 | Purdia Capital ("Freedom" 50K EOD) | not stated | none (Freedom) | 3 | own-account copying; hedging banned incl. correlated; fully automated trading banned; its two embedded catalogs conflict | **UNDETERMINED** (no readable rule page) |
-| The Futures Desk | "Static or EOD" (homepage) | -- / none | **2 per trader** | Topstep affiliate (TS TFD Buyer, LLC); funded accounts are live brokerage accounts | **FAIL** (2 seats) |
+| The Futures Desk | static or EOD (homepage) | -- / none | **2 per trader** | Topstep affiliate (TS TFD Buyer, LLC); funded accounts are live brokerage accounts | **FAIL** (2 seats; material struck, E-020) |
 | Apex Trader Funding; Elite Trader Funding; TickTickTrader; E8 Futures | -- | -- | -- | every host returned 403 to curl and to WebFetch | **UNDETERMINED** (unreadable; an operator browser read could settle them) |
 
 ## 2. The firms that pass: their terms
@@ -160,33 +180,33 @@ reader (Tradeify, Bulenox, Take Profit Trader) and their gaps are structural.
 
 ### Official pages that contradict each other (generated from the readers' notes)
 
-- **FunderPro Futures (FunderPro Ltd., Malta)** `consistency_eval`: Conflict: the site's tooltip (funderprofutures.com and /how-it-works) still describes a 45% rule ('If daily profit exceeds 45% of the target, the excess will be added to your target'), and the at-a-glance article lists 'Violating the consistency rule at the time of passing the profit target' among breach causes.
+- **FunderPro Futures (FunderPro Ltd., Malta)** `consistency_eval`: Conflict: the site's tooltip (funderprofutures.com and /how-it-works) still describes a 45% rule (excess daily profit is added to the target), and the at-a-glance article lists a consistency violation at the time of passing among breach causes (quotes struck, E-020).
 - **FunderPro Futures (FunderPro Ltd., Malta)** `consistency_funded`: Conflict: help-centre articles (July 2026) say 50%; the homepage tooltip says 45% (the legacy value).
-- **FunderPro Futures (FunderPro Ltd., Malta)** `copy_trading`: Conflict: GTC clause 13.4 prohibits any 'shared devices ... shared IP addresses, or any other technical or operational setup that enables coordinated, linked, or non-independent trading behaviour, whether between accounts owned by the same Client or multiple Clients' (quoted under other_conduct_bearing). Read literally it clashes with the advertised own-account copy trading.
+- **FunderPro Futures (FunderPro Ltd., Malta)** `copy_trading`: Conflict: GTC clause 13.4 prohibits shared devices, shared IP addresses and any setup enabling linked or non-independent trading, whether between accounts of one client or of several (quote struck, E-020). Read literally it clashes with the advertised own-account copy trading.
 - **FunderPro Futures (FunderPro Ltd., Malta)** `news`: Conflict: GTC 10.1 and 13.9 restrict opening positions within 2 minutes of Economic Calendar releases without a plan distinction.
-- **FunderPro Futures (FunderPro Ltd., Malta)** `sizing_gambling`: Conflict: article 378635 says 'Yes — martingale strategies are permitted.'
+- **FunderPro Futures (FunderPro Ltd., Malta)** `sizing_gambling`: Conflict: article 378635 permits martingale strategies (quote struck, E-020).
 - **FunderPro Futures (FunderPro Ltd., Malta)** `eval_consistency_rule`: See screen note: 45% tooltip conflict; at-a-glance lists violating it at the time of passing as a breach cause.
 - **FunderPro Futures (FunderPro Ltd., Malta)** `funded_consistency_rule`: Homepage tooltip says 45% (conflict).
-- **FunderPro Futures (FunderPro Ltd., Malta)** `payout_frequency_gate`: Not stated whether the 5 profitable days reset after each reward. The homepage still says 'Claim 3 rewards and unlock daily withdrawals' (legacy wording, conflict).
+- **FunderPro Futures (FunderPro Ltd., Malta)** `payout_frequency_gate`: Not stated whether the 5 profitable days reset after each reward. The homepage still offers daily withdrawals after 3 rewards (legacy wording, conflict; quote struck, E-020).
 - **FunderPro Futures (FunderPro Ltd., Malta)** `payout_split`: The /how-it-works page still shows the legacy 60/70/80% ladder (conflict).
 - **FunderPro Futures (FunderPro Ltd., Malta)** `copy_trading_terms`: See screen copy_trading for the own-account permission and the 13.4 conflict.
-- **FunderPro Futures (FunderPro Ltd., Malta)** `other_conduct_bearing`: Overnight conflict: the 2026 at-a-glance article allows overnight holds; the 2025 article and the homepage ('At the end of each trading day, all positions are flattened for you') say positions are flattened daily.
+- **FunderPro Futures (FunderPro Ltd., Malta)** `other_conduct_bearing`: Overnight conflict: the 2026 at-a-glance article allows overnight holds; the 2025 article and the homepage say positions are flattened daily (quote struck, E-020).
 - **FunderPro Futures (FunderPro Ltd., Malta)** `news_trading_terms`: Conflicts with GTC 10.1/13.9 (2-minute news restriction with no plan distinction).
 - **DayTraders.com (Day Traders)** `copy_trading`: The Terms of Use (Last Updated March 5, 2025) prohibit 'Sharing trades and strategies with other users or making trades that were not Customer's own creation' -- about other users, not own-account copying; no conflict for own accounts.
 - **DayTraders.com (Day Traders)** `other_conduct_bearing`: The Terms are older (last updated March 5, 2025) and link rules articles on help.daytraders.com that were not read; the help-centre articles are newer (~3 weeks). Our design is intraday, so the overnight conflict does not bind it.
 - **Aqua Futures (AquaFutures / AquaFunded Futures)** `payout_min`: Conflict: $500 minimum payout vs $100 via crypto.
 - **Aqua Futures (AquaFutures / AquaFunded Futures)** `payout_count_limit`: Conflict: the futures page blurb says three rewards then the account closes - that matches the Flex No Daily Loss article, not Flex Daily Loss. Help article value taken for Flex Daily Loss.
 - **Alpha Futures** `max_funded_accounts`: CONFLICT: the Advanced product-page FAQ says up to 5; the help centre (July 27, 2026) and T&C Schedule 2 say Advanced = 3. Taken as 3.
-- **Alpha Futures** `copy_trading`: CONFLICT between help centre and T&C wording; the help article explicitly addresses copying across one's own Alpha accounts ('Can I copy across my Alpha Futures Accounts?') and permits it.
+- **Alpha Futures** `copy_trading`: CONFLICT between help centre and T&C wording; the help article explicitly addresses copying across one's own Alpha accounts and permits it (quote struck, E-020).
 - **Alpha Futures** `eval_min_days`: CONFLICT inside the T&C: clause 8.1.9 says 3, the Schedule 1 Advanced Evaluation row says 2. Homepage card and product page say 3. Taken as 3 (the 40% rule makes 3 the arithmetic minimum anyway).
 - **Alpha Futures** `funded_drawdown_amount`: CONFLICT: product/home cards say $1,750 on the 50K Advanced Qualified; T&C Schedule 2 lists Advanced Qualified MLL as 4% (= $2,000). Taken as $1,750 (help centre/product pages, plan-specific).
-- **Alpha Futures** `payout_split`: CONFLICT: the General Service Agreement (undated, older company number/address) still has a 70/80/90 tier; the help centre, product pages and T&C Schedule 2 ('90% split') say 90% from the start. Taken as 90%.
-- **Alpha Futures** `payout_processing_days`: CONFLICT T&C (3) vs operational update (<= 5). The update follows an unnamed 'major change' around July 2026 that disrupted payouts; Premium accounts were refunded and Premium payouts are queued in batches.
+- **Alpha Futures** `payout_split`: CONFLICT: the General Service Agreement (undated, older company number/address) still has a 70/80/90 tier; the help centre, product pages and T&C Schedule 2 say 90% from the start (quote struck, E-020). Taken as 90%.
+- **Alpha Futures** `payout_processing_days`: CONFLICT T&C (3) vs operational update (<= 5). The update follows an unnamed major change (quote struck, E-020) around July 2026 that disrupted payouts; Premium accounts were refunded and Premium payouts are queued in batches.
 - **Alpha Futures** `max_accounts`: CONFLICT: T&C Schedule 2 says an active Standard OR Advanced Qualified caps the user at 3; the help centre (same date, July 27, 2026) says only an active Advanced Qualified does (and Standard accounts bought before July 27, 2026 are capped at 3). Product page FAQ says 5 for Advanced. The month-old lead ('5 per household, 3 if an Advanced Qualified is active') matches the help centre.
 - **Alpha Futures** `copy_trading_terms`: CONFLICT (see screen.copy_trading). Our design enters by hand on each account, so it does not depend on a copier.
-- **Alpha Futures** `max_accounts`: CONFLICT with T&C Schedule 2 (see terms.max_accounts). Standard was relaunched July 27, 2026 ('Standard Account is back with some upgrades!').
+- **Alpha Futures** `max_accounts`: CONFLICT with T&C Schedule 2 (see terms.max_accounts). Standard was relaunched July 27, 2026 (quote struck, E-020).
 - **Tradeify** `consistency_eval`: CONFLICT in meaning: the Select landing page FAQ defines the 40% as a share of green days, unlike the usual best-day share of profit; the governing definition is on the unreadable Help Center. The percentage (40%) is verified, its mechanics are not.
-- **Tradeify** `eval_fee`: CONFLICT: the /select-plan page's size picker shows 50K at $111 (that page carries an expired 'ENDS 13 NOVEMBER' banner and lorem-ipsum template text). Price before/after coupon not certain.
+- **Tradeify** `eval_fee`: CONFLICT: the /select-plan page's size picker shows 50K at $111 (that page carries an expired sale banner ending 13 November and lorem-ipsum template text; quote struck, E-020). Price before/after coupon not certain.
 - **BluSky Trading Company** `consistency_eval`: CONFLICT: help centre (three articles) says 50% for the Launch evaluation; the homepage plan-picker data (page script) says 55% for 50K Launch. Measured as largest profitable day / sum of profitable days (losing days excluded).
 - **BluSky Trading Company** `copy_trading`: CONFLICT in wording: table header is '| Account Size | Max Accounts | Trade Copier Allowed' and says Yes; the conduct policy's 'account' could be read to cover copying between one's own accounts. Our design enters by hand on each account.
 - **BluSky Trading Company** `eval_consistency_rule`: CONFLICT eval 50% (help) vs 55% (homepage widget data), see screen. The Buffer row's header: '| Account size | Profit target | Drawdown | Consistency | Largest single day'.
@@ -295,7 +315,7 @@ record with a manifest.
 | 23 | Alpha Futures Advanced 50K | 4,000 / 1,750 | 0.304 | 1,750 | none | 0.90 / 0.90 | 1,575 | $209.00 (monthly) | 0 | 687 | **2.29** | 1.15 | 3 |
 | 24 | Phidias Premium 50K, one-time path | 4,000 / 2,500 | 0.385 | 2,500 | none | 0.75 / 1.00 | 2,500 | $723.00 (one-time) | 0 | 1,880 | **1.33** | -- | 5 |
 
-Sources of the inputs, per row: FunderPro Futures Beginner 50K: funderpro.terms_beginner; Topstep 50K, No Activation Fee path (reference): Stage 2 rules.yaml: subscription_fee note (14289835); DayTraders.com EOD 50K: daytraders.terms; Topstep 50K Combine -> XFA, Standard path (reference): Stage 2 rules.yaml: combine_profit_target, combine_mll, xfa_mll_start, profit_split, subscription_fee, activation_fee, max_active_funded_accounts; The Trading Pit Futures Prime 50K: tradingpit.terms (split 'up to 80%'); Aqua Futures Daily 50K: aqua.terms_daily_50k; Alpha Futures Standard 50K: alpha.terms_standard; Aqua Futures Flex Daily Loss 50K: aqua.terms_flex_daily_loss_50k; FunderPro Futures Mid-Level 50K: funderpro.terms_midlevel; Lucid LucidFlex 50K: lucid 12945790, 12945815, 12945795, 12945796, 11404617 (read today); Tradeify Select 50K (Flex path): tradeify.terms; BluSky Launch 50K (Evaluation, then Buffer): blusky.terms; Earn2Trade Gauntlet Mini 50K -> LiveSim: e2t.terms ($139 activation is deducted from the first withdrawal: left out of F, so still a ceiling); FundedNext Futures Flex 50K: fundednext.terms; TradeDay Quick Pay EOD 50K: tradeday.terms_quick_pay_eod_50k (funded drawdown intraday); TradeDay Fast Pass EOD 50K: tradeday.terms_fast_pass_50k (K = 4 Sim payouts; the 5th request moves the account Live); Top One Futures Elite Daily V2 50K: topone.terms; FXIFY Futures (Futureify) Flex 50K: fxify.terms; Funded Futures Network STEADY 50K: ffn.terms (split conflict: FAQ 80/20); My Funded Futures Rapid EOD 50K: mffu.terms; Phidias Premium 50K, monthly path: phidias.terms; My Funded Futures Pro 50K: mffu.terms_pro50k; Alpha Futures Advanced 50K: alpha.terms; Phidias Premium 50K, one-time path: phidias.terms.
+Sources of the inputs, per row: FunderPro Futures Beginner 50K: funderpro.terms_beginner; Topstep 50K, No Activation Fee path (reference): Stage 2 rules.yaml: subscription_fee note (14289835); DayTraders.com EOD 50K: daytraders.terms; Topstep 50K Combine -> XFA, Standard path (reference): Stage 2 rules.yaml: combine_profit_target, combine_mll, xfa_mll_start, profit_split, subscription_fee, activation_fee, max_active_funded_accounts; The Trading Pit Futures Prime 50K: tradingpit.terms (split at most 80%; quote struck, E-020); Aqua Futures Daily 50K: aqua.terms_daily_50k; Alpha Futures Standard 50K: alpha.terms_standard; Aqua Futures Flex Daily Loss 50K: aqua.terms_flex_daily_loss_50k; FunderPro Futures Mid-Level 50K: funderpro.terms_midlevel; Lucid LucidFlex 50K: lucid 12945790, 12945815, 12945795, 12945796, 11404617 (read today); Tradeify Select 50K (Flex path): tradeify.terms; BluSky Launch 50K (Evaluation, then Buffer): blusky.terms; Earn2Trade Gauntlet Mini 50K -> LiveSim: e2t.terms ($139 activation is deducted from the first withdrawal: left out of F, so still a ceiling); FundedNext Futures Flex 50K: fundednext.terms; TradeDay Quick Pay EOD 50K: tradeday.terms_quick_pay_eod_50k (funded drawdown intraday); TradeDay Fast Pass EOD 50K: tradeday.terms_fast_pass_50k (K = 4 Sim payouts; the 5th request moves the account Live); Top One Futures Elite Daily V2 50K: topone.terms; FXIFY Futures (Futureify) Flex 50K: fxify.terms; Funded Futures Network STEADY 50K: ffn.terms (split conflict: FAQ 80/20); My Funded Futures Rapid EOD 50K: mffu.terms; Phidias Premium 50K, monthly path: phidias.terms; My Funded Futures Pro 50K: mffu.terms_pro50k; Alpha Futures Advanced 50K: alpha.terms; Phidias Premium 50K, one-time path: phidias.terms.
 
 **Not computable** (an input is UNVERIFIED):
 
@@ -341,7 +361,7 @@ all verified, in the table's order, with what must be settled before each one's 
 
 1. FunderPro Beginner 50K: 50 % funded consistency; **one seat** until GTC 13.4 is answered in writing.
 2. DayTraders EOD 50K: 30 % funded consistency; the fee's billing basis (Monthly or Lifetime) still to be read.
-3. The Trading Pit Prime 50K: the split is "up to 80%" (discretionary); **one seat** until the IP clause is answered
+3. The Trading Pit Prime 50K: the split is at most 80% (discretionary); **one seat** until the IP clause is answered
    in writing.
 4. Aqua Daily 50K and Aqua Flex Daily Loss 50K: the account-rolling ban; the 10-second and 0.3 reward-to-risk tests.
 5. Alpha Standard 50K: 40 % funded consistency; 5 or 3 seats (the pages conflict).
@@ -379,8 +399,9 @@ all verified, in the table's order, with what must be settled before each one's 
   these firms further.
 - **Needing a written answer from the firm** (a support question, which falls to the operator; Stage 2's
   `OPERATOR_SETUP.md` item 5 is the pattern):
-  - The Trading Pit: does "One Account Per IP / Network" bar one person holding several funded accounts from home?
-  - FunderPro: does GTC 13.4 ("linked ... trading behaviour ... between accounts owned by the same Client") bar
+  - The Trading Pit: does its clause against several accounts on one IP address or network bar one person
+    holding several funded accounts from home?
+  - FunderPro: does GTC 13.4 (linked or non-independent trading, including between one client's own accounts) bar
     trading one's own five accounts on one device?
   - My Funded Futures: help article against Terms 23.1.3.3 on copying.
   - Alpha Futures: 3 or 5 Advanced/Standard seats.
@@ -438,7 +459,7 @@ Topstep's $50K), and a campaign family only if a plan clears a declared bar. A d
     rolling or stacking (Alpha, Aqua, FundedNext, FXIFY, The Trading Pit) and Top One's ban on "batch-buying
     evaluations and letting most fail". These are tier 3 under D-145 at best (priced, 0 % denial in the verdict),
     and Top One's wording reads closer to tier 1.
-  - **Consistent sizing.** Tradeify's agreement, Alpha T&C 1.3.2 ("the same level of risk" as the evaluation),
+  - **Consistent sizing.** Tradeify's agreement, Alpha T&C 1.3.2 (risk kept at the evaluation level),
     Phidias and MFFU Pro's policy may bear on the state table's size changes between evaluation and funded trading.
   - **Live moves that close every sim account in the household:** Lucid, Alpha, FFN, MFFU, Top One, Tradeify, Goat,
     Aqua, BluSky, DayTraders and Phidias. Stage 2 models this for Lucid as `HOUSEHOLD_CLOSES_AT_LIVE`.
@@ -474,283 +495,14 @@ Topstep's $50K), and a campaign family only if a plan clears a declared bar. A d
 ## Appendix A. Each firm's terms, verbatim, with their pages
 
 The order follows section 3's ranking, then the firms with incomputable rows, then the rest. This appendix is
-rendered from the quote-checked firm files; no quote was retyped.
+rendered from the quote-checked firm files; no quote was retyped. The eight firms struck under E-020 keep only
+their heading, their screen verdict without quotes, and one line naming the clause (Q-34).
 
 ### FunderPro Futures (FunderPro Ltd., Malta) (`funderpro`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
+Verdict: **PASS** -- EOD trailing drawdown on funded (50% funded consistency), 5 funded accounts with own-account copy trading, nothing forbids manual bracket trading; GTC 13.4 clause on linked accounts and shared devices and the 30%-margin clause are caveats.
 
-- [P1] https://support.funderprofutures.com/en/articles/709493-important-changes-to-funderpro-futures-june-2026-and-what-they-mean-for-you; id 709493; page date: July 2, 2026
-- [P2] https://support.funderprofutures.com/en/articles/709492-everything-you-need-to-know-about-the-mid-level-challenge; id 709492; page date: July 14, 2026
-- [P3] https://support.funderprofutures.com/en/articles/726460-everything-you-need-to-know-about-the-professional-challenge; id 726460; page date: July 14, 2026
-- [P4] https://support.funderprofutures.com/en/articles/709496-funderpro-futures-trading-rules-at-a-glance; id 709496; page date: July 14, 2026
-- [P5] https://support.funderprofutures.com/en/articles/709498-funderpro-futures-reward-rules-and-requirements; id 709498; page date: July 2, 2026
-- [P6] https://funderprofutures.com/
-- [P7] https://funderprofutures.com/terms-conditions; id clause 4.10
-- [P8] https://support.funderprofutures.com/en/articles/378635-what-strategies-and-tools-are-allowed-during-the-funderpro-futures-challenge; id 378635; page date: June 15, 2026
-- [P9] https://funderprofutures.com/terms-conditions; id clause 10.3
-- [P10] https://support.funderprofutures.com/en/articles/378530-can-i-trade-during-news-on-funderpro-futures; id 378530; page date: July 14, 2026
-- [P11] https://funderprofutures.com/terms-conditions; id clause 13.13
-- [P12] https://support.funderprofutures.com/en/articles/709491-everything-you-need-to-know-about-the-beginner-challenge; id 709491; page date: July 14, 2026
-- [P13] https://support.funderprofutures.com/en/articles/709494-funderpro-futures-all-fees-and-costs-explained; id 709494; page date: July 2, 2026
-- [P14] https://support.funderprofutures.com/en/articles/378467-what-is-the-maximum-number-of-accounts-allowed; id 378467; page date: June 15, 2026
-- [P15] https://support.funderprofutures.com/en/articles/378417-do-i-trade-on-a-live-or-demo-account; id 378417; page date: October 23, 2025
-- [P16] https://funderprofutures.com/terms-conditions; id clause 11.7
-- [P17] https://funderprofutures.com/how-it-works
-- [P18] https://support.funderprofutures.com/en/articles/378476-what-is-the-inactivity-rule; id 378476; page date: June 15, 2026
-- [P19] https://funderprofutures.com/terms-conditions; id clause 13.10
-- [P20] https://funderprofutures.com/terms-conditions; id clause 13.4
-- [P21] https://funderprofutures.com/terms-conditions; id clause 13.11
-- [P22] https://funderprofutures.com/terms-conditions; id clause 13.15
-- [P23] https://support.funderprofutures.com/en/articles/378527-can-i-hold-trades-overnight; id 378527; page date: August 7, 2025
-- [P24] https://support.funderprofutures.com/en/articles/378454-can-i-only-have-one-challenge-account-at-a-time; id 378454; page date: June 15, 2026
-- [P25] https://funderprofutures.com/terms-conditions; id clause 10.2
-- [P26] https://funderprofutures.com/terms-conditions; id clause 13.5
-
-
-Official domains: funderpro.com (links 'Futures' to funderprofutures.com), funderprofutures.com, support.funderprofutures.com (Intercom help centre linked from funderprofutures.com). Read 2026-11-15.
-Plan captured: Beginner Challenge $50K and Mid-Level Challenge $50K (both pass and differ materially in fees, payout caps, split and funded news rule); Professional listed only.
-Verdict: **PASS** -- EOD trailing drawdown on funded (50% funded consistency), 5 funded accounts with own-account copy trading, nothing forbids manual bracket trading; GTC 13.4 'linked accounts / shared devices' clause and the 30%-margin clause are caveats.
-
-Unreadable (not worked around):
-- https://funderpro.com/futures/ -- 404 (guessed URL); the futures product lives on funderprofutures.com
-
-Plans seen:
-- Beginner Challenge $50K (purchases from 15 June 2026): drawdown EOD trailing $2,000, stops trailing at starting balance; locks at starting balance after 1st reward; consistency evaluation 40%, funded 50%
-  - "Consistency rule: 40% during challenge, 50% on funded account" [P1]
-- Mid-Level Challenge $50K: drawdown EOD trailing $2,000, same lock; consistency evaluation 40%, funded 50%
-  - "End-of-day (EOD) trailing drawdown. It trails upward as your account grows and stops trailing once it reaches your initial starting balance." [P2]
-- Professional Challenge $50K: drawdown EOD trailing $2,000, same lock; consistency evaluation 40%, funded 50%
-  - "| Monthly Fee | $219 | $329 | $449 | $559" [P3]
-- Classic (original) challenge, purchases before 15 June 2026 (legacy, no longer sold): drawdown EOD trailing; consistency evaluation 45%, funded 45% for first 3 rewards
-  - "| Consistency rule (challenge) | 45% | 40%" [P1]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing, stops trailing at starting balance** (verified)
-  - "Your maximum drawdown is calculated at the end of each trading day, not intra-day." [P4]
-  - note: No page says whether the breach is also checked intraday on equity; the wording suggests an end-of-day check.
-- `drawdown_funded` = **eod_trailing; locks at starting balance after the 1st reward** (verified)
-  - "| Maximum Drawdown | 4% ($50K) or 3% ($100K+), EOD trailing | Same, locks at starting balance after 1st reward" [P4]
-- `consistency_eval` = **40%** (verified)
-  - "No single trading day can account for more than 40% of your total profit during the challenge, or 50% on a funded account." [P4]
-  - note: Conflict: the site's tooltip (funderprofutures.com and /how-it-works) still describes a 45% rule ('If daily profit exceeds 45% of the target, the excess will be added to your target'), and the at-a-glance article lists 'Violating the consistency rule at the time of passing the profit target' among breach causes.
-- `consistency_funded` = **50%** (verified)
-  - "| Consistency Rule (Funded) | 50% (no single day above 50% of total profit)" [P5]
-  - "For Funded Accounts: the same 45% rule applies on your highest profit day." [P6]
-  - note: Conflict: help-centre articles (July 2026) say 50%; the homepage tooltip says 45% (the legacy value).
-- `max_funded_accounts` = **5 active funded; unlimited challenges; extra passes queue** (verified)
-  - "You may hold a maximum of five (5) active FunderPro Futures Funded Phase accounts at any given time." [P7]
-  - note: Per person ('per individual'); no household rule found on the pages read.
-- `copy_trading` = **allowed between own accounts (advertised feature); copying other people prohibited** (verified)
-  - "Yes — copy trading is allowed but only between your own accounts. You are not allowed to copy trades from other traders or from accounts you don't own." [P8]
-  - "Copy trading across challenge and funded accounts" [P6]
-  - note: Conflict: GTC clause 13.4 prohibits any 'shared devices ... shared IP addresses, or any other technical or operational setup that enables coordinated, linked, or non-independent trading behaviour, whether between accounts owned by the same Client or multiple Clients' (quoted under other_conduct_bearing). Read literally it clashes with the advertised own-account copy trading.
-- `opposite_positions` = **prohibited** (verified)
-  - "The wrongful or fraudulent use of hedging strategies, such as holding opposite positions in different accounts either alone or with other traders, is strictly prohibited." [P9]
-- `news` = **challenge: allowed; funded: Beginner restricted 2 min before/after high-impact events, Mid-Level and Professional allowed** (verified)
-  - "| Beginner | Allowed | Restricted (2-min window)" [P10]
-  - note: Conflict: GTC 10.1 and 13.9 restrict opening positions within 2 minutes of Economic Calendar releases without a plan distinction.
-- `automation` = **EAs/bots permitted if they do not exploit the system (third-party EAs: own the source code; no HFT/tick-scalping EAs)** (verified)
-  - "Yes — automated trading tools, bots, and Expert Advisors (EAs) are permitted on FunderPro Futures, as long as they do not exploit system vulnerabilities and remain compliant with our trading rules." [P8]
-  - note: Hand-entered trading is unaffected.
-- `sizing_gambling` = **more than 30% of available margin on one trade idea (or correlated group) deemed excessive; abrupt lot-size changes may count as gambling** (verified)
-  - "For the purposes of this clause, using more than thirty percent (30%) of the available margin on a single trade idea (or a group of correlated trades) will be deemed excessive and may constitute a breach of acceptable trading conduct." [P11]
-  - note: Conflict: article 378635 says 'Yes — martingale strategies are permitted.'
-
-**Terms (`terms_beginner`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Profit Target | $3,000 (6%) | $6,000 (6%) | $9,000 (6%)" [P12]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| Maximum Drawdown | $2,000 (4%) | $3,000 (3%) | $4,500 (3%)" [P12]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "The drawdown is calculated at end of day (EOD), not intra-day." [P12]
-- `eval_drawdown_lock` = **stops trailing at the starting balance ($50,000)** (verified)
-  - "It trails upward as your account grows but stops trailing once it reaches your initial starting balance." [P12]
-- `eval_daily_loss_limit` = **none during the challenge** (verified)
-  - "| Daily Pause (Challenge) | None | None | None" [P12]
-- `eval_consistency_rule` = **40%** (verified)
-  - "| Consistency Rule (Challenge) | 40% | 40% | 40%" [P12]
-  - note: See screen note: 45% tooltip conflict; at-a-glance lists violating it at the time of passing as a breach cause.
-- `eval_min_days` = **none** (verified)
-  - "| Min Trading Days | None | None | None" [P12]
-  - note: The 40% rule implies at least 3 profitable days.
-- `eval_position_limit` = **5 standard / 50 micros** (verified)
-  - "| Contracts (Std / Micro) | 5 / 50 | 10 / 100 | 15 / 150" [P12]
-- `eval_fee` = **$79 per month (30-day subscription)** (verified)
-  - "| Monthly Fee | $79 | $149 | $219" [P12]
-  - note: If no active account exists at rebilling, a new account is created (GTC 5.1).
-- `eval_reset_fee` = **69** (verified)
-  - "| $50K | $69 | $79 | $189" [P13]
-  - note: Columns: Beginner | Mid-Level | Professional. A reset does not change the billing date.
-- `activation_fee` = **0** (verified)
-  - "| Beginner | $0 (free)" [P13]
-- `eval_count_limit` = **unlimited challenges** (verified)
-  - "There’s no limit to the number of Challenge accounts you can purchase with FunderPro Futures." [P14]
-- `eval_time_limit` = **none (billed every 30 days)** (verified)
-  - "| Challenge Duration | Unlimited (billed every 30 days) | Unlimited (billed every 30 days) | Unlimited (billed every 30 days)" [P12]
-- `funded_type` = **simulated; firm may copy trades to the live market itself; no trader live-transition rule stated** (verified)
-  - "You receive a Funded Account, which still operates in a simulated environment," [P15]
-  - "The Company may, in its sole discretion, decide to copy the simulated trades the Client makes within the FunderPro Futures Funded Phase into the live market." [P16]
-  - note: Funded phase governed by a separate Funded Trader Service Agreement (GTC 11.6), not read.
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| Maximum Drawdown | 4% ($50K) or 3% ($100K+), EOD trailing | Same, locks at starting balance after 1st reward" [P4]
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "The maximum drawdown will trail based on your End-of-Day (EOD) balance until it reaches your starting balance, at which point it becomes fixed at that level." [P6]
-- `funded_drawdown_lock` = **starting balance ($50,000): when trailing reaches it, or at the 1st reward** (verified)
-  - "After your first reward request on a funded account, the drawdown locks at the starting balance regardless of how much profit you have earned." [P4]
-- `payout_balance_consequence` = **reward deducted from balance; floor stays at starting balance ($50,000)** (verified)
-  - "The reward amount is deducted from your account balance, but your drawdown level does not move down with it." [P5]
-- `funded_daily_loss_limit` = **2% = $1,000, pause (not a breach); positions closed, frozen until 16:05 CT next day** (verified)
-  - "| Daily Pause (Funded) | 2% of account size | 2% of account size | 2% of account size" [P12]
-  - "If you lose this amount in a day, your positions will close, and your account will be frozen until 16:05 CT the next trading day." [P6]
-- `funded_consistency_rule` = **50%** (verified)
-  - "| Consistency Rule (Funded) | 50% | 50% | 50%" [P12]
-  - note: Homepage tooltip says 45% (conflict).
-- `funded_position_limit` = **scaling: 2 std ($0-$2,500 profit), 3 std (above $2,500), 5 std (above $5,000)** (verified)
-  - "| Profit Earned | $50K | $100K | $150K" [P12]
-  - "| $0 to $2,500 | 2 / 20 | 3 / 30 | 4 / 40" [P12]
-  - "| Above $2,500 | 3 / 30 | 4 / 40 | 5 / 50" [P12]
-  - "| Above $5,000 | 5 / 50 | 7 / 70 | 9 / 90" [P12]
-- `funded_monthly_fee` = **none** (verified)
-  - "There are no recurring fees on funded accounts." [P13]
-  - note: Optional market data upgrades only (L1 CME free).
-- `payout_min` = **250** (verified)
-  - "| Minimum Reward Request | 0.5% of account size ($250 on $50K, $500 on $100K, $750 on $150K)" [P12]
-- `payout_cap` = **$1,000 per request (2%); no lifetime cap stated** (verified)
-  - "| Maximum Reward Request | 2% of account size ($1,000 on $50K, $2,000 on $100K, $3,000 on $150K)" [P12]
-- `payout_frequency_gate` = **5 profitable days of $100+ (non-consecutive), minimum amount, 50% consistency; no fixed calendar cadence** (verified)
-  - "| Requirements | 5 profitable trading days with $100+ profit each" [P12]
-  - "On Beginner and Mid-Level, you can request once you meet the profitable-days requirement and minimum amount. There is no fixed calendar cadence." [P5]
-  - note: Not stated whether the 5 profitable days reset after each reward. The homepage still says 'Claim 3 rewards and unlock daily withdrawals' (legacy wording, conflict).
-- `payout_split` = **80% flat** (verified)
-  - "| Reward Share | 80% flat (from your first reward onward)" [P12]
-  - note: The /how-it-works page still shows the legacy 60/70/80% ladder (conflict).
-- `payout_processing_days` = **same day (stated only in a stale section of /how-it-works)** (UNVERIFIED)
-  - "Reward requests are processed on the same day." [P17]
-  - looked at: ar-709498 (points to an article 'What reward payment methods do you support?' not found in the collections), ar-378526, ar-709494
-  - note: The sentence sits next to the legacy 60/70/80% reward terms, so it may not describe the current product.
-- `payout_fee` = **not stated** (UNVERIFIED)
-  - looked at: ar-709494 (all fees), ar-709498, ar-378526, terms-conditions
-- `payout_count_limit` = **not stated** (UNVERIFIED)
-  - looked at: ar-709498, ar-709491, ar-709493, terms-conditions
-- `max_accounts` = **5 active funded; unlimited challenges; extra passes queue and activate when a funded account is breached** (verified)
-  - "You can have a maximum of 5 active Funded Accounts at any given time." [P14]
-  - note: Old and new product accounts count together.
-- `inactivity_rule` = **funded: terminated after 30 consecutive days of inactivity; challenges: none** (verified)
-  - "However in the Funded Phase where you are no longer being billed monthly, we have a limit of 30 consecutive days of inactivity before we terminate the account." [P18]
-  - note: Article sits in the legacy collection but is dated June 15, 2026.
-- `copy_trading_terms` = **own accounts only** (verified)
-  - "Copy trading, mirror trading, or using third-party tools like expert advisors (“EAs”) to replicate trades among multiple Clients is strictly forbidden." [P19]
-  - note: See screen copy_trading for the own-account permission and the 13.4 conflict.
-- `cross_account_hedging` = **prohibited, including opposing positions across own accounts** (verified)
-  - "This includes, but is not limited to, executing opposing positions across multiple accounts, engaging in group trading arrangements, trade signaling, or any activity designed to create artificial trading activity or outcomes." [P20]
-- `news_trading_terms` = **Beginner funded: no opening or closing 2 min before/after high-impact news; positions opened earlier may stay open** (verified)
-  - "Positions opened before the restricted window can remain open, but new trades cannot be opened or closed during that timeframe." [P12]
-  - note: A bracket exit filling inside the window would breach this on Beginner funded accounts.
-- `automation_terms` = **permitted with limits** (verified)
-  - "The use of third-party EAs designed for tick scalping, rollover scalping, or high-frequency trading strategies is prohibited. Clients using third-party EAs must own the source code of the software." [P21]
-- `sizing_or_gambling_terms` = **30%-of-margin cap per trade idea; consistent lot sizes required** (verified)
-  - "Abrupt or unjustified changes in lot sizes—such as trading one (1) lot followed by ten (10) lots without a clear strategic basis—may be deemed as reckless behavior or gambling rather than disciplined trading." [P22]
-  - note: See screen sizing_gambling (13.13, 30% of margin).
-- `other_conduct_bearing` = **no shared devices/IP/VPS setups enabling linked trading (13.4, literal reading conflicts with own-account copying); no weekend holding; overnight holding conflicting** (verified)
-  - "The use of shared trading environments, shared devices, shared virtual private servers (“VPS”), shared IP addresses, or any other technical or operational setup that enables coordinated, linked, or non-independent trading behaviour, whether between accounts owned by the same Client or multiple Clients, is prohibited." [P20]
-  - "| Overnight Holding | Allowed (positions flatten at EOD Friday) | Allowed (positions flatten at EOD Friday)" [P4]
-  - "No, you cannot hold trades overnight or over the weekend." [P23]
-  - note: Overnight conflict: the 2026 at-a-glance article allows overnight holds; the 2025 article and the homepage ('At the end of each trading day, all positions are flattened for you') say positions are flattened daily.
-- `permitted_products` = **CME, COMEX, NYMEX, CBOT, EUREX incl. NQ, MNQ, ES, MES (cost per side NQ $1.90, MNQ $0.62)** (verified)
-  - "| E-mini NASDAQ 100 | NQ | Sunday – Friday 17:00–16:00 CT" [P17]
-  - "| Micro E-mini NASDAQ 100 | MNQ | Sunday – Friday 17:00–16:00 CT" [P17]
-
-**Terms (`terms_midlevel`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Profit Target | $3,000 (6%) | $6,000 (6%) | $9,000 (6%) | $12,000 (6%)" [P2]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| Maximum Drawdown | $2,000 (4%) | $3,000 (3%) | $4,500 (3%) | $6,000 (3%)" [P2]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "End-of-day (EOD) trailing drawdown. It trails upward as your account grows and stops trailing once it reaches your initial starting balance." [P2]
-- `eval_drawdown_lock` = **stops trailing at the starting balance** (verified)
-  - "Once you are in profit by the drawdown amount, your downside is capped permanently." [P2]
-- `eval_daily_loss_limit` = **none stated for the challenge (2% only on funded)** (verified)
-  - "On the Funded Account, a 2% daily loss limit applies." [P2]
-  - note: The Mid-Level table lists a Daily Loss Limit only for Funded; the at-a-glance article says the daily pause is 'not applicable during eval'.
-- `eval_consistency_rule` = **40%** (verified)
-  - "| Consistency Rule (Challenge) | 40% | 40% | 40% | 40%" [P2]
-- `eval_min_days` = **none** (verified)
-  - "| Min Trading Days | None | None | None | None" [P2]
-- `eval_position_limit` = **5 standard / 50 micros** (verified)
-  - "| Contracts (Std / Micro) | 5 / 50 | 10 / 100 | 15 / 150 | 20 / 200" [P2]
-- `eval_fee` = **$89 per month** (verified)
-  - "| Monthly Fee | $89 | $149 | $229 | $339" [P2]
-- `eval_reset_fee` = **79** (verified)
-  - "| Reset Fee | $79 | $129 | $199 | $289" [P2]
-- `activation_fee` = **129** (verified)
-  - "| Activation Fee | $129 | $129 | $129 | $129" [P2]
-  - note: One-time, on passing.
-- `eval_count_limit` = **unlimited challenges** (verified)
-  - "There’s no restriction on how many Challenges you can purchase with FunderPro Futures." [P24]
-- `eval_time_limit` = **none (billed every 30 days)** (verified)
-  - "| Challenge Duration | Unlimited (billed every 30 days) | Unlimited (billed every 30 days) | Unlimited (billed every 30 days) | Unlimited (billed every 30 days)" [P2]
-- `funded_type` = **simulated (as Beginner)** (verified)
-  - "3. Pay the $129 activation fee and receive your simulated FunderPro Futures funded account." [P2]
-  - note: No live-transition rule stated.
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| $50K | $2,000 | 4%" [P4]
-  - note: Same for all challenge types.
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "| Maximum Drawdown | 4% ($50K) or 3% ($100K+), EOD trailing | Same, locks at starting balance after 1st reward" [P4]
-- `funded_drawdown_lock` = **starting balance after the 1st reward (at-a-glance; the rewards article states it explicitly only for Beginner)** (verified)
-  - "| Drawdown lock | After 1st reward | After 1st reward (unchanged)" [P1]
-- `payout_balance_consequence` = **reward deducted; floor at starting balance after 1st reward** (verified)
-  - "After your first reward request on a funded account, the drawdown locks at the starting balance regardless of how much profit you have earned." [P4]
-- `funded_daily_loss_limit` = **2% = $1,000, pause not breach** (verified)
-  - "| Daily Loss Limit (Funded) | 2% | 2% | 2% | 2%" [P2]
-- `funded_consistency_rule` = **50%** (verified)
-  - "| Consistency Rule (Funded) | 50% | 50% | 50% | 50%" [P2]
-- `funded_position_limit` = **scaling: 2 std ($0-$2,500), 3 std (above $2,500), 5 std (above $5,000)** (verified)
-  - "| $0 to $2,500 | 2 / 20 | 3 / 30 | 4 / 40 | 5 / 50" [P2]
-  - "| Above $5,000 | 5 / 50 | 7 / 70 | 9 / 90 | 11 / 100" [P2]
-- `funded_monthly_fee` = **none** (verified)
-  - "Once activated, your monthly subscription stops and you trade without ongoing charges." [P13]
-- `payout_min` = **200** (verified)
-  - "| Minimum Reward Request | $200" [P2]
-- `payout_cap` = **per request on 50K: 1st $1,500, 2nd $1,750, 3rd $2,000, 4th $2,500, 5th+ $3,500; no lifetime cap stated** (verified)
-  - "| 1st | $1,500 (3%) | $3,000 (3%) | $4,500 (3%) | $6,000 (3%)" [P5]
-  - "| 5th+ | $3,500 (7%) | $5,000 (5%) | $7,500 (5%) | $10,000 (5%)" [P5]
-  - note: Columns: $50K | $100K | $150K | $200K.
-- `payout_frequency_gate` = **5 profitable days of $200+ each, minimum $200, 50% consistency** (verified)
-  - "| Requirements | 5 profitable trading days with $200+ profit each" [P2]
-  - note: Whether the 5 days reset per reward is not stated.
-- `payout_split` = **80% (1st) / 85% (2nd) / 90% (3rd onward)** (verified)
-  - "| Reward Share | 80% (1st reward) → 85% (2nd) → 90% (3rd onward)" [P2]
-- `payout_processing_days` = **see terms_beginner (stale same-day sentence only)** (UNVERIFIED)
-  - looked at: ar-709498, ar-709492, how-it-works
-- `payout_fee` = **not stated** (UNVERIFIED)
-  - looked at: ar-709494, ar-709498, terms-conditions
-- `payout_count_limit` = **not stated** (UNVERIFIED)
-  - looked at: ar-709498, ar-709492
-- `max_accounts` = **5 active funded (all FunderPro Futures types and old/new products together); unlimited challenges** (verified)
-  - "Yes, as long as you are within the maximum number of accounts allowed." [P1]
-  - note: See terms_beginner.max_accounts.
-- `inactivity_rule` = **funded: 30 consecutive days** (verified)
-  - "We do not have an inactivity rule for Challenges, as they are billed monthly every 30 days, covering costs for you to hold on to an account for as long as you like." [P18]
-- `copy_trading_terms` = **own accounts only (see screen)** (verified)
-  - "Yes — copy trading is allowed but only between your own accounts. You are not allowed to copy trades from other traders or from accounts you don't own." [P8]
-- `cross_account_hedging` = **prohibited** (verified)
-  - "Additionally, colluding to exploit opposite positions is prohibited, and any and all profits and losses generated by such prohibited practice will be annulled." [P25]
-- `news_trading_terms` = **allowed in challenge and funded** (verified)
-  - "News trading is allowed on FunderPro Futures Mid-Level accounts during both the evaluation and funded phases." [P2]
-  - note: Conflicts with GTC 10.1/13.9 (2-minute news restriction with no plan distinction).
-- `automation_terms` = **permitted with limits (as Beginner)** (verified)
-  - "Clients must not use high-frequency trading (“HFT”) systems, AI-driven tools, or any mass data entry methods that manipulate or exploit inefficiencies in the system." [P26]
-- `sizing_or_gambling_terms` = **as Beginner (13.13 30% margin cap; 13.15 lot consistency)** (verified)
-  - "Engaging in gambling behavior, such as risking large portions of capital on a single high-stakes trade, one-sided bets or account rolling is strictly prohibited." [P11]
-- `other_conduct_bearing` = **as Beginner: no weekend holding; 13.4 linked-setup clause** (verified)
-  - "| Weekend Holding | No | No | No | No" [P2]
-- `permitted_products` = **as Beginner** (verified)
-  - "| Instruments | CME, COMEX, NYMEX, CBOT, EUREX | Same (unchanged)" [P1]
+Struck (E-020): the firm's own terms forbid automated retrieval -- Terms & Conditions 12.5.6: "to use automated means to view, display or collect information available through the Website or Services" (as recorded in config/rules_extended.yaml, funderpro.automated_retrieval_terms). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### DayTraders.com (Day Traders) (`daytraders`) -- PASS
 
@@ -942,721 +694,21 @@ Plans seen:
 
 ### The Trading Pit (`tradingpit`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://support.thetradingpit.com/en/articles/836071-futures-prime-rules; id 836071; page date: Updated over a week ago
-- [P2] https://www.thetradingpit.com/futures
-- [P3] https://support.thetradingpit.com/en/articles/836080-futures-prime-platforms-conditions; id 836080; page date: Updated over a week ago
-- [P4] https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works; id 836068; page date: October 6, 2026
-- [P5] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, Schedule B; page date: V5.08.26
-- [P6] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, 6.5.1.1; page date: V5.08.26
-- [P7] https://www.thetradingpit.com/
-- [P8] https://support.thetradingpit.com/en/articles/835066-costs-fees-extras; id 835066; page date: October 2, 2026
-- [P9] https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards; id 836079; page date: Updated over 2 weeks ago
-- [P10] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, A.3; page date: V5.08.26
-- [P11] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, A.7; page date: V5.08.26
-- [P12] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, A.8; page date: V5.08.26
-- [P13] https://support.thetradingpit.com/en/articles/835070-trading-device-ip-network-policy; id 835070; page date: October 2, 2026
-- [P14] https://www.thetradingpit.com/general-terms-and-conditions; id GTC V5.08.26, 6.8.1; page date: V5.08.26
-- [P15] https://support.thetradingpit.com/en/articles/835071-gambling-policy; id 835071; page date: October 2, 2026
-
-
-Official domains: thetradingpit.com, support.thetradingpit.com. Read 2026-11-15.
-Plan captured: Futures Prime 50K.
 Verdict: **PASS** -- Futures Prime 50K: EOD trailing drawdown on the Earning account and no Earning-phase consistency rule; 5 Earning accounts; hand-entered one-position bracket trades are allowed (stops recommended), subject to the GTC's 2-minute news-bracketing ban.
 
-Plans seen:
-- Futures Prime 50K (one-phase challenge): drawdown EOD trailing $2,000 on closed balance, locks at starting balance (challenge and earning); consistency evaluation 40% (raises target; never fails), funded none
-  - "Applies to the Challenge only — never to a Futures Earning Account — and it never fails your account." [P1]
-- Futures Instant 50K (no challenge): drawdown EOD trailing $2,000, fixed at starting balance; dynamic daily pause from $1,200; consistency evaluation n/a, funded 20% (best day <= 20% of total profit before payout)
-  - "You can have maximum 2 Futures Instant accounts." [P2]
-
-comparability quotes:
-- "Equity indices (ES, NQ, YM, RTY and their micros)." [P3]
-- "Once you pass, you receive a funded demo Earning Account where you can request rewards on the profit you generate." [P4]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing; $2,000; locks at starting balance $50,000** (verified)
-  - "Your Max Drawdown (see the table) trails your end-of-day balance — based on closed P&L, not intraday peaks — upward, until it reaches your starting balance, then locks." [P1]
-- `drawdown_funded` = **eod_trailing; same $2,000 rule in the Earning phase** (verified)
-  - "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach" [P1]
-- `consistency_eval` = **40% of profit target per day; overshoot raises target to best day / 0.40 (accounts created on/after 14 July 2026)** (verified)
-  - "Created on or after 14 July 2026 — the target is recalculated so your highest day equals 40% of it (Highest Day ÷ 0.40 = new target)." [P1]
-- `consistency_funded` = **none** (verified)
-  - "Applies to the Challenge only — never to a Futures Earning Account — and it never fails your account." [P1]
-  - note: But the 'account rolling' signs include 'One trade or one day produces more than 40% of the net profit', and GTC A.2.4 makes 'consistency of the trading strategy' part of Compliant Trading Data for rewards.
-- `max_funded_accounts` = **5 active Earning accounts; no limit on challenge purchases** (verified)
-  - "In the Earning Phase you can hold a maximum of 5 active Earning accounts; if you pass a Challenge while already at the cap, the upgrade is queued until one of your Earning accounts closes." [P1]
-  - note: Per-household not stated. CAVEAT: the Device/IP policy says 'accessing multiple accounts from the same IP address or network is not allowed' (read in context as several people's accounts, since one trader may hold 5).
-- `copy_trading` = **allowed from own accounts only, up to 5 challenges or 5 earning accounts** (verified)
-  - "You may copy trades, manually or automatically, across up to 5 of your own Challenges or 5 of your own Earning accounts." [P1]
-- `opposite_positions` = **prohibited within an account, across own accounts, and in correlated instruments across accounts** (verified)
-  - "This includes opposing positions in a single account, a BUY on one account and a SELL on another, and offsetting positions opened in correlated instruments across accounts." [P1]
-- `news` = **CONFLICT: help centre says allowed on Futures Prime; GTC Schedule B prohibits opening or closing positions within 2 minutes before/after a high-impact release** (verified)
-  - "Allowed on Futures Prime in both the Challenge and Earning Phase." [P1]
-  - "News Bracketing: Placing or opening orders in anticipation of the release of high-impact economic data or events; in particular, opening or closing positions within two (2) minutes before or after such a release is prohibited;" [P5]
-  - note: Safe default: no entry or exit (including a resting stop/target filling) within 2 minutes of a high-impact release. The GTC (6.6) say the most up-to-date list is in the Help Center, which says news trading is allowed; the futures page also lists 'News trading Allowed' for Instant.
-- `automation` = **not prohibited as such; EAs with prohibited functions, HFT, and automated tools used to manipulate or evade monitoring are prohibited; only Replikanto Compliance Edition allowed as copier on NinjaTrader** (verified)
-  - "AI and Automated Tools: Use of artificial intelligence, automated trading systems, ultra-high-speed tools, or mass data entry to manipulate the Trading Platform, circumvent our monitoring systems, or gain an unfair trading advantage in the generation of Trading Data; and" [P5]
-  - "Yes, but only Replikanto FlowBots – Compliance Edition is permitted." [P3]
-  - note: Hand entry raises no issue.
-- `sizing_gambling` = **gambling policy (overleveraging, overexposure, one-sided bets, hyperactivity); impermissible risk allocation; account rolling; lot-size manipulation; micro-scalping flag (> 50% of profit from trades held <= 15 s)** (verified)
-  - "6.5.1.1 using a disproportionate portion of the account balance or equity to open positions (impermissible risk allocation);" [P6]
-  - "Automated monitoring flags accounts where, for example, over 50% of profits come from trades held 15 seconds or less, or where ultra-fast entries and exits are combined with disproportionate sizing." [P1]
-- `note`: Two design-relevant frictions: (1) GTC news-bracketing ban conflicts with the help centre's 'news allowed'; (2) Earning-phase contract scaling starts at 2 standard / 20 micros on 50K per the futures page, versus the 5/50 limit in the rules article.
-
-**Terms (`terms`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Account size | Profit Target | Max Drawdown | Daily Pause | Max Contracts (STD / Micro)" [P4]
-  - "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50" [P4]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50" [P4]
-- `eval_drawdown_type` = **eod_trailing (closed P&L end-of-day balance)** (verified)
-  - "Your Max Drawdown (see the table) trails your end-of-day balance — based on closed P&L, not intraday peaks — upward, until it reaches your starting balance, then locks." [P1]
-  - "If your balance falls to the drawdown level, the account is breached." [P1]
-- `eval_drawdown_lock` = **locks at starting balance ($50,000)** (verified)
-  - "Your maximum drawdown will trail based on your End-Of-Day (EOD) balance until it reaches your starting balance, after which it will remain fixed at the starting balance amount." [P2]
-- `eval_daily_loss_limit` = **Daily Pause $1,000 (soft: positions closed, paused until next day)** (verified)
-  - "On Challenge Phase only. If your equity drops below the Daily Drawdown limit, open positions will be closed, and your account will be paused until the next trading day (16:05 CT)." [P2]
-  - "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50" [P4]
-- `eval_consistency_rule` = **40% of profit target per day; overshoot raises target (best day / 0.40); never fails the account** (verified)
-  - "Your highest trading day is capped at 40% of your Profit Target; going over simply raises the target." [P1]
-- `eval_min_days` = **3** (verified)
-  - "For the Challenge to register as passed you must place a trade on at least 3 unique trading days." [P1]
-- `eval_position_limit` = **5 standard / 50 micro (fewer as balance falls)** (verified)
-  - "$50K → 5 standard / 50 micro" [P1]
-  - "There is no minimum, and the lower your current balance, the fewer contracts you’re allowed to trade." [P1]
-- `eval_fee` = **$99 one-time (Black Friday code BF40 40% off until Nov 30)** (verified)
-  - "Account Balance: $50,000 Price $99 One Time Fee" [P2]
-  - "Valid on all Instant Accounts and Prime Challenges of $10K and up. Use code BF40." [P7]
-  - note: Level 1 CME data free; Level 2 CME $16/month optional. Commissions $0.50 per standard/mini contract, $0.20 per micro.
-- `eval_reset_fee` = **79** (verified)
-  - "Reset $79 You can purchase a Reset anytime and as many times as you like, receiving a new account with the remaining challenge days." [P2]
-  - note: A reset keeps the remaining challenge days; 'Extend' ($99) adds the initial 30 days. Reset breached accounts may face an activation fee (see activation_fee).
-- `activation_fee` = **$0 for new accounts created on/after 26/03/2026 (existing and reset-breached accounts may pay one; futures page shows $129 struck to $0)** (verified)
-  - "Activation fee: new accounts created on or after 26/03/2026 have no activation fee ($0). Existing accounts and reset breached accounts may be subject to an activation fee before progressing to the Earning Phase." [P4]
-  - "Activation Fee $129 $0" [P2]
-  - note: The costs article says reset breached accounts 'are subject to' an activation fee (firmer than 'may be'); amount for a reset account presumably $129, not stated explicitly.
-- `eval_count_limit` = **no limit on purchases** (verified)
-  - "There is no limit on how many Futures accounts you can purchase." [P1]
-  - note: Copying the same strategy across more than 5 accounts 'can lead to upgrades being denied'.
-- `eval_time_limit` = **30 days (extendable for $99)** (verified)
-  - "Challenge duration: 30 days across all account sizes." [P4]
-  - "Extend $99 Add the initial number of Challenge days to your account for more time to reach the profit target." [P2]
-- `funded_type` = **simulated (demo) Earning Account with buying-power scaling; live transition not described for Prime** (verified)
-  - "All trading takes place on demo accounts using simulated funds." [P4]
-  - "In our Futures Prime Program, we will scale your Earning Account's buying power based on your end-of-day profit. Scale-ups will be calculated and adjusted daily at 16:00 CT." [P2]
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach" [P1]
-  - "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50" [P4]
-  - note: Whether the Earning account starts with a fresh trail from $48,000 is implied, not stated.
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach" [P1]
-- `funded_drawdown_lock` = **locks at starting balance** (verified)
-  - "Your maximum drawdown will trail based on your End-Of-Day (EOD) balance until it reaches your starting balance, after which it will remain fixed at the starting balance amount." [P2]
-- `payout_balance_consequence` = **floor not stated to move at payout (it locks at the starting balance once reached); next reward needs balance above the last post-payout balance** (verified)
-  - "Your balance must exceed your last post-payout balance (by at least $0.01) to request the next reward." [P2]
-  - note: What a payout does to the drawdown level is not stated; the 50%-of-buffer cap keeps half the profit as cushion.
-- `funded_daily_loss_limit` = **none since 14 July 2026 (Daily Pause removed from Earning accounts) - CONFLICT with the same article's summary table** (verified)
-  - "Applies during the Challenge phase only. It was removed from Futures Prime Earning accounts on 14 July 2026." [P1]
-  - "| Daily Pause (Daily Loss Limit) | Challenge & Earning | Auto-Close For The Day" [P1]
-  - note: The futures product page agrees with 'Challenge Phase only'. Safe default for modelling: test both (no DLL, and a $1,000 soft pause).
-- `funded_consistency_rule` = **none** (verified)
-  - "| 40% Consistency (Raises The Target) * | Challenge only | Soft — Adjusts Target" [P1]
-- `funded_position_limit` = **scaling by EOD profit (50K): 0-$2,500 profit 2 std / 20 micro; above $2,500 3 / 30; above $5,000 4 / 40 (futures page) - CONFLICT with rules article's 5 / 50 for 'Challenge & Earning'** (verified)
-  - "| $50,000 ACCOUNT | $100,000 ACCOUNT | $150,000 ACCOUNT | 0-$2,500 Profit | 2 Standard / 20 Micros" [P2]
-  - "| If Profit Above $2,500 | 3 Standard / 30 Micros" [P2]
-  - "| If Profit Above $5,000 | 4 Standard / 40 Micros" [P2]
-  - "| Max Contracts Per Account Size | Challenge & Earning | Position Limit" [P1]
-  - note: Read: the product page's scaling table is specific to the Earning account; the rules page gives the ceiling. Safe default: 2 NQ / 20 MNQ at the start of the Earning phase.
-- `funded_monthly_fee` = **none (only the one-time product fee; optional market-data add-ons are monthly)** (verified)
-  - "The only expense on your part is the one-time initial purchase of one of our Challenges." [P8]
-- `payout_min` = **UNVERIFIED (Prime: only 'positive net profit of at least $0.01' after the first reward; Instant has a $500 minimum)** (UNVERIFIED)
-  - looked at: https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards ; https://www.thetradingpit.com/futures ; https://www.thetradingpit.com/general-terms-and-conditions (Schedule A.6 refers to minimum amounts 'published on our Website')
-- `payout_cap` = **per request: up to 50% of the current profit buffer, capped at $2,500 (50K); lifetime not stated** (verified)
-  - "You can request up to 50% of your current profit buffer, capped by account size:" [P9]
-  - "| $50,000 | $2,500" [P9]
-- `payout_frequency_gate` = **5 profitable days of >= $150 (not necessarily consecutive) per reward; at most every 7 days; later rewards need net profit > $0 since the last payout** (verified)
-  - "Second and later rewards: generate a positive net profit of at least $0.01 since your last payout, and complete 5 new profitable trading days, each with at least $150 profit." [P9]
-  - "You can request a reward every 7 days." [P9]
-  - "To request a reward, you must complete 5 profitable trading days with at least $150 profit per day, which do not need to be consecutive. You can request a reward every 7 days." [P2]
-  - note: Changed 27 July 2026: daily threshold lowered from $200 to $150.
-- `payout_split` = **up to 80% (discretionary: reward rate may be set below the maximum)** (verified)
-  - "On Futures Prime, you can receive a reward of up to 80% of the notional profit you generate in the Earning Phase." [P9]
-  - "The Reward rate may be set below the maximum Reward rate" [P10]
-- `payout_processing_days` = **no later than 30 calendar days after TTP's determination; reviews generally within 14 days** (verified)
-  - "payment shall be made by bank transfer or via approved payment service providers to the account registered in the Client Area, no later than thirty (30) Calendar Days after that determination." [P11]
-  - "We generally complete reviews within fourteen (14) Calendar Days; if a review exceeds thirty (30) Calendar Days, we will inform you of its status and expected duration." [P12]
-- `payout_fee` = **international transfer costs and FX losses borne by trader; fee schedule in the general rewards info (not read)** (verified)
-  - "Costs for international transfers and exchange rate losses shall be borne by you." [P11]
-  - "Withdrawal methods, currencies and reward fees follow The Trading Pit’s general reward policy — rewards are paid by bank wire or cryptocurrency." [P9]
-- `payout_count_limit` = **UNVERIFIED (none stated)** (UNVERIFIED)
-  - looked at: https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards ; https://support.thetradingpit.com/en/articles/836071-futures-prime-rules ; https://www.thetradingpit.com/futures ; https://www.thetradingpit.com/general-terms-and-conditions
-- `max_accounts` = **5 active Earning accounts; unlimited challenge purchases; one Client Account per user** (verified)
-  - "In the Earning Phase you can hold a maximum of 5 active Earning accounts; if you pass a Challenge while already at the cap, the upgrade is queued until one of your Earning accounts closes." [P1]
-  - "One Account Per IP / Network — accessing multiple accounts from the same IP address or network is not allowed." [P13]
-  - note: The IP rule, read literally, would forbid one trader working 5 Earning accounts from one home network; in context (shared/coordinated access) it targets several people. A question to put to the firm's support in writing before relying on 5 accounts from one IP - not resolvable from the pages.
-- `inactivity_rule` = **breach after 21 consecutive days with no trade (countdown from purchase)** (verified)
-  - "If 21 consecutive days pass without placing a single trade, the account is considered inactive and breached." [P1]
-- `copy_trading_terms` = **own accounts only, up to 5 challenges or 5 earning accounts, manual or automatic; copier failures are the trader's risk; >5 accounts on the same strategy can block upgrades** (verified)
-  - "You may only copy from your own accounts. Copying from other traders or sources is prohibited. Copying between Futures Challenges and Futures Earning accounts is allowed." [P1]
-  - "Running the same strategy across more than 5 accounts can lead to upgrades being denied." [P1]
-  - "Copy Trading / Trade Coordination: Coordinated trading, or copying the trades of other traders or accounts;" [P5]
-  - note: The GTC wording 'copying the trades of other ... accounts' reads broader than the help centre's own-account allowance; GTC 6.6 points to the Help Center as the up-to-date list.
-- `cross_account_hedging` = **prohibited (same instrument or correlated instruments, within or across accounts; also coordinated external hedging with other firms)** (verified)
-  - "A BUY and a SELL held at the same time is prohibited." [P1]
-  - "in particular coordinated external hedging, copy trading, or arbitrage strategies carried out across accounts held with TTP, with Affiliated Companies, or with third-party proprietary trading firms or brokers" [P14]
-- `news_trading_terms` = **CONFLICT: allowed (help centre, Prime rules) vs. no opening/closing within 2 minutes of a high-impact release (GTC Schedule B 'News Bracketing'); pattern of trading only around news may be reviewed** (verified)
-  - "If our Risk Team identifies a consistent pattern of trading exclusively around news events in a way that resembles gambling behavior, excessive risk-taking, or an attempt to exploit extreme market volatility rather than sustainable trading performance, the Risk Team reserves the right to review the account and take appropriate measures in accordance with our Terms & Conditions." [P1]
-  - "News Bracketing: Placing or opening orders in anticipation of the release of high-impact economic data or events; in particular, opening or closing positions within two (2) minutes before or after such a release is prohibited;" [P5]
-- `automation_terms` = **Schedule B practices banned whether manual or automated; EAs with prohibited functions and manipulative automated tools banned; HFT banned; no blanket ban on automation found** (verified)
-  - "Except where stated otherwise, the practices below are prohibited regardless of whether they are carried out manually or by automated means." [P5]
-  - "Not allowed on any account: executing multiple trades per second, dozens of trades within a minute, rapid-fire entries and exits, or any attempt to exploit speed, latency or feed delays." [P1]
-- `sizing_or_gambling_terms` = **gambling policy (overleveraging, overexposure, one-sided bets, hyperactivity); impermissible risk allocation; lot-size manipulation; account rolling (>40% of net profit from one trade/day is a warning sign)** (verified)
-  - "One-Sided Bets — avoid trading predominantly in one direction without proper market analysis." [P15]
-  - "Lot Size Manipulation: Using significantly smaller lot sizes after a large trade with the aim of formally meeting minimum trading-day requirements;" [P5]
-  - "One trade or one day produces more than 40% of the net profit." [P1]
-- `other_conduct_bearing` = **no overnight/weekend positions (force-closed 14:55 CT); micro-scalping flag (> 50% of profit from trades <= 15 s); personal device only, one account per IP/network; Replikanto only in Compliance Edition; temporary micro commodity limits** (verified)
-  - "Any position still open 5 minutes before the market close (14:55 CT) is force-closed by our Risk Team." [P1]
-  - "Personal Device Only — all trading must be carried out from a personal device used exclusively by the account holder." [P13]
-  - "Not mandatory on every trade, but strongly recommended." [P1]
-  - note: Stops/targets: 'not mandatory ... strongly recommended' - bracket orders are welcome.
-- `permitted_products` = **CME equity index futures ES, NQ, YM, RTY and micros (plus FX, energy, metals, ags, rates, micro crypto, Eurex)** (verified)
-  - "Equity indices (ES, NQ, YM, RTY and their micros)." [P3]
-  - "Standard and mini contracts: $0.50 per contract." [P3]
-
-**Comparability** (reader's section)
-
-- Yes: Futures Prime is a one-phase $50K evaluation on CME Group futures (ES, NQ and micros) leading to a simulated funded 'Earning Account' that pays rewards.
-
-**Access note** (reader's section)
-
-- GTC clause 4.5.2 lists 'automated retrieval or extraction of data (scraping, crawling, or similar methods) without our express written permission' among prohibited uses; the pages were fetched one at a time by curl before this was read.
+Struck (E-020): the firm's own terms forbid automated retrieval -- GTC 4.5.2: "automated retrieval or extraction of data (scraping, crawling, or similar methods) without our express written permission" (as recorded under E-009). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### Aqua Futures (AquaFutures / AquaFunded Futures) (`aqua`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://intercom.help/aquafutures-help-center/en/articles/16934765-flex-daily-loss-faq; id 16934765; page date: October 5, 2026
-- [P2] https://intercom.help/aquafutures-help-center/en/articles/17296868-flex-no-daily-loss-faq; id 17296868; page date: October 5, 2026
-- [P3] https://intercom.help/aquafutures-help-center/en/articles/16934774-standard-account-rules; id 16934774; page date: September 30, 2026
-- [P4] https://intercom.help/aquafutures-help-center/en/articles/16934770-daily-account-rules; id 16934770; page date: September 30, 2026
-- [P5] https://intercom.help/aquafutures-help-center/en/articles/16941660-payout-policy; id 16941660; page date: September 30, 2026
-- [P6] https://intercom.help/aquafutures-help-center/en/articles/15863787-how-many-funded-accounts-am-i-allowed-at-once; id 15863787; page date: September 30, 2026
-- [P7] https://intercom.help/aquafutures-help-center/en/articles/15863742-prohibited-trading-strategies; id 15863742; page date: September 30, 2026
-- [P8] https://www.aquafunded.com/futures
-- [P9] https://intercom.help/aquafutures-help-center/en/articles/17341251-what-is-the-aquafunded-futures-live-account; id 17341251; page date: October 5, 2026
-- [P10] https://intercom.help/aquafutures-help-center/en/articles/15692179-ip-usage-devices-and-location; id 15692179; page date: September 30, 2026
-- [P11] https://intercom.help/aquafutures-help-center/en/articles/16759305-inactivity-rule; id 16759305; page date: September 30, 2026
-- [P12] https://intercom.help/aquafutures-help-center/en/articles/15692209-trading-hours; id 15692209; page date: September 30, 2026
-- [P13] https://intercom.help/aquafutures-help-center/en/articles/15692102-futures-instrument-list-codes; id 15692102; page date: September 30, 2026
-
-
-Official domains: aquafutures.io, aquafunded.com, intercom.help/aquafutures-help-center. Read 2026-11-15.
-Plan captured: Flex Daily Loss 50K (terms_flex_daily_loss_50k) and Daily 50K (terms_daily_50k): both have EOD funded drawdown and no funded consistency; they differ materially in payout mechanics (5 winning days / 50% of profit up to $2,000, no buffer vs daily payouts up to $1,100 above a $2,100 buffer).
 Verdict: **PASS** -- Flex Daily Loss and Daily have EOD funded drawdowns and no funded consistency, 5 funded accounts at once, copiers among own accounts allowed; hand-entered bracket trading is allowed (bots banned; watch the 10-second, 0.3RR and account-rolling rules).
 
-Plans seen:
-- Flex Daily Loss 50K (site config 'One Step Flex'): drawdown EOD trailing $2,000 eval and funded, locks at starting balance; DLL $1,200 soft; consistency evaluation 50%, funded none
-  - "| Consistency | 50% Challenge Only | 50% Challenge Only | 50% Challenge Only" [P1]
-- Flex No Daily Loss 50K (site config 'One Step Flex DLL'): drawdown EOD trailing $2,000, no DLL; consistency evaluation 50%, funded none; but only one funded account at a time and 3 rewards then the account closes
-  - "Traders may have unlimited Evaluation accounts, but only one active Funded Account at a time." [P2]
-- Standard 50K: drawdown EOD trailing $2,000 eval and funded, locks at $52,100; DLL $1,000 soft; consistency evaluation none, funded 40% per payout cycle
-  - "Unlike the Flex and Daily models, the Standard Model has no consistency requirement during the Evaluation. Instead, a 40% Consistency Rule applies only on the Funded Account." [P3]
-- Daily 50K: drawdown EOD trailing $2,000 eval and funded, locks at $52,100; DLL $1,000 soft; consistency evaluation 40%, funded none
-  - "The Consistency Rule applies only during the Evaluation. There is no Consistency Rule once the trader reaches the Funded Account." [P4]
-- Instant 50K (no evaluation): drawdown EOD $2,000; consistency evaluation n/a, funded 20% per payout cycle
-  - "A fixed 20% Consistency Rule applies to every Instant Account payout cycle." [P5]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing (all current futures models)** (verified)
-  - "The Maximum Trailing Drawdown varies depending on the account size and follows an End-of-Day (EOD) trailing model during both the Challenge and Funded stages." [P1]
-- `drawdown_funded` = **eod_trailing** (verified)
-  - "The trailing drawdown adjusts based on the account’s closed balance at the end of each trading day." [P1]
-- `consistency_eval` = **Flex 50%; Daily 40%; Standard none** (verified)
-  - "The trader’s highest-profit trading day cannot account for more than 50% of their total Challenge profits." [P1]
-  - note: Not met = keep trading, not a breach.
-- `consistency_funded` = **Flex: none; Daily: none; Standard: 40%; Instant: 20%** (verified)
-  - "There is no Consistency Rule on the Flex Daily Loss Funded Account." [P1]
-- `max_funded_accounts` = **5 active funded at once (extra funded accounts held until a slot opens); evaluations unlimited; Flex No Daily Loss: one funded at a time** (verified)
-  - "You may have as many Evaluation accounts as you wish. However, you can only have up to 5 active Funded accounts trading at the same time." [P6]
-  - note: Household: allowed with disclosure to support.
-- `copy_trading` = **allowed between accounts the same trader owns; copying others prohibited** (verified)
-  - "Copy trading is allowed on AquaFunded Futures Flex Daily Loss Accounts, including the use of trade copier software, provided that all accounts involved are legally owned and operated by the same trader." [P1]
-  - note: The IP/devices article says multiple accounts must be 'used independently' - a soft tension with the copier permission.
-- `opposite_positions` = **prohibited across Aqua accounts, people and firms; also NQ vs MNQ offsetting** (verified)
-  - "Hedging between multiple AquaFutures accounts is strictly prohibited." [P7]
-- `news` = **allowed (Tier-1 releases may be restricted at Aqua's discretion)** (verified)
-  - "News trading is allowed during both the Challenge and Funded stages." [P1]
-  - "Trading during major Tier-1 economic releases may also be restricted depending on market conditions, volatility levels, and platform stability requirements." [P7]
-  - note: Model pages allow news; the prohibited-strategies page reserves restriction.
-- `automation` = **fully automated systems, bots, AI execution prohibited; semi-automated only with trader present; < 100 trades/day** (verified)
-  - "The use of fully automated systems, unattended algorithms, trading bots, AI-driven execution software, latency arbitrage systems, or any form of self-operating execution mechanism is strictly prohibited across all AquaFutures account types." [P7]
-  - note: Hand entry is exactly what is allowed.
-- `sizing_gambling` = **gambling/all-or-nothing, oversized positions, account rolling/stacking prohibited; >=50% of trades and of profits from trades held > 10 s; average RR > 0.3** (verified)
-  - "To maintain fair and sustainable trading conditions, AquaFutures requires that at least 50% of all closed trades remain open for longer than 10 seconds. In addition, at least 50% of total generated profits must come from trades held longer than 10 seconds. Traders are also expected to maintain an average risk-to-reward ratio above 0.3RR across their overall trading activity." [P7]
-  - "This often includes repeatedly breaching accounts, continuously cycling through new accounts after hitting Maximum Loss Limits, purchasing excessive numbers of accounts simultaneously, or maintaining large numbers of backup accounts intended solely for replacement purposes." [P7]
-  - note: Account-rolling clause bears on a many-account design; brackets are barred only when 'ultra-tight ... intended solely for fill exploitation'.
-
-**Terms (`terms_flex_daily_loss_50k`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Profit Target | $3,000 | $6,000 | $9,000" [P1]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| Maximum Drawdown | $2,000 | $3,000 | $4,500" [P1]
-- `eval_drawdown_type` = **eod_trailing (closed balance)** (verified)
-  - "This means intraday unrealized profits do not cause the drawdown threshold to trail upward." [P1]
-  - note: Whether the floor is enforced against intraday equity is not stated on this page.
-- `eval_drawdown_lock` = **locks at the starting balance ($50,000)** (verified)
-  - "Once the trailing drawdown reaches the account’s original starting balance, the drawdown locks and no longer trails upward." [P1]
-- `eval_daily_loss_limit` = **1200 (soft: day stopped, account not breached)** (verified)
-  - "| Daily Loss Limit | $1,200 | $1,700 | $3,000" [P1]
-  - "If the Daily Loss Limit is reached, trading will be restricted for the remainder of that trading day rather than permanently breaching the account." [P1]
-- `eval_consistency_rule` = **50% (pass needs best day <= 50% of challenge profits)** (verified)
-  - "A 50% Consistency Rule applies during the AquaFunded Futures Flex Daily Loss Challenge." [P1]
-- `eval_min_days` = **none (2 days minimum in effect via the 50% rule)** (verified)
-  - "Due to the 50% Consistency Rule, traders can complete the Flex Daily Loss Challenge in as little as 2 trading days." [P1]
-- `eval_position_limit` = **4 mini / 40 micro, no scaling** (verified)
-  - "| Maximum Position Size | 4 Mini / 40 Micro | 8 Mini / 80 Micro | 12 Mini / 120 Micro" [P1]
-- `eval_fee` = **$131 one-time (site configurator value for 50K Flex; refundable per page)** (verified)
-  - "prices: { '50k': 131, '100k': 191, '150k': 365 }" [P8]
-  - "One-time fee • 100% refundable" [P8]
-  - note: From the futures page's own price table (key 'flex' = 'One Step Flex', whose spec rows match the Flex Daily Loss article). Whether 131 is before or after the 25% HONOR promo / multi-account discounts is not stated. aquafutures.io redirects to www.aquafunded.com/futures.
-- `eval_reset_fee` = **not stated** (UNVERIFIED)
-  - looked at: https://www.aquafunded.com/futures (lists 'Account resets' as a feature, no price), help collections Models, Trading Rules, Reward Information
-- `activation_fee` = **none** (verified)
-  - "AquaFunded Futures does not require an activation fee before receiving your Flex Daily Loss Funded Account." [P1]
-- `eval_count_limit` = **unlimited** (verified)
-  - "You may have as many Evaluation accounts as you wish." [P6]
-  - note: Subject to the account-rolling/stacking prohibition.
-- `eval_time_limit` = **unlimited (but 7-day inactivity closure)** (verified)
-  - "{"label": "Time Limit", "values": ["Unlimited", "—"]}" [P8]
-- `funded_type` = **simulated Funded Account; Live Review possible after Reward 5 (not guaranteed); on promotion all eligible funded accounts merge into one Live account** (verified)
-  - "Unlike Evaluation and Funded Accounts, Live Accounts operate using real CME market execution with real capital through our partnered brokerage infrastructure." [P9]
-  - "Successfully reaching Reward 5 on a Funded Account" [P9]
-  - "Once approved, all of your eligible Funded Accounts will automatically transition into one Live Account." [P9]
-  - note: Live: $0 start, EOD drawdown, combined drawdown cap $15,000, no consistency, daily rewards.
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| Maximum Drawdown | $2,000 | $3,000 | $4,500" [P1]
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "| Drawdown Mode | EOD | EOD | EOD" [P1]
-- `funded_drawdown_lock` = **locks at $50,000 (starting balance); after any payout locks at $50,100** (verified)
-  - "Once the account has generated enough closed profit for the trailing threshold to reach the original $50,000 starting balance, the threshold locks at $50,000 and will no longer trail upward." [P1]
-- `payout_balance_consequence` = **after any approved payout the floor locks permanently at starting balance + $100 ($50,100)** (verified)
-  - "After a payout from a $50,000 Flex Daily Loss Funded Account, the account's drawdown floor will be permanently locked at $50,100." [P1]
-- `funded_daily_loss_limit` = **1200 soft** (verified)
-  - "A Daily Loss Limit applies during both the Challenge and Funded stages." [P1]
-- `funded_consistency_rule` = **none** (verified)
-  - "There is no Consistency Rule on the Flex Daily Loss Funded Account." [P1]
-- `funded_position_limit` = **4 mini / 40 micro, no scaling** (verified)
-  - "There is no progressive position scaling on Flex Daily Loss Accounts." [P1]
-- `funded_monthly_fee` = **none** (verified)
-  - "Is There a Monthly Fee or Activation Fee? No." [P1]
-- `payout_min` = **$500 (payout policy); withdrawal minimum $100 crypto / $500 Rise** (verified)
-  - "Minimum payout is $500." [P5]
-  - "Minimum Withdrawal: $100 via Crypto and $500 via Rise." [P1]
-  - note: Conflict: $500 minimum payout vs $100 via crypto.
-- `payout_cap` = **50% of available profits, max $2,000 per request; no lifetime cap stated** (verified)
-  - "| $50,000 | 50% of profits, up to $2,000" [P1]
-  - "These payout caps apply to every payout request and do not disappear after a certain number of payouts." [P5]
-- `payout_frequency_gate` = **5 winning days of >= $200 per cycle (reset after each reward); from reward #2, net profit >= $1,000 since last reward; no buffer** (verified)
-  - "| $50,000 | $200 | $1,000 | $2,000" [P1]
-  - "From reward #2 onward, Flex Daily Loss Funded Accounts must also satisfy a Net Profit Requirement." [P1]
-  - "For payouts #2 through #5, traders must also meet the applicable Net Profit Requirement." [P5]
-  - note: Payout policy limits the net-profit gate to payouts #2-#5; the Flex Daily Loss FAQ says 'from reward #2 onward'.
-- `payout_split` = **90%** (verified)
-  - "The 90% Profit Split applies from the first reward onward." [P1]
-- `payout_processing_days` = **within 24 business hours** (verified)
-  - "Processing Time: Within 24 business hours." [P1]
-- `payout_fee` = **3% processing fee on all payouts** (verified)
-  - "All AquaFutures payouts are subject to a 3% processing fee to cover payment processing and transaction costs." [P5]
-- `payout_count_limit` = **no limit while the account is active** (verified)
-  - "There is no limit on the total number of rewards a trader can receive from a Flex Daily Loss Funded Account while the account remains active and all reward requirements continue to be satisfied." [P1]
-  - "The original most popular flex model with no path to live. Three rewards per account then account closes, unlimited accounts available." [P8]
-  - note: Conflict: the futures page blurb says three rewards then the account closes - that matches the Flex No Daily Loss article, not Flex Daily Loss. Help article value taken for Flex Daily Loss.
-- `max_accounts` = **5 active funded; unlimited evaluations; household allowed with disclosure** (verified)
-  - "Traders may have up to 5 active Flex Daily Loss Funded Accounts trading at the same time." [P1]
-  - "Yes. You can manage multiple accounts as long as they all belong to you and are used independently." [P10]
-- `inactivity_rule` = **closed after 7 consecutive calendar days with no trade; not reinstatable** (verified)
-  - "If no trade is executed on your account for 7 consecutive calendar days, the account will be considered inactive and will automatically closed." [P11]
-  - "Accounts closed due to the 7-Day Inactivity Rule cannot be reinstated or reset." [P11]
-  - note: Binding for a design that parks accounts.
-- `copy_trading_terms` = **own accounts only** (verified)
-  - "Traders may copy their own trades between accounts they personally own." [P1]
-- `cross_account_hedging` = **prohibited, incl. NQ/MNQ offsetting** (verified)
-  - "Examples may include simultaneously holding NQ and MNQ positions in offsetting directions or using Micro contracts to hedge larger Mini contract exposure." [P7]
-- `news_trading_terms` = **allowed; Tier-1 may be restricted** (verified)
-  - "Traders are free to open, manage and close positions during high-impact news events." [P1]
-- `automation_terms` = **bots/fully automated prohibited; manual or supervised semi-automated only** (verified)
-  - "While traders may use tools for charting assistance, alerts, or trade management, all trading activity must remain actively supervised and manually managed by the trader at all times." [P7]
-- `sizing_or_gambling_terms` = **no oversized/all-or-nothing trades; microscalping restricted; < 100 trades/day** (verified)
-  - "This includes taking oversized positions without proper risk planning, trading without stop losses while exposing the account to excessive risk, repeatedly using maximum leverage without a structured strategy, or attempting unrealistic “all-or-nothing” trades." [P7]
-  - "Traders may not execute 100 or more trades within a single trading day." [P7]
-- `other_conduct_bearing` = **brackets barred only when ultra-tight for fill exploitation; excessive bracket manipulation barred; open trades auto-closed at market close** (verified)
-  - "This includes systems dependent on perfect execution, ultra-tight stop-loss and take-profit brackets intended solely for fill exploitation, or rapid entry-and-exit behavior relying primarily on simulated execution precision rather than genuine market structure." [P7]
-  - "All open trades will automatically close when the market closes." [P12]
-- `permitted_products` = **CME futures incl. NQ and MNQ** (verified)
-  - "| E-mini NASDAQ 100 | NQ | Sunday - Friday 17:00 - 16:00 CT Daily Break: 16:00 - 17:00 CT | 0.25 | $5 | 1.9" [P13]
-  - "| Micro E-mini Nasdaq-100 | MNQ | Sunday - Friday 17:00 - 16:00 CT Daily Break: 16:00 - 17:00 CT | 0.25 | $0.50 | 0.62" [P13]
-
-**Terms (`terms_daily_50k`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Profit Target | $3,000 | $6,000 | $9,000" [P4]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| Max Drawdown | $2,000 | $2,500 | $3,500" [P4]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "The Daily Account uses an End-of-Day (EOD) trailing drawdown during both the Evaluation and Funded stages." [P4]
-- `eval_drawdown_lock` = **locks at $52,100** (verified)
-  - "For the Daily Model, the drawdown locks at:" [P4]
-  - "| $50,000 | $52,100" [P4]
-  - note: Oddity: lock $52,100 (above start) while the post-payout floor is $50,100; a $2,000 EOD trail would reach $52,100 only at a $54,100 close. Read literally.
-- `eval_daily_loss_limit` = **1000 soft** (verified)
-  - "| Daily Loss Limit | $1,000 | $1,250 | $1,750" [P4]
-  - "The Daily Loss Limit is a soft breach." [P4]
-- `eval_consistency_rule` = **40% (evaluation only)** (verified)
-  - "Your highest-profit trading day cannot account for more than 40% of your total profits during the Evaluation." [P4]
-- `eval_min_days` = **none** (verified)
-  - "There are no minimum trading days required to complete the Daily Evaluation." [P4]
-- `eval_position_limit` = **4 mini / 40 micro, no scaling** (verified)
-  - "There is no position scaling on AquaFutures Daily Accounts." [P4]
-- `eval_fee` = **$113 one-time (site configurator value for 50K Daily; refundable per page)** (verified)
-  - "prices: { '50k': 113, '100k': 173, '150k': 267 }" [P8]
-  - note: Before/after promo not stated.
-- `eval_reset_fee` = **not stated** (UNVERIFIED)
-  - looked at: futures page; help collections
-- `activation_fee` = **none** (verified)
-  - "AquaFutures does not require any monthly subscription or activation fee before receiving your Daily Funded Account." [P4]
-- `eval_count_limit` = **unlimited** (verified)
-  - "You may have as many Evaluation accounts as you wish." [P6]
-- `eval_time_limit` = **unlimited** (verified)
-  - "{"label": "Time Limit", "values": ["Unlimited", "—"]}" [P8]
-  - note: 7-day inactivity closure applies.
-- `funded_type` = **simulated Funded Account; Live Review possible** (verified)
-  - "Live Accounts are not automatically awarded and cannot be purchased." [P9]
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| Max Drawdown | $2,000 | $2,500 | $3,500" [P4]
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "The trailing drawdown adjusts based on your closed account balance at the end of each trading day." [P4]
-- `funded_drawdown_lock` = **$52,100; after any payout floor locks at $50,100** (verified)
-  - "Once the drawdown reaches this level, it will no longer trail upward." [P4]
-  - note: See oddity note on eval_drawdown_lock.
-- `payout_balance_consequence` = **floor locks permanently at $50,100 after any payout; $2,100 buffer must stay intact** (verified)
-  - "For example, after a payout from a $50,000 Daily Funded Account, the permanent drawdown floor becomes $50,100." [P4]
-- `funded_daily_loss_limit` = **1000 soft** (verified)
-  - "Daily Accounts include a fixed Daily Loss Limit during both the Evaluation and Funded stages." [P4]
-- `funded_consistency_rule` = **none** (verified)
-  - "The Consistency Rule applies only during the Evaluation. There is no Consistency Rule once the trader reaches the Funded Account." [P4]
-- `funded_position_limit` = **4 mini / 40 micro, no scaling** (verified)
-  - "| $50,000 | 4 Mini / 40 Micro Contracts" [P4]
-- `funded_monthly_fee` = **none** (verified)
-  - "AquaFutures does not require any monthly subscription or activation fee before receiving your Daily Funded Account." [P4]
-- `payout_min` = **500** (verified)
-  - "The minimum payout amount is $500 across all Daily Account sizes." [P4]
-- `payout_cap` = **$1,100 per day (daily, not lifetime); only above the $52,100 threshold** (verified)
-  - "| $50,000 | $1,100" [P4]
-  - "The maximum payout is a daily cap, not a lifetime cap." [P4]
-- `payout_frequency_gate` = **daily; balance above $52,100 buffer threshold; from payout #2 new net profit >= $550; no winning-day count** (verified)
-  - "| $50,000 | $2,100 | $52,100" [P4]
-  - "| $50,000 | $550" [P4]
-  - "There is no Winning Day requirement." [P5]
-- `payout_split` = **90%** (verified)
-  - "AquaFutures Daily Funded Traders receive a 90% Reward Split from the first payout onward." [P4]
-- `payout_processing_days` = **within 24 business hours** (verified)
-  - "| Processing Time | Within 24 business hours" [P5]
-- `payout_fee` = **3%** (verified)
-  - "All AquaFutures payouts are subject to a 3% processing fee to cover payment processing and transaction costs." [P5]
-- `payout_count_limit` = **not stated** (UNVERIFIED)
-  - looked at: https://intercom.help/aquafutures-help-center/en/articles/16934770-daily-account-rules, 16941660-payout-policy
-  - note: 'daily cap, not a lifetime cap' concerns amount, not count.
-- `max_accounts` = **5 active funded; unlimited evaluations** (verified)
-  - "If passing an Evaluation account or purchasing an Instant Funded account would take you above the 5-account limit, the additional Funded account will be placed on hold until a space becomes available." [P6]
-- `inactivity_rule` = **closed after 7 calendar days with no trade** (verified)
-  - "Simply execute at least one trade within every 7-day period." [P11]
-- `copy_trading_terms` = **own accounts only (third-party copier software allowed)** (verified)
-  - "Copy trading is allowed, including the use of third-party trade copier software, provided that all accounts involved are legally owned and operated by the same trader." [P4]
-- `cross_account_hedging` = **prohibited** (verified)
-  - "Hedging between multiple AquaFutures accounts is strictly prohibited." [P7]
-- `news_trading_terms` = **allowed; Tier-1 may be restricted** (verified)
-  - "News trading is allowed on both Evaluation and Funded Daily Accounts." [P4]
-- `automation_terms` = **bots prohibited; manual/supervised only** (verified)
-  - "The use of fully automated systems, unattended algorithms, trading bots, AI-driven execution software, latency arbitrage systems, or any form of self-operating execution mechanism is strictly prohibited across all AquaFutures account types." [P7]
-- `sizing_or_gambling_terms` = **as Flex block; microscalping < 50% of profits from < 10 s trades** (verified)
-  - "Less than 50% of your total profits may come from trades held for under 10 seconds." [P4]
-- `other_conduct_bearing` = **account rolling/stacking prohibited** (verified)
-  - "AquaFutures also prohibits behavior commonly referred to as “Account Rolling” or “Account Stacking.”" [P7]
-- `permitted_products` = **CME futures incl. NQ/MNQ** (verified)
-  - "| Micro E-mini Nasdaq-100 | MNQ | Sunday - Friday 17:00 - 16:00 CT Daily Break: 16:00 - 17:00 CT | 0.25 | $0.50 | 0.62" [P13]
+Struck (E-020): the firm's own terms forbid automated retrieval -- Terms of Service: "You are expressly prohibited from scraping, crawling, framing, posting unauthorized links to, aggregating, hacking, performing denial of service (DOS) attacks on, reverse engineering, or circumventing technological protection measures of the Services or the Company website." (as recorded in config/rules_extended.yaml, aqua.automated_retrieval_terms). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### Alpha Futures (`alpha`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://help.alpha-futures.com/en/articles/11634907-advanced-account-overview; id 11634907; page date: July 22, 2026
-- [P2] https://help.alpha-futures.com/en/articles/11632512-standard-account-overview; id 11632512; page date: July 27, 2026
-- [P3] https://help.alpha-futures.com/en/articles/11771813-zero-account-overview; id 11771813; page date: Updated over 2 weeks ago
-- [P4] https://help.alpha-futures.com/en/articles/15838742-direct-account-overview; id 15838742; page date: July 9, 2026
-- [P5] https://alpha-futures.com/posts/alpha-futures-payout-update-five-business-days-or-less; page date: Updated September 15, 2026
-- [P6] https://help.alpha-futures.com/en/articles/9491999-maximum-loss-limit-mll; id 9491999; page date: July 15, 2026
-- [P7] https://alpha-futures.com/
-- [P8] https://help.alpha-futures.com/en/articles/9492048-consistency-rule; id 9492048; page date: July 27, 2026
-- [P9] https://help.alpha-futures.com/en/articles/9492088-maximum-allocation; id 9492088; page date: July 27, 2026
-- [P10] https://alpha-futures.com/product/advanced
-- [P11] https://help.alpha-futures.com/en/articles/10573989-copy-trading; id 10573989; page date: July 17, 2026
-- [P12] https://alpha-futures.com/terms-and-conditions; page date: Effective from July 27, 2026
-- [P13] https://help.alpha-futures.com/en/articles/9508585-prohibited-trading-practices; id 9508585; page date: Updated over a week ago
-- [P14] https://help.alpha-futures.com/en/articles/9492063-news-trading-policy; id 9492063; page date: July 27, 2026
-- [P15] https://help.alpha-futures.com/en/articles/9492014-daily-loss-guard; id 9492014; page date: July 15, 2026
-- [P16] https://help.alpha-futures.com/en/articles/9492068-monthly-subscription; id 9492068; page date: Updated over 2 weeks ago
-- [P17] https://help.alpha-futures.com/en/articles/9492077-reset; id 9492077; page date: Updated over 2 weeks ago
-- [P18] https://help.alpha-futures.com/en/articles/10743344-path-to-live-structure; id 10743344; page date: Updated this week
-- [P19] https://alpha-futures.com/how-it-works
-- [P20] https://help.alpha-futures.com/en/articles/9492051-payout-policy; id 9492051; page date: July 27, 2026
-- [P21] https://help.alpha-futures.com/en/articles/9492025-scaling-plan; id 9492025; page date: July 24, 2026
-- [P22] https://help.alpha-futures.com/en/articles/10491202-maximum-withdrawal-request; id 10491202; page date: Updated over 2 weeks ago
-- [P23] https://alpha-futures.com/general-service-agreement
-- [P24] https://help.alpha-futures.com/en/articles/12757982-inactivity-rule; id 12757982; page date: November 5, 2025
-- [P25] https://help.alpha-futures.com/en/articles/9492096-what-and-when-you-can-trade; id 9492096; page date: July 17, 2026
-- [P26] https://help.alpha-futures.com/en/articles/9806068-price-limit-trading; id 9806068; page date: August 30, 2024
-- [P27] https://alpha-futures.com/product/standard
-
-
-Official domains: alpha-futures.com, help.alpha-futures.com. Read 2026-11-15.
-Plan captured: Advanced 50K (full terms in 'terms'); Standard 50K also passes and differs materially (5 qualified accounts, 40% funded consistency, DLG, scaling, news window) -- its differing terms are in 'terms_standard'.
 Verdict: **PASS** -- EOD trailing MLL (locks at start) on every plan and no funded consistency on Advanced; 3 Advanced (5 Standard) funded per household; hand-entered bracket trading not forbidden (only tight-bracket sim-fill exploitation and <10-tick/<2-min scalping).
 
-Plans seen:
-- Advanced 50K: drawdown EOD trailing $1,750, stops trailing at starting balance (eval and qualified); consistency evaluation 40%, funded none
-  - "| Consistency | 40% on Evaluation only | 40% on Evaluation only | 40% on Evaluation only" [P1]
-- Standard 50K: drawdown EOD trailing $2,000, stops trailing at starting balance; consistency evaluation 50%, funded 40% (gates each withdrawal; resets after each request); a +$70 checkout add-on 'No Consistency Rule On your Qualified account' is offered
-  - "| Consistency | 50% on Evaluation 40% on Qualified | 50% on Evaluation 40% on Qualified | 50% on Evaluation 40% on Qualified" [P2]
-- Zero 50K: drawdown EOD trailing $2,000, stops trailing at starting balance; Daily Loss Guard $1,000 on eval and qualified; consistency evaluation none, funded 40% (gates withdrawals)
-  - "| Consistency | 40% on Qualified only | 40% on Qualified only | 40% on Qualified only" [P3]
-- Direct 50K (no evaluation, one-time $519): drawdown EOD MLL $2,000; Daily Loss Guard $1,000; consistency evaluation n/a (no evaluation), funded 20% plus a withdrawal profit target ($3,000 first, $2,000 after)
-  - "| Consistency Rule | 20% | 20% | 20% | 20%" [P4]
-- Premium (discontinued): drawdown n/a; consistency evaluation n/a, funded n/a
-  - "We have now refunded all active Premium Accounts while continuing to support current traders and accounts." [P5]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing, stops trailing at starting balance** (verified)
-  - "The Maximum Loss Limit (MLL) is EOD (end of day) trailing on all of our accounts here at Alpha Futures. None of our accounts utilize intraday trailing drawdown you will see elsewhere in industry." [P6]
-  - "Maximum Loss Limit stops trailing at the account starting balance on all of our accounts." [P6]
-  - note: Breach is on floating equity or closed balance: 'If you break MLL at any point, floating equity or closed balance of account, your account will be liquidated.'
-- `drawdown_funded` = **eod_trailing, stops trailing at starting balance** (verified)
-  - "The Maximum Loss Limit (MLL) is EOD (end of day) trailing on all of our accounts here at Alpha Futures." [P6]
-  - "Every plan uses an EOD trailing Maximum Loss Limit, based on the highest end-of-day balance. It stops trailing at the starting balance." [P7]
-  - note: Same rule on every account type including Qualified.
-- `consistency_eval` = **40% (Advanced; 50% Standard; none Zero) -- gates passing the evaluation** (verified)
-  - "The Consistency Rule on Advanced Evaluations is 40%. This means that during your Evaluation, profits from one single trading day cannot be larger than 40% of your net profits made." [P8]
-  - "You will not pass your Evaluation until this rule is satisfied." [P8]
-- `consistency_funded` = **none on Advanced Qualified (40% on Standard/Zero Qualified, 20% on Direct; gates withdrawals)** (verified)
-  - "There is NO Consistency Rule on Advanced Qualified Accounts." [P8]
-  - "There is a 40% Consistency Rule on Zero and Standard Qualified Accounts." [P8]
-  - note: The month-old lead's '40% consistency gating payouts' is true of Standard/Zero Qualified, not of Advanced Qualified.
-- `max_funded_accounts` = **3 Advanced Qualified per user (any user with an active Advanced Qualified is limited to 3); 5 Qualified per household for Standard/Zero/Direct; one individual per household** (verified)
-  - "Advanced Account: 3 Qualified Accounts" [P9]
-  - "Any user that has an active Advanced Qualified account will be limited to 3." [P9]
-  - "You can run up to 5 accounts at the same time. See the full account rules in our Help Center." [P10]
-  - note: CONFLICT: the Advanced product-page FAQ says up to 5; the help centre (July 27, 2026) and T&C Schedule 2 say Advanced = 3. Taken as 3.
-- `copy_trading` = **permitted across one's own accounts (single individual) per help centre; T&C 8.1.5 says only external-to-Alpha copying is allowed** (verified)
-  - "Copy trading in general is permitted as long as it is a single user executing the trades, and it is the single individual listed on the Alpha Futures Accounts." [P11]
-  - "8.1.5 the only copy trading allowed is that from your own external account to your Alpha Futures Account." [P12]
-  - note: CONFLICT between help centre and T&C wording; the help article explicitly addresses copying across one's own Alpha accounts ('Can I copy across my Alpha Futures Accounts?') and permits it.
-- `opposite_positions` = **prohibited (across accounts and within one account)** (verified)
-  - ""Reverse Trading" or Hedging, meaning going short on one account, and long on the other is strictly prohibited at Evaluation and Qualified Phase." [P13]
-- `news` = **no restriction on evaluations or Advanced Qualified; Standard/Zero/Direct Qualified: no orders executed 2 min before to 2 min after red-folder (ForexFactory) events** (verified)
-  - "There are no news trading restrictions for any Evaluation Accounts." [P14]
-  - "You may hold through news releases following your trading plan, but no orders may be executed within 2 minutes before or 2 minutes after high impact news events." [P14]
-- `automation` = **AI/bots/automated trading prohibited on all accounts; semi-automated signals allowed if the trader places and manages trades by hand** (verified)
-  - "The use of AI, bots, and other automated trading mechanisms is strictly prohibited across all account types." [P13]
-  - note: Hand entry is what the firm requires; compatible with our design.
-- `sizing_gambling` = **'All or Nothing' max-leverage single positions, account rolling/stacking, gambling prohibited; tick scalping (<10 ticks AND <2 min) and tight-bracket exploitation of no-slippage fills prohibited** (verified)
-  - "Using maximum leverage on a single position and using DLL as a stop loss will not be tolerated." [P13]
-  - "Exploiting the absence of slippage and utilizing tight brackets to gain from favorable fills are not permitted." [P13]
-  - note: The bracket clause targets tight brackets exploiting sim fills, not brackets as such; a design with stops/targets well beyond 10 ticks and holds over 2 minutes stays clear.
-
-**Terms (`terms`)**
-
-- `eval_profit_target` = **4000** (verified)
-  - "| Parameters | Advanced 50K | Advanced 100K | Advanced 150K" [P1]
-  - "| Profit Target | $4,000 | $8,000 | $12,000" [P1]
-  - note: Must 'reach (+ maintain)' the target and satisfy the 40% consistency rule.
-- `eval_drawdown_amount` = **1750** (verified)
-  - "| Maximum Loss Limit | $1,750 | $3,500 | $5,250" [P1]
-  - note: T&C Schedule 1 lists Advanced Evaluation MLL as 3.5% (= $1,750 on 50K), consistent.
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "The Maximum Loss Limit is calculated from your account balance high at the end of each trading day, not intraday equity high like many others out there." [P6]
-  - note: Breach is checked on intraday floating equity against the EOD-set floor.
-- `eval_drawdown_lock` = **stops trailing at starting balance (floor $50,000 once EOD balance reaches $51,750)** (verified)
-  - "Once the Maximum Loss Limit reaches the initial starting balance, it won't continue to trail." [P6]
-  - note: $51,750 is the arithmetic for the $1,750 Advanced MLL; the article's worked example uses a $2,000 MLL.
-- `eval_daily_loss_limit` = **none** (verified)
-  - "| Daily Loss Guard | NONE | NONE | NONE" [P1]
-  - "There is no Daily Loss Guard on Advanced Evaluations, but there is on Zero Evaluations." [P15]
-- `eval_consistency_rule` = **40%: no single day > 40% of net profit; gates passing (not a breach)** (verified)
-  - "The Consistency Rule on Advanced Evaluations is 40%. This means that during your Evaluation, profits from one single trading day cannot be larger than 40% of your net profits made." [P8]
-  - "| 50k | $4,000 | $1,600 or less" [P8]
-- `eval_min_days` = **3** (verified)
-  - "hit the profit target in at least 3 trading days while staying inside your Maximum Loss Limit, and you're Qualified." [P10]
-  - "8.1.9 The standard and advanced account assessments consist of 2 and 3 minimum trading days in the one phase evaluation, due to the 50% and 40% Consistency Rule." [P12]
-  - "| 2 | 8% | 3.5% | 50k = 5 contracts/50 micros, 100k = 10 contracts/100 micros, 150k = 15 contracts/150 micros | None | starting at $189 | None | 40%" [P12]
-  - note: CONFLICT inside the T&C: clause 8.1.9 says 3, the Schedule 1 Advanced Evaluation row says 2. Homepage card and product page say 3. Taken as 3 (the 40% rule makes 3 the arithmetic minimum anyway).
-- `eval_position_limit` = **5 minis / 50 micros** (verified)
-  - "| Max Position | 5 minis, 50 micros | 10 minis, 100 micros | 15 minis, 150 micros" [P1]
-- `eval_fee` = **$209 per month (recurring until passed or cancelled)** (verified)
-  - "| Price | $209/month | $349/month | $489/month" [P1]
-  - "Your Monthly Evaluation Fee will rebill monthly from the sign-up date until you pass. The Evaluation subscription automatically ends once you pass." [P16]
-  - note: Site banner today advertises a code 'ALPHA50 50% off Advanced, Standard & Direct' (promotion, not a contract term). A failed eval is reset to a fresh account at rebill.
-- `eval_reset_fee` = **189** (verified)
-  - "| Reset | $189 | $319 | $449" [P1]
-  - "Resets DO NOT change or affect your monthly rebill date." [P17]
-- `activation_fee` = **0** (verified)
-  - "| Activation Fee | $0 | $0 | $0" [P1]
-  - "9.) Accounts Purchased after July 8, 2026 enjoy No Activation Fees" [P1]
-  - note: Recent change: no activation fee only for Advanced accounts bought after July 8, 2026.
-- `eval_count_limit` = **no limit on evaluations (but 'Account Stacking' -- excessive evaluations/storing passed accounts -- is prohibited conduct)** (verified)
-  - "8.1.3 Analysts may hold multiple active accounts. For Analyst Accounts, there is no maximum total allocation limit." [P12]
-  - "More examples of Account Rolling are also known as "Account Stacking", meaning excessive Evaluations and storing multiple passed accounts, so when you withdraw or hit MLL, you can roll right into your next Qualified Account." [P13]
-- `eval_time_limit` = **none (monthly rebill until passed)** (verified)
-  - "(d) There are no time limits applicable to the Challenges, but you must ensure that all Challenge requirements continue to be achieved throughout the time in which you are taking part in a Challenge." [P12]
-  - note: After passing: KYC plus contract signature within 30 days ('You have 30 days to sign this contract from passing your Evaluation, after that is expires.' -- article 9820801).
-- `funded_type` = **sim (Qualified Account, simulated); after 5 payouts on one Qualified account (or other triggers) a trader may be called to live, which closes all Qualified accounts** (verified)
-  - "Yes. Alpha Futures evaluations and Qualified Accounts use simulated funds." [P7]
-  - "5 performance fees on a single Qualified Account" [P18]
-  - "When a trader is called to live, all Qualified Accounts are closed" [P18]
-  - "Once your simulated Qualified Account reaches +$40,000 in payable balance, or after 5 payout cycles, our team reviews your trading history for the opportunity to move to Alpha Prime." [P19]
-  - note: Live: one live account per Qualified account with >=1 payout; 50K -> $0 start balance with $2,000 EOD drawdown, 80% split (Live Program) or 60% + monthly bonus (Alpha Prime). A trader may decline and take 50% of the eligible live drawdown balance, then a 3-month cool-down.
-- `funded_drawdown_amount` = **1750** (verified)
-  - "50K Advanced Qualified No Fee Once Qualified Days to Payout 5 Days Profit Target None Max Position Size 5 minis / 50 microsNo scaling plan Max Drawdown $1,750" [P10]
-  - "| Advanced Qualified | 5 | None | 4% |" [P12]
-  - note: CONFLICT: product/home cards say $1,750 on the 50K Advanced Qualified; T&C Schedule 2 lists Advanced Qualified MLL as 4% (= $2,000). Taken as $1,750 (help centre/product pages, plan-specific).
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "Alpha Futures evaluations and Qualified Accounts use an end-of-day trailing Maximum Loss Limit (MLL)." [P7]
-- `funded_drawdown_lock` = **stops trailing at starting balance** (verified)
-  - "It follows the highest end-of-day account balance rather than intraday profit spikes and stops trailing at the starting balance." [P7]
-- `payout_balance_consequence` = **MLL unchanged by a withdrawal (no reset of the floor to start/$0); withdrawal removes cash from the balance, floor stays where it was** (verified)
-  - "Your Maximum Loss Limit stays intact from the date of your withdrawal, so you keep your runway after you receive your performance fee." [P7]
-  - "If MLL was at $49,200 before payout, it will be after as well." [P2]
-  - note: The $49,200 example is on the Standard (and Zero) overview; the homepage statement covers all plans. Only up to 50% of profit may be withdrawn per request, so the balance always stays above the floor after a request.
-- `funded_daily_loss_limit` = **none** (verified)
-  - "3.) No Daily Loss Guard on Evaluation or Qualified Accounts" [P1]
-  - "| 90% split | None | None | None on Advanced Qualified Accounts" [P12]
-- `funded_consistency_rule` = **none** (verified)
-  - "There is no Consistency Rule on Advanced Qualified Accounts." [P20]
-- `funded_position_limit` = **5 minis / 50 micros, no scaling plan** (verified)
-  - "There is no Scaling Plan on Advanced Accounts." [P21]
-  - "6.) No Scaling Plan on Advanced Accounts. Get access to full contract limit at all times." [P1]
-  - note: The scaling tables (Standard/Zero only) were re-read from the HTML table cells and from T&C Schedule 3; they parse cleanly and agree (see terms_standard).
-- `funded_monthly_fee` = **0** (verified)
-  - "Qualified Traders do not pay a monthly subscription." [P16]
-- `payout_min` = **1000** (verified)
-  - "The minimum withdrawal request on Advanced Qualified Accounts is $1,000, maximum is industry leading $15,000 on all Advanced Account sizes." [P20]
-- `payout_cap` = **per request: min(50% of account profit, $15,000); lifetime: none stated** (verified)
-  - "You may request up to 50% of the profit in your account each withdrawal request (up to withdrawal limit), the rest of the balance stays on the account for drawdown or future withdrawals." [P20]
-  - "This is per request, per account, more than 3x the industry leaders." [P22]
-  - note: No lifetime cap is stated on any page read (looked at payout policy, maximum withdrawal, T&C Schedule 4); the practical ceiling is the call-to-live review after 5 payouts / +$40,000.
-- `payout_frequency_gate` = **5 winning days of >= $200 (non-consecutive) accumulated between requests; up to 4 requests per month; no fixed payout dates** (verified)
-  - "Traders have the ability to pay themselves up to 4 times a month. Request every 5 winning trading days of $200 profit, or more" [P20]
-  - "The winning trading days do not need to be consecutive, but 5 need to be accumulated between each withdrawal request." [P20]
-  - note: T&C Schedule 4 1.2.5: all trades must be closed when requesting and trading pauses until the withdrawal is debited.
-- `payout_split` = **90% from the first payout** (verified)
-  - "All withdrawal requests are the amount that will be removed from your trading account, trader received 90% of this request." [P20]
-  - "First two virtual payouts on the account the User receives a 70% Performance Fee, virtual payouts 3 and 4 80%, virtual payouts 5+ on the account the User receives a 90% Performance Fee." [P23]
-  - note: CONFLICT: the General Service Agreement (undated, older company number/address) still has a 70/80/90 tier; the help centre, product pages and T&C Schedule 2 ('90% split') say 90% from the start. Taken as 90%.
-- `payout_processing_days` = **<= 5 business days after approval (Sept 15, 2026 update); T&C says 3 business days (up to 14 with extra verification)** (verified)
-  - "Our current payout timeline is now five business days or less, and we are working towards restoring same-day payouts in the coming weeks." [P5]
-  - "within 3 Business Days unless the account requires additional verification checks (as set out above), in which case this could take up to 14 Business Days." [P12]
-  - note: CONFLICT T&C (3) vs operational update (<= 5). The update follows an unnamed 'major change' around July 2026 that disrupted payouts; Premium accounts were refunded and Premium payouts are queued in batches.
-- `payout_fee` = **no firm payout fee stated; a provider exchange-rate fee applies when paid in a domestic currency** (UNVERIFIED)
-  - "An exchange rate fee, as set by the provider from time to time, applies when receiving Analyst Performance Fees in your domestic currencies." [P12]
-  - looked at: https://help.alpha-futures.com/en/articles/9492051-payout-policy, https://help.alpha-futures.com/en/articles/10443600-payout-methods, https://alpha-futures.com/terms-and-conditions (Schedule 4)
-  - note: No page says 'no payout fee'.
-- `payout_count_limit` = **up to 4 per month; no lifetime count stated (5 payouts on one account triggers live review)** (verified)
-  - "8.) Pay yourself up to 4 times per month. Withdraw when you want after 5 winning days of $200 or more, no assigned payout dates." [P1]
-- `max_accounts` = **funded: 3 Advanced Qualified (5 Qualified per household overall for other plans); evaluations: no maximum; one username per individual, one individual per household** (verified)
-  - "Only one username per individual is permitted, and one individual per household may use our services." [P9]
-  - "For Qualified Analyst accounts, the maximum total allocation per household is five accounts;" [P12]
-  - "Any user that has an active Standard or Advanced Qualified account will be limited to 3." [P12]
-  - note: CONFLICT: T&C Schedule 2 says an active Standard OR Advanced Qualified caps the user at 3; the help centre (same date, July 27, 2026) says only an active Advanced Qualified does (and Standard accounts bought before July 27, 2026 are capped at 3). Product page FAQ says 5 for Advanced. The month-old lead ('5 per household, 3 if an Advanced Qualified is active') matches the help centre.
-- `inactivity_rule` = **at least one trade every 10 trading days** (verified)
-  - "To keep your account active you must place a trade at least once every 10 trading days (does not matter size of trade)." [P24]
-  - note: The page does not state the consequence of inactivity.
-- `copy_trading_terms` = **allowed across own accounts by the single account holder (help centre); automated/group/reverse trading prohibited** (verified)
-  - "Copy trading in general is permitted as long as it is a single user executing the trades, and it is the single individual listed on the Alpha Futures Accounts." [P11]
-  - "8.1.5 the only copy trading allowed is that from your own external account to your Alpha Futures Account." [P12]
-  - note: CONFLICT (see screen.copy_trading). Our design enters by hand on each account, so it does not depend on a copier.
-- `cross_account_hedging` = **prohibited** (verified)
-  - "Long NQ and short MNQ on the same account is another example, and strictly prohibited." [P13]
-  - "Collaborating with others to execute identical or opposite strategies across unconnected accounts is prohibited." [P13]
-- `news_trading_terms` = **no restriction on Advanced eval or Advanced Qualified; gambling during high-volatility events still prohibited** (verified)
-  - "An "all or nothing" approach or gambling tendencies still will not be tolerated at any time, especially during high volatility events." [P14]
-  - note: Advanced Qualified: 'Advanced Qualified Accounts do not have News Trading Restrictions, but please review the Prohibited Trading Practices.' (same article).
-- `automation_terms` = **full automation, AI and bots prohibited; HFT (100+ trades/day) restricted; semi-automated signals permitted with manual placement** (verified)
-  - "Semi-Automated Trading, such as a custom indicator that gives buy or sell signals, is permissible under the condition that the user manually places, monitors, and manages the trade while understanding the system and semi-automation's purpose." [P13]
-  - "Any form of hands-off, continuous day and night trading, or any other type of full automation is strictly forbidden." [P13]
-- `sizing_or_gambling_terms` = **max-leverage single positions using the DLL as a stop, account rolling and account stacking prohibited** (verified)
-  - "Gambling tendencies or "Account Rolling", taking max leverage positions with no plan, no stop loss, and hitting max loss on the account then buying more accounts and repeating the process until a trade hits." [P13]
-  - "1.3.2. a Qualified Analyst is required to maintain the same level of risk on a Qualified Analyst Account" [P12]
-  - note: T&C 1.3.2 asks the qualified account to keep the evaluation's risk level -- a constraint on sizing differently in eval vs funded.
-- `other_conduct_bearing` = **tick scalping (<10 ticks AND <2 min, when 50%+ of profit) and tight-bracket no-slippage exploitation prohibited; all trades flat by 4:20 PM ET; no trading within 2% of a CME price limit; VPN prohibited** (verified)
-  - ""Tick or Micro Scalping" (trades less than 10 ticks AND less than 2 minutes)" [P13]
-  - "This is only an issue when it is a clear pattern in the trader's profit (50%+)." [P13]
-  - "You may begin trading at 6PM EST to start a new trading day, but all trades must be closed before 4:20PM EST every day." [P25]
-  - "This prohibited conduct is enforced on ALL Alpha Futures Accounts, not just Evaluations." [P26]
-  - note: Hand-entered single-position bracket trading on NQ/MNQ is not prohibited by any of these; the bracket must not be 'tight' enough to read as sim-fill exploitation.
-- `permitted_products` = **CME Group products (CME, CBOT, NYMEX, COMEX), incl. NQ/MNQ/ES/MES** (verified)
-  - "The CME Group Products are available to trade here at Alpha Futures." [P25]
-
-**Terms (`terms_standard`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Parameters | Standard 50K | Standard 100K | Standard 150K" [P2]
-  - "| Profit Target | $3,000 | $6,000 | $9,000" [P2]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| Maximum Loss Limit | $2,000 | $3,000 | $4,500" [P2]
-  - note: Drawdown type/lock as in 'terms' (EOD trailing, stops at starting balance).
-- `eval_daily_loss_limit` = **none on evaluation; $1,000 on Qualified** (verified)
-  - "| Daily Loss Guard (NONE on Evaluation!) | $1,000 | $2,000 | $3,000" [P2]
-- `eval_consistency_rule` = **50% (gates passing)** (verified)
-  - "The Consistency Rule on Standard Evaluations is 50%." [P8]
-- `eval_min_days` = **2** (verified)
-  - "hit the profit target in at least 2 trading days while staying inside your Maximum Loss Limit, and you're Qualified." [P27]
-- `eval_position_limit` = **5 minis / 50 micros** (verified)
-  - "| Max Position | 5 minis, 50 micros | 10 minis, 100 micros | 15 minis, 150 micros" [P2]
-- `eval_fee` = **$129 per month** (verified)
-  - "| Price | $129/month | $239/month | $349/month" [P2]
-  - note: Optional checkout add-on removes the Qualified consistency rule: homepage card 'No Consistency RuleOn your Qualified account OffOn+$70' (50K). Whether the $70 is one-time or monthly is not stated (UNVERIFIED).
-- `eval_reset_fee` = **109** (verified)
-  - "| Evaluation Reset | $109 | $199 | $289" [P2]
-  - note: A Qualified Reset ($599 on 50K) may be used twice on an account that has never reached a payout request, within 7 days of breach (article 9492077).
-- `activation_fee` = **0** (verified)
-  - "3.) No Activation Fee" [P2]
-- `funded_drawdown_amount` = **2000** (verified)
-  - "50K Standard Qualified No Fee Once Qualified Minimum Trading Days 5 Profit Target None Max Position Size 5 minis / 50 micros Max Drawdown $2,000" [P7]
-- `funded_daily_loss_limit` = **$1,000 soft lock (flatten, locked to next session; not a breach)** (verified)
-  - "If you hit the Daily Loss Guard, you do not lose your Account, but your account will be locked until the next trading day (6PM ET)." [P15]
-- `funded_consistency_rule` = **40% of net profit since last withdrawal (best day must be < 40%); gates withdrawals, resets each request, not a breach** (verified)
-  - "The 40% Consistency Rule states during the Qualified stage, profits from any single trading day cannot be greater than or equal to 40% of net profits accumulated since last withdrawal request." [P8]
-  - "This rule resets in between each account withdrawal request." [P8]
-- `funded_position_limit` = **scaling plan 50K: <$1,500 profit 2 minis/20 micros; $1,500-2,000 3/30; $2,000+ 5/50** (verified)
-  - "| Profit range | $50K minis | $50K micros | $100K minis | $100K micros | $150K minis | $150K micros" [P12]
-  - "| Less than $1,500 profit | 2 | 20 | 3 | 30 | 3 | 30" [P12]
-  - "| $1,500-2,000 profit | 3 | 30 | 4 | 40 | 4 | 40" [P12]
-  - "| $2,000-3,000 profit | 5 | 50 | 5 | 50 | 5 | 50" [P12]
-  - note: Help-centre Scaling Plan table (article 9492025, July 24, 2026) re-read cell by cell from the HTML: identical values (one cell reads '$2,000-3,000profit', a missing space -- the only 'garble'). Above $3,000 the 50K stays at 5/50.
-- `payout_min` = **500** (verified)
-  - "The minimum withdrawal request on Standard Accounts is $500:" [P20]
-- `payout_cap` = **per request min(50% of profit, $3,000)** (verified)
-  - "50k Standard Qualified Account maximum withdrawal is $3,000" [P20]
-- `news_trading_terms` = **no orders 2 min before to 2 min after red-folder events on Qualified; first violation a warning, later ones breach** (verified)
-  - "Subsequent violations after warning will lead to breach of the account." [P14]
-- `max_accounts` = **5 Standard Qualified (3 for Standard accounts bought before July 27, 2026; T&C says 3 if any Standard or Advanced Qualified is active)** (verified)
-  - "Standard Account: 5 Qualified Accounts (any standard accounts prior to July 27th, 2026 are limited to 3)" [P9]
-  - note: CONFLICT with T&C Schedule 2 (see terms.max_accounts). Standard was relaunched July 27, 2026 ('Standard Account is back with some upgrades!').
+Struck (E-020): the firm's own terms forbid automated retrieval -- "any automated use of the system, such as ... web scraping robots" (as recorded under E-009). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### Lucid Trading (`lucid`) -- PASS
 
@@ -1796,202 +848,9 @@ Unreadable (not worked around):
 
 ### Tradeify (`tradeify`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://tradeify.co/
-- [P2] https://tradeify.co/select-plan
-- [P3] https://tradeify.co/funded-trader-agreement; id section 4.2; page date: Last modified: October 2026
-- [P4] https://tradeify.co/funded-trader-agreement; id section 6.7(b); page date: Last modified: October 2026
-- [P5] https://tradeify.co/funded-trader-agreement; id section 6.7(c); page date: Last modified: October 2026
-- [P6] https://tradeify.co/funded-trader-agreement; id section 6.6; page date: Last modified: October 2026
-- [P7] https://tradeify.co/funded-trader-agreement; id section 6.5; page date: Last modified: October 2026
-- [P8] https://tradeify.co/funded-trader-agreement; id section 6.8; page date: Last modified: October 2026
-- [P9] https://tradeify.co/funded-trader-agreement; id section 5.2; page date: Last modified: October 2026
-- [P10] https://tradeify.co/funded-trader-agreement; id section 7.5; page date: Last modified: October 2026
-- [P11] https://tradeify.co/funded-trader-agreement; id section 4.5; page date: Last modified: October 2026
-- [P12] https://tradeify.co/funded-trader-agreement; id section 4.3; page date: Last modified: October 2026
-- [P13] https://tradeify.co/funded-trader-agreement; id section 4.4; page date: Last modified: October 2026
-- [P14] https://tradeify.co/funded-trader-agreement; id section 2.5; page date: Last modified: October 2026
-- [P15] https://tradeify.co/funded-trader-agreement; id section 6.9; page date: Last modified: October 2026
-- [P16] https://tradeify.co/funded-trader-agreement; id section 6.7(h); page date: Last modified: October 2026
-- [P17] https://tradeify.co/funded-trader-agreement; id section 6.4; page date: Last modified: October 2026
-- [P18] https://tradeify.co/terms-of-use
-- [P19] https://tradeify.co/select-plan-paid-daily
-
-
-Official domains: tradeify.co, help.tradeify.co. Read 2026-11-15.
-Plan captured: Select 50K (terms = Select Flex funded path; terms_select_daily = the fields where the Select Daily path differs).
 Verdict: **PASS** -- Select 50K: EOD trailing drawdown on both funded paths and no funded consistency; 5 funded accounts per person/household (FTA 4.2); the agreement expects stops and targets and forbids nothing in hand-entered one-position bracket trading on NQ/MNQ.
 
-Unreadable (not worked around):
-- https://help.tradeify.co/ -- 403 Cloudflare challenge to curl; WebFetch on https://help.tradeify.co/en/ refused (HTTP 403)
-- https://help.tradeify.co/en/articles/12853921-select-evaluation-accounts -- 403 Cloudflare challenge to curl; WebFetch refused (HTTP 403)
-- https://help.tradeify.co/en/articles/10495915-growth-evaluation-accounts -- WebFetch refused (HTTP 403)
-- https://help.tradeify.co/en/articles/10495938-lightning-funded-accounts -- WebFetch refused (HTTP 403)
-- https://help.tradeify.co/en/articles/18370624-miami-plan-faq -- WebFetch refused (HTTP 403)
-
-Plans seen:
-- Select 50K (Select Flex / Select Daily funded paths): drawdown EOD trailing $2,000 (eval and both funded paths); lock UNVERIFIED; consistency evaluation 40%, funded none (both paths)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- Growth 50K: drawdown EOD trailing $2,000; DLL $1,250 (rises to the drawdown at 6% profit); consistency evaluation none, funded 35%
-  - "["Max Contracts", "4 minis / 40 micros", { tooltip: "" }], ], funded: { rule1: [ ["Payout Frequency", "5 Days", { tooltip: "" }], ["Max Accounts", "5", { tooltip: "" }], ["Consistency", "35%", { tooltip: "" }]," [P1]
-- Lightning 50K (instant funded, no evaluation): drawdown EOD $2,000; DLL $1,250; consistency evaluation n/a, funded 20% (25% payout 2, 30% payout 3+)
-  - ""Consistency requirement moves to 25% for Payout 2 and 30% for Payout 3+"" [P1]
-- Inter Miami 50K (limited edition): drawdown static $1,500; soft DLL $900; 30 micros; consistency evaluation none, funded not shown in plan data
-  - "['Profit Target', '$3,500', { tooltip: '' }], ['Static Drawdown', '$1,500', { tooltip: '' }]," [P1]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing; $2,000** (verified)
-  - "evaluation: [ ["Profit Target", "$3,000", { tooltip: "" }], ["Trailing Max Drawdown (EOD)", "$2,000", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], [ "Reset Fee", "$109"," [P1]
-  - note: From the homepage plan data (SelectData, Tradovate/WealthCharts/Tradesea entries identical). Lock level UNVERIFIED (Help Center unreadable).
-- `drawdown_funded` = **eod_trailing; $2,000 (both Select paths)** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-  - "End-of-day drawdown" [P2]
-- `consistency_eval` = **40%** (verified)
-  - "["Consistency", "40%", { tooltip: "" }], ["Activation Fee", "None", { tooltip: "" }], ["Max Contracts", "4 minis / 40 micros", { tooltip: "" }]," [P1]
-  - "It means you need to be profitable on at least 40% of your trading days during evaluation. For example, if you trade 10 days, you need to be green on at least 4 of them." [P2]
-  - note: CONFLICT in meaning: the Select landing page FAQ defines the 40% as a share of green days, unlike the usual best-day share of profit; the governing definition is on the unreadable Help Center. The percentage (40%) is verified, its mechanics are not.
-- `consistency_funded` = **none** (verified)
-  - "No consistency rules once funded. Hit a big day? Get paid." [P2]
-  - "rule1: [ ["Payout Frequency", "Daily", { tooltip: "" }], ["Max Payout", "$1,250", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "$1,000", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- `max_funded_accounts` = **5 simulated funded accounts per individual and per household, across all account types** (verified)
-  - "The Company limits the maximum number of Simulated Funded Accounts that may be held by any single individual to five (5). This limit applies on a per-individual and per-household basis and across ALL funded account types, including Advanced Challenge funded accounts, Growth Challenge funded accounts, Lightning Funded accounts, Select Flex funded accounts, and Select Daily funded accounts." [P3]
-  - note: Evaluation count limit not stated on readable pages.
-- `copy_trading` = **copying own trades across own accounts permitted only as far as the Help Center allows (unreadable); copying/mirroring with any other person prohibited** (verified)
-  - "For the avoidance of doubt, this Section 6.7(b) restricts trading conduct between the Trader and other persons; the copying or mirroring of the Trader's own trades across the Trader's own Trader-Controlled Accounts is permitted to the extent expressly allowed by the rules published at the Help Center referenced in Section 4.1, provided always that such activity does not result in Opposing Positions prohibited by Section 6.7(c)." [P4]
-  - note: The extent of the Help Center allowance is UNVERIFIED.
-- `opposite_positions` = **prohibited without regard to intent: same product or same Product Group (Equity Index), within one account, across own accounts, and against accounts at other firms** (verified)
-  - "The Trader is strictly prohibited from holding Opposing Positions in (i) the same futures product, or (ii) two or more futures products assigned to the same Product Group." [P5]
-- `news` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/ ; https://tradeify.co/funded-trader-agreement ; https://tradeify.co/terms-of-use ; https://tradeify.co/select-plan ; https://tradeify.co/select-plan-paid-daily ; https://tradeify.co/tradeify-vs-topstep
-  - note: No news-trading rule on any readable tradeify.co page; the Help Center (where it would be) is blocked.
-- `automation` = **own bots/algos permitted under conditions (sole ownership, not shared across firms, no HFT bots)** (verified)
-  - "6.6 Automated Bots: The use of automated trading bots or algorithms (“bots/algos”) is permitted only under the following conditions:" [P6]
-  - "No High-Frequency Trading (HFT) Bots: Personal bots are allowed as long as they are not high-frequency trading (HFT) bots." [P6]
-  - note: Hand entry is not restricted.
-- `sizing_gambling` = **consistent trading plan required: avoid maximum/larger sizes on single trades, keep sizes consistent, no flipping to register a day, no DCA, no HFT; microscalping guideline (>= 50% of profit from trades held > 10 s)** (verified)
-  - "6.5 Consistency in Trading: The Trader must adhere to a consistent trading plan in terms of size, stops, and targets, avoiding maximum or larger contract sizes on single trades, refraining from flipping contracts just to register a “trading day,” maintaining consistent trading sizes, avoiding dollar-cost averaging and high-frequency trading, and demonstrating consistency in the trading plan." [P7]
-  - "50% or more of the Trader’s account profit must come from trades held longer than ten (10) seconds." [P8]
-- `note`: Pass rests on tradeify.co pages and the signed agreement; Help Center rules (incorporated and prevailing) are unread. FTA 6.5's 'consistent ... size, stops, and targets' and 'avoiding maximum or larger contract sizes on single trades' constrain any sizing schedule that steps size up and down.
-
-**Terms (`terms`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "evaluation: [ ["Profit Target", "$3,000", { tooltip: "" }], ["Trailing Max Drawdown (EOD)", "$2,000", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], [ "Reset Fee", "$109"," [P1]
-  - "Meet your 6% profit target with 40% consistency." [P2]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "evaluation: [ ["Profit Target", "$3,000", { tooltip: "" }], ["Trailing Max Drawdown (EOD)", "$2,000", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], [ "Reset Fee", "$109"," [P1]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "End-of-day drawdown - no intraday traps" [P1]
-- `eval_drawdown_lock` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/ (page and inline scripts) ; https://tradeify.co/select-plan ; https://tradeify.co/funded-trader-agreement
-  - note: Help Center (blocked) holds the drawdown methodology per FTA 4.1.
-- `eval_daily_loss_limit` = **none** (verified)
-  - "evaluation: [ ["Profit Target", "$3,000", { tooltip: "" }], ["Trailing Max Drawdown (EOD)", "$2,000", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], [ "Reset Fee", "$109"," [P1]
-- `eval_consistency_rule` = **40% (mechanics UNVERIFIED; landing-page FAQ describes it as green on >= 40% of trading days)** (verified)
-  - "["Consistency", "40%", { tooltip: "" }], ["Activation Fee", "None", { tooltip: "" }], ["Max Contracts", "4 minis / 40 micros", { tooltip: "" }]," [P1]
-  - "This ensures you can pass in 3 days minimum. Once funded, consistency rules disappear." [P2]
-  - note: The homepage scripts also carry an unlabelled 'multiConsistencyData' evaluation add-on for Select 50K (price 205, reset $145, max payout daily $1,250 / flex $2,000; plan_addon_id=26) whose rule is not described on any readable page.
-- `eval_min_days` = **3 (as stated in marketing: 'as few as 3 trading days')** (verified)
-  - "Pass in as few as 3 trading days — one of the fastest evaluation in the industry." [P2]
-  - note: Whether 3 is a hard minimum-days rule or a consequence of the 40% rule is not stated; Help Center unreadable.
-- `eval_position_limit` = **4 minis / 40 micros** (verified)
-  - "["Consistency", "40%", { tooltip: "" }], ["Activation Fee", "None", { tooltip: "" }], ["Max Contracts", "4 minis / 40 micros", { tooltip: "" }]," [P1]
-- `eval_fee` = **165 one-time (homepage plan data; coupon NOV 30% off until 30 November)** (verified)
-  - "name: "50K", isSelected: true, isVisible: true, price: 165, subscription: "one time payment", couponCode: "select"," [P1]
-  - "Get 30% Off with code "NOV" - 45% off 25k accounts (excluding Miami)" [P1]
-  - note: CONFLICT: the /select-plan page's size picker shows 50K at $111 (that page carries an expired 'ENDS 13 NOVEMBER' banner and lorem-ipsum template text). Price before/after coupon not certain.
-- `eval_reset_fee` = **109** (verified)
-  - "evaluation: [ ["Profit Target", "$3,000", { tooltip: "" }], ["Trailing Max Drawdown (EOD)", "$2,000", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], [ "Reset Fee", "$109"," [P1]
-- `activation_fee` = **none** (verified)
-  - "["Consistency", "40%", { tooltip: "" }], ["Activation Fee", "None", { tooltip: "" }], ["Max Contracts", "4 minis / 40 micros", { tooltip: "" }]," [P1]
-  - "No activation fees" [P2]
-- `eval_count_limit` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/funded-trader-agreement ; https://tradeify.co/terms-of-use ; https://tradeify.co/
-  - note: Only the funded cap (5) and one Tradeify login per individual/household are stated.
-- `eval_time_limit` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/ ; https://tradeify.co/select-plan ; https://tradeify.co/funded-trader-agreement
-- `funded_type` = **simulated funded account; discretionary move to Tradeify Elite Live (internal guideline: 10 approved payouts, or 3 on one account); while Live, no other Tradeify accounts for the trader or household** (verified)
-  - "three (3) approved payouts on a single Simulated Funded Account." [P9]
-  - "Traders who are transitioned to Tradeify Elite Live (Section 5) may NOT hold ANY other funded accounts, challenge accounts, or straight-to-sim accounts while their Elite Live account is active." [P3]
-  - note: A Live call-up ends the multi-account design (all other accounts must go).
-- `funded_drawdown_amount` = **2000** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- `funded_drawdown_type` = **eod_trailing (labelled 'Max Drawdown (EOD)')** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-  - note: Funded label drops 'Trailing'; whether it trails is not stated on readable pages (assume as eval until the Help Center is read).
-- `funded_drawdown_lock` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/ (inline scripts) ; https://tradeify.co/select-plan ; https://tradeify.co/funded-trader-agreement
-- `payout_balance_consequence` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/funded-trader-agreement ; https://tradeify.co/select-plan ; https://tradeify.co/
-  - note: FTA 4.1 lists 'minimum balance requirements' as Help Center content.
-- `funded_daily_loss_limit` = **none (Select Flex)** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- `funded_consistency_rule` = **none** (verified)
-  - "Once you your pass eval, decide how you want to get paid. Both paths have zero consistency rules." [P2]
-- `funded_position_limit` = **UNVERIFIED (funded Select rows list no contract limit; eval is 4 minis / 40 micros)** (UNVERIFIED)
-  - looked at: https://tradeify.co/ (SelectData in inline scripts) ; https://tradeify.co/select-plan
-- `funded_monthly_fee` = **none (one-time purchases only)** (verified)
-  - "All accounts and services currently offered by the Company are one-time purchases." [P10]
-- `payout_min` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/ ; https://tradeify.co/select-plan ; https://tradeify.co/select-plan-paid-daily ; https://tradeify.co/funded-trader-agreement
-- `payout_cap` = **Select Flex: $2,500 per payout (Select Daily: $1,250); lifetime cap not stated** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-  - note: The unlabelled Select 50K add-on variant shows flex $2,000 / daily $1,250 instead.
-- `payout_frequency_gate` = **Select Flex: every 5 days (gate details - winning days, buffer - UNVERIFIED)** (verified)
-  - "rule2: [ ["Payout Frequency", "5 days", { tooltip: "" }], ["Max Payout", "$2,500", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "None", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-  - "Where an evaluation path requires the Trader to choose between payout policies (for example, between Select Flex and Select Daily upon passing a Select Challenge), that choice is permanent and irrevocable for the specific funded account in question." [P11]
-- `payout_split` = **90%** (verified)
-  - "Unless otherwise specified for a particular account type, profits withdrawn are split90% to the Trader and 10% to the Company." [P12]
-  - "You Keep 90% Profits" [P2]
-- `payout_processing_days` = **typically 24-48 hours after approval (up to 72 h outside business hours); approval may take to the end of the next payout cycle** (verified)
-  - "Once a payout request is approved, funds are withdrawn from the Trader’s account and payment is typically issued within twenty-four to forty-eight (24-48) hours." [P13]
-  - "The Company reserves the right to take up to the end of the next payout cycle to approve, review, or deny a payout request." [P13]
-  - note: Marketing pages claim payouts in about 60 minutes.
-- `payout_fee` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/funded-trader-agreement ; https://tradeify.co/terms-of-use ; https://tradeify.co/
-- `payout_count_limit` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/funded-trader-agreement ; https://tradeify.co/select-plan ; https://tradeify.co/
-  - note: No cap stated; a Live call-up (discretionary, guideline 3 payouts on one account) would end sim payouts.
-- `max_accounts` = **5 funded per individual and household (all types combined); one Tradeify login per individual and household** (verified)
-  - "Example: A trader may NOT hold three (3) Lightning Funded accounts, two (2) Select Flex accounts, and one (1) Growth funded account. The maximum total is five (5) funded accounts in any combination." [P3]
-  - "Each individual may register for and hold only one (1) Tradeify account." [P14]
-- `inactivity_rule` = **at least one trade per calendar week, else account may be classified inactive** (verified)
-  - "To maintain an active account status, the Trader is required to execute at least one trade per calendar week." [P15]
-- `copy_trading_terms` = **own-account copying allowed only as the Help Center permits (unread); team/group trading and copying with other persons prohibited** (verified)
-  - "Team trading, collaborative trading, group trading, the management of a Trader's account by or on behalf of any third party, and the copying or mirroring of trades between the Trader and any other person are strictly prohibited." [P4]
-- `cross_account_hedging` = **prohibited, intent irrelevant, incl. micro vs mini in the same Product Group and versus accounts at other prop firms (NinjaTrader monitoring data may be used)** (verified)
-  - "Holding a position in a Trader-Controlled Account opposite a position in an External Account constitutes hedging and is a breach of this Agreement." [P5]
-  - "Any breach of this Section 6.7 will result in every account involved in the breach being placed in violation status, and in forfeiture of any profits generated during the period of the violation, whether or not those profits have been requested for payout." [P16]
-  - note: 'Opposing Positions' covers positions held at the same time 'whether the positions were entered simultaneously or at different times': a design running independent NQ signals on several accounts must never be long on one and short on another at the same moment (ES vs NQ too, same Equity Index group).
-- `news_trading_terms` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://tradeify.co/funded-trader-agreement ; https://tradeify.co/terms-of-use ; https://tradeify.co/ ; https://tradeify.co/select-plan
-- `automation_terms` = **personal bots allowed: sole owner, not used across multiple firms, no HFT bots, documentation on request** (verified)
-  - "Exclusive Use: While the Trader may use the bot on the Trader’s personal accounts, using it across multiple firms is against Tradeify’s policy." [P6]
-- `sizing_or_gambling_terms` = **avoid maximum or larger contract sizes on single trades; consistent sizes, stops and targets; no flipping to log a day; no DCA** (verified)
-  - "6.5 Consistency in Trading: The Trader must adhere to a consistent trading plan in terms of size, stops, and targets, avoiding maximum or larger contract sizes on single trades, refraining from flipping contracts just to register a “trading day,” maintaining consistent trading sizes, avoiding dollar-cost averaging and high-frequency trading, and demonstrating consistency in the trading plan." [P7]
-- `other_conduct_bearing` = **microscalping guideline (>= 50% of profit from trades > 10 s); short-term/high-frequency manipulative trades barred; trade only the active contract month; VPS/VM access that masks identity barred** (verified)
-  - "Trades executed in less than ten (10) seconds are difficult to reliably replicate or copy, so we have implemented the following guideline: 50% or more of the Trader’s account profit must come from trades held longer than ten (10) seconds." [P8]
-  - "This includes short-term or high-frequency trades." [P17]
-  - "use a Virtual Private Server (“VPS”), virtual machine, virtualized environment, remote computing environment, or similar technology to access or use Tradeify’s Site, platform, accounts, or services where such technology obscures, alters, masks, or prevents Tradeify from reliably verifying the user’s device, network, location, identity, or account activity; or" [P18]
-- `permitted_products` = **futures incl. stock indices (S&P 500, Nasdaq); exact symbol list UNVERIFIED (Help Center)** (verified)
-  - "Stock indices like the S&P 500 and Nasdaq, metals like gold and silver, energy like crude oil and natural gas, plus currencies, bonds, and even crops." [P1]
-
-**Terms (`terms_select_daily`)**
-
-- `note`: Fields where the Select Daily funded path differs from Select Flex; all other fields as in terms.
-- `funded_daily_loss_limit` = **1000** (verified)
-  - "rule1: [ ["Payout Frequency", "Daily", { tooltip: "" }], ["Max Payout", "$1,250", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "$1,000", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- `payout_cap` = **$1,250 per payout** (verified)
-  - "rule1: [ ["Payout Frequency", "Daily", { tooltip: "" }], ["Max Payout", "$1,250", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "$1,000", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-- `payout_frequency_gate` = **daily (gate details UNVERIFIED)** (verified)
-  - "You Keep 90% Profits" [P19]
-  - "rule1: [ ["Payout Frequency", "Daily", { tooltip: "" }], ["Max Payout", "$1,250", { tooltip: "" }], ["Consistency", "None", { tooltip: "" }], ["Daily Loss Limit", "$1,000", { tooltip: "" }], ["Max Drawdown (EOD)", "$2,000", { tooltip: "" }]," [P1]
-
-**Access note** (reader's section)
-
-- The Funded Trader Agreement (section 4.1) incorporates the Help Center rules by reference and says they prevail for trading rules, so every rule that lives only there (payout gates, buffers, minimum days, drawdown lock, permitted own-account copying, news) is UNVERIFIED. The terms read here come from tradeify.co: the homepage plan data in its inline scripts, the Select landing pages, the Terms of Use and the Funded Trader Agreement. The Terms of Use forbid 'any robot, spider, scraper or other automatic device' to access the Site without written permission; seven tradeify.co pages were fetched (curl, 1 s apart) before that clause was read, and no more were fetched after it.
+Struck (E-020): the firm's own terms forbid automated retrieval -- Terms of Use: "use any robot, spider, scraper or other automatic device ... to access, harvest, monitor, copy or use the Site" without permission (as recorded under E-009). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### BluSky Trading Company (`blusky`) -- PASS
 
@@ -2407,216 +1266,9 @@ Plans seen:
 
 ### FundedNext Futures (`fundednext`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://helpfutures.fundednext.com/en/articles/17230245-is-there-any-consistency-rule-to-be-followed-in-the-fundednext-futures-challenge-fundednext-account; id 17230245; page date: Updated over 3 weeks ago
-- [P2] https://helpfutures.fundednext.com/en/articles/17229536-fundednext-futures-legacy-challenge-all-rules; id 17229536; page date: Updated over 3 weeks ago
-- [P3] https://helpfutures.fundednext.com/en/articles/17242064-how-can-i-withdraw-my-performance-reward; id 17242064; page date: October 12, 2026
-- [P4] https://helpfutures.fundednext.com/en/articles/16847874-what-is-the-fundednext-futures-fnl-003-50k-instant-account; id 16847874; page date: September 8, 2026
-- [P5] https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules; id 17229829; page date: October 13, 2026
-- [P6] https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules; id 17229848; page date: Updated over 3 weeks ago
-- [P7] https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available; id 17225812; page date: September 30, 2026
-- [P8] https://helpfutures.fundednext.com/en/articles/17230319-what-is-copy-group-trading-policy-at-fundednext-futures; id 17230319; page date: September 30, 2026
-- [P9] https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures; id 14298337; page date: September 30, 2026
-- [P10] https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions; id 17225788; page date: Updated over a week ago
-- [P11] https://helpfutures.fundednext.com/en/articles/17230400-what-is-the-disciplined-trader-program-of-fundednext-futures-and-how-does-it-help-traders-build-consistency; id 17230400; page date: September 30, 2026
-- [P12] https://helpfutures.fundednext.com/en/articles/17230388-does-fundednext-futures-allow-high-frequency-trading-hft; id 17230388; page date: September 30, 2026
-- [P13] https://helpfutures.fundednext.com/en/articles/17230376-what-is-the-micro-scalping-policy-in-fundednext-futures; id 17230376; page date: September 30, 2026
-- [P14] https://helpfutures.fundednext.com/en/articles/17230292-daily-loss-limit-and-maximum-loss-limit-at-fundednext-futures; id 17230292; page date: Updated over 3 weeks ago
-- [P15] https://helpfutures.fundednext.com/en/articles/17228852-what-are-the-reset-conditions-and-fees-at-fundednext-futures; id 17228852; page date: Updated over a week ago
-- [P16] https://helpfutures.fundednext.com/en/articles/16522296-road-to-live-trading-rapid-flex-direct; id 16522296; page date: Updated over 3 weeks ago
-- [P17] https://helpfutures.fundednext.com/en/articles/17242096-what-will-be-my-reward-share-from-the-futures-fundednext-account; id 17242096; page date: October 12, 2026
-- [P18] https://helpfutures.fundednext.com/en/articles/17242434-what-is-fundednext-futures-brand-promise; id 17242434; page date: September 30, 2026
-- [P19] https://helpfutures.fundednext.com/en/articles/17242085-what-methods-are-available-for-performance-reward-withdrawal-in-fundednext-futures; id 17242085; page date: Updated this week
-- [P20] https://helpfutures.fundednext.com/en/articles/17228935-is-there-any-inactivity-period-in-fundednext-futures; id 17228935; page date: October 12, 2026
-- [P21] https://helpfutures.fundednext.com/en/articles/17230325-which-order-types-should-i-use-for-stop-loss-and-take-profit-in-futures-trading; id 17230325
-- [P22] https://helpfutures.fundednext.com/en/articles/17225740-which-symbols-instruments-can-i-trade-on-fundednext-futures; id 17225740; page date: September 30, 2026
-- [P23] https://helpfutures.fundednext.com/en/articles/17229713-fundednext-futures-rapid-pro-fundednext-account-all-rules; id 17229713; page date: Updated over a week ago
-
-
-Official domains: fundednext.com, helpfutures.fundednext.com. Read 2026-11-15.
-Plan captured: Flex 50K.
 Verdict: **PASS** -- Flex 50K: EOD trailing MLL on the funded account and no funded consistency rule; 5 funded accounts per person/household; hand-entered one-direction bracket trades are not prohibited (only tight two-sided no-slippage bracket straddles, micro-scalping and tick scalping are).
 
-Plans seen:
-- Flex 50K: drawdown EOD trailing $1,500, locks at $50,100 (eval and funded); first withdrawal resets MLL to $50,100; consistency evaluation 40% (best day <= 40% of target, else target recalculated), funded none
-  - "| Flex | ✅ 40% | ❌ None" [P1]
-- Rapid Pro 50K: drawdown EOD trailing $2,000, locks at $50,100 (eval and funded); optional DLL add-on $1,000; consistency evaluation none, funded 40% (withdrawal gate)
-  - "| Rapid Pro | ❌ None | ✅ 40%" [P1]
-- Rapid Daily 50K: drawdown EOD trailing $2,000, locks at $50,100; daily loss limit $1,000 (soft) at every stage; funded buffer $52,100; consistency evaluation none, funded none (buffer rule)
-  - "| Rapid Daily | ❌ None | ❌ None (uses buffer rule)" [P1]
-- Direct Account 50K (no evaluation): drawdown EOD trailing $2,000, locks at $50,100; DLL $1,000; $2,100 buffer; 7-day inactivity breach; consistency evaluation n/a (no challenge), funded 20% perpetual (all-time best day <= 20% of current cycle profit)
-  - "| Direct | N/A | ✅ 20%" [P1]
-- Legacy 50K (discontinued): drawdown EOD trailing $2,000, locks at initial balance; consistency evaluation 40%, funded none
-  - "Important Notice: As of October 11, Legacy Accounts are no longer available for purchase. Existing Legacy Accounts are also not eligible for resets." [P2]
-- Bolt 50K (discontinued): drawdown not read (product withdrawn); MLL set to $50,100 after first withdrawal per the withdrawal article; consistency evaluation not read, funded not read
-  - "Note: Effective 10 July 2026, Rapid and Bolt accounts will no longer be available for new purchases or account resets." [P3]
-- FNL:003 50K Instant (Labs limited release): drawdown EOD trailing, locks at $50,100; consistency evaluation n/a (no challenge), funded 20% perpetual
-  - "Each trader can purchase 3 FNL:003 Instant Accounts, and these are not counted against your standard 5 FundedNext Account maximum allocation limit." [P4]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing; $1,500; locks at $50,100** (verified)
-  - "It follows a Trailing End-of-Day (EOD) system, updating once per day based on your highest balance that day." [P5]
-  - "| Account Size | Maximum Loss Limit | MLL Locks At" [P5]
-  - "| $50,000 | $1,500 | $50,100" [P5]
-  - note: A floating loss that touches the MLL breaches intraday; the level itself moves only at end of day (05:00 PM CT per the loss-limit article).
-- `drawdown_funded` = **eod_trailing; $1,500; locks at $50,100; first withdrawal resets MLL to $50,100** (verified)
-  - "The Maximum Loss Limit (MLL) continues to apply on your funded account, using the same Trailing End-of-Day (EOD) system as the Challenge:" [P6]
-  - "Your first withdrawal resets the MLL to the lock point for your size ($50,100 / $100,100 / $150,100)." [P6]
-- `consistency_eval` = **40% of profit target per day; exceeding it raises the target to best day / 0.40 (no breach)** (verified)
-  - "Yes. The Consistency Rule applies throughout the Challenge Phase. Your profit on any single day cannot exceed 40% of your total profit target." [P5]
-  - "Required Total Profit = Highest Daily Profit ÷ 40%" [P5]
-- `consistency_funded` = **none** (verified)
-  - "No. Unlike the Challenge Phase, there is no Consistency Rule on the Flex FundedNext Account. You have full flexibility in how much you earn on any given day." [P6]
-  - note: The payout gate instead is 5 Benchmark Days of $200 and $500 cycle profit (see terms.payout_frequency_gate).
-- `max_funded_accounts` = **5 active FundedNext accounts (per user and per household); max 10 issued per calendar month; challenges up to $750,000 combined allocation** (verified)
-  - "FundedNext Accounts: You can hold up to 5 active FundedNext Accounts at any given moment, regardless of individual account sizes or models. This limit applies per user and per household." [P7]
-  - "A maximum of 10 FundedNext Accounts can be issued to you within a calendar month." [P7]
-  - note: Household = same residential address or IP. A passed challenge beyond the cap is held pending until a slot frees.
-- `copy_trading` = **allowed between own accounts (and to own accounts at other prop firms, same registered name); copying others or signals prohibited** (verified)
-  - "Copy trading within FundedNext is allowed. Traders can freely copy trades between their own FundedNext Accounts." [P8]
-- `opposite_positions` = **prohibited (reverse hedging within or across own accounts, incl. NQ vs MNQ and correlated instruments in the same asset group)** (verified)
-  - "Reverse hedging is when a single trader, a single beneficial owner, holds both sides of the offset, buying one and selling the other." [P9]
-  - "It can be done across the trader's own accounts or within a single account." [P9]
-- `news` = **not restricted (except for traders enrolled in the Disciplined Trader Program)** (verified)
-  - "No — FundedNext Futures does not restrict news trading." [P10]
-  - "News Trading: Strictly prohibited during high-impact economic events." [P11]
-  - note: The prohibition applies only inside the corrective Disciplined Trader Program (entered after a warning for high-risk behaviour).
-- `automation` = **EAs/bots allowed (no support; customised, distinct strategy); HFT prohibited and automated systems monitored** (verified)
-  - "At FundedNext Futures, you are allowed to use automated trading systems such as Expert Advisors (EAs) and trading bots during both the Challenge and on FundedNext Accounts." [P10]
-  - "No, FundedNext Futures does not allow High-Frequency Trading." [P12]
-  - note: Our trades are hand-entered; nothing found forbids that.
-- `sizing_gambling` = **all-in / account flipping prohibited; contracts over the limit have profits deducted; micro-scalping (trades closed within 10 s) >= 40% of cycle profit is deducted on funded accounts** (verified)
-  - "Account flipping and inconsistent contract execution involve using high margin to rapidly grow or blow up accounts through reckless, oversized positions." [P9]
-  - "A Micro-Scalping percentage at or above 40% constitutes a violation." [P13]
-- `note`: Caveat for the design: the prohibited 'Bracket Strategies' item targets two-sided buy-stop/sell-stop brackets with tight targets exploiting no slippage on NQ; a single entry with its stop and target is not that pattern, but tight targets held < 10 s would fall under micro-scalping. 'Account Rolling' (buying many challenges and sacrificing some) is monitored and can cut purchase rights.
-
-**Terms (`terms`)**
-
-- `eval_profit_target` = **2500** (verified)
-  - "| Account Size | Profit Target | Maximum Loss Limit | MLL Locks At" [P5]
-  - "| $50,000 | $2,500 | $1,500 | $50,100" [P5]
-- `eval_drawdown_amount` = **1500** (verified)
-  - "| $50,000 | $2,500 | $1,500 | $50,100" [P5]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "The MLL adjusts at the end of each trading day, not in real time." [P5]
-  - "It updates once per day at the end of the trading day (05:00 PM CT) — not in real time." [P14]
-  - note: Intraday floating loss reaching the MLL breaches instantly.
-- `eval_drawdown_lock` = **locks at $50,100 (initial + $100)** (verified)
-  - "It stops trailing and locks once your balance reaches the lock point for your size ($50,100 / $100,100 / $150,100)." [P5]
-  - note: Read as: the MLL level stops trailing once it reaches $50,100 (i.e. after the EOD balance reaches $51,600); the article's wording says 'once your balance reaches the lock point', which is the MLL level.
-- `eval_daily_loss_limit` = **none** (verified)
-  - "No. The Flex Challenge has no daily loss limit at any stage, giving you more flexibility in trade management." [P5]
-- `eval_consistency_rule` = **40% of profit target per day; overshoot recalculates target = best day / 0.40** (verified)
-  - "If you earn $1,500 in a day: $1,500 ÷ 0.40 = $3,750. You would now need $3,750 total to pass, instead of $2,500." [P5]
-- `eval_min_days` = **UNVERIFIED (no minimum-days rule stated)** (UNVERIFIED)
-  - looked at: https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules ; https://helpfutures.fundednext.com/en/articles/17229807-what-is-fundednext-futures-flex-challenge ; https://helpfutures.fundednext.com/en/articles/17230209-what-are-benchmark-days-at-fundednext-futures
-  - note: The Benchmark Days article says no Benchmark Day requirement in any Challenge Phase. The 40% rule implies at least 3 profitable days to reach $2,500 without raising the target (arithmetic, not a stated rule).
-- `eval_position_limit` = **3 e-mini / 30 micro (1:10 mix); fixed, no scaling** (verified)
-  - "| $50,000 | 3 e-mini / 30 micro e-mini" [P5]
-  - "If you exceed the limit, only the excess contracts count as violations: profit from them is deducted, while losses still count." [P5]
-- `eval_fee` = **one-time: $141.99 list; $74.99 first 2 purchases, $84.99 from the 3rd (with coupon FNFLEX)** (verified)
-  - "| Account Size | Account Price | First 2 Purchases | 3 Purchases Onward" [P5]
-  - "| $50,000 | $141.99 | $74.99 | $84.99" [P5]
-  - "One-Time Fee Only: A single fee is paid at the start when you purchase a Challenge." [P10]
-  - note: The discount offer article says 47% off the first 2 and 40% off from the 3rd with coupon FNFLEX; offer prices may change.
-- `eval_reset_fee` = **82.99** (verified)
-  - "| Flex 50K | $141.99 | $82.99" [P15]
-  - note: Resets are unlimited up to the $750,000 challenge allocation; funded accounts cannot be reset.
-- `activation_fee` = **none** (verified)
-  - "Free Transition: Moving from a Challenge to a FundedNext Account involves no additional cost." [P10]
-- `eval_count_limit` = **no limit on purchases; combined challenge allocation up to $750,000 at a time** (verified)
-  - "Challenge Accounts: Up to $750,000 in total allocation at any one time." [P7]
-- `eval_time_limit` = **none** (verified)
-  - "No. There is no time limit — take as long as you need to reach your profit target while following the rules." [P5]
-  - note: Subject to the 30-calendar-day inactivity breach.
-- `funded_type` = **simulated FundedNext Account; concluded after the 5th Performance Reward; live review pool after 15 Performance Rewards across the profile** (verified)
-  - "After your 5th Performance Reward, the Flex FundedNext Account is concluded." [P6]
-  - "New to live: 15 Performance Rewards across your FundedNext journey." [P16]
-  - note: On reaching the 15th reward all accounts are closed for review; live selection is discretionary; challenge accounts are closed without refund at transition.
-- `funded_drawdown_amount` = **1500** (verified)
-  - "| $50,000 | $1,500 | $50,100" [P6]
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "The Maximum Loss Limit (MLL) continues to apply on your funded account, using the same Trailing End-of-Day (EOD) system as the Challenge:" [P6]
-- `funded_drawdown_lock` = **locks at $50,100** (verified)
-  - "It stops trailing and locks once your balance reaches the lock point for your size ($50,100 / $100,100 / $150,100)." [P6]
-- `payout_balance_consequence` = **first withdrawal sets the MLL to $50,100 (initial + $100); withdrawn amount leaves the balance** (verified)
-  - "Your first withdrawal resets the MLL to your account initial balance + $100." [P6]
-  - "A trader with a $50K Flex FundedNext Account with a 95% Reward Share makes $3,000 growth and decides to withdraw $1,500 (the 50% amount, which is under the limit)." [P17]
-  - "Account balance after withdrawal: $51,500" [P17]
-  - note: Since the lock is an MLL level, a first payout taken before the MLL has trailed to $50,100 raises the floor immediately to $50,100.
-- `funded_daily_loss_limit` = **none** (verified)
-  - "No. There is no daily loss limit on the Flex FundedNext Account." [P6]
-- `funded_consistency_rule` = **none** (verified)
-  - "No. Unlike the Challenge Phase, there is no Consistency Rule on the Flex FundedNext Account." [P6]
-- `funded_position_limit` = **3 e-mini / 30 micro; fixed, no scaling plan** (verified)
-  - "Your contract limit is fixed at account creation and does not increase with profit. Flex applies the same limits on the FundedNext Account as during the Challenge:" [P6]
-  - "| $50,000 | 3 e-mini / 30 micro e-mini" [P6]
-- `funded_monthly_fee` = **none** (verified)
-  - "No Monthly Subscription Fees: You are not required to pay recurring fees for maintaining a Challenge or FundedNext Account." [P10]
-- `payout_min` = **250** (verified)
-  - "| Minimum Withdrawal | $250 | $250 | $250" [P6]
-  - note: Bank transfer as a method has its own $1,000 minimum.
-- `payout_cap` = **per cycle: up to 50% of accumulated profit, max $1,500 (50K); lifetime cap not stated (account concludes after 5 rewards)** (verified)
-  - "| Maximum Withdrawal | Up to 50% (max $1,500) | Up to 50% (max $2,500) | Up to 50% (max $4,000)" [P6]
-  - "You can withdraw up to 50% of your accumulated profit per cycle, capped by size ($1,500 / $2,500 / $4,000), with a $250 minimum and at least $500 profit in the current cycle." [P6]
-  - note: Five rewards at the $1,500 cap would bound gross requests at $7,500 per account; that is arithmetic, not a stated lifetime cap.
-- `payout_frequency_gate` = **per cycle: 5 Benchmark Days (days with >= $200 profit) and >= $500 profit in the current cycle; request at end of a day with no new trade** (verified)
-  - "| Benchmark Days | 5 days of $200 | 5 days of $200 | 5 days of $250" [P6]
-  - "| Minimum Profit (current cycle) | $500 | $500 | $500" [P6]
-  - "Please note: placing a trade on the same day removes the transfer-to-wallet option for that day." [P6]
-  - note: No buffer rule on Flex. Benchmark days need not be consecutive (not stated either way).
-- `payout_split` = **95%** (verified)
-  - "You receive a 95% Reward Share of the requested Performance Reward" [P6]
-- `payout_processing_days` = **within 24 hours of transfer initiation (Brand Promise, $1,000 compensation if late; excludes bank transfer and manual cases)** (verified)
-  - "Timely Processing: Withdrawal requests are processed within 24 hours." [P18]
-  - "Note: Performance Reward requests submitted via Bank Transfer are not eligible for the FundedNext Brand Promise." [P19]
-  - note: The futures homepage shows '40 hours Avg. Processing Time' (marketing statistic).
-- `payout_fee` = **UNVERIFIED** (UNVERIFIED)
-  - looked at: https://helpfutures.fundednext.com/en/articles/17242064-how-can-i-withdraw-my-performance-reward ; https://helpfutures.fundednext.com/en/articles/17242085-what-methods-are-available-for-performance-reward-withdrawal-in-fundednext-futures ; https://helpfutures.fundednext.com/en/articles/17242096-what-will-be-my-reward-share-from-the-futures-fundednext-account
-  - note: Methods: USDT/USDC, RiseWorks, card, bank transfer (min $1,000), FNmarkets; no fee schedule stated.
-- `payout_count_limit` = **5** (verified)
-  - "After your 5th Performance Reward, the Flex FundedNext Account is concluded." [P6]
-- `max_accounts` = **5 active funded (per user and household), 10 issued per calendar month; challenges up to $750,000 combined** (verified)
-  - "A household is defined as family members or multiple users who share the same residential address or IP address." [P7]
-  - "Maximum allocation limits are subject to periodic review and may be adjusted at FundedNext’s discretion." [P7]
-- `inactivity_rule` = **breach after 30 consecutive calendar days with no trade (challenge and funded)** (verified)
-  - "FundedNext Accounts: Marked as inactive and deactivated after 30 consecutive calendar days of no trades." [P20]
-- `copy_trading_terms` = **own accounts only (FundedNext and other prop firms under the same registered name); signal services, group trading and copying others prohibited** (verified)
-  - "Copy trading between FundedNext and other prop firms is allowed if the trader owns all accounts involved." [P8]
-  - "Traders cannot subscribe to any trading signal services or use external signals to guide their trading decisions." [P8]
-- `cross_account_hedging` = **prohibited: reverse hedging across own accounts or within one, coordinated hedging, and opposite positions in correlated instruments of the same asset group** (verified)
-  - "Reverse hedging (across accounts): A trader opens a buy on NQ in Account A and a sell on MNQ in Account B, both under their control." [P9]
-  - "Hedging with correlated instruments means holding opposing positions, one long and one short, at the same time on two different underlyings that move together within the same Asset Group." [P9]
-- `news_trading_terms` = **not restricted (FAQ and stop-loss article); prohibited only for traders in the Disciplined Trader Program** (verified)
-  - "News trading is allowed, but riskier. FundedNext Futures doesn't restrict news trading, but during news the market can move rapidly and your SL may not fill at your intended price." [P21]
-  - "Trading during high-impact economic news events is strictly prohibited, as these periods often lead to heightened volatility and emotionally driven decisions rather than strategic execution." [P11]
-  - note: The prohibited-strategies page also bans 'trading within 2% of CME price limits' and gapped/illiquid market trading.
-- `automation_terms` = **EAs and bots permitted with conditions (own customised strategy, no identical trades with other traders, no Telegram/WhatsApp-linked EAs, no latency abuse or order flooding); HFT prohibited** (verified)
-  - "Each EA or bot is required to employ a distinct strategy, avoiding identical trades across other traders accounts within FundedNext." [P10]
-  - "Automated trading systems and algorithms are monitored on FundedNext Futures Accounts." [P12]
-- `sizing_or_gambling_terms` = **all-in / oversized flipping prohibited; excess contracts' profit deducted; Disciplined Trader Program (1% max risk, mandatory stop) imposed after warning for gambling-style behaviour** (verified)
-  - "A trader qualifies for a FundedNext Account and immediately places an all-in trade, risking the entire account balance on one position." [P9]
-  - "Maximum Risk at a Time: Must not exceed 1% of the account’s initial balance." [P11]
-  - "Breaching multiple accounts within a short period" [P11]
-  - note: 'Breaching multiple accounts within a short period' is listed as a trigger for the program: a design that runs several accounts with correlated losses could trip it.
-- `other_conduct_bearing` = **tight/no-slippage bracket strategies prohibited; micro-scalping threshold (trades closed within 10 s, 40% of cycle profit); tick scalping and simulated-execution exploitation prohibited; account rolling monitored; positions closed by 3:10 PM CT** (verified)
-  - "Exploiting the lack of slippage or using tight brackets to benefit from favorable trade executions is prohibited." [P9]
-  - "Account rolling is a high-risk practice in which multiple Challenge Accounts are purchased with the intention of quickly progressing to FundedNext Accounts, often by intentionally sacrificing some accounts while focusing on passing others." [P9]
-  - "Violations may result in restrictions on purchasing new accounts or adjustments to the lifetime allocation limit." [P9]
-  - "Tick scalping is the repeated practice of opening and closing positions within a very short window to collect a few ticks of profit per trade from favourable simulated fills, often at large or maximum position size." [P9]
-  - "All positions must be closed by 3:10 PM CT each trading day, and any open positions are closed automatically at that time." [P10]
-  - note: The bracket prohibition's example is a two-sided buy-stop/sell-stop straddle on NQ with tight targets; a single-direction entry with its stop and target is not described as prohibited. 'Account sharing' is defined oddly as 'a trader manages multiple accounts or allows another individual to trade on their behalf' - read in context as other people's accounts, since 5 own funded accounts are allowed.
-- `permitted_products` = **CME equity index futures NQ, MNQ, ES, MES, RTY, M2K (plus FX, metals, energy, ags, YM/MYM)** (verified)
-  - "E-mini NASDAQ 100 (NQ), Micro E-mini NASDAQ 100 (MNQ), E-mini S&P 500 (ES), Micro E-mini S&P 500 (MES), E-mini Russell 2000 (RTY), Micro E-mini Russell 2000 (M2K)" [P22]
-
-**Conflicts and changes** (reader's section)
-
-- note: Rapid Pro 50K payout cap conflicts between pages: the Rapid Pro funded-rules article gives $1,000 (withdrawals 1-3) / $1,250 (4-5); the withdrawal how-to article says a maximum of 1,200 for 50K. Not the captured plan.
-  - "Once you meet the 40% Consistency Rule and have $500 profit in the cycle, you can withdraw a maximum of 800(25K), 1,200(50K), or 2,500(100K)." [P3]
-  - "| 1 to 3 | $250 | $1,000" [P23]
-- note: Product changes: Bolt and the former Rapid ended for new purchases on 10 July 2026; Legacy ended for purchase on October 11 (2026). Flex is the current low-cost plan.
+Struck (E-020): the firm's own terms forbid automated retrieval -- Terms of Service 13.3(c): "The User is expressly prohibited, directly or indirectly, in whole or in part, without the Provider's prior written authorisation, from: ... (c) engaging in scraping, crawling, harvesting, data mining or using robots, scripts or automated systems to access the Website/Services, extract data" (as recorded in config/rules_extended.yaml, fundednext.automated_retrieval_terms). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### TradeDay (`tradeday`) -- PASS
 
@@ -3971,199 +2623,9 @@ Plans seen:
 
 ### Goat Funded Futures (GFF) (`goat`) -- PASS
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
-
-- [P1] https://help.goatfundedfutures.com/plans.html; id plans; page date: Updated 14 November 2026
-- [P2] https://help.goatfundedfutures.com/plans.html; id plans; page date: Updated 9 November 2026
-- [P3] https://help.goatfundedfutures.com/billing.html; id billing
-- [P4] https://help.goatfundedfutures.com/flex-challenge.html; id flex-challenge; page date: Updated 14 November 2026
-- [P5] https://help.goatfundedfutures.com/payouts.html; id payouts#consistency; page date: Updated 8 September 2026
-- [P6] https://help.goatfundedfutures.com/account-security.html; id account-security; page date: Updated 8 September 2026
-- [P7] https://help.goatfundedfutures.com/account-security.html; id account-security
-- [P8] https://help.goatfundedfutures.com/trading-rules.html; id trading-rules (bots and copy trading); page date: Updated 8 September 2026
-- [P9] https://help.goatfundedfutures.com/trading-rules.html; id trading-rules (prohibited practices); page date: Updated 9 November 2026
-- [P10] https://help.goatfundedfutures.com/trading-rules.html; id trading-rules (news); page date: Updated 8 September 2026
-- [P11] https://help.goatfundedfutures.com/account-security.html; id account-security (VPS); page date: Updated 11 August 2026
-- [P12] https://help.goatfundedfutures.com/path-to-live.html; id path-to-live; page date: Updated 9 October 2026
-- [P13] https://help.goatfundedfutures.com/drawdown.html; id drawdown
-- [P14] https://help.goatfundedfutures.com/payouts.html; id payouts#requirements; page date: Updated 8 September 2026
-- [P15] https://help.goatfundedfutures.com/payouts.html; id payouts
-- [P16] https://goatfundedfutures.com/
-- [P17] https://help.goatfundedfutures.com/payouts.html; id payouts; page date: Updated 9 November 2026
-- [P18] https://goatfundedfutures.com/terms-and-condition
-- [P19] https://help.goatfundedfutures.com/account-security.html; id account-security; page date: Updated 29 June 2026
-
-
-Official domains: goatfundedfutures.com, help.goatfundedfutures.com, app.goatfundedfutures.com. Read 2026-11-15.
-Plan captured: Flex Challenge 50K (the only 50K plan with BOTH an EOD funded drawdown and no funded consistency; EOD Challenge and 1-Day-Pass pass the screen on the EOD leg but carry 30%/35% funded consistency, Daily Payouts passes on the no-consistency leg with an intraday funded drawdown).
 Verdict: **PASS** -- Flex 50K: EOD trailing funded drawdown locking at start, no funded consistency percentage, up to 5 Flex funded accounts (copying own trades across them is the stated intended use); hand-entered bracket trading allowed, subject to the 1-minute 70%/70% holding test, funded 2-minute news buffer, no hedging, no overnight.
 
-Unreadable (not worked around):
-- https://goatfundedfutures.com/ (plan tabs other than GOAT DAILY) -- Framer site: only the default GOAT DAILY price cards are server-side; Flex/EOD/1-Day/Instant prices are rendered client-side and were not read. The help centre says 'For the current price and reset fee, see the pricing page or ask us in chat' (chat not used).
-
-Plans seen:
-- Flex Challenge 50K: drawdown EOD trailing $2,000 both phases, locks at starting balance; consistency evaluation 50%, funded none
-  - "A premium one-phase evaluation with End of Day Trailing drawdown, no consistency rule on funded accounts, and maximum flexibility." [P1]
-- EOD Challenge 50K: drawdown EOD trailing $2,000 both phases, locks at starting balance; consistency evaluation 50%, funded 30%
-  - "| Consistency, funded | 30% | 35% | 20% | None | None" [P2]
-- 1-Day-Pass-Plan 50K: drawdown EOD trailing $2,000, locks at starting balance; 2% DLL both phases (soft pause funded); consistency evaluation none, funded 35%
-  - "| Consistency, evaluation | 50% | None | N/A | 50% | 40%" [P2]
-- Daily Payouts (GOAT DAILY) 50K: drawdown evaluation EOD trailing; funded INTRADAY trailing on highest equity, locks at start + $100; $1,000 DLL, 3 hits in 30 days closes; consistency evaluation 40%, funded none; manual trading only
-  - "| Drawdown type, funded | Trailing EOD | Trailing EOD | Trailing intraday | Trailing EOD | Trailing intraday" [P2]
-- Instant Classic 50K (no evaluation): drawdown intraday trailing on highest equity $2,500, locks at starting balance; consistency evaluation n/a, funded 20%; max 3 funded
-  - "- Drawdown Type: Intraday Trailing on Highest Equity (locks at starting balance)" [P1]
-- Instant Lite 50K (no evaluation, payout target): drawdown EOD trailing, locks at start + $100; daily profit capped at 5% of balance; no resets; consistency evaluation n/a, funded 15% -> 20% -> 25% as payouts complete; manual trading only
-  - "- A consistency threshold that widens as you complete payouts, from 15% to 20% to 25%" [P2]
-- GOAT Access: drawdown not screened (only mentioned in billing and holding-time articles; no specifications page read); consistency evaluation not read, funded not read
-  - "Only on GOAT Access. GOAT Access has a one-time $99 activation fee, paid after you pass the evaluation, before your funded account is issued." [P3]
-
-**Screen**
-
-- `drawdown_eval` = **eod_trailing ($2,000), locks at starting balance** (verified)
-  - "It trails up with your profits at the end of each trading day, and stops trailing once it reaches your starting balance. That lock applies in both the evaluation and funded phases." [P4]
-- `drawdown_funded` = **eod_trailing ($2,000), locks at starting balance ($50,000)** (verified)
-  - "| Drawdown, funded | Intraday trailing | End of day trailing" [P1]
-  - "End of day trailing max drawdown, which locks once it reaches your starting balance" [P4]
-  - note: First quote's columns: Daily Payouts 50K | Flex 50K.
-- `consistency_eval` = **50%; over it you cannot complete the evaluation until the best day falls back to 50% or below** (verified)
-  - "During the evaluation, no single day may account for more than 50% of your total profit." [P4]
-- `consistency_funded` = **none (no percentage), subject to anti-gaming review** (verified)
-  - "On a funded account there is no consistency percentage." [P4]
-  - "Having no funded consistency percentage does not override prohibited-strategy or anti-gaming rules." [P5]
-  - note: Anti-gaming: loading nearly all profit into one day then placing minimum trades to tick off winning days may get the payout withheld and the big day voided.
-- `max_funded_accounts` = **5 Flex funded (each product type has its own limit; Flex 5 + Daily 5 + EOD 5 + 1-Day 5 + Instant Classic 3 can be held together); evaluations unlimited; one registered email/login per person** (verified)
-  - "EOD Challenge, 1-Day-Pass-Plan, Flex Challenge and Daily Payouts: up to 5 funded accounts each" [P6]
-  - "The limits are counted separately for each product type, so they do not compete with each other." [P6]
-  - "There is no limit on the number of evaluation accounts you may purchase." [P6]
-  - "You can register only one email address with Goat Funded Futures." [P7]
-  - note: Household rule: not stated (IP-region consistency and no device/IP sharing for linked trading are).
-- `copy_trading` = **allowed across own accounts (and to own accounts elsewhere); copying other people prohibited** (verified)
-  - "You may copy your own trades across your own GFF accounts, and across accounts you hold elsewhere. If you buy a multi account bundle, copying your own trades into each of them is the intended use." [P8]
-- `opposite_positions` = **prohibited across accounts (and cross-firm hedging targeted by the anti-gaming rule)** (verified)
-  - "holding opposing or hedged positions across accounts" [P9]
-  - "It also closely mirrors external and cross account hedging, where one leg of a position is offset on a separate account or at another firm, so the losing side is sacrificed and the winning side is withdrawn here as profit." [P4]
-- `news` = **Flex evaluation: unrestricted; funded: cannot open, close or trigger pending orders from 2 min before to 2 min after scheduled high-impact news (positions opened before the window may be held through)** (verified)
-  - "Funded: a 2 minute buffer applies around high impact news events. You cannot open, close, or trigger pending orders within 2 minutes before or after a scheduled release. Positions opened before the window began may be held through the event." [P4]
-  - "If you execute an order within the restricted timeframe, any profits generated will be deducted upon payout request." [P10]
-  - note: A bracket whose stop or target would trigger inside the window violates 'trigger pending orders'; the prohibited-practices tab (9 Nov) says only 'you may not open a new position' and that 'managing or closing' an existing one is fine -- internal inconsistency.
-- `automation` = **own automated strategies/EAs allowed on Flex (not exploiting latency/feeds); BUT VPS/remote servers prohibited and the VPS article states a requirement that you personally place and manage your trades** (verified)
-  - "On EOD, 1-Day-Pass-Plan, Flex and Instant Classic, your own automated strategies and EAs are allowed, as long as they reflect your own trading and do not exploit latency, data feed anomalies or system vulnerabilities." [P8]
-  - "Automation abuse. VPS environments are commonly used to run unattended automated systems 24/7, which conflicts with our requirement that you personally place and manage your trades." [P11]
-  - note: Hand entry is consistent with all of it. Daily Payouts and Instant Lite are manual-only.
-- `sizing_gambling` = **all-in bets, account rolling and erratic size swings may be treated as gambling; 1 minute holding rule (70% of closed trades and 70% of net profit from trades held > 1 minute, checked at pass and each payout); tick scalping prohibited; 100+ trades a day may trigger review** (verified)
-  - "Disproportionate all-in bets on a single position, account rolling, and erratic sizing swings (one micro on one trade, five minis on the next) may be treated as gambling rather than disciplined trading." [P9]
-  - "at least 70% of your closed trades were held longer than 1 minute, and" [P4]
-  - "at least 70% of your net profit came from trades held longer than 1 minute." [P4]
-  - "HFT systems, tick scalping, bulk order-entry, and volume inflation are prohibited, and 100+ trades in a single day may trigger a risk review." [P9]
-  - note: The 1-minute rule bears directly on bracket trading: a bracket that hits its target or stop within 60 s counts as a sub-minute trade; failing the 70%/70% test declines the payout and deducts sub-minute profit (not a breach). Rule changed 9 November 2026 (was a 2-minute per-trade deduction; Flex threshold raised from 50% to 70%).
-
-**Terms (`terms`)**
-
-- `eval_profit_target` = **3000** (verified)
-  - "| Profit Target | $3,000 (6%) | $6,000 (6%) | $9,000 (6%)" [P4]
-- `eval_drawdown_amount` = **2000** (verified)
-  - "| 50K | $2,000 (4%)" [P4]
-- `eval_drawdown_type` = **eod_trailing** (verified)
-  - "Maximum drawdown (end of day trailing)" [P4]
-- `eval_drawdown_lock` = **locks at starting balance** (verified)
-  - "That lock applies in both the evaluation and funded phases." [P4]
-- `eval_daily_loss_limit` = **none by default; optional $1,000 at checkout for a lower price (hard breach, both phases, cannot be changed later)** (verified)
-  - "None by default. A Flex account has no daily loss limit in the evaluation phase or on the funded account." [P4]
-  - "The limit is $1,000 on a 50K, $1,500 on a 100K and $2,500 on a 150K. It applies in both phases, and hitting it is a hard breach that closes the account." [P4]
-- `eval_consistency_rule` = **50% of total profit from any single day; gates completion (not a breach)** (verified)
-  - "If you go over, you cannot complete the evaluation until your best day falls back to 50% or below." [P4]
-- `eval_min_days` = **none** (verified)
-  - "There is no minimum number of trading days." [P4]
-  - note: With the 50% consistency rule, passing needs at least 2 trading days in practice.
-- `eval_position_limit` = **3 minis / 30 micros** (verified)
-  - "| 50K | 3 mini / 30 micro" [P4]
-- `eval_fee` = **one-time fee (no subscription); Flex 50K price UNVERIFIED (client-side pricing; the 90/10 add-on is +20% of the challenge price)** (UNVERIFIED)
-  - "All six are a one-time fee. There is no monthly subscription on any GFF product." [P2]
-  - "Prices change with our promotions. For the current price and reset fee, see the pricing page or ask us in chat." [P1]
-  - looked at: https://goatfundedfutures.com/ (only GOAT DAILY cards server-side: 50K $238 list / $107 with GFF55), sitemap (no Flex/pricing page), help plans/flex-challenge/billing
-  - note: For reference only, the homepage advertises '50K EOD Plan from $69' (EOD Challenge, not Flex).
-- `eval_reset_fee` = **two discounted resets per challenge; amount UNVERIFIED** (UNVERIFIED)
-  - "Two resets are available per challenge." [P4]
-  - looked at: help manage-account, flex-challenge, plans; homepage
-- `activation_fee` = **0** (verified)
-  - "| Activation Fee | $0 | $0 | $0" [P4]
-- `eval_count_limit` = **unlimited** (verified)
-  - "There is no limit on the number of evaluation accounts you may purchase." [P6]
-- `eval_time_limit` = **none (but 14-day inactivity breach)** (verified)
-  - "| Time Limit | None | None | None" [P4]
-- `funded_type` = **sim funded; Live by risk-team review only (no public threshold); on approval ALL sim accounts with >= 1 approved payout are combined into one live account (sizes summed, capped at 150K), unwithdrawn sim profit does not carry over, and it cannot be declined** (verified)
-  - "There is no public payout count, dollar target, or numeric milestone that "unlocks" a live account." [P12]
-  - "Your live account size is determined by summing your eligible sim account sizes, capped at 150K — GFF's largest live tier." [P12]
-  - "Transitioning is the whole point of the Path to Live, so once you are approved it is not something you opt out of." [P12]
-  - "Any sim account that has not taken a payout yet is simply closed and its account fee refunded to you." [P12]
-  - note: Bears on a multi-account design: a live call collapses the whole book (e.g. 3x50K -> one 150K live, $4,500 drawdown).
-- `funded_drawdown_amount` = **2000** (verified)
-  - "| 50K | $2,000 (4%)" [P4]
-- `funded_drawdown_type` = **eod_trailing** (verified)
-  - "Your maximum drawdown is the level your balance or equity cannot fall below." [P4]
-  - note: 'balance or equity': intraday equity below the EOD-set floor breaches (hard breach).
-- `funded_drawdown_lock` = **locks at starting balance ($50,000; no +$100)** (verified)
-  - "EOD, 1-Day-Pass-Plan, Flex and Instant Classic all lock at the starting balance, with no $100 added." [P13]
-- `payout_balance_consequence` = **payout does not move or lock the floor; max request 50% of total profit (cap $2,000), the other 50% stays as buffer** (verified)
-  - "Requesting or receiving a payout does not automatically move or lock your drawdown at the starting balance. Your drawdown remains wherever it was before the payout." [P13]
-  - "The remaining 50% stays in the account and supports your equity into the next payout cycle." [P4]
-- `funded_daily_loss_limit` = **none by default (optional $1,000 hard-breach DLL if chosen at checkout)** (verified)
-  - "None by default. A Flex account has no daily loss limit in the evaluation phase or on the funded account." [P4]
-- `funded_consistency_rule` = **none** (verified)
-  - "On a funded account there is no consistency percentage." [P4]
-- `funded_position_limit` = **scaling by simulated profit (from 10 Nov 2026): $0-$999: 2 mini/20 micro; $1,000-$1,999: 3/30; $2,000+: 4/40 (top)** (verified)
-  - "| Simulated profit | 50K | 100K | 150K" [P4]
-  - "| $0 to $999 | 2 mini / 20 micro | 3 mini / 30 micro | 4 mini / 40 micro" [P4]
-  - "| $1,000 to $1,999 | 3 mini / 30 micro | 4 mini / 40 micro | 5 mini / 50 micro" [P4]
-  - "| $2,000 to $2,999 | 4 mini / 40 micro | 5 mini / 50 micro | 6 mini / 60 micro" [P4]
-  - note: New rule effective 10 November 2026 for every funded Flex account.
-- `funded_monthly_fee` = **none** (verified)
-  - "Unlike many other futures prop firms, we do not charge monthly subscriptions." [P3]
-- `payout_min` = **500** (verified)
-  - "Minimum request: $500. There is no profit buffer to build up first, so any amount above $500 qualifies." [P4]
-- `payout_cap` = **per cycle: 50% of total account profit, up to $2,000 (measured before split); lifetime cap not stated** (verified)
-  - "| $50,000 | 50% of Profit up to $2,000" [P4]
-  - note: Lifetime cap: UNVERIFIED (none stated).
-- `payout_frequency_gate` = **5 winning days (>= $250 net each) per cycle; requests only in windows 5th-8th and 20th-23rd of each month; from the 2nd payout at least 50% of the request must be new profit since last payout (accounts created after 7 Aug 2026); 1-minute holding test at each request** (verified)
-  - "Request window: payout requests are submitted through your dashboard between the 5th and 8th, or the 20th and 23rd, of each month." [P4]
-  - "Flex 50K: 0.5% — $250" [P4]
-  - "At least 50% of the amount you request must come from new profit generated since your previous approved payout." [P14]
-  - note: Winning days need not be consecutive; counter resets to zero after each approved payout.
-- `payout_split` = **80/20 default; 90/10 with an add-on costing 20% of the challenge price** (verified)
-  - "80/20 by default. You can add the optional 90/10 Profit Share Add-On for an extra 20% of the challenge price." [P4]
-- `payout_processing_days` = **within two business days (homepage: or an extra $500)** (verified)
-  - "GFF processes payout requests within two business days after the request is submitted." [P15]
-  - "Rewards in 2 Days or Extra $500" [P16]
-- `payout_fee` = **3% of every payout (Rise or crypto)** (verified)
-  - "A 3% fee is applied to all payouts to cover payment processing and transaction costs." [P17]
-  - note: Crypto payouts capped at $1,800 per cycle across all accounts; the rest via Rise.
-- `payout_count_limit` = **UNVERIFIED (none stated for Flex)** (UNVERIFIED)
-  - looked at: help flex-challenge, payouts, plans, path-to-live
-- `max_accounts` = **5 Flex funded (separate allowance per product type); evaluations unlimited** (verified)
-  - "You can hold up to 5 funded accounts." [P4]
-- `inactivity_rule` = **no trade for 14 consecutive days -> breached and closed, fee not refunded (from 7 November 2026)** (verified)
-  - "Place at least one trade every 14 days. If no trades are placed for 14 consecutive days the account is breached and closed, and the fee is not refunded. This 14-day rule applies from 7 November 2026." [P4]
-- `copy_trading_terms` = **own accounts: allowed (incl. TradeSea SecureCopy); others' signals/trades: prohibited, linked accounts may all be suspended** (verified)
-  - "You can buy 5 accounts for a discounted bundle price on our checkout, and then you can indeed copy trades into all 5 accounts." [P7]
-  - "Trading someone else's calls, whether from a signal provider, a trading group, a third party service, a copy or mirror service, or an EA that follows an external source, is a prohibited trading practice and may result in account termination." [P8]
-- `cross_account_hedging` = **prohibited** (verified)
-  - "No arbitrage of any kind — latency, hedge, reverse, or rollover." [P9]
-- `news_trading_terms` = **evaluation free; funded 2-minute buffer (no open/close/trigger), profits inside window deducted at payout; gap trading around closures/earnings prohibited** (verified)
-  - "This applies to all funded account types: EOD, 1-Day-Pass-Plan, Flex, Instant Classic and Daily Payouts." [P10]
-- `automation_terms` = **own EAs allowed on Flex; VPS/cloud/remote desktop prohibited on all accounts** (verified)
-  - "No. The use of Virtual Private Servers (VPS), cloud-hosted machines, or any form of remote server to access or trade your GFF account is strictly prohibited — on both evaluation and funded accounts, with no exceptions." [P11]
-- `sizing_or_gambling_terms` = **no all-in bets / erratic sizing; Terms: 'market standard risk management' not met by substantially larger positions than your other trades** (verified)
-  - "Keep your sizing consistent with your strategy and balance." [P9]
-  - "You acknowledge that these standards are not met where you open substantially (i) larger position sizes compared to your other trades, or (ii) smaller or larger number of positions compared to your other trades." [P18]
-- `other_conduct_bearing` = **1-minute holding rule (70%/70%); no overnight/weekend, auto-flatten 15:55 CT; IP region must stay consistent (VPN may flag); payout-requirement gaming (one big day + token days) voidable** (verified)
-  - "If either is not met, the payout request is declined and all profit from trades held under 1 minute in that cycle is deducted from the account. This is not an account breach, and your account stays open." [P4]
-  - "Overnight holding is not permitted. Any position still open is closed automatically at 15:55 CT, five minutes before the session ends." [P4]
-  - "Once funded, the IP region you use to access the account needs to stay consistent." [P19]
-- `permitted_products` = **CME, CBOT, COMEX, NYMEX futures; NQ and MNQ listed** (verified)
-  - "GOAT Funded Futures gives you access to trade across all major futures exchanges and a wide range of instruments." [P16]
-  - "E-Mini Nasdaq 100 Futures" [P16]
-  - "Micro Nasdaq 100 Futures" [P16]
-  - note: Homepage instrument list: NQ tick $5, per-side fee $2.88; MNQ tick $0.50.
+Struck (E-020): the firm's own terms forbid automated retrieval -- "Harvesting, scraping, or otherwise collecting any information from the Sites ... without our prior written consent" (as recorded under E-009). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.
 
 ### Bulenox (`bulenox`) -- PASS
 
@@ -4660,59 +3122,6 @@ Plans seen:
 
 ### The Futures Desk (TS TFD Buyer, LLC; Topstep affiliate) (`futuresdesk`) -- FAIL
 
-**Pages quoted** (key: URL; article id; the page's own date as shown; all read 2026-11-15)
+Verdict: **FAIL** -- At most 2 accounts per trader (homepage FAQ): not several funded accounts.
 
-- [P1] https://thefuturesdesk.com/
-- [P2] https://thefuturesdesk.com/terms-conditions; page date: Effective date: Apr 1, 2026
-
-
-Official domains: thefuturesdesk.com. Read 2026-11-15.
-Plan captured: None.
-Verdict: **FAIL** -- At most 2 accounts per trader (homepage FAQ): not 'several' funded accounts.
-
-Unreadable (not worked around):
-- https://thefuturesdesk.com/knowledge-base -- JavaScript-rendered (static HTML shows only 'Loading knowledge base...'); not read further. WebFetch not tried: the verdict is already fixed by the homepage account cap, and the site's Terms forbid crawling (see note in screen.automation).
-
-Plans seen:
-- Assessment Desk / Intern Desk (custom 'loadout'; account sizes and prices not on the static pages): drawdown 'Static or EOD' (stage not specified); consistency evaluation UNVERIFIED, funded none
-  - "No consistency or minimum days between payouts (Mon-Fri)" [P1]
-
-**Screen**
-
-- `drawdown_eval` = **static or EOD (stage not specified)** (verified)
-  - "Static or EOD" [P1]
-  - note: Homepage comparison table only; which mode applies to the assessment vs funded is in the unreadable knowledge base.
-- `drawdown_funded` = **UNVERIFIED per stage (homepage: 'Static or EOD')** (UNVERIFIED)
-  - looked at: https://thefuturesdesk.com/, https://thefuturesdesk.com/terms-conditions (knowledge base unreadable)
-  - note: Funded accounts are live brokerage accounts after a short sim-brokerage period.
-- `consistency_eval` = **not stated** (UNVERIFIED)
-  - looked at: https://thefuturesdesk.com/, https://thefuturesdesk.com/terms-conditions
-- `consistency_funded` = **none** (verified)
-  - "Once you are funded with us, we have no payout caps, no consistency, no minimum days — what a modern proprietary trading company should have." [P1]
-- `max_funded_accounts` = **2 accounts per trader** (verified)
-  - "You can have a max of 2 accounts per trader." [P1]
-  - note: Not stated whether the 2 include assessments.
-- `copy_trading` = **own-account copying not addressed; coordinated same/opposite strategies across accounts to pool or hedge risk prohibited** (UNVERIFIED)
-  - "Coordinated Trading - Coordinating with others, including between unconnected accounts and third parties, to perform the same trading strategy, opposite strategy, or other activities intended to pool or hedge risk across multiple accounts." [P2]
-  - looked at: home, terms-conditions
-- `opposite_positions` = **prohibited** (verified)
-  - "This includes engaging in short-term or high-frequency trading or simultaneously entering opposite positions." [P2]
-  - note: Part of 'Market Manipulation', including between connected accounts.
-- `news` = **not stated** (UNVERIFIED)
-  - looked at: home, terms-conditions
-- `automation` = **homepage: 'Microscalping + Algos Allowed'; Terms prohibit automated tools that manipulate or give an unfair advantage** (verified)
-  - "Microscalping + Algos Allowed" [P1]
-  - "Automated Trading - Using any software, artificial intelligence, ultra-high-speed, or mass data entry tools that could manipulate, abuse, or provide an unfair advantage while using the Site or Services." [P2]
-  - "Using manual or automated software, devices, or processes to "crawl" or "spider" any web pages within the Sites or Services." [P2]
-  - note: The third quote is the site's ban on crawling (applies to visitors too); only 3 pages were fetched, then reading stopped.
-- `sizing_gambling` = **position sizes far from usual patterns, and excessive contracts per day, are prohibited conduct** (verified)
-  - "You agree to consistently apply market standard risk management rules while using the Sites and Services, and understand that opening significantly larger or smaller position sizes compared to your usual trading patterns does not meet these standards." [P2]
-  - "Excessive Trading - Trading an excessive or unrealistic number of contracts within a single day." [P2]
-  - note: Also: flat by 3:10 PM CT unless Swing Trading is enabled; VPN/VPS use forbidden.
-
-**Other notes** (reader's section)
-
-- `funded_is_live` = **funded = live brokerage account after a short sim-brokerage period** (verified)
-  - "After that, yes, all traders move to one of our fully regulated live brokerage accounts where all capital is real." [P1]
-  - "an affiliate of TS TFD Buyer, LLC" [P1]
-  - note: The Futures Desk is a Topstep affiliate (Topstep Brokerage LLC is named as an affiliate of TS TFD Buyer, LLC).
+Struck (E-020): the firm's own terms forbid automated retrieval -- Terms & Conditions: "Using manual or automated software, devices, or processes to "crawl" or "spider" any web pages within the Sites or Services." (as recorded under E-009). Removed on 2026-11-16 (Q-34): the firm's saved pages, the terms and quotes its file held, and this section; its plans are read, if ever, only through the operator's browser or with the firm's written permission.

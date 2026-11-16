@@ -43,6 +43,10 @@ def main():
             print(f"{slug}: JSON ERROR {e}")
             total_bad += 1
             continue
+        if "struck" in data and not any(True for _ in walk(data)):
+            # E-020 / Q-34: a struck firm's file is a stub naming the clause; it holds no quote to check
+            print(f"{slug}: struck (E-020), skipped")
+            continue
         ok = bad = wf = 0
         for path, q in walk(data):
             f = q["file"]
