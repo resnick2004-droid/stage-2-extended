@@ -46,11 +46,11 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-user | wt/wt-user | Q-40 the early-close calendar (readings Q-44/Q-45 are the lead's, under the lock) | running |
 | wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
 | wt-lit | wt/wt-lit | Q-38 family R's draft (resolution forecasts) | running |
-| wt-firms | wt/wt-firms | -- (Q-34 done, E-026; Q-39 next) | idle |
+| wt-firms | wt/wt-firms | Q-39 three rules readings (news size, GDP, payout amount) | running |
 | wt-payout | wt/wt-payout | Q-47 the gate rebuilt in `extended/` (another funded-account class) | running |
-| wt-report | wt/wt-report | Q-27 the dispersion report | running |
+| wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
 | wt-scout | wt/wt-scout | Q-43 family B's third draft | running |
-| wt-infra | wt/wt-infra | -- (Q-32 done, E-026; Q-48 next) | idle |
+| wt-infra | wt/wt-infra | Q-48 the identities routed through the reader | running |
 
 ## Running now
 

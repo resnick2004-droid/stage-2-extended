@@ -95,6 +95,11 @@ def main() -> int:
         tree = our_tree(T.candidates(raw, payload.get("cwd"))[-1])
         if tree is None:
             return 0
+        # E-027: not in a worktree or clean checkout (`.git` a file). There the fast tier took 2-3 minutes and a share
+        # of the machine's memory after every .py edit, with several workers at once; the pre-commit hook runs the same
+        # tier on every commit, so a break is still caught before it lands on a branch.
+        if T.is_worktree(tree):
+            return 0
 
         env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
         proc = subprocess.run([sys.executable, "-m", "pytest", "-o", "addopts=", "-q", "--no-header", "-m", FAST_TIER],
