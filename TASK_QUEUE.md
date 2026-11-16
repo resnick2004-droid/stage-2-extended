@@ -111,7 +111,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | done: merged (E-070); its red team Q-102 | Q-42 | light | 0 | E-059 |
 | Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued: combined with Q-100's identity, one step at 4f8b556 (E-084) | Q-76 | heavy | 0 | E-059 |
 | Q-94 | Place recording on the U1 replay (family O 18.1 item 4, A2), declared and off by default; its heavy identity owed | wt-features | done: merged (E-068); its identity Q-101 | Q-70, Q-76 | light | 0 | E-060 |
-| Q-95 | The red team's sixth read of family B (after the slow-marker commit) | wt-user | running (wt-user, E-062) | Q-81 | light | 0 | E-060 |
+| Q-95 | The red team's sixth read of family B (after the slow-marker commit) | wt-user | parked: family B's C1 rests on the failed one-sample statistic (E-094); after Q-108 (E-101) | Q-81 | light | 0 | E-060 |
 | Q-96 | The fast tier's time budget: profile; move slow cases to the slow tier where a fast smoke case keeps the regression covered; nothing deleted | wt-infra | done: merged (E-079) | -- | light | 0 | E-061 |
 | Q-97 | The results layer records a ledger that only grew as the run's own write (clean manifests for reader-reading runs) | wt-verify | done: merged (E-066); the queue's remaining steps from f7eda0d | Q-82 | light | 0 | E-062 |
 | Q-98 | Q-86's reading from a clean checkout (`scripts/user_spend.py`) -- the heavy queue | lead | queued: the heavy queue after Q-83, from f7eda0d (E-066) | Q-86, Q-97 | heavy | 0 | E-062 |
@@ -140,12 +140,13 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | done: fixes in (E-096); merge after Q-106b | Q-106 | light | 0 | E-090 |
 | Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | done: fixes in (E-097); merge after Q-107b | Q-107 | light | 0 | E-092 |
 | Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | running | Q-83 | light | 0 | E-093 |
-| Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | running: the plan (wt-verify, E-100); its runs after its pin | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
+| Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | plan written (wt/wt-verify f3e5768, E-101); the red team Q-108r, then the pin; its runs after | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
 | Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | running (wt-lit, a fresh builder, E-100) | E-095 | light | 0 | E-095 |
 | Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | done: the build's fixes hold; the runner fix first (E-098); Q-105d | Q-105c | light | 0 | E-096 |
 | Q-107b | The red team re-reads RD-01's fixes and its runner (a diff read) | wt-firms (read-only) | done: the fixes hold; the runner fix first (E-099); Q-104d | Q-104c | light | 0 | E-097 |
 | Q-104d | RD-01's runner completed (G-10, the must-be-zero checks, the remaining counts, the menu's flags), after Q-107b | wt-firms | running (a fresh builder, E-099) | Q-107b | light | 0 | E-097 |
 | Q-105d | RD-02's runner fixed and completed (Q-106b's R1-R5, r1-r5, notes) | wt-payout | running | Q-106b | light | 0 | E-098 |
+| Q-108r | The red team reads Q-108's plan before its pin (selection after the fact, the arithmetic, scope D's check, power and size, the seeds, the criterion) | wt-scout (read-only) | running (E-101) | Q-108 | light | 0 | E-101 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

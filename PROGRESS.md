@@ -101,3 +101,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-098: RD-02's second build read -- the fixes hold, the runner to be fixed and completed (Q-105d); identity rows now carry an `identity-holds: Q-nn` token. |
 | 2026-11-16 | lead | E-099: RD-01's second build read -- the fixes hold, the runner to be fixed and completed (Q-104d); E-089's two-call gate route withdrawn for the equivalent one-call route. |
 | 2026-11-16 | lead | E-100: Q-35 collected (every identity held; a supply count). F-03's build and the one-sample re-calibration plan dispatched. |
+| 2026-11-16 | lead | E-101: Q-108's re-calibration plan written (nothing run); the red team reads it before its pin. Q-95 parked until Q-108's outcome. |

@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-100; F-03 pinned E-095).
+**Updated:** 2026-11-16 (E-101; F-03 pinned E-095).
 
 ## Phase
 
@@ -46,15 +46,15 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | Q-108 the one-sample re-calibration plan | running |
+| wt-verify | wt/wt-verify | -- (Q-108's plan written, E-101; held for Q-108r) | idle |
 | wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
-| wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
+| wt-user | wt/wt-user | -- (Q-95 parked after Q-108, E-101) | idle |
 | wt-features | wt/wt-features | -- (Q-100 merged, E-084) | idle |
 | wt-lit | wt/wt-lit | Q-109 F-03's build | running |
 | wt-firms | wt/wt-firms | Q-104d RD-01's runner fixed and completed | running |
 | wt-payout | wt/wt-payout | Q-105d RD-02's runner fixed and completed | running |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
-| wt-scout | wt/wt-scout | -- (Q-99 read, E-072) | idle |
+| wt-scout | wt/wt-scout | Q-108r the red team on Q-108's plan (read-only) | running |
 | wt-infra | wt/wt-infra | -- (Q-96 merged, E-079) | idle |
 
 ## Running now
