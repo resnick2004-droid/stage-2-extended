@@ -16,3 +16,13 @@ def test_every_declared_family_matches_its_pinned_hash():
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == want, rel
+
+
+def test_every_pinned_config_file_matches_its_hash():
+    """From E-029: a configuration file a family relies on (e.g. the early-close calendar) is pinned by its sha256 in a
+    decision row and may not change after; a new version is a new file under a new row."""
+    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    pins = re.findall(r"`(config/[^`]+\.(?:csv|yaml|json))` sha256 `([0-9a-f]{64})`", log)
+    for rel, want in pins:
+        data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(data).hexdigest() == want, rel
