@@ -7,7 +7,11 @@ Built on Stage 2's engine, rules and results, vendored read-only at `vendor/stag
 - `CHARTER.md` -- the question, the objective, the row to beat, the exit criterion
 - `CLAUDE.md` -- the operating rules
 - `DECISIONS.md` -- the decision log (E-xxx)
-- `NEXT_STEPS.md` -- the task list
+- `DIRECTIVE.md` -- the lead orchestrator's standing orders (the bootstrap's Parts 1, 3, 5, 6, verbatim)
+- `TASK_QUEUE.md` -- the ranked queue (owner worktree, state, dependencies, weight, retries)
+- `STATUS.md` -- the live board (identities, run lock, worktrees, NEEDS_OPERATOR)
+- `PROGRESS.md` -- the log
+- `docs/OPERATOR_SETUP.md` -- the only channel for the operator's manual tasks
 - `prereg/` -- family declarations, fixed by sha256 before they are built
 - `identity/stage2_identity.py` -- the vendored engine reproduces P-14's and P-16's registered paths
 - `scripts/vendor_stage2.py` -- the snapshot and the licensed data (never committed)

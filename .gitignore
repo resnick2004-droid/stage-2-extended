@@ -27,3 +27,6 @@ desktop.ini
 # Claude Code local settings and agent worktrees
 .claude/settings.local.json
 .claude/worktrees/
+
+# The heavy-run lock (E-005): live state, never committed
+run.lock
