@@ -58,6 +58,12 @@ key, the decimals shown): `traced_numbers` turns the claims into `TracedNumber` 
 value from the file again (`quantity` on the rows the claim names). The independent check of the measures is
 `tests/report_reference.py` (plain Python); the identity against Stage 2's registered U1 readings is
 `tests/report_cases.py`'s `stage2` case.
+
+**The journey scorecard page (Q-69).** A second kind of registered page, `JourneySpec` (`journey_scorecard`): Q-17's
+readings file and its per-start companion (`scripts/user_beside.py`), composed by `extended/journey_page.py` --
+`build`, `traced_numbers` and `compose_text` hand a `JourneySpec` to it. A registered page may name the task that
+writes its files (`awaits`); while neither its files nor its page exist it is waiting (`waiting`): it has no number to
+trace, the trace check lists it as waiting, `--all` skips it and `--report` refuses it.
 """
 from __future__ import annotations
 
@@ -154,6 +160,40 @@ class ReportSpec:
         raise ReportError(f"no design {key!r} in the spec {self.name!r}")
 
 
+@dataclass(frozen=True)
+class JourneySpec:
+    """A journey scorecard page (Q-69; `extended/journey_page.py`): Q-17's readings file (`source`, written by
+    `writer`: sections identity, scorecard, extra, path, response) and its per-start companion (`starts`), both
+    relative to the repository root. `designs`: the file's `design` values (`Design.key`; `where` unused); `r_star`
+    the row to beat on P (CHARTER section 3); `awaits` the task that writes the files -- while neither file nor the
+    page exists the page waits (`waiting`) and has no number to trace; `limits` E-015's limits (None: the declared
+    `journey_page.LIMITS`); `identity_u1` Stage 2's U1 file the verdict view is held to when the page is built ("":
+    none)."""
+
+    name: str
+    title: str
+    source: str
+    starts: str
+    designs: tuple[Design, ...]
+    writer: str = "scripts/user_beside.py"
+    r_star: str = "p14"
+    awaits: str = ""
+    limits: tuple | None = None
+    identity_u1: str = ""
+    note: str = ""
+    out: str = ""
+
+    @property
+    def out_dir(self) -> str:
+        return self.out or f"docs/report/{self.name}"
+
+    def design(self, key: str) -> Design:
+        for d in self.designs:
+            if d.key == key:
+                return d
+        raise ReportError(f"no design {key!r} in the spec {self.name!r}")
+
+
 def spec_from_dict(d: Mapping[str, Any]) -> ReportSpec:
     """A spec from plain data (`scripts/build_report.py --spec <file.json>`)."""
     designs = tuple(Design(x["key"], x.get("short", x["key"]), x.get("label", x["key"]), dict(x.get("where", {})))
@@ -164,7 +204,7 @@ def spec_from_dict(d: Mapping[str, Any]) -> ReportSpec:
 
 
 #: the registered pages: `extended/trace.py` traces every number of each (its REPORT_PAGES)
-REPORTS: dict[str, ReportSpec] = {
+REPORTS: dict[str, ReportSpec | JourneySpec] = {
     "demo_stage2_u1": ReportSpec(
         name="demo_stage2_u1",
         title="Demonstration: how spread out a user's journey is -- P-14 and P-16 on Stage 2's U1 file",
@@ -183,7 +223,36 @@ REPORTS: dict[str, ReportSpec] = {
              "charter judges on the cautious reading. This repository's own file of these readings is Q-17's "
              "(`results/user_beside.csv`, not yet written).",
     ),
+    "journey_scorecard": JourneySpec(
+        name="journey_scorecard",
+        title="The user's journey, start day by start day: P-14, P-15 and P-16, and the firm's responses beside",
+        source="results/user_beside.csv",
+        starts="results/user_beside_starts.csv",
+        designs=(
+            Design("p14", "P-14", "P-14, the row to beat (R*): a breakout on half-hour bars, five Topstep accounts",
+                   {}),
+            Design("p15", "P-15", "P-15: a fair coin picks each trade's side (no signal)", {}),
+            Design("p16", "P-16", "P-16: the same kind of coin on wider stops", {}),
+        ),
+        r_star="p14",
+        awaits="Q-44",
+        identity_u1="vendor/stage2/results/user_journey.csv",
+    ),
 }
+
+
+def waiting(spec: Any, root: Path | str = ROOT) -> str | None:
+    """Why a registered page has no number yet, or None. Only a spec naming the task that writes its files (`awaits`)
+    can wait, and only while none of its files and not its page exist: then nothing exists to trace. Once a file or
+    the page exists the page is traced in full, and fails the check if it cannot be."""
+    task = getattr(spec, "awaits", "")
+    if not task:
+        return None
+    files = [source_path(spec, root)] + ([Path(root) / spec.starts] if isinstance(spec, JourneySpec) else [])
+    if any(f.exists() for f in files) or page_path(spec, root).exists():
+        return None
+    return (f"its file {spec.source} is not written yet ({task} writes it) and the page is not built: no number "
+            "exists to trace")
 
 
 def source_path(spec: ReportSpec, root: Path | str = ROOT) -> Path:
@@ -1092,6 +1161,10 @@ def compose(spec: ReportSpec, df: pd.DataFrame, manifest: Any, *, root: Path | s
 
 
 def compose_text(spec: ReportSpec, *, root: Path | str = ROOT) -> str:
+    if isinstance(spec, JourneySpec):
+        from extended import journey_page as J
+
+        return J.compose_text(spec, root=root)
     df, man = read(spec, root)
     return compose(spec, df, man, root=root).text
 
@@ -1297,7 +1370,11 @@ def _draw(plt, chart: Chart, out: Path, spec: ReportSpec, base: dict[str, Starts
 def build(spec: ReportSpec, *, root: Path | str = ROOT, out: Path | str | None = None) -> Built:
     """Read the file (manifest first), compose the page, draw its charts, write `<out>/README.md`. Refuses (raises)
     before writing anything when the file fails its manifest or the spec does not fit it. Charts this build did not
-    draw are removed from the folder."""
+    draw are removed from the folder. A `JourneySpec` is `extended.journey_page`'s page."""
+    if isinstance(spec, JourneySpec):
+        from extended import journey_page as J
+
+        return J.build(spec, root=root, out=out)
     df, man = read(spec, root)
     composed = compose(spec, df, man, root=root)
     folder = Path(out) if out is not None else Path(root) / spec.out_dir
@@ -1331,6 +1408,10 @@ class _Recompute:
 def traced_numbers(spec: ReportSpec, *, root: Path | str = ROOT) -> list[TracedNumber]:
     """Every number the page prints as a `TracedNumber`: recomputed from the source file (the trace check reads it
     through the vendored `read_result`, its manifest first) and looked for on the page."""
+    if isinstance(spec, JourneySpec):
+        from extended import journey_page as J
+
+        return J.traced_numbers(spec, root=root)
     df, man = read(spec, root)
     composed = compose(spec, df, man, root=root)
     src = str(source_path(spec, root).resolve())
@@ -1345,6 +1426,6 @@ def describe(spec: ReportSpec) -> str:
                        "designs": [d.key for d in spec.designs]})
 
 
-__all__ = ["REPORTS", "ReportSpec", "Design", "ReportError", "NotInFile", "Starts", "starts_for", "quantity",
-           "blank_reason", "dist", "compose", "compose_text", "build", "traced_numbers", "spec_from_dict",
+__all__ = ["REPORTS", "ReportSpec", "JourneySpec", "waiting", "Design", "ReportError", "NotInFile", "Starts",
+           "starts_for", "quantity", "blank_reason", "dist", "compose", "compose_text", "build", "traced_numbers", "spec_from_dict",
            "source_path", "page_path", "JOURNEY", "PAYOUTS", "SCORE_WORDS"]
