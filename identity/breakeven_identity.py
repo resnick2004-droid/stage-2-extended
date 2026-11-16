@@ -5,7 +5,7 @@
     python identity/breakeven_identity.py --smoke-days 10    # slow: the first 10 development days of real bars
 
 **`--synthetic`** (E-011's synthetic days, `walker_identity.synthetic_days`, its seed 20261117, and the same days with
-2 % of bars widened, seed 20261924 -- E-011's days alone rarely hold the tie (2)): (1) the re-walk under
+2 % of bars widened, seed 20261928 -- E-011's days alone rarely hold the tie (2)): (1) the re-walk under
 `STAGE2` (`walk_minutes_for`) equals Stage 2's `atlas_a3.walk_minutes` frame column for column -- at delay 0 on
 P-16's marks and the 150-tick rung, and five bars late on A3's 50- and 100-tick rungs; (2) the stop-first tie changes
 a walk only from a target to a breakeven exit on the same bar (gross from T to 0), against `STAGE2` and against the
@@ -51,7 +51,7 @@ A3_STOPS = (50, 100)
 A3_DELAY = 5
 #: the widened bars' seed (the brief's block) and share: E-011's synthetic days rarely hold a bar that both touches the
 #: entry and trades through the target after the move (none in 186 such targets on ten days), so 2 % of bars are widened
-WIDE_SEED = 20261924
+WIDE_SEED = 20261928
 WIDE_SHARE = 0.02
 
 
