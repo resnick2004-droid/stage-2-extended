@@ -17,6 +17,11 @@
 #                               engine still carries Stage 2's value, so anything resting on this rule is flagged until
 #                               the lead's decision row says what changes
 #                 unverified -- the official page was unreachable, silent or ambiguous; what was read is in `quote`
+#                 unstated   -- (added for Q-26) the firm's official pages that should state the term were read on
+#                               `date_read` and none states it either way; `value` is the literal string "unstated",
+#                               `quote` says what was read. Never a permission and never a zero: code that needs the
+#                               term must declare its own reading of the gap (Q-19 recorded the same case as
+#                               `verified` with value `unstated`; from Q-26 it has its own status)
 #   article_id    the help-centre article id (or the page's path where the firm has no ids)
 #   url           the official URL read (Topstep: help.topstep.com or topstep.com; another firm: its own domains only)
 #   date_read     YYYY-MM-DD
@@ -49,6 +54,28 @@ meta:
     topstep:
       - help.topstep.com
       - topstep.com
+    # Q-26 (2026-11-15): written before each firm's first read. How each domain is known to be the firm's own is in the
+    # firm's block comment under `rules`, or in its *.automated_retrieval_terms note (the site's own links to its help
+    # centre, read that day). FunderPro, Aqua and FundedNext were skipped once their terms were read (they forbid
+    # automated retrieval). Their domains stay listed so that a later browser read keeps to them.
+    funderpro:                                         # FunderPro Futures (FunderPro Ltd., Malta)
+      - funderprofutures.com
+      - support.funderprofutures.com
+    daytraders:                                        # DayTraders.com
+      - daytraders.com                                 # help centre at daytraders.com/help
+    aqua:                                              # AquaFutures / AquaFunded Futures
+      - aquafunded.com
+      - aquafutures.io
+      - intercom.help/aquafutures-help-center          # this path only (Intercom-hosted; other intercom.help paths are not Aqua's)
+    lucid:                                             # Lucid Trading (Stage 2's second firm; its ledger is vendor/stage2/vendor/propfirms/firms/lucid-trading/rules.yaml)
+      - lucidtrading.com
+      - support.lucidtrading.com
+    fundednext:                                        # FundedNext Futures
+      - fundednext.com
+      - helpfutures.fundednext.com
+    tradeday:                                          # TradeDay
+      - tradeday.com
+      - tradeday.freshdesk.com                         # Freshdesk-hosted help centre
 
 rules:
 
@@ -310,3 +337,1640 @@ rules:
       exposure across one's own accounts is the Responsible Trading Program trigger "Multiple accounts hit the
       Maximum Loss Limit in one day" (13620045, re-read today in reading 1). That is tier 2, already modelled and
       off in the base case (Stage 2 D-145, D-289).
+
+  # ==== Q-26 (2026-11-15): the short-ranked plans' terms, one firm at a time (docs/briefs/Q-26_2026-11-15.md) =========
+  # The Q-12 survey (docs/research/firms_survey_2026-11-15.md, section 5) short-ranked 11 plans at 7 firms. Before any
+  # rule page of a firm was read, that firm's own terms were read for a clause on automated retrieval (the brief's stop
+  # rule). Outcome:
+  #   SKIPPED, not read today: The Trading Pit and Alpha Futures (E-009's list).
+  #   SKIPPED, found today (NOT in E-009's list): FunderPro (GTC 12.5.6), Aqua (Terms of Service), FundedNext (Terms of
+  #     Service 13.3(c)). Only their terms page, and the page linking to it, were read. One entry each records the
+  #     clause. No rule of theirs is recorded.
+  #   READ: DayTraders.com and TradeDay. Their terms forbid crawling and spidering only, in Topstep's ToU s.28 wording.
+  #     Named pages were read one at a time, within robots.txt, as E-012 recorded for Topstep. This is an
+  #     interpretation, and the lead may overrule it.
+  #   READ: Lucid, its two unpriced fees only (the brief). Its Terms page returned a 403 and could not be checked.
+  # Every read was a WebFetch GET of one named page: no login, form, chat or purchase, nothing sent. Each rule page was
+  # fetched at least twice with differently worded prompts. `quote` holds text that came back verbatim in both
+  # fetches, or verbatim in one and the same in substance in the other (the note says which).
+  # Page dates: the help centres show "Updated over N weeks ago" (DayTraders) or "Modified on <day, date>" with no year
+  # (TradeDay); these are copied as shown.
+
+  # ---- skipped firms: their own terms forbid automated retrieval ----------------------------------------------------
+  - key: funderpro.automated_retrieval_terms
+    firm: funderpro
+    value: "forbidden: using automated means to view, display or collect information available through the Website or Services (GTC 12.5.6)"
+    units: text
+    status: verified
+    article_id: "terms-conditions 12.5.6"
+    url: https://funderprofutures.com/terms-conditions
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms & Conditions, clause 12.5 (what is prohibited "when accessing the Services and other Content"), sub-item 12.5.6:
+      "to use automated means to view, display or collect information available through the Website or Services; and"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: three. 12.5.6 came back verbatim in two and in paraphrase in the third, which also listed the other six
+      sub-items (12.5.1-12.5.7). The page gives no version or date, only "© 2025 FunderPro Ltd. All Rights Reserved."
+      CONSEQUENCE: FunderPro Beginner 50K and Mid-Level 50K (short-ranking items 1 and 6) are NOT recorded, and no
+      FunderPro rule page was read. The survey's FunderPro terms remain a scout's reading. A reading needs the
+      operator's browser (Stage 2 D-574's pattern: screenshots and their sha256, no purchase) or FunderPro's written
+      permission. The survey's readers fetched FunderPro pages on 2026-11-15 without noticing this clause. DOMAIN:
+      funderprofutures.com is the futures site that funderpro.com links as "Futures" (the survey, Appendix A).
+
+  - key: aqua.automated_retrieval_terms
+    firm: aqua
+    value: "forbidden: scraping, crawling, framing, posting unauthorized links to, aggregating (and hacking, DOS, reverse engineering) of the Services or the Company website"
+    units: text
+    status: verified
+    article_id: "legal/terms-and-conditions, section No Unlawful or Prohibited Use/Intellectual Property"
+    url: https://www.aquafunded.com/legal/terms-and-conditions
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms of Service ("Updated: March 26, 2025"), linked as "Terms of Service" from https://www.aquafunded.com/futures, section "No Unlawful or Prohibited Use/Intellectual Property":
+      "You are expressly prohibited from scraping, crawling, framing, posting unauthorized links to, aggregating, hacking, performing denial of service (DOS) attacks on, reverse engineering, or circumventing technological protection measures of the Services or the Company website."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: two of the Terms; the sentence came back verbatim in both, in segments that join as quoted. The futures
+      page was read once, for its links: "Terms of Service" goes to /legal/terms-and-conditions, and the FAQ menu's
+      "Futures" goes to https://intercom.help/aquafutures-help-center/en. That link is how the Intercom path is known
+      to be Aqua's own futures help centre. CONSEQUENCE: Aqua Daily 50K and Flex Daily Loss 50K (item 4) are NOT
+      recorded, and no Aqua rule page was read.
+
+  - key: fundednext.automated_retrieval_terms
+    firm: fundednext
+    value: "forbidden without FundedNext's prior written authorisation: scraping, crawling, harvesting, data mining, or robots, scripts or automated systems to access the Website/Services or extract data (Terms of Service 13.3(c))"
+    units: text
+    status: verified
+    article_id: "terms-of-service 13.3(c)"
+    url: https://fundednext.com/terms-of-service
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms of Service, 13.3: "The User is expressly prohibited, directly or indirectly, in whole or in part, without the Provider's prior written authorisation, from:"
+      "(c) engaging in scraping, crawling, harvesting, data mining or using robots, scripts or automated systems to access the Website/Services, extract data, circumvent rules, test limits, exploit latencies or manipulate evaluations — except for the use of automation (EAs/algorithms) only when expressly permitted by the Trading Rules and within the authorised platform;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: two. Item (c) came back verbatim in both (in segments); 13.3's opening words came back once. The
+      reader saw only the first 100,000 of the page's 120,330 characters. The Terms define "Futures" (Section 3) to
+      include the Futures Challenge, so they govern FundedNext Futures. The separate Futures Challenge Terms
+      (https://fundednext.com/futures-challenge-terms, read once) contain no such clause, but they do not displace
+      these Terms. https://fundednext.com/futures (read once) links "Read FAQs" to helpfutures.fundednext.com.
+      CONSEQUENCE: FundedNext Flex 50K (item 8) is NOT recorded, and no FundedNext rule page was read.
+
+  # ---- Lucid Trading: only the two fees Stage 2's ledger leaves unpriced (the brief) ----------------------------------
+  # DOMAIN: support.lucidtrading.com, the help centre on the firm's own domain that Stage 2's verified ledger reads
+  # (vendor/stage2/vendor/propfirms/firms/lucid-trading/rules.yaml; Stage 2 D-561, D-575).
+  - key: lucid.automated_retrieval_terms
+    firm: lucid
+    value: null
+    units: text
+    status: unverified
+    article_id: "terms-of-use"
+    url: https://lucidtrading.com/terms-of-use/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not read: https://lucidtrading.com/terms-of-use/ returned HTTP 403 Forbidden (lucidtrading.com blocks automated clients, as Stage 2 D-561 found). No text of Lucid's terms was read, so whether they forbid automated retrieval is not known.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      support.lucidtrading.com/robots.txt (read once): "User-agent: *", "Disallow: /not-authorized", "Disallow:
+      /not-found", "Disallow: /[helpCenterIdentifier]/", "Crawl-delay: 1". The articles read are allowed. Only the two
+      fee entries the brief asked for were read: five named articles and one collection page, as Stage 2 reads this
+      help centre. A web-search snippet (not evidence) dates the Terms March 20, 2025 and does not show their
+      prohibited-use section.
+
+  - key: lucid.flex50k.funded_monthly_fee
+    firm: lucid
+    value: null
+    units: usd
+    status: unverified
+    article_id: "11404620; 12945795; 12945790; 11404614"
+    url: https://support.lucidtrading.com/en/articles/11404620-simulated-account-fees
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read states whether a LucidFlex funded account carries a monthly, recurring or data fee.
+      11404620 "Simulated Account Fees" ("August 26, 2026") names only LucidPro Evaluation, LucidDirect and LucidPro Funded: "LucidPro Evaluation and LucidDirect accounts are purchased by paying a one-time fee." / "There is no subscription and no automatic rebilling."
+      12945795 "LucidFlex Funded Account" ("October 13, 2026"): no sentence contains "fee", "subscription", "monthly", "charge" or "cost".
+      12945790 "LucidFlex Evaluation Account" ("Updated over a month ago"): "One-time fee, no monthly rebilling, take as long as you need to pass" / "No activation fees to upgrade to funded account"
+      11404614 "Lucid Trading Supported Platforms" ("October 12, 2026"), section "Ready to trade your platform of choice?": "Get funded in as fast as one day. 10+ platforms. 90% profit split. No monthly fees."
+    stage2_key: "funded_monthly_fee (vendor/stage2/vendor/propfirms/firms/lucid-trading/rules.yaml)"
+    stage2_value: null
+    note: >
+      UNCHANGED from Stage 2: value null, status unverified_human_input_required, read 2026-10-30. D-31's 2026-11-05
+      card screenshot had added "absence on a card is not a statement". NEW TODAY: 11404614's banner "No monthly fees."
+      It names no account type and sits in an article about platforms, so it does not settle a LucidFlex funded
+      recurring or data fee. It is recorded as ambiguous, not as $0. Reading it as $0 would be a reading the lead
+      declares; Stage 2 charges $0 now and labels every Lucid result an upper bound. FETCHES: 11404620 twice;
+      12945795 twice; 12945790 once (its two sentences match Stage 2's ledger word for word); 11404614 twice, the
+      banner verbatim in both. The "Fees, Payments and Payouts" collection (16781120, read once) holds three articles:
+      "Simulated Account Fees", "Accepted Payments Methods" and "Payout Methods".
+
+  - key: lucid.flex50k.payout_fee
+    firm: lucid
+    value: unstated
+    units: usd
+    status: unstated
+    article_id: "12890325; 12945796"
+    url: https://support.lucidtrading.com/en/articles/12890325-payout-methods
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12890325 "Payout Methods" ("Updated today"), headings "Plaid", "WorkMarket by ADP", "Echlon", "Crypto": "Instant bank transfers for U.S.-based traders" (Plaid); "Available for both U.S. and international traders" / "Can withdraw via bank transfer or Paypal" / "Funds can typically be received as early as the next business day" (WorkMarket by ADP); "Instant bank transfers for international traders" (Echlon); "Available for International Traders" (Crypto). No sentence mentions a fee, percentage, charge, cost or deduction for any method.
+      12945796 "LucidFlex Payouts" ("July 28, 2026"): no sentence contains "fee", "charge" or "cost". The one sentence with "deduct" is "Funds will be deducted from your account within a few minutes."
+    stage2_key: "payout_fee (vendor/stage2/vendor/propfirms/firms/lucid-trading/rules.yaml)"
+    stage2_value: null
+    note: >
+      UNCHANGED in substance from Stage 2: value null, status unverified_human_input_required, read 2026-10-30; no fee
+      is stated. NEW TODAY: the page lists a fourth method, "Echlon", described as a "staged rollout" with "instant
+      bank transfers" (UK, Germany, Spain), and shows "Updated today". FETCHES: 12890325 twice (the four headings and
+      the absence of any fee in both; the method sentences verbatim in one); 12945796 once, for fees. The collection
+      16781120 holds no fee schedule.
+
+  # ---- DayTraders.com: EOD 50K (evaluation -> EOD Pro Account), short-ranking item 2 ---------------------------------
+  # DOMAIN: https://daytraders.com/help (Intercom) is titled "Home | DayTraders.com Help Center" and links back to
+  # daytraders.com (read 2026-11-15). Pages read: 17684729 EOD Evaluation, 17684736 EOD Pro Account, 17684746 EOD
+  # Drawdown, 17684741 EOD Consistency, 17684742 EOD Daily Loss Limit, 17684739 EOD Payouts, 17704104 Billing, 17704126
+  # Maximum Number of Accounts, 17704072 Minimum Activity Policy, 17704120 Market Data Add-ons and Fees, 17704121 How to
+  # Request a Payout, 17697925 Moving from Pro or S2F to Live, 17704093 Account Sharing (all "Updated over 3 weeks ago",
+  # except 17704126, "Updated over a week ago"), and the home page.
+  - key: daytraders.automated_retrieval_terms
+    firm: daytraders
+    value: "crawling or spidering any web pages of the Site or Services, by manual or automated software, is forbidden (Terms of Use s.27); no clause addresses reading named pages; robots.txt allows /help/"
+    units: text
+    status: verified
+    article_id: "17704078 (Terms of Use s.27)"
+    url: https://daytraders.com/help/articles/17704078-terms-of-use
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704078 "Terms of Use" ("Last Updated: March 5, 2025"), section 27 "OTHER PROHIBITED USES", introduced "You are solely responsible for any and all acts and omissions that occur under your Account, and you agree not to engage in unacceptable use of the Site or Services or any User Content including:":
+      "Using any manual or automated software, devices, or other processes to “crawl” or “spider” any web pages contained in the Site or Services;"
+      "Harvesting or otherwise collecting any information about other users, including, email addresses or other contact information"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: two, the second at the session's date change (2026-11-16). The crawl item came back verbatim in both;
+      the introduction came back once. The wording is Topstep's ToU s.28 (E-012). READING, an interpretation like
+      E-012's for Topstep that the lead may overrule: the clause bans crawling and spidering (traversal), not reading
+      named pages one at a time. So the brief's skip rule was taken as not met, and the home page and 13 named help
+      articles besides the Terms were read one by one. CONTRAST: E-009 skipped The Futures Desk on a "crawl" clause that was reported
+      but not quoted. If the lead reads crawl clauses that way, every daytraders.* entry below is struck.
+      https://daytraders.com/robots.txt (read once) allows all crawlers, lists /help/ and /news/ as allowed, and names
+      Claude-Web among the allowed bots.
+
+  - key: daytraders.eod50k.eval_fee
+    firm: daytraders
+    value: null
+    units: usd
+    status: unverified
+    article_id: "home page; 17704104"
+    url: https://daytraders.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Home page (three fetches): the pricing section reads "One standard price. A flat $5 activation fee. No codes, no gimmicks — every rule visible before you buy." Its account builder shows labels only ("Account Type", "Account Size", "Platform"), with no price. The only other dollar figure is the heading "You need $40. And today.", which is tied to no account.
+      17704104 "Billing" states no evaluation price (asked directly in both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The survey read "price":105 for "50K EOD" from the home page's embedded script data (PS_DATA), fetched with curl.
+      This reader's page text excludes scripts, so the figure was not re-read today and is not recorded. Which
+      billing basis it would be (Monthly or Lifetime) is not stated either: see daytraders.eod50k.eval_billing_basis.
+      Settling it needs an operator browser read of the account builder (no purchase).
+
+  - key: daytraders.eod50k.eval_billing_basis
+    firm: daytraders
+    value: "chosen at checkout: Monthly (rebills at the original price every 30 days) or Lifetime (one payment, no rebills); bulk purchases are always one-time"
+    units: text
+    status: verified
+    article_id: "17704104"
+    url: https://daytraders.com/help/articles/17704104-billing
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "When you buy an account individually, you choose Monthly or Lifetime billing at checkout."
+      Monthly: "rebills at the original price every 30 days."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both lines came back verbatim in both fetches. Verbatim in the first fetch only (the second gave them in
+      paraphrase): "This applies to evaluations, S2F and S2L."; Lifetime: "one payment, with no rebills."; "Bulk
+      purchases are always one-time, with no rebill." The page does not say whether the Monthly and Lifetime prices
+      differ. The basis also sets the inactivity rule (daytraders.inactivity_rule): Monthly needs 1 qualifying day per
+      rolling 30 days, Lifetime 4.
+
+  - key: daytraders.eod50k.eval_reset_fee
+    firm: daytraders
+    value: "none sold: no resets (a failed evaluation is replaced by a new purchase); no time limit"
+    units: text
+    status: verified
+    article_id: "17684729"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "No time limit and no resets."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in both fetches, under "Good to know". 17684736 (Pro Account), read once: "Touching the drawdown level
+      closes the Pro Account. It can't be reset; start a new evaluation to continue."
+
+  - key: daytraders.eod50k.eval_profit_target
+    firm: daytraders
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "17684729"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Rules table, columns 25K | 50K | 150K | 300K: "Profit target | $1,500 | $3,000 | $8,500 | $15,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The table came back identically in both fetches.
+
+  - key: daytraders.eod50k.eval_drawdown_amount
+    firm: daytraders
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "17684729"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Max drawdown | $1,000 | $2,000 | $4,000 | $6,500"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: daytraders.eod50k.eval_drawdown_type
+    firm: daytraders
+    value: "eod_trailing: the level moves only after each day's close, but the balance must stay above it at all times, intraday included"
+    units: text
+    status: verified
+    article_id: "17684729; 17684746"
+    url: https://daytraders.com/help/articles/17684746-eod-drawdown
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684729: "Drawdown type | End-of-day (EOD) trailing | End-of-day (EOD) trailing | End-of-day (EOD) trailing | End-of-day (EOD) trailing"
+      17684746: "Your balance must stay above it at all times, including intraday."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both lines came back in both fetches. 17684746 also says, in both fetches in substance, that the level rises
+      only after a day closes at a new high (to the balance minus the max drawdown) and never moves down.
+
+  - key: daytraders.eod50k.eval_drawdown_lock
+    firm: daytraders
+    value: "starts at $48,000 and stops trailing at the starting balance ($50,000), in the evaluation and in the Pro Account"
+    units: text
+    status: verified
+    article_id: "17684746"
+    url: https://daytraders.com/help/articles/17684746-eod-drawdown
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Table, columns Size | Max drawdown | Starts at | Stops at: "50K | $2,000 | $48,000 | $50,000"
+      "It stops at your starting balance, in the evaluation and in the Pro Account."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 50K row came back in both fetches. The sentence came back verbatim in one; the other gave it in paraphrase
+      ("It stops rising at the starting balance, in both the evaluation and the Pro Account"). The survey's
+      machine-checked quote is the same sentence.
+
+  - key: daytraders.eod50k.eval_daily_loss_limit
+    firm: daytraders
+    value: "1250 USD, soft: open positions closed and the account paused until the next trading day (6:00 PM ET), not failed; measured from the day's starting balance, not trailing"
+    units: text
+    status: verified
+    article_id: "17684729; 17684742"
+    url: https://daytraders.com/help/articles/17684742-eod-daily-loss-limit
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684729: "Daily Loss Limit | $800 | $1,250 | $2,000 | $3,250"
+      17684742: "50K | $1,250" / "It isn't failed." / "The DLL is measured from your balance at the start of the day."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      All of the quoted text came back in both fetches. Verbatim once (the other fetch had only its last sentence):
+      "Open positions are closed and the account is Paused until the next trading day starts (6:00 PM ET). It isn't
+      failed." Verbatim once: "It doesn't trail intraday." 17684742 itself does not say which account types the DLL
+      covers; the evaluation and Pro tables both list it.
+
+  - key: daytraders.eod50k.eval_consistency_rule
+    firm: daytraders
+    value: 0.50
+    units: share
+    status: verified
+    article_id: "17684741; 17684729"
+    url: https://daytraders.com/help/articles/17684741-eod-consistency
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684741: "EOD accounts have two consistency rules: 50% in the evaluation and 30% per payout cycle in the Pro Account."
+      "Largest single-day profit ÷ total profit = consistency %"
+      "A day that ends over the limit isn't a Qualifying Day, and you can't pass or request a payout until you're back within it."
+      17684729: "Keep your best day at or below 50% of your total profit. A small tolerance applies."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      All verbatim in both fetches of each page. The evaluation's base is total profit since the start (17684741, in
+      paraphrase). The "small tolerance" is not sized on any page read. It is a gate, not a breach: an over-limit day
+      blocks passing until trading brings the share back down.
+
+  - key: daytraders.eod50k.eval_position_limit
+    firm: daytraders
+    value: "10 contracts (100 micros)"
+    units: contracts
+    status: verified
+    article_id: "17684729"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Max contracts | 6 (60 micros) | 10 (100 micros) | 12 (120 micros) | 40 (400 micros)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: daytraders.eod50k.eval_min_days
+    firm: daytraders
+    value: "2 Qualifying Days (each meeting the $200 minimum daily profit, within the rules and within consistency)"
+    units: days
+    status: verified
+    article_id: "17684729"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Trade at least 2 Qualifying Days: days that meet the minimum daily profit, follow the rules and end within consistency."
+      "Min. daily profit | $100 | $200 | $300 | $400"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The sentence came back verbatim in both fetches. The table row came back whole in one; the other gave the 50K
+      cell, "$200". One fetch also returned the row "QDays to pass | 2 | 2 | 2 | 2".
+
+  - key: daytraders.eod50k.activation_fee
+    firm: daytraders
+    value: "5 USD on activation, which must happen within 10 days of passing or the pass is forfeited; a Monthly Pro Account rebills it every 30 days"
+    units: text
+    status: verified
+    article_id: "17684729; 17704104"
+    url: https://daytraders.com/help/articles/17684729-eod-evaluation
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684729: "Activate your EOD Pro Account within 10 days for $5, or the pass is forfeited."
+      17704104: "A Monthly Pro Account rebills the $5 activation fee every 30 days."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both verbatim in both fetches. 17684736's table row "Activation fee | $5" came back once. WHEN IT FALLS DUE: at
+      activation, within 10 days of the pass. What happens to a pass while 5 EOD Pro Accounts are already active is
+      not stated (see daytraders.max_funded_accounts); on these words a pass that cannot be activated within 10 days
+      is forfeited.
+
+  - key: daytraders.eod50k.funded_monthly_fee
+    firm: daytraders
+    value: "Monthly Pro Account: the $5 activation fee rebills every 30 days; Lifetime Pro Account: no rebill (its price is not stated separately); no other recurring fee except optional add-ons"
+    units: text
+    status: verified
+    article_id: "17704104; 17704120"
+    url: https://daytraders.com/help/articles/17704104-billing
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704104: "A Monthly Pro Account rebills the $5 activation fee every 30 days."
+      17704120 fee table: "Second Login Session (use two devices at once)": "$30 per month"; "Market Depth / Level 2, all exchanges": "$30 per month"; "Market Depth / Level 2, one exchange (CME, CBOT, NYMEX or COMEX)": "$10 per month"; "rTrader Pro Copier": "$10 per month"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 17704104 sentence came back in both fetches; "Pro Accounts: you choose Monthly or Lifetime at the activation
+      checkout." came back once. 17704120 was read once: its four add-ons are optional, it lists the $5 Pro Account
+      activation, and it names no payout fee and no other recurring Pro charge. The designs need none of the add-ons.
+
+  - key: daytraders.eod50k.funded_drawdown_amount
+    firm: daytraders
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "17684736"
+    url: https://daytraders.com/help/articles/17684736-eod-pro-account
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Pro Account table, columns 25K | 50K | 150K | 300K: "Max drawdown | $1,000 | $2,000 | $4,000 | $6,500"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: daytraders.eod50k.funded_drawdown_type
+    firm: daytraders
+    value: "eod_trailing (as the evaluation: the balance must stay above the level intraday)"
+    units: text
+    status: verified
+    article_id: "17684736; 17684746"
+    url: https://daytraders.com/help/articles/17684736-eod-pro-account
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684736: "An EOD Pro Account is the simulated funded account you unlock by passing an EOD evaluation. It keeps the evaluation's drawdown type and contract limits."
+      "Drawdown type | End-of-day trailing; stops at starting balance" (every size)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both lines came back in both fetches. The intraday floor is daytraders.eod50k.eval_drawdown_type's 17684746
+      sentence, which covers both stages.
+
+  - key: daytraders.eod50k.funded_drawdown_lock
+    firm: daytraders
+    value: "stops trailing at the starting balance ($50,000)"
+    units: text
+    status: verified
+    article_id: "17684736; 17684746"
+    url: https://daytraders.com/help/articles/17684746-eod-drawdown
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684736: "End-of-day trailing; stops at starting balance"
+      17684746: "50K | $2,000 | $48,000 | $50,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches of each page. See daytraders.eod50k.eval_drawdown_lock for the sentence "It stops at your starting
+      balance, in the evaluation and in the Pro Account."
+
+  - key: daytraders.eod50k.payout_balance_consequence
+    firm: daytraders
+    value: "a request needs a balance of at least $52,600 and must leave at least $52,000; no page read says a payout moves the drawdown level (which stops at $50,000)"
+    units: text
+    status: verified
+    article_id: "17684739; 17684746"
+    url: https://daytraders.com/help/articles/17684739-eod-payouts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684739: "Size | Min. balance to request | Min. balance after payout | Max per request"
+      "50K | $52,600 | $52,000 | $2,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. Asked directly, both fetches of 17684746 said the page says nothing about payouts moving the
+      drawdown level. Read together: the floor is locked at $50,000 once the balance has closed at $52,000, and
+      every payout must leave at least $52,000, so a $2,000 cushion stays after each payout.
+
+  - key: daytraders.eod50k.funded_daily_loss_limit
+    firm: daytraders
+    value: "1250 USD, soft (paused to the next trading day, not failed), as the evaluation"
+    units: text
+    status: verified
+    article_id: "17684736; 17684742"
+    url: https://daytraders.com/help/articles/17684736-eod-pro-account
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684736: "Daily Loss Limit | $800 | $1,250 | $2,000 | $3,250"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. For its mechanics, see daytraders.eod50k.eval_daily_loss_limit (17684742).
+
+  - key: daytraders.eod50k.funded_consistency_rule
+    firm: daytraders
+    value: 0.30
+    units: share
+    status: verified
+    article_id: "17684741; 17684739"
+    url: https://daytraders.com/help/articles/17684741-eod-consistency
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684741: "EOD accounts have two consistency rules: 50% in the evaluation and 30% per payout cycle in the Pro Account."
+      "A day that ends over the limit isn't a Qualifying Day, and you can't pass or request a payout until you're back within it."
+      17684739: "Your best day is no more than 30% of the cycle's profit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 17684741 sentences came back verbatim in both fetches. The 17684739 sentence came back verbatim in one; the
+      other gave "Your best day can be no more than 30% of the cycle's profit". The survey's machine-checked quote is
+      the verbatim one. The base is profit since the last payout (17684741, in paraphrase, both fetches). The page's
+      own example (once): $3,000 cycle profit with a $1,200 best day is 40%, so $4,000 is needed before a request.
+      17684736's row "Consistency (per payout cycle) | 30%" came back once. It is a payout gate, not a breach. With
+      8 Qualifying Days needed per cycle, it binds a design whose funded profit comes in a few large days.
+
+  - key: daytraders.eod50k.funded_position_limit
+    firm: daytraders
+    value: "10 contracts (100 micros), as the evaluation; no scaling plan stated"
+    units: contracts
+    status: verified
+    article_id: "17684736"
+    url: https://daytraders.com/help/articles/17684736-eod-pro-account
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Max contracts | 6 (60 micros) | 10 (100 micros) | 12 (120 micros) | 40 (400 micros)"
+      "It keeps the evaluation's drawdown type and contract limits."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: daytraders.eod50k.payout_frequency_gate
+    firm: daytraders
+    value: "8 Qualifying Days (each >= $200 profit, within the rules and within the 30% rule) since the last payout or activation; the request day does not count; no calendar window stated"
+    units: text
+    status: verified
+    article_id: "17684739; 17684736"
+    url: https://daytraders.com/help/articles/17684739-eod-payouts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684739: "8 Qualifying Days since your last payout or activation."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch. The other said "8 qualifying days are required since your last payout or activation. The
+      day you request doesn't count." The survey's machine-checked quote is "8 Qualifying Days since your last payout
+      or activation. The day you request doesn't count." 17684736 (once): "QDays between payouts | 8" and "Min. daily
+      profit | $100 | $200 | $300 | $400". Also needed: a payout method (Plane, or the DT Wallet, which "can't be
+      withdrawn as cash"; 17704121, once).
+
+  - key: daytraders.eod50k.payout_split
+    firm: daytraders
+    value: 1.0
+    units: share
+    status: verified
+    article_id: "17684739; 17684736"
+    url: https://daytraders.com/help/articles/17684739-eod-payouts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684739: "EOD Pro Accounts have a 100% split of eligible simulated profit."
+      17684736: "Profit split | 100% (simulated) | 100% (simulated) | 100% (simulated) | 100% (simulated)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both pages, both fetches.
+
+  - key: daytraders.eod50k.payout_cap
+    firm: daytraders
+    value: "2000 USD per request; no lifetime cap stated"
+    units: text
+    status: verified
+    article_id: "17684736; 17684739"
+    url: https://daytraders.com/help/articles/17684736-eod-pro-account
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684736: "Max per payout request | $1,000 | $2,000 | $3,500 | $5,000"
+      17684739: "50K | $52,600 | $52,000 | $2,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. Asked directly, neither page states a lifetime cap or a limit on the number of payouts.
+
+  - key: daytraders.eod50k.payout_min
+    firm: daytraders
+    value: "500 USD, in $50 increments"
+    units: text
+    status: verified
+    article_id: "17684739"
+    url: https://daytraders.com/help/articles/17684739-eod-payouts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Requests start at $500, in $50 increments."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: daytraders.eod50k.payout_count_limit
+    firm: daytraders
+    value: unstated
+    units: count
+    status: unstated
+    article_id: "17684736; 17684739; 17697925"
+    url: https://daytraders.com/help/articles/17697925-moving-from-pro-or-s2f-to-live
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17684736 and 17684739 state no number of payouts (asked directly, both fetches of each).
+      17697925: "There's no fixed milestone: performance, consistency and rule-following are reviewed continuously" / "Once you're live, your simulated accounts are closed."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 17697925 sentences came back in both fetches. Verbatim once: "Traders with Pro Accounts or S2F accounts may
+      be invited to a live account at the firm's discretion."; "Excess simulated balances are generally forfeited,
+      but they may be used as performance rewards in live,"; "Any Pro accounts that have not received a payout and
+      are in good standing will be refunded". The page says, in paraphrase, that about 1% of simulated funded traders
+      are now moved to live. So a sim account's payout life ends at a discretionary live call, which also closes
+      every other sim account of the trader.
+
+  - key: daytraders.eod50k.payout_fee
+    firm: daytraders
+    value: unstated
+    units: usd
+    status: unstated
+    article_id: "17684739; 17704121; 17704120"
+    url: https://daytraders.com/help/articles/17684739-eod-payouts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read states a payout or withdrawal fee: 17684739 "EOD Payouts" (asked, both fetches), 17704121 "How to Request a Payout" (once), 17704120 "Market Data Add-ons and Fees", whose fee list has no payout fee (once).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Payouts go through Plane, a payout contract signed digitally with bank details added (17704121). Any charge
+      Plane makes is not stated.
+
+  - key: daytraders.eod50k.payout_processing_days
+    firm: daytraders
+    value: unstated
+    units: days
+    status: unstated
+    article_id: "17684739; 17704121"
+    url: https://daytraders.com/help/articles/17704121
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704121 "How to Request a Payout": "You'll get an email once it's approved." / "Payouts approved before the daily reports load (5:00–6:00 PM ET) are reflected the same day." -- no time from request to approval or to receipt is stated.
+      17684739: no processing time stated (asked, both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      17704121 was read once. Its timing sentences are about when an approved payout shows on the charts, not about
+      how long approval takes. The home page's "transparent, automated, and lightning-fast" (the survey's quote) is
+      not a rule and was not re-read.
+
+  - key: daytraders.max_funded_accounts
+    firm: daytraders
+    value: "5 EOD Pro Accounts, within 15 simulated funded accounts (Pro + S2F) in total; evaluations unlimited; one login per household"
+    units: text
+    status: verified
+    article_id: "17704126; 17704093"
+    url: https://daytraders.com/help/articles/17704126-maximum-number-of-accounts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704126 ("Updated over a week ago"): "Evaluations (Trail, Static, EOD) | Unlimited" / "Simulated funded accounts (Pro + S2F) | 15 in total" / "EOD Pro Accounts | 5, within the 15"
+      17704093: "One login per household." / "If multiple accounts in a household are detected, all accounts may be subject to closure" ... "and all simulated or live profits forfeited."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      All of it came back in both fetches of each page. Also on 17704126, once: "Live accounts | 5, with only one
+      tradeable at a time"; "You can't trade simulated and live accounts at the same time."; "Once you're live, all
+      your simulated accounts, including other S2L evaluations, are closed." HOLD QUEUE: no page read says what
+      happens to an EOD pass while 5 EOD Pro Accounts are active. 17704126's "We will generally hold passed accounts
+      for 1 month." is about S2L passes. Against it stands 17684729's "Activate your EOD Pro Account within 10 days
+      for $5, or the pass is forfeited." The queue is unstated and is a question for the firm. The household
+      sentence counts logins, not accounts. Each login and its accounts are "for one person's own use" (17704093,
+      once).
+
+  - key: daytraders.inactivity_rule
+    firm: daytraders
+    value: "in every rolling 30-day window from purchase: at least 1 trading day meeting the minimum daily profit ($200 on 50K) for Monthly billing, at least 4 for Lifetime (including bulk); otherwise marked Inactive and closed, not reactivatable"
+    units: text
+    status: verified
+    article_id: "17704072"
+    url: https://daytraders.com/help/articles/17704072-minimum-activity-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Monthly" | "At least 1 trading day meeting the minimum daily profit in every rolling 30-day window"
+      "Lifetime (one-time, including bulk purchases)" | "At least 4 trading days meeting the minimum daily profit in every rolling 30-day window"
+      "The account is marked Inactive and closed."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      All of it came back in both fetches. Verbatim once: "The window starts on the purchase date for every account,
+      including accounts bought in bulk."; "Days don't need to be consecutive."; "Consistency isn't required. A day
+      counts if it meets the minimum daily profit, even if it isn't a Qualifying Day."; "Inactive accounts can't be
+      reactivated, and a Monthly account stops rebilling." Asked directly, both fetches said the page does not name
+      the account types it covers; its words are "an account". UNUSUAL: activity means PROFITABLE days. A
+      Lifetime-billed Pro Account that makes the $200 minimum on fewer than 4 days in any 30 is closed, and so is one
+      that is simply losing.
+
+  # ---- TradeDay: Fast Pass End of Day 50K and Quick Pay End of Day 50K (intraday funded drawdown), item 9 ------------
+  # DOMAIN: https://www.tradeday.com/ links "FAQs" to https://tradeday.freshdesk.com/en/support/solutions (read
+  # 2026-11-15); the Freshdesk-hosted help centre is the firm's own. Shared terms are firm-level keys (tradeday.*); keys
+  # that differ by plan carry the plan (tradeday.fastpass_eod50k.*, tradeday.quickpay_eod50k.*). Help pages show
+  # "Modified on <weekday, day month> at <time>" with no year; copied as shown.
+  - key: tradeday.automated_retrieval_terms
+    firm: tradeday
+    value: "crawling or spidering any web pages of the Sites or Services, by manual or automated software, is forbidden (Terms and Conditions s.24); no clause addresses reading named pages; robots.txt allows the help articles"
+    units: text
+    status: verified
+    article_id: "terms-and-conditions s.24"
+    url: https://www.tradeday.com/terms-and-conditions
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms and Conditions ("Last Modified: August 11, 2026"), section 24, introduced "You are solely responsible for any and all acts and omissions that occur under your Account, and you agree not to engage in unacceptable use of the Sites or Services or any User Content including:":
+      "Using any manual or automated software, devices, or other processes to "crawl" or "spider" any web pages contained in the Sites or Services;"
+      "Harvesting or otherwise collecting any information about other users, including, email addresses or other contact information"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: two, the second at the session's date change (2026-11-16). The crawl item came back verbatim in both;
+      the introduction came back once. The same READING as daytraders.automated_retrieval_terms (E-012's), and the
+      same caveat: if the lead reads crawl clauses as E-009 read The Futures Desk's, every tradeday.* entry is struck.
+      robots.txt: www.tradeday.com/robots.txt came back empty; tradeday.freshdesk.com/robots.txt (read once) disallows
+      only search, ticket, login, /helpdesk/ (attachments allowed), public-ticket and "/hit" paths, so
+      /support/solutions/articles/ is allowed. Pages read: the home page, the Terms, and 15 help articles, each named.
+
+  - key: tradeday.eval_billing_basis
+    firm: tradeday
+    value: "one-time fee (both 50K plans); no subscription"
+    units: text
+    status: verified
+    article_id: "home page"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Fast Pass "End of Day" "50k": "$ 248" "$ 99" "one-time fee"
+      Quick Pay "End of Day (Intraday Funded Drawdown)" "50k": "$ 174" "$ 69" "one-time fee"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches, on the Tradovate and Rithmic cards alike. "No Subscription Required" came back once. The Terms
+      still use subscription wording in s.3 (see tradeday.eval_reset_fee); the current cards and help pages sell
+      one-time evaluations.
+
+  - key: tradeday.eval_reset_fee
+    firm: tradeday
+    value: null
+    units: usd
+    status: unverified
+    article_id: "terms-and-conditions s.3; 103000405228"
+    url: https://www.tradeday.com/terms-and-conditions
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms and Conditions s.3 (three fetches): "If you break a Rule during the evaluation you will fail and no longer be eligible for funding." / "However, you can take the evaluation again by either: (1) purchase a retake, known as a “reset,” the cost of a reset is $99; or (2) waiting for your next subscription payment to go through, which will result in an automatic reset."
+      103000405228 "What is Quick Pay?" ("Modified on Thu, 12 Nov at 4:48 AM"): "There are no activation fees, and you can purchase a new evaluation account after failing."
+      Home page: no sentence contains "reset" (asked, once).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      AMBIGUOUS, so left unverified. "the cost of a reset is $99" came back in all three fetches of the Terms; the full
+      sentence came back once, in three segments. It sits in subscription-era wording ("your next subscription
+      payment ... automatic reset") that the one-time-fee plans no longer fit. The current Quick Pay page speaks of
+      buying a new evaluation after a fail, and neither plan's pages give a reset price. The survey recorded 99 as
+      verified; on today's reading the Terms' figure cannot be tied to these plans. A family must declare its reading:
+      $99, or the plan's own price.
+
+  - key: tradeday.eval_profit_target
+    firm: tradeday
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "103000405228; 103000304248; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000405228-what-is-quick-pay-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000405228 (Quick Pay), columns 25K | 50K | 100K | 150K: "Profit target | $1,500 | $3,000 | $6,000 | $9,000"
+      Home page, both 50K cards: "Profit Target $3,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both plans. The Quick Pay row came back in both fetches. The home cards' line came back in one home-page fetch,
+      on each card. The Fast Pass Evaluation table on 103000304248 ("Modified on Tue, 1 Sep at 6:47 AM", once) gives
+      50K "$3,000". The target rises when the consistency share is exceeded (see the plans' eval_consistency_rule).
+
+  - key: tradeday.eval_drawdown_amount
+    firm: tradeday
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "103000405228; 103000304248"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000304248-what-are-the-differences-between-each-account-size-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000405228 (Quick Pay): "Trailing max drawdown | $1,000 | $2,000 | $3,000 | $4,500"
+      103000304248, "Fast Pass Evaluations", 50K: "Maximum Drawdown": "$2,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both plans; both fetches of each page.
+
+  - key: tradeday.eval_drawdown_type
+    firm: tradeday
+    value: "eod_trailing on both End of Day plans: the level moves up only at day's end, but equity below the active level at any time triggers auto-liquidation"
+    units: text
+    status: verified
+    article_id: "103000008847; 103000008855; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008855-what-is-the-maximum-drawdown-rule-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008847 (Fast Pass section): "All drawdowns are calculated at the End-of-Day."
+      103000008855 ("Modified on Sun, 31 May at 11:07 AM"): "Important: Even though the max drawdown only moves up at day's end," ... "you must never let your equity fall below the active drawdown level at any point during the day" ... "doing so will still trigger auto-liquidation."
+      Home page, both 50K End of Day cards: "Trailing Max Drawdown $2,000 (calculated End of Day)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 103000008855 middle segment came back in both fetches, the first and last segments in one. The 103000008847
+      sentence came back verbatim in one fetch and in the same words without capitals in the other. The home cards'
+      line came back once.
+
+  - key: tradeday.eval_drawdown_lock
+    firm: tradeday
+    value: "trails until it reaches the starting balance ($50,000), then freezes"
+    units: text
+    status: verified
+    article_id: "103000250682; 103000008855"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000250682-funded-accounts-withdrawals-and-the-impact-of-drawdowns
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000250682 ("Modified on Sun, 31 May at 1:58 PM"): "For evaluations and Funded Sims, the Trailing Max Drawdown will trail until they reach the starting account balance," ... "the trailing drawdown will freeze and no longer trail."
+      103000008855: "Trailing max drawdown limits continues to trail your account growth until they reach the starting account balance."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 103000250682 segments came back in both fetches, the first segment whole in one. The 103000008855 sentence
+      came back whole in one fetch and up to "until they reach the starting account balance" in the other. Both plans.
+
+  - key: tradeday.eval_daily_loss_limit
+    firm: tradeday
+    value: "none: the only risk rule is the maximum drawdown"
+    units: text
+    status: verified
+    article_id: "103000008847"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008847-what-are-the-objectives-and-rules-of-the-quick-pay-and-fast-pass-evaluation-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "TradeDay has just one rule - Don't break the Maximum Drawdown Limit!"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches ("Modified on Thu, 12 Nov at 4:47 AM"). Asked directly, both said no daily loss limit is mentioned.
+      Both plans.
+
+  - key: tradeday.eval_position_limit
+    firm: tradeday
+    value: "5 contracts (50 micros)"
+    units: contracts
+    status: verified
+    article_id: "103000405228; 103000304248"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000405228-what-is-quick-pay-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000405228 (Quick Pay): "Position limit | 2 contracts (20 micros) | 5 contracts (50 micros) | 10 contracts (50 micros) | 15 contracts (50 micros)"
+      103000304248, "Fast Pass Evaluations", 50K: "Contracts/Micros": "5/50"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both plans; both fetches of each page. The home cards (once) read "Position Limits - 5 Contracts (50 Micros)".
+
+  - key: tradeday.activation_fee
+    firm: tradeday
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "103000008894; 103000405228"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008894-are-there-any-fees-when-i-am-funded-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008894 ("Modified on Sun, 31 May at 11:08 AM"): "TradeDay no longer has an activation fee." / "There will be no charge to activate your funded account!"
+      103000405228: "There are no activation fees, and you can purchase a new evaluation account after failing."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both pages, both fetches. Both plans. Nothing falls due when a queued pass becomes active (see
+      tradeday.max_funded_accounts).
+
+  - key: tradeday.funded_monthly_fee
+    firm: tradeday
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "103000008894"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008894-are-there-any-fees-when-i-am-funded-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "we will not charge you the monthly membership fee to TradeDay,"
+      "For Funded Sim traders there is no market data fee to pay."
+      "Simulated commission is included in your PnL."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. Funded Sim, both plans. Funded Live is different (once): "The professional market data fee is
+      $156 per month, per Exchange." plus Tradovate's "$2 a month credit card processing fee", and commissions
+      debited from the account.
+
+  - key: tradeday.funded_daily_loss_limit
+    firm: tradeday
+    value: "none: the funded rules are the maximum drawdown and no trading within 2% of a price limit"
+    units: text
+    status: verified
+    article_id: "103000008889"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008889-what-are-the-rules-for-funded-funded-sim-and-funded-live-traders-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Rule 1: "Do not hit or exceed the maximum drawdown"
+      Rule 2: "Funded Traders are not permitted to trade within 2% of a price limit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches ("Modified on Sun, 31 May at 12:48 PM"). Asked directly, both said the page mentions no daily loss
+      limit. The absence is read from the page's own numbered list of funded rules. Rule 2's consequence (once):
+      "Traders in breach of this policy will lose their funded account."
+
+  - key: tradeday.payout_min
+    firm: tradeday
+    value: 250.0
+    units: usd
+    status: verified
+    article_id: "103000404096; 103000335937; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000404096 (Fast Pass): "The minimum payout request amount is $250."
+      103000335937 (Quick Pay): "The minimum payout request is $250."
+      Home page, both 50K cards: "Min Payout Request: $250"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both plans. The Fast Pass sentence came back verbatim in one fetch ("Minimum payout request of $250" in the
+      other). The Quick Pay sentence and the card line came back in both.
+
+  - key: tradeday.max_funded_accounts
+    firm: tradeday
+    value: "5 active Funded Sim accounts; further passes are queued until a Funded Sim is lost or moves to Funded Live; 10 accounts in total; up to 5 Funded Live; one user per household; one broker"
+    units: text
+    status: verified
+    article_id: "103000354796"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000354796-multiple-accounts
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "The maximum number of active Funded Sim accounts is 5"
+      "Any additional passed evaluations will be queued"
+      "Traders can have up to 10 accounts at any one time."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      All three came back in both fetches ("Modified on Tue, 8 Sep at 5:44 AM"). Verbatim once: "If a trader passes 10
+      evaluations, 5 will be queued, while the other 5 will be active."; "Traders can have up to 5 Funded Live
+      accounts."; "Traders can have only one username and only one user per household."; "Traders can only have
+      multiple accounts on 1 broker."; "When in Funded Live, you will not be able to purchase additional accounts."
+      HOLD QUEUE: a pass beyond 5 waits, and becomes active when a Funded Sim is lost or graduates (both fetches,
+      in paraphrase). It is not forfeited, and with no activation fee nothing falls due. The 10-account total
+      counts evaluations, so 5 active Funded Sims leave 5 evaluation seats. One user per household caps a household
+      at one trader.
+
+  - key: tradeday.inactivity_rule
+    firm: tradeday
+    value: "no inactivity fee or minimum trading requirement; an account dormant or inactive for 30 days may be offboarded (Tradovate separately archives accounts not logged into for over a calendar month)"
+    units: text
+    status: verified
+    article_id: "103000008899"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008899-are-there-any-inactivity-fees-or-minimum-trading-requirements-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "any TradeDay account that remains dormant or inactive for 30 days will be considered inactive and may be offboarded."
+      "we do not charge inactivity fees"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The first sentence came back verbatim in one fetch; the other had "remains dormant or inactive for 30 days" in
+      quotation marks. The second came back in both; one fetch gave the whole sentence, "No, we do not charge
+      inactivity fees or have minimum trading requirements." ("Modified on Wed, 30 Sep at 6:48 AM"). The Tradovate
+      archive rule came back in paraphrase only, plus "However, Tradovate has its own account inactivity system."
+      (once). One fetch said, in paraphrase, that an archived account counts as failed. "May be offboarded" is
+      discretionary, and "dormant" is not defined (no trade, or no login).
+
+  # -- TradeDay Fast Pass End of Day 50K ---------------------------------------------------------------------------
+  - key: tradeday.fastpass_eod50k.eval_fee
+    firm: tradeday
+    value: null
+    units: usd
+    status: unverified
+    article_id: "home page; 103000304248"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Home page, Fast Pass "End of Day" "50k" (Tradovate and Rithmic cards): "$ 248" "$ 99" "one-time fee"; each card "60% OFF"; banner "USE CODE "SALE60""; no end date for the sale.
+      103000304248 ("Modified on Tue, 1 Sep at 6:47 AM"), "Fast Pass Evaluations", 50K: "Price": "$180"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      CONFLICT between official pages, so left unverified. The home card shows $248 struck through to $99 with
+      SALE60, and the help table shows $180. Both came back in both fetches. Which is the list price ($248 or $180),
+      and whether the $99 sale recurs, is not stated. Family C must declare its price reading (the survey's open
+      question "Which price is the price?").
+
+  - key: tradeday.fastpass_eod50k.eval_consistency_rule
+    firm: tradeday
+    value: 0.45
+    units: share
+    status: verified
+    article_id: "103000008849; 103000008847"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008849-what-is-the-consistency-objective-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008849 ("Modified on Tue, 28 Jul at 3:36 PM"): "The consistency percentage for FastPass accounts is 45%."
+      "If you have a profitable day in excess of the consistency percentage of your profit target you do not fail the evaluation"
+      103000008847: "Be consistent in your profitability. No day greater than 45% of your total profits."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      103000008849's first sentence came back in both fetches. Its second came back verbatim in one; the other had
+      "not considered a failure or rule breach" and "the profit target will increase". The 103000008847 objective came
+      back verbatim in one fetch and in paraphrase in the other. The page's rule text says "of the profit target",
+      but its example (once) divides by "total profit made so far on the evaluation" (1200 / 1800 = 67%). The
+      exceeding day raises the target until it is at most 45% of the total.
+
+  - key: tradeday.fastpass_eod50k.eval_min_days
+    firm: tradeday
+    value: null
+    units: days
+    status: unverified
+    article_id: "103000008850; terms-and-conditions s.3"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008850-what-is-the-trade-for-a-minimum-number-of-days-objective-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008850 ("Modified on Mon, 1 Jun at 7:43 AM"): "For FastPass accounts the minimum number of trading days is 3." / "There is no upper time limit."
+      Terms and Conditions s.3: "reach profit targets set for you over a minimum 7-day period"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      CONFLICT between official pages, so left unverified. Both sentences came back in both fetches of their pages.
+      The help article and the home card ("Min Trading Days 3", once) say 3 trading days; the Terms say "a minimum
+      7-day period". The survey also quoted the home FAQ's "pass in 3 days with no minimum trading day requirement",
+      which was not re-read today. Also on 103000008850 (once): "Every day you make a trade will count towards this
+      objective."
+
+  - key: tradeday.fastpass_eod50k.funded_drawdown_amount
+    firm: tradeday
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "home page"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Fast Pass End of Day 50K card, Funded Sim: "Trailing Max Drawdown: $2,000 (calculated EOD)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches.
+
+  - key: tradeday.fastpass_eod50k.funded_drawdown_type
+    firm: tradeday
+    value: eod_trailing
+    units: text
+    status: verified
+    article_id: "103000008889"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008889-what-are-the-rules-for-funded-funded-sim-and-funded-live-traders-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "All Fast Pass Funded Sim accounts are set up with End of Day (EOD) Drawdowns."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. The intraday-equity rule of tradeday.eval_drawdown_type (103000008855) is written of the EOD limit
+      generally, so it applies here too.
+
+  - key: tradeday.fastpass_eod50k.funded_drawdown_lock
+    firm: tradeday
+    value: "trails until it reaches the starting balance ($50,000), then freezes; the first payout request moves it there at once (see payout_balance_consequence)"
+    units: text
+    status: verified
+    article_id: "103000250682"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000250682-funded-accounts-withdrawals-and-the-impact-of-drawdowns
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "For evaluations and Funded Sims, the Trailing Max Drawdown will trail until they reach the starting account balance," ... "the trailing drawdown will freeze and no longer trail."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches, as tradeday.eval_drawdown_lock.
+
+  - key: tradeday.fastpass_eod50k.payout_balance_consequence
+    firm: tradeday
+    value: "on the first payout request, a trailing drawdown still below the starting balance moves up to the starting balance ($50,000) and stays fixed there"
+    units: text
+    status: verified
+    article_id: "103000404096"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "it will automatically move up to the starting account balance and remain fixed there moving forward."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch ("Modified on Tue, 8 Sep at 9:01 AM"). The other said the same in paraphrase: "If the
+      Trailing Maximum Drawdown hasn't reached the starting account balance, it moves up to that balance on the first
+      payout request and stays fixed there." The survey's machine-checked quote: "On the first payout request, if the
+      Trailing Maximum Drawdown (TMD) has not yet reached the starting account balance, it will automatically move up
+      to the starting account balance and remain fixed there moving forward." So a first payout taken at $1,000 of
+      profit leaves the floor at $50,000, and the cushion is the remaining profit.
+
+  - key: tradeday.fastpass_eod50k.funded_consistency_rule
+    firm: tradeday
+    value: "0.45 of total gross profits (current profits + payouts), for accounts opened on or after 2026-07-26; none for accounts opened before"
+    units: text
+    status: verified
+    article_id: "103000404096; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "no single day can make up more than 45% of your total gross profits (gross profits being current profits + payouts)"
+      Home page, Fast Pass 50K card, Funded Sim: "Consistency: 45%"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The policy sentence came back verbatim in one fetch and in exact paraphrase in the other, which also gave the
+      split by opening date ("Accounts opened before July 26, 2026: No consistency requirement"). The card line came
+      back in two fetches. It is a payout gate, and its base includes past payouts.
+
+  - key: tradeday.fastpass_eod50k.funded_position_limit
+    firm: tradeday
+    value: "2 contracts (20 micros), plus 1 contract per $2k profit at end of day; no maximum stated"
+    units: text
+    status: verified
+    article_id: "home page"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Fast Pass End of Day 50K card, Funded Sim: "Position Limit: 2 contracts (or 20 Micros), scales +1 contract per $2k profit at EOD"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches. It is lower than the evaluation's 5 contracts (50 micros). Whether the scale stops at the
+      evaluation's 5 is not stated. It binds a design's funded opening size: at 2 NQ minis, a 37.5-point stop risks
+      $1,500.
+
+  - key: tradeday.fastpass_eod50k.payout_frequency_gate
+    firm: tradeday
+    value: "per payout: at least 5 profitable days of >= $150 (not necessarily consecutive), balance above the starting balance, net profit since the previous request, and the 45% rule; no buffer; no trading from the request until the payout is received"
+    units: text
+    status: verified
+    article_id: "103000404096; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "5 days with at least $150 profit per day."
+      "There is no buffer requirement for Fast Pass Funded Sim accounts."
+      Home page card, Funded Sim: "Min Days to Payout: 5" / "Min Profitable Days: 5 x $150"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The policy lines came back verbatim in one fetch and the same in paraphrase in the other, which also listed
+      "Balance above the starting account balance" and "Net profit since the previous payout request". The card lines
+      came back in two fetches. Verbatim once: "Once you submit a payout request, do not resume trading until you
+      have received your payout." Day 1 of the next cycle is the session after receipt (paraphrase, once). Whether
+      the 5 days reset after each payout is implied by "per payout", not stated in those words.
+
+  - key: tradeday.fastpass_eod50k.payout_split
+    firm: tradeday
+    value: 0.80
+    units: share
+    status: verified
+    article_id: "home page; 103000404096"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Fast Pass 50K card: "Profit split: 80/20 Funded Sim, 90/10 Funded Live"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches. 103000404096 (once, in paraphrase) lists "An 80/20 profit split". Funded Live is 0.90.
+
+  - key: tradeday.fastpass_eod50k.payout_cap
+    firm: tradeday
+    value: "1500 USD per request for a 50K opened on or after 2026-07-26 ($2,000 before), and at most 50% of the account balance (its base: payout_cap_share_base); no lifetime cap stated"
+    units: text
+    status: verified
+    article_id: "103000404096; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Payout requests are limited to a maximum of 50% of the account balance,"
+      "$1,500 on a 50K,"
+      Home page card: "Max Payout Request Per Cycle: $1,500"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      "$1,500 on a 50K," came back verbatim in two fetches. The other fetch gave "$1,500 for a 50K account" for
+      accounts opened on or after July 26, 2026 and "$2,000 for a 50K account" before. The 50% sentence came back
+      verbatim once and in paraphrase in the other two. The card line came back twice. Other tiers (once): "$750 on a
+      25K", "$1,875 on a 100K", "$2,250 on a 150K." The plan's sim payout life ends at the 5th request (see
+      payout_count_limit).
+
+  - key: tradeday.fastpass_eod50k.payout_cap_share_base
+    firm: tradeday
+    value: null
+    units: text
+    status: unverified
+    article_id: "103000404096"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      The rule: "Payout requests are limited to a maximum of 50% of the account balance,"
+      Its worked example (pre-2026-07-26 caps): "Current balance after trading, making profits: $6,000 ($56k)" / "You qualify for a payout of 50% of your account balance (up to $2000 -the 50k payout cap)" / "Take a $2,000 payout → your balance is now $4,000 ($54K)."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      AMBIGUOUS, so left unverified, and read only once (the third fetch, at the session's date boundary). The rule
+      says "account balance". The examples write the balance as profit above the $50,000 start ("$6,000 ($56k)"), so
+      the 50% would be of profit, not of the whole balance. The fetch's own summary read it the other way. It
+      matters: on profit, the 50% binds below $3,000 of profit; on the whole balance, $1,500 always binds. The survey
+      read profit. A second read, or the firm, should settle it before a family loads it.
+
+  - key: tradeday.fastpass_eod50k.payout_count_limit
+    firm: tradeday
+    value: "the account moves from Funded Sim to a new Funded Live account (starting at a $0 balance) on the 5th payout request; TradeDay may move it earlier"
+    units: text
+    status: verified
+    article_id: "103000250682; 103000404096"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000250682-funded-accounts-withdrawals-and-the-impact-of-drawdowns
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000250682, under "Graduation from Fast Pass Funded Sim to Funded Live:": "On the 5th payout request the account will be moved from Funded Sim to a new Funded Live account" / "The Funded Live account will start with $0 balance."
+      103000404096: "TradeDay may move the trader to funded Live before the 5th payout request."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 103000250682 sentences came back in both fetches; the heading came back once. The 103000404096 sentence came
+      back verbatim in one fetch and in paraphrase in the other. NOT STATED: whether the 5th request is itself paid
+      from the Sim account or carried into Live (the survey read K = 4 Sim payouts). A family must declare which.
+      Live terms are not recorded here (Live costs $156 a month per exchange in data; see tradeday.funded_monthly_fee).
+
+  - key: tradeday.fastpass_eod50k.payout_fee
+    firm: tradeday
+    value: unstated
+    units: usd
+    status: unstated
+    article_id: "103000404096; 103000262630"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000404096-fast-pass-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000404096 (Fast Pass payout policy): no payout or withdrawal fee stated (asked).
+      103000262630 ("How do I request a payout/withdrawal and how long does it take?", "Modified on Wed, 11 Jun, 2025 at 7:19 PM"): no payout or withdrawal fee stated (asked, both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The method fees (international wire $15; L1 crypto $2.5 plus gas; US wire and L2 crypto free) are stated on the
+      Quick Pay payout policy only (tradeday.quickpay_eod50k.payout_fee). Both plans pay through Riseworks, but no
+      page read says the Quick Pay list applies to Fast Pass.
+
+  - key: tradeday.fastpass_eod50k.payout_processing_days
+    firm: tradeday
+    value: 1
+    units: days
+    status: verified
+    article_id: "103000262630"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000262630-how-do-i-request-a-payout-withdrawal-and-how-long-does-it-take-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Funded Sim: "Requests received before 5:30 pm CT will be processed within 24 hours (business days only)."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. The value is 1 business day for a request before 5:30 pm CT. CAVEAT: the page is from 2025 and also
+      says (once) "traders must have cleared the Buffer Zone before requesting a payout", which the Fast Pass policy
+      contradicts ("There is no buffer requirement"). So parts of the page are stale. Its processing sentence is the
+      only one that covers Fast Pass, and the 2026 Quick Pay policy repeats it word for word.
+
+  # -- TradeDay Quick Pay End of Day 50K (intraday funded drawdown) ---------------------------------------------------
+  - key: tradeday.quickpay_eod50k.eval_fee
+    firm: tradeday
+    value: null
+    units: usd
+    status: unverified
+    article_id: "home page; 103000304248"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Home page, Quick Pay "End of Day (Intraday Funded Drawdown)" "50k" (Tradovate and Rithmic cards): "$ 174" "$ 69" "one-time fee"; "60% OFF"; "USE CODE "SALE60""; no end date.
+      103000304248, "Quick Pay End of Day Evaluation", 50K: "Price": "$175"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      CONFLICT between official pages ($174 struck through to $69 on the card, against $175 in the help table), so
+      left unverified. Both came back in both fetches. As for Fast Pass, the price reading is family C's to declare.
+
+  - key: tradeday.quickpay_eod50k.eval_consistency_rule
+    firm: tradeday
+    value: 0.30
+    units: share
+    status: verified
+    article_id: "103000008849; 103000008847"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008849-what-is-the-consistency-objective-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008849: "The consistency percentage for QuickPay accounts is 30%."
+      103000008847: "Be consistent in your profitability. No day greater than 30% of your total profits."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      103000008849's sentence came back in both fetches. 103000008847's came back verbatim in one and in paraphrase in
+      the other. As for Fast Pass: no failure, the target rises.
+
+  - key: tradeday.quickpay_eod50k.eval_min_days
+    firm: tradeday
+    value: null
+    units: days
+    status: unverified
+    article_id: "103000008850; terms-and-conditions s.3"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008850-what-is-the-trade-for-a-minimum-number-of-days-objective-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008850: "For QuickPay accounts the minimum number of trading days is 5."
+      Terms and Conditions s.3: "reach profit targets set for you over a minimum 7-day period"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      CONFLICT, as for Fast Pass. Both came back in both fetches. 103000008847 (both fetches): "Trade for a minimum of
+      5 trading days". Home card (once): "Min Trading Days 5".
+
+  - key: tradeday.quickpay_eod50k.funded_drawdown_amount
+    firm: tradeday
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "home page"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Quick Pay End of Day 50K card, Funded Sim: "Trailing Max Drawdown: $2,000 (calculated intraday)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches.
+
+  - key: tradeday.quickpay_eod50k.funded_drawdown_type
+    firm: tradeday
+    value: "intraday_trailing (whatever the evaluation's drawdown type)"
+    units: text
+    status: verified
+    article_id: "103000008889; 103000335937; 103000405228"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008889: "All Quick Pay Funded Sim accounts will have an intraday drawdown, regardless of the drawdown had on the evaluation."
+      103000335937 ("Modified on Wed, 22 Jul at 2:21 PM"): "The Trailing Maximum Drawdown (TMD) for all Funded Sim Quick Pay accounts are calculated intraday."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The 103000008889 sentence came back in both fetches. The 103000335937 sentence came back verbatim in one and in
+      paraphrase in the other. 103000405228 (both): "with an intraday drawdown, regardless of the drawdown had on the
+      evaluation". So the funded drawdown is NOT end-of-day. The plan passes the survey's screen only on its "no
+      funded consistency" leg.
+
+  - key: tradeday.quickpay_eod50k.funded_drawdown_lock
+    firm: tradeday
+    value: "trails (intraday, on gross profit) until it reaches the starting balance ($50,000), then freezes"
+    units: text
+    status: verified
+    article_id: "103000250682"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000250682-funded-accounts-withdrawals-and-the-impact-of-drawdowns
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "For evaluations and Funded Sims, the Trailing Max Drawdown will trail until they reach the starting account balance," ... "the trailing drawdown will freeze and no longer trail."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. On gross profit: see payout_balance_consequence. So the freeze comes when gross profit (current
+      plus paid out) has reached $2,000, not when the balance has.
+
+  - key: tradeday.quickpay_eod50k.payout_balance_consequence
+    firm: tradeday
+    value: "the trailing drawdown is computed on gross profit (current profit + payouts): a payout lowers the balance but not the drawdown level, which keeps trailing"
+    units: text
+    status: verified
+    article_id: "103000335937"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "When a user requests a payout, the TMD is calculated off of gross profits, not the net profits."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch. The other said the same in paraphrase ("Balances and TMD use gross profit, meaning
+      current profit plus payouts. A payout does not reset the TMD"), with the page's example: Day 1, balance
+      $50,500, TMD $48,500; after a $500 payout the balance is $50,000 and the TMD stays at $48,500. Every payout
+      spends cushion one for one. 103000250682 (once, in paraphrase) adds that frequent or large withdrawals that
+      leave the account "vulnerable to hitting the drawdown" may bar re-entry.
+
+  - key: tradeday.quickpay_eod50k.funded_consistency_rule
+    firm: tradeday
+    value: none
+    units: text
+    status: verified
+    article_id: "103000405228; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000405228-what-is-quick-pay-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "There are no milestones, no consistency requirement, and no payout buffer."
+      Home page, Quick Pay 50K card, Funded Sim: "Consistency: None"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches of each.
+
+  - key: tradeday.quickpay_eod50k.funded_position_limit
+    firm: tradeday
+    value: "5 contracts (50 micros); no scaling stated"
+    units: contracts
+    status: verified
+    article_id: "home page"
+    url: https://www.tradeday.com/
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Quick Pay End of Day 50K card, Funded Sim: "Position Limit: 5 Contracts (50 Micros)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches.
+
+  - key: tradeday.quickpay_eod50k.payout_frequency_gate
+    firm: tradeday
+    value: "the first payout after one day of trading; then any time the balance is positive; no buffer, no winning-day count, no consistency"
+    units: text
+    status: verified
+    article_id: "103000405228; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000405228-what-is-quick-pay-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "You can request your first payout after just one day of trading, and you can withdraw at any time as long as your account balance is positive."
+      Home page card: "Min Days to Payout: 1"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The sentence came back whole in one fetch and up to "after just one day of trading" in the other. The card line
+      came back twice. "positive" balance reads as current profit above $50,000.
+
+  - key: tradeday.quickpay_eod50k.payout_split
+    firm: tradeday
+    value: "0.50 on current profit below $4,000; 0.80 above $4,000 if the payout still leaves more than $4,000; a payout crossing $4,000 is split proportionally; per account; 0.90 in Funded Live"
+    units: text
+    status: verified
+    article_id: "103000405228; home page; 103000335937"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000405228-what-is-quick-pay-
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Below the $4,000 current profit level, payouts are split 50/50."
+      Home page card: "Profit Split: 50/50 below $4k net profit, 80/20 above $4k net profit, 90/10 in Funded Live"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both came back in both fetches. Verbatim once: "Above $4,000, the split improves to 80/20 in your favour, but
+      only if the payout still leaves more than $4,000 in current profit in the account after the withdrawal."; "If
+      a single payout crosses the $4,000 line, it's split proportionally."; and 103000335937's "Each account is
+      evaluated independently." (examples in paraphrase: $6,000 profit, a $3,000 payout gives $1,600 + $500). The
+      card says "net profit" and the help page "current profit". Read with the gross-profit drawdown, a trader taking
+      payouts below $4,000 keeps half and spends the whole payout from the cushion.
+
+  - key: tradeday.quickpay_eod50k.payout_cap
+    firm: tradeday
+    value: unstated
+    units: usd
+    status: unstated
+    article_id: "103000405228; 103000335937; home page"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No per-request maximum is stated: 103000405228 (asked, both fetches), 103000335937 (asked, both fetches), and the home page's Quick Pay card, which has no "Max Payout Request" line (unlike the Fast Pass card).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The per-account ceiling is tradeday.quickpay_eod50k.funded_sim_profit_ceiling ($10,000 gross).
+
+  - key: tradeday.quickpay_eod50k.funded_sim_profit_ceiling
+    firm: tradeday
+    value: "10000 USD gross profit per account: at it trading pauses for a review for Funded Live (usually granted); profit above it is removed and forfeited"
+    units: text
+    status: verified
+    article_id: "103000353468"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000353468-quick-pay-funded-sim-path-to-live-trading
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Funded Sim traders will be reviewed at $10,000 gross profit in each of their funded accounts for a move to Funded Live."
+      "Please note that any profits above the $10,000 gross profit level that are in the account will be forfeited"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The first sentence came back in both fetches ("Modified on Mon, 31 Aug at 10:54 AM"). The second came back
+      verbatim in one, and the other gave the same rule as "any excess profits above the threshold will be removed,
+      and the balance will be revised back to the threshold level." Verbatim once: "The trader must stop trading when
+      they have reached each threshold level, and wait for the review to be complete."; "The trading account will be
+      reviewed, and the trader will in most cases be moved to Funded Live."; "Once approved for Funded Live, the
+      transfer may take up to 10 business days to complete." Gross means current profit plus payouts, so $10,000 of
+      gross profit bounds what one Funded Sim account can ever pay, before the split.
+
+  - key: tradeday.quickpay_eod50k.payout_count_limit
+    firm: tradeday
+    value: unstated
+    units: count
+    status: unstated
+    article_id: "103000335937; 103000353468"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No number of payouts is stated on 103000335937 (both fetches) or 103000353468 (once); 103000353468: "Traders can make withdrawals at any time once they have a positive balance." (once)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The account's payout life ends at the $10,000 gross review (funded_sim_profit_ceiling), not at a count.
+
+  - key: tradeday.quickpay_eod50k.payout_fee
+    firm: tradeday
+    value: "US bank wire free; international bank wire $15 per withdrawal; L1 crypto $2.5 per withdrawal plus estimated gas; L2 crypto free"
+    units: text
+    status: verified
+    article_id: "103000335937"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "International bank wire withdrawals: $15/withdrawal"
+      "US bank wire withdrawals: Free"
+      "L1 Crypto Withdrawals: $2.5/withdrawal + Estimated Gas Fees."
+      "L2 Crypto Withdrawals: Free."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch; the other gave the same four fees in paraphrase. A US user paid by US wire pays $0.
+
+  - key: tradeday.quickpay_eod50k.payout_processing_days
+    firm: tradeday
+    value: 1
+    units: days
+    status: verified
+    article_id: "103000335937; 103000405228"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000335937-quick-pay-funded-sim-payout-policy
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-26, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "We aim to process payout requests submitted before 5:30 pm ET by the next business day."
+      "Requests received before 5:30 pm CT will be processed within 24 hours (business days only)."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both sentences came back in both fetches. At daily resolution both give one business day. They conflict on the
+      cut-off's time zone (5:30 pm ET or CT), an hour that this record does not settle. 103000405228 (once): "requests
+      submitted before 5:30pm are processed the next business day."
