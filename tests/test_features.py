@@ -53,6 +53,17 @@ def test_registry_counts_and_documentation():
     assert all(f"`{f.name}`" in table[i + 2] for i, f in enumerate(F.REGISTRY))
 
 
+def test_family_b_declaration_carries_this_registry():
+    """Family B's declaration (the draft, or its pinned successor) embeds `describe()`'s table line for line, so the
+    features it declares are the features this library computes."""
+    from pathlib import Path
+    files = sorted((Path(__file__).resolve().parent.parent / "prereg").glob("*multifeature*.md"))
+    assert files, "family B's declaration is missing"
+    text = files[-1].read_text(encoding="utf-8")
+    for line in F.describe().splitlines():
+        assert line in text, line
+
+
 def test_columns_are_the_registry(spring_X):
     assert list(spring_X.columns) == list(F.META) + list(F.NAMES) + [n for n, _ in F.NORMALISERS]
     days = spring_X["day"].nunique()

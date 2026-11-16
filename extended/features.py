@@ -117,14 +117,14 @@ class Feature:
     daily: bool = False
 
 
-_C = "c = the close of the last bar stamped <= t-1"
 _A = "atr14"
 _TOD = "its median at the same CT slot over the 20 prior trading days"
 
 REGISTRY: tuple[Feature, ...] = (
     # returns over several windows, ATR units, within the trading day
     *(Feature(f"ret_{w}", "return", f"(c - close of the last bar stamped <= t-1-{w}min) / atr14", f"{w} min", _A,
-              f"the day's bars stamped <= t-1min; atr14's 14 prior days", warmup=ATR_DAYS) for w in (5, 15, 30, 60, 120)),
+              "the day's bars stamped <= t-1min; atr14's 14 prior days", warmup=ATR_DAYS)
+      for w in (5, 15, 30, 60, 120)),
     Feature("ret_rth", "return", "(c - open of the first bar stamped >= 08:30) / atr14", "08:30 to t", _A,
             "the day's bars stamped 08:30..t-1min", available_from=RTH_OPEN + 5, warmup=ATR_DAYS),
     Feature("ret_day", "return", "(c - open of the trading day's first bar) / atr14", "17:00 to t", _A,
@@ -242,8 +242,10 @@ def describe() -> str:
     """The registry as a markdown table (one line per feature: formula, window, normaliser, the bars it reads)."""
     rows = ["| feature | group | formula | window | normaliser | reads | from | cross-day | warm-up | per |",
             "|---|---|---|---|---|---|---|---|---|---|"]
+    esc = lambda x: x.replace("|", "\\|")                       # noqa: E731 -- a '|' inside a cell ends it otherwise
     for f in REGISTRY:
-        rows.append(f"| `{f.name}` | {f.group} | {f.formula} | {f.window} | {f.normaliser} | {f.reads} | "
+        rows.append(f"| `{f.name}` | {f.group} | {esc(f.formula)} | {f.window} | {esc(f.normaliser)} | "
+                    f"{esc(f.reads)} | "
                     f"{slot_label(f.available_from)} | {'yes' if f.cross_day else 'no'} | {f.warmup} | "
                     f"{'day' if f.daily else 'alert'} |")
     return "\n".join(rows)
@@ -426,7 +428,9 @@ def _prior_median(X: np.ndarray, k: int = TOD_DAYS, min_count: int = TOD_MIN_DAY
     cnt = (~np.isnan(W)).sum(axis=-1)
     lo_i = np.clip((cnt - 1) // 2, 0, k - 1)
     hi_i = np.clip(cnt // 2, 0, k - 1)
-    med = 0.5 * (np.take_along_axis(S, lo_i[..., None], -1)[..., 0] + np.take_along_axis(S, hi_i[..., None], -1)[..., 0])
+    lo_v = np.take_along_axis(S, lo_i[..., None], -1)[..., 0]
+    hi_v = np.take_along_axis(S, hi_i[..., None], -1)[..., 0]
+    med = 0.5 * (lo_v + hi_v)
     med[cnt < min_count] = np.nan
     return med
 
@@ -521,7 +525,8 @@ def compute(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: C
             ok_d = (f_day >= 0) & (f_day <= s - 1)
             F["ret_day"][:, k] = np.where(ok_d, (c - O_day) / A, np.nan)
             for w in (15, 60):
-                F[f"rng_{w}"][:, k] = (np.fmax.reduce(H[:, s - w:s], axis=1) - np.fmin.reduce(L[:, s - w:s], axis=1)) / A
+                hw, lw = np.fmax.reduce(H[:, s - w:s], axis=1), np.fmin.reduce(L[:, s - w:s], axis=1)
+                F[f"rng_{w}"][:, k] = (hw - lw) / A
             hd, ld = Hcum[:, s - 1], Lcum[:, s - 1]
             F["range_day"][:, k] = (hd - ld) / A
             F["pos_day"][:, k] = (c - ld) / (hd - ld)
