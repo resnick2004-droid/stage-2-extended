@@ -2,6 +2,13 @@
 run with the clean-run marker and its log beside the checkout; `--collect` bringing results home and refusing clashes
 and overwrites; `--remove` unlinking the junctions first; the run lock taken and released around the command.
 
+Q-67 (E-044 (4)): the append-only files (`results/read_ledger.jsonl`, `results/variants.jsonl`) are collected as a
+union -- two runs made from a commit whose ledger lacks the other's lines both come home, whichever is collected first
+and whether or not the first collection was committed; a run that edited, dropped or cut a line of its commit's copy,
+a tree that lost a line of the run's commit or of its own HEAD, and a union the reader's `read_ledger` does not verify
+are refused with nothing copied; collecting twice is a no-op; `--remove` counts the file home once every line of the
+run's copy is in this tree's (a multiset); and a CRLF checkout of the variant log (core.autocrlf, text=auto) unions too.
+
 All on a temporary git repository with a dummy store (never the licensed data) and a temporary lock file.
 """
 from __future__ import annotations
@@ -33,6 +40,8 @@ def _load():
 
 
 RC = _load()
+
+from extended import reader  # noqa: E402  (run_clean put this repository's root on the path)
 
 
 def git(cwd: Path, *args: str) -> str:
@@ -132,24 +141,43 @@ def test_collect_never_overwrites_a_result(repo):
     assert (repo / "results" / "old.csv").read_text(encoding="utf-8") == "a\n1\n"
 
 
-LEDGER_APPEND = ("import pathlib; p = pathlib.Path('results/read_ledger.jsonl'); "
-                 "p.write_bytes(p.read_bytes() + b'L2' + bytes([10]))")
+LEDGER = "results/read_ledger.jsonl"
+VARIANTS = "results/variants.jsonl"
+
+
+def rec(n: int, run: str = "r") -> bytes:
+    """One ledger line as the reader writes it: a JSON object with the ledger's keys, canonical, LF-terminated."""
+    r = {k: None for k in reader.LEDGER_KEYS}
+    r.update({"ledger": 1, "when": f"2026-11-16T00:00:{n:02d}+00:00", "purpose": "identity",
+              "who": {"run_id": f"{run}@{n}", "pid": 1000 + n}, "declaration": {"ref": "E-901", "kind": "identity"}})
+    return (json.dumps(r, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+
+
 LEDGER_REWRITE = "import pathlib; pathlib.Path('results/read_ledger.jsonl').write_bytes(b'L9' + bytes([10]))"
 
 
-def _commit_ledger(repo: Path) -> None:
-    (repo / "results" / "read_ledger.jsonl").write_bytes(b"L1\n")
+def _commit_ledger(repo: Path, data: bytes | None = None) -> str:
+    (repo / LEDGER).write_bytes(rec(1, "base") if data is None else data)
     git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "ledger")
+    return git(repo, "rev-parse", "HEAD")
 
 
-def test_the_read_ledger_comes_home_when_it_extends_this_trees(repo):
+def _ledger_append_body(payload: Path) -> str:
+    """A command that appends the bytes of `payload` (a file outside the repository) to the checkout's ledger."""
+    return ("import pathlib; p = pathlib.Path('results/read_ledger.jsonl'); "
+            f"p.write_bytes(p.read_bytes() + pathlib.Path({str(payload)!r}).read_bytes())")
+
+
+def test_the_read_ledger_comes_home_when_it_extends_this_trees(repo, tmp_path):
     """Q-32: a clean run's judged reads append to its checkout's `results/read_ledger.jsonl`; `--collect` brings the
     lines home when the run's ledger extends this tree's, as for the variant log."""
     _commit_ledger(repo)
-    assert RC.main(["--name", "g1", "--", *code(LEDGER_APPEND)]) == 0
+    payload = tmp_path / "payload.jsonl"
+    payload.write_bytes(rec(2, "g1"))
+    assert RC.main(["--name", "g1", "--", *code(_ledger_append_body(payload))]) == 0
     assert RC.main(["--name", "g1", "--collect"]) == 0
-    assert (repo / "results" / "read_ledger.jsonl").read_bytes() == b"L1\nL2\n"
+    assert (repo / LEDGER).read_bytes() == rec(1, "base") + rec(2, "g1")
 
 
 def test_a_rewritten_read_ledger_is_never_collected(repo):
@@ -157,7 +185,191 @@ def test_a_rewritten_read_ledger_is_never_collected(repo):
     assert RC.main(["--name", "g2", "--", *code(LEDGER_REWRITE)]) == 0
     with pytest.raises(SystemExit):
         RC.main(["--name", "g2", "--collect"])
-    assert (repo / "results" / "read_ledger.jsonl").read_bytes() == b"L1\n"
+    assert (repo / "results" / "read_ledger.jsonl").read_bytes() == rec(1, "base")
+
+
+# ------------------------------------------------- Q-67: the append-only files collected as a union (E-044 (4))
+
+
+def _run_appends(name: str, sha: str, *lines: bytes, path: str = LEDGER) -> Path:
+    """A clean checkout of `sha` whose run appended `lines` to `path`: the run simulated by writing its output into
+    the checkout (no command runs)."""
+    wt = RC.create(name, sha)
+    p = wt / path
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_bytes((p.read_bytes() if p.exists() else b"") + b"".join(lines))
+    return wt
+
+
+def _ledger(repo: Path) -> bytes:
+    return (repo / LEDGER).read_bytes()
+
+
+def _results(repo: Path) -> list[str]:
+    return sorted(p.name for p in (repo / "results").iterdir())
+
+
+@pytest.mark.parametrize("commit_between", [True, False], ids=["committed-between", "uncommitted-between"])
+def test_two_runs_from_one_commit_both_come_home_as_a_union(repo, commit_between):
+    """The gap of E-044 (4): two runs made from a commit whose ledger lacks the other's lines each append their own;
+    the first collected, the second's copy no longer extends this tree's -- it comes home as a union all the same,
+    after the base, the first run's lines, then its own; and `--remove` then counts both runs' ledgers home."""
+    sha = _commit_ledger(repo)
+    a = _run_appends("u1", sha, rec(2, "u1"), rec(3, "u1"))
+    (a / "results" / "u1.csv").write_text("x\n1\n", encoding="utf-8")
+    b = _run_appends("u2", sha, rec(4, "u2"))
+    (b / "results" / "u2.csv").write_text("x\n2\n", encoding="utf-8")
+    for name in ("u1", "u2"):
+        with pytest.raises(SystemExit, match="not brought home"):
+            RC.main(["--name", name, "--remove"])                     # nothing is home yet
+    assert RC.main(["--name", "u1", "--collect"]) == 0
+    assert _ledger(repo) == rec(1, "base") + rec(2, "u1") + rec(3, "u1")
+    if commit_between:                                                # the lead commits the first run's lines
+        git(repo, "add", "-A")
+        git(repo, "commit", "-q", "-m", "u1 home")
+    with pytest.raises(SystemExit, match="not brought home"):
+        RC.main(["--name", "u2", "--remove"])                         # u2's line is not home yet
+    assert RC.main(["--name", "u2", "--collect"]) == 0
+    assert _ledger(repo) == rec(1, "base") + rec(2, "u1") + rec(3, "u1") + rec(4, "u2")
+    assert [r["who"]["run_id"] for r in reader.read_ledger(repo / LEDGER)] == ["base@1", "u1@2", "u1@3", "u2@4"]
+    assert (repo / "results" / "u2.csv").read_text(encoding="utf-8") == "x\n2\n", "its other results as before"
+    assert not reader.missing_lines((b / LEDGER).read_text(encoding="utf-8"), _ledger(repo).decode("utf-8"))
+    assert RC.main(["--name", "u1", "--remove"]) == 0
+    assert RC.main(["--name", "u2", "--remove"]) == 0
+    assert not (RC.RUNS / "u1").exists() and not (RC.RUNS / "u2").exists()
+
+
+def test_a_run_from_a_commit_without_a_ledger_comes_home_beside_this_trees_lines(repo):
+    """The waiting checkout's case: the run's commit had no ledger; this tree has since committed another run's line."""
+    sha = git(repo, "rev-parse", "HEAD")
+    assert "read_ledger" not in git(repo, "ls-tree", "-r", "--name-only", sha)
+    _run_appends("n1", sha, rec(5, "n1"), rec(6, "n1"))
+    _commit_ledger(repo)
+    assert RC.main(["--name", "n1", "--collect"]) == 0
+    assert _ledger(repo) == rec(1, "base") + rec(5, "n1") + rec(6, "n1")
+    assert RC.main(["--name", "n1", "--remove"]) == 0
+
+
+@pytest.mark.parametrize("how", ["edited", "dropped", "reordered"])
+def test_a_run_that_did_more_than_append_is_refused(repo, how):
+    """The run's copy must start with its commit's copy byte for byte: a base line edited, dropped or moved is
+    refused (a multiset check alone would pass the reordered one), nothing copied, and the run is not home."""
+    base = rec(1, "base") + rec(2, "base")
+    sha = _commit_ledger(repo, base)
+    wt = RC.create("e1", sha)
+    edited = rec(2, "base").replace(b'"pid":1002', b'"pid":9999')
+    assert edited != rec(2, "base")
+    head = {"edited": rec(1, "base") + edited, "dropped": rec(1, "base"),
+            "reordered": rec(2, "base") + rec(1, "base")}[how]
+    (wt / LEDGER).write_bytes(head + rec(3, "e1"))
+    (wt / "results" / "e1.csv").write_text("x\n1\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="does not start with"):
+        RC.main(["--name", "e1", "--collect"])
+    assert _ledger(repo) == base and not (repo / "results" / "e1.csv").exists(), "nothing copied"
+    with pytest.raises(SystemExit, match="not brought home"):
+        RC.main(["--name", "e1", "--remove"])
+
+
+@pytest.mark.parametrize("where", ["working-copy", "committed"])
+def test_a_tree_that_lost_a_line_of_the_runs_commit_is_refused(repo, where):
+    sha = _commit_ledger(repo, rec(1, "base") + rec(2, "base"))
+    wt = _run_appends("t1", sha, rec(3, "t1"))
+    (wt / "results" / "t1.csv").write_text("x\n1\n", encoding="utf-8")
+    (repo / LEDGER).write_bytes(rec(1, "base"))                       # this tree lost rec(2)
+    if where == "committed":
+        git(repo, "commit", "-q", "-am", "a line lost")
+    with pytest.raises(SystemExit, match="lost"):
+        RC.main(["--name", "t1", "--collect"])
+    assert _ledger(repo) == rec(1, "base") and not (repo / "results" / "t1.csv").exists(), "nothing copied"
+
+
+def test_a_tree_whose_working_copy_lost_a_line_committed_at_head_is_refused(repo):
+    """A line committed after the run's commit (another run's, collected) and then lost from the working copy is not
+    in the run's base, so the base check alone would pass it; the union is refused all the same."""
+    sha = _commit_ledger(repo)
+    _run_appends("h1", sha, rec(3, "h1"))
+    _commit_ledger(repo, rec(1, "base") + rec(2, "other"))
+    (repo / LEDGER).write_bytes(rec(1, "base"))
+    with pytest.raises(SystemExit, match="HEAD"):
+        RC.main(["--name", "h1", "--collect"])
+    assert _ledger(repo) == rec(1, "base")
+
+
+def test_collecting_twice_is_a_no_op(repo):
+    """Multiset-aware: a line the run wrote twice comes home twice, once; a second collection (before or after the
+    commit) appends nothing and does not rewrite the file."""
+    sha = _commit_ledger(repo)
+    _run_appends("d1", sha, rec(2, "d1"), rec(2, "d1"), rec(3, "d1"))
+    assert RC.main(["--name", "d1", "--collect"]) == 0
+    once = _ledger(repo)
+    assert once == rec(1, "base") + rec(2, "d1") * 2 + rec(3, "d1")
+    stamp = os.stat(repo / LEDGER).st_mtime_ns
+    assert RC.main(["--name", "d1", "--collect"]) == 0
+    assert _ledger(repo) == once and os.stat(repo / LEDGER).st_mtime_ns == stamp, "not rewritten"
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "d1 home")
+    assert RC.main(["--name", "d1", "--collect"]) == 0
+    assert _ledger(repo) == once
+    assert RC.main(["--name", "d1", "--remove"]) == 0
+
+
+def test_remove_counts_a_run_home_by_its_lines_not_its_bytes(repo):
+    """Once a later line sits in this tree's copy, the run's copy differs from it byte for byte; it is home when every
+    one of its lines is (with multiplicity) -- and not home while one copy of a twice-written line is missing."""
+    sha = _commit_ledger(repo)
+    _run_appends("m1", sha, rec(2, "m1"), rec(2, "m1"))
+    (repo / LEDGER).write_bytes(rec(1, "base") + rec(7, "other") + rec(2, "m1"))
+    with pytest.raises(SystemExit, match="not brought home"):
+        RC.main(["--name", "m1", "--remove"])                         # one of its two copies is missing
+    (repo / LEDGER).write_bytes(rec(1, "base") + rec(7, "other") + rec(2, "m1") * 2)
+    assert RC.main(["--name", "m1", "--remove"]) == 0
+
+
+@pytest.mark.parametrize("tail,why", [
+    (rec(2, "c1")[:-1], "newline"),                                   # the run's last line was cut
+    (b"not json\n", "does not verify"),                               # the union is not a ledger
+    (b'{"ledger": 1}\n', "does not verify"),                          # a line without the ledger's fields
+], ids=["cut", "not-json", "no-fields"])
+def test_a_cut_or_unverifiable_line_is_refused(repo, tail, why):
+    sha = _commit_ledger(repo)
+    _run_appends("c1", sha, rec(3, "c1"), tail)
+    names = _results(repo)
+    with pytest.raises(SystemExit, match=why):
+        RC.main(["--name", "c1", "--collect"])
+    assert _ledger(repo) == rec(1, "base")
+    assert _results(repo) == names, "no temporary file is left behind"
+
+
+def test_a_tree_copy_without_its_last_newline_is_refused(repo):
+    sha = _commit_ledger(repo)
+    _run_appends("w1", sha, rec(3, "w1"))
+    (repo / LEDGER).write_bytes(rec(1, "base")[:-1])
+    with pytest.raises(SystemExit, match="newline"):
+        RC.main(["--name", "w1", "--collect"])
+    assert _ledger(repo) == rec(1, "base")[:-1]
+
+
+def test_the_variant_log_unions_from_a_crlf_checkout(repo):
+    """The variant log is `text=auto`: under core.autocrlf its checkout is CRLF while the run appends LF lines. Its
+    base is the commit's copy as the checkout holds it (`git cat-file --filters`), so the union still comes home."""
+    git(repo, "config", "core.autocrlf", "true")
+    (repo / ".gitattributes").write_text("* text=auto\nresults/read_ledger.jsonl text eol=lf\n", encoding="utf-8")
+    (repo / VARIANTS).write_bytes(b'{"v": 1}\n')
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "variants")
+    sha = git(repo, "rev-parse", "HEAD")
+    wt = RC.create("v1", sha)
+    held = (wt / VARIANTS).read_bytes()
+    assert held == b'{"v": 1}\r\n', "the checkout converts the variant log: the case under test"
+    (wt / VARIANTS).write_bytes(held + b'{"v": 2}\n')                 # the variant counter appends LF lines
+    (repo / VARIANTS).write_bytes(b'{"v": 1}\n{"v": 3}\n')            # this tree's own later line, committed
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "a later variant")
+    assert RC.main(["--name", "v1", "--collect"]) == 0
+    assert (repo / VARIANTS).read_bytes() == b'{"v": 1}\n{"v": 3}\n{"v": 2}\n'
+    assert RC.main(["--name", "v1", "--collect"]) == 0
+    assert (repo / VARIANTS).read_bytes() == b'{"v": 1}\n{"v": 3}\n{"v": 2}\n'
+    assert RC.main(["--name", "v1", "--remove"]) == 0
 
 
 def test_each_run_has_its_own_run_id(repo):
