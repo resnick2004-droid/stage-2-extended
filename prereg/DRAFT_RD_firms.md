@@ -1,13 +1,14 @@
-# DRAFT: other firms' contracts on the registered trades (reading FC) -- a described reading, unnumbered, not declared
+# RD-xx: other firms' contracts on the registered trades (reading FC) -- a described reading, unnumbered (E-023 (1))
 
-**Status: DRAFT, third version, 2026-11-16 (TASK_QUEUE Q-91, E-058).** Written under the operator's ruling **E-023
-(1)** (`CHARTER.md` section 3), from the rules record of E-020 and Q-59 (`config/rules_extended.yaml`,
-`docs/RULES_CURRENCY.md`) and Stage 2's verified ledgers, in the form reading PP's draft takes
-(`prereg/DRAFT_F-P_payout_policy.md`, E-025). The first version (Q-54) was merged under E-038, the second (Q-54b, on
-Q-59's 28 entries: the cost rule, the tier-1 count, the two conduct counts, the written questions) under E-045. This
-version answers the red team's first read (Q-88, `docs/reviews/DRAFT_RD_firms_2026-11-16.md`): every remedy adopted as
-the review states it (E-058). It carries one edit on the red team's re-read (Q-88b,
-`docs/reviews/DRAFT_RD_firms_v3_2026-11-16.md`: pinnable after it; Q-91b, E-067), listed after the table below.
+**Status: declared, 2026-11-16 -- `prereg/RD-xx_firm_contracts.md`, pinned by the sha256 of its LF text in its
+decision row.** Written under the operator's ruling **E-023 (1)** (`CHARTER.md` section 3), from the rules record of
+E-020 and Q-59 (`config/rules_extended.yaml`, `docs/RULES_CURRENCY.md`) and Stage 2's verified ledgers, in the form
+reading PP's draft takes (`prereg/DRAFT_F-P_payout_policy.md`, E-025). It was drafted as `prereg/DRAFT_RD_firms.md`:
+the first version (Q-54) merged under E-038, the second (Q-54b, on Q-59's 28 entries: the cost rule, the tier-1 count,
+the two conduct counts, the written questions) under E-045, and the third (Q-91) answering the red team's first read
+(Q-88, `docs/reviews/DRAFT_RD_firms_2026-11-16.md`), every remedy adopted as the review states it (E-058). It carries
+one edit on the red team's re-read (Q-88b, `docs/reviews/DRAFT_RD_firms_v3_2026-11-16.md`: pinnable after it; Q-91b,
+E-067), listed after the table below, and the prereg-gatekeeper's pin-time edits (Q-91d, E-075).
 
 **What changed from the second version, finding by finding, and what each change does to what the reading can show
 (E-051).**
@@ -60,8 +61,8 @@ that adds no trades, and this file is a **described reading**, not a family:
 - it is declared and pinned before its run, by its own decision row with its sha256 (as `prereg/RD-nn_<slug>.md`,
   E-025 (1)), so nothing in it is chosen after a look.
 
-**Not pinned. No engine has been run for it, no cell built, no outcome of any plan computed or read.** Anything chosen
-after a reading is exploratory and reported apart.
+**At its declaration no engine had been run for it, no cell built, no outcome of any plan computed or read.** Anything
+chosen after a reading is exploratory and reported apart.
 
 **Not E-020's "family C".** E-020 named a solver-only contract-fit read "family C". This reading solves nothing and
 re-solves no table: it replays the registered trades and tables on each plan's verified contract. A later reading that
@@ -69,6 +70,7 @@ re-solves a state table for one plan (a sizing design for that contract) is its 
 
 | field | value |
 |---|---|
+| id | RD-xx |
 | reading | FC: P-16's registered trades (P-14's beside) on five plans' contracts -- Topstep's $50K (the reference), Lucid's LucidFlex 50K, DayTraders.com's EOD 50K, TradeDay's Fast Pass and Quick Pay End of Day 50K |
 | kind | a **described reading** (E-023 (1)): never carried; the operator chooses from its menu |
 | program family number | **none** (E-023 (1)); the next numbered family's k is unchanged by this file |
@@ -80,6 +82,7 @@ re-solves a state table for one plan (a sizing design for that contract) is its 
 | unread terms | each read by a rule fixed in section 5; prices at both ends of their listed bracket, or on a declared grid where none is listed |
 | seeds | from 20261990 to 20261999: three in use, five reserved, two retired because found in use elsewhere (section 12) |
 | confirmation | none: nothing is carried (section 11) |
+| `confirmation_tests_on_this_market` | NQ: three of three spent -- P-05, P-06, P-10 (`vendor/stage2/config/windows.yaml`, the window `held_back_2025`'s `read_by`; Stage 2 D-107's cap of three per market). This reading confirms nothing and reads no NQ from 2026-07-17, the reserve the operator alone may open |
 
 ---
 
@@ -626,7 +629,8 @@ to before 13:02 (07:32) is an entry inside the window (the red team's m9).
   not the licensed bars) -- the rows whose `release` column begins "Consumer Price Index for" or "Employment
   Situation for".
 - FOMC statement days: the dates Stage 2's A3 reads (`vendor/stage2/config/im2_release_calendar.csv`, code `FOMC`;
-  `config/sources/fomc_statements_2020_2024q1.csv`, `fomc_statements_2026q3.csv`; from federalreserve.gov).
+  `vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv`,
+  `vendor/stage2/config/sources/fomc_statements_2026q3.csv`; from federalreserve.gov).
 - FOMC minutes days: `config/calendar_fomc_minutes.csv`, pinned under E-050 (sha256 of its LF text
   `0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7`), from the Federal Reserve's own calendar pages.
 
@@ -889,7 +893,8 @@ helps.
   at its lenient end excepted (5.2, n5); QP requests below $250; purchases refused for cash (A-10's
   premise); any trade exiting after 15:10 CT (DayTraders' unsettled flat time and TradeDay's 3:50 pm CT liquidation both
   fall after it); and **any trade on a session that closes before 15:20 CT by E-029's calendar**
-  (`config/calendar_early_closes.csv`) -- on an abbreviated session the designs' 15:10 CT is not the binding time, and
+  (`config/calendar_early_closes.csv`, pinned under E-029, sha256 of its LF text
+  `72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2`) -- on an abbreviated session the designs' 15:10 CT is not the binding time, and
   TradeDay's "10 minutes before the close" and DayTraders' "or the market close if sooner" would bind first (the red
   team's note 2; the designs' walk takes nothing on early-close days, `atlas_local.py` 13, Stage 2 D-215, so the count
   is expected to be zero and is checked, not assumed).
@@ -948,9 +953,13 @@ section 6. The replay draws nothing.
 11. **The menu.** Each plan's strict and lenient rows: all starts the headline, the early and late blocks and the
     start years beside. Every row carries its labels: the upper bounds (U-3), the gaps that touch it (4.7), the cost
     rule's open question (4.8), the moot checks' and the conduct counts (9.3), the firm's written question while it is
-    open (16), and at QP its request rule (5.6). **The stability flag:** a plan whose mean paired difference in P, or in any guarded measure, has
-    opposite signs on the early and late blocks is flagged "not stable across blocks" (mechanical). **E-015's limits**
-    are flags only, once the operator approves them; until then the menu is read without flags, and says so.
+    open (16), and at QP its request rule (5.6). **The stability flag:** a plan whose mean paired difference in P, or
+    in any guarded measure, has opposite signs on the early and late blocks is flagged "not stable across blocks"
+    (mechanical). **E-015's limits**
+    are flags only, once the operator approves them, and **only limits approved before the run's commit flag the
+    menu**; a limit approved later is applied to the menu only as an exploratory reading, reported apart and recorded
+    under section 17's rule (its own row, `exploratory=True`), never as part of this reading. Until approved limits
+    exist the menu is read without flags, and says so.
 12. **Not modelled, and said so wherever this scorecard appears:** a user who stops when their own money runs out, the
     user's time, taxes.
 
@@ -1035,11 +1044,23 @@ version would have shown as an interval clear of zero may now show only as a sig
 | 20261998 | retired, found in use | the red team's scratch seed in `docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md` (its `skew_null_pass.py`) |
 | 20261999 | retired, found in use | the red team's scratch seed in the same review (its `rng`) |
 
-**The check, 2026-11-16.** A word-bounded search of the worktree, the vendored snapshot and its results included
-(`grep -rIow --exclude-dir=.git -E "2026199[0-9]" .`), and the same search on every branch and remote branch (`git grep`
-per ref), find the block only in that review, which uses 20261998 and 20261999 as scratch seeds. **Those two are
-retired here and never used.** `tests/test_rd_firms_draft.py` repeats the check on every run: no seed in use or
-reserved appears in any other declaration or anywhere in the vendored snapshot.
+**The check, 2026-11-16** (re-run on `wt/wt-firms` at dab4e96, master's tip then). A word-bounded search of the
+worktree, the vendored snapshot and its results included (`grep -rIow --exclude-dir=.git -E "2026199[0-9]" .`), and the
+same search on every branch and remote branch (`git grep` per ref), find the block outside this file only here:
+
+- `docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md` lines 463 and 492: 20261999 and 20261998, the red team's
+  scratch seeds. **Those two are retired here and never used**;
+- `identity/gate_identity.py` lines 50, 126 and 128: `Q71_SEED = 20261992`, the seed of Q-71's synthetic identity of
+  A-8 (E-049) -- this reading's own declared use of 20261992, "the build's toy campaigns" (T-10);
+- `tests/test_family_o_persistence.py` line 83: family O's seed block, written as a `range` whose exclusive upper bound
+  is 20261990 -- so 20261990 is not drawn there; not a use (family O's own seeds are not repeated here: its test
+  refuses them in any other declaration);
+- `DECISIONS.md` rows E-038 and E-049, which record this reading's seeds and Q-71's use of 20261992;
+- `tests/test_rd_firms_draft.py`, this file's own test, which names the block to check it.
+
+`tests/test_rd_firms_draft.py` repeats the check, in its own scope, on every run: no seed in use or reserved appears in
+any other declaration under `prereg/`, anywhere in the vendored snapshot, or in a review's or audit's scratch
+(`docs/reviews/`, `docs/audits/`), and the retired ones are found elsewhere.
 
 **Inherited, and used only as their owners registered them:**
 
@@ -1101,8 +1122,8 @@ that table.
   - `results/fc_gate.csv`, the gate rows;
   - `results/fc_menu.csv`, the menu with its flags and labels.
 
-  Each written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id`, the reading's
-  id (unnumbered) and its pinning row; the run counts (30 or 34 replays; 28 or 32 new; 2 references; 27 ladder
+  Each written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id` = `RD-xx`
+  (this reading's id; no family number) and its pinning row; the run counts (30 or 34 replays; 28 or 32 new; 2 references; 27 ladder
   replays; 16 gates); each plan's cost schedule (4.8) and table inputs (4.9); QP's request rule on each QP row;
   every seed, the retired ones included; every parameter, section 5's readings and their labels; each plan's record
   entries with their dates read; the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`; `exploratory=False`, since
@@ -1172,7 +1193,9 @@ that table.
    G-8). On its plain words it reaches the state table's funded opening, as E-012 found for Topstep's s.8, which the
    operator set at tier 3, priced (E-013 (1)). Until the operator rules for DayTraders, the reading prices it the same
    way (the denial ladder beside the 0 % headline) and labels the DT rows.
-4. **The levels of E-015's limits.** Approval is pending; they are flags only and never block.
+4. **The levels of E-015's limits.** Approval is pending; they are flags only and never block. Only limits approved
+   before the run's commit flag this reading's menu; a limit approved later is an exploratory reading (10.1 item 11,
+   section 17).
 5. **After the run:** the choice from the menu, if any; any purchase is the operator's.
 
 ## 17. Anything chosen after seeing results
