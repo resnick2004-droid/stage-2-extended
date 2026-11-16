@@ -29,15 +29,19 @@ None yet. The audit's findings are pending (Q-06, Q-07).
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | -- | not created yet (Q-03) |
-| wt-levels | wt/wt-levels | -- | not created yet (Q-03) |
-| wt-features | wt/wt-features | -- | not created yet (Q-03) |
-| wt-firms | wt/wt-firms | -- | not created yet (Q-03) |
-| wt-scout | wt/wt-scout | -- | not created yet (Q-03) |
+| wt-verify | wt/wt-verify | Q-04 house tools, then Q-05 the U1 identity (`docs/briefs/Q-04_Q-05_2026-11-15.md`) | running |
+| wt-levels | wt/wt-levels | Q-10 the shared bracket walker and its identity (`docs/briefs/Q-10_2026-11-15.md`) | running |
+| wt-features | wt/wt-features | -- (Q-11 waits for the audit's protocol findings) | idle |
+| wt-firms | wt/wt-firms | Q-12 other firms' contracts on their own pages (`docs/briefs/Q-12_2026-11-15.md`) | running |
+| wt-scout | wt/wt-scout | -- (the red-team pass, Q-07, after the audit) | idle |
+
+All five created at e4f399a with the bars and atlas linked as junctions (`python scripts/worktrees.py list`).
 
 ## Running now
 
 - Q-06: the Phase 0 audit, five read-only agents (tracks A-E), notes to `docs/audits/phase0/`.
+- Q-02: Stage 2's five agents, three skills, nine commands and the hooks being ported (one agent, files on master).
+- Q-04/Q-05 (wt-verify), Q-10 (wt-levels), Q-12 (wt-firms): workers on their briefs.
 
 ## Machine
 
