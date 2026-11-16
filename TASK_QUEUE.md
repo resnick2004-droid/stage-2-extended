@@ -128,7 +128,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-87c | Family O's fourth text: the gatekeeper's seven items | wt-lit | done: merged (E-076); the gatekeeper's read Q-87d | Q-87b | light | 0 | E-073 |
 | Q-92b | Reading PP's small redraft (Q-102's M1 and seven minors); the review committed first | wt-payout | running (its drafter) | Q-102 | light | 0 | E-074 |
 | Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | running (its drafter) | Q-91c | light | 0 | E-075 |
-| Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | running | Q-87c | light | 0 | E-076 |
+| Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | done: APPROVE, contingent on Q-55 (drop rule) and Q-83 (E-077) | Q-87c | light | 0 | E-076 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
