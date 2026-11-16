@@ -48,6 +48,8 @@ linear; a figure at h sessions reads the start days with at least h sessions lef
   days, U1's `periodic:share_positive` and `share_by`; **P and S1-S5c by Stage 2's own code**
   (`u_select.scorecard` on `u_select.records_from_start_rows`: nothing re-implemented), P reading months 1-3 on the
   start days with 63 sessions;
+* the judged block (E-014: "all starts and the judged block"): the journey table and the scorecard again on the start
+  days from `JUDGED_FROM` (2024-01-01) on -- Stage 2 D-621 (4)(b)'s block, `u_select`'s `late`;
 * "separate stretches": the start days read over the sessions each spans -- a rough count of non-overlapping histories
   behind a figure, beside it (the effective-sample reading proper is Q-17's).
 
@@ -84,6 +86,8 @@ from propedge.research.customer_journey import _days_q, _q  # noqa: E402
 MONTH, MONTHS, YEAR = U.MONTH, U.MONTHS, U.HORIZON          # 21, 12, 252
 PASS_WINDOW, PAYOUT_WINDOW = U.PASS_WINDOW, U.PAYOUT_WINDOW  # 42, 126
 P_HORIZON = S.P_HORIZON                                      # 63
+#: the judged block: the start days from the first session of this year on (Stage 2 D-621 (4)(b), `u_select`'s `late`)
+JUDGED_FROM = f"{S.JUDGED_FIRST_YEAR}-01-01"
 TABLE_MONTHS = (1, 2, 3, 6, 12)
 FAN_PCTS = (10, 25, 50, 75, 90)
 TOL = U.TOL                       # a net within a millionth of a dollar of zero is at zero
@@ -134,6 +138,7 @@ class ReportSpec:
     where: Mapping[str, Any] = field(default_factory=dict)
     base: Mapping[str, Any] = field(default_factory=dict)
     ladder: str | None = "denial"
+    judged_block: bool = True
     demonstration: bool = False
     note: str = ""
     out: str = ""
@@ -236,17 +241,26 @@ def filters(spec: ReportSpec, design: Design, level: float | None = None) -> dic
     return f
 
 
-def design_rows(spec: ReportSpec, df: pd.DataFrame, key: str, level: float | None = None) -> pd.DataFrame:
+def design_rows(spec: ReportSpec, df: pd.DataFrame, key: str, level: float | None = None,
+                block: str | None = None) -> pd.DataFrame:
     f = filters(spec, spec.design(key), level)
     rows = df[_mask(df, f)]
     if not len(rows):
         raise ReportError(f"no rows for {key!r} where {_where_text(f)}")
+    if block is not None:
+        if block != "judged":
+            raise ReportError(f"no block {block!r} (the judged block is 'judged')")
+        rows = rows[rows["start_date"].astype(str).str[:10] >= JUDGED_FROM]
+        if not len(rows):
+            raise ReportError(f"no start day of {key!r} in the judged block (from {JUDGED_FROM})")
     return rows
 
 
-def starts_for(spec: ReportSpec, df: pd.DataFrame, key: str, level: float | None = None) -> "Starts":
-    """The design's start days (at a ladder level, else the base case) from the file's frame."""
-    return Starts.of(design_rows(spec, df, key, level))
+def starts_for(spec: ReportSpec, df: pd.DataFrame, key: str, level: float | None = None,
+               block: str | None = None) -> "Starts":
+    """The design's start days (at a ladder level, else the base case; all of them, or the judged block's) from the
+    file's frame."""
+    return Starts.of(design_rows(spec, df, key, level, block))
 
 
 def ladder_levels(spec: ReportSpec, df: pd.DataFrame, key: str) -> list[float]:
@@ -690,6 +704,7 @@ class Claim:
     decimals: int
     as_percent: bool
     printed: str
+    block: str | None = None
 
 
 #: unit -> (decimals shown, shown as a percentage)
@@ -721,15 +736,17 @@ class _Page:
     def add(self, *lines: str) -> None:
         self.lines.extend(lines)
 
-    def num(self, v: float, kind: str, label: str, design: str, what: str, level: float | None = None) -> str:
+    def num(self, v: float, kind: str, label: str, design: str, what: str, level: float | None = None,
+            block: str | None = None) -> str:
         if not math.isfinite(v):
             raise ValueError(f"{label}: a blank is not a number to print")
         s = _fmt(v, kind)
         dec, pct = KINDS[kind]
-        self.claims.append(Claim(label, design, level, what, dec, pct, s))
+        self.claims.append(Claim(label, design, level, what, dec, pct, s, block))
         return s + ("%" if pct else "")
 
-    def q(self, st: Starts, key: str, kind: str, label: str, design: str, level: float | None = None) -> str:
+    def q(self, st: Starts, key: str, kind: str, label: str, design: str, level: float | None = None,
+          block: str | None = None) -> str:
         why = blank_reason(st, key)
         if why == "not_in_file":
             return "not in this file"
@@ -737,7 +754,7 @@ class _Page:
             return f"after session {dist(st, key.split(':')[1]).days_last}"
         if why == "none":
             return "none to read"
-        return self.num(quantity(st, key), kind, label, design, key, level)
+        return self.num(quantity(st, key), kind, label, design, key, level, block)
 
     def text(self) -> str:
         return "\n".join(self.lines).rstrip() + "\n"
@@ -895,24 +912,46 @@ def compose(spec: ReportSpec, df: pd.DataFrame, manifest: Any, *, root: Path | s
               f"{st.date[0]} to {st.date[-1]}. Each figure reads the start days with enough sessions left for it "
               "(\"read over\").", "")
 
-        P.add("### The journey, start day by start day", "",
-              "| What it measures | Low end (p10) | Middle (median) | High end (p90) | Start days read | "
-              "Separate stretches (about) | Read over |", "|---|---:|---:|---:|---:|---:|---|")
-        for m in JOURNEY:
+        judged = None
+        if spec.judged_block:
             try:
-                dd = dist(st, m.name)
-            except NotInFile:
-                P.add(f"| {m.label} | not in this file | not in this file | not in this file | not in this file | "
-                      f"not in this file | {m.over} |")
-                continue
-            cells = [P.q(st, f"dist:{m.name}:p{p}", m.kind, f"{d.short} | {m.label} | p{p}", k) for p in (10, 50, 90)]
-            n = P.num(dd.n, "count", f"{d.short} | {m.label} | start days read", k, f"dist:{m.name}:n") if dd.n \
-                else "0"
-            stretch = (P.num(dd.starts / dd.window, "stretch", f"{d.short} | {m.label} | separate stretches", k,
-                             f"dist:{m.name}:stretch") if dd.starts else "0")
-            P.add(f"| {m.label} | {' | '.join(cells)} | {n} | {stretch} | {m.over} |")
-        P.add("", "*\"After session h\": more than a tenth (or half) of the start days had not got there within h "
-              "sessions. \"None to read\": no start day to read.*", "")
+                judged = starts_for(spec, df, k, None, "judged")
+            except ReportError:
+                judged = None
+
+        def journey(s_: Starts, tag: str, block: str | None) -> None:
+            P.add("| What it measures | Low end (p10) | Middle (median) | High end (p90) | Start days read | "
+                  "Separate stretches (about) | Read over |", "|---|---:|---:|---:|---:|---:|---|")
+            for m in JOURNEY:
+                try:
+                    dd = dist(s_, m.name)
+                except NotInFile:
+                    P.add(f"| {m.label} | not in this file | not in this file | not in this file | not in this file "
+                          f"| not in this file | {m.over} |")
+                    continue
+                cells = [P.q(s_, f"dist:{m.name}:p{p}", m.kind, f"{tag} | {m.label} | p{p}", k, None, block)
+                         for p in (10, 50, 90)]
+                n = (P.num(dd.n, "count", f"{tag} | {m.label} | start days read", k, f"dist:{m.name}:n", None,
+                           block) if dd.n else "0")
+                stretch = (P.num(dd.starts / dd.window, "stretch", f"{tag} | {m.label} | separate stretches", k,
+                                 f"dist:{m.name}:stretch", None, block) if dd.starts else "0")
+                P.add(f"| {m.label} | {' | '.join(cells)} | {n} | {stretch} | {m.over} |")
+            P.add("", "*\"After session h\": more than a tenth (or half) of the start days had not got there within h "
+                  "sessions. \"None to read\": no start day to read.*", "")
+
+        P.add("### The journey, start day by start day", "")
+        journey(st, d.short, None)
+        if spec.judged_block:
+            P.add("### The same on the judged block", "")
+            if judged is None:
+                P.add(f"The judged block (the start days from {JUDGED_FROM} on; Stage 2 D-621 (4)(b)): none in this "
+                      "file.", "")
+            else:
+                nj = P.num(judged.n, "count", f"{d.short} judged block | start days", k, "rows", None, "judged")
+                P.add(f"The judged block is the start days from {JUDGED_FROM} on (Stage 2 D-621 (4)(b)), the block a "
+                      f"design is judged on: {nj} of them. Its later start days have less history after them, so its "
+                      "longer readings rest on few separate stretches.", "")
+                journey(judged, f"{d.short} judged block", "judged")
 
         P.add("### Month by month", "", "| | " + " | ".join(f"Month {m}" for m in TABLE_MONTHS) + " |",
               "|---|" + "---:|" * len(TABLE_MONTHS))
@@ -956,12 +995,20 @@ def compose(spec: ReportSpec, df: pd.DataFrame, manifest: Any, *, root: Path | s
         P.add("### The scorecard: P never alone", "",
               "The primary measure P beside the guarded measures (CHARTER section 2), by Stage 2's own code "
               "(`u_select.scorecard`).", "",
-              "| Measure | What it is | Value | Better when | Start days read |", "|---|---|---:|---|---:|")
+              "| Measure | What it is | All start days | Start days read |"
+              + (" Judged block | Start days read |" if judged is not None else "") + " Better when |",
+              "|---|---|---:|---:|" + ("---:|---:|" if judged is not None else "") + "---|")
         for key, (words, kind) in SCORE_WORDS.items():
-            v, n = quantity(st, f"score:{key}"), quantity(st, f"score_n:{key}")
-            val = P.num(v, kind, f"{d.short} | {key}", k, f"score:{key}") if math.isfinite(v) else "none to read"
-            nn = P.num(n, "count", f"{d.short} | {key} | start days read", k, f"score_n:{key}") if n else "0"
-            P.add(f"| {key} | {words} | {val} | {S.BY_KEY[key].direction} | {nn} |")
+            cells = []
+            for s_, tag, block in ((st, d.short, None), (judged, f"{d.short} judged block", "judged")):
+                if s_ is None:
+                    continue
+                v, n = quantity(s_, f"score:{key}"), quantity(s_, f"score_n:{key}")
+                cells.append(P.num(v, kind, f"{tag} | {key}", k, f"score:{key}", None, block) if math.isfinite(v)
+                             else "none to read")
+                cells.append(P.num(n, "count", f"{tag} | {key} | start days read", k, f"score_n:{key}", None, block)
+                             if n else "0")
+            P.add(f"| {key} | {words} | " + " | ".join(cells) + f" | {S.BY_KEY[key].direction} |")
         P.add("")
 
         P.add("### Net cash over the first year", "")
@@ -1277,7 +1324,8 @@ class _Recompute:
         self.spec, self.claim = spec, claim
 
     def __call__(self, df: pd.DataFrame) -> float:
-        return quantity(starts_for(self.spec, df, self.claim.design, self.claim.level), self.claim.what)
+        c = self.claim
+        return quantity(starts_for(self.spec, df, c.design, c.level, c.block), c.what)
 
 
 def traced_numbers(spec: ReportSpec, *, root: Path | str = ROOT) -> list[TracedNumber]:

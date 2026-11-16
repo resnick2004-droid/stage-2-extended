@@ -60,6 +60,28 @@ Assumed, as Stage 2's engine models them: payouts never denied in every figure o
 
 *"After session h": more than a tenth (or half) of the start days had not got there within h sessions. "None to read": no start day to read.*
 
+### The same on the judged block
+
+The judged block is the start days from 2024-01-01 on (Stage 2 D-621 (4)(b)), the block a design is judged on: 657 of them. Its later start days have less history after them, so its longer readings rest on few separate stretches.
+
+| What it measures | Low end (p10) | Middle (median) | High end (p90) | Start days read | Separate stretches (about) | Read over |
+|---|---:|---:|---:|---:|---:|---|
+| Sessions until the first passed evaluation | 2 | 2 | 3 | 616 | 14.7 | start days with 42 sessions left (one not passed by then counts as later) |
+| Cash out of pocket before the first pass ($) | 294 | 392 | 588 | 616 | 14.7 | start days that passed within 42 sessions |
+| Sessions until the first payout arrives | 13 | 17 | 24 | 532 | 4.2 | start days with 126 sessions left (one not paid by then counts as later) |
+| Cash out of pocket before the first payout ($) | 1,478 | 1,725 | 2,463 | 532 | 4.2 | start days paid within 126 sessions |
+| Sessions until net cash is back to zero (break-even) | not in this file | not in this file | not in this file | not in this file | not in this file | start days with 252 sessions left (one not back by then counts as later) |
+| Deepest fall in net cash after break-even ($) | not in this file | not in this file | not in this file | not in this file | not in this file | start days back to break-even within 252 sessions |
+| Net cash at the end of month 3 ($) | 106 | 4,623 | 9,325 | 595 | 9.4 | start days with 63 sessions left |
+| Net cash at the end of month 12 ($) | 18,966 | 28,279 | 40,107 | 406 | 1.6 | start days with 252 sessions left |
+| Share of the year's months with a net gain | 66.7% | 83.3% | 91.7% | 406 | 1.6 | start days with 252 sessions left |
+| Longest run of months without a payout (months) | 0.0 | 1.0 | 1.0 | 406 | 1.6 | start days with 252 sessions left |
+| How much the monthly net change swings (standard deviation, $) | 1,734 | 2,297 | 2,888 | 406 | 1.6 | start days with 252 sessions left |
+| Payouts per month | 2.67 | 3.25 | 4.00 | 406 | 1.6 | start days with 252 sessions left |
+| Largest single month's share of the year's payouts | 13.0% | 15.4% | 18.8% | 406 | 1.6 | start days paid in the year (252 sessions left) |
+
+*"After session h": more than a tenth (or half) of the start days had not got there within h sessions. "None to read": no start day to read.*
+
 ### Month by month
 
 | | Month 1 | Month 2 | Month 3 | Month 6 | Month 12 |
@@ -77,18 +99,18 @@ The share that falls back below zero after break-even: not in this file (it need
 
 The primary measure P beside the guarded measures (CHARTER section 2), by Stage 2's own code (`u_select.scorecard`).
 
-| Measure | What it is | Value | Better when | Start days read |
-|---|---|---:|---|---:|
-| P | Start days ahead, averaged over months 1, 2 and 3 -- the primary measure | 67.1% | higher | 1,629 |
-| S1 | Cash spent before the first payout, high end (p90): the bankroll a user needs | 3,003 | lower | 1,566 |
-| S3a | Start days paid within a month (by session 21) | 79.5% | higher | 1,671 |
-| S3b | Sessions to the first payout, high end (p90) | 34 | lower | 1,566 |
-| S3c | Payouts received per dollar of fees by month 3, all start days pooled | 1.85 | higher | 1,629 |
-| S4a | Start days ahead at month 6 | 98.5% | higher | 1,566 |
-| S4b | Start days ahead at month 12 | 100.0% | higher | 1,440 |
-| S5a | Net cash at month 3 of the unlucky tenth of start days (p10) | -769 | higher | 1,629 |
-| S5b | Longest wait between payouts within 126 sessions, high end (p90) | 34.5 | lower | 1,566 |
-| S5c | How concentrated month 6's money is: the best quarter of start days' share of the total | 41.9% | lower | 1,566 |
+| Measure | What it is | All start days | Start days read | Judged block | Start days read | Better when |
+|---|---|---:|---:|---:|---:|---|
+| P | Start days ahead, averaged over months 1, 2 and 3 -- the primary measure | 67.1% | 1,629 | 71.9% | 595 | higher |
+| S1 | Cash spent before the first payout, high end (p90): the bankroll a user needs | 3,003 | 1,566 | 2,463 | 532 | lower |
+| S3a | Start days paid within a month (by session 21) | 79.5% | 1,671 | 85.2% | 637 | higher |
+| S3b | Sessions to the first payout, high end (p90) | 34 | 1,566 | 24 | 532 | lower |
+| S3c | Payouts received per dollar of fees by month 3, all start days pooled | 1.85 | 1,629 | 1.90 | 595 | higher |
+| S4a | Start days ahead at month 6 | 98.5% | 1,566 | 99.6% | 532 | higher |
+| S4b | Start days ahead at month 12 | 100.0% | 1,440 | 100.0% | 406 | higher |
+| S5a | Net cash at month 3 of the unlucky tenth of start days (p10) | -769 | 1,629 | 106 | 595 | higher |
+| S5b | Longest wait between payouts within 126 sessions, high end (p90) | 34.5 | 1,566 | 34.9 | 532 | lower |
+| S5c | How concentrated month 6's money is: the best quarter of start days' share of the total | 41.9% | 1,566 | 40.5% | 532 | lower |
 
 ### Net cash over the first year
 
@@ -139,6 +161,28 @@ The payout-denial ladder: not in this file. Every figure above has payouts never
 
 *"After session h": more than a tenth (or half) of the start days had not got there within h sessions. "None to read": no start day to read.*
 
+### The same on the judged block
+
+The judged block is the start days from 2024-01-01 on (Stage 2 D-621 (4)(b)), the block a design is judged on: 657 of them. Its later start days have less history after them, so its longer readings rest on few separate stretches.
+
+| What it measures | Low end (p10) | Middle (median) | High end (p90) | Start days read | Separate stretches (about) | Read over |
+|---|---:|---:|---:|---:|---:|---|
+| Sessions until the first passed evaluation | 2 | 2 | 4 | 616 | 14.7 | start days with 42 sessions left (one not passed by then counts as later) |
+| Cash out of pocket before the first pass ($) | 294 | 392 | 637 | 616 | 14.7 | start days that passed within 42 sessions |
+| Sessions until the first payout arrives | 13 | 19 | 41.9 | 532 | 4.2 | start days with 126 sessions left (one not paid by then counts as later) |
+| Cash out of pocket before the first payout ($) | 1,576 | 1,898 | 3,599 | 532 | 4.2 | start days paid within 126 sessions |
+| Sessions until net cash is back to zero (break-even) | not in this file | not in this file | not in this file | not in this file | not in this file | start days with 252 sessions left (one not back by then counts as later) |
+| Deepest fall in net cash after break-even ($) | not in this file | not in this file | not in this file | not in this file | not in this file | start days back to break-even within 252 sessions |
+| Net cash at the end of month 3 ($) | -1,416 | 4,920 | 11,977 | 595 | 9.4 | start days with 63 sessions left |
+| Net cash at the end of month 12 ($) | 17,945 | 31,503 | 44,993 | 406 | 1.6 | start days with 252 sessions left |
+| Share of the year's months with a net gain | 66.7% | 83.3% | 91.7% | 406 | 1.6 | start days with 252 sessions left |
+| Longest run of months without a payout (months) | 0.0 | 1.0 | 2.0 | 406 | 1.6 | start days with 252 sessions left |
+| How much the monthly net change swings (standard deviation, $) | 2,021 | 2,814 | 3,617 | 406 | 1.6 | start days with 252 sessions left |
+| Payouts per month | 2.17 | 2.83 | 3.58 | 406 | 1.6 | start days with 252 sessions left |
+| Largest single month's share of the year's payouts | 14.0% | 17.4% | 23.1% | 406 | 1.6 | start days paid in the year (252 sessions left) |
+
+*"After session h": more than a tenth (or half) of the start days had not got there within h sessions. "None to read": no start day to read.*
+
 ### Month by month
 
 | | Month 1 | Month 2 | Month 3 | Month 6 | Month 12 |
@@ -156,18 +200,18 @@ The share that falls back below zero after break-even: not in this file (it need
 
 The primary measure P beside the guarded measures (CHARTER section 2), by Stage 2's own code (`u_select.scorecard`).
 
-| Measure | What it is | Value | Better when | Start days read |
-|---|---|---:|---|---:|
-| P | Start days ahead, averaged over months 1, 2 and 3 -- the primary measure | 62.0% | higher | 1,629 |
-| S1 | Cash spent before the first payout, high end (p90): the bankroll a user needs | 3,450 | lower | 1,566 |
-| S3a | Start days paid within a month (by session 21) | 59.5% | higher | 1,671 |
-| S3b | Sessions to the first payout, high end (p90) | 39 | lower | 1,566 |
-| S3c | Payouts received per dollar of fees by month 3, all start days pooled | 2.08 | higher | 1,629 |
-| S4a | Start days ahead at month 6 | 97.7% | higher | 1,566 |
-| S4b | Start days ahead at month 12 | 99.9% | higher | 1,440 |
-| S5a | Net cash at month 3 of the unlucky tenth of start days (p10) | -1,162 | higher | 1,629 |
-| S5b | Longest wait between payouts within 126 sessions, high end (p90) | 34 | lower | 1,566 |
-| S5c | How concentrated month 6's money is: the best quarter of start days' share of the total | 40.7% | lower | 1,566 |
+| Measure | What it is | All start days | Start days read | Judged block | Start days read | Better when |
+|---|---|---:|---:|---:|---:|---|
+| P | Start days ahead, averaged over months 1, 2 and 3 -- the primary measure | 62.0% | 1,629 | 61.6% | 595 | higher |
+| S1 | Cash spent before the first payout, high end (p90): the bankroll a user needs | 3,450 | 1,566 | 3,599 | 532 | lower |
+| S3a | Start days paid within a month (by session 21) | 59.5% | 1,671 | 60.9% | 637 | higher |
+| S3b | Sessions to the first payout, high end (p90) | 39 | 1,566 | 41.9 | 532 | lower |
+| S3c | Payouts received per dollar of fees by month 3, all start days pooled | 2.08 | 1,629 | 2.02 | 595 | higher |
+| S4a | Start days ahead at month 6 | 97.7% | 1,566 | 96.8% | 532 | higher |
+| S4b | Start days ahead at month 12 | 99.9% | 1,440 | 99.8% | 406 | higher |
+| S5a | Net cash at month 3 of the unlucky tenth of start days (p10) | -1,162 | 1,629 | -1,416 | 595 | higher |
+| S5b | Longest wait between payouts within 126 sessions, high end (p90) | 34 | 1,566 | 34 | 532 | lower |
+| S5c | How concentrated month 6's money is: the best quarter of start days' share of the total | 40.7% | 1,566 | 41.1% | 532 | lower |
 
 ### Net cash over the first year
 

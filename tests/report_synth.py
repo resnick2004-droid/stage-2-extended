@@ -29,8 +29,8 @@ DESIGNS = {
 }
 
 
-def _dates(n: int) -> list[str]:
-    d, out = date(2021, 1, 4), []
+def _dates(n: int, first: date = date(2021, 1, 4)) -> list[str]:
+    d, out = first, []
     while len(out) < n:
         if d.weekday() < 5:
             out.append(d.isoformat())
@@ -102,9 +102,11 @@ def _row(rel: list[float], passed: int | None, pays: list[tuple[int, float]], ob
 
 
 def rows(seed: int, *, designs=("steady", "lumpy"), starts: int = 260, sessions: int = 280,
-         ladder: tuple[float, ...] | None = (0.0, 0.10, 0.25, 0.50), arm: str = "verdict") -> list[dict]:
-    """Start rows for each design (and ladder level): `starts` start days, start s observing min(252, sessions - s)."""
-    dates = _dates(starts)
+         ladder: tuple[float, ...] | None = (0.0, 0.10, 0.25, 0.50), arm: str = "verdict",
+         first_date: date = date(2021, 1, 4)) -> list[dict]:
+    """Start rows for each design (and ladder level): `starts` start days from `first_date` (weekdays), start s
+    observing min(252, sessions - s)."""
+    dates = _dates(starts, first_date)
     out = []
     for i, design in enumerate(designs):
         for level in (ladder if ladder is not None else (None,)):

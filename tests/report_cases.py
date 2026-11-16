@@ -138,6 +138,22 @@ def case_measures(base: Path) -> None:
                     if not close(a, b):
                         problems.append(f"seed {seed} {d.key} level {level} {k}: report {a!r}, reference {b!r}")
     info["compared"] = compared
+    # the judged block (start days from 2024-01-01): the same measures on its rows alone
+    from datetime import date
+
+    path = write(SY.frame(SY.SEEDS[0], designs=("steady",), ladder=None, first_date=date(2023, 6, 1)), base,
+                 "synth_judged")
+    spec = synth_spec("j", str(path), ladder=False, designs=("steady",))
+    st = R.starts_for(spec, X.read_result(path), "steady", None, "judged")
+    raw = [REF.Row(r) for r in text_rows(path) if r["start_date"] >= R.JUDGED_FROM]
+    if not 0 < len(raw) < 260 or int(R.quantity(st, "rows")) != len(raw):
+        problems.append(f"judged block: {R.quantity(st, 'rows')} start days, {len(raw)} from {R.JUDGED_FROM} on")
+    for k in REF.keys():
+        a, b = R.quantity(st, k), REF.quantity(raw, k)
+        compared += 1
+        if not close(a, b):
+            problems.append(f"judged block {k}: report {a!r}, reference {b!r}")
+    info["compared"] = compared
     # the same measures with the optional columns absent: those that need them say so; the rest are unchanged
     df0 = SY.frame(SY.SEEDS[0], daily=False, cash=False, ladder=None)
     path = write(df0, base, "synth_monthly")
@@ -256,10 +272,23 @@ def check_page(base: Path, spec: R.ReportSpec, *, daily: bool, exploratory: bool
 
 
 def case_build(base: Path) -> None:
-    path = write(SY.frame(SY.SEEDS[1], designs=("steady", "lumpy"), starts=150, sessions=300), base, "synth_page",
-                 exploratory=True, seed=SY.SEEDS[1])
+    from datetime import date
+
+    path = write(SY.frame(SY.SEEDS[1], designs=("steady", "lumpy"), starts=150, sessions=300,
+                          first_date=date(2023, 9, 1)), base, "synth_page", exploratory=True, seed=SY.SEEDS[1])
     spec = synth_spec("synth_daily", "results/" + path.name)
     check_page(base, spec, daily=True, exploratory=True, ladder=True)
+    text = (base / spec.out / "README.md").read_text(encoding="utf-8")
+    for d in spec.designs:
+        part = text.split(f"## {d.short}: ")[1].split("\n## ")[0]
+        judged = part.split("### The same on the judged block")[1].split("### ")[0] if "judged block" in part else ""
+        if "| Sessions until the first payout arrives |" not in judged:
+            problems.append(f"{d.key}: the judged block's journey table is missing")
+        if "| Judged block | Start days read |" not in part:
+            problems.append(f"{d.key}: the scorecard has no judged-block column")
+    built = R.traced_numbers(spec, root=base)
+    if not any(" judged block | " in c.label for c in built):
+        problems.append("no judged-block number is traced")
 
 
 def case_build_monthly(base: Path) -> None:
@@ -268,6 +297,8 @@ def case_build_monthly(base: Path) -> None:
     spec = synth_spec("synth_monthly", "results/" + path.name, ladder=False, designs=("steady", "lumpy", "poor"))
     check_page(base, spec, daily=False, exploratory=False, ladder=False)
     text = (base / spec.out / "README.md").read_text(encoding="utf-8")
+    if text.count("none in this file") != 3:
+        problems.append("monthly page: the empty judged block is not said for each design")
     for words in ("Size of each payout", "Back to break-even at least once"):
         row = [ln for ln in text.splitlines() if words in ln and ln.startswith("|")]
         if not row or "not in this file" not in row[0]:
@@ -410,10 +441,24 @@ def case_stage2(_base: Path) -> None:
         # P: Stage 2's own scorecard on the same starts (u_select.scorecard) -- the report must hand it every start
         if int(R.quantity(st, "rows")) != 1691 or int(R.quantity(st, "score_n:P")) != 1629:
             problems.append(f"{d.key}: {R.quantity(st, 'rows')} start rows, P on {R.quantity(st, 'score_n:P')}")
+        # the judged block: the report's date cut against Stage 2's own block (u_select.scorecard(records, "late"))
+        from propedge.research import u_select as S
+
+        late = S.scorecard(st.records, "late")
+        jb = R.starts_for(spec, df, d.key, None, "judged")
+        for key in late:
+            compared += 1
+            got, n = R.quantity(jb, f"score:{key}"), R.quantity(jb, f"score_n:{key}")
+            if close(got, late[key]["value"]) and int(n) == int(late[key]["n"]):
+                held += 1
+            else:
+                problems.append(f"{d.key} judged block {key}: report {got!r} (n {n}), Stage 2's late block "
+                                f"{late[key]['value']!r} (n {late[key]['n']})")
     info.update(compared=compared, held=held, differ_from_the_other_design=differ)
     # the negative control: read against the other design's registered rows, most comparisons must fail
-    if differ < 0.8 * compared:
-        problems.append(f"negative control: only {differ} of {compared} differ from the other design's rows")
+    control = len(pairs) * len(designs)
+    if differ < 0.8 * control:
+        problems.append(f"negative control: only {differ} of {control} differ from the other design's rows")
 
 
 # ------------------------------------------------------------------------------------------------ the rest

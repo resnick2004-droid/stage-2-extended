@@ -48,7 +48,8 @@ def test_report_case(case, tmp_path):
     if case == "measures":
         assert out["compared"] > 2000
     if case == "stage2":
-        assert out["held"] == out["compared"] == 4 * 73     # P-14 and P-16, both arms; 73 readings each
+        # P-14 and P-16, both arms: 73 of U1's registered readings and the 10 scorecard lines on the judged block
+        assert out["held"] == out["compared"] == 4 * (73 + 10)
 
 
 def test_build_report_lists_the_registered_page():
