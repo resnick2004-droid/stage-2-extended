@@ -85,7 +85,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-67 | `scripts/run_clean.py --collect`: the append-only files collected as a union (the run's new lines appended), tested | wt-infra | done: merged (E-053); Q-51's ledger collected | -- | light | 0 | E-044 |
 | Q-68 | A red-team read of the pass-line code (`extended/lift_bound.py`, `extended/p_bound.py`, the calibration scripts) against E-035 and F-02 v5, before the pin | wt-verify | done: stands, two MATERIAL readings adopted (E-052); Q-82..Q-85 | Q-55 | light | 0 | E-044 |
 | Q-69 | The scorecard page for Q-44's `results/user_beside.csv`, built from its writer's schema on a synthetic fixture (Q-27's tool) | wt-report | done: merged (E-054); built with Q-44's files | Q-17 | light | 0 | E-044 |
-| Q-70 | The place-recording adapter (family B section 20 item 9, family O 18.1): every simulated trade's offer, R and place; its 4-path identity a heavy chain step | wt-features | running | -- | light | 0 | E-044 |
+| Q-70 | The place-recording adapter (family B section 20 item 9, family O 18.1): every simulated trade's offer, R and place; its 4-path identity a heavy chain step | wt-features | done: merged (E-055); its identities Q-89 | -- | light | 0 | E-044 |
 | Q-71 | The RD firms gate seam (A-8): `run_gate` gains `payout_lag_days`, `household_closure`, `combine_account_cls`; the campaign re-composed in `extended/`, pinned by source hash; identity at no class | wt-payout | done: merged 9335481 (E-049); its identities Q-80 | Q-47 | light | 0 | E-044 |
 | Q-72 | F-02's sixth draft, narrow: the gatekeeper's four gaps; the title and status in pin-time form | wt-levels | done: merged c09730e (E-047); the gatekeeper's re-read Q-66b | Q-66 | light | 0 | E-045 |
 | Q-73 | The FOMC-minutes release dates 2020-01-02 to 2026-07-16 from federalreserve.gov (a scout's cited note and CSV); then a pinned `config/` calendar (a builder, as E-029) | wt-firms | done: 53 releases cited (E-048); the calendar Q-79 | Q-54b | light | 0 | E-045 |
@@ -105,6 +105,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | running | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | running (its drafter) | Q-75 | light | 0 | E-054 |
 | Q-88 | The red team's first read of the firms reading's second draft | wt-firms | running | Q-54 | light | 0 | E-054 |
+| Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | queued (after the second leg) | Q-70 | heavy | 0 | E-055 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
