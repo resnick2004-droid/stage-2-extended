@@ -14,6 +14,7 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 | 7 | **More history, free: QuantConnect's NQ and ES minute data from 2009** | six and a half years of NQ give low power for rare effects (bootstrap Part 6); QuantConnect's history would add about eleven years | NQ 2020-2026 only | open -- see below |
 | 8 | **More history, a purchase: Databento NQ 1-minute bars 2010-01-01 to 2019-12-31** | the same reason, on the operator's own licensed store, read locally | NQ 2020-2026 only | open -- a purchase; not authorised |
 | 9 | **Memory for heavy runs** | a campaign or a full identity needs about 3 GB; on 2026-11-15 the machine had about 1.7 GB available, the rest held by other applications | light work runs; a heavy run waits until the memory is there (the session checks before it starts) | open -- see below |
+| 10 | **Two written questions to other firms** (optional) -- DayTraders.com on its Terms s.26 item 3.c, TradeDay on its multiple-users sentence -- text below | the other-firms reading (`prereg/DRAFT_RD_firms.md`) names each question as open on its plan's rows | the reading runs as declared, those rows labelled | open |
 
 ## Item 6 -- the repository outside OneDrive
 
@@ -67,3 +68,21 @@ If you write to Topstep support, this is the question, ready to paste:
 > or a guideline, where is it published?
 
 Tell any session what they answer; it is recorded in a decision row. Until then the clause is priced as a risk.
+
+## Item 10 -- two optional written questions to other firms (E-045)
+
+Only if you hold or want an account there; each from your own account, by the firm's support channel. Ready to paste:
+
+> **To DayTraders.com**, on its Terms of Use s.26 item 3.c ("Sharing trades and strategies with other users or making
+> trades that were not Customer's own creation"): I trade only my own accounts, placing every order by hand. The trades
+> follow a rules-based strategy I did not design myself (it was built for me from historical data). Are trades placed
+> this way "not Customer's own creation" under s.26 3.c? Does the answer change if other, unconnected people could
+> follow the same published strategy in their own accounts?
+
+> **To TradeDay**, on "If multiple users are making the same trades, then all the accounts will be shut down, and the
+> users suspended": I am one user trading my own accounts by hand. If my trades follow a strategy that other,
+> unconnected TradeDay users might also follow independently, so that our trades coincide without any coordination,
+> would my accounts fall under this sentence? Is one person copying their own trades across their own Evaluation and
+> Funded Sim accounts outside it?
+
+Tell any session what they answer; it is recorded in a decision row.
