@@ -34,6 +34,11 @@ changed -- a newer Stage 2 snapshot is a new decision row, and this module is re
 `recomposition_problems` checks the composition itself: this function with its marked lines removed parses to the
 vendored function, statement for statement (the docstrings aside).
 
+**Q-70 (the place recorder, `extended/place_records.py`)** adds, on lines marked Q-70, the keyword `path_reducer`
+(default None, last in the signature) and one statement choosing the paths' runner (`path_runner`): the vendored
+`_run_paths` without a reducer, so with None every call is as before; with one, the vendored runner re-composed so each
+path is recorded and read where it ran. The proof strips both markers (`MARKERS`).
+
 **The identities** (`identity/gate_identity.py`, through `extended.gate.run_gate`, which calls this campaign):
 synthetic in the fast tier; P-14's and P-16's registered gate paths at 4 paths (slow) and at 500 (heavy, the lead's).
 """
@@ -75,6 +80,8 @@ from propedge.campaign.lockstep import (  # noqa: E402,F401  -- every name the v
 VENDORED_CAMPAIGN_SHA256 = "0bb321f521e99dfcf560ea128de7cf9df2bf621c1878482cb9860e08f8285f90"
 #: the comment marker on every added line of this module's re-composed function
 MARKER = "Q-71"
+#: every marker the re-composition proof strips: Q-71's evaluation class, and Q-70's place recorder
+MARKERS = (MARKER, "Q-70")
 
 
 def source_sha256(fn: Callable) -> str:
@@ -155,8 +162,23 @@ def recomposition_problems(ours: Callable, theirs: Callable, markers: Sequence[s
 
 
 def campaign_recomposition_problems() -> list[str]:
-    """`recomposition_problems` for this module's campaign against the vendored one (marker Q-71)."""
-    return recomposition_problems(simulate_lockstep_campaign, _vl.simulate_lockstep_campaign, (MARKER,))
+    """`recomposition_problems` for this module's campaign against the vendored one (markers Q-71 and Q-70)."""
+    return recomposition_problems(simulate_lockstep_campaign, _vl.simulate_lockstep_campaign, MARKERS)
+
+
+def path_runner(path_reducer: Any, *, record_trades: bool, record_days: bool) -> Callable:
+    """Q-70: the paths' runner for one campaign -- the vendored `_run_paths` without a reducer; with one (an
+    `extended.place_records.PathReducer`), its runner: the vendored `_run_paths` re-composed so that every path runs
+    with the ledger and day recorder on and is read where it ran (`extended.place_records._run_paths`), the caller's
+    own `record_trades` and `record_days` deciding what the paths keep."""
+    if path_reducer is None:
+        return _run_paths
+    from extended.place_records import PathReducer
+
+    if not isinstance(path_reducer, PathReducer):
+        raise TypeError(f"path_reducer must be an extended.place_records.PathReducer, got "
+                        f"{type(path_reducer).__name__}")
+    return path_reducer.runner(keep_trades=record_trades, keep_days=record_days)
 
 
 def simulate_lockstep_campaign(
@@ -206,13 +228,18 @@ def simulate_lockstep_campaign(
     pause_after_funded: int | None = None,
     seat_ramp: int | None = None,
     combine_account_cls: type | None = None,                                    # Q-71
+    path_reducer: Any = None,                                                   # Q-70
 ) -> tuple[CampaignSummary, list[LockstepPath]]:
     """The vendored `propedge.campaign.lockstep.simulate_lockstep_campaign` (its docstring holds every argument's
     meaning), plus `combine_account_cls`: the evaluation account's class on every path -- the vendored `CombineAccount`
     or a subclass of it (D-619) -- passed to every path (`simulate_lockstep_path`) only when given, and named in the
-    summary's provenance (`combine_account_cls`) only when given. None runs the vendored campaign exactly."""
+    summary's provenance (`combine_account_cls`) only when given. None runs the vendored campaign exactly.
+
+    `path_reducer` (Q-70; `extended.place_records`): every path recorded and read where it ran, its record riding on
+    the path handed back (`extended.place_records.RecordedPath`); the summary is the unrecorded campaign's. None runs
+    the paths with the vendored runner."""
     check_vendored_source()                               # Q-71: refused unless the vendored function is the pinned one
-    # ---- from here to the end, the vendored body; its two additions are marked Q-71
+    # ---- from here to the end, the vendored body; its two additions are marked Q-71, the recorder's runner Q-70
     from propedge.contract.adapter import Rules
 
     check_payout_timing(payout_timing)
@@ -276,6 +303,7 @@ def simulate_lockstep_campaign(
     if combine_account_cls is not None:                   # Q-71: passed only when given, so None is the vendored call
         path_kwargs["combine_account_cls"] = combine_account_cls                                # Q-71
     seeds = path_seeds(seed, n_paths)
+    _run_paths = path_runner(path_reducer, record_trades=record_trades, record_days=record_days)  # noqa: F811  # Q-70
     results = _run_paths(protocol, path_kwargs, seeds, draw_factories_for_path, flip_for_path, wallet_for_path,
                          workers=workers, pool=pool, memory_per_worker_gb=memory_per_worker_gb)
 
@@ -334,5 +362,6 @@ def simulate_lockstep_campaign(
     return summary, results
 
 
-__all__ = ["VENDORED_CAMPAIGN_SHA256", "MARKER", "source_sha256", "vendored_campaign_sha256", "check_vendored_source",
-           "recomposition_problems", "campaign_recomposition_problems", "simulate_lockstep_campaign"]
+__all__ = ["VENDORED_CAMPAIGN_SHA256", "MARKER", "MARKERS", "source_sha256", "vendored_campaign_sha256",
+           "check_vendored_source", "recomposition_problems", "campaign_recomposition_problems", "path_runner",
+           "simulate_lockstep_campaign"]
