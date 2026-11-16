@@ -58,7 +58,7 @@ def main() -> None:
     for rho in (0.5, 0.7, 0.8, 1.0):
         print(f"one null at {rho} x nominal: P(it fails 4.3) = {1 - p_holds([rho * LEV[k] for k in KS], fail):.2e}")
     # detection of a bad-subset rate b in S independent subsets: 1 - (1 - b)^S
-    for b, S in ((0.02, 60), (0.02, 115), (0.04, 60), (0.05, 25), (0.10, 25)):
+    for b, S in ((0.02, 23), (0.10, 23), (0.02, 60), (0.02, 115), (0.04, 60), (0.05, 25), (0.10, 25)):
         print(f"P(at least one bad subset | rate {b}, {S} subsets) = {1 - (1 - b) ** S:.3f}")
 
 
@@ -79,5 +79,13 @@ def p_holds(rates, fail, reps=R):
     return float(prob.sum())
 
 
+def alternating() -> None:
+    """The alternating models' granularity: 2L equally likely configurations, so an exact size is 0 or >= 1/(2L)."""
+    for L in (45, 55):
+        print(f"alternating L={L}: one configuration is 1/{2 * L} = {1 / (2 * L):.4e}, "
+              + " ".join(f"{1 / (2 * L) / LEV[k]:.0f}x" for k in KS) + " the levels k13..20")
+
+
 if __name__ == "__main__":
     main()
+    alternating()
