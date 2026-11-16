@@ -1,0 +1,75 @@
+bm63c t8 max abs diff 4.671818487622659e-13 ratio max abs diff 2.220446049250313e-16
+bm63c critical non-increasing in level: True
+bm63c k-levels: [(11, True), (12, True), (13, True), (14, True), (15, True), (None, None), (None, None), (None, None)]
+calibration-null set size 28 argmax nulls in it: True argmax set: ['real:p16p-p14p:centred:flip63', 'real:p16v-p14v:centred:flip63', 'syn:ma63']
+   level    k  critical       t8  ratio_to_t8                   argmax_null
+0.000379 11.0  6.437067 5.267510     1.222032                      syn:ma63
+0.000321 12.0  6.659194 5.406503     1.231701                      syn:ma63
+0.000275 13.0  6.823200 5.536754     1.232347                      syn:ma63
+0.000238 14.0  7.089338 5.659431     1.252659 real:p16p-p14p:centred:flip63
+0.000208 15.0  7.318893 5.775474     1.267237 real:p16p-p14p:centred:flip63
+0.001000  NaN  5.614459 4.500791     1.247438 real:p16p-p14p:centred:flip63
+0.005000  NaN  4.369228 3.355387     1.302153 real:p16p-p14p:centred:flip63
+0.025000  NaN  2.883592 2.306004     1.250471 real:p16v-p14v:centred:flip63
+cbb21: nulls with CI wholly above nominal by k: {11.0: 3, 12.0: 3, 13.0: 3, 14.0: 3, 15.0: 2} point above by k: {11.0: 8, 12.0: 9, 13.0: 9, 14.0: 10, 15.0: 9}
+                             null     k  rejections   reps  ratio     ci_lo     level
+5544  real:offered:win1:persist21  11.0          35  20000  4.620  0.001219  0.000379
+5545  real:offered:win1:persist21  12.0          30  20000  4.680  0.001012  0.000321
+5546  real:offered:win1:persist21  13.0          29  20000  5.278  0.000971  0.000275
+5547  real:offered:win1:persist21  14.0          27  20000  5.670  0.000890  0.000238
+5548  real:offered:win1:persist21  15.0          27  20000  6.480  0.000890  0.000208
+5592                 syn:skew:500  11.0          16  20000  2.112  0.000457  0.000379
+5593                 syn:skew:500  12.0          14  20000  2.184  0.000383  0.000321
+5594                 syn:skew:500  13.0          12  20000  2.184  0.000310  0.000275
+5595                 syn:skew:500  14.0          10  20000  2.100  0.000240  0.000238
+5600            syn:regime03:2000  11.0          28  20000  3.696  0.000930  0.000379
+5601            syn:regime03:2000  12.0          22  20000  3.432  0.000689  0.000321
+5602            syn:regime03:2000  13.0          22  20000  4.004  0.000689  0.000275
+5603            syn:regime03:2000  14.0          21  20000  4.410  0.000650  0.000238
+5604            syn:regime03:2000  15.0          19  20000  4.560  0.000572  0.000208
+cons mdl80 / t21w mdl80 on the 40 real thinned coin/persist1 cells: min 1.3262 median 1.3490 max 1.3720
+selection cons: k=15 difference80 >= k=11 (empty = infinite): violations 0 of 110
+  treated window net3 0.25 cons k=11: rows 1 difference80 not empty
+  treated window net3 0.25 cons k=15: rows 1 difference80 not empty
+  treated block21 net3 0.25 cons k=11: rows 1 difference80 not empty
+  treated block21 net3 0.25 cons k=15: rows 1 difference80 EMPTY
+  treated block5 net3 0.25 cons k=11: rows 1 difference80 not empty
+  treated block5 net3 0.25 cons k=15: rows 1 difference80 not empty
+raw k field values in calibration_power.csv: ['11', '15']
+raw share field values (two_sample rows): ['', '0.02', '0.05', '0.1', '0.25', '0.5']
+one-sample cons worst rows:
+  real k=11: line 858, real:taken:net3:persist21, 44/200000, ratio 0.5808, ci [1.599e-04, 2.953e-04] vs level 3.788e-04
+  real k=12: line 859, real:taken:net3:persist21, 40/200000, ratio 0.6240, ci [1.429e-04, 2.723e-04] vs level 3.205e-04
+  real k=13: line 860, real:taken:net3:persist21, 33/200000, ratio 0.6006, ci [1.136e-04, 2.317e-04] vs level 2.747e-04
+  real k=14: line 861, real:taken:net3:persist21, 28/200000, ratio 0.5880, ci [9.303e-05, 2.023e-04] vs level 2.381e-04
+  real k=15: line 862, real:taken:net3:persist21, 25/200000, ratio 0.6000, ci [8.089e-05, 1.845e-04] vs level 2.083e-04
+  realistic k=11: line 4506, syn:regime01:2000, 26/200000, ratio 0.3432, ci [8.492e-05, 1.905e-04] vs level 3.788e-04
+  realistic k=12: line 4507, syn:regime01:2000, 22/200000, ratio 0.3432, ci [6.894e-05, 1.665e-04] vs level 3.205e-04
+  realistic k=13: line 4508, syn:regime01:2000, 20/200000, ratio 0.3640, ci [6.108e-05, 1.544e-04] vs level 2.747e-04
+  realistic k=14: line 4509, syn:regime01:2000, 17/200000, ratio 0.3570, ci [4.952e-05, 1.361e-04] vs level 2.381e-04
+  realistic k=15: line 4510, syn:regime01:2000, 14/200000, ratio 0.3360, ci [3.827e-05, 1.174e-04] vs level 2.083e-04
+  stress (beside) k=11: line 5034, syn:regime10:5000, 128/200000, ratio 1.6896, ci [5.340e-04, 7.609e-04] vs level 3.788e-04
+  stress (beside) k=12: line 5035, syn:regime10:5000, 106/200000, ratio 1.6536, ci [4.339e-04, 6.410e-04] vs level 3.205e-04
+  stress (beside) k=13: line 5036, syn:regime10:5000, 92/200000, ratio 1.6744, ci [3.708e-04, 5.641e-04] vs level 2.747e-04
+  stress (beside) k=14: line 4989, syn:regime10:2000, 76/200000, ratio 1.5960, ci [2.994e-04, 4.756e-04] vs level 2.381e-04
+  stress (beside) k=15: line 4990, syn:regime10:2000, 68/200000, ratio 1.6320, ci [2.640e-04, 4.310e-04] vs level 2.083e-04
+treated two-sample cons worst rows:
+  placebo-selection k=11: line 538, select:session:0.02:net3, 59/200000, ratio 0.7788, ci [2.246e-04, 3.805e-04] vs level 3.788e-04
+  placebo-selection k=12: line 539, select:session:0.02:net3, 44/200000, ratio 0.6864, ci [1.599e-04, 2.953e-04] vs level 3.205e-04
+  placebo-selection k=13: line 540, select:session:0.02:net3, 43/200000, ratio 0.7826, ci [1.556e-04, 2.896e-04] vs level 2.747e-04
+  placebo-selection k=14: line 541, select:session:0.02:net3, 37/200000, ratio 0.7770, ci [1.303e-04, 2.550e-04] vs level 2.381e-04
+  placebo-selection k=15: line 542, select:session:0.02:net3, 30/200000, ratio 0.7200, ci [1.012e-04, 2.141e-04] vs level 2.083e-04
+  C1' k=11: line 2522, c1p:500:net3:shared63, 37/200000, ratio 0.4884, ci [1.303e-04, 2.550e-04] vs level 3.788e-04
+  C1' k=12: line 2523, c1p:500:net3:shared63, 27/200000, ratio 0.4212, ci [8.897e-05, 1.964e-04] vs level 3.205e-04
+  C1' k=13: line 2524, c1p:500:net3:shared63, 27/200000, ratio 0.4914, ci [8.897e-05, 1.964e-04] vs level 2.747e-04
+  C1' k=14: line 2525, c1p:500:net3:shared63, 17/200000, ratio 0.3570, ci [4.952e-05, 1.361e-04] vs level 2.381e-04
+  C1' k=15: line 3422, c1p:2000:net3:shared63, 10/200000, ratio 0.2400, ci [2.398e-05, 9.195e-05] vs level 2.083e-04
+stress nulls with cons point rate above nominal: ['syn:regime10:1000', 'syn:regime10:2000', 'syn:regime10:5000'] CI wholly above: ['syn:regime10:2000', 'syn:regime10:5000']
+bm63c point above nominal (real/realistic):                                null     k  rejections    reps  ratio     ci_lo     level
+1683  real:p16p-p14p:centred:flip63  14.0          50  200000   1.05  0.000186  0.000238
+real streams ['offered', 'taken', 'thin1000', 'thin200', 'thin2000', 'thin500', 'thin5000'] values ['net3', 'win1'] sides ['coin', 'persist1', 'persist21', 'persist5', 'persist63']
+synthetic sizes [200, 500, 1000, 2000, 5000]
+selection models x shares x values: {'block21': 10, 'block5': 10, 'block63': 10, 'offer': 5, 'session': 10, 'window': 10}
+C1' nulls by side model: {'coin': 8, 'indep': 24, 'shared': 24} fills [np.float64(200.0), np.float64(500.0), np.float64(1000.0), np.float64(2000.0)]
+C1' rejections identical under treated and all: True
+P d621 reps: [np.int64(20000)]

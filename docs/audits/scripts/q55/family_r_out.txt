@@ -1,0 +1,25 @@
+the rule as written: class block63 (the slower of block21..block63), share 0.5, cons, k = 15 column
+df_rule=treated value=net3 model=block63 method=cons k=15: rows 1; line(s) [2065]; null ['select:block63:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=treated value=net3 model=block63 method=cons k=11: rows 1; line(s) [2064]; null ['select:block63:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=treated value=net3 model=block63 method=t21w k=11: rows 1; line(s) [2062]; null ['select:block63:0.5:net3']; difference80 not empty; shift80 not empty
+df_rule=treated value=net3 model=block21 method=cons k=15: rows 1; line(s) [2025]; null ['select:block21:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=treated value=net3 model=block21 method=cons k=11: rows 1; line(s) [2024]; null ['select:block21:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=treated value=net3 model=block21 method=t21w k=11: rows 1; line(s) [2022]; null ['select:block21:0.5:net3']; difference80 not empty; shift80 not empty
+df_rule=treated value=win1 model=block63 method=cons k=15: rows 1; line(s) [2061]; null ['select:block63:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=treated value=win1 model=block63 method=cons k=11: rows 1; line(s) [2060]; null ['select:block63:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=treated value=win1 model=block63 method=t21w k=11: rows 1; line(s) [2058]; null ['select:block63:0.5:win1']; difference80 not empty; shift80 not empty
+df_rule=treated value=win1 model=block21 method=cons k=15: rows 1; line(s) [2021]; null ['select:block21:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=treated value=win1 model=block21 method=cons k=11: rows 1; line(s) [2020]; null ['select:block21:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=treated value=win1 model=block21 method=t21w k=11: rows 1; line(s) [2018]; null ['select:block21:0.5:win1']; difference80 not empty; shift80 not empty
+df_rule=all     value=net3 model=block63 method=cons k=15: rows 1; line(s) [2733]; null ['select:block63:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=all     value=net3 model=block63 method=cons k=11: rows 1; line(s) [2732]; null ['select:block63:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=all     value=net3 model=block63 method=t21w k=11: rows 1; line(s) [2730]; null ['select:block63:0.5:net3']; difference80 not empty; shift80 not empty
+df_rule=all     value=net3 model=block21 method=cons k=15: rows 1; line(s) [2693]; null ['select:block21:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=all     value=net3 model=block21 method=cons k=11: rows 1; line(s) [2692]; null ['select:block21:0.5:net3']; difference80 EMPTY; shift80 empty
+df_rule=all     value=net3 model=block21 method=t21w k=11: rows 1; line(s) [2690]; null ['select:block21:0.5:net3']; difference80 not empty; shift80 not empty
+df_rule=all     value=win1 model=block63 method=cons k=15: rows 1; line(s) [2729]; null ['select:block63:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=all     value=win1 model=block63 method=cons k=11: rows 1; line(s) [2728]; null ['select:block63:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=all     value=win1 model=block63 method=t21w k=11: rows 1; line(s) [2726]; null ['select:block63:0.5:win1']; difference80 not empty; shift80 not empty
+df_rule=all     value=win1 model=block21 method=cons k=15: rows 1; line(s) [2689]; null ['select:block21:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=all     value=win1 model=block21 method=cons k=11: rows 1; line(s) [2688]; null ['select:block21:0.5:win1']; difference80 EMPTY; shift80 empty
+df_rule=all     value=win1 model=block21 method=t21w k=11: rows 1; line(s) [2686]; null ['select:block21:0.5:win1']; difference80 not empty; shift80 not empty

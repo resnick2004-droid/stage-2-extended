@@ -2,14 +2,14 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-084).
+**Updated:** 2026-11-16 (E-086).
 
 ## Phase
 
 **Phase 1** -- families declared and red-teamed (F-02 levels, family B, family O; described readings F-P, RD firms).
 The pass line's statistic is `cons` (E-035); no family reads the judged block before its pin, and the first pin
-(F-02, k = 11) is approved by the gatekeeper (E-065) and waits only for Q-55's rerun and the fresh-seed validation
-Q-83.
+(F-02, k = 11) is approved by the gatekeeper (E-065); Q-55's condition holds (E-085); it waits only for the
+fresh-seed validation Q-83.
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 
@@ -58,8 +58,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 ## Running now
 
-- Heavy, one at a time under `run.lock`, one queue (E-062, E-066): Q-55 done (collected, E-083; the
-  auditor reading it); Q-83 (the fresh-seed validation F-02's pin needs, at eba1564); then from f7eda0d: Q-44 (the
+- Heavy, one at a time under `run.lock`, one queue (E-062, E-066): Q-55 done (collected, E-083; audited, its
+  condition holds, E-085); Q-83 (the fresh-seed validation F-02's pin needs, at eba1564); then from f7eda0d: Q-44 (the
   readings beside), Q-98 (money spent), Q-22b, Q-80, Q-89, Q-93, Q-35, Q-18, Q-45, Q-101.
 - Light: 
   Q-95.

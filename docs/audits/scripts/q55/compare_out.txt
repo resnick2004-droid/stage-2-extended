@@ -1,0 +1,23 @@
+Table 1: 18 rows, 126 cells compared; rows differing 0; cells differing 0
+Table 1b: 6 rows, 24 cells compared; rows differing 0; cells differing 0
+Table 2: 40 rows, 280 cells compared; rows differing 0; cells differing 0
+Table 3: 12 rows, 84 cells compared; rows differing 0; cells differing 0
+Table 4a: 10 rows, 70 cells compared; rows differing 0; cells differing 0
+Table 4b: 10 rows, 70 cells compared; rows differing 0; cells differing 0
+Table 5: 24 rows, 168 cells compared; rows differing 0; cells differing 0
+Table 5b: 8 rows, 32 cells compared; rows differing 0; cells differing 0
+Table 6: 4 rows, 44 cells compared; rows differing 0; cells differing 0
+Table 7: 8 rows, 56 cells compared; rows differing 0; cells differing 0
+Table 8: 24 rows, 168 cells compared; rows differing 0; cells differing 0
+Table 8b: 4 rows, 28 cells compared; rows differing 0; cells differing 0
+Table 9: 55 rows, 330 cells compared; rows differing 0; cells differing 0
+Table 10: 12 rows, 84 cells compared; rows differing 0; cells differing 0
+Table 10b: 4 rows, 16 cells compared; rows differing 0; cells differing 0
+Table 11: 16 rows, 96 cells compared; rows differing 0; cells differing 0
+Table F8: 24 rows, 168 cells compared; rows differing 0; cells differing 0
+Table F8b: 4 rows, 28 cells compared; rows differing 0; cells differing 0
+Table F9: 55 rows, 330 cells compared; rows differing 0; cells differing 0
+Table F10: 12 rows, 84 cells compared; rows differing 0; cells differing 0
+Table F10b: 4 rows, 16 cells compared; rows differing 0; cells differing 0
+Table F11: 16 rows, 96 cells compared; rows differing 0; cells differing 0
+TOTAL: 370 rows, 2398 cells; rows differing 0; cells differing 0

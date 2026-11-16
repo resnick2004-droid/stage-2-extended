@@ -87,3 +87,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | **E-082: reading PP pinned as RD-02** (a described reading; payout policy in a user's first months). Its build Q-105 queued. |
 | 2026-11-16 | lead | **E-083: Q-55 collected** (the calibration's clean rerun, five result files; `-dirty` from the ledger alone, as E-062 ruled); its audit running; Q-83 next in the queue. |
 | 2026-11-16 | lead | E-084: the adapter's household and seed-base keywords merged (Q-100); its identity combined with Q-93's in one queue step. |
+| 2026-11-16 | lead | **E-085: Q-55 audited clean with caveats -- it reproduces every published figure of Q-16 and the pin condition holds; family O's drop rule removes s3.** `bm63c` not adopted. F-02's pin waits on Q-83 alone. |
+| 2026-11-16 | lead | **E-086: family R closed before its pin** -- its own drop rule removes every cell (the judged block is too short for a months-long volatility filter); no k spent. |

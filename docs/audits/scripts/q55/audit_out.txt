@@ -1,0 +1,133 @@
+MANIFEST calibration_lift: sha256 MATCH; rows 5616 vs 5616; columns MATCH; commit c7e01bd794dbf3120651439112954c1b351703b7-dirty; exploratory True; seed 20261915; prereg None; ts 2026-11-16T17:24:24+00:00
+MANIFEST calibration_p: sha256 MATCH; rows 1856 vs 1856; columns MATCH; commit c7e01bd794dbf3120651439112954c1b351703b7-dirty; exploratory True; seed 20261915; prereg None; ts 2026-11-16T17:24:24+00:00
+MANIFEST calibration_two_sample: sha256 MATCH; rows 7104 vs 7104; columns MATCH; commit c7e01bd794dbf3120651439112954c1b351703b7-dirty; exploratory True; seed 20261915; prereg None; ts 2026-11-16T17:24:24+00:00
+MANIFEST calibration_power: sha256 MATCH; rows 3180 vs 3180; columns MATCH; commit c7e01bd794dbf3120651439112954c1b351703b7-dirty; exploratory True; seed 20261915; prereg None; ts 2026-11-16T17:24:24+00:00
+MANIFEST bm63c_table: sha256 MATCH; rows 8 vs 8; columns MATCH; commit c7e01bd794dbf3120651439112954c1b351703b7-dirty; exploratory True; seed 20261915; prereg None; ts 2026-11-16T17:24:24+00:00
+ARITH lift size: 5520 rows; rate/ratio mismatches 0; k-level mismatches 0; Clopper-Pearson mismatches 0; levels 8: 0.000208333, 0.000238095, 0.000274725, 0.000320513, 0.000378788, 0.001, 0.005, 0.025
+ARITH lift boot: 96 rows; rate/ratio mismatches 0; k-level mismatches 0; Clopper-Pearson mismatches 0; levels 8: 0.000208333, 0.000238095, 0.000274725, 0.000320513, 0.000378788, 0.001, 0.005, 0.025
+ARITH p size: 1856 rows; rate/ratio mismatches 0; k-level mismatches 0; Clopper-Pearson mismatches 0; levels 8: 0.000208333, 0.000238095, 0.000274725, 0.000320513, 0.000378788, 0.001, 0.005, 0.025
+ARITH two_sample size: 7104 rows; rate/ratio mismatches 0; k-level mismatches 0; Clopper-Pearson mismatches 0; levels 8: 0.000208333, 0.000238095, 0.000274725, 0.000320513, 0.000378788, 0.001, 0.005, 0.025
+STRUCT lift: real nulls 70, realistic synthetic 25 (['cluster', 'cluster_ar1', 'iid', 'regime01', 'volclust']), stress 20 (['cluster_ar5', 'regime03', 'regime10', 'skew']); methods ['cons', 'hac21', 't21e', 't21w', 't42w', 't63w']; reps [np.int64(200000)]
+STRUCT boot: nulls 12, methods ['cbb21'], reps [np.int64(20000)], draws [np.float64(96000.0)]
+STRUCT real streams' trades per replication (min, max): {'offered': {'min': 93037.0, 'max': 93037.0}, 'taken': {'min': 5959.0, 'max': 5959.0}, 'thin1000': {'min': 1000.0, 'max': 1000.0}, 'thin200': {'min': 200.0, 'max': 200.0}, 'thin2000': {'min': 2000.0, 'max': 2000.0}, 'thin500': {'min': 500.0, 'max': 500.0}, 'thin5000': {'min': 5000.0, 'max': 5000.0}}
+STRUCT p: nulls 29 (real 24, syn 5); methods ['bm126', 'bm63', 'bm63c', 'd621', 'ft63', 'obm126', 'obm63', 'pcons']; reps by method {'bm126': [200000], 'bm63': [200000], 'bm63c': [200000], 'd621': [20000], 'ft63': [200000], 'obm126': [200000], 'obm63': [200000], 'pcons': [200000]}; stage values ['validation (fresh replications)'] on methods ['bm63c']
+STRUCT two_sample treated: forms {'placebo-selection': 55, "two-sample (C1')": 56}; methods ['cons', 't21w', 't42w', 't63w']; reps [np.int64(200000)]
+STRUCT two_sample all: forms {'placebo-selection': 55, "two-sample (C1')": 56}; methods ['cons', 't21w', 't42w', 't63w']; reps [np.int64(200000)]
+STRUCT power rows by part/df_rule/form: {('lift', '-', '-'): 1380, ('p', '-', '-'): 80, ('p', '-', 'centred'): 192, ('p', '-', 'raw'): 192, ('two_sample', 'all', 'placebo-selection'): 220, ('two_sample', 'all', "two-sample (C1')"): 448, ('two_sample', 'treated', 'placebo-selection'): 220, ('two_sample', 'treated', "two-sample (C1')"): 448}
+STRUCT bm63c_table: 8 rows; calibration_nulls [28]; reps_each [200000]
+INVARIANT lift: cons rejections <= min(t21w,t42w,t63w) on the same replications: 920 null x level cells, violations 0
+INVARIANT two_sample treated: cons rejections <= min(t21w,t42w,t63w) on the same replications: 888 null x level cells, violations 0
+INVARIANT two_sample all: cons rejections <= min(t21w,t42w,t63w) on the same replications: 888 null x level cells, violations 0
+INVARIANT p: pcons rejections <= min(bm63,obm126,ft63) on the same replications: 232 null x level cells, violations 0
+INVARIANT lift: rejections non-decreasing in the level: 690 null x method series, violations 0
+INVARIANT boot: rejections non-decreasing in the level: 12 null x method series, violations 0
+INVARIANT p: rejections non-decreasing in the level: 232 null x method series, violations 0
+INVARIANT two_sample: rejections non-decreasing in the level: 888 null x method series, violations 0
+INVARIANT lift power: cons mdl80 >= max(member mdl80): 230 cells, violations 0
+INVARIANT lift power: mdl80 at k=15 >= k=11: 690 cells, violations 0
+INVARIANT lift power: mdl80 >= mdl50: violations 0 of 1380
+INVARIANT selection power: difference80 = shift80 x (1 - selected share): 0 violations of 326; empty shift80 <=> empty difference80: 0 violations
+INVARIANT selection power (treated): cons difference80 >= t21w's (empty counts as infinite): violations 0 of 110
+INVARIANT selection power (all): cons difference80 >= t21w's (empty counts as infinite): violations 0 of 110
+PIN
+                                       label  k  nulls  point_above  ci_wholly_above  max_ratio  max_rate  max_ci_lo                        at
+                       one-sample cons: real 11     70            0                0     0.5808  0.000220   0.000160 real:taken:net3:persist21
+                       one-sample cons: real 12     70            0                0     0.6240  0.000200   0.000143 real:taken:net3:persist21
+                       one-sample cons: real 13     70            0                0     0.6006  0.000165   0.000114 real:taken:net3:persist21
+                       one-sample cons: real 14     70            0                0     0.5880  0.000140   0.000093 real:taken:net3:persist21
+                       one-sample cons: real 15     70            0                0     0.6000  0.000125   0.000081 real:taken:net3:persist21
+        one-sample cons: realistic synthetic 11     25            0                0     0.3432  0.000130   0.000085         syn:regime01:2000
+        one-sample cons: realistic synthetic 12     25            0                0     0.3432  0.000110   0.000069         syn:regime01:2000
+        one-sample cons: realistic synthetic 13     25            0                0     0.3640  0.000100   0.000061         syn:regime01:2000
+        one-sample cons: realistic synthetic 14     25            0                0     0.3570  0.000085   0.000050         syn:regime01:2000
+        one-sample cons: realistic synthetic 15     25            0                0     0.3360  0.000070   0.000038         syn:regime01:2000
+            one-sample cons: stress (beside) 11     20            3                2     1.6896  0.000640   0.000534         syn:regime10:5000
+            one-sample cons: stress (beside) 12     20            3                2     1.6536  0.000530   0.000434         syn:regime10:5000
+            one-sample cons: stress (beside) 13     20            3                2     1.6744  0.000460   0.000371         syn:regime10:5000
+            one-sample cons: stress (beside) 14     20            3                2     1.5960  0.000380   0.000299         syn:regime10:2000
+            one-sample cons: stress (beside) 15     20            2                2     1.6320  0.000340   0.000264         syn:regime10:2000
+two-sample cons (treated): placebo-selection 11     55            0                0     0.7788  0.000295   0.000225  select:session:0.02:net3
+two-sample cons (treated): placebo-selection 12     55            0                0     0.6864  0.000220   0.000160  select:session:0.02:net3
+two-sample cons (treated): placebo-selection 13     55            0                0     0.7826  0.000215   0.000156  select:session:0.02:net3
+two-sample cons (treated): placebo-selection 14     55            0                0     0.7770  0.000185   0.000130  select:session:0.02:net3
+two-sample cons (treated): placebo-selection 15     55            0                0     0.7200  0.000150   0.000101  select:session:0.02:net3
+              two-sample cons (treated): C1' 11     56            0                0     0.4884  0.000185   0.000130     c1p:500:net3:shared63
+              two-sample cons (treated): C1' 12     56            0                0     0.4212  0.000135   0.000089     c1p:500:net3:shared63
+              two-sample cons (treated): C1' 13     56            0                0     0.4914  0.000135   0.000089     c1p:500:net3:shared63
+              two-sample cons (treated): C1' 14     56            0                0     0.3570  0.000085   0.000050     c1p:500:net3:shared63
+              two-sample cons (treated): C1' 15     56            0                0     0.2400  0.000050   0.000024    c1p:2000:net3:shared63
+    two-sample cons (all): placebo-selection 11     55           20               20   165.1188  0.062545   0.061488   select:block5:0.02:net3
+    two-sample cons (all): placebo-selection 12     55           21               20   188.3856  0.060380   0.059340   select:block5:0.02:net3
+    two-sample cons (all): placebo-selection 13     55           21               20   216.1432  0.059380   0.058348   select:block5:0.02:net3
+    two-sample cons (all): placebo-selection 14     55           21               20   244.8810  0.058305   0.057282   select:block5:0.02:net3
+    two-sample cons (all): placebo-selection 15     55           21               20   273.7200  0.057025   0.056013   select:block5:0.02:net3
+                  two-sample cons (all): C1' 11     56            0                0     0.4884  0.000185   0.000130     c1p:500:net3:shared63
+                  two-sample cons (all): C1' 12     56            0                0     0.4212  0.000135   0.000089     c1p:500:net3:shared63
+                  two-sample cons (all): C1' 13     56            0                0     0.4914  0.000135   0.000089     c1p:500:net3:shared63
+                  two-sample cons (all): C1' 14     56            0                0     0.3570  0.000085   0.000050     c1p:500:net3:shared63
+                  two-sample cons (all): C1' 15     56            0                0     0.2400  0.000050   0.000024    c1p:2000:net3:shared63
+LIFT CANDIDATES (count of nulls above nominal; ci = 95 % interval wholly above)
+method     group  ci_above_k11  ci_above_k12  ci_above_k13  ci_above_k14  ci_above_k15  pt_above_k11  pt_above_k12  pt_above_k13  pt_above_k14  pt_above_k15
+  t21e      real             5             4             4             4             3            23            21            22            23            21
+  t21e realistic             4             5             4             5             5            11            12            14            14            14
+  t21w      real            14            15            15            15            14            33            33            34            32            34
+  t21w realistic             9             8             8             8             8            19            18            18            18            18
+  t42w      real             9            10            11            12            11            27            27            29            27            28
+  t42w realistic             7             7             8             8             8            17            18            18            18            18
+  t63w      real            16            13            12            10             9            34            33            36            32            33
+  t63w realistic             5             2             3             3             2            15            15            16            13            13
+ hac21      real            22            26            19            20            20            45            49            45            46            44
+ hac21 realistic            15            18            15            15            16            20            20            20            20            20
+  cons      real             0             0             0             0             0             0             0             0             0             0
+  cons realistic             0             0             0             0             0             0             0             0             0             0
+P CANDIDATES
+method     group  nulls  ci_above_k11  ci_above_k12  ci_above_k13  ci_above_k14  ci_above_k15  pt_above_k11  pt_above_k12  pt_above_k13  pt_above_k14  pt_above_k15
+  d621      real     24            18            18            18            18            18            19            18            18            18            18
+  d621 realistic      4             4             4             4             4             4             4             4             4             4             4
+  d621    stress      1             1             1             1             1             1             1             1             1             1             1
+  bm63      real     24             5             4             4             4             4             6             6             5             5             5
+  bm63 realistic      4             2             2             1             1             1             3             3             3             3             3
+  bm63    stress      1             1             1             1             1             1             1             1             1             1             1
+ bm126      real     24             9             9             7             5             4            11            11            10             7             7
+ bm126 realistic      4             1             0             0             0             0             1             1             1             1             1
+ bm126    stress      1             1             1             1             1             1             1             1             1             1             1
+ obm63      real     24            11            10            10            10            10            12            11            10            10            10
+ obm63 realistic      4             4             4             4             4             4             4             4             4             4             4
+ obm63    stress      1             1             1             1             1             1             1             1             1             1             1
+obm126      real     24             7             6             6             6             6             8             8             8             8             8
+obm126 realistic      4             4             4             4             4             4             4             4             4             4             4
+obm126    stress      1             1             1             1             1             1             1             1             1             1             1
+  ft63      real     24             9             6             8             9             8            13            10            14            13            13
+  ft63 realistic      4             0             0             0             0             0             0             0             0             0             0
+  ft63    stress      1             0             0             0             0             0             1             0             1             0             0
+ pcons      real     24             0             0             0             0             0             0             0             0             0             0
+ pcons realistic      4             0             0             0             0             0             0             0             0             0             0
+ pcons    stress      1             0             0             0             0             0             0             0             0             0             0
+ bm63c      real     24             0             0             0             0             0             0             0             0             1             0
+ bm63c realistic      4             0             0             0             0             0             0             0             0             0             0
+ bm63c    stress      1             1             1             1             1             1             1             1             1             1             1
+TWO-SAMPLE CANDIDATES
+   rule method              form  nulls  ci_above_k11  ci_above_k12  ci_above_k13  ci_above_k14  ci_above_k15  pt_above_k11  pt_above_k12  pt_above_k13  pt_above_k14  pt_above_k15
+treated   t21w placebo-selection     55            10             7             6             6             6            13            12            12            10            10
+treated   t21w  two-sample (C1')     56            14            13            13            13            13            29            27            28            28            26
+treated   t42w placebo-selection     55             6             6             6             5             5            14            14            14            15            14
+treated   t42w  two-sample (C1')     56             5             6             3             5             4            23            21            22            20            20
+treated   t63w placebo-selection     55             4             4             4             4             4            14            14            14            16            16
+treated   t63w  two-sample (C1')     56            11            11            10            10             6            27            23            26            22            21
+treated   cons placebo-selection     55             0             0             0             0             0             0             0             0             0             0
+treated   cons  two-sample (C1')     56             0             0             0             0             0             0             0             0             0             0
+    all   t21w placebo-selection     55            32            30            30            30            30            37            37            39            37            37
+    all   t21w  two-sample (C1')     56            14            13            13            13            13            29            27            28            28            26
+    all   t42w placebo-selection     55            29            30            30            29            29            38            38            38            39            38
+    all   t42w  two-sample (C1')     56             5             6             3             5             4            23            21            22            20            20
+    all   t63w placebo-selection     55            25            25            25            24            25            35            36            36            38            38
+    all   t63w  two-sample (C1')     56            11            11            10            10             6            27            23            26            22            21
+    all   cons placebo-selection     55            20            20            20            20            20            20            21            21            21            21
+    all   cons  two-sample (C1')     56             0             0             0             0             0             0             0             0             0             0
+DROP s1 (window): rows selected 1; difference80 NOT EMPTY; null ['select:window:0.25:net3']; reps [5000]; csv line(s) [1897]
+DROP s2 (window): rows selected 1; difference80 NOT EMPTY; null ['select:window:0.25:net3']; reps [5000]; csv line(s) [1897]
+DROP s3 (block21): rows selected 1; difference80 EMPTY; null ['select:block21:0.25:net3']; reps [5000]; csv line(s) [2017]
+DROP u3 (block5): rows selected 1; difference80 NOT EMPTY; null ['select:block5:0.25:net3']; reps [5000]; csv line(s) [1977]
+DROP raw line 1897: model window k '15' share '0.25' difference80 field non-empty; shift80 field non-empty
+DROP raw line 1977: model block5 k '15' share '0.25' difference80 field non-empty; shift80 field non-empty
+DROP raw line 2017: model block21 k '15' share '0.25' difference80 field empty; shift80 field empty
