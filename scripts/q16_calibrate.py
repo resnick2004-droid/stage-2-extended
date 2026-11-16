@@ -645,7 +645,7 @@ def select_part(a, log) -> dict:
             A, B = _sel_batch(model, share, O, f"y_{v}", rng, r)
             Cr, Mr = C[v][:, None], M[:, None]                      # broadcast: the population is fixed
             for m in DIFF_FAST:
-                rj, _ = LB.diff_many_levels(m, A, B, Cr, Mr, LEVELS)
+                rj, _ = LB.diff_many_levels(m, A, B, Cr, Mr, LEVELS, df_rule=a.diff_df)
                 for i_, al in enumerate(LEVELS):
                     rej[(m, al)] += int(rj[i_].sum())
             if done < a.power_reps:
@@ -665,7 +665,7 @@ def select_part(a, log) -> dict:
         A0, B0 = np.concatenate(keepA, axis=1), np.concatenate(keepB, axis=1)
         R0 = A0.shape[1]
         Cr, Mr = C[v][:, None], M[:, None]
-        e0, se0, _ = LB.diff_stats(A0, B0, Cr, Mr, block=21)
+        e0, se0, _ = LB.diff_stats(A0, B0, Cr, Mr, block=21, df_rule=a.diff_df)
         unit = float(np.nanmedian(se0))
         pi = float(np.nanmean(B0.sum(axis=0) / M.sum()))
         grid = unit * np.geomspace(0.5, 40.0, 28)
@@ -673,7 +673,7 @@ def select_part(a, log) -> dict:
             for al in (FAMILY_LEVELS[0], FAMILY_LEVELS[-1]):
                 pw = []
                 for dd in grid:
-                    rj, _ = LB.diff_many_levels(m, A0 + dd * B0, B0, Cr + dd * B0, Mr, [al])
+                    rj, _ = LB.diff_many_levels(m, A0 + dd * B0, B0, Cr + dd * B0, Mr, [al], df_rule=a.diff_df)
                     pw.append(float(rj[0].mean()))
                 pw = np.maximum.accumulate(np.asarray(pw))
                 d80 = float(np.interp(0.8, pw, grid)) if pw[-1] >= 0.8 else float("nan")
@@ -713,7 +713,7 @@ def select_part(a, log) -> dict:
             S1, S2 = V1[:, None] * g1, V2[:, None] * g2
             N1r, N2r = N1[:, None], N2[:, None]
             for m in DIFF_FAST:
-                rj, md = LB.diff_many_levels(m, S1, N1r, S2, N2r, LEVELS)
+                rj, md = LB.diff_many_levels(m, S1, N1r, S2, N2r, LEVELS, df_rule=a.diff_df)
                 for i_, al in enumerate(LEVELS):
                     rej[(m, al)] += int(rj[i_].sum())
                 mdl[(m, FAMILY_LEVELS[0])].append(md[0])
@@ -737,7 +737,7 @@ def select_part(a, log) -> dict:
             f"{time.time() - t1:.0f} s")
     pd.DataFrame(rows_s).to_csv(Path(a.out) / "diff_size.csv", index=False)
     pd.DataFrame(rows_p).to_csv(Path(a.out) / "diff_power.csv", index=False)
-    return {"pairs_sha256": _sha(Path(a.pairs)), "offers": int(len(O["s"])), "sessions": n}
+    return {"pairs_sha256": _sha(Path(a.pairs)), "offers": int(len(O["s"])), "sessions": n, "diff_df": a.diff_df}
 
 
 # ================================================================================================ main
@@ -749,6 +749,8 @@ def main(argv=None) -> int:
     ap.add_argument("--pairs", type=Path, default=None)
     ap.add_argument("--part", choices=("lift", "p", "select", "all"), default="all")
     ap.add_argument("--power-reps", type=int, default=5_000)
+    ap.add_argument("--diff-df", choices=("treated", "all"), default=LB.DIFF_DF_RULE,
+                    help="the two-sample form's block count (all: the first form, kept to reproduce its failure)")
     ap.add_argument("--reps", type=int, default=200_000)
     ap.add_argument("--boot-reps", type=int, default=20_000)
     ap.add_argument("--synthetic-only", action="store_true")

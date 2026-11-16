@@ -336,10 +336,21 @@ def many_levels(method: str, S, N, levels) -> tuple[np.ndarray, np.ndarray]:
 DIFF_METHODS = ("t21w", "t42w", "t63w", "cons")
 
 
-def diff_stats(S1, N1, S2, N2, *, block: int = BLOCK, empty_second: bool = False):
+#: the two-sample form's block count for CR1's factor and the df: 'treated' (the default since Q-16's second run) counts
+#: the blocks of the sample that occupies FEWER blocks, Gt = min(G1', G2') -- a filter firing on a few sessions or
+#: blocks has only that many independent units; 'all' counts every block holding a trade of either sample (the first
+#: form, which the calibration found lax by orders of magnitude for persistent selections: few treated clusters)
+DIFF_DF_RULE = "treated"
+
+
+def diff_stats(S1, N1, S2, N2, *, block: int = BLOCK, empty_second: bool = False, df_rule: str | None = None):
     """(estimate, se, df) of the difference of two per-trade means from their session sums (vectorised like
-    `t_stats`); CR1's G' / (G' - 1) with G' the blocks holding a trade of either sample, df = G' - 1. With
-    `empty_second`, a second sample with no trade contributes nothing (the one-sample statistic)."""
+    `t_stats`): the variance from the linearised residual block sums with CR1's Gt / (Gt - 1), df = Gt - 1, Gt by
+    `df_rule` (default `DIFF_DF_RULE`). With `empty_second`, a second sample with no trade contributes nothing (the
+    one-sample statistic, Gt = sample 1's blocks)."""
+    rule = DIFF_DF_RULE if df_rule is None else df_rule
+    if rule not in ("treated", "all"):
+        raise ValueError(f"df_rule is 'treated' or 'all', not {rule!r}")
     B1, C1, _ = _block_sums(S1, N1, block)
     B2, C2, _ = _block_sums(S2, N2, block)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -353,21 +364,26 @@ def diff_stats(S1, N1, S2, N2, *, block: int = BLOCK, empty_second: bool = False
             th2 = B2.sum(axis=0) / n2
             u2 = (B2 - th2 * C2) / n2
         u = u - u2
-        Gp = ((C1 + C2) > 0).sum(axis=0)
+        if rule == "all":
+            Gp = ((C1 + C2) > 0).sum(axis=0)
+        else:
+            G1, G2 = (C1 > 0).sum(axis=0), (C2 > 0).sum(axis=0)
+            Gp = np.where(G2 > 0, np.minimum(G1, G2), G1) if empty_second else np.minimum(G1, G2)
         se = np.sqrt(Gp / (Gp - 1) * (u ** 2).sum(axis=0))
     return th1 - th2, se, Gp - 1
 
 
-def diff_many_levels(method: str, S1, N1, S2, N2, levels) -> tuple[np.ndarray, np.ndarray]:
+def diff_many_levels(method: str, S1, N1, S2, N2, levels, *, df_rule: str | None = None
+                     ) -> tuple[np.ndarray, np.ndarray]:
     """(rejections, minimum detectable differences), each (len(levels), reps), for `method` in `DIFF_METHODS` -- the
     MDL as a shift added to every trade of sample 1 (the estimate moves by it, the se does not)."""
     levels = [float(a) for a in levels]
     if method == "cons":
-        parts = [diff_many_levels(m, S1, N1, S2, N2, levels) for m in ("t21w", "t42w", "t63w")]
+        parts = [diff_many_levels(m, S1, N1, S2, N2, levels, df_rule=df_rule) for m in ("t21w", "t42w", "t63w")]
         return (parts[0][0] & parts[1][0] & parts[2][0]), np.maximum.reduce([p[1] for p in parts])
     if method not in ("t21w", "t42w", "t63w"):
         raise ValueError(f"the two-sample form takes {DIFF_METHODS}, not {method!r}")
-    est, se, df = diff_stats(S1, N1, S2, N2, block=int(method[1:3]))
+    est, se, df = diff_stats(S1, N1, S2, N2, block=int(method[1:3]), df_rule=df_rule)
     ok = np.isfinite(se) & (np.asarray(se) > 0) & (np.asarray(df) >= 1)
     with np.errstate(invalid="ignore"):
         crit = [np.where(df >= 1, stats.t.ppf(1.0 - a, np.maximum(df, 1)), np.nan) for a in levels]
@@ -460,4 +476,4 @@ def cbb_t(x, session, n_sessions: int, *, level: float, block: int = BLOCK, seed
 __all__ = ["K_RANGE", "BLOCK", "SHIPPED", "METHODS", "FIXED_B_SEED", "BOOT_SEED", "family_level", "clopper_pearson",
            "session_sums", "block_index", "t_stats", "hac_stats", "fixed_b_critical", "draws_for", "cbb_tstar",
            "cbb_critical", "cbb_crit_many", "Bound", "rejects", "mdl_draws", "bound", "t_block", "cbb_t", "DIFF_METHODS",
-           "diff_stats", "diff_many_levels", "diff_rejects", "two_sample_bound", "placebo_selection_bound"]
+           "DIFF_DF_RULE", "diff_stats", "diff_many_levels", "diff_rejects", "two_sample_bound", "placebo_selection_bound"]

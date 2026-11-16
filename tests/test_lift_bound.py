@@ -357,3 +357,49 @@ def test_diff_broadcasts_a_fixed_second_sample():
     b = LB.diff_stats(S1, N1, np.repeat(S2, 20, 1), np.repeat(N2, 20, 1), block=21)
     for x, y in zip(a, b):
         assert np.allclose(x, y)
+
+
+def _session_filter_null(rng, reps, n=300, share=0.05):
+    """A filter firing on whole sessions (5 %), independent of clustered binary outcomes; every offer the twin."""
+    M = rng.poisson(8.0, size=(n, reps)).astype(np.int64)
+    a = rng.standard_normal((n, reps)) * math.sqrt(0.35)
+    W = rng.binomial(M, stats.norm.cdf(a / math.sqrt(0.65))).astype(float)
+    f = rng.random((n, reps)) < share
+    return f * W, f * M.astype(float), W, M.astype(float)
+
+
+def test_the_treated_block_count_sets_the_df():
+    S1 = np.zeros(42); N1 = np.zeros(42)
+    S1[[3, 30]] = [2.0, 1.0]; N1[[3, 30]] = [4.0, 4.0]                       # sample 1 in 2 of 2 blocks of 21
+    S2 = np.arange(42, dtype=float) % 3; N2 = np.full(42, 3.0)
+    assert LB.diff_stats(S1, N1, S2, N2, block=21)[2] == 1
+    S1b, N1b = S1.copy(), N1.copy(); S1b[30] = N1b[30] = 0.0                  # now in 1 block: nothing to test
+    assert LB.diff_stats(S1b, N1b, S2, N2, block=21)[2] == 0
+    assert not LB.diff_rejects("cons", S1b, N1b, S2, N2, level=0.05)
+    assert LB.diff_stats(S1b, N1b, S2, N2, block=21, df_rule="all")[2] == 1    # the first form counted both
+
+
+def test_persistent_selection_first_form_fails_and_treated_form_holds():
+    """Q-16's second finding, kept on record: with the df from every block ('all'), a whole-session filter is lax beyond
+    its interval; counting the selected sample's blocks ('treated', the default), the shipped `cons` holds
+    (seed 20261911)."""
+    rng = np.random.default_rng([20261911, 10])
+    A, B, W, M = _session_filter_null(rng, 20000)
+    for al in (0.01, 0.05):
+        lo, hi = LB.clopper_pearson(int(round(al * 20000)), 20000, conf=0.999)
+        first = LB.diff_many_levels("t21w", A, B, W, M, [al], df_rule="all")[0][0].mean()
+        assert first > hi, (al, first)                                         # the recorded failure
+        r = LB.diff_many_levels(LB.SHIPPED, A, B, W, M, [al])[0][0].mean()
+        assert r <= hi, (LB.SHIPPED, al, r)
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "Q-16, kept on record: written with the treated-df change, before its calibration; on this 300-session "
+    "whole-session filter null t21w alone with the treated df still rejects 1.295 % at 1 % (6-11 treated blocks: the "
+    "CR variance stays a little low); every member is 1.2-1.3x; only their intersection (cons, 0.27 %) holds -- "
+    "scratch dbg/diag_treated.py"))
+def test_t21w_alone_with_the_treated_df_holds_on_a_session_filter():
+    rng = np.random.default_rng([20261911, 10])
+    A, B, W, M = _session_filter_null(rng, 20000)
+    lo, hi = LB.clopper_pearson(200, 20000, conf=0.999)
+    assert LB.diff_many_levels("t21w", A, B, W, M, [0.01])[0][0].mean() <= hi
