@@ -2,50 +2,63 @@
 contracts on the registered trades, the user scorecard per plan paired with Topstep by month, and beside it E-007
 (e)'s readings, the denial ladder and the gate. Nothing is chosen, nothing carried; no pass line.
 
-    python scripts/run_clean.py --name rd01-scorecard --task <Q> --hours <h> --mem-gb 3 -- \\
-        python scripts/rd01_reading.py --purpose firm_scorecard --identity-row E-NNN
-    python scripts/run_clean.py --name rd01-ladder ... -- python scripts/rd01_reading.py --purpose firm_ladder_beside \\
-        --identity-row E-NNN
-    python scripts/run_clean.py --name rd01-gate ... -- python scripts/rd01_reading.py --purpose firm_gate_beside \\
-        --identity-row E-NNN
+    python scripts/run_clean.py --name rd01-reading --task <Q> --hours <h> --mem-gb 3.5 -- \\
+        python scripts/rd01_reading.py
+    python scripts/rd01_reading.py --plan          # light: prints the guard's findings and what would run; reads nothing
 
-**One purpose, one clean run** (section 6 item 6): `--purpose` is one of the text's three judged-block purposes
-(`firm_scorecard`, `firm_ladder_beside`, `firm_gate_beside`); each is authorised once through
-`extended.reader.authorise_engine_read` (declaration `prereg/RD-01_firm_contracts.md`, pinned; the development window;
-the engine's files) before anything is read, refused outside a clean run of a committed tree, and a second run under
-the same purpose is refused unless `--repeat E-NNN` names a decision row naming the declaration.
+**The run is section 15's one run.** Its three judged-block purposes (section 6 item 6) are taken **in order**, each
+authorised through `extended.reader.authorise_engine_read` (declaration `prereg/RD-01_firm_contracts.md`, pinned; the
+development window; the engine's files) **immediately before its stage**, so a refusal leaves the later purposes
+unread: `firm_scorecard` (the 30 replays of 7.3, or 34 when P-16's count of 5.5 is not zero -- decided from the trades'
+times before any outcome), `firm_ladder_beside` (the 27 denial-ladder replays), `firm_gate_beside` (the 16 gates with
+their zero-edge twins). A purpose ledgered by an earlier clean run is refused unless `--repeat E-NNN` names a decision
+row naming the declaration (the reader's once-rule).
 
-**The identity stage first** (9.1): `--identity-row E-NNN` must be a decision row that names
-`identity/firms_identity.py` and says its identities hold; otherwise nothing runs.
+**Before anything is read** (9.1, R3): every identity the reading waits on has a decision row carrying the lead's
+token `` `identity-holds: Q-nn` `` and naming the commit it held at, whose covered files the commit being run has not
+changed (`extended.identity_rows`; `WAITED`: RD-01's identity stage `identity/firms_identity.py`, Q-80's 500-path gate
+identities, Q-93's U1-adapter identity); and the declaration's text is the one its pinning row pins. Otherwise exit 3.
 
-**What each purpose writes** (through `extended.results`, each file with its manifest: the commit, the blobs run, the
-parameters; only inside a clean run; never over an existing file):
+**Order** (15): the identities first (above); then, per cell, 9.1 items 4 and 5, **9.2's oracles** and **9.3's
+mechanics**, then the reading; **any refusing check stops the run at once** (r5), nothing written, exit 3.
 
-* `firm_scorecard` -> `results/rd01_scorecard.csv` (sections `counts` and `tier1_count` -- 9.3's mechanics, printed
-  first --, `scorecard`, `extra`, `path`, `response` -- U1's card, E-007 (e)'s measures and the path measures per run and
-  arm --, `paired` and `paired_card` -- each plan less TS by month and block with 10.2's reading --, `price_grid` and
-  `break_even` -- A-10) and `results/rd01_scorecard_starts.csv` (one row a start, run and arm). The 30 replays of 7.3,
-  or 34 when P-16's count of 5.5 is not zero (decided from the trades' times before any outcome).
-* `firm_ladder_beside` -> `results/rd01_ladder.csv`: the denial ladder (10, 25, 50 %) on TS-16 and P-16's eight
-  corners, the verdict arm, each start's draws from seed 20261990 (A-9's seed base), Q-17's exact-length rule.
-* `firm_gate_beside` -> `results/rd01_gate.csv` and `results/rd01_gate_paths.csv`: the 16 corners' gates at 500 paths
-  at the stream's registered gate seed, point and bound and the zero-edge twin, paired with TS's registered gate paths;
-  Quick Pay by E-089's ruling (`extended.firm_reading.gate_rows`).
+**What it writes** (through `extended.results`, each file with its manifest; only inside a clean run; never over an
+existing file):
 
-No smaller run exists: every judged-block read is the reading's own, once (a check on real data would spend the
-purpose's one read). The pipeline is checked end to end on toy campaigns (`tests/rd01_reading_synthetic.py`).
+* `results/fc_reading.csv` -- sections `identity` (the waited identities' rows, the pin, items 4-5 and A-9's equality
+  per cell), `oracle` (9.2 per cell, the twins' oracles), `mechanics` (9.3: G-3's count by release and year, the
+  offered trades' zero checks, every cell's counts by block), `scorecard` (U1's card, E-007 (e)'s measures, the path
+  and response measures per run, arm and block, and one row a start: the journey variables, 10.1 item 6's fields),
+  `paired` (each plan less TS by month and block with 10.2's reading; the paired card), `diverge` (10.1 item 6),
+  `grid` (A-10's price grid and break-even prices), `ladder` (the denial ladder's readings and one row a start),
+  `coverage` (10.2 item 7 at every setting read);
+* `results/fc_gate.csv` -- the 16 corners' gate rows (point, bound, the zero-edge twin), the paths paired with TS's
+  registered ones, and each path's row;
+* `results/fc_menu.csv` -- the menu (`extended.firm_menu`): a declared light step on the two files just written,
+  read back through their manifests' hashes -- flags, labels, items 3, 4 and 10.
 
-**Estimates** (not measured): the scorecard is 30 or 34 replays, each both arms on every start through A-9 and once
-more directly (A-10 and 9.3's ledger counts), about twice U1's full pass per replay -- tens of hours at one worker;
-the ladder 27 replays of one arm; the gate 16 corners x 500 paths x (two shifts and a twin), Quick Pay's at one worker.
-Peak memory about one U1 pass (about 3 GB at one worker).
+Every row carries "described, not carried"; every manifest the pinning row, the waited identities' rows, the run
+counts as run, each plan's cost schedule and table inputs, every seed (the reserved and retired with them), section 5's
+readings and their labels, each plan's record entries with their dates read, the sha256 of
+`vendor/DATA_MANIFEST_stage2.sha256`, `prereg_id` RD-01 and `exploratory=False`.
+
+**Estimates** (not measured; the run measures them, n3): the scorecard is 30 or 34 replays, each both arms on every
+start through A-9 and once more directly (A-10, 9.2 and 9.3 read the direct runs), about twice U1's full pass per
+replay, plus the coverage of 10.2 item 7 (about 0.5 ms a series, 39 shapes, 20,000 series: some 6-7 minutes a
+setting, at most nine settings) -- tens of hours at one worker; the ladder 27 replays of one arm; the gate 16 corners x
+500 paths x two calls of two arms, Quick Pay's at one worker. Peak memory about one U1 pass plus the reading's rows
+(about 3-3.5 GB at one worker). Each finished cell is kept outside the checkout keyed by the commit, so a restart
+resumes (a restart is a rerun under the once-rule: `--repeat`).
 """
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import gc
+import hashlib
 import os
 import pickle
+import re
 import subprocess
 import sys
 import time
@@ -65,16 +78,18 @@ use_vendored_stage2()
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from extended import firm_menu as FM  # noqa: E402
 from extended import firm_reading as R  # noqa: E402
 from extended import firm_terms as T  # noqa: E402
+from extended import identity_rows as IR  # noqa: E402
 from extended import reader  # noqa: E402
 from extended import user_beside as B  # noqa: E402
 from extended import user_readings as UR  # noqa: E402
 
 SCRIPT = "scripts/rd01_reading.py"
 VENDOR = ROOT / "vendor" / "stage2"
-RESULTS = {"firm_scorecard": ("rd01_scorecard", "rd01_scorecard_starts"), "firm_ladder_beside": ("rd01_ladder",),
-           "firm_gate_beside": ("rd01_gate", "rd01_gate_paths")}
+FILES = ("fc_reading", "fc_gate", "fc_menu")
+SECTIONS = ("identity", "oracle", "mechanics", "scorecard", "paired", "diverge", "grid", "ladder", "coverage")
 READING = ("DESCRIBED (RD-01, E-023 (1)): other firms' contracts on the registered trades; no pass line, nothing chosen "
            "or carried; 0 % denial and the placement off in the headline (E-008)")
 LADDER_PLANS = ("LU", "DT", "FP", "QP")
@@ -92,10 +107,56 @@ CONVENTIONS = {
     "dt_inactivity_flag": "an evaluation closed for inactivity carries the engine's `abandoned` flag; counted as "
                           "`inactive_closed`, never as a cash refusal",
     "qp_bracket": "A-7 classifies won-at-R on the run's point outcomes on every arm (M3)",
-    "a4_logging": "a day-logging trade at one micro under the design's own stand-aside, its intended risk the table's",
+    "a4_logging": "a day-logging trade at one micro under the design's own stand-aside (refused if its share is "
+                  "positive, n4), its intended risk the table's",
+    "month_9": "6 item 4 names no horizon for month 9: read at 252 sessions, the conservative choice (n1)",
+    "counts_blocks": "9.3's counts by block: all -- every start's long replay; early and late -- u_select.block at the "
+                     "long replay's 252 sessions, so no early count reads a 2024 session",
+    "g10": "G-10: sessions with no trade per funded account (its live sessions less its trading ones); idle 30 calendar "
+           "days -- a gap of at least the record's 30 days between its activation, its trading days and its end; "
+           "drained -- an account not breached whose cushion at its last close is below one micro at the smallest stop "
+           "of the design's offered trades",
+    "g12": "G-12: the trades the router dealt to a DayTraders session's later slots after the daily limit ended it",
+    "fp_forced_signals": "on a Fast Pass session forced untraded (A-5) the router passes the account over: the day's "
+                         "offered signals dealt to some account and to none are counted (the forced account's own "
+                         "signals are not recorded apart by the engine)",
+    "fp_uncapped": "the trades an uncapped Fast Pass ladder (two contracts plus one per $2,000, no cap) would size "
+                   "differently at the session's balance, the trade's own intended risk, allowance and room",
+    "items_4_5_ladder": "9.1 item 5 on every ladder replay (A-9's own account counts); item 4 on the ladder's DayTraders "
+                        "cells (run directly for A-10), the others' trades being the scorecard's on the same classes "
+                        "and draws",
+    "twin_interval": "9.2's twin oracles: a ratio of sums over the gate's paths with its delta-method standard error, "
+                     "refusing only beyond the two-sided 99.9 % normal interval",
+    "verdict_delta": "the TradeDay verdict arm shifted by the campaign's registered lb - e and lb_by_rr - e_by_rr "
+                     "(captured as U1's builder makes the arm), refused unless every untouched day is U1's bit for bit "
+                     "(r6)",
 }
-#: the seeds the readings use (section 12; the gate's are each stream's registered gate seed)
-SEEDS = {"ladder": 20261990, "coverage": 20261991, "gate_p16": 20261206, "gate_p14": 20261131}
+#: section 12's block, every seed with its status and what it draws (the reserved and retired ones never drawn)
+SEED_BLOCK = {R.F.LADDER_SEED + i: st for i, st in enumerate(
+    ("in use: the denial ladder's per-start path seeds (A-9's seed base, 10.1 item 7)",
+     "in use: 10.2 item 7's synthetic coverage series, and T-9",
+     "in use: the build's toy campaigns (T-1 to T-7, T-10, T-12 to T-14)",
+     "reserved, unused: never drawn, not reassigned (it was Q-16's comparison, dropped)",
+     "reserved, unused", "reserved, unused", "reserved, unused", "reserved, unused",
+     "retired, found in use: a red team's scratch seed (docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md)",
+     "retired, found in use: a red team's scratch seed (the same review)"))}
+#: the identities the reading waits on (R3; 15's waits), each with the files whose code it held on
+CODE = ("scripts/rd01_reading.py", "extended/firm_reading.py", "extended/firm_menu.py", "extended/firms.py",
+        "extended/firm_accounts.py", "extended/firm_terms.py", "extended/firm_counts.py",
+        "extended/firm_uncertainty.py", "extended/identity_rows.py", "extended/user_beside.py",
+        "extended/user_readings.py", "extended/user_measures.py", "extended/gate.py", "extended/campaign.py",
+        "extended/walker.py", "extended/reader.py", "extended/results.py", "identity/user_beside_identity.py",
+        "config/rules_extended.yaml", "config/calendar_fomc_minutes.csv", "config/calendar_early_closes.csv",
+        "prereg/RD-01_firm_contracts.md")
+WAITED = (
+    IR.Waited("Q-104", "RD-01's identity stage, identity/firms_identity.py (9.1 items 1-5, every start, 500 paths)",
+              CODE + ("identity/firms_identity.py", "identity/gate_identity.py", "identity/stage2_identity.py",
+                      "vendor/MANIFEST_stage2.sha256")),
+    IR.Waited("Q-80", "Q-71's 500-path gate identities (A-8; P-14, P-16)",
+              ("extended/gate.py", "extended/campaign.py", "identity/gate_identity.py")),
+    IR.Waited("Q-93", "Q-76's heavy identity with Q-100's (A-9: U1's start rows at the defaults and through the keywords)",
+              ("extended/user_beside.py", "identity/user_beside_identity.py")),
+)
 
 
 def _commit() -> str:
@@ -103,38 +164,119 @@ def _commit() -> str:
     return out.stdout.strip() or "nocommit"
 
 
-#: the code a reading runs, recorded in every manifest by its git blob as read from disk (the files actually run)
-CODE = ("scripts/rd01_reading.py", "extended/firm_reading.py", "extended/firms.py", "extended/firm_accounts.py",
-        "extended/firm_terms.py", "extended/firm_counts.py", "extended/firm_uncertainty.py", "extended/user_beside.py",
-        "extended/user_readings.py", "extended/user_measures.py", "extended/gate.py", "extended/campaign.py",
-        "identity/user_beside_identity.py", "config/rules_extended.yaml", "config/calendar_fomc_minutes.csv",
-        "config/calendar_early_closes.csv", "prereg/RD-01_firm_contracts.md")
-
-
 def code_blobs() -> dict[str, str]:
     """{path: git blob id} of each file the reading runs, hashed from the file on disk (`git hash-object`)."""
     out = {}
-    for rel in CODE:
+    for rel in CODE + ("identity/firms_identity.py",):
         r = subprocess.run(["git", "hash-object", str(ROOT / rel)], cwd=ROOT, capture_output=True, text=True)
         out[rel] = r.stdout.strip() if r.returncode == 0 else "missing"
     return out
 
 
-def identity_row_problems(row_id: str | None) -> list[str]:
-    """9.1: the reading starts only once the identity stage has printed that its identities hold -- a decision row
-    that names `identity/firms_identity.py` and says they hold."""
-    if not row_id:
-        return ["no --identity-row: the identity stage (9.1) runs first, under its own decision row"]
-    row = reader.decision_row(reader._decisions(ROOT), str(row_id))
-    if row is None:
-        return [f"{row_id} is no decision row of DECISIONS.md"]
-    low = row.lower()
-    bad = []
-    if "firms_identity" not in low:
-        bad.append(f"{row_id} does not name identity/firms_identity.py")
-    if "hold" not in low:
-        bad.append(f"{row_id} does not say the identities hold")
-    return bad
+# ------------------------------------------------------------------------------------------------ the guards
+
+
+def identity_problems(repo: Path = ROOT, decisions_text: str | None = None) -> tuple[list[str], dict[str, Any]]:
+    """R3: every waited identity's row (`extended.identity_rows`), or why not."""
+    return IR.waited_problems(repo, WAITED, decisions_text=decisions_text)
+
+
+def pin_row(repo: Path = ROOT) -> tuple[dict[str, str] | None, list[str]]:
+    """The decision row that pins the declaration, and its sha256; refused unless the file's LF text hashes to it."""
+    text = reader._decisions(repo)
+    rel = R.DECLARATION
+    for line in text.splitlines():
+        m = reader.ROW.match(line)
+        if not m:
+            continue
+        for p, h in reader.PIN.findall(line):
+            if p == rel:
+                have = reader.sha256_lf(repo / rel)
+                if have != h:
+                    return None, [f"{rel} hashes to {have[:12]}, its pinning row {m.group(1)} to {h[:12]}"]
+                return {"row": m.group(1), "sha256": h}, []
+    return None, [f"no decision row pins {rel}"]
+
+
+def data_manifest_sha256(repo: Path = ROOT) -> str:
+    p = repo / "vendor" / "DATA_MANIFEST_stage2.sha256"
+    return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "missing"
+
+
+APPENDIX_ROW = re.compile(r"^\| `([^`]+)` \| (stage2|lucid|record) \| ([a-z_]+) \|")
+
+
+def record_entries(repo: Path = ROOT) -> tuple[list[dict[str, Any]], list[str]]:
+    """Appendix R's every key with its record's status and date read (15: each plan's record entries with their dates
+    read), and the keys whose record status is not the appendix's (refusing: the record changed under the reading)."""
+    import yaml
+
+    text = (repo / R.DECLARATION).read_text(encoding="utf-8")
+    rec = {str(e["key"]): e for e in yaml.safe_load(T.RECORD.read_text(encoding="utf-8"))["rules"]}
+    st2 = yaml.safe_load(T.STAGE2_LEDGER.read_text(encoding="utf-8"))["rules"]
+    lu = yaml.safe_load(T.LUCID_LEDGER.read_text(encoding="utf-8"))["rules"]
+    out, bad = [], []
+    for line in text.split("## Appendix R", 1)[-1].splitlines():
+        m = APPENDIX_ROW.match(line)
+        if not m:
+            continue
+        key, src, status = m.groups()
+        e = {"stage2": st2, "lucid": lu, "record": rec}[src].get(key)
+        if e is None:
+            bad.append(f"{key}: not in its record ({src})")
+            continue
+        plan = ("TS" if src == "stage2" else "LU" if src == "lucid" or key.startswith("lucid.") else
+                "DT" if key.startswith("daytraders.") else "FP" if ".fastpass_" in key else
+                "QP" if ".quickpay_" in key else "FP, QP")
+        out.append({"key": key, "source": src, "plan": plan, "status": e.get("status"),
+                    "date_read": str(e.get("date_read")), "article_id": str(e.get("article_id", ""))})
+        if str(e.get("status")) != status:
+            bad.append(f"{key}: the record reads {e.get('status')!r}, Appendix R {status!r}")
+    return out, bad
+
+
+def plan_manifest(base_rules: Any) -> dict[str, Any]:
+    """Each plan's cost schedule (4.8), table inputs (4.9: what its accounts hand the table, and its `Rules` winning-
+    day fields as the run sets them) and request rule (2.3, 5.3, 5.6)."""
+    inputs = {
+        "TS": "the engine's own win_days, since_pay and request_day_next (REQUEST_AFTER_5PM)",
+        "LU": "the engine's own, with Lucid's $1 net in its gate; request_day_next 0 (no session excluded)",
+        "DT": "Qualifying Days q, 0 to 8 (a $200 day whose close has the cycle's best day at most 30 % of the cycle's "
+              "profit, the request day excluded); win_days min(5, max(0, q - 3)); 4 while q = 8 and the balance is "
+              "below $2,600 or the 30 % rule blocks; request_day_next the engine's; an evaluation at target with "
+              "Qualifying Days owed reads the table's lookup as it stands",
+        "FP": "the engine's own; win_days 4 while five days are counted and the 45 % rule blocks; request_day_next the "
+              "engine's, the session also untraded (A-5); an evaluation at target with days owed takes at most one "
+              "trade a session at one micro and the table's R (A-4)",
+        "QP": "every close: no days counted, win_days 5 from the account's second session (0 before), request_day_next "
+              "0; the reference's cadence: the engine's own count of $150 days since the last request, every session "
+              "counted; an evaluation at target with days owed as Fast Pass's (A-4)",
+    }
+    out: dict[str, Any] = {}
+    for plan in T.PLANS:
+        corners = [T.STRICT, T.LENIENT] if plan != "TS" else ["reference"]
+        sched = {c: list(T.fee_schedule(plan, T.settings_for(plan, c).fee_basis)) for c in corners} \
+            if plan == "DT" else {"all": list(T.fee_schedule(plan))}
+        fields = {}
+        if plan in ("DT", "FP", "QP"):
+            rr = R.F.plan_rules(base_rules, T.settings_for(plan, T.STRICT))
+            fields = {"std_winning_days": int(rr.std_winning_days), "std_winning_day_min": float(rr.std_winning_day_min)}
+        elif plan == "TS":
+            fields = {"std_winning_days": int(base_rules.std_winning_days),
+                      "std_winning_day_min": float(base_rules.std_winning_day_min)}
+        out[plan] = {"cost_schedule_round_turn_micro_mini": sched, "table_inputs": inputs[plan],
+                     "rules_winning_day_fields": fields or "Stage 2's lucid_rules (5, $150)",
+                     "request_rule": ("min(0.5 B, $2,000) cut to the plan's cap, remaining-balance rule and increment; "
+                                      "none below its minimum" + ("; QP-16-req: the same at the reference's cadence"
+                                                                  if plan == "QP" else ""))}
+    return out
+
+
+def readings_manifest() -> dict[str, Any]:
+    """Section 5's readings: the declared constants (each with its line of 5.2), every run's settings, the labels."""
+    return {"declared": {k: {"value": v.value, "cite": v.cite} for k, v in T.DECLARED.items()},
+            "runs": {r.name: dataclasses.asdict(T.settings_for(r.plan, r.corner, r.flip)) for r in T.RUNS},
+            "labels": {k: list(v) for k, v in FM.LABELS.items()}, "e015": FM.E015}
 
 
 class Resume:
@@ -166,30 +308,62 @@ class Resume:
 
 
 def _tag(rows: list[dict], **head: Any) -> list[dict]:
-    return [{**head, **r} for r in rows]
+    """Rows under a run's head: the head wins over a reading's own `kind` (U1's response kind is kept apart)."""
+    out = []
+    for r in rows:
+        r = dict(r)
+        if "kind" in r:
+            r["response_kind"] = r.pop("kind")
+        out.append({**r, **head})
+    return out
+
+
+def _ur_rows(rows: list[dict], section: str) -> list[dict]:
+    """U1's summary rows under 15's section: their own section is the subsection (`card` for U1's card)."""
+    return [{**{k: v for k, v in r.items() if k != "section"}, "section": section,
+             "subsection": "card" if r["section"] == "scorecard" else r["section"]} for r in rows]
+
+
+def _start_rows(table: pd.DataFrame, stats: dict[int, dict[str, float]], section: str) -> list[dict]:
+    """One row a start: U1's start table and 10.1 item 6's fields (money to the cent)."""
+    t = UR.rounded(table)
+    out = []
+    for r in t.to_dict("records"):
+        x = stats.get(int(r["start_day"]), {})
+        r = {k: v for k, v in r.items() if k not in ("design",)}
+        r["response_name"] = r.pop("response")
+        out.append({"section": section, "subsection": "start", **r,
+                    **{k: (round(float(x[k]), 2) if k.startswith(("fees_", "payouts_g", "payouts_n", "realised"))
+                           else float(x[k])) for k in R.DIVERGE if k in x}})
+    return out
 
 
 def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], starts: int | None, *,
-                      coverage: bool = True, resume: Resume | None = None) -> tuple[list[dict], pd.DataFrame, list[str]]:
-    """The 7.3 runs: (rows, the per-start table, the refusing problems). `streams`: {"p16"|"p14": {"jobs": {arm: job},
-    "config": U1's config def}}. TS's run of a stream comes first (its cells are the pairing's other side)."""
+                      coverage: bool = True, coverage_series: int = R.COVERAGE_SERIES, resume: Resume | None = None,
+                      log=print) -> tuple[list[dict], dict[str, Any]]:
+    """The 7.3 runs, TS's first on each stream (its cells are the pairing's other side): (rows, what ran). Raises
+    `firm_reading.Refused` at the first refusing problem (r5)."""
     import user_journey as UJ
 
     resume = resume or Resume(None)
     off = B.BY_NAME["off"]
     rows: list[dict] = []
-    starts_parts: list[pd.DataFrame] = []
-    problems: list[str] = []
+    ctxs = {}
     for name, st in streams.items():
         pt = st["jobs"]["point"]
-        rows += R.tier1_count_rows(name, pt["blocks"], pt["dates"])
-        rows += [{"section": "counts", "stream": name, "measure": k, "value": float(v)}
-                 for k, v in R.exit_problems(pt["blocks"], pt["dates"]).items()]
-    conditional = R.p16_count_nonzero([r for r in rows if r["section"] == "tier1_count"])
+        rows += _tag(R.tier1_count_rows(name, pt["blocks"], pt["dates"]), section="mechanics", stream=name)
+        rows += [{"section": "mechanics", "subsection": "offered", "stream": name, "measure": k, "stat": "value",
+                  "value": float(v)} for k, v in R.exit_problems(pt["blocks"], pt["dates"]).items()]
+        ctxs[name] = R.stream_context(name, pt)
+        for arm, dl in (st.get("delta") or {}).items():
+            bad = R.delta_problems(pt["blocks"], st["jobs"][arm]["blocks"], dl)
+            if bad:
+                raise R.Refused(f"r6: {name} {arm}: " + "; ".join(bad))
+    conditional = R.p16_count_nonzero([r for r in rows if r.get("subsection") == "tier1_count"])
     runs = [r for r in runs if not r.conditional or conditional]
     runs = sorted(runs, key=lambda r: (r.plan != "TS",))
     ts_cells: dict[tuple[str, str], dict] = {}
-    pending_grid: dict[tuple[str, str, str], tuple[dict, float]] = {}
+    pending_grid: dict[tuple[str, str, str], tuple[list[dict] | None, float]] = {}
     for run in runs:
         s = T.settings_for(run.plan, run.corner, run.flip)
         name = R.stream_of(run)
@@ -198,88 +372,141 @@ def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], sta
             key = f"{run.name}|{arm}"
             got = resume.get(key)
             t0 = time.time()
+            head = {"run": run.name, "plan": run.plan, "stream": run.stream, "arm": arm, "corner": run.corner,
+                    "flip": run.flip or "", "kind": run.kind, "request_rule": s.request or ""}
             if got is None:
                 job = st["jobs"][arm]
                 chosen = UJ.start_choice(len(job["blocks"]), starts)
-                blocks, point_ref, a11 = R.arm_inputs(st["jobs"]["point"], job, s, arm)
+                blocks, point_ref, a11 = R.arm_inputs(st["jobs"]["point"], job, s, arm,
+                                                      (st.get("delta") or {}).get(arm))
                 cjob, kw = R.cell_job(job, s, blocks)
-                cell = R.run_cell(name, arm, off, cjob, s, chosen, kw, point_ref, direct=True)
+                ts = ts_cells.get((name, arm))
+                cell = R.run_cell(name, arm, off, cjob, s, chosen, kw, point_ref, direct=True, ctx=ctxs[name],
+                                  ts=None if ts is None else ts["compact"], keep_ts=run.plan == "TS")
+                if cell["problems"]:
+                    raise R.Refused(f"{key}: " + "; ".join(cell["problems"][:6]))
                 outs = R.reading_outs(cell, name, arm, off, s)
-                srows, table = UR.summary(name, arm, off, outs)
-                probs = list(cell["problems"]) + UR.consistency_problems(srows, outs, key)
-                head = {"run": run.name, "plan": run.plan, "stream": run.stream, "arm": arm, "corner": run.corner,
-                        "flip": run.flip or "", "kind": run.kind, "request_rule": s.request or ""}
-                crows = _tag(srows, **head)
-                crows += _tag(R.account_count_rows(cell), **head)
-                crows += _tag([{"section": "counts", "measure": f"a11_{k}", "value": float(v)} for k, v in a11.items()],
-                              **head)
-                crows += _tag([{"section": "identity_items_4_5", "measure": k, "value": float(v)}
-                               for k, v in cell["checks"].items()], **head)
+                srows, table = UR.summary(name, arm, off, outs, blocks=UR.READING_BLOCKS)
+                probs = UR.consistency_problems(srows, outs, key, blocks=UR.READING_BLOCKS)
+                if probs:
+                    raise R.Refused("; ".join(probs[:6]))
                 recs = [o["rec"] for o in outs]
-                got = {"rows": crows, "table": UR.rounded(table).assign(run=run.name), "problems": probs,
-                       "recs": recs, "cell": R.compact(cell) if run.plan == "TS" else None, "head": head}
+                crows = _tag(_ur_rows(srows, "scorecard"), **head)
+                crows += _tag(_start_rows(table, cell["stats"], "scorecard"), **head)
+                crows += _tag([{"section": "mechanics", **r} for r in R.count_rows(cell["stats"], recs)], **head)
+                crows += _tag([{"section": "mechanics", "subsection": "a11", "measure": f"a11_{k}", "stat": "value",
+                                "value": float(v)} for k, v in a11.items()], **head)
+                crows += _tag([{"section": "identity", "subsection": "items_4_5", "measure": k, "stat": "value",
+                                "value": float(v)} for k, v in cell["checks"].items()], **head)
+                n_req = sum(float(x.get("oracle_requests_checked", 0)) for x in cell["stats"].values())
+                n_fee = sum(float(x.get("oracle_trades_fee_checked", 0)) for x in cell["stats"].values())
+                crows += _tag([{"section": "oracle", "subsection": "replay", "measure": m, "stat": "checked",
+                                "value": v, "note": "held (9.2): every one inside its bounds"}
+                               for m, v in (("requests_bounds_and_split", n_req), ("trade_fees_schedule", n_fee),
+                                            ("fees_by_kind_total", float(len(cell["stats"]))))], **head)
+                if s.plan == "QP":
+                    crows += _tag([{"section": "oracle", "subsection": "replay", "measure": "qp_floor_every_close",
+                                    "stat": "breaches", "value": 0.0, "note": "held (9.2)"}], **head)
+                got = {"rows": crows, "recs": recs, "head": head, "stats": cell["stats"],
+                       "compact": cell["ts"] if run.plan == "TS" else None}
                 if run.plan != "TS":
                     ts = ts_cells[(name, arm)]
-                    got["rows"] += _tag(R.ledger_rows(cell, s, ts["cell"]) + R.differs_rows(cell, ts["cell"]), **head)
-                    got["rows"] += _tag(R.paired_rows(recs, ts["recs"], coverage=coverage)
-                                        + R.paired_scorecard_rows(recs, ts["recs"]), **head)
+                    got["rows"] += _tag([{"section": "paired", **r} for r in
+                                         R.paired_rows(recs, ts["recs"], coverage=coverage,
+                                                       coverage_series=coverage_series)
+                                         + R.paired_scorecard_rows(recs, ts["recs"])], **head)
+                    got["rows"] += _tag([{"section": "diverge", **r} for r in
+                                         R.diverge_rows(cell["stats"], ts["stats"], recs)], **head)
                     if run.kind == "corner" or run.flip == "price":
                         grows, at = R.grid_rows(cell, name, arm, off, s, ts["recs"])
-                        got["rows"] += _tag(grows, **head)
-                        if run.corner == T.STRICT and run.flip is None and run.plan != "LU":
+                        got["rows"] += _tag([{"section": "grid", **r} for r in grows], **head)
+                        if run.corner == T.STRICT and run.flip is None and run.plan in ("DT", "FP", "QP"):
                             other = T.price_ends(run.plan)[1]
-                            pending_grid[(run.plan, name, arm)] = ({"price": other, "recs": at.get(other)}, other)
-                        if run.flip == "price" and (run.plan, name, arm) in pending_grid:
-                            mine, other = pending_grid.pop((run.plan, name, arm))
-                            got["problems"] += [f"{key}: A-10 {p}" for p in
-                                                R.grid_problems({other: mine["recs"]}, {"outs": outs}, other)]
-                if not got["problems"]:
-                    resume.put(key, got)
+                            got["grid_other"] = (at.get(other), other)        # r2: kept for a restart
+                        if run.flip == "price":
+                            pend = pending_grid.pop((run.plan, name, arm), None)
+                            if pend is None:
+                                raise R.Refused(f"{key}: A-10's check has no strict corner's arithmetic to compare")
+                            gp = R.grid_problems({pend[1]: pend[0]}, {"outs": outs}, pend[1])
+                            if gp:
+                                raise R.Refused(f"{key}: A-10 " + "; ".join(gp[:6]))
+                            got["rows"] += _tag([{"section": "oracle", "subsection": "a10", "measure":
+                                                  "grid_reproduces_the_price_run", "stat": "starts",
+                                                  "value": float(len(outs)), "note": "held (10.1 item 9)"}], **head)
+                got["coverage"] = dict(R._COVERAGE)
+                resume.put(key, got)
                 del cell
+            R._COVERAGE.update(got.get("coverage") or {})
+            if got.get("grid_other") is not None:
+                pending_grid[(run.plan, name, arm)] = got["grid_other"]
             if run.plan == "TS":
                 ts_cells[(name, arm)] = got
-            problems += got["problems"]
             rows += got["rows"]
-            starts_parts.append(got["table"])
-            print(f"timing: {run.name} {arm}: {time.time() - t0:.0f} s", flush=True)
+            log(f"timing: {run.name} {arm}: {time.time() - t0:.0f} s", flush=True)
             gc.collect()
-    return rows, (pd.concat(starts_parts, ignore_index=True) if starts_parts else pd.DataFrame()), problems
+    rows += R.coverage_rows()
+    ran = {"runs": [r.name for r in runs], "replays": len(runs), "references": sum(r.kind == "reference" for r in runs),
+           "conditional_runs": bool(conditional)}
+    ran["new"] = ran["replays"] - ran["references"]
+    return rows, ran
 
 
 # ------------------------------------------------------------------------------------------------ the ladder
 
 
-def ladder_reading(streams: dict[str, dict[str, Any]], starts: int | None) -> tuple[list[dict], list[str]]:
-    """10.1 item 7: 10, 25 and 50 % on TS-16 and P-16's eight corners, verdict arm, A-9's seed base 20261990."""
+def ladder_reading(streams: dict[str, dict[str, Any]], starts: int | None, *, resume: Resume | None = None,
+                   log=print) -> tuple[list[dict], dict[str, Any]]:
+    """10.1 item 7: 10, 25 and 50 % on TS-16 and P-16's eight corners, verdict arm, A-9's seed base (section 12's
+    ladder seed), every block, one row a start. Item 5 on every replay; item 4 where run directly (DT). Raises
+    `firm_reading.Refused` at the first refusal."""
     import user_journey as UJ
 
+    resume = resume or Resume(None)
     st = streams["p16"]
     job = st["jobs"]["verdict"]
     chosen = UJ.start_choice(len(job["blocks"]), starts)
-    rows, problems = [], []
-    cells = [("TS-16", T.settings_for("TS", "reference"))]
-    cells += [(f"{p}-16-{c[0]}", T.settings_for(p, c)) for p in LADDER_PLANS for c in (T.STRICT, T.LENIENT)]
-    for name, s in cells:
-        blocks, point_ref, _ = R.arm_inputs(st["jobs"]["point"], job, s, "verdict")
+    rows = []
+    cells = [("TS-16", T.settings_for("TS", "reference"), "reference")]
+    cells += [(f"{p}-16-{c[0]}", T.settings_for(p, c), c) for p in LADDER_PLANS for c in (T.STRICT, T.LENIENT)]
+    n = 0
+    for name, s, corner in cells:
+        blocks, point_ref, _ = R.arm_inputs(st["jobs"]["point"], job, s, "verdict", (st.get("delta") or {}).get("verdict"))
         cjob, kw = R.cell_job(job, s, blocks, ladder=True)
         for resp_name in R.LADDER:
-            resp = B.BY_NAME[resp_name]
-            cell = R.run_cell("p16", "verdict", resp, cjob, s, chosen, kw, point_ref, direct=s.plan == "DT")
-            outs = R.reading_outs(cell, "p16", "verdict", resp, s)
-            srows, _t = UR.summary("p16", "verdict", resp, outs)
-            problems += list(cell["problems"]) + UR.consistency_problems(srows, outs, f"{name} {resp_name}")
-            rows += _tag(srows, run=name, plan=s.plan, stream="P-16", seed_base=R.F.LADDER_SEED)
-            del cell
+            key = f"ladder|{name}|{resp_name}"
+            t0 = time.time()
+            got = resume.get(key)
+            if got is None:
+                resp = B.BY_NAME[resp_name]
+                cell = R.run_cell("p16", "verdict", resp, cjob, s, chosen, kw, point_ref, direct=s.plan == "DT")
+                if cell["problems"]:
+                    raise R.Refused(f"{key}: " + "; ".join(cell["problems"][:6]))
+                outs = R.reading_outs(cell, "p16", "verdict", resp, s)
+                srows, table = UR.summary("p16", "verdict", resp, outs, blocks=UR.READING_BLOCKS)
+                probs = UR.consistency_problems(srows, outs, f"{name} {resp_name}", blocks=UR.READING_BLOCKS)
+                if probs:
+                    raise R.Refused("; ".join(probs[:6]))
+                head = {"run": name, "plan": s.plan, "stream": "P-16", "arm": "verdict", "corner": corner,
+                        "seed_base": R.F.LADDER_SEED, "response_name": resp_name}
+                got = _tag(_ur_rows(srows, "ladder") + _start_rows(table, {}, "ladder"), **head)
+                got += _tag([{"section": "identity", "subsection": "items_4_5_ladder", "measure": k, "stat": "value",
+                              "value": float(v)} for k, v in cell["checks"].items()], **head)
+                resume.put(key, got)
+                del cell
+            rows += got
+            n += 1
+            log(f"timing: ladder {name} {resp_name}: {time.time() - t0:.0f} s", flush=True)
             gc.collect()
-    return rows, problems
+    return rows, {"ladder_replays": n}
 
 
 # ------------------------------------------------------------------------------------------------ the gate
 
 
 def registered_gate(design: str, n_paths: int) -> dict[str, Any]:
-    """The stream's registered gate call, made as `identity/gate_identity.py` makes it (P-16: seed 20261206 after its
-    trades' hash; P-14: seed 20261131), with a hook factory so each call has its own sink; and TS's registered paths."""
+    """The stream's registered gate call, made as `identity/gate_identity.py` makes it (P-16: its registered gate seed
+    after its trades' hash; P-14: its own), with a hook factory so each call has its own sink; TS's registered paths;
+    and the design's fresh R (the zero-edge twin's P&L shift, r8)."""
     import a3_brk30 as B3
     import a3_brk30_cb20 as C3
     import atlas_a3 as A3
@@ -324,8 +551,8 @@ def registered_gate(design: str, n_paths: int) -> dict[str, Any]:
     kw = A3.gate_kwargs(blocks, fcfg, tv, I["plan"], e_by, lb_by, hook, seed=seed, n_paths=int(n_paths),
                         horizon=int(fcfg["gate"]["campaign"]["horizon_days"]), capacity=B3.capacity(t, fcfg),
                         levels=(0.0,), rtp=False, one_at_a_time=gap, purchase_budget=budget)
-    return {"blocks": kw.pop("blocks"), "kw": kw, "hook_factory": hook_factory,
-            "ref": read_result(RESULTS_DIR / ref_file)}
+    return {"blocks": kw.pop("blocks"), "kw": kw, "hook_factory": hook_factory, "seed": int(seed),
+            "fresh_rr": float(B3.fresh_rr(L)[1]), "ref": read_result(RESULTS_DIR / ref_file)}   # rc_dev_test's route
 
 
 def paired_paths(sink: list[dict], ref: pd.DataFrame, shift: str, n: int) -> list[dict]:
@@ -351,114 +578,202 @@ def paired_paths(sink: list[dict], ref: pd.DataFrame, shift: str, n: int) -> lis
     return out
 
 
-def gate_reading(n_paths: int, workers: int, gates: dict[str, dict] | None = None, run_gate=None
-                 ) -> tuple[list[dict], pd.DataFrame, list[str]]:
-    """10.1 item 8 on the 16 corners: the gate's rows and its paths, paired with TS's registered paths."""
+def gate_reading(n_paths: int, workers: int, gates: dict[str, dict] | None = None, run_gate=None, *,
+                 resume: Resume | None = None, log=print) -> tuple[list[dict], list[dict], dict[str, Any]]:
+    """10.1 item 8 on the 16 corners, one call each and the zero-edge twin: (gate rows and paths, the twins' oracle
+    rows, what ran). Raises `firm_reading.Refused` at the first oracle beyond its interval (9.2)."""
     if run_gate is None:
         from extended.gate import run_gate
-    rows, path_parts = [], []
+    resume = resume or Resume(None)
+    rows, oracle, n = [], [], 0
     for design in ("p16", "p14"):
         g = (gates or {}).get(design) or registered_gate(design, n_paths)
         for plan in LADDER_PLANS:
             for corner in (T.STRICT, T.LENIENT):
-                s = T.settings_for(plan, corner)
-                w = 1 if plan == "QP" else int(workers)          # Quick Pay's shifted classes do not pickle
-                grows, sinks, labels = R.gate_rows(g["blocks"], g["kw"], s, run_gate, workers=w,
-                                                   hook_factory=g.get("hook_factory"))
+                key = f"gate|{design}|{plan}|{corner}"
                 head = {"run": f"{plan}-{design[1:]}-{corner[0]}", "plan": plan, "stream": design, "corner": corner}
-                rows += _tag(grows, **head)
-                for label, sink in sinks.items():
-                    if sink:
-                        path_parts.append(pd.DataFrame(sink).assign(**head, call=label))
-                    ref = g.get("ref")
-                    if ref is not None and label in ("plan", "plan_point", "plan_bound"):
-                        for shift in (("point", "lower_bound") if label == "plan" else
-                                      (("point",) if label == "plan_point" else ("lower_bound",))):
-                            rows += _tag(paired_paths(sink, ref, shift, int(n_paths)), **head)
+                t0 = time.time()
+                got = resume.get(key)
+                if got is None:
+                    s = T.settings_for(plan, corner)
+                    w = 1 if plan == "QP" else int(workers)          # Quick Pay's per-run classes do not pickle
+                    grows, sinks, labels, probs = R.gate_rows(g["blocks"], g["kw"], s, run_gate, workers=w,
+                                                              fresh_rr=g["fresh_rr"], hook_factory=g.get("hook_factory"))
+                    if probs:
+                        raise R.Refused(f"{key}: " + "; ".join(probs))
+                    got = {"rows": _tag(grows, **head), "oracle": [], "paths": []}
+                    for r in grows:
+                        if r.get("reading") != "zero_edge":
+                            continue
+                        for m in ("twin_gross_per_funded", "twin_pass_rate"):
+                            got["oracle"] += _tag([{"section": "oracle", "subsection": "twin", "measure": m,
+                                                    "stat": stat, "value": float(r.get(col, np.nan)),
+                                                    "note": "held (9.2): not above its ceiling beyond the interval"}
+                                                   for stat, col in (("value", m), ("se", f"{m}_se"),
+                                                                     ("ceiling", f"{m}_ceiling"))], **head)
+                    for label, sink in sinks.items():
+                        if sink:
+                            got["paths"] += _tag([{"section": "gate_path", "call": label, **x} for x in sink], **head)
+                        ref = g.get("ref")
+                        if ref is not None and label == "plan":
+                            for shift in ("point", "lower_bound"):
+                                got["rows"] += _tag(paired_paths(sink, ref, shift, int(n_paths)), **head)
+                    resume.put(key, got)
+                rows += got["rows"] + got["paths"]
+                oracle += got["oracle"]
+                n += 1
+                log(f"timing: gate {key}: {time.time() - t0:.0f} s", flush=True)
                 gc.collect()
-    return rows, (pd.concat(path_parts, ignore_index=True) if path_parts else pd.DataFrame()), []
+    return rows, oracle, {"gates": n}
 
 
-# ------------------------------------------------------------------------------------------------ main
+# ------------------------------------------------------------------------------------------------ the files
 
 
 def streams_of(rd: Path) -> dict[str, dict[str, Any]]:
+    """P-16 and P-14 as U1 builds them, each with its verdict arm's registered shift (r6), checked."""
     import user_beside_identity as UBI
 
     out = {}
     for name in ("p16", "p14"):
-        jobs, c, probs = UBI.build(rd, name)
+        (jobs, c, probs), seen = R.build_with_deltas(lambda name=name: UBI.build(rd, name))
         if probs:
             raise SystemExit("REFUSED: " + "; ".join(probs[:4]))
-        out[name] = {"jobs": jobs, "config": c}
+        uniq = {(float(dr), None if by is None else tuple(sorted(by.items()))) for dr, by in seen}
+        if len(uniq) != 1:
+            raise SystemExit(f"REFUSED (r6): {name}'s builder shifted its arms by {len(uniq)} different deltas, not one")
+        out[name] = {"jobs": jobs, "config": c, "delta": {"verdict": seen[0]}}   # checked against the arm's blocks
     return out
 
 
-def write_all(purpose: str, frames: list[pd.DataFrame], params: dict[str, Any], target: Path | None) -> list[str]:
+HEAD_COLS = ("section", "subsection", "run", "plan", "stream", "arm", "corner", "flip", "kind", "request_rule",
+             "response_name", "block", "month", "horizon", "measure", "stat", "value", "n", "note", "labels", "status")
+
+
+def frame(rows: list[dict], sections: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """Rows as one file's frame: the head columns first, every row "described, not carried", the sections 15's."""
+    df = pd.DataFrame(rows)
+    df["status"] = R.STATUS
+    if sections is not None:
+        bad = sorted(set(df["section"].astype(str)) - set(sections))
+        if bad:
+            raise ValueError(f"sections {bad} are not 15's {sections}")
+    cols = [c for c in HEAD_COLS if c in df] + [c for c in df.columns if c not in HEAD_COLS]
+    return df[cols]
+
+
+def identity_rows(found: dict[str, Any], pin: dict[str, str]) -> list[dict]:
+    rows = [{"section": "identity", "subsection": "waited", "measure": task, "stat": "row", "value": float("nan"),
+             "note": f"{v['row']} carries {v['token']} at {v['commit'][:12]} ({v['what']})"} for task, v in found.items()]
+    rows.append({"section": "identity", "subsection": "pin", "measure": R.DECLARATION, "stat": "row",
+                 "value": float("nan"), "note": f"{pin['row']} pins sha256 {pin['sha256']} (its LF text, checked)"})
+    return rows
+
+
+def write_all(reading_rows: list[dict], gate_rows: list[dict], params: dict[str, Any], target: Path | None,
+              counts: dict[str, Any]) -> list[str]:
+    """15's three files with their manifests: the reading and the gate, then the menu as a declared step on those two
+    as written (read back through their hashes)."""
     from extended.results import read_result, write_result
 
-    names = RESULTS[purpose]
     wrote = []
-    for nm, df in zip(names, frames):
-        seed = {"firm_scorecard": SEEDS["coverage"], "firm_ladder_beside": SEEDS["ladder"],
-                "firm_gate_beside": SEEDS["gate_p16"]}[purpose]
-        p, m = write_result(df, nm, script=SCRIPT, seed=seed, parameters={**params, "file": nm}, results_dir=target,
-                            prereg_id="RD-01",
-                            description=f"RD-01 {purpose}: {READING}", exploratory=False, variant_count=1,
-                            notes={"status": READING, "purpose": purpose})
-        read_result(p)
+    fr, fg = frame(reading_rows, SECTIONS), frame(gate_rows)
+    seeds = {"block": {str(k): v for k, v in SEED_BLOCK.items()}, "inherited_gate_seeds": params.get("gate_seeds", {})}
+    common = {**params, "seeds": seeds, "run_counts": counts}
+    for nm, df, seed, vc, what in (
+            ("fc_reading", fr, R.F.LADDER_SEED, counts.get("replays", 0),
+             "the identities, oracles, mechanics, scorecard, pairing, divergence, price grid, ladder and coverage"),
+            ("fc_gate", fg, int(params.get("gate_seeds", {}).get("p16", 0)) or R.F.LADDER_SEED, counts.get("gates", 0),
+             "the gate beside on the 16 corners, with the zero-edge twins and the paths paired with TS's")):
+        p, m = write_result(df, nm, script=SCRIPT, seed=seed, parameters={**common, "file": nm}, results_dir=target,
+                            prereg_id="RD-01", description=f"RD-01 {what}: {READING}", exploratory=False,
+                            variant_count=int(vc), notes={"status": R.STATUS, "reading": READING})
         wrote += [p.name, m.name]
+    base = target if target is not None else None
+    from extended import RESULTS_DIR
+
+    folder = Path(base) if base is not None else RESULTS_DIR
+    fm = FM.menu(read_result(folder / "fc_reading.csv"), read_result(folder / "fc_gate.csv"))
+    p, m = write_result(fm, "fc_menu", script=SCRIPT, seed=None, require_seed=False,
+                        parameters={**common, "file": "fc_menu", "step": "extended.firm_menu.menu on fc_reading.csv "
+                                    "and fc_gate.csv as written (their sha256 verified on read)"},
+                        results_dir=target, prereg_id="RD-01",
+                        description=f"RD-01 the menu, its flags and labels, items 3, 4 and 10 -- a declared light step "
+                                    f"on the run's own files; no randomness: {READING}", exploratory=False,
+                        variant_count=int(counts.get("replays", 0)), notes={"status": R.STATUS, "reading": READING})
+    wrote += [p.name, m.name]
     return wrote
+
+
+def manifest_params(found: dict[str, Any], pin: dict[str, str], entries: list[dict], base_rules: Any,
+                    a: argparse.Namespace, commit: str) -> dict[str, Any]:
+    return {"declaration": R.DECLARATION, "pinning_row": pin, "identity_rows": found, "commit_read": commit,
+            "purposes_in_order": list(R.PURPOSES), "repeat": a.repeat, "starts": "every start", "paths": PATHS,
+            "workers": a.workers, "cost_and_table_inputs": plan_manifest(base_rules), "readings": readings_manifest(),
+            "record_entries": entries, "data_manifest_sha256": data_manifest_sha256(),
+            "conventions": CONVENTIONS, "horizon_of_month": R.HORIZON_OF_MONTH, "count_horizon": R.COUNT_HORIZON,
+            "coverage_series": R.COVERAGE_SERIES, "status": R.STATUS, "code_blobs": code_blobs(),
+            "exploratory": False}
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--purpose", choices=R.PURPOSES, default="firm_scorecard")
-    ap.add_argument("--identity-row", default=None)
     ap.add_argument("--repeat", default=None, help="E-NNN: a decision row naming the declaration (a further read)")
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--no-resume", action="store_true")
+    ap.add_argument("--plan", action="store_true", help="print the guards' findings and what would run; read nothing")
     a = ap.parse_args(argv)
-    bad = identity_row_problems(a.identity_row)
-    if bad:
-        print("REFUSED (RD-01 9.1): " + "; ".join(bad))
+    bad, found = identity_problems()
+    pin, pbad = pin_row()
+    entries, ebad = record_entries()
+    if a.plan:
+        print("waited identities: " + ("; ".join(bad) if bad else "every one recorded as holding"))
+        print("the pin: " + ("; ".join(pbad) if pbad else f"{pin['row']} {pin['sha256'][:12]}"))
+        print(f"record entries: {len(entries)}" + (" -- " + "; ".join(ebad[:4]) if ebad else ""))
+        print(f"would run, in order: {', '.join(R.PURPOSES)}; {len(T.RUNS)} runs declared")
+        return 0
+    if bad or pbad or ebad:
+        print("REFUSED (RD-01 9.1, 15): " + "; ".join(bad + pbad + ebad), flush=True)
         return 3
-    try:
-        import stage2_identity as SI
+    import stage2_identity as SI
 
-        reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=a.purpose,
-                                     declaration=R.DECLARATION, repeat=a.repeat,
-                                     files=SI.engine_files(VENDOR, bars=True),
-                                     what=f"RD-01's {a.purpose} ({SCRIPT}): every start, every run, {PATHS} paths")
-    except (reader.ReadRefused, FileNotFoundError) as exc:
-        print(f"REFUSED: {exc}", flush=True)
-        return 3
     from propedge import RESULTS_DIR
+    from propedge.contract.adapter import rules_from_ledger
 
     t0 = time.time()
     commit = _commit()
-    runs = list(T.RUNS)
-    params = {"declaration": R.DECLARATION, "purpose": a.purpose, "identity_row": a.identity_row,
-              "repeat": a.repeat, "commit_read": commit, "starts": "every start", "runs": [r.name for r in runs],
-              "paths": PATHS, "workers": a.workers, "seeds": SEEDS, "code_blobs": code_blobs(),
-              "conventions": CONVENTIONS}
-    if a.purpose == "firm_gate_beside":
-        rows, paths, probs = gate_reading(PATHS, a.workers)
-        frames = [pd.DataFrame(rows), paths]
-    else:
+    params = manifest_params(found, pin, entries, rules_from_ledger(), a, commit)
+    resume = Resume(None if a.no_resume else RUNS_DIR / "resume" / f"rd01-reading_{commit}")
+
+    def authorise(purpose: str) -> None:
+        reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=purpose,
+                                     declaration=R.DECLARATION, repeat=a.repeat,
+                                     files=SI.engine_files(VENDOR, bars=True),
+                                     what=f"RD-01's {purpose} ({SCRIPT}): every start, every run, {PATHS} paths")
+
+    try:
+        authorise("firm_scorecard")
         streams = streams_of(RESULTS_DIR)
-        if a.purpose == "firm_scorecard":
-            resume = Resume(None if a.no_resume else RUNS_DIR / "resume" / f"rd01-scorecard_{commit}")
-            rows, table, probs = scorecard_reading(streams, runs, None, resume=resume)
-            frames = [pd.DataFrame(rows), table]
-        else:
-            rows, probs = ladder_reading(streams, None)
-            frames = [pd.DataFrame(rows)]
-    if probs:
-        print("REFUSED (RD-01): nothing written -- " + "; ".join(probs[:12]), flush=True)
+        rows, ran = scorecard_reading(streams, list(T.RUNS), None, resume=resume)
+        authorise("firm_ladder_beside")
+        lrows, lran = ladder_reading(streams, None, resume=resume)
+        del streams
+        gc.collect()
+        authorise("firm_gate_beside")
+        grows, orows, gran = gate_reading(PATHS, a.workers, resume=resume)
+    except (reader.ReadRefused, FileNotFoundError) as exc:
+        print(f"REFUSED: {exc}", flush=True)
         return 3
+    except R.Refused as exc:
+        print(f"REFUSED (RD-01): nothing written -- {exc}", flush=True)
+        return 3
+    counts = {**ran, **lran, **gran}
     params["seconds"] = round(time.time() - t0, 1)
-    wrote = write_all(a.purpose, frames, params, None)
+    import rc_screen as RS
+
+    params["gate_seeds"] = {"p16": int(SI.P16_SEED), "p14": int(RS.SEED)}
+    reading_rows = identity_rows(found, pin) + rows + lrows + orows
+    wrote = write_all(reading_rows, grows, params, None, counts)
     print(f"written: {wrote} ({time.time() - t0:.0f} s)", flush=True)
     return 0
 

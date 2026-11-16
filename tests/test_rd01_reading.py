@@ -1,6 +1,7 @@
-"""RD-01's reading runner (`scripts/rd01_reading.py`, `extended/firm_reading.py`): end to end on toy campaigns into a
-temporary results folder (`tests/rd01_reading_synthetic.py`, in a process of its own; seed 20261992), and the runner's
-refusals before any read -- without the identity stage's row, with a row that is not it. No bar, no atlas."""
+"""RD-01's reading runner (`scripts/rd01_reading.py`, `extended/firm_reading.py`, `extended/firm_menu.py`): end to end on
+toy campaigns into a temporary results folder (`tests/rd01_reading_synthetic.py`, in a process of its own; section 12's
+toy seed and its children), the second build read's fixes (`docs/reviews/BUILD_RD-01_v2_2026-11-16.md`: R1-R6, r1-r8)
+each asserted, every refusing check shown to refuse, and the runner's refusals before any read. No bar, no atlas."""
 from __future__ import annotations
 
 import json
@@ -11,7 +12,9 @@ from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ENV = {**os.environ, "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
+ENV = {**os.environ, "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "MKL_NUM_THREADS": "1",
+       "PYTHONDONTWRITEBYTECODE": "1"}
+SECTIONS = ["coverage", "diverge", "grid", "identity", "ladder", "mechanics", "oracle", "paired", "scorecard"]
 
 
 @lru_cache(maxsize=1)
@@ -23,41 +26,140 @@ def found() -> dict:
     return json.loads(p.stdout.strip().splitlines()[-1])
 
 
-def test_the_scorecard_end_to_end():
+def test_r4_the_files_and_sections_are_section_15s():
     r = found()
-    assert r["sc_problems"] == []           # the direct runs equal A-9's on every start; A-10 at the price run's end
-    assert r["sc_runs"] == ["DT-16-price", "DT-16-s", "FP-16-s", "LU-16-l", "QP-16-req", "QP-16-s", "TS-14", "TS-16"]
-    assert r["sc_sections"] == ["break_even", "counts", "extra", "identity_items_4_5", "paired", "paired_card", "path",
-                                "price_grid", "response", "scorecard"]
-    assert r["sc_items_4_5"]["trades"] > 0 and r["sc_items_4_5"]["accounts"] > 0     # m4: on every replay
-    assert r["sc_paired_blocks"] == ["all", "early", "late"] and r["sc_paired_months"] == [1, 2, 3, 6, 9, 12]
+    assert r["files"] == sorted(f"{n}{x}" for n in ("fc_reading", "fc_gate", "fc_menu")
+                                for x in (".csv", ".csv.manifest.json"))
+    assert r["fr_sections"] == SECTIONS
+    assert r["fr_status"] == ["described, not carried"] * 3          # every cell of every file
+    assert r["fm_sections"] == ["distribution", "evenness", "flags", "menu", "menu_gate", "paired_more",
+                                "variance_share"]
+
+
+def test_r4_every_manifest_field_section_15_lists():
+    r = found()
+    m = r["manifest"]
+    assert m["prereg_id"] == "RD-01" and m["exploratory"] is False and m["variant_count"] == 8
+    assert m["keys"] == ["conventions", "cost_and_table_inputs", "data_manifest_sha256", "horizon_of_month",
+                         "identity_rows", "pinning_row", "readings", "record_entries", "run_counts", "seeds", "status"]
+    assert r["manifest_seeds"] == [10, ["in use", "reserved", "retired"]]      # every seed, reserved and retired too
+    assert r["manifest_counts"] == {"replays": 8, "new": 6, "references": 2, "ladder_replays": 27, "gates": 16}
+    assert r["manifest_plans"] == ["DT", "FP", "LU", "QP", "TS"]
+    assert r["manifest_dt_schedules"] == ["lenient", "strict"]                 # DT's fee basis at both ends
+    assert r["manifest_month_9"] == 252 and r["manifest_data_sha"] == 64       # n1; the data manifest's sha256
+    assert r["pin"] == ["E-080", []]                                           # the pinning row, the text checked
+    n, bad, plans, dated = r["record_entries"]
+    assert n > 100 and bad == [] and plans == ["DT", "FP", "FP, QP", "LU", "QP", "TS"] and dated
+    assert r["menu_manifest_step"] is True                                     # the menu: a step on the written files
+
+
+def test_r3_the_runner_waits_on_three_identity_rows_and_none_is_recorded_here():
+    held, tasks, admitted = found()["guard_refuses"]
+    assert held is True and tasks == ["Q-104", "Q-80", "Q-93"] and admitted == {}
+
+
+def test_r1_coverage_by_keyword_on_and_every_shape():
+    r = found()
+    assert r["tiled_coverage_rows"] > 0 and r["tiled_coverage_in_unit"] is True
+    assert r["tiled_coverage_settings"] == ["63:5"] and r["coverage_shapes_per_setting"] == [39]
+    assert r["coverage_section_rows"] == 40                                    # 39 shapes and the worst
+
+
+def test_r6_the_early_block_in_every_reading_and_the_ladders_start_table():
+    r = found()
+    for k in ("sc_paired_blocks", "sc_card_blocks", "sc_extra_blocks", "sc_path_blocks", "count_blocks",
+              "diverge_blocks", "ld_blocks"):
+        assert r[k] == ["all", "early", "late"], k
+    assert r["elig_is_u_select"] is True and r["elig_judged_is_late"] is True
+    assert r["ld_start_rows"] == 81 and r["start_rows_by_section"] == {"scorecard": 80, "ladder": 81}
+
+
+def test_r2_the_oracles_are_built_and_refuse():
+    r = found()
+    n = r["neg"]
+    for k in ("fee_held", "fee_refused", "fee_missing_refused", "fee_26_micros", "qp_split_page_example",
+              "dt_request_held", "dt_increment_refused", "dt_left_refused", "dt_net_refused", "qp_split_refused",
+              "qp_split_held", "fp_cap_refused", "ts_held", "ts_gross_refused", "twin_held", "twin_refused"):
+        assert n[k] is True, k
+    assert n["fp_half_counted"] == 1                                           # a U-7 zero check: counted, not refused
+    assert n["twin_bounds_dt"] == [2000.0, 0.4]
+    assert r["gt_oracle_measures"] == ["twin_gross_per_funded", "twin_pass_rate"]
+    assert r["gt_oracle_stats"] == ["ceiling", "se", "value"] and r["gt_twin_ceilings"] == [[2000.0, 0.4]]
+    assert r["gt_twin_finite"] is True
+    # on the toy's runs every request and fee was checked, at every plan
+    assert r["fp_counts"]["oracle_requests_checked"] > 0 and r["dt_counts"]["oracle_requests_checked"] > 0
+    assert r["qp_counts"]["oracle_requests_checked"] > 0 and r["qr_requests"] > 0
+    assert r["ts_counts"]["oracle_trades_fee_checked"] == r["ts_counts"]["trades_taken"] > 0
+    assert r["fp_counts"]["oracle_trades_fee_checked"] == r["fp_counts"]["trades_taken"] > 0
+    assert r["qp_counts"]["acct.funded.floor_oracle_breaches"] == 0.0
+
+
+def test_r5_the_in_run_counts():
+    r = found()
+    for k in ("g10_funded_sessions_no_trade", "g10_accounts_idle_30", "g10_accounts_drained",
+              "g10_sessions_no_trade_per_funded_account", "zero_peak_hold_queue", "zero_resets_bought",
+              "zero_fp_request_above_half_profit", "zero_qp_request_above_reference", "zero_qp_request_below_min",
+              "zero_refused_for_cash", "fp_uncapped_ladder_differs", "share_fp_uncapped_ladder_differs",
+              "realised_to_intended_capped.combine", "realised_to_intended_capped.funded",
+              "stood_aside.combine", "stood_aside.funded", "share_contracts_differ.combine",
+              "share_contracts_differ.funded", "tier1_executed_in_window", "tier1_signals_skipped_inside",
+              "max_trades_session_account", "sessions_above_trade_line", "share_starts_differs_by_63"):
+        assert k in r["fp_keys"], k
+    for k in ("martingale_accounts_per_account", "martingale_accounts_firm_wide", "martingale_per_account.funded",
+              "share_martingale_firm_wide", "dt_limit_capped_trades", "zero_dt_activation_late", "fees_pro"):
+        assert k in r["dt_keys"], k
+    assert "g10_accounts_drained" in r["qp_keys"] and r["lu_keys"] == ["lu_fifth_payouts", "lu_household_closures"]
+    fp = r["fp_counts"]
+    assert fp["acct.funded.forced_untraded"] > 0
+    assert fp["acct.funded.forced_day_dealt_elsewhere"] + fp["acct.funded.forced_day_dealt_to_none"] > 0
+    assert fp["tier1_executed_in_window"] > 0 and fp["tier1_signals_skipped_inside"] > 0
+    assert r["toy_tier1"] == {"open": 6, "inside": 3} and r["tier1_rows"] > 0
+    assert fp["fp_funded_trades_read"] > 0 and fp["contracts_compared.funded"] > 0 and fp["g10_funded_accounts"] > 0
+    assert r["dt_counts"]["fees_pro"] > 0                                     # A-10's Pro fee in 10.1 item 6
+    n = r["neg"]
+    assert n["g12_lost_after_stop"] == 1 and n["g12_none_when_last"] == 0
+    assert n["g12_in_the_adapter"] == [1, 2, -1250.0, False]                  # the limit day; two dealt, not taken
+    assert n["failed_while_owed"] == [1, True, 1, 1]
+    assert n["fp_forced_day_signals"] == [4, 8]
+    assert n["uncapped_none_below_cap"] == 0 and n["uncapped_differs_at_9000"] == 1
+    assert r["start_has_item6"] is True and r["diverge_measures"] == sorted(
+        ["evaluations_bought", "fees_activation", "fees_evaluations", "fees_payout", "fees_pro", "funded_activated",
+         "funded_lost", "payouts_count", "payouts_gross", "payouts_net", "realised_risk", "trades_taken"])
+
+
+def test_the_menu_flags_labels_and_items_3_4_10():
+    r = found()
+    assert r["fm_flags"] == ["E-015's limits", "depends on its request rule", "no effect on these trades",
+                             "not stable across blocks"]
+    assert r["neg"]["flag_unread_terms"] == [True]                            # corners straddling TS are flagged
+    assert r["fm_menu_labels_qp"] == ["QP's request rule: every eligible close",
+                                      "QP's request rule: the reference's cadence (5.6)"]
+    assert r["fm_menu_runs"] == ["DT-16-price", "DT-16-s", "FP-16-s", "LU-16-l", "QP-16-req", "QP-16-s", "TS-14",
+                                 "TS-16"]
+    assert r["fm_paired_more_measures"] >= 30 and r["fm_distribution_rows"] > 0 and r["fm_evenness_rows"] > 0
+    assert r["fm_variance_rows"] > 0
+
+
+def test_the_scorecard_stages_and_minors():
+    r = found()
+    assert r["sc_sections"] == ["diverge", "grid", "identity", "mechanics", "oracle", "paired", "scorecard"]
+    assert r["sc_kinds"] == ["beside", "corner", "one_at_a_time", "reference"]   # the run's kind, not U1's
+    assert r["sc_paired_months"] == [1, 2, 3, 6, 9, 12]
     assert r["sc_grid_prices"] == [float(p) for p in range(25, 251, 25)]
-    assert r["sc_grid_P_falls_with_price"] is True
+    assert r["sc_grid_P_falls_with_price"] == [2, True]
     assert r["sc_break_even"] == ["P", "S5a", "mean_net_month_3"]
-    fp = r["sc_fp_counts"]
-    assert fp["trades"] > 0 and fp["fee_off_schedule"] == 0 and fp["funded.forced_untraded"] > 0
-    assert fp["contracts_compared"] > 0
-    assert r["sc_dt_counts"]["martingale_per_account"] >= 0 and r["sc_dt_counts"]["funded.q"] >= 0
-
-
-def test_the_ladder_and_the_gate_end_to_end():
-    r = found()
-    assert r["ld_problems"] == [] and r["ld_responses"] == ["denial_10", "denial_25", "denial_50"]
-    assert r["ld_runs"] == ["DT-16-l", "DT-16-s", "FP-16-l", "FP-16-s", "LU-16-l", "LU-16-s", "QP-16-l", "QP-16-s",
-                            "TS-16"]
-    assert r["gt_problems"] == [] and r["gt_runs"] == 16
-    assert r["gt_readings_qp"] == ["plan", "zero_edge"]      # M3: one call reads both arms on the point outcomes
-    assert r["gt_readings_dt"] == ["plan", "zero_edge"]
+    assert all("Lucid's price is verified; beside" in x for x in r["sc_break_even_lucid"])     # r3
+    assert r["sc_a10_held"] == 2                                              # A-10's check, both arms
+    assert r["items_4_5"]["starts_compared"] == 80 and r["items_4_5"]["trades"] > 0
+    assert r["neg"]["delta_held"] is True and r["neg"]["delta_refused"] is True               # r6
+    assert r["neg"]["capture"] == [1, True, True, True] and r["neg"]["captured_reproduces_the_arm"] is True
+    assert r["neg"]["scorecard_stops_on_a_wrong_delta"] is True
+    assert r["neg"]["stops_at_first_refusal"] is True                                         # r5
+    assert r["neg"]["n4_refused"] is True and r["neg"]["n4_held"] is True
+    assert r["ld_ran"] == {"ladder_replays": 27} and r["ld_item5"] > 0
+    assert r["ld_responses"] == ["denial_10", "denial_25", "denial_50"]
+    assert r["gt_ran"] == {"gates": 16} and r["gt_readings_qp"] == ["plan", "zero_edge"]
     assert r["gt_labels_fp"] == ["tier-1 liquidation not applied"]
-
-
-def test_the_files_carry_their_manifests():
-    r = found()
-    assert r["files"] == sorted(f"{n}{x}" for n in ("rd01_gate", "rd01_gate_paths", "rd01_ladder", "rd01_scorecard",
-                                                     "rd01_scorecard_starts") for x in (".csv", ".csv.manifest.json"))
-    assert r["manifest_keys"] == ["git_commit", "parameters", "prereg_id", "provenance", "script", "seed", "sha256"]
-    assert r["manifest_prereg"] == "RD-01" and r["read_back_rows"] > 0
-    assert r["manifest_blobs"][0] >= 15 and r["manifest_blobs"][1] is True
 
 
 def _cli(*args: str) -> subprocess.CompletedProcess:
@@ -65,10 +167,15 @@ def _cli(*args: str) -> subprocess.CompletedProcess:
                           text=True, timeout=300, env=ENV, cwd=str(ROOT))
 
 
-def test_the_runner_refuses_without_the_identity_stage_before_any_read():
-    p = _cli("--purpose", "firm_scorecard")
-    assert p.returncode == 3 and "REFUSED (RD-01 9.1)" in p.stdout and "identity stage" in p.stdout
-    p = _cli("--purpose", "firm_gate_beside", "--identity-row", "E-080")     # RD-01's pin row: not the identity's
-    assert p.returncode == 3 and "does not name identity/firms_identity.py" in p.stdout
-    p = _cli("--purpose", "no_such_purpose")
+def test_the_runner_refuses_before_any_read_without_the_identity_rows():
+    led = ROOT / "results" / "read_ledger.jsonl"
+    before = led.read_bytes() if led.is_file() else b""
+    p = _cli()
+    assert p.returncode == 3 and "REFUSED (RD-01 9.1, 15)" in p.stdout
+    for task in ("Q-104", "Q-80", "Q-93"):
+        assert f"identity-holds: {task}" in p.stdout
+    assert (led.read_bytes() if led.is_file() else b"") == before            # nothing ledgered: no read authorised
+    p = _cli("--plan")
+    assert p.returncode == 0 and "would run, in order: firm_scorecard, firm_ladder_beside, firm_gate_beside" in p.stdout
+    p = _cli("--purpose", "firm_scorecard")                                   # one run, the three purposes in order
     assert p.returncode == 2

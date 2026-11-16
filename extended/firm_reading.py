@@ -1,29 +1,45 @@
-"""RD-01's reading (`prereg/RD-01_firm_contracts.md` 6, 7, 9.2, 9.3, 10): one run's cells, the scorecard per plan paired
-with TS by month, the beside readings (E-007 (e)'s measures, the denial ladder, the gate), 9.3's counts and A-10's
-price grid -- as rows for `scripts/rd01_reading.py`'s result files. The adapters are `extended.firms`' and
-`extended.firm_accounts`', used as built (Q-104); nothing here changes a rule.
+"""RD-01's reading (`prereg/RD-01_firm_contracts.md` 6, 7, 9.2, 9.3, 10, 15): one run's cells, the oracles and the
+mechanics computed while each start's ledger and accounts are alive, the scorecard per plan paired with TS by month,
+the beside readings (the denial ladder, the gate with its zero-edge twin) and A-10's price grid -- as rows for
+`scripts/rd01_reading.py`'s three files. The adapters are `extended.firms`' and `extended.firm_accounts`', used as
+built (Q-104); nothing here changes a rule, and no rule value is typed here: every bound is read from the plan's terms.
 
 **A cell** is one run of 7.3 (or a ladder response) at one arm: every chosen start through A-9 (`user_beside.run_starts`,
 one start at a time with that start's own classes, as `firms.run_plan` composes them) -- the runner's output -- and,
-beside it, the same start's runs replayed directly (`direct_start`: the long replay with the engine's per-trade ledger
-on, and U1's exact-length runs where A-9 makes them), composed exactly as A-9's task composes them. **Refusing:** at the
-run's own price and with no fee added the direct composition equals A-9's output bit for bit on every start
-(`user_beside_identity.first_difference`), so A-10's arithmetic is applied to the runner's own replays.
+beside it, the same start replayed directly (`direct_start`: the long replay with the engine's per-trade ledger and the
+adapters' request logs, and U1's exact-length runs where A-9 makes them), composed exactly as A-9's task composes them.
+**Refusing, at the first problem** (r5): the direct composition equals A-9's output bit for bit on every start
+(`user_beside_identity.first_difference`); 9.1 items 4 and 5 on every replay; **9.2's oracles** on every start -- every
+trade's fee its plan's schedule at the contracts it holds (`fee_problems`), every request inside its plan's bounds and
+every net its plan's split of it, to 1e-9 (`request_problems`: DayTraders' $50 increments, minimum, cap, request gate
+and balance left; Fast Pass's cap and minimum; Quick Pay's tiered split, recomputed here; at TS and Lucid the records'
+requests within the minimum and the cap and summing to the gross paid), Quick Pay's floor at every close
+(`floor_oracle_breaches`, A-7's counter), and A-10's premise that the fees by kind are the engine's total. Each start's
+**9.3 counts and 10.1 item 6 fields** (`start_stats`) are taken from its ledger, its records and its accounts' counters
+before they are dropped (memory), written one row a start, and summed by plan, stream and block (`count_rows`).
 
-**A-10 in every reading.** DayTraders' recurring Pro fee (`daytraders.eod50k.funded_monthly_fee`, every 21 sessions
-after activation while the account lives) is not charged by the engine: every DT reading is the direct composition with
-the fee charged by `firms.repriced` on every run of the start (long and exact-length). The price grid (10.1 item 9)
-reprices every run of every start to each grid price; it must equal the one-at-a-time price run at the bracket's other
-end on every start to 1e-6 (`grid_problems`). The break-even price against TS: bisection on the repriced readings.
+**The verdict arm at TradeDay (r6):** A-11's booking on the point blocks, then the campaign's own registered shift
+(`customer_slices.arm_blocks`' `lb - e` and `lb_by_rr - e_by_rr`, captured as U1's builder makes the arm,
+`build_with_deltas`), and refused unless every day A-11 leaves untouched is U1's verdict block bit for bit
+(`untouched_problems`).
 
 **Pairing** (10.1 item 4, 10.2): the plan's start records against TS's on the same stream and arm, start for start;
-each measure at its horizon (months 1-3: 63 sessions; month 6: 126; month 12: 252) on the blocks `all`, `early` and
-`late` (`u_select.block`), the paired uncertainty of `firm_uncertainty.paired_reading`, its coverage label
-(`firm_uncertainty.coverage` on the worst shape at the reading's h and n_w, seed 20261991, computed once per (h, n_w)).
+each month's net read as U1 reads it (r1: `user_journey.Views`, a start whose exact-length run differed read from that
+run), at its horizon (months 1-3: 63 sessions; 6: 126; 9 and 12: 252 -- n1: 6 item 4 names none for month 9, the
+longer horizon taken) on the blocks `all`, `early` and `late` (`u_select.block`), with 10.2's paired reading and its
+coverage label (`firm_uncertainty.coverage` by keyword, R1, every declared shape at the reading's h and n_w, cached).
+
+**The gate beside (10.1 item 8, 9.2):** one call per corner at the plan's arguments, and the zero-edge twin as Stage 2
+builds it (r8: `portfolio_stage.zero_edge_blocks` at the design's fresh R, every bound 0), read on its bound arm; on the
+twin the mean gross payouts per funded account against the funded account's distance to its floor and the pass rate
+per evaluation against the evaluation's floor over target plus floor, each beyond its 99.9 % Monte Carlo interval
+refusing (`twin_problems`).
 """
 from __future__ import annotations
 
 import dataclasses
+import math
+from datetime import date as _date
 from typing import Any, Callable, Sequence
 
 import numpy as np
@@ -44,15 +60,27 @@ from extended import walker as W  # noqa: E402
 DECLARATION = "prereg/RD-01_firm_contracts.md"
 PURPOSES = ("firm_scorecard", "firm_ladder_beside", "firm_gate_beside")
 BLOCKS = ("all", "early", "late")
-#: 6 item 4: the horizon of a month's reading
+STATUS = "described, not carried"
+#: 6 item 4: the horizon of a month's reading (n1: month 9 at 252, the conservative choice; 6 item 4 names none)
 HORIZON_OF_MONTH = {1: 63, 2: 63, 3: 63, 6: 126, 9: 252, 12: 252}
 PAIRED_MONTHS = (1, 2, 3, 6, 9, 12)
 LADDER = ("denial_10", "denial_25", "denial_50")
 #: 10.2 item 7: series per coverage setting
 COVERAGE_SERIES = 20_000
-#: the ledger fields 9.3's counts read (the rest of each row dropped where the start ran: memory)
-LEDGER_KEEP = ("kind", "index", "day", "historical_day", "trade_index", "contracts", "pnl", "fee", "u", "rr",
-               "rr_used", "fee_adj_r", "at_need", "stretch")
+#: 9.3's counts by block: every start's long replay for `all`; `early` and `late` by `u_select.block` at the long
+#: replay's horizon, so no early count reads a 2024 session
+COUNT_HORIZON = 252
+#: 9.2's twin interval: two-sided 99.9 % (normal), an oracle refusing only beyond it
+TWIN_Z = 3.2905
+#: the ledger fields 9.2's and 9.3's per-start numbers read (the rest of each row dropped)
+LEDGER_KEEP = ("kind", "index", "day", "rel_day", "slot", "historical_day", "trade_index", "contracts", "pnl", "fee",
+               "u", "rr", "rr_used", "fee_adj_r", "at_need", "stretch", "balance_before", "balance_after", "floor",
+               "room", "room_capped", "cap_micros", "at_cap", "intended_risk", "intended_capped_risk",
+               "realised_risk", "risk_per_contract")
+
+
+class Refused(RuntimeError):
+    """A refusing check failed: the reading stops here (9.1, 9.2, 11; r5)."""
 
 
 # ------------------------------------------------------------------------------------------------ a run's inputs
@@ -62,18 +90,86 @@ def stream_of(run: T.Run) -> str:
     return {"P-16": "p16", "P-14": "p14"}[run.stream]
 
 
-def arm_inputs(point: dict[str, Any], arm_job: dict[str, Any], s: T.Settings, arm: str
-               ) -> tuple[list[Any], list[Any] | None, dict[str, int]]:
-    """One arm's blocks for a plan: TradeDay's tier-1 booking on the point blocks then the arm's own shift (A-11);
-    every other plan the arm's blocks as built. Also the run's point-arm blocks Quick Pay's bracket reads on every arm
-    (M3: A-11's booking applied, no shift), and A-11's counts."""
-    delta_r, dby = (0.0, None) if arm == "point" else F.arm_delta(point["blocks"], arm_job["blocks"])
+def build_with_deltas(build: Callable[[], Any]) -> tuple[Any, list[tuple[float, dict[float, float] | None]]]:
+    """`build()` (U1's own builder) with every non-point arm's registered shift recorded as `customer_slices.arm_blocks`
+    makes it: (`lb - e`, {R: `lb_by_rr[R] - e_by_rr[R]`}) from the campaign's own arguments (r6). The vendored function
+    is wrapped in this process for the call and restored; nothing vendored is edited."""
+    import customer_slices as cs
+
+    seen: list[tuple[float, dict[float, float] | None]] = []
+    orig = cs.arm_blocks
+
+    def spy(c: Any, arm: str) -> list:
+        if arm != "point":
+            kw = c.kw
+            by = None if kw.get("e_by_rr") is None else {float(k): float(kw["lb_by_rr"][k]) - float(kw["e_by_rr"][k])
+                                                         for k in kw["e_by_rr"]}
+            seen.append((float(kw["lb"]) - float(kw["e"]), by))
+        return orig(c, arm)
+
+    cs.arm_blocks = spy
+    try:
+        out = build()
+    finally:
+        cs.arm_blocks = orig
+    return out, seen
+
+
+def _same_block(a: Any, b: Any) -> bool:
+    if not np.array_equal(np.asarray(a.pnl, float), np.asarray(b.pnl, float), equal_nan=True):
+        return False
+    if (a.r_by_rr is None) != (b.r_by_rr is None):
+        return False
+    if a.r_by_rr is not None:
+        if set(map(float, a.r_by_rr)) != set(map(float, b.r_by_rr)):
+            return False
+        for k in a.r_by_rr:
+            if not np.array_equal(np.asarray(a.r_by_rr[k], float), np.asarray(b.r_by_rr[float(k)], float),
+                                  equal_nan=True):
+                return False
+    return True
+
+
+def delta_problems(point: Sequence[Any], arm: Sequence[Any], delta: tuple[float, dict | None]) -> list[str]:
+    """r6: the registered shift, applied to the point blocks as `gate.shifted_blocks` applies it, is the arm's blocks
+    bit for bit (the delta captured is the campaign's own)."""
+    from propedge.campaign.gate import shifted_blocks
+
+    got = shifted_blocks(list(point), float(delta[0]), delta[1])
+    bad = [i for i, (a, b) in enumerate(zip(got, arm)) if not _same_block(a, b)]
+    if len(got) != len(arm):
+        return [f"the shifted point list holds {len(got)} days, the arm {len(arm)}"]
+    return [f"{len(bad)} days of the arm are not the point blocks under the registered shift (first: {bad[0]})"] \
+        if bad else []
+
+
+def untouched_problems(shifted: Sequence[Any], arm: Sequence[Any], booked: Sequence[Any], point: Sequence[Any]
+                       ) -> list[str]:
+    """r6: on every day A-11 left as it was (`booked[i] is point[i]`), the TradeDay verdict arm is U1's bit for bit."""
+    bad = [i for i, (s, a, k, p) in enumerate(zip(shifted, arm, booked, point)) if k is p and not _same_block(s, a)]
+    return [f"{len(bad)} untouched days of the TradeDay verdict arm are not U1's (first: {bad[0]})"] if bad else []
+
+
+def arm_inputs(point: dict[str, Any], arm_job: dict[str, Any], s: T.Settings, arm: str,
+               delta: tuple[float, dict | None] | None = None) -> tuple[list[Any], list[Any] | None, dict[str, int]]:
+    """One arm's blocks for a plan: at TradeDay, A-11's booking on the point blocks then the arm's registered shift
+    (`delta`, r6; refused unless the untouched days are the arm's own); every other plan the arm's blocks as built.
+    Also the point-arm blocks Quick Pay's bracket reads on every arm (M3: A-11's booking applied, no shift), and A-11's
+    counts."""
     counts: dict[str, int] = {}
     blocks = list(arm_job["blocks"])
     ref = list(point["blocks"])
     if s.plan in ("FP", "QP"):
         ref, counts = F.tier1_arm(point["blocks"], point["dates"], s.tier1)
-        blocks = ref if arm == "point" else F.tier1_arm(point["blocks"], point["dates"], s.tier1, delta_r, dby)[0]
+        if arm == "point":
+            blocks = ref
+        else:
+            if delta is None:
+                raise ValueError("REFUSED (r6): a TradeDay verdict arm takes the campaign's registered shift")
+            blocks = F.tier1_arm(point["blocks"], point["dates"], s.tier1, float(delta[0]), delta[1])[0]
+            bad = untouched_problems(blocks, arm_job["blocks"], ref, point["blocks"])
+            if bad:
+                raise Refused("r6: " + "; ".join(bad))
     return blocks, (ref if s.plan == "QP" else None), counts
 
 
@@ -85,6 +181,16 @@ def cell_job(arm_job: dict[str, Any], s: T.Settings, blocks: Sequence[Any], *, l
         args = {**args, "path": {k: v for k, v in args["path"].items() if k != "combine_account_cls"}}
         kw = {k: v for k, v in kw.items() if k != "funded_account_cls"}
     return {**arm_job, "blocks": list(blocks), "args": args}, kw
+
+
+def stream_context(name: str, point: dict[str, Any]) -> dict[str, Any]:
+    """What every cell of a stream reads for 9.3: the dates, A-11's classification of the offered trades (5.5), the
+    smallest risk a micro among them (G-10's smallest tradable size)."""
+    tiers = C.tier1_trades(point["blocks"], point["dates"])
+    rpc = [float(np.min(np.asarray(b.risk_per_contract, float))) for b in point["blocks"]
+           if len(b.pnl) and b.risk_per_contract is not None]
+    return {"name": name, "dates": list(point["dates"]), "open": set(tiers["open"]), "inside": sorted(tiers["inside"]),
+            "min_rpc": float(min(rpc)) if rpc else float("nan")}
 
 
 # ------------------------------------------------------------------------------------------------ one start
@@ -134,8 +240,9 @@ def _slim(lp: Any) -> Any:
 
 def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, start: int,
                  kw: dict[str, Any], point: list[Any] | None, every: int) -> dict[str, Any]:
-    """One start, replayed directly as A-9's task replays it: the long run (its ledger kept for 9.3) and the
-    exact-length runs where A-9 makes them, with the start's classes. Returns the runs and the ledger."""
+    """One start, replayed directly as A-9's task replays it: the long run (its ledger and the adapters' counters and
+    request logs kept for 9.2 and 9.3) and the exact-length runs where A-9 makes them (their request logs kept), with
+    the start's classes."""
     from propedge.research import user_journey as U
 
     if resp.kind == "forfeit":
@@ -153,17 +260,25 @@ def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Set
     A.TALLY.clear()
     rec_args = {**a, "path": {**a["path"], "record_trades": True}}
     long_full = B.replay(job["blocks"][start:start + L], rec_args, seed)
-    counts = F.split_runs(A.collect())[:1]
-    exact = None
+    counts = F.split_runs(A.collect(with_requests=True))[:1]
+    exact, exact_counts = None, {}
     if int(start) % int(every) == 0:
-        exact = {h: B.replay(job["blocks"][start:start + h], a, seed) for h in U.EXACT if h < L}
-        A.TALLY.clear()
+        exact = {}
+        for h in U.EXACT:
+            if h < L:
+                exact[h] = B.replay(job["blocks"][start:start + h], a, seed)
+                exact_counts[h] = A.collect(with_requests=True)
+    A.TALLY.clear()
     named = {**B.seam_parameters(hc, kw.get("seed_base")), **B.class_parameters(f_cls)}
+    rules = a["path"]["rules"]
     return {"start": int(start), "date": str(job["dates"][start]), "long": _slim(long_full), "exact": exact,
             "ledger": [{k: r.get(k) for k in LEDGER_KEEP} for r in long_full.trades if r.get("contracts")],
-            "seed": seed, "named": named, "counts": counts[0] if counts else [],
+            "seed": seed, "named": named, "counts": counts[0] if counts else [], "exact_counts": exact_counts,
             "sub": float(a["path"]["subscription"]), "lag": int(a["path"]["payout_lag_days"]),
-            "billing_days": int(a["path"]["billing_days"])}
+            "billing_days": int(a["path"]["billing_days"]), "activation": float(a["path"]["activation"]),
+            "payout_fee": float(rules.payout_fee), "split": float(rules.profit_split),
+            "payout_min": float(rules.payout_min), "std_cap": float(rules.std_cap), "sessions": int(L),
+            "sizing": a["draws"].get("sizing")}
 
 
 def priced_output(design: str, arm: str, resp: Any, d: dict[str, Any], run_price: float, price: float,
@@ -180,38 +295,385 @@ def priced_output(design: str, arm: str, resp: Any, d: dict[str, Any], run_price
                    d["named"])
 
 
+def keep_direct(d: dict[str, Any]) -> dict[str, Any]:
+    """What a cell keeps of a direct start once its numbers are taken: the runs A-10 reprices (memory)."""
+    return {k: d[k] for k in ("start", "date", "long", "exact", "seed", "named", "sub", "lag", "billing_days")}
+
+
+# ------------------------------------------------------------------------------------------------ 9.2's oracles
+
+
+def micros_per_mini(plan: str) -> int:
+    if plan in ("TS", "LU"):
+        from propedge.campaign.sizing import MICROS_PER_MINI
+
+        return int(MICROS_PER_MINI)
+    return int(T.plan_terms(plan).micros_per_mini)
+
+
+def schedule_fee(plan: str, fee_basis: str | None, contracts: int) -> float:
+    """4.8: the plan's round-turn fee at `contracts` micro-equivalents -- as many minis as fit, the rest in micros."""
+    sched = T.fee_schedule(plan, fee_basis) if plan == "DT" else T.fee_schedule(plan)
+    pm = micros_per_mini(plan)
+    n = int(contracts)
+    return float((n // pm) * float(sched[1]) + (n - (n // pm) * pm) * float(sched[0]))
+
+
+def fee_problems(ledger: Sequence[dict[str, Any]], s: T.Settings) -> list[str]:
+    """9.2 (4.8): every executed trade's fee is its plan's schedule at the contracts it holds, to 1e-9 -- at every plan,
+    TS and Lucid included; a trade priced at no schedule is refused."""
+    out = []
+    for r in ledger:
+        n = int(r.get("contracts") or 0)
+        if n <= 0:
+            continue
+        if r.get("fee") is None:
+            out.append(f"a trade of {n} micros at day {r.get('historical_day')} carries no fee: priced at no schedule")
+        elif abs(float(r["fee"]) - schedule_fee(s.plan, s.fee_basis, n)) > 1e-9:
+            out.append(f"a trade of {n} micros pays {r['fee']}, the plan's schedule {schedule_fee(s.plan, s.fee_basis, n)}")
+        if len(out) >= 3:
+            break
+    return out
+
+
+def tiered_net(plan: str, request: float, before: float) -> float:
+    """Quick Pay's tiered split, recomputed independently of A-7 (`tradeday.quickpay_eod50k.payout_split`): the part
+    of the request above the split line of the profit at the low rate's complement, the rest at the low rate."""
+    t = T.plan_terms(plan)
+    above = min(float(request), max(0.0, float(before) - float(t.split_line)))
+    return float(t.split_high) * above + float(t.split_low) * (float(request) - above) - float(t.payout_fee)
+
+
+def _close(a: float, b: float, tol: float = 1e-9) -> bool:
+    return abs(float(a) - float(b)) <= tol * max(1.0, abs(float(b)))
+
+
+def request_problems(d: dict[str, Any], s: T.Settings) -> tuple[list[str], int, dict[str, int]]:
+    """9.2 on one start's runs (the long replay and each exact-length run): every request inside its plan's bounds and
+    every net its plan's split of it, to 1e-9; and U-7's zero checks on the requests (counted, never refused): Fast
+    Pass's above half the profit, Quick Pay's above the reference's amount (the ceiling's closing withdrawal excepted)
+    and below its minimum. Returns (problems, requests checked, zero-check counts)."""
+    probs: list[str] = []
+    zero = {"zero_fp_request_above_half_profit": 0, "zero_qp_request_above_reference": 0,
+            "zero_qp_request_below_min": 0}
+    n = 0
+    runs = [("long", d["long"], d["counts"])] + [(f"exact {h}", lp, d["exact_counts"].get(h, []))
+                                                  for h, lp in (d["exact"] or {}).items()]
+    t = None if s.plan in ("TS", "LU") else T.plan_terms(s.plan)
+    half = float(T.stage2_value("payout_max_frac_of_balance"))       # 2.3: the declared request's half of the balance
+    for tag, lp, counts in runs:
+        logs = {int(g["index"]): g.get("requests", []) for g in counts if g.get("kind") == "funded"}
+        for f in lp.funded:
+            where = f"{tag} funded {f.index}"
+            nets = [float(x) for x in f.payout_cash]
+            if s.plan in ("TS", "LU"):
+                split, fee, lo, cap = d["split"], d["payout_fee"], d["payout_min"], d["std_cap"]
+                reqs = [(x + fee) / split for x in nets]
+                n += len(reqs)
+                if not _close(sum(reqs), float(f.gross_paid)):
+                    probs.append(f"{where}: the requests {sum(reqs)} are not the gross paid {f.gross_paid}")
+                for r in reqs:
+                    if r < lo - 1e-9 or r > cap + 1e-9:
+                        probs.append(f"{where}: a request of {r} outside [{lo}, {cap}]")
+                continue
+            log = logs.get(int(f.index))
+            if log is None:
+                probs.append(f"{where}: no request log from its adapter")
+                continue
+            if [round(q["net"], 9) for q in log] != [round(x, 9) for x in nets]:
+                probs.append(f"{where}: the request log's nets are not the record's payouts")
+            if not _close(sum(q["request"] for q in log), float(f.gross_paid)):
+                probs.append(f"{where}: the logged requests are not the gross paid")
+            for q in log:
+                n += 1
+                r, before, after, net = float(q["request"]), float(q["before"]), float(q["after"]), float(q["net"])
+                if s.plan == "DT":
+                    inc = float(t.request_increment)
+                    if abs(r / inc - round(r / inc)) > 1e-9:
+                        probs.append(f"{where}: a request of {r} is not in ${inc:g} increments")
+                    if r < float(t.payout_min) - 1e-9 or r > float(t.payout_cap) + 1e-9:
+                        probs.append(f"{where}: a request of {r} outside [{t.payout_min}, {t.payout_cap}]")
+                    if after < float(t.request_leave) - 1e-9 or before < float(t.request_gate) - 1e-9:
+                        probs.append(f"{where}: a request from {before} leaving {after}: outside the gate or the "
+                                     "balance left")
+                    if not _close(net, float(t.split) * r - float(t.payout_fee)):
+                        probs.append(f"{where}: a net of {net} is not the split of {r}")
+                elif s.plan == "FP":
+                    if r < float(t.payout_min) - 1e-9 or r > float(t.payout_cap) + 1e-9:
+                        probs.append(f"{where}: a request of {r} outside [{t.payout_min}, {t.payout_cap}]")
+                    if not _close(net, float(t.split) * r - float(t.payout_fee)):
+                        probs.append(f"{where}: a net of {net} is not the split of {r}")
+                    zero["zero_fp_request_above_half_profit"] += int(r > half * before + 1e-9)
+                elif s.plan == "QP":
+                    if not _close(net, tiered_net("QP", r, before)):
+                        probs.append(f"{where}: a net of {net} is not the tiered split of {r} from {before}")
+                    if q.get("kind") != "ceiling_withdrawal":
+                        ref = min(half * before, float(T.stage2_value("xfa_std_cap")))
+                        zero["zero_qp_request_above_reference"] += int(r > ref + 1e-9)
+                    zero["zero_qp_request_below_min"] += int(r < float(t.payout_min) - 1e-9)
+            if len(probs) >= 3:
+                return probs, n, zero
+    return probs, n, zero
+
+
+def fees_by_kind(d: dict[str, Any], s: T.Settings) -> tuple[dict[str, float], list[str]]:
+    """10.1 item 6's fees by kind on the long replay, by A-10's arithmetic on its records, and the check that the
+    evaluation, activation and reset fees are the engine's total (A-10's premise, refusing)."""
+    lp, p = d["long"], d["long"].path
+    subs = len(F.subscription_days(lp, d["billing_days"]))
+    resets = sum(int(c.resets) for c in lp.combines)
+    payouts = sum(int(f.n_payouts) for f in lp.funded)
+    out = {"fees_evaluations": subs * float(d["sub"]), "fees_activation": len(lp.funded) * float(d["activation"]),
+           "fees_payout": payouts * float(d["payout_fee"]), "fees_pro": 0.0}
+    if s.plan == "DT":
+        t = T.plan_terms("DT")
+        due = F.pro_fee_days(lp, int(T.stage2_value("billing_days")), len(p.cash_series) - 1)
+        out["fees_pro"] = len(due) * float(t.funded_recurring_fee)
+    probs = []
+    if resets == 0 and abs(out["fees_evaluations"] + out["fees_activation"] - float(p.total_fees)) > 1e-6:
+        probs.append(f"the fees by kind ({out['fees_evaluations']} + {out['fees_activation']}) are not the engine's "
+                     f"total {p.total_fees} (A-10's arithmetic)")
+    return out, probs
+
+
+# ------------------------------------------------------------------------------------------------ 9.3 per start
+
+
+def _date_of(ctx: dict[str, Any], start: int, k: int) -> _date:
+    d = ctx["dates"][int(start) + max(int(k), 1) - 1]
+    return d if isinstance(d, _date) else _date.fromisoformat(str(d)[:10])
+
+
+def _trades(ledger: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{"account": (r["kind"], r["index"]), "day": int(r["day"]), "entry": float(r["trade_index"]),
+             "contracts": int(r["contracts"]), "pnl": float(r["pnl"])} for r in ledger]
+
+
+def uncapped_ladder_differs(ledger: Sequence[dict[str, Any]], rule: Any) -> tuple[int, int]:
+    """9.3 (5.2's scaling row): of Fast Pass's funded trades, those an uncapped ladder (the record's two contracts plus
+    one per step, without the evaluation's cap) would size differently at the session's balance -- the size it would
+    take at the trade's own intended risk, allowance and room -- and the funded trades read."""
+    from propedge.campaign.sizing import ScalingLadder
+
+    t = T.plan_terms("FP")
+    rows = [r for r in ledger if r["kind"] == "funded" and r.get("risk_per_contract")]
+    if not rows or rule is None:
+        return 0, len(rows)
+    (b0, m0), (b1, m1) = t.ladder[0], t.ladder[1]
+    per, step = float(b1) - float(b0), int(m1) - int(m0)
+    first: dict[tuple[int, int], float] = {}
+    for r in rows:
+        first.setdefault((int(r["index"]), int(r["day"])), float(r["balance_before"]))
+    top = max(first.values())
+    k = max(len(t.ladder), int(math.floor(max(top, 0.0) / per)) + 2)
+    ladder = ScalingLadder(thresholds=tuple(float(b0) + i * per for i in range(k)),
+                           minis=tuple(int(m0) + i * step for i in range(k)), micros_per_mini=int(t.micros_per_mini),
+                           source="RD-01 9.3: Fast Pass's ladder without its cap")
+    unc = dataclasses.replace(rule, ladder=ladder)
+    n = 0
+    for r in rows:
+        rpc = float(r["risk_per_contract"])
+        cap = unc.cap_micros("funded", first[(int(r["index"]), int(r["day"]))])
+        want = int(math.floor(float(r["intended_risk"]) / rpc))
+        if cap is not None:
+            want = min(want, int(cap))
+        if unc.room_capped("funded") and r.get("room") is not None and np.isfinite(float(r["room"])):
+            want = min(want, int(math.floor(max(float(r["room"]), 0.0) / rpc + 1e-9)))
+        n += int(want != int(r["contracts"]))
+    return n, len(rows)
+
+
+def start_stats(d: dict[str, Any], s: T.Settings, ctx: dict[str, Any]) -> tuple[dict[str, float], list[str]]:
+    """One start's 9.3 counts and 10.1 item 6 fields from its long replay's ledger, records and accounts' counters,
+    and its 9.2 problems (refusing). Numbers only; `count_rows` sums them by block."""
+    lp, p, led, st0 = d["long"], d["long"].path, d["ledger"], int(d["start"])
+    probs: list[str] = []
+    x: dict[str, float] = {}
+    # 10.1 item 6: what diverges
+    x["evaluations_bought"] = len(lp.combines)
+    x["funded_activated"] = len(lp.funded)
+    x["funded_lost"] = sum(int(f.closed) for f in lp.funded)
+    x["payouts_count"] = sum(int(f.n_payouts) for f in lp.funded)
+    x["payouts_gross"] = sum(float(f.gross_paid) for f in lp.funded)
+    x["payouts_net"] = sum(float(c) for f in lp.funded for c in f.payout_cash)
+    fees, fp = fees_by_kind(d, s)
+    x.update(fees)
+    probs += fp
+    x["trades_taken"] = len(led)
+    x["realised_risk"] = float(p.realised_risk_total)
+    x["intended_capped_risk"] = float(p.intended_capped_risk_total)
+    for kind, recs in (("combine", lp.combines), ("funded", lp.funded)):
+        sz = [r.sizing for r in recs if r.sizing]
+        x[f"realised_risk.{kind}"] = sum(float(z["realised_risk"]) for z in sz)
+        x[f"intended_capped_risk.{kind}"] = sum(float(z["intended_capped_risk"]) for z in sz)
+        x[f"stood_aside.{kind}"] = sum(int(z["stood_aside"]) for z in sz)
+        x[f"trades.{kind}"] = sum(1 for r in led if r["kind"] == kind)
+    x["stood_aside"] = float(p.trades_stood_aside)
+    # 9.2: fees and requests (refusing); U-7's zero checks on requests (counted)
+    probs += fee_problems(led, s)
+    rp, n_req, zero = request_problems(d, s)
+    probs += rp
+    x["oracle_requests_checked"] = n_req
+    x["oracle_trades_fee_checked"] = len(led)
+    x.update(zero)
+    # U-7's other zero checks
+    x["zero_peak_hold_queue"] = float(p.peak_queue_length)
+    x["zero_resets_bought"] = sum(int(c.resets) for c in lp.combines)
+    x["zero_refused_for_cash"] = int(p.combines_abandoned) + int(p.passes_forfeited) + int(bool(p.ruined))
+    if s.plan == "DT":
+        late = 0
+        by_index = {int(c.index): c for c in lp.combines}
+        window = int(T.parse_money(r"within (\d+) days", T.record_value("daytraders.eod50k.activation_fee"),
+                                   "daytraders.eod50k.activation_fee"))
+        for f in lp.funded:
+            c = by_index.get(int(f.combine_index))
+            if c is not None and c.resolved_on is not None:
+                late += int((_date_of(ctx, st0, f.activation_day) - _date_of(ctx, st0, c.resolved_on)).days > window)
+        x["zero_dt_activation_late"] = late
+    # the adapters' own counters (the long replay), and Quick Pay's floor oracle (refusing)
+    for g in d["counts"]:
+        for k, v in g.items():
+            if k in ("class", "family", "kind", "index", "day", "requests") or not isinstance(v, (int, float)):
+                continue
+            x[f"acct.{g['kind']}.{k}"] = x.get(f"acct.{g['kind']}.{k}", 0.0) + float(v)
+    for h, cs_ in d["exact_counts"].items():
+        bad = sum(int(g.get("floor_oracle_breaches", 0)) for g in cs_)
+        if bad:
+            probs.append(f"exact {h}: Quick Pay's floor fails 9.2 at {bad} closes")
+    if x.get("acct.funded.floor_oracle_breaches", 0):
+        probs.append(f"Quick Pay's floor fails 9.2 at {int(x['acct.funded.floor_oracle_breaches'])} closes")
+    # G-3 per TradeDay run: the executed trades open at a window's start, the signals skipped inside one
+    if s.plan in ("FP", "QP"):
+        x["tier1_executed_in_window"] = sum(1 for r in led if (st0 + int(r["historical_day"]), int(r["trade_index"]))
+                                            in ctx["open"])
+        x["tier1_signals_skipped_inside"] = sum(1 for i, _j in ctx["inside"] if st0 <= i < st0 + int(d["sessions"]))
+    tr = _trades(led)
+    if s.plan == "DT":
+        mg = C.martingale_steps(tr)
+        ma = C.martingale_accounts(tr)
+        x["martingale_per_account"] = mg["per_account"]
+        x["martingale_firm_wide"] = mg["firm_wide"]
+        x["martingale_accounts_per_account"] = ma["per_account_accounts"]
+        x["martingale_accounts_firm_wide"] = ma["firm_wide_accounts"]
+        for kind in ("combine", "funded"):
+            x[f"martingale_per_account.{kind}"] = ma["per_account_by_kind"].get(kind, 0)
+            x[f"martingale_firm_wide.{kind}"] = ma["firm_wide_by_kind"].get(kind, 0)
+        x["accounts_trading"] = ma["accounts"]
+        x["dt_limit_capped_trades"] = sum(
+            1 for r in led if r.get("room_capped") and r.get("room") is not None
+            and float(r["room"]) + 1e-9 < float(r["balance_before"]) - float(r["floor"]))
+    if s.plan in ("FP", "QP"):
+        ta = C.trades_a_session(tr)
+        x["max_trades_session_account"] = ta["max_per_account"]
+        x["max_trades_session_across"] = ta["max_across"]
+        x["sessions_above_trade_line"] = ta["sessions_above_line"]
+        # G-10: sessions with no trade per funded account, accounts idle 30 calendar days, accounts drained
+        idle_days = int(T.parse_money(r"inactive for (\d+) days", T.record_value("tradeday.inactivity_rule"),
+                                      "tradeday.inactivity_rule"))
+        no_trade = idle = drained = 0
+        for f in lp.funded:
+            days = sorted({int(r["day"]) for r in led if r["kind"] == "funded" and int(r["index"]) == int(f.index)})
+            no_trade += max(0, int(f.days) - len(days))
+            end = int(f.ended_on) if f.ended_on is not None else int(d["sessions"])
+            marks = [int(f.activation_day)] + days + [end]
+            gaps = [(_date_of(ctx, st0, b) - _date_of(ctx, st0, a)).days for a, b in zip(marks, marks[1:])]
+            idle += int(bool(gaps) and max(gaps) >= idle_days)
+            drained += int(not f.closed and float(f.balance) - float(f.floor) < float(ctx["min_rpc"]) - 1e-9)
+        x["g10_funded_sessions_no_trade"] = no_trade
+        x["g10_funded_accounts"] = len(lp.funded)
+        x["g10_accounts_idle_30"] = idle
+        x["g10_accounts_drained"] = drained
+    if s.plan == "FP":
+        n_u, n_f = uncapped_ladder_differs(led, d.get("sizing"))
+        x["fp_uncapped_ladder_differs"] = n_u
+        x["fp_funded_trades_read"] = n_f
+    if s.plan == "LU":
+        x["lu_fifth_payouts"] = sum(int(int(f.n_payouts) >= 5) for f in lp.funded)
+        x["lu_household_closures"] = (sum(int(c.household_closed) for c in lp.combines)
+                                      + sum(int(f.household_closed) for f in lp.funded))
+    return x, probs
+
+
+def compare_ts(d: dict[str, Any], ts: dict[str, Any] | None) -> dict[str, float]:
+    """9.3 against TS on the same start: whether the plan's daily cash differs at all within 63, 126 and 252 sessions,
+    and the trades both take with the contracts they hold, by account kind."""
+    if ts is None or d["start"] not in ts:
+        return {}
+    t = ts[d["start"]]
+    out: dict[str, float] = {}
+    a, b = np.asarray(d["long"].path.cash_series, float), t["cash"]
+    for h in (63, 126, 252):
+        if len(a) > h and len(b) > h:
+            out[f"differs_by_{h}"] = float(bool(np.any(np.abs(a[:h + 1] - b[:h + 1]) > 1e-9)))
+    mine = {(int(r["historical_day"]), int(r["trade_index"])): (r["kind"], int(r["contracts"])) for r in d["ledger"]}
+    for kind in ("combine", "funded"):
+        both = [k for k, (kd, _n) in mine.items() if kd == kind and k in t["contracts"] and t["contracts"][k][0] == kind]
+        out[f"contracts_compared.{kind}"] = len(both)
+        out[f"contracts_differ.{kind}"] = sum(int(mine[k][1] != t["contracts"][k][1]) for k in both)
+    return out
+
+
+def ts_compact(d: dict[str, Any]) -> dict[str, Any]:
+    """What TS keeps of a start for the pairing (9.3's differs and contracts)."""
+    return {"cash": np.asarray(d["long"].path.cash_series, float),
+            "contracts": {(int(r["historical_day"]), int(r["trade_index"])): (r["kind"], int(r["contracts"]))
+                          for r in d["ledger"]}}
+
+
 # ------------------------------------------------------------------------------------------------ a cell
 
 
 def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, starts: Sequence[int],
-             kw: dict[str, Any], point: list[Any] | None, *, direct: bool = True,
-             exact_every: int | None = None) -> dict[str, Any]:
+             kw: dict[str, Any], point: list[Any] | None, *, direct: bool = True, exact_every: int | None = None,
+             ctx: dict[str, Any] | None = None, ts: dict[int, dict[str, Any]] | None = None,
+             keep_ts: bool = False) -> dict[str, Any]:
     """Every chosen start of one cell: A-9's outputs (the runner), and -- `direct` -- each start's direct runs, held
-    equal to A-9's output at the run price (refusing: `problems`)."""
+    equal to A-9's output at the run price, 9.1 items 4 and 5, 9.2's oracles and the start's 9.3 numbers. Stops at the
+    first start with a refusing problem (r5). Without `direct`, item 5 on A-9's own account counts."""
     every = 1 if resp.kind == "off" else int(B.EXACT_EVERY if exact_every is None else exact_every)
     runs = F.run_plan(design, arm, resp, job, s, list(starts), kw, point=point)
     outs = [o for o, _ in runs]
     counts = [c[0] if c else [] for _, c in runs]
+    what = f"{design} {arm} {resp.name}"
     problems: list[str] = []
-    directs = []
-    checks = {"trades": 0, "accounts": 0}
-    if direct:
-        from user_beside_identity import first_difference
+    directs, stats, compact = [], {}, {}
+    checks = {"starts_compared": 0, "trades": 0, "accounts": 0}
+    if not direct:
+        for o, c in zip(outs, counts):
+            p = class_problems(c, s)
+            checks["accounts"] += len(c)
+            if p:
+                problems += [f"{what} start {o['rec']['start_day']}: item 5: {q}" for q in p]
+                break
+        return {"outs": outs, "counts": counts, "directs": [], "stats": {}, "problems": problems, "checks": checks,
+                "ts": None}
+    from user_beside_identity import first_difference
 
-        for o, st in zip(outs, starts):
-            d = direct_start(design, arm, resp, job, s, int(st), kw, point, every)
-            mine = priced_output(design, arm, resp, d, d["sub"], d["sub"])
-            diff = first_difference(o, mine)
-            if diff:
-                problems.append(f"{design} {arm} {resp.name} start {st}: the direct runs are not A-9's -- {diff}")
-            # 9.1 items 4 and 5 on every replay (m4): the trades are the base's; no other plan's class
-            tp = trade_problems(d["ledger"], job["blocks"][int(st):])
-            problems += [f"{design} {arm} {resp.name} start {st}: item 4: {p}" for p in tp[:3]]
-            problems += [f"{design} {arm} {resp.name} start {st}: item 5: {p}" for p in class_problems(d["counts"], s)]
-            checks["trades"] += len(d["ledger"])
-            checks["accounts"] += len(d["counts"])
-            directs.append(d)
-    return {"outs": outs, "counts": counts, "directs": directs, "problems": problems, "checks": checks}
+    for o, st in zip(outs, starts):
+        d = direct_start(design, arm, resp, job, s, int(st), kw, point, every)
+        mine = priced_output(design, arm, resp, d, d["sub"], d["sub"])
+        diff = first_difference(o, mine)
+        if diff:
+            problems.append(f"{what} start {st}: the direct runs are not A-9's -- {diff}")
+        tp = trade_problems(d["ledger"], job["blocks"][int(st):])
+        problems += [f"{what} start {st}: item 4: {p}" for p in tp[:3]]
+        problems += [f"{what} start {st}: item 5: {p}" for p in class_problems(d["counts"], s)]
+        checks["starts_compared"] += 1
+        checks["trades"] += len(d["ledger"])
+        checks["accounts"] += len(d["counts"])
+        if ctx is not None:
+            x, sp = start_stats(d, s, ctx)
+            x.update(compare_ts(d, ts))
+            stats[int(st)] = x
+            problems += [f"{what} start {st}: 9.2: {p}" for p in sp]
+        if keep_ts:
+            compact[int(st)] = ts_compact(d)
+        directs.append(keep_direct(d))
+        del d
+        if problems:
+            break                                                     # r5: the reading stops at the first refusal
+    return {"outs": outs, "counts": counts, "directs": directs, "stats": stats, "problems": problems,
+            "checks": checks, "ts": compact if keep_ts else None}
 
 
 def trade_problems(ledger: Sequence[dict[str, Any]], blocks: Sequence[Any]) -> list[str]:
@@ -252,51 +714,153 @@ def reading_outs(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Se
                           pro_billing_days=int(T.stage2_value("billing_days"))) for d in cell["directs"]]
 
 
-# ------------------------------------------------------------------------------------------------ the scorecard, paired
+# ------------------------------------------------------------------------------------------------ 9.3 by block
 
 
-def _net(rec: dict[str, Any], m: int) -> float:
-    nm = rec.get("net_month") or []
-    v = nm[m - 1] if len(nm) >= m else None
-    return float("nan") if v is None else float(v)
-
-
-def _block_days(recs: Sequence[dict[str, Any]], which: str, h: int) -> list[int]:
+def _blocks_of(recs: Sequence[dict[str, Any]], h: int) -> dict[str, set[int]]:
     from propedge.research import u_select as S
 
-    sel = S.block(list(recs), None if which == "all" else which, int(h))
-    return sorted(int(r["start_day"]) for r in sel)
+    out = {"all": {int(r["start_day"]) for r in recs}}
+    for b in ("early", "late"):
+        out[b] = {int(r["start_day"]) for r in S.block(list(recs), b, int(h))}
+    return out
 
 
-_COVERAGE: dict[tuple[int, int], float] = {}
+#: 9.3's ratios, each from two summed numbers: (name, numerator, denominator)
+RATIOS = (("realised_to_intended_capped", "realised_risk", "intended_capped_risk"),
+          ("realised_to_intended_capped.combine", "realised_risk.combine", "intended_capped_risk.combine"),
+          ("realised_to_intended_capped.funded", "realised_risk.funded", "intended_capped_risk.funded"),
+          ("share_contracts_differ.combine", "contracts_differ.combine", "contracts_compared.combine"),
+          ("share_contracts_differ.funded", "contracts_differ.funded", "contracts_compared.funded"),
+          ("share_martingale_per_account", "martingale_per_account", "trades_taken"),
+          ("share_martingale_firm_wide", "martingale_firm_wide", "trades_taken"),
+          ("g10_sessions_no_trade_per_funded_account", "g10_funded_sessions_no_trade", "g10_funded_accounts"),
+          ("share_fp_uncapped_ladder_differs", "fp_uncapped_ladder_differs", "fp_funded_trades_read"))
 
 
-def coverage_of(h: int, n_w: int) -> float:
-    """10.2 item 7: the worst coverage over the declared shapes at (h, n_w), seed 20261991, cached."""
+def count_rows(stats: dict[int, dict[str, float]], recs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """9.3 for one cell, by block: each number summed over the block's starts (a `max_` or `zero_peak_` number its
+    largest), each share of starts differing their mean, and `RATIOS` from the sums."""
+    blocks = _blocks_of(recs, COUNT_HORIZON)
+    keys = sorted({k for x in stats.values() for k in x})
+    rows = []
+    for b in BLOCKS:
+        sel = [stats[s0] for s0 in sorted(stats) if s0 in blocks[b]]
+        tot: dict[str, float] = {}
+        for k in keys:
+            vals = [float(x[k]) for x in sel if k in x]
+            if k.startswith("differs_by_"):
+                v = float(np.mean(vals)) if vals else float("nan")
+                rows.append({"subsection": "count", "block": b, "measure": f"share_starts_{k}", "stat": "value",
+                             "value": v, "n": len(vals)})
+                continue
+            v = (max(vals) if vals else float("nan")) if (k.startswith("max_") or k.startswith("zero_peak")) \
+                else float(np.sum(vals))
+            tot[k] = v
+            rows.append({"subsection": "count", "block": b, "measure": k, "stat": "value", "value": v,
+                         "n": len(vals)})
+        for name, num, den in RATIOS:
+            if num in tot and den in tot:
+                v = tot[num] / tot[den] if tot[den] else float("nan")
+                rows.append({"subsection": "count", "block": b, "measure": name, "stat": "value", "value": v,
+                             "n": len(sel)})
+    return rows
+
+
+#: 10.1 item 6's fields (each plan against TS), from `start_stats`
+DIVERGE = ("funded_activated", "funded_lost", "evaluations_bought", "fees_evaluations", "fees_activation",
+           "fees_payout", "fees_pro", "payouts_count", "payouts_gross", "payouts_net", "trades_taken",
+           "realised_risk")
+
+
+def diverge_rows(stats: dict[int, dict[str, float]], ts_stats: dict[int, dict[str, float]],
+                 recs: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """10.1 item 6, each plan against TS on the same starts, by block: the plan's mean, TS's, the mean difference and
+    its distribution over starts, and the shares above, equal and below."""
+    blocks = _blocks_of(recs, COUNT_HORIZON)
+    rows = []
+    for b in BLOCKS:
+        common = [s0 for s0 in sorted(stats) if s0 in ts_stats and s0 in blocks[b]]
+        for k in DIVERGE:
+            x = np.array([float(stats[s0].get(k, np.nan)) for s0 in common], float)
+            y = np.array([float(ts_stats[s0].get(k, np.nan)) for s0 in common], float)
+            ok = np.isfinite(x) & np.isfinite(y)
+            dlt = (x - y)[ok]
+            base = {"subsection": "item_6", "block": b, "measure": k, "n": int(ok.sum())}
+            rows.append({**base, "stat": "plan_mean", "value": float(np.mean(x[ok])) if ok.any() else float("nan")})
+            rows.append({**base, "stat": "ts_mean", "value": float(np.mean(y[ok])) if ok.any() else float("nan")})
+            rows.append({**base, "stat": "mean_difference", "value": float(np.mean(dlt)) if ok.any() else float("nan")})
+            q = M.quantiles(dlt)
+            rows += [{**base, "stat": f"difference_p{p}", "value": q[f"p{p}"]} for p in M.PERCENTILES]
+            for nm, v in (("above", dlt > 1e-9), ("equal", np.abs(dlt) <= 1e-9), ("below", dlt < -1e-9)):
+                rows.append({**base, "stat": f"share_{nm}", "value": float(v.mean()) if ok.any() else float("nan")})
+    return rows
+
+
+# ------------------------------------------------------------------------------------------------ the pairing
+
+
+_COVERAGE: dict[tuple[int, int], dict[str, float]] = {}
+
+
+def coverage_shapes_at(h: int, n_w: int, n_series: int = COVERAGE_SERIES) -> dict[str, float]:
+    """10.2 item 7: the coverage of every declared shape at (h, n_w), the coverage seed, `n_series` series (R1: the
+    keyword-only `firm_uncertainty.coverage` called by keyword), cached for the run."""
     key = (int(h), int(n_w))
     if key not in _COVERAGE:
-        _COVERAGE[key] = min(FU.coverage(sh, int(h), int(n_w), COVERAGE_SERIES, FU.SEED) for sh in FU.coverage_shapes())
+        _COVERAGE[key] = {sh: FU.coverage(sh, h=int(h), n_w=int(n_w), n_series=int(n_series), seed=FU.SEED)
+                          for sh in FU.coverage_shapes()}
     return _COVERAGE[key]
 
 
-def paired_rows(plan: list[dict[str, Any]], ts: list[dict[str, Any]], *, coverage: bool = True) -> list[dict[str, Any]]:
+def coverage_of(h: int, n_w: int, n_series: int = COVERAGE_SERIES) -> float:
+    """The worst coverage over the declared shapes at (h, n_w)."""
+    return min(coverage_shapes_at(h, n_w, n_series).values())
+
+
+def coverage_rows() -> list[dict[str, Any]]:
+    """The `coverage` section: every setting a reading used, every shape, its coverage, and the worst."""
+    rows = []
+    for (h, n_w), by in sorted(_COVERAGE.items()):
+        for sh, v in sorted(by.items()):
+            rows.append({"section": "coverage", "subsection": "shape", "horizon": h, "n_w": n_w, "measure": sh,
+                         "stat": "coverage", "value": float(v)})
+        worst = min(by.values())
+        rows.append({"section": "coverage", "subsection": "worst", "horizon": h, "n_w": n_w, "measure": "worst",
+                     "stat": "coverage", "value": float(worst), "note": FU.coverage_label(worst) or ""})
+    return rows
+
+
+def _nets(recs: Sequence[dict[str, Any]], m: int) -> np.ndarray:
+    """Each start's month-m net as U1 reads it (r1): `user_journey.Views`, a start whose exact-length run differed read
+    from that run."""
+    from propedge.research import user_journey as U
+
+    if not recs:
+        return np.array([], float)
+    return np.asarray(U._net_at(U.Views(list(recs)), U.MONTH * int(m)), float)
+
+
+def paired_rows(plan: list[dict[str, Any]], ts: list[dict[str, Any]], *, coverage: bool = True,
+                coverage_series: int = COVERAGE_SERIES) -> list[dict[str, Any]]:
     """10.1 item 4 on the plan's and TS's start records (same stream and arm): by month and block, the per-start
     difference's distribution, the shares better / equal / worse, the share-ahead cross tab (months 1-3), and the mean
     difference with 10.2's reading."""
-    pr = {int(r["start_day"]): r for r in plan}
+    from propedge.research import u_select as S
+
     tr = {int(r["start_day"]): r for r in ts}
-    common = sorted(set(pr) & set(tr))
     rows = []
     for m in PAIRED_MONTHS:
         h = HORIZON_OF_MONTH[m]
         for b in BLOCKS:
-            days = [d for d in _block_days([pr[d] for d in common], b, h) if d in tr]
-            x = np.array([_net(pr[d], m) for d in days], float)
-            y = np.array([_net(tr[d], m) for d in days], float)
+            mine = [r for r in S.block(list(plan), None if b == "all" else b, h) if int(r["start_day"]) in tr]
+            theirs = [tr[int(r["start_day"])] for r in mine]
+            x, y = _nets(mine, m), _nets(theirs, m)
             ok = np.isfinite(x) & np.isfinite(y)
             diff = (x - y)[ok]
             n = int(ok.sum())
-            base = {"section": "paired", "block": b, "month": m, "horizon": h, "measure": f"net_month_{m}", "n": n}
+            base = {"subsection": "net_month", "block": b, "month": m, "horizon": h, "measure": f"net_month_{m}",
+                    "n": n}
             q = M.quantiles(diff)
             rows += [{**base, "stat": f"p{p}", "value": q[f"p{p}"]} for p in M.PERCENTILES]
             for k, v in (("better", diff > 1e-9), ("equal", np.abs(diff) <= 1e-9), ("worse", diff < -1e-9)):
@@ -314,12 +878,12 @@ def paired_rows(plan: list[dict[str, Any]], ts: list[dict[str, Any]], *, coverag
             for k in ("above", "equal", "below"):
                 rows.append({**base, "stat": f"windows_{k}", "value": float(r["signs"][k])})
             if r["interval"] is not None:
+                rows.append({**base, "stat": "mdd", "value": float(r["mdd"])})
                 rows.append({**base, "stat": "interval_lo", "value": float(r["interval"][0])})
                 rows.append({**base, "stat": "interval_hi", "value": float(r["interval"][1])})
-                rows.append({**base, "stat": "mdd", "value": float(r["mdd"])})
                 if coverage:
-                    cov = coverage_of(h, int(r["n_w"]))
-                    rows.append({**base, "stat": "coverage", "value": cov, "note": FU.coverage_label(cov)})
+                    cov = coverage_of(h, int(r["n_w"]), coverage_series)
+                    rows.append({**base, "stat": "coverage", "value": cov, "note": FU.coverage_label(cov) or ""})
     return rows
 
 
@@ -334,25 +898,23 @@ def paired_scorecard_rows(plan: list[dict[str, Any]], ts: list[dict[str, Any]]) 
         mine = S.scorecard(plan, which, paired_with=ts)
         theirs = S.scorecard(ts, which, paired_with=plan)
         for k in mine:
-            out.append({"section": "paired_card", "block": b, "measure": k, "stat": "plan", "value": mine[k]["value"],
+            out.append({"subsection": "card", "block": b, "measure": k, "stat": "plan", "value": mine[k]["value"],
                         "n": mine[k]["n"]})
-            out.append({"section": "paired_card", "block": b, "measure": k, "stat": "ts", "value": theirs[k]["value"],
+            out.append({"subsection": "card", "block": b, "measure": k, "stat": "ts", "value": theirs[k]["value"],
                         "n": theirs[k]["n"]})
     return out
 
 
-# ------------------------------------------------------------------------------------------------ 9.3
+# ------------------------------------------------------------------------------------------------ 9.3, the stream
 
 
 def tier1_count_rows(stream: str, blocks: Sequence[Any], dates: Sequence[Any]) -> list[dict[str, Any]]:
     """G-3's count (9.3's first line): the offered trades open at a window's start at any offered R, and the entries
     inside a window, by release and year."""
-    from datetime import date as _d
-
     days, spec = C.tier1_days(), C.window_spec()
     tab: dict[tuple[str, int, str], int] = {}
     for b, dd in zip(blocks, dates):
-        d = dd if isinstance(dd, _d) else _d.fromisoformat(str(dd)[:10])
+        d = dd if isinstance(dd, _date) else _date.fromisoformat(str(dd)[:10])
         kinds = days.get(d)
         if not kinds or b.r_by_rr is None or b.exit_by_rr is None or b.entry_t is None:
             continue
@@ -364,52 +926,13 @@ def tier1_count_rows(stream: str, blocks: Sequence[Any], dates: Sequence[Any]) -
                     tab[(kind, d.year, "entries_inside")] = tab.get((kind, d.year, "entries_inside"), 0) + 1
                 elif C.open_at(float(b.entry_t[j]), ex, spec[w][0]):
                     tab[(kind, d.year, "open_at_start")] = tab.get((kind, d.year, "open_at_start"), 0) + 1
-    return [{"section": "tier1_count", "stream": stream, "release": k, "year": y, "measure": what, "value": float(v)}
-            for (k, y, what), v in sorted(tab.items())]
+    return [{"subsection": "tier1_count", "stream": stream, "release": k, "year": y, "measure": what,
+             "value": float(v)} for (k, y, what), v in sorted(tab.items())]
 
 
 def p16_count_nonzero(rows: Sequence[dict[str, Any]]) -> bool:
     """5.5: the four conditional runs are added when P-16's count of trades open at a window's start is not zero."""
     return any(r["stream"] == "p16" and r["measure"] == "open_at_start" and r["value"] > 0 for r in rows)
-
-
-def ledger_rows(cell: dict[str, Any], s: T.Settings, ts_cell: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """9.3's ledger counts on each start's long replay: the trades and their fees against the plan's schedule (9.2),
-    exits after 15:10 CT, trades on an early-close session, martingale steps (DT), trades a session (FP, QP), and the
-    share of trades whose contracts differ from TS's, by account kind."""
-    out: dict[str, float] = {"trades": 0, "fee_off_schedule": 0, "exits_after_flat": 0, "early_close_trades": 0,
-                             "martingale_per_account": 0, "martingale_firm_wide": 0, "max_trades_session_account": 0,
-                             "max_trades_session_across": 0, "sessions_above_trade_line": 0,
-                             "contracts_compared": 0, "contracts_differ": 0}
-    ts_led = {} if ts_cell is None else {d["start"]: d["ledger"] for d in ts_cell["directs"]}
-    sched = None if s.plan in ("TS",) else T.fee_schedule(s.plan, s.fee_basis) if s.plan != "LU" else None
-    for d in cell["directs"]:
-        led = [r for r in d["ledger"] if r.get("contracts")]
-        out["trades"] += len(led)
-        for r in led:
-            if sched is not None and "fee" in r:
-                n = int(r["contracts"])
-                want = (n // 10) * sched[1] + (n - (n // 10) * 10) * sched[0]
-                out["fee_off_schedule"] += int(abs(float(r["fee"]) - want) > 1e-9)
-        trades = [{"account": (r["kind"], r["index"]), "day": int(r["day"]), "entry": float(r["trade_index"]),
-                   "contracts": int(r["contracts"]), "pnl": float(r["pnl"])} for r in led]
-        if s.plan == "DT":
-            mg = C.martingale_steps(trades)
-            out["martingale_per_account"] += mg["per_account"]
-            out["martingale_firm_wide"] += mg["firm_wide"]
-        if s.plan in ("FP", "QP"):
-            ta = C.trades_a_session(trades)
-            out["max_trades_session_account"] = max(out["max_trades_session_account"], ta["max_per_account"])
-            out["max_trades_session_across"] = max(out["max_trades_session_across"], ta["max_across"])
-            out["sessions_above_trade_line"] += ta["sessions_above_line"]
-        if d["start"] in ts_led:
-            mine = {(r["historical_day"], r["trade_index"], r["kind"]): int(r["contracts"]) for r in led}
-            theirs = {(r["historical_day"], r["trade_index"], r["kind"]): int(r["contracts"])
-                      for r in ts_led[d["start"]] if r.get("contracts")}
-            both = set(mine) & set(theirs)
-            out["contracts_compared"] += len(both)
-            out["contracts_differ"] += sum(mine[k] != theirs[k] for k in both)
-    return [{"section": "counts", "measure": k, "value": float(v)} for k, v in out.items()]
 
 
 def exit_problems(blocks: Sequence[Any], dates: Sequence[Any]) -> dict[str, int]:
@@ -423,40 +946,7 @@ def exit_problems(blocks: Sequence[Any], dates: Sequence[Any]) -> dict[str, int]
     late = sum(int(np.nansum(np.where(np.isfinite(np.asarray(v, float)), np.asarray(v, float) > W.C_FLAT, False)))
                for b in blocks if b.exit_by_rr is not None for v in b.exit_by_rr.values())
     on_early = sum(len(b.pnl) for b, d in zip(blocks, dates) if str(d)[:10] in early)
-    return {"exits_after_flat": int(late), "trades_on_early_close": int(on_early)}
-
-
-def account_count_rows(cell: dict[str, Any]) -> list[dict[str, Any]]:
-    """9.3's adapter counts (each account's counters, `firm_accounts.collect`), summed over the cell's long replays,
-    by account class family."""
-    tot: dict[str, float] = {}
-    for per in cell["counts"]:
-        for g in per:
-            for k, v in g.items():
-                if k in ("class", "kind", "index", "day") or not isinstance(v, (int, float)):
-                    continue
-                key = f"{g['kind']}.{k}"
-                tot[key] = tot.get(key, 0.0) + float(v)
-    return [{"section": "counts", "measure": k, "value": v} for k, v in sorted(tot.items())]
-
-
-def differs_rows(cell: dict[str, Any], ts_cell: dict[str, Any]) -> list[dict[str, Any]]:
-    """9.3: the share of starts on which the plan differs from TS at all within 63, 126 and 252 sessions (the long
-    replays' daily cash)."""
-    ts = {d["start"]: np.asarray(d["long"].path.cash_series, float) for d in ts_cell["directs"]}
-    out = []
-    for h in (63, 126, 252):
-        flags = []
-        for d in cell["directs"]:
-            if d["start"] not in ts:
-                continue
-            a, b = np.asarray(d["long"].path.cash_series, float), ts[d["start"]]
-            if len(a) <= h or len(b) <= h:
-                continue
-            flags.append(bool(np.any(np.abs(a[:h + 1] - b[:h + 1]) > 1e-9)))
-        out.append({"section": "counts", "measure": f"share_starts_differing_by_{h}",
-                    "value": float(np.mean(flags)) if flags else float("nan"), "n": len(flags)})
-    return out
+    return {"zero_exits_after_flat": int(late), "zero_trades_on_early_close": int(on_early)}
 
 
 # ------------------------------------------------------------------------------------------------ A-10's grid
@@ -476,14 +966,25 @@ def _card(recs: list[dict[str, Any]], which: str | None) -> dict[str, float]:
     return {k: float(v["value"]) for k, v in S.scorecard(recs, which).items()}
 
 
+def _m3(recs: list[dict[str, Any]]) -> float:
+    x = _nets([r for r in recs if int(r["observed"]) >= HORIZON_OF_MONTH[3]], 3)
+    return float(np.nanmean(x)) if len(x) else float("nan")
+
+
+LUCID_NOTE = "Lucid's price is verified; beside"
+
+
 def grid_rows(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Settings,
               ts_recs: list[dict[str, Any]] | None) -> tuple[list[dict[str, Any]], dict[float, list[dict]]]:
     """Every money measure and P at each price, by A-10's arithmetic on every run of every start; and the break-even
-    price against TS for P, S5a and the mean month-3 net (`firms.break_even_price`, $0 to $250). Returns (rows, the
-    records at each price)."""
+    price against TS for P, S5a and the mean month-3 net (`firms.break_even_price`, $0 to $250; Lucid's too, r3,
+    labelled). Returns (rows, the records at each price)."""
+    from propedge.research import u_select as S
+
     pro = (float(T.plan_terms("DT").funded_recurring_fee), int(T.stage2_value("billing_days"))) if s.plan == "DT" \
         else (0.0, None)
     run_price = float(cell["directs"][0]["sub"]) if cell["directs"] else float("nan")
+    note = LUCID_NOTE if s.plan == "LU" else ""
 
     def recs_at(p: float) -> list[dict[str, Any]]:
         return [priced_output(design, arm, resp, d, run_price, p, pro[0], pro[1])["rec"] for d in cell["directs"]]
@@ -493,15 +994,17 @@ def grid_rows(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Setti
         recs = recs_at(p)
         at[p] = recs
         for b in BLOCKS:
-            card = _card(recs, None if b == "all" else b)
+            which = None if b == "all" else b
+            card = _card(recs, which)
             for k, v in card.items():
-                rows.append({"section": "price_grid", "block": b, "price": p, "measure": k, "value": v})
-            m3 = [_net(r, 3) for r in recs if int(r["observed"]) >= 63]
-            rows.append({"section": "price_grid", "block": b, "price": p, "measure": "mean_net_month_3",
-                         "value": float(np.nanmean(m3)) if m3 else float("nan")})
-    if ts_recs is not None and s.plan != "LU":
+                rows.append({"subsection": "price_grid", "block": b, "price": p, "measure": k, "value": v,
+                             "note": note})
+            sub = S.block(recs, which, HORIZON_OF_MONTH[3])
+            rows.append({"subsection": "price_grid", "block": b, "price": p, "measure": "mean_net_month_3",
+                         "value": _m3(sub), "note": note})
+    if ts_recs is not None:
         ts_card = _card(ts_recs, None)
-        ts_m3 = float(np.nanmean([_net(r, 3) for r in ts_recs if int(r["observed"]) >= 63]))
+        ts_m3 = _m3(S.block(ts_recs, None, HORIZON_OF_MONTH[3]))
         for key, target in (("P", ts_card.get("P")), ("S5a", ts_card.get("S5a")), ("mean_net_month_3", ts_m3)):
             if target is None or not np.isfinite(target):
                 continue
@@ -509,12 +1012,13 @@ def grid_rows(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Setti
             def measure(p: float, key=key) -> float:
                 recs = recs_at(p)
                 if key == "mean_net_month_3":
-                    return float(np.nanmean([_net(r, 3) for r in recs if int(r["observed"]) >= 63]))
+                    return _m3(S.block(recs, None, HORIZON_OF_MONTH[3]))
                 return _card(recs, None)[key]
 
             be = F.break_even_price(measure, float(target), 0.0, float(T.DT_PRICE_GRID[-1]), tol=0.01)
-            rows.append({"section": "break_even", "block": "all", "price": float("nan") if be is None else be,
-                         "measure": key, "value": float(target), "note": "none in range" if be is None else ""})
+            rows.append({"subsection": "break_even", "block": "all", "price": float("nan") if be is None else be,
+                         "measure": key, "value": float(target),
+                         "note": "; ".join(x for x in ("none in range" if be is None else "", note) if x)})
     return rows, at
 
 
@@ -545,18 +1049,70 @@ def grid_problems(at: dict[float, list[dict]], other: dict[str, Any] | None, oth
 # ------------------------------------------------------------------------------------------------ the gate beside
 
 
-def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate: Callable, *, workers: int = 1,
-              hook_factory: Callable[[str], tuple[Any, list]] | None = None
-              ) -> tuple[list[dict[str, Any]], dict[str, list], list[str]]:
+def twin_measures(paths: Sequence[Any]) -> dict[str, float]:
+    """9.2 on a gate arm's paths: the mean gross payouts per funded account and the pass rate per evaluation (each a
+    ratio of sums over paths) with their delta-method Monte Carlo standard errors."""
+    g = np.array([sum(float(f.gross_paid) for f in lp.funded) for lp in paths], float)
+    n = np.array([len(lp.funded) for lp in paths], float)
+    w = np.array([sum(int(c.passed) for c in lp.combines) for lp in paths], float)
+    a = np.array([len(lp.combines) for lp in paths], float)
+
+    def ratio(num: np.ndarray, den: np.ndarray) -> tuple[float, float]:
+        if den.sum() <= 0:
+            return float("nan"), float("nan")
+        r = float(num.sum() / den.sum())
+        if len(num) < 2:
+            return r, float("nan")
+        e = num - r * den
+        return r, float(math.sqrt(float(np.sum(e ** 2)) / (len(num) - 1) / len(num)) / float(den.mean()))
+
+    rg, sg = ratio(g, n)
+    rp, sp = ratio(w, a)
+    return {"twin_funded": float(n.sum()), "twin_gross_per_funded": rg, "twin_gross_per_funded_se": sg,
+            "twin_evaluations": float(a.sum()), "twin_pass_rate": rp, "twin_pass_rate_se": sp}
+
+
+def twin_bounds(s: T.Settings, rules: Any) -> tuple[float, float]:
+    """9.2's two ceilings for a plan: the funded account's distance from its start to its floor (the mean gross payouts
+    per funded account of any fair strategy, the martingale bound), and the evaluation's floor distance over target
+    plus floor (propsim D-02's pass rate of any fair strategy)."""
+    if s.plan in ("TS", "LU"):
+        funded = -float(rules.xfa_mll_start)
+        target, floor = float(rules.profit_target), float(rules.mll)
+    else:
+        t = T.plan_terms(s.plan)
+        funded, target, floor = float(t.funded_mll), float(t.eval_target), float(t.eval_mll)
+    return funded, floor / (target + floor)
+
+
+def twin_problems(row: dict[str, Any], s: T.Settings, rules: Any) -> list[str]:
+    """9.2, refusing: on the zero-edge twin, the mean gross payouts per funded account above its ceiling, or the pass
+    rate per evaluation above its, each beyond the 99.9 % interval -- an engine error, never a finding."""
+    pay_cap, pass_cap = twin_bounds(s, rules)
+    out = []
+    for k, cap in (("twin_gross_per_funded", pay_cap), ("twin_pass_rate", pass_cap)):
+        v, se = float(row.get(k, np.nan)), float(row.get(f"{k}_se", np.nan))
+        if np.isfinite(v) and np.isfinite(se) and v - TWIN_Z * se > cap + 1e-9:
+            out.append(f"{s.plan} {s.corner}: the zero-edge twin's {k} {v:.4f} (se {se:.4f}) is above {cap:g} beyond "
+                       "its interval (9.2: an engine error)")
+    return out
+
+
+def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate: Callable, *, fresh_rr: float,
+              workers: int = 1, hook_factory: Callable[[str], tuple[Any, list]] | None = None
+              ) -> tuple[list[dict[str, Any]], dict[str, list], list[str], list[str]]:
     """10.1 item 8 for one corner: the gate's rows at the plan's arguments (A-1 on the gate, A-8's seams; the placement
-    off), point and bound, and its zero-edge twin -- the bound arm with every bound at 0 (every R's outcomes shifted to a
-    zero mean). One call each, at every plan: Quick Pay's class holds the gate's point blocks and classifies on them on
-    both arms (M3), which settles E-089's route. Labelled: A-11 off; DayTraders' inactivity on 21 sessions; its
-    recurring fee left out. `kw`: the registered call's keywords (its `e`, `lb`, `e_by_rr`, `lb_by_rr` among them);
-    `hook_factory(label)`: each call's own path hook and the list it fills. Returns (rows, sinks by call, labels)."""
+    off), point and bound, one call (Quick Pay's class holds the gate's point blocks and classifies on them on both
+    arms, M3); and the zero-edge twin as Stage 2 builds it (r8: `portfolio_stage.zero_edge_blocks` at the design's
+    fresh R, every bound 0), read on its bound arm, with 9.2's two oracles (`twin_problems`). Labelled: A-11 off;
+    DayTraders' inactivity on 21 sessions; its recurring fee left out. Returns (rows, sinks by call, labels, the
+    oracles' problems)."""
+    import portfolio_stage as ps
+
     g = F.gate_args(kw, s, point_blocks=blocks if s.plan == "QP" else None)
     e, lb = float(g["e"]), float(g["lb"])
     e_by_rr, lb_by_rr = dict(g["e_by_rr"]), dict(g["lb_by_rr"])
+    rules = g["rules"]
     g = {k: v for k, v in g.items() if k not in ("e", "lb", "e_by_rr", "lb_by_rr", "path_hook")}
     if s.plan != "TS" and g.get("rtp", True) is not False:
         raise ValueError("RD-01's gate beside runs with the placement off (rtp=False) at every plan but TS")
@@ -566,31 +1122,41 @@ def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate
         labels.append("tier-1 liquidation not applied")
     if s.plan == "DT":
         labels += ["inactivity on 21 sessions, not 30 calendar days", "recurring Pro fee left out: an upper bound"]
-    zero = {k: 0.0 for k in lb_by_rr}
+    zero = {k: 0.0 for k in e_by_rr}
 
-    def call(label: str, lb_s: float, lb_by: dict[float, float], keep: tuple[str, ...]) -> list[dict[str, Any]]:
+    def call(label: str, blk: Sequence[Any], e_s: float, lb_s: float, e_by: dict, lb_by: dict, keep: tuple[str, ...],
+             oracle: bool) -> list[dict[str, Any]]:
         k = dict(g)
+        inner = None
         if hook_factory is not None:
-            k["path_hook"], sinks[label] = hook_factory(label)
-        rows, _passed = run_gate(blocks, e=e, lb=lb_s, e_by_rr=e_by_rr, lb_by_rr=lb_by, workers=workers, **k)
+            inner, sinks[label] = hook_factory(label)
+        if oracle:
+            def hook(shift, p, paths, inner=inner):
+                out = dict(inner(shift, p, paths) or {}) if inner is not None else {}
+                out.update(twin_measures(paths))
+                return out
+            k["path_hook"] = hook
+        elif inner is not None:
+            k["path_hook"] = inner
+        rows, _passed = run_gate(list(blk), e=e_s, lb=lb_s, e_by_rr=e_by, lb_by_rr=lb_by, workers=workers, **k)
         return [{**r, "reading": label} for r in rows.to_dict("records") if r.get("shift") in keep]
 
-    out = call("plan", lb, lb_by_rr, ("point", "lower_bound")) + call("zero_edge", 0.0, zero, ("lower_bound",))
-    return [{**r, "section": "gate", "labels": "; ".join(labels)} for r in out], sinks, labels
+    twin = ps.zero_edge_blocks(list(blocks), e_by_rr, float(fresh_rr))
+    out = call("plan", blocks, e, lb, e_by_rr, lb_by_rr, ("point", "lower_bound"), False)
+    tw = call("zero_edge", twin, 0.0, 0.0, zero, zero, ("lower_bound",), True)
+    pay_cap, pass_cap = twin_bounds(s, rules)
+    tw = [{**r, "twin_gross_per_funded_ceiling": pay_cap, "twin_pass_rate_ceiling": pass_cap,
+           "twin_fresh_rr": float(fresh_rr)} for r in tw]
+    probs = [p for r in tw for p in twin_problems(r, s, rules)]
+    rows = [{**r, "section": "gate", "labels": "; ".join(labels), "status": STATUS} for r in out + tw]
+    return rows, sinks, labels, probs
 
 
-__all__ = ["DECLARATION", "PURPOSES", "BLOCKS", "LADDER", "stream_of", "arm_inputs", "cell_job", "compose",
-           "direct_start", "priced_output", "run_cell", "reading_outs", "paired_rows", "paired_scorecard_rows",
-           "tier1_count_rows", "p16_count_nonzero", "ledger_rows", "exit_problems", "account_count_rows",
-           "differs_rows", "grid_prices", "grid_rows", "grid_problems", "gate_rows", "coverage_of", "compact",
-           "trade_problems", "class_problems"]
-
-
-def compact(cell: dict[str, Any]) -> dict[str, Any]:
-    """What a TS cell keeps for the pairing (9.3's differs and contracts): each start's long cash series and ledger."""
-    from types import SimpleNamespace
-
-    return {"directs": [{"start": d["start"], "ledger": d["ledger"],
-                         "long": SimpleNamespace(path=SimpleNamespace(cash_series=np.asarray(d["long"].path.cash_series,
-                                                                                             float)))}
-                        for d in cell["directs"]]}
+__all__ = ["DECLARATION", "PURPOSES", "BLOCKS", "STATUS", "LADDER", "Refused", "stream_of", "build_with_deltas",
+           "delta_problems", "untouched_problems", "arm_inputs", "cell_job", "stream_context", "compose",
+           "direct_start", "priced_output", "keep_direct", "schedule_fee", "fee_problems", "tiered_net",
+           "request_problems", "fees_by_kind", "uncapped_ladder_differs", "start_stats", "compare_ts", "ts_compact",
+           "run_cell", "trade_problems", "class_problems", "reading_outs", "count_rows", "diverge_rows",
+           "coverage_shapes_at", "coverage_of", "coverage_rows", "paired_rows", "paired_scorecard_rows",
+           "tier1_count_rows", "p16_count_nonzero", "exit_problems", "grid_prices", "grid_rows", "grid_problems",
+           "twin_measures", "twin_bounds", "twin_problems", "gate_rows"]

@@ -3,7 +3,10 @@ rows of `results/user_beside.csv` and `results/user_beside_starts.csv`. Imports 
 (`propedge.research.user_journey`, `u_select`) at call time: run in a process with `use_vendored_stage2()` done.
 
 **Blocks.** `all`: every start with the reading's horizon left; `judged`: D-621 (4)(b)'s late block -- the starts from
-2024 with the horizon left (`u_select.block(..., "late", h)`).
+2024 with the horizon left (`u_select.block(..., "late", h)`). Q-44's readings use these two (`BLOCKS`, the default
+everywhere). A reading that needs D-621 (4)(b)'s other blocks passes `blocks=` (RD-01's 6 item 4: `READING_BLOCKS`,
+all, early and late): `early` the starts of 2023 and before less those within the horizon of the block's last start
+(`u_select.block(..., "early", h)`), `late` the same as `judged`.
 
 **Sections** (each row: design, arm, response and its descriptors, block, measure, stat, value, n):
 
@@ -36,6 +39,10 @@ import pandas as pd
 from extended import user_measures as M
 
 BLOCKS = ("all", "judged")
+#: every block a reading may name (`blocks=`); `judged` and `late` are one block under two names
+KNOWN_BLOCKS = ("all", "judged", "early", "late")
+#: RD-01 6 item 4's three blocks (the firms reading passes them; Q-44's default stays `BLOCKS`)
+READING_BLOCKS = ("all", "early", "late")
 MONTH = 21
 FIRST_WINDOW = 126
 YEAR_WINDOW = 252
@@ -58,9 +65,11 @@ MONEY_COLS = ("net_month_1", "net_month_2", "net_month_3", "net_month_6", "net_m
 
 
 def _which(block: str) -> str | None:
-    if block not in BLOCKS:
-        raise ValueError(f"a block is one of {BLOCKS}, got {block!r}")
-    return None if block == "all" else "late"
+    if block not in KNOWN_BLOCKS:
+        raise ValueError(f"a block is one of {KNOWN_BLOCKS}, got {block!r}")
+    if block == "all":
+        return None
+    return "early" if block == "early" else "late"
 
 
 # ------------------------------------------------------------------------------------------------ per start
@@ -107,11 +116,21 @@ def _row(section: str, block: str, measure: str, stat: str, value: float, n: int
 
 
 def _elig(t: pd.DataFrame, block: str, h: int) -> np.ndarray:
+    """The table's starts in `block` at horizon `h`, as `u_select.block` chooses them (`judged` / `late`: from 2024 with
+    h sessions; `early`: 2023 and before, less the starts within h of the block's last, with h sessions)."""
+    _which(block)
     m = t["observed"].to_numpy(int) >= int(h)
-    if block == "judged":
+    if block in ("judged", "late", "early"):
         from propedge.research import u_select as S
 
-        m &= t["start_date"].str[:4].astype(int).to_numpy() >= int(S.JUDGED_FIRST_YEAR)
+        year = t["start_date"].astype(str).str[:4].astype(int).to_numpy()
+        if block == "early":
+            e = year <= int(S.CHOICE_LAST_YEAR)
+            day = t["start_day"].to_numpy(int)
+            last = int(day[e].max()) if e.any() else 0
+            m &= e & (day <= last - int(h))
+        else:
+            m &= year >= int(S.JUDGED_FIRST_YEAR)
     return m
 
 
@@ -129,22 +148,22 @@ def _days(section: str, block: str, measure: str, first: np.ndarray, window: int
     return out
 
 
-def scorecard_rows(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def scorecard_rows(records: Sequence[Mapping[str, Any]], blocks: Sequence[str] = BLOCKS) -> list[dict[str, Any]]:
     from propedge.research import u_select as S
 
     out = []
-    for b in BLOCKS:
+    for b in blocks:
         card = S.scorecard(records, _which(b))
         out += [_row("scorecard", b, k, "value", v["value"], v["n"]) for k, v in card.items()]
     return out
 
 
-def extra_rows(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def extra_rows(records: Sequence[Mapping[str, Any]], blocks: Sequence[str] = BLOCKS) -> list[dict[str, Any]]:
     from propedge.research import u_select as S
     from propedge.research import user_journey as U
 
     out = []
-    for b in BLOCKS:
+    for b in blocks:
         sub = S.block(records, _which(b), S.P_HORIZON)
         if not sub:
             out += [_row("extra", b, "P", "value", np.nan, 0)]
@@ -177,9 +196,9 @@ def extra_rows(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def path_rows(t: pd.DataFrame) -> list[dict[str, Any]]:
+def path_rows(t: pd.DataFrame, blocks: Sequence[str] = BLOCKS) -> list[dict[str, Any]]:
     out = []
-    for b in BLOCKS:
+    for b in blocks:
         e = _elig(t, b, FIRST_WINDOW)
         for ev, spent in (("first_pass", "spent_before_first_pass"), ("first_payout", "spent_before_first_payout")):
             f = t[ev].to_numpy(float)[e]
@@ -211,10 +230,10 @@ def path_rows(t: pd.DataFrame) -> list[dict[str, Any]]:
     return out
 
 
-def response_rows(t: pd.DataFrame) -> list[dict[str, Any]]:
+def response_rows(t: pd.DataFrame, blocks: Sequence[str] = BLOCKS) -> list[dict[str, Any]]:
     out = []
     day = t["response_day"].to_numpy(float)
-    for b in BLOCKS:
+    for b in blocks:
         for m in ACTED_MONTHS:
             em = _elig(t, b, MONTH * m)
             x = day[em]
@@ -229,18 +248,21 @@ def response_rows(t: pd.DataFrame) -> list[dict[str, Any]]:
     return out
 
 
-def summary(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, Any]]) -> tuple[list[dict], pd.DataFrame]:
-    """One design, arm and response: (the summary rows, the per-start table)."""
+def summary(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, Any]], *,
+            blocks: Sequence[str] = BLOCKS) -> tuple[list[dict], pd.DataFrame]:
+    """One design, arm and response: (the summary rows, the per-start table), on `blocks` (Q-44's two by default)."""
     records = [x["rec"] for x in outs]
     t = start_table(design, arm, resp.name, outs)
-    rows = scorecard_rows(records) + extra_rows(records) + path_rows(t) + response_rows(t)
+    rows = (scorecard_rows(records, blocks) + extra_rows(records, blocks) + path_rows(t, blocks)
+            + response_rows(t, blocks))
     head = {"design": design, "arm": arm, "response": resp.name, "kind": resp.kind,
             "enforcement_p": float(resp.enforcement_p), "rtp": bool(resp.rtp), "rtp_warnings": int(resp.rtp_warnings),
             "ftp_label": resp.ftp_label}
     return [{**head, **r} for r in rows], t
 
 
-def consistency_problems(rows: Sequence[Mapping[str, Any]], outs: Sequence[Mapping[str, Any]], what: str) -> list[str]:
+def consistency_problems(rows: Sequence[Mapping[str, Any]], outs: Sequence[Mapping[str, Any]], what: str, *,
+                         blocks: Sequence[str] = BLOCKS) -> list[str]:
     """The refusing checks on one reading: every run's payouts and fees against the engine's totals; the record from
     the long replay alone equal to `_one_start`'s wherever both are made; the extra P equal
     to the card's; P within each bankroll limit not above P, the $2,000 one not above the $2,500 one; every share in
@@ -254,7 +276,7 @@ def consistency_problems(rows: Sequence[Mapping[str, Any]], outs: Sequence[Mappi
     if n:
         out.append(f"{what}: on {n} starts the long replay's record is not user_journey._one_start's")
     by = {(r["section"], r["block"], r["measure"], r["stat"]): float(r["value"]) for r in rows}
-    for b in BLOCKS:
+    for b in blocks:
         card, mine = by.get(("scorecard", b, "P", "value")), by.get(("extra", b, "P", "value"))
         if card is None or mine is None or not (np.isnan(card) and np.isnan(mine) or abs(card - mine) <= 1e-12):
             out.append(f"{what} {b}: the extra P {mine} is not the card's {card}")
@@ -268,5 +290,5 @@ def consistency_problems(rows: Sequence[Mapping[str, Any]], outs: Sequence[Mappi
     return out
 
 
-__all__ = ["BLOCKS", "START_COLS", "MONEY_COLS", "MDD_NOTE", "start_table", "rounded", "scorecard_rows", "extra_rows",
+__all__ = ["BLOCKS", "KNOWN_BLOCKS", "READING_BLOCKS", "START_COLS", "MONEY_COLS", "MDD_NOTE", "start_table", "rounded", "scorecard_rows", "extra_rows",
            "path_rows", "response_rows", "summary", "consistency_problems"]

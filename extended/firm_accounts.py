@@ -36,7 +36,16 @@ next session) without such a day. In the gate, whose days carry no date, Stage 2
 purchase on the replay's day 0 is dated the day before its first session.
 
 **Counts** (9.3): each account keeps its counters (`counters()`); every adapter account built in a process is registered
-in `TALLY` until `collect()` reads and clears it, so a runner reads them after each replay.
+in `TALLY` until `collect()` reads and clears it, so a runner reads them after each replay. A funded adapter also logs
+each request it makes (`requests`: the close, the request, the balance above start before and after it, the net, its
+kind), read by `collect(with_requests=True)` for 9.2's request oracles; the counters themselves stay numbers.
+
+**The in-run counts** (9.3), each a counter: DayTraders' signals dealt to an account after the daily limit ended its
+session (G-12, `lost_after_limit`: the trades the router had handed the session's later slots, which the engine does not
+re-deal) and its evaluations held at target with Qualifying Days owed that then failed (`failed_while_owed`); on Fast
+Pass's forced-untraded sessions, the day's offered signals the router dealt to some account and to none
+(`forced_day_dealt_elsewhere`, `forced_day_dealt_to_none`: the router passes the account over, so these are the day's
+signals, its own not being recorded apart); Quick Pay's floor held to 9.2 at every close (`floor_oracle_breaches`).
 
 **Calendars and arms.** `with_calendar` makes a subclass holding one start's session dates; `with_point` a Quick Pay
 class holding the run's point outcomes (M3), so the peak bracket reads each trade's point outcomes on every arm. Both are made in the process that replays (they are not module attributes and do not pickle); the module's
@@ -68,11 +77,71 @@ TALLY: list[Any] = []
 NAMED: set[str] = set()
 
 
-def collect() -> list[dict[str, Any]]:
-    """Each registered account's counters (`counters()`), in the order built; the register cleared."""
-    out = [a.counters() for a in TALLY]
+def collect(with_requests: bool = False) -> list[dict[str, Any]]:
+    """Each registered account's counters (`counters()`), in the order built; the register cleared. `with_requests`:
+    each funded adapter's request log too, under `requests` (9.2)."""
+    out = []
+    for a in TALLY:
+        c = a.counters()
+        if with_requests:
+            c["requests"] = [dict(r) for r in getattr(a, "requests", ())]
+        out.append(c)
     TALLY.clear()
     return out
+
+
+def _session_day(draw: Any, rel_day: int) -> int:
+    """The calendar day a draw's router keys a session by (`TierSizedDraw.__call__`'s `t`)."""
+    return int(rel_day) if getattr(draw, "relative_days", True) else int(draw.start_day) + 1 + int(rel_day)
+
+
+def _dealt(draw: Any, rel_day: int, n_slots: int) -> list[int | None]:
+    """The trade index each of the session's slots was dealt (None: none) -- the router's, or the slot's own trade."""
+    t = _session_day(draw, rel_day)
+    router = getattr(draw, "router", None)
+    if router is not None:
+        key = getattr(draw, "key", None)
+        return [router.trade_index(key, t, s) for s in range(int(n_slots))]
+    h = draw.table.historical_day(t)
+    n = len(draw._pnl[h]) if h >= 0 else 0
+    return [s if s < n else None for s in range(int(n_slots))]
+
+
+def dealt_after_stop(draw: Any, rel_day: int, n_slots: int) -> int:
+    """G-12 (9.3): the signals dealt to an account's session after its last executed trade -- the slots the daily limit
+    left untaken (the engine ends the session at the trade that reaches the limit and does not re-deal them)."""
+    lt = getattr(draw, "last_trade", None)
+    if not lt or lt.get("trade_index") is None:
+        return 0
+    idx = _dealt(draw, rel_day, n_slots)
+    j = int(lt["trade_index"])
+    if j not in idx:
+        return 0
+    k = idx.index(j)
+    return sum(1 for x in idx[k + 1:] if x is not None)
+
+
+def day_signals(draw: Any, rel_day: int) -> tuple[int, int]:
+    """(the day's offered signals the router dealt to some account, those it dealt to none) -- 9.3's count on a Fast
+    Pass session forced untraded (the router passed the account over)."""
+    router = getattr(draw, "router", None)
+    if router is None:
+        return (0, 0)
+    t = _session_day(draw, rel_day)
+    h = router.table.historical_day(t)
+    n = int(router.n_trades[h]) if h >= 0 else 0
+    dealt = {int(j) for lst in router.assignments(t).values() for j in lst if j is not None}
+    return (len(dealt), max(0, n - len(dealt)))
+
+
+def logging_share_problem(rule: Any) -> str | None:
+    """n4: A-4's day-logging micro is sized against a raised target (one micro at every stop), so a design whose
+    evaluation stand-aside has a positive risk share would stand every logging micro aside -- refused, not run."""
+    sa = None if rule is None else rule.stand_aside_for("combine")
+    if sa is not None and float(sa[0]) > 0.0:
+        return (f"A-4's day-logging micro under an evaluation stand-aside share of {sa[0]}: the share compares one "
+                "micro with the raised target and would stand it aside (n4); this design is not run here")
+    return None
 
 
 class _Counted:
@@ -83,7 +152,14 @@ class _Counted:
     def _register(self) -> None:
         for k in self.COUNTERS:
             setattr(self, k, 0)
+        self.requests: list[dict[str, Any]] = []
         TALLY.append(self)
+
+    def _log_request(self, calendar_day: int, request: float, net: float, kind: str = "request") -> None:
+        """9.2: one request as made -- the close, the amount, the balance above start before and after, the net."""
+        after = float(self.B)
+        self.requests.append({"day": int(calendar_day), "request": float(request), "before": after + float(request),
+                              "after": after, "net": float(net), "kind": kind})
 
     def counters(self) -> dict[str, Any]:
         kind = "funded" if isinstance(self, FundedAccount) else "combine"
@@ -161,7 +237,8 @@ class DayTradersCombine(_Counted, _Inactivity, CombineAccount):
     DLL: ClassVar[bool] = True
     QUALIFYING: ClassVar[bool] = True
     SELLS_RESET: ClassVar[bool] = False
-    COUNTERS = ("qualifying_days", "sessions_held", "inactive_closed", "dll_days")
+    COUNTERS = ("qualifying_days", "sessions_held", "inactive_closed", "dll_days", "failed_while_owed",
+                "lost_after_limit")
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -177,14 +254,19 @@ class DayTradersCombine(_Counted, _Inactivity, CombineAccount):
 
     def trade_day(self, rules: Any, policy: Any, rel_day: int, calendar_day: int, ledger: Any = None,
                   need_aware: bool = False, consistency_cap: bool = False) -> None:
+        was_failed = bool(self.failed)
         super().trade_day(rules, policy, rel_day, calendar_day, ledger=ledger, need_aware=need_aware,
                           consistency_cap=consistency_cap)
-        if self.failed:
-            return
         t = T.plan_terms("DT")
+        if self.failed:
+            # 9.3: an evaluation held at target with Qualifying Days owed that failed before logging them
+            if not was_failed and self.sessions_held > 0 and self.qualifying_days < int(t.eval_qualifying_days):
+                self.failed_while_owed = 1
+            return
         day = float(self.last_day_pnl)
         if self.DLL and self.dll is not None and day <= -float(self.dll) + EPS:
             self.dll_days += 1
+            self.lost_after_limit += dealt_after_stop(self.draw, rel_day, int(policy.trades_per_day))   # G-12
         if self.QUALIFYING:
             if day >= float(t.qualifying_day_min) - EPS and self.B > EPS \
                     and self.best_day <= float(t.eval_consistency) * self.B + EPS:
@@ -209,7 +291,7 @@ class DayTradersFunded(_Counted, _Inactivity, FundedAccount):
     REQUEST_RULE: ClassVar[bool] = True
     TABLE_INPUTS: ClassVar[bool] = True
     COUNTERS = ("q", "sessions_held", "share_blocked", "gate_blocked", "requests_rounded", "requests_cut_by_left",
-                "inactive_closed", "dll_days")
+                "inactive_closed", "dll_days", "lost_after_limit")
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -260,6 +342,8 @@ class DayTradersFunded(_Counted, _Inactivity, FundedAccount):
                 self.last_request = r_inc
                 self.requests_rounded += 1
                 net = new
+        if net is not None:
+            self._log_request(calendar_day, float(self.last_request), float(net))
         if net is not None and self.QUALIFYING:
             self.q = 0
         if not self.closed and self.ended_on is None and self._inactive(calendar_day, float(self.last_day_pnl),
@@ -268,6 +352,8 @@ class DayTradersFunded(_Counted, _Inactivity, FundedAccount):
             self.ended_on = int(calendar_day)                          # ends, not breached; its balance not credited
         if self.DLL and self.dll is not None and float(self.last_day_pnl) <= -float(self.dll) + EPS:
             self.dll_days += 1
+            if not self.closed:
+                self.lost_after_limit += dealt_after_stop(self.draw, rel_day, int(policy.trades_per_day))  # G-12
         if self.TABLE_INPUTS and self.QUALIFYING:                       # 4.9: the plan's days still needed, held at 4
             self.sessions_held += int(self._held)
             owed = max(0, int(t.winning_days) - self.q)
@@ -337,6 +423,9 @@ class TradeDayCombine(_Counted, _DecisionSeam, CombineAccount):
             return dec                                                  # the cell sits the session out
         if rule is None or not hasattr(draw, "target_risk") or rule.cap_micros("combine", float(self.B)) is None:
             raise RuntimeError("A-4's day-logging micro needs the design's tier-sized draw")
+        bad = logging_share_problem(self._sizing_rule)
+        if bad:
+            raise RuntimeError(bad)
         # one micro (m1): the design's own stand-aside kept; a headroom of 1 so a one-micro limit floors to one
         draw.rule = replace(self._sizing_rule, combine_limit_micros=1, headroom_frac=1.0)
         rpc = getattr(draw, "_rpc", None) or []
@@ -407,22 +496,26 @@ class FastPassFunded(_Counted, _DecisionSeam, FundedAccount):
     PASS_OVER: ClassVar[bool] = True
     FIFTH: ClassVar[str | None] = "unpaid"
     TABLE_INPUTS: ClassVar[bool] = True
-    COUNTERS = ("sessions_held", "share_blocked", "forced_untraded", "sat_out", "fifth_ended", "fifth_unpaid")
+    COUNTERS = ("sessions_held", "share_blocked", "forced_untraded", "sat_out", "fifth_ended", "fifth_unpaid",
+                "forced_day_dealt_elsewhere", "forced_day_dealt_to_none")
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self._life_best = 0.0
         self._true_win_days = 0
         self._held = False
+        self._forced_now = False
         self._register()
 
     def _adjust_decision(self, dec: Any) -> Any:
+        self._forced_now = False
         if not self.PASS_OVER or not self.request_day_next or getattr(dec, "abandon", False):
             return dec
         if dec.max_trades is not None and int(dec.max_trades) <= 0:
             self.sat_out += 1                                           # the cell sits the session out already
             return dec
         self.forced_untraded += 1
+        self._forced_now = True
         return replace(dec, max_trades=0)
 
     def _standard_eligible(self, rules: Any) -> bool:
@@ -451,6 +544,11 @@ class FastPassFunded(_Counted, _DecisionSeam, FundedAccount):
         if self.TABLE_INPUTS:
             self.win_days = self._true_win_days
         self._held = False
+        if self._forced_now:                                            # 9.3: the forced session's day's signals
+            dealt, none = day_signals(self.draw, rel_day)
+            self.forced_day_dealt_elsewhere += dealt
+            self.forced_day_dealt_to_none += none
+            self._forced_now = False
         net = super().trade_day(rules, policy, cap, rel_day, calendar_day, ledger=ledger, second_trade=second_trade,
                                 collect=collect)
         if net is not None and self.FIFTH == "unpaid" and self.n_payouts >= int(T.plan_terms("FP").fifth_request):
@@ -459,6 +557,8 @@ class FastPassFunded(_Counted, _DecisionSeam, FundedAccount):
             self.fifth_unpaid = 1
             self.ended_on = int(calendar_day)
             net = None
+        if net is not None:
+            self._log_request(calendar_day, float(self.last_request), float(net))
         if self.TABLE_INPUTS:
             self._true_win_days = self.win_days
             self.sessions_held += int(self._held)
@@ -547,7 +647,7 @@ class QuickPayFunded(_Counted, FundedAccount):
     #: bracket reads them on every arm; a class without them refuses to bracket
     POINT: ClassVar[tuple | None] = None
     COUNTERS = ("floor_rises", "breaches_at_raised_floor", "split_low", "split_high", "split_crossing",
-                "ceiling_ended", "ceiling_withdrawn", "mae_unknown")
+                "ceiling_ended", "ceiling_withdrawn", "mae_unknown", "floor_oracle_breaches")
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -556,6 +656,7 @@ class QuickPayFunded(_Counted, FundedAccount):
             raise ValueError("Quick Pay's switches: PEAK pess|opt, REQUEST engine|every|cadence, CEILING None|strict|"
                              "lenient")
         self.g_peak = 0.0
+        self._eod_peak = 0.0
         self.ceiling_forfeit = 0.0
         self._true_win_days = 0
         if self.INTRADAY:
@@ -653,6 +754,11 @@ class QuickPayFunded(_Counted, FundedAccount):
         if self.FLOOR_GROSS:                                            # a payout lowers the balance, not the floor
             self.g_peak = max(self.g_peak, float(self.B + self.gross_paid))
             self.F = self._gross_floor()
+            # 9.2: at every close the floor is at least the end-of-day trailing floor of the same gross path, never
+            # above start
+            self._eod_peak = max(self._eod_peak, float(self.B + self.gross_paid))
+            eod = min(float(t.funded_lock), max(float(self.floor_start), self._eod_peak - float(t.funded_mll)))
+            self.floor_oracle_breaches += int(self.F < eod - EPS or self.F > float(t.funded_lock) + EPS)
         if self.CEILING is not None and self.B + self.gross_paid >= float(t.profit_ceiling) - EPS:
             excess = float(self.B + self.gross_paid) - float(t.profit_ceiling)
             if net is not None:
@@ -664,6 +770,7 @@ class QuickPayFunded(_Counted, FundedAccount):
             if self.CEILING == LENIENT and self.B >= float(rules.payout_min) - EPS:
                 net = self._withdraw_all(rel_day)
                 self.ceiling_withdrawn = 1
+                self._log_request(calendar_day, float(self.last_request), float(net), "ceiling_withdrawal")
             self.ended_on = int(calendar_day)
         elif net is not None and self.SPLIT_TIERED:                     # the tiered split, on the balance before it
             r = float(self.last_request)
@@ -671,6 +778,9 @@ class QuickPayFunded(_Counted, FundedAccount):
             self.cash += new - float(net)
             self.payout_cash[-1] = new
             net = new
+            self._log_request(calendar_day, r, float(net))
+        elif net is not None:
+            self._log_request(calendar_day, float(self.last_request), float(net))
         if self.TABLE_INPUTS and self.REQUEST == "every":
             self._true_win_days = self.win_days
             self.win_days = 5 if self.days >= 1 else 0
@@ -772,6 +882,6 @@ def with_point(cls: type, point_blocks: Sequence[Any]) -> type:
                                                  "__module__": cls.__module__})
 
 
-__all__ = ["TALLY", "collect", "gate_window_sessions", "with_calendar", "DayTradersCombine", "DayTradersFunded",
+__all__ = ["TALLY", "collect", "dealt_after_stop", "day_signals", "logging_share_problem", "gate_window_sessions", "with_calendar", "DayTradersCombine", "DayTradersFunded",
            "TradeDayCombine", "FastPassFunded", "QuickPayFunded", "ticks_of", "won_at", "peak_bracket", "CLASSES",
            "TWINS", "classes_for", "with_point", "NAMED"]

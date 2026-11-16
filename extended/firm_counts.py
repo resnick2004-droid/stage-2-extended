@@ -146,9 +146,11 @@ def book(R: float, stop_ticks: int, fee_micro_eq: float, reading: str) -> float:
 
 def tier1_blocks(blocks: Sequence[Any], dates: Sequence[date], reading: str) -> tuple[list[Any], dict[str, int]]:
     """A-11 on a run's trade log (point arm, before the verdict shift): on each tier-1 day, a trade open at a window's
-    start is booked by `reading` ('strict', 'lenient', or 'walked' to keep it) at every R it offers, its MAE at least
-    its booked loss, its exits unchanged; an entry inside a window is skipped (no outcome at any R). Other days' blocks
-    are returned as they are. Also the counts: trades open at a window's start, entries inside one."""
+    start at some offered R (5.5's count) is booked by `reading` ('strict', 'lenient', or 'walked' to keep it) **only at
+    an R at which it is still open at the window's start** -- its exit bar there at or after it (M1) -- its MAE there at
+    least its booked loss; at every other R its walked outcome and MAE stay; its exits are unchanged. An entry inside a
+    window is skipped (no outcome at any R). Other days' blocks are returned as they are. Also the counts: trades open
+    at a window's start, entries inside one, days with both windows (each trade counted once, at its first window)."""
     if reading not in (T.STRICT, T.LENIENT, "walked"):
         raise ValueError(f"unknown reading {reading!r}")
     days = tier1_days()
@@ -203,6 +205,64 @@ def tier1_blocks(blocks: Sequence[Any], dates: Sequence[date], reading: str) -> 
 # ------------------------------------------------------------------------------------------------ the 9.3 counts
 
 
+def tier1_trades(blocks: Sequence[Any], dates: Sequence[date]) -> dict[str, list[tuple[int, int]]]:
+    """5.5's classification of each offered trade, as `tier1_blocks` makes it (each trade once, at its day's first
+    window): `open` -- (block index, trade index) of every trade open at a window's start at some offered R; `inside` --
+    every entry inside a window. 9.3 reads it per TradeDay run: the executed trades among `open`, the signals in
+    `inside` within each replay's sessions."""
+    days = tier1_days()
+    spec = window_spec()
+    out: dict[str, list[tuple[int, int]]] = {"open": [], "inside": []}
+    for i, (b, d) in enumerate(zip(blocks, dates)):
+        kinds = days.get(d if isinstance(d, date) else date.fromisoformat(str(d)[:10]))
+        if not kinds or b.r_by_rr is None or b.exit_by_rr is None or b.entry_t is None or len(b.pnl) == 0:
+            continue
+        order = sorted(windows_of(kinds), key=lambda w: spec[w][0])
+        for j in range(len(b.pnl)):
+            ex = {float(k): float(v[j]) for k, v in b.exit_by_rr.items() if np.isfinite(float(b.r_by_rr[k][j]))}
+            for w in order:
+                if entry_inside(float(b.entry_t[j]), w):
+                    out["inside"].append((i, j))
+                    break
+                if open_at(float(b.entry_t[j]), ex, spec[w][0]):
+                    out["open"].append((i, j))
+                    break
+    return out
+
+
+def martingale_accounts(trades: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """9.3's "the accounts they fall in" for `martingale_steps`' two counts: the accounts holding a step (each a trade
+    at least the rule's multiple of the trade before it when that one closed at a loss) -- within one account and across
+    the user's accounts in time order -- as their number and their kinds (`account` = (kind, index)), and the steps by
+    the kind of the account taking the stepped trade."""
+    mult = int(T.parse_money(r"(\d+)x or more after a closed loss", T.record_value("daytraders.martingale_rule"),
+                             "daytraders.martingale_rule"))
+    order = sorted(range(len(trades)), key=lambda i: (trades[i]["day"], trades[i]["entry"], i))
+
+    def step(prev: dict[str, Any], cur: dict[str, Any]) -> bool:
+        return float(prev["pnl"]) < 0 and float(cur["contracts"]) >= mult * float(prev["contracts"])
+
+    per: set = set()
+    firm: set = set()
+    by_kind = {"per_account": {}, "firm_wide": {}}
+    last: dict[Any, dict[str, Any]] = {}
+    prev_any = None
+    for i in order:
+        t = trades[i]
+        a = tuple(t["account"])
+        if a in last and step(last[a], t):
+            per.add(a)
+            by_kind["per_account"][a[0]] = by_kind["per_account"].get(a[0], 0) + 1
+        if prev_any is not None and step(prev_any, t):
+            firm.add(a)
+            by_kind["firm_wide"][a[0]] = by_kind["firm_wide"].get(a[0], 0) + 1
+        last[a] = t
+        prev_any = t
+    return {"per_account_accounts": len(per), "firm_wide_accounts": len(firm),
+            "per_account_by_kind": by_kind["per_account"], "firm_wide_by_kind": by_kind["firm_wide"],
+            "accounts": len({tuple(t["account"]) for t in trades})}
+
+
 def martingale_steps(trades: Sequence[dict[str, Any]]) -> dict[str, int]:
     """DayTraders' martingale rule (`daytraders.martingale_rule`, 9.3): trades taken at least twice the micro-
     equivalents of the trade before them when that one closed at a loss -- within one account, and across the user's
@@ -248,4 +308,5 @@ def trades_a_session(trades: Sequence[dict[str, Any]]) -> dict[str, int]:
 
 
 __all__ = ["BLS_CALENDARS", "FOMC_MINUTES_SHA256", "EARLY_CLOSES_SHA256", "window_spec", "tier1_days", "windows_of",
-           "open_at", "entry_inside", "book", "tier1_blocks", "martingale_steps", "trade_count_line", "trades_a_session"]
+           "open_at", "entry_inside", "book", "tier1_blocks", "tier1_trades", "martingale_steps", "martingale_accounts",
+           "trade_count_line", "trades_a_session"]

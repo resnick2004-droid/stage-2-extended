@@ -108,6 +108,37 @@ def test_the_tier1_blocks_book_counted_trades_and_skip_entries_inside():
     assert np.isnan(walked[0].r_by_rr[1.0][2])         # ... and the entry inside still skipped
 
 
+def test_the_tier1_classification_is_the_bookings_own_and_names_each_trade():
+    """9.3 per TradeDay run reads which trades A-11 counts (open at a window's start) and skips (entered inside one):
+    `tier1_trades` names them, (block, trade), and its counts are `tier1_blocks`' own."""
+    d = date(2024, 1, 3)
+    entries = [W.bar_of(12, 30), W.bar_of(11, 0), W.bar_of(12, 59)]
+    exits = {1.0: [W.bar_of(13, 10), W.bar_of(11, 30), W.bar_of(13, 20)],
+             3.0: [W.bar_of(14, 0), W.bar_of(11, 45), W.bar_of(14, 0)]}
+    outs = {1.0: [0.98, -1.01, 0.97], 3.0: [-1.01, -1.01, 2.95]}
+    blocks, dates = [_day(entries, exits, outs), _day(entries, exits, outs)], [date(2024, 1, 4), d]
+    got = C.tier1_trades(blocks, dates)
+    assert got == {"open": [(1, 0)], "inside": [(1, 2)]}
+    _, n = C.tier1_blocks(blocks, dates, "strict")
+    assert (len(got["open"]), len(got["inside"])) == (n["open_at_start"], n["entries_inside"])
+
+
+def test_the_martingale_accounts_name_where_the_steps_fall():
+    trades = [  # the count test's trades: per account, the combine's day 2 and day 3; firm-wide, the funded opening
+        {"account": ("combine", 0), "day": 1, "entry": 10.0, "contracts": 3, "pnl": -100.0},     # and the day 3
+        {"account": ("funded", 0), "day": 1, "entry": 20.0, "contracts": 26, "pnl": 500.0},
+        {"account": ("combine", 0), "day": 2, "entry": 10.0, "contracts": 6, "pnl": -50.0},
+        {"account": ("combine", 0), "day": 3, "entry": 10.0, "contracts": 12, "pnl": 10.0},
+        {"account": ("funded", 0), "day": 3, "entry": 30.0, "contracts": 11, "pnl": 10.0},
+    ]
+    got = C.martingale_accounts(trades)
+    assert got == {"per_account_accounts": 1, "firm_wide_accounts": 2, "per_account_by_kind": {"combine": 2},
+                   "firm_wide_by_kind": {"funded": 1, "combine": 1}, "accounts": 2}
+    steps = C.martingale_steps(trades)
+    assert sum(got["per_account_by_kind"].values()) == steps["per_account"]
+    assert sum(got["firm_wide_by_kind"].values()) == steps["firm_wide"]
+
+
 def test_the_martingale_count_per_account_and_firm_wide():
     trades = [  # (account, day, entry, micros, pnl)
         {"account": ("combine", 0), "day": 1, "entry": 10.0, "contracts": 3, "pnl": -100.0},
