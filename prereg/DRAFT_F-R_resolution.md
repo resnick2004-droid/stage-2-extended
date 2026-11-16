@@ -613,6 +613,10 @@ block's refused offers, strata (mark, year) within the judged block.
 - **C2, worth something where it is used:**
   - The design's gate campaign on the judged block: P-16 plus the pick's admitted offers, each at its cap; 500 paths;
     the bound arm; seed **20261973**.
+  - **The bound arm's shift is P-16's registered shift at each R**, for this design and for P-16 alike (here and in
+    sections 12 and 13). Every trade is a P-16-schedule coin trade walked the same way, so a pair differs only by the
+    lever. The alternative, each design's own bounds by the base's era rule, would be estimated over both blocks again
+    (the F-P review's N2) and would move with the admitted offers' outcomes.
   - It records, for every simulated trade j taken from an admitted offer, its offer i(j), the R the table took R_j,
     and its place p(j).
   - Per judged session s: z_s = sum over those trades j on session s of mean_dv(p(j)) x (c_i(j)(R_j) -
@@ -911,14 +915,16 @@ floor).
 4. **The twin's form:** the placebo's exact expectation in C1, the seeded draw beside (7.2); or the drawn twin in the
    line.
 5. **Where Part II lives:** in this file, or in a described-reading file of its own in the form Q-42 sets.
-6. **(u3) handed to family O** (Q-37) as a declared state, with the LeBaron sign (0.1).
-7. **The value bar for a lever whose textbook lift is a cost effect.** $500 a year is F-02's and F-B's bar. Here the
+6. **The verdict arm's shift:** P-16's registered shift at each R for every design here (section 11, C2), rather than
+   each design's own bounds.
+7. **(u3) handed to family O** (Q-37) as a declared state, with the LeBaron sign (0.1).
+8. **The value bar for a lever whose textbook lift is a cost effect.** $500 a year is F-02's and F-B's bar. Here the
    lift is, by section 1 (iv), mostly the flatten convention's cost avoided. The drafter's expectation, recorded now,
    is a close at C. The lead decides whether the family is worth its k. **Pinning and running it as declared, with that
    expectation on record, is the drafter's proposal**, because its stage A answers questions wanted anyway: does a
    forecast sort the late offers, and how many would resolve.
-8. **The family number:** F-02 and F-B may be pinned first.
-9. **The seeds** (section 16) confirmed unique at the pin.
+9. **The family number:** F-02 and F-B may be pinned first.
+10. **The seeds** (section 16) confirmed unique at the pin.
 
 **The red team's, in particular:**
 
