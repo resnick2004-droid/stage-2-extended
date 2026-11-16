@@ -47,6 +47,10 @@ for fn in sorted(os.listdir(os.path.join(root, "firms"))):
     domains = data.get("official_domains", [])
     index = {}
     ip = os.path.join(root, "raw", slug, "INDEX.tsv")
+    if "struck" in data and not any(True for _ in walk(data)) and not os.path.exists(ip):
+        # E-020 / Q-34: a struck firm's file is a stub and its saved pages are deleted; nothing is left to check
+        print(f"{slug}: struck (E-020), skipped")
+        continue
     if os.path.exists(ip):
         for line in open(ip, encoding="utf-8"):
             parts = line.rstrip("\n").split("\t")
