@@ -35,3 +35,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | Q-26 merged (E-020): 4 of 11 short-ranked plans recorded; 3 more firms' terms forbid automated retrieval -- the eight firms' collected material to be struck (Q-34, dispatched). Q-32 and Q-33 launched. |
 | 2026-11-16 | lead | Q-28 merged (E-021): A1 (the opening's side-free timing filter) and B1 (resolution forecasts) ranked; A2-A4 parked; Q-35..Q-39 queued; Q-38 dispatched to wt-lit; Q-34 launched. |
 | 2026-11-16 | lead | Q-30 merged (E-022): F-02's third version, 18 cells; floor (ii) in P-14's form and the gate floor read on stage D's design (the lead's); Q-40 (calendar) queued; Q-41 dispatched. |
+| 2026-11-16 | lead | Q-31's red team: F-P must be redrafted; PL-3 recommended. The operator ruled (E-023): describe payout policy, test filters against a placebo-selection twin. CHARTER amended; Q-42 dispatched; Q-16 and Q-38 told. |

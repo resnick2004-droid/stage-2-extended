@@ -96,6 +96,21 @@ rule on P can carry nothing but near-P-14 variants or very large contract-shape 
 The rule below, Stage 2 D-621 (3), is kept on record as E-001 adopted it; it no longer decides a design. Its line (i)
 was found not to deliver its stated level (E-007).
 
+**Levers that do not choose a side (the operator, E-023, 2026-11-16).** Two kinds of component cannot be judged by a
+lift over the coin twin, so they have their own rules:
+
+- **Levers that add no trades** -- payout policy (when and how much to withdraw), and any other choice that leaves the
+  offered trades unchanged -- are **described, never carried**: each is read on the journey scorecard (who it helps and
+  hurts each month, its uncertainty, the evenness trade-off) for the operator to choose from the menu. Such a reading
+  takes **no program family number** and spends nothing of the multiplicity budget; it is declared and pinned like a
+  family so nothing in it is chosen after a look.
+- **Filters that keep the coin's side but choose which offers to take or when** -- a timing filter on the funded
+  opening, a resolution forecast admitting marks -- are **tested at the trade level against a placebo-selection twin**:
+  a random filter that fires on the same share of the same population, seeded, so supply and schedule cancel and only
+  the selection is measured; one-sided at the family's level 0.05 / (k (k + 1)) by a calibrated statistic (TASK_QUEUE
+  Q-16), its value at that bound at least the declared bar; the same floors as section 3; the user scorecard beside.
+  Such a filter can be carried.
+
 *As adopted by E-001:* a design is **CARRIED** only by Stage 2 D-621 (3)'s rule, used unchanged: on the judged block of start days
 (starts from the first session of 2024, chosen on the starts of 2020-2023), (i) its paired difference in P from R\* is
 above zero with the moving-block bootstrap interval (63-session blocks, seed 20261700, 2,000 draws) excluding zero at
