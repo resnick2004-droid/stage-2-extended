@@ -251,10 +251,11 @@ fixed without reading the judged block.
 
   What each is:
   - `stage_C_sides` -- the judged block's bars up to each alert, for the pinned model's features and sides, the
-    filter's selection and the three twins' sides only. They are hashed into the run's manifest before any outcome is
-    read; stage B2 runs on them;
+    filter's selection, the partialled sides (from the half-hour's bars, closed by 09:30, before every alert), the
+    since-open rule's sides and the three twins' sides only. They are hashed into the run's manifest before any outcome
+    is read; stage B2 runs on them;
   - `stage_C_judgement` -- the bars after each entry, for the labels and pair values at the pick's stop: C1, C1-d,
-    C1-f and the readings beside;
+    the judged yearly lifts (d) of the twins and the model, C1-f and the readings beside;
   - `stage_C_campaign` -- the engine's gate campaign of designs (i) and (ii) on the judged block: C2's routing and the
     long-run gate floor;
   - `stage_C_scorecard` -- the U1 journey replay and Q-17's adapter on the judged block's starts.
