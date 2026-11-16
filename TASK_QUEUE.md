@@ -155,7 +155,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-104e | RD-01's runner: the third read's M1, m1-m7, the notes, the single-pass cost route, measured cost; D1 on Q-110's parser once merged | wt-firms | running (E-106) | Q-107c | light | 0 | E-106 |
 | Q-109r | The red team reads F-03's build (4da975e): look-ahead, the waiting class, the statistics, the guards, A0, what is owed before run 1 (A10's consequence first), cost | wt-lit (read-only) | running (E-107) | Q-109 | light | 0 | E-107 |
 | Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | running (E-107) | Q-109 | light | 0 | E-107 |
-| Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | running (E-109) | Q-108b | light | 0 | E-109 |
+| Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | done: pin after the listed changes (E-110); Q-108c | Q-108b | light | 0 | E-109 |
+| Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | running (E-110) | Q-108r2 | light | 0 | E-110 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
