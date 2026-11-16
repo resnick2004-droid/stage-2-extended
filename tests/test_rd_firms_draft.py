@@ -124,6 +124,20 @@ def _occurrences(seed: int, files) -> list[str]:
     return [str(p.relative_to(ROOT)) for p in files if pat.search(p.read_bytes())]
 
 
+def _occurrences_of(seeds, files) -> dict[int, list[str]]:
+    """`_occurrences(seed, files)` for every seed at once, each file read once and the word-bounded search run only on a
+    file holding the digits (Q-96: a regex scan of the ~100 MB of text once a seed took most of the seed test's time);
+    the same lists, in the same order."""
+    pats = {s: (str(s).encode(), re.compile(rb"\b" + str(s).encode() + rb"\b")) for s in seeds}
+    out: dict[int, list[str]] = {s: [] for s in seeds}
+    for p in files:
+        data = p.read_bytes()
+        for s, (digits, pat) in pats.items():
+            if digits in data and pat.search(data):
+                out[s].append(str(p.relative_to(ROOT)))
+    return out
+
+
 def _text_files(base: Path, *, skip: tuple[Path, ...] = ()) -> list[Path]:
     out = []
     for p in base.rglob("*"):
@@ -133,6 +147,15 @@ def _text_files(base: Path, *, skip: tuple[Path, ...] = ()) -> list[Path]:
             continue
         out.append(p)
     return out
+
+
+def test_the_one_pass_seed_search_is_the_per_seed_search():
+    """Q-96: `_occurrences_of` finds, seed for seed and in the same order, what `_occurrences` finds."""
+    files = sorted(PREREG.glob("*.md")) + [p for d in SCRATCH_DIRS if d.is_dir() for p in _text_files(d)]
+    seeds = (*SEED_BLOCK, 20261117, 20261910)                          # the block, and two seeds in use elsewhere
+    got = _occurrences_of(seeds, files)
+    assert got == {s: _occurrences(s, files) for s in seeds}
+    assert any(got[s] for s in seeds), "the comparison is not vacuous"
 
 
 def test_seed_block_is_the_briefs_and_its_seeds_are_unused_elsewhere():
@@ -145,15 +168,17 @@ def test_seed_block_is_the_briefs_and_its_seeds_are_unused_elsewhere():
     # where other seeds are used: Stage 2's snapshot, and the reviews' and audits' scratch scripts
     scratch = [p for d in SCRATCH_DIRS if d.is_dir() for p in _text_files(d)]
     everywhere = [p for p in _text_files(ROOT, skip=(VENDOR_DATA,)) if p != me]
+    found = {name: _occurrences_of(seeds, files) for name, files in
+             (("decls", other_decls), ("vendored", vendored), ("scratch", scratch), ("everywhere", everywhere))}
     problems = []
     for s, status in rows:
         seed, status = int(s), status.strip().lower()
         if status.startswith("in use") or status.startswith("reserved"):
-            hits = _occurrences(seed, other_decls) + _occurrences(seed, vendored) + _occurrences(seed, scratch)
+            hits = found["decls"][seed] + found["vendored"][seed] + found["scratch"][seed]
             if hits:
                 problems.append(f"{seed} ({status}) is also in {hits}")
         elif status.startswith("retired, found in use"):
-            if not _occurrences(seed, everywhere):
+            if not found["everywhere"][seed]:
                 problems.append(f"{seed} is retired as found in use, but appears nowhere else")
         else:
             problems.append(f"{seed}: status {status!r} is not 'in use', 'reserved ...' or 'retired, found in use'")
