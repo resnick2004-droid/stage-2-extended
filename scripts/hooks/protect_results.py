@@ -12,8 +12,15 @@ repository, a worktree under `%LOCALAPPDATA%\\stage2-extended-wt\\`, a clean che
 `%LOCALAPPDATA%\\stage2-extended-runs\\`), or this repository's own `results/` (`_trees.py`). Stage 2's results under
 `vendor/stage2/results/` are refused outright by `protect_vendor.py`.
 
-Allowed under `results/`: `README.md`, `.gitkeep`, the append-only variant log `variants.jsonl`, and the test-run record
+Allowed under `results/`: `README.md`, `.gitkeep`, the append-only variant log `variants.jsonl`, the judged block's
+append-only read ledger `read_ledger.jsonl` (Q-32; written by `extended.reader`), and the test-run record
 `.last_test_run.json`. Denied: `*.csv` and `*.manifest.json`.
+
+**The read ledger is append-only.** A tool call that would change or remove an existing line of a `read_ledger.jsonl`
+(a `Write` whose content drops a current line, an `Edit` or `MultiEdit` whose `new_string` drops a line of its
+`old_string`) is allowed and **warned** -- to the user (`systemMessage`) and to Claude (`additionalContext`), as
+`decisions_append_only.py` warns; an append is silent. The proof is `tests/test_reader.py`'s history check, which
+reports any committed line no longer in HEAD.
 
 Deny = exit 2 with the reason on stderr. Fails open on any unexpected input.
 """
@@ -29,7 +36,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 WRITE_TOOLS = {"Write", "Edit", "MultiEdit", "NotebookEdit"}
 
 #: Files under results/ that a tool call may legitimately write.
-ALLOWED_NAMES = {"readme.md", ".gitkeep", "variants.jsonl", ".last_test_run.json"}
+ALLOWED_NAMES = {"readme.md", ".gitkeep", "variants.jsonl", ".last_test_run.json", "read_ledger.jsonl"}
+#: Of those, the append-only ones whose existing lines a write is warned for changing (Q-32).
+APPEND_ONLY_NAMES = {"read_ledger.jsonl"}
+
+LEDGER_WARNING = """\
+WARNING -- append-only: this {tool} changes or removes {n} existing line(s) of {path}, the judged block's read
+ledger (Q-32; extended/reader.py), e.g. {example}
+
+Every read of the judged block appends one line there (who, what, which dates, which declaration and purpose, when),
+and a line is never edited or removed: the ledger is the record that the judged block was read once, by a pinned
+declaration, for a declared purpose. tests/test_reader.py's history check reports any committed line that is no
+longer in HEAD, and the reader refuses the next judged read while a line does not parse.
+
+The write has been allowed. If a merge needs the lines of two branches, keep every line of both.
+"""
 
 MESSAGE = """\
 DENIED: {path}
@@ -52,6 +73,44 @@ evidence.
 """
 
 
+def _missing(old: str, new: str) -> list[str]:
+    """Non-blank lines of `old` not in `new`, with multiplicity (the reader's `missing_lines`)."""
+    have: dict[str, int] = {}
+    for line in (new or "").splitlines():
+        have[line] = have.get(line, 0) + 1
+    out = []
+    for line in (old or "").splitlines():
+        if not line.strip():
+            continue
+        if have.get(line, 0) > 0:
+            have[line] -= 1
+        else:
+            out.append(line)
+    return out
+
+
+def ledger_rewrites(payload: dict, target: Path) -> list[str]:
+    """The existing lines of an append-only ledger that this tool call would change or remove."""
+    tool = payload.get("tool_name") or ""
+    ti = payload.get("tool_input") or {}
+    if tool == "Write":
+        current = target.read_text(encoding="utf-8") if target.is_file() else ""
+        return _missing(current, ti.get("content") or "")
+    if tool == "Edit":
+        return _missing(ti.get("old_string") or "", ti.get("new_string") or "")
+    if tool == "MultiEdit":
+        return [x for e in (ti.get("edits") or []) for x in _missing(e.get("old_string") or "",
+                                                                     e.get("new_string") or "")]
+    return []
+
+
+def warn(message: str) -> None:
+    """Allow the call, and say so to the user and to Claude."""
+    json.dump({"systemMessage": message,
+               "hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": message}}, sys.stdout)
+    sys.stdout.write("\n")
+
+
 def main() -> int:
     try:
         import _trees as T
@@ -67,6 +126,12 @@ def main() -> int:
             if results is None or T.norm(results) == T.norm(target):
                 continue
             name = target.name.lower()
+            if name in APPEND_ONLY_NAMES:
+                lost = ledger_rewrites(payload, target)
+                if lost:
+                    warn(LEDGER_WARNING.format(tool=payload.get("tool_name"), n=len(lost), path=target,
+                                               example=lost[0][:160]))
+                    return 0
             if name in ALLOWED_NAMES:
                 continue
             if name.endswith(".csv") or name.endswith(".manifest.json"):

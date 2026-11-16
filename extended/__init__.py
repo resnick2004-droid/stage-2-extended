@@ -23,6 +23,9 @@ RESULTS_DIR = ROOT / "results"
 RUNS_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "stage2-extended-runs"
 #: the environment marker `scripts/run_clean.py` sets for the command it runs: the checkout's name
 CLEAN_RUN_ENV = "S2X_CLEAN_RUN"
+#: the run id `scripts/run_clean.py` sets for each run it starts (`<name>@<UTC time>`); the reader's once-rule (Q-32)
+#: tells runs apart by it, and the command's own workers inherit it
+RUN_ID_ENV = "S2X_RUN_ID"
 #: one BLAS thread a process (Stage 2 D-464 (5))
 BLAS_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
 
@@ -42,4 +45,5 @@ def use_vendored_stage2(root: Path | str | None = None) -> Path:
     return root
 
 
-__all__ = ["ROOT", "VENDOR_STAGE2", "RESULTS_DIR", "RUNS_DIR", "CLEAN_RUN_ENV", "BLAS_VARS", "use_vendored_stage2"]
+__all__ = ["ROOT", "VENDOR_STAGE2", "RESULTS_DIR", "RUNS_DIR", "CLEAN_RUN_ENV", "RUN_ID_ENV", "BLAS_VARS",
+           "use_vendored_stage2"]
