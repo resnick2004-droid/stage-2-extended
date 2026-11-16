@@ -41,15 +41,15 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
-| wt-levels | wt/wt-levels | -- (F-02's draft ready; waits for Q-16, then Q-53) | idle |
+| wt-verify | wt/wt-verify | -- (Q-16 done, E-035) | idle |
+| wt-levels | wt/wt-levels | Q-57 F-02's Q-16 marks filled, then Q-53 | running |
 | wt-user | wt/wt-user | -- (Q-40 done, E-029) | idle |
 | wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
 | wt-lit | wt/wt-lit | Q-37 family O's draft (the funded opening's timing filter) | running |
-| wt-firms | wt/wt-firms | Q-39 three rules readings (news size, GDP, payout amount) | running |
+| wt-firms | wt/wt-firms | -- (Q-39 done, E-034) | idle |
 | wt-payout | wt/wt-payout | Q-54 other firms' contracts, a described reading's draft | running |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
-| wt-scout | wt/wt-scout | Q-52 the red team's third read of family B | running |
+| wt-scout | wt/wt-scout | Q-56 family B's fourth draft | running |
 | wt-infra | wt/wt-infra | Q-48 the identities routed through the reader | running |
 
 ## Running now

@@ -22,6 +22,7 @@ engine run in a child process (CLAUDE.md: the vendored tree goes on `sys.path` o
 from __future__ import annotations
 
 import ast
+import re
 import hashlib
 import json
 import os
@@ -608,7 +609,9 @@ def test_this_repositorys_code_reads_bars_and_walks_only_through_the_reader():
         rel = p.relative_to(ROOT).as_posix()
         if rel == "extended/reader.py":
             continue
-        tree = ast.parse(p.read_text(encoding="utf-8"), filename=rel)
+        src = p.read_text(encoding="utf-8")
+        lines = src.splitlines()
+        tree = ast.parse(src, filename=rel)
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("propedge.data"):
                 names = {a.name for a in node.names}
@@ -620,7 +623,10 @@ def test_this_repositorys_code_reads_bars_and_walks_only_through_the_reader():
             elif isinstance(node, ast.Call):
                 f = node.func
                 name = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
-                if name in READ_CALLS:
+                # E-035: a read of this repository's own derived file (not Stage 2's bars or walks) may be exempted on
+                # its line by `# one-door-exempt: E-nnn -- <why>`, naming the decision row that admits it.
+                exempt = re.search(r"one-door-exempt:\s*E-\d{3}", lines[node.lineno - 1]) if node.lineno <= len(lines) else None
+                if name in READ_CALLS and not exempt:
                     bad.append(f"{rel}:{node.lineno} calls {name}")
                 if name in READER_CALLS and not rel.startswith("tests/") and \
                         any(k.arg == "repo" for k in node.keywords):
