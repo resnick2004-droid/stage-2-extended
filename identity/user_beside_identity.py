@@ -272,14 +272,34 @@ def u1_reference(rd: Path, configs: Sequence[str]) -> dict[str, Any]:
     return {"columns": columns, "recorded": man.parameters["starts"], "start": st}
 
 
+def build_p15(rd: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """P-15 as `user_journey.build_p15` builds it -- `rc_dev_test.build_cells`, `_rc_campaign`, `_single_jobs` at the
+    plan and budget -- with its trades' check reduced to the pinned content hash (`rc_dev_test.P15.trades_sha256`):
+    the check's first step reads P-15's screen file (`results/rc_reentry_screen.csv`), which is not in the vendored
+    snapshot. The off arm's start rows against U1's file, every start and column, stand beside it."""
+    import a3_brk30_cb20 as C
+    import rc_dev_test as D
+    import user_journey as UJ
+
+    I, b = D.build_cells()
+    t = b["cells"][D.P15.cell]["trades"]
+    th = D.trades_hash(t)
+    bad = [] if th == D.P15.trades_sha256 else [f"P-15's trades' content hash {th[:12]} is not the pinned "
+                                                f"{D.P15.trades_sha256[:12]}"]
+    ident = {"check": f"the trades' content hash is P-15's registered {D.P15.trades_sha256} (the screen row's check "
+                      f"needs results/{D.P15.screen_file}, not vendored)", "holds": not bad, "refuses": True,
+             "problems": "; ".join(bad)}
+    return {"p15": UJ._single_jobs(UJ._rc_campaign(I, b, D.P15.cell, D.P15), I["plan"], C.BUDGET)}, [ident]
+
+
 def build(rd: Path, name: str) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
-    """A configuration's two arms' jobs by U1's own builder (`user_journey.BUILDERS`), its definition, and the
-    builder's refusing identity rows' failures."""
+    """A configuration's two arms' jobs by U1's own builder (`user_journey.BUILDERS`; P-15's by `build_p15`), its
+    definition, and the builder's refusing identity rows' failures."""
     import user_journey as UJ
 
     defs = {c["config"]: c for c in UJ.CONFIG_DEFS}
     c = defs[name]
-    jobs, idents = UJ.BUILDERS[c["group"]](rd, [name])
+    jobs, idents = build_p15(rd) if name == "p15" else UJ.BUILDERS[c["group"]](rd, [name])
     probs = [f"{name}: the study's identity fails: {r['check'][:120]} -- {r['problems']}" for r in idents
              if not r["holds"] and r["refuses"]]
     for arm in UJ.ARMS:
