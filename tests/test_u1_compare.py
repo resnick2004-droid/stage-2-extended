@@ -72,3 +72,42 @@ def test_starts_missing_extra_and_columns_not_in_the_file():
     assert "not reproduced" in I.u1_compare([ours()], [ref(), ref(start_day=4.0)], COLS, "x", all_starts=True)[0]
     assert "not in the file's columns" in I.u1_compare([ours(extra=1)], [ref()], COLS, "x", all_starts=True)[0]
     assert "twice" in I.u1_compare([ours()], [ref(), ref()], COLS, "x", all_starts=True)[0]
+
+
+# ------------------------------------------------------------------------------------------------ Q-22: which configs
+
+
+def test_u1_configs_default_is_e010s_pair():
+    """With no --u1-configs the identity checks what E-010 recorded it checking: P-14 and P-16."""
+    assert I.parse_u1_configs(None) == ("p14", "p16")
+    assert I.U1_CONFIGS == ("p14", "p16")
+
+
+def test_u1_configs_p15_and_all():
+    assert "p15" in I.U1_ALL
+    assert I.parse_u1_configs("p15") == ("p15",)
+    assert I.parse_u1_configs("all") == I.U1_ALL == ("p14", "p15", "p16")
+    # any spelling of a list comes back in one order, each once
+    assert I.parse_u1_configs("p16,p15") == ("p15", "p16")
+    assert I.parse_u1_configs("p15 p14 p15") == ("p14", "p15")
+
+
+def test_u1_configs_refuses_an_unknown_or_empty_one():
+    for bad in ("p17", "p15,p13", "", " , "):
+        try:
+            I.parse_u1_configs(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"{bad!r} was accepted")
+
+
+def test_u1_configs_needs_starts():
+    """--u1-configs without --u1-starts is refused at the argument stage (nothing vendored imported)."""
+    for argv in (["--only", "u1", "--u1-configs", "p15"], ["--u1-configs", "p15"],
+                 ["--only", "u1", "--u1-configs", "p17", "--u1-starts", "4"]):
+        try:
+            I.main(argv)
+        except SystemExit as e:
+            assert e.code == 2, argv
+            continue
+        raise AssertionError(f"{argv} was accepted")
