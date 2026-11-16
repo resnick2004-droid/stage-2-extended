@@ -63,7 +63,9 @@ value from the file again (`quantity` on the rows the claim names). The independ
 readings file and its per-start companion (`scripts/user_beside.py`), composed by `extended/journey_page.py` --
 `build`, `traced_numbers` and `compose_text` hand a `JourneySpec` to it. A registered page may name the task that
 writes its files (`awaits`); while neither its files nor its page exist it is waiting (`waiting`): it has no number to
-trace, the trace check lists it as waiting, `--all` skips it and `--report` refuses it.
+trace, the trace check lists it as waiting, `--all` skips it and `--report` refuses it. Q-86's money reading
+(`JourneySpec.spend`, `results/user_spend.csv`) adds a section of its own, shown when that file exists and saying it
+waits otherwise; the page itself waits only for Q-44's two files.
 """
 from __future__ import annotations
 
@@ -168,7 +170,8 @@ class JourneySpec:
     the row to beat on P (CHARTER section 3); `awaits` the task that writes the files -- while neither file nor the
     page exists the page waits (`waiting`) and has no number to trace; `limits` E-015's limits (None: the declared
     `journey_page.LIMITS`); `identity_u1` Stage 2's U1 file the verdict view is held to when the page is built ("":
-    none)."""
+    none). `spend` Q-86's money reading (`scripts/user_spend.py`, `spend_writer`), relative to the root: its section is
+    shown when the file exists and says it waits for `spend_awaits` otherwise ("": no such section)."""
 
     name: str
     title: str
@@ -180,6 +183,9 @@ class JourneySpec:
     awaits: str = ""
     limits: tuple | None = None
     identity_u1: str = ""
+    spend: str = ""
+    spend_writer: str = "scripts/user_spend.py"
+    spend_awaits: str = ""
     note: str = ""
     out: str = ""
 
@@ -237,6 +243,8 @@ REPORTS: dict[str, ReportSpec | JourneySpec] = {
         r_star="p14",
         awaits="Q-44",
         identity_u1="vendor/stage2/results/user_journey.csv",
+        spend="results/user_spend.csv",
+        spend_awaits="Q-86",
     ),
 }
 
