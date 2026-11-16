@@ -38,17 +38,15 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | Q-04 house tools, then Q-05 the U1 identity (`docs/briefs/Q-04_Q-05_2026-11-15.md`) | running |
-| wt-levels | wt/wt-levels | Q-10 the shared bracket walker and its identity (`docs/briefs/Q-10_2026-11-15.md`) | running |
-| wt-features | wt/wt-features | -- (Q-11 waits for the audit's protocol findings) | idle |
-| wt-firms | wt/wt-firms | Q-12 other firms' contracts on their own pages (`docs/briefs/Q-12_2026-11-15.md`) | running |
-| wt-scout | wt/wt-scout | -- (the red-team pass, Q-07, after the audit) | idle |
-
-All five created at e4f399a with the bars and atlas linked as junctions (`python scripts/worktrees.py list`).
+| wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
+| wt-levels | wt/wt-levels | Q-10 corrective cycle 1: the identity runner's substitution (E-010, PROGRESS) | running |
+| wt-features | wt/wt-features | Q-11 the feature library and family B's draft (`docs/briefs/Q-11_2026-11-15.md`) | running |
+| wt-firms | wt/wt-firms | Q-19 three conduct readings (`docs/briefs/Q-19_2026-11-15.md`) | running |
+| wt-scout | wt/wt-scout | -- | idle |
 
 ## Running now
 
-- Q-04/Q-05 (wt-verify), Q-10 (wt-levels), Q-12 (wt-firms): workers on their briefs.
+- The four worktree items above; no heavy run (the lock is free).
 
 ## Machine
 
