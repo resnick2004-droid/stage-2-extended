@@ -47,7 +47,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-features | wt/wt-features | Q-22 P-15's identity, then Q-18 P-14's stress checks (heavy, under the lock) | running |
 | wt-lit | wt/wt-lit | Q-38 family R's draft (resolution forecasts) | running |
 | wt-firms | wt/wt-firms | Q-34 strike the material from firms whose terms forbid automated retrieval | running |
-| wt-payout | wt/wt-payout | Q-42 F-P redrafted as a described reading | running |
+| wt-payout | wt/wt-payout | Q-47 the gate rebuilt in `extended/` (another funded-account class) | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
 | wt-scout | wt/wt-scout | Q-43 family B's third draft | running |
 | wt-infra | wt/wt-infra | Q-32 the judged block's seal (purpose-tagged reader, read ledger) | running |

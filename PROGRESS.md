@@ -37,3 +37,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | Q-30 merged (E-022): F-02's third version, 18 cells; floor (ii) in P-14's form and the gate floor read on stage D's design (the lead's); Q-40 (calendar) queued; Q-41 dispatched. |
 | 2026-11-16 | lead | Q-31's red team: F-P must be redrafted; PL-3 recommended. The operator ruled (E-023): describe payout policy, test filters against a placebo-selection twin. CHARTER amended; Q-42 dispatched; Q-16 and Q-38 told. |
 | 2026-11-16 | lead | Q-17/Q-20 merged, built (E-024; fast tier 191 passed); their readings queued as Q-44/Q-45 behind Q-16's lock. Run-lock skill clarified (slow identities are heavy). Q-33: family B redraft again -- Q-43 dispatched. |
+| 2026-11-16 | lead | Q-42 merged (E-025): F-P as a described reading; the declarations test widened to `RD-` files; Q-46 (exploratory D-566 check) queued; Q-47 (the gate adapter) dispatched. |

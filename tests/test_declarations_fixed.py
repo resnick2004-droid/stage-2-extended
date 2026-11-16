@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def test_every_declared_family_matches_its_pinned_hash():
     log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
-    pins = re.findall(r"`(prereg/F-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`", log)
+    # Families (`F-nn`) and, from E-025, described readings (`RD-nn`, E-023 (1): declared and pinned, never carried).
+    pins = re.findall(r"`(prereg/(?:F|RD)-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`", log)
     assert pins, "no family pinned in DECISIONS.md"
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
