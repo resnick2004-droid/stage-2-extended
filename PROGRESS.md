@@ -67,3 +67,9 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-061: the one-door scan now checks the row each exemption names (Q-85 merged); Q-96, the fast tier's time budget, dispatched. |
 | 2026-11-16 | lead | E-062: Q-82 (the fresh-seed validation) and Q-86 (money spent) merged, built not run. Reader-reading clean runs leave `-dirty` manifests -- Q-97 fixes it. Stale chain shells found and stopped; one heavy queue now, Q-83 first after Q-55. |
 | 2026-11-16 | lead | E-063: F-02's seventh text merged (K0/C0 shown power-neutral where the size holds); its gatekeeper re-read running; the heavy queue started with Q-83 behind Q-55. |
+| 2026-11-16 | lead | E-064: the firms reading's third draft merged (all of E-058's remedies); its re-read and a scout's note on composing an execution model dispatched; two more optional questions for DayTraders in setup item 10; family R's third draft held for Q-55's Table 9. E-065: F-02's seventh text approved by the gatekeeper, contingent on Q-55 and Q-83; the pin's expected hash updated. |
+| 2026-11-16 | lead | E-066: clean manifests for reader-reading runs (Q-97 merged); the heavy queue's remaining steps appended, from the merge commit. |
+| 2026-11-16 | lead | E-067: the firms reading pinnable after one small edit (Q-91b); the adapter's two further keywords queued (Q-100). |
+| 2026-11-16 | lead | E-068: place recording on the U1 replay merged (recording changes nothing on synthetic runs); its heavy identity Q-101 queued. |
+| 2026-11-16 | lead | E-069: a refused commit on record (Q-85's scan vs Q-82's marker, fixed by a comment); batches now wait for the previous hook's exit 0. |
+| 2026-11-16 | lead | E-070: reading PP's third draft merged (the separated-window interval; its reads line; no Focused Trader readings under its class); its red-team read Q-102 dispatched. |

@@ -77,7 +77,9 @@ Only if you hold or want an account there; each from your own account, by the fi
 > trades that were not Customer's own creation"): I trade only my own accounts, placing every order by hand. The trades
 > follow a rules-based strategy I did not design myself (it was built for me from historical data). Are trades placed
 > this way "not Customer's own creation" under s.26 3.c? Does the answer change if other, unconnected people could
-> follow the same published strategy in their own accounts?
+> follow the same published strategy in their own accounts? Two more: do the commissions on your Instruments and
+> Commissions page (MNQ $1.02, NQ $3.98 a round turn) include exchange and NFA fees, or are those charged on top?
+> And how many business days does a payout take from request to receipt?
 
 > **To TradeDay**, on "If multiple users are making the same trades, then all the accounts will be shut down, and the
 > users suspended": I am one user trading my own accounts by hand. If my trades follow a strategy that other,

@@ -2,14 +2,14 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-063).
+**Updated:** 2026-11-16 (E-070).
 
 ## Phase
 
 **Phase 1** -- families declared and red-teamed (F-02 levels, family B, family O; described readings F-P, RD firms).
 The pass line's statistic is `cons` (E-035); no family reads the judged block before its pin, and the first pin
-(F-02, k = 11) waits for Q-55's rerun, the fresh-seed validation Q-83 and the gatekeeper's re-read of its seventh
-text (E-063).
+(F-02, k = 11) is approved by the gatekeeper (E-065) and waits only for Q-55's rerun and the fresh-seed validation
+Q-83.
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 
@@ -45,24 +45,24 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | Q-97 clean manifests for reader-reading runs | running |
-| wt-levels | wt/wt-levels | -- (Q-84 merged, E-063; the gatekeeper's re-read Q-66c) | idle |
+| wt-verify | wt/wt-verify | -- (Q-97 merged, E-066) | idle |
+| wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
 | wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
-| wt-features | wt/wt-features | Q-94 place recording on the U1 replay | running |
+| wt-features | wt/wt-features | -- (Q-94 merged, E-068; its identity Q-101 queued) | idle |
 | wt-lit | wt/wt-lit | Q-87 family O's third draft | running |
-| wt-firms | wt/wt-firms | Q-91 the firms reading's third draft | running |
-| wt-payout | wt/wt-payout | Q-92 F-P's third draft | running |
+| wt-firms | wt/wt-firms | Q-91b the firms reading's small edit | running |
+| wt-payout | wt/wt-payout | Q-102 the red team's read of reading PP | running |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
-| wt-scout | wt/wt-scout | -- (Q-81 merged, E-062) | idle |
+| wt-scout | wt/wt-scout | Q-99 composing an execution model (a scout's note) | running |
 | wt-infra | wt/wt-infra | Q-96 the fast tier's time budget | running |
 
 ## Running now
 
-- Heavy, one at a time under `run.lock`, one queue (E-062): Q-55 (the calibration, running to about 17:36
-  UTC); then Q-83 (the fresh-seed validation F-02's pin needs); then, from the Q-97 commit, Q-44 (the
-  readings beside), Q-22b, Q-80, Q-89, Q-93, Q-35, Q-98 (money spent), Q-18, Q-45.
-- Light: Q-87 (family O's third draft), Q-91, Q-92, Q-66c (F-02's gatekeeper re-read), Q-96,
-  Q-94, Q-97, Q-95.
+- Heavy, one at a time under `run.lock`, one queue (E-062, E-066): Q-55 (the calibration, running to about
+  17:36 UTC); Q-83 (the fresh-seed validation F-02's pin needs, at eba1564); then from f7eda0d: Q-44 (the
+  readings beside), Q-98 (money spent), Q-22b, Q-80, Q-89, Q-93, Q-35, Q-18, Q-45, Q-101.
+- Light: Q-87 (family O's third draft), Q-91b, Q-99, Q-102, Q-96,
+  Q-95.
 
 ## Machine
 
