@@ -17,14 +17,18 @@ What it checks, on the file's own text and the records (no engine, no bar, no re
   reader (`extended/reader.py`) would parse, none a choosing or fitting purpose;
 - **and the reader admits a described reading's file** -- E-025 (1) widened the hash test to `prereg/RD-` files;
   `extended/reader.py` admits a pinned `prereg/RD-` file as a judged-block read's declaration on the rules F- files
-  follow (Q-58; a strict expected failure until then), so this reading, once pinned, can authorise the U1 replay's
-  engine reads.
+  follow (Q-58, E-041; a strict expected failure until then), so this reading, once pinned, can authorise the U1
+  replay's engine reads -- checked end to end (Q-74): this file's own text, pinned in a temporary tree, authorises
+  the engine reads under each purpose of its line and is refused where an F- file would be.
 """
 from __future__ import annotations
 
+import hashlib
 import re
+import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 from extended import reader
@@ -172,3 +176,75 @@ def test_the_reader_admits_a_described_readings_file():
     rel = "prereg/RD-01_firm_contracts.md"
     assert reader.DECLARATION_PATH.fullmatch(rel)
     assert reader.PIN.search(f"`{rel}` sha256 `{'0' * 64}`")
+
+
+#: stand-ins for files the U1 replay's engine opens (Q-48's names), in the temporary tree only
+ENGINE_FILES = ("vendor/stage2/data/bars/NQ/bars.parquet", "vendor/stage2/data/atlas/A1/walks.parquet",
+                "vendor/stage2/data/atlas/A3/walks.parquet")
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True)
+
+
+def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path, monkeypatch):
+    """T-0's last part end to end (Q-74; the admission itself was built by Q-58, E-041). This draft's own text, pinned
+    as `prereg/RD-01_firm_contracts.md` by a synthetic decision row in a temporary tree, authorises the U1 replay's
+    engine reads over the whole development window under each purpose of its `Judged-block reads:` line -- judged,
+    ledgered inside a (simulated) clean run as a described reading with its pin's sha256 -- and is refused where a
+    family's file would be: outside a clean run, by another run under the same purpose with no decision row naming
+    it, and once edited after its pin; and, as a family's, never for the purpose `registered_design` (E-037)."""
+    rel = "prereg/RD-01_firm_contracts.md"
+    body = text()                                                      # LF, as the pins are taken
+    pin = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    runs = tmp_path / "runs"
+    t = runs / "rd-firms-sim"
+    (t / "prereg").mkdir(parents=True)
+    (t / rel).write_bytes(body.encode("utf-8"))
+    (t / "DECISIONS.md").write_text("# Decisions (synthetic, Q-74)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
+                                    f"| E-990 | 2026-11-16 | **RD-01 declared**, `{rel}` sha256 `{pin}` | test |\n",
+                                    encoding="utf-8")
+    (t / ".gitignore").write_text("vendor/stage2/data/\nresults/\n", encoding="utf-8")
+    for f in ENGINE_FILES:
+        (t / f).parent.mkdir(parents=True, exist_ok=True)
+        (t / f).write_bytes(b"a stand-in, never read as data\n")
+    for args in (("init", "-q", "-b", "master"), ("config", "user.email", "t@example.invalid"),
+                 ("config", "user.name", "t"), ("config", "core.autocrlf", "false"), ("add", "-A"),
+                 ("commit", "-q", "-m", "the pinned reading")):
+        _git(t, *args)
+    monkeypatch.setattr(reader, "RUNS_DIR", runs)
+    monkeypatch.setenv(reader.CLEAN_RUN_ENV, t.name)
+    monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@1")
+    led = t / reader.LEDGER_REL
+    kw = dict(files=[t / f for f in ENGINE_FILES], what="the U1 replay (Q-74's check)", repo=t)
+    purposes = sorted(reader.declared_purposes(body))
+    assert purposes
+    for p in purposes:
+        for declaration in (rel, "RD-01"):
+            a = reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=p, declaration=declaration, **kw)
+            assert (a.judged, a.ledgered, a.kind, a.declaration, a.declaration_sha256) == \
+                (True, True, "described_reading", rel, pin), (p, declaration, a)
+    recs = reader.read_ledger(led)
+    assert sorted(r["purpose"] for r in recs) == sorted(purposes * 2)
+    assert all(r["declaration"] == {"ref": rel, "sha256": pin, "kind": "described_reading"} for r in recs)
+    assert all([f["path"] for f in r["what"]["files"]] == list(ENGINE_FILES) for r in recs)
+    assert all(r["dates"]["judged_first"] == "2024-01-02" and r["dates"]["judged_last"] == "2026-07-16" for r in recs)
+
+    one = dict(purpose=purposes[0], declaration=rel, **kw)
+    monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@2")               # another run: once, unless a row names it
+    with pytest.raises(reader.JudgedBlockReadTwice, match="once"):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", **one)
+    monkeypatch.setattr(reader, "_main_script", lambda: t / "scripts" / "probe.py")
+    with pytest.raises(reader.JudgedBlockSealed, match="decision row"):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=reader.REGISTERED_DESIGN, declaration=rel,
+                                     design="P-16", **kw)
+    monkeypatch.delenv(reader.CLEAN_RUN_ENV)
+    with pytest.raises(reader.JudgedBlockSealed, match="clean run"):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", **one)
+    monkeypatch.setenv(reader.CLEAN_RUN_ENV, t.name)
+    (t / rel).write_bytes(body.encode("utf-8") + b"\nA sentence added after the pin.\n")
+    _git(t, "commit", "-q", "-am", "edited after the pin")
+    monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@3")
+    with pytest.raises(reader.JudgedBlockSealed, match="edited since"):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", **one)
+    assert len(reader.read_ledger(led)) == len(recs), "a refused read writes no line"
