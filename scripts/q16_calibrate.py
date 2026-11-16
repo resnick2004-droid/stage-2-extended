@@ -755,7 +755,12 @@ def main(argv=None) -> int:
     ap.add_argument("--boot-reps", type=int, default=20_000)
     ap.add_argument("--synthetic-only", action="store_true")
     ap.add_argument("--d621-reps", type=int, default=20_000)
+    ap.add_argument("--days", type=Path, default=None,
+                    help="the trading-day calendar (default A1's days.parquet; a test passes a synthetic one)")
     a = ap.parse_args(argv)
+    global DAYS_FILE
+    if a.days is not None:
+        DAYS_FILE = Path(a.days)
     out = Path(a.out).resolve()
     if (ROOT / "results").resolve() in [out, *out.parents]:
         print("REFUSED: the calibration writes no result file (Q-16's brief); choose a scratch --out")
