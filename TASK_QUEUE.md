@@ -141,7 +141,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | done: fixes in (E-097); merge after Q-107b | Q-107 | light | 0 | E-092 |
 | Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | running | Q-83 | light | 0 | E-093 |
 | Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | plan revised under Q-108b (E-105); re-read, then the pin; its runs after | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
-| Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | running (wt-lit, a fresh builder, E-100) | E-095 | light | 0 | E-095 |
+| Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | built in part (E-107); the red team Q-109r; continued in Q-109b | E-095 | light | 0 | E-095 |
 | Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | done: the build's fixes hold; the runner fix first (E-098); Q-105d | Q-105c | light | 0 | E-096 |
 | Q-107b | The red team re-reads RD-01's fixes and its runner (a diff read) | wt-firms (read-only) | done: the fixes hold; the runner fix first (E-099); Q-104d | Q-104c | light | 0 | E-097 |
 | Q-104d | RD-01's runner completed (G-10, the must-be-zero checks, the remaining counts, the menu's flags), after Q-107b | wt-firms | done: fixed and completed (E-103); the third read's changes in Q-104e (E-106) | Q-107b | light | 0 | E-097 |
@@ -149,10 +149,14 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108r | The red team reads Q-108's plan before its pin (selection after the fact, the arithmetic, scope D's check, power and size, the seeds, the criterion) | wt-scout (read-only) | done: pin after the listed changes (E-105); Q-108b | Q-108 | light | 0 | E-101 |
 | Q-106c | The red team's third read of RD-02's runner (the diff 98a23a2..a2cac51; the builder's readings; whether the real inputs need a heavy reference exercise) | wt-payout (read-only) | done: merge after D1-D5 (E-104); Q-105e | Q-105d | light | 0 | E-102 |
 | Q-107c | The red team's third read of RD-01's runner (the diff 1e1647c..e72bb17; the builder's readings; what the pinned text requires of the run's cost) | wt-firms (read-only) | done: merge after the listed changes (E-106); Q-104e | Q-104d | light | 0 | E-103 |
-| Q-110 | A guard on E-098's identity tokens (`extended/identity_tokens.py`, its test on `DECISIONS.md`, the lead's script) | wt-infra | running (E-103) | E-098 | light | 0 | E-103 |
+| Q-110 | A guard on E-098's identity tokens (`extended/identity_tokens.py`, its test on `DECISIONS.md`, the lead's script) | wt-infra | done: merged (E-108) | E-098 | light | 0 | E-103 |
 | Q-105e | RD-02's runner: the third read's D1-D5 (D1 on Q-110's shared parser once merged; D2 inside RD-02's own owed identity) | wt-payout | running (E-104) | Q-106c | light | 0 | E-104 |
-| Q-108b | Q-108's plan revised on its red-team read and the lead's rulings (E-105), then re-read and pinned | wt-verify | running (E-105) | Q-108r | light | 0 | E-105 |
+| Q-108b | Q-108's plan revised on its red-team read and the lead's rulings (E-105), then re-read and pinned | wt-verify | done: the second text (E-109); the re-read Q-108r2, then the pin | Q-108r | light | 0 | E-105 |
 | Q-104e | RD-01's runner: the third read's M1, m1-m7, the notes, the single-pass cost route, measured cost; D1 on Q-110's parser once merged | wt-firms | running (E-106) | Q-107c | light | 0 | E-106 |
+| Q-109r | The red team reads F-03's build (4da975e): look-ahead, the waiting class, the statistics, the guards, A0, what is owed before run 1 (A10's consequence first), cost | wt-lit (read-only) | running (E-107) | Q-109 | light | 0 | E-107 |
+| Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | running (E-107) | Q-109 | light | 0 | E-107 |
+| Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | done: pin after the listed changes (E-110); Q-108c | Q-108b | light | 0 | E-109 |
+| Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | running (E-110) | Q-108r2 | light | 0 | E-110 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
