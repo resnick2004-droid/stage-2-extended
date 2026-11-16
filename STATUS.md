@@ -19,7 +19,22 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 
 ## NEEDS_OPERATOR
 
-None yet. The audit's findings are pending (Q-06, Q-07).
+**Candidates, pending the red team's check (Q-07); none adopted, none acted on:**
+
+1. **The selection rule does not deliver its level** (tracks B and D independently): Stage 2 D-621 (3)(i)'s paired
+   moving-block percentile bound rejects a true zero far more often than 0.05/110 on synthetic nulls with the data's
+   own dependence. No Stage 2 closure flips (they all failed to carry); a CARRIED here would not mean what it says.
+2. **The judged block may be too small to carry any plausible design on P** (track B): few independent starts; the
+   minimum detectable difference far above every gain on file.
+3. **Every user measure is read at 0 % payout denial, the Responsible Trading Program's placement off and the Focused
+   Trader Program off** (track C) -- the operator's rules (Stage 2 D-234, D-289) applied as declared -- while the
+   designs show the named patterns on nearly every payout; the user files report no reading beside.
+4. **The multiplicity budget** (track D): E-001's reason for continuing program U applies to Stage 2's program S too.
+5. **S3c as the screening target** (track B): partly arithmetic, and weak among the strongest designs.
+
+**F-01 is held** (track D: withdraw and re-declare -- the fill-bar rule's asymmetry, its overlap with Stage 2's closed
+opening-range branch, stage D's design, K2, a one-minute look-ahead at 08:25). Nothing of F-01 is built beyond the
+general walker, and no level is computed.
 
 ## The run lock
 
@@ -39,8 +54,7 @@ All five created at e4f399a with the bars and atlas linked as junctions (`python
 
 ## Running now
 
-- Q-06: the Phase 0 audit, five read-only agents (tracks A-E), notes to `docs/audits/phase0/`.
-- Q-02: Stage 2's five agents, three skills, nine commands and the hooks being ported (one agent, files on master).
+- Q-07: the red-team pass over the five audit notes (`docs/reviews/phase0_red_team_2026-11-15.md`).
 - Q-04/Q-05 (wt-verify), Q-10 (wt-levels), Q-12 (wt-firms): workers on their briefs.
 
 ## Machine

@@ -46,7 +46,11 @@ For each candidate alert `t`:
   under 45 ticks costs eat the trade, Stage 2 D-527); **targets** at each declared R.
 - **Resolution** by 15:10 CT: win (target), loss (stop) or flatten (at 15:10, its actual P&L). No time stop.
 - **Ties:** a bar that could hit both stop and target is read **stop first**; on a resting order's fill bar a stop
-  touch counts and a target touch does not.
+  touch counts and a target touch does not -- **for one trade's own outcome only.** In a comparison of a resting
+  entry with its mirror or coin twin that rule is biased with a predictable sign, because price reaches the fill from
+  the rule's side (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13): the family declares its fill-bar
+  settlement for pairs (the **pair rule** -- a pair whose fill bar touches either trade's stop or target contributes
+  zero lift, is counted and its share reported and capped) and books both sides symmetrically about the trigger.
 - **Costs:** Stage 2's per-contract costs at the stop (`atlas_a3.fee_by_stop`; `vendor/stage2/config/fills.yaml`),
   the stop exit slipping a tick, a limit target none.
 - **Gates before any outcome is read:** signals per session (supply), the unresolved share at every R (at most 5 %

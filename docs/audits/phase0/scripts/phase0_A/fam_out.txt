@@ -1,0 +1,335 @@
+
+########## u_budget  k=1 level=0.025 family_id=D-629:u_budget variant_count=8 program_cells=8 chosen_base=p16
+  program_by_family: {'D-629:u_budget': 8}
+         cell base role block measure        value reference  reference_value  difference     lower  level      n  n_reference status     allowed     worse_by
+193  budget15  NaN  NaN  late       P     0.654342       p14         0.719328   -0.064986 -0.193305  0.025  595.0          NaN    NaN         NaN          NaN
+194  budget15  NaN  NaN  late      S1  3349.100000       p14      2463.100000         NaN       NaN    NaN  532.0        532.0    NaN  246.310000   886.000000
+195  budget15  NaN  NaN  late     S3a     0.569859       p14         0.852433         NaN       NaN    NaN  637.0        637.0    NaN    0.050000     0.282575
+196  budget15  NaN  NaN  late     S3b    47.900000       p14        24.000000         NaN       NaN    NaN  532.0        532.0    NaN    2.400000    23.900000
+197  budget15  NaN  NaN  late     S3c     2.067294       p14         1.900606         NaN       NaN    NaN  595.0        595.0    NaN    0.190061    -0.166687
+198  budget15  NaN  NaN  late     S4a     0.943609       p14         0.996241         NaN       NaN    NaN  532.0        532.0    NaN    0.050000     0.052632
+199  budget15  NaN  NaN  late     S4b     0.997537       p14         1.000000         NaN       NaN    NaN  406.0        406.0    NaN    0.050000     0.002463
+200  budget15  NaN  NaN  late     S5a -1495.000000       p14       105.698614         NaN       NaN    NaN  595.0        595.0    NaN   10.569861  1600.698614
+201  budget15  NaN  NaN  late     S5b    43.000000       p14        34.900000         NaN       NaN    NaN  532.0        532.0    NaN    3.490000     8.100000
+202  budget15  NaN  NaN  late     S5c     0.455349       p14         0.404774         NaN       NaN    NaN  532.0        532.0    NaN    0.040477     0.050575
+         cell chosen      line         status verdict first_failing  family decision  cells  program_cells  program_families    k  level counted
+221       NaN    NaN    (3)(i)          fails     NaN           NaN     NaN      NaN    NaN            NaN               NaN  NaN    NaN     NaN
+222       NaN    NaN   (3)(ii)          fails     NaN           NaN     NaN      NaN    NaN            NaN               NaN  NaN    NaN     NaN
+223       NaN    NaN  (3)(iii)  not evaluated     NaN           NaN     NaN      NaN    NaN            NaN               NaN  NaN    NaN     NaN
+224       NaN    NaN   (3)(iv)  not evaluated     NaN           NaN     NaN      NaN    NaN            NaN               NaN  NaN    NaN     NaN
+225       NaN    NaN    (4)(e)          fails     NaN           NaN     NaN      NaN    NaN            NaN               NaN  NaN    NaN     NaN
+226  budget15    NaN   verdict          fails  CLOSED        (3)(i)  budget    D-629    8.0            8.0               1.0  1.0  0.025     NaN
+choice (P rows):
+             cell base  block measure     value chosen      n
+177      budget10  NaN  early       P  0.628218  False  971.0
+178      budget15  NaN  early       P  0.680055   True  971.0
+179      budget30  NaN  early       P  0.612084  False  971.0
+180      nobudget  NaN  early       P  0.622382  False  971.0
+181  budget10_p14  NaN  early       P  0.589770  False  971.0
+182  budget15_p14  NaN  early       P  0.631995  False  971.0
+183  budget30_p14  NaN  early       P  0.652249  False  971.0
+184  nobudget_p14  NaN  early       P  0.670443  False  971.0
+185      budget10  NaN   late       P  0.609524  False  595.0
+186      budget15  NaN   late       P  0.654342  False  595.0
+187      budget30  NaN   late       P  0.615686  False  595.0
+188      nobudget  NaN   late       P  0.643697  False  595.0
+189  budget10_p14  NaN   late       P  0.714846  False  595.0
+190  budget15_p14  NaN   late       P  0.740056   True  595.0
+191  budget30_p14  NaN   late       P  0.708683  False  595.0
+192  nobudget_p14  NaN   late       P  0.717647  False  595.0
+
+########## u_entry  k=2 level=0.008333333333333333 family_id=D-630:u_entry variant_count=14 program_cells=14 chosen_base=p16
+  program_by_family: {'D-630:u_entry': 14}
+       cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed     worse_by
+355  pause1  NaN  NaN  late       P     0.617927       p14         0.719328   -0.101401 -0.259575  0.008333  595.0          NaN    NaN         NaN          NaN
+356  pause1  NaN  NaN  late      S1  2514.600000       p14      2463.100000         NaN       NaN       NaN  532.0        532.0    NaN  246.310000    51.500000
+357  pause1  NaN  NaN  late     S3a     0.560440       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000     0.291994
+358  pause1  NaN  NaN  late     S3b    41.000000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000    17.000000
+359  pause1  NaN  NaN  late     S3c     1.857338       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061     0.043268
+360  pause1  NaN  NaN  late     S4a     0.953008       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000     0.043233
+361  pause1  NaN  NaN  late     S4b     1.000000       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000     0.000000
+362  pause1  NaN  NaN  late     S5a -2367.454809       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  2473.153423
+363  pause1  NaN  NaN  late     S5b    36.000000       p14        34.900000         NaN       NaN       NaN  532.0        532.0    NaN    3.490000     1.100000
+364  pause1  NaN  NaN  late     S5c     0.436605       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477     0.031831
+       cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k     level counted
+383     NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+384     NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+385     NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+386     NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+387     NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+388  pause1    NaN   verdict          fails  CLOSED        (3)(i)  entry    D-630   14.0           14.0               1.0  2.0  0.008333     NaN
+choice (P rows):
+               cell base  block measure     value chosen      n
+327      wallet1000  NaN  early       P  0.552695  False  971.0
+328      wallet1500  NaN  early       P  0.583591  False  971.0
+329      wallet2000  NaN  early       P  0.592860  False  971.0
+330          pause1  NaN  early       P  0.633711   True  971.0
+331          pause2  NaN  early       P  0.615860  False  971.0
+332           ramp2  NaN  early       P  0.554411  False  971.0
+333           ramp3  NaN  early       P  0.595949  False  971.0
+334  wallet1000_p14  NaN  early       P  0.500515  False  971.0
+335  wallet1500_p14  NaN  early       P  0.588740  False  971.0
+336  wallet2000_p14  NaN  early       P  0.611054  False  971.0
+337      pause1_p14  NaN  early       P  0.497082  False  971.0
+338      pause2_p14  NaN  early       P  0.570546  False  971.0
+339       ramp2_p14  NaN  early       P  0.462067  False  971.0
+340       ramp3_p14  NaN  early       P  0.520426  False  971.0
+341      wallet1000  NaN   late       P  0.523249  False  595.0
+342      wallet1500  NaN   late       P  0.571989  False  595.0
+343      wallet2000  NaN   late       P  0.593277  False  595.0
+344          pause1  NaN   late       P  0.617927  False  595.0
+345          pause2  NaN   late       P  0.618487  False  595.0
+346           ramp2  NaN   late       P  0.583754  False  595.0
+347           ramp3  NaN   late       P  0.604482  False  595.0
+348  wallet1000_p14  NaN   late       P  0.600000  False  595.0
+349  wallet1500_p14  NaN   late       P  0.677871  False  595.0
+350  wallet2000_p14  NaN   late       P  0.698599   True  595.0
+351      pause1_p14  NaN   late       P  0.591597  False  595.0
+352      pause2_p14  NaN   late       P  0.641457  False  595.0
+353       ramp2_p14  NaN   late       P  0.558543  False  595.0
+354       ramp3_p14  NaN   late       P  0.547899  False  595.0
+
+########## u_seats  k=3 level=0.004166666666666667 family_id=D-635:u_seats variant_count=8 program_cells=16 chosen_base=p16
+  program_by_family: {'D-629:u_budget': 8, 'D-635:u_seats': 8}
+       cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed    worse_by
+193  seats3  NaN  NaN  late       P     0.667787       p14         0.719328   -0.051541 -0.205425  0.004167  595.0          NaN    NaN         NaN         NaN
+194  seats3  NaN  NaN  late      S1  2953.300000       p14      2463.100000         NaN       NaN       NaN  532.0        532.0    NaN  246.310000  490.200000
+195  seats3  NaN  NaN  late     S3a     0.500785       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000    0.351648
+196  seats3  NaN  NaN  late     S3b    39.000000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000   15.000000
+197  seats3  NaN  NaN  late     S3c     1.953614       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061   -0.053008
+198  seats3  NaN  NaN  late     S4a     0.945489       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000    0.050752
+199  seats3  NaN  NaN  late     S4b     1.000000       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000    0.000000
+200  seats3  NaN  NaN  late     S5a  -691.000000       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  796.698614
+201  seats3  NaN  NaN  late     S5b    39.000000       p14        34.900000         NaN       NaN       NaN  532.0        532.0    NaN    3.490000    4.100000
+202  seats3  NaN  NaN  late     S5c     0.427800       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477    0.023026
+       cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k     level counted
+221     NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+222     NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+223     NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+224     NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+225     NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+226  seats3    NaN   verdict          fails  CLOSED        (3)(i)  seats    D-635    8.0           16.0               2.0  3.0  0.004167     NaN
+choice (P rows):
+           cell base  block measure     value chosen      n
+177      seats1  NaN  early       P  0.522829  False  971.0
+178      seats2  NaN  early       P  0.581531  False  971.0
+179      seats3  NaN  early       P  0.623412   True  971.0
+180      seats4  NaN  early       P  0.606934  False  971.0
+181  seats1_p14  NaN  early       P  0.380021  False  971.0
+182  seats2_p14  NaN  early       P  0.499142  False  971.0
+183  seats3_p14  NaN  early       P  0.522829  False  971.0
+184  seats4_p14  NaN  early       P  0.594233  False  971.0
+185      seats1  NaN   late       P  0.557983  False  595.0
+186      seats2  NaN   late       P  0.578151  False  595.0
+187      seats3  NaN   late       P  0.667787   True  595.0
+188      seats4  NaN   late       P  0.600560  False  595.0
+189  seats1_p14  NaN   late       P  0.597759  False  595.0
+190  seats2_p14  NaN   late       P  0.612885  False  595.0
+191  seats3_p14  NaN   late       P  0.592717  False  595.0
+192  seats4_p14  NaN   late       P  0.643137  False  595.0
+
+########## u_hours  k=4 level=0.0025 family_id=D-639:u_hours variant_count=6 program_cells=36 chosen_base=s100_us
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6}
+     cell base role block measure        value reference  reference_value  difference     lower   level      n  n_reference status     allowed    worse_by
+365  us25  NaN  NaN  late       P     0.670028       p14         0.719328     -0.0493 -0.164147  0.0025  595.0          NaN    NaN         NaN         NaN
+366  us25  NaN  NaN  late      S1  2223.000000       p14      2463.100000         NaN       NaN     NaN  532.0        532.0    NaN  246.310000 -240.100000
+367  us25  NaN  NaN  late     S3a     0.854003       p14         0.852433         NaN       NaN     NaN  637.0        637.0    NaN    0.050000   -0.001570
+368  us25  NaN  NaN  late     S3b    23.000000       p14        24.000000         NaN       NaN     NaN  532.0        532.0    NaN    2.400000   -1.000000
+369  us25  NaN  NaN  late     S3c     1.811539       p14         1.900606         NaN       NaN     NaN  595.0        595.0    NaN    0.190061    0.089067
+370  us25  NaN  NaN  late     S4a     0.981203       p14         0.996241         NaN       NaN     NaN  532.0        532.0    NaN    0.050000    0.015038
+371  us25  NaN  NaN  late     S4b     1.000000       p14         1.000000         NaN       NaN     NaN  406.0        406.0    NaN    0.050000    0.000000
+372  us25  NaN  NaN  late     S5a  -815.476901       p14       105.698614         NaN       NaN     NaN  595.0        595.0    NaN   10.569861  921.175515
+373  us25  NaN  NaN  late     S5b    36.000000       p14        34.900000         NaN       NaN     NaN  532.0        532.0    NaN    3.490000    1.100000
+374  us25  NaN  NaN  late     S5c     0.442199       p14         0.404774         NaN       NaN     NaN  532.0        532.0    NaN    0.040477    0.037424
+     cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k   level counted
+393   NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN     NaN     NaN
+394   NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN     NaN     NaN
+395   NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN     NaN     NaN
+396   NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN     NaN     NaN
+397   NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN     NaN     NaN
+398  us25    NaN   verdict          fails  CLOSED        (3)(i)  hours    D-639    6.0           36.0               4.0  4.0  0.0025     NaN
+choice (P rows):
+           cell base  block measure     value chosen      n
+353    london25  NaN  early       P  0.561277  False  971.0
+354  london37_5  NaN  early       P  0.455544  False  971.0
+355        us25  NaN  early       P  0.626502   True  971.0
+356      us37_5  NaN  early       P  0.409887  False  971.0
+357      asia25  NaN  early       P  0.441813  False  971.0
+358    asia37_5  NaN  early       P  0.231377  False  971.0
+359    london25  NaN   late       P  0.616807  False  595.0
+360  london37_5  NaN   late       P  0.523249  False  595.0
+361        us25  NaN   late       P  0.670028   True  595.0
+362      us37_5  NaN   late       P  0.512045  False  595.0
+363      asia25  NaN   late       P  0.476190  False  595.0
+364    asia37_5  NaN   late       P  0.346779  False  595.0
+
+########## u_firms  k=5 level=0.0016666666666666668 family_id=D-644:u_firms variant_count=18 program_cells=54 chosen_base=l1_day0
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6, 'D-644:u_firms': 18}
+        cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed     worse_by
+549  l1_day0  NaN  NaN  late       P     0.621289       p14         0.719328   -0.098039 -0.266672  0.001667  595.0          NaN    NaN         NaN          NaN
+550  l1_day0  NaN  NaN  late      S1  4374.000000       p14      2463.100000         NaN       NaN       NaN  532.0        532.0    NaN  246.310000  1910.900000
+551  l1_day0  NaN  NaN  late     S3a     0.634223       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000     0.218210
+552  l1_day0  NaN  NaN  late     S3b    37.000000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000    13.000000
+553  l1_day0  NaN  NaN  late     S3c     1.906181       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061    -0.005575
+554  l1_day0  NaN  NaN  late     S4a     0.981203       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000     0.015038
+555  l1_day0  NaN  NaN  late     S4b     1.000000       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000     0.000000
+556  l1_day0  NaN  NaN  late     S5a -1023.345120       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  1129.043734
+557  l1_day0  NaN  NaN  late     S5b    29.000000       p14        34.900000         NaN       NaN       NaN  532.0        532.0    NaN    3.490000    -5.900000
+558  l1_day0  NaN  NaN  late     S5c     0.409527       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477     0.004753
+        cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k     level counted
+577      NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+578      NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+579      NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+580      NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+581      NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+582  l1_day0    NaN   verdict          fails  CLOSED        (3)(i)  firms    D-644   18.0           54.0               5.0  5.0  0.001667     NaN
+choice (P rows):
+        cell base  block measure     value chosen      n
+537  l1_day0  NaN  early       P  0.597322   True  971.0
+538   l1_seq  NaN  early       P  0.554755  False  971.0
+539  l2_day0  NaN  early       P  0.566770  False  971.0
+540   l2_seq  NaN  early       P  0.524888  False  971.0
+541  l5_day0  NaN  early       P  0.466186  False  971.0
+542   l5_seq  NaN  early       P  0.423275  False  971.0
+543  l1_day0  NaN   late       P  0.621289   True  595.0
+544   l1_seq  NaN   late       P  0.570308  False  595.0
+545  l2_day0  NaN   late       P  0.594398  False  595.0
+546   l2_seq  NaN   late       P  0.540056  False  595.0
+547  l5_day0  NaN   late       P  0.589356  False  595.0
+548   l5_seq  NaN   late       P  0.459384  False  595.0
+
+########## u_consistency  k=6 level=0.0011904761904761906 family_id=D-646:u_consistency variant_count=4 program_cells=40 chosen_base=p16
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6, 'D-646:u_consistency': 4}
+             cell base role block measure        value reference  reference_value  difference     lower    level      n  n_reference status     allowed     worse_by
+137  cons_cap1of3  NaN  NaN  late       P     0.000560       p14         0.719328   -0.718768 -0.824841  0.00119  595.0          NaN    NaN         NaN          NaN
+138  cons_cap1of3  NaN  NaN  late      S1  2951.000000       p14      2463.100000         NaN       NaN      NaN    3.0        532.0    NaN  246.310000   487.900000
+139  cons_cap1of3  NaN  NaN  late     S3a     0.001570       p14         0.852433         NaN       NaN      NaN  637.0        637.0    NaN    0.050000     0.850863
+140  cons_cap1of3  NaN  NaN  late     S3b          NaN       p14        24.000000         NaN       NaN      NaN  532.0        532.0    NaN         NaN          NaN
+141  cons_cap1of3  NaN  NaN  late     S3c     0.001855       p14         1.900606         NaN       NaN      NaN  595.0        595.0    NaN    0.190061     1.898751
+142  cons_cap1of3  NaN  NaN  late     S4a     0.000000       p14         0.996241         NaN       NaN      NaN  532.0        532.0    NaN    0.050000     0.996241
+143  cons_cap1of3  NaN  NaN  late     S4b     0.000000       p14         1.000000         NaN       NaN      NaN  406.0        406.0    NaN    0.050000     1.000000
+144  cons_cap1of3  NaN  NaN  late     S5a -4335.200000       p14       105.698614         NaN       NaN      NaN  595.0        595.0    NaN   10.569861  4440.898614
+145  cons_cap1of3  NaN  NaN  late     S5b   102.800000       p14        34.900000         NaN       NaN      NaN    3.0        532.0    NaN    3.490000    67.900000
+146  cons_cap1of3  NaN  NaN  late     S5c          NaN       p14         0.404774         NaN       NaN      NaN  532.0        532.0    NaN         NaN          NaN
+             cell chosen      line         status verdict first_failing       family decision  cells  program_cells  program_families    k    level counted
+165           NaN    NaN    (3)(i)          fails     NaN           NaN          NaN      NaN    NaN            NaN               NaN  NaN      NaN     NaN
+166           NaN    NaN   (3)(ii)          fails     NaN           NaN          NaN      NaN    NaN            NaN               NaN  NaN      NaN     NaN
+167           NaN    NaN  (3)(iii)  not evaluated     NaN           NaN          NaN      NaN    NaN            NaN               NaN  NaN      NaN     NaN
+168           NaN    NaN   (3)(iv)  not evaluated     NaN           NaN          NaN      NaN    NaN            NaN               NaN  NaN      NaN     NaN
+169           NaN    NaN    (4)(e)          fails     NaN           NaN          NaN      NaN    NaN            NaN               NaN  NaN      NaN     NaN
+170  cons_cap1of3    NaN   verdict          fails  CLOSED        (3)(i)  consistency    D-646    4.0           40.0               5.0  6.0  0.00119     NaN
+choice (P rows):
+             cell base  block measure    value chosen      n
+129          cons  NaN  early       P  0.00000  False  971.0
+130      cons_p14  NaN  early       P  0.00000  False  971.0
+131  cons_cap2of3  NaN  early       P  0.00000  False  971.0
+132  cons_cap1of3  NaN  early       P  0.00103   True  971.0
+133          cons  NaN   late       P  0.00000  False  595.0
+134      cons_p14  NaN   late       P  0.00000  False  595.0
+135  cons_cap2of3  NaN   late       P  0.00000  False  595.0
+136  cons_cap1of3  NaN   late       P  0.00056   True  595.0
+
+########## u_plan  k=7 level=0.0008928571428571429 family_id=D-653:u_plan variant_count=12 program_cells=70 chosen_base=p16
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6, 'D-644:u_firms': 18, 'D-646:u_consistency': 4, 'D-653:u_plan': 12}
+              cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed     worse_by
+447  flat1000_cons  NaN  NaN  late       P     0.482353       p14         0.719328   -0.236975 -0.492891  0.000893  595.0          NaN    NaN         NaN          NaN
+448  flat1000_cons  NaN  NaN  late      S1  3450.000000       p14      2463.100000         NaN       NaN       NaN  532.0        532.0    NaN  246.310000   986.900000
+449  flat1000_cons  NaN  NaN  late     S3a     0.728414       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000     0.124019
+450  flat1000_cons  NaN  NaN  late     S3b    38.000000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000    14.000000
+451  flat1000_cons  NaN  NaN  late     S3c     1.413691       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061     0.486915
+452  flat1000_cons  NaN  NaN  late     S4a     0.763158       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000     0.233083
+453  flat1000_cons  NaN  NaN  late     S4b     0.965517       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000     0.034483
+454  flat1000_cons  NaN  NaN  late     S5a -3221.349758       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  3327.048372
+455  flat1000_cons  NaN  NaN  late     S5b    50.000000       p14        34.900000         NaN       NaN       NaN  532.0        532.0    NaN    3.490000    15.100000
+456  flat1000_cons  NaN  NaN  late     S5c     0.668977       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477     0.264203
+              cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k     level counted
+475            NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+476            NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+477            NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+478            NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+479            NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+480  flat1000_cons    NaN   verdict          fails  CLOSED        (3)(i)   plan    D-653   12.0           70.0               7.0  7.0  0.000893     NaN
+choice (P rows):
+                  cell base  block measure     value chosen      n
+423            flat250  NaN  early       P  0.065225  False  971.0
+424            flat500  NaN  early       P  0.199451  False  971.0
+425           flat1000  NaN  early       P  0.507724  False  971.0
+426       flat250_cons  NaN  early       P  0.061449  False  971.0
+427       flat500_cons  NaN  early       P  0.286989  False  971.0
+428      flat1000_cons  NaN  early       P  0.585994   True  971.0
+429        flat250_p14  NaN  early       P  0.069688  False  971.0
+430        flat500_p14  NaN  early       P  0.256093  False  971.0
+431       flat1000_p14  NaN  early       P  0.472709  False  971.0
+432   flat250_cons_p14  NaN  early       P  0.072434  False  971.0
+433   flat500_cons_p14  NaN  early       P  0.375901  False  971.0
+434  flat1000_cons_p14  NaN  early       P  0.548575  False  971.0
+435            flat250  NaN   late       P  0.070588  False  595.0
+436            flat500  NaN   late       P  0.229132  False  595.0
+437           flat1000  NaN   late       P  0.415686  False  595.0
+438       flat250_cons  NaN   late       P  0.105882  False  595.0
+439       flat500_cons  NaN   late       P  0.318207  False  595.0
+440      flat1000_cons  NaN   late       P  0.482353  False  595.0
+441        flat250_p14  NaN   late       P  0.055462  False  595.0
+442        flat500_p14  NaN   late       P  0.289076  False  595.0
+443       flat1000_p14  NaN   late       P  0.528852  False  595.0
+444   flat250_cons_p14  NaN   late       P  0.033613  False  595.0
+445   flat500_cons_p14  NaN   late       P  0.415686  False  595.0
+446  flat1000_cons_p14  NaN   late       P  0.639216   True  595.0
+
+########## u_limit  k=8 level=0.0006944444444444445 family_id=D-658:u_limit variant_count=2 program_cells=72 chosen_base=p16
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6, 'D-644:u_firms': 18, 'D-646:u_consistency': 4, 'D-653:u_plan': 12, 'D-658:u_limit': 2}
+              cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed     worse_by
+120  flat1500_cons  NaN  NaN  late       P     0.513725       p14         0.719328   -0.205602 -0.441246  0.000694  595.0          NaN    NaN         NaN          NaN
+121  flat1500_cons  NaN  NaN  late      S1  5277.400000       p14      2463.100000         NaN       NaN       NaN  529.0        532.0    NaN  246.310000  2814.300000
+122  flat1500_cons  NaN  NaN  late     S3a     0.618524       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000     0.233909
+123  flat1500_cons  NaN  NaN  late     S3b    59.000000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000    35.000000
+124  flat1500_cons  NaN  NaN  late     S3c     1.515983       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061     0.384623
+125  flat1500_cons  NaN  NaN  late     S4a     0.774436       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000     0.221805
+126  flat1500_cons  NaN  NaN  late     S4b     0.931034       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000     0.068966
+127  flat1500_cons  NaN  NaN  late     S5a -3746.045320       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  3851.743934
+128  flat1500_cons  NaN  NaN  late     S5b    66.400000       p14        34.900000         NaN       NaN       NaN  529.0        532.0    NaN    3.490000    31.500000
+129  flat1500_cons  NaN  NaN  late     S5c     0.643977       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477     0.239202
+              cell chosen      line         status verdict first_failing family decision  cells  program_cells  program_families    k     level counted
+148            NaN    NaN    (3)(i)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+149            NaN    NaN   (3)(ii)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+150            NaN    NaN  (3)(iii)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+151            NaN    NaN   (3)(iv)  not evaluated     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+152            NaN    NaN    (4)(e)          fails     NaN           NaN    NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+153  flat1500_cons    NaN   verdict          fails  CLOSED        (3)(i)  limit    D-658    2.0           72.0               8.0  8.0  0.000694     NaN
+choice (P rows):
+              cell base  block measure     value chosen      n
+116  flat1500_cons  NaN  early       P  0.595606   True  971.0
+117       flat1500  NaN  early       P  0.467559  False  971.0
+118  flat1500_cons  NaN   late       P  0.513725   True  595.0
+119       flat1500  NaN   late       P  0.403361  False  595.0
+
+########## u_resolve  k=9 level=0.0005555555555555556 family_id=D-659:u_resolve variant_count=4 program_cells=76 chosen_base=p14
+  program_by_family: {'D-629:u_budget': 8, 'D-630:u_entry': 14, 'D-635:u_seats': 8, 'D-639:u_hours': 6, 'D-644:u_firms': 18, 'D-646:u_consistency': 4, 'D-653:u_plan': 12, 'D-658:u_limit': 2, 'D-659:u_resolve': 4}
+             cell base role block measure        value reference  reference_value  difference     lower     level      n  n_reference status     allowed    worse_by
+255  resolve3_p14  NaN  NaN  late       P     0.682913       p14         0.719328   -0.036415 -0.093495  0.000556  595.0          NaN    NaN         NaN         NaN
+256  resolve3_p14  NaN  NaN  late      S1  2705.000000       p14      2463.100000         NaN       NaN       NaN  532.0        532.0    NaN  246.310000  241.900000
+257  resolve3_p14  NaN  NaN  late     S3a     0.824176       p14         0.852433         NaN       NaN       NaN  637.0        637.0    NaN    0.050000    0.028257
+258  resolve3_p14  NaN  NaN  late     S3b    26.900000       p14        24.000000         NaN       NaN       NaN  532.0        532.0    NaN    2.400000    2.900000
+259  resolve3_p14  NaN  NaN  late     S3c     1.766952       p14         1.900606         NaN       NaN       NaN  595.0        595.0    NaN    0.190061    0.133654
+260  resolve3_p14  NaN  NaN  late     S4a     0.971805       p14         0.996241         NaN       NaN       NaN  532.0        532.0    NaN    0.050000    0.024436
+261  resolve3_p14  NaN  NaN  late     S4b     1.000000       p14         1.000000         NaN       NaN       NaN  406.0        406.0    NaN    0.050000    0.000000
+262  resolve3_p14  NaN  NaN  late     S5a  -217.594923       p14       105.698614         NaN       NaN       NaN  595.0        595.0    NaN   10.569861  323.293537
+263  resolve3_p14  NaN  NaN  late     S5b    31.000000       p14        34.900000         NaN       NaN       NaN  532.0        532.0    NaN    3.490000   -3.900000
+264  resolve3_p14  NaN  NaN  late     S5c     0.407719       p14         0.404774         NaN       NaN       NaN  532.0        532.0    NaN    0.040477    0.002945
+             cell chosen      line          status verdict first_failing   family decision  cells  program_cells  program_families    k     level counted
+284           NaN    NaN    (3)(i)           fails     NaN           NaN      NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+285           NaN    NaN   (3)(ii)           fails     NaN           NaN      NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+286           NaN    NaN  (3)(iii)   not evaluated     NaN           NaN      NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+287           NaN    NaN   (3)(iv)  not applicable     NaN           NaN      NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+288           NaN    NaN    (4)(e)           fails     NaN           NaN      NaN      NaN    NaN            NaN               NaN  NaN       NaN     NaN
+289  resolve3_p14    NaN   verdict           fails  CLOSED        (3)(i)  resolve    D-659    4.0           76.0               9.0  9.0  0.000556     NaN
+choice (P rows):
+               cell base  block measure     value chosen      n
+247      resolve1_5  NaN  early       P  0.599039  False  971.0
+248        resolve3  NaN  early       P  0.580158  False  971.0
+249  resolve1_5_p14  NaN  early       P  0.589083  False  971.0
+250    resolve3_p14  NaN  early       P  0.601099   True  971.0
+251      resolve1_5  NaN   late       P  0.591036  False  595.0
+252        resolve3  NaN   late       P  0.610644  False  595.0
+253  resolve1_5_p14  NaN   late       P  0.598319  False  595.0
+254    resolve3_p14  NaN   late       P  0.682913   True  595.0
