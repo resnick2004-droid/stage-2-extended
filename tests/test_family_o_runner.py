@@ -30,7 +30,7 @@ for _k in ("S2X_CLEAN_RUN", "S2X_RUN_ID"):
 LEAD = "identity-holds:"
 
 
-def token_row(e: str, ident: str, sha: str, text: str = "the identity held", date: str = "2026-11-17") -> str:
+def token_row(e: str, ident: str, sha: str, text: str = "the identity holds", date: str = "2026-11-17") -> str:
     """A row in E-104's positional form, built from its parts."""
     return f"| {e} | {date} | {LEAD} {ident} @ {sha} -- {text} | basis |"
 
@@ -96,34 +96,26 @@ def test_the_declaration_is_pinned_unchanged_and_names_the_four_purposes():
         assert not set(p.lower().split("_")) & reader.CHOICE_WORDS
 
 
-def test_e104s_token_is_positional_and_nothing_else_is_a_token(history):
-    sha = history["c1"]
-    good = token_row("E-201", "Q-89", sha)
-    label = token_row("E-202", "f03-a0", sha)
-    quoted = f"| E-203 | 2026-11-17 | `{LEAD} Q-93 @ {sha}` -- quoted | b |"
-    inside = f"| E-204 | 2026-11-17 | **the read.** It says {LEAD} Q-101 @ {sha} -- in prose | b |"
-    rule = f"| E-104 | 2026-11-16 | a row recording that an identity holds begins `{LEAD} <id> @ <sha>` | b |"
-    free = f"{LEAD} Q-80 @ {sha} -- outside any row"
-    toks = R.parse("\n".join([good, label, quoted, inside, rule, free]))
-    assert [(t["row"], t["id"], t["sha"]) for t in toks] == [("E-201", "Q-89", sha), ("E-202", "f03-a0", sha)]
-    assert R.parse(token_row("E-205", "Q-89", sha).replace("| E-205", "|E-205")) == []
+def test_the_waits_read_the_one_parser_and_count_only_at_head_or_an_ancestor(history):
+    from extended import identity_tokens as IT
 
-
-def test_e104s_token_counts_only_at_head_or_an_ancestor_with_its_covered_files_unchanged(history):
     repo, c1, c2, c3, side = (history[k] for k in ("repo", "c1", "c2", "c3", "side"))
     head = "main"
-    assert R.held(token_row("E-1", "Q-89", c1), "Q-89", repo, head, ["a.py"]) is False   # a.py changed in c3
-    assert R.held(token_row("E-1", "Q-89", c1), "Q-89", repo, head, ["b.py"]) is False   # b.py changed in c2
-    assert R.held(token_row("E-1", "Q-89", c2), "Q-89", repo, head, ["b.py"]) is True    # nothing of b.py since c2
-    assert R.held(token_row("E-1", "Q-89", c3), "Q-89", repo, head, ["a.py", "b.py"]) is True
-    assert R.held(token_row("E-1", "Q-89", side), "Q-89", repo, head, ["b.py"]) is False  # not an ancestor
-    assert R.held(token_row("E-1", "Q-89", "0" * 40), "Q-89", repo, head, ["b.py"]) is False
-    assert R.held(token_row("E-1", "Q-93", c3), "Q-89", repo, head, ["b.py"]) is False   # another identity's
+    assert IT.held(token_row("E-1", "Q-89", c1), "Q-89", repo, head, ["a.py"]) is None   # a.py changed in c3
+    assert IT.held(token_row("E-1", "Q-89", c2), "Q-89", repo, head, ["b.py"]).row == "E-1"
+    assert IT.held(token_row("E-1", "Q-89", side), "Q-89", repo, head, ["b.py"]) is None  # not an ancestor
     two = "\n".join([token_row("E-1", "Q-89", c1), token_row("E-2", "Q-89", c2)])
-    assert R.held(two, "Q-89", repo, head, ["b.py"]) and R.held_rows(two, "Q-89", repo, head, ["b.py"]) == ["E-2"]
     bad, rows = R.waited_problems(two, {"Q-89": ("b.py",), "Q-80": ("a.py",)}, repo, head)
-    assert rows == {"Q-89": ["E-2"], "Q-80": []} and len(bad) == 1 and "Q-80" in bad[0]
-    assert R.problems(token_row("E-1", "Q-89", c1), "Q-89", repo, head, ["b.py"])[0].startswith("Q-89: E-1:")
+    assert rows == {"Q-89": ["E-2"], "Q-80": []} and len(bad) == 1 and bad[0].startswith("Q-80 is not on record")
+    lab = token_row("E-3", R.A0_ID, c3)
+    assert R.waited_problems(lab, {R.A0_ID: ("a.py", "b.py")}, repo, head) == ([], {R.A0_ID: ["E-3"]})
+    # a breach anywhere refuses before any wait is read; a covered path not at HEAD is refused
+    quoted = f"| E-9 | 2026-11-17 | `{LEAD} Q-80 @ {c3}` -- quoted, held | b |"
+    bad, rows = R.waited_problems(two + "\n" + quoted, {"Q-89": ("b.py",)}, repo, head)
+    assert rows == {} and bad and "breaches the token rule" in bad[0]
+    bad, _ = R.waited_problems(two, {"Q-89": ("nope.py",)}, repo, head)
+    assert bad and "not in" in bad[0]
+    assert R.A0_ID == "f03_a0" and IT.ID.fullmatch(R.A0_ID) and not IT.ID.fullmatch("f03-a0")
 
 
 def test_every_wait_declares_its_covered_files():
@@ -137,7 +129,7 @@ def test_every_wait_declares_its_covered_files():
 def test_this_branch_waits_for_its_identities():
     """The infrastructure identities and A0 are not on record as holding at this build's commit: the runs refuse."""
     bad, _ = R.waited_problems(DECISIONS, R.WAITS, ROOT)
-    assert any(R.A0_ID in b for b in bad)
+    assert any(b.startswith(R.A0_ID) for b in bad)
 
 
 def test_t9_the_judge_reads_the_pick_and_forecast_by_their_pinned_hashes_and_cannot_fit():
@@ -201,7 +193,7 @@ def _script(*args: str, timeout: int = 600) -> subprocess.CompletedProcess:
 def test_the_runner_refuses_without_the_waited_identities_and_reads_nothing():
     r = _script("--run", "1", "--check-guards")
     assert r.returncode == 2, r.stdout + r.stderr
-    assert "REFUSED (F-03)" in r.stdout and "positional token for Q-89" in r.stdout
+    assert "REFUSED (F-03)" in r.stdout and "Q-89 is not on record as holding" in r.stdout
     assert r.stdout.strip().endswith("EXIT 2")
     assert "AUTHORISED" not in r.stdout
 

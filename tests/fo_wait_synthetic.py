@@ -19,7 +19,7 @@ fallback flags and the joins by offer id on a hand-checked start; the forfeiture
 equals the forfeiture over the vendored class; the Focused Trader models refused; the class pickles to a worker's
 task and the task, run in a fresh interpreter, gives the same outputs and records; the wrapper cannot be collected
 while its account lives; the gate (`extended.gate.run_gate`) with the state always on equals the gate without a
-class. Seeds: the fixture's (20262070) and the placebo set's `[20261988, 500, ...]` (section 16's test block).
+class. Seeds: the fixture's (20262070) and the placebo set's `[SEED_TESTS, 500, ...]` (section 16's test block).
 """
 from __future__ import annotations
 

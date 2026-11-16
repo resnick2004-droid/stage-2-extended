@@ -16,11 +16,10 @@
    and its `Judged-block reads:` line names exactly the four purposes (19.1);
 5. **the waited identities by E-104's positional token** (E-098 as amended) -- for each of Q-89 (Q-70's place
    records), Q-93 (Q-76's class on the U1 replay), Q-101 (Q-94's replay recorder), Q-80 (the gate's 500-path
-   identities) and A0's own (`A0_ID`), a row of DECISIONS.md that **begins** `| E-NNN | YYYY-MM-DD | identity-holds:
-   <id> @ <sha> -- <text> |` (no backticks; anywhere else in a row the string is never a token) whose commit is HEAD or
-   an ancestor of HEAD, with none of that identity's covered files (`WAITS`: the code it certifies) changed since
-   (`held`, which keeps the shared parser's signature, Q-110's `extended/identity_tokens.py`, so it can be swapped for
-   the import); the rows are named in every manifest (`PreRun.rows`);
+   identities) and A0's own (`A0_ID`), by the one parser, `extended.identity_tokens` (Q-110): the decision log has no
+   breach of the token rule (`IT.problems`, else nothing is read), and for each wait a row whose token for its id is at
+   a commit that is HEAD or an ancestor of it, with none of its covered files (`WAITS`: the code it certifies) changed
+   since (`IT.held_report`); the rows are named in every manifest (`PreRun.rows`);
 6. **a clean run** for anything that writes a result (`extended.results.clean_run_problem`).
 
 **What run 1 and run 2 read** (19.1, 19.2): run 1 the choice block only, no tag; run 2 the judged block under the four
@@ -58,9 +57,9 @@ PINNED_BLOBS = {"extended/lift_bound.py": "984f3467a4a05aa790d3ea43e94ac7761f072
 #: the infrastructure identities waited for (header; 20 item 4), and A0's own (20 item 6), each with the files it certifies
 #: (E-104: a waited identity counts only where none of its covered files changed since the commit it held at)
 WAITED = ("Q-89", "Q-93", "Q-101", "Q-80")
-#: A0's id in its token -- a lowercase label (E-104 admits one); the lead may number A0's run otherwise, and then this
+#: A0's id in its token -- a lowercase label (E-104's grammar `[a-z][a-z0-9_]*`); the lead may number A0's run otherwise, and then this
 #: constant is changed in a code commit before run 1 (said in the build's hand-back)
-A0_ID = "f03-a0"
+A0_ID = "f03_a0"
 A0_QUEUE_ID = A0_ID
 WAITS: dict[str, tuple[str, ...]] = {
     "Q-89": ("extended/place_records.py", "extended/place_fields.py", "extended/gate.py", "extended/campaign.py",
@@ -72,9 +71,6 @@ WAITS: dict[str, tuple[str, ...]] = {
     A0_ID: ("identity/family_o_identity.py", "extended/opening_population.py", "extended/opening_wait.py",
             "extended/walker.py", "extended/user_beside.py", "extended/gate.py", "extended/reader.py"),
 }
-#: E-104's positional token: a row that begins `| E-NNN | YYYY-MM-DD | identity-holds: <id> @ <sha> -- <text> |`
-TOKEN_ROW = re.compile(r"^\| (E-\d+) \| (\d{4}-\d{2}-\d{2}) \| identity-holds: (Q-\d+[a-z]?|[a-z][a-z0-9_.-]*) @ "
-                       r"([0-9a-f]{7,40}) -- ([^|]*?) \|")
 ROW = re.compile(r"^\|\s*(E-\d+)\s*\|")
 #: the cells (4, s3 dropped at the pin and counted, E-095), the searched configurations and the fitted values (17)
 CELL_COUNTS = {"cells": 4, "dropped_at_pin": ["s3"], "searched": 0, "fitted_values": 11}
@@ -121,67 +117,29 @@ def blob_problems(repo: Path, pinned: Mapping[str, str] = PINNED_BLOBS) -> list[
 # ------------------------------------------------------------------------------------------------ the decision log
 
 
-def parse(text: str) -> list[dict[str, str]]:
-    """Every positional token of the decision log (E-104): one a row that begins
-    `| E-NNN | YYYY-MM-DD | identity-holds: <id> @ <sha> -- <text> |` -- {row, date, id, sha, text}. The same string
-    anywhere else in a row, or with backticks, is no token."""
-    out = []
-    for line in text.splitlines():
-        m = TOKEN_ROW.match(line)
-        if m:
-            out.append({"row": m.group(1), "date": m.group(2), "id": m.group(3), "sha": m.group(4),
-                        "text": m.group(5)})
-    return out
-
-
-def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
-
-
-def _token_problem(tok: Mapping[str, str], repo: Path, head: str, covered: Sequence[str]) -> str | None:
-    sha = tok["sha"]
-    if _git(repo, "cat-file", "-e", f"{sha}^{{commit}}").returncode:
-        return f"{tok['row']}: {sha} is no commit of this repository"
-    if _git(repo, "merge-base", "--is-ancestor", sha, head).returncode:
-        return f"{tok['row']}: {sha[:12]} is neither HEAD nor an ancestor of it"
-    d = _git(repo, "diff", "--name-only", sha, head, "--", *covered) if covered else None
-    if d is not None and (d.returncode or d.stdout.strip()):
-        changed = d.stdout.split()[:3] if not d.returncode else [d.stderr.strip()[:120]]
-        return f"{tok['row']}: the covered files changed since {sha[:12]} ({changed})"
-    return None
-
-
-def problems(text: str, ident: str, repo: Path, head: str, covered: Sequence[str]) -> list[str]:
-    """Why `ident` is not on record as holding at `head` (empty when it is): no row carries its positional token, or
-    every one that does is at a commit that is not HEAD or its ancestor, or one of `covered` changed since."""
-    toks = [t for t in parse(text) if t["id"] == ident]
-    if not toks:
-        return [f"no row of DECISIONS.md begins with the positional token for {ident} (E-104: "
-                "`| E-NNN | YYYY-MM-DD | identity-holds: <id> @ <sha> -- ...`): the identity is not on record as holding"]
-    why = [_token_problem(t, Path(repo), head, covered) for t in toks]
-    return [] if any(w is None for w in why) else [f"{ident}: {w}" for w in why]
-
-
-def held(text: str, ident: str, repo: Path, head: str, covered: Sequence[str]) -> bool:
-    """E-104's rule (the shared parser's signature, Q-110): `ident` holds when some row carries its positional token at
-    a commit that is `head` or an ancestor of it, with none of `covered` changed since."""
-    return not problems(text, ident, repo, head, covered)
-
-
-def held_rows(text: str, ident: str, repo: Path, head: str, covered: Sequence[str]) -> list[str]:
-    """The rows whose token for `ident` counts (named in every manifest)."""
-    return [t["row"] for t in parse(text) if t["id"] == ident
-            and _token_problem(t, Path(repo), head, covered) is None]
-
-
 def waited_problems(decisions_text: str, waits: Mapping[str, Sequence[str]], repo: Path, head: str = "HEAD"
                     ) -> tuple[list[str], dict[str, list[str]]]:
-    """(why each waited identity is not on record as holding, {id: the rows that count}) -- E-104's rule."""
+    """(why the waits are not met, {id: the row that counts}) by the one parser (`extended.identity_tokens`, Q-110;
+    E-104): first `IT.problems(text)` must be empty -- any breach refuses before a wait is read; then each waited
+    identity by `IT.held_report(text, ident, repo, head, covered)` (refused there too: an id outside the grammar, a
+    covered path not in `head`)."""
+    from extended import identity_tokens as IT
+
+    breaches = IT.problems(decisions_text)
+    if breaches:
+        return [f"DECISIONS.md breaches the token rule (E-104), so no wait is read: {b_}" for b_ in breaches], {}
     bad: list[str] = []
     rows: dict[str, list[str]] = {}
     for ident, covered in waits.items():
-        bad += problems(decisions_text, ident, repo, head, covered)
-        rows[ident] = held_rows(decisions_text, ident, repo, head, covered)
+        try:
+            tok, why = IT.held_report(decisions_text, ident, repo, head, list(covered))
+        except ValueError as exc:
+            bad.append(f"{ident}: {exc}")
+            rows[ident] = []
+            continue
+        rows[ident] = [tok.row] if tok is not None else []
+        if tok is None:
+            bad.append(f"{ident} is not on record as holding at {head} for its covered files: " + "; ".join(why))
     return bad, rows
 
 
@@ -228,7 +186,7 @@ class PreRun:
     problems: list[str] = field(default_factory=list)
 
     def parameters(self) -> dict[str, Any]:
-        return {"identity_rows": self.rows, "identity_token_rule": "E-104 (E-098 amended): positional",
+        return {"identity_rows": self.rows, "identity_token_rule": "E-104 by extended.identity_tokens (Q-110)",
                 "identity_covered": {k: list(v) for k, v in WAITS.items()}, "declaration": DECLARATION,
                 "declaration_sha256": DECLARATION_SHA256, "pin_row": PIN_ROW, "k": K, "level": LEVEL,
                 "pinned_blobs": dict(PINNED_BLOBS), "judged_sessions": len(self.judged_sessions),
@@ -314,7 +272,6 @@ def choice_pick(choice: pd.DataFrame) -> dict[str, Any]:
 
 __all__ = ["FAMILY", "DECLARATION", "DECLARATION_SHA256", "PIN_ROW", "K", "LEVEL", "PURPOSES", "PINNED_BLOBS", "WAITED",
            "A0_ID", "A0_QUEUE_ID", "WAITS", "CELL_COUNTS", "RESULT", "JOURNEY", "SECTIONS", "RUN1_SECTIONS",
-           "RunRefused", "blob_id", "head_blob", "blob_problems", "parse", "problems", "held", "held_rows",
-           "waited_problems", "declaration_problems",
+           "RunRefused", "blob_id", "head_blob", "blob_problems", "waited_problems", "declaration_problems",
            "level_problems", "session_list_problems", "PreRun", "pre_run", "pinned_run1_problems", "file_sha256",
            "rows", "frame", "choice_pick"]

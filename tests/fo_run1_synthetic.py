@@ -4,7 +4,7 @@ result value of any design is read.
 
     python tests/fo_run1_synthetic.py <repository root>       # prints one JSON line last
 
-**The inputs:** `extended/synthetic_bars.py`'s bars (seed `[20261988, 700]`, fast: `vol_scale` 10, so overnight 3R brackets
+**The inputs:** `extended/synthetic_bars.py`'s bars (seed `[SEED_TESTS, 700]`, fast: `vol_scale` 10, so overnight 3R brackets
 resolve) on 2020-06-01 .. 2020-12-31 and the first quarter of 2021, 2022 and 2023 (each year of stage A's span), a day table
 with report days (`b`, the first Friday of each month) and one FOMC day (`f`); every mark 17:00 .. 09:00 admitted; the
 walk by this repository's walker; P-16's configuration, plan and money side from the vendored tree (no registered

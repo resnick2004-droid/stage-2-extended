@@ -4,6 +4,7 @@ time on the machine, from a clean checkout of a named commit (`scripts/run_clean
     python scripts/fo_opening.py --run 1 --workers 2                      # stages A and B, the choice block only
     python scripts/fo_opening.py --run 1 --check-guards                   # the refusing guards only; reads nothing
     python scripts/fo_opening.py --run 2 --run1 results/fo_opening.csv --check-read   # run 2's four reads, pre-checked
+    python scripts/fo_opening.py --run 2 --run1 results/fo_opening.csv --workers 2    # stage C and the scorecard
 
 **Before anything is read** (`extended.opening_run.pre_run`, refusing): the pass-line blobs, the level
 `family_level(12)`, the judged session list (657, E-094's sha256), the pinned text and its reads line, the waited
@@ -21,13 +22,22 @@ forecast (its canonical JSON and sha256 in the manifest) and the pick. **A10's c
 surviving cell's class) is not built -- its inner draws' seeds are not declared and its declared cost is far below its
 real one -- so if A10 flags it, run 1 stops before stage B (EXIT 3) for the lead's decision, writing nothing.
 
-**Run 2** (stage C) is built through its reads' pre-check (`--check-read`: the four purposes in stage C's order through
-`extended.reader.authorise`, nothing read) and its pinned inputs (T-9: run 1's sha256 and u3's forecast hash in one
-row naming F-03); its statistics are `extended.opening_stats`'; **its end-to-end composition is not built**: run 2
-refuses (EXIT 3) after the pinned inputs check.
+**Run 2** (stage C, section 12; the scorecard, 13) reads run 1's file and u3's forecast only by the hashes the lead
+pinned between the runs (T-9), then the judged block in stage C's order, each purpose authorised and ledgered by
+`extended/reader.py` just before its stage (`Ctx.authorise`; `--repeat E-NNN` only under a row naming F-03):
+`stage_C_states` (A1's judged day kinds and the bars: the pick's states by the frozen forecast, the population offers
+from the bars alone, the strata counts and run lengths, hashed; K0 on the judged C1 counts), `stage_C_judgement` (the
+population's walks, both flatten conventions and Q-20's corrected moves, the labels: L, the halves, a*, B2, C1, C1-close,
+C3), `stage_C_campaign` (the paired U1 replays of the design, its two clustered twin designs and P-16: K0 on the judged
+C2 counts before any value is attached, B2 for C2, C2 and V_line; the floors, floor (iii) on the design's own gate
+campaign at the gate's declared seed; the beside readings, the placement on, the zero-edge twin and P-16's campaign at
+the same seed among them) and `stage_C_scorecard` (the journeys of the design, its twin design (draw 0) and P-16 on
+both arms under the responses, `extended.user_readings`' card, measures and path readings, the paired readings with
+`pcons` beside, the frontier, the notes). It writes `results/fo_opening_judged.csv` (sections `level`, `judged`,
+`campaign`, `floor`, `beside`) and `results/fo_journey.csv`, each with its manifest -- run 1's file is never rewritten.
 
 The last line printed is `EXIT <code>`: 0 written, 2 refused by a guard, 3 an identity, a kill or an unbuilt branch
-stopped the run.
+(A10's consequence) stopped the run.
 """
 from __future__ import annotations
 
@@ -48,6 +58,7 @@ sys.path.insert(0, str(ROOT))
 sys.dont_write_bytecode = True
 
 SCRIPT = "scripts/fo_opening.py"
+RESULT_JUDGED = "fo_opening_judged"
 STAGE_AB_FIRST = "2021-01-04"
 ARM = "verdict"
 DECIDING_CLASS = {"s1": "window", "s2": "window", "u3": "block5"}      # 6.6's one deciding class a cell
@@ -72,6 +83,10 @@ class Sizes:
     a10: int = 2000
     stage_b: int = 2000
     a3_cuts: int = A3_CUTS
+    b2: int = 1_000_000
+    gate_paths: int = 500
+    responses: tuple[str, ...] = ("off", "denial_10", "denial_25", "denial_50", "forfeit_10", "forfeit_25",
+                                  "forfeit_50", "rtp", "rtp_w3")
 
 
 @dataclass
@@ -81,6 +96,95 @@ class Ctx:
     results_dir: Path | None = None
     sizes: Sizes = field(default_factory=Sizes)
     smoke: bool = False
+    repeat: str | None = None
+    authorised: list = field(default_factory=list)
+
+    # ---- run 2's judged reads, each under its purpose (19.1), authorised just before its stage
+    def authorise(self, purpose: str) -> None:
+        from extended import VENDOR_STAGE2, opening_run as R, reader
+
+        files = [VENDOR_STAGE2 / f for f in ("data/bars/NQ/bars.parquet", "data/atlas/A1/days.parquet")]
+        reader.authorise_engine_read(reader.JUDGED_START, reader.JUDGED_END, purpose=purpose,
+                                     declaration=R.DECLARATION, repeat=self.repeat, files=files,
+                                     what=f"F-03 run 2: {purpose}")
+        self.authorised.append(purpose)
+
+    def judged_days(self):
+        from extended import opening_run as R, reader
+
+        d = reader.read_walks("A1", "days", reader.JUDGED_START, reader.JUDGED_END, purpose="stage_C_states",
+                              declaration=R.DECLARATION, repeat=self.repeat, columns=["date", "day_kind"],
+                              what="F-03 stage_C_states: A1's judged day table")
+        return d.assign(date=d["date"].astype(str), day_kind=d["day_kind"].astype(str))
+
+    def states_grid(self, walked_choice: list[str], walked_judged: list[str]):
+        import pandas as pd
+
+        from extended import features as F
+        from extended import opening_run as R, reader
+
+        a = reader.read_bars(walked_choice[0], reader.CHOICE_END, what="F-03 stage_C_states: the choice tail")
+        b = reader.read_bars(reader.JUDGED_START, reader.JUDGED_END, purpose="stage_C_states",
+                             declaration=R.DECLARATION, repeat=self.repeat,
+                             what="F-03 stage_C_states: the judged bars")
+        bars = pd.concat([a, b], ignore_index=True)
+        keep = set(walked_choice) | set(walked_judged)
+        return F.grid(bars[bars["day"].astype(str).isin(keep)].reset_index(drop=True))
+
+    def admitted(self) -> list[int]:
+        from extended import opening_population as OP
+
+        return OP.admitted_marks()
+
+    def judged_span(self, all_dates: list[str]):
+        from extended import opening_population as OP
+        from extended import opening_run as R, reader
+        from extended import walker as W
+
+        return OP.build_span(str(reader.JUDGED_START), str(reader.JUDGED_END), all_dates, purpose="stage_C_judgement",
+                             declaration=R.DECLARATION, repeat=self.repeat, log=log,
+                             extra_rules={"be_both": W.STAGE2_BE_BOTH})
+
+    def gate(self, trades, days, P, **kw):
+        return gate_campaign(trades, days, P, **kw)
+
+    def follow_lifts(self):
+        from propedge import RESULTS_DIR
+
+        from extended import opening_stats as ST
+
+        return ST.amplitude_b(RESULTS_DIR)
+
+    def p14_ahead(self, arm: str):
+        from extended import p_bound as PB
+
+        return PB.judged(PB.load_starts(configs=("p14",), arms=(arm,))[("p14", arm)])
+
+    def ladder_seed_base(self) -> int:
+        """The denial ladder's base for this file's designs: one integer from the scorecard's ladder key (section
+        16; `user_beside.run_starts`' `seed_base` takes an integer)."""
+        import numpy as np
+
+        from extended import opening_stats as ST
+
+        return int(np.random.SeedSequence([ST.SEED_SCORECARD, 1]).generate_state(1)[0])
+
+    def write_stage_c(self, jdf, jjf, params: dict[str, Any]) -> list[str]:
+        from extended import opening_run as R
+        from extended import opening_stats as ST
+        from extended.results import write_result
+
+        if self.smoke:
+            return []
+        out = []
+        for df, name, what in ((jdf, RESULT_JUDGED, "stage C: the lines, the judged readings, the campaign, the "
+                                                   "floors, beside"),
+                               (jjf, R.JOURNEY, "the journey scorecard (section 13), beside, never the pass line")):
+            csv, _ = write_result(df, name, script=SCRIPT, seed=ST.SEED_B2, parameters=params, exploratory=True,
+                                  prereg_id=R.FAMILY, variant_count=4, results_dir=self.results_dir,
+                                  description=f"F-03 run 2 ({what}); EXPLORATORY until a carried design is registered.")
+            out.append(str(csv))
+        return out
 
     def a1_days(self, start: str, end: str):
         from extended import reader
@@ -290,7 +394,7 @@ def special_sessions(g) -> list[int]:
 
 def a3_cuts(g, st, n: int) -> list[tuple[int, int]]:
     """A3's cuts (9, A3; T-2's on the real frame): the first marks after 17:00, 17:30 and the `asia` band's first marks
-    18:00 and 18:05, on sessions drawn by `[20261981, 10**6]` among those where the states are defined, every roll and
+    18:00 and 18:05, on sessions drawn by `[SEED_SHIFT, 10**6]` among those where the states are defined, every roll and
     DST session among them first; `n` cuts (200 declared)."""
     import numpy as np
 
@@ -547,30 +651,496 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
 # ------------------------------------------------------------------------------------------------ run 2
 
 
-def run2(a: argparse.Namespace) -> int:
+STAGE_C_RESPONSES = ("off", "denial_10", "denial_25", "denial_50", "forfeit_10", "forfeit_25", "forfeit_50", "rtp",
+                     "rtp_w3")
+SCORECARD_ARMS = ("verdict", "point")
+SHARE_HISTORY = 300                    # choice-block walked sessions read before the judged block (the 250-session share)
+
+
+def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_paths: int, workers: int, cls=None,
+                  rtp: bool = False, zero_edge: bool = False, flags_of=None):
+    """A gate campaign on a span's trades as P-16's gate call is made (`identity/gate_identity.py`'s `p16_problems`):
+    `score_fv3_grid.gate_blocks`, `atlas_a3.gate_kwargs` at P-16's registered shift and capacity, the strict rule and
+    the budget, through `extended.gate.run_gate` -- with the waiting class in index mode (`cls(blocks)`), the placement
+    on (`rtp`) or every R shifted to a zero mean by its own e (`portfolio_stage.zero_edge_blocks`)."""
+    import a3_brk30 as B
+    import a3_brk30_cb20 as C
+    import atlas_a3 as A
+    import fv3d_lever_test as lt
+    import portfolio_stage as ps
+    import score_fv3_grid as gf
+
+    from extended import gate as XG
+
+    fcfg, tv = P["fcfg"], float(P["tv"])
+    keys = B.rrs(trades)
+    blocks, n_used = gf.gate_blocks(trades, list(days), tv, keys, require_sides=True, require_exits=True)
+    if n_used != len(trades):
+        raise RuntimeError("the gate's blocks hold a different number of trades")
+    e_by, lb_by = dict(P["e_by"]), dict(P["lb_by"])
+    if zero_edge:
+        blocks = ps.zero_edge_blocks(blocks, e_by, float(fcfg["state_policy"]["fresh"]["funded_rr"]))
+        e_by = {k: 0.0 for k in e_by}
+        lb_by = {k: 0.0 for k in lb_by}
+    pcfg = fcfg["portfolio"]
+    inner = ps.composed_hook({"margin": float(pcfg["margin"]), "block_days": int(pcfg["block_days"])})
+    hook = lt.lever_hook(inner)
+    kw = A.gate_kwargs(blocks, fcfg, tv, P["plan"], e_by, lb_by, hook, seed=int(seed), n_paths=int(n_paths),
+                       horizon=int(fcfg["gate"]["campaign"]["horizon_days"]), capacity=int(P["cap"]), levels=(0.0,),
+                       rtp=bool(rtp), one_at_a_time=C.STRICT_GAP, purchase_budget=C.BUDGET)
+    blk = kw.pop("blocks")
+    extra = {"funded_account_cls": cls(blk)} if cls is not None else {}
+    rows, _ = XG.run_gate(blk, workers=int(workers), **extra, **kw)
+    return rows, blk
+
+
+def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> tuple[int, Any, Any, dict[str, Any]]:
+    """Stage C (section 12) and the scorecard (13) on the judged block, in the declared order -- each judged read
+    authorised just before its stage (`Ctx.authorise`): `stage_C_states`, K0 on the judged C1 counts,
+    `stage_C_judgement`, `stage_C_campaign` (K0 on the judged C2 counts before any value is attached), the floors,
+    `stage_C_scorecard`. Returns (the exit code, the judged frame, the journey frame, the parameters)."""
+    import numpy as np
+    import pandas as pd
+
+    from extended import features as F
+    from extended import opening_population as OP
+    from extended import opening_run as R
+    from extended import opening_stagec as SC
+    from extended import opening_states as OS
+    from extended import opening_stats as ST
+    from extended import opening_wait as OW
+    from extended import reader
+    from extended import user_beside as B
+    from extended import user_readings as UR
+
+    t_all = time.time()
+    z = ctx.sizes
+    pick = R.choice_pick(run1_df)
+    c = pick["pick"]
+    ci = OS.CELL_INDEX[c]
+    fc = OS.coefficients_from_json(run1_params["forecast_json"])
+    out: list[dict[str, Any]] = []
+    jr: list[dict[str, Any]] = []
+    P = ctx.p16()
+    mdv = ctx.mean_dv()
+    A1c = ctx.a1_days(str(reader.CHOICE_START), str(reader.CHOICE_END))
+    cal = list(pre.judged_sessions)
+    n = len(cal)
+
+    # ---- 1. stage_C_states: the judged bars, the pick's states, the strata counts, the run lengths
+    ctx.authorise("stage_C_states")
+    A1j = ctx.judged_days()
+    if sorted(A1j["date"]) != sorted(cal):
+        return _refuse("the judged day table is not the pinned judged session list"), None, None, {}
+    kinds = dict(zip(A1j["date"], A1j["day_kind"]))
+    kinds_all = {**dict(zip(A1c["date"], A1c["day_kind"])), **kinds}
+    all_dates = sorted(set(A1c["date"]) | set(cal))
+    walked_c = sorted(A1c.loc[A1c["day_kind"].isin(OP.WALKED_KINDS), "date"])[-SHARE_HISTORY:]
+    walked_j = sorted(A1j.loc[A1j["day_kind"].isin(OP.WALKED_KINDS), "date"])
+    g = ctx.states_grid(walked_c, walked_j)
+    st = OS.compute(g, frozen=fc, test_years=())
+    if st.forecast.coefficients_sha256 != run1_params["forecast_sha256"]:
+        return _refuse("the frozen forecast is not run 1's"), None, None, {}
+    arrays = {d.isoformat(): tuple(np.r_[np.nan, X[i][:1330]] for X in (g.O, g.H, g.L, g.C))
+              for i, d in enumerate(g.days) if d.isoformat() >= reader.JUDGED_START.isoformat()}
+    admitted = ctx.admitted()
+    pof = SC.population_offers(cal, kinds, admitted, arrays)
+    sfr = st.frame()
+    pof = pof.merge(sfr[["date", "slot", f"in_{c}"]], on=["date", "slot"], how="left")
+    pof[f"in_{c}"] = pof[f"in_{c}"].astype("boolean").fillna(False).astype(bool)
+    L0 = ST.layout(pof, cal, kinds=kinds, values=(), flags=[f"in_{c}"])
+    sel0 = L0.flags[f"in_{c}"] & L0.population
+    sel_sha = OS.states_sha256(pof.rename(columns={f"in_{c}": f"in_{c}"}), cells=[c])
+    out += R.rows("judged", [{"stage": "stage_C_states", "cell": c, "offers": int(L0.population.sum()),
+                              "in_state": int(sel0.sum()), "selection_sha256": sel_sha,
+                              **run_lengths(sel0.any(axis=1))}]
+                  + [{"stage": "stage_C_states", "kind": "stratum_count", "group": f"{k}|{y}",
+                      "in_state": int(sel0[L0.group == gi].sum()), "offers": int(L0.population[L0.group == gi].sum())}
+                     for gi, (k, y) in enumerate(L0.groups)])
+    # ---- 2. K0 on the pick's judged C1 counts, before any outcome is read
+    k0c1 = ST.k0_family(sel0.sum(axis=1), L0.population.sum(axis=1), "nested", n, R.LEVEL, ci, ST.K0_FORMS["c1_judged"],
+                        z.k0)
+    out += R.rows("level", [{"line": "K0", "form": "c1_judged", **k0c1.as_dict()}])
+
+    # ---- 3. stage_C_judgement: the population's walks, L, the halves, (d), B2, C1, C1-close, C3
+    ctx.authorise("stage_C_judgement")
+    spj = ctx.judged_span(all_dates)
+    popj = spj.population.merge(sfr[["date", "slot", f"in_{c}"]], on=["date", "slot"], how="left")
+    popj[f"in_{c}"] = popj[f"in_{c}"].astype("boolean").fillna(False).astype(bool) & popj["population"].astype(bool)
+    bad = SC.population_problems(pof, popj)
+    if bad:
+        return _refuse("; ".join(bad)), None, None, {}
+    vals = ("c", "c_close", "rl", "rs", "c_be_both") if "c_be_both" in popj else ("c", "c_close", "rl", "rs")
+    Lj = ST.layout(popj, cal, kinds=kinds, values=vals, flags=[f"in_{c}"])
+    sel = Lj.flags[f"in_{c}"] & Lj.population
+    kl = _grid(Lj, popj, "kl")
+    ks = _grid(Lj, popj, "ks")
+    y = ST.centred(Lj, "c", Lj.population)
+    y_close = ST.centred(Lj, "c_close", Lj.population)
+    y_all = ST.centred(Lj, "c")
+    # the choice span's centred values on the judged grid's marks (B2's source, both conventions, the labels for C2)
+    spc = ctx.span(str(reader.CHOICE_START), str(reader.CHOICE_END), all_dates)
+    cpop = spc.population[spc.population["date"] >= STAGE_AB_FIRST]
+    ccal = sorted(d for d in A1c["date"] if d >= STAGE_AB_FIRST)
+    Lc = ST.layout(cpop, ccal, kinds=kinds_all, values=("c", "c_close"))
+    on_j = lambda V: _remark(V, Lc.marks, Lj.marks)                                   # noqa: E731
+    yc, yc_close, yc_all = (on_j(ST.centred(Lc, "c", Lc.population)), on_j(ST.centred(Lc, "c_close", Lc.population)),
+                            on_j(ST.centred(Lc, "c")))
+    a_a = ST.amplitude_a(Lc, ST.centred(Lc, "c", Lc.population), Lc.population)
+    a_b, b_rows = ctx.follow_lifts()
+    out_state = Lj.population & ~sel
+    a_d = ST.amplitude_d(Lj, "c", out_state)
+    a_star = max(a_a, a_b, a_d)
+    W1, W2 = sel.astype(float), Lj.population.astype(float)
+    q1, _ = ST.b2_quantiles(ST.B2Inputs(yc, Lc.kind, Lj.kind, Lj.group, Lj.exists & Lj.population, W1, W2), a_star,
+                            R.LEVEL, ST.LINE_C1, replicates=z.b2)
+    q1c, _ = ST.b2_quantiles(ST.B2Inputs(yc_close, Lc.kind, Lj.kind, Lj.group, Lj.exists & Lj.population, W1, W2),
+                             a_star, R.LEVEL, ST.LINE_C1_CLOSE, replicates=z.b2)
+    c1 = ST.c1_line(Lj, y, sel, R.LEVEL, q1)
+    c1c = ST.c1_line(Lj, y_close, sel, R.LEVEL, q1c)
+    h = ST.halves(Lj, sel)
+    c3 = bool(h["long"] > 0 and h["short"] > 0)
+    out += R.rows("level", [{"line": "C1", **c1.as_dict()}, {"line": "C1_close", **c1c.as_dict()},
+                            {"line": "C3", "L_long": h["long"], "L_short": h["short"], "passes": c3},
+                            {"line": "a_star", "a": a_a, "b": a_b, "d": a_d, "a_star": a_star,
+                             "set_by": ["a", "b", "d"][int(np.argmax([a_a, a_b, a_d]))]}])
+    out += R.rows("beside", [{"reading": "follow_lift", **r_} for r_ in b_rows])
+
+    # ---- 4. stage_C_campaign: the paired U1 replays, K0 on their counts, B2 for C2, V_line; the floors
+    ctx.authorise("stage_C_campaign")
+    days_all = sorted(cal)
+    jobs = ctx.jobs(spj.trades, days_all, P)
+    job = jobs[ARM]
+    ids = offer_ids_of(spj.trades, days_all, job["blocks"])
+    starts = list(range(len(job["blocks"])))
+    if z.starts is not None:
+        starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
+    offers = popj.assign(offer=[OP.offer_id(d, s) for d, s in zip(popj["date"], popj["slot"])]).set_index("offer")
+    spec = OW.WaitSpec.for_blocks(c, job["blocks"], flags_by_block(ids, grid_flags(Lj, sel)))
+    design = OW.waiting_class(spec)
+    twin_cls = []
+    for d in ST.TWIN_DRAWS:
+        tw, _ = ST.clustered_twin(Lj, sel, ci, ST.BLOCK_JUDGED, d)
+        twin_cls.append(OW.waiting_class(OW.WaitSpec.for_blocks(f"{c}_twin{d}", job["blocks"],
+                                                                flags_by_block(ids, grid_flags(Lj, tw)))))
+    _, rec_d = replay(f"fo_{c}", job, starts, workers, design, ids)
+    rec_t = [replay(f"fo_{c}_twin{d}", job, starts, workers, k, ids)[1] for d, k in enumerate(twin_cls)]
+    _, rec_p = replay("p16", job, starts, workers, None, ids)
+    od = OW.openings(rec_d, f"fo_{c}", ARM, "off", offers)
+    ot = [OW.openings(r_, f"fo_{c}_twin{d}", ARM, "off", offers) for d, r_ in enumerate(rec_t)]
+    op16 = OW.openings(rec_p, "p16", ARM, "off", offers)
+    pos = {d_: i for i, d_ in enumerate(cal)}
+    u1c = np.bincount([pos[d_] for d_ in od["date"]], minlength=n)
+    u2c = sum(np.bincount([pos[d_] for d_ in o_["date"]], minlength=n) for o_ in ot)
+    k0c2 = ST.k0_family(u1c, u2c, "pair", n, R.LEVEL, ci, ST.K0_FORMS["c2_judged"], z.k0)
+    out += R.rows("level", [{"line": "K0", "form": "c2_judged", **k0c2.as_dict()}])
+    yv = {OP.offer_id(Lj.sessions[i], Lj.marks[k]): float(y_all[i, k]) for i, k in zip(*np.nonzero(Lj.exists))}
+    mpos = {m_: k for k, m_ in enumerate(Lj.marks)}
+
+    def uses(o_):
+        U = np.zeros(Lj.exists.shape)
+        for d_, s_ in zip(o_["date"], o_["slot"]):
+            U[pos[d_], mpos[int(s_)]] += 1
+        return U
+
+    U1, U2 = uses(od), sum(uses(o_) for o_ in ot)
+    out_c2 = Lj.exists & ~sel
+    a_d2 = ST.amplitude_d(Lj, "c", out_c2)
+    a_a2 = ST.amplitude_a(Lc, ST.centred(Lc, "c"), Lc.exists)
+    a2 = max(a_a2, a_b, a_d2)
+    q2, _ = ST.b2_quantiles(ST.B2Inputs(yc_all, Lc.kind, Lj.kind, Lj.group, Lj.exists, U1, U2), a2, R.LEVEL,
+                            ST.LINE_C2, replicates=z.b2)
+    oall = pd.concat(ot, ignore_index=True)
+    c2 = ST.two_sample_line(od["offer"].map(yv).to_numpy(), od["date"].map(pos).to_numpy(),
+                            oall["offer"].map(yv).to_numpy(), oall["date"].map(pos).to_numpy(), n, R.LEVEL, q2)
+    sess = [min(252, len(job["blocks"]) - s_) for s_ in starts]
+    u_d = ST.openings_a_start_year(len(od), sess)
+    v_line = ST.v_line(u_d, mdv, c2.bound) if np.isfinite(c2.bound) else float("nan")
+    c2_pass = bool(np.isfinite(v_line) and v_line >= ST.BAR_DOLLARS and c2.bound > 0)
+    out += R.rows("level", [{"line": "C2", **c2.as_dict(), "u_d": u_d, "V_line": v_line, "passes_bar": c2_pass,
+                             "a_star": a2, "a": a_a2, "d": a_d2}])
+    out += R.rows("campaign", opening_counts(od, "design", c) + opening_counts(op16, "p16", "-")
+                  + [x for d, o_ in enumerate(ot) for x in opening_counts(o_, f"twin{d}", c)])
+    # the floors
+    pool = SC.pooled_years(Lj.year)
+    f1 = SC.floor_resolution(kl[Lj.population], ks[Lj.population], sel[Lj.population], np.broadcast_to(
+        Lj.year[:, None], sel.shape)[Lj.population], pool)
+    f1b = SC.floor_taken_flattened(rec_d.trades(f"fo_{c}", ARM, "off"), offers, pool)
+    gate_cls = _index_class(c, spj.trades, days_all, Lj, sel)
+    grows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
+                        cls=gate_cls)
+    fg = SC.floor_gate(grows)
+    floors = {"i_in_state_unresolved": f1["holds"], "i_taken_flattened": f1b["holds"], "ii_realised_risk": fg["floor_ii"],
+              "iii_long_run_gate": fg["floor_iii"], "iv_rules_verified": True, "v_conduct_tier_1": True}
+    out += R.rows("floor", [{"floor": "i", "part": "in_state_unresolved_3r", **f1["shares"], "holds": f1["holds"]},
+                            {"floor": "i", "part": "taken_flattened", **f1b["shares"], "trades": f1b.get("trades"),
+                             "holds": f1b["holds"]},
+                            {"floor": "ii", "part": "realised_to_intended_capped_risk",
+                             "value": fg["realised_to_intended_capped_risk"], "threshold": SC.FLOOR_REALISED,
+                             "holds": fg["floor_ii"]},
+                            {"floor": "iii", "part": "growth_on_required_at_bound", "value": fg["growth_at_bound"],
+                             "seed_role": "the design's gate campaign (SEED_GATE)", "paths": z.gate_paths,
+                             "holds": fg["floor_iii"],
+                             "note": "on the gate's independent days the design waits less than traded in history's "
+                                     "order (the second read's n2-8)"},
+                            {"floor": "iv", "part": "every firm rule verified (Stage 2's ledger)", "holds": True},
+                            {"floor": "v", "part": "conduct tier 1 (section 3)", "holds": True}])
+
+    # ---- the beside readings (12), deciding nothing
+    bes: list[dict[str, Any]] = []
+    for yr in sorted(set(Lj.year)):
+        m_ = np.broadcast_to((Lj.year == yr)[:, None], sel.shape)
+        bes.append({"reading": "L_by_year", "block": "judged", "year": int(yr),
+                    "L": ST.lift(Lj, np.where(m_, y, np.nan), sel),
+                    "L_long": ST.lift(Lj, np.where(m_, ST.centred(Lj, "rl", Lj.population), np.nan), sel),
+                    "L_short": ST.lift(Lj, np.where(m_, ST.centred(Lj, "rs", Lj.population), np.nan), sel)})
+    ch1 = run1_df[(run1_df["section"] == "choice") & (run1_df["kind"] == "cell") & (run1_df["cell"] == c)]
+    if len(ch1):
+        bes.append({"reading": "L_by_year", "block": "choice", "by_year": ch1["by_year"].iloc[0]})
+    bes += [{"reading": "kind_share", **x} for x in SC.kind_shares(Lj, kl, ks, sel)]
+    cost = costs_of(P)
+    bes.append({"reading": "kind_decomposition", **SC.kind_decomposition(Lj, kl, ks, sel, cost[0], cost[1])})
+    if "c_be_both" in Lj.values:
+        bes.append({"reading": "L_q20_corrected_moves", "rules": "STAGE2_BE_BOTH",
+                    "L": ST.lift(Lj, ST.centred(Lj, "c_be_both", Lj.population), sel)})
+    tw_draw = SC.drawn_twin(Lj, sel, ci)
+    sess_g = np.repeat(np.arange(n)[:, None], len(Lj.marks), axis=1)
+    m1, m2 = sel & np.isfinite(y), tw_draw & np.isfinite(y)
+    bd = ST.LB.two_sample_bound(y[m1], sess_g[m1], y[m2], sess_g[m2], n, level=R.LEVEL)
+    bes.append({"reading": "seeded_twin_draw", "draw": 0, "estimate": bd.estimate, "lower": bd.lower})
+    a10 = run1_df[(run1_df["section"] == "level_control") & (run1_df.get("check") == "A10")]
+    bes += [{"reading": "A10_pick_class", **{k: r_[k] for k in ("class", "share", "level", "lax") if k in r_}}
+            for _, r_ in a10[a10["class"] == DECIDING_CLASS[c]].iterrows()]
+    bes += [{"reading": "K0_judged", "form": f, "rate": v.rejections / v.replications, "lax": v.lax}
+            for f, v in (("c1", k0c1), ("c2", k0c2))]
+    yP = op16["offer"].map(yv)
+    u_p = ST.openings_a_start_year(len(op16), sess)
+    v_des = ST.v_line(u_d, mdv, float(od["offer"].map(yv).mean()))
+    v_tw = ST.v_line(ST.openings_a_start_year(len(oall) / 2.0, sess), mdv, float(oall["offer"].map(yv).mean()))
+    bes += [{"reading": "V_p16", "value": ST.v_line(u_p, mdv, float(yP.mean()))},
+            {"reading": "V_design_undifferenced", "value": v_des},
+            {"reading": "V_design_minus_V_twin", "value": v_des - v_tw}]
+    for part in ("in_wait", "fallback"):
+        a_, b_ = od[od[part]], oall[oall[part]]
+        if len(a_) and len(b_):
+            bes.append({"reading": f"V_{part}", "value": ST.v_line(u_d, mdv, float(a_["offer"].map(yv).mean()
+                                                                                     - b_["offer"].map(yv).mean()))})
+    bes += v_other_rows(rec_d, rec_t, c, popj, Lj)
+    iw = ST.openings_a_start_year(int(od["in_wait"].sum()), sess)
+    bes.append({"reading": "uniform_lift_valuation", "value": SC.uniform_valuation(c1.bound, iw, mdv),
+                "in_wait_per_start_year": iw})
+    bes.append({"reading": "p16_openings_in_state_share",
+                "value": float(op16[f"in_{c}"].mean()) if len(op16) else float("nan")})
+    if c == "u3":
+        bands = {b_: [k for k, m_ in enumerate(st.marks) if lo <= m_ <= hi] for b_, (lo, hi, _) in OS.BANDS.items()}
+        rows_ = np.array([d.isoformat() >= reader.JUDGED_START.isoformat() for d in st.days])
+        bes += [{"reading": "u3_judged_skill", "band": b_, **v} for b_, v in ST.a4_skill(st.y, st.y_hat, bands,
+                                                                                         rows_).items()]
+    # beside floor (iii): the placement on, the zero-edge twin, P-16's campaign at the same seed; e, its bound, D-47
+    on_rows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
+                          cls=gate_cls, rtp=True)
+    ze_rows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
+                          cls=gate_cls, zero_edge=True)
+    p16_rows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers)
+    g_on, g_ze, g_p = SC.floor_gate(on_rows), SC.floor_gate(ze_rows), SC.floor_gate(p16_rows)
+    bes += [{"reading": "break_even_denial", "value": fg["break_even_denial"]},
+            {"reading": "placement_on_growth_at_bound", "value": g_on["growth_at_bound"]},
+            {"reading": "zero_edge_twin_growth", "value": g_ze["growth_at_point"],
+             "signal_lift_over_zero_edge_twin": fg["growth_at_point"] - g_ze["growth_at_point"]},
+            {"reading": "same_day_multi_breach_share", "design": fg["share_paths_with_same_day_multi_breach"],
+             "p16": g_p["share_paths_with_same_day_multi_breach"]},
+            {"reading": "s_program_guard", "value": fg["growth_at_bound"] - g_p["growth_at_bound"]},
+            {"reading": "e_bound_d47", "note": "P-16's by construction (the same trades, P-16's registered shift); "
+                                              "cited from its registration, not recomputed"},
+            {"reading": "assumptions", "note": "the differencing removes the routing selection to first order; the "
+                                              "state's own alignment with the night's routing is not in B2's null for "
+                                              "C2; V is gross of the wait's cost and first-order; the value-map price "
+                                              "at the bound is not calibrated"}]
+    out += R.rows("beside", bes)
+    # the verdict (12): every line and floor
+    claimed = not (k0c1.lax or k0c2.lax)
+    passes = bool(claimed and c1.passes and c1c.passes and c2_pass and c3 and all(floors.values()))
+    verdict = ("not claimed: the judged counts make cons lax" if not claimed else "CARRIED" if passes else "CLOSED")
+    out += R.rows("level", [{"line": "verdict", "cell": c, "verdict": verdict, **floors}])
+
+    # ---- 5. stage_C_scorecard (13)
+    ctx.authorise("stage_C_scorecard")
+    tw0_flags = grid_flags(Lj, ST.clustered_twin(Lj, sel, ci, ST.BLOCK_JUDGED, 0)[0])
+    designs = {"design": grid_flags(Lj, sel), "twin": tw0_flags, "p16": None}
+    cards: dict[str, dict[str, float]] = {}
+    tables: dict[tuple[str, str], Any] = {}
+    for arm in SCORECARD_ARMS:
+        jb = jobs[arm]
+        ids_a = offer_ids_of(spj.trades, days_all, jb["blocks"])
+        st_ = list(range(len(jb["blocks"])))
+        if z.starts is not None:
+            st_ = st_[:: max(1, len(st_) // int(z.starts))][: int(z.starts)]
+        for name, k in designs.items():
+            for resp in z.responses:
+                kw = ({"funded_account_cls": OW.waiting_class(OW.WaitSpec.for_blocks(f"{c}_{name}_{arm}", jb["blocks"],
+                                                                                  flags_by_block(ids_a, k)))}
+                      if k is not None else {})
+                if resp.startswith("denial") or resp.startswith("forfeit"):
+                    kw["seed_base"] = ctx.ladder_seed_base()
+                outs = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
+                rows_, t = UR.summary(name, arm, B.BY_NAME[resp], outs)
+                jr += [dict(r_) for r_ in rows_]
+                if resp == "off":
+                    tables[(name, arm)] = t
+                    if arm == ARM:
+                        cards[name] = _card(rows_)
+    for arm in SCORECARD_ARMS:
+        for name, other in (("design", "p16"), ("design", "twin"), ("twin", "p16")):
+            jr += [{"section": "paired", "arm": arm, **r_} for r_ in
+                   SC.paired_rows(name, tables[(name, arm)], tables[(other, arm)], other)]
+        p14 = ctx.p14_ahead(arm)
+        if p14 is not None:
+            for name in designs:
+                jr += [{"section": "paired", "arm": arm, **r_} for r_ in
+                       SC.paired_rows(name, tables[(name, arm)], None, "p14", b_ahead=p14)]
+    jr += [{"section": "frontier", "design": k, "on_frontier": v, **cards.get(k, {})}
+           for k, v in SC.frontier({k: {m_: cards[k].get(m_, np.nan) for m_ in SC.FRONTIER_MEASURES}
+                                    for k in cards}).items()]
+    jr += [{"section": "note", "measure": "not_modelled", "note": SC.NOT_MODELLED},
+           {"section": "note", "measure": "focused_trader", "note": SC.FTP_NOTE},
+           {"section": "note", "measure": "menu", "note": "E-015's limits as flags only, once the operator approves "
+                                                         "them; none approved: no menu"},
+           {"section": "note", "measure": "d621_3", "note": "Stage 2 D-621 (3)'s rule against P-14 beside, its line "
+                                                           "(i) not holding its level (E-007 (1)); not computed here"}]
+    jdf = R.frame(out, R.SECTIONS[10:])
+    jjf = pd.DataFrame(jr)
+    params = {**pre.parameters(), "run": 2, "pick": c, "verdict": verdict, "run1_sha256": run1_params.get("_sha256"),
+              "forecast_sha256": run1_params["forecast_sha256"], "selection_sha256": sel_sha,
+              "population_sha256": OP.frame_sha256(popj), "purposes": list(ctx.authorised), "sizes": vars(z),
+              "seed_roles": {"twins": "SEED_TWIN", "B2": "SEED_B2", "K0": "SEED_K0", "gate": "SEED_GATE",
+                             "scorecard": "SEED_SCORECARD"}, "workers": int(workers),
+              "seconds": round(time.time() - t_all, 1)}
+    return 0, jdf, jjf, params
+
+
+def _refuse(why: str) -> int:
+    log(f"REFUSED (F-03): {why}")
+    return 3
+
+
+def _grid(L, pop, col: str):
+    import numpy as np
+
+    pos = {d: i for i, d in enumerate(L.sessions)}
+    mpos = {m: k for k, m in enumerate(L.marks)}
+    G = np.full(L.exists.shape, -1, dtype=np.int64)
+    G[[pos[d] for d in pop["date"]], [mpos[int(s)] for s in pop["slot"]]] = pop[col].to_numpy(np.int64)
+    return G
+
+
+def _remark(V, src_marks, dst_marks):
+    import numpy as np
+
+    k = {m: i for i, m in enumerate(src_marks)}
+    out = np.full((V.shape[0], len(dst_marks)), np.nan)
+    for j, m in enumerate(dst_marks):
+        if m in k:
+            out[:, j] = V[:, k[m]]
+    return out
+
+
+def costs_of(P: dict[str, Any]):
+    import atlas_a3 as A
+
+    from extended import walker as W
+
+    fee = A.fee_by_stop(P["fcfg"], (150,), float(P["tv"]))[150]
+    entry = float(P["cfg"]["slip_ticks"])
+    return W.Costs(float(fee), float(P["tv"]), entry), entry
+
+
+def _index_class(c: str, trades, days, Lj, sel):
+    """The waiting class for the gate (index mode): the flags of each gate block's trades, in its trade order."""
+    from extended import opening_wait as OW
+
+    def make(blocks):
+        ids = offer_ids_of(trades, days, blocks)
+        return OW.waiting_class(OW.WaitSpec.for_index(f"{c}_gate", flags_by_block(ids, grid_flags(Lj, sel))))
+    return make
+
+
+def _card(rows) -> dict[str, float]:
+    out = {}
+    for r_ in rows:
+        if (r_.get("section") == "scorecard" and r_.get("block") == "judged" and r_.get("stat") == "value"
+                and r_["measure"] in ("P", "S1", "S3a", "S5a")):
+            out[r_["measure"]] = float(r_["value"])
+    return out
+
+
+def v_other_rows(rec_d, rec_t, c: str, popj, Lj) -> list[dict[str, Any]]:
+    """V_other (7.4, beside): the designs' trades at places (b), (d) and (e), each valued at its own R against its own
+    stratum's mean at that R (the side-symmetric value), the design's mean less the twin designs' pooled mean."""
+    import numpy as np
+    import pandas as pd
+
+    from extended import opening_population as OP
+    from extended import opening_stats as ST
+
+    td = rec_d.trades(f"fo_{c}", ARM, "off")
+    tt = pd.concat([r_.trades(f"fo_{c}_twin{d}", ARM, "off") for d, r_ in enumerate(rec_t)], ignore_index=True)
+    out = []
+    for place in ("b_evaluation", "d_funded_later", "e_paid"):
+        a, b = td[td["place"] == place], tt[tt["place"] == place]
+        if not len(a) or not len(b):
+            continue
+        val: dict[str, float] = {}
+        for R in sorted(set(pd.to_numeric(pd.concat([a["rr"], b["rr"]]), errors="coerce").dropna())):
+            k = OP.rkey(R)
+            if f"rl_{k}" not in popj:
+                continue
+            popj[f"_c_{k}"] = (popj[f"rl_{k}"] + popj[f"rs_{k}"]) / 2.0
+            L = ST.layout(popj, Lj.sessions, values=(f"_c_{k}",))
+            yR = ST.centred(L, f"_c_{k}")
+            for i, j in zip(*np.nonzero(L.exists)):
+                val[f"{OP.offer_id(L.sessions[i], L.marks[j])}#{k}"] = float(yR[i, j])
+        key = lambda t: [f"{o}#{OP.rkey(r)}" for o, r in zip(t["offer"], pd.to_numeric(t["rr"]))]   # noqa: E731
+        va = pd.Series(key(a)).map(val).dropna()
+        vb = pd.Series(key(b)).map(val).dropna()
+        out.append({"reading": "V_other", "place": place, "D": float(va.mean() - vb.mean()) if len(va) and len(vb)
+                    else float("nan"), "trades_design": int(len(va)), "trades_twins": int(len(vb))})
+    return out
+
+
+def main_run2(a: argparse.Namespace, pre) -> int:
+    """Run 2's entry point: run 1's file and u3's forecast by the hashes the lead pinned (T-9), then stage C."""
     import pandas as pd
 
     from extended import opening_run as R
     from extended import opening_states as OS
 
+    if not a.run1:
+        log("REFUSED (F-03): run 2 reads run 1's result file (--run1)")
+        return 2
     run1 = Path(a.run1)
     sha = R.file_sha256(run1)
-    man = json.loads(Path(str(run1) + ".manifest.json").read_text(encoding="utf-8"))
-    par = man.get("parameters") or {}
-    fsha = par.get("forecast_sha256")
-    bad = R.pinned_run1_problems((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), sha, fsha)
-    if OS.coefficients_sha256(OS.coefficients_from_json(par.get("forecast_json", "{}"))) != fsha:
+    par = (json.loads(Path(str(run1) + ".manifest.json").read_text(encoding="utf-8")).get("parameters") or {})
+    bad = R.pinned_run1_problems((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), sha, par.get("forecast_sha256"))
+    if OS.coefficients_sha256(OS.coefficients_from_json(par.get("forecast_json", "{}"))) != par.get("forecast_sha256"):
         bad.append("run 1's forecast JSON does not hash to its recorded sha256")
+    df1 = pd.read_csv(run1, low_memory=False)
+    pick = R.choice_pick(df1)
+    if pick["killed"] or not pick["pick"]:
+        bad.append("run 1 closed the family (Kill B, or every cell killed): there is no run 2")
     if bad:
         log("REFUSED (F-03): " + "; ".join(bad))
         return 2
-    pick = R.choice_pick(pd.read_csv(run1, low_memory=False))
-    if pick["killed"] or not pick["pick"]:
-        log("REFUSED (F-03): run 1 closed the family (Kill B, or every cell killed): there is no run 2")
-        return 2
-    log(f"run 2: the pick {pick['pick']} (run 1 {sha[:16]}, forecast {fsha[:16]})")
-    log("STOPPED (F-03): stage C's end-to-end composition is not built (the build's hand-back); nothing read")
-    return 3
+    from extended import use_vendored_stage2
+
+    use_vendored_stage2()
+    ctx = Ctx(repeat=a.repeat)
+    code, jdf, jjf, params = run2(ctx, pre, int(a.workers), df1, {**par, "_sha256": sha})
+    if code != 0:
+        return code
+    for p_ in ctx.write_stage_c(jdf, jjf, params):
+        log(f"written: {p_}")
+    log(f"stage C: {params['verdict']}")
+    return 0
 
 
 def check_reads(a: argparse.Namespace) -> int:
@@ -614,7 +1184,9 @@ def main(argv: list[str] | None = None) -> int:
     if a.check_guards:
         return 0
     if a.run == 2:
-        return check_reads(a) if a.check_read else run2(a)
+        if a.check_read:
+            return check_reads(a)
+        return main_run2(a, pre)
     from extended import use_vendored_stage2
 
     use_vendored_stage2()

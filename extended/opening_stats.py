@@ -16,7 +16,7 @@ span session **of its own day kind** (two stationary bootstraps of mean block 63
 offers that session's centred values at the same marks (a mark the drawn session lacks is dropped), plus a* x rho_t (a
 sign switching with probability 1/63 a judged session, a random start), **re-centred within the judged strata**, the
 members recomputed with the real judged weights (C1: the in-state flag against every population offer; C2: the
-design's uses against the twin designs' uses). Replicate j draws from `default_rng([20261985, line, j])`.
+design's uses against the twin designs' uses). Replicate j draws from `default_rng([SEED_B2, line, j])`.
 
 **a*** (11 item 3): the largest of (a) the choice span's largest |mean| over its disjoint 63-session blocks (in session
 order; `lift_bound.block_index`'s blocks) of the per-session mean of y, (b) Stage 2's recorded follow lifts at 3R
@@ -26,11 +26,11 @@ the per-session mean of the **out-of-state** offers' values, each centred by its
 
 **K0** (A11): `cons`'s size at the family's level on Q-16's `cluster` sign null (each offer or use 1/2 sign(a_s + e), the
 session effect shared, icc 0.35), each replication the judged block's length of the count series from a uniform
-circular offset; replication j from `default_rng([20261989, cell, form, j])`; a cell killed when the 95 %
+circular offset; replication j from `default_rng([SEED_K0, cell, form, j])`; a cell killed when the 95 %
 Clopper-Pearson interval lies wholly above the nominal. Counts only: no value is read.
 
 **The clustered twin** (7.1): the state's own indicator shifted circularly, within each (calendar year, day kind)
-sequence of sessions, by a uniform offset over the sequence's positions (`default_rng([20261982, c, b, d])`, one
+sequence of sessions, by a uniform offset over the sequence's positions (`default_rng([SEED_TWIN, c, b, d])`, one
 offset a sequence in (year, kind) order), all marks of a session together.
 
 Every function that draws takes its generator's key explicitly (section 16's seeds); none has a default seed.
@@ -527,7 +527,7 @@ def k0_rejections_from_sums(S1, N1, S2, N2, level: float) -> int:
 def k0(N1s, N2s, form: str, n_judged: int, level: float, rng_for: Callable[[int], np.random.Generator],
        replications: int = K0_REPLICATIONS, chunk: int = 2000) -> K0Verdict:
     """A11: `cons`'s rejections at `level` on the sign null over `replications`; replication j's draws from
-    `rng_for(j)` (the family's: `default_rng([20261989, cell, form, j])`); the verdict the Clopper-Pearson interval's
+    `rng_for(j)` (the family's: `default_rng([SEED_K0, cell, form, j])`); the verdict the Clopper-Pearson interval's
     and nothing else (lax when its lower end is above the nominal). Reads counts only."""
     rej, done = 0, 0
     while done < replications:
@@ -542,7 +542,7 @@ def k0(N1s, N2s, form: str, n_judged: int, level: float, rng_for: Callable[[int]
 
 def k0_family(N1s, N2s, form: str, n_judged: int, level: float, cell: int, form_index: int,
               replications: int = K0_REPLICATIONS) -> K0Verdict:
-    """K0 with the declared generators `[20261989, cell, form, j]`."""
+    """K0 with the declared generators `[SEED_K0, cell, form, j]`."""
     return k0(N1s, N2s, form, n_judged, level, lambda j: rng_of(SEED_K0, cell, form_index, j), replications)
 
 
@@ -584,7 +584,7 @@ def a10_selection(rng: np.random.Generator, model: str, share: float, population
 def a10(L: Layout, y: np.ndarray, classes: Sequence[str] = A10_CLASSES, shares: Sequence[float] = A10_SHARES,
         selections: int = A10_SELECTIONS, levels: Sequence[float] = A10_LEVELS) -> pd.DataFrame:
     """A10 (9): `cons` (treated) through `placebo_selection_bound` on y = c - mu_g over the choice span's population, at
-    one-sided 1 % and 5 %, on random selections; selection j of (class, share) from `default_rng([20261984, class,
+    one-sided 1 % and 5 %, on random selections; selection j of (class, share) from `default_rng([SEED_A10, class,
     share, j])` (class its index in Table 9's order, share its index); a class lax when the rejection rate's 95 %
     Clopper-Pearson interval lies wholly above the nominal."""
     rows = []
@@ -647,7 +647,7 @@ def k5_killed(fallback_share: float) -> bool:
 def a4_skill(y: np.ndarray, y_hat: np.ndarray, band_cols: Mapping[str, Sequence[int]], rows: np.ndarray
              ) -> dict[str, dict[str, float]]:
     """A4 (9): per band, the per-session MSE of y under the HAR against under y = 0 on the out-of-fold sessions `rows`;
-    the improvement's one-sided 95 % lower bound by circular 21-session blocks, 2,000 draws (`[20261980, 0]`, one
+    the improvement's one-sided 95 % lower bound by circular 21-session blocks, 2,000 draws (`[SEED_STAGE_B, 0]`, one
     generator for every band in `band_cols`' order)."""
     rng = rng_of(SEED_STAGE_B, 0)
     out = {}
@@ -688,7 +688,7 @@ def _strata_lift(C: np.ndarray, pop: np.ndarray, sel: np.ndarray, group: np.ndar
 def stage_b_bootstrap(L: Layout, value: str, selections: Mapping[str, np.ndarray], draws: int = STAGE_B_DRAWS,
                       seed_key: tuple[int, int] = (SEED_STAGE_B, 1)) -> dict[str, Any]:
     """10 item 1: L_c for each eligible cell on the span, and its stationary bootstrap of sessions (mean block 63,
-    2,000 draws from one generator `[20261980, 1]`), each draw recomputing L_c, the strata means included, on the
+    2,000 draws from one generator `[SEED_STAGE_B, 1]`), each draw recomputing L_c, the strata means included, on the
     resampled sessions; SE_c the draws' sd; q_B the 95th percentile over the centred draws of max_c (L*_c - L_c) / SE_c."""
     C = L.values[value]
     names = list(selections)
@@ -708,7 +708,7 @@ def stage_b_bootstrap(L: Layout, value: str, selections: Mapping[str, np.ndarray
 def d_bootstrap_se(y1, s1, y2, s2, n_sessions: int, draws: int = STAGE_B_DRAWS,
                    seed_key: tuple[int, int] = (SEED_STAGE_B, 2)) -> tuple[float, float]:
     """V_B's per-opening difference D_B and its standard error: a stationary bootstrap of the span's sessions (mean
-    block 63, 2,000 draws, `[20261980, 2]`), each resampled session bringing its uses of both samples (the uses held
+    block 63, 2,000 draws, `[SEED_STAGE_B, 2]`), each resampled session bringing its uses of both samples (the uses held
     fixed; the values centred once on the span)."""
     S1, N1 = LB.session_sums(y1, np.asarray(s1, np.int64), n_sessions)
     S2, N2 = LB.session_sums(y2, np.asarray(s2, np.int64), n_sessions)

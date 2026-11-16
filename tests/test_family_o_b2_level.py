@@ -2,8 +2,8 @@
 n2-6): B2's machinery (`extended.opening_stats`) on synthetic data at declared levels (the first read's m7) -- a
 synthetic population with a planted slow component and a clustered daily selection independent of it; the per-member
 larger-of rule under `cons` at one-sided 1 % and 5 %; 2,000 outer replications, each B2 quantile from 20,000 inner
-replicates. Outer replication j draws its judged block from `[20261988, 200, j, 0]` and its inner replicates from
-`[20261988, 200, j, 1, i]` (section 16's test block, `[20261988, 200, j]`). **Failure rule:** the test fails if a
+replicates. Outer replication j draws its judged block from `[SEED_TESTS, 200, j, 0]` and its inner replicates from
+`[SEED_TESTS, 200, j, 1, i]` (section 16's test block, `[SEED_TESTS, 200, j]`). **Failure rule:** the test fails if a
 level's rejection rate has its 95 % Clopper-Pearson interval wholly above the nominal; a failure is kept on record and
 runs the failure protocol, never a rerun to pass. The family's level rests on the larger-of rule at the family's
 level, not on this test.

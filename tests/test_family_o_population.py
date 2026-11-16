@@ -1,7 +1,7 @@
 """F-03 (family O, `prereg/F-03_opening_timing.md`) T-4, T-6, T-16, T-17 and T-14: the population and its strata, the
 estimand on the family's own code, K0, the clustered twin and the stage-B pick (sections 5.2, 7, 9 A11, 10; build items
-18.1 items 2 and 5). Synthetic inputs only; seeds `[20261988, ...]` (section 16's test block) and the declared
-generators where the code under test draws (`[20261982, c, b, d]`, `[20261989, cell, form, j]`).
+18.1 items 2 and 5). Synthetic inputs only; seeds `[SEED_TESTS, ...]` (section 16's test block) and the declared
+generators where the code under test draws (`[SEED_TWIN, c, b, d]`, `[SEED_K0, cell, form, j]`).
 """
 from __future__ import annotations
 
@@ -276,7 +276,7 @@ def test_t16_k0_reads_no_value_and_draws_by_its_declared_generator():
     N1s, N2s = rng.binomial(30, 0.4, 200), rng.binomial(30, 0.4, 200)
     a = ST.k0_family(N1s, N2s, "pair", 120, 0.05, cell=0, form_index=1, replications=200)
     b = ST.k0_family(N1s, N2s, "pair", 120, 0.05, cell=0, form_index=1, replications=200)
-    assert a == b                                                   # deterministic by [20261989, cell, form, j]
+    assert a == b                                                   # deterministic by [SEED_K0, cell, form, j]
     import inspect
     assert "value" not in inspect.signature(ST.k0).parameters and "y" not in inspect.signature(ST.k0).parameters
     assert ST.SEED_K0 == 20261989 and ST.K0_REPLICATIONS == 200_000

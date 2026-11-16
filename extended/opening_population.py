@@ -132,11 +132,14 @@ def p16_offered(slot: np.ndarray, day_kind: np.ndarray, admitted: Sequence[int])
 
 def population_frame(walk: pd.DataFrame, walk_close: pd.DataFrame, coins: Any, kinds: Mapping[str, str],
                      admitted: Sequence[int], *, rr_grid: Sequence[float], costs: W.Costs,
-                     entry_ticks: float = float(W.SLIP_TICKS)) -> pd.DataFrame:
+                     entry_ticks: float = float(W.SLIP_TICKS), extras: Mapping[str, pd.DataFrame] | None = None
+                     ) -> pd.DataFrame:
     """One row a P-16 offer (date, mark) walked on both sides: `date`, `year`, `day_kind`, `slot`, `entry_slot`, `coin`
     (+1 / -1, the registered coin), `population` (5.2) and `label` (the other P-16 offers), the kinds `kl`, `ks` and
-    the net R `rl`, `rs`, `rl_close`, `rs_close` at 3R, `c` and `c_close`, and both sides' net R at every table R
-    (`rl_<R>`, `rs_<R>`). A row is kept only where P-16 offers it and both sides filled."""
+    the net R `rl`, `rs`, `rl_close`, `rs_close` at 3R, `c` and `c_close`, both sides' net R and kind at every table
+    R (`rl_<R>`, `rs_<R>`, `kl_<R>`, `ks_<R>`), and for each further walk at 3R in `extras` (name -> walk frame, such
+    as Q-20's corrected moves) `rl_<name>`, `rs_<name>`, `c_<name>`. A row is kept only where P-16 offers it and both
+    sides filled."""
     S = STOP
     rr = [float(R) for R in rr_grid]
     if R_JUDGED not in rr:
@@ -168,6 +171,8 @@ def population_frame(walk: pd.DataFrame, walk_close: pd.DataFrame, coins: Any, k
     for R in rr:
         out[f"rl_{rkey(R)}"] = net(lo, R)
         out[f"rs_{rkey(R)}"] = net(sh, R)
+        out[f"kl_{rkey(R)}"] = lo[f"k{S}_{rkey(R)}"].astype(np.int8).to_numpy()
+        out[f"ks_{rkey(R)}"] = sh[f"k{S}_{rkey(R)}"].astype(np.int8).to_numpy()
     out["kl"] = lo[f"k{S}_3"].astype(np.int8).to_numpy()
     out["ks"] = sh[f"k{S}_3"].astype(np.int8).to_numpy()
     out["rl"], out["rs"] = out["rl_3"].to_numpy(), out["rs_3"].to_numpy()
@@ -184,6 +189,14 @@ def population_frame(walk: pd.DataFrame, walk_close: pd.DataFrame, coins: Any, k
     out["rs_close"] = net(cs, R_JUDGED)
     out["c"] = (out["rl"] + out["rs"]) / 2.0
     out["c_close"] = (out["rl_close"] + out["rs_close"]) / 2.0
+    for name, wx in (extras or {}).items():
+        wx = wx.assign(date=wx["date"].astype(str), slot=wx["slot"].astype(np.int64))
+        xl = wx[wx["side"].astype(int) > 0].set_index(["date", "slot"]).reindex(both)
+        xs = wx[wx["side"].astype(int) < 0].set_index(["date", "slot"]).reindex(both)
+        if xl[f"k{S}_3"].isna().any() or xs[f"k{S}_3"].isna().any():
+            raise ValueError(f"the walk {name!r} does not cover every offer")
+        out[f"rl_{name}"], out[f"rs_{name}"] = net(xl, R_JUDGED), net(xs, R_JUDGED)
+        out[f"c_{name}"] = (out[f"rl_{name}"] + out[f"rs_{name}"]) / 2.0
     out = out[offered].reset_index(drop=True)
     return out
 
@@ -344,7 +357,8 @@ def build_span(start: str, end: str, all_dates: Sequence[str], *, purpose: str |
                declaration: Any = None, repeat: str | None = None, results_dir=None,
                arrays_for: Callable[[list[str]], Callable[[str], tuple]] | None = None,
                days_table: pd.DataFrame | None = None, admitted: Sequence[int] | None = None,
-               log: Callable[[str], None] = print) -> Span:
+               log: Callable[[str], None] = print,
+               extra_rules: Mapping[str, W.Rules] | None = None) -> Span:
     """The span's population, labels and P-16 trades (the module docstring). `all_dates`: every stored session of the
     development window (the coin's grid); `purpose`/`declaration`/`repeat`: the reader's, for a judged span. Seams for
     the synthetic tests: `arrays_for(dates) -> arrays(day)`, `days_table` (date, day_kind) and `admitted` (the marks)
@@ -404,17 +418,21 @@ def build_span(start: str, end: str, all_dates: Sequence[str], *, purpose: str |
         return arrays
 
     walks, closes = [], []
+    extras: dict[str, list[pd.DataFrame]] = {n: [] for n in (extra_rules or {})}
     for i in range(0, len(walk_dates), CHUNK_DAYS):
         chunk = walk_dates[i:i + CHUNK_DAYS]
         arr = read_arrays(chunk)
         m = mins[mins["date"].isin(chunk)]
         walks.append(walk_offers(m, arr, rr_grid, rules=W.STAGE2, tick=tick))
         closes.append(walk_offers(m, arr, [R_JUDGED], rules=CLOSE_RULES, tick=tick))
+        for n_, rules_ in (extra_rules or {}).items():
+            extras[n_].append(walk_offers(m, arr, [R_JUDGED], rules=rules_, tick=tick))
         log(f"  F-03 walked {min(i + CHUNK_DAYS, len(walk_dates))}/{len(walk_dates)} days")
     walk = pd.concat(walks, ignore_index=True) if walks else walk_offers(mins.iloc[0:0], None, rr_grid)
     walk_close = pd.concat(closes, ignore_index=True)
     pop = population_frame(walk, walk_close, coins, kinds, admitted, rr_grid=rr_grid, costs=costs,
-                           entry_ticks=float(cfg["slip_ticks"]))
+                           entry_ticks=float(cfg["slip_ticks"]),
+                           extras={n_: pd.concat(v, ignore_index=True) for n_, v in extras.items() if v})
     raw = rc.cell_trades(walk, kinds, admitted, STOP, coins, fees, rr_grid=rr_grid, fresh_rr=crr, tick_value=tv,
                          entry_ticks=float(cfg["slip_ticks"]), cut=cut)
     trades = rc.drop_release_minute(zd.pad(raw, keys), clear) if len(raw) else raw

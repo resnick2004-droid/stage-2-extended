@@ -1,6 +1,6 @@
 """F-03 (family O, `prereg/F-03_opening_timing.md`) T-2 and T-7: the states read only bars closed by the alert, and
 u3's forecast is ordinary least squares (sections 6, A3; build item 18.1 item 1). Synthetic bars only
-(`extended/synthetic_bars.py`); the replacement walks are seeded `[20261981, j]` (section 16).
+(`extended/synthetic_bars.py`); the replacement walks are seeded `[SEED_SHIFT, j]` (section 16).
 
 T-2 (A3): every bar stamped at or after the alert m - 5 is replaced by a seeded random walk, and separately deleted;
 every state's share and flag and every y_hat at (d, m) -- and at every earlier (session, mark) -- is unchanged, at 200
