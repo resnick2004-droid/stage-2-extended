@@ -86,7 +86,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-68 | A red-team read of the pass-line code (`extended/lift_bound.py`, `extended/p_bound.py`, the calibration scripts) against E-035 and F-02 v5, before the pin | wt-verify | running | Q-55 | light | 0 | E-044 |
 | Q-69 | The scorecard page for Q-44's `results/user_beside.csv`, built from its writer's schema on a synthetic fixture (Q-27's tool) | wt-report | running | Q-17 | light | 0 | E-044 |
 | Q-70 | The place-recording adapter (family B section 20 item 9, family O 18.1): every simulated trade's offer, R and place; its 4-path identity a heavy chain step | wt-features | running | -- | light | 0 | E-044 |
-| Q-71 | The RD firms gate seam (A-8): `run_gate` gains `payout_lag_days`, `household_closure`, `combine_account_cls`; the campaign re-composed in `extended/`, pinned by source hash; identity at no class | wt-payout | running | Q-47 | light | 0 | E-044 |
+| Q-71 | The RD firms gate seam (A-8): `run_gate` gains `payout_lag_days`, `household_closure`, `combine_account_cls`; the campaign re-composed in `extended/`, pinned by source hash; identity at no class | wt-payout | done: merged 9335481 (E-049); its identities Q-80 | Q-47 | light | 0 | E-044 |
 | Q-72 | F-02's sixth draft, narrow: the gatekeeper's four gaps; the title and status in pin-time form | wt-levels | done: merged c09730e (E-047); the gatekeeper's re-read Q-66b | Q-66 | light | 0 | E-045 |
 | Q-73 | The FOMC-minutes release dates 2020-01-02 to 2026-07-16 from federalreserve.gov (a scout's cited note and CSV); then a pinned `config/` calendar (a builder, as E-029) | wt-firms | done: 53 releases cited (E-048); the calendar Q-79 | Q-54b | light | 0 | E-045 |
 | Q-74 | The reader admits pinned `prereg/RD-nn_*.md` declarations; the strict expected failures tracking the gap become passing tests | wt-infra | queued (after Q-67, same worker) | Q-58 | light | 0 | E-045 |
@@ -96,6 +96,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-66b | The gatekeeper re-reads F-02's sixth text (c09730e) -- a verdict only | lead | done: APPROVE, contingent on Q-55 only (E-048) | Q-72 | light | 0 | E-047 |
 | Q-78 | Family R's second draft to the program's current rules | wt-levels | running | Q-38 | light | 0 | E-048 |
 | Q-79 | `config/calendar_fomc_minutes.csv` built from Q-73's cited dates (builder, loader, tests), then pinned by the lead | wt-firms | running | Q-73 | light | 0 | E-048 |
+| Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | queued (after the second leg) | Q-71 | heavy | 0 | E-049 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
