@@ -121,11 +121,11 @@ def _lucid(args: dict[str, Any], s: T.Settings) -> tuple[dict[str, Any], dict[st
     cls = path.pop("funded_account_cls")
     path.pop("household_closure")
     path["conduct"] = V["ConductModel"](rtp=False, enforcement_p=0.0)
-    sz = dataclasses.replace(lu.draws["sizing"], fee_schedule=T.fee_schedule("LU"))
     kw: dict[str, Any] = {"funded_account_cls": cls}
     if s.household is False:                       # the lenient reach; the strict one is the class's own rule (A-9)
         kw["household_closure"] = False
-    return {**args, "draws": {**lu.draws, "sizing": sz}, "path": path}, kw
+    # 4.8: LU's per-trade costs are TS's -- the design's own sizing fee schedule, which lucid_setup keeps
+    return {**args, "draws": dict(lu.draws), "path": path}, kw
 
 
 def plan_args(args: dict[str, Any], s: T.Settings, *, blocks: Sequence[Any] | None = None,
@@ -177,8 +177,7 @@ def gate_args(gate_kw: dict[str, Any], s: T.Settings) -> dict[str, Any]:
         sz = gate_kw["sizing"]
         lz = lucid_sizing_rule(sz.mode, headroom_frac=sz.headroom_frac)
         out = {**gate_kw, "rules": lucid_rules(open_rows=OPEN_ROWS_UPPER_BOUND, configuration=STANDARD_40),
-               "sizing": dataclasses.replace(sz, ladder=lz.ladder, combine_limit_micros=lz.combine_limit_micros,
-                                             fee_schedule=T.fee_schedule("LU")),
+               "sizing": dataclasses.replace(sz, ladder=lz.ladder, combine_limit_micros=lz.combine_limit_micros),
                "payout_lag_days": int(lucid_terms().payout_processing_days), "payout_timing": LUCID_PAYOUT_TIMING,
                "funded_account_cls": LucidFundedAccount}
         if s.household is False:

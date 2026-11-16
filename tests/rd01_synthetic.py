@@ -324,9 +324,14 @@ for a in fund + fund_rich:
         share = row["w_profit"] > EPS and row["w_best"] <= 0.3 * row["w_profit"] + EPS if row["net"] is None else None
         if row["lrd"]:
             seen["rd_excluded"] += 1
+        since_want = 0.0 if row["net"] is not None else (a.trace[i - 1]["since_pay"] if i else 0.0) + row["pnl"]
+        if abs(row["since_pay"] - since_want) > 1e-6:
+            probs.append(f"Pro {a.index}: since_pay {row['since_pay']} is not the cycle's profit {since_want}")
         if row["net"] is not None:
             r = row["last_request"]
             seen["payouts"] += 1
+            if not row["rdn"]:
+                probs.append(f"Pro {a.index}: the session after a request is not the request day (4.9)")
             bc = row["B"] + r
             if abs(r / 50.0 - round(r / 50.0)) > 1e-9 or r < 500.0 - EPS or r > 2000.0 + EPS:
                 probs.append(f"Pro {a.index}: request {r} off its bounds")
@@ -730,8 +735,14 @@ for a in [x for x in accts if isinstance(x, FundedAccount)]:
             break
         if row["win_days"] not in (row["true_wd"], 4):
             p14.append(f"FP {a.index}: win_days {row['win_days']} is neither the engine's {row['true_wd']} nor 4")
-        if row["net"] is not None and not row["rdn"] and a.FIFTH != "unpaid":
+        if row["ended_on"] is not None:
+            break                                            # the fifth request's close: the account ends there
+        if row["net"] is not None and not row["rdn"]:
             p14.append(f"FP {a.index}: no request day after a request")
+        i = a.trace.index(row)
+        since_want = 0.0 if row["net"] is not None else (a.trace[i - 1]["since_pay"] if i else 0.0) + row["pnl"]
+        if abs(row["since_pay"] - since_want) > 1e-6:
+            p14.append(f"FP {a.index}: since_pay {row['since_pay']} is not the profit since the request {since_want}")
 out["t14_fp_problems"] = p14[:6]
 out["t14_fp_held"] = int(sum(a.sessions_held for a in accts if isinstance(a, FundedAccount)))
 
