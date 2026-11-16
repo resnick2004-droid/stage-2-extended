@@ -168,7 +168,7 @@ def test_shipped_statistic_holds_its_size_on_a_fixed_null(gen, seed):
 @pytest.mark.xfail(strict=True, reason=(
     "Q-16, kept on record (the failure protocol): written before the choice, on a 300-session calendar; the shipped "
     "`cons` finds the planted 5-se lift 62.6 % of the time there, because its 63-session member has 4 blocks (df 3). "
-    "Diagnosed (scratch dbg/diag_power.py): on the judged block's 657 sessions (10 blocks, df 9) it finds it 96 %. "
+    "Diagnosed (docs/research/scripts/q16/diag_power.py): on the judged block's 657 sessions (10 blocks, df 9) it finds it 96 %. "
     "Not loosened; the judged-calendar check is test_power_on_the_judged_calendar"))
 def test_power_is_not_vacuous_and_mdl_matches_the_power_definition():
     rng = np.random.default_rng(20261910)
@@ -397,7 +397,7 @@ def test_persistent_selection_first_form_fails_and_treated_form_holds():
     "Q-16, kept on record: written with the treated-df change, before its calibration; on this 300-session "
     "whole-session filter null t21w alone with the treated df still rejects 1.295 % at 1 % (6-11 treated blocks: the "
     "CR variance stays a little low); every member is 1.2-1.3x; only their intersection (cons, 0.27 %) holds -- "
-    "scratch dbg/diag_treated.py"))
+    "docs/research/scripts/q16/diag_treated.py"))
 def test_t21w_alone_with_the_treated_df_holds_on_a_session_filter():
     rng = np.random.default_rng([20261911, 10])
     A, B, W, M = _session_filter_null(rng, 20000)
