@@ -15,26 +15,25 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 |---|---|---|
 | P-14's registered gate paths (500, point and bound, every `PATH_COLS` column to 1e-6) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | P-16's registered gate paths (500, same) | HOLDS, clean clone of ba2d3b5 | E-004 |
-| U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`) | **not yet built** (Q-05) | -- |
+| U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`) | **running**: every start, under the lock (Q-05, wt-verify) | -- |
 
-## NEEDS_OPERATOR
+## NEEDS_OPERATOR (the audit gate, E-007: not passed for model families)
 
-**Candidates, pending the red team's check (Q-07); none adopted, none acted on:**
+Confirmed by the red team (`docs/reviews/phase0_red_team_2026-11-15.md`); asked of the operator 2026-11-15:
 
-1. **The selection rule does not deliver its level** (tracks B and D independently): Stage 2 D-621 (3)(i)'s paired
-   moving-block percentile bound rejects a true zero far more often than 0.05/110 on synthetic nulls with the data's
-   own dependence. No Stage 2 closure flips (they all failed to carry); a CARRIED here would not mean what it says.
-2. **The judged block may be too small to carry any plausible design on P** (track B): few independent starts; the
-   minimum detectable difference far above every gain on file.
-3. **Every user measure is read at 0 % payout denial, the Responsible Trading Program's placement off and the Focused
-   Trader Program off** (track C) -- the operator's rules (Stage 2 D-234, D-289) applied as declared -- while the
-   designs show the named patterns on nearly every payout; the user files report no reading beside.
-4. **The multiplicity budget** (track D): E-001's reason for continuing program U applies to Stage 2's program S too.
-5. **S3c as the screening target** (track B): partly arithmetic, and weak among the strongest designs.
+1. **How new designs are judged.** Once the selection rule is corrected (the lead's fix, Q-16), the judged block
+   (2024-01-02 to 2026-07-16, a few dozen independent starts) can carry only near-P-14 variants or large
+   contract-shape effects on P. Options: judge a design first on its trades (lift over the coin twin) with P beside;
+   add history (QuantConnect's free NQ from 2009, item 7; or a Databento purchase, item 8); a second fold; or keep P
+   and accept that only large effects can carry.
+2. **0 % payout denial and the placement off as the verdict** (Stage 2 D-234, D-289). The readings beside are added
+   either way (E-007 (e)).
+3. **The no-automation limit.** Topstep's pages permit automation through its paid API; the limit is the operator's.
+4. *After the rules readings (Q-19):* the tiers of the breakeven stop move inside P-14/P-15/P-16 ("auto-breakeven",
+   10305426) and of Terms of Use s.8 (outsized positions) against the state table.
 
-**F-01 is held** (track D: withdraw and re-declare -- the fill-bar rule's asymmetry, its overlap with Stage 2's closed
-opening-range branch, stage D's design, K2, a one-minute look-ahead at 08:25). Nothing of F-01 is built beyond the
-general walker, and no level is computed.
+Safe defaults applied meanwhile (E-007): F-01 withdrawn (k = 10 spent); `or30` out; the signal-service purpose
+dropped; report-day entries after 07:35:00 CT; no model family starts.
 
 ## The run lock
 
@@ -54,7 +53,6 @@ All five created at e4f399a with the bars and atlas linked as junctions (`python
 
 ## Running now
 
-- Q-07: the red-team pass over the five audit notes (`docs/reviews/phase0_red_team_2026-11-15.md`).
 - Q-04/Q-05 (wt-verify), Q-10 (wt-levels), Q-12 (wt-firms): workers on their briefs.
 
 ## Machine
