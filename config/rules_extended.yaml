@@ -2243,3 +2243,811 @@ rules:
       The page's partial-request examples are its nearest support. They are in round hundreds and do not show whether
       an amount in cents, or one that is not a round figure, is accepted. Only a reading of the form would settle
       that: the operator's browser (Stage 2 D-574's pattern), no purchase, no request submitted.
+
+  # ==== Q-59 (2026-11-16): R-1..R-5 for DayTraders EOD 50K and TradeDay Fast Pass / Quick Pay End of Day 50K =========
+  # Brief: TASK_QUEUE Q-59 (E-038; prereg/DRAFT_RD_firms.md section 16 item 2). Hosts: daytraders.com (its /help
+  # centre) and www.tradeday.com / tradeday.freshdesk.com only (meta.official_domains). Retrieval within E-020 (1)'s
+  # reading of the crawl-only clauses (DayTraders ToU s.27, TradeDay T&C s.24): named pages, one at a time, in
+  # sequence, within robots.txt, which was re-read today (daytraders.com/robots.txt allows /help/;
+  # tradeday.freshdesk.com/robots.txt disallows only search, tickets, login, /helpdesk/ (attachments allowed), public
+  # tickets and "/hit" paths). The Terms read today show the dates Q-26 recorded (DayTraders "Last Updated: March 5,
+  # 2025"; TradeDay "Last Modified: August 11, 2026"). Two index pages were read to find articles (daytraders.com/help
+  # and its "Trading Rules and Guidelines" collection, 11 articles). Web searches limited to the firms' domains were
+  # used only to find article ids; their summaries are not evidence (one listed old DayTraders ids such as 14367899,
+  # which returned HTTP 404, and a host help.daytraders.com, which is not listed here and was not read). No login,
+  # form, chat or purchase; nothing was sent. Each rule page was fetched at least twice with differently worded
+  # prompts; `quote` holds text returned verbatim in at least two fetches unless the note says otherwise. The fetch
+  # tool returns long sentences only in fragments of about 125 characters, so some are quoted as consecutive
+  # fragments joined by " ... " where the join is not certain to be a sentence boundary. TradeDay's help pages show a
+  # year in "Modified on" only for dates before 2026; copied as shown. Terms that apply to every plan carry firm-level
+  # keys (daytraders.*, tradeday.*): no page read distinguishes the plans for them. READINGS, NOT RULINGS: where a term
+  # bears on the designs the note says how; tiers are the operator's (E-007 item 4).
+
+  # ---- Q-59 DayTraders.com -----------------------------------------------------------------------------------------
+  - key: daytraders.permitted_products
+    firm: daytraders
+    value: "futures only (no forex, crypto or options); NQ (E-mini Nasdaq-100) and the micro MNQ are both listed as tradable"
+    units: text
+    status: verified
+    article_id: "17704134"
+    url: https://daytraders.com/help/articles/17704134-instruments-and-commissions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704134 "Instruments and Commissions" ("Updated over 3 weeks ago"), instruments table, columns "Group" | "Instruments":
+      "Equity" | "E-mini S&P 500 (ES), E-mini Nasdaq-100 (NQ), Mini-Dow (YM), Russell 2000 (RTY), E-mini Midcap 400 (EMD), Nikkei (NKD)"
+      "Micros" | "MES, MNQ, MYM, M2K, Micro Gold (MGC), Micro Crude Oil (MCL), Micro AUD/USD (M6A), Micro EUR/USD (M6E)"
+      Commission table, columns "Group" | "Symbols" | "Round turn": "Micros" | "MES, MNQ, MYM, M2K, MCL" | "$1.02"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-1). FETCHES: three. The two instrument rows came back verbatim in one fetch and as the
+      same lists, summarised, in another; they are word for word the survey's machine-checked quotes of 2026-11-15.
+      The commission row came back verbatim in two (daytraders.commissions). Verbatim once, and in the same words
+      paraphrased once: "DayTraders is for futures only: no forex, crypto or options." ASKED DIRECTLY (once): no
+      sentence says MNQ or micros are restricted, not permitted or limited by plan. The page names no exchange. An
+      account's own instrument list is shown in rTrader Pro ("View Risk Parameters", paraphrased once), behind the
+      login, not read. THE DESIGNS: Stage 2 costs their trades as MNQ (vendor/stage2/config/fills.yaml,
+      round_turn_by_instrument), a listed product.
+
+  - key: daytraders.contract_counting
+    firm: daytraders
+    value: "10 micros count as 1 mini; positions in different instruments add up (5 NQ + 50 MNQ fills a 10-contract account); working orders do not count until they fill; an order that would exceed the limit is rejected; Pro Accounts keep their evaluation's limits; getting around the limits leads to closure"
+    units: text
+    status: verified
+    article_id: "17704092; 17704134"
+    url: https://daytraders.com/help/articles/17704092-contract-limits
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704092 "Contract Limits" ("Updated over 3 weeks ago"), section "How it's counted":
+      "10 micro contracts count as 1 mini contract."
+      "Positions in different instruments add up. On a 10-contract account, 5 NQ + 50 MNQ uses your full limit."
+      "Working orders don't count until they fill."
+      "An order that would take you over the limit is rejected."
+      "Pro Accounts keep the same limits as their evaluation."
+      Max contracts table, columns Plan | Max contracts (minis), row EOD: "25K: 6 · 50K: 10 · 150K: 12 · 300K: 40"
+      "Any attempt to get around these limits," ... "leads to account closure."
+      17704134: "Your max contracts are the total across all instruments and open positions," ... "so on a 10-contract account, 5 NQ + 50 MNQ is the full limit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-1). FETCHES: 17704092 twice, every line in `quote` verbatim in both, except the closure
+      sentence, whose middle ("for example by splitting positions across platforms or tools,") came back once.
+      Verbatim once: "Your max contracts is the largest total open position you can hold at once, across all
+      instruments combined." 17704134 (three fetches): the max-contracts sentence came back in two; "10 micros = 1
+      mini." verbatim in one and in paraphrase in another; verbatim once: "Orders beyond it are rejected, and any
+      deliberate attempt(s) to circumvent limits will breach your account." NOT STATED (asked once): whether the
+      limit is per account or across a holder's accounts; the page's example is "a 10-contract account". THE DESIGNS:
+      MNQ only, one position at a time across the firm (Stage 2 D-157, D-429), so the 100 micros of
+      daytraders.eod50k.eval_position_limit and funded_position_limit are the draft's allowance as written.
+
+  - key: daytraders.trading_hours
+    firm: daytraders
+    value: "the trading day runs from 6:00 PM ET to 4:59 PM ET the next day (17:00 to 15:59 CT, this record's conversion)"
+    units: text
+    status: verified
+    article_id: "17704089"
+    url: https://daytraders.com/help/articles/17704089-trading-hours-holidays-and-overnight-positions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704089 "Trading Hours, Holidays and Overnight Positions" ("Updated over 3 weeks ago"):
+      "The trading day runs from 6:00 PM ET to 4:59 PM ET the next day."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-2). FETCHES: two; the sentence verbatim in both (the page sets the times in bold).
+      Verbatim once each: "Sunday's 6:00 PM ET session counts as part of Monday."; "On a market holiday, the session
+      isn't a trading day and its trades count toward the next trading day."; "Shortened sessions that aren't
+      holidays, such as Black Friday and Christmas Eve, count as normal trading days."; "Check the CME Group Holiday
+      Calendar for early closes." 17704134 (verbatim once): "You can trade from 6:00 PM to 4:59 PM ET the next day."
+      The Terms of Use (s.26, March 5, 2025) state the day differently, in CST, in their Daily Loss Limit sentence:
+      "the trading day (6:00PM CST to 5:00 PM CST)" (two fetches); and, once: "Trading can only occur during normal
+      electronic trading hours unless otherwise indicated by us." See daytraders.flat_time. THE DESIGNS: P-16's first
+      mark is 17:00 CT (Stage 2 D-525), the start of DayTraders' trading day on 17704089's words.
+
+  - key: daytraders.flat_time
+    firm: daytraders
+    value: null
+    units: text
+    status: unverified
+    article_id: "17704089; 17704078 s.26"
+    url: https://daytraders.com/help/articles/17704089-trading-hours-holidays-and-overnight-positions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      AMBIGUOUS: the help page and the Terms disagree on whether positions must be flat at the session's end and on whether DayTraders flattens them.
+      17704089 ("Updated over 3 weeks ago"): "Close trades by 4:59 PM ET." / "Holding positions overnight or over the weekend is allowed but not recommended, because of mark-to-market adjustments." / "DayTraders doesn't close your positions for you at the end of the session." / "There's no firm-set liquidation time."
+      17704078 Terms of Use ("Last Updated: March 5, 2025"), s.26 "PROHIBITED CONDUCT", item 2: "Engaging in gap trading" / 2.a: "All trades will be attempted to be automatically flattened upon the relevant market closure." / 2.b: "Traders must close all positions prior to 5:00 PM ET;"
+      s.26, in an unnumbered paragraph: "All positions MUST be closed prior to 5:00 PM CST or prior to the market close, whichever is sooner."
+      s.26: "your positions will automatically be flattened (e.g., closed out) just prior to the end of the then current trading session (e.g., about ten seconds prior to the closing bell at 5:00 PM CST) as determined by Day Traders."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-2), UNVERIFIED because the official pages conflict. FETCHES: 17704089 twice (every line
+      verbatim in both); the Terms five times (the s.26 lines verbatim in at least two each). Read once: the
+      unnumbered paragraph opens "Trading can only occur during normal electronic trading hours unless otherwise
+      indicated by us."; the flattening sentence is introduced by "Additionally, to deter and avoid violations of the
+      trading rules (as set forth in this Section 26 and in addition the Express Funded Account Agreement),"; and on
+      17704089, "You can set your own time in rTrader Pro" (to "set the auto-liquidation time") and "It doesn't adjust
+      for daylight saving time." The phrase "Express Funded Account Agreement" (two fetches) is Topstep's account name,
+      so the Terms read as adapted from Topstep's. By their stated dates the help page ("over 3 weeks ago") is newer
+      than the Terms (March 5, 2025); no page says which governs. WHAT NO PAGE CONTRADICTS: every time stated -- 4:59
+      PM ET, 5:00 PM ET, 5:00 PM CST or the market close if sooner, about ten seconds before 5:00 PM CST -- is at or
+      after 15:59 CT, so a position closed before 4:59 PM ET satisfies every sentence quoted. The designs are flat by
+      15:10 CT (16:10 ET; Stage 2's walk ends 15:08, E-010) and hold nothing past the session, so they are inside on
+      every reading; what stays open (overnight holding, the firm's own flatten) does not touch them. A declared
+      reading is the lead's. ALSO IN s.26, FLAGGED FOR THE LEAD (outside R-1..R-5): "If the Net profit and loss should
+      hit or exceed the Daily Loss Limit during the trading day (6:00PM CST to 5:00 PM CST), the account will hit a
+      Hard Breach and will be auto-liquidated for the remainder of the then current trading session." (verbatim, two
+      fetches) and "This means any open trading positions will be flattened, any pending orders will be canceled, and
+      your account will be prevented from placing any new trades until the start of the next trading day (5:00 PM
+      CST)." (once). The help pages call the DLL a pause, not a failure (17684742, Q-26; 17704094, once today: "You hit
+      the Daily Loss Limit." | "Open positions are closed and trading resumes at 6:00 PM ET, when the next trading day
+      starts." | "The account isn't failed."). Both describe a stop for the rest of the session; "Hard Breach" is the
+      Terms' word for it, and daytraders.eod50k.eval_daily_loss_limit (verified, soft) does not record it. That entry
+      is left as it is.
+
+  - key: daytraders.news_rule
+    firm: daytraders
+    value: "trading around news is allowed but not recommended; no page read names a release, a restricted window, or a liquidation at news"
+    units: text
+    status: verified
+    article_id: "17704089"
+    url: https://daytraders.com/help/articles/17704089-trading-hours-holidays-and-overnight-positions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704089 ("Updated over 3 weeks ago"): "Trading around news is allowed but not recommended."
+      "Fast markets can hit daily price limits or cause platform lag, and losses from these conditions aren't covered."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-3). FETCHES: two; both sentences verbatim in both. ASKED DIRECTLY: 17704089 lists no news
+      event and no news-related restricted time (both fetches); the Terms of Use have no sentence with "news" and none
+      on economic releases (two fetches); 17704132 "Plan Comparison Overview" ("Updated over 3 weeks ago", once) has
+      nothing on news; no title in the "Trading Rules and Guidelines" collection (11 articles) is on news. WHICH
+      RELEASES COUNT: none is named, so none is restricted. THE DESIGNS: no DayTraders page touches a position open at
+      a release; the price-limit sentence leaves the risk with the trader and sets no rule (contrast
+      tradeday.price_limit_rule).
+
+  - key: daytraders.hedging_rule
+    firm: daytraders
+    value: "prohibited within an account and across one's DayTraders accounts: long and short in the same instrument at once, opposite positions in related or correlated instruments, and opposite positions coordinated with other people; if confirmed, every account involved is closed and its unpaid profits forfeited"
+    units: text
+    status: verified
+    article_id: "17704076; 17704078 s.26"
+    url: https://daytraders.com/help/articles/17704076-no-hedging
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704076 "No Hedging" ("Updated over 3 weeks ago"):
+      "Hedging is prohibited within an account and across your accounts."
+      "Holding long and short positions in the same instrument at the same time, in one account or across your DayTraders accounts."
+      "Opposite positions in related or correlated instruments, such as long NQ in one account and short ES in another."
+      "Opposite positions coordinated with other people."
+      "If a prohibited strategy is confirmed, all accounts involved are closed and unpaid profits on them are forfeited."
+      17704078 Terms s.26, item 1.f: "Using hedging trades between the Day Traders Account(s), different accounts under the same account holder, or in concert with any other persons;"
+      item 1.g: "Traders cannot hedge by taking positions in related instruments."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 17704076 twice, every line verbatim in both; the Terms items in two fetches
+      each (1.f in fragments in one, confirmed word for word in another). Verbatim once: "For example, long NQ in one
+      account and short NQ in another."; "Trade execution across accounts and related instruments is monitored.";
+      "Serious or repeat violations lead to a full ban."; "Payouts approved before the finding are honored." ACROSS
+      FIRMS: the page does not address it (asked); it says "Trading with other firms is allowed"
+      (daytraders.copy_trading_own_accounts). CLAUDE.md tier 1 bars hedging across accounts or firms in any case. THE
+      DESIGNS: one position at a time across the firm (Stage 2 D-157, D-429), never an opposite one: outside.
+
+  - key: daytraders.copy_trading_own_accounts
+    firm: daytraders
+    value: "allowed: copying the same trades across one's own accounts (17704076), and trade copiers across one's own accounts, including accounts at other firms (17704087); not allowed: copying trades into accounts that aren't one's own, or using a copier to hedge or to exceed max contracts"
+    units: text
+    status: verified
+    article_id: "17704076; 17704087; 17704093"
+    url: https://daytraders.com/help/articles/17704087-automation-ai-and-trade-copiers
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704076: "Trading with other firms is allowed, and so is copying the same trades across your own accounts."
+      17704087 "Automation, AI and Trade Copiers" ("Updated over 3 weeks ago"), under "What's allowed": "Trade copiers that copy trades across your own accounts, including accounts at other firms."
+      Under "What isn't allowed": "Trading for other people, including copying trades into accounts that aren't yours." / "Using a copier or automation to hedge or to exceed your max contracts."
+      17704093 "Account Sharing, VPN/VPS and Code of Conduct" ("Updated over 3 weeks ago"): "Don't share your credentials or let someone else trade your account, and don't trade accounts for other people."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: two of each page; every line verbatim in both. Verbatim once on 17704093:
+      "Each DayTraders login and its accounts are for one person's own use." (Q-26 read it once too). ASKED DIRECTLY
+      (once): 17704093 has no rule on position size, on how many accounts are traded at once, or on the same trades
+      across one's own accounts; its account-count rule is "One login per household." (daytraders.max_funded_accounts).
+      THE DESIGNS: one person's five accounts, each its own hand-entered trades: inside the permission. Several users
+      placing the same design's trades: see daytraders.tou_s26_prohibited_conduct.
+
+  - key: daytraders.automation_rule
+    firm: daytraders
+    value: "AI, scripts, bots, trade copiers and a VPS allowed at normal execution speeds and within all account rules; not allowed: anything that places, modifies or cancels orders in milliseconds, spams orders or relies on latency, or trades for others; no page addresses hand-entered or API order entry"
+    units: text
+    status: verified
+    article_id: "17704087; 17704078 s.26"
+    url: https://daytraders.com/help/articles/17704087-automation-ai-and-trade-copiers
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704087 ("Updated over 3 weeks ago"): "You can use AI, scripts, bots, trade copiers and a VPS, as long as you don't trade in an HFT style or trade for others."
+      Under "What's allowed": "Scripts, bots and strategy automation that trade at normal execution speeds."
+      Under "What isn't allowed": "Anything that places, modifies or cancels orders in milliseconds, spams orders or relies on latency."
+      17704078 Terms s.26, item 1.h: "Using, such software, AI, high frequency automated trading, mass data entry, or other programs that manipulate" ... "or abuse the Pro Accounts or the simulated trading environment" ... "give Customer an unfair advantage when using the services;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 17704087 twice, verbatim in both; item 1.h in fragments in one fetch of the
+      Terms and confirmed word for word (not returned whole) in another. Verbatim once: "Every trade a tool places
+      counts as your account activity, including any rule breaks, losses or drawdown breaches it causes." ASKED
+      DIRECTLY (once): no sentence on API order entry or on manual, hand-entered trading. THE DESIGNS: hand-entered,
+      no automated or API order entry (CLAUDE.md): outside every clause.
+
+  - key: daytraders.hft_rule
+    firm: daytraders
+    value: "high-frequency trading prohibited on every plan: orders placed, modified or cancelled in milliseconds or at extremely high speed; hundreds or thousands of trades per second or minute; excessive trade volume over very short periods; a suspected account is suspended pending review"
+    units: text
+    status: verified
+    article_id: "17704074"
+    url: https://daytraders.com/help/articles/17704074-no-high-frequency-trading
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704074 "No High-Frequency Trading" ("Updated over 3 weeks ago"):
+      "High-frequency trading (HFT) is prohibited on every plan."
+      Under "What counts as HFT": "Systems that place, modify or cancel orders in milliseconds or at extremely high speed." / "Executing hundreds or thousands of trades per second or minute." / "Excessive trade volume over very short periods."
+      "An account suspected of HFT is suspended pending review."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: two; every line verbatim in both. Verbatim once: "Order spamming, or
+      repeatedly placing and canceling orders at high speed."; "Latency-based strategies that exploit price
+      differences in milliseconds or microseconds."; "Trade frequency, volume and execution patterns are monitored."
+      THE DESIGNS: one position at a time across the firm, at five-minute marks: outside every item.
+
+  - key: daytraders.min_hold_time_and_trade_count
+    firm: daytraders
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17704074; 17704087; 17704078 s.26"
+    url: https://daytraders.com/help/articles/17704074-no-high-frequency-trading
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read states a minimum holding time, a maximum number of trades a day, or a rule on scalping.
+      17704074's only volume items: "Executing hundreds or thousands of trades per second or minute." / "Excessive trade volume over very short periods."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. NEW TO THIS RECORD (R-4). ASKED DIRECTLY: 17704074 has no minimum holding time,
+      no per-day trade count and no word "scalp" (two fetches); 17704087 addresses neither hold times nor trade counts
+      (once); the Terms' s.26 lists "high frequency automated trading, mass data entry" with no number (two fetches).
+      Never a permission: the HFT items (daytraders.hft_rule) still apply.
+
+  - key: daytraders.martingale_rule
+    firm: daytraders
+    value: "prohibited on every plan and instrument: increasing size on each new trade after a closed losing trade to win back the loss; 2x or more after a closed loss, as part of this pattern, is not allowed; adding to an open position within max contracts (DCA) is allowed"
+    units: text
+    status: verified
+    article_id: "17704073; 17704078 s.26"
+    url: https://daytraders.com/help/articles/17704073-no-martingale
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704073 "No Martingale" ("Updated over 3 weeks ago"):
+      "The Martingale strategy, or doubling down after losses, is prohibited on every plan and every instrument."
+      "Martingale means increasing your size on each new trade after a losing trade to win back the loss."
+      "Increasing your position size by 2x or more after a closed loss, as part of this pattern, isn't allowed."
+      "Martingale is about the size of new trades after closed losses."
+      "Trading activity is monitored for doubling-down patterns."
+      17704078 Terms s.26, item 1.e: "Martingale strategy (i.e. doubling down on losing trades)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 17704073 twice, every line verbatim in both; the Terms item in two. Verbatim
+      once: "Example: you trade 2 NQ and close at a loss." / "Your next trade is 4 NQ, another loss, then 8 NQ, and so
+      on until you win or the account fails."; "Adding to an open position within your max contracts is Dollar Cost
+      Averaging (DCA), which is allowed." ASKED DIRECTLY (once): no threshold other than 2x; nothing on size changes
+      that follow the balance, a risk budget, or a move from evaluation to Pro. A READING, NOT A RULING: Stage 2's
+      state table sets size by the account's state and balance, not by the last trade's outcome, and the page ties the
+      ban to a pattern meant "to win back the loss". Whether any design trade at DayTraders follows a closed loss in
+      the same account at 2x or more the previous trade's contracts is a count on the trades under DayTraders'
+      allowance. It is not made here, and section 4 of the draft lists no such check.
+
+  - key: daytraders.tou_relative_position_size
+    firm: daytraders
+    value: "market-standard risk management is not met where a trader opens substantially larger position sizes, or a smaller or larger number of positions, compared to their other trades (s.7); Prohibited Conduct includes opening positions of substantially larger size or quantity than other trades on the Day Traders Accounts, and grossly overleveraged positions (s.26 item 4); no threshold stated; Day Traders decides non-compliance in its sole discretion"
+    units: text
+    status: verified
+    article_id: "17704078 s.7, s.26"
+    url: https://daytraders.com/help/articles/17704078-terms-of-use
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704078 Terms of Use ("Last Updated: March 5, 2025"), s.7 "USER SECTION":
+      "You agree to apply market standard risk management rules for trading on financial markets at all times" ... "while using the Site and Services."
+      "You acknowledge that these standards are not met where you open substantially (i) larger position sizes" ... "compared to your other trades, or (ii) smaller or larger number of positions compared to your other trades."
+      s.26 "PROHIBITED CONDUCT", item 4: "Engaging in trading practices that are in contradiction of standard risk management rules" ... "applicable to the relevant financial market, including but not limited to opening positions" ... "of substantially larger sizes than other trades on the Day Traders Accounts;"
+      4.a: "opening positions in substantially larger quantity than other trades on the Day Traders Accounts, and"
+      4.b: "opening positions that are grossly overleveraged;"
+      After the list: "We reserve the right to determine in our sole discretion whether a certain event constitutes a Noncompliant Trading Practice."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4; the draft's G-8 line). FETCHES: five of the Terms. The s.7 sentences came back in
+      fragments in two; item 4's lead-in in fragments in one and its phrase "opening positions of substantially larger
+      sizes than other trades" in another; 4.a, 4.b and the discretion sentence verbatim and confirmed word for word.
+      Verbatim once: 4.c "intentionally attempting to open trades with higher contract limits than their contract size
+      allocation for the Day Traders Account;" and, in a paraphrase quoting the page, that Day Traders may, in its sole
+      determination, "remove any Simulated Account profits, delete a trading day, reset an Account, or ban a User".
+      WHAT THE PAGE DOES NOT SAY (asked once): no definition, number or example for "substantially", and no threshold
+      for "grossly overleveraged". The s.7 wording is Topstep's ToU s.8 (tou_s8_relative_position_size, E-012) almost
+      word for word; s.26 names a comparison base Topstep's does not: "other trades on the Day Traders Accounts"
+      (plural). A READING, NOT A RULING (the tier is the operator's, E-007 item 4): the state table's funded opening
+      (handoff 2.5: 3R at $2,000, then mostly $250 at 1R) puts in every funded account's record one opening trade
+      several times the size of the trades after it; on the plain words the clause reaches it, as E-012 found for
+      Topstep. The draft prices it by the denial ladder (G-8).
+
+  - key: daytraders.tou_s26_prohibited_conduct
+    firm: daytraders
+    value: "Terms s.26 item 3, 'collaboration with other persons': trading on another person's account or on another's behalf, and sharing trades and strategies with other users or making trades that were not the Customer's own creation, are Prohibited Conduct (hedging, automation and size items are in daytraders.hedging_rule, daytraders.automation_rule and daytraders.tou_relative_position_size)"
+    units: text
+    status: verified
+    article_id: "17704078 s.26"
+    url: https://daytraders.com/help/articles/17704078-terms-of-use
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704078 Terms of Use ("Last Updated: March 5, 2025"), s.26 "PROHIBITED CONDUCT", item 3 "Engaging in collaboration with other persons by:":
+      3.b: "Trading on another person’s account(s) or on behalf of another person;"
+      3.c: "Sharing trades and strategies with other users or making trades that were not Customer’s own creation;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: five of the Terms; 3.b and 3.c verbatim in two each (3.c confirmed word for
+      word; the first fetch returned its first half). Verbatim once: the section's lead-in "In connection with use of
+      the Site or Services, User is prohibited from (collectively, "Prohibited Conduct"):"; item 3's lead-in above;
+      1.i "Otherwise exploiting the simulated environment provided by our services;"; 3.a "Allowing access by third
+      parties to Customer’s Accounts;"; 3.d "Engaging in account management;"; and "Taking advantage of the simulated
+      environment to gain an edge in the Day Traders Account is not permitted." ASKED DIRECTLY (once): no item on
+      trades across one's own accounts other than hedging. A READING, NOT A RULING, FLAGGED FOR THE LEAD: (1) "making
+      trades that were not Customer's own creation" -- on its plain words it reaches a user who places trades someone
+      else designed, as a user of this repository's designs would. No page defines "own creation"; the newer help
+      pages permit AI, scripts, bots and copiers as tools and forbid only "trading for others"
+      (daytraders.automation_rule). (2) "Sharing trades and strategies with other users" reaches several users placing
+      the same design's trades (E-007 (c); E-012 for Topstep's coordinated-trading clauses). One person's own five
+      accounts, each its own hand-entered trades, are outside 3.a to 3.d on their words. No page settles either
+      question; each is one for the firm in writing (E-009's pattern of safe defaults).
+
+  - key: daytraders.commissions
+    firm: daytraders
+    value: "per contract, round turn, on every simulated account (evaluations, Pro, S2F and S2L): MNQ $1.02, NQ $3.98; live rates are confirmed by the Risk Manager; the page does not say whether exchange and NFA fees are included"
+    units: text
+    status: verified
+    article_id: "17704134"
+    url: https://daytraders.com/help/articles/17704134-instruments-and-commissions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      17704134 ("Updated over 3 weeks ago"), heading "Commissions":
+      "Per contract, round turn."
+      "These rates apply to every simulated account (evaluations, Pro, S2F and S2L);" ... "live rates are confirmed by your Risk Manager."
+      Table, columns "Group" | "Symbols" | "Round turn":
+      "Micros" | "MES, MNQ, MYM, M2K, MCL" | "$1.02"
+      "Equity" | "ES, NQ, YM, RTY, EMD, NKD" | "$3.98"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-5). FETCHES: three; every line in `quote` verbatim in two (the first fetch gave the same
+      figures in a summary). Verbatim once: "Your profit target is net of commissions and all costs." ASKED DIRECTLY
+      (once): no sentence names exchange, NFA or platform fees beyond the round-turn figure, and none says the figure
+      includes them. AGAINST THE ENGINE: Stage 2 costs the designs as MNQ at $1.22 a round turn all-in (Topstep
+      8284213; vendor/stage2/config/fills.yaml round_turn_by_instrument, MNQ 1.22). DayTraders' MNQ figure is $0.20 a
+      micro round turn below it. If $1.02 is all-in, the draft's G-5 (Topstep's costs at every plan) overstates
+      DayTraders' commission and the DT rows are conservative in this term; if exchange and NFA fees are charged on
+      top, the pages do not give the direction.
+
+  # ---- Q-59 TradeDay (both End of Day 50K plans; no page read distinguishes them for these terms) ---------------------
+  - key: tradeday.permitted_products
+    firm: tradeday
+    value: "CME Group futures only, those listed on the CME, CBOT, COMEX and NYMEX, from TradeDay's permitted list; NQ and MNQ are on it"
+    units: text
+    status: verified
+    article_id: "103000008862; 103000008825; terms-and-conditions s.3"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008862-what-are-the-permitted-products-guidelines-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008862 "What are the permitted products guidelines?" ("Modified on Tue, 6 Oct at 10:21 AM"):
+      "You can only trade products that are permitted by TradeDay."
+      "TradeDay only allows its traders to trade the CME Group futures products, specifically those listed on the CME, CBOT, COMEX, and NYMEX."
+      Equity index table rows: "E-mini Nasdaq-100 Futures | NQ | $5.00 | CME" / "Micro E-mini Nasdaq-100 Index Futures | MNQ | $0.50 | CME"
+      "TradeDay will not fail a trader for accidental breaches of the permitted product guidelines, but traders found to be ignoring these guidelines and abusing the policy will lose their account."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-1). FETCHES: two of 103000008862; every line verbatim in both (the long sentences in
+      fragments in one, confirmed word for word in the other). Read once: the table's columns "Equity index futures
+      contracts" | "Contract code" | "Tick size" | "Data feed" (the dollar column is the tick size, not a commission);
+      "However, we do not trade high-margin products or very illiquid products which are difficult to trade and risk
+      manage."; "Please note that SIL - Micro Silver follows the mini/standard contract count because of a technical
+      limitation." 103000008825 "What products can I trade?" ("Modified on Sat, 22 Feb, 2025 at 11:14 AM", once):
+      futures only on CME, CBOT, NYMEX and COMEX (in fragments), no product named. Terms s.3 (once): "Permitted
+      products: All trading must be in TradeDay-approved products, which are CME Exchange Group futures products
+      only;" HOW CONTRACTS COUNT: no page read states the micro-to-mini ratio in words or how mixed positions add up;
+      the only figures are the limit's own "5 contracts (50 micros)" (tradeday.eval_position_limit) and SIL's exception
+      above. The designs trade MNQ only, so the 50-micro limit is the allowance as the draft has it.
+
+  - key: tradeday.trading_hours
+    firm: tradeday
+    value: "a CME product's trading session runs from the market's 5 pm CT open to its close the next day; overnight trading within it is allowed"
+    units: text
+    status: verified
+    article_id: "103000018874"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000018874-what-is-the-permitted-trading-times-guideline-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000018874 "What is the permitted trading times guideline?" ("Modified on Mon, 27 Apr at 3:42 PM"):
+      "For CME products, a trading session is defined from the opening of the market at 5 pm CT through to the close the next day."
+      "Overnight trading is allowed, but any open positions must be closed before the market closes the next day."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-2). FETCHES: three; both sentences verbatim in two. ASKED DIRECTLY (once): the page names no
+      close time for equity index futures and has no table of closes. Once: "For example, agricultural products close
+      earlier than most of the other CME Group products." The Terms' s.3 "Day-trading only" is read with the flat time
+      (tradeday.flat_time).
+
+  - key: tradeday.flat_time
+    firm: tradeday
+    value: "all positions closed at least 10 minutes before the end of the product's session; TradeDay auto-liquidates open positions 10 minutes before the daily close and can do so at 3:50 pm CT only; a trader holding a position in those 10 minutes is warned"
+    units: text
+    status: verified
+    article_id: "103000018874; terms-and-conditions s.3"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000018874-what-is-the-permitted-trading-times-guideline-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000018874 ("Modified on Mon, 27 Apr at 3:42 PM"):
+      "Exit all positions 10 minutes before the close." / "No holding positions when the market closes."
+      "TradeDay will auto-liquidate all open positions 10 minutes before the daily market close and 2 minutes before" ... "TradeDay's tier 1 economic data releases, and open markets back up to trade 2 minutes after these releases."
+      "TradeDay can liquidate open positions at 3:50 pm CT only" ...
+      "Any trader holding a position during this time will be issued a warning."
+      Terms and Conditions ("Last Modified: August 11, 2026"), s.3, under "The Rules are set forth on our Site and include:": "Permitted times for trading: Day-trading only and all positions must be closed" ... "at least 10 minutes prior to the end of any session;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-2). FETCHES: 103000018874 three times; the lines above verbatim in two, except the
+      auto-liquidation sentence, whose first part came back in two and whole (in two fragments) in the third. The
+      Terms' item came back in two fetches. Verbatim once: "For funded traders, we require all open positions to be
+      closed 10 minutes before the close of the product you are trading." (it precedes the warning sentence, so "this
+      time" is those 10 minutes); the end of the 3:50 sentence, "it is your responsibility to ensure that you are flat
+      and have no working orders before the close of that product."; "If you breach a drawdown limit because our
+      software did not liquidate your position" ... "or prevent orders from being filled, TradeDay will not reset the
+      account."; "We do not fail traders for accidental breaches of these guidelines" ... "traders found to be
+      ignoring these guidelines and abusing the policy will lose their account." "Day-trading only" is not defined;
+      read with the help page's session (5 pm CT to the next day's close), a position opened after the open and closed
+      10 minutes before that session's close complies with both. THE DESIGNS: flat by 15:10 CT (Stage 2's walk ends
+      15:08, E-010), 40 minutes or more before 3:50 pm CT: inside.
+
+  - key: tradeday.tier1_news_auto_liquidation
+    firm: tradeday
+    value: "all open positions auto-liquidated 2 minutes before each TradeDay tier 1 economic data release, markets reopened to trade 2 minutes after; no sentence names an account type; accidental trading of a release is not failed, ignoring or abusing the guideline loses the account"
+    units: text
+    status: verified
+    article_id: "103000081072; 103000063272; 103000018874; 103000008889"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000081072-can-i-trade-news-or-data-releases-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000081072 "Can I trade news or data releases?" ("Modified on Sat, 22 Feb, 2025 at 8:49 AM"):
+      "TradeDay will auto-liquidate all open positions 2 minutes before TradeDay's tier 1 economic data releases, and open markets back up to trade 2 minutes after these releases."
+      "TradeDay does not fail you for accidentally trading tier 1 economic data releases."
+      "traders found to be ignoring these guidelines and abusing the policy will lose their account."
+      103000063272 "Why do we ban Tier 1 news and data release trading?" ("Modified on Mon, 7 Jul, 2025 at 1:10 PM"): "TradeDay will auto-liquidate all open positions 2 minutes before TradeDay's tier 1 economic data releases," ... "and open markets back up to trade 2 minutes after these releases."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-3; the draft's G-3). FETCHES: 103000081072 twice (the first sentence in two fragments in
+      one, confirmed word for word in the other; the other two verbatim in both); 103000063272 twice (the sentence in
+      fragments in one, its first fragment in the other); 103000018874 states it too (tradeday.flat_time).
+      103000008889 (once today; Q-26 read the page twice) lists among profits not returned when a funded account is
+      lost with a positive balance: "All profits from trading tier 1 data releases, trading in breach of our permitted
+      times." NOT STATED (asked): which account types it covers -- no sentence carries a qualifier, and 103000063272
+      sits in a "Funded Trader FAQs" folder (once, paraphrased); whether orders can be entered in the four minutes
+      ("open markets back up to trade" implies not). THE DESIGNS (the lead's to count; this record's arithmetic from
+      tradeday.tier1_release_list's CT times): for NQ and MNQ the windows are 07:28 to 07:32 CT on CPI and Employment
+      Situation days and 12:58 to 13:02 CT on FOMC statement days and FOMC minutes days. A design trade open at a
+      window's start is closed by TradeDay, not by its bracket, and the engine models no such liquidation. E-007's
+      audit C1 read the report-day cut ("no entry before 07:35 CT on a BLS 08:30 day; FOMC days out") as keeping the
+      designs out of Topstep's windows; it is not re-checked here, and FOMC minutes days (on TradeDay's list, not
+      Topstep's) are not among the days that reading names. G-3's count is owed before the pin.
+
+  - key: tradeday.tier1_release_list
+    firm: tradeday
+    value: "seven releases, CT: FOMC minutes 1:00 PM and FOMC interest rate decision statement 1:00 PM, US CPI 7:30 AM and US employment report (Non-Farm Payrolls) 7:30 AM, all products; Crude Oil Inventories (EIA) 9:30 AM / 10:00 AM, oil contracts only; Natural Gas Inventories (EIA) 9:30 AM, gas contracts only; Crop production reports 11:00 AM, ags only; times subject to change without notice; no PPI, GDP, ISM, retail sales or jobless claims"
+    units: text
+    status: verified
+    article_id: "103000081072; 103000063272"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000081072-can-i-trade-news-or-data-releases-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000081072 and 103000063272, identically: "We consider tier 1 data to be the following:"
+      "FOMC minutes - All products" / "1:00 PM CT"
+      "FOMC interest rate decision statement - All products" / "1:00 PM CT"
+      "US CPI - All products" / "7:30 AM CT"
+      "US employment report (Non-Farm Payrolls) - All products" / "7:30 AM CT"
+      "Crude Oil Inventories (EIA) - Oil contracts only" / "9:30 AM CT / 10:00 AM CT*"
+      "Natural Gas Inventories (EIA) - Gas contracts only" / "9:30 AM CT"
+      "Crop production reports - Ags contacts only" / "11:00 AM CT"
+      103000081072: "Times are subject to change without notice"
+      103000063272: "We have created a page that lists the TradeDay tier 1 data release calendar dates."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-3). FETCHES: two of each page; the list verbatim in one fetch of each and the same in the
+      other ("contacts" is the page's own typo). Read once: "*Pending Abbreviated Trading Hours." 103000063272's
+      fuller sentence came back in fragments in one fetch: "Times are subject to change without notice, and traders
+      are responsible for being aware of what economic releases" ... "are and when they occur." ASKED DIRECTLY:
+      neither page names GDP, PPI, ISM, retail sales or jobless claims (two fetches of each); 103000081072 has no
+      "bracket" or "straddle" (once). THE DATES are on a page in the Members area (behind the login, not read); the
+      calendars it names (Investing.com, CME; once, paraphrased) are third-party and were not read. FOR NQ AND MNQ: the
+      four "All products" rows. CONTRAST Topstep's Tier 1 (tier1_news_events_restriction: CPI, the FOMC decision and
+      press conference, NFP, PPI): TradeDay lists FOMC minutes and not PPI. GDP (07:30 CT, P-16's BEA-day mark, Q-39)
+      is not tier 1 at TradeDay.
+
+  - key: tradeday.bracketing_data_releases
+    firm: tradeday
+    value: "prohibited: continued exploiting of the sim's lack of slippage to achieve unrealistic stop-loss execution, such as bracketing data releases; gaming the simulator includes exploiting the lack of slippage with stops during major economic releases (the evaluation failed); neither 'bracketing' nor 'major economic releases' is defined"
+    units: text
+    status: verified
+    article_id: "103000121031; terms-and-conditions s.23; 103000008885"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000121031-prohibited-trade-practices
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000121031 "Prohibited Trade Practices" ("Modified on Tue, 10 Jun, 2025 at 7:30 AM"): "Continued exploiting the lack of slippage in the sim environment to achieve unrealistic stop-loss execution, such as bracketing data releases."
+      Terms and Conditions ("Last Modified: August 11, 2026"), s.23 "PROHIBITED CONDUCT": the same sentence.
+      103000008885 "Gaming the simulated trading algorithm" ("Modified on Fri, 3 Jan, 2025 at 4:09 PM"): "Examples include taking advantage of unrealistic fills from gaming queue positions and exploiting the lack of slippage with stops during major economic releases."
+      "If we suspect you are deliberately trying to ‘game the system’ in order to pass the evaluation we wil fail you" (the page's spelling)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-3, R-4). The draft cites "bracketing data releases" to 103000081072; it is on 103000121031
+      and in the Terms, not there (asked). FETCHES: 103000121031 twice (verbatim; in fragments in one); the Terms twice
+      (fragments in one, confirmed word for word in the other); 103000008885 twice (the example sentence in fragments
+      in one, confirmed in the other). The fail sentence's continuation ", and ban you from TradeDay." came back in one
+      fetch only. Verbatim in two, in fragments: "TradeDay guarantees to get the trading funded for traders who pass
+      the evaluation fairly," ... "but we reserve the right not to fund those seeking to exploit the system." ASKED
+      DIRECTLY: "bracketing" is not explained (103000121031, once); "major economic releases" is not defined and no
+      release is named (103000008885, once). A READING, NOT A RULING: a tier 1 release cannot be held through at
+      TradeDay (tradeday.tier1_news_auto_liquidation). Other releases are not tier 1 there, and P-16's 07:30 CT mark
+      on BEA GDP days enters at the release bar with its stop resting (tier1_window_gdp_release, Q-39). This record's
+      gloss, not the page's: "bracketing" a release usually means orders resting on both sides of the price before
+      it; the designs rest one position's stop and target after a market entry. The pages' words neither reach that
+      nor clear it; "Continued exploiting" and "deliberately" put repetition and intent in the test.
+
+  - key: tradeday.price_limit_rule
+    firm: tradeday
+    value: "Funded Traders are not permitted to trade within 2% of a price limit; a breach loses the funded account; how the 2% is measured is not stated; equity index daytime circuit breakers at 7%, 13% and 20% from settlement (15-minute halts at 7% and 13%; closed for the day at 20%); the levels are CME's, not on the page"
+    units: text
+    status: verified
+    article_id: "103000307192; 103000008889; 103000121031; terms-and-conditions s.23"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000307192-price-limits-and-circuit-breakers
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000307192 "Price Limits and Circuit Breakers" ("Modified on Thu, 17 Jul, 2025 at 9:15 AM"):
+      "At TradeDay, Funded Traders are not permitted to trade within 2% of a price limit."
+      "Traders in breach of this policy will lose their funded account."
+      "Daytime trading in US equity market futures is coordinated with stock market circuit breakers when the price trades at 7%, 13%, and 20% from the settlement price."
+      "The 7% and 13% circuit breakers are each followed by 15-minute trading halts; if the 20% level is reached, the market closes for the trading day."
+      "It is the trader's responsibility to know when the circuit breakers are for the product they are trading."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD as its own key (R-3; the draft's G-2). Q-26 recorded the rule inside
+      tradeday.funded_daily_loss_limit from 103000008889 ("Rule 2", read again once today, unchanged). FETCHES: two;
+      every line verbatim in both. Verbatim once, then confirmed: "Price limits represent the maximum price range
+      permitted for a futures contract in each trading session."; read once: "The easiest way to know how far the
+      market is away from hitting a price limit" ... "is to watch the % Net Change for the contract you are
+      participating in via your trading platform quote board." The rule is also on 103000121031 and in the Terms' s.23
+      (two fetches each). NOT STATED (asked): how "within 2%" is measured (two percentage points of the move from
+      settlement, or 2% of the limit price); account types beyond "Funded Traders" (the evaluation is not named); any
+      overnight equity limit. The engine models none of it (G-2).
+
+  - key: tradeday.hedging_rule
+    firm: tradeday
+    value: "prohibited: simultaneously going long in one account and short in another account for the same product"
+    units: text
+    status: verified
+    article_id: "103000121031; terms-and-conditions s.23"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000121031-prohibited-trade-practices
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000121031 ("Modified on Tue, 10 Jun, 2025 at 7:30 AM"): "Hedging is prohibited at TradeDay" ... "the practice of simultaneously going long in one account and short in another account for the same product)."
+      Terms s.23: "Hedging is prohibited at TradeDay" ... "the practice of simultaneously going long in one account and short in another account for the same product"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: "Hedging is prohibited at TradeDay" in two fetches of each source (a
+      parenthesis follows it); the parenthesis's text in one fetch of each. Opposite positions between connected
+      accounts are also in tradeday.coordinated_trading_rule's clause (its continuation, read once). Correlated
+      instruments and other firms are not named. THE DESIGNS: one position at a time across the firm, never an
+      opposite one: outside.
+
+  - key: tradeday.copy_trading_own_accounts
+    firm: tradeday
+    value: "allowed: copy trading across one's own evaluations and Funded Sim accounts in any combination (2 to 10 accounts), and from one's personal accounts elsewhere into TradeDay; no active trades in a Funded Live account and an Evaluation or Funded Sim account at once"
+    units: text
+    status: verified
+    article_id: "103000008833"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008833-can-i-have-multiple-accounts-can-i-use-copy-trader-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008833 "Can I have multiple accounts? Can I use copy trader?" ("Modified on Tue, 22 Sep at 9:26 AM"):
+      "We now support multiple accounts, so you’re welcome to use copy trading across our evaluations or funded accounts."
+      "Trade copiers are allowed from your personal accounts or other evaluations in to your TradeDay account."
+      "Evaluation & Funded Sim: You may copy trade any combination of Evaluation and Funded Sim accounts, with 2 to 10 accounts total."
+      "You cannot have active trades simultaneously across a Funded Live account and an Evaluation or Funded Sim account."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: three; the lines above verbatim in two (the last is prefixed "No." on the
+      page). Verbatim once: "Funded Live: You may copy trade between up to 5 Funded Live accounts."; "Funded Live and
+      Funded Sim accounts must be traded separately." / "You cannot trade them simultaneously, and copy trading
+      between these accounts is not possible." / "Each account must be managed and executed independently." (all
+      under "Can I trade Funded Live and Funded Sim accounts at the same time or use copy trading?", so about Funded
+      Live against Funded Sim only); "A trader can only have one username, and we only allow 1 user per household."
+      (as in tradeday.max_funded_accounts). ASKED DIRECTLY (once): no copier tool named; no condition on direction,
+      size or platform; no consequence; nothing on the same trades placed by hand in several accounts. THE DESIGNS:
+      one person's five accounts in evaluation and Funded Sim, hand-entered: inside; Funded Live is not modelled (G-4).
+
+  - key: tradeday.coordinated_trading_rule
+    firm: tradeday
+    value: "prohibited: multiple users making the same trades (every account shut down, the users suspended); and, alone or in concert with others, including between connected accounts or accounts held with different TradeDay parties, trades or combinations of trades whose purpose is to manipulate, abuse, or give the user an unfair advantage"
+    units: text
+    status: verified
+    article_id: "103000085101; 103000121031; terms-and-conditions s.23"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000085101-automated-algo-and-bot-trading
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000085101 "Automated, Algo and Bot Trading" ("Modified on Fri, 28 Nov, 2025 at 9:41 AM"): "If multiple users are making the same trades, then all the accounts will be shut down, and the users suspended."
+      103000121031: "Performing, alone or in concert with any other persons, including between connected accounts" ... "or accounts held with different TradeDay parties, trades, or combinations of trades," ... "the purpose of which is to manipulate, abuse, or give the user an unfair advantage"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 103000085101 twice, verbatim in both; the 103000121031 clause in fragments in
+      one fetch and confirmed word for word up to "unfair advantage" in the other; the Terms' s.23 carries the clause's
+      opening (two fetches). Verbatim once: its continuation "for example, by engaging in any short-term or high
+      frequency trades or simultaneously entering into opposite positions."; "Or multiple users using the same trading
+      bots and ATS's."; "Signing up using different usernames and email addresses." "Connected accounts" is not
+      defined. A READING, NOT A RULING (as E-012 read Topstep's): one person's five accounts, each its own hand-entered
+      trades, one position at a time, are outside the multiple-users sentence (it needs other people), and the clause
+      needs a purpose to manipulate, abuse or gain an unfair advantage. Several users placing the same design's trades
+      are inside the multiple-users sentence on its words, with every account shut down: E-007 (c) stands.
+
+  - key: tradeday.automation_rule
+    firm: tradeday
+    value: "algos and bots purchased from a third party and used by the trader are forbidden; no platform API for traders (the Tradovate API is not exposed); an automated trading system must run on NinjaTrader, Tradovate, TradingView, Jigsaw or Quantower; no page addresses hand-entered orders"
+    units: text
+    status: verified
+    article_id: "103000085101; 103000121031"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000085101-automated-algo-and-bot-trading
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000085101 ("Modified on Fri, 28 Nov, 2025 at 9:41 AM"):
+      "Algos and Bots purchased from a third party and employed by the trader are forbidden."
+      "We do not make platform APIs available to traders."
+      "TradeDay does not expose the Tradovate API to allow traders to connect automated trading systems directly."
+      "TradeDay does not evaluate systems you have purchased from third parties."
+      "To use an automated trading system, you must use one of the platforms we support:" / "NinjaTrader, Tradovate, TradingView, Jigsaw and Quantower."
+      103000121031: "Using trading bots or Automated Trading Systems (ATS) purchased from a third party."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: two of each; verbatim in both (the platform list quoted in one, named in the
+      other). ASKED DIRECTLY (once): the page does not say a trader's own system is allowed, only where one must run;
+      no page read addresses manual orders. THE DESIGNS: hand-entered, no automated or API order entry (CLAUDE.md):
+      outside.
+
+  - key: tradeday.trade_count_hold_time
+    firm: tradeday
+    value: "no strategy producing more than 200 trades in a day; strategies that trade in a few seconds to capture a couple of ticks, automated scalping at extremely high frequency, and queue-position gaming prohibited; scalpers as such are funded; no minimum holding time stated"
+    units: text
+    status: verified
+    article_id: "103000008883; 103000121031; terms-and-conditions s.23"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008883-will-tradeday-evaluate-and-fund-scalpers-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008883 "Will TradeDay evaluate and fund scalpers?" ("Modified on Fri, 3 Jan, 2025 at 3:56 PM"), under "Prohibited at TradeDay:":
+      "Strategies that produce more than 200 trades in a day."
+      "Strategies that trade in a few seconds, designed to capture just a couple of ticks at a time."
+      "Any strategy that attempts to capture queue position advantage by gaming the simulated matching engine."
+      "We reserve the right not to fund traders, or make payouts to traders, who are found to have abused this policy."
+      103000121031 and Terms s.23: "We do not allow strategies that produce more than 200 trades in a day." / "Using automated trading systems designed to scalp at an extremely high frequency."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 103000008883 twice, verbatim in both; 103000121031 and the Terms twice each.
+      Verbatim once: "The short answer is yes, we do fund scalpers, but there are some scalping practices we don't
+      allow."; scalping is "the practice of trying to make a lot of very small profitable trades in a very short time
+      frame", "often using bracket orders to enter and exit within a matter of seconds in an attempt to capture
+      short-term market action" (the second confirmed in a second fetch); "No refunds will be offered." ASKED
+      DIRECTLY: no minimum holding time (103000008883 and 103000121031, once each). "200 trades in a day" is per
+      strategy; the page does not say per account or per trader. THE DESIGNS: one position at a time across the firm,
+      entered at five-minute marks with a 37.5-point stop (P-16): far from seconds and a couple of ticks. Whether any
+      session's trades reach 200 is a count on the trades, not made here (the five-minute marks from 17:00 to 15:10 CT
+      alone do not bound it below 200).
+
+  - key: tradeday.order_splitting_and_sim_exploitation
+    firm: tradeday
+    value: "prohibited: order splitting (entering multiple orders at the same price at the same time); performing trades any time outside the best bid or offer; gaming the simulated matching engine for queue position; profits from prohibited practices confiscated"
+    units: text
+    status: verified
+    article_id: "103000121031; 103000008883; terms-and-conditions s.23"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000121031-prohibited-trade-practices
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000121031 ("Modified on Tue, 10 Jun, 2025 at 7:30 AM"): "Order splitting. Entering multiple orders at the same price at the same time."
+      "Performing trades any time outside the best bid or offer."
+      "All profits generated from prohibited trade practices will be confiscated."
+      103000008883: "Any strategy that attempts to capture queue position advantage by gaming the simulated matching engine."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-4). FETCHES: 103000121031 twice, the three lines verbatim in both; 103000008883 twice. The
+      Terms' s.23 has "Order splitting - entering multiple orders at the same price at the same time." (once). Read
+      once on 103000121031: "Using strategies designed to capture queue advantage by gaming the simulated matching
+      engine."; "Initiating trades in gapped, illiquid markets to profit from stray fills."; "Using any trading
+      strategy intended to exploit or create errors in the Services or Trading Platform" ... "such as errors in the
+      display of prices or delays in their updates;"; "Performing trades using an external or slow Data feed."; "Using
+      a VPN or VPS to mask the location of the trading."; "All passed evaluations are subject to review" ... "will not
+      be funded, and the trader will not be eligible for refunds." The Terms' s.23 (two fetches): "Taking advantage of
+      the simulated environment to gain an edge in the Evaluation Challenge is not permitted." A READING, NOT A
+      RULING: the designs hold one position at a time across the firm, entered at the market with a stop and a target
+      at two other prices -- not several orders at one price at one time. The pages do not say what "outside the best
+      bid or offer" means for a market order. Nothing on these pages reaches the designs as made.
+
+  - key: tradeday.commissions
+    firm: tradeday
+    value: "per lot per side, including brokerage, NFA, clearing and exchange fees, in the PnL of evaluations and Funded Sim: MNQ $0.95, NQ $2.88 (round turn $1.90 and $5.76, this record's arithmetic); TradeDay adds no commission of its own; Funded Live may differ slightly"
+    units: text
+    status: verified
+    article_id: "103000008893"
+    url: https://tradeday.freshdesk.com/en/support/solutions/articles/103000008893-how-much-are-trading-commissions-
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-59, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      103000008893 "How much are trading commissions?" ("Modified on Thu, 20 Aug at 10:07 AM"), heading "All Evaluation, Funded Sim and Funded Live Commissions":
+      "Prices are per lot traded (per side), and include brokerage fee, NFA fee, Clearing fee and Exchange fee."
+      Table, columns "Equity index futures contracts" | "Contract code" | "Commission":
+      "Micro E-mini Nasdaq-100 Index Futures | MNQ | $0.95"
+      "E-mini Nasdaq-100 Futures | NQ | $2.88"
+      "TradeDay does not charge any additional commission on top of the commission charged by its broker."
+      "If you move to a Funded Live account, the commission may differ slightly."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (R-5). FETCHES: two; every line verbatim in both (the column headings in one). Verbatim once:
+      "Please note that we include simulated commission in the calculation of your Profit and Loss (PnL)" ... "for the
+      funded sim and the evaluation."; "This simulated commission is part of our broker's trading environment."
+      103000008894 (Q-26): "Simulated commission is included in your PnL." ASKED DIRECTLY (once): no difference by
+      platform (Tradovate, Rithmic) or plan (Fast Pass, Quick Pay) is stated. AGAINST THE ENGINE: Stage 2 costs the
+      designs as MNQ at $1.22 a round turn all-in (Topstep 8284213; vendor/stage2/config/fills.yaml). TradeDay's
+      all-in MNQ round turn is $1.90, $0.68 a micro round turn above it, so the draft's G-5 understates TradeDay's
+      commission and the FP and QP rows are optimistic in this term, by $0.68 for each micro traded per round turn.

@@ -1,21 +1,21 @@
-# DRAFT F-XX: resting orders at pre-session levels, corrected (family RL2) -- not declared
+# F-XX: resting orders at pre-session levels (family RL2)
 
-**Status: DRAFT, fifth version, of 2026-11-16 (TASK_QUEUE Q-64). This is the fourth version -- Q-50's, corrected per
-E-032 (1)-(2), with its `[Q-16]` marks filled by Q-57 -- redrafted narrowly on the final read
-(`docs/reviews/DRAFT_F-02_resting_levels_v4_2026-11-16.md`) and the lead's ruling on its G1. Not pinned, not numbered,
-not declared.** It replaces F-01
+**Status: declared before anything of it is built or read.** It is pinned by the sha256 of its LF text in its decision
+row. Nothing declared is edited: a change is a new family under a new row. It replaces F-01
 (`prereg/F-01_resting_order_level_atlas.md`, withdrawn, its k = 10 spent, E-007 (a)). No bar has been read for it, no
-level computed, no outcome of any order computed. The versions are fc7747b, 255e13b, 9ee82e6 and 825f264, 0d40ece,
-and this one.
-The pinning row names the commit and sha256 it pins, and the diff between the pinned bytes and this reviewed text: the
-status lines change at the pin, and the pinned file is `prereg/F-NN_<slug>.md`, the reader's `DECLARATION_PATH` (N9).
-It becomes a declaration only after the prereg-gatekeeper approves it (assigning F-XX and k) and the lead pins it.
+level computed, no outcome of any order computed.
 
-**It cannot be pinned before Q-55's clean rerun of Q-16's calibration (E-035 (4)) has reproduced `cons`, and the
-treated two-sample `cons`, at or below its level on every real and realistic null at the family's k (the final read's
-M3).** If the rerun shows either statistic above its level on such a null, this draft is **withdrawn before any read**
-and re-declared under a new row; nothing of it is run. Stage A's planning reads that rerun's power tables, and no figure
-of Q-16 is cited before it. The final red-team read (Q-53) is answered here.
+**Its text's history.** It was drafted and reviewed as `prereg/DRAFT_F-02_resting_levels.md`:
+- commits fc7747b, 255e13b, 9ee82e6 and 825f264, 0d40ece, 1d61a31, and Q-72's text;
+- four red-team reads and the prereg-gatekeeper's refusal of the fifth text, each answered in section 0.
+
+At the pin the file is renamed `prereg/F-02_resting_levels.md` (the reader's `DECLARATION_PATH`) and `F-XX` becomes
+`F-02`; nothing else changes (N9). The pinning row names the commit and the sha256 it pins.
+
+**The pin's condition (the final read's M3).** It is pinned only after Q-55's clean rerun of Q-16's calibration
+(E-035 (4)) has reproduced `cons`, and the treated two-sample `cons`, at or below its level on every real and realistic
+null at k = 11. A rerun that did not would withdraw this text before any read, to be re-declared under a new row, and
+nothing of it would run. Stage A's planning reads that rerun's power tables, and no figure of Q-16 is cited before it.
 
 Q-16 is merged (E-035), and its statistics stand where the draft's marks stood (Q-57). The pass line is `cons`
 (`extended/lift_bound.SHIPPED`); C1' is its two-sample form; the scorecard's P comparison is `extended/p_bound`'s
@@ -23,16 +23,16 @@ Q-16 is merged (E-035), and its statistics stand where the draft's marks stood (
 
 The early-close calendar this file reads is pinned (E-029).
 
-The other items left open are in section 19, each to be closed before the pin. **The judged-block reads this family may
-make are named on the one line the reader requires (section 18.1, E-026).** Anything chosen after a reading is
-exploratory and reported apart.
+What the pin requires, and what stays open, is in section 19. **The judged-block reads this family may make are named
+on the one line the reader requires (section 18.1, E-026).** Anything chosen after a reading is exploratory and reported
+apart.
 
 | field | value |
 |---|---|
 | family | RL2: resting stop and limit orders at four pre-session price levels, judged on their trades first (E-008) |
-| id | F-XX -- the gatekeeper's (F-02 if this is the next family pinned) |
-| program family number k | the next free at the pin: **11 if pinned next** (F-01 spent 10, E-007 (a)) |
-| level | one-sided **0.05 / (k (k + 1))**: 0.05 / 132 at k = 11 |
+| id | F-XX (`prereg/F-02_resting_levels.md` at the pin) |
+| program family number k | **11** (F-01 spent 10, E-007 (a); the gatekeeper's count, E-045) |
+| level | one-sided **0.05 / (k (k + 1))** = **0.05 / 132** |
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16 |
 | choice block | fills from 2020-01-02 to 2023-12-29 |
 | judged block | fills from 2024-01-02 to 2026-07-16 |
@@ -131,6 +131,16 @@ exploratory and reported apart.
 | N9 | the pinned file's name and changed status lines | stated for the pinning row | status |
 | R1 | the null class reasoned from the side reset, not the pair terms' dependence | the residual stated; the pick's choice-block lift by quarter and its block lifts' lag-1 correlations beside | 9.1, 9.6 |
 
+### 0.5 The prereg-gatekeeper's refusal of the fifth text (E-045, TASK_QUEUE Q-72)
+
+| gap | the defect | the correction | section |
+|---|---|---|---|
+| 1 (template section 3) | tier 2 named only "R at or below 1" | all four tier-2 patterns, each stated for the tickets and the bases; off in the base case, on beside | 3 |
+| 2 (template section 5) | the readings beside a campaign verdict incomplete | the break-even denial, the zero-edge twin, the tickets' e and its bound for each R, and stage one's D-47 criterion, added beside | 11.5 |
+| 3 | D-663's stress readings left to "where Q-18's tooling exists" | each reading named, with its blocks, levels and seeds (20261933, 20261934, 20261936, reassigned before any use); A2 and B3 not run, and why | 11.5, 15 |
+| 4 | line 192: `s3_event_kinds.csv` "not vendored" | vendored by E-043 (905eb19); not read for this text | 2 |
+| notes | the pin-time form; E-015's limits; the Combine-headroom check | the title and status in pin-time form (k = 11, `prereg/F-02_resting_levels.md`); only limits approved before stage D flag the menu; F3 does not apply to a trades-lift confirmation | status, 12, 14 |
+
 ## 1. Hypothesis
 
 **The mechanism.** Orders cluster at prices everyone can see before the session: just beyond the prior session's high
@@ -189,7 +199,7 @@ with the user's journey reported beside (section 12).
 | atlas families A1 to A3 (D-460; `config/atlas_a1.yaml` to `a3.yaml`) | `pdhl` (the prior day's 08:30-15:10 CT high and low, the first close beyond) followed and faded, five bars late; `orb_rth5/15/30`, `orb_globex30`; P-13/P-14's `brk30` | 2020-01-01 to 2026-07-16 | P-14 (A3-BRK30-CB20) chosen from A3 | `pd`'s break and fade were read at the market; `pdhl` is defined on 08:30-15:10, this family's `pd` on the bars stamped 08:30-14:59 -- close, not identical |
 | A4, the coin-benchmarked atlas (D-550, D-555, D-557, D-558) | 34 patterns at 25 and 37.5 points, delays 0 and 5, lift over the coin twin, follow and fade one test: `brk` at k = 5, 10, 15, 30, 60 and 90 minutes; `orb` at the 08:30, 17:00 and 02:00 opens (17:00 and 02:00 at m = 15, 30, 60); `pdhl` | 2020-01-01 to 2026-07-16 | survivors "short breakouts and n-bar runs on 5- and 10-minute bars, a few at 15 and 60 minutes", all on the follow side (D-555); **`pdhl` is not among the survivors' classes**; "a genuine but tiny direction effect", no campaign value (D-558) | the follow effect reaches 60-minute breakouts -- the evidence behind dropping `break` at `on` and `pd`; `pdhl`'s own lift is in `results/a4_coin_atlas.csv`, not vendored |
 | program S, S1 (D-578, D-580) | the side of recent breakouts and momentum followed and faded, on P-16's schedule | 2020-01-02 to 2026-07-16 | two follow rules (15-minute momentum, the latest 5-minute breakout) survive the lift test; both grow less than P-16 on 2020-2023 and more on 2024-2026, so the span guard rejects them | the follow effect's sign by era |
-| program S, S3 (D-586, D-587, D-588, D-589) | 13 rules, among them `gap_glbx` (the session's first open against the previous trading day's last close at or before 16:00 CT) and `gap_rth` (the open after 08:30 against the same close), followed and faded against the coin twin | 2020-01-02 to 2026-07-16 | one survivor, `lnbar1x4_follow`; the Benjamini-Hochberg rejections "every one on the follow side and all but one on the breakout and n-bar rules" (D-588); the gap rules' own rows are in `results/s3_event_kinds.csv`, not vendored | **the overnight move, read on this window: the reason `break` at `pdc` is dropped and the fade at `pdc` carries no level claim (6.2, 9.7; the final read's G1), after the side-matched placebo of the third read's P1 proved to match its sign but not its size** |
+| program S, S3 (D-586, D-587, D-588, D-589) | 13 rules, among them `gap_glbx` (the session's first open against the previous trading day's last close at or before 16:00 CT) and `gap_rth` (the open after 08:30 against the same close), followed and faded against the coin twin | 2020-01-02 to 2026-07-16 | one survivor, `lnbar1x4_follow`; the Benjamini-Hochberg rejections "every one on the follow side and all but one on the breakout and n-bar rules" (D-588); the gap rules' own rows are in `results/s3_event_kinds.csv`, vendored by E-043 (905eb19) and not read for this text | **the overnight move, read on this window: the reason `break` at `pdc` is dropped and the fade at `pdc` carries no level claim (6.2, 9.7; the final read's G1), after the side-matched placebo of the third read's P1 proved to match its sign but not its size** |
 | D-592 | S3's candidate at the five-minute latency | -- | fails; the follow effect "broad and slow rather than tied to the last bar"; "re-testing it on that window would reuse hypotheses already seen, so it is recorded as a lead for unread data" | `break` at range extremes dropped (6.2); C1' for the other breaks (9.2) |
 | Stage 2's effect atlas (`config/effect_atlas.yaml`, H01 to H04, F01 to F02) | the overnight return's, and the previous close's location's, relation to the day's move | Stage 2's development | returns, not levels | the overnight move's sign again; named for completeness |
 | program U, nine families (`results/u_budget.csv`, `u_resolve.csv`) | P on start days from 2024 | judged block of starts | all closed below P-14 | the judged block has been read for P nine times |
@@ -225,7 +235,8 @@ gap's side (S3).
 | the sizeable stop band (`vendor/stage2/results/stop_band.csv`, D-201 (2)) | the narrow edge per state of stage one's family: 82 ticks in the Combine, 134 ticks funded below +$2,000, and 45 ticks funded at or above +$2,000, where the cost-drag floor binds (`cost_drag_floor_ticks`, the stop at which costs reach a tenth of it; D-271 (3)'s 45 MNQ ticks). 50 ticks is inside the band in the last state only, 100 ticks in the Combine and the last, 150 ticks in all three (6.3). The bases' $50K table sizes by its own allowance, which 6.3 and section 10 use |
 | news | tickets go live at 08:30 CT: on a BLS 08:30 ET release day strictly after 07:35:00 CT (E-007 (d)), and outside Topstep's Tier 1 windows -- 07:25-07:35 CT on CPI, NFP and PPI days, and around both FOMC events, as Track E read them (E-007 (6), `docs/audits/phase0/E_rules_currency.md` C1). The article is recorded by E-034 (`config/rules_extended.yaml`, key `tier1_news_events_restriction`, article 13613539, read 2026-11-16, with its windows and its rule that positions opened before a window may be kept); the tickets avoid those windows by construction. FOMC days as 4.5 (d). **Releases inside the resting window (the final read's M5).** 8284211 lists seven releases (E-034), three of which fall inside it: EIA crude oil inventories, EIA natural gas inventories, and USDA crop production. 10305426 forbids "trading your full Maximum Position Size directly into a scheduled major news event", and which events count is unstated (E-034). A 50-tick Combine ticket is sized at the 50-micro allowance, which is full size. So **a ticket sized at its account's full allowance is cancelled from five minutes before to five minutes after each EIA release** (11.2), dated by Stage 2's `config/im2_release_calendar.csv` (its `EIAC` and `EIAG` rows). Crop production has no vendored dated calendar, so it is listed as not modelled (12 item 8). Tickets below the full allowance rest through every release, as Stage 2's rule allows for 09:00 CT releases (D_protocol N-6) |
 | conduct, tier 1 (D-145) | no hedge (cancel-on-entry: never two positions in the firm); no simulator-fill exploitation (stops of at least 50 ticks, no stop move); no maximum size into news (above, 4.5 (d), and 11.2's release cancellation); no copying (each ticket on one account, D-157); nothing concealed (a resting order at a public level) |
-| conduct, tiers 2 and 3 | tier 2: the R = 1 cells meet "R at or below 1"; modelled off in the base case (D-289), on beside in stage D. Tier 3: priced at 0 % denial in the verdict, 10, 25 and 50 % beside; Terms of Use s.8 (outsized positions) priced among them (E-013 (1)) |
+| conduct, tier 2 (Stage 2 D-145; `vendor/stage2/propedge/campaign/conduct.py`; the template's section 3) | each pattern is **modelled off in the base case (D-289) and on beside, in stage D's placement-on arm (11.5)**. **(1) R at or below 1** (`conduct.MIN_RR`): applies to the tickets of an R = 1 pick, to Combine tickets the engine's need-aware exits close below 1R (6.3), and to the bases' own 1R leaves. **(2) A funded position risking more than half the $2,000 drawdown, an account-deciding position** (`MAX_FUNDED_RISK_FRACTION_OF_DRAWDOWN`): applies to the tickets -- a 150-tick ticket at the funded opening on 20 micros carries $1,500 (6.3), and a funded 100- or 150-tick ticket carries more than $1,000 wherever the ladder's 30- or 50-micro step sizes it -- and to the bases' own funded openings (P-16's carries $1,500). **(3) Maximum position on most trades:** can apply to the tickets, since a 50-tick ticket is capped at its allowance in the Combine (50 micros, the full size of a $50K Combine) and at the funded opening (6.3); the share of the pick's tickets at full allowance is reported beside (11.5); it applies to the bases' own trades wherever their tables size at the allowance, as registered. **(4) Several accounts at the MLL in one day:** a campaign pattern, not one ticket's -- a ticket is one account's only trade of its session (11.2), so tickets alone cannot put several accounts at the MLL in a day, but with the bases' trades they can; the campaign's share of such days is reported beside (11.5) |
+| conduct, tier 3 | priced at 0 % denial in the verdict, 10, 25 and 50 % beside, with the break-even denial (11.5); Terms of Use s.8 (outsized positions) priced among them (E-013 (1)) |
 | hours | US regular hours: tickets live from 08:30 CT to their cutoff (at latest 14:30); the walk ends at the bar ending 15:08 CT |
 | entry by hand | the user places the ticket between `t_pub` and `t_live`, or at 08:30:00 itself if the platform does not take an order that works only from 08:30; the fill window opens with the bar stamped 08:30 either way (E-008) |
 | firm rules | only rules verified in `vendor/stage2/config/rules.yaml` or `config/rules_extended.yaml` |
@@ -690,7 +701,7 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
    - **The bound:** the trade-weighted session-cluster t (CR1) on 21-, 42- and 63-session blocks of that calendar,
      each with df = the non-empty blocks - 1. C1 holds only if **all three** bounds are above zero; `cons`'s bound is
      their minimum.
-   - **No draws:** `cons` draws nothing, so no seed (15).
+   - **No draws:** `cons` draws nothing, so no seed. 20261933, once reserved for it, serves D-663's readings (15).
    - **The null class (E-035 (6); the calibration note, section 7.4 item 1).** A ticket's side is set each day at
      `t_pub` from that day's levels, and there is no multi-session regime filter. So the family's sides persist at most
      one session, inside the class Q-16 calibrated against (sides persisting up to a quarter).
@@ -922,15 +933,52 @@ reads ("every R at the 0.05 bound the design's gate read", `scripts/user_journey
    A failed identity stops the family.
 2. **The gate.** Stage 2's `gate` call as the base registered it -- rotation, its horizon, 500 paths, **campaign seed
    20261935**, 0 % denial, the placement off -- with both streams at the 0.05 bound. Floor (i) is read here.
-3. **Beside:**
+3. **Beside, each reported and never a line** (the template's section 5):
    - the base alone at the same seed and level (the paired difference);
    - P-06's row;
-   - denial at 10, 25 and 50 %;
-   - the placement on;
+   - **the denial ladder:** the same campaign at 10, 25 and 50 % denial;
+   - **the break-even denial:** `propedge.campaign.portfolio.break_even_denial(fees, payouts)` on the design's campaign
+     at the bound -- one minus fees over payouts, the share of payouts the firm could deny before the gain is gone;
+   - **the placement on:** tier 2's patterns of section 3 modelled (D-289), with the share of the pick's tickets at full
+     allowance and the campaign's share of days with several accounts at the MLL;
+   - **the zero-edge twin:** the same gate call at the same seed with every R of both streams shifted to a zero mean,
+     each stream by its own e (Stage 2's `scripts/portfolio_stage.zero_edge_blocks`). It reports the twin's growth on
+     the required bankroll, and the design's point growth less the twin's (`signal_lift_over_zero_edge_twin`, the form
+     of `propedge/reporting/scoreboard.py`);
+   - **the tickets' e and its bound for each R** of the base's carried menu: e the mean net R of the pick's rule-side
+     trades, per block and pooled; its one-sided 95 % bound as 11.4 computes the shift;
+   - **stage one's D-47 criterion** (propsim D-47: e at least 0.10 and its bound at least 0.05) at the pick's R: met or
+     not;
    - D-212 (1)'s letter share;
    - floor (ii)'s check;
-   - the share of tickets outside the stop band;
-   - D-663's stress readings where Q-18's tooling exists.
+   - the share of tickets outside the stop band.
+4. **D-663's validation readings** (EXPLORATORY, deciding nothing; the template's section 4). They run on stage D's
+   design -- base plus tickets, both streams at the 0.05 bound -- through `extended/v1_adapter.py`, after the gate,
+   heavy, under the run lock:
+   - **A0, the days' dependence:** the design's day series of summed net R at the fresh Combine's R, its absolute value
+     and its sign -- autocorrelations at lags 1 to 21, Ljung-Box at lags 5, 10 and 21, a runs test on the sign, and the
+     automatic block length (`V.ACF_LAGS`, `V.LB_LAGS`). No draws.
+   - **A1, block-resampled days:** the gate with each path's calendar from the stationary bootstrap of days at mean
+     blocks of **1, 5, 21 and 63 sessions** (`V.MEAN_BLOCKS`; mean block 1 the control). It runs 500 paths, campaign
+     seed 20261935, growth on the required bankroll at the 0.05 bound and the point. Each run's Monte-Carlo error is
+     drawn with **`mc_seed = 20261933`** (`v1_adapter.Engine`).
+   - **B1, the bound's coverage:** the tickets' and the base's bound of e on block-resampled histories. The stationary
+     bootstrap runs at mean blocks of **1, 5 and 21 sessions** and the automatic length, with **200,000 replicates** and
+     5 verification draws (`V.B1_BLOCKS`, `V.B1_REPS`, `V.B1_VERIFY`). Coverage is read at one-sided **0.05** and at the
+     family's **0.05 / 132**, with **`part_b1(seed = 20261934)`**.
+   - **B2, the break-even e:** each R's outcomes stepped down by **0.02 R**, up to **8 steps**, under the independent
+     draw and at mean block **21** (`V.B2_STEP`, `V.B2_MAX_STEPS`, `V.B2_MEAN_BLOCK`), at campaign seed 20261935. The
+     reading is the step at which growth at the bound reaches zero, and its margin below the bound.
+   - **C1, missed trades:** the arms drop **10 %** and **25 %** of offered trades and miss **10 %** of sessions
+     (`V.C1_ARMS`), with **3 realisations** an arm (`V.C1_REALISATIONS`), each R's e and bound as in 11.4, and
+     **`part_c1(seed = 20261936)`** -- each realisation's seed
+     `v1_adapter.c1_seed(20261936, subject, arm, realisation)`.
+   - **Slippage, D-583's families** (`v1_adapter.part_slip`): **(A)** stop slip 2, 3, 5, 8 and 12 ticks, the flatten one
+     more; **(B)** entry and stop slip 2, 3 and 5 ticks, targets at zero. Each arm's e and bound is re-read on the
+     stressed trades by each stream's own bound rule, at campaign seed 20261935. The reading per family is the lowest
+     level at which growth at the bound is at or below zero.
+   - **Not run: A2 and B3.** Their seeds are D-663's own (`V.SEED_A2`, `V.SEED_B3`), fixed in the vendored code and not
+     adapted by `v1_adapter`, so they could not be this family's. They are recorded as not computed.
 
 ### 11.6 What stays unidentified (D-3)
 
@@ -984,12 +1032,14 @@ no scorecard, and the closing row says so.
    - `pcons` carries only where `bm63`, `obm126` and `ft63` all carry, its limit their minimum. It holds its level and
      has almost no power on this judged block.
    - `bm63c` is reported beside once its critical-value table comes from a clean run and is pinned (E-035 (3)).
-   - `pcons`'s fixed-b critical values are simulated with the module's own seed (Q-16's 20261919), so the family's
-     20261936 is unused.
+   - `pcons`'s fixed-b critical values are simulated with the module's own seed (Q-16's 20261919). The family's
+     20261936, reserved for it, is reassigned to D-663's C1 (11.5 item 4).
    - D-621 (3)'s percentile bound is not computed (E-007 (1)).
 6. **Limits:** E-015's limits, **once approved by the operator**, as **menu flags only**. A design crossing one is shown
-   with which limit and by how much; a limit never fails a design. Until approved, the menu is read without flags, and
-   says so.
+   with which limit and by how much; a limit never fails a design.
+   - Only limits approved **before stage D's run** flag the menu.
+   - A limit approved later flags it only in a reading labelled exploratory.
+   - With none approved by then, the menu is read without flags, and says so.
 7. **The evenness trade-off curve** -- how much "ahead" each step of evenness costs -- beside, with this design's point
    and its base's, in the form E-015's menu reading fixes.
 8. **Not modelled, and said so wherever this scorecard appears:**
@@ -1043,6 +1093,9 @@ The replay draws nothing.
   - **Resolution:** at most 5 % overall, and in every calendar year with at least 63 of the window's sessions (a stub
     year pooled with its neighbour, D-604).
   - **K5:** at most 5 % on the window.
+- **The family template's Combine-headroom check (F3) does not apply.** That check weighs the Combine's headroom over
+  its target against the window's bound for a campaign confirmed on its growth (D-451 (3)). This confirmation tests the
+  pick's lift over its coin twin on the window's fills, so no campaign's growth, and no Combine headroom, is confirmed.
 - **What it cannot test: P.** A six-month window holds one 63-start block, on which no interval on P exists (red team
   M1). The scorecard on the window is descriptive, without an interval, and never a line.
 - **How much data.** At least six months (D-604), and at least the number of months at which `cons`, one-sided at 0.05
@@ -1077,10 +1130,10 @@ The replay draws nothing.
 | 20261930 | stage B's stationary bootstrap (choice block) |
 | 20261931 | the seeded coin twin beside (5.7) |
 | 20261932 | the placebo's source draws: `numpy.random.default_rng([20261932, j, k, b])`, j the replicate (0..4), k the kind (0..3), b the block (0 choice, 1 judged, 2 confirmation) |
-| 20261933 | unused: `cons` draws nothing (reserved for stage C; never reassigned) |
-| 20261934 | unused: `cons` draws nothing, so the year-by-year readings (9.6) need no seed (reserved; never reassigned) |
+| 20261933 | D-663's A1, B2 and slippage readings (11.5 item 4): `v1_adapter.Engine(mc_seed = 20261933)`, each run's Monte-Carlo error. Reassigned before any use: it was reserved for stage C, where `cons` draws nothing |
+| 20261934 | D-663's B1 (11.5 item 4): `v1_adapter.part_b1(seed = 20261934)`, its block-resampled histories. Reassigned before any use: it was reserved for the year-by-year readings, which draw nothing |
 | 20261935 | stage D's campaign seed: the gate floor and every beside arm, 500 paths |
-| 20261936 | unused: `pcons` simulates its fixed-b table with `extended/p_bound`'s own seed (reserved for the scorecard; never reassigned) |
+| 20261936 | D-663's C1 (11.5 item 4): `v1_adapter.part_c1(seed = 20261936)`, its missed-trade realisations. Reassigned before any use: it was reserved for the scorecard, where `pcons` uses `extended/p_bound`'s own seed |
 | 20261937 | the confirmation's length rule (14): `default_rng([20261937, m])`, the sign flips of its power simulation at m months |
 | 20261938 | the build's walker tests: `default_rng([20261938, j])` -- j = 0 the shift test, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c), 4 T-13 (a)'s extension (today's T-13 keeps its own 20261118) |
 | 20261939 | the build's planted-effect tests, T-14: `default_rng([20261939, j])` -- j = 0 (a), 1 (b), 2 (c), 3 (e) gap follow, 4 (e) gap reversal |
@@ -1110,9 +1163,8 @@ family's own in a `prereg/F-*.md` other than this one. An exclusive `range` boun
 
 ## 16. Multiplicity and the budget
 
-1. **F-01 spent k = 10** (E-007 (a)). **This family takes the next free program family number at its pin -- 11 if
-   pinned next, level 0.05 / (11 x 12) = 0.05 / 132.** If another family is pinned first, k and the level are the
-   gatekeeper's count, and the pinning row writes them.
+1. **F-01 spent k = 10** (E-007 (a)). **This family is program family number k = 11, at the level 0.05 / (11 x 12) =
+   0.05 / 132** (the gatekeeper's count, E-045).
 2. **One cell reaches judgement**, with no further division in the family.
    - C1' is an intersection with C1 at the same level.
    - C2 is a conjunctive gate, not a claim.
@@ -1335,7 +1387,7 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
   C, the run asserts `extended/lift_bound.py`'s blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and before stage D
   `extended/p_bound.py`'s blob `f5b29710e243f97a2795e57f6458512fea99199b` (N1).
 
-## 19. Open before the pin
+## 19. What the pin requires, and what stays open
 
 **The lead's:**
 
