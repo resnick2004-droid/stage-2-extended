@@ -357,15 +357,17 @@ def split_runs(counts: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
 
 
 def captured_run(B: Any, design: str, arm: str, resp: Any, job: dict[str, Any], start: int, kw: dict[str, Any]
-                 ) -> tuple[dict[str, Any], dict[tuple[int, int], Any]]:
+                 ) -> tuple[dict[str, Any], dict[tuple[int, int], Any], list[str]]:
     """The single pass (the third read's (g)): one start through A-9 (`run_starts`) with its long replay recorded by
     A-9's own Q-94 recorder seam, and every replay A-9 makes captured in this process as `user_beside.replay` returns
     it -- {(path seed, sessions): the engine's path}, the long run's with its per-trade ledger. Nothing A-9 is handed
     changes but the recorder; Q-94's identity holds its outputs bit for bit with it on. The wrap of this repository's
-    `user_beside.replay` (not a vendored function) is restored whatever happens."""
+    `user_beside.replay` (not a vendored function) is restored whatever happens. Also returned: the recorder's own
+    per-start checks of the recorded long run (Q-94's `record_path` and opening checks; V5: read, never discarded)."""
     from extended import replay_records as RR
 
     got: dict[tuple[int, int], Any] = {}
+    rec = RR.ReplayRecorder(columns=())
     orig = B.replay
 
     def spy(blocks: Any, args: Any, path_seed: int) -> Any:
@@ -375,10 +377,11 @@ def captured_run(B: Any, design: str, arm: str, resp: Any, job: dict[str, Any], 
 
     B.replay = spy
     try:
-        o = B.run_starts(design, arm, resp, job, [int(start)], 1, recorder=RR.ReplayRecorder(columns=()), **kw)
+        o = B.run_starts(design, arm, resp, job, [int(start)], 1, recorder=rec, **kw)
     finally:
         B.replay = orig
-    return o[0], got
+    checks = [str(q) for r in rec.per_start(design, arm, resp.name) for q in r["problems"]]
+    return o[0], got, checks
 
 
 def _chunk(task: tuple) -> list[tuple]:
@@ -395,9 +398,9 @@ def _chunk(task: tuple) -> list[tuple]:
             j = {**job, "args": {**job["args"], "path": {**job["args"]["path"], "combine_account_cls": c_cls}}}
         k = {**kw, **({} if f_cls is None else {"funded_account_cls": f_cls})}
         A.TALLY.clear()
-        if capture:                                # every replay's counts and request logs, and its paths
-            o, got = captured_run(B, design, arm, resp, j, int(st), k)
-            out.append((o, split_runs(A.collect(with_requests=True)), got))
+        if capture:                                # every replay's counts and request logs, its paths, Q-94's checks
+            o, got, checks = captured_run(B, design, arm, resp, j, int(st), k)
+            out.append((o, split_runs(A.collect(with_requests=True)), got, checks))
         else:
             o = B.run_starts(design, arm, resp, j, [int(st)], 1, **k)
             out.append((o[0], split_runs(A.collect())[:1]))
@@ -412,7 +415,7 @@ def run_plan(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
     `keywords` A-9's (the funded class is replaced by each start's own). At `workers` > 1 the starts run in chunks in
     processes of this runner's own, each at one engine worker. `capture` (one worker only): the single pass
     (`captured_run`) -- each start's (output, every replay's account counts with their request logs, its replays'
-    paths by (seed, sessions))."""
+    paths by (seed, sessions), the recorder's per-start problems)."""
     kw = {k: v for k, v in keywords.items() if k != "funded_account_cls"}
     if s.plan in ("TS", "LU") and keywords.get("funded_account_cls") is not None:
         kw["funded_account_cls"] = keywords["funded_account_cls"]

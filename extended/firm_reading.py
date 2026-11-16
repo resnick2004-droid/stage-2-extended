@@ -718,9 +718,12 @@ def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
 
     outs, counts, directs, stats, compact = [], [], [], {}, {}
     for st in starts:
-        ((o, by_run, got),) = F.run_plan(design, arm, resp, job, s, [int(st)], kw, point=point, capture=True)
+        ((o, by_run, got, q94),) = F.run_plan(design, arm, resp, job, s, [int(st)], kw, point=point, capture=True)
         outs.append(o)
         counts.append(by_run[0] if by_run else [])
+        if q94:                                         # V5: the recorder's own checks of the recorded long run
+            problems += [f"{what} start {st}: Q-94's recorder check: {q}" for q in q94[:3]]
+            break
         try:
             d = captured_start(job, s, int(st), kw, point, resp, every, by_run, got)
         except Refused as exc:
@@ -1028,6 +1031,8 @@ def u1_reported_rows(recs: Sequence[dict[str, Any]], paired_with: Sequence[dict[
                 want += [("S6", k) for k in sorted(got) if k.startswith(year_key + "[")]
             for line, key in want:
                 r = got.get(key)
+                if r is None and mine:                  # n4: a key U1 no longer makes is a refusal, not a blank line
+                    raise Refused(f"M1: U1's metric_rows made no {key} on the {b} block's {len(mine)} starts")
                 rows.append({"subsection": "u1_reported", "block": b, "horizon": h, "measure": key, "stat": line,
                              "value": float("nan") if r is None else float(r["value"]),
                              "n": 0 if r is None else int(r["n"])})

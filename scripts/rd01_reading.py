@@ -143,7 +143,9 @@ CONVENTIONS = {
     "single_pass": "one pass through A-9 per cell (the third read's (g)): A-9's own replays kept in-process -- the long "
                    "run's ledger through A-9's Q-94 recorder seam, the exact-length runs as user_beside.replay returns "
                    "them -- read for 9.1 items 4-5, 9.2, 9.3 and A-10; no second replay; each start's output composed "
-                   "again from them must be A-9's bit for bit",
+                   "again from them must be A-9's bit for bit; the recorder's own per-start checks read and refusing "
+                   "(V5); TS-16 and TS-14 on this route held to U1's registered start rows by E-010's comparison, "
+                   "both arms, every start, before any plan cell (7.1, V1)",
     "break_even": "10.1 item 9's break-even: bisection on $0 to $250 to a cent, as built; one recomposition a price "
                   "shared by the grid and the three searches, and a midpoint's side read from the grid where the "
                   "measure's fall in price decides it -- the same answers as the plain search (the toys)",
@@ -446,10 +448,12 @@ def _start_rows(table: pd.DataFrame, stats: dict[int, dict[str, float]], section
 
 def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], starts: int | None, *,
                       coverage: bool = True, coverage_series: int = R.COVERAGE_SERIES, resume: Resume | None = None,
-                      spill: Spill | None = None, log=print) -> tuple[Spill, dict[str, Any]]:
+                      spill: Spill | None = None, reference: Any = None, log=print) -> tuple[Spill, dict[str, Any]]:
     """The 7.3 runs, TS's first on each stream (its cells are the pairing's other side): (the spilled rows, what ran).
-    Each cell's rows leave memory as it finishes (m7); TS's cells keep only what the pairing reads. Raises
-    `firm_reading.Refused` at the first refusing problem (r5)."""
+    Each cell's rows leave memory as it finishes (m7); TS's cells keep only what the pairing reads. **V1 (7.1):** each
+    TS reference cell, on the reading's own route, must reproduce U1's registered start rows -- `reference(design, arm,
+    outs, n_window, starts)` returns E-010's comparison's problems (`user_beside_identity.u1_compare_outs` in the run),
+    refusing, before any plan's cell is computed. Raises `firm_reading.Refused` at the first refusing problem (r5)."""
     import user_journey as UJ
 
     resume = resume or Resume(None)
@@ -503,6 +507,17 @@ def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], sta
                 probs = UR.consistency_problems(srows, outs, key, blocks=UR.READING_BLOCKS)
                 if probs:
                     raise R.Refused("; ".join(probs[:6]))
+                v1 = []
+                if run.plan == "TS":                    # V1: the reference reproduces U1's registered rows, refusing
+                    if reference is None:
+                        raise R.Refused(f"{key}: no U1 reference to hold TS's registered rows to (7.1, V1)")
+                    bad = reference(name, arm, outs, len(job["blocks"]), starts)
+                    if bad:
+                        raise R.Refused(f"{key}: TS on the reading's route is not U1's registered start rows (7.1): "
+                                        + "; ".join(bad[:6]))
+                    v1 = [{"section": "identity", "subsection": "u1_reference", "measure": "u1_start_rows",
+                           "stat": "starts", "value": float(len(outs)),
+                           "note": "held (7.1, V1): E-010's comparison of every start's row on the reading's route"}]
                 recs = [o["rec"] for o in outs]
                 u1 = R.u1_reported_rows(recs)
                 crows = _tag(_ur_rows(srows, "scorecard"), **head)
@@ -512,7 +527,7 @@ def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], sta
                 crows += _tag([{"section": "mechanics", "subsection": "a11", "measure": f"a11_{k}", "stat": "value",
                                 "value": float(v)} for k, v in a11.items()], **head)
                 crows += _tag([{"section": "identity", "subsection": "items_4_5", "measure": k, "stat": "value",
-                                "value": float(v)} for k, v in cell["checks"].items()], **head)
+                                "value": float(v)} for k, v in cell["checks"].items()] + v1, **head)
                 n_req = sum(float(x.get("oracle_requests_checked", 0)) for x in cell["stats"].values())
                 n_fee = sum(float(x.get("oracle_trades_fee_checked", 0)) for x in cell["stats"].values())
                 crows += _tag([{"section": "oracle", "subsection": "replay", "measure": m, "stat": "checked",
@@ -899,7 +914,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         authorise("firm_scorecard")
         streams = streams_of(RESULTS_DIR)
-        _, ran = scorecard_reading(streams, list(T.RUNS), None, resume=resume, spill=spill)
+        import user_beside_identity as UBI
+
+        u1 = UBI.u1_reference(RESULTS_DIR, ("p16", "p14"))      # U1's registered start rows (7.1, V1)
+
+        def reference(design: str, arm: str, outs: list, n_window: int, starts_: Any) -> list[str]:
+            return UBI.u1_compare_outs(design, streams[design]["config"], arm, outs, u1, n_window, starts_)
+
+        _, ran = scorecard_reading(streams, list(T.RUNS), None, resume=resume, spill=spill, reference=reference)
+        del u1
         authorise("firm_ladder_beside")
         _, lran = ladder_reading(streams, None, resume=resume, spill=spill)
         del streams

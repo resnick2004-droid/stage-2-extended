@@ -141,11 +141,50 @@ for name, seed in (("p16", KIDS[0]), ("p14", KIDS[1])):
 out["toy_tier1"] = {k: len(v) for k, v in C.tier1_trades(streams["p16"]["jobs"]["point"]["blocks"],
                                                          streams["p16"]["jobs"]["point"]["dates"]).items()}
 
+# ------------------------------------------------------------------------------------------------ V1's reference
+# U1's start rows for TS as the identity's route makes them (`firms.run_plan` without the capture, `user_journey.
+# start_rows`), on every start the toy's scorecard runs; the other starts of the window carry only their day, so the
+# file's row count is the window's as U1's is (they are never compared: the toy runs a choice of starts)
+import user_beside_identity as UBI  # noqa: E402
+import user_journey as UJ  # noqa: E402
+from propedge.research import user_journey as UJR  # noqa: E402
+
+
+def toy_reference(choices: tuple[int, ...]) -> dict:
+    rows, recorded, cols = [], {}, None
+    for name in ("p16", "p14"):
+        c = {"config": name, "label": "", "cell": "toy"}
+        streams[name]["config"] = c
+        for arm in ("point", "verdict"):
+            job = streams[name]["jobs"][arm]
+            run_ = sorted({d for k in choices for d in UJ.start_choice(len(job["blocks"]), k)})
+            outs = [o for o, _ in R.F.run_plan(name, arm, B.BY_NAME["off"], job, T.settings_for("TS", "reference"),
+                                               run_, {})]
+            mine = [{**r, "reading": UJR.READING} for r in UJ.start_rows(c, arm, outs)]
+            cols = cols or list(mine[0])
+            rows += mine + [{"section": "start", "config": name, "arm": arm, "start_day": d}
+                            for d in range(len(job["blocks"])) if d not in set(run_)]
+            recorded[f"{name}|{arm}"] = len(job["blocks"])
+    return {"columns": cols, "recorded": recorded, "start": pd.DataFrame(rows)}
+
+
+TOY_REF = toy_reference((STARTS, 2))
+
+
+def reference_of(ref: dict):
+    def fn(design, arm, outs, n_window, starts_):
+        return UBI.u1_compare_outs(design, streams[design]["config"], arm, outs, ref, n_window, starts_)
+    return fn
+
+
+REFERENCE = reference_of(TOY_REF)
+
 # ------------------------------------------------------------------------------------------------ the scorecard
 names = ["TS-16", "TS-14", "DT-16-s", "DT-16-price", "FP-16-s", "QP-16-s", "QP-16-req", "LU-16-l"]
 runs = [r for r in T.RUNS if r.name in names]
 t0 = time.time()
-sc_spill, ran = RDR.scorecard_reading(streams, runs, STARTS, coverage=True, coverage_series=COV_SERIES)
+sc_spill, ran = RDR.scorecard_reading(streams, runs, STARTS, coverage=True, coverage_series=COV_SERIES,
+                                      reference=REFERENCE)
 df = sc_spill.frame()
 out["sc_ran"] = ran
 out["sc_sections"] = sorted(set(df["section"]))
@@ -333,7 +372,7 @@ neg["capture"] = [len(seen), abs(seen[0][0] - (0.08 - 0.11)) < 1e-15,
 neg["captured_reproduces_the_arm"] = R.delta_problems(pt16, made["verdict"], seen[0]) == []
 bad_streams = {k: {**v, "delta": {"verdict": (DELTA[2.0] + 1e-6, DELTA)}} for k, v in streams.items()}
 try:
-    RDR.scorecard_reading(bad_streams, runs[:1], 2, coverage=False)
+    RDR.scorecard_reading(bad_streams, runs[:1], 2, coverage=False, reference=REFERENCE)
     neg["scorecard_stops_on_a_wrong_delta"] = False
 except R.Refused as exc:
     neg["scorecard_stops_on_a_wrong_delta"] = "r6" in str(exc)
@@ -344,7 +383,7 @@ try:                                               # r5: a cell's refusal stops 
     RR.fee_problems = lambda ledger, s: ["planted"] if s.plan == "DT" else []
     seen = []
     RDR.scorecard_reading(streams, [r for r in runs if r.name in ("TS-16", "DT-16-s", "FP-16-s")], 2, coverage=False,
-                          log=lambda *a, **k: seen.append(a[0]))
+                          reference=REFERENCE, log=lambda *a, **k: seen.append(a[0]))
     neg["stops_at_first_refusal"] = False
 except R.Refused as exc:
     neg["stops_at_first_refusal"] = ("planted" in str(exc) and not any("FP-16-s" in x for x in seen))
@@ -440,8 +479,8 @@ for rname, s_ in (("TS-16", T.settings_for("TS", "reference")), ("DT-16-s", T.se
         plain = R.F.run_plan("p16", arm, B.BY_NAME["off"], cj_, s_, [0, 37, 74], kw_, point=ref_)
         capt = R.F.run_plan("p16", arm, B.BY_NAME["off"], cj_, s_, [0, 37, 74], kw_, point=ref_, capture=True)
         same_out = all(not first_difference(a_[0], b_[0]) for a_, b_ in zip(plain, capt))
-        same_led = True
-        for (o_, by_, got_), st_ in zip(capt, [0, 37, 74]):
+        same_led = all(not q_ for *_, q_ in capt)                     # V5: Q-94's own checks hold on the toy
+        for (o_, by_, got_, _q), st_ in zip(capt, [0, 37, 74]):
             dc = R.captured_start(cj_, s_, st_, kw_, ref_, B.BY_NAME["off"], 1, by_, got_)
             dd = R.direct_start("p16", arm, B.BY_NAME["off"], cj_, s_, st_, kw_, ref_, 1)
             same_led &= (dc["ledger"] == dd["ledger"] and dc["counts"] == dd["counts"]
@@ -449,6 +488,85 @@ for rname, s_ in (("TS-16", T.settings_for("TS", "reference")), ("DT-16-s", T.se
                          and sorted(dc["exact"] or {}) == sorted(dd["exact"] or {}))
         third[f"{rname}|{arm}"] = [same_out, same_led]
 out["single_pass"] = third
+
+# V1: the references are U1's rows on the reading's route; a planted difference in the registered rows refuses
+v1 = {"held": int(((df["section"] == "identity") & (df["subsection"] == "u1_reference")).sum())}
+planted = {**TOY_REF, "start": TOY_REF["start"].copy()}
+st_ = planted["start"]
+first = st_[(st_["config"] == "p16") & (st_["arm"] == "point") & st_["net_month_1"].notna()].index[0]
+st_.loc[first, "net_month_1"] = float(st_.loc[first, "net_month_1"]) + 0.01
+try:
+    RDR.scorecard_reading(streams, [r for r in runs if r.name == "TS-16"], STARTS, coverage=False,
+                          reference=reference_of(planted))
+    v1["planted_refused"] = False
+except R.Refused as exc:
+    v1["planted_refused"] = "registered start rows" in str(exc) and "net_month_1" in str(exc)
+try:
+    RDR.scorecard_reading(streams, [r for r in runs if r.name == "TS-16"], STARTS, coverage=False)
+    v1["none_refused"] = False
+except R.Refused as exc:
+    v1["none_refused"] = "no U1 reference" in str(exc)
+out["v1"] = v1
+
+# V5: a recorder check that fails refuses the cell
+import extended.replay_records as RRm  # noqa: E402
+
+orig_reduce = RRm.ReplayReducer.reduce
+
+
+def bad_reduce(self, *a, **k):
+    lp_, rec_ = orig_reduce(self, *a, **k)
+    return lp_, {**rec_, "problems": ["a planted opening problem"]}
+
+
+RRm.ReplayReducer.reduce = bad_reduce
+try:
+    cj5, kw5 = R.cell_job(streams["p16"]["jobs"]["point"], T.settings_for("TS", "reference"),
+                          streams["p16"]["jobs"]["point"]["blocks"])
+    c5 = R.run_cell("p16", "point", B.BY_NAME["off"], cj5, T.settings_for("TS", "reference"), [0, 37], kw5, None)
+    out["v5"] = [len(c5["problems"]), "Q-94's recorder check" in (c5["problems"] or [""])[0],
+                 c5["checks"]["starts_compared"]]
+finally:
+    RRm.ReplayReducer.reduce = orig_reduce
+
+# n2, V1 and V3 in the identity script: its own `reading_route_items` on the toy streams (U1's builder and file stood in
+# by the toy's, the registered shift through a real `customer_slices.Campaign`), every refusal list empty, its timings
+import contextlib  # noqa: E402
+import io  # noqa: E402
+
+import firms_identity as FI  # noqa: E402
+
+
+def toy_build(rd, name):
+    camp_ = cs.Campaign(name, streams[name]["jobs"]["point"]["blocks"], list(streams[name]["jobs"]["point"]["dates"]),
+                        {"e": 0.0, "lb": DELTA[2.0], "e_by_rr": {R_: 0.0 for R_ in RS}, "lb_by_rr": dict(DELTA)})
+    jobs_ = {arm: {**streams[name]["jobs"][arm], "blocks": cs.arm_blocks(camp_, arm)} for arm in ("point", "verdict")}
+    return jobs_, streams[name]["config"], []
+
+
+saved_ = (FI.UBI.build, FI.UBI.u1_reference)
+FI.UBI.build, FI.UBI.u1_reference = toy_build, (lambda rd, configs: TOY_REF)
+buf = io.StringIO()
+try:
+    with contextlib.redirect_stdout(buf):
+        n2 = FI.reading_route_items(STARTS)
+finally:
+    FI.UBI.build, FI.UBI.u1_reference = saved_
+printed = buf.getvalue().splitlines()
+out["identity_n2"] = {k: v[:3] for k, v in n2.items()}
+out["identity_timings"] = [len([x for x in printed if x.startswith("timing: n2 ")]),
+                           all("s a start-run" in x and "peak" in x for x in printed if x.startswith("timing: n2 "))]
+
+# n4: a key U1 no longer makes refuses (on the tiled records, whose blocks hold starts)
+orig_keys = R.u1_reported_keys
+R.u1_reported_keys = lambda: orig_keys() + [("S2", "first_pass:no_such_key@42", 42)]
+try:
+    R.u1_reported_rows(plan_t)
+    out["n4"] = False
+except R.Refused as exc:
+    out["n4"] = "no_such_key" in str(exc)
+finally:
+    R.u1_reported_keys = orig_keys
 
 # the break-even search: the shared one gives the plain search's answers exactly, with fewer recompositions
 be_cmp = {}

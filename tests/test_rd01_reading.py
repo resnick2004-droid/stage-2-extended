@@ -243,3 +243,27 @@ def test_m7_and_d1_rows_spilled_and_the_identity_rows_without_the_token():
     rows, shas, heads, in_csv, in_manifest = r["fr_identity"]
     assert rows == ["E-000"] and shas == ["abab"] and heads == ["cdcd"]
     assert in_csv is False and in_manifest is False                  # the row, sha and HEAD; never the token
+
+
+# ------------------------------------------------------------------------------------------------ the fourth read
+
+
+def test_v1_the_references_reproduce_u1s_rows_on_the_readings_route():
+    v1 = found()["v1"]
+    assert v1 == {"held": 4, "planted_refused": True, "none_refused": True}
+
+
+def test_v5_the_recorders_own_checks_refuse_and_hold_on_the_toys():
+    r = found()
+    assert r["v5"] == [1, True, 0]                    # a planted recorder problem stops the cell at its first start
+    assert all(v == [True, True] for v in r["single_pass"].values())   # and none on the toys' own replays
+
+
+def test_n4_a_missing_u1_key_refuses():
+    assert found()["n4"] is True
+
+
+def test_n2_v1_v3_the_identity_stage_runs_the_readings_route_and_times_it():
+    r = found()
+    assert r["identity_n2"] == {"n2 the reading's in-run refusals": [], "V1 TS on the reading's route": []}
+    assert r["identity_timings"] == [20, True]          # 2 streams x 2 arms x 5 plans, each timed with its peak

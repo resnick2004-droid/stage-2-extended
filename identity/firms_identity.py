@@ -36,6 +36,16 @@ that start (its day and index in range), its outcome the block's own at its R pl
 is zero; at each plan every adapter account is of exactly the class `classes_for` names (m4: through the per-start
 subclasses' bases, so Fast Pass's and Quick Pay's evaluation classes are told apart). Counted and printed.
 
+**The reading's own route on the same sample** (the fourth read's n2 and V1, with items 4 and 5): on the sampled starts
+of each stream and arm, the reading's cells as `scripts/rd01_reading.py` runs them (`firm_reading.run_cell`: one pass
+through A-9 with its replays captured) -- TS held to U1's registered start rows by E-010's comparison on that route
+(V1), then every plan's strict corner with every in-run refusal the reading makes: the capture guard, the recorder's
+own checks (V5), 9.1 items 4 and 5, 9.2's oracles, 9.3's uncapped-ladder control, U1's consistency checks and M1's
+lines. So a false refusal shows here, under the identity's read, before any purpose of the reading is ledgered.
+
+**Timings (V3).** Every stage prints its seconds, its start-runs (or paths) and seconds a start-run, and the process's
+peak memory so far -- item 1 at every start, T-8 at 4 -- for the lead to schedule the reading from.
+
 E-010's negative control (`--control`): item 1's comparison with Fast Pass's strict corner in place of TS must be
 refused (the comparison can tell a plan from TS).
 
@@ -91,8 +101,16 @@ LUCID_JOINT_CONFIG = "p16_5+1"
 CHECKS = ("item 1: TS through the runner -- U1's start rows (p16, p14, both arms) and the registered gate paths",
           "item 2: the adapters at their Topstep setting, in pairs (A-2+A-3, A-4+A-5, A-4+A-7) -- the same",
           "item 3: Lucid -- (a) the vendored joint engine's p16_5+1 rows; (b) the runner against the joint one-firm run",
-          "item 4: every trade taken is one of the design's offered trades",
+          "item 4: every trade taken is one of the design's offered trades; and, on the same sample, the reading's "
+          "own route with every in-run refusal and TS held to U1's rows on it (n2, V1)",
           "item 5: off where off -- no adapter fires at TS, no other plan's rule in a plan")
+
+
+def timing(label: str, seconds: float, runs: int, unit: str = "start-run") -> None:
+    """V3: one stage's real timing and the process's peak memory so far, printed for the reading's schedule."""
+    each = f", {seconds / runs:.3f} s a {unit}" if runs else ""
+    mem = SI.peak_memory() or "peak memory not available"
+    print(f"timing: {label}: {seconds:.1f} s, {runs} {unit}s{each}; {mem}", flush=True)
 
 
 def _with_path(job: dict[str, Any], **kw: Any) -> dict[str, Any]:
@@ -121,14 +139,18 @@ def u1_items(starts: int | None, workers: int, control: bool = False) -> dict[st
             args, kw = F.plan_args(job["args"], s, blocks=job["blocks"] if control else None)
             if not control and (args is not job["args"] or kw):
                 out["item 1 U1"].append(f"{name} {arm}: A-1 at Topstep's contract changed the arguments")
+            t0 = time.time()
             runs = F.run_plan(name, arm, B.BY_NAME["off"], {**job, "args": args}, s, chosen, kw, workers=workers)
+            timing(f"item 1 {name} {arm} (A-9 through the runner, TS)", time.time() - t0, len(chosen))
             outs = [o for o, _ in runs]
             out["item 1 U1"] += UBI.u1_compare_outs(name, c, arm, outs, ref, of, starts)
             if control:
                 continue
             for plan, ca, fa in PAIRS:
                 j2 = _with_path(job, combine_account_cls=TWIN[ca])
+                t0 = time.time()
                 o2 = B.run_starts(name, arm, B.BY_NAME["off"], j2, chosen, workers, funded_account_cls=TWIN[fa])
+                timing(f"item 2 {plan}'s twins {name} {arm}", time.time() - t0, len(chosen))
                 what = f"{plan}'s twins ({ca}+{fa}) {name} {arm}"
                 out["item 2 U1"] += [f"{what}: {p}" for p in UBI.u1_compare_outs(name, c, arm, o2, ref, of, starts)]
                 out["item 2 U1"] += UBI.class_outs_problems(outs, o2, TWIN[fa], what)
@@ -163,8 +185,14 @@ def gate_items(paths: int, workers: int) -> dict[str, list[str]]:
     saved = GI.arm_kwargs
     GI.arm_kwargs = arm_kwargs
     try:
+        t0 = time.time()
         p16 = GI.p16_problems(int(paths), int(workers), arms)
+        timing(f"items 1-2 gates P-16 ({len(arms)} arms, each two shifts)", time.time() - t0, int(paths) * len(arms),
+               "arm-path")
+        t0 = time.time()
         p14 = GI.p14_problems(int(paths), int(workers), arms)
+        timing(f"items 1-2 gates P-14 ({len(arms)} arms, each two shifts)", time.time() - t0, int(paths) * len(arms),
+               "arm-path")
     finally:
         GI.arm_kwargs = saved
     out = {"item 1 gate": [f"P-16 {p}" for p in p16["ts"]] + [f"P-14 {p}" for p in p14["ts"]],
@@ -308,6 +336,65 @@ def sample_items(n_starts: int) -> dict[str, list[str]]:
     return out
 
 
+def reading_route_items(n_starts: int) -> dict[str, list[str]]:
+    """n2 and V1 (the module's docstring): on `n_starts` starts of each stream and arm, the reading's own cells and
+    every refusal it makes in the run, before any of its purposes is ledgered."""
+    import user_journey as UJ
+
+    from extended import user_readings as UR
+    from propedge import RESULTS_DIR
+
+    out: dict[str, list[str]] = {"n2 the reading's in-run refusals": [], "V1 TS on the reading's route": []}
+    ref = UBI.u1_reference(RESULTS_DIR, CONFIGS)
+    off = B.BY_NAME["off"]
+    for name in CONFIGS:
+        (jobs, c, probs), seen = RD.build_with_deltas(lambda name=name: UBI.build(RESULTS_DIR, name))
+        out["n2 the reading's in-run refusals"] += probs
+        uniq = {(float(dr), None if by is None else tuple(sorted(by.items()))) for dr, by in seen}
+        if len(uniq) != 1:
+            out["n2 the reading's in-run refusals"].append(f"{name}: {len(uniq)} registered verdict shifts, not one")
+            continue
+        delta = {"verdict": seen[0]}
+        pt = jobs["point"]
+        out["n2 the reading's in-run refusals"] += [f"{name} verdict: r6: {q}" for q in
+                                                     RD.delta_problems(pt["blocks"], jobs["verdict"]["blocks"],
+                                                                       delta["verdict"])]
+        ctx = RD.stream_context(name, pt)
+        for arm in UJ.ARMS:
+            job = jobs[arm]
+            chosen = UJ.start_choice(len(job["blocks"]), n_starts)
+            ts = None
+            for plan in ("TS", "LU", "DT", "FP", "QP"):
+                st = TS if plan == "TS" else T.settings_for(plan, T.STRICT)
+                what = f"{name} {arm} {plan}"
+                t0 = time.time()
+                try:
+                    blocks, ref_pt, _ = RD.arm_inputs(pt, job, st, arm, delta.get(arm))
+                    cjob, kw = RD.cell_job(job, st, blocks)
+                    cell = RD.run_cell(name, arm, off, cjob, st, chosen, kw, ref_pt, direct=True, ctx=ctx,
+                                       ts=None if ts is None else ts, keep_ts=plan == "TS",
+                                       keep_directs=plan == "DT")
+                    probs = list(cell["problems"])
+                    if not probs:
+                        outs = RD.reading_outs(cell, name, arm, off, st)
+                        srows, _t = UR.summary(name, arm, off, outs, blocks=UR.READING_BLOCKS)
+                        probs += UR.consistency_problems(srows, outs, what, blocks=UR.READING_BLOCKS)
+                        RD.u1_reported_rows([o["rec"] for o in outs])
+                    if plan == "TS" and not probs:
+                        out["V1 TS on the reading's route"] += [
+                            f"{what}: {q}" for q in UBI.u1_compare_outs(name, c, arm, cell["outs"], ref,
+                                                                       len(job["blocks"]), n_starts)]
+                        ts = cell["ts"]
+                except RD.Refused as exc:
+                    probs = [str(exc)]
+                out["n2 the reading's in-run refusals"] += [f"{what}: {q}" for q in probs[:3]]
+                timing(f"n2 {what} (the reading's single pass and its refusals)", time.time() - t0, len(chosen))
+                gc.collect()
+        del jobs
+        gc.collect()
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ main
 
 
@@ -356,14 +443,25 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if r else 3
     res: dict[str, list[str]] = {}
     if items & {1, 2}:
+        t1 = time.time()
         res.update(u1_items(starts, a.workers))
+        timing("items 1-2, U1's start rows", time.time() - t1, 0)
+        t1 = time.time()
         res.update(gate_items(a.paths, a.workers))
+        timing("items 1-2, the gates", time.time() - t1, 0)
         if 2 not in items:
             res.pop("item 2 U1"), res.pop("item 2 gate")
     if 3 in items:
+        t1 = time.time()
         res.update(lucid_items(starts, a.workers))
+        timing("item 3, Lucid", time.time() - t1, 0)
     if items & {4, 5}:
+        t1 = time.time()
         res.update(sample_items(a.trade_starts))
+        timing("items 4-5, the sample", time.time() - t1, 0)
+        t1 = time.time()
+        res.update(reading_route_items(a.trade_starts))
+        timing("n2 and V1, the reading's route on the sample", time.time() - t1, 0)
     rc = 0
     for k, probs in res.items():
         if probs:
