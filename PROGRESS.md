@@ -32,3 +32,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-15 | lead | Q-24's red team: F-02 must be redrafted (F1 material; D-1 and D-5's fixes verified in the walker) -- merged; the redraft Q-30 sent to the Q-21 worker. The feature-rules skill corrected: the store's column is `ts`, the bar's start, UTC. |
 | 2026-11-16 | lead | Q-25 merged (E-018): the payout-policy family's draft with three proposed pass lines for a same-trades lever (the operator's, after its red team). Q-31 dispatched. |
 | 2026-11-16 | lead | Q-29 merged (E-019): family B out of the opening window. Dispatched Q-32 (new wt-infra: the judged block's seal) and Q-33 (wt-scout: the second red-team read). |
+| 2026-11-16 | lead | Q-26 merged (E-020): 4 of 11 short-ranked plans recorded; 3 more firms' terms forbid automated retrieval -- the eight firms' collected material to be struck (Q-34, dispatched). Q-32 and Q-33 launched. |
