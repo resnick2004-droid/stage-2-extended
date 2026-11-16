@@ -103,7 +103,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | done: merged 40a56a7 (E-063); the gatekeeper's re-read Q-66c | Q-68 | light | 0 | E-052 |
 | Q-85 | The one-door scan checks that the row an exemption names exists and says so; the hook's "prereg/F-xx" message | wt-infra | done: merged (E-061) | Q-68 | light | 0 | E-052 |
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | done: built and merged (E-062); the run is Q-98 | Q-69 | light | 0 | E-054 |
-| Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | running (its drafter) | Q-75 | light | 0 | E-054 |
+| Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | done: merged (E-071); the gatekeeper's read Q-87b | Q-75 | light | 0 | E-054 |
 | Q-88 | The red team's first read of the firms reading's second draft | wt-firms | done: must be redrafted, remedies adopted (E-058); Q-91 | Q-54 | light | 0 | E-054 |
 | Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | queued: the heavy queue after Q-83, from f7eda0d (E-066) | Q-70 | heavy | 0 | E-055 |
 | Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | held until Q-55's Table 9 (E-064) | Q-78 | light | 0 | E-057 |
@@ -117,11 +117,14 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-98 | Q-86's reading from a clean checkout (`scripts/user_spend.py`) -- the heavy queue | lead | queued: the heavy queue after Q-83, from f7eda0d (E-066) | Q-86, Q-97 | heavy | 0 | E-062 |
 | Q-66c | The gatekeeper re-reads F-02's seventh text (a verdict only) | lead | done: APPROVE, contingent on Q-55 and Q-83 (E-065) | Q-84 | light | 0 | E-063 |
 | Q-88b | The red team re-reads the firms reading's third draft's diff | wt-firms | done: pinnable after one small edit (E-067); Q-91b | Q-91 | light | 0 | E-064 |
-| Q-99 | A scout's note: composing an execution model from the program's components (structure only, no result) | wt-scout | running | -- | light | 0 | E-064 |
-| Q-91b | The firms reading's one small edit (Q-88b's five minors); the addendum committed first | wt-firms | running (its drafter) | Q-88b | light | 0 | E-067 |
-| Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | queued (after Q-95) | Q-76 | light | 0 | E-067 |
+| Q-99 | A scout's note: composing an execution model from the program's components (structure only, no result) | wt-scout | done: read (E-072) | -- | light | 0 | E-064 |
+| Q-91b | The firms reading's one small edit (Q-88b's five minors); the addendum committed first | wt-firms | done: merged (E-072); the pin check Q-91c | Q-88b | light | 0 | E-067 |
+| Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | running (wt-features, E-072) | Q-76 | light | 0 | E-067 |
 | Q-101 | Q-94's heavy identity: U1's start rows with recording on, P-16 and P-14, every start (`--row E-068`) -- the heavy queue | lead | queued | Q-94 | heavy | 0 | E-068 |
 | Q-102 | The red team's read of reading PP's third draft | wt-payout | running | Q-92 | light | 0 | E-070 |
+| Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | running | Q-87 | light | 0 | E-071 |
+| Q-91c | A gatekeeper's pin check of the firms reading (a verdict and the pinning row) | lead | running | Q-91b | light | 0 | E-072 |
+| Q-103 | Where components would meet (a supply count, no outcome): on P-16's and P-14's choice-block U1 replays, how often a new funded account's opening, an 08:30 resting ticket's reachable account and a 09:05-15:05 mark would contend for the same position or account | wt-user | queued (after Q-35's run) | Q-35, Q-94 | heavy | 0 | E-072 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

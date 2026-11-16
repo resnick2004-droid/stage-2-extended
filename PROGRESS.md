@@ -73,3 +73,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-068: place recording on the U1 replay merged (recording changes nothing on synthetic runs); its heavy identity Q-101 queued. |
 | 2026-11-16 | lead | E-069: a refused commit on record (Q-85's scan vs Q-82's marker, fixed by a comment); batches now wait for the previous hook's exit 0. |
 | 2026-11-16 | lead | E-070: reading PP's third draft merged (the separated-window interval; its reads line; no Focused Trader readings under its class); its red-team read Q-102 dispatched. |
+| 2026-11-16 | lead | E-071: family O's third draft merged (the minors applied; its toys show level held and little power cost); its gatekeeper read running; a power ceiling for persistent placebo selections noted for every family. |
+| 2026-11-16 | lead | E-072: the firms reading's one edit merged and its diff checked; a gatekeeper's pin check running; the composition note read (ten slots, two conflicts named, no option chosen yet); Q-100 in wt-features; Q-103 queued. |
