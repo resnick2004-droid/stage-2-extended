@@ -130,11 +130,13 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | done: merged (E-078); the gatekeeper's read Q-91e | Q-91c | light | 0 | E-075 |
 | Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | done: APPROVE, contingent on Q-55 (drop rule) and Q-83 (E-077) | Q-87c | light | 0 | E-076 |
 | Q-91e | The gatekeeper reads the firms reading's pin-form diff (a verdict and the pinning row) | lead | done: APPROVE; pinned as RD-01 (E-080) | Q-91d | light | 0 | E-078 |
-| Q-104 | The firms reading's build (A-1..A-7, A-9..A-11 with their tests; its identity stage under its own row), after Q-100 merges | wt-firms | running (wt-firms, its drafter, E-087) | Q-91e, Q-100 | light | 0 | E-080 |
+| Q-104 | The firms reading's build (A-1..A-7, A-9..A-11 with their tests; its identity stage under its own row), after Q-100 merges | wt-firms | built (E-089); merge after Q-107's read | Q-91e, Q-100 | light | 0 | E-080 |
 | Q-92c | A gatekeeper's pin check of reading PP (a verdict and the RD-02 pinning row) | lead | done: APPROVE; pinned as RD-02 (E-082) | Q-92b | light | 0 | E-081 |
 | Q-105 | Reading PP's build (the adapter, the counters' channel T-10, `identity/pp_identity.py`, T-1..T-11) | wt-payout | built (E-088); merge after Q-106's read | Q-92c | light | 0 | E-082 |
 | Q-105b | RD-02's runner (section 14: cells x arms x blocks, counts, the honesty table, the menu) | wt-payout | running (its drafter) | Q-105 | light | 0 | E-088 |
 | Q-106 | The red team's read of RD-02's build before its merge | wt-payout (read-only) | running | Q-105 | light | 0 | E-088 |
+| Q-104b | RD-01's runner (scorecard, beside reports, 9.3's counts, A-10's price grid) | wt-firms | running (its drafter) | Q-104 | light | 0 | E-089 |
+| Q-107 | The red team's read of RD-01's build before its merge | wt-firms (read-only) | running | Q-104 | light | 0 | E-089 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
