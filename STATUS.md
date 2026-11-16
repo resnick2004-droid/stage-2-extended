@@ -47,7 +47,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-firms | wt/wt-firms | Q-26 the short-ranked firms' terms | running |
 | wt-payout | wt/wt-payout | Q-25 a payout-policy family's draft | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
-| wt-scout | wt/wt-scout | -- (Q-23 done) | idle |
+| wt-scout | wt/wt-scout | Q-29 family B redrafted per the red team | running |
 
 ## Running now
 
