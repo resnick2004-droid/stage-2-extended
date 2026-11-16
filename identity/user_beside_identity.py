@@ -33,6 +33,17 @@ distinct over 3,000 starts.
 `--control <response>` (a negative control, E-010's kind): the same comparison with that response on must be refused
 -- the identity can tell a response on from off.
 
+**`--funded-cls` (Q-76, E-046 (3)): the adapter's declared funded-account class.** `none` (the default) is the
+comparison above, unchanged -- the keyword at its default. `pass_through` runs it with the gate's
+`PassThroughFundedAccount` (`extended.gate`, a subclass that overrides nothing) given as `funded_account_cls`: U1's
+start rows, every column, as above, and every start's output naming the class. `both` runs the default and then the
+pass-through class on the same starts, and holds the class run's outputs equal to the default's **bit for bit** apart
+from the one added key that names the class (`class_outs_problems`: every float by its hex, every type, every key in
+order). Not with `--control`.
+
+    python identity/user_beside_identity.py --u1-starts 4 --funded-cls both            # slow (the lock)
+    python identity/user_beside_identity.py --u1-starts all --funded-cls both          # heavy (the lock; the lead's)
+
 **The read (Q-48).** With `--u1-starts` (and `--control`), before anything runs, `main` authorises Stage 2's engine's
 read through `extended.reader.authorise_engine_read` (purpose `identity`, declaration **E-024**, the window 2020-01-02
 to 2026-07-16; the files: A1's events and days and A3's cached walk for every configuration, the bars for P-15's and
@@ -78,6 +89,89 @@ SYN_PATH_SEEDS = tuple(range(B.SEED_BLOCK[2], B.SEED_BLOCK[2] + 6))
 SYN_HORIZON = 253
 #: the short paths of (3b): about two months, where some paths see no denial at 10 %
 SYN_SHORT = 43
+#: Q-76: the funded-account class arms of the U1 comparison (`--funded-cls`), in the order run
+FUNDED_CLS_ARMS = {"none": ("none",), "pass_through": ("pass_through",), "both": ("none", "pass_through")}
+CLASS_KEY = "funded_account_cls"
+
+
+# ------------------------------------------------------------------------------------------------ Q-76: the class
+
+
+def funded_cls_of(arm: str) -> type | None:
+    """`none` -> None (the keyword's default); `pass_through` -> the gate's `PassThroughFundedAccount`."""
+    if arm == "none":
+        return None
+    if arm == "pass_through":
+        from extended.gate import PassThroughFundedAccount
+
+        return PassThroughFundedAccount
+    raise ValueError(f"unknown funded-class arm {arm!r}")
+
+
+def canonical(x: Any) -> Any:
+    """A value's canonical form for a bit-for-bit comparison: every float by its hex (a NaN equal to a NaN, -0.0 not
+    0.0), every scalar with its type's name, dicts with their keys in order, sequences and arrays item by item (an
+    array with its dtype and shape). Refuses (`TypeError`) a value it has no form for."""
+    if isinstance(x, dict):
+        return ("dict", tuple((canonical(k), canonical(v)) for k, v in x.items()))
+    if isinstance(x, np.ndarray):
+        return ("ndarray", str(x.dtype), tuple(x.shape), tuple(canonical(v) for v in x.ravel().tolist()))
+    if isinstance(x, (list, tuple)):
+        return (type(x).__name__, tuple(canonical(v) for v in x))
+    if isinstance(x, (bool, np.bool_)):
+        return (type(x).__name__, bool(x))
+    if isinstance(x, (float, np.floating)):
+        return (type(x).__name__, float(x).hex())
+    if isinstance(x, (int, np.integer)):
+        return (type(x).__name__, int(x))
+    if x is None or isinstance(x, str):
+        return (type(x).__name__, x)
+    raise TypeError(f"no canonical form for a {type(x).__name__}")
+
+
+def first_difference(a: Any, b: Any, where: str = "") -> str | None:
+    """Where two values' canonical forms first differ (None when they are the same, bit for bit)."""
+    ca, cb = canonical(a), canonical(b)
+    if ca == cb:
+        return None
+    if isinstance(a, dict) and isinstance(b, dict):
+        if list(a) != list(b):
+            return f"{where}: the keys differ ({list(a)[:8]} against {list(b)[:8]})"
+        for k in a:
+            d = first_difference(a[k], b[k], f"{where}[{k!r}]")
+            if d:
+                return d
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)) and type(a) is type(b):
+        if len(a) != len(b):
+            return f"{where}: {len(a)} items against {len(b)}"
+        for i, (x, y) in enumerate(zip(a, b)):
+            d = first_difference(x, y, f"{where}[{i}]")
+            if d:
+                return d
+    return f"{where}: {str(ca)[:120]} against {str(cb)[:120]}"
+
+
+def class_outs_problems(base: list[dict[str, Any]], given: list[dict[str, Any]], cls: type, what: str) -> list[str]:
+    """Q-76: a run with `funded_account_cls=cls` against the default run on the same starts: as many outputs; every
+    one names the class in its last key (`B.class_name`); and, that key taken out, every output is the default's bit
+    for bit (`first_difference`)."""
+    want = B.class_name(cls)
+    if len(base) != len(given):
+        return [f"{what}: {len(given)} starts with the class against {len(base)} without"]
+    probs = []
+    unnamed = [i for i, x in enumerate(given) if not x or list(x)[-1] != CLASS_KEY or x[CLASS_KEY] != want]
+    if unnamed:
+        probs.append(f"{what}: {len(unnamed)} of {len(given)} starts do not name the class {want} in their last key "
+                     f"(first: start index {unnamed[0]})")
+    named = [i for i, x in enumerate(base) if CLASS_KEY in x]
+    if named:
+        probs.append(f"{what}: {len(named)} starts of the default run name a class")
+    for i, (x, y) in enumerate(zip(base, given)):
+        d = first_difference(x, {k: v for k, v in y.items() if k != CLASS_KEY}, f"start index {i}")
+        if d:
+            probs.append(f"{what}: with the class the outputs are not the default's -- {d}")
+            break
+    return probs
 
 
 # ------------------------------------------------------------------------------------------------ synthetic
@@ -345,8 +439,11 @@ def u1_compare_outs(name: str, c: dict[str, Any], arm: str, outs: list[dict[str,
     return probs
 
 
-def u1_problems(configs: Sequence[str], starts: int | None, workers: int, response: str = "off"
-                ) -> dict[str, dict[str, Any]]:
+def u1_problems(configs: Sequence[str], starts: int | None, workers: int, response: str = "off",
+                funded_cls: str = "none") -> dict[str, dict[str, Any]]:
+    """Each configuration's problems against U1's file. Q-76: `funded_cls` (`FUNDED_CLS_ARMS`) -- `none` is E-010's
+    comparison, unchanged; `pass_through` the same with the gate's pass-through class given; `both` the two in turn,
+    the class run's outputs held to the default's bit for bit apart from its naming (`class_outs_problems`)."""
     import gc
 
     import user_journey as UJ
@@ -365,9 +462,28 @@ def u1_problems(configs: Sequence[str], starts: int | None, workers: int, respon
             job = jobs[arm]
             of = len(job["blocks"])
             chosen = UJ.start_choice(of, starts)
-            outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers)
-            ran = len(outs)
-            probs += u1_compare_outs(name, c, arm, outs, ref, of, starts)
+            base = None
+            for which in FUNDED_CLS_ARMS[funded_cls]:                           # Q-76: `none` alone by default
+                cls = funded_cls_of(which)
+                if cls is None:
+                    outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers)
+                    ran = len(outs)
+                    probs += u1_compare_outs(name, c, arm, outs, ref, of, starts)
+                    base = outs
+                    continue
+                outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers, funded_account_cls=cls)
+                ran = len(outs)
+                what = f"the pass-through class: {name} {arm}"
+                probs += [f"the pass-through class: {p}" for p in u1_compare_outs(name, c, arm, outs, ref, of, starts)]
+                if base is not None:
+                    probs += class_outs_problems(base, outs, cls, what)
+                else:
+                    want = B.class_name(cls)
+                    if not all(x.get(CLASS_KEY) == want and list(x)[-1] == CLASS_KEY for x in outs):
+                        probs.append(f"{what}: a start's output does not name the class {want} in its last key")
+                del outs
+            del base
+            gc.collect()
         del jobs
         gc.collect()
         out[name] = {"problems": probs, "starts": ran, "of": of, "seconds": time.time() - t0,
@@ -383,9 +499,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--control", default=None, help="a negative control: the same comparison with this response on "
                     "must be REFUSED (exit 0 when it is)")
+    ap.add_argument("--funded-cls", default="none", choices=tuple(FUNDED_CLS_ARMS),
+                    help="Q-76: the U1 comparison at the class keyword's default (none), with the gate's pass-through "
+                    "class (pass_through), or both, the class run held to the default's outputs bit for bit")
     a = ap.parse_args(argv)
     if not a.synthetic and a.u1_starts is None:
         ap.error("give --synthetic and/or --u1-starts")
+    if a.funded_cls != "none" and (a.u1_starts is None or a.control is not None):
+        ap.error("--funded-cls applies to the U1 comparison (--u1-starts), not with --control")
     configs = tuple(x for x in a.configs.split(",") if x)
     if a.u1_starts is not None:
         root = VENDOR / "data"
@@ -395,7 +516,8 @@ def main(argv: list[str] | None = None) -> int:
         files = SI.engine_files(VENDOR, bars=any(c in SI.U1_WALKED for c in configs))
         what = (f"{READ_ROW}'s identity (identity/user_beside_identity.py): U1's start rows for {', '.join(configs)} "
                 f"({a.u1_starts} starts) through the adapter, "
-                + ("every response off" if a.control is None else f"the negative control {a.control}"))
+                + ("every response off" if a.control is None else f"the negative control {a.control}")
+                + ("" if a.funded_cls == "none" else f", the funded-account class arm {a.funded_cls} (Q-76)"))
         try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
             reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
                                          declaration=READ_ROW, files=files, what=what)
@@ -429,7 +551,11 @@ def main(argv: list[str] | None = None) -> int:
             if mem:
                 print(mem, flush=True)
             return rc
-        for name, r in u1_problems(configs, starts, a.workers).items():
+        extra = {"none": "", "pass_through": " -- with the pass-through class (Q-76) given, every start naming it",
+                 "both": " and with the pass-through class (Q-76) given, every start naming it and every output else "
+                         "the default's bit for bit"}[a.funded_cls]
+        cls_kw = {} if a.funded_cls == "none" else {"funded_cls": a.funded_cls}   # Q-76: the default call as before
+        for name, r in u1_problems(configs, starts, a.workers, **cls_kw).items():
             if r["problems"]:
                 rc = 3
                 print(f"REFUSED: Q-17 U1 {name.upper()} is not reproduced ({r['seconds']:.0f} s) -- "
@@ -437,7 +563,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"identity HOLDS: Q-17 U1 {name.upper()} = results/{SI.U1_FILE}'s start rows for {name}, both "
                       f"arms, {r['starts']} of {r['of']} starts each, all {r['columns']} columns, through the adapter "
-                      f"with every response off ({r['seconds']:.0f} s)", flush=True)
+                      f"with every response off{extra} ({r['seconds']:.0f} s)", flush=True)
     mem = SI.peak_memory()
     if mem:
         print(mem, flush=True)
