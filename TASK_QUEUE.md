@@ -140,7 +140,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | done: fixes in (E-096); merge after Q-106b | Q-106 | light | 0 | E-090 |
 | Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | done: fixes in (E-097); merge after Q-107b | Q-107 | light | 0 | E-092 |
 | Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | running | Q-83 | light | 0 | E-093 |
-| Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | plan revised under Q-108b (E-105); re-read, then the pin; its runs after | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
+| Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | pinned (E-115); its build Q-108d, then the red team, then the two heavy runs | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
 | Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | built in part (E-107); the red team Q-109r; continued in Q-109b | E-095 | light | 0 | E-095 |
 | Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | done: the build's fixes hold; the runner fix first (E-098); Q-105d | Q-105c | light | 0 | E-096 |
 | Q-107b | The red team re-reads RD-01's fixes and its runner (a diff read) | wt-firms (read-only) | done: the fixes hold; the runner fix first (E-099); Q-104d | Q-104c | light | 0 | E-097 |
@@ -158,9 +158,10 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | done: pin after the listed changes (E-110); Q-108c | Q-108b | light | 0 | E-109 |
 | Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | done: the third text (E-114); Q-108r3, then the pin | Q-108r2 | light | 0 | E-110 |
 | Q-106d | The red team's last diff read of RD-02's runner (D1-D5; the waits' covered paths) | wt-payout (read-only) | done: merge after L1, L2 (E-113); Q-105f | Q-105e | light | 0 | E-111 |
-| Q-105f | RD-02's runner: the fourth read's L1 (own waits now; shared waits through Q-111's cover once merged) and L2 | wt-payout | running (E-113) | Q-106d | light | 0 | E-113 |
+| Q-105f | RD-02's runner: the fourth read's L1 (own waits now; shared waits through Q-111's cover once merged) and L2 | wt-payout | done: L1, L2 (E-116); the shared waits swap to Q-111's cover, then merge | Q-106d | light | 0 | E-113 |
 | Q-111 | One shared declaration of the shared identities' covered paths (`extended/identity_cover.py`), its import rule tested from the scripts' source | wt-infra | running (E-113) | E-108 | light | 0 | E-113 |
-| Q-108r3 | The red team reads Q-108's third text (the diff 383a3e9..c905c9c); pin as is, or the last changes | wt-scout (read-only) | running (E-114) | Q-108c | light | 0 | E-114 |
+| Q-108r3 | The red team reads Q-108's third text (the diff 383a3e9..c905c9c); pin as is, or the last changes | wt-scout (read-only) | done: pin as is (E-115) | Q-108c | light | 0 | E-114 |
+| Q-108d | Q-108's build from the pinned plan (E-115): the module, the calibration and validation scripts, the guard; synthetic tests only; then the red team, then the two heavy runs | wt-verify | running (E-115) | E-115 | light (build) / heavy (runs) | 0 | E-115 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
