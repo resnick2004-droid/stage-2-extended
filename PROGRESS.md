@@ -90,3 +90,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | **E-085: Q-55 audited clean with caveats -- it reproduces every published figure of Q-16 and the pin condition holds; family O's drop rule removes s3.** `bm63c` not adopted. F-02's pin waits on Q-83 alone. |
 | 2026-11-16 | lead | **E-086: family R closed before its pin** -- its own drop rule removes every cell (the judged block is too short for a months-long volatility filter); no k spent. |
 | 2026-11-16 | lead | E-087: Q-83 running (after a forty-minute wait for memory); RD-01's and RD-02's builds dispatched. |
+| 2026-11-16 | lead | E-088: RD-02's build done (synthetic; two-worker checks not run under the memory guard); a red-team read of the build before its merge; its runner Q-105b running. |
