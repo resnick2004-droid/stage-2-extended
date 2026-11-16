@@ -116,8 +116,9 @@ def main() -> int:
         sys.stderr.write(
             f"pytest FAILED after editing {Path(raw).name} in {tree}: {summary}\n\n{tail}\n\n"
             "Reported, not blocked -- the edit stands. Fix the failure before building on it. A failed vendor-integrity "
-            "or declaration-hash test means something under vendor/ or a pinned prereg/F-xx file changed: restore it, "
-            "never re-pin it (E-002, E-003). A failed check stays on record (the failure protocol).\n")
+            "or declaration-hash test means something under vendor/ or a pinned declaration (a family's prereg/F-xx or "
+            "a described reading's prereg/RD-xx file, E-025 (1)) changed: restore it, never re-pin it (E-002, E-003). "
+            "A failed check stays on record (the failure protocol).\n")
         return 2
     except subprocess.TimeoutExpired:
         sys.stderr.write(f"pytest (fast tier) timed out after {TIMEOUT_SECONDS}s; run it by hand.\n")

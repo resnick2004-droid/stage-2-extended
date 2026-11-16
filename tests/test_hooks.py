@@ -281,6 +281,19 @@ def test_the_fast_tier_is_one_selection_everywhere():
         assert f'"{marker}: ' in pyproject, f"the {marker} marker is not registered in pyproject.toml"
 
 
+def test_the_test_hooks_failure_message_names_both_kinds_of_pinned_declaration():
+    """E-025 (1): the declaration-hash test re-hashes described readings (`prereg/RD-nn_<slug>.md`) beside families
+    (`prereg/F-nn_<name>.md`); the message that tells an editor what a failed hash means names both (Q-85)."""
+    import ast
+
+    tree = ast.parse((HOOKS / "run_tests.py").read_text(encoding="utf-8"))
+    texts = ["".join(v.value for v in n.values if isinstance(v, ast.Constant)) for n in ast.walk(tree)
+             if isinstance(n, ast.JoinedStr)] + [n.value for n in ast.walk(tree)
+                                                 if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+    msg = [t for t in texts if "declaration-hash" in t]
+    assert msg and all("prereg/F-xx" in t and "prereg/RD-xx" in t for t in msg), msg
+
+
 def test_the_git_hooks_keep_lf_and_install_into_the_common_dir():
     for name in ("pre-commit", "post-commit"):
         assert b"\r\n" not in (ROOT / "scripts" / name).read_bytes(), f"scripts/{name} has CRLF"
