@@ -14,7 +14,9 @@ session's file would stamp it `-dirty`. So a run gets its own tree:
    tree's** copy as directory junctions (`scripts/worktrees.py`'s `link`), read where they are, never copied; the
    checkout's `git status` must be empty before the command runs.
 3. The command runs inside the checkout with one BLAS thread, no bytecode, and the clean-run marker
-   `S2X_CLEAN_RUN=<name>` -- the only condition under which `extended.results.write_result` writes into `results/`.
+   `S2X_CLEAN_RUN=<name>` -- the only condition under which `extended.results.write_result` writes into `results/`
+   and `extended.reader` lets a family read the judged block -- and the run id `S2X_RUN_ID=<name>@<UTC time>`, new
+   for every run (a reused checkout included), by which the reader's once-rule tells runs apart (Q-32).
    Its output goes to `<name>.log` beside the checkout (never inside it: an untracked log would stamp it `-dirty`),
    ending with an `EXIT <code>` line.
 4. **The lock** (E-005, E-006): with `--hours H --mem-gb G` (and `--task`), `run.lock` is taken through
@@ -23,7 +25,8 @@ session's file would stamp it `-dirty`. So a run gets its own tree:
 5. `--collect` copies every file the run changed or created into this tree, refusing (nothing copied) a file this
    tree or a later commit changed since the run's commit, a file the run deleted, and any existing file under
    `results/` it would replace -- a result file is never overwritten (DIRECTIVE Part 1); the variant log
-   `results/variants.jsonl` only when the run's copy extends this tree's.
+   `results/variants.jsonl` and the judged block's read ledger `results/read_ledger.jsonl` (Q-32) only when the
+   run's copy extends this tree's.
 6. `--remove` refuses while a file the run produced is not home (`--collect` first, or `--discard` to drop it), then
    unlinks the junctions -- never through them -- and removes the checkout.
 """
@@ -35,6 +38,7 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -45,12 +49,13 @@ for _p in (str(HERE.parent), str(HERE)):
 import run_lock as RL  # noqa: E402
 import worktrees as W  # noqa: E402  (this tree's root is W.ROOT; its stores are W.STORES)
 
-from extended import CLEAN_RUN_ENV, RUNS_DIR  # noqa: E402
+from extended import CLEAN_RUN_ENV, RUN_ID_ENV, RUNS_DIR  # noqa: E402
 
 RUNS = RUNS_DIR
 BLAS = {"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
-#: files under results/ that are not results: the append-only variant log may be extended, never replaced
-APPEND_ONLY = ("results/variants.jsonl",)
+#: files under results/ that are not results: the append-only variant log and read ledger may be extended, never
+#: replaced
+APPEND_ONLY = ("results/variants.jsonl", "results/read_ledger.jsonl")
 
 
 def _git(*args: str, cwd: Path | None = None) -> str:
@@ -110,9 +115,11 @@ def checkout(name: str, commit: str) -> Path:
 
 
 def run(wt: Path, cmd: list[str], lock_job: str | None = None) -> int:
-    env = {**os.environ, **BLAS, "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1", CLEAN_RUN_ENV: wt.name}
+    run_id = f"{wt.name}@{datetime.now(timezone.utc):%Y%m%dT%H%M%S.%fZ}"
+    env = {**os.environ, **BLAS, "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1", CLEAN_RUN_ENV: wt.name,
+           RUN_ID_ENV: run_id}
     log = wt.parent / f"{wt.name}.log"
-    print(f"running in {wt}: {' '.join(cmd)}  (log: {log})", flush=True)
+    print(f"running in {wt}: {' '.join(cmd)}  (log: {log}; run id {run_id})", flush=True)
     with log.open("w", encoding="utf-8") as f:
         p = subprocess.Popen(cmd, cwd=wt, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                              encoding="utf-8", errors="replace")

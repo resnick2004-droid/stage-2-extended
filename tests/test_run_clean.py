@@ -132,6 +132,47 @@ def test_collect_never_overwrites_a_result(repo):
     assert (repo / "results" / "old.csv").read_text(encoding="utf-8") == "a\n1\n"
 
 
+LEDGER_APPEND = ("import pathlib; p = pathlib.Path('results/read_ledger.jsonl'); "
+                 "p.write_bytes(p.read_bytes() + b'L2' + bytes([10]))")
+LEDGER_REWRITE = "import pathlib; pathlib.Path('results/read_ledger.jsonl').write_bytes(b'L9' + bytes([10]))"
+
+
+def _commit_ledger(repo: Path) -> None:
+    (repo / "results" / "read_ledger.jsonl").write_bytes(b"L1\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "ledger")
+
+
+def test_the_read_ledger_comes_home_when_it_extends_this_trees(repo):
+    """Q-32: a clean run's judged reads append to its checkout's `results/read_ledger.jsonl`; `--collect` brings the
+    lines home when the run's ledger extends this tree's, as for the variant log."""
+    _commit_ledger(repo)
+    assert RC.main(["--name", "g1", "--", *code(LEDGER_APPEND)]) == 0
+    assert RC.main(["--name", "g1", "--collect"]) == 0
+    assert (repo / "results" / "read_ledger.jsonl").read_bytes() == b"L1\nL2\n"
+
+
+def test_a_rewritten_read_ledger_is_never_collected(repo):
+    _commit_ledger(repo)
+    assert RC.main(["--name", "g2", "--", *code(LEDGER_REWRITE)]) == 0
+    with pytest.raises(SystemExit):
+        RC.main(["--name", "g2", "--collect"])
+    assert (repo / "results" / "read_ledger.jsonl").read_bytes() == b"L1\n"
+
+
+def test_each_run_has_its_own_run_id(repo):
+    """Q-32: `S2X_RUN_ID` names one invocation of run_clean (the reader's once-rule tells runs apart by it), set
+    beside the clean-run marker and inherited by the command's own workers."""
+    body = "import os; print('RUNID', os.environ.get('S2X_RUN_ID'))"
+    ids = []
+    for _ in range(2):
+        assert RC.main(["--name", "g3", "--", *code(body)]) == 0
+        line = [x for x in (RC.RUNS / "g3.log").read_text(encoding="utf-8").splitlines() if x.startswith("RUNID")]
+        ids.append(line[0].split()[1])
+    assert all(i.startswith("g3@") for i in ids), ids
+    assert ids[0] != ids[1], "a reused checkout is a new run"
+
+
 def test_remove_unlinks_first_and_keeps_the_store(repo):
     assert RC.main(["--name", "r4", "--", *code(WRITE_MARKER)]) == 0
     with pytest.raises(SystemExit):

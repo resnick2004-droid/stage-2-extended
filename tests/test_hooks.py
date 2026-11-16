@@ -145,10 +145,50 @@ def test_direct_writes_to_results_are_denied(path):
     assert "never hand-edited" in err and "extended.results" in err
 
 
-@pytest.mark.parametrize("name", ["README.md", "variants.jsonl", ".gitkeep", ".last_test_run.json"])
+@pytest.mark.parametrize("name", ["README.md", "variants.jsonl", ".gitkeep", ".last_test_run.json",
+                                  "read_ledger.jsonl"])
 def test_bookkeeping_files_under_results_are_allowed(name):
     code, _, _ = invoke("protect_results.py", pre("Write", f"results/{name}"))
     assert code == ALLOW, f"results/{name} must remain writable"
+
+
+LEDGER = '{"n":1}\n{"n":2}\n'
+
+
+@pytest.mark.parametrize("tool,extra", [
+    ("Write", {"content": '{"n":1}\n{"n":20}\n'}),                       # a line rewritten
+    ("Write", {"content": ""}),                                           # the ledger emptied
+    ("Edit", {"old_string": '{"n":2}', "new_string": '{"n":3}'}),         # a line replaced
+    ("MultiEdit", {"edits": [{"old_string": '{"n":1}\n', "new_string": ""}]}),
+])
+def test_a_read_ledger_rewrite_is_allowed_but_made_visible(worktree, tool, extra):
+    """Q-32: the read ledger is append-only. The hook lets a write through (the brief: the ledger is a file
+    `protect_results.py` allows) and says, to the user and to Claude, that existing lines were changed;
+    `tests/test_reader.py`'s history check is the proof."""
+    led = worktree / "results" / "read_ledger.jsonl"
+    led.write_text(LEDGER, encoding="utf-8")
+    code, out, _ = invoke("protect_results.py", pre(tool, str(led), **extra))
+    assert code == ALLOW
+    msg = json.loads(out)
+    assert "append-only" in msg["systemMessage"] and "read_ledger.jsonl" in msg["systemMessage"]
+    assert msg["hookSpecificOutput"]["hookEventName"] == "PreToolUse"
+
+
+@pytest.mark.parametrize("tool,extra", [
+    ("Write", {"content": LEDGER + '{"n":3}\n'}),
+    ("Edit", {"old_string": '{"n":2}\n', "new_string": '{"n":2}\n{"n":3}\n'}),
+])
+def test_a_read_ledger_append_is_silent(worktree, tool, extra):
+    led = worktree / "results" / "read_ledger.jsonl"
+    led.write_text(LEDGER, encoding="utf-8")
+    code, out, _ = invoke("protect_results.py", pre(tool, str(led), **extra))
+    assert code == ALLOW and out.strip() == ""
+
+
+def test_a_new_read_ledger_is_silent(worktree):
+    code, out, _ = invoke("protect_results.py", pre("Write", str(worktree / "results" / "read_ledger.jsonl"),
+                                                    content='{"n":1}\n'))
+    assert code == ALLOW and out.strip() == ""
 
 
 def test_a_worktrees_results_are_denied(worktree):
