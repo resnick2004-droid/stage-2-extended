@@ -1,26 +1,39 @@
 # DRAFT: other firms' contracts on the registered trades (reading FC) -- a described reading, unnumbered, not declared
 
-**Status: DRAFT, second version, 2026-11-16 (TASK_QUEUE Q-54b).** Written under the operator's ruling **E-023 (1)**
-(`CHARTER.md` section 3), from the rules record of E-020 and Q-59 (`config/rules_extended.yaml`,
+**Status: DRAFT, third version, 2026-11-16 (TASK_QUEUE Q-91, E-058).** Written under the operator's ruling **E-023
+(1)** (`CHARTER.md` section 3), from the rules record of E-020 and Q-59 (`config/rules_extended.yaml`,
 `docs/RULES_CURRENCY.md`) and Stage 2's verified ledgers, in the form reading PP's draft takes
-(`prereg/DRAFT_F-P_payout_policy.md`, E-025). The first version (Q-54) was merged under E-038.
+(`prereg/DRAFT_F-P_payout_policy.md`, E-025). The first version (Q-54) was merged under E-038, the second (Q-54b, on
+Q-59's 28 entries: the cost rule, the tier-1 count, the two conduct counts, the written questions) under E-045. This
+version answers the red team's first read (Q-88, `docs/reviews/DRAFT_RD_firms_2026-11-16.md`): every remedy adopted as
+the review states it (E-058).
 
-**What changed from the first version (Q-54b, on Q-59's 28 entries for DayTraders and TradeDay).**
+**What changed from the second version, finding by finding, and what each change does to what the reading can show
+(E-051).**
 
-- **The rules owed in the first version's section 16 item 2 are recorded** (products, contract counting, hours, flat
-  times, news, conduct, commissions); sections 4.3 to 4.5 and Appendix R cite them. Two are open and read in section 5:
-  DayTraders' flat time (its pages conflict; every stated time is after the designs' 15:10 CT) and its minimum hold
-  time and trade count (unstated).
-- **Per-trade costs are now declared per plan** (4.8): TradeDay's verified all-in schedule at FP and QP (the first
-  version's Topstep costs there were optimistic by $0.68 a micro round turn); at DayTraders the dearer of its listed
-  figure and Topstep's all-in figure, per instrument, since its pages do not say whether exchange and NFA fees are in.
-- **G-3 is a declared count and a bracket** (4.7, 5.5): the trades open in TradeDay's tier-1 windows (07:28 to 07:32 CT
-  on CPI and employment-report days; 12:58 to 13:02 CT on FOMC statement and FOMC minutes days), and, at FP and QP, a
-  strict and a lenient reading of what the auto-liquidation does to them.
-- **Two new checks** (9.3): DayTraders' martingale rule and TradeDay's 200-trades-a-day line.
-- **Two written questions for the firms** (DayTraders' Terms s.26 3.c; TradeDay's multiple-users sentence) are listed
-  for the operator's setup file (16).
-- A citation corrected: "bracketing data releases" is on TradeDay's 103000121031 and its Terms s.23, not 103000081072.
+| finding | the second version | this version | where | effect on what the reading can show |
+|---|---|---|---|---|
+| M1 | the tables' inputs at DT, FP and QP unsaid | `win_days`, `since_pay`, `request_day_next` and the `Rules` winning-day fields declared per plan; an evaluation at target with days owed declared per plan; tested | 4.9, 4.6, G-6, T-2..T-5, T-14 | each plan's row is now one defined design; the held reading (4) and the day-logging micro make DT, FP and QP read the table's one-day-short and smallest sizes more often than a free lookup would -- printed (9.3), never tuned |
+| M2 | DT at the dearer of its listed and Topstep's figure, called conservative | the fee basis a two-ended term: strict, the listed figures plus exchange and NFA fees by Topstep's verified decomposition (MNQ $1.74, NQ $6.76); lenient, the listed figures as all-in ($1.02, $3.98); `DT-16-fees` added; "direction unknown" corrected; E-045's adoption withdrawn | 4.8, 5.2, 7.2, G-5, 16 | DT's strict corner is dearer by up to $2.78 a mini and $0.52 a micro round turn: DT's two corners lie further apart, so "above TS at both corners" is harder for DT to show |
+| M3 | QP read only under the reference's request at every close | a second declared request reading, the reference's cadence (`QP-16-req`), run beside and called neither end; every QP row labelled with its request rule; G-10 counted at QP | 2.3, 5.6, 7.2, 9.3, 10.1 | QP's row is shown under two request habits; where they disagree the menu says QP "depends on its request rule" instead of giving one row |
+| M4 | the tier-1 bracket's lenient end the walked outcome | the lenient end the trade's target less a tick with the flatten's two-tick cost; the walked outcome read beside as "no liquidation", neither end | 5.5, 7.2, U-11 | the bracket is wider on FOMC-minutes days; with two more conditional runs (four in all) |
+| M5 | the 90 % interval on adjacent h-start windows | windows separated by h starts (every other window); the honesty check rebuilt on overlapping per-start h-session sums; any reading below 0.88 coverage at its n_w labelled | 10.2 | about half as many windows: wider intervals and minimum detectable differences, and more readings printed as "too few independent windows" (month 12 and the late block mostly); the sign count stays |
+| m1 | Q-16's one-sided 0.05 comparison beside | dropped: a described reading has no level | 10.2 | no 0.05 calls on the menu |
+| m2 | "only the first complete run is read" | any rerun under a purpose names its row with `repeat=`; the identity stage runs from `identity/*.py` under its own row | 6, 9.1, 15 | none |
+| m3 | the reader, the calendar, A-8 and the gate's owed identities stale | corrected: the reader admits RD- files (E-041); the FOMC-minutes calendar pinned (E-050); A-8 built (E-049); the gate waits for Q-80 | 4.6, 5.5, 15, 16 | none |
+| m4 | A-9's waits missing | A-9 waits for Q-76 and takes the ladder's seed by keyword | 4.6, 15 | none |
+| m5 | A-11 in the gate unsaid | A-11 off in the gate (its blocks carry no date), the rows labelled | 4.6, 10.1 | the gate beside does not show the tier-1 term |
+| m6 | U-9's strict peak at the trade's own target | the strict peak at the next menu R above the largest won, less a tick; the optimistic peak at least a profitable flatten's exit; the walk's stop-first convention named | 5.4 | QP's peak bracket narrower (its strict end less harsh) |
+| m7 | corners read as bounds | "at both declared corners"; the one-at-a-time runs read as each term's direction on P-16; the monotone terms named | 5.1, 11 | no row is called bounded in a term that is not monotone |
+| m8 | Lucid's struck $165 unread | printed by A-10's arithmetic beside; the coupon's basis said | 10.1, 4.2 | LU gains a price grid point |
+| m9 | the count's definitions loose | open at the window's start at any offered R; the bar convention; the BLS name match; A-11 on evaluations and Funded Sim; A-11 in 9.1 item 2 | 5.5, 9.1 | none |
+| m10 | QP's ceiling at one end | two ends: the balance not credited / withdrawn at the ceiling's close; `QP-16-ceil` added | 5.2, 7.2, A-7 | QP's corners further apart where the ceiling binds |
+| m11 | martingale counted per account | per account and across the user's accounts in time order, in micro-equivalents | 9.3 | more steps may show |
+| m12 | A-4's "trading days" | days with at least one executed trade | A-4 | none |
+| notes 1-8 | -- | readings: 5.3 at FP; the early-close zero check; DT's daily limit sizes trades; family 5's closure in 3; U-5's slow end in the written question; the in-sample choice in 11; the pin's name; DT's inactivity rolling over 30 calendar days | 5.3, 9.3, 2.3, 3, 16, 11, 15, 4.6 | DT's inactivity exact in the replay, translated in the gate |
+
+**Runs, after these changes:** 30 replays (2 references, 16 corners, 12 one at a time), or 34 if P-16 has a trade open
+in a TradeDay tier-1 window (5.5); 27 denial-ladder replays and 16 gates beside.
 
 **What E-023 (1) makes of it.** The firm a user trades at leaves the offered trades unchanged: the same registered
 entries, the same outcome of every offer at every R, the same days in the same order. So a firm's contract is a lever
@@ -48,9 +61,9 @@ re-solves a state table for one plan (a sizing design for that contract) is its 
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16, read only inside Stage 2's engine by P-16's and P-14's registered builders (this reading's own code reads no bar) |
 | the unit | one start day, replayed as U1 replays it (`vendor/stage2/docs/USER_MILESTONES.md`); each plan paired with Topstep on the same start |
 | blocks | all starts (the menu's headline); the early and late blocks per measure by `u_select.block` (section 6) |
-| runs | 27 replays (2 references that must reproduce registered rows, 16 corner runs, 9 one-at-a-time runs), or 29 if P-16 has a trade open in a TradeDay tier-1 window (5.5); 27 denial-ladder replays beside, 16 gates beside (section 7) |
+| runs | 30 replays (2 references that must reproduce registered rows, 16 corner runs, 12 one-at-a-time runs), or 34 if P-16 has a trade open in a TradeDay tier-1 window (5.5); 27 denial-ladder replays beside, 16 gates beside (section 7) |
 | unread terms | each read by a rule fixed in section 5; prices at both ends of their listed bracket, or on a declared grid where none is listed |
-| seeds | from 20261990 to 20261999: four in use, four reserved, two retired because found in use elsewhere (section 12) |
+| seeds | from 20261990 to 20261999: three in use, five reserved, two retired because found in use elsewhere (section 12) |
 | confirmation | none: nothing is carried (section 11) |
 
 ---
@@ -129,8 +142,11 @@ read with its terms for accounts opened on or after 2026-07-26. Rule changes ove
   P-14's (A3-BRK30-CB20, U1's own builder) beside. Each with its own registered state table, protocol and routing (the
   longest-waiting account, one position at a time across the firm with five minutes flat, Stage 2 D-429), its purchase
   budget (at most 20 evaluation purchases in 21 sessions, P-14's), and its sizing rule's mode, headroom, stand-aside
-  and room cap. **Only the plan's allowances and its per-trade costs (4.8) replace Topstep's**, as Stage 2's
-  `lucid_setup` replaces the allowances for Lucid (Stage 2 D-575).
+  and room cap. **Only the plan's allowances, its per-trade costs (4.8) and the inputs its accounts hand the table
+  (4.9) replace Topstep's**, as Stage 2's `lucid_setup` replaces the allowances for Lucid (Stage 2 D-575). At
+  DayTraders the soft daily limit sizes trades too: the engine hands the draw the smaller of the cushion and the day's
+  remaining limit as its room (`lockstep.py` 452-455, 706-708), so the $1,250 limit caps a trade's size where it is the
+  nearer barrier (9.3 shows where).
 - **The seats.** Five; at most five accounts of every kind together (evaluations, funded accounts and passes waiting),
   each design's own `max_total_accounts`. That is inside every plan's caps (section 4). With the total at or below the
   funded cap a pass never waits for a seat (the engine's rule, `lockstep.simulate_lockstep_path`'s
@@ -140,8 +156,12 @@ read with its terms for accounts opened on or after 2026-07-26. Rule changes ove
   own rules make the account eligible, request **the smaller of half the balance above start and $2,000** -- the
   reference's amount, Topstep's `payout_max_frac_of_balance` and `xfa_std_cap` -- **cut to the plan's own per-request
   cap and its remaining-balance rule, rounded down to the plan's increment; no request below the plan's minimum.** At
-  TS, LU, DT and FP this is the plan's own maximum (5.3 shows why); at QP, whose pages state no per-request maximum, it
-  is the reference's amount. It is a declared choice: the payout lever itself is reading PP's subject, not this one's.
+  TS, LU and DT this is the plan's own maximum, and at FP it is under the profit reading of its 50 % base (5.3); at QP,
+  whose pages state no per-request maximum, it is the reference's amount. It is a declared choice: the payout lever
+  itself is reading PP's subject, not this one's. **At Quick Pay a second request reading is run beside** (5.6): the
+  same amount at the reference's cadence -- because at QP, eligible at every close over a floor frozen at start, the
+  every-close rule drains the cushion, and QP's row would otherwise read the request habit rather than the contract
+  (the red team's M3).
 - **Hand entry**, at least five minutes from alert to order (E-008). One user's own accounts at one firm: each plan is
   read alone, never beside another firm (Stage 2 read Lucid beside Topstep, section 3).
 - **Conduct.** Tier 1 untouched. Tier 2: Topstep's Responsible Trading Program and Focused Trader Program are Topstep's
@@ -158,7 +178,7 @@ read with its terms for accounts opened on or after 2026-07-26. Rule changes ove
 | Stage 2 D-575, D-577 (`scripts/rc150_firm_split.py --second-firm lucid`) | P-16's five seats split between Topstep and Lucid | 500 gate paths | growth at the bound; D-577 (as D-593 quotes it) found a Lucid seat worth less than a Topstep seat | two firms together, on growth; never Lucid alone |
 | Stage 2 D-593, D-601 (`rc150_added_lucid`) | Lucid seats added to Topstep's five | gate paths | closed on growth (as D-643 quotes D-601) | as above |
 | U1, Stage 2 D-620 (`results/user_journey.csv`, config `p16_5+1`) | five Topstep seats and one Lucid seat, every start | all starts | its start rows are on file; D-626 (7), as D-643 quotes it, found it the highest mean net from month 3 and the highest cash before the first payout | the Lucid identity (9.1 item 3) reproduces these rows; Lucid alone was never run |
-| Stage 2 program U, family 5 (D-643, D-644; `results/u_firms.csv`) | Lucid seats 1, 2 or 5 beside Topstep's five, from day 0 or after the first payout | both blocks | its outcome was not opened by the drafter | Lucid beside Topstep only |
+| Stage 2 program U, family 5 (D-643, D-644; `results/u_firms.csv`) | Lucid seats 1, 2 or 5 beside Topstep's five, from day 0 or after the first payout | both blocks | closed, as every program U family closed (the row below); its file's numbers were not opened by the drafter | Lucid beside Topstep only |
 | Q-12's survey (E-009; `docs/research/firms_survey_2026-11-15.md`) | zero-edge contract ceilings from quoted terms -- arithmetic, not a simulation | no NQ | "no firm clearly above Topstep's $50K" (E-009) | the drafter saw the survey's ceiling table rows for DayTraders and TradeDay while locating their sections |
 | program U's nine families | P on the late block against P-14 | starts from 2024 | all closed | the late block is late development, not out of sample |
 
@@ -170,10 +190,14 @@ engine's account classes, the gate, the U1 runner and the Lucid adapter and setu
 D-574, D-575, D-593, D-643 and D-644 (which state the outcomes quoted above); the survey's sections for DayTraders and
 TradeDay, for their conduct, news and product lines. For the second version, Q-59's 28 entries (their quotes and
 notes), and the columns, release codes and row counts of Stage 2's vendored release calendars (to name the files in
-5.5; no trade was matched against them). No result file of any plan was opened; `u_firms.csv` and `user_journey.csv` were not opened.
+5.5; no trade was matched against them). For the third version, the red team's review (Q-88), whose synthetic toys
+(its Appendix A) are on made-up data, not on any plan; the vendored table code (`state_policy.py`, `risk_policy.py`)
+and `fills.yaml`'s fee decomposition. No result file of any plan was opened; `u_firms.csv` and `user_journey.csv`
+were not opened.
 
 **What is already known of the direction (disclosed).** The survey's zero-edge arithmetic (E-009); Lucid beside
-Topstep on growth (D-577, D-601) and on the journey (D-626 (7)). Nothing is known of any plan alone on the journey.
+Topstep on growth (D-577, D-601) and on the journey (D-626 (7)); program U's family 5 (Lucid seats beside Topstep's)
+closed. Nothing is known of any plan alone on the journey.
 
 ## 4. The contracts on the engine
 
@@ -213,7 +237,7 @@ ladder (`funded_scaling_plan`, `scaling_tier_after_payout`). Nothing new: TS is 
 | evaluation target, drawdown, lock | $3,000; $2,000 end-of-day trailing; locks at start + $100 (`eval_profit_target`, `eval_drawdown_amount`, `eval_drawdown_type`, `eval_drawdown_lock`) | field (`lucid_rules`) |
 | evaluation consistency, minimum days | 40 %; as few as three days (`eval_consistency_rule`, `eval_min_days`) -- the share implies the days | field |
 | evaluation allowance | 40 micros (`eval_position_limit`) | field (`lucid_sizing_rule`) |
-| price | $115.50 one-time with the checkout coupon; resets not bought (`eval_fee`, `eval_reset_fee`) | field (`lucid_price`) |
+| price | $115.50 one-time with the checkout coupon, the card's list price $165 struck; resets not bought (`eval_fee`, `eval_reset_fee`) | field (`lucid_price`); the coupon as every purchase's price rests on the operator's statement (Stage 2 D-574: "Coupons are a multiple time thing"), which TradeDay's sale card has no counterpart to (U-1); $165 printed beside by A-10's arithmetic (10.1 item 9) |
 | daily loss limit | optional at checkout, off in the configuration read (`eval_daily_loss_limit`) | field (none) |
 | funded floor | $2,000 end-of-day trailing, locking at start + $100, forced to the lock by a request (`funded_drawdown_amount`, `funded_drawdown_type`, `payout_balance_consequence`) | field |
 | payout gate | five days of at least $150 and a net profit of at least $1 every cycle; at most five payouts (`payout_frequency_gate`) | `LucidFundedAccount` (Stage 2) |
@@ -260,7 +284,7 @@ ladder (`funded_scaling_plan`, `scaling_tier_after_payout`). Nothing new: TS is 
 | martingale | 2x or more after a closed loss, as part of a pattern to win it back, prohibited (`daytraders.martingale_rule`) | a count (9.3): the table sizes by state, not by the last trade's outcome, but its sizes can step up after a loss |
 | outsized positions | Terms s.7 and s.26 item 4: positions substantially larger than one's other trades, or grossly overleveraged; no threshold; the firm's sole discretion (`daytraders.tou_relative_position_size`) | G-8: priced by the denial ladder; its tier is the operator's (16) |
 | own creation | Terms s.26 3.c: "Sharing trades and strategies with other users or making trades that were not Customer's own creation" (`daytraders.tou_s26_prohibited_conduct`) | a written question to the firm (16); not modelled |
-| commissions | MNQ $1.02, NQ $3.98 per round turn on every simulated account; whether exchange and NFA fees are in is not stated (`daytraders.commissions`) | the cost rule, 4.8 |
+| commissions | MNQ $1.02, NQ $3.98 per round turn on every simulated account; whether exchange and NFA fees are in is not stated (`daytraders.commissions`) | the cost rule, 4.8: the fee basis read at both ends (section 5) |
 
 ### 4.4 FP -- TradeDay Fast Pass End of Day 50K
 
@@ -314,7 +338,7 @@ implies four days), minimum days five or seven (`tradeday.quickpay_eod50k.eval_m
 | seats, inactivity, price limit | as FP | moot; G-10; G-2 |
 | products, hours, tier-1 news, conduct, commissions | as FP (TradeDay's firm-level entries, 4.4) | as FP: field; moot; G-3 and 5.5; G-14; 9.3's counts; 4.8 |
 
-### 4.6 What the engine cannot represent, built as adapters in `extended/` (declared; built after the pin)
+### 4.6 What the engine cannot represent, built as adapters in `extended/` (declared; A-8 built, the rest after the pin)
 
 Every adapter subclasses or wraps a vendored seam; none edits `vendor/`. Where a vendored body must be copied, it is
 refused unless the vendored source hashes to its pin, as `extended/gate.py` does (Q-47). **Each has switches whose
@@ -324,18 +348,19 @@ rows (9.1 item 2).
 | id | adapter | what it adds |
 |---|---|---|
 | A-1 | `extended/firms.py` | a plan's contract applied to a design's replay arguments and gate arguments: rules, fees, billing, activation, lag, request timing, account classes, household rule, conduct, allowances, and the per-trade cost schedule (4.8). Lucid's by Stage 2's `rc150_firm_split.lucid_setup`, imported, on a setup made from the design's replay arguments; TS's leaves the arguments unchanged (tested equal) |
-| A-2 | DayTraders evaluation (`CombineAccount` subclass, through `combine_account_cls`) | the soft daily loss limit (`dll`); the two Qualifying Days a pass needs (a day of at least $200 whose close has the best day at most 50 % of total profit); the inactivity closure (the account ends, not breached, when a 21-session window from its purchase holds no day of at least $200) |
-| A-3 | DayTraders Pro (`FundedAccount` subclass) | eligibility by eight Qualifying Days since the last payout or activation (a day of at least $200 whose close has the cycle's best day at most 30 % of the cycle's profit; the request day excluded); the $2,600 request gate; at least $2,000 left after a request; requests rounded down to $50; the soft daily loss limit; the inactivity closure (21 sessions from activation) |
-| A-4 | TradeDay evaluation (`CombineAccount` subclass) | a minimum count of trading days before a pass |
-| A-5 | Fast Pass funded (`FundedAccount` subclass, with a decision wrapper) | the 45 % rule on gross profit; the session after a request untraded, the account read at a no-trade decision so that the router passes over it (Stage 2 D-162) and its signal goes to another account if one can take it; the fifth request (section 5) |
-| A-7 | Quick Pay funded (`FundedAccount` subclass, with a wrapper on its draw) | the gross-profit intraday floor with the excursion bracket (U-9); eligibility; the tiered split; the $10,000 ceiling |
-| A-8 | the gate for another plan | `extended/gate.py`'s `run_gate` gains `payout_lag_days`, `household_closure` and `combine_account_cls`; the last needs `simulate_lockstep_campaign` re-composed in `extended/` (its vendored body plus one keyword, pinned by its source hash), because the vendored campaign does not pass `combine_account_cls` to its paths |
-| A-9 | Q-17's ladder adapter (`extended/user_beside.py`) | takes a plan's arguments from A-1; its `off` arm must still reproduce U1's start rows |
+| A-2 | DayTraders evaluation (`CombineAccount` subclass, through `combine_account_cls`) | the soft daily loss limit (`dll`); the two Qualifying Days a pass needs (a day of at least $200 whose close has the best day at most 50 % of total profit); at or above target with Qualifying Days owed, the table's lookup as it stands (4.9); the inactivity closure (the account ends, not breached, when a rolling window of 30 calendar days from its purchase holds no day of at least $200 -- exact in the replay, whose sessions carry dates; 21 sessions in the gate, whose resampled days carry none, Stage 2's translation, the gate rows labelled) |
+| A-3 | DayTraders Pro (`FundedAccount` subclass) | eligibility by eight Qualifying Days since the last payout or activation (a day of at least $200 whose close has the cycle's best day at most 30 % of the cycle's profit; the request day excluded); the $2,600 request gate; at least $2,000 left after a request; requests rounded down to $50; the soft daily loss limit; the inactivity closure (a rolling 30 calendar days from activation in the replay, 21 sessions in the gate, as A-2); the table's inputs of 4.9 |
+| A-4 | TradeDay evaluation (`CombineAccount` subclass, with a decision wrapper) | a minimum count of trading days before a pass, a trading day being **a session with at least one executed trade** ("Every day you make a trade will count"; the engine's own `days` counts every live session, `lockstep.py` 506-507); at or above target with days owed, one micro a trade at the table's R until the days are logged (4.9) |
+| A-5 | Fast Pass funded (`FundedAccount` subclass, with a decision wrapper) | the 45 % rule on gross profit; the session after a request untraded, the account read at a no-trade decision so that the router passes over it (Stage 2 D-162) and its signal goes to another account if one can take it -- the registered table's own request-day cells already sit that session out (`state_policy.py` 1338-1339, D-321), so the wrapper asserts it and acts only where a cell would trade; the fifth request (section 5); the table's inputs of 4.9 |
+| A-7 | Quick Pay funded (`FundedAccount` subclass, with a wrapper on its draw) | the gross-profit intraday floor with the excursion bracket (U-9, 5.4); eligibility; the tiered split; the $10,000 ceiling at two ends (section 5); both request readings (5.6); the table's inputs of 4.9 |
+| A-8 | the gate for another plan -- **built** (Q-71, E-049) | `extended/gate.py`'s `run_gate` takes `payout_lag_days`, `household_closure` and `combine_account_cls`; `extended/campaign.py` re-composes `simulate_lockstep_campaign` (its vendored body plus one keyword, pinned by its source hash), because the vendored campaign does not pass `combine_account_cls` to its paths. Its synthetic identity holds (E-049); nothing carries through it until Q-80's 500-path identities hold |
+| A-9 | Q-17's ladder adapter (`extended/user_beside.py`) | takes a plan's arguments from A-1 -- today it refuses a path that already carries `funded_account_cls` or `household_closure` (`user_beside.py` 157-171), which **Q-76** lifts -- and **the ladder's start-seed base as a keyword** (section 12's 20261990; today the base is Q-17's own, `user_beside.py` 126-130); its `off` arm must still reproduce U1's start rows |
 | A-10 | fee arithmetic | DayTraders' recurring $5 Pro fee, and the price grid and break-even price (10.1 item 9): exact arithmetic on each start's purchase, billing and activation records. Exact because the replay's bankroll never binds, so no purchase depends on cash -- checked on every start (9.3). In the gate beside, DayTraders' recurring fee is left out and its rows labelled an upper bound in it |
-| A-11 | TradeDay's tier-1 liquidation (a wrapper on a TradeDay account's draw) | a trade open at the start of a tier-1 window booked by 5.5's strict or lenient reading; its position held to its walked exit for the one-position rule. With no trade in a window it changes nothing (tested) |
+| A-11 | TradeDay's tier-1 liquidation (a wrapper on a TradeDay account's draw) | a trade open at the start of a tier-1 window booked by 5.5's strict or lenient reading, or its walked outcome in the "no liquidation" runs; its position held to its walked exit for the one-position rule; on evaluations and Funded Sim alike (no sentence names an account type). With no trade in a window it changes nothing (tested). **Off in the gate:** the gate's resampled days carry no calendar date (`DayBlock`, `distribution.py` 40-80; `_GateDraws` resamples), so no window can be placed; the FP and QP gate rows are labelled "tier-1 liquidation not applied" |
 
-(There is no A-6: the evaluation's minimum days of both TradeDay plans are A-4.) **If A-5's pass-over cannot be built
-without editing the vendored router, the build stops and reports; this declaration does not fall back.**
+(There is no A-6: the evaluation's minimum days of both TradeDay plans are A-4.) **If A-5's pass-over, A-4's
+one-micro decision or 4.9's inputs cannot be built without editing the vendored engine, the build stops and reports;
+this declaration does not fall back.**
 
 ### 4.7 What is not modelled, listed as gaps
 
@@ -344,13 +369,13 @@ without editing the vendored router, the build stops and reports; this declarati
 | G-1 | Quick Pay's favourable excursion inside a trade: Stage 2's trades carry the adverse excursion (`DayBlock.mae`), not the favourable one | bracketed from the trade's own outcomes at the menu's R values (U-9); an exact walk of the bars would be a new walk with its own identity, not this reading |
 | G-2 | TradeDay's "no trading within 2 % of a price limit" (the account lost on a breach; `tradeday.price_limit_rule`): the page gives the equity circuit-breaker levels (7 %, 13 %, 20 % from settlement) but not how "within 2 %" is measured, and this reading reads no bar | not modelled; every TradeDay row says so; its effect is not bounded |
 | G-3 | TradeDay's tier-1 auto-liquidation (`tradeday.tier1_news_auto_liquidation`, `tradeday.tier1_release_list`): for NQ and MNQ, every position open at 07:28 CT on CPI and employment-report days and at 12:58 CT on FOMC statement and FOMC minutes days is closed by the firm, and nothing trades until 07:32 or 13:02; the engine models no such exit, and the price at 07:28 or 12:58 needs the bars | **the count** (9.3, the run's first mechanics line), and at FP and QP **the bracket** of 5.5 |
-| G-4 | every live move: Lucid's (Stage 2's household readings), Fast Pass's Funded Live at the fifth request, Quick Pay's Live review at $10,000, DayTraders' discretionary live call that closes every simulated account | live accounts are not modelled; an account moved ends, its balance not credited |
-| G-5 | commissions: the cost rule of 4.8. What it leaves open: whether DayTraders' listed figures include exchange and NFA fees (`daytraders.commissions` does not say), and Lucid's actual schedule beside Topstep's (Stage 2 D-575's reading) | DT rows labelled: a bound in this term only if DayTraders' figures are all-in; LU rows conservative in it (D-575) |
-| G-6 | the state tables were solved for Topstep's contract (Stage 2 D-501) and are not re-solved for any plan (Stage 2 D-575 (1)'s known gap) | every plan's row is P-16's (P-14's) design traded there, not the best design for that plan |
+| G-4 | every live move: Lucid's (Stage 2's household readings), Fast Pass's Funded Live at the fifth request, Quick Pay's Live review at $10,000, DayTraders' discretionary live call that closes every simulated account | live accounts are not modelled; an account moved ends, its balance not credited -- except at the two terms read at two ends in section 5 (Fast Pass's fifth request; Quick Pay's ceiling), whose lenient ends pay what the pages let the user withdraw before the move |
+| G-5 | commissions: the cost rule of 4.8. DayTraders' fee basis is read at both ends (section 5): fees on top only add cost, so its strict end is the listed figures plus exchange and NFA fees as Topstep's verified page decomposes them. Left open: any DayTraders fee beyond that decomposition, and Lucid's actual schedule beside Topstep's (Stage 2 D-575's reading) | DT's two corners carry the two bases; LU rows conservative in this term (D-575) |
+| G-6 | the state tables were solved for Topstep's contract (Stage 2 D-501) and are not re-solved for any plan (Stage 2 D-575 (1)'s known gap). **"The design traded there" includes 4.9's mappings** -- what each plan's accounts hand the table, and what an evaluation does at target with days owed -- which are declared choices, not the plan's | every plan's row is P-16's (P-14's) design traded there under 4.9, not the best design for that plan |
 | G-7 | DayTraders' Lifetime billing | not read: its prices are not stated separately |
 | G-8 | each plan's discretionary review, and DayTraders' Terms clause on positions substantially larger than one's other trades (`daytraders.tou_relative_position_size`: Topstep's s.8 wording, its base "other trades on the Day Traders Accounts"; no threshold) -- on its plain words it reaches the state table's funded opening, as E-012 found for Topstep's | priced by the denial ladder only; its tier is the operator's (16) |
 | G-9 | DayTraders' consistency "small tolerance", unsized | read strictly (U-8): a lower bound in that term |
-| G-10 | TradeDay's 30-day dormancy offboarding (discretionary) and its broker's archive | not modelled; the designs trade most sessions |
+| G-10 | TradeDay's 30-day dormancy offboarding (discretionary) and its broker's archive. At Quick Pay its premise fails: an account drained below its trading size sits idle (the red team's M3) | not modelled; **counted at FP and QP** (9.3): sessions with no trade per funded account, accounts idle 30 calendar days, accounts drained below the smallest tradable size |
 | G-11 | rule changes over 2020-2026 | today's terms on every start (2.2) |
 | G-12 | a soft daily loss limit's later signals: an account DayTraders pauses takes no further trade that day, and trades already dealt to it are not re-dealt (the engine's day-loss mechanics, as for Topstep's RTP limit) | counted (9.3) |
 | G-13 | payouts unavailable in holiday hours; Topstep's move to a Live Funded Account | as in every registered row |
@@ -368,11 +393,63 @@ plan's schedule; spread, slippage and the ticks at entry, stop and flatten are e
 |---|---|---|---|
 | TS | $1.22, $3.78 (as registered) | the reference | -- |
 | LU | $1.22, $3.78 | Stage 2 D-575's reading: above Lucid's listed per-side fees, kept as the conservative figure | none in the direction: LU rows conservative in this term |
-| DT | **the dearer of DayTraders' listed figure and Topstep's all-in figure, per instrument: $1.22, $3.98** | DayTraders lists MNQ $1.02 and NQ $3.98 a round turn (`daytraders.commissions`) without saying whether exchange and NFA fees are in; the dearer figure never understates a listed one | if DayTraders' figures are all-in, the DT rows are conservative by $0.20 a micro round turn; if exchange and NFA fees are charged on top, the pages do not give the direction (G-5) |
+| DT | **two ends (section 5).** Strict: **$1.74, $6.76** -- the listed figures plus exchange and NFA fees as Topstep's verified page decomposes its own all-in figure (`fills.yaml` lines 32-35, 8284213: commission $0.50 a micro and $1.00 a mini round turn, NFA $0.02, so exchange fees $0.70 on MNQ and $2.76 on NQ). Lenient: **$1.02, $3.98** -- the listed figures as all-in | DayTraders lists MNQ $1.02 and NQ $3.98 a round turn (`daytraders.commissions`) without saying whether exchange and NFA fees are in. Fees on top only add cost, so the direction is known: the listed figures are the least it can be, the decomposition the most the record supports | any DayTraders fee beyond Topstep's decomposition (G-5). **Withdrawn:** the second version's "dearer of the listed and Topstep's figure" ($1.22, $3.98), adopted under E-045 as conservative -- it is lenient if fees come on top (the red team's M2) |
 | FP, QP | **TradeDay's all-in schedule: $1.90, $5.76** | `tradeday.commissions`: $0.95 and $2.88 a side, brokerage, NFA, clearing and exchange fees included, in evaluation and Funded Sim PnL | none: TradeDay states it all-in. (The first version's Topstep schedule here was optimistic by $0.68 a micro round turn.) |
 
 A check before any reading (9.2): every trade's fee at every plan equals its schedule at the contracts it holds. If a
-design's blocks carry no per-trade fee, the build stops and reports.
+design's blocks carry no per-trade fee, the build stops and reports. (P-16's sizing rule carries `fee_schedule` from
+`fills.yaml`, `score_fv3_grid.sizing_rule`, so A-1's swap is one change.)
+
+### 4.9 What each plan's accounts hand the table (the red team's M1; declared, tested)
+
+**Why.** P-16's and P-14's tables are version-12 exports (`rc150_table_screen.py` 73). From version 7 every funded
+cell is keyed by `request_day` and `win_days`, and every paid cell also by `line_gap` (`state_policy.py` 1338-1346).
+The engine fills them from the account at each session (`risk_policy.account_state`, `risk_policy.py` 339-353):
+`win_days` from `account.win_days`, `line_gap` from `account.since_pay` once paid, `request_day` from
+`account.request_day_next`. The table was solved with `win_days` 0 to 5, **5 meaning eligible**, at Topstep's
+winning-day rule (`state_policy.py` 971); a value above the top threshold reads the top cell (`Tiers.decide`). So what
+an adapter stores in those three fields decides every funded size at that plan, and is declared here.
+
+**The rule.** The table reads "eligible" exactly when the plan's own day count is complete:
+
+- **`win_days` = min(5, max(0, 5 - the plan's own days still needed))**, at each close, after the plan's own count;
+- **held:** when the plan's days are complete but a plan-specific gate other than the profit since the last request
+  still blocks the request -- DayTraders' $2,600 balance gate and its 30 % share at the request's close, Fast Pass's
+  45 % rule -- the account reads
+  **`win_days` = 4**, the table's own cell one day short (reading PP's held-state rule, its draft's 6.3, in the same
+  form; the profit since the last request is the table's own `line_gap`);
+- **`since_pay`** = the plan's own profit since the last request (the engine's field: the cycle's profit at every
+  plan here);
+- **`request_day_next`** = 1 only on the session the plan excludes from its count (or leaves untraded) after a request;
+  0 at plans that exclude none.
+
+| plan | `Rules.std_winning_days`, `std_winning_day_min` | what the account counts | `win_days` read by the table | `request_day_next` |
+|---|---|---|---|---|
+| TS | 5, $150 (as registered) | the engine's own | the engine's own | the engine's (`REQUEST_AFTER_5PM`) |
+| LU | 5, $150 (Stage 2's `lucid_rules`) | the engine's own, with Lucid's $1 net in its gate | the engine's own | 0 (no session excluded) |
+| DT | 5, $200 | Qualifying Days q, 0 to 8: a day of at least $200 whose close has the cycle's best day at most 30 % of the cycle's profit, the request day excluded | min(5, max(0, q - 3)); 4 while q = 8 and the balance is below $2,600 or the cycle's best day is above 30 % of its profit | the engine's (`REQUEST_AFTER_5PM`: "The day you request doesn't count") |
+| FP | 5, $150 | the engine's own (Fast Pass's five days of $150 are Topstep's) | the engine's own; 4 while five days are counted and the 45 % rule blocks | the engine's; the session is also untraded (A-5) |
+| QP, every close | 5, $150 (unused: QP counts no days) | none: eligible at any close with a positive balance after the account's first session | 5 from the account's second session; before it, 0 | 0 |
+| QP, the reference's cadence (5.6) | 5, $150 | the engine's own count of days of $150 since the last request, every session counted | the engine's own | 0 |
+
+**An evaluation at or above its target with days still owed** (a state the table never saw at Topstep, where a pass
+needs no extra days):
+
+- **TradeDay (A-4):** each later routed signal is taken at **one micro**, at the table's R, until the account has
+  logged its trading days ("Every day you make a trade will count"); the pass is then read at the first close with the
+  days logged and the balance still at or above the (consistency-raised) target. A user logs the days at the smallest
+  size; trading the table's size meanwhile could fail an account already at target.
+- **DayTraders (A-2):** **the table's lookup as it stands** (its top balance cell, `Tiers.decide`'s open top). A
+  Qualifying Day needs a day of at least $200, which one micro cannot make reliably at these stops (one MNQ at P-16's
+  37.5 points risks $75, at P-14's 12.5 points $25), so a day-logging size is no option here; the account trades on and
+  can fail meanwhile -- counted (9.3).
+
+**Tested** (T-2 to T-5, T-14): every plan's three fields and its two `Rules` fields at each close of toy campaigns;
+the held reading; the TradeDay day-logging micro; at TS every field equals the vendored engine's.
+
+**What it does to what the reading can show (E-051).** These rules make DT, FP and QP read the table's one-day-short
+cells and smallest sizes more often than a free lookup would. They are fixed now, printed by plan (9.3: sessions read
+held, at the day-logging micro, at the DT evaluation's top cell), and never tuned after a look.
 
 ## 5. Unverified and unstated terms, each read by a rule declared now
 
@@ -394,25 +471,36 @@ design's blocks carry no per-trade fee, the build stops and reports.
 - **U-5. A term no page states that changes timing only** (DayTraders' processing days): read at the bracket of the
   verified lags of the other plans here -- one session (TradeDay) and three (Topstep's Aeropay) -- both read.
 - **U-6. A stated term whose reach is unstated** (Lucid's live move, DayTraders' inactivity accounts, Fast Pass's fifth
-  request, Fast Pass's scaling maximum): the reading under which it helps the user least at the strict end; the other
-  concrete reading at the lenient end where there is one.
+  request, Fast Pass's scaling maximum, Quick Pay's profit ceiling): the reading under which it helps the user least at
+  the strict end; the other concrete reading at the lenient end where there is one.
 - **U-7. A term that cannot bind under section 2.3's user** (the hold queues; DayTraders' 10-day activation window;
   TradeDay's reset fee; Fast Pass's 50 % base; Quick Pay's per-request cap; DayTraders' unsettled flat time, every
   reading of which falls after the designs' 15:10 CT): not read. A mechanical check shows it does not bind (9.3); if it
   does, the plan's rows carry the check's count and nothing more is claimed for them.
 - **U-8. A relaxation of a stated rule that no page sizes** is never assumed (DayTraders' consistency tolerance).
 - **U-9. A verified rule whose data the trades lack** (Quick Pay's intraday peak): bracketed between the two extremes
-  the trades' own outcomes allow, both read (5.4).
+  the trades' own outcomes at the menu's R values allow, read on the walk's own booking convention, both read (5.4).
 - **U-10. A limit no page states is not invented** (DayTraders' and Quick Pay's payout counts; DayTraders' minimum hold
   time and trade count): read as no limit, labelled; the discretionary live moves are G-4; a stated rule beside it
   still applies (DayTraders' HFT rule, 4.3).
 - **U-11. A verified exit the trades lack** (TradeDay's tier-1 auto-liquidation, G-3): a trade it closes is booked at
-  the worst value it could have while still open at the strict end, and at its own walked outcome at the lenient end
-  (5.5).
+  the worst value it could have while still open at the strict end, and at the best value it could have while still
+  open at the lenient end; its walked outcome ("no liquidation") is read beside, neither end (5.5). A trade open at the
+  window's start has touched neither its stop nor its target, so the firm's price lies strictly between them, and the
+  walked outcome is not an end (the red team's M4: about half such trades are worth more at the liquidation than
+  walked).
+- **U-12. A stated price whose basis is unstated** (DayTraders' commissions, `daytraders.commissions`: "the page does
+  not say whether exchange and NFA fees are included"): the listed figures as all-in at the lenient end; the listed
+  figures plus the fees a verified page of this record decomposes (Topstep's, `fills.yaml`, 8284213) at the strict end.
 
 **The strict corner and the lenient corner.** Each term with two ends has a **strict** end (the one that helps the
-user least: the dearer price, the slower lag, the wider closure, the later pass, the unpaid request, the higher floor)
-and a **lenient** end. Every term's strict end is named in 5.2, so neither corner is chosen after a look.
+user least: the dearer price or fee, the slower lag, the wider closure, the later pass, the unpaid request, the higher
+floor, the worse liquidation) and a **lenient** end. Every term's strict end is named in 5.2, so neither corner is
+chosen after a look. **The corners are bounds only for the terms that act in one direction on every start** -- the
+prices, U-3's fees, DayTraders' fee basis and lag, and Fast Pass's fifth request. The minimum days, DayTraders'
+inactivity, Lucid's reach, Quick Pay's peak and ceiling and the tier-1 term are not monotone per start (a closure frees
+a seat; a later pass moves the funded path), so for them the two corners are **the two declared corners**, not bounds,
+and each one-at-a-time run of 7.2 is read as that term's direction on P-16 only (the red team's m7).
 
 ### 5.2 Every such term, and its declared reading
 
@@ -431,6 +519,7 @@ and a **lenient** end. Every term's strict end is named in 5.2, so neither corne
 | DT | billing basis | `daytraders.eod50k.eval_billing_basis` | verified | Monthly | the same (Lifetime not read, G-7) | -- |
 | DT | flat time | `daytraders.flat_time` | unverified (the help page's 4:59 PM ET against the Terms' 5:00 PM ET or CST, or the market close if sooner) | moot: every stated time is at or after 15:59 CT and the designs are flat by 15:10 CT (checked: no trade exits after 15:10 CT) | -- | U-7 |
 | DT | minimum hold time, trade count | `daytraders.min_hold_time_and_trade_count` | unstated | no hold time and no daily trade cap; the HFT rule (`daytraders.hft_rule`) still applies, and at most one entry every five minutes across the firm keeps the designs far from it | the same | U-10 |
+| DT | fee basis | `daytraders.commissions` | verified; whether exchange and NFA fees are in unstated | fees on top: MNQ $1.74, NQ $6.76 a round turn (4.8) | the listed figures all-in: $1.02, $3.98 | U-12 |
 | FP | evaluation price | `tradeday.fastpass_eod50k.eval_fee` | unverified ($99 sale card; $180 help table; $248 list card) | $248 | $99 | U-1 |
 | FP | minimum days | `tradeday.fastpass_eod50k.eval_min_days` | unverified (3 against "a minimum 7-day period") | seven trading days | three (implied by the 45 % share) | U-4 |
 | FP | reset fee | `tradeday.eval_reset_fee` | unverified | moot: no reset bought (checked) | -- | U-7 |
@@ -444,7 +533,9 @@ and a **lenient** end. Every term's strict end is named in 5.2, so neither corne
 | QP | per-request cap | `tradeday.quickpay_eod50k.payout_cap` | unstated | moot: the declared request rule (2.3); a check shows no request above it | -- | U-7 |
 | QP | payout count | `tradeday.quickpay_eod50k.payout_count_limit` | unstated | no limit (the $10,000 ceiling ends the account) | the same | U-10 |
 | QP | the intraday peak | `tradeday.quickpay_eod50k.funded_drawdown_type` | verified; the data lack the peak | the pessimistic bound (5.4) | the optimistic bound (5.4) | U-9 |
-| FP, QP | tier-1 liquidation | `tradeday.tier1_news_auto_liquidation`; `tradeday.tier1_release_list` | verified; the price at the liquidation not in the trades | a trade open at a window's start booked at its full stop loss (5.5) | booked at its own walked outcome (5.5) | U-11 |
+| QP | the profit ceiling's reach | `tradeday.quickpay_eod50k.funded_sim_profit_ceiling` | verified; what the user may do at the review unstated | the account ends at the first close its gross profit reaches $10,000, the excess forfeited, its balance not credited | at that close the excess is forfeited (the balance "revised back to the threshold level") and the whole remaining balance above start is requested -- "you can withdraw at any time as long as your account balance is positive" (`tradeday.quickpay_eod50k.payout_frequency_gate`) -- paid at the tiered split, then the account ends | U-6 |
+| QP | the request habit | `tradeday.quickpay_eod50k.payout_frequency_gate`; `tradeday.quickpay_eod50k.payout_cap` | verified gate; no cap stated | the reference's amount at every eligible close (2.3) | -- the reference's cadence read beside, neither end (5.6) | 5.6 |
+| FP, QP | tier-1 liquidation | `tradeday.tier1_news_auto_liquidation`; `tradeday.tier1_release_list` | verified; the price at the liquidation not in the trades | a trade open at a window's start booked at its full stop loss (5.5) | booked at its target less a tick, with the flatten's two-tick cost (5.5); its walked outcome beside, neither end | U-11 |
 
 ### 5.3 Why the declared request rule is each plan's own maximum where one is stated
 
@@ -454,8 +545,10 @@ Write B for the balance above start at the request's close.
 - **DT:** the maximum is `min(B - $2,000, $2,000)`, with B at least $2,600. The rule is `min(0.5 B, B - $2,000,
   $2,000)`. Below B = $4,000, `B - $2,000` is the smaller of the first two; from $4,000 both are at least $2,000. So the
   two are equal at every B.
-- **FP:** read on the profit, the maximum is `min(0.5 B, $1,500)` -- the rule. Read on the whole balance, the maximum is
-  $1,500 at any B; the rule asks no more than it. So the 50 % base never enters (U-7).
+- **FP:** read on the profit, the maximum is `min(0.5 B, $1,500)` -- the rule, so the rule is the plan's own maximum
+  **under the profit reading only**. Read on the whole balance, the maximum is $1,500 at any B and the rule asks less
+  below B = $3,000; it never asks more than either reading allows, so the 50 % base never enters as a refusal (U-7) --
+  but under the balance reading the rule is not Fast Pass's maximum (the red team's note 1).
 - **QP:** no maximum is stated, so the rule is the reference's amount, `min(0.5 B, $2,000)`.
 
 ### 5.4 Quick Pay's intraday peak, bracketed (U-9)
@@ -465,18 +558,27 @@ the menu's R values (Stage 2's `DayBlock.r_by_rr`) say at which targets it would
 brackets on the same entry share its stop rule (the breakeven move included) until one exits, so:
 
 - if the trade **won at R_x**, its favourable excursion before its exit is m = r x R_x (it exits at its target);
-- if it **did not win at R_x** (stopped, moved-stop exit, or flattened), r x R_lo <= m < r x R_x, where R_lo is the
-  largest menu R below R_x at which it won (0 if none).
+- if it **did not win at R_x** (stopped, moved-stop exit, or flattened), r x R_lo <= m < r x R_hi, where R_lo is the
+  largest menu R below R_x at which it won (0 if none) and **R_hi the smallest menu R above R_lo** (at most R_x; the
+  trades carry outcomes at every quarter R up to 3R). The trade did not win at R_hi either -- by R_lo's definition when
+  R_hi is below R_x -- and the R_hi bracket shares the R_x bracket's path until both exit, so its peak stayed below
+  R_hi's target (the red team's m6).
+
+**The walk's convention, named.** On a bar where both a target and a stop trade, the walk books the stop
+(`fv3_rung_walk.py` 12-13), so a trade booked as not winning at some R may in fact have touched that target. The
+bracket is read on the walk's own booking -- the booking every outcome of this reading uses -- and is not corrected
+for it.
 
 Write G for the gross profit (the balance above start plus the gross paid) and G_pk for its running peak. The floor in
 balance terms is `min(0, G_pk - $2,000)`; G_pk includes the peak inside each trade, and the gross value after each
 exit and at each close.
 
-- **The pessimistic bound (the strict end).** A trade that did not win at R_x peaks one tick short of its target
-  (m = r x R_x less one tick's value at its size), then falls to its exit. A trade that won at R_x takes its whole
+- **The pessimistic bound (the strict end).** A trade that did not win at R_x peaks one tick short of R_hi's target
+  (m = r x R_hi less one tick's value at its size), then falls to its exit. A trade that won at R_x takes its whole
   maximum adverse excursion at R_x (`DayBlock.mae_by_rr`) after a peak one tick short of its target, then rises to it.
-- **The optimistic bound (the lenient end).** A trade that did not win at R_x peaks at r x R_lo, then falls to its
-  exit. A trade that won at R_x takes every adverse excursion before its favourable one, so its peak is its exit.
+- **The optimistic bound (the lenient end).** A trade that did not win at R_x peaks at the larger of r x R_lo and its
+  exit's value when it exits by a profitable flatten, then falls to its exit. A trade that won at R_x takes every
+  adverse excursion before its favourable one, so its peak is its exit.
 
 In both: if the trade's path after its peak crosses the floor raised by that peak, the trade ends at that floor and
 the account ends (a breach). Between trades and at the close, the floor follows the gross value. Both bounds are run
@@ -488,39 +590,81 @@ the account ends (a breach). Between trades and at the close, the floor follows 
 at 7:30 AM CT and the FOMC statement and the FOMC minutes at 1:00 PM CT (`tradeday.tier1_release_list`; "subject to
 change without notice", read as stated). Every open position is closed two minutes before and nothing trades until two
 minutes after (`tradeday.tier1_news_auto_liquidation`). So the windows are **07:28 to 07:32 CT** on CPI and
-employment-report days and **12:58 to 13:02 CT** on FOMC statement and FOMC minutes days. A trade is **in a window**
-when it is open at the window's start: entered before it, exiting after it.
+employment-report days and **12:58 to 13:02 CT** on FOMC statement and FOMC minutes days. **A trade is in a window**
+when it is open at the window's start at **any offered R** (an offered trade's exit depends on the R it is traded at,
+`DayBlock.exit_by_rr`, Stage 2 D-349). Bars are stamped at their open (CT), so a trade is open at 12:58 (07:28) when
+its entry bar is stamped before 12:58 (07:28) and its exit bar at or after it; an entry bar stamped from 12:58 (07:28)
+to before 13:02 (07:32) is an entry inside the window (the red team's m9).
 
 **The dates, from files fixed now.**
 
-- CPI and employment-report days: BLS's own schedules as Stage 2 vendored them, each release named
+- CPI and employment-report days: BLS's own schedules as Stage 2 vendored them
   (`vendor/stage2/data/releases_bls_0830_2009_2025.csv`, `releases_bls_0830_2026.csv`, from bls.gov; tracked files,
-  not the licensed bars).
+  not the licensed bars) -- the rows whose `release` column begins "Consumer Price Index for" or "Employment
+  Situation for".
 - FOMC statement days: the dates Stage 2's A3 reads (`vendor/stage2/config/im2_release_calendar.csv`, code `FOMC`;
   `config/sources/fomc_statements_2020_2024q1.csv`, `fomc_statements_2026q3.csv`; from federalreserve.gov).
-- FOMC minutes days: not on file. A calendar of the minutes' release dates from 2020-01-02 to 2026-07-16, from the
-  Federal Reserve's own FOMC calendar pages, made and pinned by its sha256 under a row before the run, as E-029 pinned
-  the early closes (16 item 2).
+- FOMC minutes days: `config/calendar_fomc_minutes.csv`, pinned under E-050 (sha256 of its LF text
+  `0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7`), from the Federal Reserve's own calendar pages.
 
 **The count** (9.3's first mechanics line, before any outcome; no bar read). Per stream, the registered offered trades
 in a window, by release and year, from the trades' own entry and exit times; per TradeDay run, the executed trades among
-them and the signals whose entry falls inside a window. **Disclosed in advance:** the report-day cut (no entry before
+them and the signals whose entry falls inside a window. **A-11 applies to evaluations and Funded Sim alike** (no
+sentence of the record names an account type). **Disclosed in advance:** the report-day cut (no entry before
 07:35:00 CT on a BLS 08:30 day, E-007 (d)) and "FOMC days out" keep the designs' entries out of the CPI,
 employment-report and statement windows, but they do not stop a trade entered earlier from being open at 07:28 CT, and
-FOMC minutes days are not among the days they name. So the count is not assumed to be zero.
+FOMC minutes days are not among the days they name. So the count is not assumed to be zero. (The red team reads the
+designs' own construction -- P-16 drops a report day's marks before 07:30 CT; P-14 takes no trade before its 07:30 cut;
+A1 walks nothing on FOMC statement days -- as leaving only the FOMC-minutes windows open to the term, at most the
+calendar's minutes days. The count settles it.)
 
 **The bracket** (FP and QP only):
 
 - **strict end:** a trade in a window is closed at the window's start at the worst value it could have while still
   open -- a loss of its whole dollar risk at its size, with its stop exit's costs (its stop had not been touched, so it
   was above it; a breakeven move that had taken the stop to entry is ignored);
-- **lenient end:** the trade keeps its own walked outcome, as if the liquidation cost nothing;
-- **at both ends:** the account's position is held to the trade's walked exit for the one-position rule (no signal is
-  freed by the liquidation), and a TradeDay account takes no entry inside a window (the signal is skipped, counted).
+- **lenient end:** a trade in a window is closed at the window's start at the best value it could have while still
+  open -- its target less one tick, with the flatten's two-tick cost (its target had not been touched, so it was
+  below it);
+- **beside, neither end -- "no liquidation":** the trade keeps its own walked outcome. It is not an end: for a trade
+  later stopped, or flattened below the liquidation price, the walked outcome is below the firm's price (the red team's
+  M4 and its Appendix A3);
+- **at every reading:** the account's position is held to the trade's walked exit for the one-position rule (no
+  signal is freed by the liquidation), and a TradeDay account takes no entry inside a window (the signal is skipped,
+  counted).
 
-**The runs.** The term sits in both corners of FP and QP on both streams; on a stream whose count is zero its two ends
-are the same. If P-16's count is not zero, two one-at-a-time runs are added -- FP-16-news and QP-16-news, the strict
-corner with this term at its lenient end -- making **29 replays**; if it is zero, **27**.
+**The runs.** The term sits in both corners of FP and QP on both streams; on a stream whose count is zero its readings
+are the same. If P-16's count is not zero, four one-at-a-time runs are added from the strict corner -- FP-16-news and
+QP-16-news (this term at its lenient end) and FP-16-walked and QP-16-walked (this term at "no liquidation") -- making
+**34 replays**; if it is zero, **30**. The condition is a count of trade times, decided before any outcome is read.
+
+### 5.6 Quick Pay's second request reading (the red team's M3; fixed before any Quick Pay row exists)
+
+**Why.** Quick Pay is eligible at every close with a positive balance, its floor is frozen at start once the gross
+peak reaches $2,000, and a payout lowers the balance, not the floor. So 2.3's rule -- the reference's amount at every
+eligible close -- halves the cushion above that floor at every close until a request falls below the $250 minimum. The
+red team's synthetic toy (its Appendix A2, made-up data) showed the median such account drained below its trading
+size and idle for the rest of the year, holding a seat. QP's row under that rule reads the request habit as much as
+the contract.
+
+**The second reading, "the reference's cadence".** The same amount, `min(0.5 B, $2,000)` and at least $250, requested
+only at a close at which the account has had **five days of at least $150 since its last request** (the reference's
+own `xfa_std_winning_days` and `xfa_std_winning_day_min`, every session counted, none excluded) and a positive
+balance. It is the user's habit at the reference held fixed, not a rule of Quick Pay's.
+
+**How it is read.**
+
+- It is run beside, as `QP-16-req`: the strict corner on P-16 with only the request rule changed. **It is called
+  neither strict nor lenient**: which habit helps a user is not monotone (a drained account lives longer; a fuller one
+  breaches more and pays more).
+- **Every QP row carries its request rule's name**: "every eligible close" (the corners and the other QP runs) or "the
+  reference's cadence" (`QP-16-req`).
+- Where the two disagree on P-16 about which side of TS the plan lies on P, the menu says QP "**depends on its request
+  rule**" (10.1 item 5), as it says "depends on its unread terms" of the corners.
+- **G-10 counted at QP** under both rules (9.3): sessions with no trade per funded account, accounts idle 30 calendar
+  days, accounts drained below the smallest tradable size (one micro at the trade's stop).
+- 4.9 gives each rule's table inputs. Neither rule is changed after any QP row is seen; a third would be a new
+  declaration.
 
 ## 6. Data, blocks and the unit
 
@@ -542,9 +686,15 @@ corner with this term at its lenient end -- making **29 replays**; if it is zero
 5. **No NQ from 2026-07-17** is on disk or read.
 6. **The judged block's seal** (E-026). The registered builders read the bars and the atlas inside Stage 2's engine, so
    the run authorises those reads with `extended.reader.authorise_engine_read` before the engine runs, under the
-   purposes on this line (the identities under `identity` and their own decision row):
+   purposes on this line. The reader admits a pinned `prereg/RD-` file on the F- rules (E-041, E-053 (2)).
 
    - **Judged-block reads:** `firm_scorecard`, `firm_ladder_beside`, `firm_gate_beside`
+
+   **The identity stage** (9.1) is not authorised by this line: it runs first, as its own script under `identity/`
+   (the reader admits the purpose `identity` only from `identity/*.py`, `reader.py` 377-391), under its own decision
+   row naming the identities. **Once per purpose:** once a clean run has ledgered a read under one of these purposes,
+   any later clean run under it -- a restart, a plan's rerun after an adapter fix, a rerun the failure protocol calls
+   for -- is refused unless it passes `repeat="E-NNN"`, a decision row naming this file (`reader.py` 478-501).
 
 ## 7. The cells and the runs
 
@@ -556,10 +706,11 @@ corner with this term at its lenient end -- making **29 replays**; if it is zero
 
 ### 7.2 One at a time
 
-On P-16 only, from the strict corner, each term with two ends flipped alone to its lenient end: DT's price, lag and
-inactivity; FP's price, minimum days and fifth request; QP's price, minimum days and intraday peak; and, only if P-16's
-count of 5.5 is not zero, FP's and QP's tier-1 liquidation. Lucid has one such term, so its corners are its
-one-at-a-time reading. Per-trade costs (4.8) are one rule per plan, not a term with two ends, so they take no flip.
+On P-16 only, from the strict corner, each term with two ends flipped alone to its lenient end: DT's price, lag,
+inactivity and fee basis; FP's price, minimum days and fifth request; QP's price, minimum days, intraday peak and
+profit ceiling; and, only if P-16's count of 5.5 is not zero, FP's and QP's tier-1 liquidation (at its lenient end, and
+at "no liquidation" beside). Beside them, QP's second request reading (5.6), neither end. Lucid has one such term, so
+its corners are its one-at-a-time reading. A one-at-a-time run shows that term's direction on P-16 only (5.1).
 
 ### 7.3 The runs
 
@@ -571,17 +722,19 @@ one-at-a-time reading. Per-trade costs (4.8) are one rule per plan, not a term w
 | LU-14-s, LU-14-l | LU | P-14 | strict, lenient corner | corner |
 | DT-16-s, DT-16-l | DT | P-16 | strict, lenient corner | corner |
 | DT-14-s, DT-14-l | DT | P-14 | strict, lenient corner | corner |
-| DT-16-price, DT-16-lag, DT-16-inact | DT | P-16 | strict, with that one term lenient | one at a time |
+| DT-16-price, DT-16-lag, DT-16-inact, DT-16-fees | DT | P-16 | strict, with that one term lenient | one at a time |
 | FP-16-s, FP-16-l | FP | P-16 | strict, lenient corner | corner |
 | FP-14-s, FP-14-l | FP | P-14 | strict, lenient corner | corner |
 | FP-16-price, FP-16-days, FP-16-fifth | FP | P-16 | strict, with that one term lenient | one at a time |
 | QP-16-s, QP-16-l | QP | P-16 | strict, lenient corner | corner |
 | QP-14-s, QP-14-l | QP | P-14 | strict, lenient corner | corner |
-| QP-16-price, QP-16-days, QP-16-peak | QP | P-16 | strict, with that one term lenient | one at a time |
+| QP-16-price, QP-16-days, QP-16-peak, QP-16-ceil | QP | P-16 | strict, with that one term lenient | one at a time |
+| QP-16-req | QP | P-16 | strict, with the reference's cadence as the request rule (5.6) | beside, neither end |
 | FP-16-news, QP-16-news | FP, QP | P-16 | strict, with the tier-1 liquidation lenient -- only if P-16's count of 5.5 is not zero | one at a time |
+| FP-16-walked, QP-16-walked | FP, QP | P-16 | strict, with the tier-1 liquidation at "no liquidation" -- only if P-16's count of 5.5 is not zero | beside, neither end |
 
-That is **27 replays** -- 2 references, 16 corners, 9 one at a time -- or **29** with the two news runs. Each runs both
-arms, every start, the long replay and U1's exact-length runs.
+That is **30 replays** -- 2 references, 16 corners, 12 one at a time (QP-16-req among them) -- or **34** with the four
+news runs. Each runs both arms, every start, the long replay and U1's exact-length runs.
 
 ### 7.4 Beside
 
@@ -603,16 +756,19 @@ arms, every start, the long replay and U1's exact-length runs.
 | seats, budget, routing | accounts and purchases | fixed | five seats, five accounts in all; 20 evaluation purchases in 21 sessions; the strict one-position rule | 2.3; P-14's and P-16's registrations |
 | resets | buying a reset | fixed | none | each design's own |
 | the request rule | how much each payout asks | fixed | `min(0.5 B, $2,000)` cut to the plan's cap, remaining-balance rule and increment; none below its minimum | 2.3, 5.3 |
+| QP's second request reading | the same amount at the reference's cadence (five days of $150 since the last request) | **described**, beside (P-16) | `QP-16-req` | 5.6; the red team's M3 |
+| the table's inputs | what each plan's accounts hand the table (`win_days`, `since_pay`, `request_day_next`); an evaluation at target with days owed | fixed, per plan | 4.9's table: the plan's days still needed mapped to 0..5, held at 4; TradeDay's day-logging micro; DayTraders' lookup as it stands | 4.9; the red team's M1 |
 | the plan's verified terms | caps, splits, floors, gates, fees, allowances, lags, seats | fixed | the records' values | section 4; Appendix R |
 | unread prices | evaluation prices not verified | **both ends** | FP $248 / $99; QP $175 / $69; DT on the grid, $250 / $25 at its ends | U-1, U-2 |
 | unread fees | fees no page states | fixed | $0, labelled an upper bound | U-3 |
 | conflicting minimum days | TradeDay's evaluation | **both ends** | FP 7 / 3; QP 7 / 5 trading days | U-4 |
 | DT's lag | payout processing | **both ends** | 3 / 1 sessions | U-5 |
-| unstated reaches | Lucid's live move; DT's inactivity accounts; FP's fifth request | **both ends** | 5.2 | U-6 |
+| unstated reaches | Lucid's live move; DT's inactivity accounts; FP's fifth request; QP's profit ceiling | **both ends** | 5.2 | U-6 |
+| DT's fee basis | whether DayTraders' listed commissions include exchange and NFA fees | **both ends** | fees on top ($1.74 / $6.76) / listed as all-in ($1.02 / $3.98), MNQ / NQ | U-12, 4.8 |
 | FP's scaling maximum | the funded ladder's top | fixed | 5 contracts | U-6 |
 | QP's intraday peak | the floor inside a trade | **both ends** | the pessimistic / optimistic bound | U-9, 5.4 |
-| per-trade costs | the round-turn fee each trade pays, at the contracts it holds | fixed, per plan | TS and LU $1.22 / $3.78; DT $1.22 / $3.98; FP and QP $1.90 / $5.76 (MNQ / NQ) | 4.8 |
-| TradeDay's tier-1 liquidation | what the firm's exit two minutes before a tier-1 release does to a trade open then | **both ends** (FP, QP) | its full stop loss / its walked outcome | U-11, 5.5 |
+| per-trade costs | the round-turn fee each trade pays, at the contracts it holds | fixed, per plan (DT at both ends) | TS and LU $1.22 / $3.78; DT as the row above; FP and QP $1.90 / $5.76 (MNQ / NQ) | 4.8 |
+| TradeDay's tier-1 liquidation | what the firm's exit two minutes before a tier-1 release does to a trade open then | **both ends** (FP, QP) | its full stop loss / its target less a tick; its walked outcome beside | U-11, 5.5 |
 | moot terms | queues, the 10-day window, reset fees, FP's 50 % base, QP's cap | fixed (not read) | checked not to bind | U-7, 9.3 |
 | request timing | when in the day | fixed | per plan: TS, DT, FP after 5:00 PM CT with the next session excluded; LU, QP at the close with none excluded | section 4; Stage 2 D-175 |
 | arms | outcome shift | fixed | `verdict` the headline, `point` beside | CHARTER section 2 |
@@ -628,6 +784,9 @@ re-solving a table for a plan (G-6; a later reading); the price inside any brack
 
 ### 9.1 The identities, refusing (E-004, E-010)
 
+The identities run first, as their own script under `identity/`, under the purpose `identity` and their own decision
+row (section 6 item 6); the reading's runner starts only once that script has printed that they hold.
+
 1. **TS through this reading's runner** (A-1 with Topstep's contract, A-8, and A-9's `off` arm) reproduces, for P-16
    and P-14: U1's start rows (`vendor/stage2/results/user_journey.csv`, section `start`, configs `p16` and `p14`, both
    arms, every start, every column as E-010 compared them: money and the ratio to 1e-6; counts, days, dates and text
@@ -635,7 +794,8 @@ re-solving a table for a plan (G-6; a later reading); the price inside any brack
    (`vendor/stage2/results/rc_s150_all_gate_paths.csv` at seed 20261206 after P-16's trades' hash;
    `vendor/stage2/results/a3_brk30_cb20_gate_paths.csv` at seed 20261131), every `zero_edge_decomposition.PATH_COLS`
    column, point and bound, all 500 paths, to 1e-6.
-2. **Every adapter at its Topstep setting** (A-2 to A-7 with every switch at the vendored behaviour) reproduces item 1:
+2. **Every adapter at its Topstep setting** (A-2 to A-7 and A-11 with every switch at the vendored behaviour, 4.9's
+   inputs at TS's) reproduces item 1:
    at 4 starts and 4 paths in the suite (`slow`), and at every start and all 500 paths as the run's first stage.
 3. **Lucid.** (a) The vendored joint engine reproduces U1's `p16_5+1` start rows (both arms, every start, as item 1):
    Stage 2's Lucid machinery as registered, in this snapshot. (b) This reading's runner with Lucid's contract (A-1, by
@@ -671,10 +831,13 @@ helps.
   and year, on each stream; then, per TradeDay run, the executed ones and the signals skipped inside a window;
 - **two conduct counts, readings and not rulings** (the tier of either, if nonzero, is the operator's, as E-013 set
   Topstep's; nothing in the reading changes with them):
-  - **DayTraders' martingale rule** (`daytraders.martingale_rule`): per DT run, the trades taken by an account whose
-    previous trade in the same account closed at a loss, with at least twice that trade's contracts -- their count,
-    share and the accounts they fall in. The table sizes by the account's state, not by the last trade's outcome, and
-    the page ties the ban to a pattern meant "to win back the loss", so a nonzero count is printed with that said;
+  - **DayTraders' martingale rule** (`daytraders.martingale_rule`): per DT run, in micro-equivalents, the trades taken
+    at least twice the size of the trade before them when that trade closed at a loss -- counted two ways: **within one
+    account**, and **across the user's accounts in time order** (one position at a time across the firm, so the
+    sequence a reviewer sees is firm-wide: a small evaluation loss followed by a funded opening on another account is
+    a 2x step in it). Their count, share and the accounts they fall in. The table sizes by the account's state, not by
+    the last trade's outcome, and the page ties the ban to a pattern meant "to win back the loss", so a nonzero count
+    is printed with that said;
   - **TradeDay's 200-trades-a-day line** (`tradeday.trade_count_hold_time`): per FP and QP run, the largest number of
     trades in one session in one account and across the user's five accounts together (the page says "a strategy",
     not per account or per trader). Any session above 200 labels the plan's rows;
@@ -687,10 +850,19 @@ helps.
   request and their signals re-dealt or skipped, fifth-request endings, trades an uncapped ladder would size
   differently; QP -- floor rises from intraday peaks at both bounds, breaches at a raised floor, requests by split tier,
   accounts ended at $10,000; LU -- fifth payouts and household closures;
+- **4.9's inputs at work** (DT, FP, QP): funded sessions read held (`win_days` 4), by plan; TradeDay evaluations at
+  target logging days at one micro, and the sessions it took; DayTraders evaluations at target with Qualifying Days
+  owed, and how many failed meanwhile; trades whose size the DayTraders daily limit capped (2.3);
+- **G-10 at FP and QP** (both QP request readings): sessions with no trade per funded account; accounts idle 30
+  calendar days; accounts drained below the smallest tradable size (one micro at the trade's stop);
 - **the checks that must be zero** (U-7): the peak hold queue; resets bought; DT activations later than ten days after
   a pass; FP requests above half the profit; QP requests above the reference's amount; purchases refused for cash (A-10's
-  premise); and any trade exiting after 15:10 CT (DayTraders' unsettled flat time and TradeDay's 3:50 pm CT
-  liquidation both fall after it).
+  premise); any trade exiting after 15:10 CT (DayTraders' unsettled flat time and TradeDay's 3:50 pm CT liquidation both
+  fall after it); and **any trade on a session that closes before 15:20 CT by E-029's calendar**
+  (`config/calendar_early_closes.csv`) -- on an abbreviated session the designs' 15:10 CT is not the binding time, and
+  TradeDay's "10 minutes before the close" and DayTraders' "or the market close if sooner" would bind first (the red
+  team's note 2; the designs' walk takes nothing on early-close days, `atlas_local.py` 13, Stage 2 D-215, so the count
+  is expected to be zero and is checked, not assumed).
 
 A plan identical to TS on every start is reported as "no effect on these trades", and nothing more is read for it.
 
@@ -718,8 +890,10 @@ section 6. The replay draws nothing.
    neither, under TS and not the plan); the mean difference with 10.2's interval, its window count and its minimum
    detectable difference.
 5. **Each plan's spread.** Its two corners side by side, and on P-16 its one-at-a-time runs: which unread term moves
-   the plan's row, and by how much. A plan whose two corners lie on opposite sides of TS on P is flagged "**depends on
-   its unread terms**". The flag is mechanical, not a line.
+   the plan's row, and by how much -- each run that term's direction on P-16 only (5.1). A plan whose two corners lie on
+   opposite sides of TS on P is flagged "**depends on its unread terms**"; Quick Pay whose two request readings lie on
+   opposite sides of TS on P (P-16) is flagged "**depends on its request rule**" (5.6). The flags are mechanical, not
+   lines.
 6. **What diverges** (each plan against TS): funded accounts activated and lost; evaluations bought; fees by kind;
    payouts' count and size; trades taken and their realised risk.
 7. **E-007 (e)'s readings beside:** the **denial ladder** (10, 25, 50 %), drawn per start from seed **20261990** by
@@ -730,8 +904,12 @@ section 6. The replay draws nothing.
 8. **The long-run gate beside, on the corners:** growth on the required bankroll, the required bankroll, payouts a
    month and days to the first payout, paired with TS's registered gate paths (the same seeds, so the same day draws).
    It shows the trade-off between a user's first months and two-year growth. Nothing is a floor: nothing is carried.
-9. **The price grid and the break-even price** (DT, FP, QP): every money measure and P at each price of U-2's grid,
-   and at every listed price, by exact arithmetic (A-10) from the run. The arithmetic must reproduce the run at the
+   The gate's resampled days carry no date, so three of the replay's terms are read differently there, each gate row
+   labelled: TradeDay's tier-1 liquidation is off (A-11); DayTraders' inactivity runs on 21 sessions, not 30 calendar
+   days (A-2, A-3); DayTraders' recurring $5 Pro fee is left out, the rows an upper bound in it (A-10).
+9. **The price grid and the break-even price** (DT, FP, QP; and Lucid at its struck list price of $165, beside its
+   verified $115.50): every money measure and P at each price of U-2's grid, and at every listed price, by exact
+   arithmetic (A-10) from the run. The arithmetic must reproduce the run at the
    bracket's other end (the one-at-a-time price run) on every start to 1e-6, refusing. Beside it, **the break-even
    price** against TS for P, S5a and the mean month-3 net: the price in $0 to $250 at which the plan's measure equals
    TS's (bisection on the exact arithmetic), or "none in range". Printed beside, never a pick.
@@ -739,8 +917,8 @@ section 6. The replay draws nothing.
     form.
 11. **The menu.** Each plan's strict and lenient rows: all starts the headline, the early and late blocks and the
     start years beside. Every row carries its labels: the upper bounds (U-3), the gaps that touch it (4.7), the cost
-    rule's open question (4.8), the moot checks' and the conduct counts (9.3), and the firm's written question while it
-    is open (16). **The stability flag:** a plan whose mean paired difference in P, or in any guarded measure, has
+    rule's open question (4.8), the moot checks' and the conduct counts (9.3), the firm's written question while it is
+    open (16), and at QP its request rule (5.6). **The stability flag:** a plan whose mean paired difference in P, or in any guarded measure, has
     opposite signs on the early and late blocks is flagged "not stable across blocks" (mechanical). **E-015's limits**
     are flags only, once the operator approves them; until then the menu is read without flags, and says so.
 12. **Not modelled, and said so wherever this scorecard appears:** a user who stops when their own money runs out, the
@@ -748,30 +926,44 @@ section 6. The replay draws nothing.
 
 ### 10.2 The uncertainty on each paired reading (fixed now)
 
-These are descriptions, not tests. Nothing here is compared with a critical value to decide anything. The method is
-reading PP's (`prereg/DRAFT_F-P_payout_policy.md`, 9.2), so the two menus read alike.
+These are descriptions, not tests. Nothing here is compared with a critical value to decide anything; a described
+reading has no level (E-023 (1)), so no one-sided comparison is printed (the second version's item 8, Q-16's
+comparison at 0.05, is dropped: the red team's m1). The method began as reading PP's (its draft's 9.2); the window
+rule below corrects it, and the same correction is owed there (the red team's M5, told to PP's drafter).
 
-1. **The window count.** For a reading at horizon h on a block, n_w is the number of non-overlapping h-start windows
-   (consecutive start days in order, from the block's first start; a last incomplete window dropped), printed with every
-   reading.
-2. **The interval.** A two-sided 90 % interval from a Student-t on the n_w window means, with n_w - 1 degrees of
+1. **The windows.** For a reading at horizon h on a block, the block's starts in order are cut into consecutive
+   h-start windows from the block's first start (a last incomplete window dropped), and **every other window is kept**
+   -- the first, third, fifth, ... So kept windows are separated by h starts, and no two kept windows' measures share a
+   session (a start's measure at h reads sessions s to s + h - 1). n_w is the number of kept windows, printed with
+   every reading. **Why:** on adjacent windows the window means share up to h - 1 sessions, their lag-1 correlation is
+   near 1/4 even with independent sessions, and the nominal 90 % t-interval covers about 0.83 (the red team's Appendix
+   A1); keeping every other window restored 0.87 to 0.91 there.
+2. **The interval.** A two-sided 90 % interval from a Student-t on the n_w kept window means, with n_w - 1 degrees of
    freedom, **printed only when n_w is at least 4**. Below 4 the reading prints "too few independent windows for an
    interval" and gives only item 3.
-3. **The window sign count.** In how many of the n_w windows the plan's mean is above, equal to and below TS's.
+3. **The window sign count.** In how many of the n_w kept windows the plan's mean is above, equal to and below TS's.
    Distribution-free, always printed.
 4. **The effective sample size.** From the Bartlett long-run variance of the per-start difference with lag window h
-   (audit B's form; `extended.user_measures.n_eff_bartlett`), beside.
+   (audit B's form; `extended.user_measures.n_eff_bartlett`), on all the block's starts, beside.
 5. **The minimum detectable difference** of item 2's interval at 80 % power: (t(0.95; n_w - 1) + t(0.80; n_w - 1))
-   times the window means' standard error, printed beside each mean and before it.
-6. **A series zero on every window** prints "identical on these trades", with no interval and no MDD.
-7. **The interval's honesty, beside.** Its coverage on synthetic series of known zero mean, at each n_w the reading
-   uses (seed **20261991**; 20,000 series per setting): a symmetric Gaussian; the red team's skewed, lumpy shapes (its
-   Appendix A model on reading PP: g = 0.01; p in {0.05, 0.10, 0.20}; s in {0.0025, 0.005, 0.01}; window means +g with
-   probability 1 - p and -g(1 - p)/p with probability p, plus N(0, s^2) noise, and their mirror); and a persistent
-   version (the rare window's sign repeated in the next with probability one half).
-8. **Beside, when Q-16 is merged.** Q-16's calibrated paired comparison, one-sided at 0.05, for P and the guarded
-   measures, its draws (if any) from seed **20261993**, labelled with its name and commit. The reading does not wait
-   for it.
+   times the kept window means' standard error, printed beside each mean and before it.
+6. **A series zero on every kept window** prints "identical on these trades", with no interval and no MDD.
+7. **The interval's honesty, beside -- rebuilt on overlapping series.** Its coverage on synthetic series of known zero
+   mean, built as the reading's own measures are: a session series, each start's measure the sum (or the 0/1 sign) of
+   the h sessions from it, the windows of item 1, at each h and n_w the reading uses (seed **20261991**; 20,000 series
+   per setting; the red team's Appendix A1 construction). The session series: (a) independent Gaussian, the additive
+   measure; (b) the same, its 0/1 "ahead" form less one half; (c) a paired form -- two session series correlated 0.64,
+   the difference of their 0/1 signs; (d) skewed and lumpy -- each session +g with probability 1 - p and -g(1 - p)/p
+   with probability p, plus N(0, s^2) noise (g = 0.01; p in {0.05, 0.10, 0.20}; s in {0.0025, 0.005, 0.01}), and its
+   mirror; (e) persistent -- (d) with the rare session's sign repeated in the next session with probability one half.
+   **A reading whose coverage, at its h and n_w on the worst of these shapes, falls below 0.88 is labelled "interval
+   below its coverage" with that coverage printed.**
+
+**What this does to what the reading can show (E-051).** About half as many windows: every interval and minimum
+detectable difference is wider (by the t quantile at fewer degrees of freedom and about the square root of two in the
+standard error), and more readings print "too few independent windows" -- most of month 12, and much of the late
+block at months 6 and 12. The sign count and the distributions over starts are unchanged. A plan difference the second
+version would have shown as an interval clear of zero may now show only as a sign count.
 
 ## 11. What the reading delivers, and what each outcome means
 
@@ -783,13 +975,17 @@ reading PP's (`prereg/DRAFT_F-P_payout_policy.md`, 9.2), so the two menus read a
   - an identity fails (9.1): the reading stops, the failure protocol applies;
   - an oracle is breached (9.2): an engine error; the reading stops;
   - a moot check is nonzero (9.3): the plan's rows carry the count; nothing is resolved here;
-  - a plan's corners lie on one side of TS on P: the menu shows the plan above (or below) TS on these trades at both
-    ends of its unread terms;
+  - a plan's corners lie on one side of TS on P: the menu shows the plan above (or below) TS on these trades **at both
+    declared corners** -- a bound only in the terms that act in one direction on every start (5.1); in the others, the
+    two corners as declared;
   - a plan's corners straddle TS: the menu flags it "depends on its unread terms"; the operator's read of a price (DT),
     or a written question to the firm, is what would settle it. **No run is repeated to settle it**: a re-read is a new
-    declaration citing this one.
+    declaration citing this one;
+  - Quick Pay's two request readings straddle TS: the menu flags it "depends on its request rule" (5.6).
 - **The operator's choice.** Recorded in its own decision row, citing this reading's result files (E-015: limits
-  first, then the best inside them). Buying a plan is a purchase, the operator's.
+  first, then the best inside them). Buying a plan is a purchase, the operator's. **It is an in-sample choice:** taken
+  over five plans and their corners on the development window 2020-2026, with no confirmation on unread data (E-023
+  (1)); the menu says so beside it (the red team's note 6).
 - **No confirmation.** Nothing is carried, so NQ from 2026-07-17 is not touched.
 - **The binding.** The blocks read here are recorded as read for firm contracts on P-14 and P-16, all of them. A later
   firm reading names this one, states what changed, and reads no block of it as fresh.
@@ -800,8 +996,8 @@ reading PP's (`prereg/DRAFT_F-P_payout_policy.md`, 9.2), so the two menus read a
 |---|---|---|
 | 20261990 | in use | the denial ladder's per-start path seeds (`lockstep.child_seed(20261990, 0, start_day)`), common to every plan's ladder run (10.1 item 7) |
 | 20261991 | in use | 10.2 item 7's synthetic coverage series, and T-9 |
-| 20261992 | in use | the build's toy campaigns (T-1 to T-7, T-10, T-12, T-13) |
-| 20261993 | in use | Q-16's paired comparison beside (10.2 item 8), if it draws |
+| 20261992 | in use | the build's toy campaigns (T-1 to T-7, T-10, T-12 to T-14) |
+| 20261993 | reserved, unused | -- (it was Q-16's comparison beside, dropped in the third version, the red team's m1; never drawn, not reassigned) |
 | 20261994 | reserved, unused | -- |
 | 20261995 | reserved, unused | -- |
 | 20261996 | reserved, unused | -- |
@@ -824,9 +1020,10 @@ reserved appears in any other declaration or anywhere in the vendored snapshot.
 
 1. **No program family number and no level** (E-023 (1)). The next numbered family's k is what it would be without
    this file.
-2. **Counted under this reading's row:** 27 replays, or 29 with 5.5's two news runs (25 or 27 new: 16 corners and 9
-   or 11 one at a time; 2 references, counted as identities); 27 denial-ladder replays and 16 gates beside, labelled;
-   every block read, recorded as read for firm contracts (11).
+2. **Counted under this reading's row:** 30 replays, or 34 with 5.5's four news runs (28 or 32 new: 16 corners and 12
+   or 16 one at a time, QP-16-req and the two "no liquidation" runs among them as readings beside; 2 references,
+   counted as identities); 27 denial-ladder replays and 16 gates beside, labelled; every block read, recorded as read
+   for firm contracts (11).
 3. **Nothing is selected by the program.** The operator's menu choice is a choice among described readings, recorded in
    its own row with the menu it was made from.
 
@@ -849,20 +1046,21 @@ that table.
 
 | test | what it asserts |
 |---|---|
-| T-0 (this draft's commit) | `tests/test_rd_firms_draft.py`: Appendix R cites every key with its record's status; every open term of the three new firms' records is cited and read in section 5; section 12 holds the brief's block, its seeds in use and reserved appear in no other declaration and nowhere in the vendored snapshot, and the retired ones are found elsewhere; the `Judged-block reads:` purposes parse and choose nothing; and, as a strict expected failure until the lead's fix (16 item 1), that the reader admits an RD- file |
+| T-0 (with the draft) | `tests/test_rd_firms_draft.py`: Appendix R cites every key with its record's status; every open term of the three new firms' records is cited and read in section 5; section 12 holds the brief's block, its seeds in use and reserved appear in no other declaration and nowhere in the vendored snapshot, and the retired ones are found elsewhere; the `Judged-block reads:` purposes parse and choose nothing; the reader admits an RD- file (E-041); and, end to end (Q-74, E-053), this file's own text pinned in a temporary tree authorises its declared engine reads and is refused where an F- file would be |
 | T-1 | every adapter at its Topstep setting equals the vendored class bit for bit on toy campaigns (seed 20261992): every day's balance, floor, request, payout, cash and recorded `eligible` |
-| T-2 | DT: the evaluation's two Qualifying Days (a day over the 50 % share does not count), the soft daily limit, the inactivity closure at a 21-session window; the Pro account's eight Qualifying Days with the request day excluded, the 30 % cycle rule, the $2,600 gate, the $2,000 left, the $50 rounding, and a payout leaving the floor at start (the engine's move a no-op); the recurring $5 fee's due sessions |
+| T-2 | DT: the evaluation's two Qualifying Days (a day over the 50 % share does not count), the soft daily limit, the inactivity closure on a rolling 30 calendar days (21 sessions in the gate), an evaluation at target with Qualifying Days owed reading the table's top cell; the Pro account's eight Qualifying Days with the request day excluded, the 30 % cycle rule, the $2,600 gate, the $2,000 left, the $50 rounding, and a payout leaving the floor at start (the engine's move a no-op); the recurring $5 fee's due sessions; the fee basis at both ends (T-12) |
 | T-3 | FP: the 45 % rule on gross profit; the session after a request untraded and passed over, its signal re-dealt to the longest-waiting other account; the fifth request at both ends; the ladder and its cap |
-| T-4 | QP: the gross-profit floor on the page's own example (a $50,500 balance with the floor at $48,500; after a $500 payout, $50,000 with the floor still at $48,500); the tiered split on its example ($6,000 of profit and a $3,000 payout: $1,600 plus $500); the $10,000 ceiling; 5.4's two bounds on hand-built trades with known outcomes at each R |
-| T-5 | TradeDay's minimum days at 3, 5 and 7 |
+| T-4 | QP: the gross-profit floor on the page's own example (a $50,500 balance with the floor at $48,500; after a $500 payout, $50,000 with the floor still at $48,500); the tiered split on its example ($6,000 of profit and a $3,000 payout: $1,600 plus $500); the $10,000 ceiling at both ends; 5.4's two bounds on hand-built trades with known outcomes at each R (R_hi, a profitable flatten's exit); both request readings of 5.6 on a toy account, the cadence reading's five days of $150 counted with no session excluded |
+| T-5 | TradeDay's minimum days at 3, 5 and 7, counting only sessions with an executed trade; an evaluation at target with days owed taking one micro at the table's R until they are logged, then passing at the first close with the days logged and the target held |
 | T-6 | A-10: on toy campaigns at two prices the records are identical and the cash differs exactly by the arithmetic; the break-even bisection on a known case |
 | T-7 | 9.2's oracles on toy campaigns |
 | T-8 (`slow`) | 9.1 items 1 to 3 at 4 starts and 4 paths; the full run is the run's first stage (heavy) |
-| T-9 | 10.2: the window count, the interval from 4 windows only, the sign count, the zero-series rule, the coverage on one small fixed setting (seed 20261991) |
+| T-9 | 10.2: every other window kept (no two kept windows' measures share a session), the interval from 4 kept windows only, the sign count, the zero-series rule, the coverage on one small fixed overlapping setting (seed 20261991), and the 0.88 label |
 | T-10 | A-8 equals the vendored gate with no new keyword given (synthetic, as Q-47's identity) and at Topstep's values |
 | T-11 | 14.2: the loader refuses an entry not verified; no rule literal outside the constants table |
-| T-12 | 4.8: each plan's fee schedule reaches the sizing rule; a hand-built trade of 26 micros is priced as two minis and six micros at each plan's figures; TS's schedule is the registered one |
-| T-13 | 5.5 and A-11: a hand-built day with a trade open at 07:28 CT on a CPI date and at 12:58 CT on an FOMC-minutes date is counted and booked at both ends; a trade closed at 07:27 is not; an entry at 07:30 is skipped; with no trade in a window nothing changes; the 9.3 counts for martingale steps and for trades a session on toy campaigns |
+| T-12 | 4.8: each plan's fee schedule reaches the sizing rule; a hand-built trade of 26 micros is priced as two minis and six micros at each plan's figures, DT at both ends; TS's schedule is the registered one |
+| T-13 | 5.5 and A-11: a hand-built day with a trade open at 07:28 CT on a CPI date and at 12:58 CT on an FOMC-minutes date (at some offered R only) is counted and booked at the strict end, the lenient end and "no liquidation"; a trade whose exit bar is stamped 07:27 is not; an entry bar at 07:30 is skipped; with no trade in a window nothing changes; A-11 off in the gate; the 9.3 counts for martingale steps (per account and firm-wide, in micro-equivalents) and for trades a session on toy campaigns |
+| T-14 | 4.9: at each close of toy campaigns, every plan's `win_days`, `since_pay` and `request_day_next` as its table row says, the held reading at 4, and the two `Rules` fields; at TS every field equals the vendored engine's |
 
 ## 15. Outputs and the run
 
@@ -873,46 +1071,48 @@ that table.
   - `results/fc_menu.csv`, the menu with its flags and labels.
 
   Each written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id`, the reading's
-  id (unnumbered) and its pinning row; the run counts (27 or 29 replays; 25 or 27 new; 2 references; 27 ladder
-  replays; 16 gates); each plan's cost schedule (4.8);
+  id (unnumbered) and its pinning row; the run counts (30 or 34 replays; 28 or 32 new; 2 references; 27 ladder
+  replays; 16 gates); each plan's cost schedule (4.8) and table inputs (4.9); QP's request rule on each QP row;
   every seed, the retired ones included; every parameter, section 5's readings and their labels; each plan's record
   entries with their dates read; the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`; `exploratory=False`, since
   nothing in it is chosen after a look. Every cell is still labelled "described, not carried".
 - **The run:**
   - **where.** Once, from a clean checkout of a named commit (`scripts/run_clean.py`), under the run lock, watched to
     its end;
-  - **weight: heavy.** Every start on two arms for 27 or 29 replays, 27 ladder replays and 16 gates: several hours at two
-    workers; memory near the U1 identity's and Q-17's (E-010, E-024);
-  - **order.** The identities first (9.1); any failure stops the run. Then the oracles, the mechanics (9.3), then the
-    reading;
-  - **a restart.** A run aborted or restarted is recorded by the lead with its log, and only the first complete run is
-    read.
-- **Waits:** the pinning row; 16's items 1 and 2; A-1 to A-11 built with their tests; Q-47's 500-path identities
-  (E-028 (3)) before A-8 runs; Q-17's adapter's identity (E-024) before A-9 runs. It does not wait for Q-16 (10.2 item
-  8 is beside), for E-015's limits (flags only), or for the operator's price read (U-2).
+  - **weight: heavy.** Every start on two arms for 30 or 34 replays, 27 ladder replays and 16 gates: several hours at
+    two workers; memory near the U1 identity's and Q-17's (E-010, E-024);
+  - **order.** The identities first, by their own script under `identity/` (9.1, section 6 item 6); any failure stops
+    the run. Then the oracles, the mechanics (9.3), then the reading;
+  - **a restart or a rerun.** Recorded by the lead with its log. Any later clean run under one of this file's purposes
+    -- a restart, a plan's rerun after an adapter fix, a rerun the failure protocol calls for -- passes
+    `repeat="E-NNN"`, a decision row naming this file, or the reader refuses it (`reader.py` 478-501). Only the first
+    complete run is read, unless that row says which run replaces it and why.
+- **Waits:** the pinning row; A-1 to A-7 and A-9 to A-11 built with their tests (A-8 is built, E-049); **Q-80's
+  500-path gate identities** before A-8 runs (E-049: every arm now passes through the re-composed campaign, so Q-51 no
+  longer covers master's gate); **Q-76** (A-9 takes a path carrying `funded_account_cls` or `household_closure`, and the
+  ladder's seed base by keyword) and Q-17's adapter's identity (E-024) before A-9 runs. It does not wait for E-015's
+  limits (flags only) or for the operator's price read (U-2).
 
 ## 16. Open before the pin
 
 **The lead's:**
 
-1. **The reader admits only `prereg/F-` files.** `extended/reader.py`'s `DECLARATION_PATH` and `PIN` accept a
-   judged-block read's declaration only as `prereg/F-NN_*.md`, so a pinned `prereg/RD-nn_*.md` cannot authorise the U1
-   replay's engine reads (section 6 item 6). E-025 (1) widened the hash test, not the reader. T-0 keeps it as a strict
-   expected failure until it is widened.
-2. **The rules owed in the first version are recorded (Q-59, 28 entries; their row is the lead's).** Products, contract
-   counting, hours, flat times, news, conduct and commissions for DayTraders and TradeDay are in
-   `config/rules_extended.yaml`; sections 4.3 to 4.5, 4.8, 5 and 9.3 read them, and Appendix R cites every one. Each
-   rule they state is represented (a field, an adapter, a check) or listed as a gap (G-2, G-3, G-8, G-14). **What remains
-   before the run:** the calendar of FOMC minutes release dates for 2020-01-02 to 2026-07-16, from the Federal Reserve's
-   own FOMC calendar pages, made and pinned by its sha256 under a row (5.5; as E-029 pinned the early closes). If a later
-   reading of either firm states a rule section 4 does not represent, that plan's cells are not run under this
-   declaration (a redraft names it).
+1. **The pin itself:** a re-read of this version's diff (E-058). Settled since the second version and no longer open:
+   the reader admits a pinned `prereg/RD-` file (E-041, E-053 (2); T-0 checks it end to end); the FOMC-minutes calendar
+   is pinned (E-050, 5.5); A-8 is built (E-049).
+2. **The rules are recorded (Q-59, E-045).** Products, contract counting, hours, flat times, news, conduct and
+   commissions for DayTraders and TradeDay are in `config/rules_extended.yaml`; sections 4.3 to 4.5, 4.8, 5 and 9.3 read
+   them, and Appendix R cites every one. If a later reading of either firm states a rule section 4 does not represent,
+   that plan's cells are not run under this declaration (a redraft names it).
 3. **E-020 (1)'s crawl-clause reading** stands for DayTraders and TradeDay. If the lead ever reads those clauses as
    E-009 read The Futures Desk's, their entries are struck and their cells dropped.
-4. **A-8** is new code of Q-47's pattern; Q-47's own 500-path identities come first.
-5. **With reading PP.** The same uncertainty method by design (10.2); both readings pair against the same references;
-   neither reads the other's cells.
-6. **The name at the pin** (`prereg/RD-nn_<slug>.md`, E-025 (1)).
+4. **Before the run, not the pin:** Q-80's 500-path gate identities before A-8 runs; Q-76 before A-9 runs; A-1 to A-7
+   and A-9 to A-11 built (15's waits).
+5. **With reading PP.** The two began with one uncertainty method; this version's window rule (10.2, the red team's
+   M5) is owed there too. Both readings pair against the same references; neither reads the other's cells.
+6. **The name at the pin** (`prereg/RD-nn_<slug>.md`, E-025 (1)) must match the test's glob `RD-*firm*.md`, and this
+   DRAFT file is removed (renamed) at the pin -- `tests/test_rd_firms_draft.py` asserts exactly one firms-reading file
+   (the red team's note 7).
 
 **The operator's:**
 
@@ -925,7 +1125,11 @@ that table.
      making trades that were not Customer's own creation", `daytraders.tou_s26_prohibited_conduct`): *"I trade only my
      own accounts, placing every order by hand. The trades follow a rules-based strategy I did not design myself (it was
      built for me from historical data). Are trades placed this way 'not Customer's own creation' under s.26 3.c? Does
-     the answer change if other, unconnected people could follow the same published strategy in their own accounts?"*
+     the answer change if other, unconnected people could follow the same published strategy in their own accounts?
+     Two more: do the commissions on your Instruments and Commissions page (MNQ $1.02, NQ $3.98 a round turn) include
+     exchange and NFA fees, or are those charged on top? And how many business days does a payout take from request to
+     receipt?"* -- the first settles 4.8's fee basis (U-12), the second U-5's lag, whose slow end (three sessions) is
+     borrowed from Topstep and is not strict if DayTraders takes longer (the red team's M2 item 4 and note 5).
    - **To TradeDay**, on "If multiple users are making the same trades, then all the accounts will be shut down, and the
      users suspended" (103000085101, `tradeday.coordinated_trading_rule`): *"I am one user trading my own accounts by
      hand. If my trades follow a strategy that other, unconnected TradeDay users might also follow independently, so
