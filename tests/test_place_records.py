@@ -65,7 +65,9 @@ def test_the_field_list_is_documented_with_its_draft_sources():
         assert name in names, name
     assert PF.TRADE_COLUMNS[:2] == ("shift", "enforcement_p")
     assert "opening_session" in PF.ACCOUNT_COLUMNS
-    for draft in ("DRAFT_F-B_multifeature.md", "DRAFT_F-O_opening_timing.md"):
+    # family O was pinned as prereg/F-03_opening_timing.md (E-095): its text is found under either name
+    for names_ in (("DRAFT_F-B_multifeature.md",), ("DRAFT_F-O_opening_timing.md", "F-03_opening_timing.md")):
+        draft = next(n for n in names_ if (ROOT / "prereg" / n).exists())
         text = (ROOT / "prereg" / draft).read_text(encoding="utf-8")
         assert "place-recording adapter" in text, draft
     assert "trades" in PF.describe()

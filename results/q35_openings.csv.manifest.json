@@ -1,0 +1,232 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "design",
+    "prereg",
+    "arm",
+    "block",
+    "group",
+    "openings",
+    "share",
+    "distinct_trades",
+    "distinct_share",
+    "block_openings",
+    "block_distinct",
+    "holds",
+    "compared",
+    "note"
+  ],
+  "description": "EXPLORATORY (Q-35): where P-14's and P-16's routed funded openings fall in U1's replay (every start, both arms, every response off): the marks, hours (CT), entry delays, the shares inside 08:30-09:00 CT and on BLS report days, FOMC days, the early-close calendar's kinds, weekdays, years and stops, on the choice block, the judged block and both. A supply count: no outcome.",
+  "exploratory": true,
+  "git_commit": "f7eda0d02e31daea7bfb92847f4ad1203cef014e",
+  "git_dirty": false,
+  "notes": {
+    "no_outcome": "no P&L, win, loss, exit, pass or payout is written or printed",
+    "selection": "none",
+    "status": "EXPLORATORY (Q-35, E-021 (2)): where P-14's and P-16's routed funded openings fall in U1's replay -- a supply count, no outcome; beside the registered verdicts, selects nothing",
+    "variant_count_rule": "one reading a design and arm; exploratory, no family"
+  },
+  "parameters": {
+    "arms": [
+      "verdict",
+      "point"
+    ],
+    "blocks": {
+      "all": "both",
+      "by": "the opening's own session date",
+      "choice": [
+        "2020-01-02",
+        "2023-12-29"
+      ],
+      "judged": [
+        "2024-01-02",
+        "2026-07-16"
+      ]
+    },
+    "calendars": {
+      "config": "vendor/stage2/config/atlas_a1.yaml",
+      "early_closes": {
+        "file": "config/calendar_early_closes.csv",
+        "pinned": "E-029",
+        "sha256_lf": "72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2"
+      },
+      "function": "propedge.data.flip_kit.collect_release_days",
+      "news": {
+        "bls": [
+          "data/release_days_0830_2009_2025.csv",
+          "data/release_days_0830_2026.csv"
+        ],
+        "bls_cut_ct": "07:30",
+        "fomc": [
+          "config/im2_release_calendar.csv",
+          "config/sources/fomc_statements_2020_2024q1.csv",
+          "config/sources/fomc_statements_2026q3.csv"
+        ]
+      },
+      "window": [
+        "2020-01-02",
+        "2026-07-16"
+      ]
+    },
+    "columns": [
+      "section",
+      "reading",
+      "design",
+      "prereg",
+      "arm",
+      "block",
+      "group",
+      "openings",
+      "share",
+      "distinct_trades",
+      "distinct_share",
+      "block_openings",
+      "block_distinct",
+      "holds",
+      "compared",
+      "note"
+    ],
+    "counted": {
+      "distinct_trades": "the distinct historical trades (date, index in the day) among them",
+      "openings": "each start's funded accounts' openings (the same historical trade opens accounts in many starts' replays)"
+    },
+    "decisions": [
+      "E-021 (2)",
+      "E-037",
+      "E-039 (1)",
+      "E-029"
+    ],
+    "designs": [
+      "p14",
+      "p16"
+    ],
+    "entry": "entry_t - 1: the open of the entry bar, whose END index on the clock is entry_t",
+    "mark": "decision_slot_minutes, minutes after 17:00 CT (the trading-day clock), as HH:MM CT",
+    "opening": "a funded account's first executed trade in the engine's ledger, first by (day, slot) -- U2's opening_trade (vendor/stage2/scripts/u_xfa_day_budget.py)",
+    "opening_keys": [
+      "start_day",
+      "account",
+      "day",
+      "slot",
+      "historical_day",
+      "trade_index"
+    ],
+    "outcome_words_refused": [
+      "pnl",
+      "p&l",
+      "profit",
+      "loss",
+      "lost",
+      "win",
+      "won",
+      "exit",
+      "pass",
+      "payout",
+      "paid",
+      "balance",
+      "cash",
+      "net",
+      "fee",
+      "mae",
+      "outcome",
+      "result",
+      "return",
+      "cushion",
+      "floor",
+      "equity",
+      "drawdown",
+      "breach",
+      "r_",
+      "rr",
+      "gross",
+      "cost"
+    ],
+    "prereg": [
+      "P-14",
+      "P-16"
+    ],
+    "read": {
+      "declaration": "E-021",
+      "purpose": "registered_design"
+    },
+    "replay": "U1's (vendor/stage2/scripts/user_journey.py) as Q-17 adapted it (extended.user_beside): each start's long run of min(252, sessions left) sessions, every response off (ConductModel(rtp=False, enforcement_p=0.0)), the engine's per-trade ledger on (record_trades=True), nothing else changed",
+    "seconds": 1285.1,
+    "seeds": {
+      "draws": "none: an as-happened replay (SharedDayDraws(replay=True)) draws no day",
+      "path_seed": "lockstep.child_seed(20261920, 0, start_day) (extended.user_beside.start_seed): feeds only the enforcement stream, unused at 0 %",
+      "recorded": 20261920
+    },
+    "session": "dates[start + historical_day] (ReplayTable: calendar day = historical day + 1, checked); a trading day runs 17:00 CT the evening before to 15:10 CT",
+    "starts": "every start of each design's development window",
+    "starts_read": {
+      "p14|point": 1691,
+      "p14|verdict": 1691,
+      "p16|point": 1691,
+      "p16|verdict": 1691
+    },
+    "task": "Q-35",
+    "timing": {
+      "p14|inputs": {
+        "seconds": 18.7
+      },
+      "p14|point": {
+        "seconds": 247.2,
+        "starts": 1691
+      },
+      "p14|verdict": {
+        "seconds": 272.6,
+        "starts": 1691
+      },
+      "p16|inputs": {
+        "seconds": 71.6
+      },
+      "p16|point": {
+        "seconds": 342.0,
+        "starts": 1691
+      },
+      "p16|verdict": {
+        "seconds": 331.5,
+        "starts": 1691
+      }
+    },
+    "trade_columns": [
+      "date",
+      "decision_slot_minutes",
+      "entry_t",
+      "stop_ticks",
+      "side",
+      "day_kind"
+    ],
+    "u1_reference": {
+      "file": "vendor/stage2/results/user_journey.csv",
+      "sha256": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "windows": [
+      "mark before 08:30 CT",
+      "mark in [08:30, 09:00) CT",
+      "mark at 09:00 CT",
+      "mark after 09:00 CT",
+      "mark in [08:30, 09:00] CT",
+      "entry in [08:30, 09:00) CT",
+      "entry in [08:30, 09:00] CT"
+    ],
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q35-openings",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q35-openings"
+    },
+    "read_ledger": "1 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "q35_openings.csv",
+  "rows": 7599,
+  "script": "scripts/q35_openings.py",
+  "seed": 20261920,
+  "sha256": "f1d80547bb161685cdcadccad19fa42bf371c77d0326e02fbe81d0eb28696bf3",
+  "timestamp": "2026-11-16T20:30:37+00:00",
+  "variant_count": 4
+}
