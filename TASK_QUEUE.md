@@ -156,10 +156,11 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-109r | The red team reads F-03's build (4da975e): look-ahead, the waiting class, the statistics, the guards, A0, what is owed before run 1 (A10's consequence first), cost | wt-lit (read-only) | done: merge after the listed changes (E-112); in Q-109b | Q-109 | light | 0 | E-107 |
 | Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | running: before-run-1 items first, then run 2 and the scorecard (E-112) | Q-109 | light | 0 | E-107 |
 | Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | done: pin after the listed changes (E-110); Q-108c | Q-108b | light | 0 | E-109 |
-| Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | running (E-110) | Q-108r2 | light | 0 | E-110 |
+| Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | done: the third text (E-114); Q-108r3, then the pin | Q-108r2 | light | 0 | E-110 |
 | Q-106d | The red team's last diff read of RD-02's runner (D1-D5; the waits' covered paths) | wt-payout (read-only) | done: merge after L1, L2 (E-113); Q-105f | Q-105e | light | 0 | E-111 |
 | Q-105f | RD-02's runner: the fourth read's L1 (own waits now; shared waits through Q-111's cover once merged) and L2 | wt-payout | running (E-113) | Q-106d | light | 0 | E-113 |
 | Q-111 | One shared declaration of the shared identities' covered paths (`extended/identity_cover.py`), its import rule tested from the scripts' source | wt-infra | running (E-113) | E-108 | light | 0 | E-113 |
+| Q-108r3 | The red team reads Q-108's third text (the diff 383a3e9..c905c9c); pin as is, or the last changes | wt-scout (read-only) | running (E-114) | Q-108c | light | 0 | E-114 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

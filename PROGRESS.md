@@ -114,3 +114,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-111: RD-02's runner after D1-D5 (the waits through the shared parser); one last diff read before merge. |
 | 2026-11-16 | lead | E-112: F-03's build read -- merge after five fixes owed before run 1; A10's inner seed read from its declared key, its cost cut by an exact shortcut; Q-89 moved after the merges (queue part 4). |
 | 2026-11-16 | lead | E-113: RD-02's fourth read -- merge after two small changes; one shared list of what each shared identity certifies, derived from the scripts' imports (Q-111). |
+| 2026-11-16 | lead | E-114: the re-calibration plan's third text (nothing run); the red team's last read before the pin. |
