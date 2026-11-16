@@ -47,7 +47,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
 | wt-lit | wt/wt-lit | Q-37 family O's draft (the funded opening's timing filter) | running |
 | wt-firms | wt/wt-firms | -- (Q-39 done, E-034) | idle |
-| wt-payout | wt/wt-payout | Q-54 other firms' contracts, a described reading's draft | running |
+| wt-payout | wt/wt-payout | -- (Q-54 drafted, E-038) | idle |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
 | wt-scout | wt/wt-scout | Q-56 family B's fourth draft | running |
 | wt-infra | wt/wt-infra | Q-58 the readings scripts through the reader | running |
