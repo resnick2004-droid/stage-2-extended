@@ -75,7 +75,17 @@ from extended import features as F
 from extended import reader
 
 ROOT = Path(__file__).resolve().parent.parent
-DRAFT = ROOT / "prereg" / "DRAFT_F-O_opening_timing.md"
+def _declaration() -> Path:
+    """The family's text under either name: `prereg/DRAFT_F-O_opening_timing.md` before the pin,
+    `prereg/F-NN_opening_timing.md` after it (the pin renames the file and changes nothing else, the text's header) --
+    exactly one of them."""
+    found = sorted(p for p in (ROOT / "prereg").glob("*opening_timing.md")
+                   if p.name == "DRAFT_F-O_opening_timing.md" or re.fullmatch(r"F-\d+_opening_timing\.md", p.name))
+    assert len(found) == 1, [q.name for q in found]
+    return found[0]
+
+
+DRAFT = _declaration()
 SEED = 20261988
 Z = 4.0                                    # Monte Carlo band, in standard errors
 A = 10                                     # the stop, in lattice steps (the bracket's -1R)
