@@ -1,7 +1,8 @@
 # DRAFT F-XX: resting orders at pre-session levels, corrected (family RL2) -- not declared
 
 **Status: DRAFT, fourth version, of 2026-11-16 (TASK_QUEUE Q-50), redrafted on the red team's third read
-(`docs/reviews/DRAFT_F-02_resting_levels_v3_2026-11-16.md`). Not pinned, not numbered, not declared.** It replaces F-01
+(`docs/reviews/DRAFT_F-02_resting_levels_v3_2026-11-16.md`) and corrected per E-032 (1)-(2). Not pinned, not numbered,
+not declared.** It replaces F-01
 (`prereg/F-01_resting_order_level_atlas.md`, withdrawn, its k = 10 spent, E-007 (a)). No bar has been read for it, no
 level computed, no outcome of any order computed. The versions: fc7747b (the first), 255e13b (the second, which E-022
 counts as the third), this one; the pinning row names the commit and sha256 it pins. It becomes a declaration only
@@ -10,7 +11,9 @@ after the red team reads this version, the prereg-gatekeeper approves it (assign
 **It cannot be pinned before:**
 - Q-16 is merged: the pass line is Q-16's calibrated statistic, still pending. The marks **[Q-16]** are filled in a
   revised draft, with the merged statistic's name, module and commit.
-- Q-40's calendar is pinned (4.5).
+- A final red-team read once Q-16's statistic is named (Q-53, E-032).
+
+The early-close calendar this file reads is pinned (E-029).
 
 The other items left open are in section 19, each to be closed before the pin. **The judged-block reads this family may
 make are named on the one line the reader requires (section 18.1, E-026).** Anything chosen after a reading is
@@ -64,7 +67,7 @@ exploratory and reported apart.
 | F2 | past-only placebo sources; placebo tickets in the shift test; block-total denominators | 5.8, 9.2, 17.3 |
 | F3 | the stop band per state; floor (ii)'s form (E-022 (1)); the 50-tick `dv` | 3, 6.3, 10 |
 | F4 | C2 at `rule_fill`; a spread-and-jumps T-13 | 5.5, 9.3, 17.5 |
-| F5, F6, F7 | the rule side's 2020-2023 resolution; a pinned calendar (Q-40); one 0.05 bound in stage D | 8.5, 4.5, 11.4 |
+| F5, F6, F7 | the rule side's 2020-2023 resolution; a pinned calendar (E-029); one 0.05 bound in stage D | 8.5, 4.5, 11.4 |
 | F8 | one priority order for value and routing -- the quantities now too (0.3, V1) | 10, 11.2 |
 | F9, F10 | prior-exposure rows; what a fade pass means | 2, 9.7 |
 | N1-N9 | as rules or readings | 5.6, 7, 13 |
@@ -89,10 +92,13 @@ exploratory and reported apart.
 | N8 | T-13's tier and walk; consequences of a failure | the tiers marked, the walks written out, a failure stops the build | 17.5 |
 | N9 | the T-12 sentence stale | updated: references against uses | 15 |
 | N10 | the version label | stated above; the row names the commit | status |
-| N11 | CHARTER section 4 states D-212 (1)'s letter | the reading recorded in section 3; a charter row is the lead's | 3, 19 |
+| N11 | CHARTER section 4 states D-212 (1)'s letter | the charter now records the allowance-capped reading (E-032 (3)) | 3 |
 | N12 | the Tier 1 windows cited from an audit note | a reading; the rules-verifier records 13613539 before anything asserts them | 3 |
 | N13 | the red team's scripts | listed in section 2 | 2 |
 | E-026 | the reader requires a judged-block reads line | added, with each purpose | 18.1 |
+| E-031 (2), E-032 (1) | the reverse walk-forward would make the judged block a block that chooses | struck from the reads line and the readings; the pick's year-by-year readings beside instead | 9.6, 15, 18.1 |
+| E-032 (2) | how the reachable count is read | through `extended/reader.py` on choice-block days only; if that cannot be done, C2 falls back to the records cap, with no new purpose | 10, 7.8 |
+| E-029 | the calendar | `config/calendar_early_closes.csv`, pinned | 4.5 |
 
 ## 1. Hypothesis
 
@@ -172,7 +178,8 @@ gap's side (S3).
 2. `or30` is out, and `break` at `on` and `pd` is dropped (6.2).
 3. A `break` cell at `pdc` or `rn100` passes only if its lift also exceeds that of matched non-level crossings, the
    match at `pdc` including the overnight move's sign (5.8, 9.2).
-4. The reverse walk-forward and the lift by year are reported with every judgement (9.6).
+4. The pick's year-by-year readings are reported with every judgement (9.6). The reverse walk-forward is dropped
+   program-wide (E-031 (2)): it would make the judged block a block that chooses.
 
 ## 3. Contract fit: the constraints each cell lives inside
 
@@ -181,7 +188,7 @@ gap's side (S3).
 | latency at least 5 minutes (Stage 2 D-266) | every level and side from bars stamped at or before `t_pub - 1 min`; the order works from `t_live = t_pub + 5 min` (section 4) |
 | one position per firm, 5 minutes flat (D-429); one trade an account a session (the table's model, P-14's campaign) | stages A to C read every fill independently; stage D routes by the strict rule, a ticket only to an account that has not traded that session, with cancel-on-entry (11.2) |
 | every trade resolving: at most 5 % to the flatten, overall, per market and per year, no time stops (D-212 (2) as D-308 (3) raised it) | the cutoff rule and K2 (7.2); the pick's rule side on 2020-2023 (8.5); C3 on the judged block (9.4); each read with every trade's own fill-bar rule (N5) |
-| realised risk matching intended (D-212 (1)) | cannot fail in the walk (K3, 7.5). In stage D the ticket is sized by the engine's own form (6.3), under which the line can miss only by whole-micro rounding near a Combine's floor: a build check (11.1). **Against CHARTER section 4's words:** the charter states D-212 (1)'s letter ("at least 90 % of trades within 10 % of the state's risk in whole micros"); this family reads it in P-14's registered form, the form R\* = P-14 was itself judged by (E-022 (1)); the letter's share is reported beside (11.5); a charter row recording the reading is the lead's (19) |
+| realised risk matching intended (D-212 (1)) | cannot fail in the walk (K3, 7.5). In stage D the ticket is sized by the engine's own form (6.3), under which the line can miss only by whole-micro rounding near a Combine's floor: a build check (11.1). **Against CHARTER section 4's words:** the charter now records this allowance-capped reading of D-212 (1) (E-032 (3)), the form R\* = P-14 was itself judged by (E-022 (1)); the letter's share is reported beside (11.5) |
 | the sizeable stop band (`vendor/stage2/results/stop_band.csv`, D-201 (2)) | the narrow edge per state of stage one's family: 82 ticks in the Combine, 134 ticks funded below +$2,000, and 45 ticks funded at or above +$2,000, where the cost-drag floor binds (`cost_drag_floor_ticks`, the stop at which costs reach a tenth of it; D-271 (3)'s 45 MNQ ticks). 50 ticks is inside the band in the last state only, 100 ticks in the Combine and the last, 150 ticks in all three (6.3). The bases' $50K table sizes by its own allowance, which 6.3 and section 10 use |
 | news | tickets go live at 08:30 CT: on a BLS 08:30 ET release day strictly after 07:35:00 CT (E-007 (d)), and outside Topstep's Tier 1 windows -- 07:25-07:35 CT on CPI, NFP and PPI days, and around both FOMC events, as Track E read them (E-007 (6), `docs/audits/phase0/E_rules_currency.md` C1). That citation is a reading: no entry for article 13613539 is in `config/rules_extended.yaml`, nothing loads it, and the tickets avoid the windows by construction; if the build ever asserts the windows, the rules-verifier records the article first (N12). FOMC days as 4.5 (d). Tickets rest through other 09:00 CT releases, as Stage 2's rule allows (D_protocol N-6) |
 | conduct, tier 1 (D-145) | no hedge (cancel-on-entry: never two positions in the firm); no simulator-fill exploitation (stops of at least 50 ticks, no stop move); no maximum size into news (above, and 4.5 (d)); no copying (each ticket on one account, D-157); nothing concealed (a resting order at a public level) |
@@ -208,12 +215,12 @@ gap's side (S3).
    - A bar stamped 08:30 or later that opens beyond a stop fills at its open plus the slippage (a gap through). One
      that opens through a limit fills at the limit's price, never better.
 5. **Calendar voids, from calendars fixed before the run -- never from the day's own bars.** Each is counted.
-   - **(a) Scheduled early closes** -- from Q-40's pinned file (`config/calendar_early_closes.csv`, its sources in it,
-     pinned by sha256 in a decision row before this family's pin). Such a day voids every kind; the next trading day
-     voids `pd` and `pdc`.
-   - **(b) Data-defect days** -- the purchase seam (trading day 2025-06-30, no trades; 2025-07-01, its first two hours
-     missing; P-14 caveat C2) and any other day Q-40's file lists as defective. Such a day voids every kind; the next
-     trading day voids `pd` and `pdc`.
+   - **(a) Scheduled early closes** -- from the pinned calendar `config/calendar_early_closes.csv` (E-029): every
+     `early_close` row, and every `holiday` row with a `close_ct` (an abbreviated session). Such a day voids every
+     kind; the next trading day voids `pd` and `pdc`. (A `holiday` row with no `close_ct` holds no session.)
+   - **(b) Data-defect days** -- every `data_defect_candidate` row of the same file, and the purchase seam (trading day
+     2025-06-30, no trades; 2025-07-01, its first two hours missing; P-14 caveat C2). Such a day voids every kind; the
+     next trading day voids `pd` and `pdc`.
    - **(c) Roll days**, from the bar store's manifest `rolls`. The charted contract is chosen on the previous day's
      volume (README section 5), so a roll is known in advance. A roll day voids `pd` and `pdc`, whose prices would be
      the old contract's.
@@ -413,13 +420,13 @@ the overnight move's sign (P1).
 | resolution ceiling | the most that may reach the flatten | fixed | 5 % overall and in every calendar year | D-212 (2) as D-308 (3) raised it |
 | K1 supply | the fewest fills | fixed | 100 on the choice block and 12 in every calendar year of it | F-01; the value map's smallest use count |
 | K5 ambiguity cap | the most fills the walk cannot settle | fixed | 5 % of fills | **the drafter's choice**: it buys measurability, not an error rate; set at D-212's flatten ceiling by analogy only |
-| calendar voids | days with no ticket | fixed | 4.5's lists | D-11; F6; N6; Q-40 |
+| calendar voids | days with no ticket | fixed | 4.5's lists, from `config/calendar_early_closes.csv` and Stage 2's FOMC list | D-11; F6; N6; E-029 |
 | `rn100` spacing | the round number | fixed | 100 points, in the futures' own price | F-01; D-11 |
 | placebo | the control for `break` | fixed | 5 replicates; past-only sources 21 to 252 trading days back; the target day's own sides; distances scaled by `A` (20 full sessions) at `pd`, `on`, `pdc`, unscaled at `rn100` | D_protocol 1.3 item 4; F2; P1; N3; the drafter's 21, 252, 20 and 5 |
 | stage B bootstrap | the family-wise gate on the choice block | fixed | stationary, mean block 21 sessions, circular, 2,000 replicates, centred, studentised, seed 20261930 | D-14; D-550's form |
 | stage C level and statistic | the pass line | fixed | one-sided 0.05 / (k (k + 1)), Q-16's statistic [Q-16] | E-008 |
 | value bar | the least a pass must be worth | fixed | $500 a year at C2's bound | `u_value_map.csv` `bar`; E-008 |
-| valuation | where a lift is priced | fixed rule | section 10: `p14` for 50 and 100 ticks, `p16` for 150; caps at the records count and the reachable uses; one priority order shared with stage D's routing | `u_value_map.csv`; V1 |
+| valuation | where a lift is priced | fixed rule | section 10: `p14` for 50 and 100 ticks, `p16` for 150; caps at the records count and the reachable uses (or the records cap alone, E-032 (2)); one priority order shared with stage D's routing | `u_value_map.csv`; V1 |
 | the 50-tick scaling ρ | the value of a smaller bet | fixed rule | ρ (section 10), an approximation of unknown sign; ρ squared and 1 beside | V2 |
 | ticket size in stage D | the micros a ticket carries | fixed | the engine's `_plain_size` at the pick's stop: the allowance, the Combine's room cap, the 45-tick floor | P-14's configuration; S1; 6.3 |
 | realised risk in stage D | floor (ii) | a build check | at least 0.9 of the allowance- and room-capped intention, P-14's form | E-022 (1); S1 |
@@ -537,8 +544,8 @@ far prices travelled, never which way. No lift is computed.
    K4's outcome part (touched-but-unfilled fades) is computed with stages B and C, beside (D-10).
 8. **The valuation's inputs, from contract arithmetic and direction-free counts** (section 10):
    - σ, ρ and the records caps, from `records_leaf`, `place_values` and D-667's sizing;
-   - **the reachable uses** -- one heavy, direction-free count from the base's campaign on the choice block's days
-     (10; V1);
+   - **the reachable uses** -- one heavy, direction-free count from the base's campaign on the choice block's days,
+     read through `extended/reader.py` on those days only, or not used at all (10; V1; E-032 (2));
    - φ, the cell's filled ticket-days over its placed ticket-days.
 
    The placebo cells' counts and K5 shares are read here too.
@@ -548,7 +555,7 @@ far prices travelled, never which way. No lift is computed.
    - the minimum detectable lift at the family's level with 80 % power, from Q-16's power curve [Q-16], with the
      worst-case-sd Student-t formula beside (D_protocol Appendix C);
    - for `break`, the same for D;
-   - the value bar in points at the cell's reachable uses (10), and the ratio of the two.
+   - the value bar in points at the cell's capped uses (10), and the ratio of the two.
 
    Every figure goes to the `planning` section; none is typed anywhere. R-16 is not adopted, and is not applied.
 
@@ -578,7 +585,7 @@ For every surviving (cell, R), on the choice block:
    block, each walked by its own fill-bar rule, leave at most 5 % unresolved, overall and in each calendar year 2020 to
    2023.
 6. **Kill B.** No eligible (cell, R) above q: the family closes, and the judged block is not read.
-7. **The pick.** The eligible (cell, R) with the largest **valued lift** (section 10, on its reachable uses) at the
+7. **The pick.** The eligible (cell, R) with the largest **valued lift** (section 10, on its capped uses) at the
    lower limit of its C2-booked lift, L_C2 - q x se_C2.
    - A tie (equal to the dollar) goes to more choice-block fills, then to the first in table order (5.1, 5.2, stops
      ascending, R ascending).
@@ -613,7 +620,7 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
      follow effect or S3's overnight-move effect seen again -- not a finding.
    - **If Q-16 does not cover this form.** If Q-16's calibration does not cover the two-sample form, the pin waits for
      one that does, or a revised draft drops `break` before the pin.
-3. **C2, value (F4, T2, V1).** The valued lift (section 10, on the reachable uses) at the lower bound -- at the same
+3. **C2, value (F4, T2, V1).** The valued lift (section 10, on its capped uses) at the lower bound -- at the same
    level, by the same statistic -- of the pick's lift **under its C2 booking** (rung 1, or rung 2 where 5.5 moves it) is
    at least **$500 a year**.
 4. **C3, resolution (a floor, E-008; N5).** On the judged block, the pick's rule-side trades at its R, each walked by
@@ -622,9 +629,10 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
 5. **C4, measurability.** K5 on the judged block: the ambiguous share is at most 5 %. It guards measurability, not an
    error rate, and can close a true effect for a direction-free reason.
 6. **Beside, deciding nothing:**
-   - the lift by calendar year on each block;
-   - the reverse walk-forward: stages A to C with the blocks swapped and their own cutoffs, run only after stage C's
-     file is written; its bootstrap `default_rng([20261934, 0])`, its statistic's draws `[20261934, 1]`;
+   - **the pick's year-by-year readings** (E-031 (2), in place of the dropped reverse walk-forward): for each calendar
+     year of each block, the pick's lift, its net R lift, its fills, its unresolved share, its K5 share and, for a break
+     pick, D, each with Q-16's statistic's interval at one-sided 0.05 where the year's fills allow [Q-16]; its draws, if
+     any, `default_rng([20261934, year])`;
    - the seeded coin twin (20261931);
    - the net R lift;
    - drift: the lifts on long-rule and short-rule fills, and their mean, the side-balanced lift;
@@ -682,7 +690,13 @@ and `mean_dv`), with each place's uses capped by what the routing can actually r
     - sits in a firm that holds no position and closed none in the last five minutes.
 
     It is counted once in stage A (7.8), from the base's registered engine call with its day table **restricted to the
-    choice block's days**: counts only, no outcome of the tickets, and T-3 covers it.
+    choice block's days**, the base's trades read through `extended/reader.py` on those days only (E-032 (2)): counts
+    only, no outcome of the tickets, and T-3 covers it.
+  - **The fallback (E-032 (2)).** If Stage 2's builders cannot restrict the base's trades to the choice block's days
+    without opening the judged part of their files, the reachable count is not used, and cap(p, R) is the records cap
+    (i) alone. No purpose is created for it, and the `valuation` section says which cap applied. The fallback prices
+    uses the base's own trades may take first, most at the funded opening (the third read's V1), so C2 then errs high
+    there; stage D's realised take-up is reported beside it (11.6).
   - **φ** is the cell's choice-block filled ticket-days over its placed ticket-days. A ticket-day is a day the kind
     publishes a ticket not void at `t_live`; it is filled when at least one of the kind's tickets fills by the cutoff.
 
@@ -792,7 +806,8 @@ reads ("every R at the 0.05 bound the design's gate read", `scripts/user_journey
 
 1. **The base still occupies the firm** after 08:30, so tickets are cancelled on its entries. The take-up is reported:
    placed, filled, cancelled on entry, voided at re-place, refused for no reachable account; and the realised uses
-   against section 10's reachable count.
+   against section 10's cap -- the reachable count, or under E-032 (2)'s fallback the records cap, which errs high at
+   the funded opening.
 2. **The reservation changes the base's routing** even when no ticket fills.
 3. **For a 150-tick pick,** the comparison with R\* = P-14 mixes the base's own distance from P-14 with the tickets; the
    paired difference against its own base is read beside.
@@ -884,7 +899,7 @@ The replay draws nothing.
   - **A break pick** is also confirmed by its placebo-differenced lift, built exactly as 5.8 builds it -- on the target
     day's own sides, distances scaled or not by kind, sources past-only (development days included) -- with generators
     `default_rng([20261932, j, k, 2])`.
-  - **C2 at the 95 % bound,** under its C2 booking, on the reachable uses: at least $500 a year.
+  - **C2 at the 95 % bound,** under its C2 booking, on its capped uses (10): at least $500 a year.
   - **Resolution:** at most 5 % overall, and in every calendar year with at least 63 of the window's sessions (a stub
     year pooled with its neighbour, D-604).
   - **K5:** at most 5 % on the window.
@@ -905,7 +920,7 @@ The replay draws nothing.
 | 20261931 | the seeded coin twin beside (5.7) |
 | 20261932 | the placebo's source draws: `numpy.random.default_rng([20261932, j, k, b])`, j the replicate (0..4), k the kind (0..3), b the block (0 choice, 1 judged, 2 confirmation) |
 | 20261933 | stage C: the draws of Q-16's statistic, if it draws any (else unused, and the result file says so) |
-| 20261934 | the reverse walk-forward beside: `default_rng([20261934, 0])` its bootstrap, `[20261934, 1]` its statistic's draws |
+| 20261934 | the pick's year-by-year readings beside (9.6): `default_rng([20261934, year])`, the draws of Q-16's statistic for each year's interval, if it draws any (reassigned before any use from the dropped reverse walk-forward) |
 | 20261935 | stage D's campaign seed: the gate floor and every beside arm, 500 paths |
 | 20261936 | the scorecard's calibrated P comparison (Q-16), if it draws |
 | 20261937 | the confirmation's statistic, if it draws |
@@ -950,7 +965,7 @@ family's own in a `prereg/F-*.md` other than this one.
    - 54 signed hypotheses, over 36 (kind, stop, R) questions;
    - 18 placebo cells, as controls;
    - one campaign cell if stage D runs;
-   - the reverse walk-forward re-reads the same cells;
+   - the year-by-year readings re-read the pick, no new cell;
    - the 6 `break` cells at `on` and `pd`, dropped before any read, are not counted.
 
    A later D-189 N counts these, plus section 2's Stage 2 reads of the mechanism.
@@ -1066,7 +1081,8 @@ row records the diagnosis. That is not a kill.
      - the engine's `_plain_size` at the pick's stop, with the room cap binding;
      - floor (ii)'s check;
      - the need-aware exit acting on a Combine ticket.
-   - The reachable count's adapter reproduces the base's registered paths when its day table is not restricted.
+   - The reachable count's adapter, if built (E-032 (2)), reproduces the base's registered paths when its day table
+     is not restricted.
 9. **Q-16's own size test** passes at the build's commit.
 10. **T-12:** section 15's seeds are used nowhere else, telling references from uses.
 11. **T-7's analogue:** stage C reads the pick from stage B's result file by its sha256, and its entry point cannot run
@@ -1089,20 +1105,22 @@ Every read of Stage 2's bars or walks goes through `extended/reader.py`. A read 
 file names on its one reads line below, inside a clean run of a committed tree, once per purpose (a repeat needs a row).
 No purpose here contains a choosing or fitting word: choosing reads only the choice block.
 
-- **Judged-block reads:** `stage_C_judgement`, `stage_D_gate_floor`, `stage_D_scorecard`, `reverse_walkforward_beside`
+- **Judged-block reads:** `stage_C_judgement`, `stage_D_gate_floor`, `stage_D_scorecard`
 
 | purpose | what it reads, and why |
 |---|---|
-| `stage_C_judgement` | the pick's judged-block fills, its placebo and its walks: C1 to C4 and every stage-C reading beside (9.6) |
+| `stage_C_judgement` | the pick's judged-block fills, its placebo and its walks: C1 to C4 and every stage-C reading beside, the pick's year-by-year readings included (9.6) |
 | `stage_D_gate_floor` | the stage-D campaign over the development window, through the engine (`reader.authorise_engine_read`): floor (i), the base alone and the arms beside (11.5) |
 | `stage_D_scorecard` | the real-order replay over start days of the three designs (section 12) |
-| `reverse_walkforward_beside` | the reverse walk-forward (9.6): a choice made on the judged block for a reading beside, run **only after stage C's result file is written**, when the forward pick is frozen and judged; it decides nothing and cannot reach the forward pick (19) |
 
 **Not on this line:**
 - the identity reads (purpose `identity`, under the build's identity row, from `identity/*.py`; Q-48);
-- stage A and B (the choice block only, including the reachable count);
+- stage A and B (the choice block only), and the reachable count, which is read on the choice block's days only or not
+  used at all (10; E-032 (2));
 - T-13 and T-14 (synthetic);
-- the confirmation window, which the reader refuses outright and which belongs to a registration.
+- the confirmation window, which the reader refuses outright and which belongs to a registration;
+- the reverse walk-forward, dropped program-wide (E-031 (2), E-032 (1)): it would make the judged block a block that
+  chooses.
 
 ### 18.2 Files and the run
 
@@ -1116,14 +1134,14 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
   - `prereg_id` the family's F-id;
   - the cell and hypothesis counts;
   - every seed and parameter;
-  - the sha256 of `vendor/DATA_MANIFEST_stage2.sha256` and of Q-40's calendar file.
+  - the sha256 of `vendor/DATA_MANIFEST_stage2.sha256` and of `config/calendar_early_closes.csv` (E-029).
 
   They are EXPLORATORY until a carried candidate is registered. The reader's ledger (`results/read_ledger.jsonl`)
   records every judged read.
 - **The run.** Once, from a clean checkout of a named commit (`scripts/run_clean.py`), under the run lock, watched to
   its end.
-  - The order is fixed: the build's synthetic K0 tests, stage A (the reachable count included), B, C, D, then the
-    reverse walk-forward. Each stage's file is written before the next reads anything.
+  - The order is fixed: the build's synthetic K0 tests, stage A (the reachable count included, or its fallback), B,
+    C, then D. Each stage's file is written before the next reads anything.
   - A kill stops the sequence.
   - A run aborted or restarted is recorded by the lead with its log, and only the first complete run is read.
 - **Waits.** No judged-block read until Q-05 holds (done, E-010), Q-16 is merged (E-008), and this file is pinned (the
@@ -1135,17 +1153,16 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
 
 1. **Q-16.** Its choice fills the [Q-16] marks (7.9, 9.1-9.3, 12 item 5, 14), and settles whether its calibration
    covers the two-sample form of C1'.
-2. **Q-40's calendar** (`config/calendar_early_closes.csv`) is pinned under its row (4.5 (a), (b)).
-3. **The reachable count's adapter (V1)** must read only the choice block's days of the base's trades, through the
-   reader. If Stage 2's builders cannot be restricted without opening the judged part of their files, the count needs a
-   purpose of its own on 18.1's line and a ruling that a direction-free count of the base's schedule may feed stage B.
-   Decide before the pin.
-4. **The reverse walk-forward's purpose** (18.1). It is a choice made on the judged block after the forward judgement.
-   Its name passes the reader's word filter because it decides nothing, not to evade it. Confirm it, or drop the
-   reading.
-5. **A charter row (N11):** CHARTER section 4 states D-212 (1)'s letter; record E-022 (1)'s reading against it.
-6. **The readings beside.** Q-17's adapter is needed for section 12 item 4, and E-015's approved limits for 12 item 6.
-7. **Optional (V2):** a per-rung `dv` from D-667's solver would replace ρ.
+2. **The final red-team read** once Q-16's statistic is named (Q-53, E-032).
+3. **The readings beside.** Q-17's adapter is needed for section 12 item 4, and E-015's approved limits for 12 item 6.
+4. **Optional (V2):** a per-rung `dv` from D-667's solver would replace ρ.
+
+**Decided since the fourth version was written, and applied here:**
+- the calendar (E-029);
+- the reverse walk-forward struck (E-031 (2), E-032 (1));
+- the reachable count read on the choice block's days only, or not used and replaced by the records cap, with no new
+  purpose (E-032 (2));
+- the charter's record of the allowance-capped reading (E-032 (3)).
 
 **The operator's**, each with its safe default applied, none blocking:
 
