@@ -2,14 +2,15 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-090).
+**Updated:** 2026-11-16 (E-096; F-03 pinned E-095).
 
 ## Phase
 
 **Phase 1** -- families declared and red-teamed (F-02 levels, family B, family O; described readings F-P, RD firms).
 The pass line's statistic is `cons` (E-035); no family reads the judged block before its pin, and the first pin
-(F-02, k = 11) is approved by the gatekeeper (E-065); Q-55's condition holds (E-085); it waits only for the
-fresh-seed validation Q-83.
+**F-03 (family O, k = 12) pinned (E-095)** -- its build next. F-02 withdrawn before any read: the one-sample
+`cons` failed its fresh-seed validation (E-094); F-02 and k = 11 retired unspent. Family B waits for a one-sample
+statistic that holds (Q-108).
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 
@@ -50,8 +51,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
 | wt-features | wt/wt-features | -- (Q-100 merged, E-084) | idle |
 | wt-lit | wt/wt-lit | -- (family O approved, E-077; the pin after Q-55 and Q-83) | idle |
-| wt-firms | wt/wt-firms | Q-104b RD-01's runner; Q-107 the red team on its build (read-only) | running |
-| wt-payout | wt/wt-payout | Q-105c RD-02's build fixes, then its runner | running |
+| wt-firms | wt/wt-firms | Q-104c RD-01's build fixes, then its runner | running |
+| wt-payout | wt/wt-payout | -- (RD-02's build and runner done, E-096; the re-read Q-106b) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
 | wt-scout | wt/wt-scout | -- (Q-99 read, E-072) | idle |
 | wt-infra | wt/wt-infra | -- (Q-96 merged, E-079) | idle |

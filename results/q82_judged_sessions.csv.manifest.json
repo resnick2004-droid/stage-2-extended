@@ -1,0 +1,179 @@
+{
+  "columns": [
+    "ordinal",
+    "date"
+  ],
+  "description": "Q-82 (E-052): the judged block's session list as the calibration uses it (A1's stored days 2024-01-02..2026-07-16); no randomness",
+  "exploratory": false,
+  "git_commit": "eba156408684d63181be5a121cdc215a464e1b34",
+  "git_dirty": false,
+  "notes": {
+    "beside": "the count-persistent tables are reported beside; F-02's K0 addresses them",
+    "criterion_fixed": "in E-052, before the run",
+    "why": "E-052 (M2): Q-55 replays Q-16's replications; this run draws the same constructions afresh"
+  },
+  "parameters": {
+    "argv": [],
+    "batch_i": 10000,
+    "batch_ii": 5000,
+    "blobs": {
+      "extended/count_nulls.py": "c4ceee8ffb243bb8dc07cb51be5397daae906c02",
+      "extended/lift_bound.py": "984f3467a4a05aa790d3ea43e94ac7761f0725b2",
+      "scripts/q16_calibrate.py": "677d6a738283a2c44d3ffa6b6650e131d99088f4",
+      "scripts/q16_p16_pairs.py": "1bdd21a3b654ea01b1e7a9d0d0bea142a6aa0db6",
+      "scripts/q82_validation.py": "8ba05b1c9e9daf7ad715ca576043734cfc7b47ef"
+    },
+    "calendar_sha256": "d1e4524b15dc6a69c2f66865462a5fe30527c6a56b4c7cc7aaccc1436a30f3bd",
+    "calendar_source": {
+      "columns": [
+        "date"
+      ],
+      "data_manifest_sha256": "b2a7493a3e42d96ea15b611dc1c17e1af89b738cbcfed8424bb00e281359ef62",
+      "declaration": "E-035",
+      "design": "P-16",
+      "file": "vendor/stage2/data/atlas/A1/days.parquet",
+      "purpose": "registered_design"
+    },
+    "count": 657,
+    "criterion": "E-052: at every k in 11..15 no real or realistic null's 95 % interval lies wholly above nominal; (ii) beside, never folded in",
+    "days_supplied": false,
+    "decision": "E-052",
+    "df_rule": "treated",
+    "family_levels": {
+      "11": 0.0003787878787878788,
+      "12": 0.0003205128205128205,
+      "13": 0.0002747252747252747,
+      "14": 0.0002380952380952381,
+      "15": 0.00020833333333333335
+    },
+    "first": "2024-01-02",
+    "joined": "ISO dates joined by a single LF, no trailing newline",
+    "last": "2026-07-16",
+    "levels": [
+      0.0003787878787878788,
+      0.0003205128205128205,
+      0.0002747252747252747,
+      0.0002380952380952381,
+      0.00020833333333333335,
+      0.001,
+      0.005,
+      0.01,
+      0.025
+    ],
+    "members": [
+      "t21w",
+      "t42w",
+      "t63w"
+    ],
+    "n_sessions": 657,
+    "pairs_identity": "HOLDS: (a) the cutoff's marks, (b) the screen's cell row, (c) TRADES_SHA256",
+    "pairs_sha256": "62e64491f2c51240569b4e9f58c072657135ae5d24237fc76bfaa8f6575f009d",
+    "pairs_supplied": false,
+    "parts": {
+      "i_lift": {
+        "batch": 10000,
+        "nulls": 95,
+        "peak_working_set_mb": 698.6,
+        "scalar_checked": 7705,
+        "scalar_mismatched": 0,
+        "seconds": 918.6
+      },
+      "i_two": {
+        "batch": 10000,
+        "nulls": 111,
+        "peak_working_set_mb": 487.9,
+        "scalar_checked": 5945,
+        "scalar_mismatched": 0,
+        "seconds": 522.5
+      },
+      "ii_real": {
+        "batch": 5000,
+        "nulls": 86,
+        "peak_working_set_mb": 453.5,
+        "scalar_checked": 37105,
+        "scalar_mismatched": 0,
+        "seconds": 3890.7
+      },
+      "ii_syn": {
+        "batch": 5000,
+        "nulls": 24,
+        "peak_working_set_mb": 347.1,
+        "scalar_checked": 5275,
+        "scalar_mismatched": 0,
+        "seconds": 685.1
+      }
+    },
+    "read": {
+      "by": {
+        "calendar": "scripts/q82_validation.py",
+        "pairs": "scripts/q16_p16_pairs.py"
+      },
+      "declaration": "E-035",
+      "design": "P-16",
+      "files": [
+        "vendor/stage2/data/atlas/A1/days.parquet",
+        "vendor/stage2/data/atlas/A1/events.parquet",
+        "vendor/stage2/data/bars/NQ/bars.parquet"
+      ],
+      "purpose": "registered_design"
+    },
+    "reps": 200000,
+    "scalar_redecision": {
+      "checked": 56030,
+      "mismatched": 0
+    },
+    "seed_block": [
+      20262010,
+      20262011,
+      20262012,
+      20262013,
+      20262014,
+      20262015,
+      20262016,
+      20262017,
+      20262018,
+      20262019
+    ],
+    "seed_check": "unused outside this item's files; documents' mentions: prereg/DRAFT_F-02_resting_levels.md (refs/heads/master); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-features); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-firms); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-levels); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-lit); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-payout); prereg/DRAFT_F-02_resting_levels.md (refs/heads/wt/wt-scout); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/master); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-features); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-firms); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-levels); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-lit); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-payout); prereg/DRAFT_F-02_resting_levels.md (refs/remotes/origin/wt/wt-scout); prereg/DRAFT_F-B_multifeature.md (refs/heads/master); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-features); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-firms); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-levels); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-lit); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-payout); prereg/DRAFT_F-B_multifeature.md (refs/heads/wt/wt-scout); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/master); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/wt/wt-features); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/wt/wt-firms); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/wt/wt-lit); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/wt/wt-payout); prereg/DRAFT_F-B_multifeature.md (refs/remotes/origin/wt/wt-scout)",
+    "seed_map": {
+      "c1p": 20262014,
+      "count_real_one": 20262015,
+      "count_real_two": 20262016,
+      "count_syn": 20262017,
+      "lift_real": 20262011,
+      "lift_syn": 20262012,
+      "selection": 20262013,
+      "tests": 20262010
+    },
+    "seeds": {},
+    "sha256_dates_joined_lf": "d1e4524b15dc6a69c2f66865462a5fe30527c6a56b4c7cc7aaccc1436a30f3bd",
+    "spare_seeds": [
+      20262018,
+      20262019
+    ],
+    "statistic": "cons",
+    "task": "Q-82 built it; Q-83 runs it",
+    "trades_sha256": "17bcc29bc0c61296c872eaf04c3d49942649dcddca782836916bebdf29c9635f",
+    "versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python": "3.12.10",
+      "scipy": "1.18.1"
+    }
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q83-validation",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q83-validation"
+    }
+  },
+  "result_file": "q82_judged_sessions.csv",
+  "rows": 657,
+  "script": "scripts/q82_validation.py",
+  "seed": null,
+  "sha256": "59a698623d951772c1ea19439200762026855eb696e859a544597041e0ffbdea",
+  "timestamp": "2026-11-16T19:46:41+00:00",
+  "variant_count": null
+}

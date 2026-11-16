@@ -99,8 +99,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | queued: the heavy queue after Q-83, from f7eda0d (E-066) | Q-71 | heavy | 0 | E-049 |
 | Q-81 | Family B's sixth draft: C1-f's null the realised paired lift (the model's term dropped), the conjoint MDL, level and power at the family's level | wt-scout | done: merged through 12bc60e (E-062); Q-95 | Q-77 | light | 0 | E-051 |
 | Q-82 | The pass line's fresh-seed validation, built (seeds 20262010-20262019; criterion fixed in E-052) | wt-verify | done: merged (E-062); the run is Q-83 | Q-68 | light | 0 | E-052 |
-| Q-83 | Q-82's run from a clean checkout under the lock -- F-02's pin needs it | lead | running: the heavy queue, clean checkout of eba1564 from 18:04 UTC (E-087) | Q-82, Q-55 | heavy | 0 | E-052 |
-| Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | done: merged 40a56a7 (E-063); the gatekeeper's re-read Q-66c | Q-68 | light | 0 | E-052 |
+| Q-83 | Q-82's run from a clean checkout under the lock -- F-02's pin needs it | lead | done: audited (E-094) -- `bound` FAILS, the two-sample forms HOLD | Q-82, Q-55 | heavy | 0 | E-052 |
+| Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | done: merged (E-063); F-02 withdrawn before any read (E-094) | Q-68 | light | 0 | E-052 |
 | Q-85 | The one-door scan checks that the row an exemption names exists and says so; the hook's "prereg/F-xx" message | wt-infra | done: merged (E-061) | Q-68 | light | 0 | E-052 |
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | done: built and merged (E-062); the run is Q-98 | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | done: merged (E-071); the gatekeeper's read Q-87b | Q-75 | light | 0 | E-054 |
@@ -128,16 +128,21 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-87c | Family O's fourth text: the gatekeeper's seven items | wt-lit | done: merged (E-076); the gatekeeper's read Q-87d | Q-87b | light | 0 | E-073 |
 | Q-92b | Reading PP's small redraft (Q-102's M1 and seven minors); the review committed first | wt-payout | done: merged (E-081); the pin check Q-92c | Q-102 | light | 0 | E-074 |
 | Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | done: merged (E-078); the gatekeeper's read Q-91e | Q-91c | light | 0 | E-075 |
-| Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | done: APPROVE, contingent on Q-55 (drop rule) and Q-83 (E-077) | Q-87c | light | 0 | E-076 |
+| Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | done: APPROVE (E-077); pinned as F-03 (E-095) | Q-87c | light | 0 | E-076 |
 | Q-91e | The gatekeeper reads the firms reading's pin-form diff (a verdict and the pinning row) | lead | done: APPROVE; pinned as RD-01 (E-080) | Q-91d | light | 0 | E-078 |
 | Q-104 | The firms reading's build (A-1..A-7, A-9..A-11 with their tests; its identity stage under its own row), after Q-100 merges | wt-firms | built (E-089); merge after Q-107's read | Q-91e, Q-100 | light | 0 | E-080 |
 | Q-92c | A gatekeeper's pin check of reading PP (a verdict and the RD-02 pinning row) | lead | done: APPROVE; pinned as RD-02 (E-082) | Q-92b | light | 0 | E-081 |
 | Q-105 | Reading PP's build (the adapter, the counters' channel T-10, `identity/pp_identity.py`, T-1..T-11) | wt-payout | built (E-088); merge after Q-106's read | Q-92c | light | 0 | E-082 |
-| Q-105b | RD-02's runner (section 14: cells x arms x blocks, counts, the honesty table, the menu) | wt-payout | running (its drafter) | Q-105 | light | 0 | E-088 |
+| Q-105b | RD-02's runner (section 14: cells x arms x blocks, counts, the honesty table, the menu) | wt-payout | built (E-096); merge after Q-106b | Q-105 | light | 0 | E-088 |
 | Q-106 | The red team's read of RD-02's build before its merge | wt-payout (read-only) | done: fix first, code and tests only (E-090); Q-105c | Q-105 | light | 0 | E-088 |
 | Q-104b | RD-01's runner (scorecard, beside reports, 9.3's counts, A-10's price grid) | wt-firms | running (its drafter) | Q-104 | light | 0 | E-089 |
-| Q-107 | The red team's read of RD-01's build before its merge | wt-firms (read-only) | running | Q-104 | light | 0 | E-089 |
-| Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | running (its drafter) | Q-106 | light | 0 | E-090 |
+| Q-107 | The red team's read of RD-01's build before its merge | wt-firms (read-only) | done: fix first, three MATERIAL, code only (E-092); Q-104c | Q-104 | light | 0 | E-089 |
+| Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | done: fixes in (E-096); merge after Q-106b | Q-106 | light | 0 | E-090 |
+| Q-104c | RD-01's build fixes from Q-107 (M1-M3, m1-m5), then the runner continued; a re-read of the diff after | wt-firms | running (its drafter) | Q-107 | light | 0 | E-092 |
+| Q-82b | The seed-block guard after its block's one run (allowed in Q-82's results and documents only) | wt-verify | running | Q-83 | light | 0 | E-093 |
+| Q-108 | The one-sample pass line re-calibrated: candidates, nulls (fresh subsets of persistent nulls among them), calibration seeds and separate validation seeds all declared before any run | wt-verify | queued (after Q-82b) | Q-83 | light (design) / heavy (runs) | 0 | E-094 |
+| Q-109 | F-03's build (family O: the seam, the gating wrapper, the replay recording joins, A0 under its own row) | wt-lit | queued | E-095 | light | 0 | E-095 |
+| Q-106b | The red team re-reads RD-02's fixes and its new runner (a diff read) | wt-payout (read-only) | running | Q-105c | light | 0 | E-096 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

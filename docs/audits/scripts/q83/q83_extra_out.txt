@@ -1,0 +1,25 @@
+INVARIANT one: cons <= min(members) violations 0 of 855; non-monotone series 0
+INVARIANT two: cons <= min(members) violations 0 of 999; non-monotone series 0
+INVARIANT count_persistent: cons <= min(members) violations 0 of 990; non-monotone series 0
+one-sample criterion nulls by group: {'real': 70, 'realistic synthetic': 25} ; not in criterion: 0
+Q-83 realistic models: ['cluster', 'cluster_ar1', 'iid', 'regime01', 'volclust'] ; stress nulls present: []
+two-sample criterion nulls by function: {'placebo_selection_bound': 55, 'two_sample_bound': 56}
+Q-83 scalar re-decision columns (sum over cons rows): 7705 checked-per-null sum /9 levels; mismatched total 0
+persist63 real nulls at k = 11, rejections of 200,000 (nominal 75.76):
+                        null  q83_t21w  q83_t42w  q83_t63w  q83_cons  q55_t21w  q55_t42w  q55_t63w  q55_cons
+ real:offered:net3:persist63         0         0        23         0         0         0        22         0
+ real:offered:win1:persist63       242        59        16         4       283        70        23         7
+   real:taken:net3:persist63         0         6        84         0         0        12        68         0
+   real:taken:win1:persist63       100        60        28         0        90        49        28         0
+real:thin1000:net3:persist63         6        92        37         0         0         2         0         0
+real:thin1000:win1:persist63       205       286        63         3         0         0         0         0
+real:thin2000:net3:persist63         0        25        34         0         9         1         0         0
+real:thin2000:win1:persist63        49        20        10         3         0         0       100         0
+ real:thin200:net3:persist63       120       105        68        10        13         9         8         0
+ real:thin200:win1:persist63       156        89       572        56         2        30       273         2
+real:thin5000:net3:persist63         0         1        25         0         0        27         0         0
+real:thin5000:win1:persist63       257       346       449       116         4        29        26         1
+ real:thin500:net3:persist63         1        30        28         1        23        50         0         0
+ real:thin500:win1:persist63         0       121         6         0         0        47        96         0
+L = 63 flip null: 12 signs drawn a replication; the 657 sessions touch [11, 12] blocks across phases; one sign pattern's probability 2^-11 = 4.883e-04, 2^-12 = 2.441e-04; family levels 3.788e-04, 3.205e-04, 2.747e-04, 2.381e-04, 2.083e-04
+the failing null's cons rate at k = 11: 5.800e-04 = 1.19 x 2^-11
