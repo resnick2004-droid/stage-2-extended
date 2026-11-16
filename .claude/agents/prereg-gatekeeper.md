@@ -173,3 +173,7 @@ author fixes their own declaration; otherwise it records your assumptions rather
   diagnosed -- terminal states, stage decomposition, the component in isolation, replication with seeds fixed
   beforehand -- and **never rerun until it passes** (the failure protocol; propsim D-40). A new question is a new
   family that cites the old one.
+
+## The journey scorecard (E-014, E-015)
+
+Refuse a family declaration that does not carry CHARTER section 2's journey scorecard: every measure as a distribution over start days (median, p10, p90) with its uncertainty, the limits (operator-approved, each with a margin wider than its noise) applied as menu flags -- never as a pass line -- and the evenness trade-off curve beside.

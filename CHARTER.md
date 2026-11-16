@@ -49,6 +49,20 @@ does track P (the red team). From E-008 a design is screened and judged by its t
 (section 3); S3c and its components (a won funded opening; the five winning days after it) are reported with the user
 scorecard, compared only within one trade stream.
 
+**The journey scorecard (the operator, E-014, E-015).** The goal is an evenly distributed path for a user, not one
+lump sum: the journey is read as a collective of variables -- sessions and cash to the first pass, sessions and cash
+to the first payout, sessions to break-even (cumulative net cash at or above zero, daily) and the share that later fall
+back below it, and the path's evenness (the share of months with a positive net change, the longest run of months
+without a payout, the spread of monthly net, the deepest fall after break-even, payouts per month, the largest single
+month's share of the year's payouts) -- beside P and S1-S5c. **Every measure is reported as a distribution over start
+days** (median, p10, p90), with its uncertainty from the effective number of independent starts, and the share of a
+user's result that is the start day's luck rather than the design. **Designs are compared by limits first, then the
+best inside them** (E-015): limits on what a user feels, set from what P-14, P-15 and P-16 achieve, each with a margin
+wider than its measurement noise, approved by the operator before use. **A limit never fails a design**: the pass line
+is the trades' calibrated lift (section 3); a design that crosses a limit is shown on the menu with which limit and by
+how much, and the trade-off curve (how much "ahead" each step of evenness costs) is reported beside. Not modelled, and
+said so wherever a scorecard appears: a user who stops when their own money runs out, the user's time, taxes.
+
 **The frontier, not one number.** A user's first quarter is mostly the day they start, not the design
 (`results/user_drivers.csv`, section `design_vs_luck`): the honest promise is a distribution. Every campaign reading
 reports the frontier of designs not beaten at once on P, S1, S3a and S5a (the form of `user_drivers.csv` section
