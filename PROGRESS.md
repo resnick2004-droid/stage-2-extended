@@ -117,3 +117,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-114: the re-calibration plan's third text (nothing run); the red team's last read before the pin. |
 | 2026-11-16 | lead | E-115: the one-sample re-calibration plan pinned after three red-team reads; its build dispatched to a fresh builder; the two heavy runs after the build's read. |
 | 2026-11-16 | lead | E-116: RD-02's last two changes in; it merges once the shared identity cover lands. |
+| 2026-11-16 | lead | E-117: RD-01's runner complete, its cost measured and cut by the single pass; a last diff read before merge; identity covers include `config/`. |
