@@ -3,6 +3,7 @@ charts, every number computed from its file (`extended/report.py`).
 
     python scripts/build_report.py --list                          # the registered pages
     python scripts/build_report.py --report demo_stage2_u1         # one registered page -> docs/report/<name>/
+    python scripts/build_report.py --report journey_scorecard      # Q-69: the journey scorecard on Q-44's files
     python scripts/build_report.py --all                           # every registered page
     python scripts/build_report.py --spec my_page.json --out <dir> # a page not registered (it says NOT TRACED)
 
@@ -10,7 +11,8 @@ A registered page is trace-checked as soon as it is built (`extended.trace.run` 
 number is found on it, 1 when one is not, 2 when the file or the spec is refused (a file failing its manifest, a design
 with no rows, rows that disagree with themselves) -- nothing is written then. The spec file of `--spec` is JSON with
 `name`, `title`, `source` (relative to the repository root), `where`, `designs` ([{key, short, label, where}]), `base`,
-`ladder`, `demonstration`, `note` (`extended.report.spec_from_dict`).
+`ladder`, `demonstration`, `note` (`extended.report.spec_from_dict`). A registered page whose files are not written
+yet (`extended.report.waiting`) is listed as waiting, skipped by `--all`, and refused by `--report` (exit 2).
 
 Reads a result file and writes a page; runs no engine and writes nothing under results/. Run it in its own process
 (it imports the vendored engine); it is not importable by name -- Stage 2's vendored scripts/ holds a module of the same
@@ -43,7 +45,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list:
         for name, spec in R.REPORTS.items():
-            print(f"{name}: {spec.source} -> {spec.out_dir}/{R.PAGE} ({len(spec.designs)} designs)")
+            why = R.waiting(spec)
+            print(f"{name}: {spec.source} -> {spec.out_dir}/{R.PAGE} ({len(spec.designs)} designs)"
+                  + (f" -- waiting: {why}" if why else ""))
         return 0
     if args.spec is not None:
         specs = [R.spec_from_dict(json.loads(args.spec.read_text(encoding="utf-8")))]
@@ -57,6 +61,12 @@ def main(argv: list[str] | None = None) -> int:
 
     rc = 0
     for spec in specs:
+        why = R.waiting(spec) if args.spec is None else None
+        if why:
+            print(f"{'skipped' if args.all else 'REFUSED'} {spec.name}: waiting -- {why}")
+            if not args.all:
+                return 2
+            continue
         t0 = time.time()
         try:
             built = R.build(spec, out=args.out if args.spec is not None else None)

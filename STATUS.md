@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-048).
+**Updated:** 2026-11-16 (E-051).
 
 ## Phase
 
@@ -46,21 +46,22 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-68 a red-team read of the pass-line code | running |
 | wt-levels | wt/wt-levels | Q-78 family R's second draft | running |
-| wt-user | wt/wt-user | Q-35's script | running |
+| wt-user | wt/wt-user | -- (Q-35's script merged, E-051; Q-76 next) | idle |
 | wt-features | wt/wt-features | Q-70 the place-recording adapter | running |
 | wt-lit | wt/wt-lit | Q-75 the red team's second read of family O | running |
-| wt-firms | wt/wt-firms | Q-79 the FOMC-minutes calendar built | running |
-| wt-payout | wt/wt-payout | Q-71 the RD firms gate seam | running |
+| wt-firms | wt/wt-firms | -- (Q-79 pinned, E-050) | idle |
+| wt-payout | wt/wt-payout | -- (Q-71 merged, E-049; its identities Q-80 in the chain) | idle |
 | wt-report | wt/wt-report | Q-69 the scorecard page for Q-44's file | running |
-| wt-scout | wt/wt-scout | Q-77 the red team's fifth read of family B | running |
+| wt-scout | wt/wt-scout | Q-81 family B's sixth draft | running |
 | wt-infra | wt/wt-infra | Q-67 the ledger's union on collection, then Q-74 the reader's RD- files | running |
 
 ## Running now
 
 - Heavy, one at a time under `run.lock`, each from a clean checkout: the second leg at c7e01bd (E-041) -- Q-55 (the
-  calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45.
-- Light: Q-75 (family O's second read), Q-77 (family B's fifth read), Q-78 (family R's second draft), Q-67 then Q-74,
-  Q-68, Q-69, Q-70, Q-71, Q-79, Q-35's script.
+  calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45; then the
+  third leg: Q-80 (the re-composed gate's 500-path identities), Q-35 (where the openings fall).
+- Light: Q-75 (family O's second read), Q-81 (family B's sixth draft), Q-78 (family R's second draft), Q-67 then Q-74,
+  Q-68, Q-69, Q-70.
 
 ## Machine
 
