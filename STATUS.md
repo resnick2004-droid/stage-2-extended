@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-045).
+**Updated:** 2026-11-16 (E-046).
 
 ## Phase
 
@@ -48,7 +48,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | Q-72 F-02's sixth draft (the gatekeeper's four gaps) | running |
 | wt-user | wt/wt-user | Q-35's script | running |
 | wt-features | wt/wt-features | Q-70 the place-recording adapter | running |
-| wt-lit | wt/wt-lit | Q-63 family O's second draft | running |
+| wt-lit | wt/wt-lit | Q-75 the red team's second read of family O | running |
 | wt-firms | wt/wt-firms | Q-73 the FOMC-minutes dates (a scout) | running |
 | wt-payout | wt/wt-payout | Q-71 the RD firms gate seam | running |
 | wt-report | wt/wt-report | Q-69 the scorecard page for Q-44's file | running |
@@ -59,7 +59,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 - Heavy, one at a time under `run.lock`, each from a clean checkout: the second leg at c7e01bd (E-041) -- Q-55 (the
   calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45.
-- Light: Q-63 (family O's second draft), Q-65 (family B's fifth draft), Q-72 (F-02's sixth draft), Q-67 then Q-74,
+- Light: Q-75 (family O's second read), Q-65 (family B's fifth draft), Q-72 (F-02's sixth draft), Q-67 then Q-74,
   Q-68, Q-69, Q-70, Q-71, Q-73, Q-35's script.
 
 ## Machine
