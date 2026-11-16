@@ -42,6 +42,20 @@ def test_every_response_off_reproduces_u1s_start_rows():
 
 
 @pytest.mark.slow
+def test_the_readings_pipeline_on_four_starts():
+    """`scripts/user_beside.py --check`: the identity first, every reading's refusing checks, both files written with
+    their manifests to a temporary folder and read back through their hashes -- one response of each kind."""
+    if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "user_beside.py"), "--check", "--starts", "4",
+                        "--designs", "p14", "--responses", "off,denial_50,forfeit_10,rtp,ftp_corrective_lost_3"],
+                       capture_output=True, text=True, timeout=1800)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert "every identity holds; the pipeline ran" in r.stdout, r.stdout
+    assert "FAILS" not in r.stdout and r.stdout.count("identity HOLDS") == 11, r.stdout
+
+
+@pytest.mark.slow
 def test_the_comparison_refuses_a_response_switched_on():
     """The negative control: the same comparison with the placement on (P-14, 4 starts) must be refused."""
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):

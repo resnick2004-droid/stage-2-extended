@@ -40,6 +40,10 @@ every response, design and arm (common random numbers: the ladder's levels and t
 engine intends). The shared day draws keep the replay's own seed. The path seed drives nothing else in a replay
 without a flip stream (`lockstep.py:1417, 1436, 1496`); a design with one is refused.
 
+**The exact-length runs** (U1's runs of exactly 21, 63, 90 and 126 sessions, read where their event days differ from
+the long replay's): on every start of `off`; for the other responses on every `EXACT_EVERY`-th start index, as a
+check whose differing count is reported (U1 found none at 0 %; they are over half of a start's cost).
+
 Everything a start reads is made by the vendored functions: `user_journey._one_start` (the record, the exact-length
 runs, the checks of every run's payouts and fees against the engine's totals), `customer_journey.single_events`,
 `customer_slices.slice_measures`, `user_journey.payout_arrivals`. Added per start: its daily path measures
@@ -67,6 +71,11 @@ FTP_BINDING = (("slowdown", "combine_purchases", 10), ("slowdown", "combine_purc
                ("corrective", "combine_purchases", 10), ("corrective", "combine_purchases", 20),
                ("corrective", "funded_lost", 3), ("corrective", "funded_lost", 5), ("corrective", "funded_lost", 10))
 FTP_BUDGET = (20, 21)
+#: the exact-length runs (U1's 21, 63, 90, 126 sessions; D-620 (3)(f)) are made on every start of the `off` arm (the
+#: identity needs them) and, for every other response, on the starts whose index is a multiple of this -- a check, its
+#: count of differing runs reported: U1 found none differing at 0 % on any configuration and arm
+#: (`user_journey.csv`'s manifest, `starts_read_from_an_exact_run`), and they are over half of a start's cost
+EXACT_EVERY = 21
 
 
 @dataclass(frozen=True)
@@ -303,7 +312,7 @@ def _task(task: tuple) -> list[dict[str, Any]]:
     from propedge.research import user_journey as U
 
     warnings.filterwarnings("ignore")
-    design, arm, rname, blocks, dates, args, starts = task
+    design, arm, rname, blocks, dates, args, starts, exact_every = task
     resp = BY_NAME[rname]
     a = response_args(args, resp)
     sub = float(args["path"]["subscription"])
@@ -319,36 +328,70 @@ def _task(task: tuple) -> list[dict[str, Any]]:
     def pay(lp, obs):
         return U.payout_arrivals([(f.activation_day, lag, f.payout_days, f.payout_cash) for f in lp.funded], obs)
 
+    def totals(lp):
+        return lp.path.total_fees, lp.path.total_payouts
+
     out = []
     for s in starts:
         L = min(U.HORIZON, n - s)
         long_run, info = run(s, L)
         if len(long_run.path.cash_series) != L + 1:
             raise RuntimeError(f"{design} {arm} {rname} start {s}: {len(long_run.path.cash_series)} closes, not {L + 1}")
-        exact = {h: run(s, h)[0] for h in U.EXACT if h < L}
-        o = UJ._one_start(design, arm, s, dates[s], long_run, exact, sub, CJ.single_events, pay,
-                          lambda lp: (lp.path.total_fees, lp.path.total_payouts), cs.slice_measures)
+        mine = long_record(s, dates[s], long_run, pay, totals)
+        if int(s) % int(exact_every) == 0:
+            exact = {h: run(s, h)[0] for h in U.EXACT if h < L}
+            o = UJ._one_start(design, arm, s, dates[s], long_run, exact, sub, CJ.single_events, pay, totals,
+                              cs.slice_measures)
+            # the record composed here must be `_one_start`'s on every start both are made (refused otherwise)
+            r0 = {k: v for k, v in o["rec"].items() if k != "alt"}
+            same = not U.record_problems(r0, mine["rec"]) and r0["start_date"] == mine["rec"]["start_date"] and                 all(o[f"{k}_bad"] == mine[f"{k}_bad"] for k in ("pay", "cash", "fee"))
+            o = {**o, "record_same": bool(same)}
+        else:
+            o = {**mine, "differs": [], "checked": [], "record_same": None}
         rel = np.asarray(long_run.path.cash_series, float) - float(long_run.path.initial_bankroll)
         out.append({"rec": o["rec"], "differs": o["differs"], "checked": o["checked"], "pay_bad": o["pay_bad"],
-                    "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "daily": M.daily(rel),
-                    "response": response_record(long_run, resp, info), "seed": start_seed(s)})
+                    "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
+                    "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": start_seed(s)})
     return out
 
 
+def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
+    """A start's record from its long replay alone -- `user_journey._one_start`'s own `record` step (the vendored
+    `customer_journey.single_events`, `user_journey.payout_arrivals`, `fees_paid` and `start_record`, composed as it
+    composes them), with its three checks against the engine's totals; for a start whose exact-length runs are not
+    made. `_task` holds it equal to `_one_start`'s on every start where both are made."""
+    import customer_journey as CJ
+
+    from propedge.research import user_journey as U
+
+    cash, init, passes, funded, pays = CJ.single_events(run)
+    obs = len(cash) - 1
+    arr = pay(run, obs)
+    fees, paid = totals(run)
+    got = float(sum(c for _, c in arr))
+    bad = {"pay_bad": int(sorted(d for d, _ in arr) != sorted(int(d) for d in pays)),
+           "cash_bad": int(abs(got - float(paid)) > U.TOL),
+           "fee_bad": int(abs(U.fees_paid(float(cash[-1]) - float(init), got) - float(fees)) > U.TOL)}
+    return {"rec": {"start_day": int(s), "start_date": str(date), **U.start_record(cash, init, passes, funded, arr)},
+            **bad}
+
+
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
-               chunk: int = 20) -> list[dict[str, Any]]:
+               chunk: int = 20, exact_every: int | None = None) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
-    guarded pool (`workers`; 1 runs in this process)."""
+    guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
+    `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start)."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
         raise ValueError("Q-17 replays single-firm designs only")
+    every = 1 if resp.kind == "off" else int(EXACT_EVERY if exact_every is None else exact_every)
     chunks = [list(starts[j:j + chunk]) for j in range(0, len(starts), chunk)]
-    tasks = [(design, arm, resp.name, job["blocks"], job["dates"], job["args"], c) for c in chunks]
+    tasks = [(design, arm, resp.name, job["blocks"], job["dates"], job["args"], c, every) for c in chunks]
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
     return [x for part in res for x in part]
 
 
-__all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "FTP_BINDING", "FTP_BUDGET", "Response", "RESPONSES",
-           "BY_NAME", "start_seed", "forfeit_class", "base_problems", "response_args", "replay", "binding_ftp",
-           "forfeit_view", "response_record", "run_starts"]
+__all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "EXACT_EVERY", "FTP_BINDING", "FTP_BUDGET", "Response",
+           "RESPONSES", "BY_NAME", "start_seed", "forfeit_class", "base_problems", "response_args", "replay",
+           "binding_ftp", "forfeit_view", "response_record", "long_record", "run_starts"]
