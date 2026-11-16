@@ -43,13 +43,13 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
 | wt-levels | wt/wt-levels | Q-41 the red team's third read of F-02 | running |
-| wt-user | wt/wt-user | Q-17 the readings beside the user scorecard, then Q-20 (`docs/briefs/Q-17_2026-11-15.md`) | running |
+| wt-user | wt/wt-user | -- (Q-17/Q-20 built, E-024; their readings Q-44/Q-45 are the lead's, under the lock) | idle |
 | wt-features | wt/wt-features | Q-22 P-15's identity, then Q-18 P-14's stress checks (heavy, under the lock) | running |
 | wt-lit | wt/wt-lit | Q-38 family R's draft (resolution forecasts) | running |
 | wt-firms | wt/wt-firms | Q-34 strike the material from firms whose terms forbid automated retrieval | running |
 | wt-payout | wt/wt-payout | Q-42 F-P redrafted as a described reading | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
-| wt-scout | wt/wt-scout | Q-33 the red team's second read of family B | running |
+| wt-scout | wt/wt-scout | Q-43 family B's third draft | running |
 | wt-infra | wt/wt-infra | Q-32 the judged block's seal (purpose-tagged reader, read ledger) | running |
 
 ## Running now

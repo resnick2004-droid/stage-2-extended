@@ -10,9 +10,11 @@ runs at once can swap the machine or fail on the commit limit, and a run that di
 **one heavy run at a time, under one lock, watched to its exit.** Light work (reading, code, unit tests on synthetic
 data, small checks) never needs the lock and runs in parallel.
 
-**Heavy** = reads the full bars or atlas; runs Stage 2's engine beyond a few paths (the 4-path identity in the suite is
-light); solves a state table; runs a campaign, a family screen or a full identity; anything expected over 1 GB or 15
-minutes.
+**Heavy** = reads the full bars or atlas; runs Stage 2's engine beyond a few paths; solves a state table; runs a
+campaign, a family screen or a full identity; anything expected over 1 GB or 15 minutes. **The slow identity tests
+count** (E-024): the 4-path / 4-start identities rebuild cells from the full bars and peak at 1.2-1.9 GB, so a worker
+runs them only under the lock (`slow` in the suite is not "light"); the fast tier is the only test tier that runs
+without it.
 
 ## The lock
 
