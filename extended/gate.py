@@ -32,6 +32,14 @@ changed -- a newer Stage 2 snapshot is a new decision row, and this module is re
 - synthetic, in the fast tier: the adapter equals the vendored gate, with no class and with `PassThroughFundedAccount`;
 - slow: P-14's and P-16's registered gate paths at 4 paths, under the run lock;
 - heavy, the lead's: all 500 paths of each.
+
+**Q-70's addition, the place recorder** (`extended/place_records.py`): the keyword `recorder` (default None), an
+`extended.place_records.PlaceRecorder`. For each (shift, level) it records, the campaign is called through the
+recorder's campaign function -- the vendored `simulate_lockstep_campaign` re-composed so that each path's ledger and day
+rows are read into the recorder as the path finishes and dropped -- with the same arguments, the call's text unchanged;
+every other (shift, level), and every call with None, calls the vendored function exactly. The paths it hands back are
+those of the unrecorded call, so the rows, the hooks and the gate flag are unchanged and the row carries no new column
+(`identity/place_records_identity.py`).
 """
 from __future__ import annotations
 
@@ -147,16 +155,26 @@ def run_gate(
     seat_ramp: int | None = None,
     mean_block: float | None = None,
     funded_account_cls: type | None = None,
+    recorder: Any = None,
 ) -> tuple[pd.DataFrame, bool]:
     """The vendored `propedge.campaign.gate.run_gate` (its docstring holds every argument's meaning), plus
     `funded_account_cls`: the funded account's class on every path of every arm -- the vendored `FundedAccount` or a
     subclass of it -- passed to `simulate_lockstep_campaign` only when given, and named on every row
-    (`funded_account_cls`) only when given. None runs the vendored engine call exactly."""
+    (`funded_account_cls`) only when given. None runs the vendored engine call exactly.
+
+    `recorder` (Q-70): an `extended.place_records.PlaceRecorder`; the (shift, level) campaigns it asks for are recorded
+    into it (its `trades()`, `accounts()`, `per_year()`, `problems()` afterwards), every row and path unchanged."""
     check_vendored_source()
     check_funded_account_cls(funded_account_cls, int(workers))
     cls_kw: dict[str, Any] = {} if funded_account_cls is None else {"funded_account_cls": funded_account_cls}
+    if recorder is not None:                             # Q-70
+        from extended.place_records import PlaceRecorder, check_vendored_campaign_source
 
-    # ---- from here to the end, the vendored body; the three additions are marked "Q-47"
+        if not isinstance(recorder, PlaceRecorder):
+            raise TypeError(f"recorder must be an extended.place_records.PlaceRecorder, got {type(recorder).__name__}")
+        check_vendored_campaign_source()
+
+    # ---- from here to the end, the vendored body; the three additions are marked "Q-47", the recorder's seam "Q-70"
     from propedge.contract.payout_timing import DEFAULT_PAYOUT_TIMING, check_payout_timing
     from propedge.outcomes.settlement import default_trade_log_settlement
 
@@ -233,7 +251,10 @@ def run_gate(
                                    hold_to_own_exit=hold_to_own_exit, one_at_a_time=one_at_a_time,
                                    routing_rule=routing_rule, **block_kw)
 
-                summary, paths = simulate_lockstep_campaign(
+                campaign = simulate_lockstep_campaign                                                   # Q-70
+                if recorder is not None and recorder.wants(shift, float(p)):                            # Q-70
+                    campaign = recorder.campaign(shift, float(p), blk, rules)                           # Q-70
+                summary, paths = campaign(                                                              # Q-70
                     protocol, edge=0.0, seed=seed, rules=rules, initial_bankroll=bankroll, horizon_days=horizon_days,
                     n_paths=n_paths, payout_method="aeropay", max_concurrent_accounts=accounts,
                     max_concurrent_combines=int(combines), max_total_accounts=total_accounts,
