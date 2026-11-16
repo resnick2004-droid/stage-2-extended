@@ -78,6 +78,7 @@ RUNS = (
     ("gate_identity", ["--paths", "4"], "E-028", ALL4, ["p14", "p16"]),
     ("gate_identity", ["--paths", "4", "--only", "p14"], "E-028", A1A3, ["p14"]),
     ("gate_identity", ["--paths", "4", "--only", "p16", "--cls", "none"], "E-028", ALL4, ["p16"]),
+    ("gate_identity", ["--paths", "500", "--workers", "1", "--cls", "all"], "E-028", ALL4, ["p14", "p16"]),   # Q-71
 )
 SCRIPTS = ("stage2_identity", "walker_identity", "user_beside_identity", "breakeven_identity", "gate_identity")
 #: one real-data run a script, for the refusals
