@@ -12,9 +12,18 @@ offers of a session agreeing on the outcome 85 % of the time -- the review's App
     share at the grid's top edge is the majority side's (the defect, kept on record as a test);
   * under a weak planted signal the centred side recovers it with the right sign at every lambda.
 
+**The proof is an identity, not these numbers** (the second red team's n2-2): p is a monotone function of the linear
+score z = b0 + x . beta, and a weighted median that picks an element commutes with a monotone map, so
+`sign(p - p~) = sign(z - z~) = sign(x . beta - median(x_train . beta))` -- the intercept, and with it the training
+block's base rate, cancels exactly, whatever lambda is. `test_the_intercept_cancels_exactly` asserts the identity.
+**What this file cannot show** (n2-3): it standardises each sample by its own statistics and draws its test block
+like its training block, so it has no covariate shift; a judged-block imbalance from a level-dependent (`d_round`,
+`atr_rel`) or trending (`ret_20d`) feature is not shown here -- C1-d's 0.9 rule and stage B's long-share report are
+the guards.
+
 It is a demonstration of a declared rule, not the family's code: it reads no bar and no file, and imports nothing of
 this repository. Seeds `numpy.random.default_rng([20261968, j])`, proposed for family B's build tests (the draft's
-section 15).
+section 19).
 """
 from __future__ import annotations
 
@@ -97,6 +106,23 @@ def test_null_signal_gives_balanced_centred_sides(j, base):
     if base == 0.53:
         # the defect the redraft removes: at the grid's top edge the uncentred side is the majority side
         assert shares_raw[-1] >= 0.85, shares_raw
+
+
+def test_the_intercept_cancels_exactly():
+    """sign(p - p~) equals sign(x . beta - median(x_train . beta)) on every offer, and moving the intercept by any
+    amount changes no side -- the identity that makes the rule unable to collapse into the majority side."""
+    rng = np.random.default_rng([SEED, 3])
+    Xtr, ytr, str_ = make(rng, D_TRAIN, 0.53)
+    Xte, _, _ = make(rng, D_TEST, 0.53)
+    w = session_weights(str_)
+    for lam in (LAMBDAS[0], LAMBDAS[-1]):
+        b = fit(Xtr, ytr, str_, lam)
+        by_score = np.sign(Xte @ b[1:] - weighted_median(Xtr @ b[1:], w))
+        assert np.array_equal(sides(b, Xtr, str_, Xte, True), by_score)
+        for shift in (-3.0, -0.5, 0.5, 3.0):
+            moved = b.copy()
+            moved[0] += shift
+            assert np.array_equal(sides(moved, Xtr, str_, Xte, True), by_score), (lam, shift)
 
 
 def test_weak_planted_signal_is_recovered_by_the_centred_side():
