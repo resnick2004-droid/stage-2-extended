@@ -50,7 +50,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-payout | wt/wt-payout | Q-54 other firms' contracts, a described reading's draft | running |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
 | wt-scout | wt/wt-scout | Q-56 family B's fourth draft | running |
-| wt-infra | wt/wt-infra | Q-48 the identities routed through the reader | running |
+| wt-infra | wt/wt-infra | Q-58 the readings scripts through the reader | running |
 
 ## Running now
 
