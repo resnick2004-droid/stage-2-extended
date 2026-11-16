@@ -118,17 +118,22 @@ def test_the_waits_read_the_one_parser_and_count_only_at_head_or_an_ancestor(his
     assert R.A0_ID == "f03_a0" and IT.ID.fullmatch(R.A0_ID) and not IT.ID.fullmatch("f03-a0")
 
 
-def test_every_wait_declares_its_covered_files():
-    assert set(R.WAITS) == {*R.WAITED, R.A0_ID}
-    for ident, covered in R.WAITS.items():
-        assert covered and all((ROOT / c).is_file() for c in covered), ident
-    assert "identity/family_o_identity.py" in R.WAITS[R.A0_ID]
-    assert "extended/opening_population.py" in R.WAITS[R.A0_ID] and "extended/opening_wait.py" in R.WAITS[R.A0_ID]
+def test_every_wait_covers_the_base_its_script_and_every_module_it_imports():
+    w = R.waits()
+    assert set(w) == {*R.WAITED, R.A0_ID}
+    for ident, covered in w.items():
+        assert set(R.COVER_BASE) <= set(covered) and R.SCRIPTS[ident] in covered, ident
+        assert all((ROOT / c).is_file() for c in covered), ident
+        assert not any(c.startswith("vendor/stage2/") for c in covered)
+    assert {"extended/opening_population.py", "extended/opening_wait.py", "extended/user_beside.py",
+            "identity/user_beside_identity.py", "identity/stage2_identity.py"} <= set(w[R.A0_ID])
+    assert {"extended/walker.py", "extended/features.py", "identity/gate_identity.py"} <= set(w["Q-89"])
+    assert "extended/user_measures.py" in w["Q-93"] and "identity/user_beside_identity.py" in w["Q-101"]
 
 
 def test_this_branch_waits_for_its_identities():
     """The infrastructure identities and A0 are not on record as holding at this build's commit: the runs refuse."""
-    bad, _ = R.waited_problems(DECISIONS, R.WAITS, ROOT)
+    bad, _ = R.waited_problems(DECISIONS, R.waits(), ROOT)
     assert any(b.startswith(R.A0_ID) for b in bad)
 
 

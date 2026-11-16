@@ -123,8 +123,16 @@ class WaitSpec:
         return cls(label, W, "blocks", in_state, fps)
 
     @classmethod
-    def for_index(cls, label: str, in_state: Sequence[np.ndarray] | None, W: int = W_DECLARED) -> "WaitSpec":
-        """A gate campaign's spec: `in_state[h]` the flags of the campaign's block h (its historical day)."""
+    def for_index(cls, label: str, in_state: Sequence[np.ndarray] | None, W: int = W_DECLARED,
+                  blocks: Sequence[Any] | None = None) -> "WaitSpec":
+        """A gate campaign's spec: `in_state[h]` the flags of the campaign's block h (its historical day), checked
+        against the campaign's `blocks` (one flag a trade, block by block) when given -- refused without them for a
+        real state."""
+        if in_state is not None:
+            if blocks is None:
+                raise ValueError("an index-mode spec with a state is checked against the campaign's blocks")
+            if len(in_state) != len(blocks) or any(len(x) != len(b) for x, b in zip(in_state, blocks)):
+                raise ValueError("one in-state flag a trade, block by block (the gate's blocks)")
         return cls(label, W, "index", in_state)
 
     def window_offset(self, window: Sequence[str]) -> int:
@@ -222,7 +230,9 @@ class GateWrapper:
         if self.spec.always:
             return True
         flags = self.spec.in_state[self._session(h)]
-        return bool(flags[int(j)]) if 0 <= int(j) < len(flags) else False
+        if not 0 <= int(j) < len(flags):
+            raise IndexError(f"trade {j} of historical day {h} is outside the spec's flags ({len(flags)})")
+        return bool(flags[int(j)])
 
     def waiting(self) -> bool:
         a = self._account()

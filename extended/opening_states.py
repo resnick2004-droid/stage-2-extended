@@ -481,6 +481,9 @@ def compute(bars: pd.DataFrame | F.Grid, marks: Sequence[int] = POPULATION_MARKS
     """s1, s2 and u3 at every (walked session, mark) of `bars` (or its grid). u3 by 6.5's walk-forward (`frozen`: the
     pinned final coefficients, for the judged block -- nothing is fitted then but the folds, which read the choice
     block only)."""
+    if frozen is not None and tuple(test_years):
+        raise ValueError("REFUSED (F-03, T-9): with the frozen forecast nothing is fitted -- pass test_years=() and "
+                         "predict any fold from its pinned coefficients")
     g = bars if isinstance(bars, F.Grid) else F.grid(bars)
     q = quantities(g, marks)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -571,4 +574,39 @@ def invariance_problems(g: F.Grid, st: States, cuts: Sequence[tuple[int, int]], 
                 out.append(f"A3: y_hat moved at {st.days[d]} {F.slot_label(m)} ({name})")
             if out:
                 return out
+    return out
+
+
+def window_problems(g: F.Grid, st: States, sessions: Sequence[int], seed: int, **kw: Any) -> list[str]:
+    """A3 (E-030): replacing an alert day's 08:30-08:59 bars by a seeded walk (`[seed, 2 * 10**6 + d]`) changes no
+    state of that day, at each session in `sessions`."""
+    out = []
+    lo, hi = F.slot(8, 30), F.slot(9, 0)
+    for d in sessions:
+        h = _grid_copy(g)
+        rng = np.random.default_rng([int(seed), 2 * 10 ** 6 + int(d)])
+        for X in (h.O, h.H, h.L, h.C):
+            X[d, lo:hi] = X[d, lo:hi] + 0.25 * np.rint(rng.normal(0, 400, X[d, lo:hi].shape))
+        h.H[d, lo:hi] = np.fmax.reduce([h.O[d, lo:hi], h.C[d, lo:hi], h.H[d, lo:hi]])
+        h.L[d, lo:hi] = np.fmin.reduce([h.O[d, lo:hi], h.C[d, lo:hi], h.L[d, lo:hi]])
+        got = compute(h, st.marks, **kw)
+        for c in BUILT:
+            if not np.array_equal(got.share(c)[d], st.share(c)[d], equal_nan=True):
+                out.append(f"A3: replacing {st.days[d]}'s 08:30-08:59 bars moved {c}'s state")
+        if out:
+            return out
+    return out
+
+
+def degenerate_problems(st: States, rows: np.ndarray | None = None) -> list[str]:
+    """A3: no built state all-undefined or constant (on `rows`, the sessions read) -- a broken state is an identity
+    failure, never a kill (the build read's M3)."""
+    out = []
+    for c in BUILT:
+        sh = st.share(c) if rows is None else st.share(c)[rows]
+        on = (st.in_state(c) if rows is None else st.in_state(c)[rows])[np.isfinite(sh)]
+        if not np.isfinite(sh).any():
+            out.append(f"A3: {c} is undefined everywhere")
+        elif on.all() or not on.any():
+            out.append(f"A3: {c} is constant ({'always' if on.all() else 'never'} in state)")
     return out

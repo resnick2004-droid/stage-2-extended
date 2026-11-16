@@ -252,8 +252,11 @@ def test_t7_the_walk_forward_fits_inside_the_choice_block_less_22(base):
     assert set(fc.folds) == {2021}                               # the synthetic frame holds 2020 and 2021 only
     n2020 = sum(1 for d in st.days if d.year == 2020)
     assert fc.fold_rows[2021] == n2020 - OS.FOLD_GAP
-    frozen = OS.compute(g, frozen=fc.final)
+    with pytest.raises(ValueError, match="nothing is fitted"):
+        OS.compute(g, frozen=fc.final)                               # the judge never refits (M5)
+    frozen = OS.compute(g, frozen=fc.final, test_years=())
     assert frozen.forecast.coefficients_sha256 == fc.coefficients_sha256 and frozen.forecast.final == fc.final
+    assert frozen.forecast.folds == {}
 
 
 def test_t7_family_rs_forecast_is_not_pinned_so_no_shared_code_is_owed():

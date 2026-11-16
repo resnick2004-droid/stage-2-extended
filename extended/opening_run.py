@@ -61,16 +61,72 @@ WAITED = ("Q-89", "Q-93", "Q-101", "Q-80")
 #: constant is changed in a code commit before run 1 (said in the build's hand-back)
 A0_ID = "f03_a0"
 A0_QUEUE_ID = A0_ID
-WAITS: dict[str, tuple[str, ...]] = {
-    "Q-89": ("extended/place_records.py", "extended/place_fields.py", "extended/gate.py", "extended/campaign.py",
-             "identity/place_records_identity.py"),
-    "Q-93": ("extended/user_beside.py", "extended/gate.py", "identity/user_beside_identity.py"),
-    "Q-101": ("extended/replay_records.py", "extended/place_records.py", "extended/place_fields.py",
-              "extended/user_beside.py", "identity/replay_records_identity.py"),
-    "Q-80": ("extended/gate.py", "extended/campaign.py", "identity/gate_identity.py"),
-    A0_ID: ("identity/family_o_identity.py", "extended/opening_population.py", "extended/opening_wait.py",
-            "extended/walker.py", "extended/user_beside.py", "extended/gate.py", "extended/reader.py"),
-}
+#: each waited identity's script; its covered paths are `cover(ident)` (E-113's rule; Q-111's `identity_cover` will
+#: replace the shared ones)
+SCRIPTS: dict[str, str] = {"Q-89": "identity/place_records_identity.py", "Q-93": "identity/user_beside_identity.py",
+                           "Q-101": "identity/replay_records_identity.py", "Q-80": "identity/gate_identity.py",
+                           A0_ID: "identity/family_o_identity.py"}
+COVER_BASE = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
+
+
+def _module_file(root: Path, name: str, here: Path) -> Path | None:
+    """A repository module's file for an import name (`extended.x`, `x` beside the importer, a script), or None."""
+    parts = name.split(".")
+    for base in (root, here.parent, root / "identity", root / "scripts"):
+        f = base.joinpath(*parts).with_suffix(".py")
+        if f.is_file() and "vendor" not in f.relative_to(root).parts:
+            return f
+        d = base.joinpath(*parts) / "__init__.py"
+        if d.is_file() and "vendor" not in d.relative_to(root).parts:
+            return d
+    return None
+
+
+def imports_of(root: Path, rel: str) -> set[str]:
+    """Every repository module `rel` imports, directly or not (any import statement, top-level or inside a function),
+    as repository-relative paths; vendored modules are covered by the vendored manifest."""
+    import ast
+
+    root = Path(root)
+    seen: set[str] = set()
+    todo = [root / rel]
+    while todo:
+        f = todo.pop()
+        r = f.relative_to(root).as_posix()
+        if r in seen:
+            continue
+        seen.add(r)
+        tree = ast.parse(f.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            names: list[str] = []
+            if isinstance(node, ast.Import):
+                names = [a.name for a in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+                names = [node.module] + [f"{node.module}.{a.name}" for a in node.names]
+            for n in names:
+                m = _module_file(root, n, f)
+                if m is not None and m.relative_to(root).as_posix() not in seen:
+                    todo.append(m)
+    return seen
+
+
+def cover(ident: str, root: Path | None = None) -> tuple[str, ...]:
+    """A waited identity's covered paths (E-113): the base (`extended/__init__.py`, both vendored manifests), the
+    identity's own script, and every repository module that script imports, directly or not."""
+    from extended import ROOT as _ROOT
+
+    r = Path(root) if root is not None else _ROOT
+    return tuple(sorted(set(COVER_BASE) | imports_of(r, SCRIPTS[ident])))
+
+
+WAITS: dict[str, tuple[str, ...]] = {ident: () for ident in SCRIPTS}       # filled by `waits()`
+
+
+def waits(root: Path | None = None) -> dict[str, tuple[str, ...]]:
+    """{id: its covered paths} for every waited identity, by `cover`."""
+    return {ident: cover(ident, root) for ident in SCRIPTS}
+
+
 ROW = re.compile(r"^\|\s*(E-\d+)\s*\|")
 #: the cells (4, s3 dropped at the pin and counted, E-095), the searched configurations and the fitted values (17)
 CELL_COUNTS = {"cells": 4, "dropped_at_pin": ["s3"], "searched": 0, "fitted_values": 11}
@@ -117,6 +173,10 @@ def blob_problems(repo: Path, pinned: Mapping[str, str] = PINNED_BLOBS) -> list[
 # ------------------------------------------------------------------------------------------------ the decision log
 
 
+#: each admitted wait's commit, from its row's token (the manifest names it, E-106's rule)
+COMMITS: dict[str, str] = {}
+
+
 def waited_problems(decisions_text: str, waits: Mapping[str, Sequence[str]], repo: Path, head: str = "HEAD"
                     ) -> tuple[list[str], dict[str, list[str]]]:
     """(why the waits are not met, {id: the row that counts}) by the one parser (`extended.identity_tokens`, Q-110;
@@ -130,6 +190,7 @@ def waited_problems(decisions_text: str, waits: Mapping[str, Sequence[str]], rep
         return [f"DECISIONS.md breaches the token rule (E-104), so no wait is read: {b_}" for b_ in breaches], {}
     bad: list[str] = []
     rows: dict[str, list[str]] = {}
+    COMMITS.clear()
     for ident, covered in waits.items():
         try:
             tok, why = IT.held_report(decisions_text, ident, repo, head, list(covered))
@@ -138,6 +199,8 @@ def waited_problems(decisions_text: str, waits: Mapping[str, Sequence[str]], rep
             rows[ident] = []
             continue
         rows[ident] = [tok.row] if tok is not None else []
+        if tok is not None:
+            COMMITS[ident] = tok.sha
         if tok is None:
             bad.append(f"{ident} is not on record as holding at {head} for its covered files: " + "; ".join(why))
     return bad, rows
@@ -184,10 +247,11 @@ class PreRun:
     rows: dict[str, list[str]]
     judged_sessions: list[str]
     problems: list[str] = field(default_factory=list)
+    commits: dict[str, str] = field(default_factory=dict)
 
     def parameters(self) -> dict[str, Any]:
         return {"identity_rows": self.rows, "identity_token_rule": "E-104 by extended.identity_tokens (Q-110)",
-                "identity_covered": {k: list(v) for k, v in WAITS.items()}, "declaration": DECLARATION,
+                "identity_covered": {k: list(v) for k, v in waits().items()}, "declaration": DECLARATION,
                 "declaration_sha256": DECLARATION_SHA256, "pin_row": PIN_ROW, "k": K, "level": LEVEL,
                 "pinned_blobs": dict(PINNED_BLOBS), "judged_sessions": len(self.judged_sessions),
                 "judged_sessions_sha256": hashlib.sha256("\n".join(self.judged_sessions).encode()).hexdigest()
@@ -201,7 +265,7 @@ def pre_run(repo: Path, *, results_dir: Path | None = None, level: float = LEVEL
     repo = Path(repo)
     text = decisions_text if decisions_text is not None else (repo / "DECISIONS.md").read_text(encoding="utf-8")
     problems = list(blob_problems(repo)) + level_problems(level) + declaration_problems(repo, text)
-    bad, rows = waited_problems(text, WAITS if waits is None else waits, repo, head)
+    bad, rows = waited_problems(text, globals()["waits"](repo) if waits is None else waits, repo, head)
     problems += bad
     sp, cal = session_list_problems(Path(results_dir) if results_dir is not None else repo / "results")
     problems += sp
@@ -211,21 +275,24 @@ def pre_run(repo: Path, *, results_dir: Path | None = None, level: float = LEVEL
         c = clean_run_problem()
         if c:
             problems.append(c)
-    pre = PreRun(rows, cal, problems)
+    pre = PreRun(rows, cal, problems, dict(COMMITS))
     if problems:
         raise RunRefused("REFUSED (F-03): " + "; ".join(problems))
     return pre
 
 
-def pinned_run1_problems(decisions_text: str, run1_sha256: str, forecast_sha256: str | None) -> list[str]:
+def pinned_run1_problems(decisions_text: str, run1_sha256: str, forecast_sha256: str | None,
+                         fold_sha256s: Sequence[str] = ()) -> list[str]:
     """T-9: run 2 reads the pick and u3's forecast only by hashes the lead pinned -- one decision row naming F-03 that
     carries run 1's result file's sha256 and (when u3 is the pick or its forecast is read) the forecast's."""
     for line in decisions_text.splitlines():
         if ROW.match(line) and FAMILY in line and run1_sha256 in line and (forecast_sha256 is None
-                                                                          or forecast_sha256 in line):
+                                                                          or forecast_sha256 in line) \
+                and all(f in line for f in fold_sha256s):
             return []
     return [f"no decision row naming {FAMILY} pins run 1's result ({run1_sha256[:12]})"
             + (f" and u3's forecast ({forecast_sha256[:12]})" if forecast_sha256 else "")
+            + (f" and its {len(fold_sha256s)} fold fits" if fold_sha256s else "")
             + " (19.2: the lead's row between the two runs)"]
 
 
@@ -271,7 +338,7 @@ def choice_pick(choice: pd.DataFrame) -> dict[str, Any]:
 
 
 __all__ = ["FAMILY", "DECLARATION", "DECLARATION_SHA256", "PIN_ROW", "K", "LEVEL", "PURPOSES", "PINNED_BLOBS", "WAITED",
-           "A0_ID", "A0_QUEUE_ID", "WAITS", "CELL_COUNTS", "RESULT", "JOURNEY", "SECTIONS", "RUN1_SECTIONS",
+           "A0_ID", "A0_QUEUE_ID", "WAITS", "SCRIPTS", "COVER_BASE", "imports_of", "cover", "waits", "CELL_COUNTS", "RESULT", "JOURNEY", "SECTIONS", "RUN1_SECTIONS",
            "RunRefused", "blob_id", "head_blob", "blob_problems", "waited_problems", "declaration_problems",
            "level_problems", "session_list_problems", "PreRun", "pre_run", "pinned_run1_problems", "file_sha256",
            "rows", "frame", "choice_pick"]

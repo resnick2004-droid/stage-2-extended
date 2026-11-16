@@ -18,9 +18,11 @@ value map). It builds the population and labels (`extended.opening_population.bu
 walk-forward (`extended.opening_states`), P-16's U1 job on the choice block at P-16's registered shift, and replays it
 through Q-17's adapter with the family's class (`extended.opening_wait`) and Q-94's recorder: A1 (items 4 to 7), stage
 A (A2 to A11) and stage B (`run1`). It writes `results/fo_opening.csv`, sections `identity` .. `choice`, u3's frozen
-forecast (its canonical JSON and sha256 in the manifest) and the pick. **A10's consequence** (a lax `cons` on c in a
-surviving cell's class) is not built -- its inner draws' seeds are not declared and its declared cost is far below its
-real one -- so if A10 flags it, run 1 stops before stage B (EXIT 3) for the lead's decision, writing nothing.
+forecast (its canonical JSON and sha256 in the manifest) and the pick. **A10's consequence** runs inside run 1 when A10 records `cons` lax on c in a surviving cell's deciding class
+(`extended.opening_stats.a10_consequence`: both shares, both levels; its inner draws keyed by A10's replication key
+extended by the inner index, the lead's reading in E-112; the exact shortcut). Run 1 also holds the offer lookup on
+every start's window (m3), A1 items 4 and 5 against the wrapper's own declines (M2), A3's three checks (M3), and writes
+u3's fold fits (M5). `--t3 <run 1's file>` is T-3 as declared (heavy, between run 1 and the lead's row).
 
 **Run 2** (stage C, section 12; the scorecard, 13) reads run 1's file and u3's forecast only by the hashes the lead
 pinned between the runs (T-9), then the judged block in stage C's order, each purpose authorised and ledgered by
@@ -83,6 +85,8 @@ class Sizes:
     a10: int = 2000
     stage_b: int = 2000
     a3_cuts: int = A3_CUTS
+    a3_window: int = 30
+    a10_inner: int = 20_000
     b2: int = 1_000_000
     gate_paths: int = 500
     responses: tuple[str, ...] = ("off", "denial_10", "denial_25", "denial_50", "forfeit_10", "forfeit_25",
@@ -340,6 +344,70 @@ def replay(design: str, job: dict, starts: list[int], workers: int, cls=None, id
     return outs, rec
 
 
+def lookup_problems(spec, job: dict, starts: list[int]) -> list[str]:
+    """m3: the wrapper's offer lookup on real data, before any replay -- every start's window (and each exact-length
+    window U1 reads) is found at its own start."""
+    from propedge.research import user_journey as U
+
+    n = len(job["blocks"])
+    fps = spec.fingerprints
+    bad = []
+    for s_ in starts:
+        for L_ in {min(U.HORIZON, n - s_), *[h for h in U.EXACT if h < min(U.HORIZON, n - s_)]}:
+            try:
+                got = spec.window_offset(list(fps[s_:s_ + L_]))
+            except (KeyError, ValueError) as exc:
+                bad.append(f"the lookup: start {s_} ({L_} sessions): {exc}")
+                continue
+            if got != s_:
+                bad.append(f"the lookup: start {s_}'s window ({L_} sessions) is found at {got}")
+        if len(bad) > 3:
+            break
+    return bad
+
+
+def run1_more_readings(L, sp, base_rec, offers, cells: dict) -> list[dict[str, Any]]:
+    """m5: run 1's readings that cannot be recovered after it -- the in-state offers by hour and day kind, their share
+    per stratum (A5); the kind shares of the in-state offers against their strata and the halves by year (10 item 5);
+    every P-16 trade at the report-day 07:35:00 entry (A2)."""
+    import numpy as np
+
+    from extended import opening_run as R
+    from extended import opening_stagec as SC
+    from extended import opening_stats as ST
+    from extended import opening_states as OS
+
+    out = []
+    kl, ks = _grid(L, sp, "kl"), _grid(L, sp, "ks")
+    for c in OS.BUILT:
+        sel = L.flags[f"in_{c}"] & L.population
+        hours = (np.asarray(L.marks) + 1020) % 1440 // 60
+        for hr in sorted(set(hours.tolist())):
+            out.append({"section": "supply", "cell": c, "by": "hour", "key": int(hr),
+                        "in_state_offers": int(sel[:, hours == hr].sum())})
+        for k in sorted(set(L.kind.tolist())):
+            out.append({"section": "supply", "cell": c, "by": "day_kind", "key": str(k),
+                        "in_state_offers": int(sel[L.kind == k].sum())})
+        for gi, (k, yr) in enumerate(L.groups):
+            rows = L.group == gi
+            out.append({"section": "supply", "cell": c, "by": "stratum_share", "key": f"{k}|{yr}",
+                        "share": float(sel[rows].sum() / max(1, L.population[rows].sum()))})
+        out += [{"section": "choice", "kind": "kind_share", "cell": c, **x} for x in SC.kind_shares(L, kl, ks, sel)]
+        for yr in sorted(set(L.year.tolist())):
+            m_ = np.broadcast_to((L.year == yr)[:, None], sel.shape)
+            out.append({"section": "choice", "kind": "halves_by_year", "cell": c, "year": int(yr),
+                        "L_long": ST.lift(L, np.where(m_, ST.centred(L, "rl", L.population), np.nan), sel),
+                        "L_short": ST.lift(L, np.where(m_, ST.centred(L, "rs", L.population), np.nan), sel)})
+    t = base_rec.trades("p16", ARM, "off")
+    t = t[(t["source"] == "strategy") & t["offer"].isin(offers.index)]
+    o = offers.loc[t["offer"].to_numpy()]
+    at = (o["day_kind"].astype(str).to_numpy() == "b") & (o["slot"].to_numpy() == F_slot(7, 35))
+    out.append({"section": "openings", "cell": "-", "design": "p16", "group": "trades", "key": "report_day_0735",
+                "count": int(at.sum()), "share": float(at.mean()) if len(at) else float("nan")})
+    del R
+    return out
+
+
 def run_lengths(on) -> dict[str, float]:
     """A session-level indicator's in-state runs (6.6 at run time): their count, mean and longest."""
     import numpy as np
@@ -392,23 +460,37 @@ def special_sessions(g) -> list[int]:
     return sorted(set(out))
 
 
-def a3_cuts(g, st, n: int) -> list[tuple[int, int]]:
-    """A3's cuts (9, A3; T-2's on the real frame): the first marks after 17:00, 17:30 and the `asia` band's first marks
-    18:00 and 18:05, on sessions drawn by `[SEED_SHIFT, 10**6]` among those where the states are defined, every roll and
-    DST session among them first; `n` cuts (200 declared)."""
+def F_slot(h: int, m: int) -> int:
+    from extended import features as F
+
+    return F.slot(h, m)
+
+
+def a3_cuts(g, st, n: int, report_sessions: set[int] | None = None) -> list[tuple[int, int]]:
+    """A3's cuts (9, A3; T-2's on the real frame): the first marks after 17:00, 17:30, the `asia` band's first marks
+    18:00 and 18:05, `london`'s 02:00, the last mark 08:25, one population mark a session drawn by the same generator,
+    and on report-day sessions their first mark 07:40 -- on sessions drawn by `[SEED_SHIFT, 10**6]` among those where
+    the states are defined, every roll and DST session among them first; at least `n` cuts (200 declared)."""
     import numpy as np
 
     from extended import opening_states as OS
     from extended import opening_stats as ST
 
-    first = [0, 5, OS.NIGHT_FIRST_MARK, 60, 65]
+    first = [0, 5, OS.NIGHT_FIRST_MARK, 60, 65, F_slot(2, 0), F_slot(8, 25)]
     defined = [i for i in range(len(st.days)) if np.isfinite(st.share("s1")[i]).any()]
     special = [i for i in special_sessions(g) if i in set(defined)]
     rng = np.random.default_rng([ST.SEED_SHIFT, 10 ** 6])
     pool = [i for i in defined if i not in set(special)]
-    k = max(0, n // len(first) + 1 - len(special))
+    k = max(0, n // (len(first) + 1) + 1 - len(special))
     days = special + [int(x) for x in rng.choice(pool, size=min(len(pool), k), replace=False)]
-    return [(int(d), int(m)) for d in days for m in first][:n]
+    kinds = report_sessions or set()
+    cuts = []
+    for d in days:
+        marks = list(first) + [int(rng.choice(OS.POPULATION_MARKS))]
+        if d in kinds:
+            marks.append(OS.REPORT_DAY_FIRST_MARK)
+        cuts += [(int(d), int(m)) for m in marks]
+    return cuts[: max(n, len(special) * len(first))]
 
 
 # ------------------------------------------------------------------------------------------------ run 1
@@ -445,10 +527,22 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
     states_sha = OS.states_sha256(pop)
     log(f"states: {len(pop)} offers, u3's final fit {fc.coefficients_sha256[:16]}, states {states_sha[:16]}")
     # A3: no look-ahead on these bars (refusing)
-    cuts = a3_cuts(g, st, z.a3_cuts)
+    kinds_c = dict(zip(A1["date"], A1["day_kind"]))
+    report = {i for i, d in enumerate(st.days) if kinds_c.get(d.isoformat()) == "b"}
+    cuts = a3_cuts(g, st, z.a3_cuts, report)
     a3 = OS.invariance_problems(g, st, cuts, ST.SEED_SHIFT)
+    defined = [i for i in range(len(st.days)) if np.isfinite(st.share("s1")[i]).any()]
+    a3w = OS.window_problems(g, st, defined[:: max(1, len(defined) // max(1, z.a3_window))][: z.a3_window],
+                             ST.SEED_SHIFT)
+    ab_rows = np.array([d.isoformat() >= STAGE_AB_FIRST for d in st.days])
+    a3d = OS.degenerate_problems(st, ab_rows)
     out += R.rows("identity", [{"check": "A3: the states and y_hat read no bar at or after the alert", "cuts": len(cuts),
-                                "holds": not a3, "problems": a3[:3]}])
+                                "holds": not a3, "problems": a3[:3]},
+                               {"check": "A3: the alert day's 08:30-08:59 bars change no state",
+                                "sessions": z.a3_window, "holds": not a3w, "problems": a3w[:3]},
+                               {"check": "A3: no state all-undefined or constant on stage A's span", "holds": not a3d,
+                                "problems": a3d[:3]}])
+    a3 = a3 + a3w + a3d
     if a3:
         log("REFUSED (F-03): A3 fails -- " + "; ".join(a3[:3]))
         return 3, None, {}
@@ -479,26 +573,44 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
     if z.starts is not None:
         starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
     probs: list[str] = []
-    never = OW.waiting_class(OW.WaitSpec.for_blocks("never", job["blocks"],
-                                                    [np.zeros(len(b), bool) for b in job["blocks"]]))
+    never_spec = OW.WaitSpec.for_blocks("never", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]])
+    probs += lookup_problems(never_spec, job, starts)                                      # m3: the lookup, every start
+    never = OW.waiting_class(never_spec)
     _, rn = replay("fo_never", job, starts, workers, never, ids)
     on = OW.openings(rn, "fo_never", ARM, "off")
+    dn = rn.declined("fo_never", ARM, "off")
     if len(on) and not (on["opening_session"] >= OW.W_DECLARED).all():
         probs.append("A1 item 4: with the state never on an opening fell inside the wait")
+    probs += [f"A1 item 4: {p}" for p in OW.wait_problems(on, dn, None)]
+    if not len(dn):
+        probs.append("A1 item 4: the never-on wait declined nothing (the identity does not bite)")
     tw0, _ = ST.clustered_twin(L, L.flags["in_s1"], OS.CELL_INDEX["s1"], ST.BLOCK_CHOICE, 0)
     placebo = grid_flags(L, tw0)
-    _, rp = replay("fo_placebo", job, starts, workers, OW.waiting_class(
-        OW.WaitSpec.for_blocks("placebo", job["blocks"], flags_by_block(ids, placebo))), ids)
-    probs += [f"A1 item 5: {p}" for p in OW.wait_problems(OW.openings(rp, "fo_placebo", ARM, "off"),
-                                                         rp.declined("fo_placebo", ARM, "off"), placebo)]
+    pspec = OW.WaitSpec.for_blocks("s1_twin0", job["blocks"], flags_by_block(ids, placebo))
+    _, rp = replay("fo_s1_twin0", job, starts, workers, OW.waiting_class(pspec), ids)
+    op_ = OW.openings(rp, "fo_s1_twin0", ARM, "off")
+    dp = rp.declined("fo_s1_twin0", ARM, "off")
+    probs += [f"A1 item 5: {p}" for p in OW.wait_problems(op_, dp, placebo)]
+    inset = [ids[int(s_) + int(h_)][int(j_)] for s_, h_, j_ in zip(dp["start_day"], dp["historical_day"],
+                                                                  dp["trade_index"]) if placebo.get(
+        ids[int(s_) + int(h_)][int(j_)], False)]
+    if inset:
+        probs.append(f"A1 item 5: {len(inset)} declined offers are in the placebo set (first {inset[0]})")
+    if not len(dp) or not int(op_["in_wait"].sum()):
+        probs.append(f"A1 item 5: {len(dp)} declines and {int(op_['in_wait'].sum())} in-wait openings -- the identity "
+                     "must see both")
     w0 = OW.waiting_class(OW.WaitSpec.for_blocks("w0", job["blocks"], flags_by_block(ids, placebo), W=0))
-    base_outs, base_rec = replay("p16", job, starts[:4], workers, None, ids)
+    from extended import user_beside as B
+
+    base4 = B.run_starts("p16", ARM, B.BY_NAME["off"], job, starts[:4], int(workers))       # m4: unrecorded
     w0_outs, w0_rec = replay("p16_w0", job, starts[:4], workers, w0, ids)
     sys.path.insert(0, str(ROOT / "identity"))
     import user_beside_identity as I
 
-    probs += [f"A1 item 7: {p}" for p in I.class_outs_problems(base_outs, w0_outs, w0, "the wait off, recorded")]
+    probs += [f"A1 item 7: {p}" for p in I.class_outs_problems(base4, w0_outs, w0, "the wait off, recorded")]
     probs += [f"A1 records: {p}" for p in (rn.problems() + rp.problems() + w0_rec.problems())[:5]]
+    reuse = {"s1_twin0": rp}                                                               # m11
+    del rn, w0_rec, base4, w0_outs
     probs += ctx.restricted_replay_problems(job, starts, workers)
     out += R.rows("identity", [{"check": "A1 items 4-7 (never on, the placebo set, the wait off recorded, the "
                                          "restricted replay)", "starts": len(starts), "holds": not probs,
@@ -517,10 +629,13 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
     mdv = ctx.mean_dv()
     killed: dict[str, str] = {}
     keep: dict[str, dict[str, Any]] = {}
+    keep_all: dict[str, dict[str, Any]] = {}
     pos = {d: i for i, d in enumerate(cal)}
     for c in OS.BUILT:
         sel = L.flags[f"in_{c}"]
-        out += R.rows("persistence", [{"cell": c, **run_lengths((sel & L.population).any(axis=1))}])
+        rl_ = run_lengths((sel & L.population).any(axis=1))
+        out += R.rows("persistence", [{"cell": c, **rl_, "implied_class": ST.implied_class(
+            rl_["mean_run"], float((sel & L.population).any(axis=1).mean())), "deciding_class": DECIDING_CLASS[c]}])
         by_year = ST.k1_sessions_by_year(L, sel)
         k2 = ST.k2_shares(sp["kl"].to_numpy(), sp["ks"].to_numpy(), sp[f"in_{c}"].to_numpy(bool),
                           sp["year"].to_numpy())
@@ -540,9 +655,11 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
         for d in ST.TWIN_DRAWS:
             tw, _ = ST.clustered_twin(L, sel, OS.CELL_INDEX[c], ST.BLOCK_CHOICE, d)
             tspec = OW.WaitSpec.for_blocks(f"{c}_twin{d}", job["blocks"], flags_by_block(ids, grid_flags(L, tw)))
-            twins.append(replay(f"fo_{c}_twin{d}", job, starts, workers, OW.waiting_class(tspec), ids)[1])
+            got = reuse.pop(f"{c}_twin{d}", None)
+            twins.append(got if got is not None else
+                         replay(f"fo_{c}_twin{d}", job, starts, workers, OW.waiting_class(tspec), ids)[1])
         ops = OW.openings(rec, f"fo_{c}", ARM, "off", offers)
-        tops = [OW.openings(r_, f"fo_{c}_twin{d}", ARM, "off", offers) for d, r_ in enumerate(twins)]
+        tops = [OW.openings(r_, r_.recorded()[0][0], ARM, "off", offers) for d, r_ in enumerate(twins)]
         out += R.rows("openings", opening_counts(ops, "design", c)
                       + [x for d, o_ in enumerate(tops) for x in opening_counts(o_, f"twin{d}", c)])
         cen = OW.censored(rec, f"fo_{c}", ARM, "off")
@@ -573,6 +690,7 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
         out += R.rows("power", [{"cell": c, "mdl": mdl["mdl"], "windows": mdl["windows"], "u_c": u_c,
                                  "lambda_bar": ST.lambda_bar(mdv, u_c)}])
         keep[c] = {"ops": ops, "tops": tops, "mdl": mdl["mdl"], "lambda_bar": ST.lambda_bar(mdv, u_c), "u_d": u_c}
+        keep_all[c] = keep[c]
     if "u3" in keep:
         rows_ = np.array([d.isoformat() >= STAGE_AB_FIRST for d in st.days])
         bands = {b: [k for k, m in enumerate(st.marks) if lo <= m <= hi] for b, (lo, hi, _) in OS.BANDS.items()}
@@ -583,11 +701,20 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
             keep.pop("u3")
     a10 = ST.a10(L, y, selections=z.a10)
     out += R.rows("level_control", [{"check": "A10", **r} for r in a10.to_dict("records")])
-    lax = [c for c in keep if a10[(a10["class"] == DECIDING_CLASS[c]) & a10["lax"]].shape[0]]
-    if lax:
-        log(f"STOPPED (F-03): A10 records `cons` lax on c in the class of {lax}; A10's consequence (the pseudo-judged "
-            "split) is not built -- the lead decides (nothing written)")
-        return 3, R.frame(out, R.RUN1_SECTIONS), {}
+    a_b, b_rows = ctx.follow_lifts()
+    out += R.rows("level_control", [{"check": "A10_consequence_b", **r_} for r_ in b_rows])
+    for c in list(keep):
+        if not a10[(a10["class"] == DECIDING_CLASS[c]) & a10["lax"]].shape[0]:
+            continue
+        res = ST.a10_consequence(L, "c", DECIDING_CLASS[c], a_b, selections=z.a10, inner=z.a10_inner)
+        out += R.rows("level_control", [{"cell": c, **r_} for r_ in res.rows]
+                      + [{"cell": c, "check": "A10_consequence_verdict", "closed": res.closed, "b2_runs": res.b2_runs,
+                          "verdict": ("closed, counted" if res.closed else
+                                      "`cons` lax on c in this class; the larger-of rule held on the pseudo-judged "
+                                      "split")}])
+        if res.closed:
+            killed[c] = "A10's consequence"
+            keep.pop(c)
     surviving = list(keep)
     screen = bool(surviving) and all(keep[c]["mdl"] > ST.MDL_FACTOR * keep[c]["lambda_bar"] for c in surviving)
     out += R.rows("power", [{"check": "screen", "declared_screen": screen, "surviving": surviving}])
@@ -636,8 +763,17 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
                       "share": float((L.flags[f"in_{c}"] & L.population)[L.year == y_].sum()
                                      / max(1, L.population[L.year == y_].sum()))}
                      for c in OS.BUILT for y_ in sorted(set(L.year))])
+    folds = {str(Y): {"json": OS.canonical_json(cf), "sha256": OS.coefficients_sha256(cf)} for Y, cf in fc.folds.items()}
+    out += R.rows("states", [{"kind": "fold", "year": int(Y), "sha256": v["sha256"], "json": v["json"]}
+                             for Y, v in folds.items()])
+    out += R.rows("resolution", [{"cell": "population", "scope": k, "unresolved_3r": v}
+                                 for k, v in ST.k2_shares(sp["kl"].to_numpy(), sp["ks"].to_numpy(),
+                                                          sp["population"].to_numpy(bool), sp["year"].to_numpy()).items()])
+    out += run1_more_readings(L, sp, base_rec, offers, keep_all)
     df = R.frame(out, R.RUN1_SECTIONS)
-    params = {**pre.parameters(), "run": 1, "forecast_json": OS.canonical_json(fc.final),
+    params = {**pre.parameters(), "run": 1, "forecast_json": OS.canonical_json(fc.final), "forecast_folds": folds,
+              "data_manifest_sha256": R.file_sha256(ROOT / "vendor" / "DATA_MANIFEST_stage2.sha256"),
+              "identity_commits": pre.commits,
               "forecast_sha256": fc.coefficients_sha256, "states_sha256": states_sha,
               "population_sha256": OP.frame_sha256(pop), "coin_digest": span.coin_digest, "starts": len(starts),
               "calendars": {"identity": "the U1 replay of choice-block starts", "openings": "the U1 replay in "
@@ -1060,7 +1196,8 @@ def _index_class(c: str, trades, days, Lj, sel):
 
     def make(blocks):
         ids = offer_ids_of(trades, days, blocks)
-        return OW.waiting_class(OW.WaitSpec.for_index(f"{c}_gate", flags_by_block(ids, grid_flags(Lj, sel))))
+        return OW.waiting_class(OW.WaitSpec.for_index(f"{c}_gate", flags_by_block(ids, grid_flags(Lj, sel)),
+                                                      blocks=blocks))
     return make
 
 
@@ -1120,7 +1257,11 @@ def main_run2(a: argparse.Namespace, pre) -> int:
     run1 = Path(a.run1)
     sha = R.file_sha256(run1)
     par = (json.loads(Path(str(run1) + ".manifest.json").read_text(encoding="utf-8")).get("parameters") or {})
-    bad = R.pinned_run1_problems((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), sha, par.get("forecast_sha256"))
+    folds = [v["sha256"] for v in (par.get("forecast_folds") or {}).values()]
+    df1_ = pd.read_csv(run1, low_memory=False)
+    u3 = R.choice_pick(df1_)["pick"] == "u3"
+    bad = R.pinned_run1_problems((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), sha, par.get("forecast_sha256"),
+                                 folds if u3 else ())
     if OS.coefficients_sha256(OS.coefficients_from_json(par.get("forecast_json", "{}"))) != par.get("forecast_sha256"):
         bad.append("run 1's forecast JSON does not hash to its recorded sha256")
     df1 = pd.read_csv(run1, low_memory=False)
@@ -1141,6 +1282,80 @@ def main_run2(a: argparse.Namespace, pre) -> int:
         log(f"written: {p_}")
     log(f"stage C: {params['verdict']}")
     return 0
+
+
+class T3Ctx(Ctx):
+    """T-3 (18.2, heavy, under the lock, between run 1 and the lead's row): run 1's reads, with every judged-block bar
+    or day row they return replaced by a seeded walk (the test block's T-3 key) -- so if run 1 could see the judged
+    block at all, its sections would move. Nothing is copied or written."""
+
+    def _replaced(self, bars):
+        import numpy as np
+
+        from extended import opening_stats as ST
+        from extended import reader
+
+        m = bars["day"].astype(str).to_numpy() >= reader.JUDGED_START.isoformat()
+        if m.any():
+            rng = np.random.default_rng([ST.SEED_TESTS, 100])
+            k = int(m.sum())
+            walk = 9000.0 + 0.25 * np.cumsum(np.rint(rng.normal(0.0, 40.0, k)))
+            bars = bars.copy()
+            for col in ("open", "high", "low", "close"):
+                bars.loc[m, col] = walk
+            self.replaced += k
+        return bars
+
+    replaced: int = 0
+
+    def grid(self, start, end, walked):
+        from extended import features as F
+        from extended import reader
+
+        bars = self._replaced(reader.read_bars(start, end, what=f"F-03 T-3: the bars {start} to {end}"))
+        return F.grid(bars[bars["day"].astype(str).isin(walked)].reset_index(drop=True))
+
+    def span(self, start, end, all_dates):
+        from extended import opening_population as OP
+        from extended import reader
+
+        def arrays_for(chunk):
+            import numpy as np
+
+            from propedge.research import atlas_local
+
+            bars = self._replaced(reader.read_bars(chunk[0], chunk[-1], what="F-03 T-3: the walk's bars"))
+            by = {d: g for d, g in bars.groupby("day", sort=False)}
+            return lambda day: tuple(np.array([np.nan if x is None else x for x in v], dtype=float)
+                                     for v in atlas_local.day_arrays(by.get(day, bars.iloc[0:0])))
+        return OP.build_span(start, end, all_dates, log=log, arrays_for=arrays_for)
+
+
+def t3(a: argparse.Namespace, pre) -> int:
+    """T-3: run 1 recomputed through `T3Ctx` must give run 1's file's sections other than `identity` byte for byte
+    (as CSV text) and u3's final forecast hash."""
+    import io
+
+    import pandas as pd
+
+    from extended import use_vendored_stage2
+
+    use_vendored_stage2()
+    f = Path(a.t3)
+    par = (json.loads(Path(str(f) + ".manifest.json").read_text(encoding="utf-8")).get("parameters") or {})
+    ctx = T3Ctx(smoke=True)
+    code, df, params = run1(ctx, pre, int(a.workers))
+    if code != 0:
+        log("T-3 FAILS: run 1 did not complete under the replacement")
+        return 3
+    want = pd.read_csv(f, low_memory=False)
+    a_, b_ = io.StringIO(), io.StringIO()
+    want[want["section"] != "identity"].to_csv(a_, index=False)
+    pd.read_csv(io.StringIO(df.to_csv(index=False)), low_memory=False).pipe(
+        lambda d: d[d["section"] != "identity"]).to_csv(b_, index=False)
+    same = a_.getvalue() == b_.getvalue() and params.get("forecast_sha256") == par.get("forecast_sha256")
+    log(f"T-3 {'HOLDS' if same else 'FAILS'}: {ctx.replaced} judged-block bars replaced in run 1's reads")
+    return 0 if same else 3
 
 
 def check_reads(a: argparse.Namespace) -> int:
@@ -1168,6 +1383,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repeat", default=None, help="run 2: E-NNN, a row naming F-03 that authorises one more read")
     ap.add_argument("--check-guards", action="store_true", help="the refusing guards only; reads and writes nothing")
     ap.add_argument("--check-read", action="store_true", help="run 2: the four purposes pre-checked; reads nothing")
+    ap.add_argument("--t3", default=None, help="run 1: T-3 against run 1's result file (heavy, under the lock)")
     a = ap.parse_args(argv)
     if not 1 <= int(a.workers) <= 2:
         log("REFUSED (F-03): at most two workers (CLAUDE.md)")
@@ -1196,6 +1412,8 @@ def main(argv: list[str] | None = None) -> int:
         log("REFUSED (F-03): A1 item 2 -- E-011's walker identity (synthetic) does not hold at this commit:\n"
             + (w.stdout + w.stderr)[-1500:])
         return 3
+    if a.t3:
+        return t3(a, pre)
     ctx = Ctx()
     code, df, params = run1(ctx, pre, int(a.workers))
     if code != 0:

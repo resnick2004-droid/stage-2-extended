@@ -270,7 +270,7 @@ r1 = rows1.drop(columns=["funded_account_cls"])
 out["gate_always_on"] = {"rows_same": bool(rows0.reset_index(drop=True).equals(r1.reset_index(drop=True))),
                          "flag_same": bool(ok0 == ok1), "names_class": "funded_account_cls" in rows1.columns,
                          "sink": PRI.GI.sink_problems(s0, s1, "gate") if hasattr(PRI, "GI") else []}
-gate_never = OW.waiting_class(OW.WaitSpec.for_index("never_gate", [np.zeros(len(b), bool) for b in b14], W=W))
+gate_never = OW.waiting_class(OW.WaitSpec.for_index("never_gate", [np.zeros(len(b), bool) for b in b14], W=W, blocks=b14))
 h2, s2 = PRI._p14_hook(P["fcfg"], "fo_syn")
 rows2, _ = XG.run_gate(b14, path_hook=h2, funded_account_cls=gate_never, **kw14)
 out["gate_never_differs"] = not rows0.reset_index(drop=True).equals(

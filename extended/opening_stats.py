@@ -256,6 +256,8 @@ def larger_of(S1, N1, S2, N2, level: float, b2: Mapping[int, float] | None = Non
     for b, est, se, df in members_of(S1, N1, S2, N2):
         tc = float(stats.t.ppf(1.0 - level, df)) if df >= 1 else float("nan")
         q = float(b2[b]) if b2 is not None else float("-inf")
+        if b2 is not None and not math.isfinite(q):
+            raise NotFinite(f"B2's quantile of t{b}w is not finite: the rule is never quietly nominal (m6)")
         c = max(tc, q) if math.isfinite(tc) else float("nan")
         lo = est - c * se if (math.isfinite(se) and se > 0 and math.isfinite(c)) else float("nan")
         mem.append(Member(b, est, se, df, tc, q, c, lo))
@@ -402,17 +404,9 @@ def b2_quantiles(inp: B2Inputs, a_star: float, level: float, line: int, replicat
     """Each member's (1 - level) quantile of its t under B2's null ({block: quantile}); replicate j from
     `default_rng([seed, line, j])` (or `[*prefix, j]` when a test gives its own key), computed in chunks of `chunk`
     replicates (the chunking changes no draw). `keep` returns the replicates' t's too (members x replicates)."""
-    T = np.empty((len(MEMBERS), int(replicates)))
-    done = 0
-    while done < int(replicates):
-        r = min(int(chunk), int(replicates) - done)
-        cols = [b2_replicate_sums(inp, a_star, rng_of(*prefix, done + q) if prefix is not None
-                                  else rng_of(seed, line, done + q)) for q in range(r)]
-        S1, N1, S2, N2 = (np.column_stack([c[i] for c in cols]) for i in range(4))
-        T[:, done:done + r] = member_t(S1, N1, S2, N2)
-        done += r
-    q = {b: float(np.nanquantile(T[i], 1.0 - float(level))) for i, b in enumerate(MEMBERS)}
-    return q, (T if keep else None)
+    T = b2_t(inp, a_star, replicates, (lambda i: rng_of(*prefix, i)) if prefix is not None
+             else (lambda i: rng_of(seed, line, i)), chunk=chunk)
+    return quantiles_of(T, level), (T if keep else None)
 
 
 def block_mean_amplitude(per_session: np.ndarray, block: int = 63) -> float:
@@ -713,19 +707,27 @@ def d_bootstrap_se(y1, s1, y2, s2, n_sessions: int, draws: int = STAGE_B_DRAWS,
     S1, N1 = LB.session_sums(y1, np.asarray(s1, np.int64), n_sessions)
     S2, N2 = LB.session_sums(y2, np.asarray(s2, np.int64), n_sessions)
     D = float(S1.sum() / N1.sum() - S2.sum() / N2.sum())
+    if not math.isfinite(D):
+        raise NotFinite("D_B is not finite")
     rng = rng_of(*seed_key)
     out = np.empty(int(draws))
     for b in range(int(draws)):
         pi = stationary_indices(rng, n_sessions, n_sessions, STAGE_B_MEAN_BLOCK)
         with np.errstate(invalid="ignore", divide="ignore"):
             out[b] = S1[pi].sum() / N1[pi].sum() - S2[pi].sum() / N2[pi].sum()
-    return D, float(np.nanstd(out, ddof=1))
+    if not np.isfinite(out).all():
+        raise NotFinite("a bootstrap draw of D_B is not finite")
+    return D, float(np.std(out, ddof=1))
 
 
 def stage_b_pick(cells: Sequence[str], est: Mapping[str, float], se: Mapping[str, float], q_B: float,
                  eligible: Mapping[str, bool], v_lower: Mapping[str, float]) -> dict[str, Any]:
     """10 items 2-4: Kill B when no eligible cell has L_c / SE_c above q_B; else the pick is the eligible cell above q_B
     with the largest lower limit of V_B, ties to the cell listed first."""
+    for c in cells:
+        if eligible.get(c, False) and not (math.isfinite(est[c]) and math.isfinite(se[c]) and se[c] > 0
+                                           and math.isfinite(q_B) and math.isfinite(v_lower[c])):
+            raise NotFinite(f"stage B: {c}'s L, SE, q_B or V_B's lower limit is not finite")
     above = [c for c in cells if eligible.get(c, False) and est[c] / se[c] > q_B]
     if not above:
         return {"killed": True, "pick": None, "above": []}
@@ -737,23 +739,39 @@ def stage_b_pick(cells: Sequence[str], est: Mapping[str, float], se: Mapping[str
 # ------------------------------------------------------------------------------------------------ A9
 
 
+A9_MIN_OFFSET = 63
+
+
+def within_kind_index(L: Layout, base: np.ndarray, offset: int) -> np.ndarray:
+    """Each session of `base` moved `offset` places along its own day kind's sequence of sessions (circular)."""
+    out = np.empty(len(base), dtype=np.int64)
+    for kind in np.unique(L.kind):
+        seq = np.flatnonzero(L.kind == kind)
+        pos = {int(x): i for i, x in enumerate(seq)}
+        for t, s_ in enumerate(base):
+            if L.kind[s_] == kind:
+                out[t] = seq[(pos[int(s_)] + int(offset)) % len(seq)]
+    return out
+
+
 def a9_mdl(L: Layout, y: np.ndarray, selected: np.ndarray, n_judged: int, level: float, power: float = 0.8
            ) -> dict[str, float]:
     """A9: the minimum detectable lift of C1 at the family's level and 80 % power on a judged-length calendar, from the
     cell's choice-span in-state pattern (its first `n_judged` sessions, circularly) and the population's centred values
-    on the choice span **at every other circular alignment** (offsets 1 .. n - 1: the values never sit on their own
-    sessions' selection, so the in-state mean, which stage B reads first, is never read), each window re-centred within
+    moved along each day kind's own sequence by every offset from 63 to n - 63 (the build read's m2: no value sits
+    within a quarter of its own session's selection, so the in-state mean is not read), each window re-centred within
     its own strata; each member at the larger of its t and the windows' (1 - level) quantile of its t under this null;
-    the MDL the `power` quantile over the windows of max over members of (crit x se - estimate). Deterministic: no draw."""
+    the MDL the `power` quantile over the windows of max over members of (crit x se - estimate). Deterministic."""
     n = L.n
     base = np.arange(int(n_judged)) % n
     sel = selected[base] & L.population[base]
-    est, se, df = (np.full((n - 1, len(MEMBERS)), np.nan) for _ in range(3))
-    for o in range(1, n):
-        idx = (base + o) % n
+    offs = list(range(A9_MIN_OFFSET, max(A9_MIN_OFFSET + 1, n - A9_MIN_OFFSET)))
+    est, se, df = (np.full((len(offs), len(MEMBERS)), np.nan) for _ in range(3))
+    for w, o in enumerate(offs):
+        idx = within_kind_index(L, base, o)
         V = y[idx].copy()
-        pop = L.population[idx]
-        grp = L.group[idx]
+        pop = L.population[idx] & L.population[base]
+        grp = L.group[base]
         for g in np.unique(grp):
             rows = grp == g
             sub, mm = V[rows], pop[rows] & np.isfinite(V[rows])
@@ -762,14 +780,136 @@ def a9_mdl(L: Layout, y: np.ndarray, selected: np.ndarray, n_judged: int, level:
             V[rows] = sub - mu[None, :]
         S1, N1, S2, N2 = c1_sums(V, sel & pop, pop)
         for i, (b, e, s_, d) in enumerate(members_of(S1, N1, S2, N2)):
-            est[o - 1, i], se[o - 1, i], df[o - 1, i] = e, s_, d
+            est[w, i], se[w, i], df[w, i] = e, s_, d
     with np.errstate(invalid="ignore", divide="ignore"):
         T = est / se
-    q = np.nanquantile(T, 1.0 - level, axis=0)
+    if not np.isfinite(T).all():
+        raise NotFinite("A9: a window's member t is not finite")
+    q = np.quantile(T, 1.0 - level, axis=0)
     tc = stats.t.ppf(1.0 - level, np.maximum(df, 1))
     crit = np.maximum(tc, q[None, :])
-    need = np.nanmax(crit * se - est, axis=1)
-    return {"mdl": float(np.nanquantile(need, power)), "windows": int(n - 1), "null_quantiles": [float(x) for x in q]}
+    need = np.max(crit * se - est, axis=1)
+    return {"mdl": float(np.quantile(need, power)), "windows": int(len(offs)),
+            "null_quantiles": [float(x) for x in q], "offsets": [offs[0], offs[-1]]}
+
+
+# ------------------------------------------------------------------------------------------------ A10's consequence
+
+
+class NotFinite(RuntimeError):
+    """A replicate's t, a quantile, a standard error or a value the rule needs is not finite: refused, never a fall-back
+    (the build read's m6)."""
+
+
+def b2_t(inp: B2Inputs, a_star: float, replicates: int, key: Callable[[int], np.random.Generator], chunk: int = 500
+         ) -> np.ndarray:
+    """B2's member t's (members x replicates), replicate i from `key(i)`; refused (`NotFinite`) when any is not finite."""
+    T = np.empty((len(MEMBERS), int(replicates)))
+    done = 0
+    while done < int(replicates):
+        r = min(int(chunk), int(replicates) - done)
+        cols = [b2_replicate_sums(inp, a_star, key(done + q)) for q in range(r)]
+        S1, N1, S2, N2 = (np.column_stack([c[i] for c in cols]) for i in range(4))
+        T[:, done:done + r] = member_t(S1, N1, S2, N2)
+        done += r
+    if not np.isfinite(T).all():
+        raise NotFinite(f"B2: {int((~np.isfinite(T)).sum())} replicate t's are not finite")
+    return T
+
+
+def quantiles_of(T: np.ndarray, level: float) -> dict[int, float]:
+    q = {b: float(np.quantile(T[i], 1.0 - float(level))) for i, b in enumerate(MEMBERS)}
+    if not all(math.isfinite(v) for v in q.values()):
+        raise NotFinite("B2: a quantile is not finite")
+    return q
+
+
+def sub_layout(L: Layout, rows: np.ndarray) -> Layout:
+    """The layout of the sessions `rows` (a boolean mask): its own (kind, year) groups, the same marks."""
+    rows = np.asarray(rows, bool)
+    sessions = [s for s, k in zip(L.sessions, rows) if k]
+    kind, year = L.kind[rows], L.year[rows]
+    groups = sorted({(str(a), int(b)) for a, b in zip(kind, year)})
+    gpos = {g: j for j, g in enumerate(groups)}
+    group = np.array([gpos[(str(a), int(b))] for a, b in zip(kind, year)], dtype=np.int64)
+    out = Layout(sessions, list(L.marks), kind, year, group, groups, L.exists[rows], L.population[rows])
+    out.values = {k: v[rows] for k, v in L.values.items()}
+    out.flags = {k: v[rows] for k, v in L.flags.items()}
+    return out
+
+
+@dataclass
+class ConsequenceResult:
+    rows: list[dict[str, Any]]
+    closed: bool
+    b2_runs: int
+    decisions: dict[tuple[float, float], list[bool]] = field(default_factory=dict)
+
+
+def a10_consequence(L: Layout, value: str, model: str, a_b: float, *, shares: Sequence[float] = A10_SHARES,
+                    levels: Sequence[float] = A10_LEVELS, selections: int = A10_SELECTIONS, inner: int = A10_INNER,
+                    shortcut: bool = True, test_year: int = 2023) -> ConsequenceResult:
+    """A10's consequence (9; the lead's reading, E-112): the deciding rule itself -- each member at the larger of its t
+    and B2's (1 - level) quantile -- on the same A10 replications as a pseudo-judged split. Selection j of (class,
+    share) is A10's own (`[A10 seed, class, share, j]`) restricted to `test_year`; the statistic on that year's values
+    centred within its strata; B2 from the earlier years' centred values, within day kind, a* the largest of (a) on
+    the earlier years, (b) `a_b`, and (d) on the test year's out-of-state offers of that selection; the inner draws
+    `[A10 seed, class, share, j, i]` (A10's replication key extended by the inner index), `inner` of them, shared by
+    both levels. **The exact shortcut** (`shortcut`): the larger-of rule rejects only where nominal `cons` rejects (each
+    member's critical value is at least its t), and nominal at 1 % only where it rejects at 5 %, so B2 runs only for the
+    selections nominal `cons` rejects at the largest level; per-selection keys mean a skipped selection changes no
+    other's draws. The cell is closed when any (share, level)'s rejection rate has its 95 % Clopper-Pearson interval
+    wholly above the nominal."""
+    ci = A10_CLASSES.index(model)
+    te = L.year == int(test_year)
+    tr = (L.year < int(test_year))
+    Lte, Ltr = sub_layout(L, te), sub_layout(L, tr)
+    yte = centred(Lte, value, Lte.population)
+    ytr = centred(Ltr, value, Ltr.population)
+    a_a = amplitude_a(Ltr, ytr, Ltr.population)
+    rows, closed, runs = [], False, 0
+    decisions: dict[tuple[float, float], list[bool]] = {}
+    lv = sorted(float(a) for a in levels)
+    for share in shares:
+        si = list(A10_SHARES).index(float(share))
+        rej = {a: 0 for a in lv}
+        for a in lv:
+            decisions[(float(share), a)] = []
+        for j in range(int(selections)):
+            sel_all = a10_selection(rng_of(SEED_A10, ci, si, j), model, float(share), L.population)
+            sel = sel_all[te] & Lte.population
+            S1, N1, S2, N2 = c1_sums(yte, sel, Lte.population)
+            nominal = {a: larger_of(S1, N1, S2, N2, a).passes for a in lv}
+            if shortcut and not nominal[lv[-1]]:
+                for a in lv:
+                    decisions[(float(share), a)].append(False)
+                continue
+            a_d = amplitude_d(Lte, value, Lte.population & ~sel)
+            inp = B2Inputs(ytr, Ltr.kind, Lte.kind, Lte.group, Lte.exists & Lte.population, sel.astype(float),
+                           Lte.population.astype(float))
+            T = b2_t(inp, max(a_a, float(a_b), a_d), inner, lambda i, j=j: rng_of(SEED_A10, ci, si, j, i))
+            runs += 1
+            for a in lv:
+                d_ = bool(larger_of(S1, N1, S2, N2, a, quantiles_of(T, a)).passes)
+                decisions[(float(share), a)].append(d_)
+                rej[a] += int(d_)
+        for a in lv:
+            lo, hi = LB.clopper_pearson(rej[a], int(selections))
+            lax = bool(lo > a)
+            closed = closed or lax
+            rows.append({"check": "A10_consequence", "class": model, "share": float(share), "level": a,
+                         "selections": int(selections), "rejections": rej[a], "ci_lo": lo, "ci_hi": hi, "lax": lax,
+                         "a": a_a, "b": float(a_b), "inner": int(inner), "shortcut": bool(shortcut)})
+    return ConsequenceResult(rows, closed, runs, decisions)
+
+
+def implied_class(mean_run: float, share_sessions: float) -> str:
+    """The persistence class a cell's run lengths imply (6.6, beside): `offer` when its state fills a part of most
+    sessions, else the session-level class nearest its mean in-state run (1 session, 5, 21, 63)."""
+    if share_sessions > 0.9:
+        return "window"
+    marks = {"session": 1.0, "block5": 5.0, "block21": 21.0, "block63": 63.0}
+    return min(marks, key=lambda k: abs(math.log(max(mean_run, 1e-9)) - math.log(marks[k])))
 
 
 __all__ = [n for n, v in list(globals().items()) if not n.startswith("_") and type(v).__name__ != "module"

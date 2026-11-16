@@ -207,7 +207,7 @@ def u1_problems(make_cls, starts: int | None, workers: int, what: str) -> list[s
     return probs
 
 
-def item4(starts: int, workers: int) -> list[str]:
+def item4(starts: int | None, workers: int) -> list[str]:
     """Q-17's adapter's outputs with the family's class, the wait switched off, equal the vendored class's (every
     response the class can run, the forfeiture's three among them), at `starts` starts of P-16's verdict arm."""
     import numpy as np
@@ -222,6 +222,11 @@ def item4(starts: int, workers: int) -> list[str]:
     jobs, _, probs = I.build(Path(RESULTS_DIR), "p16")
     job = jobs["verdict"]
     chosen = UJ.start_choice(len(job["blocks"]), starts)
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import fo_opening as FO
+
+    spec = OW.WaitSpec.for_blocks("a0_lookup", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]])
+    probs += FO.lookup_problems(spec, job, chosen)                    # m3: the offer lookup on every window
     cls = OW.waiting_class(OW.WaitSpec.for_blocks("w0_off", job["blocks"],
                                                   [np.zeros(len(b), bool) for b in job["blocks"]], W=0))
     for name in RESPONSES_W0:
@@ -262,12 +267,12 @@ def main(argv: list[str] | None = None) -> int:
     bad += u1_problems(lambda job: OW.waiting_class(OW.WaitSpec.for_blocks("a0_always", job["blocks"], None)),
                        a.starts, a.workers, "item 2 U1")
     bad += [f"item 3 gate: {p}" for p in gate_problems(
-        lambda blk: OW.waiting_class(OW.WaitSpec.for_index("a0_w0_gate", [np.zeros(len(b), bool) for b in blk], W=0)),
+        lambda blk: OW.waiting_class(OW.WaitSpec.for_index("a0_w0_gate", [np.zeros(len(b), bool) for b in blk], W=0, blocks=blk)),
         a.paths, a.workers, "fo_a0_w0")]
     bad += u1_problems(lambda job: OW.waiting_class(OW.WaitSpec.for_blocks(
         "a0_w0", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]], W=0)), a.starts, a.workers,
         "item 3 U1")
-    bad += item4(a.starts or 21, a.workers)
+    bad += item4(a.starts, a.workers)                       # every start of the verdict arm unless --starts (m8)
     log("item 4: Q-51 HOLDS is cited (E-044 (3)), not re-run")
     if bad:
         log("A0 FAILS: " + "; ".join(bad[:10]))

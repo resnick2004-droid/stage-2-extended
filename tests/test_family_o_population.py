@@ -200,11 +200,12 @@ def test_t6_an_uninformative_state_averages_no_lift_and_the_halves_average_to_l(
 
 
 def test_t6_d_and_v_line_are_their_hand_sums_and_a_fallback_takes_its_label():
-    y1 = np.array([0.5, -0.25, 1.0])            # the design's openings' centred values
-    s1 = np.array([0, 3, 3])
-    y2 = np.array([0.0, 0.25, -0.5, 0.75])      # the twin designs' (two draws pooled)
-    s2 = np.array([1, 2, 3, 4])
-    D, _ = ST.d_bootstrap_se(y1, s1, y2, s2, 63, draws=50)
+    y1 = np.array([0.5, -0.25, 1.0, 0.2, -0.1])  # the design's openings' centred values
+    s1 = np.array([0, 1, 2, 3, 4])
+    y2 = np.array([0.0, 0.25, -0.5, 0.75, 0.1])  # the twin designs' (two draws pooled)
+    s2 = np.array([0, 1, 2, 3, 4])
+    D, se = ST.d_bootstrap_se(y1, s1, y2, s2, 5, draws=50)
+    assert np.isfinite(se)
     assert abs(D - (y1.mean() - y2.mean())) < 1e-15
     assert ST.v_line(2.0, 1200.0, D) == 2.0 * 1200.0 * D / 4.0
     assert abs(ST.openings_a_start_year(30, [252, 126]) - 30 / 1.5) < 1e-12

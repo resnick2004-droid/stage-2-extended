@@ -37,7 +37,7 @@ def test_run1_runs_every_stage_and_writes_only_its_sections(got):
 
 
 def test_run1s_identities_hold_and_every_cell_reaches_stage_b(got):
-    assert got["identity_holds"] and all(got["identity_holds"])
+    assert len(got["identity_holds"]) == 4 and all(got["identity_holds"])     # A3's three checks and A1
     assert got["killed"] == {}
     assert got["choice_cells"] == ["s1", "s2", "u3"] and got["choice_finite"]
     assert got["k0_rows"] == 6 and got["a10_rows"] == 24          # K0 two forms a cell; A10 6 classes x 2 shares x 2
@@ -48,5 +48,6 @@ def test_run1s_identities_hold_and_every_cell_reaches_stage_b(got):
 def test_run1s_manifest_parameters_name_what_the_text_asks(got):
     need = {"identity_rows", "identity_token_rule", "declaration_sha256", "k", "level", "pinned_blobs", "cells",
             "dropped_at_pin", "searched", "fitted_values", "forecast_json", "forecast_sha256", "states_sha256",
-            "population_sha256", "calendars", "seeds", "judged_sessions_sha256", "pick", "killed", "screen"}
+            "population_sha256", "calendars", "seeds", "judged_sessions_sha256", "pick", "killed", "screen",
+            "forecast_folds", "identity_commits", "data_manifest_sha256", "identity_covered"}
     assert need <= set(got["param_keys"])
