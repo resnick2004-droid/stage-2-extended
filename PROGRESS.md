@@ -109,3 +109,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-106: RD-01's third read -- merge after small changes (Q-104e), the scorecard's cost about halved under the same text, cost to be measured; the shared-code identities moved after both runners' merges; the heavy queue re-cut (part 3). |
 | 2026-11-16 | lead | E-107: F-03's build in part (run 1 on synthetic inputs; A0 written); the red team reads it, A10's consequence settled before any run; the builder continues with run 2 and the scorecard. |
 | 2026-11-16 | lead | E-108: the identity-token guard merged; the hook now refuses a decision log with a misplaced or malformed token; the three runners move to it. |
+| 2026-11-16 | lead | E-109: the re-calibration plan's second text (nothing run); the red team re-reads it before the pin. |

@@ -151,10 +151,11 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-107c | The red team's third read of RD-01's runner (the diff 1e1647c..e72bb17; the builder's readings; what the pinned text requires of the run's cost) | wt-firms (read-only) | done: merge after the listed changes (E-106); Q-104e | Q-104d | light | 0 | E-103 |
 | Q-110 | A guard on E-098's identity tokens (`extended/identity_tokens.py`, its test on `DECISIONS.md`, the lead's script) | wt-infra | done: merged (E-108) | E-098 | light | 0 | E-103 |
 | Q-105e | RD-02's runner: the third read's D1-D5 (D1 on Q-110's shared parser once merged; D2 inside RD-02's own owed identity) | wt-payout | running (E-104) | Q-106c | light | 0 | E-104 |
-| Q-108b | Q-108's plan revised on its red-team read and the lead's rulings (E-105), then re-read and pinned | wt-verify | running (E-105) | Q-108r | light | 0 | E-105 |
+| Q-108b | Q-108's plan revised on its red-team read and the lead's rulings (E-105), then re-read and pinned | wt-verify | done: the second text (E-109); the re-read Q-108r2, then the pin | Q-108r | light | 0 | E-105 |
 | Q-104e | RD-01's runner: the third read's M1, m1-m7, the notes, the single-pass cost route, measured cost; D1 on Q-110's parser once merged | wt-firms | running (E-106) | Q-107c | light | 0 | E-106 |
 | Q-109r | The red team reads F-03's build (4da975e): look-ahead, the waiting class, the statistics, the guards, A0, what is owed before run 1 (A10's consequence first), cost | wt-lit (read-only) | running (E-107) | Q-109 | light | 0 | E-107 |
 | Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | running (E-107) | Q-109 | light | 0 | E-107 |
+| Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | running (E-109) | Q-108b | light | 0 | E-109 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
