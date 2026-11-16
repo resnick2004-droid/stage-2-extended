@@ -103,3 +103,7 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-100: Q-35 collected (every identity held; a supply count). F-03's build and the one-sample re-calibration plan dispatched. |
 | 2026-11-16 | lead | E-101: Q-108's re-calibration plan written (nothing run); the red team reads it before its pin. Q-95 parked until Q-108's outcome. |
 | 2026-11-16 | lead | E-102: RD-02's runner fixed after the second read (code and tests only); the red team's third read before merge. |
+| 2026-11-16 | lead | E-103: RD-01's runner fixed and completed (code and tests only); the red team's third read before merge, its cost among the questions. A guard on the identity tokens dispatched. |
+| 2026-11-16 | lead | E-104: RD-02's third read -- merge after five small fixes (Q-105e); the identity token made positional for every runner, one shared parser (Q-110); E-015 limits read only from an approving row. |
+| 2026-11-16 | lead | E-105: the re-calibration plan's red-team read -- revise before the pin; the per-subset size decides, the level rule loosened to what validation protects, the power ceiling dropped, k = 13 to 20. |
+| 2026-11-16 | lead | E-106: RD-01's third read -- merge after small changes (Q-104e), the scorecard's cost about halved under the same text, cost to be measured; the shared-code identities moved after both runners' merges; the heavy queue re-cut (part 3). |
