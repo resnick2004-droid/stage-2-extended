@@ -1,6 +1,6 @@
-# RD-xx: other firms' contracts on the registered trades (reading FC) -- a described reading, unnumbered (E-023 (1))
+# RD-01: other firms' contracts on the registered trades (reading FC) -- a described reading, unnumbered (E-023 (1))
 
-**Status: declared, 2026-11-16 -- `prereg/RD-xx_firm_contracts.md`, pinned by the sha256 of its LF text in its
+**Status: declared, 2026-11-16 -- `prereg/RD-01_firm_contracts.md`, pinned by the sha256 of its LF text in its
 decision row.** Written under the operator's ruling **E-023 (1)** (`CHARTER.md` section 3), from the rules record of
 E-020 and Q-59 (`config/rules_extended.yaml`, `docs/RULES_CURRENCY.md`) and Stage 2's verified ledgers, in the form
 reading PP's draft takes (`prereg/DRAFT_F-P_payout_policy.md`, E-025). It was drafted as `prereg/DRAFT_RD_firms.md`:
@@ -70,7 +70,7 @@ re-solves a state table for one plan (a sizing design for that contract) is its 
 
 | field | value |
 |---|---|
-| id | RD-xx |
+| id | RD-01 |
 | reading | FC: P-16's registered trades (P-14's beside) on five plans' contracts -- Topstep's $50K (the reference), Lucid's LucidFlex 50K, DayTraders.com's EOD 50K, TradeDay's Fast Pass and Quick Pay End of Day 50K |
 | kind | a **described reading** (E-023 (1)): never carried; the operator chooses from its menu |
 | program family number | **none** (E-023 (1)); the next numbered family's k is unchanged by this file |
@@ -1122,7 +1122,7 @@ that table.
   - `results/fc_gate.csv`, the gate rows;
   - `results/fc_menu.csv`, the menu with its flags and labels.
 
-  Each written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id` = `RD-xx`
+  Each written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id` = `RD-01`
   (this reading's id; no family number) and its pinning row; the run counts (30 or 34 replays; 28 or 32 new; 2 references; 27 ladder
   replays; 16 gates); each plan's cost schedule (4.8) and table inputs (4.9); QP's request rule on each QP row;
   every seed, the retired ones included; every parameter, section 5's readings and their labels; each plan's record

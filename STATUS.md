@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-077).
+**Updated:** 2026-11-16 (E-081).
 
 ## Phase
 
@@ -50,18 +50,18 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
 | wt-features | wt/wt-features | Q-100 the adapter's household and seed-base keywords | running |
 | wt-lit | wt/wt-lit | -- (family O approved, E-077; the pin after Q-55 and Q-83) | idle |
-| wt-firms | wt/wt-firms | Q-91d the firms reading's pin-form edit | running |
-| wt-payout | wt/wt-payout | Q-92b reading PP's small redraft | running |
+| wt-firms | wt/wt-firms | -- (RD-01 pinned, E-080; its build Q-104 after Q-100) | idle |
+| wt-payout | wt/wt-payout | -- (Q-92b merged, E-081; the pin check Q-92c) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
 | wt-scout | wt/wt-scout | -- (Q-99 read, E-072) | idle |
-| wt-infra | wt/wt-infra | Q-96 the fast tier's time budget | running |
+| wt-infra | wt/wt-infra | -- (Q-96 merged, E-079) | idle |
 
 ## Running now
 
 - Heavy, one at a time under `run.lock`, one queue (E-062, E-066): Q-55 (the calibration, running to about
   17:36 UTC); Q-83 (the fresh-seed validation F-02's pin needs, at eba1564); then from f7eda0d: Q-44 (the
   readings beside), Q-98 (money spent), Q-22b, Q-80, Q-89, Q-93, Q-35, Q-18, Q-45, Q-101.
-- Light: Q-91d, Q-100, Q-92b, Q-96,
+- Light: Q-100, Q-92c,
   Q-95.
 
 ## Machine

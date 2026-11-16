@@ -80,3 +80,7 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-075: the firms reading's gatekeeper refused narrowly (pin-time form, a seed sentence, the limits' timing); Q-91d running; reading PP's redraft takes the same items. |
 | 2026-11-16 | lead | E-076: family O's fourth text merged (its pin on external conditions only; the drop rule mechanical); the gatekeeper's diff read running. |
 | 2026-11-16 | lead | E-077: family O approved by the gatekeeper, contingent on Q-55 (its drop rule applied) and Q-83; a family whose every cell drops is not pinned and takes no k. |
+| 2026-11-16 | lead | E-078: the firms reading in pin-time form (its pin's substitution and expected hash named); the gatekeeper's diff read Q-91e running. |
+| 2026-11-16 | lead | E-079: the fast tier about a fifth faster (Q-96 merged; nothing deleted, guards and smokes added). |
+| 2026-11-16 | lead | **E-080: the firms reading pinned as RD-01 -- the program's first pinned declaration since F-01** (a described reading: no level, nothing carried). Its build Q-104 follows Q-100. |
+| 2026-11-16 | lead | E-081: reading PP's redraft merged in pin-time form; a gatekeeper's RD-02 pin check running. |
