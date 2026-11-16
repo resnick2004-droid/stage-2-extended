@@ -4,17 +4,23 @@
                                                           #   its walk frame and its cost columns (seconds)
     python identity/walker_identity.py --smoke-days 10    # P-16's entries on the first 10 development days of real
                                                           #   bars, frame for frame against Stage 2's walk
+    python identity/walker_identity.py --substitution     # light, no bars: the full run's substitution touches
+                                                          #   P-16's walk only (A3's cache key unchanged)
     python identity/walker_identity.py                    # HEAVY (every development bar; the run lock): P-16's cell
                                                           #   rebuilt with this walker -> its content hash
 
-**The full identity.** P-16's cell (Stage 2 D-544/D-547, `rc_s150_all` with D-533's news-safe cut) is built by P-16's
-own builder, `rc150_dev_test.build_cells()` -- `rc_width_screen.build` at the 150-tick stop: every five-minute mark of
-every walked day (`resolved_coin.marks`, `rc_screen.walked_minutes`), the cutoff from the walk's kind columns
+**The full identity.** P-16's cell (Stage 2 D-544/D-547, `rc_s150_all` with D-533's news-safe cut) is built as P-16's
+own builder, `rc150_dev_test.build_cells()`, builds it -- its two lines, `rc_screen.inputs()` (P-14's inputs, A3's
+cached walk among them) then `rc_width_screen.build(I, (150,))`: every five-minute mark of every walked day
+(`resolved_coin.marks`, `rc_screen.walked_minutes`), the cutoff from the walk's kind columns
 (`resolved_coin.mark_resolution`), the coin's side (`coin_table`, seed 20261102), the trades (`resolved_coin.cell_trades`),
-padded (`zero_edge_decomposition.pad`) and cut (`drop_release_minute`) -- with ONE substitution: `atlas_a3.walk_minutes`,
-Stage 2's walk of every (date, mark, side), is replaced for the call by `walk_minutes` below, which places a market order
-on each side live at the mark and walks it with `extended.walker` under `STAGE2`. Every other line is Stage 2's,
-vendored and unedited. Market entries fill at a bar's open, so neither fill-bar mode nor the mirror's booking mode
+padded (`zero_edge_decomposition.pad`) and cut (`drop_release_minute`) -- with ONE substitution, around the second line
+only (`build_p16`): `atlas_a3.walk_minutes`, Stage 2's walk of every (date, mark, side), is replaced by `walk_minutes`
+below, which places a market order on each side live at the mark and walks it with `extended.walker` under `STAGE2`.
+The inputs load under Stage 2's walk, because A3's cache is keyed on that function's source read at call time
+(`atlas_a3.walk_inputs`; corrective cycle 1: the lead's first full run refused at A3's cache when the substitution
+covered `build_cells()` whole). The runner refuses if the vendored `build_cells` is not those two lines. Every other
+line is Stage 2's, vendored and unedited. Market entries fill at a bar's open, so neither fill-bar mode nor the mirror's booking mode
 enters (both sides are walked from the same open, as Stage 2 walks them). Then:
 
 1. **the content hash** of the cell's trades (`rc_dev_test.trades_hash`: every column, sorted, row order as built) must
@@ -36,6 +42,7 @@ import argparse
 import os
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
@@ -339,20 +346,125 @@ def smoke(n_days: int) -> list[str]:
 # ------------------------------------------------------------------------------------------------ the full identity
 
 
+@contextmanager
+def substituted_walk(walk):
+    """`atlas_a3.walk_minutes` replaced by `walk` inside the block, Stage 2's restored on leaving it (also on an error).
+    Kept as narrow as one call: A3's cache is keyed on `inspect.getsource(walk_minutes)` read at call time
+    (`atlas_a3.walk_inputs`), so a substitution in force while P-14's inputs load makes A3's cached walk look stale
+    (the lead's run of 2026-11-16, refused at `atlas_a3.cached_walk`)."""
+    import atlas_a3 as A
+
+    stage2 = A.walk_minutes
+    A.walk_minutes = walk
+    try:
+        yield
+    finally:
+        A.walk_minutes = stage2
+
+
+BUILD_CELLS_LINES = ("I = S.inputs()", "return I, W.build(I, (STOP,))")
+
+
+def build_p16(walk=None):
+    """P-16's cell as `rc150_dev_test.build_cells()` builds it -- its two lines, `rc_screen.inputs()` then
+    `rc_width_screen.build(I, (STOP,))` -- with `walk` (None: Stage 2's) substituted for the second line only, the one
+    call that walks P-16's marks; the inputs (P-14's, A3's cached walk among them) load under Stage 2's walk. Refused if
+    the vendored `build_cells` is not those two lines."""
+    import inspect
+
+    import rc150_dev_test as P
+    import rc_screen as S
+    import rc_width_screen as Wd
+
+    src = inspect.getsource(P.build_cells)
+    if not all(x in src for x in BUILD_CELLS_LINES):
+        raise RuntimeError("REFUSED: rc150_dev_test.build_cells is not the two lines this runner reproduces")
+    I = S.inputs()
+    if walk is None:
+        return I, Wd.build(I, (P.STOP,))
+    with substituted_walk(walk):
+        b = Wd.build(I, (P.STOP,))
+    return I, b
+
+
+def substitution_problems() -> list[str]:
+    """`--substitution` (light, no bars): `build_p16`'s substitution leaves A3's cache key Stage 2's while the inputs
+    load, is in force while P-16's marks are walked, and is undone after -- with `rc_screen.inputs` and
+    `rc_width_screen.build` replaced by probes that record what they see; then, when the atlas is present, A3's own
+    manifest key matches under Stage 2's walk and would not under the substitution (the defect this guards)."""
+    import json
+
+    import atlas_a3 as A
+    import rc_screen as S
+    import rc_width_screen as Wd
+
+    cfg = A.config()
+    probe_inputs = {"probe": "a1 inputs"}
+    stage2 = A.walk_minutes
+    key0 = A.walk_inputs(cfg, probe_inputs)
+    seen: dict = {}
+
+    def fake_inputs():
+        seen["inputs_key"] = A.walk_inputs(cfg, probe_inputs)
+        seen["inputs_walk"] = A.walk_minutes
+        return {"probe": True}
+
+    def fake_build(I, stops):
+        seen["build_walk"], seen["build_stops"] = A.walk_minutes, tuple(stops)
+        if seen.get("raise"):
+            raise KeyError("probe")
+        return {"probe": True}
+
+    bad = []
+    real_inputs, real_build = S.inputs, Wd.build
+    S.inputs, Wd.build = fake_inputs, fake_build
+    try:
+        build_p16(walk_minutes)
+        if seen.get("inputs_key") != key0 or seen.get("inputs_walk") is not stage2:
+            bad.append("the inputs loaded under the substitution: A3's cache key would not be Stage 2's")
+        if seen.get("build_walk") is not walk_minutes or seen.get("build_stops") != (150,):
+            bad.append("P-16's walk (rc_width_screen.build at 150 ticks) did not run under the substitution")
+        if A.walk_minutes is not stage2 or A.walk_inputs(cfg, probe_inputs) != key0:
+            bad.append("the substitution was not undone")
+        seen["raise"] = True
+        try:
+            build_p16(walk_minutes)
+        except KeyError:
+            pass
+        if A.walk_minutes is not stage2:
+            bad.append("the substitution was not undone after an error")
+        with substituted_walk(walk_minutes):
+            moved = A.walk_inputs(cfg, probe_inputs) != key0
+        if not moved:
+            bad.append("the key does not see the substitution: this check could not catch the defect")
+    finally:
+        S.inputs, Wd.build = real_inputs, real_build
+    man = VENDOR / "data" / "atlas" / "A3" / "manifest.json"
+    note = "A3's manifest absent: the probe check only"
+    if man.is_file():
+        inp = json.loads(man.read_text(encoding="utf-8"))["inputs"]
+        if A.walk_inputs(cfg, inp["a1_cache"]) != inp:
+            bad.append("A3's cache manifest does not match Stage 2's walk key (the cache itself is stale)")
+        with substituted_walk(walk_minutes):
+            if A.walk_inputs(cfg, inp["a1_cache"]) == inp:
+                bad.append("A3's manifest key unexpectedly matches under the substitution")
+        note = "A3's own manifest key matches under Stage 2's walk and would not under the substitution"
+    if not bad:
+        print("substitution check HOLDS: the inputs load under Stage 2's walk (A3's cache key unchanged), P-16's "
+              f"150-tick walk runs under this walker, Stage 2's walk is restored after, also on an error; {note}")
+    return bad
+
+
 def full() -> list[str]:
     import atlas_a3 as A
     import rc150_dev_test as P
     import rc_dev_test as D
+    import rc_width_screen as Wd
 
     if P.TRADES_SHA256 != P16_TRADES_SHA256 or int(P.STOP) != 150:
         return [f"the vendored P-16 pins {P.TRADES_SHA256} at {P.STOP} ticks, not {P16_TRADES_SHA256} at 150"]
-    stage2_walk = A.walk_minutes
     t0 = time.time()
-    A.walk_minutes = walk_minutes                  # the one substitution, for this call only
-    try:
-        I, b = P.build_cells()
-    finally:
-        A.walk_minutes = stage2_walk
+    I, b = build_p16(walk_minutes)                 # the one substitution: P-16's walk only
     L = I["L"]
     t = b["cells"][P.CELL]["trades"]
     th = D.trades_hash(t)
@@ -365,7 +477,7 @@ def full() -> list[str]:
     bad += cost_problems(t, int(P.STOP), fee, float(L["tv"]), float(L["cfg"]["slip_ticks"]), b["rr_grid"])
     if bad and th != P.TRADES_SHA256:
         print("  diagnosing: the cell rebuilt with Stage 2's own walk, compared trade by trade...", flush=True)
-        _, b2 = P.build_cells()
+        b2 = Wd.build(I, (P.STOP,))                # the same inputs, Stage 2's walk
         t2 = b2["cells"][P.CELL]["trades"]
         if D.trades_hash(t2) != P.TRADES_SHA256:
             bad.append("Stage 2's own build does not reproduce its pin either (the data or the snapshot changed)")
@@ -394,6 +506,8 @@ def main(argv: list[str] | None = None) -> int:
     g = ap.add_mutually_exclusive_group()
     g.add_argument("--synthetic", action="store_true", help="synthetic days against Stage 2's walk (light, no bars)")
     g.add_argument("--smoke-days", type=int, default=None, help="P-16's entries on the first N development days")
+    g.add_argument("--substitution", action="store_true", help="the full run's substitution touches P-16's walk only "
+                   "(light, no bars)")
     a = ap.parse_args(argv)
     if not (VENDOR / "propedge").is_dir():
         print(f"REFUSED: {VENDOR} holds no Stage 2 engine")
@@ -403,6 +517,8 @@ def main(argv: list[str] | None = None) -> int:
     t0 = time.time()
     if a.synthetic:
         bad = synthetic()
+    elif a.substitution:
+        bad = substitution_problems()
     else:
         if not (VENDOR / "data" / "bars").is_dir():
             print(f"REFUSED: {VENDOR / 'data'} has no bars (scripts/vendor_stage2.py --data)")

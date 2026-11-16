@@ -37,6 +37,16 @@ def test_the_walker_is_stage2s_walk_on_synthetic_days():
     assert "synthetic identity HOLDS" in r.stdout, r.stdout
 
 
+def test_the_substitution_touches_p16s_walk_only():
+    """Corrective cycle 1 (the lead's run of 2026-11-16 refused at A3's cache): the full identity's one substitution
+    must leave `atlas_a3.walk_inputs`' key for A3's cache -- read while P-14's inputs load -- Stage 2's, be in force only
+    while `rc_width_screen.build` walks P-16's marks, and be undone after (also on an error). No bars are read; when the
+    atlas is present its A3 manifest's key is checked too."""
+    r = run("--substitution")
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert "substitution check HOLDS" in r.stdout, r.stdout
+
+
 @pytest.mark.slow
 def test_the_walker_is_stage2s_walk_on_p16s_first_days():
     if not (DATA / "bars").is_dir():
