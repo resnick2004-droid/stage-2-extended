@@ -49,7 +49,8 @@ declared h as Q-17's reading does (`extended/user_readings.py`'s `path_rows`): t
 * item 9 -- the evenness trade-off curve: the four policies' points of P against each evenness measure, and each step's
   cost in P per unit of evenness (E-015's menu form);
 * item 10 -- the menu: each cell's headline, its guarded measures paired, the stability flag over P and every guarded
-  measure (`GUARDED`), E-015's limits as declared hooks (only those the caller hands in), the count of intervals.
+  measure (`GUARDED`), E-015's limits read from the operator's approving rows only (`limit_rows`, D5), the count of
+  intervals.
 
 **8.3's mechanics, per block** -- the shares of starts differing within 63, 126 and 252 sessions, the levers' and the
 held reads' counts (per block, each start's long replay, purged at 252), the share of starts held at sessions 63, 126
@@ -81,6 +82,8 @@ from extended import payout_policy as PP  # noqa: E402
 from extended import pp_reading as RD  # noqa: E402
 from extended import user_measures as M  # noqa: E402
 from extended import user_readings as R  # noqa: E402
+from extended.pp_inputs import (BESIDE, GATE_DIVERGE, GATE_READING, GATE_SHIFTS, LADDER_TEXT, NAN,  # noqa: E402
+                                ROW_KEYS, Inputs, RealInputs, Refused, _f, _row, q44_problems)
 
 DECLARATION = "prereg/RD-02_payout_policy.md"
 PREREG_ID = "RD-02"
@@ -91,7 +94,6 @@ ARMS = ("verdict", "point")
 NEW_CELLS = ("lock", "half", "lock_half")
 POLICY_CELLS = ("ref",) + NEW_CELLS
 SENSITIVITY_DESIGN = "p14"
-BESIDE = ("denial_10", "denial_25", "denial_50", "rtp")
 LADDER = ("denial_10", "denial_25", "denial_50")
 #: 7.1: the trade columns the replay recorder keeps (fixed; its checks run on the full record where the start ran)
 RECORD_COLUMNS = ("date", "entry_t", "exit_t", "at_cap", "kind")
@@ -108,7 +110,8 @@ VOIDED_DAYS = ("2020-07-01", "2025-06-30", "2025-07-01")
 CALENDARS = {"config/calendar_early_closes.csv": "72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2",
              "config/calendar_fomc_minutes.csv": "0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7"}
 LOWER, HIGHER = "lower", "higher"
-ADAPTER_FILES = ("extended/payout_policy.py", "extended/pp_reading.py", "extended/pp_run.py", "extended/user_beside.py",
+ADAPTER_FILES = ("extended/payout_policy.py", "extended/pp_reading.py", "extended/pp_run.py", "extended/pp_inputs.py",
+                 "extended/user_beside.py",
                  "extended/gate.py", "extended/campaign.py", "extended/replay_records.py", "scripts/pp_reading.py")
 #: pp_reading.csv's sections (14); every row also names its `part` (what it is within the section)
 SECTIONS = ("identity", "oracle", "mechanics", "scorecard", "paired", "diverge", "coverage", "beside")
@@ -117,22 +120,9 @@ FRONTIER = ("P", "S1", "S3a", "S5a")
 #: the guarded measures the stability flag reads besides P (9.1 item 10): the card's guarded keys
 GUARDED = ("P", "card_S1", "card_S3a", "card_S3b", "card_S3c", "card_S4a", "card_S4b", "card_S5a", "card_S5b",
            "card_S5c")
-#: 9.1 item 8 (D-564 (4)'s rows) and item 6 on the gate, from a gate row's columns
-GATE_READING = (("growth_on_required_bankroll", "pf_growth_on_base_p50"), ("required_bankroll_p90", "pf_required_p90"),
-                ("days_to_first_payout_median", "median_days_to_first_payout"),
-                ("payouts_per_path_mean", "mean_payouts_per_path"))
-GATE_DIVERGE = (("evaluations_bought_mean", "mean_combine_purchases"), ("funded_accounts_mean", "mean_accounts_funded"),
-                ("share_accounts_ever_paid", "share_accounts_ever_paid"),
-                ("realised_to_intended_capped_risk", "realised_to_intended_capped_risk"))
-GATE_SHIFTS = ("point", "lower_bound")
 #: the request oracle's tolerance (8.2: "to 1e-9"), relative to the request
 ORACLE_TOL = 1e-9
 
-NAN = float("nan")
-
-
-class Refused(RuntimeError):
-    """A check of 8.1 or 8.2 failed: the reading stops, nothing is written (the failure protocol applies)."""
 
 
 # ------------------------------------------------------------------------------------------------ the declaration
@@ -183,50 +173,24 @@ def calendar_frames(root: Path = ROOT) -> dict[str, pd.DataFrame]:
 
 def holiday_sessions(cal: Mapping[str, pd.DataFrame], dates: Sequence[str]) -> set[str]:
     """E-029's holiday-hours reach (section 4): the sessions that close early (an early close, or a holiday's abbreviated
-    session) and the last session before a scheduled holiday, on the job's own dates."""
+    session) and the last session before every scheduled holiday, on the job's own dates -- the last date before the
+    holiday whether or not the holiday has a session (the third read's D4: Good Friday, Christmas and New Year's Day have
+    none), for a holiday inside the dates' span."""
+    import bisect
+
     ec = cal["config/calendar_early_closes.csv"]
     early = set(ec.loc[ec["kind"].isin(["early_close", "holiday"]), "date"])
-    holidays = set(ec.loc[ec["kind"] == "holiday", "date"])
-    di = {str(d): i for i, d in enumerate(dates)}
-    eve = {str(dates[di[d] - 1]) for d in holidays if d in di and di[d] > 0}
-    return early | eve
+    holidays = sorted(set(ec.loc[ec["kind"] == "holiday", "date"]))
+    ds = sorted({str(d) for d in dates})
+    eve = set()
+    for h in holidays:
+        i = bisect.bisect_left(ds, str(h))               # the first session on or after the holiday
+        if 0 < i < len(ds):                              # a holiday inside the dates' span
+            eve.add(ds[i - 1])
+    return (early & set(ds)) | eve
 
 
 # ------------------------------------------------------------------------------------------------ the inputs
-
-
-class Inputs:
-    """What the run reads, for one source (the real designs, or a synthetic campaign in the tests)."""
-
-    def preflight(self, designs: Sequence[str]) -> list[str]:
-        """Everything that can be checked before the judged block's reads are authorised (its problems): read no bar."""
-        return []
-
-    def jobs(self, design: str) -> dict[str, dict[str, Any]]:
-        raise NotImplementedError
-
-    def identity_problems(self, design: str, arm: str, outs: list[dict[str, Any]]) -> list[str]:
-        """8.1 item 2's repeat: the `ref` start rows against the reference."""
-        raise NotImplementedError
-
-    def ladder_problems(self, design: str, response: str, outs: list[dict[str, Any]]) -> list[str]:
-        """8.1 item 6: `ref`'s readings beside against the reference."""
-        raise NotImplementedError
-
-    def gate_call(self, design: str, cell: str, twin: bool) -> dict[str, Any]:
-        """The gate's keywords for a cell (`blocks` among them), its path sink and its label."""
-        raise NotImplementedError
-
-    def gate_pairing_rows(self, design: str, cell: str, twin: bool, g: dict[str, Any]) -> list[dict[str, Any]]:
-        """9.1 item 8: the cell's gate paths beside the base's registered ones (none for a source without them)."""
-        return []
-
-    def base_gate_rows(self, design: str) -> dict[str, dict[str, Any]]:
-        """The base's registered gate row at 0 %, the placement off, by shift (none for a source without one)."""
-        return {}
-
-    def n_paths(self) -> int:
-        raise NotImplementedError
 
 
 def cell_job(job: dict[str, Any], cell: str) -> dict[str, Any]:
@@ -349,27 +313,6 @@ def block_days(recs: Sequence[Mapping[str, Any]], which: str | None, h: int) -> 
     from propedge.research import u_select as US
 
     return [int(r["start_day"]) for r in US.block(recs, which, int(h))]
-
-
-ROW_KEYS = ("section", "part", "design", "arm", "cell", "mode", "response", "base", "block", "measure", "stat", "value",
-            "n", "h", "note")
-
-
-def _row(**kw: Any) -> dict[str, Any]:
-    base = {"section": "", "part": "", "design": "", "arm": "", "cell": "", "mode": "", "response": "off", "base": "",
-            "block": "", "measure": "", "stat": "", "value": np.nan, "n": 0, "h": 0, "note": ""}
-    base.update(kw)
-    if not base["part"]:
-        base["part"] = base["section"]
-    return base
-
-
-def _f(x: Any) -> float:
-    try:
-        v = float(x)
-    except (TypeError, ValueError):
-        return NAN
-    return v
 
 
 # ------------------------------------------------------------------------------------------------ distributions
@@ -1054,23 +997,27 @@ class GateTally:
         self.frac = PP.cell_payout_frac(cell)
         self.lock = PP.CELL_LEVERS[cell][0] == "lock"
         self.counts: Counter = Counter()
-        self.gross = [0.0, 0.0, 0]                       # sum, sum of squares, funded accounts (every shift)
+        self.gross = [0.0, 0.0, 0]                       # sum, sum of squares, funded accounts (the point shift only)
 
     def __call__(self, shift: str, p: float, paths: Sequence[Any]) -> dict[str, Any]:
-        self.tally(paths)
+        self.tally(paths, gross=str(shift) == "point")
         return self.inner(shift, p, paths) if self.inner is not None else {}
 
-    def tally(self, paths: Sequence[Any]) -> None:
+    def tally(self, paths: Sequence[Any], gross: bool = True) -> None:
+        """The request oracles on every shift's paths; the gross payouts on the point shift's only (D3: the twin's two
+        arms are the same paths at e = lb = 0, so counting both would double each account and shrink the standard
+        error by about a root of two)."""
         r = PP.ledger_rules()
         split, fee, pmin, cap = float(r.profit_split), float(r.payout_fee), float(r.payout_min), float(r.std_cap)
         mfrac, lock_b = float(r.payout_max_frac_of_balance), PP.lock_balance(r)
         c = self.counts
         for x in paths:
             for f in x.funded:
-                g = float(f.gross_paid)
-                self.gross[0] += g
-                self.gross[1] += g * g
-                self.gross[2] += 1
+                if gross:
+                    g = float(f.gross_paid)
+                    self.gross[0] += g
+                    self.gross[1] += g * g
+                    self.gross[2] += 1
                 if int(f.n_payouts) <= 0 or bool(getattr(f, "consistency_forced", False)):
                     continue
                 reqs = [(float(v) + fee) / split for v in f.payout_cash]
@@ -1476,7 +1423,7 @@ def gate_rows(gates: Mapping[tuple, Mapping[str, Any]], inputs: Inputs) -> pd.Da
 # ------------------------------------------------------------------------------------------------ the menu
 
 
-#: the menu's columns an E-015 limit may name (`--limit`; 9.1 item 10)
+#: the menu's columns an E-015 limit may name (9.1 item 10; `limit_rows`)
 def limit_columns() -> tuple[str, ...]:
     out = ["P_level", "P_mean_difference"]
     for g in GUARDED[1:]:
@@ -1496,6 +1443,49 @@ def limit_problems(limits: Sequence[Mapping[str, Any]]) -> list[str]:
         if not math.isfinite(_f(lim.get("bound"))):
             out.append(f"limit {lim}: the bound is not a number")
     return out
+
+
+#: D5 (the lead's ruling, E-104): a limits row of DECISIONS.md, by position -- the row's id, its date, then the text
+#: column beginning with the prefix, the limits separated by "; ", then " -- " and the row's own words
+LIMITS_PREFIX = "e015-limits:"
+LIMIT_ROW = re.compile(r"^\| (E-\d+) \| (\d{4}-\d{2}-\d{2}) \| " + re.escape(LIMITS_PREFIX) + r" (.+?) -- (.+?) \|")
+LIMIT_ITEM = re.compile(r"^(\S+) (max|min) (\S+)$")
+
+
+def limit_rows(text: str) -> tuple[list[dict[str, Any]], list[str], list[str]]:
+    """D5: E-015's limits (9.1 item 10) read only from the rows recording the operator's approval -- each row of
+    `text` (the checkout's DECISIONS.md, so approved before the run's commit) that begins
+    `| E-NNN | YYYY-MM-DD | e015-limits: <COLUMN> max|min <BOUND>; <COLUMN> max|min <BOUND> -- <text> |`, positional,
+    no backticks; a string of that shape anywhere else is not a limits row. Returns (the limits, the rows used, the
+    problems): a limits row whose items do not parse, name a column outside `limit_columns()` or a bound that is not a
+    number, or whose own words do not name the operator's approval, is a problem (the run refuses). No bound is ever
+    typed on a command line."""
+    limits: list[dict[str, Any]] = []
+    rows: list[str] = []
+    probs: list[str] = []
+    for line in text.splitlines():
+        m = LIMIT_ROW.match(line)
+        if not m:
+            continue
+        rid, items, words = m.group(1), m.group(3), m.group(4)
+        mine, bad = [], []
+        for item in items.split(";"):
+            im = LIMIT_ITEM.match(item.strip())
+            if not im:
+                bad.append(f"{rid}: the limit {item.strip()!r} is not '<COLUMN> max|min <BOUND>'")
+                continue
+            mine.append({"row": rid, "column": im.group(1), "kind": im.group(2), "bound": _f(im.group(3))})
+        low = words.lower()
+        if "operator" not in low or "approv" not in low:
+            bad.append(f"{rid}: a limits row whose words do not name the operator's approval")
+        bad += [f"{rid}: {q}" for q in limit_problems(mine)]
+        if not mine:
+            bad.append(f"{rid}: a limits row with no limit")
+        probs += bad
+        if not bad:                                      # a row with any problem gives no limit (and the run refuses)
+            limits += mine
+            rows.append(rid)
+    return limits, rows, probs
 
 
 def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any]],
@@ -1610,281 +1600,6 @@ def adapter_provenance(root: Path = ROOT, strict: bool = True) -> dict[str, Any]
     return out
 
 
-# ------------------------------------------------------------------------------------------------ Q-44's comparison
-
-
-LADDER_TEXT = ("design", "arm", "response", "start_date", "exact_runs_differing")
-
-
-def _blank(v: Any) -> bool:
-    if v is None:
-        return True
-    if isinstance(v, str):
-        return v.strip() in ("", "nan", "NaN", "None")
-    try:
-        return not math.isfinite(float(v))
-    except (TypeError, ValueError):
-        return False
-
-
-def _text(v: Any) -> str:
-    if _blank(v):
-        return ""
-    if isinstance(v, str):
-        return v.strip()
-    f = float(v)
-    return str(int(f)) if f.is_integer() else repr(f)
-
-
-def q44_problems(mine: pd.DataFrame, theirs: pd.DataFrame, what: str, *, all_starts: bool) -> list[str]:
-    """8.1 item 6 (R4): our per-start rows (`user_readings.rounded(start_table(...))`) against Q-44's file read as text
-    (`extended.results.read_result(..., text=True)`), start for start, every column that file writes, by E-010's
-    comparator's rules: a blank equals only a blank; text as text (a day list such as "63" or "21 63" stays text); money
-    to the cent (both rounded to it: equal within 1e-6); every other number within 1e-9."""
-    out = []
-    by: dict[int, dict] = {}
-    for r in theirs.to_dict("records"):
-        s = int(float(r["start_day"]))
-        if s in by:
-            return [f"{what}: start {s} twice in Q-44's file"]
-        by[s] = r
-    ours = {int(r["start_day"]): r for r in mine.to_dict("records")}
-    missing = sorted(set(ours) - set(by))
-    if missing:
-        out.append(f"{what}: {len(missing)} of our starts not in Q-44's file (first: start {missing[0]})")
-    if all_starts and set(by) - set(ours):
-        out.append(f"{what}: {len(set(by) - set(ours))} of Q-44's {len(by)} starts not reproduced")
-    common = sorted(set(ours) & set(by))
-    for col in R.START_COLS:
-        if col not in theirs.columns:
-            out.append(f"{what}: Q-44's file has no column {col}")
-            continue
-        tol = 1e-6 if col in R.MONEY_COLS else 1e-9
-        bad = []
-        for s in common:
-            a, b = ours[s].get(col), by[s].get(col)
-            if col in LADDER_TEXT:
-                same = _text(a) == _text(b)
-            elif _blank(a) or _blank(b):
-                same = _blank(a) and _blank(b)
-            else:
-                try:
-                    same = abs(float(a) - float(b)) <= tol
-                except (TypeError, ValueError):
-                    same = False
-            if not same:
-                bad.append(s)
-        if bad:
-            s = bad[0]
-            out.append(f"{what}: {col} differs from Q-44's file on {len(bad)} of {len(common)} starts (first: start "
-                       f"{s}: {ours[s].get(col)!r} against {by[s].get(col)!r})")
-    return out
-
-
-class RealInputs(Inputs):
-    """P-14's and P-16's registered designs, read through Stage 2's own builders (the lead's run, from a clean
-    checkout, its reads authorised first): U1's jobs (`identity/user_beside_identity.py`'s `build`), U1's file for 8.1
-    item 2's repeat, Q-44's per-start file (as text) for item 6, the registered gate calls (`identity/pp_identity.py`'s)
-    and the registered gate rows."""
-
-    GATE_FILES = {"p14": "a3_brk30_cb20_gate.csv", "p16": "rc_s150_all_gate.csv"}
-
-    def __init__(self, starts: int | None = None, n_paths: int = 500, q44_path: Path | str | None = None):
-        self.starts = starts
-        self._n_paths = int(n_paths)
-        self._jobs: dict[str, Any] = {}
-        self._gate: dict[str, Any] = {}
-        self._q44: pd.DataFrame | None = None
-        self._q44_path = Path(q44_path) if q44_path is not None else ROOT / "results" / "user_beside_starts.csv"
-        self._base_gate: dict[str, dict[str, dict[str, Any]]] = {}
-
-    def n_paths(self) -> int:
-        return self._n_paths
-
-    def q44(self) -> pd.DataFrame:
-        if self._q44 is None:
-            from extended.results import read_result
-
-            self._q44 = read_result(self._q44_path, text=True)
-        return self._q44
-
-    def preflight(self, designs: Sequence[str]) -> list[str]:
-        """Before any read is authorised: Q-44's file verifies and reads as text with every column and the verdict rows
-        of each design and response beside; each design's registered gate row is one row a shift at 0 %, the placement
-        off, with the columns 9.1 items 6 and 8 read."""
-        out = []
-        try:
-            f = self.q44()
-        except Exception as exc:                          # noqa: BLE001 -- any failure here is a refusal before reads
-            return [f"Q-44's per-start file: {exc}"]
-        miss = [c for c in R.START_COLS if c not in f.columns]
-        if miss:
-            out.append(f"Q-44's per-start file lacks {miss}")
-        else:
-            for d in designs:
-                for resp in BESIDE:
-                    if not ((f["design"] == d) & (f["arm"] == "verdict") & (f["response"] == resp)).any():
-                        out.append(f"Q-44's per-start file has no {d} verdict {resp} rows")
-        for d in designs:
-            try:
-                rows = self.base_gate_rows(d)
-            except Exception as exc:                      # noqa: BLE001
-                out.append(f"{d}'s registered gate rows: {exc}")
-                continue
-            if sorted(rows) != sorted(GATE_SHIFTS):
-                out.append(f"{d}'s registered gate rows: shifts {sorted(rows)}, not {list(GATE_SHIFTS)}")
-            for shift, r in rows.items():
-                need = [c for _, c in (*GATE_READING, *GATE_DIVERGE)] + ["mean_payouts_per_path"]
-                miss = [c for c in need if c not in r]
-                if miss:
-                    out.append(f"{d} {shift}'s registered gate row lacks {miss}")
-        return out
-
-    def base_gate_rows(self, design: str) -> dict[str, dict[str, Any]]:
-        """The base's registered gate rows (`section` gate, 0 %, the placement off), one a shift, as `rc_screen.
-        p14_beside` reads P-14's (read, never rerun); refused unless exactly one row a shift."""
-        if design in self._base_gate:
-            return self._base_gate[design]
-        from propedge import RESULTS_DIR
-        from propedge.reporting.results import read_result
-
-        d = read_result(RESULTS_DIR / self.GATE_FILES[design])
-        g = d[(d["section"].astype(str) == "gate") & np.isclose(d["enforcement_p"].astype(float), 0.0)
-              & (d["placement"].astype(str) == "off")]
-        out = {}
-        for shift in GATE_SHIFTS:
-            s = g[g["shift"].astype(str) == shift]
-            if len(s) != 1:
-                raise ValueError(f"{self.GATE_FILES[design]}: {len(s)} gate rows at 0 % for {shift}, not one")
-            out[shift] = s.iloc[0].to_dict()
-        self._base_gate[design] = out
-        return out
-
-    def jobs(self, design: str) -> dict[str, dict[str, Any]]:
-        import user_beside_identity as UI
-
-        from propedge import RESULTS_DIR
-
-        jobs, c, probs = UI.build(RESULTS_DIR, design)
-        if probs:
-            raise Refused(f"{design}: the builder's own identities fail: {probs[:4]}")
-        self._jobs[design] = (jobs, c, UI.u1_reference(RESULTS_DIR, [design]))
-        return jobs
-
-    def identity_problems(self, design: str, arm: str, outs: list[dict[str, Any]]) -> list[str]:
-        import user_beside_identity as UI
-
-        jobs, c, ref = self._jobs[design]
-        return UI.u1_compare_outs(design, c, arm, outs, ref, len(jobs[arm]["blocks"]), self.starts)
-
-    def ladder_problems(self, design: str, response: str, outs: list[dict[str, Any]]) -> list[str]:
-        """Q-44's `results/user_beside_starts.csv` rows for the design, the verdict arm and the response, start for
-        start, every column that file writes, at its precision (money to the cent): the file read as text (R4)."""
-        f = self.q44()
-        theirs = f[(f["design"] == design) & (f["arm"] == "verdict") & (f["response"] == response)]
-        mine = R.rounded(R.start_table(design, "verdict", response, outs))
-        return q44_problems(mine, theirs, f"{design} {response}", all_starts=self.starts is None)
-
-    def _gate_inputs(self, design: str) -> dict[str, Any]:
-        if design in self._gate:
-            return self._gate[design]
-        import a3_brk30 as B
-        import a3_brk30_cb20 as C
-        import atlas_a3 as A
-        import rc_screen as S
-        import score_fv3_grid as gf
-        import stage2_identity as SI
-
-        if design == "p14":
-            I = S.inputs()
-            L = I["L"]
-            t, days = B.cell_trades(L)
-            seed, gap, budget = S.SEED, S.STRICT_GAP, S.BUDGET
-        else:
-            import rc150_dev_test as P
-            import rc_dev_test as D
-
-            sp = P.SPEC
-            I, b = sp.build()
-            L = I["L"]
-            t, days = b["cells"][sp.cell]["trades"], b["days"]
-            if D.trades_hash(t) != sp.trades_sha256:
-                raise Refused(f"P-16's trades hash is not the pinned {sp.trades_sha256}")
-            seed, gap, budget = SI.P16_SEED, C.STRICT_GAP, C.BUDGET
-        cfg, fcfg, tv = L["cfg"], L["fcfg"], float(L["tv"])
-        keys = B.rrs(t)
-        _, e_by, lb_by, _, _ = A.bounds(t, days, keys, cfg)
-        blocks, n_used = gf.gate_blocks(t, days, tv, keys, require_sides=True, require_exits=True)
-        if n_used != len(t):
-            raise Refused("the blocks hold a different number of trades")
-        g = {"A": A, "I": I, "fcfg": fcfg, "tv": tv, "e_by": e_by, "lb_by": lb_by, "blocks": blocks, "seed": seed,
-             "gap": gap, "budget": budget, "cap": B.capacity(t, fcfg)}
-        self._gate[design] = g
-        return g
-
-    def gate_call(self, design: str, cell: str, twin: bool) -> dict[str, Any]:
-        import fv3d_lever_test as lt
-        import portfolio_stage as ps
-
-        g = self._gate_inputs(design)
-        fcfg = g["fcfg"]
-        blocks, e_by, lb_by = g["blocks"], g["e_by"], g["lb_by"]
-        if twin:                                         # the zero-edge twin, as atlas_a3.campaign builds it
-            fr = float(fcfg["state_policy"]["fresh"]["funded_rr"])
-            blocks = ps.zero_edge_blocks(blocks, e_by, fr)
-            e_by = lb_by = {k: 0.0 for k in g["e_by"]}
-        sink: list[dict] = []
-        pc = fcfg["portfolio"]
-        inner = ps.composed_hook({"margin": float(pc["margin"]), "block_days": int(pc["block_days"])}, sink=sink)
-        hook = lt.lever_hook(inner)
-        label = f"{design}_{cell}{'_twin' if twin else ''}"
-        ps._label(inner, label)
-        kw = g["A"].gate_kwargs(blocks, fcfg, g["tv"], g["I"]["plan"], e_by, lb_by, hook, seed=g["seed"],
-                                n_paths=self._n_paths, horizon=int(fcfg["gate"]["campaign"]["horizon_days"]),
-                                capacity=g["cap"], levels=(0.0,), rtp=False, one_at_a_time=g["gap"],
-                                purchase_budget=g["budget"])
-        kw["protocol"] = PP.cell_protocol(kw["protocol"], cell)
-        return {"kw": kw, "sink": sink, "label": label}
-
-    def gate_pairing_rows(self, design: str, cell: str, twin: bool, g: dict[str, Any]) -> list[dict[str, Any]]:
-        """The cell's paths (its hook's sink) against the base's registered gate paths, path for path (the same seed,
-        so the same day draws): each `zero_edge_decomposition.PATH_COLS` column's mean over paths, the cell's, the
-        base's and their difference, point and bound. The twin has no registered twin here: its own means alone."""
-        import stage2_identity as SI
-        import zero_edge_decomposition as zd
-
-        from propedge import RESULTS_DIR
-        from propedge.reporting.results import read_result
-
-        import rc_screen as S
-
-        rows = []
-        mine = pd.DataFrame([r for r in g["sink"] if r.get("run") == g["label"]
-                             and float(r.get("enforcement_p", 0.0)) == 0.0])
-        ref = read_result(RESULTS_DIR / (S.P14_PATHS if design == "p14" else SI.P16_PATHS))
-        theirs_run = "zero_edge_twin" if twin else "gate"
-        for shift in (("point",) if twin else ("point", "lower_bound")):
-            a = mine[mine["shift"] == shift].sort_values("path").reset_index(drop=True) if len(mine) else mine
-            b = ref[(ref["run"].astype(str) == theirs_run) & (ref["shift"].astype(str) == shift)
-                    & np.isclose(ref["enforcement_p"].astype(float), 0.0)].sort_values("path").head(len(a))
-            b = b.reset_index(drop=True)
-            for col in zd.PATH_COLS:
-                if col not in a:
-                    continue
-                x = pd.to_numeric(a[col], errors="coerce").to_numpy(float)
-                k = dict(section="gate", part="pairing", design=design, cell=cell, mode="declared", block=shift,
-                         measure=col, n=int(len(a)), note="the zero-edge twin" if twin else "")
-                rows.append(_row(**k, stat="cell_mean", value=float(np.nanmean(x)) if x.size else np.nan))
-                if len(b) == len(a) and col in b and len(a):
-                    y = pd.to_numeric(b[col], errors="coerce").to_numpy(float)
-                    rows += [_row(**k, stat="base_registered_mean", value=float(np.nanmean(y))),
-                             _row(**k, stat="cell_less_base_mean", value=float(np.nanmean(x - y)))]
-                else:
-                    rows.append(_row(**k, stat="base_registered_mean", value=np.nan,
-                                     note=f"no registered {theirs_run} run of {len(a)} paths to pair with"))
-        return rows
-
-
 #: where each declared output lives (the second read's R5 remedy: a declared-outputs test reads this table): (the
 #: declared item, the file, the section or None, the part, a measure (or its prefix with `*`), a stat or None)
 DECLARED_OUTPUTS: tuple[tuple[str, str, str | None, str, str, str | None], ...] = (
@@ -1951,5 +1666,5 @@ __all__ = ["RealInputs", "DECLARATION", "PREREG_ID", "PIN_ROW", "PURPOSES", "DES
            "calendar_frames", "holiday_sessions", "Inputs", "cell_job", "runs_of", "Measure", "MEASURES", "start_frame",
            "start_tallies", "distribution_rows", "paired_rows", "card_of", "extra_card", "reading_rows", "read_check",
            "gate_read_check", "run_reading", "honesty_table", "label_rows", "menu_table", "limit_columns",
-           "limit_problems", "adapter_provenance", "q44_problems", "GateTally", "gate_oracle_rows",
+           "limit_problems", "limit_rows", "adapter_provenance", "q44_problems", "GateTally", "gate_oracle_rows",
            "replay_oracle_rows", "identical_outputs", "DECLARED_OUTPUTS"]

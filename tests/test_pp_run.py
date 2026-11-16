@@ -1,4 +1,4 @@
-"""Q-105b, Q-105d: RD-02's reading runner (`scripts/pp_reading.py`, `extended/pp_run.py`, `extended/pp_run_synthetic.py`;
+"""Q-105b, Q-105d, Q-105e: RD-02's reading runner (`scripts/pp_reading.py`, `extended/pp_run.py`, `extended/pp_run_synthetic.py`;
 the pinned text's section 14) on synthetic inputs only -- no bar, no atlas, no result file of a design read -- held to
 the red team's second read (`docs/reviews/BUILD_RD-02_v2_2026-11-16.md`):
 
@@ -7,14 +7,16 @@ the red team's second read (`docs/reviews/BUILD_RD-02_v2_2026-11-16.md`):
   (`pp_run.DECLARED_OUTPUTS`, R5), the menu's labels and notes, the gates' file;
 * `refusals` -- a planted failure writes nothing; the real mode refuses outside a clean run; a protected folder is
   refused;
-* `waits` -- the waits by their literal tokens (R3), the rows named (r4), two workers only after T-10 at two (r5);
+* `waits` -- the waits by position, tied to a commit and its covered files (the third read's D1, E-104), the rows
+  named (r4), two workers only after T-10 at two (r5);
+* `limits` -- E-015's limits from the operator's approving rows only (D5);
 * `authorise` -- every purpose checked before any is ledgered (n1);
 * `labels` -- the paired readings' intervals, MDDs and labels from the honesty table, and the menu's count;
 * `t3` -- T-3 on the runner's composed reading through `start_frame` from session-level toy records (R1);
 * `order` -- the second design's `ref` failing replays no new run (R2);
 * `q44` -- Q-44's file read as text, the round trip on empty and numeric-looking fields (R4);
-* `oracles` -- 8.2's oracles on the gates' funded records and on the replays (r1);
-* `holiday` -- each request dated on its own session (r2).
+* `oracles` -- 8.2's oracles on the gates' funded records and on the replays (r1); the twin's gross on one arm (D3);
+* `holiday` -- each request dated on its own session (r2); every holiday's eve, the no-session ones included (D4).
 
 Each runs in its own process (`tests/pp_run_check.py`). The build's seed rule (T-9) holds for these files too: none
 writes a seed of RD-02's block (the runner reads its seeds from the pinned file; the tests use the build seed's one
@@ -32,9 +34,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-FILES = ("extended/pp_run.py", "extended/pp_run_synthetic.py", "scripts/pp_reading.py", "tests/pp_run_check.py",
-         "tests/test_pp_run.py", "tests/pp_gate_direct.py")
-SECTIONS = ("e2e", "refusals", "waits", "authorise", "labels", "t3", "order", "q44", "oracles", "holiday")
+FILES = ("extended/pp_run.py", "extended/pp_inputs.py", "extended/pp_run_synthetic.py", "scripts/pp_reading.py",
+         "tests/pp_run_check.py", "tests/test_pp_run.py", "tests/pp_gate_direct.py")
+SECTIONS = ("e2e", "refusals", "waits", "limits", "authorise", "labels", "t3", "order", "q44", "oracles", "holiday")
 
 
 @pytest.mark.parametrize("section", SECTIONS)

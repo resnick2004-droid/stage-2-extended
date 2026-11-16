@@ -1,6 +1,8 @@
-"""RD-02's identities, refusing (`prereg/RD-02_payout_policy.md` 8.1 items 1 to 3, with item 4 on the paths; Q-105):
-the reference policy (`elig`, `max`) run through this reading's whole adapter -- its funded-account class, the
-held-state rule, the payout fields -- reproduces P-14's and P-16's registered gate paths and U1's start rows.
+"""RD-02's identities, refusing (`prereg/RD-02_payout_policy.md` 8.1 items 1 to 3, with item 4 on the paths and starts,
+and item 6 at `ref`; Q-105, Q-105e): the reference policy (`elig`, `max`) run through this reading's whole adapter -- its
+funded-account class, the held-state rule, the payout fields -- **and through the reading's own inputs**
+(`extended/pp_inputs.RealInputs`, the third read's D2) reproduces P-14's and P-16's registered gate paths with their
+zero-edge twins, U1's start rows, and Q-44's per-start rows beside.
 
     python identity/pp_identity.py --paths 4 --u1-starts 4 --row E-NNN        # T-8, slow: the lead's, under the lock
     python identity/pp_identity.py --paths 500 --u1-starts all --row E-NNN    # heavy: the lead's, under the lock
@@ -9,20 +11,27 @@ held-state rule, the payout fields -- reproduces P-14's and P-16's registered ga
 as it runs, and is ledgered only inside a clean run, so this script can never read a policy cell: its cell, class and
 payout fields are the constants below, equal to `ref`'s; no argument selects a policy, a lever or a payout field; and
 `guard` -- called first in each comparison, before any input is built, any start runs or any path -- refuses unless both
-levers are off and the class is the reference's under the declared rule.
+levers are off and the class is the reference's under the declared rule. The inputs are the reading's `RealInputs` at the
+constant cell `ref` (`payout_policy.cell_protocol(base, "ref")` is the base itself), so no policy cell can be built here.
 
-**What it compares** (each refusing; E-010's tolerances):
+**What it compares** (each refusing; E-010's tolerances), every input through `RealInputs` -- so the identity certifies
+the code the reading runs (D2; the duplicate gate builder this script carried is gone):
 
-1. **P-14's registered gate paths** -- `vendor/stage2/results/a3_brk30_cb20_gate_paths.csv`, the `gate` run, 0 %,
-   point and bound -- through `extended/gate.py` with the class given, every `zero_edge_decomposition.PATH_COLS` column
-   to 1e-6, at P-14's seed (`identity/gate_identity.py`'s P-14 call, the class added);
+1. **P-14's registered gate paths** -- `vendor/stage2/results/a3_brk30_cb20_gate_paths.csv`, the `gate` run at 0 %,
+   point and bound, and its `zero_edge_twin` run, point and bound -- through `extended/gate.py` with the class given,
+   the calls built by `RealInputs.gate_call("p14", "ref", twin)`, every `zero_edge_decomposition.PATH_COLS` column to
+   1e-6, at P-14's seed;
 2. **U1's start rows for P-14** -- `vendor/stage2/results/user_journey.csv` section `start`, config `p14`, both arms --
-   through `extended.user_beside.run_starts` with the class given and the response `off`
-   (`identity/user_beside_identity.py`'s comparison);
+   through `extended.user_beside.run_starts` with the class given and the response `off`, the jobs and the comparison
+   `RealInputs.jobs` and `identity_problems` (`identity/user_beside_identity.py`'s build and comparison);
 3. **the same for P-16** (its trades' hash first; `rc_s150_all_gate_paths.csv`; U1's `p16` rows);
 4. **on the paths and the starts, the levers off**: through the counters' channel (`GateCounters`, `ReplayCounters`),
-   every counter zero -- no held read, no first request held, no request cut, no close where the policy's eligibility
-   differs from the firm's.
+   every lever count zero -- no held read, no first request held, no request cut, no close where the policy's
+   eligibility differs from the firm's;
+6. **the readings beside at `ref`** (8.1 item 6, with `--u1-starts`): `ref` under `denial_10`, `denial_25`,
+   `denial_50` and `rtp` on the verdict arm, at the identity's starts, against Q-44's `results/user_beside_starts.csv`
+   through `RealInputs.ladder_problems` (the file read as text; E-010's comparator; money to the cent). Q-44's file must
+   be on the tree and verify, or the script refuses before any read.
 
 **The read.** Stage 2's engine reads the bars and the atlas itself, so `main` authorises them first
 (`extended.reader.authorise_engine_read`, purpose `identity`, declaration `--row`, the decision row that registers this
@@ -30,7 +39,7 @@ identity -- the lead's; the reader refuses a row that does not exist or does not
 without it.
 
 **Its waits** (8.1): Q-80 (the re-composed gate's 500-path identities) for item 1 and 3's gates; Q-93 (U1's start rows
-with a class) and Q-101 (with the recorder) for the replays.
+with a class) and Q-101 (with the recorder) for the replays; Q-44's per-start file for item 6.
 """
 from __future__ import annotations
 
@@ -89,59 +98,34 @@ def _zero(rows: Any, what: str, key: tuple[str, str, str]) -> list[str]:
     return [] if not any(tot.values()) else [f"{what}: the levers are not off ({tot})"]
 
 
+# ------------------------------------------------------------------------------------------------ the inputs
+
+
+#: the reading's own inputs, one instance a (paths, starts) setting -- built in the comparison, after its guard
+_INPUTS: dict[tuple[int | None, int | None], Any] = {}
+
+
+def _real_inputs(n_paths: int | None = None, starts: int | None = None) -> Any:
+    """The reading's `RealInputs` (`extended/pp_inputs.py`; D2), kept a design's comparisons long so U1's jobs are
+    built once."""
+    from extended import pp_inputs as PI
+
+    key = (None if n_paths is None else int(n_paths), None if starts is None else int(starts))
+    if key not in _INPUTS:
+        _INPUTS[key] = PI.RealInputs(starts=starts, n_paths=int(n_paths) if n_paths else 500)
+    return _INPUTS[key]
+
+
 # ------------------------------------------------------------------------------------------------ items 1 and 3
 
 
-def _build_gate_inputs(design: str, n: int) -> dict[str, Any]:
-    """The registered gate call's keywords, as `identity/gate_identity.py` builds P-14's and P-16's (the inputs read
-    through the vendored builders)."""
-    import a3_brk30 as B
-    import a3_brk30_cb20 as C
-    import atlas_a3 as A
-    import fv3d_lever_test as lt
-    import portfolio_stage as ps
-    import rc_screen as S
-    import score_fv3_grid as gf
-    import stage2_identity as SI
-
-    if design == "p14":
-        I = S.inputs()
-        L = I["L"]
-        t, days = B.cell_trades(L)
-        seed, gap, budget, ref = S.SEED, S.STRICT_GAP, S.BUDGET, S.P14_PATHS
-    else:
-        import rc150_dev_test as P
-        import rc_dev_test as D
-
-        sp = P.SPEC
-        I, b = sp.build()
-        L = I["L"]
-        t, days = b["cells"][sp.cell]["trades"], b["days"]
-        if D.trades_hash(t) != sp.trades_sha256:
-            raise RuntimeError(f"P-16's trades hash is not the pinned {sp.trades_sha256}")
-        seed, gap, budget, ref = SI.P16_SEED, C.STRICT_GAP, C.BUDGET, SI.P16_PATHS
-    cfg, fcfg, tv = L["cfg"], L["fcfg"], float(L["tv"])
-    keys = B.rrs(t)
-    _, e_by, lb_by, _, _ = A.bounds(t, days, keys, cfg)
-    blocks, n_used = gf.gate_blocks(t, days, tv, keys, require_sides=True, require_exits=True)
-    if n_used != len(t):
-        raise RuntimeError("the blocks hold a different number of trades")
-    cap = B.capacity(t, fcfg)
-    sink: list[dict] = []
-    pc = fcfg["portfolio"]
-    inner = ps.composed_hook({"margin": float(pc["margin"]), "block_days": int(pc["block_days"])}, sink=sink)
-    hook = lt.lever_hook(inner)
-    label = f"{design}_pp_identity"
-    ps._label(inner, label)
-    kw = A.gate_kwargs(blocks, fcfg, tv, I["plan"], e_by, lb_by, hook, seed=seed, n_paths=int(n),
-                       horizon=int(fcfg["gate"]["campaign"]["horizon_days"]), capacity=cap, levels=(0.0,), rtp=False,
-                       one_at_a_time=gap, purchase_budget=budget)
-    return {"kw": kw, "sink": sink, "label": label, "ref": ref}
+TWIN_RUN = "zero_edge_twin"
 
 
 def gate_problems(design: str, n: int, workers: int) -> list[str]:
-    """Item 1 (P-14) or 3 (P-16): the registered gate paths through `extended/gate.py` with the reference class, and
-    item 4 on the paths through the counters' channel."""
+    """Item 1 (P-14) or 3 (P-16): the registered gate paths -- the `gate` run and its `zero_edge_twin`, point and bound
+    -- through `extended/gate.py` with the reference class, each call built by `RealInputs.gate_call(design, "ref",
+    twin)`; and item 4 on the paths through the counters' channel."""
     guard()
     from extended import gate as XG
     import zero_edge_decomposition as zd
@@ -149,54 +133,100 @@ def gate_problems(design: str, n: int, workers: int) -> list[str]:
     from propedge import RESULTS_DIR
     from propedge.reporting.results import read_result
 
-    g = _build_gate_inputs(design, n)
-    kw = g["kw"]
-    guard(FUNDED_CLASS, kw["protocol"])
-    counters = PP.GateCounters()
-    XG.run_gate(kw.pop("blocks"), workers=int(workers), funded_account_cls=FUNDED_CLASS, counters=counters, **kw)
-    probs = zd.path_problems(g["sink"], read_result(RESULTS_DIR / g["ref"]),
-                             [(g["label"], s, "gate", s) for s in ("point", "lower_bound")], int(n))
-    for shift in ("point", "lower_bound"):
-        probs += _zero((r for k in counters.keys() if k[0] == shift for r in counters.paths(*k[:2])[k[2]]),
-                       f"{design} gate {shift}", (design, "gate paths", shift))
+    ri = _real_inputs(n_paths=n)
+    probs: list[str] = []
+    ref = None
+    for twin in (False, True):
+        g = ri.gate_call(design, CELL, twin)
+        kw = dict(g["kw"])
+        guard(FUNDED_CLASS, kw["protocol"])
+        counters = PP.GateCounters()
+        XG.run_gate(kw.pop("blocks"), workers=int(workers), funded_account_cls=FUNDED_CLASS, counters=counters, **kw)
+        if ref is None:
+            ref = read_result(RESULTS_DIR / ri.registered_paths_file(design))
+        theirs = TWIN_RUN if twin else "gate"
+        probs += zd.path_problems(g["sink"], ref, [(g["label"], s, theirs, s) for s in ("point", "lower_bound")],
+                                  int(n))
+        what = "twin" if twin else "gate"
+        for shift in ("point", "lower_bound"):
+            probs += _zero((r for k in counters.keys() if k[0] == shift for r in counters.paths(*k[:2])[k[2]]),
+                           f"{design} {what} {shift}", (design, "gate paths", f"{what} {shift}"))
     return probs
 
 
-# ------------------------------------------------------------------------------------------------ items 2 and 3
-
-
-def _build_u1_job(design: str) -> tuple[dict[str, Any], dict[str, Any], list[str], dict[str, Any]]:
-    """U1's jobs for a configuration (`identity/user_beside_identity.py`'s `build`) and U1's file (its reference)."""
-    import user_beside_identity as UI
-
-    from propedge import RESULTS_DIR
-
-    jobs, c, probs = UI.build(RESULTS_DIR, design)
-    return jobs, c, probs, UI.u1_reference(RESULTS_DIR, [design])
+# ------------------------------------------------------------------------------------------------ items 2, 3 and 6
 
 
 def u1_problems(design: str, starts: int | None, workers: int) -> list[str]:
-    """Item 2 (P-14) or 3 (P-16): U1's start rows through `run_starts` with the reference class, both arms, and item 4
-    on the starts through the counters' channel."""
+    """Item 2 (P-14) or 3 (P-16): U1's start rows through `run_starts` with the reference class, both arms, the jobs
+    and the comparison `RealInputs.jobs` and `identity_problems`; and item 4 on the starts through the counters'
+    channel."""
     guard()
-    import user_beside_identity as UI
     import user_journey as UJ
 
+    from extended import pp_inputs as PI
     from extended import user_beside as B
 
-    jobs, c, probs, ref = _build_u1_job(design)
+    ri = _real_inputs(starts=starts)
+    try:
+        jobs = ri.jobs(design)
+    except PI.Refused as exc:
+        return [str(exc)]
+    probs: list[str] = []
     for arm in UJ.ARMS:
         job = jobs[arm]
         guard(FUNDED_CLASS, job["args"]["draws"]["protocol"])
-        n_window = len(job["blocks"])
-        chosen = UJ.start_choice(n_window, starts)
+        chosen = UJ.start_choice(len(job["blocks"]), starts)
         counters = PP.ReplayCounters()
         outs = B.run_starts(design, arm, B.BY_NAME["off"], job, chosen, int(workers), funded_account_cls=FUNDED_CLASS,
                             counters=counters)
-        probs += UI.u1_compare_outs(design, c, arm, outs, ref, n_window, starts)
+        probs += ri.identity_problems(design, arm, outs)
         probs += _zero((r for v in counters.starts(design, arm, "off").values() for r in v), f"{design} {arm} starts",
                        (design, "U1 start rows", arm))
     return probs
+
+
+def ladder_problems(design: str, starts: int | None, workers: int) -> list[str]:
+    """Item 6 at `ref` (D2): `ref` under the denial ladder and the placement on, verdict arm, at the identity's starts,
+    through `run_starts` with the reference class, against Q-44's per-start rows by `RealInputs.ladder_problems`; and
+    the levers' own counts zero under each (item 4; the two `cons_*` counts are the engine's)."""
+    guard()
+    import user_journey as UJ
+
+    from extended import pp_inputs as PI
+    from extended import user_beside as B
+
+    ri = _real_inputs(starts=starts)
+    try:
+        job = ri.jobs(design)["verdict"]
+    except PI.Refused as exc:
+        return [str(exc)]
+    guard(FUNDED_CLASS, job["args"]["draws"]["protocol"])
+    chosen = UJ.start_choice(len(job["blocks"]), starts)
+    probs: list[str] = []
+    for rname in PI.BESIDE:
+        counters = PP.ReplayCounters()
+        outs = B.run_starts(design, "verdict", B.BY_NAME[rname], job, chosen, int(workers),
+                            funded_account_cls=FUNDED_CLASS, counters=counters)
+        probs += ri.ladder_problems(design, rname, outs)
+        probs += _zero((r for v in counters.starts(design, "verdict", rname).values() for r in v),
+                       f"{design} verdict {rname} starts", (design, "ladder rows", rname))
+    return probs
+
+
+def q44_problems() -> list[str]:
+    """Item 6's reference before any read: Q-44's per-start file on the tree, verifying, with every column and the
+    verdict rows of each design and response beside (`RealInputs.preflight`'s Q-44 part)."""
+    from extended import pp_inputs as PI
+    from extended import results as XR
+
+    p = ROOT / "results" / "user_beside_starts.csv"
+    if not p.is_file():
+        return ["Q-44's per-start file results/user_beside_starts.csv is not on the tree (8.1 item 6 at ref waits for it)"]
+    ok, msg = XR.verify_result(p)
+    if not ok:
+        return [f"Q-44's per-start file: {msg}"]
+    return [q for q in PI.RealInputs().preflight(DESIGNS) if q.startswith("Q-44")]
 
 
 # ------------------------------------------------------------------------------------------------ main
@@ -222,6 +252,13 @@ def main(argv: list[str] | None = None) -> int:
     designs = [d for d in DESIGNS if a.only is None or d == a.only]
     import stage2_identity as SI
 
+    if a.u1_starts:                                 # item 6's reference, before any read is authorised
+        probs = q44_problems()
+        if probs:
+            print("REFUSED (RD-02 8.1 item 6 at ref): " + "; ".join(probs))
+            print("EXIT 3", flush=True)
+            return 3
+
     try:                                            # the engine's reads authorised first (ledgered in a clean run only)
         reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
                                      declaration=a.row, files=SI.engine_files(VENDOR, bars="p16" in designs),
@@ -234,7 +271,8 @@ def main(argv: list[str] | None = None) -> int:
     bad = False
     for d in designs:
         for what, run in (("gate paths", (lambda: gate_problems(d, a.paths, a.workers)) if a.paths else None),
-                          ("U1 start rows", (lambda: u1_problems(d, starts, a.workers)) if a.u1_starts else None)):
+                          ("U1 start rows", (lambda: u1_problems(d, starts, a.workers)) if a.u1_starts else None),
+                          ("ladder rows", (lambda: ladder_problems(d, starts, a.workers)) if a.u1_starts else None)):
             if run is None:
                 continue
             t0 = time.time()
@@ -247,6 +285,7 @@ def main(argv: list[str] | None = None) -> int:
                 counts = "; ".join(f"{k[2]}: {v}" for k, v in COUNTS.items() if k[:2] == (d, what))
                 print(f"identity HOLDS: RD-02 ref {d} {what} ({time.time() - t0:.0f} s); 8.1 item 4, the levers' counts "
                       f"-- {counts}", flush=True)
+        _INPUTS.clear()                             # a design's inputs released before the next
     pm = SI.peak_memory()
     if pm:
         print(pm)
