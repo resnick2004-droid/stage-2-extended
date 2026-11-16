@@ -1,0 +1,41 @@
+Q-87 (family O's third draft): the printed output of tests/test_family_o_toys.py (slow tier) -- synthetic toys only,
+no bar, walk or result file read; the figures select nothing and are not results of this family (the draft's 18.3).
+Command: OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 timeout 3600 python -m pytest -q -s -o addopts= -p no:cacheprovider tests/test_family_o_toys.py
+Tree: wt/wt-lit at 8d80481 (master) with the test file as committed in the Q-87 commit; run 2026-11-16, 05:02-05:53 local, one process,
+beside other workers (free memory 0.3-0.9 GB). Seeds [20261988, 300, ...] (K0's toys) and [20261988, 400, ...] (B2's toys).
+
+
+K0 toys: cons (treated two-sample) on the cluster sign null, 200000 replications each, 630 sessions
+  offer (iid, Q-16's reference) (nested; mean N1 62.0, mean N2 186.0): k=12: 3 rej, 0.05x [0.01, 0.14] kept; k=15: 3 rej, 0.07x [0.01, 0.21] kept  [49 s]
+  window, clustered across nights (s1, s2) (nested; mean N1 64.4, mean N2 186.0): k=12: 8 rej, 0.12x [0.05, 0.25] kept; k=15: 3 rej, 0.07x [0.01, 0.21] kept  [47 s]
+  whole sessions, runs 5 (u3) (nested; mean N1 58.5, mean N2 186.0): k=12: 8 rej, 0.12x [0.05, 0.25] kept; k=15: 5 rej, 0.12x [0.04, 0.28] kept  [34 s]
+  whole sessions, runs 21 (s3) (nested; mean N1 78.6, mean N2 186.0): k=12: 0 rej, 0.00x [0.00, 0.06] kept; k=15: 0 rej, 0.00x [0.00, 0.09] kept  [35 s]
+  whole sessions, runs 63 (s3, slower) (nested; mean N1 39.2, mean N2 186.0): k=12: 0 rej, 0.00x [0.00, 0.06] kept; k=15: 0 rej, 0.00x [0.00, 0.09] kept  [36 s]
+  C2 openings: design vs two clustered twin draws (pair; mean N1 9.7, mean N2 18.1): k=12: 20 rej, 0.31x [0.19, 0.48] kept; k=15: 11 rej, 0.26x [0.13, 0.47] kept  [40 s]
+.
+B2 toy [whole sessions, runs 21 (s3/u3), slow 0.05 / 0.05]: a_hat 0.0885, in-state offers 39060 of 117180, B2 400000 replicates per a* [212 s]
+  k=12 level, 200000 null judged blocks: cons 0 (0.00x [0.00, 0.06]); larger-of (a) 0 (0.00x [0.00, 0.06]); larger-of (a),(d) 0 (0.00x [0.00, 0.06]); a* beyond the grid 0
+  k=12 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.25: 0.030 / 0.030 / 0.030; lift 0.5: 0.262 / 0.262 / 0.262; lift 1.0: 0.664 / 0.664 / 0.664; lift 2.0: 0.956 / 0.956 / 0.956
+  k=15 level, 200000 null judged blocks: cons 0 (0.00x [0.00, 0.09]); larger-of (a) 0 (0.00x [0.00, 0.09]); larger-of (a),(d) 0 (0.00x [0.00, 0.09]); a* beyond the grid 0
+  k=15 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.25: 0.010 / 0.010 / 0.010; lift 0.5: 0.131 / 0.131 / 0.131; lift 1.0: 0.323 / 0.323 / 0.323; lift 2.0: 0.471 / 0.471 / 0.471
+.
+B2 toy [whole sessions, runs 21 (s3/u3), slow 0.05 / 0.15]: a_hat 0.1150, in-state offers 39432 of 117180, B2 400000 replicates per a* [289 s]
+  k=12 level, 200000 null judged blocks: cons 1 (0.02x [0.00, 0.09]); larger-of (a) 1 (0.02x [0.00, 0.09]); larger-of (a),(d) 1 (0.02x [0.00, 0.09]); a* beyond the grid 0
+  k=12 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.25: 0.052 / 0.052 / 0.052; lift 0.5: 0.525 / 0.525 / 0.525; lift 1.0: 0.977 / 0.977 / 0.977; lift 2.0: 1.000 / 1.000 / 1.000
+  k=15 level, 200000 null judged blocks: cons 0 (0.00x [0.00, 0.09]); larger-of (a) 0 (0.00x [0.00, 0.09]); larger-of (a),(d) 0 (0.00x [0.00, 0.09]); a* beyond the grid 0
+  k=15 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.25: 0.030 / 0.030 / 0.029; lift 0.5: 0.357 / 0.357 / 0.357; lift 1.0: 0.896 / 0.896 / 0.896; lift 2.0: 1.000 / 1.000 / 1.000
+.
+B2 toy [window, clustered across nights (s1/s2), slow 0.05 / 0.05]: a_hat 0.0819, in-state offers 40160 of 117180, B2 400000 replicates per a* [243 s]
+  k=12 level, 200000 null judged blocks: cons 6 (0.09x [0.03, 0.20]); larger-of (a) 5 (0.08x [0.03, 0.18]); larger-of (a),(d) 5 (0.08x [0.03, 0.18]); a* beyond the grid 0
+  k=12 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.05: 0.007 / 0.007 / 0.006; lift 0.1: 0.105 / 0.104 / 0.099; lift 0.15: 0.482 / 0.480 / 0.462; lift 0.25: 0.975 / 0.975 / 0.971
+  k=15 level, 200000 null judged blocks: cons 4 (0.10x [0.03, 0.25]); larger-of (a) 4 (0.10x [0.03, 0.25]); larger-of (a),(d) 4 (0.10x [0.03, 0.25]); a* beyond the grid 0
+  k=15 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.05: 0.004 / 0.003 / 0.003; lift 0.1: 0.077 / 0.073 / 0.067; lift 0.15: 0.413 / 0.405 / 0.384; lift 0.25: 0.960 / 0.959 / 0.952
+.
+B2 toy [window, clustered across nights (s1/s2), slow 0.05 / 0.15]: a_hat 0.1130, in-state offers 41144 of 117180, B2 400000 replicates per a* [207 s]
+  k=12 level, 200000 null judged blocks: cons 10 (0.16x [0.07, 0.29]); larger-of (a) 9 (0.14x [0.06, 0.27]); larger-of (a),(d) 8 (0.12x [0.05, 0.25]); a* beyond the grid 0
+  k=12 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.05: 0.004 / 0.003 / 0.003; lift 0.1: 0.090 / 0.085 / 0.077; lift 0.15: 0.423 / 0.407 / 0.382; lift 0.25: 0.958 / 0.954 / 0.948
+  k=15 level, 200000 null judged blocks: cons 12 (0.29x [0.15, 0.50]); larger-of (a) 10 (0.24x [0.12, 0.44]); larger-of (a),(d) 8 (0.19x [0.08, 0.38]); a* beyond the grid 0
+  k=15 power (cons / larger-of (a) / larger-of (a),(d)), 4000 blocks each: lift 0.05: 0.004 / 0.004 / 0.004; lift 0.1: 0.064 / 0.059 / 0.052; lift 0.15: 0.337 / 0.320 / 0.299; lift 0.25: 0.923 / 0.915 / 0.906
+.
+5 passed in 3046.48s (0:50:46)
+exit 0

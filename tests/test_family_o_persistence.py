@@ -1,5 +1,6 @@
-"""Q-37, Q-63 (family O's draft, first and second versions): the bracket arithmetic, the twin's estimand, the pass
-line's input form, the wait's calendar and the clock the draft leans on, on synthetic walks only.
+"""Q-37, Q-63, Q-87 (family O's draft, first to third versions): the bracket arithmetic, the twin's estimand, the pass
+line's input form, the wait's calendar, the `close` walk, A10's consequence and the clock the draft leans on, on
+synthetic walks only. The level and power toys of the third version are in `tests/test_family_o_toys.py` (slow).
 
 The draft (`prereg/DRAFT_F-O_opening_timing.md`, sections 1, 6 and 7) times the funded account's 3R opening by a
 side-free state and keeps the coin's side. Its case rests on four facts it states before anything is read:
@@ -43,6 +44,11 @@ What each test holds:
   * `test_an_ordered_calendar_keeps_the_wait_an_independent_one_destroys` (second version, review F2) -- a persistent
     daily state: the fallback share at W = 5 in history's order is more than twice that on independently drawn days,
     which is about (2/3)^5;
+  * `test_the_close_instance_differs_from_stage2_only_at_the_flatten_price` (third version, the second read's m2-7) --
+    `Rules("fo_stage2_close", FLAT_ENTRY, "close", True)` against `STAGE2` on synthetic days: every kind, exit bar and
+    MAE equal, only a flattened trade's gross differs, by at least the two slipped ticks;
+  * `test_a10s_consequence_closes_a_holding_cell_rarely` (third version, m2-4) -- the exact binomial probability that
+    A10 flags a holding `cons` lax over 2,000 selections, at 1 % and 5 %: at most 2.5 %, printed;
   * `test_rolling_third_fires_on_a_third_and_reads_only_the_past` -- the draft's mid-rank share over the 250 prior
     sessions (at least 120): on an iid series its top third fires on about a third of days (4 standard errors), and a
     day's state is unchanged when every later value is replaced;
@@ -348,6 +354,72 @@ def test_rolling_third_fires_on_a_third_and_reads_only_the_past():
         y[d + 1:] = rng.normal(size=y.size - d - 1) * 50.0          # every later value replaced
         assert mid_rank_share(y)[d] == share[d]
     assert np.isnan(share[:120]).all()
+
+
+# ------------------------------------------------------------------------------------------------ third version
+
+
+def _synthetic_day(rng, step_ticks: int):
+    """One synthetic trading day for the walker: bars indexed by their end minute after 17:00 (1..1330, index 0
+    empty), opens at the previous close, closes a +-step random walk on the 0.25 grid, highs and lows a few ticks out."""
+    n = 1331
+    o, h, l, c = (np.full(n, np.nan) for _ in range(4))
+    last = 20000.0
+    for j in range(1, n):
+        o[j] = last
+        c[j] = o[j] + 0.25 * step_ticks * rng.integers(-1, 2)
+        h[j] = max(o[j], c[j]) + 0.25 * rng.integers(0, 3)
+        l[j] = min(o[j], c[j]) - 0.25 * rng.integers(0, 3)
+        last = c[j]
+    return o, h, l, c
+
+
+def test_the_close_instance_differs_from_stage2_only_at_the_flatten_price():
+    """Review m2-7: C1-close's walk is the named instance `Rules("fo_stage2_close", FLAT_ENTRY, "close", True)` --
+    STAGE2's walk end (the bar ending 15:08), its breakeven move and every other rule, the flatten priced at the close
+    of the bar ending 15:08 instead of the worst of the bars ending 15:08-15:10 less two ticks. On synthetic days every
+    trade's kind, exit bar and MAE are the same under both; only a flattened trade's gross differs, and by at least the
+    two slipped ticks (the worst is never above that bar's close)."""
+    from extended import walker as Wk
+
+    close_rules = Wk.Rules("fo_stage2_close", Wk.FLAT_ENTRY, "close", True)
+    assert close_rules.walk_end == Wk.STAGE2.walk_end and close_rules.breakeven == Wk.STAGE2.breakeven
+    assert (close_rules.breakeven_tie, close_rules.breakeven_delay) == (Wk.STAGE2.breakeven_tie,
+                                                                        Wk.STAGE2.breakeven_delay)
+    brackets = Wk.brackets([150], [1.0, 3.0])
+    flattened = 0
+    for j, step in enumerate((1, 3, 6)):                            # quiet, middling and fast days
+        o, h, l, c = _synthetic_day(np.random.default_rng([SEED, 9, j]), step)
+        bars = np.arange(5, 926, 5)                                  # overnight marks' entry bars
+        fill_bars = np.repeat(bars, 2)
+        sides = np.tile([1.0, -1.0], bars.size)
+        a = Wk.walk(o, h, l, c, fill_bars, o[fill_bars], sides, False, brackets, rules=Wk.STAGE2)
+        b = Wk.walk(o, h, l, c, fill_bars, o[fill_bars], sides, False, brackets, rules=close_rules)
+        for k in ("kind", "exit", "mae"):
+            assert np.array_equal(a[k], b[k]), k
+        flat = a["kind"] == Wk.FLATTEN
+        assert np.array_equal(a["gross"][~flat], b["gross"][~flat])
+        assert (b["gross"][flat] >= a["gross"][flat] + Wk.FLATTEN_SLIP_TICKS).all()
+        flattened += int(flat.sum())
+    assert flattened > 0                                             # the comparison saw flattened trades
+
+
+def test_a10s_consequence_closes_a_holding_cell_rarely():
+    """Review m2-4 (the third version's A10 consequence, E-051's rule): a cell is closed only if A10 finds `cons` lax
+    on c in its class -- the rejection rate's two-sided 95 % Clopper-Pearson interval over 2,000 random selections wholly
+    above the nominal -- AND the deciding rule is lax on the pseudo-judged split. When the true rate is at the nominal,
+    the first event alone has probability at most 2.5 % (exactly, by the binomial), so a cell whose rule holds is closed
+    at most that often per (class, level) check. Printed: the exact probabilities at 1 % and 5 %."""
+    from scipy import stats as st
+    from extended import lift_bound as LB
+
+    n = 2000
+    for p0 in (0.01, 0.05):
+        ks = np.arange(n + 1)
+        flagged = np.array([LB.clopper_pearson(int(k), n)[0] > p0 for k in ks])
+        prob = float(st.binom.pmf(ks[flagged], n, p0).sum())
+        print(f"\nA10 at {p0:.0%}: P(flagged lax | true rate nominal) = {prob:.4f} over {n} selections")
+        assert prob <= 0.025
 
 
 # ------------------------------------------------------------------------------------------------ the draft's text
