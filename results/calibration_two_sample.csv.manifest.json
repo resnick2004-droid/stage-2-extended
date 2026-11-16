@@ -1,0 +1,111 @@
+{
+  "columns": [
+    "null",
+    "form",
+    "model",
+    "share",
+    "value",
+    "method",
+    "level",
+    "k",
+    "reps",
+    "rejections",
+    "rate",
+    "ci_lo",
+    "ci_hi",
+    "ratio",
+    "L",
+    "level_fills",
+    "placebo_fills",
+    "df_rule"
+  ],
+  "description": "Q-16's two-sample forms (E-022's C1', E-023's placebo-selection twin): rejection rates, both block-count rules (treated: the module's; all: the first form, failed)",
+  "exploratory": true,
+  "git_commit": "c7e01bd794dbf3120651439112954c1b351703b7-dirty",
+  "git_dirty": true,
+  "notes": {
+    "exploratory_because": "the statistics' configuration (candidates, nulls, the treated block count, bm63c) was fixed in Q-16 after exploratory runs; this run changes none of it",
+    "tables": "python scripts/q16_tables.py --results <this folder>",
+    "why": "E-035 (4): the calibration's figures are cited only from a clean run; TASK_QUEUE Q-55"
+  },
+  "parameters": {
+    "argv": [],
+    "boot_reps": 20000,
+    "d621_reps": 20000,
+    "days": "vendor/stage2/data/atlas/A1/days.parquet",
+    "pairs_identity": "HOLDS: (a) the cutoff's marks, (b) the screen's cell row, (c) TRADES_SHA256",
+    "pairs_sha256": "62e64491f2c51240569b4e9f58c072657135ae5d24237fc76bfaa8f6575f009d",
+    "pairs_supplied": false,
+    "parts": {
+      "lift": {
+        "commit": "c7e01bd794dbf3120651439112954c1b351703b7",
+        "dirty": true,
+        "peak_working_set_mb": 793.4,
+        "script": "scripts/q16_calibrate.py",
+        "seconds": 9378.0
+      },
+      "p": {
+        "commit": "c7e01bd794dbf3120651439112954c1b351703b7",
+        "dirty": true,
+        "peak_working_set_mb": 426.0,
+        "script": "scripts/q16_calibrate.py",
+        "seconds": 1378.2
+      },
+      "two_sample_all": {
+        "commit": "c7e01bd794dbf3120651439112954c1b351703b7",
+        "dirty": true,
+        "peak_working_set_mb": 688.8,
+        "script": "scripts/q16_calibrate.py",
+        "seconds": 1361.0
+      },
+      "two_sample_treated": {
+        "commit": "c7e01bd794dbf3120651439112954c1b351703b7",
+        "dirty": true,
+        "peak_working_set_mb": 682.7,
+        "script": "scripts/q16_calibrate.py",
+        "seconds": 1449.5
+      }
+    },
+    "power_reps": 5000,
+    "read": {
+      "declaration": "E-035",
+      "files": [
+        "vendor/stage2/data/atlas/A1/events.parquet",
+        "vendor/stage2/data/atlas/A1/days.parquet",
+        "vendor/stage2/data/bars/NQ/bars.parquet"
+      ],
+      "purpose": "registered_design"
+    },
+    "reps": 200000,
+    "seeds": {
+      "boot": 20261914,
+      "fixed_b": 20261913,
+      "lift_real": 20261915,
+      "lift_syn": 20261916,
+      "p_fixed_b": 20261919,
+      "p_real": 20261917,
+      "p_syn": 20261918,
+      "tests": [
+        20261910,
+        20261911,
+        20261912
+      ]
+    },
+    "trades_sha256": "17bcc29bc0c61296c872eaf04c3d49942649dcddca782836916bebdf29c9635f"
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q55-calibration",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q55-calibration"
+    }
+  },
+  "result_file": "calibration_two_sample.csv",
+  "rows": 7104,
+  "script": "scripts/q55_calibration.py",
+  "seed": 20261915,
+  "sha256": "041b675960c2beba525f3cfa3542c580979ac6584b31c845b60a197c57e14e5a",
+  "timestamp": "2026-11-16T17:24:24+00:00",
+  "variant_count": null
+}

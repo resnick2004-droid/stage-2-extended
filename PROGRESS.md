@@ -84,3 +84,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-079: the fast tier about a fifth faster (Q-96 merged; nothing deleted, guards and smokes added). |
 | 2026-11-16 | lead | **E-080: the firms reading pinned as RD-01 -- the program's first pinned declaration since F-01** (a described reading: no level, nothing carried). Its build Q-104 follows Q-100. |
 | 2026-11-16 | lead | E-081: reading PP's redraft merged in pin-time form; a gatekeeper's RD-02 pin check running. |
+| 2026-11-16 | lead | **E-082: reading PP pinned as RD-02** (a described reading; payout policy in a user's first months). Its build Q-105 queued. |
+| 2026-11-16 | lead | **E-083: Q-55 collected** (the calibration's clean rerun, five result files; `-dirty` from the ledger alone, as E-062 ruled); its audit running; Q-83 next in the queue. |

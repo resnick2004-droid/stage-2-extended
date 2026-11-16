@@ -1,4 +1,4 @@
-# RD-xx: payout policy in a user's first months (reading PP) -- a described reading, unnumbered
+# RD-02: payout policy in a user's first months (reading PP) -- a described reading, unnumbered
 
 **Status: declared before anything of it is built or read.** It is pinned by the sha256 of its LF text in its decision
 row. Nothing declared is edited: a change is a new declaration under a new row. It takes no program family number
@@ -38,7 +38,7 @@ team's N1). It is not part of this reading, and it gets its own decision row whe
 | field | value |
 |---|---|
 | reading | PP: how much a funded account withdraws, and when, in a user's first months -- on P-14's registered trades, P-16's beside |
-| id | RD-xx (`prereg/RD-02_payout_policy.md` at the pin); every result's `prereg_id` is `RD-xx` (section 14) |
+| id | RD-02 (`prereg/RD-02_payout_policy.md` at the pin); every result's `prereg_id` is `RD-02` (section 14) |
 | kind | a **described reading** (E-023 (1)): never carried; the operator chooses from its menu |
 | program family number | **none** (E-023 (1)); the next numbered family's k is unchanged by this file |
 | level, pass line, pick | **none** |
@@ -961,7 +961,7 @@ A test fails on the literals 2000, 125 or 0.5 in the adapter outside comments.
   - `results/pp_menu.csv`, the menu with its flags.
 
   Each is written with its sidecar manifest through `extended.results.write_result`, carrying:
-  - `prereg_id`: `RD-xx`, this file's id (unnumbered: no program family number), and its pinning row;
+  - `prereg_id`: `RD-02`, this file's id (unnumbered: no program family number), and its pinning row;
   - the decision row under which 8.1 items 1 to 3 held, and the rows under which Q-80, Q-93 and Q-101 held;
   - the run counts (11; 6 new, 2 references, 3 rule sensitivity; 32 replays and 8 gates beside);
   - every seed, with the retired ones, and the inherited ladder seeds named as Q-17's;
