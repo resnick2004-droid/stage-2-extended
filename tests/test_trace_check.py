@@ -17,11 +17,36 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_empty_registry_is_not_checked():
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "trace_check.py")], cwd=ROOT, capture_output=True,
-                       text=True, timeout=300)
+    # Q-27 registers the report pages' numbers, so the registry is emptied here explicitly: the assertion is the same
+    # (an empty registry is NOT CHECKED, exit 2, never a pass), no longer resting on nothing having been registered
+    code = f"""
+        import sys
+        sys.path.insert(0, {str(ROOT)!r})
+        import importlib.util
+        import extended.trace as T
+        spec = importlib.util.spec_from_file_location("s2x_trace_check", {str(ROOT / 'scripts' / 'trace_check.py')!r})
+        TC = importlib.util.module_from_spec(spec); spec.loader.exec_module(TC)
+        T.REGISTRY[:] = []
+        raise SystemExit(TC.main([]))
+    """
+    r = subprocess.run([sys.executable, "-c", textwrap.dedent(code)], cwd=ROOT, capture_output=True, text=True,
+                       timeout=300)
     assert r.returncode == 2, r.stdout + r.stderr
     assert "NOT CHECKED" in r.stdout
     assert "OK" not in r.stdout.replace("NOT CHECKED", "")
+
+
+def test_registry_traces_the_report_pages():
+    # Q-27: every number of every registered report page (extended/trace.py REPORT_PAGES) recomputes from its file
+    # and is found on the committed page -- the check the brief names as done
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "trace_check.py")], cwd=ROOT, capture_output=True,
+                       text=True, timeout=600)
+    assert r.returncode == 0, r.stdout[-4000:] + r.stderr[-2000:]
+    first = r.stdout.splitlines()[0]
+    assert first.startswith("trace check: "), first
+    ok, total = (int(x) for x in first.split()[2].split("/"))
+    assert ok == total > 100, first
+    assert "demo_stage2_u1: " in r.stdout
 
 
 def test_registered_number_found_drifted_and_edited(tmp_path):
