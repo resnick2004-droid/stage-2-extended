@@ -18,8 +18,9 @@ Collect the clean run **$ARGUMENTS** (the lead only).
    set as the declaration says; its `variant_count` is present.
 4. **The variants ledger.** Union the run's variant entries into `results/variants.jsonl` (append new entries only,
    never rewrite; a duplicate is dropped by its key) and check the family's count against its declaration.
-5. **The report.** Rebuild whatever reads these files (`python scripts/build_report.py` once it exists, else say
-   "report not built"), then `python scripts/trace_check.py` -- "NOT CHECKED" is not a pass.
+5. **The report.** Rebuild every page that reads these files (`python scripts/build_report.py --list` names them;
+   `--report <page>` builds one, `--all` every page -- e.g. `--report journey_scorecard` for Q-44's files), in the
+   same commit as the files, then `python scripts/trace_check.py` -- "NOT CHECKED" is not a pass.
 6. **The audit.** For a result that decides anything (a kill line, a pick, a judgement, a verdict), the `auditor`
    re-derives its headline numbers from the CSV before the reading's row is written.
 7. **Record and free.** The reading's decision row (citing the file and sections; no typed number the trace check
