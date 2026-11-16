@@ -16,7 +16,7 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 | P-14's registered gate paths (500, point and bound, every `PATH_COLS` column to 1e-6) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | P-16's registered gate paths (500, same) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`, all 1,691 starts, both arms, all 68 columns) | **HOLDS**, wt-verify at 8010969 under the lock | E-010 |
-| the walker against P-16's pinned trades (`TRADES_SHA256`) | holds on synthetic days and P-16's first 10 days; **the full run owed** (heavy, waits for memory) | E-010 |
+| the walker against P-16's pinned trades (`TRADES_SHA256`, all 239,768 trades) | **HOLDS** (the lead, under the lock, wt-levels at 318d45b) | E-011 |
 
 ## NEEDS_OPERATOR
 
@@ -39,7 +39,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | worktree | branch | task | state |
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
-| wt-levels | wt/wt-levels | Q-10 corrective cycle 1: the identity runner's substitution (E-010, PROGRESS) | running |
+| wt-levels | wt/wt-levels | -- (Q-10 done, E-011; a corrected level family waits for Q-16) | idle |
 | wt-features | wt/wt-features | Q-11 the feature library and family B's draft (`docs/briefs/Q-11_2026-11-15.md`) | running |
 | wt-firms | wt/wt-firms | Q-19 three conduct readings (`docs/briefs/Q-19_2026-11-15.md`) | running |
 | wt-scout | wt/wt-scout | -- | idle |
