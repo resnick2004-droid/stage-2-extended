@@ -35,6 +35,12 @@ enters (both sides are walked from the same open, as Stage 2 walks them). Then:
 On a hash mismatch the cell is rebuilt with Stage 2's own walk and the first differing trade and column are printed
 (the failure protocol's first step); nothing is ever loosened. Nothing is written; nothing but counts, timings and
 equality is printed. The last line is `EXIT <code>` (0 holds, 3 refused).
+
+**The read (Q-48).** The modes that read Stage 2's data -- `--smoke-days` (A1's events and days, the bars) and the full
+identity (A1's, A3's cached walk, the bars) -- first authorise the engine's read through
+`extended.reader.authorise_engine_read` (purpose `identity`, declaration **E-011**, the window 2020-01-02 to
+2026-07-16: A1's tables are read whole); a refusal ends the run (`EXIT 3`) before anything is read. Ledgered only
+inside a clean run (E-026). `--synthetic` and `--substitution` read no bar or walk and authorise nothing.
 """
 from __future__ import annotations
 
@@ -52,6 +58,7 @@ SYNTH_SEED = 20261117                     # the synthetic days' seed, used nowhe
 SYNTH_DAYS = 40
 SYNTH_STOPS = (50, 100, 150, 200)
 SYNTH_FEE = 1.2345                        # an arbitrary fee for the synthetic cost check (the arithmetic is compared)
+READ_ROW = "E-011"                        # the decision row that registered this identity (Q-48's read authorisation)
 
 
 def _setup() -> None:
@@ -513,6 +520,30 @@ def main(argv: list[str] | None = None) -> int:
         print(f"REFUSED: {VENDOR} holds no Stage 2 engine")
         print("EXIT 3")
         return 3
+    real = not (a.synthetic or a.substitution)
+    if real:
+        if not (VENDOR / "data" / "bars").is_dir():
+            print(f"REFUSED: {VENDOR / 'data'} has no bars (scripts/vendor_stage2.py --data)")
+            print("EXIT 3")
+            return 3
+        if str(HERE) not in sys.path:
+            sys.path.insert(0, str(HERE))
+        from extended import reader                 # stdlib only: no engine, no sys.path change
+
+        import stage2_identity as SI                # the data files' names (identity/stage2_identity.py)
+
+        smoke_run = a.smoke_days is not None
+        files = SI.engine_files(VENDOR, a3=not smoke_run, bars=True)
+        what = (f"{READ_ROW}'s identity (identity/walker_identity.py): "
+                + (f"P-16's entries on the first {a.smoke_days} development days, frame for frame" if smoke_run else
+                   "P-16's cell rebuilt with this walker, its content hash"))
+        try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
+            reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
+                                         declaration=READ_ROW, files=files, what=what)
+        except (reader.ReadRefused, FileNotFoundError) as exc:
+            print(SI.refusal(exc))
+            print("EXIT 3")
+            return 3
     _setup()
     t0 = time.time()
     if a.synthetic:
@@ -520,10 +551,6 @@ def main(argv: list[str] | None = None) -> int:
     elif a.substitution:
         bad = substitution_problems()
     else:
-        if not (VENDOR / "data" / "bars").is_dir():
-            print(f"REFUSED: {VENDOR / 'data'} has no bars (scripts/vendor_stage2.py --data)")
-            print("EXIT 3")
-            return 3
         bad = smoke(a.smoke_days) if a.smoke_days is not None else full()
     pk = peak_gb()
     print(f"{time.time() - t0:.0f} s; peak working set {pk:.2f} GB" if pk is not None else f"{time.time() - t0:.0f} s")

@@ -19,7 +19,14 @@ the trades; `atlas_a3.cached_walk` is Stage 2's after the block, also after an e
 **`--smoke-days N`**: A3's minutes on the first N development days, five bars late, re-walked under `STAGE2`, equal
 `atlas_a3.walk_minutes`' frame and the cached frame's rows for those days.
 
-Exit 0 when every part run holds; 3 when one is refused. Nothing is written.
+**The read (Q-48).** With `--substitution` (A1's events and days, A3's cached walk) or `--smoke-days` (those and the
+bars), before anything runs, `main` authorises Stage 2's engine's read through `extended.reader.authorise_engine_read`
+(purpose `identity`, declaration **E-024**, the window 2020-01-02 to 2026-07-16: the tables are read whole); a refusal
+ends the run (exit 3) before anything is read. Ledgered only inside a clean run (E-026). `--synthetic` alone reads no
+bar or walk and authorises nothing.
+
+Exit 0 when every part run holds; 3 when one is refused. Nothing is written (inside a clean run, the read's ledger
+line).
 """
 from __future__ import annotations
 
@@ -45,8 +52,13 @@ import stage2_identity as SI  # noqa: E402
 import walker_identity as WI  # noqa: E402
 
 from extended import breakeven as BE  # noqa: E402
+from extended import reader  # noqa: E402
 from extended import walker as W  # noqa: E402
 
+#: the Stage 2 tree the engine reads (named for the read's authorisation, Q-48)
+VENDOR = ROOT / "vendor" / "stage2"
+#: the decision row that registered this identity (Q-20's, merged under E-024)
+READ_ROW = "E-024"
 A3_STOPS = (50, 100)
 A3_DELAY = 5
 #: the widened bars' seed (the brief's block) and share: E-011's synthetic days rarely hold a bar that both touches the
@@ -216,6 +228,17 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if not (a.synthetic or a.substitution or a.smoke_days):
         ap.error("give --synthetic, --substitution and/or --smoke-days N")
+    if a.substitution or a.smoke_days:
+        parts = (["P-14's substitution on A3's cached frame"] if a.substitution else []) + (
+            [f"A3's minutes on the first {a.smoke_days} development days re-walked"] if a.smoke_days else [])
+        try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
+            reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
+                                         declaration=READ_ROW, files=SI.engine_files(VENDOR, bars=bool(a.smoke_days)),
+                                         what=f"{READ_ROW}'s identity (identity/breakeven_identity.py): "
+                                              + "; ".join(parts))
+        except (reader.ReadRefused, FileNotFoundError) as exc:
+            print(SI.refusal(exc), flush=True)
+            return 3
     rc_ = 0
     for flag, fn, args in ((a.synthetic, synthetic_problems, ()), (a.substitution, substitution_problems, ()),
                            (a.smoke_days, smoke_problems, (a.smoke_days,))):

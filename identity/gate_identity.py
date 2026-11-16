@@ -38,7 +38,14 @@ checks exercise it on the registered trades.
 7. **non-account class refused;**
 8. **unpicklable class refused:** a class defined inside a function, at two workers.
 
-Exit 0 when every part run holds; 3 when one is refused. Nothing is written. Peak memory printed last.
+**The read (Q-48).** With `--paths`, before anything runs, `main` authorises Stage 2's engine's read through
+`extended.reader.authorise_engine_read` (purpose `identity`, declaration **E-028**, the window 2020-01-02 to
+2026-07-16; the files: A1's events and days and A3's cached walk for P-14, and the bars for P-16's cell); a refusal
+ends the run (`EXIT 3`) before anything is read. Ledgered only inside a clean run (E-026). `--synthetic` reads no bar
+or walk and authorises nothing.
+
+Exit 0 when every part run holds; 3 when one is refused. Nothing is written (inside a clean run, the read's ledger
+line). Peak memory printed last.
 """
 from __future__ import annotations
 
@@ -67,7 +74,12 @@ from propedge.campaign.lockstep import FundedAccount  # noqa: E402
 import stage2_identity as SI  # noqa: E402  (identity/stage2_identity.py: P-16's seed and paths file, peak memory)
 
 from extended import gate as XG  # noqa: E402
+from extended import reader  # noqa: E402
 
+#: the Stage 2 tree the engine reads (named for the read's authorisation, Q-48)
+VENDOR = ROOT / "vendor" / "stage2"
+#: the decision row that registered this identity (Q-47's, merged under E-028)
+READ_ROW = "E-028"
 #: the synthetic campaigns' seed: F-P's draft section 11 assigns 20261947 to "the build's toy campaigns", and this
 #: adapter is F-P's build (its 13.1 item 3; E-025 (2))
 SYN_SEED = 20261947
@@ -349,6 +361,18 @@ def main(argv: list[str] | None = None) -> int:
         ap.error("give --synthetic or --paths N")
     if a.paths is not None and a.paths < 1:
         ap.error("--paths takes a whole number of at least 1")
+    if a.paths is not None:
+        names = [n for n in ("P-14", "P-16") if a.only is None or n.replace("-", "").lower() == a.only]
+        try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
+            reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
+                                         declaration=READ_ROW, files=SI.engine_files(VENDOR, bars="P-16" in names),
+                                         what=f"{READ_ROW}'s identity (identity/gate_identity.py): "
+                                              f"{' and '.join(names)} registered gate paths ({a.paths}) through "
+                                              f"extended.gate, arms {a.cls}")
+        except (reader.ReadRefused, FileNotFoundError) as exc:
+            print(SI.refusal(exc))
+            print("EXIT 3", flush=True)
+            return 3
     bad = False
     t0 = time.time()
     if a.synthetic:
