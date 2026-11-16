@@ -109,7 +109,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | held until Q-55's Table 9 (E-064) | Q-78 | light | 0 | E-057 |
 | Q-91 | The firms reading's third draft: Q-88's five MATERIAL and twelve minors | wt-firms | done: merged (E-064); its re-read Q-88b | Q-88 | light | 0 | E-058 |
 | Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | done: merged (E-070); its red team Q-102 | Q-42 | light | 0 | E-059 |
-| Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued: the heavy queue after Q-83, from f7eda0d (E-066) | Q-76 | heavy | 0 | E-059 |
+| Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued: combined with Q-100's identity, one step at 4f8b556 (E-084) | Q-76 | heavy | 0 | E-059 |
 | Q-94 | Place recording on the U1 replay (family O 18.1 item 4, A2), declared and off by default; its heavy identity owed | wt-features | done: merged (E-068); its identity Q-101 | Q-70, Q-76 | light | 0 | E-060 |
 | Q-95 | The red team's sixth read of family B (after the slow-marker commit) | wt-user | running (wt-user, E-062) | Q-81 | light | 0 | E-060 |
 | Q-96 | The fast tier's time budget: profile; move slow cases to the slow tier where a fast smoke case keeps the regression covered; nothing deleted | wt-infra | done: merged (E-079) | -- | light | 0 | E-061 |
@@ -119,7 +119,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-88b | The red team re-reads the firms reading's third draft's diff | wt-firms | done: pinnable after one small edit (E-067); Q-91b | Q-91 | light | 0 | E-064 |
 | Q-99 | A scout's note: composing an execution model from the program's components (structure only, no result) | wt-scout | done: read (E-072) | -- | light | 0 | E-064 |
 | Q-91b | The firms reading's one small edit (Q-88b's five minors); the addendum committed first | wt-firms | done: merged (E-072); the pin check Q-91c | Q-88b | light | 0 | E-067 |
-| Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | running (wt-features, E-072) | Q-76 | light | 0 | E-067 |
+| Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | done: merged (E-084); its identity with Q-93's in one queue step at 4f8b556 | Q-76 | light | 0 | E-067 |
 | Q-101 | Q-94's heavy identity: U1's start rows with recording on, P-16 and P-14, every start (`--row E-068`) -- the heavy queue | lead | queued | Q-94 | heavy | 0 | E-068 |
 | Q-102 | The red team's read of reading PP's third draft | wt-payout | done: a small redraft, remedies adopted (E-074); Q-92b | Q-92 | light | 0 | E-070 |
 | Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | done: REFUSE, seven text items (E-073); Q-87c | Q-87 | light | 0 | E-071 |
@@ -130,7 +130,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | done: merged (E-078); the gatekeeper's read Q-91e | Q-91c | light | 0 | E-075 |
 | Q-87d | The gatekeeper reads family O's fourth text's diff (a verdict and the pinning row) | lead | done: APPROVE, contingent on Q-55 (drop rule) and Q-83 (E-077) | Q-87c | light | 0 | E-076 |
 | Q-91e | The gatekeeper reads the firms reading's pin-form diff (a verdict and the pinning row) | lead | done: APPROVE; pinned as RD-01 (E-080) | Q-91d | light | 0 | E-078 |
-| Q-104 | The firms reading's build (A-1..A-7, A-9..A-11 with their tests; its identity stage under its own row), after Q-100 merges | wt-firms | queued (after Q-100) | Q-91e, Q-100 | light | 0 | E-080 |
+| Q-104 | The firms reading's build (A-1..A-7, A-9..A-11 with their tests; its identity stage under its own row), after Q-100 merges | wt-firms | queued: Q-100 merged (E-084); dispatch when a worktree is free | Q-91e, Q-100 | light | 0 | E-080 |
 | Q-92c | A gatekeeper's pin check of reading PP (a verdict and the RD-02 pinning row) | lead | done: APPROVE; pinned as RD-02 (E-082) | Q-92b | light | 0 | E-081 |
 | Q-105 | Reading PP's build (the adapter, the counters' channel T-10, `identity/pp_identity.py`, T-1..T-11) | wt-payout | queued | Q-92c | light | 0 | E-082 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
