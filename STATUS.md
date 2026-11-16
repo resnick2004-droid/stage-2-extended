@@ -47,7 +47,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-firms | wt/wt-firms | Q-26 the short-ranked firms' terms | running |
 | wt-payout | wt/wt-payout | Q-31 the red team on F-P's draft | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
-| wt-scout | wt/wt-scout | Q-29 family B redrafted per the red team | running |
+| wt-scout | wt/wt-scout | Q-33 the red team's second read of family B | running |
+| wt-infra | wt/wt-infra | Q-32 the judged block's seal (purpose-tagged reader, read ledger) | running |
 
 ## Running now
 
