@@ -32,6 +32,10 @@ whose helpers it imports; it reads one file, the vendored value map, for C2's pl
   is conditional on the cell's own path (its first form failed on that point; kept on record in the test).
 
 Each test prints its figures (`pytest -s`); the hand-back reads them from that output.
+
+**Tiers (the lead, Q-81).** The level and power cases are marked `slow` (about 3.6 CPU-minutes, light in memory): they
+run in `/validate`'s slow tier, not in every commit's fast tier. One fast smoke case,
+`test_the_declared_functions_smoke`, exercises every declared function on small counts in a few seconds.
 """
 from __future__ import annotations
 
@@ -40,6 +44,7 @@ import math
 import pathlib
 
 import numpy as np
+import pytest
 from scipy import stats
 
 import test_family_b_b2 as T
@@ -127,6 +132,7 @@ def rate(t, crit):
 # ------------------------------------------------------------------------------- C1-f under (A), the family's level
 
 
+@pytest.mark.slow
 def test_c1f_b2_at_the_family_level_fifth_form_inflated_sixth_not():
     """M5-1 at the family's level: the fifth draft's B2 puts C1-f's critical value at a multiple of nominal (its frozen
     opposite state, probability about 0.0019, exceeds the level); the sixth's, centred within the block, never above
@@ -144,6 +150,7 @@ def test_c1f_b2_at_the_family_level_fifth_form_inflated_sixth_not():
     assert all(np.all(v <= 1.05 * nom) for v in sixth.values())       # the sixth draft's form
 
 
+@pytest.mark.slow
 def test_c1f_size_at_the_boundary_null_of_a():
     """(A)'s boundary null: the realised paired lift exactly zero, the follow regimes present but centred within the
     block. Nominal `cons` holds the level; the declared rule's critical values are never below nominal, so its
@@ -165,6 +172,7 @@ def _amplitude_grid_crit(rng, q, nom):
     return np.maximum(nom, qs.max(0))
 
 
+@pytest.mark.slow
 def test_c1f_power_at_the_family_level():
     """M5-1 remedy 3: power non-decreasing in the model's excess over the twin, against an uninformative twin
     (q = 1/2, T = 0) and a twin with its own lift (q = 0.3, T = 0.03, so the excess is L - T); within 0.05 of nominal
@@ -253,7 +261,7 @@ def line_stats(S):
     return est, se
 
 
-def conj_b2_crit(rng, des):
+def conj_b2_crit(rng, des, n_rep=B2_REPS):
     """Each line's per-component critical value: the larger of nominal and B2's (1 - LEVEL) quantile. B2: a choice
     block's session pair values (drift 0.03 switching 1/120, session effect 0.30) resampled in stationary 63-session
     blocks, centred, plus a* rho_t (1/250); fresh offer noise; for the C1-f lines also the symmetric follow part at
@@ -263,7 +271,7 @@ def conj_b2_crit(rng, des):
     choice = a * T.markov(rng, T.REVIEW["q_d"], 1, N_C)[0] + T.S_ETA * rng.standard_normal(N_C)
     a_star = np.max(np.abs([choice[y].mean() for y in YEARS_C]))
     ts, tf = [], []
-    for n in chunks(B2_REPS, 1000):
+    for n in chunks(n_rep, 1000):
         cs = choice[T.stationary_idx(rng, n, N_J, N_C, T.STRESS_BLOCK)]
         cs = cs - cs.mean(1, keepdims=True) + a_star * T.markov(rng, T.STRESS_Q, n, N_J)
         S = des["P"][:, 0][None] * cs[:, None] + _noise(rng, des, n)
@@ -301,6 +309,7 @@ def conj_pass(rng, des, crit, n_rep, L, T_own, g_twin):
     return ok.mean(0), float(np.all(ok, axis=1).mean())
 
 
+@pytest.mark.slow
 def test_the_conjunction_level_and_power_at_the_family_level():
     """M5-2 on the toy: every deciding line at the larger of its nominal and B2's critical values, at the family's
     level. At no lift each line and the conjunction hold the level. Under a planted lift L on the model's side (the
@@ -347,6 +356,7 @@ def test_the_conjunction_level_and_power_at_the_family_level():
 # ------------------------------------------------------------------------- the confirmation's C1-f (M5-1 remedy 3)
 
 
+@pytest.mark.slow
 def test_the_confirmation_c1f_level_and_power():
     """126 sessions, `t21w`, one-sided 0.05, at the larger of 1.3 x nominal and B2 (block-centred, amplitudes 0 to
     0.12): at most 1.25 x 0.05 at (A)'s boundary null; power non-decreasing and at least 0.8 at twice the 80 % point of
@@ -417,6 +427,7 @@ def ar_count_path(rng, n=N_C, phi=0.98, sd=1.5, mean=2.0):
     return rng.poisson(mean * np.exp(z - sd * sd / 2))
 
 
+@pytest.mark.slow
 def test_the_fill_intensity_check():
     """E-052's check, by its reference `count_check`. A `side` cell's counts are its admitted marks every session
     (constant): kept, at stage A and in the judged form. Two count paths of the lax profile: path 3 of the diagnosis
@@ -445,3 +456,25 @@ def test_the_fill_intensity_check():
               f"killed {v[2]}")
     assert not r_flat[2] and not r_judged[2]
     assert r[3][2] and not r[7][2]
+
+
+def test_the_declared_functions_smoke():
+    """The fast tier's case (the full checks are `slow`): every declared function of this file runs on small counts
+    and gives what its construction guarantees -- B2's sixth form below its fifth at C1-f's slow regime, the
+    conjunction's critical values never below nominal and a large planted lift passing every line, the count check
+    keeping constant counts. Seeds `[20261968, 140]`."""
+    rng = np.random.default_rng([SEED, 140])
+    lev = 0.01
+    fifth = b2_quantile(rng, 0.5, G_SLOW, within=False, level=lev, n_rep=4000)
+    sixth = b2_quantile(rng, 0.5, G_SLOW, within=True, level=lev, n_rep=4000)
+    assert np.all(sixth < fifth)
+    t = c1f_truth_t(rng, 2000, 0.5, 0.0, centred=True)
+    assert t.shape == (2000, len(COMPONENTS)) and 0.0 <= rate(t, nominal(lev)) <= 1.0
+    des = judged_design(rng)
+    crit = conj_b2_crit(rng, des, n_rep=2000)
+    assert crit.shape == (len(LINE_NAMES), len(COMPONENTS)) and np.all(crit >= nominal(LEVEL)[None, :] - 1e-12)
+    lines, conj = conj_pass(rng, des, crit, 500, 0.2, 0.0, 0.0)
+    assert conj > 0.9 and np.all(lines >= conj)
+    r, ci, killed = count_check(np.full(N_C, 40), 2000, rng, level=0.05)
+    assert r < 0.05 and not killed and ci[0] <= r <= ci[1]
+    assert ar_count_path(np.random.default_rng([SEED, 131, 3])).shape == (N_C,)

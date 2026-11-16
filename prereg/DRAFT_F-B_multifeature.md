@@ -503,6 +503,8 @@ training fold stops the fit (the failure protocol), never silently dropped.
      (`[20261960, 9, c]`, c the cell's index in section 10's order), the 95 % Clopper-Pearson interval
      (`lift_bound.clopper_pearson`). The reference is `count_check` in `tests/test_family_b_level_power.py`.
    - **The kill:** a cell whose interval lies wholly above the family's level is killed before stage B.
+   - **What it means:** K0 is a conditional check -- it asks whether `cons` holds the family's level given this cell's
+     own count path, not over the profile that path came from.
    - **Why it can bite here, and where not.** A `side` cell offers every admitted mark of every traded session, so its
      count is constant but for the as-of rule's drops: it cannot persist, and the check keeps it (the test). A
      `filter` cell's count is its firing count, which its day-level and multi-day features can make persist (section
@@ -691,7 +693,8 @@ persistence Q-16's nulls may not span.
   the second review's design and a slower one (C1's form); C2's dollar-weighted form holds under B2; the model's own
   routing biases C2's mean under the null and the coin's does not; the confirmation's form holds at 126 sessions and
   0.05. Its three C1-f tests are the record of the fifth version's null (B), the expected lift across regimes.
-- `tests/test_family_b_level_power.py`, **at the family's level, of level and power (m5-3)**:
+- `tests/test_family_b_level_power.py`, **at the family's level, of level and power (m5-3)** -- `slow` cases, run in
+  `/validate`'s slow tier (section 20 item 8):
   - the fifth version's B2 sets C1-f's critical value at a multiple of nominal (the frozen opposite state); the sixth's,
     centred within the block, never above 1.05 times nominal at any amplitude tried;
   - at (A)'s boundary null (the realised paired lift exactly zero) the size is at most the level;
@@ -1133,7 +1136,7 @@ and speed reading for the journey, never a pass (E-023: a coin-side filter is ju
 | 20261965 | stage B2, mapped to lines (m4-5, m5-2): `[20261965, j, c]` with j = 0 C1, 1 C1-d, 5 C2 at design (i), 6 C2 at design (ii), 7 the partialled reading, and `[20261965, j, a, c]` for j = 2-4 C1-f (`lnbar1x4`, `lbrk5`, `mom15`; a = 0 at `g*_pre`, 1 at `g*_post`), c = 0..99 the chunk; the confirmation 10 + j; the count checks `[20261965, 20]` (the pick's judged counts), `[20261965, 21]` and `[20261965, 22]` (C2's routed counts at designs (i) and (ii)), `[20261965, 30]` (the confirmation's counts) |
 | 20261966 | the gate campaigns of designs (i) and (ii): C2's two routings, the long-run gate floor, the scorecard; 500 paths |
 | 20261967 | draws of a statistic, if any: `[20261967, 0]` stage C, `[20261967, 1]` the confirmation (`cons` and `t21w` draw none) |
-| 20261968 | the build's tests: `tests/test_family_b_side_rule.py` (`[20261968, 0..3]`), `tests/test_family_b_opening_range.py` (`[20261968, 20..29, 33]`), `tests/test_family_b_b2.py` (`[20261968, 30..32, 40..41, 60..67, 80..85, 90..95]`), `tests/test_family_b_level_power.py` (`[20261968, 100..102, 110, 120, 134]` and the count paths `[20261968, 131, i]`, `[20261968, 132, i]`), T-3's synthetic judged block (`[20261968, 50]`); the drafter's scratch checks `m32_r2.py` (`[20261968, 70]`), `m41_d_diag.py` (**the test's own `[20261968, 65]` and `[20261968, 66]`, drawn through `T.SEED`, so a literal grep does not find them**; n5-3) and `q81_counts_diag.py` (`[20261968, 131..133]`) |
+| 20261968 | the build's tests: `tests/test_family_b_side_rule.py` (`[20261968, 0..3]`), `tests/test_family_b_opening_range.py` (`[20261968, 20..29, 33]`), `tests/test_family_b_b2.py` (`[20261968, 30..32, 40..41, 60..67, 80..85, 90..95]`), `tests/test_family_b_level_power.py` (`[20261968, 100..102, 110, 120, 134, 140]` and the count paths `[20261968, 131, i]`, `[20261968, 132, i]`), T-3's synthetic judged block (`[20261968, 50]`); the drafter's scratch checks `m32_r2.py` (`[20261968, 70]`), `m41_d_diag.py` (**the test's own `[20261968, 65]` and `[20261968, 66]`, drawn through `T.SEED`, so a literal grep does not find them**; n5-3) and `q81_counts_diag.py` (`[20261968, 131..133]`) |
 | 20261969 | the planted-effect test (T-14) |
 
 **The check.** On 2026-11-16, `grep -rIowh --exclude-dir=.git -E "2026196[0-9]" .` over the whole working tree (the
@@ -1184,7 +1187,9 @@ All of the family's code is committed after its pin (T-9); fast tier unless mark
      effect (a drift with `c`'s position against the 30-minute range) are each recovered by C1 and removed by the
      partialled reading.
 8. **Stage B2:**
-   - `tests/test_family_b_b2.py` and `tests/test_family_b_level_power.py` pass;
+   - `tests/test_family_b_b2.py` and `tests/test_family_b_level_power.py` pass. **The latter's level and power cases
+     are marked `slow` and run in `/validate`'s slow tier** (about 3.6 CPU-minutes, light in memory); its smoke case,
+     which exercises every declared function on small counts, runs in every commit's fast tier;
    - **the declared construction is tested at the build, at the family's level, of level and power** (n4-1, m5-3): a
      synthetic judged block with real-type joint side series (the model's, three twins agreeing on parts of the
      offers, the filter's) and a synthetic choice block. B2 by its declared resampling and chunking, with the declared
