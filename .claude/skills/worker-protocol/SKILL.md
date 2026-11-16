@@ -45,8 +45,9 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
 2. Tests first; then the code; then the tests again, with a time limit (`timeout 900 python -m pytest -q ...`).
 3. Light work runs freely. Heavy work takes the run lock (skill `run-lock`) after checking memory, is watched to its
    exit, and releases the lock whatever the outcome.
-4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; small commits; never `--no-verify`
-   unless the hand-back says why. The post-commit hook pushes the branch to the private remote.
+4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; small commits; **never `--no-verify`,
+   for any reason** (E-060): if memory is short for the hook's fast tier, wait (`python scripts/run_lock.py status`
+   shows what is free) and commit when it can run. The post-commit hook pushes the branch to the private remote.
 5. Two corrective cycles at most on one failure (diagnosed by the failure protocol). A third is the lead's decision:
    stop and hand back.
 

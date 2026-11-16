@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-059).
+**Updated:** 2026-11-16 (E-060).
 
 ## Phase
 
@@ -47,7 +47,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-verify | wt/wt-verify | Q-82 the pass line's fresh-seed validation | running |
 | wt-levels | wt/wt-levels | Q-84 F-02's seventh text (K0, C0, the pin conditions) | running |
 | wt-user | wt/wt-user | -- (Q-76 merged, E-059; its identity Q-93 in the chain) | idle |
-| wt-features | wt/wt-features | -- (Q-70 merged, E-055; its identities Q-89 in the chain) | idle |
+| wt-features | wt/wt-features | Q-94 place recording on the U1 replay | running |
 | wt-lit | wt/wt-lit | Q-87 family O's third draft | running |
 | wt-firms | wt/wt-firms | Q-91 the firms reading's third draft | running |
 | wt-payout | wt/wt-payout | Q-92 F-P's third draft | running |
@@ -63,8 +63,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
   adapter's class), Q-35
   (where the openings fall); then Q-83
   (the fresh-seed validation F-02's pin needs).
-- Light: Q-87 (family O's third draft), Q-86, Q-91, Q-92, Q-81 (family B's sixth draft), Q-84 (F-02's seventh text), Q-85,
-  Q-82.
+- Light: Q-87 (family O's third draft), Q-86, Q-91, Q-92, Q-81 (family B's sixth draft: the slow-marker commit), Q-84 (F-02's seventh text), Q-85,
+  Q-82, Q-94.
 
 ## Machine
 

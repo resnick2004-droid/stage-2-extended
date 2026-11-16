@@ -97,7 +97,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-78 | Family R's second draft to the program's current rules | wt-levels | done: merged (E-057); its third draft Q-90 | Q-38 | light | 0 | E-048 |
 | Q-79 | `config/calendar_fomc_minutes.csv` built from Q-73's cited dates (builder, loader, tests), then pinned by the lead | wt-firms | done: merged and pinned (E-050) | Q-73 | light | 0 | E-048 |
 | Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | queued (after the second leg) | Q-71 | heavy | 0 | E-049 |
-| Q-81 | Family B's sixth draft: C1-f's null the realised paired lift (the model's term dropped), the conjoint MDL, level and power at the family's level | wt-scout | running (the family B drafter) | Q-77 | light | 0 | E-051 |
+| Q-81 | Family B's sixth draft: C1-f's null the realised paired lift (the model's term dropped), the conjoint MDL, level and power at the family's level | wt-scout | drafted (E-060); the slow-marker commit, then merge and Q-95 | Q-77 | light | 0 | E-051 |
 | Q-82 | The pass line's fresh-seed validation, built (seeds 20262010-20262019; criterion fixed in E-052) | wt-verify | running | Q-68 | light | 0 | E-052 |
 | Q-83 | Q-82's run from a clean checkout under the lock -- F-02's pin needs it | lead | queued (after Q-82) | Q-82, Q-55 | heavy | 0 | E-052 |
 | Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | running (its drafter, wt-levels, E-057) | Q-68 | light | 0 | E-052 |
@@ -110,6 +110,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-91 | The firms reading's third draft: Q-88's five MATERIAL and twelve minors | wt-firms | running (its drafter) | Q-88 | light | 0 | E-058 |
 | Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | running | Q-42 | light | 0 | E-059 |
 | Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued (after the second leg) | Q-76 | heavy | 0 | E-059 |
+| Q-94 | Place recording on the U1 replay (family O 18.1 item 4, A2), declared and off by default; its heavy identity owed | wt-features | running | Q-70, Q-76 | light | 0 | E-060 |
+| Q-95 | The red team's sixth read of family B (after the slow-marker commit) | wt-user | queued (after Q-81's marker commit) | Q-81 | light | 0 | E-060 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
