@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-086).
+**Updated:** 2026-11-16 (E-087).
 
 ## Phase
 
@@ -50,8 +50,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
 | wt-features | wt/wt-features | -- (Q-100 merged, E-084) | idle |
 | wt-lit | wt/wt-lit | -- (family O approved, E-077; the pin after Q-55 and Q-83) | idle |
-| wt-firms | wt/wt-firms | -- (RD-01 pinned, E-080; its build Q-104 after Q-100) | idle |
-| wt-payout | wt/wt-payout | -- (RD-02 pinned, E-082; its build Q-105) | idle |
+| wt-firms | wt/wt-firms | Q-104 RD-01's build | running |
+| wt-payout | wt/wt-payout | Q-105 RD-02's build | running |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
 | wt-scout | wt/wt-scout | -- (Q-99 read, E-072) | idle |
 | wt-infra | wt/wt-infra | -- (Q-96 merged, E-079) | idle |
