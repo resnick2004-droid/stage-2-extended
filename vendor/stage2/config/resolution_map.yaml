@@ -1,0 +1,47 @@
+# config/resolution_map.yaml -- the resolution map (D-213 part 2; D-214), fixed before any of its data is read.
+#
+# The question: inside Topstep's trading day (resume 17:00 CT, flat by 15:10 CT; 8284206), at which fixed stop
+# sizes and entry times does a bracket resolve at its stop or its target -- never the 15:10 flatten -- on at least 98 %
+# of entries (D-212), and what does it cost there? Direction-neutral: a long and a short at each decision, both
+# counted; no edge is read. The kits aggregate inside QuantConnect and export only counts (D-120): per year, decision
+# time, stop and R, how many brackets hit the target first, the stop first, or were still open at the day's last bar,
+# the minutes to resolution, and the entry minute's bid-ask spread in the micro's ticks.
+
+window:
+  open_ct: "17:00"          # the trading day starts the evening before (Topstep: "You can resume trading at 5:00 PM CT")
+  flatten_ct: "15:10"       # every bracket still open at the last bar at or before 15:10 CT is counted as open
+  # decision slots, minutes after 17:00: every hour from 17:00 to 14:00 CT (22 decisions); a decision enters at the
+  # open of the first bar after it, one micro tick adverse (the `assumed` fill profile, D-95)
+  decision_every_min: 60
+  last_decision_ct: "14:00"
+
+# fixed stops in dollars per micro: each divides stage one's $1,500 Combine and $750 funded risk into whole micros
+# exactly (D-212's consistent risk by construction) and sits between the band's size-cap edge and its zero-micro edge
+stop_dollars_per_micro: [50, 75, 125, 150, 250, 375]
+
+# D-215: a day whose last bar ends before 15:00 CT (an early close) is counted in its own cells, apart from full
+# sessions. Spreads: only a two-sided, uncrossed quote counts; one wider than `cap_ticks` micro ticks is kept out of
+# the mean and counted (badq); those above `wide_ticks` are counted (wide).
+spread: {wide_ticks: 4, cap_ticks: 50}
+rr: [1.0, 2.0]              # stage one's legs: the 1:1 Combine and the 2:1 funded bracket (propsim D-08, D-10)
+
+# each trading day's bars are rescaled so its first bar's open (17:00) maps to p_ref (D-106): a fixed-dollar stop is
+# then read in today's price terms, whatever the year's price level. p_ref as config/bracket_map.yaml (ES, NQ) and
+# config/model_im2.yaml (CL, 6E, NG).
+markets:
+  ES: {micro: MES, tick: 0.25,    micro_tick: 0.25,   micro_point_value: 5.0,     p_ref: 4000.0}
+  NQ: {micro: MNQ, tick: 0.25,    micro_tick: 0.25,   micro_point_value: 2.0,     p_ref: 10000.0}
+  CL: {micro: MCL, tick: 0.01,    micro_tick: 0.01,   micro_point_value: 100.0,   p_ref: 70.0}
+  6E: {micro: M6E, tick: 0.00005, micro_tick: 0.0001, micro_point_value: 12500.0, p_ref: 1.10}
+  NG: {micro: MNG, tick: 0.001,   micro_tick: 0.001,  micro_point_value: 1000.0,  p_ref: 3.00}
+
+# the development period in the kits' two halves (as the bracket map and IM2), each with a warm-up of a few days
+halves:
+  "0914": {warm: "2009-05-25", start: "2009-06-01", end: "2014-05-27"}
+  "1419": {warm: "2014-05-21", start: "2014-05-28", end: "2019-12-31"}
+
+# what part 2 reads from the counts (D-213, D-212), applied after the kits by scripts/score_resolution_map.py:
+feasible:
+  resolved_share_min: 0.98      # overall, and in every year of the development period
+  cost_r_max: "c*"              # the cost per trade (round turn plus the entry minute's measured spread) below D-213
+                                # part 1's c* for the arm, at the reading's denial

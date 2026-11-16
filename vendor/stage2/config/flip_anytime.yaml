@@ -1,0 +1,70 @@
+# config/flip_anytime.yaml -- the any-time direction atlas (D-373), fixed before any of its data is read.
+#
+# Why: the 08:30 flip-direction atlas (D-371) found nothing that held on both spans (D-372), and noted one hint seen in
+# its own data: the last minute's candle, faded every year to 2021, was followed every year from 2022. The operator
+# (2026-10-15): "Why does this have to be before a certain time period, can't this measurement just be used anytime";
+# then "Do as you see best fit". A measure known at a moment can choose the side of a bracket entered at that moment at
+# any time of day, so this screen asks it at every half hour of the regular session: (A) whether the hint holds at the
+# slots it was NOT seen at (09:00 to 14:30) -- one test, written before those slots are read; (B) which measure, if any,
+# tells the first move pooled over the session's slots, chosen on 2020-2022 and checked on 2023 to June 2025; and (C)
+# declares now a forward record of the two 08:30 hints on NQ data not yet in the repository.
+#
+# One QuantConnect run, NQ at actual prices, 2020-01-02 to 2025-06-30 (development only, D-237; the market of D-144's
+# reason -- the older span's brackets were a few ticks wide, D-372 (3)). Per trading day one record leaves (D-120):
+# per slot the measures in ticks and the brackets' outcomes both ways on one-second bars, by one history request a slot
+# (R138's method, D-344).
+
+status: fixed
+market: NQ
+run: R143-flipany-NQ
+window: {warm: "2019-11-01", start: "2020-01-02", end: "2025-06-30"}
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0}
+slots_ct: ["08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30"]
+pre_seconds: 60                  # each slot's second window starts a minute before the slot ...
+window_seconds: 780              # ... and runs thirteen minutes: the entry, the ten-minute box, the late entry
+box_seconds: 600
+entry_delays_seconds: [0, 60]    # on time, and one minute late (the hand trader's seconds; a guard, below)
+slip_ticks: 1
+widths:
+  # a 1:1 bracket as a fraction of the slot's typical ten-minute range: the mean high less low of the ten minute bars
+  # after that slot over the previous 20 complete trading days -- so each slot's bracket resolves in minutes
+  range_fractions: [0.25, 0.40]
+  primary_fraction: 0.25
+  min_ticks: 16                  # never a bracket of a few ticks (D-372 (3): those read the bid-ask bounce); a slot-day
+                                 # whose width would be smaller is not walked and is counted
+range_days: 20
+fallback: "a slot the history cannot serve with second bars is not walked and is counted (no minute fallback: the
+  brackets here are a few minute-ranges wide, where a minute bar touching both sides is common)"
+
+# --- the measures at a slot (P = the close of the last bar at or before the slot) ---------------------------------------
+measures:
+  A1_last1: "the bar ending at the slot: its close less its open"
+  A2_last15: "P less the close fifteen minutes before"
+  A3_last60: "P less the close sixty minutes before"
+  A4_since_rth_open: "P less the regular session's 08:30 open (none at the 08:30 slot)"
+  A5_since_day_open: "P less the trading day's first open (17:00 CT the evening before)"
+  A6_range_position: "P in the top third of the day's range so far +1, the bottom third -1, else 0"
+  A7_prior_rth: "the previous regular session's last close at or before 15:00 CT less its 08:30 open (same contract)"
+
+# --- the tests ------------------------------------------------------------------------------------------------------
+statistic: "per slot-day with a signal and both primary brackets entered on time: z = 1 when the side the rule takes reached its target first, -1 when the other side did, else 0; the effect is mean z over the slot-days; its standard error clustered by day (the day's summed residuals, Newey-West over days, lag 5)"
+cost: "per attempt, in units of the bracket's risk: the MNQ round turn (config/fills.yaml, read) and one tick of spread beyond the walk's entry tick, over the bracket's width in ticks at $0.50 a tick a micro"
+money: "the rule's side at the primary width, on time: +1 at the target, -1 at the stop, a scratch's P&L over the width, less the cost; its mean and its one-sided 95 % lower bound (clustered as the statistic); TRADABLE when the lower bound is above zero"
+A_hint:
+  rule: "FOLLOW A1_last1 (the last minute's candle)"
+  slots: "every slot but 08:30 (where the hint was seen)"
+  period: ["2022-01-03", "2025-06-30"]
+  holds: "the effect above zero with a one-sided p below 0.05, AND the 60-second-late entry's effect also above zero (a bounce does not survive a minute's delay, D-372 (3))"
+  k: 1
+B_atlas:
+  measures: [A1_last1, A2_last15, A3_last60, A4_since_rth_open, A5_since_day_open, A6_range_position, A7_prior_rth]
+  pooled: "each measure over all thirteen slots"
+  choice: ["2020-01-02", "2022-12-30"]
+  check: ["2023-01-03", "2025-06-30"]
+  rule: "on CHOICE, two-sided p per measure, Benjamini-Hochberg at q = 0.10 across the seven (k = 7); the side follow when the effect is positive, else fade; a survivor holds when on CHECK its side's effect is positive, one-sided p below 0.05, at least half the CHOICE size, and the late entry's effect has the same sign"
+  beside: "every measure at every slot on both spans (with the Benjamini-Hochberg listing over the 91 on CHOICE), per year, the 0.40 width and the late entry -- descriptions, not tests"
+C_forward:
+  what: "the two 08:30 hints of D-372 (4) -- FOLLOW the last minute's candle (F05) and FOLLOW the 07:30 release reaction (F09) -- at the declared flip (20 points, on time), by D-371's statistics"
+  data: "NQ from 2026-07-17, as QuantConnect's data accrues; never the development span or the read held-back windows"
+  read: "once, when at least 250 trading days are recorded; one-sided p below 0.05 and the money's lower bound above zero"
+counting: "A k = 1, B k = 7 (family flip_anytime, results/variants.jsonl when scored); C counted when read; nothing touches NQ's data from 2025-07-01"

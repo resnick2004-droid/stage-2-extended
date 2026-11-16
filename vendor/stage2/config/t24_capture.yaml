@@ -1,0 +1,64 @@
+# config/t24_capture.yaml -- T24's per-trade capture (D-428), fixed before any of its data is read.
+#
+# Why (the operator, 2026-10-24: "New capture, both rules"; "If we are doing it randomly can we have a 5 minue entry
+# time rather than 2?"): T24's screen (D-427) and stage one's model (D-428 (2)) say the contract pays most for a trade
+# that can win large against its risk at the full allowance -- wide stops and 2:1 to 3:1 targets -- and the T23 capture
+# carries stops to 40 points and targets to 1.5:1 only. This capture measures, at the same fixed times, how every
+# bracket of a wider set ends and when -- no box: a trade runs to its target, its stop or the day's end (D-212) -- so
+# T24's screen can read coin-flip trades at 20, 40 and 60-point stops and 1:1 to 3:1 targets, under the operator's
+# strict one-at-a-time rule and the firm's own rule side by side.
+#
+# Three QuantConnect runs (each under the 10,000-order cap with twelve brackets), NQ at actual prices, development data
+# only (D-237): R149 2020-01-01 to 2021-12-31, R150 2022-01-01 to 2023-12-31, R151 2024-01-01 to 2025-06-30, on minute
+# bars; a minute that first reaches a bracket's target and its stop settled on its one-second bars (R138's history
+# request, D-344, as R145 and R147/R148). Records only: no bar or price leaves (D-120). The kit is T23's (D-416),
+# unchanged but for this file.
+status: fixed
+decision: D-428
+market: NQ
+runs:
+  - {run: R149-t24-NQ-2021, warm: "2019-12-20", start: "2020-01-01", end: "2021-12-31"}
+  - {run: R150-t24-NQ-2023, warm: "2021-12-20", start: "2022-01-01", end: "2023-12-31"}
+  - {run: R151-t24-NQ-2025, warm: "2023-12-20", start: "2024-01-01", end: "2025-06-30"}
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:                            # the collect map's slots (R137's, D-343), so R137's measured entry spreads price them
+  open_ct: "17:00"
+  flatten_ct: "15:10"
+  decision_every_min: 60        # every hour start from 17:00 to 14:00 CT ...
+  last_decision_ct: "14:00"
+  extra_decisions_ct: ["08:30"] # ... and 08:30 CT: 23 slots
+entry_delays_min: [0, 5]        # on time -- the identity against R147/R148 (D-428 (4)) -- and five bars late, the
+                                # operator's entry for a coin-flip side (2026-10-24)
+slip_ticks: 1                   # one tick adverse at entry and at an end (D-95); the scorer costs the rest
+sides: "long and short at every slot-day (the side is the screen's coin, declared before any record is read)"
+brackets:                       # (target, stop) in NQ points; whole ticks; the outcome is the same for any micro count
+  - [20, 20]                    # 1:1 at 20      -- also in R147/R148 (the identity)
+  - [30, 20]                    # 1.5:1 at 20    -- also in R147/R148 (the identity)
+  - [40, 20]                    # 2:1 at 20
+  - [60, 20]                    # 3:1 at 20
+  - [40, 40]                    # 1:1 at 40      -- also in R147/R148 (the identity)
+  - [60, 40]                    # 1.5:1 at 40    -- also in R147/R148 (the identity)
+  - [80, 40]                    # 2:1 at 40
+  - [120, 40]                   # 3:1 at 40
+  - [60, 60]                    # 1:1 at 60
+  - [90, 60]                    # 1.5:1 at 60
+  - [120, 60]                   # 2:1 at 60
+  - [180, 60]                   # 3:1 at 60
+fills: "a target is reached when a bar trades THROUGH it (a resting limit); a stop when a bar touches it or opens beyond
+  it -- an open beyond it fills there, the gap beyond the stop recorded in ticks (collect_core's walk, D-381)"
+ties: "a minute bar that first reaches a bracket's target and its stop is settled on that minute's one-second bars; a
+  second reaching both, or a minute the history cannot serve, is the stop's, marked (counted)"
+end: "a bracket at neither by the day's last bar at or before 15:10 CT (or the cut) ends there at the bar's close, one
+  tick adverse, its P&L in ticks recorded -- the collect map's scratch, with no box"
+a3: "per slot-day the sign of the last sixty minutes' move at the slot's bar (A3, D-374), recorded beside; T24's side is
+  a seeded coin"
+early_close_days: skipped       # holiday sessions, known in advance (D-215): a day record, no walk
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # no walk that trading day
+  bls: data/release_days_0830_2009_2025.csv   # BLS 08:30 ET (07:30 CT): a bracket still open is ended at the close
+  bls_cut_ct: "07:30"           #   of the last bar before 07:30 CT -- never held into it
+identity:                       # D-428 (4): before anything else is read, the on-time walks of the four shared brackets
+  against: [R147-t23-NQ-2022, R148-t23-NQ-2025]   # must equal the T23 capture's walk for walk
+  delay: 0
+  brackets: [[20, 20], [30, 20], [40, 40], [60, 40]]
+counting: "every bracket and configuration the screen reads, under its own declaration"

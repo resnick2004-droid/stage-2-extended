@@ -1,0 +1,16 @@
+,value
+winners,200000.0
+total_net_mean,3598.3657044632437
+total_net_median,3535.3125
+total_net_p10,2531.25
+total_net_p90,4736.25
+first_payout_net_mean,1726.4363625
+first_payout_net_median,1800.0
+p_first_payout_exactly_1800,0.636655
+first_payout_day_median,8.0
+first_payout_day_p90,13.0
+further_net_mean,1871.9293419632436
+payouts_mean,4.212905
+close_day_median,42.0
+close_day_p90,60.0
+engine_total_check,3598.0

@@ -1,0 +1,229 @@
+# config/fills.yaml — fill model parameters
+#
+# Loaded by propedge/execution/fills.py.
+#
+# EVERY value in `assumed` is an ASSUMPTION placed here so the code runs. None of them is
+# measured. They must be replaced by measured values (T2 in NEXT_STEPS.md) before any result
+# is reported, and each replacement records its source and date.
+#
+# Why this matters more than it looks: the criterion is e >= 0.10 NET. Stage one measured a
+# gross edge and treated commissions as negative edge; the whole point of stage two's fill
+# model is that the gap between gross and net is where a candidate dies. An optimistic
+# slippage assumption does not make a candidate look slightly better - it can move it across
+# the criterion. Slippage is in TICKS and commission is per CONTRACT PER SIDE (D-03); never
+# express either as a fraction of dollar risk.
+#
+# The `zero_cost` profile is the validation limit: zero slippage, zero commission, exact
+# fills. With it the fill model must return exactly the binary P&L, which is what lets
+# tests/test_fills_zero_cost_limit.py and tests/test_adapter_reproduces_stage_one.py show
+# that stage two reduces to stage one. Do not edit the zero_cost profile.
+
+meta:
+  active_profile: assumed          # which profile propedge loads by default
+  generated: 2026-09-21
+
+# Per-instrument ROUND-TURN cost per contract, all-in (commission + exchange + NFA fees).
+#
+# This field exists because a single flat commission across contract sizes is not merely
+# imprecise, it points the wrong way on the question it is used to answer. A flat $1.44 applied
+# to both a $12.50-tick ES and a $1.25-tick MES hands minis a free 10x cost advantage; the real
+# ratio is about 3:1. Cost drag decides candidate viability, so the comparison has to be right.
+#
+# Values verified 2026-09-22 from help.topstep.com article 8284213 ("TopstepX - Commissions and
+# Fees"), read directly by the session: "ES $3.78 | MES $1.22 | NQ $3.78 | MNQ $1.22" round turn;
+# commission alone is "$1.00 round turn ($0.50 per side)" for minis and "$.50 round turn ($0.25
+# per side)" for micros, plus an NFA fee of "$0.02 round turn ($0.01 per side)".
+#
+# MCL, M6E and MNG added 2026-09-26 (D-158) by the rules-verifier from the same article, read
+# directly: table columns "Product" | "Total Round-Turn Cost (RT)"; rows "Micro Crude Oil (MCL)" |
+# "$1.52", "Micro EUR/USD (M6E)" | "$1.00", "Micro Henry Hub Natural Gas (MNG)" | "$1.72". The
+# same read found ES/MES/NQ/MNQ unchanged. Per-instrument quotes are under `provenance` below.
+#
+# SCHEDULED CHANGE, NOW IN EFFECT: the same article announces a CME exchange-fee increase on MCL
+# and MNG "starting the October 1, 2026 trading day" (quoted under `scheduled_changes` below).
+# RE-READ 2026-09-30 (D-209, the operator's instruction that the fee change not pause scoring):
+# the page still showed the notice and stated no post-change total; its table figures ($1.52,
+# $1.72) decomposed exactly into the old exchange fees. So `values` carried P-04 section 3's
+# fallback, the derived floors MCL 1.72 and MNG 1.92 (table figure + $0.20 round turn, from the
+# page's own components).
+# RE-READ 2026-10-01 (rules-verifier; page marked "Updated yesterday", i.e. 2026-09-30): the table
+# now STATES "Micro Crude Oil (MCL)" | "$1.72" and "Micro Henry Hub Natural Gas (MNG)" | "$1.92",
+# exactly the derived floors, and decomposes into the NEW exchange fees ($1.20 / $1.40 round turn
+# + $0.52). `values` is unchanged; MCL and MNG are now the page's stated totals, not derivations.
+# ES $3.78, MES $1.22, NQ $3.78, MNQ $1.22 and M6E $1.00 unchanged. The notice is still shown,
+# same wording.
+#
+# PROVISIONAL: these are the broker's published figures, not measured fills. Replace with values
+# measured on a funded test account, then change `source` below.
+round_turn_by_instrument:
+  source: help.topstep.com article 8284213, read 2026-09-22 (ES, MES, NQ, MNQ), 2026-09-26 (M6E), 2026-09-30 (MCL, MNG at P-04's derived floors, D-209) and 2026-10-01 (MCL, MNG at the page's stated totals; ES, MES, NQ, MNQ, M6E re-read unchanged) (published schedule, not measured)
+  values:
+    ES: 3.78
+    MES: 1.22
+    NQ: 3.78
+    MNQ: 1.22
+    MCL: 1.72
+    M6E: 1.00
+    MNG: 1.92
+
+  # Not read by propedge.execution.fills (which reads only `values` and `source`): the record
+  # behind the three rows added 2026-09-26. Article: https://help.topstep.com/en/articles/8284213
+  # ("TopstepX - Commissions and Fees", marked "Updated this week" when read 2026-09-26 and
+  # 2026-09-30, "Updated yesterday" when read 2026-10-01; the absolute timestamp was not read).
+  # The composition text below was re-read 2026-10-01, same wording.
+  provenance:
+    composition: |
+      The table's figure is all-in. Page text: "Round-Turn (RT) cost: charged when you complete
+      both sides of a trade. Each side (Buy or Sell) incurs half the total, also called a 'per
+      side' fee." The Round-Turn Cost Breakdown lists Exchange Fee ("Exchange fees are set by the
+      exchange and do not include the regulatory fee. Each varies by product."), NFA Regulatory
+      Fee ("$0.02 round turn ($0.01 per side)") and Commissions ("Minis $1.00 round turn ($0.50
+      per side)"; "Micros $.50 round turn ($0.25 per side)"). No clearing fee is mentioned.
+    MCL:
+      value: 1.72
+      article_id: 8284213
+      url: https://help.topstep.com/en/articles/8284213
+      date_read: 2026-10-01
+      verified_by: rules-verifier (stage two)
+      status: verified - the page's stated total (table, "Total Round-Turn Cost (RT)")
+      quote: '"Micro Crude Oil (MCL)" | "$1.72"'
+      note: >-
+        Stated total equals D-209's derived floor (1.72), so the loaded value is unchanged. It
+        decomposes into the NEW exchange fee: $1.20 ("MCL: $0.50 to $0.60 per side ($1.20 round
+        turn)") + "$0.02 round turn" NFA + "Micros $.50 round turn" commission. The page does not
+        say in words that the table includes the increase; the table figure is the stated total.
+        Read before: 2026-09-26, $1.52, verified; 2026-09-30, table still $1.52, loaded at the
+        derived floor 1.72 (D-209).
+    M6E:
+      value: 1.00
+      article_id: 8284213
+      url: https://help.topstep.com/en/articles/8284213
+      date_read: 2026-10-01
+      verified_by: rules-verifier (stage two)
+      status: verified
+      quote: '"Micro EUR/USD (M6E)" | "$1.00"'
+      note: not named in the 2026-10-01 exchange-fee notice. Read before 2026-09-26, $1.00; re-read 2026-10-01, unchanged
+    MNG:
+      value: 1.92
+      article_id: 8284213
+      url: https://help.topstep.com/en/articles/8284213
+      date_read: 2026-10-01
+      verified_by: rules-verifier (stage two)
+      status: verified - the page's stated total (table, "Total Round-Turn Cost (RT)")
+      quote: '"Micro Henry Hub Natural Gas (MNG)" | "$1.92"'
+      note: >-
+        Stated total equals D-209's derived floor (1.92), so the loaded value is unchanged. It
+        decomposes into the NEW exchange fee: $1.40 ("MNG: $0.60 to $0.70 per side ($1.40 round
+        turn)") + "$0.02 round turn" NFA + "Micros $.50 round turn" commission. The page does not
+        say in words that the table includes the increase; the table figure is the stated total.
+        Read before: 2026-09-26, $1.72, verified; 2026-09-30, table still $1.72, loaded at the
+        derived floor 1.92 (D-209).
+
+  # Announced on the same page, read 2026-09-26, again 2026-09-30 and again 2026-10-01 (still
+  # shown each time, same wording). LOADED from 2026-09-30 as the derived totals below (D-209;
+  # P-04 section 3's fallback); from 2026-10-01 the page's table STATES the same totals.
+  scheduled_changes:
+    - effective: 2026-10-01              # "the October 1, 2026 trading day" (CME trading day)
+      products: [MCL, MNG]
+      article_id: 8284213
+      date_read: 2026-09-26
+      last_read: 2026-10-01              # notice still shown, wording unchanged
+      quote: |
+        "Exchange fee increase starting the October 1, 2026 trading day"
+        "The CME is raising Exchange transaction fees on 2 products. Fees apply per side, so a
+        round turn counts both entry and exit."
+        "MCL: $0.50 to $0.60 per side ($1.20 round turn)"
+        "MNG: $0.60 to $0.70 per side ($1.40 round turn)"
+        "That's $0.10 more per side. Deducted automatically and shown in your trade activity."
+      loaded: true                       # D-209, 2026-09-30: as the derived floors; 2026-10-01: the page's stated totals
+      # As derived 2026-09-26/30 (kept as the record): the page did not say whether the table
+      # already included the increase. Its own components said it did not: MCL $1.52 - $0.50
+      # micro commission - $0.02 NFA = $1.00 exchange RT = $0.50/side (the "from" figure); MNG
+      # $1.72 - $0.52 = $1.20 RT = $0.60/side (the "from" figure). On that reading the totals
+      # from 2026-10-01 were the table figure + $0.20 RT. The "($1.20 round turn)" and "($1.40
+      # round turn)" in the notice are the new EXCHANGE fee alone, not the new total.
+      derived_total_round_turn_after:
+        MCL: 1.72
+        MNG: 1.92
+      # Re-read 2026-10-01: the table states the post-change totals, equal to the derivation.
+      stated_total_round_turn_after:
+        MCL: 1.72                        # "Micro Crude Oil (MCL)" | "$1.72"
+        MNG: 1.92                        # "Micro Henry Hub Natural Gas (MNG)" | "$1.92"
+      stated_date_read: 2026-10-01
+      derived_status: CONFIRMED as stated totals 2026-10-01 - the page's table reads "Micro Crude Oil (MCL)" | "$1.72" and "Micro Henry Hub Natural Gas (MNG)" | "$1.92", equal to the derived floors loaded 2026-09-30 (D-209); values unchanged. Before 2026-10-01 these were arithmetic on the page's quoted components, unverified as stated totals
+
+profiles:
+
+  zero_cost:
+    description: >
+      Validation limit. Zero slippage, zero commission, exact fills at the stop and target.
+      Reproduces stage one's binary model exactly. Used by tests. DO NOT EDIT.
+    status: exact                  # not an assumption: this profile is definitionally zero
+    entry_slippage_ticks: 0.0
+    stop_slippage_ticks: 0.0
+    target_slippage_ticks: 0.0
+    flatten_slippage_ticks: 0.0
+    gap_through_stop: exact        # fill at the stop price even if the market gapped past it
+    commission_per_contract_per_side: 0.0
+    exchange_fees_per_contract_per_side: 0.0
+
+  zero_cost_gap_fill:
+    description: >
+      Reconciliation stage A reference (D-83, docs/PIPELINE.md section 5). Zero slippage and zero
+      commission, but a stop the market GAPS through fills at the next available price, as
+      PIPELINE.md section 2 requires -- never at the stop price. Targets need a strict
+      trade-through. It differs from zero_cost in exactly those two rules; zero_cost stays the
+      stage-one reproduction profile and is not edited.
+    status: exact                  # definitionally zero cost; not an assumption
+    apply_round_turn_by_instrument: false   # zero cost means zero: no per-instrument fees
+    entry_slippage_ticks: 0.0
+    stop_slippage_ticks: 0.0
+    target_slippage_ticks: 0.0
+    flatten_slippage_ticks: 0.0
+    gap_through_stop: next_price
+    require_trade_through_for_target: true
+    commission_per_contract_per_side: 0.0
+    exchange_fees_per_contract_per_side: 0.0
+
+  assumed:
+    description: >
+      Placeholder cost model. Every number here is an assumption to be replaced by a measured
+      value in T2. Do not report a result computed with this profile without saying so.
+    # D-95: the operator has no measured fills and has instructed that costs be assumed or taken
+    # from published sources. The profile stays FLAGGED AS AN ASSUMPTION (the ASSUMED marker is
+    # read by propedge.execution.fills), so every result computed with it says so.
+    status: ASSUMED - operator instruction 2026-09-24 (D-95); fees from the published Topstep schedule, slippage assumed
+
+    # Slippage in TICKS, per side, adverse by convention (a positive number always costs money).
+    entry_slippage_ticks: 1.0
+    # A stop is a market order once touched, so it is the most adverse of the three.
+    stop_slippage_ticks: 1.0
+    # A target is a resting limit: it fills at the limit price or not at all, so slippage is 0
+    # but the fill is not guaranteed. `require_trade_through` below is the honest version.
+    target_slippage_ticks: 0.0
+    # The 15:10 CT flatten is a market order into the close.
+    flatten_slippage_ticks: 1.0
+
+    # What happens when price gaps past the stop rather than trading through it.
+    #   exact         - fill at the stop price (OPTIMISTIC; forbidden outside the zero_cost
+    #                   profile because it is the SIM-fill exploitation the firm prohibits)
+    #   next_price    - fill at the next available price after the gap (realistic)
+    gap_through_stop: next_price
+
+    # A resting limit target is only filled if price trades strictly through it, not merely
+    # touches it. false would assume a fill on a touch, which flatters every result.
+    require_trade_through_for_target: true
+
+    # Per contract per side, in USD. Commission is the broker's; exchange fees are the
+    # exchange's and are charged separately on most platforms. They are listed apart so the
+    # rules-verifier / T2 can source them separately.
+    commission_per_contract_per_side: 0.35
+    exchange_fees_per_contract_per_side: 0.37
+
+    sources:
+      entry_slippage_ticks: ASSUMED (D-95) - one tick adverse on a market entry, conservative for ES/NQ in RTH
+      stop_slippage_ticks: ASSUMED (D-95) - one tick adverse; stops are market orders once touched
+      target_slippage_ticks: ASSUMED (D-95) - resting limit fills at the limit; strict trade-through required
+      flatten_slippage_ticks: ASSUMED (D-95) - one tick adverse into the 15:10 CT flatten
+      commission_per_contract_per_side: SUPERSEDED - fees are charged from round_turn_by_instrument (Topstep 8284213, published schedule)
+      exchange_fees_per_contract_per_side: SUPERSEDED - included in round_turn_by_instrument (Topstep 8284213)

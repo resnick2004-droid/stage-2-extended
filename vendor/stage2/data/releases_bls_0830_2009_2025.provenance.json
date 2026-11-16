@@ -1,0 +1,112 @@
+{
+ "what": "Every BLS news release scheduled at 08:30 AM Eastern, 2009-2025, from the Bureau of Labor Statistics' own schedule pages (one page per year), parsed from the release-list tables; the day-level file lists each date once with its releases.",
+ "parser": "parse_bls.py (html.parser over <table class='release-list'>; rows whose first cell is a date and whose time cell starts with '08:30')",
+ "pages": {
+  "2009": {
+   "url": "https://www.bls.gov/schedule/2009/home.htm",
+   "sha256": "11e7da53f82221ff2f7601f9aff4cb816cd1363ea678673a23e6393a7f4f4bbd",
+   "bytes": 95745,
+   "fetched_utc": "2026-10-05T17:48:52+00:00"
+  },
+  "2010": {
+   "url": "https://www.bls.gov/schedule/2010/home.htm",
+   "sha256": "58ba6ad2df51d17ca2c64955044ecc7e0a1574babde17ea759640c9b78af0a76",
+   "bytes": 96927,
+   "fetched_utc": "2026-10-05T17:48:52+00:00"
+  },
+  "2011": {
+   "url": "https://www.bls.gov/schedule/2011/home.htm",
+   "sha256": "7bf531385e6641dbe7c9b396119583df687a650cbc9e7f99c66bcc03ffd01e19",
+   "bytes": 95495,
+   "fetched_utc": "2026-10-05T17:48:53+00:00"
+  },
+  "2012": {
+   "url": "https://www.bls.gov/schedule/2012/home.htm",
+   "sha256": "4d28d4564227e713e01078fa27bf9a899364ab8b24a77287031415971b0e1287",
+   "bytes": 97427,
+   "fetched_utc": "2026-10-05T17:48:53+00:00"
+  },
+  "2013": {
+   "url": "https://www.bls.gov/schedule/2013/home.htm",
+   "sha256": "0f3454b4975f615361a5b9268f0519d0003ef18ba6737f04e759ec3668b28348",
+   "bytes": 93640,
+   "fetched_utc": "2026-10-05T17:48:53+00:00"
+  },
+  "2014": {
+   "url": "https://www.bls.gov/schedule/2014/home.htm",
+   "sha256": "691e1abbb5d5ed080a5afa6e7eaee1570dd69f65fc3bd69601b609e1688adb66",
+   "bytes": 91662,
+   "fetched_utc": "2026-10-05T17:48:53+00:00"
+  },
+  "2015": {
+   "url": "https://www.bls.gov/schedule/2015/home.htm",
+   "sha256": "515fcbfccaa4ca758a2376cc42560c8df4faefc46217268be8c9222c35eff416",
+   "bytes": 96815,
+   "fetched_utc": "2026-10-05T17:48:54+00:00"
+  },
+  "2016": {
+   "url": "https://www.bls.gov/schedule/2016/home.htm",
+   "sha256": "da838eb21650da1f7aa3ae3355bdb9b5e1cd190a467232e74ae28621453a6c0a",
+   "bytes": 96677,
+   "fetched_utc": "2026-10-05T17:48:54+00:00"
+  },
+  "2017": {
+   "url": "https://www.bls.gov/schedule/2017/home.htm",
+   "sha256": "cefc78608ffdf1cf295ca6ce29b60a34171b2be679aa4ff003defa56eb5dd781",
+   "bytes": 95284,
+   "fetched_utc": "2026-10-05T17:48:55+00:00"
+  },
+  "2018": {
+   "url": "https://www.bls.gov/schedule/2018/home.htm",
+   "sha256": "0508017239cb944b6a865537e86706e89579347cd5703cfac73abc4116f70655",
+   "bytes": 98266,
+   "fetched_utc": "2026-10-05T17:48:55+00:00"
+  },
+  "2019": {
+   "url": "https://www.bls.gov/schedule/2019/home.htm",
+   "sha256": "79d544badfec76a4e3687076a831e8ba4fb69c211898828f5edd173ba8e401fd",
+   "bytes": 99273,
+   "fetched_utc": "2026-10-05T17:48:56+00:00"
+  },
+  "2020": {
+   "url": "https://www.bls.gov/schedule/2020/home.htm",
+   "sha256": "0ee7b9af2cdef3b326eb3924154d916f89b917a0f91ffc8b0046157dbf5c9e9e",
+   "bytes": 93767,
+   "fetched_utc": "2026-10-05T17:48:56+00:00"
+  },
+  "2021": {
+   "url": "https://www.bls.gov/schedule/2021/home.htm",
+   "sha256": "f1c527292a25d8f8989abbe476fcf4f89a2cce1a1d8d4dcb17a172da5e547b0c",
+   "bytes": 98369,
+   "fetched_utc": "2026-10-05T17:48:56+00:00"
+  },
+  "2022": {
+   "url": "https://www.bls.gov/schedule/2022/home.htm",
+   "sha256": "8a65fcdee01b1c42db14a2413b6b60a3d1f4e389159cbcbba68d5743d94358c1",
+   "bytes": 100703,
+   "fetched_utc": "2026-10-05T17:48:57+00:00"
+  },
+  "2023": {
+   "url": "https://www.bls.gov/schedule/2023/home.htm",
+   "sha256": "dde426274a3f593a352e7b2b9d978799307ace879e032caf0b1e3dd184259412",
+   "bytes": 100158,
+   "fetched_utc": "2026-10-05T17:48:57+00:00"
+  },
+  "2024": {
+   "url": "https://www.bls.gov/schedule/2024/home.htm",
+   "sha256": "989023c355a3a4d179e2a250da476468f3a63ad3e310b6a029b6814a6307f878",
+   "bytes": 101431,
+   "fetched_utc": "2026-10-05T17:48:58+00:00"
+  },
+  "2025": {
+   "url": "https://www.bls.gov/schedule/2025/home.htm",
+   "sha256": "3ef4c8dee4db6a88a1ccc9a7f67715adac973a46ff6288483367e46895aa9607",
+   "bytes": 96700,
+   "fetched_utc": "2026-10-05T17:48:58+00:00"
+  }
+ },
+ "rows": 1215,
+ "distinct_dates": 1013,
+ "packaged_utc": "2026-10-05T18:04:57+00:00",
+ "use": "FV3 (T17 item 3): on these dates the session's fair price is the open of the 8:30 ET candle (JJ Simon's pre-news price); not a firm rule, so verified here by source and hash, and checked by the data-integrity agent before the harness reads it."
+}

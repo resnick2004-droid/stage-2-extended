@@ -1,0 +1,51 @@
+# config/flip_design.yaml -- the flip design map (D-375), fixed before any of its data is read.
+#
+# Why: D-374 found one direction measure that holds on two spans -- FOLLOW the last sixty minutes' move (A3) -- too
+# small to pay the cost of small brackets, useful where a trade's cost is a smaller share of its risk. The 08:30 flip
+# (D-345, D-346) costs about a twentieth of its $200 risk at 20 points on five micros; a wider bracket on fewer micros
+# at the same risk costs a fraction of that, but needs longer than the ten-minute box D-343 set to resolve. The operator
+# (2026-10-15): "if there are certain variables i have recommended like the 10 minute resolution period that are
+# hindering your results you can make changes that will produce better outcomes". This map measures the 08:30 flip at
+# widths from 20 to 100 points, both sides, every day, with its resolution time and its mark at every box length up to
+# thirty minutes, beside the pre-08:30 measures (D-371's), so the flip's width, box and side can be chosen by the rule
+# below on 2021-2023 and checked on 2024 to June 2025 -- the years of FV3-D's lever tests (D-365).
+#
+# One QuantConnect run, NQ at actual prices, 2020-01-02 to 2025-06-30 (development only, D-237). One record a day leaves
+# (D-120): the measures, each bracket's outcome and seconds, and the marks.
+
+status: fixed
+market: NQ
+run: R144-flipdesign-NQ
+window: {warm: "2019-12-02", start: "2020-01-02", end: "2025-06-30"}
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0}
+slot_ct: "08:30"
+window_ct: {start: "08:29", end: "09:02"}   # the slot a minute in; the thirty-minute box and the late entry inside
+box_seconds: 1800                           # the longest box: a bracket still open after thirty minutes is a scratch
+marks_seconds: [600, 900, 1200, 1800]       # the price at each shorter box's end, so any of those boxes can be read
+entry_delays_seconds: [0, 60]
+slip_ticks: 1
+widths_points: [20, 25, 30, 40, 50, 75, 100]
+
+# --- the choice (scored on 2021-2023, checked on 2024 to June 2025) ------------------------------------------------------
+periods: {choice: ["2021-01-04", "2023-12-29"], check: ["2024-01-02", "2025-06-30"]}
+side: "A3 (D-374): the sign of P less the close sixty minutes before (the last close at or before 07:30 CT); a day with no
+  move takes no flip"
+contracts: "config/flip_sizing.yaml's rule (D-346): the fewest whole MNQ whose risk at the width is a multiple of the
+  table's $50 grid and whose win after the round turn clears the $150 winning-day bar"
+max_risk_dollars: 200            # the operator's flip risk (D-346: "$400 is still a substantial amount")
+boxes_minutes: [10, 15, 20, 30]
+resolved_min: 0.90               # a (width, box) qualifies when at least this share of its on-time brackets resolves
+                                 #   inside the box on CHOICE pooled AND in each CHOICE year
+cost: "per attempt, at the width's contract count: the MNQ round turn (config/fills.yaml), the entry spread beyond the walk's
+  tick at 08:30 measured by the minute flip map (results/manual_R137_flipmap_NQ.csv, its spread rows), and a tick on a
+  stop exit"
+rule: "among the qualifying (width, box) with risk at most max_risk_dollars, the one with the highest mean net dollars per
+  attempt on CHOICE with its side set by A3; ties to the shorter box, then the narrower width"
+check: "the chosen (width, box) on CHECK: its resolution, win share, mean net dollars per attempt and the one-sided 95 %
+  Newey-West lower bound (lag 5); and beside, every (width, box) on both spans, the mechanical side (D-343's last
+  minute) against A3's, and the late entry"
+then: "the chosen flip's shares and cost on CHOICE price the flip action in the funded table (D-339's flip action, with
+  the window held only to the flip's own exit, D-350 (iii)); that candidate runs against FV3-C by D-365's procedure --
+  its own declaration"
+counting: "the map is a description; the choice is one (width, box) by the rule above, recorded in results/variants.jsonl
+  (family flip_design) with every (width, box) evaluated; nothing touches NQ's data from 2025-07-01"

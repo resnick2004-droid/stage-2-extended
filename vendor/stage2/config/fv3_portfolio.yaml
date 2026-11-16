@@ -1,0 +1,206 @@
+# The one declared run of FV3's captured trades under the fidelity protocol and D-304/D-305's portfolio lines
+# (NEXT_STEPS T17 items 5 and 7; the operator, 2026-10-06). D-306's run of this declaration closed at feasibility
+# (results/fv3_portfolio.csv; D-307; the audit docs/audits/fv3_portfolio_2026-10-06.md) on a condition its wording did
+# not name. This is the corrected declaration for the single pre-registered rerun of the SAME candidate (the operator's
+# decision, 2026-10-06, D-308): every feasibility condition the scorer applies is written below, the flatten ceiling
+# is D-212 (2)'s as the operator amended it (5 %) with its reason, the inert terms are live or gone, the mechanics eras
+# and the benchmark stop follow this file -- and no candidate parameter, target, stop or portfolio line is changed from
+# D-306. D-308's run (results/fv3_portfolio_v2.csv, D-309: continue) left two findings in the declaration's execution
+# -- the first test year untraded for want of a selection statistic one development year cannot give, and D-47's
+# criterion unstated -- corrected under D-310 (the operator takes (b)): the one cell is taken in every feasible test
+# year without a statistic, P4 says 'no idle years' again, the criterion rows and the per-path record are written.
+# D-310's run (results/fv3_portfolio_v3.csv, D-311: continue) stated a $5,000 bankroll, which bound and censored the
+# required figure; under D-312 (the operator, 2026-10-07) the bankroll is an output of the run -- cash that never binds,
+# the required bankroll reported, growth read on it. Under D-313 (the operator, 2026-10-07) the Combine gains two rules
+# -- a trade never risks more than the room above the floor; a day that cannot pass closes at the consistency
+# allowance -- and the state table is re-solved within them (version 4): a NEW CANDIDATE (D-277), D-310's on record
+# beside it; the planned D-312 re-read of D-310's candidate is superseded and not run. Run once, from a clean tree:
+#   python scripts/score_fv3_grid.py --declaration D-313 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v4
+# Under D-316 (the operator, 2026-10-07: "openly test higher risk options and negative RR trades") the Combine gets its
+# own menu in the state table (v5: risks to $3,000, R from 0.25) -- a further change before D-313's run, which is
+# superseded and not run. Run once, from a clean tree, after the v5 table and its fresh geometry:
+#   python scripts/score_fv3_grid.py --declaration D-316 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v5
+# That run was launched and stopped before it wrote anything: a diagnostic of the same gate (the operator's question why
+# accounts take so long) found Combines that could never trade again and never fail -- room below one micro at any stop
+# offering their R -- holding every slot. Under D-318 (the operator, 2026-10-07: "A + B + C") such a Combine ends out of
+# room, the router hands a trade only to an account that can take it, and the state table learns each rung's
+# availability by R (version 6). D-316's run is superseded and not run. Run once, from a clean tree, after the v6 table:
+#   python scripts/score_fv3_grid.py --declaration D-318 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v6
+# D-318's run (results/fv3_portfolio_v6.csv, D-319: continue). Under D-321 (the operator, 2026-10-08: "we need to fix
+# all the errors and issues before considering running the OOS tests") two errors the operator's Studio review found are
+# corrected before any confirmation: the funded export keyed only by balance and cushion, so a paid account below its
+# payout line traded the band's most-visited $250 whatever its winning days (the table sizes up there) -- export
+# version 7 keys it by winning days and the payout-line band; and every trade charged one median cost priced as a stop
+# exit, so a target exit paid a tick it never pays -- `fidelity.costs: per_trade`. A new candidate (D-277); D-318's on
+# record beside it. Run once, from a clean tree, after the v7 table:
+#   python scripts/score_fv3_grid.py --declaration D-321 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v7
+# D-321's run (results/fv3_portfolio_v7.csv, D-323: continue; two defects fixed under D-324 behind switches, off by
+# default). Under D-325 (the operator, 2026-10-08: "Proceed with the next steps as you see best fix to solve the issues
+# we have been failing to resolve") the funded table is solved under two rules -- among the actions within $5 of a
+# state's best value the smallest dollar risk, and once the balance is above its start no action beyond $500 at risk
+# -- against the erratic funded accounts of the operator's Studio review (a flat optimum; bold play below the payout
+# line); its export corrected under D-326 (the unpaid balance band split at the start: version 9); and D-324's two
+# switches are on: each trade's fee at the contracts it holds, and a policy's no-trade state holding only a
+# Standard-path funded account. A new candidate (D-277); D-321's on record beside it. Run once, from a clean tree,
+# after the v9 table:
+#   python scripts/score_fv3_grid.py --declaration D-326 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v8
+# D-326's run (results/fv3_portfolio_v8.csv, D-327: continue; the Studio mirror exact on the verdict arm, D-328). Under
+# D-329 (the operator, 2026-10-09: "We need to measure how much $ a day is worth ... if it's better to just start
+# over") -- the LAST protocol change before the confirmation -- the slot rent is derived as the campaign's cash rate
+# per slot-day (lambda*, the fixed point over the Combine -> XFA chain), both tables may abandon an account (a Combine
+# cancelled, an XFA closed at the trader's request; verified 2026-10-09), the Combine breaks ties toward the higher R,
+# the efficiency measures (cash per slot-day, slot-days per attempt and per XFA, the shares abandoned) are reported
+# beside every result, and D-328's cent rounding of the policy's decision inputs is on. Table version 10. A new
+# candidate (D-277); D-326's on record beside it. Then the protocol is frozen. Run once, from a clean tree, after the
+# v10 table:
+#   python scripts/score_fv3_grid.py --declaration D-329 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v9
+# D-329's run (results/fv3_portfolio_v9.csv, D-332: continue by the lines, every magnitude below v8's): the audit found
+# the exported policy file closing funded accounts the table never decided to close -- a visited-bands-only export,
+# the engine inheriting a neighbouring band's abandon for near-fresh accounts (the same class as D-322, D-326). Under
+# D-332 (a defect reopens the protocol) the export is corrected (version 11: every band carries the table's own
+# decision) on the SAME v10 solve, the policy file checked against the exact table on real trades before the run,
+# and the run repeated once. Run once, from a clean tree, after the v11 export:
+#   python scripts/score_fv3_grid.py --declaration D-332 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v10
+# The v11 file's check before the run (the replay on real trades; the Studio's policy map) found one more artefact
+# (D-333): the funded balance cap's band carried the table's boundary abandon into the engine; version 12 leaves it
+# out. The same solve re-exported once more; the run as declared, on the v12 files:
+#   python scripts/score_fv3_grid.py --declaration D-333 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v10
+# D-333's run (results/fv3_portfolio_v10.csv, D-334: continue by the lines; every number the lines read exact; the v9
+# defect gone; the magnitudes at v8's level). The audit's one engine error (finding 3): the engine read the abandon at
+# the next session's start, so the slot idled a session the table never priced (5-6 % of the slot-days available).
+# Under D-334 the abandon is taken at the close whose state decides it -- a change to the engine's timing, not to the
+# table or to this file -- with the deferred housekeeping (the manifests' variant count, the ledger's export version,
+# G's value and basis, the percentile rule beside a minus infinity, these labels). The same table (v12). Run once,
+# from a clean tree:
+#   python scripts/score_fv3_grid.py --declaration D-334 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v11
+# D-334's run (results/fv3_portfolio_v11.csv, D-335: continue by the lines; the abandon fix verified -- no idle session
+# per abandon; the money up by about half the reckoning, the rest the trade supply). The audit's one LOW defect
+# (finding 9), the same timing class: a room-capped Combine out of room ended at the next session's start (D-318),
+# idling the slot a session -- in run v11 only in the fixed-legs twin. Under D-335 it ends at the close that finds it,
+# after the abandon is read; no policy campaign's row can change, the twin's can. One run from a clean tree, judged by
+# identity with run v11 on every row and path but the twin's; then the protocol FREEZES at that commit:
+#   python scripts/score_fv3_grid.py --declaration D-335 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v12
+# FROZEN at f41c492 (D-336). REOPENED ONCE for a defect (D-351; the audit of the two-stream run fv3_gf_v2, finding 5):
+# flat-account routing held a routed position only to the log's single exit -- the fresh Combine's 1.5R exit -- so an
+# account trading 2R or 3R could be handed a later trade while its position was still open, against D-159's premise.
+# `fidelity.hold_to_own_exit: true` holds every routed position to its exit at the R the account trades (the gate's
+# trades carry each R's exit since D-349); nothing else moves. One run from a clean tree, judged by the lines and read
+# against run v12 (the difference is this mechanism alone); then the protocol freezes again at that commit:
+#   python scripts/score_fv3_grid.py --declaration D-351 --config config/fv3_portfolio.yaml --result-name fv3_portfolio_v13
+decision: D-351                          # the declaration row (the scorer refuses without it)
+description: "FV3's captured trades under D-306's fidelity protocol with D-313's two Combine rules (the room cap and the consistency cap), 2020 to June 2025, one declared configuration (k = 1), judged by D-304/D-305's portfolio lines P1-P4 on the campaign's cash with the bankroll an output of the run (D-312): the mechanics report on the declared eras, the cell's feasibility under the declared conditions with every reason recorded, its walk-forward from 2021, the era rule, the per-side drift benchmark at the rungs' fixed stops, the D-145 gate under the state table v10 in its export version 12 -- every band carrying the table's own decision (D-332), the funded balance cap's band out (D-333) -- (the allowance built in, need-aware exits, the Combine's two rules and its own menu, each rung's availability by R, the funded decisions keyed by winning days and payout-line band, the funded table solved under D-325's two rules -- the $5 tie-break toward the smaller risk and the $500 cap once in profit -- with its balance band split at the start, the slot rent derived as the cash rate per slot-day and an abandon action in both tables with the Combine's tie-break toward the higher R (D-329), the abandon taken at the close whose state decides it (D-334), a Combine out of room ending at the close that finds it (D-335); trades routed only to accounts that can take them; a Combine out of room ends; each trade's own cost at the contracts it holds; a no-trade state holding only a Standard-path funded account; the policy's decision inputs read to the cent) on cash that never binds, the required bankroll, the twins, the per-year campaigns, the efficiency measures and the lines -- all fixed in config/fv3_portfolio.yaml before the run."
+status: "a new candidate (D-313, D-316, D-318, D-321, D-325, D-326, D-329; its export corrected on the same solve, D-332 and D-333; the engine's abandon and out-of-room timing, D-334 and D-335): D-306's fidelity protocol over FV3's captured trades with the Combine's room cap and consistency cap, the Combine's own menu (higher risks, R below 1), each rung's availability by R, routing to accounts that can take the trade, out-of-room Combines ended, the funded export keyed by the Standard path's payout conditions, the funded table solved under the operator's two rules (D-325) with its export's start band split (D-326), the slot rent derived and the abandon action with the Combine's tie-break (D-329: the last protocol change before the confirmation; the export corrected twice on the same solve under D-332 and D-333, and the engine's abandon and out-of-room endings taken at the close that decides them under D-334 and D-335 -- defects, not changes of the protocol), each trade's own cost at the contracts it holds and the no-trade state held to the Standard path (D-324's switches on), the decision inputs to the cent (D-328), the bankroll an output (D-312); EXPLORATORY in that FV3's design is not blind to FV1's and FV2's results, the rules and the menu were set after D-310's development result was seen, D-325's rules after D-321's and the operator's Studio review of D-318's, and D-329's after D-326's and the review of a Combine in the Studio, and D-332 to D-335's corrections after D-329's, D-333's and D-334's runs and their audits; only the held-back confirmation can decide"
+model: FV3
+market: NQ
+# today's regime only: the captures from 2020 (D-305: the first year in which the campaign trades on most days)
+runs: [R127-fv3-NQ-20H1, R133-fv3-NQ-20H2, R128-fv3-NQ-2121, R129-fv3-NQ-22H1, R134-fv3-NQ-22H2, R130-fv3-NQ-23H1,
+       R135-fv3-NQ-23H2, R131-fv3-NQ-24H1, R136-fv3-NQ-24H2, R132-fv3-NQ-2525]
+window: {start: "2020-01-01", end: "2025-06-30"}            # development only (D-237); the held-back window is never read
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # FOMC days excluded (D-283, D-297)
+
+execution:
+  mode: manual
+  latency_minutes: 2                     # seated (D-282)
+  entry: "a market order working from the signal bar's close + L, filled at the next bar's open; the spread and a tick charged"
+  coordination: one_at_a_time            # D-160
+  accounts: 5
+  max_trades_per_day: 5
+  breakeven: "a trade open at the next session's open has its stop moved to the entry when the open there is in its favour (the capture's be_* fields)"
+  flatten: "the worst of 15:07-15:10 CT less 2 ticks (D-263); the 15:08 close where none was recorded"
+
+ladder:                                  # the fidelity protocol (D-306): his stops in POINTS, fixed, so the dollar risk is exact
+  mode: fixed_points                     # not ATR-scaled (FV3's record used 25 / 381.25 x the ATR, D-293)
+  stops_ticks: {half: 50, full: 100, double: 200}             # 12.5 / 25 / 50 points
+  room_ticks: {half: [60, 120], full: 120, double: 304}       # his room rule in points: 15-30 half, 30+ full, 76+ double (reversions)
+  continuation_open_body_ticks: 100      # a continuation on an opening candle whose body exceeds 25 points: the double stop
+  room_target_frac: 0.8                  # room >= 0.8 x the target, his "80 % of my trade" (the funded leg's room rule too)
+  # funded_room_min_frac (D-306: 2.0) removed: read and never used (the audit of D-307, finding 6)
+
+state_policy:                            # D-290's table with the allowance (D-306), the Combine's two rules (D-313), its own menu (D-316), each rung's availability (D-318), the funded export by payout conditions (D-321), the funded table under D-325's two rules and the export's start band split (D-326), the rent derived and the abandon action (D-329): version 10
+  file: results/state_policy_v12.csv
+  policies_json: results/state_policy_v12_policies.json
+  slot_rent: fixed_point                 # D-329: the policy at the edge's lambda* (state_dp_e<edge>_lamstar); the dp row carries the rent it was solved at
+  fresh: {combine_rr: 1.5, combine_risk: 2000, funded_rr: 3.0, funded_risk: 2000}   # D-329: the v10 table's fresh-state decision at the cell the scorer reads (-0.05; the same from -0.05 to +0.05, 0.75R at +0.10): the fresh Combine moves from 0.75R to 1.5R under the derived rent (results/state_policy_v10_policies.json); the fresh funded account is v7's; D-154's table carries the size (D-315)
+  edge_cell: "the policy at the edge nearest the funded leg's lower bound, chosen after the bound is read -- never the 0.025 cell by default"
+  allowance: {combine_micros: 50, funded_micros_by_balance: {0: 20, 1500: 30, 2000: 50}}   # D-289: the full verified allowance
+  rung_shares: results/fv3_rung_shares_2020.csv                # the rungs' shares in today's regime, from the corrected gate's trades
+  stand_aside:                           # the table already sizes to the allowance, so no share rule; the cost floor only
+    combine: {min_risk_share: 0.0, floor_ticks: 45}
+    funded: {min_risk_share: 0.0, floor_ticks: 45}
+  contracts: "whole micros at the rung's fixed stop: risk / (stop ticks x $0.50), capped by the allowance -- intended_capped = realised exactly"
+
+fidelity:                                # the operator's requirements (D-303, D-304, D-305, D-306)
+  need_aware_exits: true                 # a Combine trade closes at what the account needs to pass (the smallest carried R whose net outcome reaches it; the day ends at a passing balance); the funded leg unchanged
+  rr_menu: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]   # outcomes carried at every quarter-R; the table's menu (1 .. 3) is a subset
+  intended: capped                       # P4's realised / intended is measured against the allowance-capped intention (D-313: and the room); the raw ratio beside
+  day_set_start: "2020-01-01"
+  consistency_cap_exits: true            # D-313: a Combine day that cannot pass closes a winning trade at the day's consistency allowance (55 % of the effective target, 8284208); the account then stops for the day
+  room_cap: [combine]                    # D-313: a Combine trade never risks more than the room above the floor (the whole micros it carries); the funded leg as before (the operator: "the eval side"). D-318: a room-capped Combine whose room buys no micro at any stop its state's R is offered at ends out of room (a failed attempt, not a breach)
+  routing: able                          # D-318: each trade to the longest-waiting account that can take it (its R permitted by the setup's room, a micro under the allowance and the room); not 'longest_waiting', which handed trades to accounts that then let them pass
+  costs: per_trade_at_size               # D-321: each trade's own round trip -- its entry spread, its fee, and the exit its outcome at each R took (a tick on a stop or breakeven, none at a target, two on the flatten); D-324: the fee re-priced in the engine at the contracts the trade holds (as many NQ minis as fit, the rest MNQ micros, at the fill model's round-turn fees), not the fresh leg's size (the audit of D-323, finding 2)
+  no_trade_standard_path_only: true      # D-324: a policy's no-trade state holds only a Standard-path funded account; an account the Responsible Trading Program placed on the Consistency path trades the state's action (the audit of D-323, finding 1: such accounts sat in 'wait for the payout' states that never pay there)
+  decision_inputs_cents: true            # D-328: the policy reads balance, cushion and the payout-line gap rounded to the cent, as the firm's ledger carries them (a sub-cent float residue moved one path's decision across a band edge in D-326's run)
+  hold_to_own_exit: true                 # D-351: a routed position is held, for flat-account routing, to its exit at the R the account trades (the blocks' per-R exits), not to the log's single 1.5R exit -- runs v11 and v12 handed a later trade to an account whose 2R or 3R trade was still open (the fv3_gf_v2 audit, finding 5)
+
+search:                                  # one configuration -- the cell FV3's corrected walk-forward selected in every test year (D-303); k = 1
+  sessions: [[am, eve, asia]]
+  continuation: [true]
+  displacement: ["off"]                  # BOS only
+  double_rung_reversions: [true]
+k: 1
+
+selection:
+  rule: "one declared cell; no selection"
+  value: "the smaller of the two legs' one-sided 95 % yearly-means bounds of the mean metric per trade (the statistic the scorer computes; the wording defect of the audits fixed here)"
+  feasibility:                           # D-308: EVERY condition the scorer applies, as it applies it; a cell failing one is recorded with the reason (`infeasible_reason`)
+    min_setups_per_day: "D-154's minimum at zero edge for the table's fresh Combine (state_policy.fresh's R and risk, as the scorer reads it; results/setups_per_day.csv), per account on the 2020+ days"
+    cap_share_max: 0.02                  # the share of sessions with signals beyond the capture's cap
+    funded_sizeable: true                # every kept funded trade's stop at or above the funded cost floor (45 ticks) and buying a whole micro at the fresh funded risk -- live (D-306's wording named it; the scorer did not apply it)
+    flat_share_max: 0.05                 # D-212 (2) as amended by D-308: at most 5 % of a leg's trades at the 15:10 flatten, overall and in every year; the shares reported in the `flatten` rows either way
+    flat_share_note: "D-212 (2) is the operator's rule for every card (2026-10-01): a ceiling on the share of a screen's trades that reach Topstep's 15:10 CT flatten, overall and in every year, because stage one's R geometry assumes a trade ends at its stop or its target; validate_card applied it to FV3's card at the ATR ladder at 2 %. D-306's run closed on the 2 % at the fixed stops: the funded leg's 3R target flattened 9 of 396 trades in 2020 (2.27 %) and 8 of 382 in 2021 (2.09 %), 1.06 % overall (D-307). Those 24 were same-day trades, 22 in the AM session, still open at the firm's forced close, all past a later session's open, 23 with the stop moved to the entry (D-293, the capture's be_* fields), closed at a mean +1.41R inside their own statistics. The operator (2026-10-06), knowing this: \"these numbers should pass; change the number to 5 %; I didn't realise how strict this ruling was; a total of under 1 % of trades is fine\" -- D-308 raises the ceiling to 5 % for every card and screen. The number was chosen after D-306's result was seen and is labelled so; the rule is otherwise unchanged and still enforced here."
+  eras: {split: [[2020, 2022], [2023, 2025]], bootstrap_years: 2000}
+  walkforward: {first_test_year: 2021, selection: "one declared cell: taken in every test year on which it is feasible under the declared conditions over the development years before it, without the yearly-means statistic (D-310; one development year gives none, which left 2021 untraded in D-308's run)"}
+
+mechanics_report:
+  group_by: [phase, trigger_kind, session, room_band, swing_bars_class, era]
+  swing_bars_classes: [1, 2, "3+"]
+  eras: ["2020-2022", "2023-2025"]       # the scorer adds the whole span as `all` (declared here, D-310)
+  min_trades: 50
+  per_group: [n, per_day, gross_e_1r, net_e_1r_today, bound_1r, hit_rate_1r, mean_r_1p5, mean_r_fv, share_at_target_fv, median_mae_r, share_breakeven, excess_vs_benchmark_1r]   # the columns as written (D-308; the audit of D-307, finding 4)
+  also: []
+
+benchmark:
+  slots: fv3_core.BENCH
+  settle: "the benchmark's own profiles settled at each rung's fixed stop (50 / 100 / 200 ticks) and the leg's target; a trade is compared with the benchmark at its own rung's stop (D-308; the audit of D-307, finding 5)"
+
+gate:                                    # D-145 at 0 % denial, placement off (D-289), today's costs, the state policy
+  trades: "each test year's out-of-sample trades, both legs by the table's state, settled from the profiles with the true MAE"
+  settlement: mae
+  campaign: {bankroll_mode: output, bankroll: null, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 1.0, rtp: false}
+  # D-312 (the operator, 2026-10-07; D-177): the bankroll is an output of the run, never a stated input -- cash that
+  # never binds, the required bankroll (each path's deepest loss below its start plus one subscription) reported at
+  # p50 / p90 / p99 / worst, and growth read on the required bankroll at p90; D-310's run stated $5,000 (D-311 (4))
+  denial_levels: [0.0, 0.10, 0.25, 0.50]
+  costs: "NQ minis with MNQ micros at the verified fees (D-276), re-priced at the contracts each trade holds (D-324); each trade's own round trip (D-321): the spread and a tick at entry, a tick on a stop or breakeven, none at a target, two on the flatten"
+
+portfolio:                               # D-304, D-305: the judgment is the campaign's cash
+  fixed_legs: {combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  walkforward_paths: 200
+  margin: 49.0
+  block_days: 21
+  break_even_denial_min: 0.25
+  gate_denial_still_positive: 0.10
+  realised_to_intended_min: 0.9
+  day_set_start: "2020-01-01"
+  paths_file: "<result>_paths.csv"       # D-310: every campaign's per-path record (final cash, fees, payouts, ruin, drawdown, trades, the measures on the run's base), with its own manifest, so the lines re-derive from the files
+  criterion_rows: "propsim D-47 at every R of the menu, reported beside (D-145), never the gate"
+
+kill_lines:                              # D-304's stopping points; D-277's W1, W2 and B reported beside
+  P1: "the portfolio walk-forward: the one-sided 95 % t bound of the yearly campaign growth on its required bankroll across test years above zero; every year's activity bound above one half; no path's Sharpe changing sign without its idle blocks"
+  P2: "the D-145 gate: the median path's growth on the required bankroll (p90), a year's rate, above zero at the lower-bound shift, 0 % denial, placement off; the required bankroll reported at p50 / p90 / p99 / worst (D-312)"
+  P3_reading: "the gate's growth on the required bankroll at 10 % denial (D-312)"
+  P3: "the break-even denial rate at least 25 %; the gate above zero at 10 % denial"
+  P4: "realised risk at least 90 % of the allowance-capped intention (the raw ratio beside); no day before 2020-01-01; no idle years -- every year of the gate's day set carries a gate trade (D-304, restored by D-310)"
+  stopping: "any line failing closes this declared protocol on FV3's trades; all four passing -> the one-shot confirmation on the held-back window under a registered pre-registration"
+
+seeds: {eras: 20261017, stops: 20261018, gate: 20261019, spa: 20261020}

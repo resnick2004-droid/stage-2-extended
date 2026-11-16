@@ -1,0 +1,16 @@
+{
+ "what": "Every BLS news release scheduled at 08:30 AM Eastern in 2026, from the Bureau of Labor Statistics' own 2026 schedule page, parsed as the 2009-2025 pages were; the day-level file lists each date once with its releases.",
+ "parser": "scripts/parse_bls_schedule_2026.py (html.parser over <table class='release-list'>; rows whose first cell is a date and whose time cell starts with '08:30'; scripts/parse_bls_schedule.py's reader)",
+ "page": {
+  "url": "https://www.bls.gov/schedule/2026/home.htm",
+  "file": "data/raw/bls_schedule_2026/2026.htm",
+  "sha256": "fd0af3ecb59e2c777cac323898b631a25e51b74855cb5b8ed48320a49cdeffc1",
+  "bytes": 119539,
+  "obtained": "saved by hand from the operator's browser on 2026-10-13 as a complete web page ('Schedule of Selected Releases 2026.html'; the HTML file kept, its _files folder not) -- BLS refused automated requests that day: 403 to a scripted fetch, Access Denied to headless Edge"
+ },
+ "rows": 76,
+ "distinct_dates": 62,
+ "all_release_rows": 177,
+ "packaged_utc": "2026-10-13T19:47:59+00:00",
+ "use": "FV3-C's confirmation kits (D-355): on these dates the session's fair price is the open of the 8:30 ET candle; added to the kits' embedded table after the cores (fv3_kit.confirm_preamble); not a firm rule, so verified here by source and hash, and checked by the data-integrity agent before any kit is generated."
+}

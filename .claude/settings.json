@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "mcp__quantconnect__authorize_connection",
+      "mcp__quantconnect__create_live_algorithm",
+      "mcp__quantconnect__stop_live_algorithm",
+      "mcp__quantconnect__liquidate_live_algorithm",
+      "mcp__quantconnect__create_live_command",
+      "mcp__quantconnect__broadcast_live_command"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {"type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/scripts/hooks/protect_vendor.py\"", "timeout": 20}
+        ]
+      }
+    ]
+  },
+  "env": {"PYTHONDONTWRITEBYTECODE": "1"}
+}

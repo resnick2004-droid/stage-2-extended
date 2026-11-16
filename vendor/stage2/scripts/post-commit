@@ -1,0 +1,25 @@
+#!/bin/sh
+# Stage two git post-commit hook (R9; D-453: "push after every commit"). Install with `make hooks`
+# (or `.\scripts\make.ps1 hooks`), which copies this into the git directory's hooks.
+#
+# Pushes the branch just committed to the private backup remote `origin`, in the background, so every commit leaves
+# this machine. It never blocks or fails a commit: the push runs detached and its outcome is appended to
+# <git-dir>/push.log; a push that fails (offline, a rejected credential) is retried by the next commit's push, which
+# carries every commit since. Skipped when GIT_PUSH_ON_COMMIT=0, when there is no `origin`, or on a detached HEAD
+# (a rebase or a bisect in progress).
+
+[ "${GIT_PUSH_ON_COMMIT:-1}" = "0" ] && exit 0
+git remote get-url origin >/dev/null 2>&1 || exit 0
+branch=$(git symbolic-ref -q --short HEAD) || exit 0
+log="$(git rev-parse --git-dir)/push.log"
+head=$(git rev-parse --short HEAD)
+
+(
+    if git push -q origin "$branch" >>"$log" 2>&1; then
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) pushed $branch at $head" >>"$log"
+    else
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PUSH FAILED $branch at $head (the next commit retries)" >>"$log"
+    fi
+) </dev/null >/dev/null 2>&1 &
+
+exit 0

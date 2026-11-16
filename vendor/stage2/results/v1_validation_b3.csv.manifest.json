@@ -1,0 +1,129 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "holds",
+    "check",
+    "family",
+    "cells",
+    "signal_days",
+    "mean_block",
+    "level",
+    "replicates",
+    "undefined",
+    "exceed",
+    "nominal",
+    "share_exceed",
+    "share_lo",
+    "share_hi",
+    "ratio_to_nominal",
+    "nominal_inside_interval",
+    "share_stitched_mean_above_zero",
+    "share_no_pick_in_any_year",
+    "first_test_year",
+    "note"
+  ],
+  "description": "EXPLORATORY (D-663): V1's part B3 on P-16's registered gate and FV3-C's confirmation P-06 -- read beside the registered verdicts, changing none.",
+  "exploratory": true,
+  "git_commit": "c0b1ee9909c848e3d4a73a99a9b4206d03e0363c",
+  "git_dirty": false,
+  "notes": {
+    "readings": "propedge/research/v1_validation.py's docstring",
+    "selection": "none: beside the registered verdicts",
+    "status": "EXPLORATORY (D-663): block-resampled days, the bound's calibration and execution stress on P-16's and FV3-C's registered gates; beside the registered verdicts, changes none, selects nothing"
+  },
+  "parameters": {
+    "a2": {
+      "horizon": 252,
+      "paths": 500,
+      "step": 21
+    },
+    "b1": {
+      "auto": {},
+      "blocks": [
+        1,
+        5,
+        21
+      ],
+      "replicates": 200000,
+      "verified": 5
+    },
+    "b2": {
+      "max_steps": 8,
+      "mean_block": 21,
+      "step": 0.02
+    },
+    "b3": {
+      "mean_block": 21,
+      "replicates": 20000
+    },
+    "c1": {
+      "arms": [
+        [
+          "drop10",
+          "trade",
+          0.1
+        ],
+        [
+          "drop25",
+          "trade",
+          0.25
+        ],
+        [
+          "session10",
+          "session",
+          0.1
+        ]
+      ],
+      "realisations": 3,
+      "seeds": "v1_validation.c1_seed: lockstep.child_seed(SEED_C1, 3 x subject + arm, realisation)"
+    },
+    "campaign_seeds": {},
+    "decision": "D-663",
+    "declaration_sha256": "133ce5031afae834c3469b6d55fcfaebe501e801587ff0811f497fba4d54d2ea",
+    "engine_keyword": "gate.run_gate(mean_block=...), shared_days.StationaryDayTable; off by default",
+    "identity_columns": [
+      "mean_r_used",
+      "pf_growth_on_base_p50",
+      "pf_required_p50",
+      "pf_required_p90",
+      "pf_required_p99",
+      "median_log_growth",
+      "mean_final_cash",
+      "median_final_cash",
+      "mean_max_drawdown",
+      "p90_max_drawdown",
+      "mean_combine_purchases"
+    ],
+    "ledger_n": {
+      "S1": 414,
+      "S2": 183
+    },
+    "mean_blocks": [
+      1,
+      5,
+      21,
+      63
+    ],
+    "part": "B3",
+    "paths": 500,
+    "seconds": 193.2,
+    "seeds": {
+      "A2": 20262101,
+      "B1": 20262102,
+      "B3": 20262103,
+      "C1": 20262104
+    },
+    "subjects": [],
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "v1_validation_b3.csv",
+  "rows": 4,
+  "script": "scripts/v1_validation.py",
+  "seed": 20262103,
+  "sha256": "2b4310817704d10e3af7017609d477079350134a3bf730b524508e3dac543d26",
+  "timestamp": "2026-11-15T21:22:02+00:00",
+  "variant_count": 0
+}

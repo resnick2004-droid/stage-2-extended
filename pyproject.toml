@@ -1,0 +1,10 @@
+[project]
+name = "stage2-extended"
+version = "0.1.0"
+description = "Execution models for a prop-firm user's journey, on Stage 2's vendored engine (read-only)."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: runs Stage 2's engine (about a minute)"]

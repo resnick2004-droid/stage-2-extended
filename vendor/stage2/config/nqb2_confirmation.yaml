@@ -1,0 +1,64 @@
+# config/nqb2_confirmation.yaml -- NQB2's one confirmation (D-242), fixed before any of its data is read.
+#
+# NQB2 (docs/candidates/cards/NQB2.md) is D-241's setting: stage one's best pair at zero edge (T5 2a, `s1_low_edge`)
+# built from NQ brackets that resolve on 2020-2025 development data at actual prices (D-238 to D-241), one Combine live
+# (the operator, 2026-10-02). This file is everything its confirmation does; the pre-registration cites it, and the kit
+# (propedge/data/regime_kit.py CONFIRM_RUN), the verdict (scripts/confirm_nqb2.py) and the tests read it. Nothing here
+# was chosen after reading the held-back window.
+
+model: NQB2
+prereg_id: pending               # the gatekeeper's id once registered (prereg/REGISTRY.md); the kit exists only under it (D-81)
+market: NQ
+
+# D-237's held-back window, read once: 2025-07-01 to the last complete month of QuantConnect's NQ data (it ended
+# 2026-07-04 when R088 ran). The warm-up days are development data and record nothing.
+window: {warm: "2025-06-23", start: "2025-07-01", end: "2026-06-30"}
+# the bound's blocks: the twelve calendar months (D-237 (4): one year cannot carry yearly blocks)
+months: ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12",
+         "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"]
+# D-212's resolution, per calendar year of the window: 2025 from July, 2026 to June
+years: [2025, 2026]
+
+# D-230's rule: the run and its one permitted fix. A run is UNUSABLE, judged from its log alone before any count is
+# parsed, if END is missing, the backtest stopped with an error or a time limit, or HEAD's days fall below min_days
+# (about 250 trading days are in the window). An unusable run is kept on record and its counts are never parsed. One
+# fixed kit -- kit mechanics only, every rule in this file unchanged, the fix recorded in a decision before it runs --
+# may follow; a second unusable run is a FAIL.
+runs: [R095-regime-confirm-NQ-2026, R096-regime-confirm-NQ-2026]
+min_days: 235
+
+# live execution, which the direction-neutral counts stand for: each bracket's direction a coin flip from a seeded
+# generator; on trading day d the five accounts, in the router's order j = 0..4, take slot (5d + j) mod 10, so every
+# slot carries the same share of trades over 10 days (the pooled edge assumes it)
+direction: seeded coin flip
+slot_rotation: "(5 * day + account) mod 10"
+
+# the measurement: actual prices (no rescale, D-238); the regime map's walk, entry, spread and overshoot rules
+decision_slots: [0, 30, 60, 90, 120, 180, 210, 240, 270, 360]    # 17:00-19:00, 20:00-21:30 and 23:00 CT
+legs:
+  combine: {R: 2.0, stop_points: 20.0, risk: 750.0}       # 18 MNQ, $720
+  funded: {R: 1.5, stop_points: 40.0, risk: 1000.0}       # 12 MNQ, $960
+
+# pass rule 1 (D-212): per leg, pooled over the decision slots, full sessions (early closes add no count, D-238), the
+# share of brackets at their target or stop at or above this overall and in each calendar year of the window
+resolved_share_min: 0.98
+
+# pass rule 2 (D-145 at D-234's 0 %): the campaign on each leg's net edge at its lower bound -- the monthly estimates'
+# mean less the one-sided 95 % t quantile (months - 1 degrees of freedom) times their standard error
+campaign:
+  arm: s1_low_edge               # Combine 2:1 $750, funded 1.5:1 $1,000 (T5 2a's best pair at zero edge; propsim D-36)
+  combines_at_once: 1            # the operator's choice, 2026-10-02
+  beside_combines_at_once: 5
+  trades_per_day: 1              # per account, the accounts on different decision slots (D-154, D-157)
+  accounts: 5
+  bankroll: 5000.0
+  horizon_days: 504
+  n_paths: 500
+  seed: 20261213                 # part 1's, D-227's and D-240's seed: common random numbers with the development reading
+  gate_denial: 0.0               # D-234
+  beside_denials: [0.10, 0.25, 0.50]   # kept in the file (D-236)
+  rtp_warnings: 0                # the strictest placement timing (D-220)
+  open_bracket: loss             # a bracket open at the flatten counts as a full loss (D-227)
+
+# reported beside the verdict, never as it: each leg's bound at D-189's one-sided 0.05/N, N the ledger's count for NQB2
+ledger_n: 125445                 # propedge.research.ledger.count_n: k 125,440 plus five earlier looks at NQ in its pool

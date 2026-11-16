@@ -1,0 +1,165 @@
+# The two-stream candidate FV3-G/F (D-338, D-339): FV3's frozen candidate (config/fv3_portfolio.yaml as declared by
+# D-335, the protocol frozen at f41c492 under D-336) with ONE candidate change and TWO engine corrections, each declared
+# here before anything runs. The candidate change: the funded table gains the flip stream's action (config/
+# state_policy_v13.yaml, `funded_flip`) -- a scheduled direction-neutral bracket at NQB1's decision slots, sized to the
+# firm's $150 winning-day rule ($250 at 1:1, two MNQ at the $125-a-micro bracket), priced in the table from its OWN
+# measured statistics (the no-edge bracket study on record, development data; never the strategy's edge cell), taken
+# every session the account's state asks for one; FV3's signals carry the growth stream at the table's strategy leaves.
+# The engine corrections (D-336 (i) and (iv), scheduled for "the next candidate's engine change"): the firm's
+# cross-account rule -- no signal is routed to any account while a position of the opposite side is open on another,
+# and a flip takes the side of any open position, else the day's one seeded direction -- and the funded seat freed at
+# the close the account ends (activation "minutes after paying", 8284215), not the next session. Both are declared
+# switches (`fidelity.cross_account_rule`, `fidelity.seat_frees`), off by default, so every recorded run reproduces.
+# The gate's bound is read on the growth stream's trades (FV3's), as before; the flip stream is judged on resolution and
+# cost in its own `flip` rows, never a line. P1-P4 unchanged. A NEW CANDIDATE (D-277); frozen FV3 on record beside it.
+# The v13 table was solved (D-340) and its Studio map read a checkerboard between the strategy's $250 1R and the flip's
+# $250 1R within the $5 tie-break; under D-341 the funded tie-break prefers the flip at equal risk and the table is
+# re-solved as version 14 (config/state_policy_v14.yaml). Before any run the operator changed the flip itself (D-343):
+# it must resolve within minutes and the flip-state accounts copy it; the flip map (D-344, kits R137 and R138) measured
+# the fast bracket on one-second bars and its declared rules chose 08:30 CT, 20 points (D-345); the operator then made
+# the contract a rule of its own (D-346, config/flip_sizing.yaml): the fewest micros on the table's grid whose win after
+# fees clears the winning-day bar -- five MNQ, $200 -- and the map was re-scored at that count; the table is re-solved as
+# version 16 with that bracket (config/state_policy_v16.yaml; the v15 solve was stopped before it wrote). Run v1
+# (results/fv3_gf_v1.csv, from 9a0a301 under D-346) is on record with a defect: the gate's trade table carried no side,
+# so the declared cross-account rule refused nothing (a silent no-op; D-348); its audit found a second gap -- a growth
+# position was held, for the rule, only to its exit at the fresh Combine's 1.5R whatever R the account traded (D-349).
+# The trades now carry each signal's side and its exit at every R, a declared rule refuses a table without either, the
+# router holds a position to its exit at the R the account trades, and the same candidate runs once more, from a clean tree:
+#   python scripts/score_fv3_grid.py --declaration D-349 --config config/fv3_gf_portfolio.yaml --result-name fv3_gf_v2
+decision: D-349                          # the declaration row (the scorer refuses without it); D-339 declared the candidate, D-341 its table's tie rule, D-343 to D-346 its fast, copied, micro-sized flip, D-348 and D-349 the rerun with the cross-account rule real
+candidate: FV3-GF                        # the card: docs/candidates/cards/drafts/FV3_GF.md (the eleventh declared candidate, D-338)
+description: "FV3-G/F: FV3's captured trades as the growth stream under the frozen fidelity protocol (D-306 to D-335 as config/fv3_portfolio.yaml declares them), and the flip stream -- the fast bracket the flip map chose (D-343 to D-346): five MNQ micros at 08:30 CT, 20 points each way ($200; the contract rule of D-346), entered at the slot minute, read for a ten-minute box to its target, its stop or a scratch, every flip-state account taking the same bracket at the same minute on the same side, settled from the second-resolution capture's measured shares and cost (results/flip_map_nq_seconds_micros.csv, never typed), its net edge its own (negative: slippage, spread and fees on a fair bracket), its lower bound driving the lower-bound arm's flips -- 2020 to June 2025, one declared configuration (k = 1), judged by D-304/D-305's portfolio lines P1-P4 on the campaign's cash with the bankroll an output of the run (D-312); the state table v16 (v12 plus the flip action in the funded menu, the flip preferred at equal risk within the tie-break, the fast bracket with its scratch share, D-345, in five micros, D-346) in export version 16 (every leaf names its source); the engine's cross-account rule (a signal opposite to any open position refused and counted; a flip on the side of any open position, else the day's one seeded direction) and the funded seat freed the evening an account ends (D-336 (i) and (iv)); everything else as frozen -- all fixed in config/fv3_gf_portfolio.yaml before the run."
+status: "a new candidate (D-338, D-339; its table's tie rule D-341 after the v13 solve's map was read; its flip redefined by the operator before any run, D-343, measured D-344, chosen D-345, sized in micros by the operator's rule D-346): frozen FV3 (D-336 at f41c492) with the flip stream added to the funded table and the engine's two scheduled corrections; EXPLORATORY in that FV3's design is not blind to FV1's and FV2's results and the flip stream was proposed after FV3's development runs were read (the operator's two-category idea of 2026-10-10); the flip's statistics are development data (the second-resolution capture R138: NQ 2020-01 to 2025-06 at actual prices, D-344 to D-346); only the held-back confirmation, held for this candidate (D-338 (1)), can decide"
+model: FV3                               # the growth stream's triggers are FV3's (the captures below); the candidate is named above
+market: NQ
+# today's regime only: the captures from 2020 (D-305: the first year in which the campaign trades on most days)
+runs: [R127-fv3-NQ-20H1, R133-fv3-NQ-20H2, R128-fv3-NQ-2121, R129-fv3-NQ-22H1, R134-fv3-NQ-22H2, R130-fv3-NQ-23H1,
+       R135-fv3-NQ-23H2, R131-fv3-NQ-24H1, R136-fv3-NQ-24H2, R132-fv3-NQ-2525]
+window: {start: "2020-01-01", end: "2025-06-30"}            # development only (D-237); the held-back window is never read
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # FOMC days excluded (D-283, D-297)
+
+execution:
+  mode: manual
+  latency_minutes: 2                     # seated (D-282); a flip is a scheduled market order at its slot (latency immaterial)
+  entry: "a market order working from the signal bar's close + L, filled at the next bar's open; the spread and a tick charged"
+  coordination: one_at_a_time            # D-160 (the growth stream); the flips on NQB1's slot rotation, never two accounts at one slot
+  accounts: 5
+  max_trades_per_day: 5
+  breakeven: "a trade open at the next session's open has its stop moved to the entry when the open there is in its favour (the capture's be_* fields)"
+  flatten: "the worst of 15:07-15:10 CT less 2 ticks (D-263); the 15:08 close where none was recorded"
+
+ladder:                                  # the fidelity protocol (D-306): his stops in POINTS, fixed, so the dollar risk is exact -- frozen
+  mode: fixed_points
+  stops_ticks: {half: 50, full: 100, double: 200}             # 12.5 / 25 / 50 points
+  room_ticks: {half: [60, 120], full: 120, double: 304}       # his room rule in points: 15-30 half, 30+ full, 76+ double (reversions)
+  continuation_open_body_ticks: 100
+  room_target_frac: 0.8
+
+state_policy:                            # D-290's table as frozen (v10 solve, export v12) PLUS the flip action in the funded menu (v13, D-339), the flip preferred at equal risk (v14, D-341), the flip the fast bracket the flip map chose (v15, D-345) in five micros (version 16, D-346)
+  file: results/state_policy_v16.csv
+  policies_json: results/state_policy_v16_policies.json
+  slot_rent: fixed_point                 # D-329: the policy at the edge's lambda*
+  # READ FROM THE v16 SOLVE (D-347): the fresh-state decision at the cell the scorer reads (-0.05), from
+  # results/state_policy_v16_policies.json -- the fresh funded decision $2,000 at 3R, a strategy leaf, as in v12, v13
+  # and v14; the fresh Combine $2,000 at 1.5R, as in v10 (the Combine's menu has no flip; its table is solved against
+  # the funded table's fresh value, so a few of its cells move within the $5 tie-break, p_pass per attempt unchanged).
+  # D-154's table at the Combine's size is unchanged. (The v15 solve was stopped before it wrote, D-346.)
+  fresh: {combine_rr: 1.5, combine_risk: 2000, funded_rr: 3.0, funded_risk: 2000}
+  edge_cell: "the policy at the edge nearest the funded leg's lower bound (the growth stream's), chosen after the bound is read -- never the 0.025 cell by default"
+  allowance: {combine_micros: 50, funded_micros_by_balance: {0: 20, 1500: 30, 2000: 50}}   # D-289: the full verified allowance
+  rung_shares: results/fv3_rung_shares_2020.csv
+  stand_aside:
+    combine: {min_risk_share: 0.0, floor_ticks: 45}
+    funded: {min_risk_share: 0.0, floor_ticks: 45}
+  contracts: "whole micros at the rung's fixed stop: risk / (stop ticks x $0.50), capped by the allowance -- intended_capped = realised exactly; a flip: five MNQ at the chosen width ($200 at 20 points; D-346's contract rule, config/flip_sizing.yaml)"
+
+streams:                                 # D-339: the two streams. Every statistic below is READ from the result file it names; none is typed.
+  growth: "FV3's signals at the table's strategy leaves, routed by the queue to the longest-waiting account that can take them (D-318); the gate's edge and bound are theirs, as frozen; a flip's ten-minute window blocks only a signal of the opposite side inside it"
+  flip:                                  # D-343 to D-346: the fast, time-boxed, copied bracket in five micros; every statistic READ from the flip map's chosen row
+    source: flip_map                     # the second-resolution flip map's `choice` row (scripts/score_flip_map.py --seconds --sizing config/flip_sizing.yaml; D-344's corrected rules: the widest width resolving inside the box nine times in ten in every year, the cheaper slot; D-346's contract rule: the fewest micros on the table's grid whose win after fees clears the winning-day bar)
+    source_file: results/flip_map_nq_seconds_micros.csv   # kit R138: NQ 2020-01 to 2025-06 at actual prices, one-second bars at the 08:30 and 09:00 CT slots, re-scored at the micro count (the one-mini reading, results/flip_map_nq_seconds.csv, stays on record; the minute map, results/flip_map_nq.csv, found the slots and could not measure them)
+    row: {section: choice, role: rule}   # the same row the table's funded_flip reads (config/state_policy_v16.yaml)
+    risk: 200.0                          # five MNQ at the chosen width: 5 x 20 points x $2 -- the scorer refuses if the row's risk_dollars or contract count disagrees
+    rr: 1.0
+    contract_point_value: 2.0            # the MNQ's dollars a point: the width in points x this = what one contract risks ($40 at 20 points); the risk over it is the count (5)
+    box_minutes: 10                      # the box (600 seconds on the capture): a bracket still open at its end is closed at market, a scratch, no winning day, its mean P&L kept; the window for the cross-account rule
+    copy: true                           # D-343 (2): every flip-state account takes the same bracket at the same minute on the same side -- one shared outcome a day (D-157 narrowed: no copying of growth trades)
+    resolved_in_box_min: 0.90            # the map's qualifying rule, repeated here for the `flip` rows' judgement
+    slot: "08:30 CT, the slot the row names (the first second bar's open after the slot minute, one tick adverse; a hand trader entering at a known minute); the one-minute-late entry reported beside"
+    direction: "mechanical and symmetric -- in the engine the day's one seeded direction, or the side of any position open on another account at the slot (the firm's rule); in trading the side of the completed one-minute bar before the slot, as the card states; the shares are measured both ways"
+    table_config: config/state_policy_v16.yaml   # the table's funded_flip must name this row, risk, R, the scratch field and the copy, or the engine's flip is not the table's and the scorer refuses
+    judged_on: "resolution inside the box (the row's pooled and worst-year shares against the minimum) and cost (the expected dollars per flip and per winning day at the row's shares) -- reported in the result's `flip` rows, never a line"
+
+fidelity:                                # the operator's requirements (D-303 to D-306) and every switch since, as frozen -- plus the two declared corrections
+  need_aware_exits: true
+  rr_menu: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+  intended: capped
+  day_set_start: "2020-01-01"
+  consistency_cap_exits: true
+  room_cap: [combine]
+  routing: able
+  costs: per_trade_at_size
+  no_trade_standard_path_only: true
+  decision_inputs_cents: true
+  cross_account_rule: true               # D-339 (D-336 (iv), 13747047, 10296582): a signal whose side is opposite to a position open on ANY account at its entry is refused and counted (share_trades_skipped_opposite); a flip takes the side of any open position, else the day's direction, and holds it to its window's end. Predicted (run v11's log): the opposite overlaps -- about three trading days in a hundred, almost all a funded 3R trade still open -- fall to zero; the refused signals are a share of a percent of the log
+  seat_frees: same_evening               # D-339 (D-336 (i), 8284215 "minutes after paying the Activation Fee", 8284217 "closed at the end of the day"): a funded seat is freed at the close the account ends and the waiting pass activates that evening and trades the next session; the frozen runs idled the seat one session per funded ending (the stage-level convention, pessimistic). Predicted: about one slot-day recovered per funded ending (run v11: about a hundred funded endings a path over the horizon)
+
+search:                                  # one configuration -- the cell FV3's corrected walk-forward selected in every test year (D-303); k = 1
+  sessions: [[am, eve, asia]]
+  continuation: [true]
+  displacement: ["off"]
+  double_rung_reversions: [true]
+k: 1
+
+selection:
+  rule: "one declared cell; no selection"
+  value: "the smaller of the two legs' one-sided 95 % yearly-means bounds of the mean metric per trade (the statistic the scorer computes)"
+  feasibility:
+    min_setups_per_day: "D-154's minimum at zero edge for the table's fresh Combine (state_policy.fresh's R and risk, as the scorer reads it; results/setups_per_day.csv), per account on the 2020+ days"
+    cap_share_max: 0.02
+    funded_sizeable: true
+    flat_share_max: 0.05                 # D-308's ceiling (the operator, 2026-10-06), as frozen
+    flat_share_note: "D-212 (2) as amended by D-308 (5 %): a ceiling on the share of a screen's trades that reach Topstep's 15:10 CT flatten, overall and in every year; unchanged from config/fv3_portfolio.yaml, where its history is written. A flip still open at the flatten is a full loss in its shares (open_share), not a flattened growth trade"
+  eras: {split: [[2020, 2022], [2023, 2025]], bootstrap_years: 2000}
+  walkforward: {first_test_year: 2021, selection: "one declared cell: taken in every test year on which it is feasible under the declared conditions over the development years before it, without the yearly-means statistic (D-310)"}
+
+mechanics_report:
+  group_by: [phase, trigger_kind, session, room_band, swing_bars_class, era]
+  swing_bars_classes: [1, 2, "3+"]
+  eras: ["2020-2022", "2023-2025"]
+  min_trades: 50
+  per_group: [n, per_day, gross_e_1r, net_e_1r_today, bound_1r, hit_rate_1r, mean_r_1p5, mean_r_fv, share_at_target_fv, median_mae_r, share_breakeven, excess_vs_benchmark_1r]
+  also: []
+
+benchmark:
+  slots: fv3_core.BENCH
+  settle: "the benchmark's own profiles settled at each rung's fixed stop (50 / 100 / 200 ticks) and the leg's target; a trade is compared with the benchmark at its own rung's stop (D-308)"
+
+gate:                                    # D-145 at 0 % denial, placement off (D-289), today's costs, the state policy v13
+  trades: "each test year's out-of-sample trades (the growth stream), both legs by the table's state, settled from the profiles with the true MAE; the flip stream's brackets from the study's shares on the sessions the table asks for one"
+  settlement: mae
+  campaign: {bankroll_mode: output, bankroll: null, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 1.0, rtp: false}
+  denial_levels: [0.0, 0.10, 0.25, 0.50]
+  costs: "NQ minis with MNQ micros at the verified fees (D-276), re-priced at the contracts each trade holds (D-324); each growth trade's own round trip (D-321): the spread and a tick at entry, a tick on a stop or breakeven, none at a target, two on the flatten; a flip's cost the study's cost_r at its contracts"
+
+portfolio:                               # D-304, D-305: the judgment is the campaign's cash -- unchanged
+  fixed_legs: {combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  walkforward_paths: 200
+  margin: 49.0
+  block_days: 21
+  break_even_denial_min: 0.25
+  gate_denial_still_positive: 0.10
+  realised_to_intended_min: 0.9
+  day_set_start: "2020-01-01"
+  paths_file: "<result>_paths.csv"
+  criterion_rows: "propsim D-47 at every R of the menu, reported beside (D-145), never the gate"
+
+kill_lines:                              # D-304's stopping points, unchanged; D-277's W1, W2 and B reported beside
+  P1: "the portfolio walk-forward: the one-sided 95 % t bound of the yearly campaign growth on its required bankroll across test years above zero; every year's activity bound above one half; no path's Sharpe changing sign without its idle blocks"
+  P2: "the D-145 gate: the median path's growth on the required bankroll (p90), a year's rate, above zero at the lower-bound shift (the growth stream's trades at each R's bound; the flips at the bracket's bound), 0 % denial, placement off; the required bankroll reported at p50 / p90 / p99 / worst (D-312)"
+  P3_reading: "the gate's growth on the required bankroll at 10 % denial (D-312)"
+  P3: "the break-even denial rate at least 25 %; the gate above zero at 10 % denial"
+  P4: "realised risk at least 90 % of the allowance-capped intention (the raw ratio beside); no day before 2020-01-01; no idle years -- every year of the gate's day set carries a gate trade (D-304, restored by D-310)"
+  stopping: "any line failing closes this declared protocol on FV3-G/F; all four passing -> the one-shot confirmation on the held-back window (held for this candidate, D-338 (1)) under a registered pre-registration"
+
+seeds: {eras: 20261017, stops: 20261018, gate: 20261019, spa: 20261020}   # frozen FV3's seeds: common random numbers against runs v11/v12 where the draws coincide

@@ -1,0 +1,98 @@
+# config/fv2_grid.yaml -- FV2: JJ Simon's fair-value strategy on NQ from his own stated rules, traded seated at two
+# minutes (T16 item 11; D-279, D-282, D-283), declared before any of its data is read. The operator agreed the search
+# as drafted and dropped news re-anchoring (2026-10-04).
+#
+# The hypothesis: price pushed away from a session's fair price -- the body of the bar before the session opens --
+# returns toward it once the opening push stops, and in the first minutes the push continues; his own triggers (a break
+# of structure or a displacement candle) entered by hand two minutes after the signal carry an edge beyond NQ's drift,
+# net of today's costs, out of sample. FV2 is a new candidate under D-277, designed after FV1 (D-142) and ORB6 (D-281),
+# not blind to them; its multiplicity controls are the walk-forward, the count k, SPA and the deflated Sharpe ratio, and
+# the held-back window (2025-07-01 on), untouched, is its one clean test.
+
+model: FV2
+market: NQ
+runs: [R111-fv2-NQ-0911, R112-fv2-NQ-1214, R113-fv2-NQ-1517, R114-fv2-NQ-1819, R115-fv2-NQ-2022, R116-fv2-NQ-2325]
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]
+
+# FIXED -- not searched
+fixed:
+  sessions_defined: "propedge/outcomes/fv2_core.py SESSIONS: the evening reopen (17:00 CT, fair value its first bar's open, 90 minutes), the Asian open (19:00 CT year-round, his 8 PM ET -- a fixed clock: in US standard time Tokyo opens an hour earlier -- the evening's fair value, 90), New York AM (08:30 CT, the body of the 08:29-08:30 bar, 90), New York PM (13:00 CT, the AM's fair value, 60)"
+  structure: "a swing high (low) is a bar whose high (low) is beyond both neighbours', confirmed when the next bar closes, formed at most 30 minutes before the session opens"
+  displacement: "the body in the trade's direction, larger than the previous bar's body, closing beyond the previous bar's wick"
+  break_of_structure: "a close beyond the latest confirmed swing in the trade's direction after a close not beyond it (a swing re-crossed can trigger again); the evening's first bar has no previous bar (the daily halt), so its triggers start at its second bar"
+  continuation: "within the first 5 minutes, a trigger in the opening candle's direction (the session's first bar; a doji none)"
+  reversion: "after the first 5 minutes to the window's end, a trigger toward fair value while the close is beyond it, with at least 0.8 x the cell's Combine target between the signal's close and fair value's near edge (his '80 % of my trade'); at 1R the capture's own floor, at 1.5R applied here"
+  execution:
+    mode: manual
+    latency_minutes: 2                     # seated (D-282): a market order working from the signal bar's close + 2
+    reported_latencies: [0, 5]             # D-266: reported beside, the verdict at 2
+  stop: "25 / 381.25 x the 14-day ATR (his 25 points at NQ's median ATR of July 2024 to June 2025, an ATR-only calibration), doubled for the session when its opening candle's body (not its range) exceeds it (his 50-point stop at half size); the strict fill-bar reading does not arise -- every entry is at a bar's open, the bar walked"
+  combine: {max_trades_per_account_day: 1}
+  funded:
+    risk: "of 1000, 750 and 500 dollars, the one deploying the most risk a day at the stop -- risk times the share of 2020 to June 2025's session stops sizeable at it -- ties to the larger (D-273)"
+    max_trades_per_account_day: 1
+  coordination: "one position at a time across the five accounts in rotation, one trade an account a day (his rule; D-157, D-160): at most five a day, in signal order"
+  stand_aside: "D-272 (1): a trade is taken only if min(floor(risk / stop $), cap) x stop $ >= 90 % of the state's risk and the stop is at least the cost-drag floor (results/stop_band.csv: caps 37 Combine, 15 funded below +$2,000; floor 45 MNQ ticks)"
+  flatten: "a trade still open at the 15:08 bar is closed at the worst price of 15:07-15:10 less 2 ticks (D-263); the 15:08 close where no bar was recorded; an evening session's trade is held to 15:08 of its trading day"
+  costs: "the entry max(1 tick, the recorded spread at its fill minute) beyond the bar's open the move is measured from; the round-turn fee of NQ minis with MNQ micros where the risk allows, at the verified fees (D-276); the exit 1 tick on a stop, none at a target's limit, 2 ticks on the flatten"
+  fomc_days: excluded
+
+# SEARCHED -- the grid; k is the product
+search:
+  sessions: [[am], [am, pm], [eve, asia, am], [eve, asia, am, pm]]
+  trigger: [bos, displacement, either]
+  continuation: [false, true]
+  combine: [{rr: 1.0, risk: 1500}, {rr: 1.5, risk: 1000}]     # propsim D-08's 1:1 $1,500; his 38/25 evals; each a $1,500 target (D-267)
+  funded_target: [r1.5, fair_value]       # 1.5R, or fair value's near edge (a continuation, or a trade with fair value behind its entry, at 1.5R)
+k: 96                                     # 4 x 3 x 2 x 2 x 2
+
+# DROPPED -- with the reason
+dropped:
+  news_reanchoring: "the pre-8:30 ET price on release days: no verified 8:30 ET release calendar (the operator's choice, 2026-10-04)"
+  consolidation_reanchoring: "discretionary by his own account ('no mechanical way')"
+  breakeven_layering_dashboard_targets: "discretionary or unpublished (his mentorship)"
+  london: "he does not trade it"
+  other_stops: "his static stop is fixed; a stop search is not his rule"
+
+# SELECTION -- fixed now
+selection:
+  metric: "per trade, its move before any cost in R (from the entry bar's open; a target credited at R x the stop rounded down to a whole tick, fair value at its distance in whole ticks; the flatten as fixed above) less the configuration's median round-trip cost in R over its trades of 2020 to June 2025, priced as a stop exit (no outcome) -- D-271 (2)"
+  legs: "the Combine leg (its geometry's R) and the funded leg (funded_target); a configuration's value on a set of years is the smaller of its two legs' one-sided 95 % lower bounds of the yearly mean metric"
+  feasible:
+    frequency: "the Combine leg's sizeable trades on 2020 to June 2025 per trading day and per account of the five, at or above D-154's minimum for its Combine size (results/setups_per_day.csv)"
+    resolution: "at most 2 % of each leg's trades reach the 15:08 bar, overall and in every year of the set (D-212)"
+    funded_risk: "fixed.funded.risk exists"
+    capped: "at most 2 % of the configuration's sessions in 2020 to June 2025 hit the capture's 32-signal cap (fv2_core.MAX_SIGNALS) -- beyond it a session's later signals are unrecorded"
+  plateau: "no axis is ordered, so the plateau is the cell itself: the feasible configuration with the highest value; ties to the earlier in the order of `search`"
+  walk_forward: "anchored: each test year from 2013 to 2025 (January to June) scored with the selection made on every earlier year; a selection with no trade in the test year scores 0 there"
+  eras:
+    split: [[2009, 2017], [2018, 2025]]
+    flag: "a whole-year bootstrap of the eras' difference in mean gross R per trade, reps 2000 (D-271 (1))"
+    when_flagged: "the lower era's bound"
+  drift: "D-277 (2): each trade's move less the year's mean move of the capture's unconditional entries of the same side, in the same session at the latest benchmark slot before the trade's entry bar, with the same stop and target, read strictly and priced alike; the drift-free value is the yearly-means bound of that excess, the smaller leg's"
+
+# KILL LINES -- fixed now; the stopping points are D-277's
+kill_line:
+  W1: "the walk-forward's test-year values have their one-sided 95 % lower bound at or below zero, or a test year has no feasible selection -- the execution model is invalidated and the fair-value branch on NQ closed"
+  W2: "the final selection on every development year is infeasible, or its value (the lower era's when flagged) is at or below zero"
+  B: "the final selection's drift-free value (selection.drift) is at or below zero"
+  G: "the D-145 gate on the walk-forward's out-of-sample trades, at today's costs, fails: median yearly log growth at 0 % denial at or below zero with each leg shifted to its one-sided 95 % lower bound"
+  stopping: "W1 fails: closed for good; W1 passes but W2, B or G fails: this specification closed; all pass: one confirmation on the held-back window, which closes it if it fails; no parameter changed after any gate's result (D-277)"
+gate:
+  trades: "each test year's out-of-sample trades of the configuration selected on the years before it, both legs, each at its move less its cell's median cost of 2020 to June 2025 (D-271, D-276)"
+  bound: "per leg, the yearly-means one-sided 95 % lower bound of the out-of-sample net R"
+  stops: "each trade's stop in dollars drawn (seeded) from 2020 to June 2025's session stops; not sizeable in both states, left out"
+  campaign: {bankroll: 5000, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 0.75}
+  protocol: "the Combine at the final selection's geometry, one trade an account a day; funded at the final selection's funded risk and target, one trade an account a day; payout standard"
+  conduct: "the Responsible Trading Program's consequences on (D-145 tier 2); denial 0 % decides (D-234), 10/25/50 % reported"
+seeds: {eras: 20261012, stops: 20261013, gate: 20261014, spa: 20261015}
+
+# REPORTED BESIDE -- never a verdict
+reported:
+  - "the final selection at L = 0 and L = 5 (the capture's outcome codes; an open trade valued from the L = 2 trade's close and worst, shifted by the entries' difference): each leg's e, its bound, gross and net"
+  - "each leg's e, its bound, gross and net, hit rate, trades a day, the flatten share and mean R of flattened trades, per era and pooled; long and short apart, each less its benchmark, and combined"
+  - "per session and per phase (continuation, reversion): trades, e and gross"
+  - "the edge-to-friction ratio, gross edge over today's cost in R, per configuration"
+  - "sessions at the 32-signal cap, per year"
+  - "Hansen's SPA p-value over the feasible configurations' yearly values and the deflated Sharpe ratio at N = k"
+then: "continue -> the final selection's card completed and one confirmation registered on NQ's held-back window (2025-07-01 to 2026-06-30, D-237), one QuantConnect capture and the D-145 gate"

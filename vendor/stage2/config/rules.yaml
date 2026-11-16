@@ -1,0 +1,2231 @@
+# config/rules.yaml — machine-readable copy of RULES_LEDGER.md
+#
+# `propedge/contract/rules.py` loads this file and RAISES if code requests a rule
+# whose status is not "verified". That is the enforcement of the charter rule
+# "nothing may depend on a rule whose status is not verified".
+#
+# Status values (must match RULES_LEDGER.md):
+#   verified                          - read on the official help centre, id + url + date below.  USABLE.
+#   carried_from_stage_one_reverify   - stage one verified it; not re-read in stage two.          NOT usable.
+#   unverified_human_input_required   - needed by stage two, never verified.                      NOT usable.
+#   third_party                       - non-official source. Never sufficient.                    NOT usable.
+#
+# Edit via `/verify-rule <rule>` (the rules-verifier agent), which writes the value,
+# article id, url and date here and in RULES_LEDGER.md together, and appends to DECISIONS.md.
+# Hand-editing this file without updating RULES_LEDGER.md puts the two out of sync;
+# `tests/test_instruments.py` and `/close-check` compare them.
+
+meta:
+  ledger: RULES_LEDGER.md
+  official_domains:                  # rules-verifier will not accept any other host
+    - help.topstep.com
+    - topstep.com
+  generated: 2026-09-21
+
+rules:
+
+  # ---------------------------------------------------------------- Combine
+  combine_profit_target:
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $3,000, and now read from a table as well as the worked
+      example. 8284208 (page date "September 17, 2026"; two fetches with differently worded
+      prompts, identical cells): table "Account Size" / "Profit Target" / "Best Day
+      Recommendation", $50K row "$50K" / "$3,000" / "Less than $1,650"; the worked example is
+      unchanged, "$50K account: $1,600 best day ÷ $3,000 total profit = 53% [check mark] —
+      Consistency Target met." 8284197 (page date "September 24, 2026") still states no amount:
+      "Reach and maintain your Profit Target". The 100K and 150K targets are rows of their own
+      (combine_profit_target_100k, combine_profit_target_150k).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, value unchanged at $3,000 - but THE SOURCE MOVED. Article 8284197
+      (Combine Parameters) no longer states the figure in text; it says only "Reach and
+      maintain your Profit Target". $3,000 is now established from the worked example on
+      8284208 - "$50K account: $1,600 best day / $3,000 total profit = 53% - Consistency
+      Target met." - and from topstep.com/no-activation-fee, "Profit Target: $3,000".
+      Two official pages, four reads. article_id moved 8284197 -> 8284208 so the next
+      verifier does not waste a pass looking on the parameters page.
+
+  combine_mll:
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $2,000. 8284204 (page date "September 18, 2026", the date
+      recorded on 2026-10-25; three fetches with differently worded prompts, identical cells):
+      table "Account Size" / "Maximum Loss Limit", rows "$50K" / "$2,000", "$100K" / "$3,000",
+      "$150K" / "$4,500"; "The MLL is a trailing limit."; "It rises as your end-of-day balance
+      grows, but never moves down."; "Both realized and unrealized P&L count toward it."; "Your
+      account starts at the full account size (e.g., $50,000 for a 50K Trading Combine), and your
+      Maximum Loss Limit starts $2,000 below that."; "Balance: $50,000. MLL: $48,000."; on a
+      breach, "Your account is liquidated for the rest of the trading day and becomes ineligible
+      for funding until you Reset."; "The MLL cannot be adjusted or changed." / "Topstep makes no
+      exceptions." The 100K and 150K amounts are rows of their own (combine_mll_100k,
+      combine_mll_150k).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "$50K | $2,000"; "The MLL is a trailing limit. It rises as
+      your end-of-day balance grows, but never moves down."; "Both realized and unrealized P&L
+      count toward it. If your Net P&L hits the limit at any point during the day, your account is
+      liquidated immediately."
+
+  combine_consistency_max_day_frac:
+    value: 0.55
+    units: fraction
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-10-03; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 0.55. 8284208 (page date "September 17, 2026"; two fetches
+      with differently worded prompts, identical wording): "Your single best day of profit must
+      stay at or below 55% of your Profit Target." / "If it exceeds that, your Profit Target
+      increases."; "Best Day Profit ÷ Total Profit = Best Day %"; "55% is a hard line. It is not
+      rounded, and there is no buffer."; "At 3:10 PM CT, that day's value locks into your trading
+      history and cannot be changed."; "You can pass in as few as 2 days," / "as long as no single
+      day exceeds 55% of your total profit and your Profit Target is met."; the table's "Best Day
+      Recommendation" column reads "Less than $1,650" (50K), "Less than $3,300" (100K), "Less than
+      $4,950" (150K) -- 55 % of each size's target, so the fraction is the same at every size.
+      The Profit Target / Total Profit ambiguity recorded below is still on the page.
+      EARLIER RECORD (2026-10-03), kept for history:
+      RE-READ 2026-10-03, UNCHANGED at 0.55. 8284208 ("Updated over 2 weeks ago"): "Your single
+      best day of profit must stay at or below 55% of your Profit Target. If it exceeds that, your
+      Profit Target increases."; "Best Day Profit ÷ Total Profit = Best Day %"; "55% is a hard
+      line. It is not rounded, and there is no buffer."; "$50K account: $1,600 best day ÷ $3,000
+      total profit = 53% [check mark] — Consistency Target met."; "At 3:10 PM CT, that day's value
+      locks into your trading history and cannot be changed." The ambiguity recorded below (the
+      rule stated against the Profit Target, the formula against Total Profit) is still on the
+      page; the engine's target_eff = max(3000, best_day/0.55) matches either reading.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged at 0.55. THE OFFICIAL VALUE IS 55%, NOT the 50% the
+      third-party guides state: "Your single best day of profit must stay at or below 55% of
+      your Profit Target." / "55% is a hard line."
+      AMBIGUITY RECORDED RATHER THAN RESOLVED: the same page states the rule against the
+      PROFIT TARGET but gives the formula against TOTAL PROFIT - "Best Day Profit / Total
+      Profit = Best Day %". The tie-breaker is the consequence: "If it exceeds that, your
+      Profit Target increases. You'll need to earn more to pass." Under EITHER reading the
+      coded behaviour is the same - finish with total profit >= best_day/0.55 and >= $3,000 -
+      so the engine's target_eff = max(3000, best_day/0.55) is correct either way. The
+      ambiguity matters only if anyone later models a fixed $1,650 best-day cap with hard
+      failure: the page is explicit that the account does NOT fail, the target rises.
+
+  combine_mll_lock_at:
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED. 8284204 (page date "September 18, 2026"; read three times):
+      "Once it reaches your starting balance, it locks permanently." The sentence names no account
+      size, so it reads the same for 50K, 100K and 150K.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "Once it reaches your starting balance, it locks permanently."
+
+  combine_position_size_limit:
+    value: 5
+    units: contracts (mini-equivalent; 1 mini = 10 micros, so 50 micros)
+    status: verified
+    article_id: "8284197"
+    url: https://help.topstep.com/en/articles/8284197-trading-combine-parameters
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), spot-checked by the session; re-read 2026-10-03 by rules-verifier
+    note: >
+      RE-READ 2026-10-03, UNCHANGED: 5 minis / 50 micros at 10:1. 8284197 (Trading Combine
+      Parameters, "Updated over a week ago"), table headers "Account Size" | "Max Contracts" |
+      "Max Micros", $50K row "$50K" | "5" | "50"; "The maximum number of contracts you can hold
+      open at one time, per account. Micros and minis count at a 10:1 ratio."; "Hint: You're
+      never required to trade the maximum. Fewer contracts is always allowed." 8284223 (displayed
+      date July 16, 2026, as recorded before): "1 Mini = 10 Micro contracts"; "Limits are based on
+      mini-contract equivalents"; "Example — $50K XFA, 2-lot Scaling Plan: 2 Minis, OR 20 Micros,
+      OR Any combo equal to 2 Minis". New to the record (8284223, read twice): "Errors corrected
+      in under 10 seconds are ignored. Leave too many contracts on for 10+ seconds and your account
+      may be reviewed." THE CONFLICTING BLOG IS STILL PUBLISHED, same wording, read 2026-10-03
+      (topstep.com/blog/new-permitted-products-offered-at-topstep, dated January 14, 2026): "Each
+      Micro futures contract equals a full contract toward your max position size in the Trading
+      Combine and the Funded Account." / "5 Micro contracts will max you out." The help centre
+      states 10:1 on both 8284197 and 8284223; the record below (D-23, D-52) stands. Not re-read
+      on 2026-10-03: the sentence that the ratio is not available on the Live Funded Account.
+      EARLIER RECORD (2026-09-22/23), kept for history:
+      Verified 2026-09-22. Table quoted verbatim: "Account Size | Max Contracts | Max Micros" /
+      "$50K | 5 | 50". And: "Micros and minis count at a 10:1 ratio." Also "The Micro to Mini ratio
+      functionality is available for the Trading Combine and Express Funded Account. It is not
+      currently available for the Live Funded Account." No soft/recommended tier exists; the only
+      softening sentence is "You're never required to trade the maximum. Fewer contracts is always
+      allowed."
+      VERIFIED 2026-09-23 (D-52), no longer a working reading. PRIMARY SOURCE: article 8284223 defines the allowance on the page that sets it, verbatim - "Example - $50K XFA, 2-lot Scaling Plan: 2 Minis, OR 20 Micros, OR Any combo equal to 2 Minis". CORROBORATION: the trader confirmed 10:1 first-hand from the platform on 2026-09-23. Two independent readings of different kinds - an official page and a first-hand observation - agreeing, which is the standard D-35 asks for. The blog below is therefore SUPERSEDED, not merely outweighed; both readings stay on record because a retracted-in-practice source that is still published can mislead a later reader. Removed from the support list. Originally:  the scaling-plan page 8284223 defines the allowance itself, verbatim - "Example - $50K XFA, 2-lot Scaling Plan: 2 Minis, OR 20 Micros, OR Any combo equal to 2 Minis". That is the official definition of what the allowance MEANS, stated on the page that sets it, and it is 10:1. It also settles a second question: "Any combo" makes the cap AGGREGATE across instruments, not per instrument. The blog conflict below is left on the record and is on the support list in docs/HUMAN_INPUTS.md; work proceeds on 10:1 rather than blocking. CONFLICT ON THE RECORD: topstep.com/blog/new-permitted-products-offered-at-topstep (published
+      2026-01-14, an official domain) says the opposite — "Each Micro futures contract equals a full
+      contract toward your max position size in the Trading Combine and the Funded Account" and "if
+      you are trading in a 50K Trading Combine, your max position size is 5 contracts, so 5 Micro
+      contracts will max you out." That is a 10x difference in expressible risk. The help centre is
+      preferred as the rules authority and is the later source (the 10:1 statement is repeated in
+      8284223, dated 2026-07-16), but the blog is not retracted. See DECISIONS.md D-23.
+      NOTE: this is the COMBINE cap and is NOT the binding constraint — funded_scaling_plan is, and
+      it is unverified.
+
+  combine_count_limit:
+    value: unlimited
+    units: text
+    status: verified
+    article_id: "8284121"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two); re-read 2026-10-30 by rules-verifier (D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30, VALUE UNCHANGED ('unlimited' = no mechanical cap on the count or rate of Combine
+      purchases), BUT THE PURCHASE RATE IS A NAMED CONDUCT RISK WITH NO PUBLISHED THRESHOLD. Mechanical: 8284121
+      ("Updated over 2 weeks ago"): "Yes — no limit on how many you can have at once."; 10370307 (Reset Purchase
+      Limits, page date June 18, 2026): "No limit on Trading Combine purchases" / "2 Resets per account per calendar
+      day" / "Limits exist to protect you from account churning"; 13620045: "You can purchase any size and type of
+      Trading Combine — there's no limit on how many you can hold." Conduct (none gives a number, window or
+      threshold): 10296582 lists "Excessive purchases of Trading Combines or Resets" as Prohibited Conduct
+      (responses: "Warning", "Deletion of the impacted trading day", "Account Reset", "Permanent account closure",
+      "Delay or denial of a Payout request"; "Violations are reviewed case-by-case based on severity and
+      history."); 10406542 (August 13, 2026) lists "Excessive purchases of Trading Combines® or Resets" after "A
+      few things that'll get you flagged:"; 10551016 (Focused Trader Program, August 10, 2026) puts "Excessive
+      Resets and Trading Combine purchases" on the Slowdown Path ("You cannot purchase new Trading Combines,
+      Resets, or B2F Reactivations") and "Excessive recycling of Trading Combines® or XFAs" on the Corrective Path
+      (see focused_trader_program); Terms of Use (September 21, 2026) s.3: "if you place an unusually large number
+      of orders for the Services within an unreasonably short period of time, as determined in the sole discretion
+      of Topstep, we reserve the right to suspend any further orders of the Services by you." Callers must not read
+      'unlimited' as 'any purchase rate carries no consequence'; the rate is a tier-3 exposure (D-145).
+      EARLIER RECORD (2026-09-22): Re-read 2026-09-22, unchanged. 8284197: "Yes. There's no limit to the number of Trading
+      Combines you can have." 8284121: "Yes - no limit on how many you can have at once."
+      Also 8284121: no time limit for passing.
+      VALUE IS THE STRING 'unlimited', not null: propedge/contract/rules.py deliberately raises
+      on a rule marked verified with a null value, so a fact that IS established needs a
+      non-null sentinel to be expressible. Callers must treat 'unlimited' as no cap.
+
+  # ------------------------------------------------------------------- XFA
+  xfa_mll_start:
+    value: -2000.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at -$2,000. 8284204 (page date "September 18, 2026"; read
+      three times): "Your Express Funded Account (XFA) balance starts at $0."; "For a 50K XFA,
+      your MLL starts at -$2,000 and trails upward."; "Once your balance reaches $2,000, the MLL
+      locks at $0 permanently."; the Back2Funded table "Account Size" / "Starting MLL" reads
+      "$50K XFA" / "-$2,000", "$100K XFA" / "-$3,000", "$150K XFA" / "-$4,500" (the larger sizes
+      are rows of their own: xfa_mll_start_100k, xfa_mll_start_150k). On a breach: "Your account
+      is permanently closed."
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "your MLL starts at -$2,000 and trails upward. Once your
+      balance reaches $2,000, the MLL locks at $0 permanently."
+
+  xfa_lock_at:
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED. 8284204 (page date "September 18, 2026"): "Once your balance
+      reaches $2,000, the MLL locks at $0 permanently."; "After your first Payout:" / "Your MLL is
+      set to $0 regardless of where it was before." / "The remaining balance becomes your
+      effective loss floor." 8284233 ("Updated this week"), Standard path: "After each Payout:
+      Your Maximum Loss Limit (MLL) resets to $0 permanently, and your 5-day count restarts.";
+      Consistency path: "After each Payout: Your Maximum Loss Limit resets to $0 permanently, your
+      consistency calculation resets, and your 3-day count restarts." NOT STATED for 100K and
+      150K: the balance at which the XFA's MLL locks (the page gives "$2,000" for the 50K XFA
+      only; for the others only "The MLL trails upward as your balance grows and locks at $0 once
+      reached, same as a brand new XFA.").
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. 8284204: "After your first Payout: Your MLL is set to $0
+      regardless of where it was before." 8284233: "Your Maximum Loss Limit (MLL) resets to $0
+      permanently."
+
+  xfa_std_winning_days:
+    value: 5
+    units: days
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-10-03; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 5. 8284233 AGAIN SHOWS "Updated this week" (on 2026-10-30
+      it showed "Updated over 2 weeks ago", so the page was edited again in the week before this
+      read); the Standard-path text is the same (two fetches with differently worded prompts):
+      "To request a Payout, you must meet both requirements:" / "5 winning days of $150+ Net
+      P&L." / "Days don't need to be consecutive." / "A day locks in at 4:00 PM CT." / "The
+      trading day your Payout is requested doesn't count toward your next 5." / "Positive net
+      profit since your last Payout." / "You must have earned at least $0.01 since your last
+      Payout." / "Your first Payout is exempt." The Standard path still states no consistency or
+      best-day percentage. 8284215's comparison table agrees: "Payout eligibility" / "5 winning
+      days of $150+" (Standard).
+      EARLIER RECORD (2026-10-03), kept for history:
+      RE-READ 2026-10-03, UNCHANGED at 5. 8284233 NOW SHOWS "Updated this week" (its displayed
+      last-updated date was 2026-09-03 when read on 2026-09-27); the Standard-path text is the
+      same. Standard path requirements, in order: "5 winning days of $150+ Net P&L. Days don't
+      need to be consecutive." and "Positive net profit since your last Payout. You must have
+      earned at least $0.01 since your last Payout."; "A day locks in at 4:00 PM CT." The
+      Standard path states no consistency or best-day percentage (absent on 8284233, two reads).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "5 winning days of $150+ Net P&L. Days don't need to be
+      consecutive."; "A day locks in at 4:00 PM CT. The trading day your Payout is requested
+      doesn't count toward your next 5."
+
+  xfa_std_winning_day_min:
+    value: 150.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-10-03; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $150. 8284233 ("Updated this week"; two fetches), Standard
+      path: "5 winning days of $150+ Net P&L." The amount is stated once for the Standard path,
+      with no account-size distinction on the page.
+      EARLIER RECORD (2026-10-03), kept for history:
+      RE-READ 2026-10-03, UNCHANGED at $150. 8284233 ("Updated this week"), Standard path: "5
+      winning days of $150+ Net P&L. Days don't need to be consecutive."
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "5 winning days of $150+ Net P&L."
+
+  xfa_std_cap:
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $2,000 as the NO-DLL value. 8284233 ("Updated this week";
+      three fetches with differently worded prompts, identical cells): table "Account Size" /
+      "XFA Standard" / "XFA Consistency", rows "$50K" / "$2,000" / "$3,000", "$100K" / "$3,000" /
+      "$4,000", "$150K" / "$5,000" / "$6,000"; the DLL table "Account" / "Path" / "Current Cap" /
+      "With DLL (new)" gives "$50K" / "Standard" / "$2,000" / "$4,000". "Max Payout per request:
+      50% of your account balance up to the cap below." The page's Standard Path box reads
+      "Request 50% of the account balance" / "up to $5000*" -- that is the 150K cap, not the
+      50K one (8284215: "50% of balance, up to $5,000*", footnote "See the Payout Policy for
+      Payout cap details by account size."). The 100K and 150K caps are rows of their own
+      (xfa_std_cap_100k, xfa_std_cap_150k).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged as the NO-DLL value. Table: "Account Size | XFA Standard |
+      XFA Consistency" / "$50K | $2,000 | $3,000". DOUBLES TO $4,000 under the DLL election
+      (dll_offer_status) - the election must be made at Combine purchase.
+
+  xfa_cons_min_days:
+    value: 3
+    units: days
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-10-03; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 3. 8284208 (page date "September 17, 2026"; two fetches):
+      "A minimum of 3 trading days with at least 1 trade per day". 8284233 ("Updated this week"),
+      Consistency path: "3 trading days with at least 1 trade per day." / "Days lock in at 4:00
+      PM CT." / "The trading day your Payout is requested doesn't count toward your next 3."
+      EARLIER RECORD (2026-10-03), kept for history:
+      RE-READ 2026-10-03, UNCHANGED at 3. 8284208 ("Updated over 2 weeks ago"): "A minimum of 3
+      trading days with at least 1 trade per day". 8284233 ("Updated this week"), Consistency
+      path: "3 trading days with at least 1 trade per day."
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "A minimum of 3 trading days with at least 1 trade per day."
+
+  xfa_cons_max_day_frac:
+    value: 0.4
+    units: fraction
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-10-03; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 0.4; ONE WORDING CHANGE ON 8284233, no change of value.
+      8284208 (page date "September 17, 2026"; two fetches): "Your Consistency % must be 40% or
+      below to be Payout eligible." / "This is not rounded. Any result above 40% does not
+      qualify."; "Largest Single-Day Net Profit ÷ Total Net Profit = Consistency %"; "When you
+      activate your XFA, you choose Standard or Consistency as your Payout path." / "The
+      Consistency path gets you to Payout eligibility faster but adds a 40% threshold." 8284233
+      ("Updated this week"), Consistency path, now reads "Stay at or below the 40% Consistency
+      Objective." (recorded on 2026-10-03 as "Stay at or below the 40% consistency target.") /
+      "Your largest single day cannot exceed 40% of your total net profit." / "For example, if
+      your best trading day's profit is $2,000, your total net profit must be at least $5,000
+      ($2,000 ÷ 0.4)."
+      EARLIER RECORD (2026-10-03), kept for history:
+      RE-READ 2026-10-03, UNCHANGED at 0.4. 8284208 ("Updated over 2 weeks ago"): "Your
+      Consistency % must be 40% or below to be Payout eligible. This is not rounded.";
+      "Largest Single-Day Net Profit ÷ Total Net Profit = Consistency %"; "If your Consistency %
+      exceeds 40%, keep trading."; "When you activate your XFA, you choose Standard or Consistency
+      as your Payout path. The Consistency path gets you to Payout eligibility faster but adds a
+      40% threshold." 8284233 ("Updated this week"), Consistency path: "Stay at or below the 40%
+      consistency target. Your largest single day cannot exceed 40% of your total net profit."
+      The Standard path on 8284233 states no consistency or best-day percentage.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "Your Consistency % must be 40% or below to be Payout
+      eligible."; "Largest Single-Day Net Profit / Total Net Profit = Consistency %".
+
+  xfa_cons_cap:
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $3,000 as the NO-DLL value. 8284233 ("Updated this week";
+      three fetches, identical cells): "$50K" / "$2,000" / "$3,000" under "Account Size" / "XFA
+      Standard" / "XFA Consistency"; the DLL table gives "$50K" / "Consistency" / "$3,000" /
+      "$6,000". The page's Consistency Path box reads "up to $6,000*", which is the 150K cap. The
+      100K and 150K caps are rows of their own (xfa_cons_cap_100k, xfa_cons_cap_150k).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged as the NO-DLL value: "$50K | $2,000 | $3,000" (Consistency
+      column). DOUBLES TO $6,000 under the DLL election (dll_offer_status). The repo previously
+      recorded the doubling for the Standard cap only; it applies to both.
+
+  payout_min:
+    value: 125.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED. 8284233 ("Updated this week"; two fetches): "Minimum Payout:
+      $125".
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "Minimum Payout: $125".
+
+  payout_max_frac_of_balance:
+    value: 0.5
+    units: fraction
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 0.5. 8284233 ("Updated this week"; two fetches): "Max
+      Payout per request: 50% of your account balance up to the cap below."; both path boxes read
+      "Request 50% of the account balance". 8284215's comparison table: "Max Payout" / "50% of
+      balance, up to $5,000*" (Standard) / "50% of balance, up to $6,000*" (Consistency). The
+      sentence recorded on 2026-09-22 ("Request 50% of the account balance up to the cap below.")
+      is the same rule; today's fetches return it as the two fragments quoted here.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "Request 50% of the account balance up to the cap below."
+
+  profit_split:
+    value: 0.9
+    units: fraction
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 0.9. 8284233 ("Updated this week"; two fetches): "90/10
+      profit split — you keep 90%"; both path boxes "90/10 split". 8284215's comparison table:
+      "Profit split" / "90/10" / "90/10".
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged. "90/10 split - you keep 90%".
+
+  require_profit_since_payout:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED. 8284233 ("Updated this week"; two fetches), Standard path:
+      "Positive net profit since your last Payout." / "You must have earned at least $0.01 since
+      your last Payout." / "Your first Payout is exempt." The Consistency path lists no such
+      requirement (its two are the 3 trading days and the 40% objective).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Re-read 2026-09-22, unchanged and now stated explicitly: "Positive net profit since your
+      last Payout. You must have earned at least $0.01 since your last Payout. Your first Payout
+      is exempt."
+
+  # ------------------------------------------------------------------ fees
+  subscription_fee:
+    value: 49.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $49 (STANDARD PATH, 50K). 14289835 ("Updated over a month
+      ago"; three fetches with differently worded prompts, identical cells): table "Account Size"
+      / "Standard Path" / "No Activation Fee Path", rows "50K" / "$49/month" / "$95/month", "100K"
+      / "$99/month" / "$149/month", "150K" / "$199/month" / "$229/month"; "Paths cannot be changed
+      after purchase."; "Standard Path: Lower monthly cost. $149 Activation Fee charged once per
+      Express Funded Account (XFA) earned." 8284121 ("Updated this week") lists no prices and
+      refers to this article. The 100K and 150K prices are rows of their own (subscription_fee_100k,
+      subscription_fee_150k). NOT PREVIOUSLY QUOTED IN THIS ROW (it does not touch the Standard
+      path's $49): "There's now a Responsible Trading Discount when you add a DLL at purchase" /
+      "for No Activation Fee Trading Combines, Express Funded Account Activations, and Back2Funded
+      Reactivations." -- "$10 off" 50K, "$20 off" 100K, "$30 off" 150K on a No Activation Fee
+      Trading Combine; "$50 off" Reactivation Fees; "Discount is applied at checkout."; "Discount
+      recurs monthly."; "The DLL is fixed and carried into your XFA when you pass." The two pages
+      differ on the product list: 10490293 (page date "June 30, 2026", read twice) says "for No
+      Activation Fee Trading Combines and Back2Funded Reactivations." with no mention of XFA
+      activations, and neither page gives a discount amount for an activation. So a No Activation
+      Fee 50K Combine bought with the DLL is $85 a month by these sentences; the Standard path's
+      price has no stated discount.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22, STANDARD PATH ONLY: "50K | $49/month | $95/month" (Standard |
+      No Activation Fee). Spot-checked independently. Source moved from
+      topstep.com/express-funded-account-rules to the help centre. Pair with billing_days=30.
+
+  billing_days:
+    value: 21
+    units: trading days (the engine's day index)
+    status: verified
+    article_id: "8284121"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); unit error corrected by the session; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED: the official sentence behind this derived value is the same.
+      8284121 (NOW SHOWS "Updated this week"; it showed "Updated over 2 weeks ago" on 2026-10-30,
+      so the page was edited in the week before this read; two fetches with differently worded
+      prompts): "It Rebills every 30 days from your original sign-up date." 21 trading days stays
+      the engine's translation of 30 calendar days (30 x 252/365 = ~20.7).
+      EARLIER RECORD (2026-09-22), kept for history:
+      CORRECTED 2026-09-22 back to 21, and propsim D-31 STANDS. The official rule is 30
+      CALENDAR days - "It Rebills every 30 days from your original sign-up date" (8284121,
+      spot-checked) - but this key is consumed by propsim.simulate_combine as
+      `d % billing_days`, where d indexes TRADING days. 30 calendar days x 252/365 = ~20.7
+      trading days, so 21 trading days IS the correct translation and stage one's convention
+      was right.
+      An earlier stage-two entry (D-25) set this to 30 and claimed the repo had been
+      over-charging subscriptions by ~43%. That was a UNIT ERROR: it compared 21 trading days
+      with 30 calendar days as if they were the same unit. Billing every 30 TRADING days is
+      ~43.5 calendar days and would have UNDER-charged by ~40%. Corrected by D-29; the
+      official calendar figure is carried separately as billing_period_calendar_days so the
+      fact and the engine convention cannot be confused again.
+
+  billing_period_calendar_days:
+    value: 30
+    units: calendar days
+    status: verified
+    article_id: "8284121"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), spot-checked by the session; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at 30. 8284121 (NOW SHOWS "Updated this week"; "Updated over 2
+      weeks ago" on 2026-10-30; two fetches with differently worded prompts, identical wording):
+      "It Rebills every 30 days from your original sign-up date."; "No time limit for passing.";
+      "Subscriptions can't be paused or put on hold."; on a pass, "The subscription tied to the
+      passed Trading Combine will auto-cancel, and the account will close." / "Other active
+      Trading Combines keep Rebilling until you manually cancel them." / "Payments already
+      processed for the current billing cycle are not refunded or prorated."; "You'll get a Reset
+      Credit when your Rebill processes." What the week's edit changed was not identified; the
+      page's thirteen FAQ headings and the passages above match the earlier records.
+      EARLIER RECORD (2026-09-22), kept for history:
+      The OFFICIAL rule, in the firm's own units: "It Rebills every 30 days from your original
+      sign-up date." Carried separately from billing_days because that key is in TRADING days (the
+      engine's index) and conflating the two caused a real error - see D-29. Any model that runs on
+      a calendar clock rather than a trading-day index must use THIS value, not billing_days.
+      Conversion: 30 calendar days x 252/365 = ~20.7 trading days.
+
+  activation_fee:
+    value: 149.0
+    units: usd
+    status: verified
+    article_id: "8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $149 (STANDARD PATH). 8284217 (page date "September 24,
+      2026", the date recorded on 2026-10-25): fee table "Standard Path" / "$149 one-time
+      activation fee per XFA", "No Activation Fee Path" / "No activation fee"; the page opens on
+      traders who pass a "50K, 100K, or 150K" Trading Combine and gives one fee, with no
+      account-size breakdown. 14289835 ("Updated over a month ago", read three times): "$149
+      Activation Fee charged once per Express Funded Account (XFA) earned."; "Standard Path —
+      $149, charged once per XFA earned."; "No Activation Fee Path — $0."; "No fee when you
+      pass."; "Paths cannot be changed after purchase." No page states a different activation fee
+      for 100K or 150K (activation_fee_100k, activation_fee_150k). The "$149" that appears beside
+      100K on 14289835 is the No Activation Fee path's monthly price and Reset price for that
+      size, a different figure that happens to be equal.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22 at $149 FOR THE STANDARD PATH, and independently spot-checked.
+      Fee table: "Standard Path | $149 one-time activation fee per XFA" / "No Activation Fee
+      Path | No activation fee". STRUCTURAL CHANGE the repo did not carry: there are now TWO
+      pricing paths, chosen at Combine purchase and fixed thereafter ("Paths cannot be changed
+      after purchase"). Standard = $49/month + $149 activation + $49 reset. No-Activation-Fee
+      = $95/month + $0 activation + $95 reset (14289835). Topstep states the paths are
+      otherwise identical in rules and objectives. Which is cheaper depends on pass rate per
+      subscription-month, which is exactly what the campaign model computes - so this is a
+      PROTOCOL DIMENSION, not a constant. Note also the source moved:
+      topstep.com/express-funded-account-rules no longer states $149.
+      See DECISIONS.md D-25.
+
+  reset_fee:
+    value: 49.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $49 (STANDARD PATH, 50K). 14289835 ("Updated over a month
+      ago"; two fetches with differently worded prompts, identical cells): Reset table "Account
+      Size" / "Standard Path" / "No Activation Fee Path", rows "50K" / "$49" / "$95", "100K" /
+      "$99" / "$149", "150K" / "$199" / "$229". 8284121 ("Updated this week"): "You'll get a Reset
+      Credit when your Rebill processes." 10370307 (Reset Purchase Limits, page date "June 18,
+      2026", read twice): "2 Resets per account per calendar day" (its own row,
+      reset_limit_per_account_per_calendar_day). 8284128 (the Reset Bank and credit expiry) was
+      not re-read today; the caveat below stands as recorded. The 100K and 150K prices are rows of
+      their own (reset_fee_100k, reset_fee_150k).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22, STANDARD PATH ONLY ($95 on the No-Activation-Fee path).
+      A Reset restarts an ACTIVE Combine: "A Reset returns your Trading Combine to its original
+      starting balance" (8284128). It is a DIFFERENT product from Back2Funded reactivation,
+      which reactivates a LOST funded account at $599/$699/$829 by size, max 2 per XFA, only
+      before the first payout, with a 30-calendar-day decision window (12060405) - so stage
+      one's reset_fee of $49 was right and the $599 is not a substitute for it.
+      COST MODEL CAVEAT: resets are often FREE. "Every monthly Rebill adds 1 Reset Credit to
+      your Reset Bank" (8284128), credits expiring 1 year after they are added. Charging $49
+      per reset unconditionally overstates campaign cost.
+
+  payout_fee:
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $0 for Aeropay. 8284233 ("Updated this week"): Aeropay fee
+      cell "No Topstep fee**"; footnote "No Topstep fee for Aeropay or Wise, but your bank or
+      those services may charge their own fees."; Prop-to-Brokerage "No Fee"; ACH "$30";
+      Wire/SWIFT "$30". The full table is under payout_methods_and_fees.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22. RESOLVED: the $30 is real but METHOD-SPECIFIC, not universal -
+      "$30" for ACH and Wire/SWIFT only; "No Fee" for Prop-to-Brokerage and "No Topstep fee"
+      for Aeropay and Wise. A US trader pays $0. Stage one's later note was right and its flat
+      $30 was too pessimistic; the third_party flag is closed.
+      0.0 is the US Aeropay baseline and MUST be paired with payout_lag_days ~3. The $30 ACH
+      sensitivity must be paired with ~6. Because payout policy is first-order (propsim D-45),
+      an avoidable fee charged flat biases the optimum toward later, larger payouts - so any
+      payout-policy conclusion computed at a flat $30 must be re-run at $0. See D-24.
+
+  # ------------------------------------- T1 gate: needed by stage two, unverified
+  max_active_funded_accounts:
+    value: 5
+    units: accounts
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), spot-checked by the session; re-read 2026-10-03 by rules-verifier
+    note: >
+      RE-READ 2026-10-03, UNCHANGED at 5. 8284215 (date shown August 5, 2026): "You can hold up to
+      5 active XFAs at a time."; FAQ "Yes, up to 5 active at a time."; "If you pass a Trading
+      Combine® while at the limit, the new XFA goes on hold until one closes."; "Can I have a mix
+      of Standard and Consistency XFA accounts? Yes, up to the 5-account limit, unless you're on
+      the Focused Trader Plan (FTP)."; "Shoulder Tap account holders are limited to 1 XFA."
+      8284217 ("Updated over a week ago"): "If you already have 5 active XFAs or a Live Funded
+      Account®, the button will be greyed out." / "You'll need to close an account before
+      activating a new one." topstep.com/express-funded-account-rules: "You can have up to 5
+      active Express Funded Accounts at one time." / "This number may change depending on your
+      activity or participation in other Topstep programs, such as the Focused Trader Program."
+      The qualifiers below stand (an LFA blocks activation; Shoulder Tap 1; FTP alters the limit;
+      the 5 may move).
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22. 8284215 FAQ "Can I have more than 1 XFA?" — "Yes, up to 5 active at a time.
+      If you pass a Trading Combine while at the limit, the new XFA goes on hold until one closes."
+      Corroborated on topstep.com/express-funded-account-rules: "You can have up to 5 active Express
+      Funded Accounts at one time. This number may change depending on your activity or participation
+      in other Topstep programs, such as the Focused Trader Program."
+      QUALIFIERS THE MODEL DOES NOT YET CARRY: Shoulder Tap holders are limited to 1 XFA; the Focused
+      Trader Plan alters the limit (number not stated); mixed account sizes are allowed; and per 8284217
+      a LIVE FUNDED ACCOUNT ALSO BLOCKS ACTIVATION — "If you already have 5 active XFAs or a Live Funded
+      Account, the button will be greyed out." The cap is therefore "5 XFAs or an LFA", not "5 XFAs".
+      Topstep states the 5 may move, so it is a ceiling, not an entitlement. See DECISIONS.md D-21.
+
+  hold_queue_behaviour:
+    value: hold_until_slot_frees
+    units: text
+    status: verified
+    article_id: "8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), spot-checked by the session; re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED: a pass at the cap waits, and the fee is paid in the activation flow.
+      8284217 (page date "September 24, 2026"): "If you already have 5 active XFAs or a Live Funded Account®, the
+      button will be greyed out." / "You'll need to close an account before activating a new one."; step 6
+      "Activation Fee:" -- "Standard path:" "Check all 3 fee agreement boxes, enter your payment info (credit or
+      debit card), and click" "Complete Payment to Activate."; "No Activation Fee path:" "Click Continue — your
+      account is created!"; "It only takes a few minutes." 8284215 ("Updated over a week ago"; two fetches): "Yes,
+      up to 5 active at a time." / "If you pass a Trading Combine® while at the limit, the new XFA goes on hold
+      until one closes."; "Minutes after paying the Activation Fee." 8284121 ("Updated this week"), on a pass:
+      "the passed Trading Combine remains in "Passed" status until you activate your Express Funded Account" /
+      "ensuring you won't lose the account while waiting to activate." -- the nearest official sentence to the
+      hold's duration, and it names no deadline; 8284217 and 8284121 state no deadline or expiry for activating a
+      passed Combine (asked of each page directly; absent). 14289835 words the fee as "charged once per Express
+      Funded Account (XFA) earned" and does not say whether that is at the pass or at activation; 8284217's step 6
+      is the only page that places the payment, and it places it in the activation flow.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22. A pass at the cap WAITS; it is not forfeited. 8284215: "If you pass a Trading
+      Combine while at the limit, the new XFA goes on hold until one closes." 8284217 gives the
+      mechanism: activation is TRADER-INITIATED from the Trade Report, and "If you already have 5 active
+      XFAs or a Live Funded Account, the button will be greyed out. You'll need to close an account
+      before activating a new one."
+      THE ACTIVATION FEE FALLS DUE ON ACTIVATION, NOT ON PASSING. 8284217 puts payment at step 6 of the
+      trader-initiated flow: "Standard path: Check all 3 fee agreement boxes, enter your payment info
+      (credit or debit card), and click 'Complete Payment to Activate.'" At the cap the button is greyed
+      out, so a queued trader cannot pay. This CONTRADICTS propedge/campaign/reinvest.py, which charges
+      activation on the pass day. See DECISIONS.md D-21.
+      The hold's DURATION is not stated on any official page read — see hold_expiry_days.
+
+  xfa_activation_latency:
+    value: minutes
+    units: text
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-10-10
+    verified_by: rules-verifier (stage two), report only; recorded by the session under D-336
+    note: >
+      8284215 (page date August 5, 2026), FAQ "How long does it take to get my XFA?": "Minutes after paying the
+      Activation Fee. If you pass on a Friday, your XFA won't be available until markets reopen at 5 PM CT Sunday."
+      8284197: "The status update can take up to 30 minutes."; "Passed on a Friday? You can pay the Activation Fee
+      immediately, but your XFA won't be available to trade until markets reopen at 5 PM CT Sunday." 8284217: "It
+      only takes a few minutes." UNSTATED on every page: when a closed XFA's slot frees the activation button, and how
+      a held pass is released (8284215: "the new XFA goes on hold until one closes"; 8284217: "You'll need to close
+      an account before activating a new one"). The engine's convention -- the seat frees the day after an ending, the
+      pass activates that day, the new XFA trades the day after -- is pessimistic by up to one session against the
+      fastest reading (a breached XFA is "closed at the end of the day", 8284215/8284204; activation in minutes;
+      trading at the next 5 PM CT open) and never optimistic; it stays a declared assumption of the frozen record
+      (D-336), to be corrected with the next candidate's engine change.
+
+  xfa_closure_at_request:
+    value: permitted_terms_unstated
+    units: text
+    status: unverified_human_input_required
+    article_id: "10657969"
+    url: https://help.topstep.com/en/articles/10657969-live-funded-account-parameters
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two), report only 2026-10-10, recorded by the session under D-336; re-read 2026-10-25 by rules-verifier (D-444); re-read 2026-10-30 by rules-verifier (D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30 (D-490 (4), D-494), STILL NOT VERIFIED, value unchanged. Pages re-read and still silent on
+      how an XFA is closed at request, a fee, when the closure takes effect, what the balance becomes, and a payout
+      pending at such a closure: 8284215 (page date August 5, 2026), 8284217 (September 24, 2026), 8284233 ("Updated
+      over 2 weeks ago"; no sentence on a payout at any closure; its review FAQ lists "Payout Policy requirements",
+      "Prohibited Conduct", "Terms of Use", "Professional Behavior", "Prohibited Trading Strategies"), 8284204
+      (September 18, 2026), 12060405 (September 29, 2026), 10657969 ("Updated over a week ago": "When the call-up
+      comes, all Express Funded Accounts (XFA) close."; "your options are to move to Live or close your Express
+      Funded Account"), 10551016 (August 10, 2026), 14645398 (Pro Account, September 11, 2026: "Your XFAs will be
+      closed as part of this process."). Terms of Use (September 21, 2026) s.8, re-read: "You may terminate your
+      Account at any time by contacting Support"; "the contractual relationship between the User and Topstep will be
+      terminated as of the date of the confirmation email."; "User is not entitled to any refund of any fees or
+      costs, and all fees are final, non-cancelable, and non-refundable." -- the whole Account, not one XFA; nothing
+      on balances or pending payouts. The only official sentence on pending payouts at any closure is still the
+      Focused Trader Program's Corrective Path, 10551016: "Any pending payouts are denied". The payout-before-closure
+      credit (D-477 F3) therefore rests on payout_after_request_survives_mll_breach for breaches and on silence for
+      closures at request.
+      EARLIER RECORD: RE-READ 2026-10-25 (D-444), for P-09's audit F3. STILL NOT VERIFIED: the help centre presupposes a closure at
+      the trader's request and never describes it. The load-bearing quotes (8284217, 8284215's breach FAQ,
+      12060405's eligibility, 8284121, 10551016 and the topstep.com closing clause) were fetched twice with
+      differently worded prompts, identical wording both times; the others once.
+      XFA, HELP CENTRE. 8284217 (page date September 24, 2026), under "Starting Balance": "If you already have 5
+      active XFAs or a Live Funded Account®, the button will be greyed out." / "You'll need to close an account
+      before activating a new one." 10657969 ("Updated this week"): "Once the Risk Team determines you're ready,
+      your options are to move to Live or close your Express Funded Account." 8284215 (page date August 5, 2026)
+      names only closures by the firm: FAQ "What happens if I breach the Maximum Loss Limit?" - "Your account is
+      liquidated and closed at the end of the day."; and "XFAs with no trading activity for more than 30 days may
+      be closed." 12060405 (Back2Funded) requires "The XFA was closed due to a rule violation before taking a
+      Payout", so it says nothing of a closure at request. Pages read and silent on how to close an XFA, a fee, a
+      waiting period, when a closure at request takes effect, what the balance becomes and a payout pending at
+      such a closure: 8284215, 8284217, 8284233, 8284204, 10657969, 12060405, 13620045, 10551016, 13747178,
+      10513413, 8284121, 8284117, 14289835.
+      XFA, TOPSTEP.COM - A STALE PAGE, NOT A VERIFICATION. topstep.com/express-funded-account-rules ("Last
+      updated: June 26, 2025"), under "Expectations": "If you choose to close your Express Funded Account and are
+      eligible for a payout," / "you may receive up to 50% of your current Reward Balance, capped at $5,000." /
+      "Any remaining balance will be forfeited." The same page is out of date against the help centre: it gives
+      Back2Funded "seven calendar days from the time your XFA is closed", and 12060405 says "On May 29th, 2026,
+      the Reactivation window increased from 7 days to 30 days!"; it gives "a max of $5,000 (Standard) or $6,000
+      (Consistency XFA) per payout". A clause on a page known to be stale is recorded so the question is not
+      lost. If it held it would be no worse for the trader than the engine's abandon, which credits nothing.
+      COMBINE. 8284121 ("Updated over 2 weeks ago"), FAQ "How do I cancel?": "Billing page → click "X" next to
+      the subscription → confirm." / "Once canceled, it cannot be undone." / "No resubscribe option." / "You
+      also can't purchase a Reset on that subscription after it's canceled." FAQ "Can I reactivate a canceled
+      subscription?": "No. Once canceled, it's gone. Start a new Trading Combine to keep trading." No fee is
+      stated; whether the Combine closes at once or at the end of its billing period is not stated. A refund only
+      "within 28 days of the charge" with "no trading activity" (8284117). Terms of Use (last updated September
+      21, 2026) s.3: "You are not entitled to a refund of the fee, for example, if you cancel your Account."
+      CONSEQUENCES. No page calls a closure at request a breach or counts it toward a limit. Two programmes name
+      patterns of closing and replacing accounts, with no number, threshold or window ("recycling" and
+      "excessive" are not defined). 10551016 (Focused Trader Program, page date August 10, 2026), Corrective
+      Path reasons include "Excessive recycling of Trading Combines® or XFAs"; what happens: "Immediately placed
+      into the Focused Trader Program (outlined above)" / "All current accounts (Live, Express Funded Account,
+      Trading Combine) are closed" / "No refunds are issued" / "Any pending payouts are denied" / "Any pending
+      Express Funded Accounts or banked resets are removed (if applicable)". Slowdown Path reasons include
+      "Excessive Resets and Trading Combine purchases" and "Activating and losing many Express Funded Accounts in
+      a short period of time"; what happens includes "You cannot purchase new Trading Combines, Resets, or B2F
+      Reactivations". (13620045, recorded 2026-10-01: "Under the Focused Trader Program, Traders are limited to
+      one Express Funded Account at a time.") RTP's voluntary-closure sentence is about Live only (13620045,
+      10657969): "Traders moved from the Live program voluntarily or due to the account breaching the Loss Limit
+      and closing may be placed in the Responsible Trading Program (RTP)."
+      A PAYOUT PENDING AT A CLOSURE AT REQUEST: SILENT. 8284233 has no sentence on an account closed while a
+      payout request is pending; its MLL FAQ covers a breach only (payout_after_request_survives_mll_breach,
+      D-445). The seat's timing is its own row (xfa_seat_frees_at, D-446).
+      EARLIER RECORD (2026-10-10), kept for history:
+      Closing an XFA at the trader's request is named as an option (10657969: "your options are to move to Live or
+      close your Express Funded Account") and presupposed (8284217: "You'll need to close an account before activating
+      a new one"). UNSTATED on every official page read: the mechanism (no help-centre article describes it; the
+      Practice Account page 8284134 is the only Support-closed account), the processing time, what the balance
+      becomes, and the treatment of a payout requested and not yet paid (8284233 is silent on closure at request; "Once
+      you request a Payout, the funds are transferred immediately" is its nearest sentence). The Terms of Use (last
+      updated September 21, 2026, s.8): "You may terminate your Account at any time by contacting Support." ...
+      "terminated as of the date of the confirmation email"; "the funds provided to you for Simulated Trading are
+      fictitious"; "you will not be paid any remuneration or profits based on the results of your fictitious trading"
+      -- the whole Account, not one XFA. The engine's abandon (D-329: closed at the trader's request, nothing of the
+      balance credited, a requested payout honoured, the slot freed the next day) rests on these clauses and on
+      silence: conservative on the balance, an assumption on the pending payout and the timing (D-336). Loading this
+      key raises by design; the engine's abandon reads no value from it.
+
+  payout_after_request_survives_mll_breach:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two), new row; two fetches with differently worded prompts, identical wording; re-read 2026-10-30 by rules-verifier (D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30, UNCHANGED. 8284233 ("Updated over 2 weeks ago"): "Yes. Once the Payout amount has been
+      deducted from your balance, hitting the MLL won't affect it."; "Once you request a Payout, the funds are
+      transferred immediately, allowing you to start trading again right away."; "Internal approval can take 1-3
+      business days." The page still has no sentence on a payout pending at a closure at request, and none on
+      denial or sole discretion; the review FAQ's list is unchanged. Still NOT COVERED: closure at request
+      (xfa_closure_at_request) and the Focused Trader Program's Corrective Path ("Any pending payouts are denied",
+      10551016, re-read 2026-10-30).
+      EARLIER RECORD: NEW ROW, VERIFIED 2026-10-25 (D-445), for P-09's audit F1. 8284233 ("Updated over a week ago"), FAQ "Will I
+      still get my Payout if I hit the MLL after requesting?": "Yes. Once the Payout amount has been deducted from
+      your balance, hitting the MLL won't affect it." When the deduction happens, FAQ "How does trading impact my
+      Payout request while it is being processed?": "Once you request a Payout, the funds are transferred
+      immediately, allowing you to start trading again right away." Live accounts are the stated exception:
+      "Live Accounts: Please note that after submitting a Payout request, trading should be paused until the
+      Payout has been fully processed and the funds have been deducted from the account." On an XFA a breach
+      closes the account: 8284204 (page date September 18, 2026) "Your account is permanently closed."; 8284215
+      "Your account is liquidated and closed at the end of the day."
+      SCOPE AND LIMITS. The MLL FAQ names no account type. That an XFA's payout is deducted at the request rests
+      on the general sentence and the Live-only exception, not on a sentence naming the XFA. The payout still
+      goes through the review every payout gets ("Internal approval can take 1-3 business days."; FAQ "What does
+      Topstep review before approving a Payout?" - the Payout Policy requirements, Prohibited Conduct, the Terms
+      of Use, Professional Behavior, Prohibited Trading Strategies), so the FAQ removes the breach as a reason to
+      withhold the payout, not the review. NOT COVERED: an account closed at the trader's request with a payout
+      pending (silent; see xfa_closure_at_request), and accounts closed by the firm on the Focused Trader
+      Program's Corrective Path, where 10551016 says "Any pending payouts are denied".
+      PROCESSING TIME, read the same day on 8284233, unchanged against payout_lag_days_aeropay and
+      payout_lag_days_ach (not re-dated): "Internal approval can take 1-3 business days."; Aeropay "Instant after
+      approval"; Wise and ACH "1-3 business days"; Wire/SWIFT "5-10 business days"; Prop-to-Brokerage "Same day*"
+      ("If requested by 12 pm CT"); "Processing times are estimates and exclude weekends and holidays."; "Not all
+      Aeropay Payouts deliver instantly — processing times may vary depending on review and approval steps."
+      ENGINE. lockstep credits a payout pending at an MLL breach when it arrives (P-09's audit F1); this reading
+      supports that for breaches only. No code loads this key.
+
+  xfa_seat_frees_at:
+    value: on_closure_timing_unstated
+    units: text
+    status: unverified_human_input_required
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two), new row; every page read twice with differently worded prompts; re-read 2026-10-30 by rules-verifier (D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30 (D-490 (4), D-494), STILL NOT VERIFIED, value unchanged. 8284215 (page date August 5,
+      2026): "Yes, up to 5 active at a time." / "If you pass a Trading Combine® while at the limit, the new XFA goes
+      on hold until one closes." / "Your account is liquidated and closed at the end of the day." / "Minutes after
+      paying the Activation Fee." 8284217 (September 24, 2026): "If you already have 5 active XFAs or a Live Funded
+      Account®, the button will be greyed out." / "You'll need to close an account before activating a new one." /
+      "It only takes a few minutes." 12060405 (now dated September 29, 2026): "Back2Funded-eligible XFAs do not
+      count toward your 5-account limit until the Reactivation fee is paid" / "The eligible XFA does not count
+      toward your 5-account limit during the 30-day window." / "You have 30 calendar days from account closure to
+      decide". 8284204 (September 18, 2026): "Your account is permanently closed." None says when a closure at
+      request takes effect or when the activation button returns. NEW QUALIFIER on the seat count: the Focused
+      Trader Program (10551016, August 10, 2026) limits a placed trader to "1 active $50K account at a time
+      (Trading Combine, XFA, or LFA)" (Corrective Path; on the Slowdown Path "Current active accounts can remain
+      open but limited to 1 active $50K account at a time (Trading Combine, XFA, or LFA) once closed.") -- a
+      placement collapses the five seats to one; see focused_trader_program.
+      EARLIER RECORD: NEW ROW 2026-10-25 (D-446), for P-09's audit F3. NOT VERIFIED: the help centre ties a seat to a closure and
+      never says when a closure at request takes effect, when the activation button returns, or whether a seat can
+      be refilled (or a passed Combine converted) the same evening. Verbatim: 8284215 (page date August 5, 2026),
+      FAQ "Can I have more than 1 XFA?": "Yes, up to 5 active at a time." / "If you pass a Trading Combine® while
+      at the limit, the new XFA goes on hold until one closes." FAQ "What happens if I breach the Maximum Loss
+      Limit?": "Your account is liquidated and closed at the end of the day." FAQ "How long does it take to get my
+      XFA?": "Minutes after paying the Activation Fee." / "If you pass on a Friday, your XFA won't be available
+      until markets reopen at 5 PM CT Sunday." 8284217 (page date September 24, 2026), under "Starting Balance":
+      "If you already have 5 active XFAs or a Live Funded Account®, the button will be greyed out." / "You'll need
+      to close an account before activating a new one."; and "It only takes a few minutes." 12060405 (Back2Funded,
+      "Updated over 3 weeks ago"), under "Reactivation Window": "Back2Funded-eligible XFAs do not count toward your
+      5-account limit until the Reactivation fee is paid"; FAQ "What happens if I have 5 active XFAs and one
+      becomes eligible for Back2Funded?": "The eligible XFA does not count toward your 5-account limit during the
+      30-day window." That covers an XFA closed by a rule violation before its first payout, and does not say
+      from what moment it stops counting. A reactivated account "becomes available at the start of the next
+      trading session after your purchase — not immediately." (one read; Back2Funded's own timing, not a new
+      activation's). A stale topstep.com page (express-funded-account-rules, "Last updated: June 26, 2025"; see
+      xfa_closure_at_request) counts pending accounts too: "Traders can have a maximum of 5 active or pending XFAs
+      at one time." / "If you are at the 5 active or pending XFA limit, you cannot activate a new XFA" - not a
+      verification, and "pending" is not defined there.
+      ENGINE. D-353's same-evening seat (the seat freed at the close the account ends with, the waiting pass
+      activated that evening) is the fastest reading these pages allow for a breach (closed "at the end of the
+      day"; activation in minutes) and has no support at all for a closure at request; the engine default (the
+      next day) is one session slower. P-09's audit prices the difference in its replication RC. A declared
+      assumption, not a loadable value; no code loads this key.
+
+  hold_expiry_days:
+    value: not_required_under_d34
+    units: text
+    status: verified
+    article_id: null
+    url: null
+    date_read: 2026-09-22
+    verified_by: design decision D-34, not a firm rule reading
+    note: >
+      NOT REQUIRED UNDER D-34, and therefore not an open blocker.
+      D-34 caps the campaign at 5 concurrent accounts INCLUDING Combines, so the account cap can
+      never be reached while a Combine is still running: a pass cannot queue behind a full slate
+      because the slate is bounded by the same 5. The hold queue is unreachable by construction,
+      so its expiry has no effect on any modelled outcome.
+      THIS IS A DESIGN FACT, NOT A RULE READING. The firm's behaviour is still unknown - no
+      official page states whether a held pass expires - and the question is parked in
+      PARKING_LOT.md. It becomes live again the moment D-34 is relaxed, or if a protocol is
+      considered that runs more Combines than funded slots. Any such protocol must re-open this
+      before it can be simulated.
+      The value is a sentinel rather than a number so that code reading it fails visibly if it
+      ever expects days: propedge/contract/rules.py would otherwise hand out a null.
+
+  funded_scaling_entry_tier_minis:
+    value: 2
+    units: contracts (minis; = 20 micros at 10:1)
+    status: verified
+    article_id: "8284223"
+    url: https://help.topstep.com/en/articles/8284223-what-is-the-scaling-plan
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), textual quote; re-read 2026-10-03 (text and the page's chart)
+    note: >
+      RE-READ 2026-10-03, UNCHANGED at 2. 8284223 (displayed date July 16, 2026, the same date
+      recorded on 2026-09-27): "Example — $50K XFA, 2-lot Scaling Plan: 2 Minis, OR 20 Micros, OR
+      Any combo equal to 2 Minis"; "Your XFA starts at a $0 balance"; "1 Mini = 10 Micro
+      contracts". The chart the same page embeds, viewed directly on 2026-10-03, reads "$50K
+      ACCOUNT" / "Below $1,500" / "2 Lots" (see funded_scaling_plan), so the entry tier now rests
+      on the chart's own reading as well as the worked example.
+      EARLIER RECORD (2026-09-22), kept for history:
+      The ENTRY tier only, and the only part of the scaling plan with a TEXTUAL source. Article
+      8284223, verbatim: "Example - $50K XFA, 2-lot Scaling Plan: 2 Minis, OR 20 Micros, OR Any
+      combo equal to 2 Minis." Supported by "Your XFA starts at a $0 balance" and "1 Mini = 10 Micro
+      contracts".
+      Strictly this is the article's own worked example rather than a statement that 2 is the entry
+      tier; it is recorded as verified because the example is given for a $50K XFA and the article
+      states the account starts at $0, but a reader of the chart should confirm it.
+      The rest of the ladder is UNVERIFIED - see funded_scaling_plan and DECISIONS.md D-31.
+
+  funded_scaling_plan:
+    value: "0:2,1500:3,2000:5"
+    units: balance_usd_threshold:contracts (minis; 10:1 micros)
+    status: verified
+    article_id: "8284223"
+    url: https://help.topstep.com/en/articles/8284223-what-is-the-scaling-plan
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), re-read 2026-10-03 from the chart image the page embeds, viewed directly; first read 2026-09-22 by the session from the user-supplied screenshot saved at docs/evidence/8284223_scaling_plan_2026-09-22.png
+    note: >
+      RE-READ 2026-10-03, UNCHANGED. Page 8284223 (displayed date July 16, 2026) embeds one chart,
+      alt text "XFA charts - hc.png", served from the help centre's image host
+      (downloads.intercomcdn.com/i/o/bjnr216i/2431115610/e9b4f24c46bea0fcd5c4e3d008d7/19155321446035;
+      the signed query string expires and is not recorded). The image was fetched from the src the
+      official page gives and viewed directly, not through a summary. It reads: "$50K ACCOUNT" /
+      "Account Balance" / "Below $1,500" "2 Lots" / "$1,500 - $2,000" "3 Lots" / "Above $2,000"
+      "5 Lots". The 100K and 150K panels also match the record below ("$100K ACCOUNT": "Below
+      $1,500" "3 Lots", "$1,500 - $2,000" "4 Lots", "$2,000 - $3,000" "5 Lots", "Above $3,000" "10
+      Lots"; "$150K ACCOUNT": "Below $1,500" "3 Lots", "$1,500 - $2,000" "4 Lots", "$2,000 -
+      $3,000" "5 Lots", "$3,000 - $4,500" "10 Lots", "Above $4,500" "15 Lots"). The page text still
+      gives no thresholds in words. Text re-read the same day: "Your XFA starts at a $0 balance";
+      "Your max contracts do not increase mid-session. Hit the threshold to release more buying
+      power? Wait for the next session."; and, new to the record (read twice), "Errors corrected
+      in under 10 seconds are ignored. Leave too many contracts on for 10+ seconds and your account
+      may be reviewed." The 2026-10-03 image is not saved under docs/evidence/; the 2026-09-22
+      screenshot there remains the archived copy.
+      EARLIER RECORD (2026-09-22), kept for history:
+      50K ladder, read by this session directly from the chart image:
+        Below $1,500      -> 2 Lots  (20 micros)
+        $1,500 - $2,000   -> 3 Lots  (30 micros)
+        Above $2,000      -> 5 Lots  (50 micros)
+      EVIDENCE: the screenshot is saved in the repo at docs/evidence/8284223_scaling_plan_2026-09-22.png (sha256 in
+      docs/evidence/MANIFEST.sha256), so the reading is reproducible and not a claim about a page
+      that has since changed. Chart headed "$50K ACCOUNT / Account Balance".
+      NOTE THE TOP BREAKPOINT IS $2,000, NOT $2,500. The unsourced ladder withdrawn in D-31 had it
+      at $2,500 and was wrong - which is why it was withdrawn rather than left standing as close
+      enough.
+      For reference, the same chart gives 100K (below 1500 -> 3, 1500-2000 -> 4, 2000-3000 -> 5,
+      above 3000 -> 10) and 150K (3 / 4 / 5 / 10 above 3000-4500 / 15 above 4500). Out of scope but
+      recorded so the chart does not need re-reading if account size is ever revisited.
+      Accompanying text, same page: "Your XFA starts at a $0 balance"; "As your balance grows, so
+      does your buying power"; "You're never required to trade your maximum contracts"; "Key rule:
+      Your max contracts do not increase mid-session. Hit the threshold to release more buying
+      power? Wait for the next session."
+      THE TOP OF THE 50K LADDER EQUALS THE COMBINE CAP (5), so a mature funded account is no
+      tighter than the Combine - but a fresh one, at 2, is. See DECISIONS.md D-32.
+
+  scaling_tier_after_payout:
+    value: resets_with_balance
+    units: text
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), page text read 2026-09-27 from the raw HTML (fetched twice, identical); re-read 2026-10-03 (two fetches, same wording)
+    note: >
+      RE-READ 2026-10-03, UNCHANGED, but 8284233 NOW SHOWS "Updated this week" (its displayed
+      last-updated date was 2026-09-03 when read on 2026-09-27). FAQ "How do Payouts affect my
+      Scaling Plan?", verbatim: "If a Payout reduces your balance to a lower tier, your maximum
+      contract size decreases accordingly. See the Scaling Plan." 8284223 still does not state the
+      payout case (absent in the 2026-10-03 read). Still NOT STATED on either page: whether the
+      decrease applies from the moment of the request or from the next session. What the week's
+      edit to 8284233 changed was not identified; the passages read for this key and for the
+      payout paths are the same (xfa_std_winning_days, xfa_cons_max_day_frac).
+      EARLIER RECORD (2026-09-27), kept for history:
+      PAGE-VERIFIED 2026-09-27 (T11); no longer a first-hand assertion. Article 8284233 (Topstep
+      Payout Policy), FAQ "How do Payouts affect my Scaling Plan?", verbatim: "If a Payout reduces
+      your balance to a lower tier, your maximum contract size decreases accordingly. See the
+      Scaling Plan." THE VALUE IS UNCHANGED: the tier follows the balance down after a payout, and
+      the engine already applies it (docs/audits/topstep_rule_fidelity_2026-09-27.md, "The tier
+      drops after a payout"). THE SOURCE MOVED: article_id 8284223 -> 8284233. The scaling-plan
+      page 8284223, re-read the same day (displayed last-updated date 2026-07-16), still does not
+      state the payout case; it says only that the plan sets the maximum position size "based on
+      your current account balance" and "Key rule: Your max contracts do not increase
+      mid-session." NOT STATED on either page: whether the decrease applies from the moment of the
+      request or from the next session.
+      8284233's displayed last-updated date is 2026-09-03, before T1 read it on 2026-09-22, so the
+      sentence was very probably on the page then and was missed by the summarising fetch that T1
+      used; D-35/D-53's "no official page states it" was a gap in that reading, not a change by
+      Topstep.
+      EARLIER RECORD, superseded as evidence and kept for history: "Yes it does reset the scaling
+      plan" - the user, 2026-09-22; reconfirmed first-hand by the trader on 2026-09-23 (D-53);
+      recorded with verified_by "user assertion, 2026-09-22 - NO DOCUMENT CITED" and flagged in
+      this note as the weakest entry in the ledger under D-35's evidence rule. That flag is closed.
+      CONSEQUENCE, unchanged (D-32, D-53): a payout removes up to 50% of the balance, so TAKING A
+      PAYOUT CUTS POSITION SIZE. Every leg's size follows the account's CURRENT tier and the
+      daily-risk limit is computed at the current tier, never the highest reached, so sizing and
+      payout policy are a JOINT optimisation, not two separable choices. This gives stage one's
+      buffer finding (propsim D-45) a second, mechanical cause it never modelled. See DECISIONS.md
+      D-32 and D-53.
+
+  multi_account_same_strategy:
+    value: permitted
+    units: text
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-10-03
+    verified_by: rules-verifier (stage two), spot-checked by the session; re-read 2026-10-03 by rules-verifier
+    note: >
+      RE-READ 2026-10-03, UNCHANGED: PERMITTED, and the help centre addresses the same instrument
+      across one trader's own accounts directly. 13747047 (Understanding Hedging, "Updated July 27,
+      2026"), FAQ "Can I trade the same instrument across multiple accounts?" - "Yes! You can trade
+      the same markets across different accounts. What's prohibited is holding opposite positions
+      simultaneously in a way that eliminates market risk." 8284197 (Combine Parameters), FAQ "Can
+      I use automated trading strategies?" - "You can also use a trade copier to duplicate trades
+      across multiple accounts." 8284215 (XFA Parameters, dated August 5, 2026) - "Yes, up to $750K
+      buying power using a trade copier. See What is a Trade Copier. Hedging across accounts and
+      coordinated trading with others is prohibited." 14434175 (now titled "TopstepX™", section
+      "Trade Copier"; 8284215 links to it as 14434175-topstepx#h_1f5928cd40) - "The Trade Copier
+      lets you mirror trades from a Lead account to 1 or more Follower accounts automatically — so
+      you can run the same strategy across multiple accounts without placing every order
+      manually."
+      RESTRICTIONS, re-read: one profile - 8284197 "All Trading Combines, Express Funded Accounts,
+      and Live Funded Accounts must be under 1 Topstep profile."; no opposite positions - 10296582
+      "Cross-account hedging (single-user) — holding opposite positions across multiple accounts
+      simultaneously"; no coordination with others - 10296582 "Coordinated trading — performing
+      trades in concert with others (including unconnected accounts or third parties) to pool
+      risk, hedge aggregate positions, or trade the same or opposite strategy simultaneously";
+      copier on Combines and XFAs only - 14434175 "Trade copying is only available for Trading
+      Combine® and Express Funded Account® accounts. Live Funded Account® accounts cannot use the
+      Trade Copier."; Lead sizing - "The Lead account must have the lowest Maximum Position Size
+      (MPS) of all accounts in the group."; the "$750K buying power" ceiling, still not defined on
+      any page read. NEW TO THE RECORD: 14434175 "If your Lead and Follower accounts are at
+      different Scaling Plan tiers — meaning their margin requirements differ — the Trade Copier
+      may disconnect automatically at the start of a new trading day." and "Executions are
+      mirrored — but exact fill price and timing may vary slightly due to slippage, liquidity, and
+      market conditions."; 13747047 "Hedging attempts are tracked at the Trader level." and
+      "Technical glitches and copy trading software can create temporary opposite positions — our
+      system accounts for that. But you're still fully responsible for all activity across your
+      accounts, including anything created by automated systems or third-party tools."
+      10305426 (Prohibited Trading Strategies, "Updated: June 10, 2026") is still silent on copy
+      trading, copiers and multiple accounts; 10296582 (now "Updated this week") has no copier
+      item. NOT RE-READ on 2026-10-03: the RTP trigger "Multiple accounts hit the Maximum Loss Limit
+      in one day" (13620045, last read 2026-10-01), which accounts trading the same direction make
+      more likely.
+      EARLIER RECORD (2026-09-22), kept for history:
+      PERMITTED — verified 2026-09-22. This is the T1 gate that could have collapsed the campaign model,
+      and it does not. 8284215 FAQ "Can I trade across multiple XFAs at once?" — "Yes, up to $750K
+      buying power using a trade copier. See [What is a Trade Copier]. Hedging across accounts and
+      coordinated trading with others is prohibited." 13747047 (Understanding Hedging, an article NOT in
+      stage one's id list): "Yes! You can trade the same markets across different accounts. What's
+      prohibited is holding opposite positions simultaneously in a way that eliminates market risk."
+      Topstep ships a first-party Trade Copier (14434175): "The Trade Copier lets you mirror trades from
+      a Lead account to 1 or more Follower accounts automatically — so you can run the same strategy
+      across multiple accounts without placing every order manually."
+      RESTRICTIONS, all quoted: (1) all accounts under one profile — 8284197 "All Trading Combines,
+      Express Funded Accounts, and Live Funded Accounts must be under 1 Topstep profile"; (2) no
+      opposite positions across your own accounts — 10296582 "Cross-account hedging (single-user) —
+      holding opposite positions across multiple accounts simultaneously"; (3) no coordination with
+      other people — 10296582 "Coordinated trading — performing trades in concert with others ... to
+      pool risk, hedge aggregate positions, or trade the same or opposite strategy simultaneously";
+      (4) copier unavailable on Live Funded Accounts (14434175); (5) "The Lead account must have the
+      lowest Maximum Position Size (MPS) of all accounts in the group" (14434175) — inert for a
+      homogeneous 5x50K campaign, but it means a mixed-size group trades the SMALLEST account's size;
+      (6) a "$750K buying power" ceiling applies when copying across XFAs and the term is NOT DEFINED on
+      any official page read.
+      ACCOUNT STACKING DOES NOT REACH THIS. 10305426: "Account Stacking — Repeatedly trading
+      aggressively, hitting the Maximum Loss Limit (MLL) in one account, then switching to another
+      account and repeating. The goal is to run high-risk attempts until a large win occurs." That is
+      the fail-and-repurchase pattern stage one ruled out (propsim D-34), not one genuine-edge strategy
+      run concurrently. 10305426 is silent on copy trading and multi-account replication.
+      See DECISIONS.md D-22.
+
+  payout_methods_and_fees:
+    value: "per-method; see note. US baseline Aeropay: fee $0, lag ~3 business days. Conservative US: ACH, fee $30, lag ~6"
+    units: text
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED: every cell of the method table and both processing
+      sentences read the same. 8284233 ("Updated this week"). Method / Availability / Processing
+      Time / Fee: "Prop-to-Brokerage Payouts" / "US only" / "Same day*" / "No Fee"; "Aeropay" /
+      "US banks only" / "Instant after approval" / "No Topstep fee**"; "Wise" / "China, Canada,
+      UK" / "1-3 business days" / "No Topstep fee**"; "ACH" / "US banks only" / "1-3 business
+      days" / "$30"; "Wire/SWIFT" / "International" / "5-10 business days" / "$30". Footnotes:
+      "If requested by 12 pm CT"; "No Topstep fee for Aeropay or Wise, but your bank or those
+      services may charge their own fees." "Processing times are estimates and exclude weekends
+      and holidays." / "Internal approval can take 1-3 business days." / "Not all Aeropay Payouts
+      deliver instantly — processing times may vary depending on review and approval steps." On
+      Wise, a heading "August 2026: Wise Payout Option Restored for Select Regions" and "Wise is
+      available again as a payout method for traders in China, Canada, and the United Kingdom." /
+      "Wise remains unavailable everywhere else." (not quoted in this row before; the Wise row's
+      availability cell already read "China, Canada, UK" on 2026-09-22). Also from 13350348
+      (Topstep Holiday Trading Hours, "September 18, 2026"): "Payouts are not available during
+      holiday hours." The page still states no request-to-receipt total; the lags stay derived.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22 (four differently-worded fetches, identical tables). The payout
+      collection holds only this article plus a tax article, so 8284233 is the whole official
+      record. Method | Availability | Processing time | Fee:
+        Prop-to-Brokerage | US only | "Same day*" | "No Fee"
+        Aeropay | US banks only | "Instant after approval" | "No Topstep fee**"
+        Wise | China, Canada, UK | "1-3 business days" | "No Topstep fee**"
+        ACH | US banks only | "1-3 business days" | "$30"
+        Wire/SWIFT | International | "5-10 business days" | "$30"
+        * "If requested by 12 pm CT". ** no Topstep fee, but the bank or service may charge.
+      Plus: "Processing times are estimates and exclude weekends and holidays. Internal
+      approval can take 1-3 business days."
+      THE PAGE NEVER STATES A COMBINED REQUEST-TO-RECEIPT TOTAL. It gives approval and transfer
+      as two separate stages. Any end-to-end lag is therefore DERIVED, not quoted: slow-end
+      sums are ~3 (Aeropay), ~6 (ACH), ~13 (wire) business days. Business days map ~1:1 to the
+      model's trading-day index.
+      FEE AND LAG ARE A SINGLE JOINT METHOD CHOICE. The available pairs are (fee $0, lag 3)
+      Aeropay and (fee $30, lag 6) ACH. Do NOT model ($30, 3) or ($0, 6) - neither exists.
+      payout_lag_days=0 is not supported by any bank-delivered method and must stop being the
+      default. See DECISIONS.md D-24.
+
+  payout_lag_days_aeropay:
+    value: 3
+    units: trading days (business days mapped 1:1 to the engine's day index)
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); split out of payout_methods_and_fees as a loadable value by the session 2026-09-25 (D-119); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED: both quoted stages read the same on 8284233 ("Updated this
+      week") -- "Internal approval can take 1-3 business days." and Aeropay "Instant after
+      approval" -- so the derived slow-end sum stays 3. The page's own caution stands: "Not all
+      Aeropay Payouts deliver instantly — processing times may vary depending on review and
+      approval steps."
+      EARLIER RECORD (2026-09-25), kept for history:
+      The loadable form of the Aeropay lag already recorded in payout_methods_and_fees. It is
+      DERIVED from two quoted stages on 8284233, never quoted as a total: "Internal approval
+      can take 1-3 business days" plus Aeropay "Instant after approval" gives a slow-end sum of
+      3 business days ("~3" in the note above). "Processing times are estimates and exclude
+      weekends and holidays", and business days map ~1:1 to the engine's trading-day index.
+      Paired with payout_fee = 0.0 ("No Topstep fee"): the US baseline (D-24). Consumed by
+      propedge.campaign.payout_method, which refuses to pair it with another method's fee.
+
+  payout_lag_days_ach:
+    value: 6
+    units: trading days (business days mapped 1:1 to the engine's day index)
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); split out of payout_methods_and_fees as a loadable value by the session 2026-09-25 (D-119); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED: both quoted stages read the same on 8284233 ("Updated this
+      week") -- "Internal approval can take 1-3 business days." and ACH "1-3 business days" -- so
+      the derived slow-end sum stays 6.
+      EARLIER RECORD (2026-09-25), kept for history:
+      The loadable form of the ACH lag already recorded in payout_methods_and_fees. DERIVED
+      slow-end sum: approval "1-3 business days" plus ACH transfer "1-3 business days" = 6
+      ("~6" in the note above). Paired with payout_fee_ach = 30.0: the conservative US case
+      (D-24). ($30, 3) and ($0, 6) do not exist and must not be modelled.
+
+  payout_fee_ach:
+    value: 30.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); split out of payout_fee's note as a loadable value by the session 2026-09-25 (D-119); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, UNCHANGED at $30. 8284233 ("Updated this week"): "ACH" / "US banks
+      only" / "1-3 business days" / "$30"; "Wire/SWIFT" / "International" / "5-10 business days"
+      / "$30".
+      EARLIER RECORD (2026-09-25), kept for history:
+      The loadable form of the method-specific fee recorded in payout_fee's note: "$30" for
+      ACH (and Wire/SWIFT). Paired with payout_lag_days_ach = 6. Charged inside the funded
+      engine as Rules.payout_fee when the ACH method is chosen
+      (propedge.campaign.payout_method.rules_for_method); payout_fee = 0.0 stays the Aeropay
+      baseline.
+
+  dll_offer_status:
+    value: "offered_at_combine_checkout_only; doubles_both_payout_caps; limited_time_no_published_end_date"
+    units: text
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two); re-read 2026-11-14 by rules-verifier
+    note: >
+      RE-READ 2026-11-14, VALUE UNCHANGED ON ALL THREE COUNTS: the cap-doubling election is still
+      offered, still only at Combine checkout, still doubles both caps, still "limited time" with
+      no published end date. 8284233 ("Updated this week"; two fetches with differently worded
+      prompts, identical wording): "Traders who voluntarily add a Daily Loss Limit to their
+      account unlock double per-request payout caps." / "No DLL added = current caps remain
+      unchanged."; "All Traders who make a new Trading Combine purchase and add a Daily Loss Limit
+      (DLL) at checkout" / "will receive the increased Payout cap"; table "Account" / "Path" /
+      "Current Cap" / "With DLL (new)": "$50K" "Standard" "$2,000" "$4,000"; "$50K" "Consistency"
+      "$3,000" "$6,000"; "$100K" "Standard" "$3,000" "$6,000"; "$100K" "Consistency" "$4,000"
+      "$8,000"; "$150K" "Standard" "$5,000" "$10,000"; "$150K" "Consistency" "$6,000" "$12,000";
+      FAQ: "No. Only if you already added the DLL when you purchased your Trading Combine." /
+      "Adding it at the XFA stage doesn't unlock the higher cap."; "Limited Time Offering:"; FAQ
+      "Why is this a limited-time offering, and how long will this last?" - "We're always looking
+      for new ways to reward responsible trading — this is one of them." / "Keep an eye on our
+      social channels to find out when this offer will expire and what is coming up next."
+      NOT QUOTED IN THIS ROW BEFORE (the page cannot show whether these are new): the start,
+      "Available starting at 3:30 PM CT on Tuesday, June 2nd."; and FAQ "If I already added a
+      Daily Loss Limit before this release, will I see an increased Payout cap?" - "No — the
+      increased cap is only available on new Trading Combine purchases."
+      10490293 (page date "June 30, 2026", unchanged; the amounts, the checkout sentence and the
+      Limited Time sentence read twice, the rest once): "The Daily Loss Limit (DLL) is
+      optional in the Trading Combine® and Express Funded Account® (XFA)." / "It's automatic in
+      the Live Funded Account® (LFA)."; "$50K Account: $1,000" / "$100K Account: $2,000" / "$150K
+      Account: $3,000" (rows of their own: dll_amount_50k, dll_amount_100k, dll_amount_150k);
+      "Limited Time Offering: Add a Daily Loss Limit at checkout in the Trading Combine," / "and
+      increase your Payout Cap once you pass and activate an Express Funded Account."; "Daily Loss
+      Limit at checkout is fixed (no changes later)"; "Applies to your Express Funded Account
+      after you pass"; "Triggering it is not a rule violation"; "No new trades until 5 PM CT next
+      session".
+      A DISTINCTION THE VALUE'S FIRST TERM MUST NOT BLUR: "offered_at_combine_checkout_only"
+      describes the CAP-DOUBLING election. The DLL itself can also be added elsewhere -- 10490293:
+      "You now have the option to add a Daily Loss Limit at checkout when purchasing a Trading
+      Combine" / "or activating/Reactivating an Express Funded Account."; "After purchasing, you
+      can still add a Daily Loss Limit manually through Risk Settings."; "Unlike Daily Loss Limits
+      set at purchase, manual limits can be adjusted or removed at any time" -- and none of those
+      unlocks the higher cap (8284233, above). 8284215's comparison table lists "Daily Loss Limit
+      (DLL)" as "Optional" on both paths. A second, separate incentive is on the pricing page
+      (see subscription_fee): the Responsible Trading Discount for a DLL added at purchase on a No
+      Activation Fee Combine.
+      EARLIER RECORD (2026-09-22), kept for history:
+      Verified 2026-09-22 across two official articles, every claim and every absence read
+      twice. STAGE ONE'S RECORD IS CONFIRMED, not stale, on all three counts.
+      8284233: "Traders who voluntarily add a Daily Loss Limit to their account unlock double
+      per-request payout caps. No DLL added = current caps remain unchanged." 50K: Standard
+      $2,000 -> $4,000; Consistency $3,000 -> $6,000. THE DOUBLING APPLIES TO BOTH CAPS - the
+      repo previously recorded only the Standard one.
+      Election must be at COMBINE purchase: "Only if you already added the DLL when you
+      purchased your Trading Combine. Adding it at the XFA stage doesn't unlock the higher cap."
+      Still limited-time: "Limited Time Offering" (10490293), with NO published end date -
+      "Keep an eye on our social channels to find out when this offer will expire." So the
+      doubled cap can vanish without a help-centre edit; any protocol banking on it carries
+      that risk and must be re-read before being locked.
+      10490293 (updated 2026-06-30): "The Daily Loss Limit (DLL) is optional in the Trading
+      Combine and Express Funded Account (XFA). It's automatic in the Live Funded Account."
+      Amounts 50K/100K/150K = $1,000/$2,000/$3,000. Triggering it is not a violation.
+      No official page states any DLL interaction with position size or the Scaling Plan
+      (absence confirmed across three articles).
+      NOT YET MODELLED: the engine has no dll_elected switch, so neither the doubled caps nor
+      the $1,000/day hard stop can be represented. The DLL is a protocol lever - and a cheap
+      one - but its cost (a truncated daily loss distribution) must be modelled with its
+      benefit. See DECISIONS.md D-26.
+
+  # ----------------------------------------------- conduct (not numeric; gating)
+  permitted_products:
+    value: all_cme_group_products
+    units: text
+    status: verified
+    article_id: '8284206'
+    url: https://help.topstep.com/en/articles/8284206-when-and-what-products-can-i-trade
+    date_read: 2026-10-03
+    verified_by: Claude (stage two), read from the page text on 2026-09-22; re-read 2026-10-03 by rules-verifier
+    note: 'RE-READ 2026-10-03, VALUE UNCHANGED, AND A FLATTEN TIME THE RECORD DID NOT CARRY. Page
+      "When and What Products Can I Trade?", date shown July 13, 2026 (before the 2026-09-22 read,
+      so not a change by Topstep). Verbatim: "Every tradeable CME Group product, with permitted
+      hours for the Trading Combine and Funded Accounts."; "All positions must be closed by 3:10 PM
+      CT every weekday."; "You can resume trading at 5:00 PM CT."; "No swing trading. No Forex.";
+      "No. Topstep is a Futures-only program."; "All open positions and pending orders begin to
+      automatically cancel at 3:10 CST." (the page writes CST in this one sentence, CT elsewhere);
+      "Topstep does not permit holding positions from one session to the next."; "Sunday open 5:00
+      PM CT"; "Weekday reopen 5:00 PM CT"; "Friday close 3:10 PM CT (closed till Sunday at 5:00
+      PM)". NEW TO THE RECORD, read twice with differently worded prompts: "Avoid opening new
+      positions after 3:08 PM CT — Risk Managers begin flattening at that time." followed by
+      "It''s still your responsibility to be flat by 3:10 PM CT." Also: "If you''re trading a
+      product with an earlier daily close than 3:10 PM CT, you must exit before that product''s
+      close." CONSEQUENCE: flatten_ct "15:10" (config/instruments.yaml and the maps) is the
+      deadline, but the firm''s Risk Managers begin flattening at 15:08 CT, so a position still
+      open after 15:08 can be closed by the firm before 15:10. The page words 3:08 as advice
+      ("Avoid opening new positions"), not a prohibition. Not modelled. 8284197 corroborates the
+      day: "The trading day runs from 5:00 PM CT through 3:10 PM CT the next calendar day."
+
+      EARLIER RECORD (2026-09-22), kept for history: Read 2026-09-22 for the multi-market lever (D-37). The page permits the
+      CME Group product set, so ZN, CL, GC and 6E are as permitted as ES and NQ -
+      the pool is not restricted to the index complex. Two verbatim constraints bind
+      the design: "All positions must be closed by 3:10 PM CT every weekday. You can
+      resume trading at 5:00 PM CT" - which is the 15:10 CT flatten already in
+      config/instruments.yaml - and "No swing trading. No Forex.", which excludes
+      spot FX but NOT the Euro FX FUTURES contract (6E), a CME Group product. That
+      distinction is easy to get backwards and is recorded here deliberately. What
+      this rule does NOT establish: tick sizes, tick values or electronic history
+      for any of the four candidates. Those are in config/instruments.yaml under
+      candidate_instruments, and are UNVERIFIED.
+
+      '
+
+  cross_account_hedging:
+    value: prohibited
+    units: text
+    status: verified
+    article_id: '13747047'
+    url: https://help.topstep.com/en/articles/13747047
+    date_read: 2026-10-30
+    verified_by: Claude (stage two), read from the page text on 2026-09-23; re-read 2026-10-03 by rules-verifier (three fetches); re-read 2026-10-30 by rules-verifier (two fetches)
+    note: 'RE-READ 2026-10-30, UNCHANGED (page date still July 27, 2026): "Cross-account hedging is prohibited
+      at Topstep."; "Opposing positions are prohibited even if the overlap is brief or unintentional.";
+      "Accounts closed for hedging violations are not eligible for payouts, and any associated profits cannot
+      be withdrawn."; "Confirmed hedging violations are final and not eligible for appeal." NEW TO THE RECORD,
+      under "Best Practices": "Trade each account independently based on your own analysis" / "Don''t
+      coordinate positions across accounts (or other traders) to offset risk"; under "How Topstep Detects
+      Hedging": "We use advanced monitoring systems to identify hedging patterns across your accounts." /
+      "Position Timing: Are opposite positions opened and closed in coordinated patterns?" / "Position Size:
+      Are positions sized to offset each other''s risk?" / "Duration: How long are opposite positions held
+      simultaneously?" / "Intent: Does the pattern suggest intentional risk elimination rather than
+      independent trading?"
+
+      EARLIER RECORD: RE-READ 2026-10-03, UNCHANGED. Page "Understanding Hedging" (13747047), "Updated July
+      27, 2026" (before the 2026-09-23 read). Verbatim: "Cross-account hedging is prohibited at
+      Topstep."; "Cross-account hedging means simultaneously going long and short the same or
+      correlated instrument across multiple accounts"; "Opposing positions are prohibited even if
+      the overlap is brief or unintentional."; "Accounts closed for hedging violations are not
+      eligible for payouts, and any associated profits cannot be withdrawn."; "Confirmed hedging
+      violations are final and not eligible for appeal". NEW TO THE RECORD: FAQ "Are hedging
+      attempts tracked at the account level or trader level?" - "Hedging attempts are tracked at
+      the Trader level."; and "Technical glitches and copy trading software can create temporary
+      opposite positions — our system accounts for that. But you''re still fully responsible for
+      all activity across your accounts, including anything created by automated systems or
+      third-party tools." The same page answers the same-direction question (FAQ "Can I trade the
+      same instrument across multiple accounts?"); that is recorded under
+      multi_account_same_strategy.
+
+      EARLIER RECORD (2026-09-23), kept for history: Page "Understanding Hedging", read 2026-09-23. Verbatim: "Cross-account
+      hedging is prohibited at Topstep", defined as "simultaneously going long and
+      short the same or correlated instrument across multiple accounts". The sentence
+      that sets the engineering requirement: "Opposing positions are prohibited even
+      if the overlap is brief or unintentional." BRIEF AND UNINTENTIONAL ARE BOTH
+      NAMED, so this cannot be treated as a conduct guideline to be honoured on average
+      - it is a hard invariant that must hold at every instant, including during order
+      transit. Consequences escalate: first violation gives a warning window to un-hedge,
+      then automatic liquidation of the hedged positions and an account flag; repeat
+      or excessive violations bring immediate liquidation and a Temporary Hedging
+      Violation barring trading for the rest of the day; "after numerous warnings,
+      your account may be permanently closed without further notice". And the part
+      that makes it a campaign-level risk rather than a per-trade one: "Accounts closed
+      for hedging violations are not eligible for payouts, and any associated profits
+      cannot be withdrawn", and such accounts "cannot be reopened or reinstated". Note
+      "or correlated instrument" - the prohibition is NOT limited to the identical
+      contract, so ES against MES, or ES against NQ, is in scope. See DECISIONS.md
+      D-55 for the rule that guarantees compliance by construction.
+      '
+
+  trade_copier_own_accounts:
+    value: permitted
+    units: text
+    status: verified
+    article_id: "14434175"
+    url: https://help.topstep.com/en/articles/14434175-topstepx#h_1f5928cd40
+    date_read: 2026-10-10
+    verified_by: rules-verifier (stage two), report only; recorded by the session under D-336
+    note: >
+      Topstep's own Trade Copier, by name: 14434175 "The Trade Copier lets you mirror trades from a Lead account to 1
+      or more Follower accounts automatically -- so you can run the same strategy across multiple accounts without
+      placing every order manually."; "Trade copying is only available for Trading Combine and Express Funded Account
+      accounts. Live Funded Account accounts cannot use the Trade Copier."; "The Lead account must have the lowest
+      Maximum Position Size (MPS) of all accounts in the group."; "When a Payout request is submitted, Follower
+      accounts are automatically unlinked."; "If the Lead hits its Daily Loss Limit or is auto-liquidated, all
+      Follower accounts are flattened with it". 8284197: "You can also use a trade copier to duplicate trades across
+      multiple accounts." 8284215: "Can I trade across multiple XFAs at once? Yes, up to $750K buying power using a
+      trade copier ... Hedging across accounts and coordinated trading with others is prohibited." 13747047: "you're
+      still fully responsible for all activity across your accounts, including anything created by automated systems
+      or third-party tools." Agrees with multi_account_same_strategy (permitted, 2026-10-03). D-157's rule that the
+      five accounts carry different trades is therefore the project's design choice, not the firm's; "$750K buying
+      power" is undefined on any page read.
+
+  cross_account_opposite_positions:
+    value: prohibited
+    units: text
+    status: verified
+    article_id: "13747047"
+    url: https://help.topstep.com/en/articles/13747047-understanding-hedging
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two), report only; recorded by the session under D-336; re-read 2026-10-30 by rules-verifier (two fetches)
+    note: >
+      RE-READ 2026-10-30, UNCHANGED (13747047, page date July 27, 2026): the definition "-- such as MES/ES,
+      MNQ/NQ."; the FAQ "Yes! You can trade the same markets across different accounts." / "What's prohibited is
+      holding opposite positions simultaneously in a way that eliminates market risk."; "Hedging attempts are
+      tracked at the Trader level." New to the record: "Trade each account independently based on your own
+      analysis" / "Don't coordinate positions across accounts (or other traders) to offset risk", and the detection
+      criteria (timing, size, duration, intent) quoted under cross_account_hedging. Still UNSTATED: same-direction
+      timing or rotation across one's own accounts. 10296582 re-read the same day: "Cross-account hedging
+      (single-user)" and "Coordinated trading" items unchanged.
+      EARLIER RECORD: Re-read 2026-10-10 (the cross_account_hedging row stands; this row carries the exact scope for a single
+      trader's accounts). 13747047 ("Updated: July 27, 2026"): "Cross-account hedging means simultaneously going long
+      and short the same or correlated instrument across multiple accounts -- such as MES/ES, MNQ/NQ."; FAQ: "Can I
+      trade the same instrument across multiple accounts? Yes! You can trade the same markets across different
+      accounts. What's prohibited is holding opposite positions simultaneously in a way that eliminates market
+      risk."; "Hedging attempts are tracked at the Trader level."; the enforcement ladder (real-time warning, same-day
+      repeat liquidation, acknowledgment, immediate liquidation, suspension, permanent closure); violations not
+      appealable; profits of a closed account forfeited. 10296582: "Cross-account hedging (single-user) -- holding
+      opposite positions across multiple accounts simultaneously"; "Coordinated trading -- performing trades in
+      concert with others". Terms of Use s.27 (September 21, 2026): "In concert with others, including between
+      unconnected accounts and third parties, performing the same trading strategy (i.e., performing the same trades
+      in the same time increments), opposite strategy, or other activity meant to pool or hedge risk"; and, for the
+      trader alone, "Performing, alone or in concert with any other persons, including between connected accounts ...
+      trades, or combinations of trades, the purpose of which is to manipulate, abuse, or give User an unfair
+      advantage", with the sole-discretion clause (tier 3, D-145). UNSTATED: the timing of same-direction trades
+      across one's own accounts; sequential, non-overlapping opposite positions. D-55's compliance by construction
+      covered the engines of its day; FV3's lockstep router hands each trigger to the longest-waiting able account and
+      has no cross-account opposite-position rule. Measured on run v11's gate log (development data): zero overlapping
+      trades at every exit up to 1.5R, and 18 overlapping opposite-side pairs at the 3R exits (36 of 1,676 trades,
+      18 of 988 days); the Studio's count on the v11 mirror across every R (docs/mirrors/
+      fv3_portfolio_v11_verdict_opposite_overlap.md and _point_, Studio repository): about three trading days in a
+      hundred carry an opposite-side overlap -- per path 15 days of 504 (p90 20, max 29), 19 pairs, 34 account-days,
+      on every path -- almost always a funded 3R trade still open when a later signal fires the other way on another
+      account (1.5R x 3R and 1R x 3R the common pairs). The routing rule is built with the next candidate's engine
+      change (D-336).
+
+  combine_min_trading_days:
+    value: none_stated
+    units: text
+    status: verified
+    article_id: "8284197"
+    url: https://help.topstep.com/en/articles/8284197-trading-combine-parameters
+    date_read: 2026-10-10
+    verified_by: rules-verifier (stage two), report only; recorded by the session under D-336
+    note: >
+      No official page states a minimum number of trading days for the 50K Trading Combine (8284197, 8284208,
+      8284121, 8284099 read; "Minimum Trading Days" appears on the help centre only as a Topstep Labs parameter,
+      15520357, value "None"; the "10 Active Trading Days" of 11748475 governs the Live Funded Account's risk
+      expansion, not the Combine). The only floor is the one the consistency rule implies and the page states:
+      8284197 "Can I pass the Trading Combine in one day? No. Big spike days don't build funded traders, consistency
+      does. You can pass in as few as two days, but keep your best day below 55% of your Profit Target."; 8284208
+      "You can pass in as few as 2 days"; 8284121 "No time limit for passing." Whether a minimum-days rule once
+      existed and was removed is unverified (no page says so). The engine's consistency-cap exits (D-313) already
+      impose the two-day floor.
+
+  combine_consistency_boundary_note:
+    value: at_or_below
+    units: text
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-10-10
+    verified_by: rules-verifier (stage two), report only; recorded by the session under D-336
+    note: >
+      Two wording differences between the official pages, with the engine's comparison stated: (1) the boundary --
+      8284208 "Your single best day of profit must stay at or below 55% of your Profit Target" and "55% is a hard
+      line. It is not rounded, and there is no buffer." and "as long as no single day exceeds 55%", against 8284197
+      "your best single day should stay below 55% of your Profit Target" -- a best day at exactly 55.000 % is met under
+      8284208 and not under 8284197; (2) the denominator -- 8284208 uses "55% of your Profit Target" and "55% of your
+      total profit" interchangeably ("Best Day Profit / Total Profit = Best Day %"; "Best Day / 0.55 = Total Profit
+      Needed"), 8284197 the Profit Target only; they coincide only when total profit equals the target at the pass.
+      Values unchanged: 55 % Combine, $3,000 target on 50K, the 3:10 PM CT lock, "Losses don't reset your best day";
+      XFA Consistency path 40 % not rounded, "A minimum of 3 trading days with at least 1 trade per day", the
+      calculation reset to $0 after a payout request. THE ENGINE applies combine_consistency_max_day_frac (0.55) as
+      8284208 reads: the effective target is max(profit target, best day / 0.55) (propedge/campaign/lockstep.py,
+      CombineAccount.need_to_pass, passes, day_allowance), so a best day at exactly 55 % of the target raises nothing
+      (at-or-below), and the denominator is the effective profit target, which equals total profit at the pass.
+
+  prohibited_trading_strategies:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "10305426"
+    url: https://help.topstep.com/en/articles/10305426
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two); re-read 2026-10-30 by rules-verifier (two fetches, D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30, UNCHANGED (page date still June 10, 2026). Account Stacking, verbatim: "Repeatedly
+      trading aggressively, hitting the Maximum Loss Limit (MLL) in one account," / "then switching to another
+      account and repeating." / "The goal is to run high-risk attempts until a large win occurs." / "This exploits
+      risk parameters and is not permitted." Consequence sentences on the page: "Exploiting the simulator will get
+      you removed from the program."; "We retain the right to reject profit claims if abuse is suspected."; framing
+      "These aren't gray areas — they're hard stops." No sentence on gambling, recycling accounts or repurchasing
+      Combines; no number of breaches or window. The bold-funded, breach-and-repurchase pattern of D-490 (4)/D-494
+      matches Account Stacking's words ("hitting the Maximum Loss Limit (MLL) in one account, then switching to
+      another account and repeating") whenever its funded play is aggressive; the page's defining element is the
+      intent ("run high-risk attempts until a large win occurs").
+      EARLIER RECORD: Re-read 2026-09-22; page last updated 2026-06-10, so UNCHANGED since stage one - but stage
+      one's capture was PARTIAL. Seven named strategies: Account Stacking ("Repeatedly trading
+      aggressively, hitting the Maximum Loss Limit (MLL) in one account, then switching to another
+      account and repeating"); Intentionally Depleting a Live Funded Account; Violating the Terms
+      of Use; Using Unfair Technology ("software, AI, ultra-high speed systems, or mass data entry
+      that manipulates, abuses, or provides an unfair advantage"); Trading Outside Real Market
+      Behavior; Trading Outside the Best Bid or Offer; and Trading Maximum Position Size into Major
+      News Events. SIM-fill examples include two the repo did not carry: "Running scalping
+      algorithms designed to exploit unrealistic SIM fills" and "Using tight brackets or
+      auto-breakeven to take advantage of favorable SIM fills" - both are direct constraints on
+      candidate design. CORRECTION: "hard stops" is the page's framing ("These aren't gray areas -
+      they're hard stops"), NOT a prohibited item; stage one's note mischaracterised it.
+      The page is SILENT on copy trading, trade copiers and account counts (absence confirmed twice).
+
+  prohibited_conduct:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "10296582"
+    url: https://help.topstep.com/en/articles/10296582
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two); re-read 2026-10-30 by rules-verifier (two fetches, D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30, the passages below UNCHANGED (page "Updated over a month ago"). "Excessive purchases of
+      Trading Combines or Resets"; "Account stacking — repeatedly hitting the Maximum Loss Limit in one account and
+      switching to another" / "to repeat high-risk attempts"; "Any other conduct that Topstep determines, at its
+      sole discretion, is uncommercial, games the market," / "is not a viable strategy, or is not responsible
+      trading"; "Possible responses to a Prohibited Conduct violation:" "Warning" / "Deletion of the impacted
+      trading day" / "Account Reset" / "Permanent account closure" / "Delay or denial of a Payout request";
+      "Violations are reviewed case-by-case based on severity and history."; "Ultimately, the action Topstep takes
+      will depend on the infractions severity and your prior history (or lack thereof)." No threshold, count or
+      window for "excessive" or for stacking. Terms of Use (September 21, 2026), re-read the same day: s.27 "If
+      Topstep identifies trading activity that, in its sole discretion, relates to Prohibited Conduct, Topstep
+      reserves the right to, in its sole discretion, delete the trading day and all profits, or restart or close
+      the Account."; "or otherwise deemed to have engaged in other Prohibited Conduct (defined below) you will not
+      be entitled to receive any withdrawals from any other account maintained with Topstep, all of which will be
+      forfeited and closed immediately."; s.3 "if you place an unusually large number of orders for the Services
+      within an unreasonably short period of time, as determined in the sole discretion of Topstep, we reserve the
+      right to suspend any further orders of the Services by you." The s.27 forfeiture reaches every account, not
+      only the offending one -- heavier than tier 3's per-payout denial pricing (D-145, D-234).
+      EARLIER RECORD: Re-read 2026-09-22; unchanged (page "Updated over a week ago", i.e. on or before ~2026-09-15).
+      Stage one captured 2 of 19 items. New to the record and relevant here: "Excessive purchases
+      of Trading Combines or Resets" (a SECOND, independent basis for the no-fail-and-repurchase
+      guardrail, not requiring the aggressive-trading element of account stacking); "Coordinated
+      trading - performing trades in concert with others..."; "Cross-account hedging (single-user)
+      - holding opposite positions across multiple accounts simultaneously"; "Holding a position
+      within 2% of a product's price lock limit" (NOT modelled anywhere in this repo). Catch-all
+      wording UNCHANGED: "Any other conduct that Topstep determines, at its sole discretion, is
+      uncommercial, games the market, is not a viable strategy, or is not responsible trading."
+      SILENT on copiers, bots and account counts (absence confirmed twice).
+
+  responsible_trading_program:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "13620045"
+    url: https://help.topstep.com/en/articles/13620045
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two); re-read 2026-10-01, page text fetched three times (bare-id URL twice with differently worded prompts, slugged URL once cache-busted), identical wording each time; re-read 2026-10-30 by rules-verifier (two fetches, D-490 (4), D-494)
+    note: >
+      RE-READ 2026-10-30. THE PAGE WAS EDITED AGAIN AFTER 2026-10-01 (it shows "Updated over 2 weeks ago"; on
+      2026-10-01 it showed "Updated today"). Re-read verbatim and UNCHANGED: the six triggers ("Multiple accounts
+      hit the Maximum Loss Limit in one day"; "You max position a majority of your trades"; "You don’t keep losers
+      smaller than winners"; "You don’t use stops"; "You go full port or trade on tilt, FOMO, or revenge"; "You
+      disrespect your daily limits"); "50K accounts = -$1,000"; the warning FAQ in full; "How long does RTP last?"
+      in full; "Your existing Standard XFA account is unaffected." / "Any new XFAs created during RTP will be
+      Consistency XFA only"; the FTP/RTP account-limit sentences; "a Trader may be moved from RTP to FTP if they
+      continue to violate our Trader Pledge" / "or carry out the other prohibited trading strategies outlined
+      here."; "Traders in RTP can request payouts of up to $6,000 every 3 trading days"; the Live-exit sentence.
+      CHANGED WORDING (no change to the modelled consequence): "Any Standard Trading Combine subscription started
+      before RTP placement will remain as a Standard Trading Combine," / "and No Activation Fee Trading Combines
+      will remain as No Activation Fee Trading Combines." / "If passed, the Trading Combine may be activated as
+      either a Standard XFA or Consistency XFA." Not previously quoted: "In fact, compared to the prior Focused
+      Trader Program, RTP allows more flexibility, not less."; "Yes, Traders in RTP can Reactivate their Express
+      Funded Account using our Back2Funded option." Trigger 1 is still undefined (no count, no day definition).
+      10406542 ("What is Responsible Trading?", August 13, 2026), re-read: the RTP list unchanged ("Hit the Maximum
+      Loss Limit on multiple accounts in 1 day"; "Max position the majority of your trades"; "Let losers run bigger
+      than winners"; "Trade without stops"; "Go full port, trade on tilt, FOMO, or revenge"; "Disrespect your daily
+      limits"); in the page's Do's and Don'ts list, under No: "Use MLL as a stop loss"; "Maximum position size is a
+      tool, not a default setting."; under "A few things that'll get you flagged:" the first item is "Excessive
+      purchases of Trading Combines® or Resets". "Use MLL as a stop loss" is a Don't, not a placement trigger -- but
+      it names the bold-funded play of D-490 (4)/D-494 directly.
+      EARLIER RECORD: RE-READ 2026-10-01 (D-218 (A), after the RTP-trigger diagnostic; D-219). THE PAGE WAS EDITED
+      AFTER THE LAST READ: on 2026-10-01 it shows "Updated today"; on 2026-09-27 it showed a
+      last-updated date of 2026-07-21. Every passage quoted on 2026-09-22/27 is still on the page
+      word for word (UNCHANGED, below). The page ALSO carries passages that no record in this
+      repository quotes (NEW 1-5). The page cannot show whether they came in the latest edit or
+      were there and went unrecorded. This read went through the fetch tool's page-to-text
+      conversion (three fetches), not the raw HTML.
+      NEW 1 - HOW RTP ENDS. FAQ "How long does RTP last?", verbatim: "There's no set timeline — it
+      depends on you. To move through the Responsible Trader Program, here's what needs to happen:"
+      / "1. Get to the Live Program. First, you need to qualify and start trading in a real, Live
+      Funded Account (LFA)." / "2. Make $10,000 in profit in your Live Funded Account. Once you're
+      live, you build that Live Funded Account's balance by $10,000 in profit. This profit must come
+      from trading in the Live Funded Account itself, not from a Trading Combine or an Express Funded
+      Account. How fast you reach this depends on how consistent and disciplined your trading is." /
+      "3. Once you reach Live with $10K in profit, you'll be moved out of RTP." The page names no
+      other way out: no course, no time period, no count of days or trades, no review on request and
+      no support contact.
+      NEW 2 - AFTER REMOVAL. "If you're removed from RTP with an active Consistency XFA:" - "Your
+      Consistency XFA account stays unchanged" / "Going forward, you can choose a Standard or
+      Consistency XFA for new accounts". NOT STATED: whether Combines bought after removal carry the
+      DLL. The page states the DLL only "While in the Responsible Trading Program".
+      NEW 3 - LIVE AND RTP. The page says (after a warning-sign icon) "Please note: Traders moved from
+      the Live program voluntarily or due to the account breaching the Loss Limit and closing may be
+      placed in the Responsible Trading Program (RTP)." The same sentence is on 10657969 (Live Funded
+      Account Parameters, which also shows "Updated today" on 2026-10-01; read twice). That page
+      also says: "When the call-up comes, all Express Funded Accounts (XFA) close."; "The restriction
+      is only on activation — a passed Trading Combine cannot be activated into an Express Funded
+      Account while your Live Funded Account is active."; "Once the Risk Team determines you're
+      ready, your options are to move to Live or close your Express Funded Account." WHAT THIS MEANS
+      HERE: the only published exit runs through a Live Funded Account. The Risk Team decides when a
+      trader is ready for one, it closes every XFA when it comes, and no XFA can be activated while
+      it is active. So in a campaign of XFAs with no Live leg, RTP placement lasts to the end of the
+      campaign. The engine's consequence stands, but the reason it gives ("the completion criteria
+      are not published", lockstep.py ConductModel) is no longer true.
+      NEW 4 - PLACEMENT FOLLOWS A REVIEW. The triggers are introduced with "You may need the
+      Responsible Trading Program if:". FAQ "Will I always receive a warning before being put in
+      RTP?", verbatim: "While warnings will often be sent out first, Topstep reserves the right to
+      send Traders directly to RTP based on the severity of the violation. Traders are only placed
+      into RTP after thorough reviews from our Risk Team. Trading activity is monitored over time, and
+      placement occurs only if we continue to see patterns that suggest unsustainable or high-risk
+      behavior. If you're put into RTP, you will be notified directly via email." The page publishes
+      no threshold, count or time window. Placing a trader the next day after a single trigger day is
+      the strictest reading the page allows (direct placement "based on the severity of the
+      violation"). It is not the process the page describes as usual.
+      NEW 5 - ESCALATION AND ACCOUNT COUNT. "Under the Focused Trader Program, Traders are limited to
+      one Express Funded Account at a time. Under the Responsible Trading Program, Traders may trade
+      up to five Express Funded Accounts while following a consistency requirement during payout
+      periods." / "However, a Trader may be moved from RTP to FTP if they continue to violate our
+      Trader Pledge or carry out the other prohibited trading strategies outlined here." The FTP is
+      not modelled.
+      SCOPE IS PER TRADER. The trader is the one placed: "you may be placed in the Responsible
+      Trading Program (RTP)"; "Traders are only placed into RTP after thorough reviews"; "If you're
+      put into RTP, you will be notified directly via email". The consequences attach to every new
+      account: "All new Trading Combines® and XFAs automatically get a Daily Loss Limit (DLL):".
+      Purchases FAQ: "You can purchase any size and type of Trading Combine — there's no limit on how
+      many you can hold. Each one will automatically have a Daily Loss Limit. For Express Funded
+      Accounts, there's an additional restriction: once you pass a TC while in RTP, you'll be placed
+      on the Consistency path rather than Standard." The page does not say whether the per-account
+      triggers (2-6) are judged per account or across all the trader's accounts.
+      TRIGGER 1 IS NOT DEFINED. 13620045 says "Multiple accounts hit the Maximum Loss Limit in one
+      day". 10406542 ("What is Responsible Trading?", dated August 13, 2026; read twice) says "Hit
+      the Maximum Loss Limit on multiple accounts in 1 day". Neither page says how many accounts
+      "multiple" means, whether "day" is the trading day or the calendar day, or whether Combines and
+      XFAs are counted together. The engine counts two or more accounts of either kind in one
+      engine day. That is an assumption (D-145), not a reading.
+      TRIGGER 3 IS WORDED TWO WAYS. 13620045 says "You don’t keep losers smaller than winners".
+      10406542 says "Let losers run bigger than winners". The two differ when losers equal winners,
+      as in a 1:1 bracket: the trigger fires under the first wording but not the second. The engine
+      follows the first. 10406542's own sentence is "If we see habits that won't hold up in Live
+      markets, we'll put you on the Responsible Trading Program."
+      UNCHANGED SINCE 2026-09-22/27, re-read verbatim on 2026-10-01. Under "Responsible Trading
+      Program Parameters" / "While in the Responsible Trading Program:" - "All new Trading Combines®
+      and XFAs automatically get a Daily Loss Limit (DLL):" / "50K accounts = -$1,000" (also "100K
+      accounts = -$2,000", "150K accounts = -$3,000"); "Pass a Trading Combine®? You'll be limited to
+      Express Funded Account (XFA) Consistency — best day must stay under 40% of total profits per
+      Payout period"; "Standard XFA is unavailable until RTP is completed". Under "If you’re placed
+      into the RTP with an active Trading Combine:" - "Any Standard Trading Combine subscription
+      started before RTP placement will remain as a Standard Trading Combine. If passed, it may be
+      activated as either a Standard XFA or Consistency XFA." / "If Reset, the new Trading Combine
+      will follow RTP rules — it will be a Consistency Trading Combine account with a Daily Loss
+      Limit (DLL) and will follow this path if the account is passed." Under "If you're placed into
+      the RTP with an active Standard XFA:" - "Your existing Standard XFA account is unaffected." /
+      "Any new XFAs created during RTP will be Consistency XFA only" / "XFAs activated from Trading
+      Combines purchased before your RTP placement can be Standard or Consistency with a Daily Loss
+      Limit." On payouts: "Traders in RTP can request payouts of up to $6,000 every 3 trading days,
+      provided consistency requirements are met." On Back2Funded: "The Reactivated Express Funded
+      Account account will follow RTP rules and will be created on the Consistency Path with a Daily
+      Loss Limit, regardless of if the original account was purchased before or after RTP
+      placement." The SIX placement triggers, verbatim: "Multiple accounts hit the Maximum Loss Limit
+      in one day"; "You max position a majority of your trades"; "You don’t keep losers smaller than
+      winners"; "You don’t use stops"; "You go full port or trade on tilt, FOMO, or revenge"; "You
+      disrespect your daily limits".
+      RELATED PAGES READ 2026-10-01. 10490293 (Daily Loss Limit, dated June 30, 2026) says "$50K
+      Account: $1,000" and, on hitting the limit, "Account stays eligible for funding. Resume
+      tomorrow."; it does not mention RTP. 8284215 (XFA Parameters) says "At activation, you choose
+      your Payout path: Standard or Consistency." and "Once you select XFA Consistency or Standard,
+      that choice cannot be changed either."; it does not mention RTP. 8284197 (Combine Parameters,
+      "Updated over a week ago") does not mention a "Consistency Trading Combine", a "Standard
+      Trading Combine" or RTP. The term "Consistency Trading Combine" appears only on 13620045,
+      where it means a Combine with the RTP DLL whose pass leads to the Consistency path.
+      THE SCOPE, AS THE PAGE STATES IT (unchanged from 2026-09-27). (1) The -$1,000 DLL (50K) goes on
+      every Combine bought during RTP, on a Combine RESET during RTP, on EVERY XFA activated during
+      RTP (including one activated from a Combine bought before placement) and on a Back2Funded
+      reactivation during RTP. (2) XFAs from Combines bought or reset during RTP are Consistency-only.
+      A Combine bought BEFORE placement stays a Standard Combine and may be activated as a Standard
+      OR a Consistency XFA, with a DLL (D-174). (3) A Standard XFA already active at placement "is
+      unaffected". STILL NOT STATED: whether a Combine bought before placement carries a DLL while it
+      is still a Combine, and what happens to a Consistency XFA already active at placement.
+      TRIGGER 1 IS A CAMPAIGN-DESIGN FINDING (unchanged). Accounts that lose together can hit the MLL
+      on the same day, which is the named trigger. The consequence is not closure but RTP placement,
+      which costs in the currency the stage measures: a -$1,000 DLL on 50K, Consistency-path-only new
+      XFAs, and no Standard XFA until RTP is completed, which for an XFA campaign means never (NEW 1,
+      NEW 3). Trigger 2 gives the carried guardrail 'risk per position well below the maximum' an
+      official citation. See DECISIONS.md D-27, D-218 and D-219.
+
+  focused_trader_program:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "10551016"
+    url: https://help.topstep.com/en/articles/10551016-what-is-the-focused-trader-program
+    date_read: 2026-10-30
+    verified_by: rules-verifier (stage two), new row 2026-10-30 (D-490 (4), D-494); four fetches with differently worded prompts, identical wording
+    note: >
+      NEW ROW 2026-10-30. The program exists and its triggers and consequences are stated; NO trigger has a
+      published number, threshold or time window ("excessive", "many", "short period", "multiple" are undefined on
+      the page). Cited before this row by D-447 and D-477 (F4) from the 2026-10-25 read; the quotes below are
+      today's. Page date "August 10, 2026". Opening: "The Focused Trader Program (FTP) resets your approach and
+      helps you build the habits needed" / "to trade consistently and sustainably."
+      CORRECTIVE PATH. "This path is for Traders who haven't followed Topstep's Terms of Use after multiple
+      warnings." Reasons: "Hedging accounts against each other to gain funding"; "Excessive recycling of Trading
+      Combines® or XFAs"; "Losing multiple LFAs"; "Behavior that goes against the Trader Pledge or real-world market
+      discipline". What happens: "Immediately placed into the Focused Trader Program (outlined above)"; "All current
+      accounts (Live, Express Funded Account, Trading Combine) are closed"; "No refunds are issued"; "Any pending
+      payouts are denied"; "Any pending Express Funded Accounts or banked resets are removed (if applicable)".
+      Account limit: "1 active $50K account at a time (Trading Combine, XFA, or LFA)". Time requirement: "6
+      months". To request a Risk Team review: "6 months of consistent trading + $10K net LFA profits, or good
+      trading behavior".
+      SLOWDOWN PATH. "This path is for Traders who follow the Terms of Use but haven't found success in the LFA" /
+      "or show patterns of unhealthy trading." Reasons: "Excessive Resets and Trading Combine purchases";
+      "Activating and losing many Express Funded Accounts in a short period of time"; "Overtrading"; "Other
+      unsustainable habits". What happens: "You may continue trading in your existing active accounts"; "You cannot
+      purchase new Trading Combines, Resets, or B2F Reactivations"; "If all accounts close or expire, you move into
+      the full FTP structure". Account limit: "Current active accounts can remain open but limited to 1 active $50K
+      account at a time (Trading Combine, XFA, or LFA) once closed." Time requirement: "None". Review: "$10K net
+      LFA profits or good trading behavior".
+      BOTH. "For both paths, Risk Team review does not guarantee approval to rejoin the regular program or purchase
+      multiple accounts." No notification or appeal process is described on the page. 13620045 (re-read the same
+      day): "Under the Focused Trader Program, Traders are limited to one Express Funded Account at a time." /
+      "However, a Trader may be moved from RTP to FTP if they continue to violate our Trader Pledge" / "or carry out
+      the other prohibited trading strategies outlined here."
+      WHAT IT MEANS HERE (D-490 (4), D-494). A campaign that buys dozens of Combines a month across five seats and
+      ends most funded accounts by breach or closure at request matches the Slowdown Path's first two reasons in
+      their words, and the Corrective Path's "Excessive recycling of Trading Combines® or XFAs" in its words, with
+      no published line that separates it from them. The consequences are not a per-payout denial: the Slowdown
+      Path stops new purchases and collapses the five seats to one as accounts close (the campaign's engine stops);
+      the Corrective Path closes every account and denies every pending payout. Neither path is modelled. No code
+      loads this key; it is recorded so the exposure is read beside the verdict (D-145 tier 3; the gate's 0 %
+      denial, D-234, is the operator's rule and is not changed by this reading).
+
+  # ------------------------------------------------ new rows, read 2026-11-14
+  # The payout-path choice, the 100K and 150K account sizes, trading hours and purchase limits.
+  # Each was read on the official help centre on 2026-11-14 by the rules-verifier; no code loads
+  # any of these keys yet. The 50K rows above keep their unsuffixed keys.
+  xfa_payout_path_choice:
+    value: "chosen_at_activation; cannot_be_changed; rtp_new_xfas_consistency_only"
+    units: text
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; 8284215 fetched twice with differently worded prompts, identical wording; 8284217, 8284208 and 13620045 read the same day
+    note: >
+      NEW ROW 2026-11-14 (before this the choice was only a quote inside responsible_trading_program's note).
+      WHO CHOOSES AND WHEN: the trader, at activation. 8284215 ("Updated over a week ago"): "At activation, you
+      choose your Payout path: Standard or Consistency." 8284217 (page date "September 24, 2026"), step 2 of the
+      activation flow, before the agreement and the fee: "Select your XFA type — Standard or Consistency." 8284208
+      (page date "September 17, 2026"): "When you activate your XFA, you choose Standard or Consistency as your
+      Payout path." / "The Consistency path gets you to Payout eligibility faster but adds a 40% threshold."
+      8284233: "Pick your lane."
+      CAN IT BE CHANGED LATER: no. 8284215 FAQ "Can I change my XFA size or type?" - "No. Your size matches the
+      Trading Combine® you passed and is locked before and after activation." / "Once you select XFA Consistency or
+      Standard, that choice cannot be changed either." 8284217 and 8284233 have no sentence on switching (asked of
+      each; absent).
+      PER ACCOUNT, AND MIXED ACROSS ACCOUNTS: 8284215 FAQ "Can I have a mix of Standard and Consistency XFA
+      accounts?" - "Yes, up to the 5-account limit, unless you're on the Focused Trader Plan (FTP)."
+      A TRADER NOT IN THE RESPONSIBLE TRADING PROGRAM: the three sentences above state the choice with no
+      condition, and 8284215 has no sentence restricting who may pick Standard (asked directly; absent; the page
+      does not mention RTP). The only restrictions any official page states are programme placements. 13620045
+      ("Updated over a month ago"): "Pass a Trading Combine®? You'll be limited to" "Express Funded Account (XFA)
+      Consistency"; "Standard XFA is unavailable until RTP is completed"; "Any new XFAs created during RTP will be
+      Consistency XFA only"; the exception, "XFAs activated from Trading Combines purchased before your RTP
+      placement can be Standard or Consistency" "with a Daily Loss Limit."; and after removal, "Going forward, you
+      can choose a Standard or Consistency XFA for new accounts". So for a trader outside RTP the choice is open
+      at each activation; no page says so in a sentence that names "not in RTP", it follows from the unconditional
+      statements and from RTP being the stated exception. NOT STATED on any page read: whether the path can be
+      chosen or pre-committed at Combine purchase (the pages place it at activation only), and whether the
+      Daily Loss Limit election at Combine checkout constrains the path (no sentence links them; the doubled caps
+      are given for both paths, 8284233).
+
+  xfa_cap_shared_across_sizes:
+    value: true
+    units: boolean
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical wording
+    note: >
+      NEW ROW 2026-11-14. The 5-account XFA cap is one cap across account sizes, not five per size. 8284215
+      ("Updated over a week ago"): "You can hold up to 5 active XFAs at a time."; FAQ "Can I mix account sizes?" -
+      "Yes. Example: two 50K XFAs and three 150K XFAs." (two plus three is the five); FAQ "Can I have a mix of
+      Standard and Consistency XFA accounts?" - "Yes, up to the 5-account limit, unless you're on the Focused
+      Trader Plan (FTP)."; "Shoulder Tap account holders are limited to 1 XFA."; FAQ "Can I trade across multiple
+      XFAs at once?" - "Yes, up to $750K buying power using a trade copier." (five 150K accounts; the term is
+      still not defined on the page). An XFA's size is fixed by the Combine passed: "Your size matches the Trading
+      Combine® you passed and is locked before and after activation." 8284217: "If you already have 5 active XFAs
+      or a Live Funded Account®, the button will be greyed out." -- no size is named. See
+      max_active_funded_accounts for the cap's other qualifiers.
+
+  combine_profit_target_100k:
+    value: 6000.0
+    units: usd
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284208 (page date "September 17, 2026"), table "Account Size" / "Profit Target" / "Best
+      Day Recommendation": "$100K" / "$6,000" / "Less than $3,300". 8284197 states no amount for any size.
+
+  combine_profit_target_150k:
+    value: 9000.0
+    units: usd
+    status: verified
+    article_id: "8284208"
+    url: https://help.topstep.com/en/articles/8284208-consistency-at-topstep
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284208 (page date "September 17, 2026"), table "Account Size" / "Profit Target" / "Best
+      Day Recommendation": "$150K" / "$9,000" / "Less than $4,950".
+
+  combine_mll_100k:
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284204 (page date "September 18, 2026"), table "Account Size" / "Maximum Loss Limit":
+      "$100K" / "$3,000". The trailing and locking sentences name no size ("The MLL is a trailing limit."; "Once
+      it reaches your starting balance, it locks permanently."). NOTE THE RATIO: the 100K target is twice the
+      50K's ($6,000 against $3,000) and the MLL only 1.5 times ($3,000 against $2,000).
+
+  combine_mll_150k:
+    value: 4500.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284204 (page date "September 18, 2026"), table "Account Size" / "Maximum Loss Limit":
+      "$150K" / "$4,500". The 150K target is three times the 50K's ($9,000) and the MLL 2.25 times.
+
+  xfa_mll_start_100k:
+    value: -3000.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284204 (page date "September 18, 2026"), under "What happens to my MLL when I use
+      Back2Funded?": "Your MLL resets to the starting value for your account size:" / table "Account Size" /
+      "Starting MLL": "$100K XFA" / "-$3,000" / "The MLL trails upward as your balance grows and locks at $0 once
+      reached, same as a brand new XFA." The figure is given in the Back2Funded section as "the starting value
+      for your account size"; the page's own XFA section words the start for the 50K only ("For a 50K XFA, your
+      MLL starts at -$2,000 and trails upward."). NOT STATED: the balance at which the 100K XFA's MLL locks at $0
+      (the page says "$2,000" for the 50K only; $3,000 would follow from the trail but no sentence says it).
+
+  xfa_mll_start_150k:
+    value: -4500.0
+    units: usd
+    status: verified
+    article_id: "8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284204 (page date "September 18, 2026"), Back2Funded table "Account Size" / "Starting
+      MLL": "$150K XFA" / "-$4,500"; "Your MLL resets to the starting value for your account size:". The same
+      caveats as xfa_mll_start_100k: the lock balance for the 150K XFA is not stated in a sentence.
+
+  combine_position_size_limit_100k:
+    value: 10
+    units: contracts (mini-equivalent; 100 micros at 10:1)
+    status: verified
+    article_id: "8284197"
+    url: https://help.topstep.com/en/articles/8284197-trading-combine-parameters
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284197 (page date "September 24, 2026"), table "Account Size" / "Max Contracts" / "Max
+      Micros": "$100K" / "10" / "100" (the 50K row re-read the same day, unchanged: "$50K" / "5" / "50"). "The
+      maximum number of contracts you can hold open at one time, per account."; "Micros and minis count at a 10:1
+      ratio." The temporary restricted-product ceilings (13613539, last read 2026-09-27: "Crude Oil (CL) = 3/6/9"
+      and the rest) were not re-read today.
+
+  combine_position_size_limit_150k:
+    value: 15
+    units: contracts (mini-equivalent; 150 micros at 10:1)
+    status: verified
+    article_id: "8284197"
+    url: https://help.topstep.com/en/articles/8284197-trading-combine-parameters
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14. 8284197 (page date "September 24, 2026"), table "Account Size" / "Max Contracts" / "Max
+      Micros": "$150K" / "15" / "150". "Micros and minis count at a 10:1 ratio."
+
+  subscription_fee_100k:
+    value: 99.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. 14289835 ("Updated over a month ago"), table "Account Size" / "Standard
+      Path" / "No Activation Fee Path": "100K" / "$99/month" / "$149/month". The No Activation Fee path's 100K
+      price is $149 a month; with a DLL added at purchase the page gives "$20 off" that path's 100K Combine,
+      recurring monthly. Billing as for 50K: "It Rebills every 30 days from your original sign-up date."
+      (8284121).
+
+  subscription_fee_150k:
+    value: 199.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. 14289835 ("Updated over a month ago"), table "Account Size" / "Standard
+      Path" / "No Activation Fee Path": "150K" / "$199/month" / "$229/month". The No Activation Fee path's 150K
+      price is $229 a month; with a DLL added at purchase the page gives "$30 off" that path's 150K Combine.
+
+  reset_fee_100k:
+    value: 99.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. 14289835 ("Updated over a month ago"), Reset table "Account Size" /
+      "Standard Path" / "No Activation Fee Path": "100K" / "$99" / "$149". The Reset Credit caveat under reset_fee
+      applies at every size.
+
+  reset_fee_150k:
+    value: 199.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. 14289835 ("Updated over a month ago"), Reset table: "150K" / "$199" /
+      "$229".
+
+  activation_fee_100k:
+    value: 149.0
+    units: usd
+    status: verified
+    article_id: "8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; 8284217 read twice, 14289835 three times
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. THE FEE IS STATED ONCE FOR ALL SIZES, NOT PER SIZE. 8284217 (page date
+      "September 24, 2026") addresses traders who pass a "50K, 100K, or 150K" Trading Combine and gives one fee
+      table: "Standard Path" / "$149 one-time activation fee per XFA"; "No Activation Fee Path" / "No activation
+      fee". 14289835 ("Updated over a month ago"), whose price tables are by size, gives the activation fee with no
+      size column: "$149 Activation Fee charged once per Express Funded Account (XFA) earned."; "Standard Path —
+      $149, charged once per XFA earned."; "No Activation Fee Path — $0." Asked of both pages directly: no
+      size-based activation fee is stated. The value is therefore the flat $149 read on a page that names the 100K
+      size, not a cell labelled 100K. (Back2Funded reactivation is priced by size - "$50K XFA — $599", "$100K XFA
+      — $699", "$150K XFA — $829" - and is a different product.)
+
+  activation_fee_150k:
+    value: 149.0
+    units: usd
+    status: verified
+    article_id: "8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; 8284217 read twice, 14289835 three times
+    note: >
+      NEW ROW 2026-11-14, STANDARD PATH. The flat fee, as under activation_fee_100k: 8284217 names "50K, 100K, or
+      150K" and states "Standard Path" / "$149 one-time activation fee per XFA"; 14289835 "Standard Path — $149,
+      charged once per XFA earned." No size-based activation fee is stated on either page.
+
+  funded_scaling_plan_100k:
+    value: "0:3,1500:4,2000:5,3000:10"
+    units: balance_usd_threshold:contracts (minis; 10:1 micros)
+    status: verified
+    article_id: "8284223"
+    url: https://help.topstep.com/en/articles/8284223-what-is-the-scaling-plan
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; read from the chart image the page embeds, fetched from the src the page gives and viewed directly
+    note: >
+      NEW ROW 2026-11-14. Page 8284223 (page date "July 16, 2026", unchanged) still gives the tiers only in its
+      one embedded chart, alt text "XFA charts - hc.png", the same asset path as on 2026-10-03
+      (downloads.intercomcdn.com/i/o/bjnr216i/2431115610/e9b4f24c46bea0fcd5c4e3d008d7/19155321446035; the signed
+      query string expires and is not recorded). The image was fetched from that src and viewed directly. The
+      "$100K ACCOUNT" panel, under "Account Balance", reads: "Below $1,500" "3 Lots"; "$1,500 - $2,000" "4 Lots";
+      "$2,000 - $3,000" "5 Lots"; "Above $3,000" "10 Lots". The "$50K ACCOUNT" panel, viewed the same day, is
+      unchanged ("Below $1,500" "2 Lots"; "$1,500 - $2,000" "3 Lots"; "Above $2,000" "5 Lots"), so
+      funded_scaling_plan and funded_scaling_entry_tier_minis stand. Page text: "The Scaling Plan is an Express
+      Funded Account® (XFA) objective."; "Your max contracts do not increase mid-session."; "1 Mini = 10 Micro
+      contracts". As for the 50K, the chart does not say which tier a balance of exactly $1,500, $2,000 or $3,000
+      falls in; the value follows the 50K row's convention (the threshold belongs to the higher tier). THE TOP
+      TIER (10) EQUALS THE 100K COMBINE CAP, and the entry tier is 3 against that cap of 10.
+
+  funded_scaling_plan_150k:
+    value: "0:3,1500:4,2000:5,3000:10,4500:15"
+    units: balance_usd_threshold:contracts (minis; 10:1 micros)
+    status: verified
+    article_id: "8284223"
+    url: https://help.topstep.com/en/articles/8284223-what-is-the-scaling-plan
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; read from the chart image the page embeds, fetched from the src the page gives and viewed directly
+    note: >
+      NEW ROW 2026-11-14. 8284223's embedded chart (see funded_scaling_plan_100k for the source), "$150K ACCOUNT"
+      panel, under "Account Balance": "Below $1,500" "3 Lots"; "$1,500 - $2,000" "4 Lots"; "$2,000 - $3,000" "5
+      Lots"; "$3,000 - $4,500" "10 Lots"; "Above $4,500" "15 Lots". The first three tiers are the same as the
+      100K's; the top tier (15) equals the 150K Combine cap. The boundary convention is the 50K row's.
+
+  xfa_std_cap_100k:
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, the NO-DLL value. 8284233 ("Updated this week"), table "Account Size" / "XFA Standard" /
+      "XFA Consistency": "$100K" / "$3,000" / "$4,000". With the Daily Loss Limit added at Combine checkout (table
+      "Account" / "Path" / "Current Cap" / "With DLL (new)", read twice): "$100K" / "Standard" / "$3,000" /
+      "$6,000". "Max Payout per request: 50% of your account balance up to the cap below."
+
+  xfa_std_cap_150k:
+    value: 5000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, the NO-DLL value. 8284233 ("Updated this week"): "$150K" / "$5,000" / "$6,000" under
+      "Account Size" / "XFA Standard" / "XFA Consistency". With the DLL: "$150K" / "Standard" / "$5,000" /
+      "$10,000". This is the figure the page's Standard Path box and 8284215's comparison table show ("up to
+      $5000*"; "50% of balance, up to $5,000*").
+
+  xfa_cons_cap_100k:
+    value: 4000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, the NO-DLL value. 8284233 ("Updated this week"): "$100K" / "$3,000" / "$4,000" under
+      "Account Size" / "XFA Standard" / "XFA Consistency". With the DLL: "$100K" / "Consistency" / "$4,000" /
+      "$8,000".
+
+  xfa_cons_cap_150k:
+    value: 6000.0
+    units: usd
+    status: verified
+    article_id: "8284233"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; three fetches with differently worded prompts, identical cells
+    note: >
+      NEW ROW 2026-11-14, the NO-DLL value. 8284233 ("Updated this week"): "$150K" / "$5,000" / "$6,000" under
+      "Account Size" / "XFA Standard" / "XFA Consistency". With the DLL: "$150K" / "Consistency" / "$6,000" /
+      "$12,000". 13620045 ("Updated over a month ago") gives the same top figure for the programme: "Traders in
+      RTP can request payouts of up to $6,000 every 3 trading days" (read 2026-10-30; not re-read today).
+
+  dll_amount_50k:
+    value: 1000.0
+    units: usd
+    status: verified
+    article_id: "10490293"
+    url: https://help.topstep.com/en/articles/10490293
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical lines; 13620045 read the same day
+    note: >
+      NEW ROW 2026-11-14 (the amount was carried only inside the notes of dll_offer_status and
+      responsible_trading_program). 10490293 ("Daily Loss Limit in the Trading Combine and Express Funded Account",
+      page date "June 30, 2026"): "$50K Account: $1,000". The same amount is the Responsible Trading Program's:
+      13620045 "50K accounts = -$1,000". What the limit does (read once today): "Net P&L hits or exceeds the DLL
+      during the trading day (5 PM CT – 3:10 PM CT):" / "Open positions are flattened" / "Pending orders are
+      canceled" / "No new trades until 5 PM CT next session" / "Triggering it is not a rule violation". Optional
+      in the Combine and the XFA, automatic in the Live Funded Account (see dll_offer_status).
+
+  dll_amount_100k:
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "10490293"
+    url: https://help.topstep.com/en/articles/10490293
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical lines; 13620045 read the same day
+    note: >
+      NEW ROW 2026-11-14. 10490293 (page date "June 30, 2026"): "$100K Account: $2,000". 13620045: "100K accounts =
+      -$2,000".
+
+  dll_amount_150k:
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "10490293"
+    url: https://help.topstep.com/en/articles/10490293
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical lines; 13620045 read the same day
+    note: >
+      NEW ROW 2026-11-14. 10490293 (page date "June 30, 2026"): "$150K Account: $3,000". 13620045: "150K accounts =
+      -$3,000".
+
+  trading_hours:
+    value: "flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close"
+    units: text (Central Time, as the pages write it)
+    status: verified
+    article_id: "8284206"
+    url: https://help.topstep.com/en/articles/8284206-when-and-what-products-can-i-trade
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; 8284206 and 13350348 each fetched twice with differently worded prompts, identical wording
+    note: >
+      NEW ROW 2026-11-14 (before this the hours were a note inside permitted_products, last read 2026-10-03).
+      THE DAILY SESSION. 8284206 (now shows "Updated over 2 weeks ago"; on 2026-10-03 it showed the date July 13,
+      2026, so an edit since then cannot be ruled out): "All positions must be closed by 3:10 PM CT every
+      weekday." / "You can resume trading at 5:00 PM CT."; table "Session" / "Hours": "Sunday open" / "5:00 PM
+      CT"; "Weekday close" / "3:10 PM CT"; "Weekday reopen" / "5:00 PM CT"; "Friday close" / "3:10 PM CT (closed
+      till Sunday at 5:00 PM)". "Avoid opening new positions after 3:08 PM CT — Risk Managers begin flattening at
+      that time."; "It's still your responsibility to be flat by 3:10 PM CT."; "If you're trading a product with
+      an earlier daily close than 3:10 PM CT," / "you must exit before that product's close."; "No swing
+      trading."; "Topstep does not permit holding positions from one session to the next." TWO SMALL DIFFERENCES
+      FROM THE 2026-10-03 RECORD, neither a change of rule: the table row "Weekday close" / "3:10 PM CT" was not
+      quoted then, and the cancel sentence reads today "All open positions and pending orders begin to
+      automatically cancel at 3:10 PM CST." (recorded then as "at 3:10 CST."; the page still writes CST in this
+      one sentence and CT elsewhere). 8284197 (page date "September 24, 2026"): "The trading day runs from 5:00 PM
+      CT through 3:10 PM CT the next calendar day." 8284206 states no consequence for a position still open at
+      3:10 PM CT beyond the automatic cancel (asked directly; absent), and has no sentence on holidays.
+      HOLIDAYS are on a page of their own, 13350348 ("Topstep Holiday Trading Hours", page date "September 18,
+      2026"; https://help.topstep.com/en/articles/13350348-topstep-holiday-trading-hours): "All account types must
+      close positions 15 minutes before any early close." / "Positions still open at the cutoff are
+      auto-liquidated." / "Applies to: Trading Combine®, Express Funded Account® (XFA), Live Funded Account®
+      (LFA)"; "Payouts are not available during holiday hours."; "Holiday trading hours are subject to change per
+      the exchange." / "Always confirm with CME holiday hours when planning trades." Blended trade dates ("the CME
+      may blend multiple calendar days into a single trading day") apply to the Live Funded Account only; the
+      page's table marks the Trading Combine and the XFA as not following that protocol. The dated table,
+      "Holiday" / "Date" / "Close Positions By" / "Reopen After", for the rows still ahead: "Thanksgiving" / "Thu
+      Nov 26, 2026" / "11:45 CT" / "17:00 CT Thu Nov 26"; "Day After Thanksgiving" / "Fri Nov 27, 2026" / "12:00
+      CT" / "17:00 CT Sun Nov 29"; "Christmas Eve" / "Thu Dec 24, 2026" / "12:00 CT" / "—"; "Christmas Day" / "Fri
+      Dec 25, 2026" / "Markets closed" / "17:00 CT Sun Dec 27"; "New Year's Day" / "Fri Jan 1, 2027" / "Markets
+      closed" / "17:00 CT Sun Jan 3" (the New Year row read once). The earlier 2026 rows were not transcribed, and
+      the page publishes dates, not a rule that generates them, so a backtest's holiday calendar cannot be taken
+      from it for past years. The value's times are 24-hour renderings of the page's "3:10 PM CT" and "5:00 PM
+      CT". config/instruments.yaml's flatten_ct "15:10" agrees with the weekday rule and does not carry the
+      holiday cutoffs.
+
+  account_start_rate_limit:
+    value: none_stated
+    units: text
+    status: verified
+    article_id: "10370307"
+    url: https://help.topstep.com/en/articles/10370307
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; 10370307 and 8284121 each fetched twice with differently worded prompts; 8284197, 8284215, 8284217 and the Terms of Use read the same day
+    note: >
+      NEW ROW 2026-11-14. NO OFFICIAL PAGE STATES A NUMERIC LIMIT ON HOW QUICKLY NEW TRADING COMBINES OR XFAS MAY
+      BE STARTED - no count per day, week or month, no waiting period, no cooldown. For Combines the absence is a
+      positive statement: 10370307 ("Reset Purchase Limits", page date "June 18, 2026") lists "No limit on Trading
+      Combine purchases" beside "2 Resets per account per calendar day" (the only numeric purchase rate on the
+      help centre; its own row, reset_limit_per_account_per_calendar_day), with "Limits exist to protect you from
+      account churning" and "If you attempt to exceed a limit, a warning will appear showing when you can make new
+      purchases again."; 8284121 ("Updated this week"): "Yes — no limit on how many you can have at once."; 8284197
+      (page date "September 24, 2026"): "Yes. There's no limit to the number of Trading Combines you can have."
+      For XFAs the absence is silence: 8284215 and 8284217 state no limit on activations per period (asked of each
+      directly; absent); the bounds are the seat count ("You can hold up to 5 active XFAs at a time.") and
+      Back2Funded ("lets you reactivate up to 2 times at the same size and Payout policy."); activation itself is
+      "Minutes after paying the Activation Fee." 10370307 does not mention XFA activations or Back2Funded.
+      THE RATE IS STILL A CONDUCT EXPOSURE WITH NO PUBLISHED THRESHOLD, which is a different thing from a rate
+      limit and is recorded under combine_count_limit, prohibited_conduct and focused_trader_program (10296582
+      "Excessive purchases of Trading Combines or Resets"; 10551016 "Excessive Resets and Trading Combine
+      purchases", "Activating and losing many Express Funded Accounts in a short period of time", "Excessive
+      recycling of Trading Combines® or XFAs" - those pages last read 2026-10-30, not re-read today). The one
+      discretionary rate clause, re-read today on topstep.com/terms-of-use: "if you place an unusually large number
+      of orders for the Services within an unreasonably short period of time" / "we reserve the right to suspend
+      any further orders of the Services by you" - no number. THE TERMS OF USE NOW SHOW "Last updated: November 4,
+      2026" (recorded as September 21, 2026 on 2026-10-30); only this sentence and "Your Account is personal to you
+      and you are only permitted to have one Account" were read from the new version, and the first 100,000 of the
+      page's 104,876 characters. The rows that quote ss.3, 8 and 27 of the September version (prohibited_conduct,
+      combine_count_limit, xfa_closure_at_request, cross_account_opposite_positions) have not been re-read against
+      it.
+
+  reset_limit_per_account_per_calendar_day:
+    value: 2
+    units: resets per account per calendar day
+    status: verified
+    article_id: "10370307"
+    url: https://help.topstep.com/en/articles/10370307
+    date_read: 2026-11-14
+    verified_by: rules-verifier (stage two), new row 2026-11-14; two fetches with differently worded prompts, identical wording
+    note: >
+      NEW ROW 2026-11-14 (the sentence was quoted inside combine_count_limit's note on 2026-10-30). 10370307
+      ("Reset Purchase Limits", page date "June 18, 2026"), a two-item list: "No limit on Trading Combine
+      purchases" / "2 Resets per account per calendar day". "Limits exist to protect you from account churning";
+      "If you attempt to exceed a limit, a warning will appear showing when you can make new purchases again." The
+      page does not say at what time of day the count restarts (asked directly; absent) - "calendar day", not the
+      5:00 PM CT trading day. The limit is per account, so it does not bound resets across several Combines.

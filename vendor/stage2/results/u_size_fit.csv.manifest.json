@@ -1,0 +1,211 @@
+{
+  "columns": [
+    "section",
+    "size",
+    "base",
+    "edge",
+    "subject",
+    "measure",
+    "value",
+    "n",
+    "unit",
+    "note",
+    "label"
+  ],
+  "description": "EXPLORATORY (D-666, program U's U4): the account-size fit read -- the base designs' state-table solver (v12's no-closure table) on each Topstep size's verified rows ($50K, $100K, $150K) under P-14's and P-16's own rungs and per-R edges (the bound arm's and zero): the zero-edge oracles against each size's bounds, an attempt's P(pass), payouts, fees, payouts per fee dollar, value and sessions to a first payout; D-666 (3)'s rule and verdict. The identities first (section identity). No campaign; no seed (an exact chain).",
+  "exploratory": true,
+  "git_commit": "99c1c7ddb9e00e6a76e91f92bc07d7c0d03ee38b",
+  "git_dirty": false,
+  "notes": {
+    "labels": "every larger-size row: lock_assumed_1to1 (D-623: the lock balance is stated on no page; the 1:1 trail applied) and D-666 (5)'s assumptions",
+    "status": "EXPLORATORY (D-666): a solver-only fit read; no campaign, no variant counted, selects nothing",
+    "verdict_line": "D-666 (3): account size closes -- no larger size's payouts per fee dollar at the bound edge exceeds the $50K solve's by more than 10 % on either base"
+  },
+  "parameters": {
+    "bases": {
+      "p14": "P-14 (A3-BRK30-CB20, its 12.5- and 25-point rungs)",
+      "p16": "P-16 (rc_s150_all, its 37.5-point stop)"
+    },
+    "config": "config/state_policy_v12.yaml with funded_rules.abandon false (a3_compliance.noclose_config)",
+    "cost": {
+      "p14_100k_bound": {
+        "estimated_gb": 1.26,
+        "nA_combine": 66,
+        "nA_funded": 41,
+        "nS_combine": 11041,
+        "nS_funded": 306732,
+        "peak_mb": 1217.7,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 160.2
+      },
+      "p14_100k_zero": {
+        "estimated_gb": 1.26,
+        "nA_combine": 66,
+        "nA_funded": 41,
+        "nS_combine": 11041,
+        "nS_funded": 306732,
+        "peak_mb": 1217.7,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 143.4
+      },
+      "p14_150k_bound": {
+        "estimated_gb": 4.21,
+        "nA_combine": 90,
+        "nA_funded": 56,
+        "nS_combine": 24661,
+        "nS_funded": 800172,
+        "peak_mb": 3088.4,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 511.0
+      },
+      "p14_150k_zero": {
+        "estimated_gb": 4.21,
+        "nA_combine": 90,
+        "nA_funded": 56,
+        "nS_combine": 24661,
+        "nS_funded": 800172,
+        "peak_mb": 3176.2,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 484.6
+      },
+      "p14_50k_bound": {
+        "estimated_gb": 0.85,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb": 1025.6,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 104.4
+      },
+      "p14_50k_zero": {
+        "estimated_gb": 0.85,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb": 1025.6,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "seconds": 105.9
+      },
+      "p16_100k_bound": {
+        "estimated_gb": 0.86,
+        "nA_combine": 66,
+        "nA_funded": 41,
+        "nS_combine": 11041,
+        "nS_funded": 306732,
+        "peak_mb": 3176.2,
+        "rent_rounds": 4,
+        "rungs": 1,
+        "seconds": 163.8
+      },
+      "p16_100k_zero": {
+        "estimated_gb": 0.86,
+        "nA_combine": 66,
+        "nA_funded": 41,
+        "nS_combine": 11041,
+        "nS_funded": 306732,
+        "peak_mb": 3176.2,
+        "rent_rounds": 3,
+        "rungs": 1,
+        "seconds": 135.9
+      },
+      "p16_150k_bound": {
+        "estimated_gb": 2.78,
+        "nA_combine": 90,
+        "nA_funded": 56,
+        "nS_combine": 24661,
+        "nS_funded": 800172,
+        "peak_mb": 3176.2,
+        "rent_rounds": 4,
+        "rungs": 1,
+        "seconds": 495.7
+      },
+      "p16_150k_zero": {
+        "estimated_gb": 2.78,
+        "nA_combine": 90,
+        "nA_funded": 56,
+        "nS_combine": 24661,
+        "nS_funded": 800172,
+        "peak_mb": 3176.2,
+        "rent_rounds": 3,
+        "rungs": 1,
+        "seconds": 398.6
+      },
+      "p16_50k_bound": {
+        "estimated_gb": 0.6,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb": 3176.2,
+        "rent_rounds": 4,
+        "rungs": 1,
+        "seconds": 105.7
+      },
+      "p16_50k_zero": {
+        "estimated_gb": 0.6,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb": 3176.2,
+        "rent_rounds": 4,
+        "rungs": 1,
+        "seconds": 107.3
+      }
+    },
+    "d559_edge": -0.03674043043908111,
+    "decision": "D-666",
+    "edge_sets": [
+      "bound",
+      "zero"
+    ],
+    "fresh_funded_rr": 3.0,
+    "headroom": 1.0,
+    "horizon_days": 504,
+    "identity_edge": -0.05,
+    "interpretations": [
+      "The table on file (state_dp_e-0.050_lamstar_noclose) was solved at one edge for both bases (e = -0.050 at every R, FV3-C's cell, on FV3-C's three rungs); it is reproduced as the identity set, and the readings are a second set at each base's own rungs and per-R edges.",
+      "Each R's bound edge is the lb_gate column of the base's registered gate's edge rows (the lb_by_rr its bound arm used, atlas_a3.bounds' era rule); read from the result file, its manifest verified, not recomputed from trades.",
+      "A Combine trade closed early (at the need or at the consistency allowance) is read at the exit-grid R's own edge; a trade held to its target, and every funded trade, at the action's R's edge.",
+      "Each menu's risks are extended above its top by its top spacing, $500, to the size's loss limit (funded: $2,500 and $3,000 at $100K, to $4,500 at $150K; the Combine's list already reaches $3,000, so $3,500 to $4,500 at $150K only); nothing at $50K.",
+      "The funded balance cap is the larger of v12's $6,000 and twice the size's Standard cap: $6,000 at $50K and $100K, $10,000 at $150K.",
+      "The funded profit-risk cap ($500), the tie-break tolerances ($5), the winning-day minimum ($150), the payout minimum and share, the split and the consistency fraction stay single-valued, as the base's (D-666 (5)).",
+      "Fees per attempt: the subscription as the engine bills it (at purchase and every 21 trading days held) plus the activation at a pass; the reset is the next attempt's purchase (reset and subscription priced equal at every size); the table's own accrual is reported beside (_accrued), and the rule's comparison on it is a beside row.",
+      "Payouts per attempt are net of the split and the method's fee (what a user receives): P(pass) x the fresh funded account's expected net payouts over the horizon, as the table's cycle accounting reads them.",
+      "Sessions to a first payout: the Combine's mean days to its pass plus the fresh funded account's mean days to its first payout, each among those that reach it (the table's model: no activation latency, one trade a session).",
+      "The zero-edge bound checks apply to the fee-free oracle tables at every size and base, and to every solved table whose edges are all at or below zero (both bases' bound edges are), since a fair or unfavourable game cannot beat them."
+    ],
+    "memory_limit_gb": 6.0,
+    "read_files_sha256": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "rc150_table_screen.csv": "e67b517167a766ba19f00415f11799587512ec8cf016e437c8d8dd11c242e735",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "rc_width_screen.csv": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+      "state_policy_v12_noclose.csv": "1eba6230d2d133115f3ad847707088f40e73e40a3de850881b4831d811e905de"
+    },
+    "rule_margin": 0.1,
+    "seconds": 3777.6,
+    "sizes": [
+      "50k",
+      "100k",
+      "150k"
+    ]
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_size_fit.csv",
+  "rows": 500,
+  "script": "scripts/u_size_fit.py",
+  "seed": null,
+  "sha256": "603a7182d07bd5d315c204e3f71d786f679ca3a48f518484ca1ea8a7dd4de4c6",
+  "timestamp": "2026-11-15T23:46:01+00:00",
+  "variant_count": null
+}

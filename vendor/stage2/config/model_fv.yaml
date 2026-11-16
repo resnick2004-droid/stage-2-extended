@@ -1,0 +1,107 @@
+# config/model_fv.yaml -- FV1: the fair-value two-phase model, stage two's own, JJ Simon-inspired (D-142).
+#
+# A COMPLETE execution model, declared before any of its trades is computed: sessions, anchors, both setups, the
+# entry trigger, stops, targets, attempts, a daily stop, costs and sizing. Inspiration: JJ Simon's Fair Value Theory
+# (docs: the operator's PDF, 2026-09-24). The operator's standing instruction: JJ's rules inspire the model; they are
+# not the model. Where JJ is explicit (anchors, windows, phases, the displacement + BOS/MSB trigger, 1.5R, volatility
+# bands for the stop) the model follows him, translated into era-invariant terms; where he is silent, the project's
+# own rules decide (next-bar-open fills D-123, costs D-95, era matching D-106, the prop contract's sizing D-114/D-117).
+#
+# Standing: EXPLORATORY development work (2009-06-01 to 2014-05-27). Written AFTER the morning open-reversion results
+# on ES and NQ were seen (D-116, D-123, D-125: price tended to move away from the open) -- which is why the
+# continuation leg is here, and why every result is labelled as seen. A promising configuration would still need a
+# pre-registration and the confirmation window before any money decision.
+
+status: declared
+decision: D-142
+exploratory: true
+model: FV1
+
+markets:                    # scored separately; NQ is JJ's instrument
+  NQ: {vehicle: MNQ, tick: 0.25, tick_value: 0.50, round_turn: 1.22, floor_ticks: 40, p_ref: 10000}
+  ES: {vehicle: MES, tick: 0.25, tick_value: 1.25, round_turn: 1.22, floor_ticks: 20, p_ref: 4000}
+scales: [p_ref, actual]     # primary: each day's path rescaled so its 08:30 open maps to the market's p_ref (D-106's
+                            # era matching; the day's own open, so the reference is always the traded contract);
+                            # actual price as a reference
+
+recording: {first: "08:00", last: "15:00"}   # CT, bar END times; 08:00 gives ATR its history before the first signal
+
+sessions:                   # CT; a bar "ends at" its END time; signals are decided on a bar's close
+  am:
+    anchor: "08:30"          # fair value = the OPEN of the bar starting 08:30 (JJ: the 9:30 NY open)
+    first_signal: "08:34"    # skip the first 3 minutes (JJ)
+    continuation_until: "08:45"   # JJ: continuations away from fair value in the first ~10-15 minutes
+    last_signal: "10:00"     # JJ: 9:30-11:00 NY
+  pm:
+    anchor: "13:00"          # JJ: 2 pm NY acts as fair value
+    first_signal: "13:04"
+    continuation_until: "13:15"
+    last_signal: "14:00"     # JJ: 2-3 pm NY
+time_exit: "15:00"           # any open trade closes at the 15:00 CT close (before Topstep's 15:10 flatten)
+
+setups:                      # decided at the close of signal bar t; filled at the open of the next bar (D-123)
+  swings: Williams fractals, two bars each side, confirmed two bars later (the existing openrev_core definition)
+  displacement: "counter-wick <= 0.20 x (extreme - open) in the trade's direction, body in that direction (JJ's 0.20)"
+  continuation: >
+    in the continuation phase, price on one side of fair value (close above -> long, below -> short); the signal bar
+    closes beyond the most recent confirmed swing in that direction (a break of structure, BOS) and is a displacement
+    bar in that direction. Tag "cont".
+  reversion: >
+    in the reversion phase, the direction is TOWARD fair value; the signal bar closes beyond the most recent confirmed
+    swing in that direction (a market-structure break, MSB) and is a displacement bar in that direction; the entry
+    must still be on the far side of fair value. Tag "rev".
+  recontinuation: >
+    in the reversion phase, only after price has traded through fair value since the anchor: a BOS + displacement
+    AWAY from fair value on the side price is now on. Tag "recont" (JJ: "additional continuations after price returns
+    to fair value, with a separate tag").
+  attempts: at most 2 trades per phase per session (JJ allows second attempts); one position at a time
+  daily_stop: no new trade after two losing trades in the day (the prop contract's daily loss logic)
+
+exits:
+  target: "1.5 x the stop distance (JJ's 1.5R, no trade management); a resting limit, filled on a trade through"
+  stop_families:             # SEARCHED: the one real choice about the stop
+    atr_bands: >
+      JJ's volatility bands in era-invariant terms. ATR = the mean true range of the last 14 one-minute bars at the
+      signal bar, as a percent of price. JJ's points at his era's NQ level (17,000, declared): ATR above 20 points ->
+      stop 50; 7 to 20 -> 25; below 7 -> 16.5. So: ATR% >= 0.1176 -> stop 0.2941 %; 0.0412 <= ATR% < 0.1176 ->
+      stop 0.1471 %; below -> stop 0.0971 %. The same percentages for ES (JJ gives no ES rules).
+    structural: >
+      beyond the most recent confirmed opposite swing (continuation: the pullback's extreme; reversion: the extreme
+      of the move away), one tick past it.
+  floor: the stop is never inside the market's cost floor (floor_ticks); a wider stop keeps the 1.5R target
+  costs: config/fills.yaml "assumed" (D-95) -- entry and stop one tick adverse, target at the limit, time exit one
+    tick adverse; round turn per contract from round_turn above
+
+windows_searched: [am, am_pm]    # SEARCHED: JJ trades both; the afternoon is new evidence
+configurations: 4                # stop family (2) x windows (2); counted in results/variants.jsonl
+
+measure:
+  trade: R per trade, gross and net of costs, per contract (independent of the number of contracts)
+  per_configuration: [trades, trades per day, win rate, average win R, average loss R, mean R net (e),
+    one-sided 95 % lower bound of e (20-day block bootstrap by day, 10,000 reps), largest drawdown in R,
+    e by year, by setup tag, by session and by side]
+  halves: {selection: [2009-06-01, 2011-12-31], validation: [2012-01-01, 2014-05-27]}
+  selection: the configuration with the highest lower bound of e on the selection half, at p_ref; the validation
+    half is read once for it; every configuration is reported on both halves
+  seed: 20261101
+
+prop_simulation:              # the selected configuration's trades, through the contract engine
+  risk_per_trade: 500         # Combine baseline 1.5:1 at $500 (vendor/propsim/edge/T5_RESULTS.md section 2a; D-114)
+  sizing: "contracts = min(floor(500 / (stop ticks x tick value)), the D-117 tier cap)"
+  draw: the trade log resampled by day (EmpiricalDraw), seeds fixed here
+  report: [P(pass the Combine), days to pass, P(fail), funded payouts, largest drawdown]
+  seed: 20261102
+
+extension_1419:              # declared 2026-09-25, before any of these days is scored (the block D-144 opened)
+  question: does FV1's result on 2009-2014 hold on the more recent development years, or was the older market the problem?
+  runs: {NQ: R047-fv1-NQ-1419, ES: R048-fv1-ES-1419}
+  window: [2014-05-28, 2019-12-31]
+  model: unchanged -- every rule above, both stop families, both scales; nothing selected or tuned on this block
+  report: every configuration's per_configuration measures (above) on the whole block at both scales, by year, with the
+    same day filter; the configuration selected on 2009-2011 (scripts/score_fv.py) read once; the D-145 campaign gate on
+    that configuration's 2014-2019 trades (scripts/campaign_fv.py's settings)
+  seed: 20261104
+
+criterion_reminder: >
+  a configuration is a candidate only if e >= 0.10 R net with a one-sided 95 % lower bound >= 0.05, OUT OF SAMPLE
+  (propsim D-47); development results never meet that by themselves.

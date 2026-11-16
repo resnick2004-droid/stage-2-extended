@@ -1,0 +1,5 @@
+predicted=0.327131 measured=0.328613 se=0.000470 z=+3.15 N=1000000 seed=20260921
+VERDICT (pre-registered, 3 SE): FAIL (z = +3.15)
+DIAGNOSIS: terminal states are exactly the three predicted leaves (-2000: 451,679; -350: 219,708; +3000: 328,613). Day 1 survival 0.548321 vs 0.547945 (z +0.75); day 2 pass 0.599308 vs 0.597015 (z +3.46). The single-trade draw tested in isolation is exact at both R (z -0.50, +0.38). No logic path can create an excess pass.
+REPLICATION (diagnostic, seeds fixed before running): 101 +1.03, 202 +1.42, 303 +0.13, 404 +0.60, 505 -0.67; pooled 5M = 0.327368 +/- 0.000210, z +1.13.
+CONCLUSION: statistical false alarm in the original run (~1 in 600 at |z| >= 3.15); propsim reproduces 0.327131. Original verdict retained on record.

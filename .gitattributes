@@ -1,0 +1,12 @@
+# Line-ending policy. The LAST matching line wins: the general rule first, the exceptions after.
+* text=auto
+
+# The vendored Stage 2 snapshot is pinned byte-for-byte by vendor/MANIFEST_stage2.sha256 (E-002). Git must never
+# transform it: a CRLF conversion on checkout would change every text file's hash and make the integrity test report a
+# corrupted foundation where there is none.
+vendor/** -text
+
+# Result CSVs are hashed in their sidecar manifests, for the same reason.
+results/*.csv -text
+
+*.sh text eol=lf

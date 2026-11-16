@@ -1,0 +1,60 @@
+# config/orb2_model.yaml -- ORB2: ORB1's opening-range breakout on NQ alone, the four ranges taken one position at a
+# time in one account, D-212's brackets at stage one's R (T15 item 9; D-252, D-253, D-254 -- the pre-run review's
+# changes). Fixed before its screen's data (R101, NQ 2020-01-01 to 2025-06-30) is read.
+#
+# Where it comes from (D-252, EXPLORATORY): on 2009-2019 NQ's trades after the opening range moved the right way before
+# any cost, and the costs -- fixed in ticks per micro -- took most of it on the paper's stop of 10 % of the ATR, which
+# was then a few dozen ticks. From 2018 NQ's ranges are several times wider in ticks (the regime map, R090), so the
+# same costs are a far smaller share of R. ORB2 asks whether the move is still there on 2020-2025 and pays at the
+# contract's own R. The operator, 2026-10-03: "Screen 2020-25, then confirm".
+
+model: ORB2
+from: ORB1                                            # config/orb_model.yaml: every rule there not changed here
+market: NQ
+rules: config/orb_model.yaml                          # the paper's rules: the ranges, direction, the stop order, the stop
+                                                      # at 10 % of the 14-day ATR, relative volume >= 100 % per range,
+                                                      # last entry 15:07, flat 15:08, FOMC days excluded
+
+# one account, one position at a time (the operator: one trade at a time when trades resolve fast; stage one's
+# sequential trades): the four ranges' trades in fill-bar order, the shorter range first on the same bar; an entry is
+# skipped while a position is open (from its fill bar to its exit bar, both counted)
+entries: {ranges: [5, 15, 30, 60], one_at_a_time: true, order: [fill_slot, or_minutes]}
+
+# D-212 and stage one: the Combine's trades at 2R, the funded account's at 1.5R (T5 2a's pair at an edge of 0 to 0.05,
+# propsim D-36), each held to its stop or target; the 15:08 flatten an outlier. The paper's exit is reported, never
+# traded (D-212).
+exits: {combine_rr: 2.0, funded_rr: 1.5, paper: report_only}
+
+# sizes: T5 2a's pair. The funded account's $1,000 under the 15-micro cap below +$2,000 (D-117, D-229) cannot be met in
+# quiet years (the regime map's ranges); so the funded risk is the largest of stage one's admissible 1.5:1 funded risks
+# -- $1,000, $750, $500 (T5 section 1) -- whose stops pass D-212's consistent risk and D-201's band on the screen's
+# stops, chosen on the stops alone before any P&L is read. The Combine stays at $750.
+sizes:
+  combine: {rr: 2.0, risk: 750}
+  funded: {rr: 1.5, risk_candidates: [1000, 750, 500]}
+  accounts: 1
+  layout: rotation
+edge_assumed: 0.00                                    # the low end (the card's); D-154's minimum is read at it
+
+# the screen's run (the check years of config/orb_model.yaml): development data under D-237, read once by ORB2.
+# config/orb_model.yaml's clause that its check-year runs follow a pre-registration was ORB1's; ORB1 is closed (D-252)
+# and R101 is ORB2's screen, not ORB1's check (D-254)
+screen:
+  run: R101-orb-NQ-2020
+  window: {warm: "2019-11-18", start: "2020-01-01", end: "2025-06-30"}
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]
+  costs: assumed                                      # config/fills.yaml's profile (D-95), as ORB1's reading
+
+# the kill line, written before the screen runs: any one ends ORB2 and closes the opening-range breakout (the operator:
+# "if it fails, ORB is closed for good")
+kill_line:
+  K1: "the move: the 5-minute range's paper-exit trades before any cost (the entry's tick added back, no fee, no exit slippage) have their yearly one-sided 95 % lower bound at or below zero"
+  K2: "the edge at the contract's R: the one-at-a-time trades' net e at 2R or at 1.5R, net of the assumed costs, is at or below zero under either fill-bar reading (the kit's, and the strict one: a fill bar reaching the stop counts as stopped)"
+  K3: "resolution (D-212): at 2R or at 1.5R, under either fill-bar reading, more than 2 % of the one-at-a-time trades reach the 15:08 flatten, overall or in any year"
+  K4: "frequency (D-154): at 2R or at 1.5R, under either fill-bar reading, the one-at-a-time trades per trading day of the window (every session: early closes and FOMC days count, with no trade) fall below the 2:1 $750 Combine's minimum at the card's edge (results/setups_per_day.csv, one account)"
+  K5: "contract fit (D-201, D-190, D-212): on the screen's stops the Combine at $750, or the funded account at every one of $1,000, $750 and $500, fails the band (more than 25 % outside or unsizeable) or consistent risk (fewer than 90 % realising 90 % of the risk)"
+then: "continue -> the card completed from the screen's files; one registered confirmation on NQ's held-back window (2025-07-01 to 2026-06-30, D-237), decided by the D-145 gate; NQ's second of three confirmation tests (D-107; P-05 the first)"
+
+# variants: the market (NQ, after ORB1's reading of NQ and ES) and the funded size (three, by the stops rule); the
+# pool holds ORB1's 70 and its search
+k: 6

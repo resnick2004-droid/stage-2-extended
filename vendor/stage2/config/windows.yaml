@@ -1,0 +1,55 @@
+# The confirmation-data plan (R4, D-459): per market, which trading days are development, which were held back and
+# have been read (spent), which are held back and unread (a confirmation window, read once per registered test), and
+# which are reserved for later. Declared before any development read of the market under the reset (D-452 §7 item 4),
+# and read by `propedge/data/windows.py`, which refuses a read past a market's window for the purpose asked.
+#
+# Dates are trading days (Chicago time; a session opens at 17:00 the evening before). `end: null` is open-ended.
+# A window's status:
+#   development  -- read freely for development; the trial ledger counts what reads it (D-189)
+#   spent        -- held back once, read by the registered tests named; readable only by a study labelled exploratory
+#   confirmation -- held back and unread: readable only by a registered pre-registration naming this market's window
+#   reserved     -- unread and not yet a confirmation window; nothing reads it until a decision row opens it
+#
+# Why each split (D-459): a market's unread span starts where the trial ledger's reads of it stop
+# (`prereg/models.yaml`). NQ and ES were read through 2025-06-30 (D-237's development; the session-setups screen and
+# the regime map read ES to then), so their unread span starts 2025-07-01; NQ's held-back year was spent (P-05,
+# P-06, P-10) and is development now (D-461). CL was
+# read through 2025-06-30 by the regime map. GC was read only to 2014-05-27 (the atlas), so GC alone can be split
+# "develop on the early years, confirm on the rest" with a long confirmation (the handoff's §7 item 4).
+
+block_days: 21          # a confirmation's bound is read over 21-session blocks (D-237 (4)); the registration states both counts
+
+markets:
+  NQ:
+    micro: MNQ
+    windows:
+      - {name: development, status: development, start: 2020-01-01, end: 2025-06-30,
+         note: "the reset's development span on the local bars; QuantConnect's development reads go back to 2009 (D-237)"}
+      - {name: held_back_2025, status: development, start: 2025-07-01, end: 2026-07-16, read_by: [P-05, P-06, P-10],
+         note: "held back by D-237 and spent by NQ's three confirmation tests (D-107: P-05, P-06, P-10; D-450); folded
+           into development by D-461 -- a new NQ model may be built on it, never confirmed on it"}
+      - {name: reserve, status: reserved, start: 2026-07-17, end: null,
+         note: "unread forward data; becomes NQ's fourth confirmation window only by the operator's decision (D-107),
+           asked 2026-10-29; until then nothing reads it"}
+  ES:
+    micro: MES
+    windows:
+      - {name: development, status: development, start: 2020-01-01, end: 2025-06-30}
+      - {name: confirmation, status: confirmation, start: 2025-07-01, end: 2026-09-30,
+         note: "unread; the first ES family's confirmation; about 15 blocks -- shorter than three times P-10's, because ES to 2025-06-30 was read (session_setups_screen, regime_map)"}
+      - {name: reserve, status: reserved, start: 2026-10-01, end: null}
+  CL:
+    micro: MCL
+    windows:
+      - {name: development, status: development, start: 2020-01-01, end: 2025-06-30}
+      - {name: confirmation, status: confirmation, start: 2025-07-01, end: 2026-09-30,
+         note: "unread; CL to 2025-06-30 was read by the regime map"}
+      - {name: reserve, status: reserved, start: 2026-10-01, end: null}
+  GC:
+    micro: MGC
+    windows:
+      - {name: development, status: development, start: 2020-01-01, end: 2022-12-31,
+         note: "GC was read only to 2014-05-27 (atlas_F, atlas_R, C007_legs, shortlist_first_look): the early years develop"}
+      - {name: confirmation, status: confirmation, start: 2023-01-01, end: 2026-09-30,
+         note: "unread; about 45 blocks -- the long confirmation the handoff asks for (§7 item 4)"}
+      - {name: reserve, status: reserved, start: 2026-10-01, end: null}

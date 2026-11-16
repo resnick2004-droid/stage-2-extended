@@ -1,0 +1,60 @@
+# config/nqb1_confirmation.yaml -- NQB1's one confirmation (D-229), fixed before any of its data is read.
+#
+# NQB1 (docs/candidates/cards/NQB1.md) is D-226's setting, chosen on 2009-2019 at today's price level (D-225) and
+# carried through the campaign on its measured inputs (D-227, D-228). This file is everything its confirmation does;
+# the pre-registration cites it, and the kit (propedge/data/rmap_kit.py CONFIRM_RUN), the verdict
+# (scripts/confirm_nqb1.py) and the tests read it. Nothing here was chosen after reading the held-back window.
+
+model: NQB1
+prereg_id: P-05                  # registered 2026-10-02 by the prereg-gatekeeper (prereg/REGISTRY.md); the kit is generated only under it (D-81)
+market: NQ
+
+# D-144's held-back window, read once: 2020-01-01 to the last complete month before registration. The warm-up days
+# are development data and record nothing.
+window: {warm: "2019-12-23", start: "2020-01-01", end: "2026-09-30"}
+years: [2020, 2021, 2022, 2023, 2024, 2025, 2026]   # every one must hold brackets for each leg (rule 1)
+
+# D-230: the run and its one permitted fix. A run is UNUSABLE, judged from its log alone before any count is parsed,
+# if END is missing, the backtest stopped with an error or a time limit, or HEAD's days fall below min_days (about
+# 1,745 trading days are in the window; the development halves counted about 258 a year). An unusable run is kept on
+# record and its counts are never parsed. One fixed kit -- kit mechanics only, every rule in this file unchanged, the
+# fix recorded in a decision before it runs -- may follow; a second unusable run is a FAIL.
+runs: [R088-rmap-confirm-NQ-2026, R089-rmap-confirm-NQ-2026]
+min_days: 1600
+
+# live execution, which the test's direction-neutral counts stand for: each bracket's direction a coin flip from a
+# seeded generator; on trading day d the five accounts, in the router's order j = 0..4, take slot (5d + j) mod 13, so
+# every slot carries the same share of trades over 13 days (the pooled edge assumes it)
+direction: seeded coin flip
+slot_rotation: "(5 * day + account) mod 13"
+
+# the measurement, as the development reading's (D-225, D-226): each day rescaled to today's level
+p_ref: 30600.0
+decision_slots: [0, 60, 120, 180, 240, 300, 540, 600, 660, 720, 780, 840, 900]    # 17:00-22:00 and 02:00-08:00 CT
+legs:
+  combine: {R: 1.0, stop_dollars: 125.0, risk: 1500.0}     # 12 MNQ
+  funded: {R: 2.0, stop_dollars: 75.0, risk: 750.0}        # 10 MNQ
+
+# pass rule 1 (D-212): per leg, pooled over the decision slots, full sessions (early closes apart, D-215), the share
+# of brackets at their target or stop at or above this overall and in every calendar year of the window
+resolved_share_min: 0.98
+
+# pass rule 2 (D-145): the campaign on each leg's net edge at its lower bound -- the yearly estimates' mean less the
+# one-sided 95 % t quantile (years - 1 degrees of freedom) times their standard error -- with 25 % denial
+campaign:
+  arm: s1_zero_edge_static       # Combine 1:1 $1,500, funded static 2:1 $750 (propsim D-08, D-10, D-15; D-150)
+  combines_at_once: 1            # D-226's choice
+  trades_per_day: 1              # per account, the accounts on different decision slots (D-154, D-157)
+  accounts: 5
+  bankroll: 5000.0
+  horizon_days: 504
+  n_paths: 500
+  seed: 20261213                 # part 1's and D-227's seed: common random numbers with the development reading
+  gate_denial: 0.25
+  beside_denial: 0.0
+  rtp_warnings: 0                # the strictest placement timing, the gate's (D-220)
+  open_bracket: loss             # a bracket open at the flatten counts as a full loss (D-227)
+
+# reported beside the verdict, never as it (the gatekeeper's ruling, D-230): each leg's bound at D-189's one-sided
+# 0.05/N, N the ledger's count for NQB1 (prereg/models.yaml)
+ledger_n: 126721

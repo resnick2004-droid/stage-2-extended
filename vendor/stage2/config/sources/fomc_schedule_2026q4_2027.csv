@@ -1,0 +1,26 @@
+# FOMC statement days SCHEDULED after the frozen calendar's last FOMC row (config/im2_release_calendar.csv, 2026-07-29)
+# and after config/sources/fomc_statements_2026q3.csv (2026-09-16), for FV3-C's shadow period (D-399; the execution
+# terminal's request of 2026-10-19). Source: the Federal Reserve's calendar page
+# https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm, fetched 2026-10-19 (165,751 bytes, sha256
+# edaf3a0c6e40afed9a220e3eb88735891a688f633dbde0b506c3925a2ff32af0; "Last Update: October 07, 2026"). The statement day
+# is each two-day meeting's second day. sep 1: "Meeting associated with a Summary of Economic Projections". status:
+# scheduled (2026) or tentative (2027: "Each meeting date is tentative until confirmed at the meeting immediately
+# preceding it"). release_line: the 2:00 p.m. ET statement time is ASSUMED here -- the time line is printed only on the
+# statement page, which exists after the meeting; each row is confirmed against its statement page after its meeting,
+# or replaced, and an unscheduled meeting is added when announced, each by a decision row.
+# 2026-10-29 (D-449): 2026-10-28 CONFIRMED on its statement page (source_url; fetched 2026-10-29, 83,055 bytes, sha256
+# b834baede8eefb3f5b8bf49cc903c4d5404ac6bf346d835df3406e41af37ccf8; "Federal Reserve issues FOMC statement", "October
+# 28, 2026", "For release at 2:00 p.m. EDT"). The calendar page re-fetched the same day (166,350 bytes, sha256
+# a0774e2a5bcb64ebe48e2d4b9e8d3d6cc685e543f6713abf9de6153c5b72dec4; "Last Update: October 28, 2026") lists no
+# unscheduled meeting in 2026 and December 8-9 unchanged.
+date,meeting,sep,status,source_url,release_line
+2026-10-28,October 27-28 Meeting - 2026,0,confirmed,https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm,2:00 p.m. EDT (the statement page; D-449)
+2026-12-09,December 8-9 Meeting - 2026,1,scheduled,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-01-27,January 26-27 Meeting - 2027,0,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-03-17,March 16-17 Meeting - 2027,1,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-04-28,April 27-28 Meeting - 2027,0,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-06-09,June 8-9 Meeting - 2027,1,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-07-28,July 27-28 Meeting - 2027,0,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-09-15,September 14-15 Meeting - 2027,1,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-10-27,October 26-27 Meeting - 2027,0,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)
+2027-12-08,December 7-8 Meeting - 2027,1,tentative,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2:00 p.m. ET (assumed until the statement page)

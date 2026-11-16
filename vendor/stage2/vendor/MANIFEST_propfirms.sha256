@@ -1,0 +1,24 @@
+# vendor/propfirms -- the multi-firm repository's Lucid subset, vendored read-only (Stage 2 R7; docs/TWO_FIRMS.md).
+# source: C:/Users/resni/OneDrive/Desktop/Stage 1- XFA Eval Repository (package propfirms)
+# remote: https://github.com/resnick2004-droid/stage-1-xfa-eval-multifirm.git
+# commit: b9f4172 (D-31: Lucid prices verified from the official pricing cards); each file read with `git cat-file blob b9f4172:<path>` (the committed bytes) by scripts/vendor_propfirms.py
+# copied: 2026-11-05
+# format: sha256sum native (<digest><two spaces><path relative to vendor/>); checked by tests/test_vendor_propfirms.py
+fcf9a7e9c011b9ad0295c879aef231db8944c6cf7d94036ab2649ee28fea5476  propfirms/DECISIONS.md
+77ff3fc58f6de4ce0d92ce46e8eb900afbba300852fd9198dc83bc3607f4963b  propfirms/docs/T3_CEILINGS_DERIVATION.md
+621d71577394340651be101da2bb1925b5d5c7c47adce18525d720cac004a1a7  propfirms/docs/T4_ENGINE_FIT.md
+b1d1b883c8688d6b677722b649b9c13d0f43f25a93bad0acaec93d06afe0da5c  propfirms/firms/README.md
+da823fbdd411cd1821a72253ad1d0399f77368fc972de29509f5f5d7e94b0726  propfirms/firms/lucid-trading/RULES_LEDGER.md
+caabea078eda4308482414e68984c3425c6ac16c1ca5c659c80eb5dbb747f2a8  propfirms/firms/lucid-trading/rules.yaml
+eb2bfc542f25bd52bc61f699dafce214da0df4d77c2440fef6926726c8d6ba54  propfirms/propfirms/__init__.py
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  propfirms/propfirms/contract/__init__.py
+4aee4008b084bc99d0aa675e75849d8a341c6354044e106576cc0094c2b574da  propfirms/propfirms/contract/adapter.py
+583f5b147602fbc3fcbc8830d872ec0e0d3d33ab7a7f59481e83bca3ee7d936a  propfirms/propfirms/contract/engine.py
+6607346c5daacb621f2415e467c3aa054620cb0d07b03ee0c7e4277c4d079c57  propfirms/propfirms/contract/evals.py
+a25508b35c66a0bea413b8fd2ad57688dd25cae991226842788f87e9f1eb130b  propfirms/propfirms/spec.py
+f47c663dc276fc3f145d23b6de66517dd1c41c08ee6d85d76f0956651c23309e  propfirms/results/ceilings_lucid-trading.csv
+987c867d89026393799c00d21e92a8c4497bdf130d556ee7d31433675d43ed78  propfirms/results/ceilings_lucid-trading.csv.manifest.json
+aced97358ff8c6ba4161a64d30d51fc200f3e3162991228e168cf906500e929d  propfirms/results/t4_validation.csv
+f67726309e040920bd9921bdbec8c531400244dac0e032222208fc38c761170f  propfirms/results/t4_validation.csv.manifest.json
+a095fdc86cef54c385ec77026b381296faedb0e6d38ec3010e5eed2dce0a305f  propfirms/results/t5_eval_supremum.csv
+3b3a7099e1b9c6852c461c65d44566bc88316bb9a5c31ac131e048e8db82056b  propfirms/results/t5_eval_supremum.csv.manifest.json

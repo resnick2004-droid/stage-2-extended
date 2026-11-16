@@ -1,0 +1,63 @@
+# config/t23_capture.yaml -- T23's per-trade capture (D-416), fixed before any of its data is read.
+#
+# Why (the operator, 2026-10-23, after D-415: "Yes, build the capture"): "big trade first, then flips" passed stage one's
+# contract fit only thinly (D-415), with the big trade's 25/37.5-point bracket estimated, never measured, and the
+# Combine's 20-point bracket losing several per cent of its risk a trade to costs. Costs are a fixed amount a micro, so a
+# wider bracket in points carries the same dollars on fewer micros at a smaller cost share; it also resolves more slowly,
+# which the five-a-day, one-at-a-time schedule (R1, R2) must absorb. This capture measures, at the collect map's fixed
+# times, how every bracket of a declared set ends and when -- no box (D-212: a trade runs to its target, its stop or
+# the day's end) -- so the distance is chosen on measured costs and resolution by the rule below, and the chosen
+# protocol's prop-environment run has per-trade sequences.
+#
+# Two QuantConnect runs, NQ at actual prices, development data only (D-237): R147 2020-01-01 to 2022-12-31 and R148
+# 2023-01-01 to 2025-06-30, on minute bars; a minute that first reaches a bracket's target and its stop settled on its
+# one-second bars (R138's history request, D-344, as R145). Records only: no bar or price leaves (D-120).
+status: fixed
+decision: D-416
+market: NQ
+runs:
+  - {run: R147-t23-NQ-2022, warm: "2019-12-20", start: "2020-01-01", end: "2022-12-31"}
+  - {run: R148-t23-NQ-2025, warm: "2022-12-20", start: "2023-01-01", end: "2025-06-30"}
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:                            # the collect map's slots (R137's, D-343), so R137's measured entry spreads price them
+  open_ct: "17:00"
+  flatten_ct: "15:10"
+  decision_every_min: 60        # every hour start from 17:00 to 14:00 CT ...
+  last_decision_ct: "14:00"
+  extra_decisions_ct: ["08:30"] # ... and 08:30 CT: 23 slots
+entry_delays_min: [0, 2]        # on time (the slot's first bar's open) and two bars late (the seated latency, D-282)
+slip_ticks: 1                   # one tick adverse at entry and at an end (D-95); the scorer costs the rest
+sides: "long and short at every slot-day (the side rule is the scorer's, declared below)"
+brackets:                       # (target, stop) in NQ points; whole ticks; the outcome is the same for any micro count
+  - [20, 20]                    # 1:1 at 20 -- the Combine and variant (i)'s funded trade (D-414); the flip at 5 MNQ ($200)
+  - [25, 25]                    # 1:1 at 25
+  - [30, 30]                    # 1:1 at 30
+  - [40, 40]                    # 1:1 at 40
+  - [30, 20]                    # 1.5:1 at a 20-point stop
+  - [37.5, 25]                  # 1.5:1 at 25 -- stage one's funded anchor, $1,000 on 20 micros (variant (ii), D-414)
+  - [45, 30]                    # 1.5:1 at 30
+  - [60, 40]                    # 1.5:1 at 40
+  - [20, 40]                    # the flip at 2x (5 MNQ, $200 target, $400 stop), beside
+fills: "a target is reached when a bar trades THROUGH it (a resting limit); a stop when a bar touches it or opens beyond
+  it -- an open beyond it fills there, the gap beyond the stop recorded in ticks (collect_core's walk, D-381)"
+ties: "a minute bar that first reaches a bracket's target and its stop is settled on that minute's one-second bars; a
+  second reaching both, or a minute the history cannot serve, is the stop's, marked (counted)"
+end: "a bracket at neither by the day's last bar at or before 15:10 CT (or the cut) ends there at the bar's close, one
+  tick adverse, its P&L in ticks recorded -- the collect map's scratch, with no box"
+a3: "per slot-day the sign of the last sixty minutes' move at the slot's bar (A3, D-374): the side rule's input"
+early_close_days: skipped       # holiday sessions, known in advance (D-215): a day record, no walk
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # no walk that trading day
+  bls: data/release_days_0830_2009_2025.csv   # BLS 08:30 ET (07:30 CT): a bracket still open is ended at the close
+  bls_cut_ct: "07:30"           #   of the last bar before 07:30 CT -- never held into it
+# --- what the chooser (D-416 (6)) reads, fixed before any record is read -------------------------------------------------
+periods: {choice: ["2021-01-01", "2023-12-31"], check: ["2024-01-01", "2025-06-30"], beside: ["2020-01-01", "2020-12-31"]}
+configurations:                 # one stop distance for the Combine (1:1) and the big funded trade (1.5:1); the flip fixed
+  - {name: d20, combine: [20, 20], big: [30, 20], flip: [20, 20]}
+  - {name: d25, combine: [25, 25], big: [37.5, 25], flip: [20, 20]}
+  - {name: d30, combine: [30, 30], big: [45, 30], flip: [20, 20]}
+  - {name: d40, combine: [40, 40], big: [60, 40], flip: [20, 20]}
+side_rule: "A3 -- the side of the last sixty minutes' move at the slot (a zero or missing sign: no trade that slot);
+  a seeded coin beside (seed 20261023)"
+delay_rule: 2                   # the chooser reads the seated delay (two bars); on time beside
+counting: "every configuration and bracket under D-416:t23_capture"

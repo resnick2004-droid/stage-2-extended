@@ -1,0 +1,48 @@
+{
+  "columns": [
+    "quantity",
+    "stage",
+    "value",
+    "units",
+    "formula",
+    "rule_keys",
+    "note"
+  ],
+  "description": "T3 analytic ceilings for Lucid Trading (lucid-trading): zero-edge martingale bounds (P(pass) ceiling; E[gross payouts] ceiling = min(cushion, almost-sure cap)). Deterministic closed form - no randomness anywhere in the computation, hence require_seed=False (P-01 \u00a76).",
+  "exploratory": false,
+  "git_commit": "9256df5526892422e5f6e4b9609cb32471d4850d",
+  "git_dirty": false,
+  "notes": {
+    "oracle_check": "Topstep identity reproduced from vendored Rules(): P(pass) ceiling = 2/5, funded cushion = $2,000 (vendor/propsim/README.md, 'Mathematical structure')"
+  },
+  "parameters": {
+    "C_funded_usd": 2000.0,
+    "D_eval_usd": 2000.0,
+    "G_eval_usd": 3000.0,
+    "K_hard_cap_usd": 10000.0,
+    "eval_drawdown_type": "eod_trailing",
+    "funded_drawdown_type": "eod_trailing",
+    "lifetime_payouts": 5,
+    "payout_split": 0.9,
+    "per_payout_cap_usd": 2000.0,
+    "pinned_rules_yaml_sha256": "f1f1c572d3dece66dee0da7bd7160b2a18e7d53080722911630f0caddb99a08e"
+  },
+  "prereg_id": "P-01",
+  "provenance": {
+    "docstring_first_line": "propsim.py \u2014 Gate-1 contract engine for Topstep 50K (A0, 2026-09-12b, no-DLL instance).",
+    "engine": "propsim (stage one, vendored)",
+    "firm": "Lucid Trading",
+    "module_file": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\vendor\\propsim\\propsim.py",
+    "path": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\vendor\\propsim",
+    "program": "LucidFlex, $50,000 account (futures evaluation -> sim-funded -> live after 5 payouts). Chosen per D-06 as the mainstream plan at the tier closest to $50K: LucidFlex is the first plan listed on the firm's own help centre and has the fullest rule set. Other plans at the same tier exist (LucidDaily, LucidPro, LucidDirect, LucidBlack legacy, LucidMaxx, LucidLive) \u2014 see ledger \u00a7E.",
+    "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\lucid-trading\\rules.yaml",
+    "rules_yaml_sha256": "f1f1c572d3dece66dee0da7bd7160b2a18e7d53080722911630f0caddb99a08e"
+  },
+  "result_file": "ceilings_lucid-trading.csv",
+  "rows": 7,
+  "script": "scripts/run_ceilings.py",
+  "seed": null,
+  "sha256": "f47c663dc276fc3f145d23b6de66517dd1c41c08ee6d85d76f0956651c23309e",
+  "timestamp": "2026-10-04T16:59:50+00:00",
+  "variant_count": 1
+}

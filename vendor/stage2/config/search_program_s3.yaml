@@ -1,0 +1,40 @@
+# Batch S3 of the rolling model search (D-578), declared under D-586 before its code is built or anything is read.
+# A separate file because config/search_program.yaml is pinned by sha256 (D-579) and read as text by S1's and S2's
+# builds; that file is not edited. This file is valid YAML and is pinned the same way by S3's build.
+batch:
+  id: S3
+  decision: D-586
+  program: D-578                   # the program's rules, guards, data window and reference (P-16) apply unchanged
+  name: sided coin, new event kinds
+  source: config/search_program.yaml proposed_not_declared[0] -- finer and new event kinds on A4's protocol
+  alpha: 0.0041666667              # 0.05 / (3 * 4), batch 3's share of the program-wide 5 %
+  idea: >-
+    S1's design exactly (D-579's readings): P-16's schedule, stop (150 ticks), windows, news-safe cut, table and engine;
+    only each offer's side changes -- it comes from a declared rule on bars closed at or before the mark, not a coin.
+    Follow and fade are one two-sided test (fade = minus follow). A tie (rule undefined or zero) is excluded from the
+    lift and takes P-16's own coin side in the campaign (G1) and that sequence's coin in G2; the tie share is reported.
+  stop_ticks: 150
+  rules:                           # 13 rules; side = the sign given; "none yet today" or undefined -> tie
+    lbrk1: side of the most recent 1-min brk event (atlas_core.a_events, the whole day's clock) at or before t
+    lbrk2: side of the most recent 2-min brk event at or before t
+    lbrk3: side of the most recent 3-min brk event at or before t
+    lnbar1x4: side of the most recent nbar event, k = 1, n = 4, at or before t
+    lnbar1x8: side of the most recent nbar event, k = 1, n = 8, at or before t
+    lnbar3x4: side of the most recent nbar event, k = 3, n = 4, at or before t
+    lnbar3x8: side of the most recent nbar event, k = 3, n = 8, at or before t
+    gap_glbx: sign(open of the session's first bar - the previous trading day's last close at or before 16:00 CT); one side all day; the first development day ties
+    gap_rth: sign(open of the first bar ending after 08:30 CT - the previous trading day's last close at or before 16:00 CT); marks before that bar's end tie
+    lout5: close-minus-open sign of the most recent completed 5-min bar (clock-aligned, atlas_core.a_bars) whose high is above and low below the previous 5-min bar's (an outside bar), at or before t; a zero body ties
+    lout15: the same on 15-min bars
+    lrx5: close-minus-open sign of the most recent completed 5-min bar whose high-low range is at least twice the mean range of the 10 completed 5-min bars before it in the same trading day, at or before t; fewer than 10 prior bars -> not a candidate bar; a zero body ties
+    lrx15: the same on 15-min bars
+  stage_1:                         # cheap, exact: per-offer lift over the coin twin, every offered mark
+    lift: (rule side's net R - other side's net R) / 2 at every offered R (0.25, 1, 1.5, 2, 2.5, 3), P-16's walk and costs
+    hypotheses: 78                 # 13 rules x 6 R
+    test: studentised max-statistic, stationary block bootstrap by session (block 21, 2,000 reps, seed 20261109), family-wise at alpha; Benjamini-Hochberg at 10 % beside, never selecting
+  stage_2:                         # survivors only (rule, sign): the campaign, every survivor through all four guards
+    engine: rc150_routing's paired run -- the cell's coins replaced by the rule's sides; campaign seed 20261131, 500 paths
+    guards: D-578's four (paired +0.05 at the bound; every offered R resolves; at least 40 of 50 coin sequences, seeds 20261600 + i, 200 paths; not below P-16 on either span alone)
+  with_no_survivor: stage 1 and the reference's paired row only
+  variants: 13
+  writes: results/s3_event_kinds.csv (EXPLORATORY, variants under D-578:S3)

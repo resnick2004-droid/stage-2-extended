@@ -1,0 +1,409 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "config",
+    "arm",
+    "check",
+    "holds",
+    "compared",
+    "differing",
+    "refuses",
+    "cell",
+    "base",
+    "role",
+    "block",
+    "measure",
+    "what",
+    "direction",
+    "unit",
+    "measure_role",
+    "value",
+    "n",
+    "counted",
+    "overrides",
+    "row_to_beat",
+    "chosen",
+    "line",
+    "reference",
+    "reference_value",
+    "difference",
+    "lower",
+    "level",
+    "k",
+    "boot_block",
+    "draws",
+    "seed",
+    "first_date",
+    "last_date",
+    "worse_by",
+    "allowed",
+    "blank",
+    "n_reference",
+    "own_row_to_beat",
+    "own_row_to_beat_value",
+    "year",
+    "worse",
+    "years_worse",
+    "status",
+    "verdict",
+    "first_failing",
+    "family",
+    "decision",
+    "cells",
+    "program_cells",
+    "program_families"
+  ],
+  "description": "EXPLORATORY (D-621, program U): the lever family limit (D-658) on P-16's replay setup -- every cell on every start day, the scorecard, the choice on the early block and the judgement on the late one against R*, the reverse beside, the year rule, and for the chosen cell the coin guard and the gate floor; the identities first.",
+  "exploratory": true,
+  "git_commit": "f85c475d47e532fd36efeb81614a566a99430b6f",
+  "git_dirty": false,
+  "notes": {
+    "selection": "D-621 (3): CARRIED only if every line holds; a carried cell is a new candidate for its own registered development test",
+    "status": "EXPLORATORY (D-621, program U): a lever family judged on the user's milestones by the declared selection rule; beside the gate, never a verdict of the gate (D-234); a carried cell is a new candidate, not a change to any verdict",
+    "variant_count_rule": "one per cell, under D-658:u_limit; the reference cell, the chosen cell's point arm, coin replays and gate floor are readings of cells already counted"
+  },
+  "parameters": {
+    "arm": "verdict",
+    "bases": {
+      "p16": {
+        "coin_design": true,
+        "override_kinds": [
+          "accounts",
+          "combines",
+          "total_accounts",
+          "purchase_budget",
+          "funded_cap_share",
+          "protocol",
+          "payout_timing",
+          "funded_plan",
+          "wallet_stop",
+          "pause_after_funded",
+          "seat_ramp"
+        ],
+        "reference_cell": "reference",
+        "refused_kinds": {},
+        "setup": "U1's p16 configuration (P-16)"
+      }
+    },
+    "blocks": {
+      "early": "starts to the last start of 2023 less the reading's horizon",
+      "late": "starts from the first session of 2024 with the reading's horizon left"
+    },
+    "bootstrap": {
+      "block": 63,
+      "draws": 2000,
+      "interval": "one-sided: the lower limit is the level's quantile",
+      "seed": 20261700
+    },
+    "cells": [
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "flat1500_cons",
+        "overrides": {
+          "funded_plan": {
+            "paid": true,
+            "risk": 1500.0,
+            "rr": 1.0
+          },
+          "protocol": {
+            "payout_path": "consistency"
+          }
+        },
+        "rules": [
+          "xfa_payout_path_choice",
+          "xfa_cons_min_days",
+          "xfa_cons_max_day_frac",
+          "xfa_cons_cap"
+        ]
+      },
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "flat1500",
+        "overrides": {
+          "funded_plan": {
+            "risk": 1500.0,
+            "rr": 1.0
+          }
+        },
+        "rules": []
+      }
+    ],
+    "chosen_base": "p16",
+    "coin_guard": {
+      "applies": "a coin design's only: not applicable to a cell on base p14",
+      "every": 21,
+      "ran": false,
+      "registered_coin": 20261102,
+      "sequences": [
+        20261600,
+        20261601,
+        20261602,
+        20261603,
+        20261604,
+        20261605,
+        20261606,
+        20261607,
+        20261608,
+        20261609,
+        20261610,
+        20261611,
+        20261612,
+        20261613,
+        20261614,
+        20261615,
+        20261616,
+        20261617,
+        20261618,
+        20261619,
+        20261620,
+        20261621,
+        20261622,
+        20261623,
+        20261624,
+        20261625,
+        20261626,
+        20261627,
+        20261628,
+        20261629,
+        20261630,
+        20261631,
+        20261632,
+        20261633,
+        20261634,
+        20261635,
+        20261636,
+        20261637,
+        20261638,
+        20261639,
+        20261640,
+        20261641,
+        20261642,
+        20261643,
+        20261644,
+        20261645,
+        20261646,
+        20261647,
+        20261648,
+        20261649
+      ],
+      "starts": "every 21st of the judged block's common start dates",
+      "wins_needed": 40
+    },
+    "decision": "D-621",
+    "declaration_sha256": "0c7a89b6c4e42c5623e1a0e4f69d1af5b4d91fbfcf1ec9913ea35d4c7a50f4df",
+    "expensive_lines": "the gate floor and the coin guard run for the chosen cell only, each only while every line before it holds (the verdict is the first failing line)",
+    "family": "limit",
+    "family_decision": "D-658",
+    "family_id": "D-658:u_limit",
+    "funded_plans": {
+      "cells": {
+        "flat1500": {
+          "base_table": "state_dp_e-0.050_lamstar_noclose",
+          "conduct_flags": [
+            "regime 'combine $250 0.25R': R 0.25, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)",
+            "regime 'paid $500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'paid $250 1R': R 1, winners not larger than losers (Responsible Trading Program)"
+          ],
+          "conduct_flags_base": 11,
+          "conduct_flags_new": [
+            "regime 'funded flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)"
+          ],
+          "funded_leaves": 1260,
+          "funded_no_trade_leaves": 129,
+          "leaf": "funded flat $1,500 1R",
+          "max_trades": 1,
+          "paid": false,
+          "paid_leaf": "",
+          "paid_leaves": 0,
+          "paid_no_trade_leaves": 0,
+          "paid_replaced": false,
+          "paid_was_explicit": true,
+          "risk": 1500.0,
+          "rr": 1.0,
+          "sizing": [
+            {
+              "at_cap": true,
+              "cap_micros": 20,
+              "from_balance": 0.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            },
+            {
+              "at_cap": false,
+              "cap_micros": 30,
+              "from_balance": 1500.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            },
+            {
+              "at_cap": false,
+              "cap_micros": 50,
+              "from_balance": 2000.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            }
+          ],
+          "table": "state_dp_e-0.050_lamstar_noclose_flat1500"
+        },
+        "flat1500_cons": {
+          "base_table": "state_dp_e-0.050_lamstar_noclose",
+          "conduct_flags": [
+            "regime 'combine $250 0.25R': R 0.25, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)",
+            "regime 'paid flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'paid flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)"
+          ],
+          "conduct_flags_base": 11,
+          "conduct_flags_new": [
+            "regime 'funded flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'funded flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)",
+            "regime 'paid flat $1,500 1R': R 1, winners not larger than losers (Responsible Trading Program)",
+            "regime 'paid flat $1,500 1R': risk $1,500 above half the $2,000 drawdown, an account-deciding position (Responsible Trading Program)"
+          ],
+          "funded_leaves": 1260,
+          "funded_no_trade_leaves": 129,
+          "leaf": "funded flat $1,500 1R",
+          "max_trades": 1,
+          "paid": true,
+          "paid_leaf": "paid flat $1,500 1R",
+          "paid_leaves": 1356,
+          "paid_no_trade_leaves": 374,
+          "paid_replaced": true,
+          "paid_was_explicit": true,
+          "risk": 1500.0,
+          "rr": 1.0,
+          "sizing": [
+            {
+              "at_cap": true,
+              "cap_micros": 20,
+              "from_balance": 0.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            },
+            {
+              "at_cap": false,
+              "cap_micros": 30,
+              "from_balance": 1500.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            },
+            {
+              "at_cap": false,
+              "cap_micros": 50,
+              "from_balance": 2000.0,
+              "micros": 20,
+              "realised": 1500.0,
+              "risk_per_micro": 75.0,
+              "taken": true
+            }
+          ],
+          "table": "state_dp_e-0.050_lamstar_noclose_flat1500_paid"
+        }
+      },
+      "decision": "D-653",
+      "what": "the base's table with its funded phase (activation to the first payout) replaced by one leaf; the evaluation's and the paid phase's leaves the base's; not re-solved; the funded leg's edge and bound keys and the protocol's funded leg re-pointed to the plan's R and dollars; payout requests are the engine's, not a leaf's"
+    },
+    "gate_floor": {
+      "paths": 500,
+      "ran": false,
+      "registered_call": {
+        "p14": "a3_brk30_cb20's gate campaign at seed 20261131, 500 paths, against a3_brk30_cb20_gate.csv's section gate rows at 0 % and a3_brk30_cb20_gate_paths.csv's gate run path for path",
+        "p16": "rc_screen.Runner's form at seed 20261131, 500 paths, against rc_width_screen.csv's rc_s150_all row"
+      },
+      "row_to_beat": "P-06",
+      "seed": 20261801
+    },
+    "k": 8,
+    "level": 0.0006944444444444445,
+    "p": "months 1 to 3 ending above zero over three, on the starts with 63 sessions",
+    "program_by_family": {
+      "D-629:u_budget": 8,
+      "D-630:u_entry": 14,
+      "D-635:u_seats": 8,
+      "D-639:u_hours": 6,
+      "D-644:u_firms": 18,
+      "D-646:u_consistency": 4,
+      "D-653:u_plan": 12,
+      "D-658:u_limit": 2
+    },
+    "program_cells": 72,
+    "r_star": "p14",
+    "r_star_is_a_stand_in": false,
+    "references": {
+      "rc_s150_all_gate_slices.csv": "31831695ac5a1ec7d193fcf5d64913d6f38ae2354253202970cfcaa633a42833",
+      "rc_width_screen.csv": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+      "scoreboard.csv": "1c6b2beb424ad4e7d3f67d69a9b2be1dc72f9ae254368ca61c2d83dabc03f712",
+      "user_journey.csv": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "rows_to_beat": {
+      "P": "p14",
+      "S1": "p14",
+      "S3a": "p14",
+      "S3b": "p14",
+      "S3c": "p16",
+      "S4a": "p14",
+      "S4b": "p14",
+      "S5a": "p14",
+      "S5b": "p16",
+      "S5c": "p16"
+    },
+    "seconds": 1455.3,
+    "seeds": {
+      "bootstrap": 20261700,
+      "campaign": 20261131,
+      "coin": 20261102,
+      "note": "a replay draws nothing"
+    },
+    "timing": {
+      "flat1500_cons|point": {
+        "seconds": 240.0,
+        "starts": 1691
+      },
+      "flat1500_cons|verdict": {
+        "seconds": 229.0,
+        "starts": 1691
+      },
+      "flat1500|verdict": {
+        "seconds": 264.4,
+        "starts": 1691
+      },
+      "p16|verdict": {
+        "seconds": 637.7,
+        "starts": 1691
+      }
+    },
+    "tolerances": {
+      "blank": "a blank on either side fails the line",
+      "relative": 0.1,
+      "share": 0.05,
+      "zero_reference": "no relative tolerance"
+    },
+    "workers": 2
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_limit.csv",
+  "rows": 154,
+  "script": "scripts/u_family.py",
+  "seed": 20261700,
+  "sha256": "74ddd4da16d3fa01a0c778281e7d9457c507decdae096fc0de0797c9f52eb6fa",
+  "timestamp": "2026-11-15T12:59:07+00:00",
+  "variant_count": 2
+}

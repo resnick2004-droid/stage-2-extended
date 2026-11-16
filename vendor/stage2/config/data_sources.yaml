@@ -1,0 +1,696 @@
+# config/data_sources.yaml — facts about the QuantConnect data source, with their provenance
+#
+# This is NOT the rules ledger. `config/rules.yaml` holds firm rules read on the official Topstep
+# help centre; this file holds facts about the vendor's data and server: dataset membership,
+# start dates, the continuous-contract roll rule, resolution, and the MCP server version (D-78).
+#
+# Same discipline as the ledger. `propedge/data/sources.py` loads this file and RAISES if code
+# asks for a fact whose status is not "read". A fact is "read" only with its full provenance:
+#
+#   what_read   - what was actually read (the response field, the log line, the tool output)
+#   method      - how: `mcp_tool` (a tool call in an agent session), `api_script` (a committed
+#                 script calling the QuantConnect API) or `manual_run` (a committed kit in
+#                 runs/<run-id>/, run by hand in the web editor and ingested; D-82)
+#   identifier  - the tool name; the script path plus the run's ids; or runs/<run-id> plus the
+#                 QuantConnect project and backtest ids
+#   date_read   - the date it was read
+#   read_by     - who or what read it
+#
+# `requires` fixes the method in advance. Dataset facts accept `api_script` or `manual_run`
+# (D-82), never `mcp_tool`: an answer whose only provenance is an agent conversation has no
+# manifest (docs/QUANTCONNECT_MCP.md). The server version is a property of the running
+# container, so it requires `mcp_tool`.
+#
+# Status values (must match docs/DATA_SOURCES.md):
+#   read     - answered from the source, with full provenance below.   USABLE.
+#   unread   - not yet read. Value is null.                            NOT usable.
+#
+# docs/DATA_SOURCES.md is GENERATED from this file: `python scripts/gen_data_sources.py`.
+# `tests/test_data_sources_agreement.py` fails if the two drift.
+
+meta:
+  record: docs/DATA_SOURCES.md
+  vendor: QuantConnect (AlgoSeek datasets, cloud only; D-39)
+  generated: 2026-09-23
+
+facts:
+
+  # ------------------------------------------------------------ MCP server
+  mcp_server_version:
+    question: Version of the running quantconnect/mcp-server container
+    requires: mcp_tool
+    value: "0.0.10"
+    status: read
+    what_read: >
+      The tool's response body, {"result":"0.0.10"}.
+    method: mcp_tool
+    identifier: mcp__quantconnect__read_mcp_server_version
+    date_read: 2026-09-23
+    read_by: Claude Code agent session (claude-opus-5-5), at the user's instruction
+    note: >
+      Running image quantconnect/mcp-server:latest, launched from .mcp.json (commit 48e0d35).
+
+  mcp_latest_server_version:
+    question: Latest published quantconnect/mcp-server version, to compare with the running one
+    requires: mcp_tool
+    value: "0.0.10"
+    status: read
+    what_read: >
+      The tool's response body, {"result":"0.0.10"}.
+    method: mcp_tool
+    identifier: mcp__quantconnect__read_latest_mcp_server_version
+    date_read: 2026-09-23
+    read_by: Claude Code agent session (claude-opus-5-5), at the user's instruction
+    note: >
+      Equal to mcp_server_version: the running container is the latest release, so the notebook answer below describes the current server, not a stale one.
+
+  mcp_notebook_tools:
+    question: Which research-notebook tools, if any, the running server exposes (QUANTCONNECT_MCP.md §4)
+    requires: mcp_tool
+    value: "none"
+    status: read
+    what_read: >
+      The tool list the running 0.0.10 server advertised to the session (tools/list), searched for jupyter/notebook/research/cell. It advertises 51 tools besides the 15 live-trading names denied in .claude/settings.json; none is jupyter_create_cell, jupyter_execute_cell, jupyter_read_notebook or any other notebook tool.
+    method: mcp_tool
+    identifier: tools/list of the running server at version 0.0.10 (see mcp_server_version); ToolSearch over it
+    date_read: 2026-09-23
+    read_by: Claude Code agent session (claude-opus-5-5), at the user's instruction
+    note: >
+      Resolves docs/QUANTCONNECT_MCP.md section 4 in favour of the repository tool list: the docs page's Research category is not exposed by server 0.0.10. create_file accepts .ipynb content, so a notebook file can be written, but nothing can execute a cell. Measurements therefore run as backtests recording statistics, as already assumed. Re-read if the server version changes.
+
+  # ------------------------------------------------------------ US Equities
+  equities_spy_present:
+    question: Is SPY in the AlgoSeek US Equities dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  # ------------------------------------------------------------ US Futures membership
+  futures_present_es:
+    question: Is ES in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_nq:
+    question: Is NQ in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_gc:
+    question: Is GC in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_cl:
+    question: Is CL in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_6e:
+    question: Is 6E in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_zn:
+    question: Is ZN in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_hg:
+    question: Is HG in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_ng:
+    question: Is NG in the US Futures dataset?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  # ------------------------------------------------------------ start dates within May 2009
+  futures_start_es:
+    question: First available ES date, within May 2009
+    requires: [api_script, manual_run]
+    value: "on or before 2008-11-03"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_nq:
+    question: First available NQ date, within May 2009
+    requires: [api_script, manual_run]
+    value: "on or before 2008-11-03"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_gc:
+    question: First available GC date, within May 2009
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_cl:
+    question: First available CL date, within May 2009
+    requires: [api_script, manual_run]
+    value: "on or before 2008-11-03"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_6e:
+    question: First available 6E date, within May 2009
+    requires: [api_script, manual_run]
+    value: "2008-11-17"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_zn:
+    question: First available ZN date, within May 2009
+    requires: [api_script, manual_run]
+    value: "on or before 2008-11-03"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_hg:
+    question: First available HG date, within May 2009
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_ng:
+    question: First available NG date, within May 2009
+    requires: [api_script, manual_run]
+    value: "on or before 2008-11-03"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  # ------------------------------------------------------------ roll and resolution
+  futures_roll_rule:
+    question: The continuous-contract roll rule (mapping mode, normalisation, depth offset)
+    requires: [api_script, manual_run]
+    value: "defaults mapping=OPEN_INTEREST;normalisation=ADJUSTED;depth=0; applied OPEN_INTEREST/ADJUSTED/0,OPEN_INTEREST/BACKWARDS_RATIO/0"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  resolution_minute:
+    question: Is minute resolution available for every contract above and SPY?
+    requires: [api_script, manual_run]
+    value: false
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_dataset_checks).
+    method: manual_run
+    identifier: runs/R001-dataset-checks project 36895258 backtest 516294409885fa267915b896d10642e8 -> results/manual_R001_dataset_checks.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "false only because GC and HG received no bars (period None); every symbol that received bars was minute (results/manual_R001_dataset_checks.csv). Parser corrected to judge received symbols only (D-89)."
+
+  futures_present_gc_2009_2014:
+    question: Were GC minute bars received anywhere in 2009-08-03 to 2014-05-27 (R001 received none earlier)?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_coverage_checks).
+    method: manual_run
+    identifier: runs/R005-gc-coverage project 36895762 backtest 831a869c10a76ac1982719dd651da7f3 -> results/manual_R005_gc_coverage.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_gc_2009_2014:
+    question: First GC minute bar in 2009-08-03 to 2014-05-27
+    requires: [api_script, manual_run]
+    value: "2012-11-01"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_coverage_checks).
+    method: manual_run
+    identifier: runs/R005-gc-coverage project 36895762 backtest 831a869c10a76ac1982719dd651da7f3 -> results/manual_R005_gc_coverage.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_present_hg_2009_2014:
+    question: Were HG minute bars received anywhere in 2009-08-03 to 2014-05-27 (R001 received none earlier)?
+    requires: [api_script, manual_run]
+    value: "yes"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_coverage_checks).
+    method: manual_run
+    identifier: runs/R005-gc-coverage project 36895762 backtest 831a869c10a76ac1982719dd651da7f3 -> results/manual_R005_gc_coverage.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_start_hg_2009_2014:
+    question: First HG minute bar in 2009-08-03 to 2014-05-27
+    requires: [api_script, manual_run]
+    value: "2011-09-28"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_coverage_checks).
+    method: manual_run
+    identifier: runs/R005-gc-coverage project 36895762 backtest 831a869c10a76ac1982719dd651da7f3 -> results/manual_R005_gc_coverage.csv
+    date_read: 2026-09-23
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  # ------------------------------------------------------------ extra datasets (D-127, R036-R037)
+
+  futures_quotes_es:
+    question: Years in 2009-06-01 to 2014-05-27 in which ES minute quote bars with a bid and an ask were received (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "Presence only. R036 subscribed with QuantConnect's default continuous-contract settings, whose applied normalisation is BACKWARDS_RATIO (futures_roll_rule), so its bid and ask are ratio-adjusted and the spread buckets (s0-s3) in results/manual_R036_data_extras.csv are NOT a spread measurement. Spreads are measured on RAW prices of the volume-chosen contract, as the atlas kits read them."
+
+  futures_quote_sizes_es:
+    question: Years in 2009-06-01 to 2014-05-27 in which ES minute quote bars carried both bid and ask sizes (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_quotes_nq:
+    question: Years in 2009-06-01 to 2014-05-27 in which NQ minute quote bars with a bid and an ask were received (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "Presence only; the spread buckets are on ratio-adjusted prices and are not a spread measurement (see futures_quotes_es)."
+
+  futures_quote_sizes_nq:
+    question: Years in 2009-06-01 to 2014-05-27 in which NQ minute quote bars carried both bid and ask sizes (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  futures_minute_vx:
+    question: Years in 2009-06-01 to 2014-05-27 in which VIX futures (VX, CFE) minute trade bars were received (R036)
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "The symbol was added without error, and no VX bar or quote of any kind arrived. LEAN's closing log line reads: 'Due to numerical precision issues in the factor file, data for the following symbols was adjust to a later starting date: [/VX, 10/30/2009]'. Not proof the dataset lacks VX, only that this account received none in the span with default settings."
+
+  futures_start_vx:
+    question: First day VIX futures data arrived in 2009-06-01 to 2014-05-27 (R036)
+    requires: [api_script, manual_run]
+    value: "no data received"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_minute_vix:
+    question: Years in 2009-06-01 to 2014-05-27 in which VIX index minute bars were received through the subscription (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_daily_vix:
+    question: Years in 2009-06-01 to 2014-05-27 in which VIX index daily bars were returned by a history request (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_minute_spx:
+    question: Years in 2009-06-01 to 2014-05-27 in which SPX index minute bars were received through the subscription (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_daily_spx:
+    question: Years in 2009-06-01 to 2014-05-27 in which SPX index daily bars were returned by a history request (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_minute_ndx:
+    question: Years in 2009-06-01 to 2014-05-27 in which NDX index minute bars were received through the subscription (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  index_daily_ndx:
+    question: Years in 2009-06-01 to 2014-05-27 in which NDX index daily bars were returned by a history request (R036)
+    requires: [api_script, manual_run]
+    value: "2009,2010,2011,2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_extras).
+    method: manual_run
+    identifier: runs/R036-data-extras project 36966839 backtest abec332ac22d8c906e8f850218505497 -> results/manual_R036_data_extras.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_chains_spx:
+    question: Years in 2011-12-01 to 2014-05-27 with a non-empty daily SPX index options chain (R037)
+    requires: [api_script, manual_run]
+    value: "2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_start_spx:
+    question: First day a SPX index options chain arrived in 2011-12-01 to 2014-05-27 (R037)
+    requires: [api_script, manual_run]
+    value: "2012-01-04"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "A daily bar is delivered at the start of the next day, so a first chain dated 2012-01-04 is the first 2012 session. The underlying's bars arrived through December 2011 with no chain, so the options data begins in January 2012, as documented. The same holds for ndx, es and nq."
+
+  options_fields_spx:
+    question: Which of open interest, implied volatility, gamma and a price are non-zero on most, some or none of the SPX index options contracts observed (R037)
+    requires: [api_script, manual_run]
+    value: "open_interest=most;implied_volatility=most;gamma=most;price=most"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: "Populated means non-zero, not correct. The run does not say whether implied volatility and gamma come from QuantConnect's daily option-universe files or from LEAN's own pricing model on the option's price; for futures options no universe file with Greeks is documented, so there they are presumably LEAN's. Any feature built on them states which, and is checked against a direct computation. The same holds for ndx, es and nq."
+
+  options_chains_ndx:
+    question: Years in 2011-12-01 to 2014-05-27 with a non-empty daily NDX index options chain (R037)
+    requires: [api_script, manual_run]
+    value: "2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_start_ndx:
+    question: First day a NDX index options chain arrived in 2011-12-01 to 2014-05-27 (R037)
+    requires: [api_script, manual_run]
+    value: "2012-01-04"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_fields_ndx:
+    question: Which of open interest, implied volatility, gamma and a price are non-zero on most, some or none of the NDX index options contracts observed (R037)
+    requires: [api_script, manual_run]
+    value: "open_interest=most;implied_volatility=most;gamma=most;price=most"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_chains_es:
+    question: Years in 2011-12-01 to 2014-05-27 with a non-empty daily ES futures options chain (R037)
+    requires: [api_script, manual_run]
+    value: "2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_start_es:
+    question: First day a ES futures options chain arrived in 2011-12-01 to 2014-05-27 (R037)
+    requires: [api_script, manual_run]
+    value: "2012-01-04"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_fields_es:
+    question: Which of open interest, implied volatility, gamma and a price are non-zero on most, some or none of the ES futures options contracts observed (R037)
+    requires: [api_script, manual_run]
+    value: "open_interest=most;implied_volatility=most;gamma=most;price=most"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_chains_nq:
+    question: Years in 2011-12-01 to 2014-05-27 with a non-empty daily NQ futures options chain (R037)
+    requires: [api_script, manual_run]
+    value: "2012,2013,2014"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_start_nq:
+    question: First day a NQ futures options chain arrived in 2011-12-01 to 2014-05-27 (R037)
+    requires: [api_script, manual_run]
+    value: "2012-01-04"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null
+
+  options_fields_nq:
+    question: Which of open interest, implied volatility, gamma and a price are non-zero on most, some or none of the NQ futures options contracts observed (R037)
+    requires: [api_script, manual_run]
+    value: "open_interest=most;implied_volatility=most;gamma=most;price=most"
+    status: read
+    what_read: >
+      The run's summary lines in logs.txt, parsed by propedge/data/manual_parsers.py (parse_options).
+    method: manual_run
+    identifier: runs/R037-data-options project 36967154 backtest cbfa3e96b45391585f4971f5d137042a -> results/manual_R037_data_options.csv
+    date_read: 2026-09-25
+    read_by: Ryan Resnick (human-run in QuantConnect web editor), ingested by scripts/ingest_manual_run.py
+    note: null

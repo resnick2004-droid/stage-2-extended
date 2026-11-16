@@ -1,0 +1,25 @@
+# config/manual_runs.yaml -- when manual runs in the free web editor stop being worth it (D-82)
+#
+# Evaluated by propedge/data/effort.py on every ingestion, over `evaluate_after_runs` runs in the
+# order they were run, after skipping the first `skip_first_runs`. Upgrade to a paid Quant
+# Researcher seat if ANY threshold is exceeded. The effort figures come from
+# results/manual_run_effort.csv.
+#
+# STATUS: confirmed by the operator 2026-09-23 (D-83), as proposed in D-82, with one change: the
+# window is runs 2-6, not 1-5, because R001 carries one-off setup (learning the editor, creating
+# the first project) that later runs will not.
+
+upgrade_rule:
+  status: confirmed                 # 2026-09-23, D-83
+  skip_first_runs: 1                # R001's one-off setup is excluded (D-83)
+  evaluate_after_runs: 5            # so the window is runs 2-6
+  # Mean operator minutes per run, from opening the kit to finishing ingestion. A scripted run
+  # needs a few minutes of attention; above this, the manual route costs about an hour of a
+  # person's time for every two runs.
+  max_mean_minutes: 30
+  # Mean fix-and-rerun rounds per run. One round per run on average means every run is paid for
+  # twice; above that, the lack of an API to iterate with is the bottleneck.
+  max_mean_rounds: 1.0
+  # Runs cut short or reshaped by a free-tier limit (log size, node, quota). One can be designed
+  # around; a second says the free tier does not fit the work.
+  max_runs_hitting_a_limit: 1

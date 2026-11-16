@@ -1,0 +1,29 @@
+# The operator's Databento bars (licensed for private use, never redistributed) and the atlas walks derived from them:
+# copied into the vendored tree by scripts/vendor_stage2.py --data, hashed in vendor/DATA_MANIFEST_stage2.sha256,
+# never committed.
+vendor/stage2/data/bars/
+vendor/stage2/data/atlas/
+data/bars/
+data/atlas/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+
+# Scratch output
+results/scratch/
+results/*.png
+results/*.parquet
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Claude Code local settings and agent worktrees
+.claude/settings.local.json
+.claude/worktrees/

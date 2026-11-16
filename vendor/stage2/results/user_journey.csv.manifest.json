@@ -1,0 +1,367 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "config",
+    "arm",
+    "check",
+    "holds",
+    "compared",
+    "differing",
+    "refuses",
+    "label",
+    "cell",
+    "key",
+    "group",
+    "measure",
+    "at_days",
+    "month",
+    "year",
+    "value",
+    "n",
+    "start_day",
+    "start_date",
+    "observed",
+    "pass_days",
+    "funded_days",
+    "pay_days",
+    "payouts",
+    "first_pass",
+    "first_funded",
+    "first_payout",
+    "first_payout_cash",
+    "spent_before_first_pass",
+    "spent_before_first_payout",
+    "net_month_1",
+    "net_month_2",
+    "net_month_3",
+    "net_month_4",
+    "net_month_5",
+    "net_month_6",
+    "net_month_7",
+    "net_month_8",
+    "net_month_9",
+    "net_month_10",
+    "net_month_11",
+    "net_month_12",
+    "fees_month_1",
+    "fees_month_2",
+    "fees_month_3",
+    "fees_month_4",
+    "fees_month_5",
+    "fees_month_6",
+    "fees_month_7",
+    "fees_month_8",
+    "fees_month_9",
+    "fees_month_10",
+    "fees_month_11",
+    "fees_month_12",
+    "net_30",
+    "monthly_mean_over_sd",
+    "exact_runs_differing",
+    "reference",
+    "reference_value",
+    "difference",
+    "lo",
+    "hi",
+    "alpha",
+    "block",
+    "draws",
+    "seed"
+  ],
+  "description": "EXPLORATORY (D-620, U1): every trading day of each configuration's development window as a fresh start, replayed for up to 252 sessions in historical order -- the first pass and payout, the net at each month end, payouts per dollar of fees, the payout rhythm, the quit rules, luck against design (sections metric and month), every start's record (section start) and each configuration's paired difference from P-16 with a moving-block bootstrap interval (section paired); the identities first (section identity). No new design; no selection.",
+  "exploratory": true,
+  "git_commit": "d39d9968624a7cef80a4a59b0c0e229d7506ed31",
+  "git_dirty": false,
+  "notes": {
+    "labels": "lucid_upper_bound: the 5 + 1 cell runs Lucid's verified contract with its two unpriced fees at zero -- every figure of it is an upper bound on them",
+    "selection": "none (D-620 (3)(h)); U1's reading gets its own decision row, built from this file",
+    "status": "EXPLORATORY (D-620, U1): a start-day measurement over twelve months; no new design, no selection; beside the verdicts, never a gate (D-234)",
+    "variant_count_rule": "one reading per configuration and arm, under D-620:user_journey"
+  },
+  "parameters": {
+    "arms": {
+      "point": "as traded",
+      "verdict": "every R at the 0.05 bound the design's gate read (the lower_bound arm its recorded slices and journeys were built at); the cells on P-16's trades at P-16's; the London cell at its own (the registered file's beside rows')"
+    },
+    "bootstrap": {
+      "alpha": 0.05,
+      "block": "the reading's horizon in sessions (start days in date order)",
+      "draws": 2000,
+      "interval": "two-sided percentile",
+      "seed": 20261700
+    },
+    "configs": [
+      {
+        "cell": "fv3c_dev",
+        "config": "fv3c",
+        "decision": "D-505",
+        "engine": "single",
+        "group": "d518",
+        "label": ""
+      },
+      {
+        "cell": "a3_brk30",
+        "config": "p13",
+        "decision": "D-500",
+        "engine": "single",
+        "group": "d518",
+        "label": ""
+      },
+      {
+        "cell": "a3_brk30_cb20",
+        "config": "p14",
+        "decision": "D-513",
+        "engine": "single",
+        "group": "d518",
+        "label": ""
+      },
+      {
+        "cell": "rc_s100_all",
+        "config": "p15",
+        "decision": "D-527",
+        "engine": "single",
+        "group": "p15",
+        "label": ""
+      },
+      {
+        "cell": "rc_s150_all_nr",
+        "config": "p16",
+        "decision": "D-544",
+        "engine": "single",
+        "group": "p16",
+        "label": ""
+      },
+      {
+        "cell": "rc_s150_all_nr",
+        "config": "p16_funded_cap",
+        "decision": "D-544",
+        "engine": "single",
+        "group": "p16",
+        "label": ""
+      },
+      {
+        "cell": "rc_s150_all_nr",
+        "config": "p16_4+0",
+        "decision": "D-567",
+        "engine": "joint",
+        "group": "joint",
+        "label": "",
+        "seats": [
+          4
+        ]
+      },
+      {
+        "cell": "rc_s150_all_nr",
+        "config": "p16_5+1",
+        "decision": "D-593",
+        "engine": "joint",
+        "group": "joint",
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          1
+        ]
+      },
+      {
+        "cell": "rc_s150_london",
+        "config": "rc_s150_london",
+        "decision": "D-538",
+        "engine": "single",
+        "group": "p16",
+        "label": ""
+      }
+    ],
+    "conventions": {
+      "blank": "a reading with no eligible start, a percentile beyond the observed days, a concentration whose total is not positive, an interval with fewer common starts than one block",
+      "concentration": "the ceil(n / 4) largest nets over the total",
+      "exact_runs": "a start whose long replay's event days up to h differ from the exact h-session run's is read from the exact run at h",
+      "fees": "payouts received by the close less the net at it, to 1e-6",
+      "first_payout_cash": "the first payout to arrive (same day: the engine's account order)",
+      "net": "cash at a close less the start (the bankroll never binds); month-end and session-30 nets are the long replay's closes",
+      "sd": "sample standard deviations (ddof 1)"
+    },
+    "decision": "D-620",
+    "declaration_sha256": "3b6574afc220ce1b36ca624f90293cc5ad58b01baeaa7f68e4e71aefc0a0eafb",
+    "exact_runs": [
+      21,
+      63,
+      90,
+      126
+    ],
+    "horizon": 252,
+    "limit_reference": "p14",
+    "london_trades_sha256": "6a421c7e1bc9fd69e4880381544e14d1777bf84bdef7f9fd5004f4f024ea8557",
+    "month": 21,
+    "reference": "p16",
+    "references": {
+      "a3_brk30_cb20_gate_slices.csv": "b70701cec6adbcf7cfa1dd2d1bdc1ae47caf5ad500582eb789ed9b68bd7c17f5",
+      "customer_journey.csv": "5b19b0dcf6e1ddccee3e279ed8ab195500cba4844f6d380fe343fbd2650dad43",
+      "customer_slices.csv": "0009afa7be22a657a065f1939ded0f53088e59e17ca6a338cd74ced0f248bd98",
+      "rc150_firm_split.csv": "f54a981128fc7ca973f15ba91908e10f0ef9e61a6b528e71be4a4a9673e750b8",
+      "rc_s100_all_gate.csv": "7e9a599a7cc931b6ebc5161e3f97e8a68cf34838b0f531d0c2cdcf4202b117ed",
+      "rc_s100_all_gate_slices.csv": "7653fa38b3a74385f3b1742d037621e9fd51b345fead7000b8bdf6faff66d470",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "rc_s150_all_gate_slices.csv": "31831695ac5a1ec7d193fcf5d64913d6f38ae2354253202970cfcaa633a42833"
+    },
+    "seconds": 4112.8,
+    "seeds": {
+      "campaign": 20261131,
+      "coin": 20261102,
+      "note": "a replay draws nothing; each configuration's replay is passed the seed its own study passed"
+    },
+    "starts": {
+      "fv3c|point": 1083,
+      "fv3c|verdict": 1083,
+      "p13|point": 1691,
+      "p13|verdict": 1691,
+      "p14|point": 1691,
+      "p14|verdict": 1691,
+      "p15|point": 1691,
+      "p15|verdict": 1691,
+      "p16_4+0|point": 1691,
+      "p16_4+0|verdict": 1691,
+      "p16_5+1|point": 1691,
+      "p16_5+1|verdict": 1691,
+      "p16_funded_cap|point": 1691,
+      "p16_funded_cap|verdict": 1691,
+      "p16|point": 1691,
+      "p16|verdict": 1691,
+      "rc_s150_london|point": 1691,
+      "rc_s150_london|verdict": 1691
+    },
+    "starts_read_from_an_exact_run": {
+      "fv3c|point": 0,
+      "fv3c|verdict": 0,
+      "p13|point": 0,
+      "p13|verdict": 0,
+      "p14|point": 0,
+      "p14|verdict": 0,
+      "p15|point": 0,
+      "p15|verdict": 0,
+      "p16_4+0|point": 0,
+      "p16_4+0|verdict": 0,
+      "p16_5+1|point": 0,
+      "p16_5+1|verdict": 0,
+      "p16_funded_cap|point": 0,
+      "p16_funded_cap|verdict": 0,
+      "p16|point": 0,
+      "p16|verdict": 0,
+      "rc_s150_london|point": 0,
+      "rc_s150_london|verdict": 0
+    },
+    "study": "U1",
+    "timing": {
+      "fv3c|point": {
+        "engine": "single",
+        "seconds": 76.9,
+        "starts": 1083
+      },
+      "fv3c|verdict": {
+        "engine": "single",
+        "seconds": 77.1,
+        "starts": 1083
+      },
+      "p13|point": {
+        "engine": "single",
+        "seconds": 152.3,
+        "starts": 1691
+      },
+      "p13|verdict": {
+        "engine": "single",
+        "seconds": 153.6,
+        "starts": 1691
+      },
+      "p14|point": {
+        "engine": "single",
+        "seconds": 139.7,
+        "starts": 1691
+      },
+      "p14|verdict": {
+        "engine": "single",
+        "seconds": 135.4,
+        "starts": 1691
+      },
+      "p15|point": {
+        "engine": "single",
+        "seconds": 207.3,
+        "starts": 1691
+      },
+      "p15|verdict": {
+        "engine": "single",
+        "seconds": 204.7,
+        "starts": 1691
+      },
+      "p16_4+0|point": {
+        "engine": "joint",
+        "seconds": 196.0,
+        "starts": 1691
+      },
+      "p16_4+0|verdict": {
+        "engine": "joint",
+        "seconds": 195.2,
+        "starts": 1691
+      },
+      "p16_5+1|point": {
+        "engine": "joint",
+        "seconds": 306.0,
+        "starts": 1691
+      },
+      "p16_5+1|verdict": {
+        "engine": "joint",
+        "seconds": 319.3,
+        "starts": 1691
+      },
+      "p16_funded_cap|point": {
+        "engine": "single",
+        "seconds": 191.5,
+        "starts": 1691
+      },
+      "p16_funded_cap|verdict": {
+        "engine": "single",
+        "seconds": 190.3,
+        "starts": 1691
+      },
+      "p16|point": {
+        "engine": "single",
+        "seconds": 187.2,
+        "starts": 1691
+      },
+      "p16|verdict": {
+        "engine": "single",
+        "seconds": 185.0,
+        "starts": 1691
+      },
+      "rc_s150_london|point": {
+        "engine": "single",
+        "seconds": 142.3,
+        "starts": 1691
+      },
+      "rc_s150_london|verdict": {
+        "engine": "single",
+        "seconds": 201.8,
+        "starts": 1691
+      },
+      "twin_5+0|point": {
+        "engine": "joint",
+        "seconds": 218.5,
+        "starts": 1691
+      },
+      "twin_5+0|verdict": {
+        "engine": "joint",
+        "seconds": 313.3,
+        "starts": 1691
+      }
+    },
+    "workers": 3
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "user_journey.csv",
+  "rows": 31991,
+  "script": "scripts/user_journey.py",
+  "seed": 20261700,
+  "sha256": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc",
+  "timestamp": "2026-11-14T17:32:46+00:00",
+  "variant_count": 18
+}

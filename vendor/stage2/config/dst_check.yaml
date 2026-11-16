@@ -1,0 +1,33 @@
+# config/dst_check.yaml -- the clock check across daylight-saving changes (D-386 (7)), fixed before any of its data is
+# read.
+#
+# Why: every kit runs on Chicago time with the same day bookkeeping (D-214, D-215, D-223), and FV3's news rule, the
+# collect map's BLS cut and every scheduled slot read that clock. A clock an hour off on either side of a US
+# daylight-saving change would put each scheduled release an hour from where the kits think it is. The deployment
+# protocol's Gate 4 names the check (`docs/DEPLOYMENT_PROTOCOL.md`, the clock test): a release's spike must land in the
+# release's own minute on the kits' clock across the changes.
+#
+# One QuantConnect run, NQ at actual prices, 2020-01-01 to 2025-06-30 (development only, D-237), on minute bars: on
+# every trading day, the high less low of six bars -- those starting at 06:30, 07:30 and 08:30 CT (the BLS 08:30 ET
+# release is the 07:30 CT bar; the others are an hour either side) and at 12:00, 13:00 and 14:00 CT (the FOMC statement
+# at 2:00 PM ET is the 13:00 CT bar). One short record a day leaves (D-120); the release days come from the scorer's
+# calendars, never the kit's.
+
+status: fixed
+decision: D-386
+market: NQ
+run: R146-dst-NQ
+window: {warm: "2019-12-20", start: "2020-01-01", end: "2025-06-30"}
+contract: {ticker: NQ, tick: 0.25}
+bars_start_ct: ["06:30", "07:30", "08:30", "12:00", "13:00", "14:00"]   # each a one-minute bar, by its START time
+
+# --- what the scorer (scripts/score_dst_check.py) reads, fixed before any record is read --------------------------------
+releases:
+  bls: data/release_days_0830_2009_2025.csv          # BLS releases at 08:30 ET: the 07:30 CT bar
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # scheduled statements at 2:00 PM ET: the 13:00 CT bar
+near_change_days: 7                                  # a release within seven calendar days of a US daylight-saving change
+changes: "the US rule: the second Sunday of March and the first Sunday of November, 2020-2025"
+spike_ratio: 2.0                                     # a bar's range over the median range of the same bar on the year's non-release days
+rule: "it holds when on every near-change release day with any spike (a ratio of at least spike_ratio at one of its three
+  bars) the largest ratio is at the release's own bar; a day without a spike is quiet (counted, no reading); release
+  days away from the changes reported beside as the control"

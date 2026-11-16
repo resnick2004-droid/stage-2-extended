@@ -1,0 +1,73 @@
+# The rolling model search (D-578). Declared before any batch is built or read.
+# A batch's menu is fixed here, under its own decision row, BEFORE its code is built; a batch added later is declared
+# the same way and spends its own share of the program's error budget (alpha_k below). Nothing in a declared batch is
+# edited after it is declared; a change is a new batch.
+program:
+  decision: D-578
+  reference: P-16                  # rc_s150_all_nr: the row to beat (best development row, D-547)
+  data: NQ development only, 2020-01-01 .. 2026-07-16 (config/windows.yaml); nothing later is read
+  family_wise_budget: 0.05         # across ALL batches, ever
+  alpha_k: "0.05 / (k * (k + 1))"  # batch k's family-wise level, by declaration order: S1 0.025, S2 0.00833, ...
+  campaign_guards:                 # a batch's campaign-stage cell is a candidate only if ALL hold (D-568's guards)
+    - growth on the required bankroll at the 0.05 bound exceeds P-16's (paired, same trades/seeds) by more than 0.05
+    - resolves every offered R (D-212, at most 5 % unresolved)
+    - beats P-16 in at least 40 of 50 coin sequences (coin seeds 20261600 + i, 200 paths; D-568 (2))
+    - not below P-16 on either span alone (2020-2023, 2024-2026-07-16)
+  candidate_path: registered development test (prereg-gatekeeper; N counts every variant the program and the RC pools
+    ever tried) -> auditor -> one confirmation on unread data (needs data the operator buys; never assumed)
+  writes: results/s<k>_*.csv, EXPLORATORY, variants under D-578:S<k>; every run from a clean checkout (D-474)
+  stop: when the queue holds no declared batch, or the operator says so
+
+batches:
+  - id: S1
+    name: sided coin
+    status: declared
+    alpha: 0.025
+    idea: P-16's exact schedule, stop, windows, news-safe cut, table and engine; only the side changes -- each offer's
+      side comes from a declared rule on bars that have closed at or before the mark, not a coin. Follow and fade are
+      one two-sided test (fade = minus follow). A tie (rule undefined or zero) is excluded from the lift and takes
+      P-16's own coin side in the campaign; the tie share is reported.
+    stop_ticks: 150
+    rules:                         # 15 rules; side = sign(...)
+      mom1:   c[t] - c[t-1]        # c[t]: the close of the last 1-min bar ending at or before the mark
+      mom2:   c[t] - c[t-2]
+      mom3:   c[t] - c[t-3]
+      mom5:   c[t] - c[t-5]
+      mom10:  c[t] - c[t-10]
+      mom15:  c[t] - c[t-15]
+      mom30:  c[t] - c[t-30]
+      mom60:  c[t] - c[t-60]
+      mom120: c[t] - c[t-120]      # bars before the session's first bar do not exist: tie
+      glbx:   c[t] - open of the session's first bar (17:00 CT)
+      pday:   prior session's last close - prior session's first open (one side all day)
+      rng15:  c[t] - midpoint of the last 15 bars' high and low
+      rng60:  c[t] - midpoint of the last 60 bars' high and low
+      lbrk5:  side of the most recent 5-min brk event (atlas_core.a_events) at or before t; none yet today: tie
+      lbrk15: side of the most recent 15-min brk event at or before t; none yet today: tie
+    stage_1:                       # cheap, exact: per-offer lift over the coin twin, every offered mark
+      lift: (rule side's net R - other side's net R) / 2 at every offered R (0.25, 1, 1.5, 2, 2.5, 3), FV3-C's walk/costs
+      hypotheses: 90               # 15 rules x 6 R
+      test: studentised max-statistic, stationary block bootstrap by session (block 21, 2,000 reps, seed 20261105),
+        family-wise at 0.025; Benjamini-Hochberg at 10 % beside, never selecting
+    stage_2:                       # survivors only (rule, sign): the campaign
+      engine: rc150_routing's paired run -- the cell's coins replaced by the rule's sides; campaign seed 20261131,
+        500 paths; then the four program guards
+    variants: 15
+  - id: S2
+    name: state-gated coin
+    status: declared
+    alpha: 0.00833
+    idea: P-16 unchanged (its coin, seed 20261102) except that an offer is taken only when a declared ex-ante state
+      holds; each measure compared with the trailing 20 sessions' values of the same measure at the same mark (prior
+      sessions only; fewer than 20 prior sessions -> the offer is kept)
+    cells:                         # 5 cells, judged directly by the campaign guards (no stage 1)
+      vol_low:  last-30-bar high-low range in the bottom third of its trailing distribution
+      vol_mid:  ... in the middle third
+      vol_high: ... in the top third
+      trend:    |c[t] - session open| above its trailing median
+      range:    |c[t] - session open| at or below its trailing median
+    variants: 5
+
+proposed_not_declared:             # named only; each needs its own decision row and alpha_k before it is built
+  - finer and new event kinds on A4's protocol (brk/nbar at 1-3 min, opening gap, outside bar, range expansion)
+  - a re-solved state table for any S-batch candidate's own outcome distribution

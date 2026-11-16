@@ -1,0 +1,125 @@
+# Signal atlas family A3 (D-490, D-491, D-492): FV3-C's whole design driven by family A1's mechanical events -- declared
+# before any A3 campaign runs. D-487 found FV3-C's zero-edge money needs three things together: its v12 table, trades whose
+# targets reach 2.5 to 3R, and funded accounts with no room cap. A1's m40 map offers no R above 2, so A1's trades cannot
+# use the table (D-487 cell c); A3 walks A1's events on FV3-C's own rungs instead, where step 0 found 2.5R and 3R resolve
+# at nearly every hour (D-491).
+#
+# Every walk key is A1's (config/atlas_a1.yaml, D-460, D-461, D-469), so A1's events are read under A1's digest
+# (`atlas_walk.walk_source`); A1's brackets and stop map below describe A1's walk, which A3 reads only for its events.
+# Every cell is one trial in N; the pool also counts FV3's rows in the window, A1's and A2's screens, T24's steps, P-11,
+# P-12 and D-487's decomposition (D-492 (5); the gatekeeper rules at registration).
+status: fixed
+decision: D-492
+family: A3
+walk_family: A1                     # A1's EVENTS, read as they are (A1's cache under A1's digest, never written); A3
+                                    # walks them again on FV3-C's rungs into its own cache, data/atlas/A3 (below)
+market: NQ
+bars: local                         # data/bars/NQ (D-458), read through config/windows.yaml (D-459)
+development:
+  start: "2020-01-01"
+  end: "2026-07-16"                 # NQ's spent held-back year folded into development (D-461); the reserve unread
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:
+  first_decision_ct: "17:00"        # events from the session's open (slot 0: T24's first slot) ...
+  last_decision_ct: "14:00"         # ... to 14:00 CT: a 40 to 60-point bracket needs the afternoon (D-212)
+  flatten_ct: "15:10"
+entry_delays_min: [0, 5]            # walked: on time (R149-R151's identity) and five bars late
+screen_delay_min: 5                 # screened: five bars late only -- the operator's manual entry (D-428 (1)); the
+                                    # automated track (D-399) is no faster than the modelled latency
+slip_ticks: 1                       # one tick adverse at entry and at an end (D-95); the screen costs the rest
+side_rules: [follow, fade]          # trade the event's direction, or against it -- both walked from one capture;
+                                    # the clock pattern takes T24's seeded coin instead (COIN_SEED 20261025), one cell
+brackets:                           # T24's twelve (config/t24_capture.yaml), so the clock pattern is R149-R151's identity
+  - [20, 20]
+  - [30, 20]
+  - [40, 20]
+  - [60, 20]
+  - [40, 40]
+  - [60, 40]
+  - [80, 40]
+  - [120, 40]
+  - [60, 60]
+  - [90, 60]
+  - [120, 60]
+  - [180, 60]
+stop_maps: [m40]                    # T24's m40 (D-432, D-433: it led): each event hour's stop the widest to 40 points
+                                    # at which 1:1 resolves (at most 5 % unresolved on normal days, overall and every
+                                    # year), every R offered there that resolves
+cells: "15 patterns x 2 side rules + the clock's coin = 31 cells, each one trial in N (D-189)"
+patterns:                           # ids are positions; definitions in atlas_core's docstring
+  - {name: clock_t24, kind: clock}  # T24's 23 decision slots, both sides -- the null family and R149-R151's identity
+  - {name: brk15, kind: brk, k: 15}
+  - {name: brk30, kind: brk, k: 30}
+  - {name: brk60, kind: brk, k: 60}
+  - {name: inside15, kind: inside, k: 15}
+  - {name: inside30, kind: inside, k: 30}
+  - {name: nbar15x4, kind: nbar, k: 15, n: 4}
+  - {name: nbar15x8, kind: nbar, k: 15, n: 8}
+  - {name: orb_rth5, kind: orb, open_ct: "08:30", m: 5}
+  - {name: orb_rth15, kind: orb, open_ct: "08:30", m: 15}
+  - {name: orb_rth30, kind: orb, open_ct: "08:30", m: 30}
+  - {name: orb_globex30, kind: orb, open_ct: "17:00", m: 30}
+  - {name: orb_london30, kind: orb, open_ct: "02:00", m: 30}
+  - {name: pdhl, kind: pdhl}        # the prior trading day's 08:30-15:10 CT high and low
+  - {name: engulf15, kind: engulf, k: 15}
+  - {name: engulf30, kind: engulf, k: 30}
+plan: v12_exact                     # D-492 (3): FV3-C's EXPORTED v12 policy at its own edge cell, NOT re-solved -- a
+                                    # deliberately carried table (D-487 cell c showed it cannot trade without 2.5-3R; here
+                                    # the rungs offer them)
+policy:
+  config: config/fv3_corrected_portfolio.yaml       # FV3-C's frozen declaration (D-353): its state_policy block
+  policies_json: results/state_policy_v12_policies.json
+  id: state_dp_e-0.050_lamstar      # FV3-C's own cell: results/fv3_corrected_v1.csv's gate policy id (checked at run time)
+protocol: fv3c                      # FV3-C's campaign switches VERBATIM from config/fv3_corrected_portfolio.yaml, as
+                                    # scripts/zero_edge_decomposition.py's run_fv3c applies them (portfolio_stage.run_campaign's
+                                    # engine call: MAE settlement, the room cap on the Combine only, the 45-tick stand-aside,
+                                    # routing to able accounts, the firm's cross-account rule, each position held to its own
+                                    # exit, need-aware and consistency-cap exits, the seat freed the same evening, each
+                                    # trade's fee at the contracts it holds, five accounts, rotation, Aeropay, 504 sessions,
+                                    # the bankroll an output, placement off), EXCEPT the two D-492 (3) declares:
+capacity: busiest_day               # (i) the day capacity raised to a cell's busiest day where FV3-C's five is too few
+                                    # (D-469: a capacity, never a choice); every cell event at its hour's rung is a trade --
+                                    # no FV3 at-most-five rule (D-490 (3)'s alternative, not taken)
+bounds:                             # (ii) P-11's convention, not FV3-C's yearly bound:
+  block_days: 21                    # each R's one-sided 95 % bound over 21-session blocks, pooled ...
+  eras: [[2020, 2022], [2023, 2026]]                # ... and the era rule (D-271; P-11's eras): when either R's era
+                                    # difference is flagged by the whole-year bootstrap, the lower era's bounds are read
+  era_seed: 20261017                # P-11's (t24_gf15.SEED_BOOT), 2,000 reps
+rungs:                              # D-492 (1)-(2): FV3-C's ladder (config/fv3_corrected_portfolio.yaml ladder.stops_ticks)
+  stops_ticks: [50, 100]            # 12.5 and 25 points; the 50-point rung out (its far targets do not resolve, D-491)
+  cap_ticks: 100                    # the rung rule's cap (25 points)
+  rr_grid: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]   # every quarter R to 3R (FV3-C's rr_menu)
+  walk: propedge/research/fv3_rung_walk.py          # FV3's settlement: breakeven at the next session open, MAE, the 15:10
+                                    # flatten (D-490 (1)); five bars late (screen_delay_min), no entry slip in the walk
+  cache: data/atlas/A3              # A3's own cache and digest (A1's inputs, the rung walk's code, the rungs); A1's untouched
+rung_rule: "D-432's map rule on FV3's rungs, capped at 25 points (D-492 (2)): per event hour the wider of the two rungs at
+  which 1:1 resolves -- at most 5 % unresolved overall and in every year on normal days, a breakeven exit resolved --
+  the narrower where only it does, no trade where neither; every R offered at that hour and rung that resolves. Read
+  from step 0's map (each map row's `eligible`), not re-measured"
+rung_map:
+  file: results/a3_resolution_map.csv               # step 0's read (D-491), from a clean checkout of bca86d7
+  sha256: 784b20accd0609f2995fb5babe93ff1b69e3f9f482eb126f217c97061f3bf4b8
+costs: "entry one tick (A1's walk's entry slip, D-492 (1)) in place of FV3's spread; the rest FV3-C's cost model
+  (score_fv3_grid.Signals3.outcome, fidelity.costs per_trade_at_size): the fee a micro-equivalent pays at the fresh
+  Combine's size (mini_mix_fee at $2,000 and 50 micros, the MNQ and NQ round turns of the assumed fill model), a tick on
+  a stop or a breakeven, none at a target, two on the flatten, in units of the rung's stop"
+day_set: "every day record of A1's walk (atlas_cells' convention, A1's and A2's screens' day set): FOMC days, early
+  closes and empty days are days with no trade"
+identity: {paths: 20, seed: 20261019}   # before the screen: FV3-C's own trades through A3's campaign path, with FV3-C's
+                                    # own yearly bounds, must equal results/fv3_corrected_v1_paths.csv's first paths
+                                    # exactly (point, bound and zero-edge twin; zero_edge_decomposition's cell a), else
+                                    # the screen is REFUSED
+screen:
+  paths: 150                        # the screens' convention; the verdict runs 500
+  seed: 20261030                    # A1's: common random numbers with A1's and A2's screens
+  rank: "growth on the required bankroll at the 0.05 bound (the gate row: bound arm, 0 % denial, placement off),
+    highest first, among the cells whose offered R's resolve (at most 5 % unresolved overall and in every year, a
+    breakeven exit resolved) and that carry a growth reading"
+  carry: "the top cell goes to a registered development test at 0.05/N (PASS, CONTINUE at 0.05, FAIL: D-419); every
+    cell is reported, its A1 gf15b and A2 rows beside it, and beside every A3 row the share of payouts exposed to
+    tier-3 denial, the break-even denial and Combine purchases in any 21 days (D-492 (6)); a top cell that cannot beat
+    FV3-C's development row is still carried -- the verdict and the scoreboard decide"
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv, config/sources/fomc_statements_2026q3.csv]
+  bls: [data/release_days_0830_2009_2025.csv, data/release_days_0830_2026.csv]
+  bls_cut_ct: "07:30"

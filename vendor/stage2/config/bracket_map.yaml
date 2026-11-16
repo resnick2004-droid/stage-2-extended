@@ -1,0 +1,102 @@
+# config/bracket_map.yaml -- the bracket outcome map (D-149). Declared before any of its data is computed.
+#
+# What a stop-and-target bracket of every geometry the prop lifecycle uses would have done, at every decision time,
+# long and short, on ES and NQ; and which pre-entry conditions lift its win rate above the contract's break-even for
+# that geometry. A research screen like the effect atlas (D-126): nothing here is a candidate; survivors become
+# declared models (entries, geometry per state, audit prices, chart review -- D-148) with their own variant count.
+#
+# The geometry comes from stage one, by lifecycle state, not from this data. The map records each entry's path once
+# (how far price went in the trade's favour before the stop, whether the stop was hit, where it stood at the time
+# exit), so every target multiple below is read from the same record. Dollar risk is not part of the map: the
+# campaign engine applies it per state as contracts, under the tier caps (D-117).
+
+status: declared
+decision: D-149
+exploratory: true
+
+lifecycle_geometry:            # stage one (vendor/propsim), at e = 0 unless stated; D-145 made the conduct limits priced
+  combine:
+    best_at_zero_edge: {rr: 1.0, risk: 1500, trades_per_day: 1}           # propsim D-08, D-15: 16/49, supremum 0.327131
+    close_alternatives:                                                    # results_state_policy_combine.csv
+      - {rr: 0.5, risk: 1000, trades_per_day: 3}
+      - {rr: 0.825, risk: 2000, note: "day one, then fill-the-gap at 1:1"}
+    conduct_constrained: {rr: 2.0, risk: 750}                              # propsim D-36; T5 2a for e <= 0.05
+    at_edge_0_10_or_more: {rr: 1.5, risk: 500}                             # T5 2a
+  funded_day_one:
+    all_in: {rr: [3.0, 5.0], risk: 2000, note: "only if the bracket can complete inside a session (s >= 0.75)"}  # D-09, D-10, D-18, D-19
+    two_all_ins: {rr: 3.0, risk: 2000, count: 2}                           # results_state_policy_xfa_kallin.csv
+    static_if_s_below_0_75: {rr: 2.0, risk: 750}                           # propsim D-10
+    at_edge_0_10_or_more: {rr: 1.5, risk: 1000}                            # T5 2a
+  funded_harvest: {rr: 1.0, risk: [150, 300], note: "after the day-one bet wins, until the payout"}  # results_state_policy_xfa_allin.csv
+  funded_build: {rr: 2.0, risk: 1000, until_balance: 2000, then: funded_harvest}                # results_state_policy_xfa.csv
+  after_payout: {rr: 1.5, risk: 500, keep_balance: 8000}                   # propsim D-45 (exploratory there)
+
+rr_recorded: [0.5, 1.0, 1.5, 2.0, 3.0, 5.0]    # every multiple above; the favourable excursion is recorded to 5.05R
+
+markets:                       # vehicles and assumed costs as FV1 (config/model_fv.yaml, D-95)
+  NQ: {vehicle: MNQ, tick: 0.25, tick_value: 0.50, round_turn: 1.22, floor_ticks: 40, p_ref: 10000}
+  ES: {vehicle: MES, tick: 0.25, tick_value: 1.25, round_turn: 1.22, floor_ticks: 20, p_ref: 4000}
+scales: [p_ref]                # (D-106) each day rescaled so its 08:30 open maps to p_ref; the actual scale is not recorded (export budget)
+
+session_scale: >
+  D = the mean of the previous 20 sessions' (high - low) over 08:30-15:00 CT, as a percent of that session's 08:30
+  open. D is stage one's s in price terms: the all-in bracket is executable only when its target is a reachable
+  fraction of D. Days whose session is incomplete (no 15:00 bar, or under 90 % of the minutes) do not enter D. Each run starts a month before its
+  window to fill D (warm-up, development data, recorded nothing) and records only inside the window.
+stop_widths_of_D: [0.1, 0.2, 0.4]   # small (harvest), medium, session-scale (all-in); never inside floor_ticks
+
+decisions:
+  times_ct: ["08:35", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:05", "13:30", "14:00"]
+  rule: at each time, the close of the bar ending then is the decision; both a long and a short are recorded
+  entry: the next existing bar's open, one tick adverse (D-123, D-95)
+  exits: stop first when a bar touches both; a target needs a trade through; a bar opening through the stop fills at
+    its open (gap); anything open at 15:00 CT closes there, one tick adverse
+  recorded_per_entry_and_stop: [mfe_before_stop_r (floored to hundredths, capped 5.05), stop_hit (0 no, 1 touched,
+    2 gapped), exit_r (-1 at the stop, the gap open's R, or the R at 15:00; before exit costs)]
+  per_day: [the stop ticks of each width, D, the gap and close-location buckets, integrity counts as FV1]
+
+features:                      # computed in the cloud from the past only, exported as bucket digits (never prices, D-120)
+  fv_dist: "signed distance from the session anchor (08:30 open; 13:00 open from 13:05), in D units; buckets <-0.5, -0.5..-0.2, -0.2..0, 0..0.2, 0.2..0.5, >=0.5 (lower edge included)"
+  vwap_dist: "signed distance from the session VWAP since 08:30, in D units; the same buckets"
+  last30: "the last 30 minutes' move, in D units; the same buckets"
+  range_so_far: "today's high - low so far, in D units; buckets <0.3, 0.3..0.6, 0.6..1, >=1"
+  gap: "the 08:30 open against the previous settlement, in D units; the fv_dist buckets"
+  prev_close_location: "(previous close - previous low) / (previous high - previous low), terciles"
+  weekday: "from the date"
+  priors: "intraday momentum and hedging demand (Baltussen et al. 2021; Gao et al. 2018), fair value (D-142),
+    VWAP, the gap (D-105), volatility state (atlas R family), close location (atlas F01)"
+
+analysis:
+  halves: {discovery: [2009-06-01, 2016-12-31], check: [2017-01-01, 2019-12-31]}   # D-144's development window
+  baseline: every geometry's unconditional win rate and mean R net, by time of day and side -- what random entry is
+  question: under which single-feature conditions (by geometry, time and side) does the pessimistic win rate clear the
+    contract break-even win rate for that geometry (the calculator requested of stage-2-4a; until it exists, the
+    brokerage break-even with costs, labelled)
+  families: one per (feature, geometry); Benjamini-Hochberg at q = 0.10 within a family on the discovery half; each
+    survivor read once on the check half; the number of tests reported with every result
+  cell_rule: >
+    (added 2026-09-25 before any analysis was run; only the descriptive baseline of R049 had been seen) a test is one
+    cell -- a feature bucket at one decision time and one side -- within a (feature, geometry) family, per market;
+    one entry per day per cell, so its standard error is the day-to-day one. Cells with fewer than 30 discovery
+    entries are not tested. H0: the cell's mean R net is at or below the yardstick (the contract break-even for the
+    geometry once the calculator exists; zero, the brokerage break-even, until then, labelled). A survivor holds on
+    the check half when its check-half mean R net is above the yardstick with a one-sided p below 0.05; survivors
+    are reported with both halves' win rate, mean R net and lower bound
+  outcome_check: >
+    (declared 2026-09-26 before it ran, after the screen was re-read against the contract lines) the yardstick's
+    binary trades always resolve at their stop or target, while the map's session-scale entries mostly end at 15:00,
+    which changes how fast a Combine resolves; so every cell that holds on the check, and the unconditional entry at
+    the same geometry, time and side, is put through the D-145 campaign gate with its own outcomes
+    (propedge.campaign.gate.run_gate; one entry on each development day the cell qualifies; the lower-bound shift
+    from the 20-day block bootstrap; the Combine at the cell's R with stage one's Combine risk for it and the funded
+    account at the same R and $750; one account, fixed dollar risk, $5,000 and 504 days assumed, denial 25 %,
+    200 paths). A cell counts only if the gate passes AND its campaign grows faster at the lower bound than the
+    unconditional entry's; results/bmap_gate_check.csv
+  bootstrap: {block_days: 20, replicates: 10000}
+  seed: 20261107
+  confirmation: 2020-01-01 on stays locked; only a declared model built from a survivor may use it, once
+
+runs:                          # split per market to keep each run's exported records inside QuantConnect's limits
+  NQ: [R049-bmap-NQ-0914, R050-bmap-NQ-1419]
+  ES: [R051-bmap-ES-0914, R052-bmap-ES-1419]
+windows: {"0914": [2009-06-01, 2014-05-27], "1419": [2014-05-28, 2019-12-31]}

@@ -1,0 +1,22 @@
+# config/flip_sizing.yaml -- D-346 (the operator, 2026-10-11): the flip's CONTRACT rule, fixed before the second-resolution
+# flip map is re-scored under it.
+#
+# Why: D-343's rule fixed the flip's instrument as one NQ mini and left only the width to the data; the widest qualifying
+# width (20 points, D-345) therefore put $400 at risk on every flip day. The operator: "Why can't we do the same amount
+# of points with smaller contract sizing for lower risk? The whole point of this was for it to be a flip day, not a
+# growth day. $400 is still a substantial amount that can change the blow/payout amount of an account." The width rule
+# stands (resolution inside the box and tolerance of a hand trader's delay belong to the width, which the capture
+# measured independently of the contract); the contract count is now a rule of its own. The capture's prices are NQ's;
+# the micro (MNQ) tracks the same index at $2 a point with its own round-turn fee (config/fills.yaml, 8284213).
+#
+# The rule, per width: the FEWEST whole micros whose risk at that width is a multiple of the state table's grid (the
+# menu step, so the flip action sits on a cell) and whose win after the round-turn fees clears the firm's winning-day
+# bar ($150 net, 8284233 -- read from the ledger, never typed). At 20 points: 5 MNQ, $200 at risk, $200 to win (about
+# $194 after fees). The slot comparison (D-344's cheapest qualifying flip) prices each slot's chosen width at its own
+# count. Used by `python scripts/score_flip_map.py --seconds --sizing config/flip_sizing.yaml`.
+decision: D-346
+instrument: MNQ               # the traded contract; its round-turn fee from config/fills.yaml (round_turn_by_instrument)
+point_value: 2.0              # dollars a point, one MNQ
+grid_dollars: 50.0            # config/state_policy_v16.yaml menu.step: the flip's risk is a cell of the table
+bar: xfa_std_winning_day_min  # the ledger entry the win after fees must clear (8284233: "5 winning days of $150+ Net P&L")
+rule: "the fewest whole micros whose risk at the slot's chosen width is a multiple of the grid and whose win after the round-turn fees clears the bar; applied per width, so each slot is priced at its own count"

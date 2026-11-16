@@ -1,0 +1,201 @@
+# config/gap_reversal.yaml -- the opening-gap reversal candidate (T4), fixed BEFORE any data (D-105).
+#
+# Machine-readable twin of docs/candidates/gap_reversal/DESIGN.md. The scoring code reads this file, so
+# the document and the code cannot drift apart. A change here after any development data has been seen
+# is a new combination in Stage 2B and a new variant count; it is never an edit.
+
+source:
+  framework: Stage 2B handoff/frameworks/FRAMEWORK_opening_gap_reversal.md (2B D-49, request R-03)
+  paper: >
+    Grant, Wolf and Yu (2005), Intraday price reversals in the US stock index futures market: a 15-year
+    study, J. Banking & Finance 29(5) 1311-1327, doi 10.1016/j.jbankfin.2004.04.006. Full text read
+    2026-09-24 (operator's copy). Cards S-012/S-011 in 2B.
+  execution_document: >
+    "JJ Simon's Fair Value Theory NQ Strategy" (FX Replay), read 2026-09-24. Supplies execution mechanics
+    only (structural entry, 1.5R bracket, ATR-scaled stop). It is NOT a prior: one trader's observations.
+  prior: results/gap_reversal_prior.csv          # analysis/gap_reversal_prior.py, Grant's tables only
+  data_seen_before_rule: false                   # operator has not backtested this; no charts looked at
+
+instrument:
+  market: ES                                     # Grant's contract; NQ is a separate transfer (not here)
+  vehicle: MES                                   # costed as the micro; development bars are ES
+  bars: 1-minute trade bars (D-94)
+  contract_choice: most volume in the prior session, filter 120 days (D-98)
+
+development:
+  start: 2009-06-01
+  end: 2014-05-27                                # strictly before the confirmation window (D-49)
+  selection_end: 2011-12-31                      # inner split: choose on the first half...
+  validation_start: 2012-01-01                   # ...check once on the second
+
+# ---------------------------------------------------------------- the event: FIXED by the paper
+event:
+  reference_price: close of the 15:00 CT settlement minute of the previous session (D-50, D-101)
+  open_price: open of the 08:30 CT minute bar (the first trade at or after 08:30:00 CT)
+  gap_pct: 100 * ln(open_price / reference_price)          # Grant eq. (1)
+  threshold_pct: 0.20                                       # Grant's reported filter (Section 3)
+  sign: up_only                                             # Table 6: only gap-ups survive the bid-ask proxy
+  weekdays: [Tue, Wed, Thu, Fri]                            # Table 5: Mondays continue, not revert
+  skip:
+    - no 08:30 bar
+    - no previous settlement
+    - the contract changed between the settlement and the open
+    - a holiday early close
+    - fewer than 14 bars before the entry bar
+  # D-111: an early-close session (cash market open, no 15:00 CT settlement) has a close the evidence
+  # does not hold, so the DAY AFTER it cannot measure its gap from the previous session's close and is
+  # skipped. Dates from the NYSE calendar as checked in docs/data_reports/gap_reversal_evidence.md.
+  early_close_sessions: ["20091127", "20091224", "20101126", "20111125", "20120703", "20121123",
+                         "20121224", "20130703", "20131129", "20131224"]
+  # Reported for the SELECTED variant only, never used to select (Section 4 of the design):
+  sensitivities:
+    threshold_pct: [0.10, 0.30]                             # Grant tried these; "consistent" (fn 8)
+    sign: [down_only, both]
+    monday: true
+
+# ---------------------------------------------------------------- stage 1: the existence gate, NO knobs
+gate:
+  statistic: >
+    G = mean of the favourable average cumulative return (ACAR, %, gross of costs) at 30, 45 and 60
+    minutes after the 08:40 CT entry minute, over gap-up non-Monday event days; favourable = the
+    price falling after a gap-up.
+  grant_value_pct: 0.0669                                   # (0.0585 + 0.0775 + 0.0646) / 3, Table 3
+  pass:
+    min_fraction_of_grant: 0.5                              # G >= 0.0335 %
+    lower_bound_one_sided_95_above_pct: 0.0
+  bootstrap: {block_days: 20, replicates: 10000, seed: 20260926}
+  also_reported: [full ACAR path 5-120 min, gap-downs, Mondays, by year, drift in units of the window's sd]
+
+# ---------------------------------------------------------------- timing: FIXED (paper + declared)
+timing:
+  entry_earliest_ct: "08:40"        # Grant: ~10 min of continuation; the 10-minute delay is his best
+  entry_latest_ct: "09:00"          # DECLARED: Table 6's net reversal is complete by ~45 min
+  cutoff_ct: "10:30"                # Grant: significant through 120 min after the open (Table 6)
+
+# ---------------------------------------------------------------- stage 2: the search, 12 variants
+trigger:
+  types: [time, structural]
+  time:
+    rule: market order at the close of the 08:39-08:40 CT bar, against the gap
+  structural:
+    direction: against the gap
+    swing: Williams fractal -- a bar whose low (high) is strictly below (above) the two bars either side,
+      confirmed at the close of the second later bar; only swings formed since the 08:30 bar count
+    msb: a bar whose close is beyond the most recent confirmed swing in the trade direction
+    displacement: >
+      a bar in the trade direction (close beyond open) whose counter-wick is at most w times the
+      distance from the open to the extreme in the trade direction: for a short,
+      (close - low) <= w * (open - low); for a long, (high - close) <= w * (high - open).
+    trigger_bar: the first bar closing in [08:40, 09:00] CT that is BOTH an MSB and a displacement bar
+    entry: market order at the close of the trigger bar
+    w_grid: [0.10, 0.20, 0.30]      # JJ Simon: 0.20; ordered dimension, plateau rule applies
+    size_rule: none                 # JJ Simon calls candle size discretionary; dropped (considered)
+stop:
+  atr: mean true range of the 14 one-minute bars ending at the trigger bar (JJ Simon's ATR)
+  multiplier_grid: [2.5, 5.0, 10.0]   # 2.5 = JJ Simon's implied value (25 pt SL at 7-20 pt ATR)
+  floor_ticks: 20                     # candidate_constraints cost floor for MES (D-46: per instrument)
+  rule: stop_ticks = max(ceil(m * ATR / 0.25), 20), placed from the entry fill
+  fallback_if_floor_bound:            # declared now: development may not be able to tell m apart
+    floor_bound_share_above: 0.8
+    multiplier: 2.5
+target:
+  R: 1.5                              # JJ Simon; the pinned frontier's R; fixed, not searched
+  ticks: round(1.5 * stop_ticks)
+  fill: a resting limit filled only on a trade THROUGH the price
+exits:
+  time_cutoff: market at the close of the 10:29-10:30 CT bar
+  same_bar_stop_and_target: stop first
+  gap_through_stop: fill at that bar's open
+  management: none                    # no breakeven, no trailing, no partials (pinned)
+fills: assumed                        # config/fills.yaml (D-95): 1 tick adverse on entry, stop, time exit
+sizing:                               # D-114: the 250 was a C-007-era diagnostic; sizing is a T7 parameter
+  trades_per_day: 1                   # anchored on stage one's pairs (T5_RESULTS 2a); u is size-free
+  daily_risk_usd: 250                 # kept as the diagnostic the (closed) results were computed with
+  contracts: min(20, floor(250 / (stop_ticks * 1.25)))
+  u: net pnl / (stop_ticks * 1.25 * contracts)     # intended risk; contracts cancel
+
+# ---------------------------------------------------------------- contract scale (D-106)
+scale:
+  why: >
+    the effect is in percent of price; the contract's costs (the round turn, one tick of slippage, the
+    20-tick floor) are in ticks and dollars. At 2009-2013 ES levels (about 900-1900) the floor is
+    several times the width the effect wants; at 2014-2026 levels (about 1900-6500) it mostly is not.
+    Scoring the development bracket only at its own price level would fail the candidate for the era,
+    not for the effect.
+  method: >
+    before the bracket is scored, the day's recorded prices are multiplied by P_ref / P_day (P_day =
+    the day's reference price). The ATR, the stop and the target scale with the price; the tick, the
+    slippage and the round turn do not. Only the cost drag, the floor and the tick rounding change;
+    the path's shape, the effect and the noise are development's own.
+  selection_price_level: 4000         # DECLARED: about the confirmation window's typical ES level
+                                      # (a public index level, not bar data); the geometry the test trades
+  reported_price_levels: [actual, 2000, 4000, 6500]
+  gate_is_scale_free: true            # percent units; no contract enters the gate
+
+search:
+  variants: 12                        # 4 triggers (time + 3 w) x 3 multipliers, everything else fixed
+  selection_half: [2009-06-01, 2011-12-31]
+  selection_statistic: >
+    one-sided 95 % lower bound of mean(u), net, 20-day block bootstrap, 10000 reps, on the path
+    rescaled to scale.selection_price_level; the same statistic at the actual price level is reported
+  selection_seed: 20260928
+  plateau_rule: >
+    on an ordered dimension (w, m) a value is eligible only if it and its neighbours (both, or the one
+    neighbour at an edge) all have a lower bound above zero; among eligible values take the highest
+    lower bound; on a tie take the middle of the plateau.
+  ablation_rule: >
+    the structural trigger is chosen only if its best eligible variant's lower bound exceeds the time
+    trigger's at the same m; otherwise the time trigger (the simpler rule, Grant's own) is chosen.
+  validation: the selected variant is scored ONCE on [2012-01-01, 2014-05-27]; nothing is re-chosen
+  permutation_null:
+    permutations: 200
+    seed: 20260929
+    rule: >
+      each permutation flips every event day's trade direction with probability 1/2 (all 12 variants
+      on that day together), re-scores the bracket on the recorded path, and takes the best-of-12
+      selection-half lower bound. The real best-of-12 must exceed the 95th percentile of these.
+  trigger_diagnostic: mean favourable move (%) in the 45 minutes after each trigger's entry, gross
+
+go_no_go:                             # ALL required before a pre-registration is drafted
+  - gate passed (stage 1)
+  - permutation null cleared
+  - validation-half mean(u) of the selected variant >= 0
+  - floor-bound share reported; fallback applied if above 0.8
+  - operator decision to spend the confirmation window, recorded in DECISIONS.md (D-38 style)
+if_no_go: >
+  the development result is reported as negative for this effect, with every variant; no second grid
+  on the same data. A different grid is a new combination in 2B with its own k.
+
+# ---------------------------------------------------------------- safeguards declared before data (D-107, D-108)
+safeguards:
+  log_carries_no_trade_days: true      # every calendar day with its reason; the campaign clock runs on them
+  scorer_known_answer_tests:           # must pass before the scorer reads a real bar
+    - a synthetic path that trades through the target returns exactly the target's u
+    - a driftless random walk nets the cost drag and nothing else, within bootstrap error
+    - mirroring a path and the direction mirrors the gross result exactly
+  release_days:
+    filter: none                       # Grant did not filter; a filter would be a fork
+    flag: 08:30 bar range in the top 5 % of the development sample, reported separately, never filtered
+  gate_reported_per_half: true         # 2009-2011 and 2012-2014 are different regimes; a validation drop can be regime
+  vehicle_by_era:
+    note: >
+      MES and MNQ first listed 2019-05-06 -- VERIFIED: CME Clearing advisory 19-118 ("Effective Date 06 May
+      2019", Initial Listing of Micro E-mini S&P 500 ... and Micro E-mini Nasdaq-100 ... Futures),
+      https://www.cmegroup.com/notices/clearing/2019/04/Chadv19-118.html, read by the operator 2026-09-25 (D-115)
+    effect: the per-trade criterion is unaffected (u is size-free); sizing and the campaign apply the vehicle by date
+  confirmation_window_budget: 3 registered tests per market, counted in prereg/REGISTRY.md (D-107)
+
+considered_not_searched:              # forks recorded so they cannot be taken later without a label
+  - {fork: 14:00 CT afternoon session, why: no outside evidence; JJ Simon only}
+  - {fork: Asia / London sessions, why: no outside evidence}
+  - {fork: 08:30 news reversions, why: no outside evidence; different event}
+  - {fork: continuation trades in the first 10 min, why: Grant Table 2 shows ~0.01-0.02 %, below costs}
+  - {fork: second attempts and re-entries, why: one trade a day, pinned}
+  - {fork: session VWAP confluence, why: discretionary in the source}
+  - {fork: candle size rule, why: JJ Simon calls it discretionary}
+  - {fork: swing lookback other than 2, why: Williams fractal is the published convention; fixed}
+  - {fork: target R other than 1.5, why: JJ Simon and the pinned frontier; fixed}
+  - {fork: gap-scaled stop (2B C-011's 0.5 x gap), why: one stop family only; ATR is the document's}
+  - {fork: cutoff other than 10:30, why: Grant's persistence; fixed}
+  - {fork: entry delay other than 10 min, why: Grant's own sweep (0/5/10/15) chose 10}
+  - {fork: NQ / MNQ, why: a transfer needing its own declaration and its own gate}

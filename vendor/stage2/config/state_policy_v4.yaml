@@ -1,0 +1,67 @@
+# The account-state risk policy re-solved with the Combine's two rules (D-313; the operator, 2026-10-07), on D-306's
+# allowance-aware table (config/state_policy_v3.yaml) -- fixed before scripts/state_policy_dp.py --declaration D-313
+# runs. EXPLORATORY and engine-only: no market data; stage one's binary edge convention. What changes from v3 is the
+# `combine_rules` block only: (1) a Combine trade never risks more than the room above the floor -- cut to the whole
+# micros the room carries at the rung's stop; (2) when the pass cannot be taken today, a winning Combine trade closes
+# at the day's consistency allowance (55 % of the effective target, 8284208), so no day lifts the target. The funded
+# leg's table is v3's. The result: results/state_policy_v4.csv and its policies file.
+decision: D-313
+script: scripts/state_policy_dp.py
+module: propedge/campaign/state_policy.py
+
+outcomes:
+  model: "stage one's binary process: p = (1 + e) / (1 + R), the same e at every R (propsim D-06); a trade risking more than the room above the floor is raced against the floor by the engine's p_race / theta_from_edge (floor_mode truncate, edge_mode drift) -- under the room cap a Combine trade never does; a realised win is rounded to the $50 grid and its probability read at the R the grid makes of it, so every action is exactly fair at zero edge"
+  edges: [-0.05, -0.025, 0.0, 0.025, 0.05, 0.10]     # D-290's grid, unchanged
+
+rules: "rules_for_method('aeropay') from config/rules.yaml -- the verified ledger; D-289: the Standard path, no placement"
+horizon_days: 504
+slot_rent_per_day: [25.0]                            # the rent config/fv3_portfolio.yaml declares
+
+menu:
+  step: 50.0
+  risks: [250, 500, 750, 1000, 1500, 2000]
+  rrs: [1.0, 1.5, 2.0, 2.5, 3.0]
+  skip: true
+
+rungs:                                               # D-306's, unchanged
+  file: results/fv3_rung_shares_2020.csv
+  phase: all
+  stops_ticks: {half: 50, full: 100, double: 200}
+  tick_value: 0.5
+  combine_cap_micros: 50
+  funded_caps: {0: 20, 1500: 30, 2000: 50}
+  exit_grid: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+
+combine_rules:                                       # D-313: the Combine's two rules, in the table's own transitions
+  room_cap: true                                     # never more than the room above the floor
+  consistency_cap: true                              # a non-passing day closes at the consistency allowance
+
+funded:
+  balance_cap: 6000.0
+  payout_grid_step: 50.0
+
+objective: "expected cash from one attempt within the horizon: the Combine's subscription accrued per trading day (subscription / billing_days), the activation at a pass, net payouts (profit split, the method's fee), less the slot rent per account-day; no credit for survival"
+
+baselines:                                           # the fixed legs under the same allowance and the Combine's two rules
+  - {name: s1_1to1_1500, combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  - {name: s1_1p5to1_1000, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}
+  - {name: fv3_fresh, combine_rr: 1.0, combine_risk: 1500, funded_rr: 3.0, funded_risk: 2000}
+
+oracles:                                             # CLAUDE.md: a value outside a ceiling is an engine error
+  zero_edge_no_fees_max_p_pass: 0.327131
+  zero_edge_no_fees_p_pass_1to1_1500: 0.32653061224   # 16/49 (the fixed geometry without rungs or rules: the contract's own oracle)
+  zero_edge_no_fees_max_gross_payouts: 2000.0
+
+export:
+  balance_band: 250.0
+  cushion_band: 250.0
+
+campaign_check:                                      # D-290 (8): the engine's own binary campaign (its draw takes no need, so neither exit applies there)
+  accounts: 5
+  combines: 5
+  bankroll: 5000
+  horizon_days: 504
+  n_paths: 500
+  payout_method: aeropay
+  seed: 20261016
+  fixed_legs: {combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}

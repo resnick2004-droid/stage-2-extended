@@ -1,0 +1,2113 @@
+# The P1 trial ledger (D-197): every model, registration, withdrawal, protocol option, screen and atlas family stage
+# two ran or declared, with the data it touched and its trials. D-189 counts its N from here
+# (`propedge/research/ledger.py`, `count_n`); `tests/test_ledger.py` checks the file and recounts P-04's N by hand.
+#
+# Each row: `windows` the dates its data spanned (warm-ups included), `resolution` the bars it read (`minute` for every
+# QuantConnect kit here, whatever per-day or per-entry records it exported; `none` for no market data), `markets` the
+# markets it read with the tests on each, `count_tests` whether those tests were selection steps (then each counts on
+# the registration's markets; otherwise the row counts once), `pools` the selection pools it sat in, and `reason` why
+# -- the judgements are written here so N can be recounted from this file alone. Built on 2026-09-30 from an inventory
+# of DECISIONS.md, NEXT_STEPS.md, prereg/, the result manifests and results/variants.jsonl (D-208), before IM2's
+# development score existed.
+#
+# Studies that read no market data (the contract calculators, setups per day, the feasibility frontier, L3 and L5,
+# the stop band) hold no trial and are not listed; nor is the external QuantConnect-assistant material, which D-85
+# bars as an input. Stage one's and stage 2B's own ledgers stay theirs (propsim; 2B's F- and C- ids).
+
+pools:
+  - id: pool-2026-09-26-im1
+    description: >-
+      The search IM1 was chosen from on 2026-09-26 (docs/candidates/cards/IM1.md: the operator's decisions of that day),
+      which IM2 inherits: IM2 is IM1's entry signal re-sized to stage one's lifecycle (D-161), and no other model was
+      on the table when it was formed. The alternatives: docs/candidates/SHORTLIST.md's three candidates, the bracket
+      map's NQ 08:35 lead "beside the shortlist" (NEXT_STEPS 5g), and the leads D-154 had re-screened (shortlist,
+      bracket map, FV1); the searches behind them: the effect atlas and its F, R and O families, the shortlist's first
+      look, FV1, the opening-gap and open-reversion models.
+  - id: pool-2026-10-02-nqb1
+    description: >-
+      The search NQB1 was chosen from (D-226, D-229): the no-edge contract test's part 2 -- the regular-session first look
+      on the bracket map's records (D-213), the resolution map over ES, NQ, CL, 6E and NG at the development scale
+      (R071-R081, D-214, D-215, D-223) and at today's price level (R082-R087, D-225), D-221's scorer choosing among the
+      geometries and caps part 1 and D-217/D-220 had run on synthetic draws, and the campaign on the setting's measured
+      inputs (D-227). The synthetic studies read no market data and hold no trial (the header); the search's grid is
+      NQB1's k.
+  - id: pool-2026-10-02-nqb2
+    description: >-
+      The search NQB2 was chosen from (D-237 to D-242): the whole-day regime map over ES, NQ, CL, 6E and NG at actual
+      prices (R090-R094, D-238), read then against now (D-239), and the campaign on stage one's geometries built from
+      its 2020-2025 brackets (D-240, D-241) -- whose grid is NQB2's k -- and, counted beside it because they shaped the
+      no-edge route it continues, the earlier looks at NQ on minute bars: the regular-session first look, the
+      resolution map at both scales, NQB1's screen and NQB1's confirmation (P-05), whose held-back years D-237 made
+      development.
+  - id: pool-2026-10-03-ss1
+    description: >-
+      The search any model from the session-setup screen is chosen from (D-245): SS1's grid over NQ and ES -- six
+      windows, eleven rules, three trailing-range stops, four R (k 1,584) -- and the regime map (D-238, D-239), whose
+      reading chose the stop multiples and the markets SS1 searches.
+  - id: pool-2026-10-03-orb1
+    description: >-
+      The search ORB1 came from (D-248, D-249): the session-setup screen SS1 (D-245, D-246), whose exploratory
+      diagnostic pointed at the 08:30 CT open's first minutes, and the regime map (D-238, D-239) before it. ORB1's rules
+      are the paper's (SSRN 4729284), not chosen on our data; its own k is its two markets, seven exits and (D-250)
+      five entry sets -- the paper's four ranges and their COMBO.
+  - id: pool-2026-10-03-orb2
+    description: >-
+      The search ORB2 came from (D-252, D-253): ORB1's development reading on NQ and ES (k 70), whose EXPLORATORY
+      decomposition chose NQ, and everything ORB1's own pool holds -- the session-setup screen SS1 and the regime map.
+  - id: pool-2026-10-03-orb3
+    description: >-
+      The search ORB3 is chosen from and came after (D-255, D-256): its own declared grid (k 640), ORB2's screen, whose
+      findings set the grid's parameters, and everything ORB2's pool holds -- ORB1's reading and decomposition, SS1 and
+      the regime map.
+  - id: pool-2026-10-03-orb4
+    description: >-
+      The search ORB4 is chosen from (D-258): ORB3's 640 configurations re-scored with the operator's sizing rule, after
+      ORB3's result -- ORB3's own search, whose every configuration was a selection step, and everything before it.
+  - id: pool-2026-10-04-orb5
+    description: >-
+      The search ORB5 is chosen from (D-273): its own declared grid (k 7,680) and, before it, ORB4's re-selection,
+      ORB3's search, whose records it re-walks, the Studio views of R105 and R107 the operator saw before the grid was
+      declared (D-270: four entries, each with the Responsible Trading Program off and on), and everything ORB4's pool
+      holds. The captures R105-R107 and ORB5's preparation (D-272) read no outcome and hold no trial.
+  - id: pool-2026-10-04-orb6
+    description: >-
+      The search ORB6 is chosen from (D-278): its own declared grid (k 960) and, before it, ORB5's grid, whose verdict
+      it was designed after (D-275), the two D-276 checks on ORB5's selection, which set its fee model, and everything
+      ORB5's pool holds. The capture R108-R110 reads no outcome and holds no trial.
+  - id: pool-2026-10-04-fv2
+    description: >-
+      The search FV2 is chosen from (D-283): its own declared grid (k 96) and, before it, FV1's search (D-142), whose
+      results it was designed after, with FV1's 2014-2019 look and its gate. The captures R111-R116 read no outcome and
+      hold no trial.
+  - id: pool-2026-10-05-fv3
+    description: >-
+      The fair-value family's search on NQ from FV3's declaration (2026-10-05), from which FV3, the two-stream candidate
+      FV3-G/F and the corrected candidate FV3-C were chosen in turn. It is FV3-C's pool (D-353), the last of the three
+      and the one a count of N reads: FV3 is killed (D-298) and FV3-G/F closed (D-353), neither to be registered. It
+      holds FV2's declared grid and everything FV2's pool holds (FV1's development, extension and campaign gate), whose
+      results FV3 was designed after (D-286; FV3's card); FV3's declared screen (k 32, D-295, D-298) and its labelled
+      corrected re-score (D-301 to D-303), whose walk-forward chose the one cell every later run carries (D-306 (e));
+      that cell's eleven recorded development runs under the fidelity protocol (D-306 to D-352), each read before the
+      protocol's next change; the two-stream candidate's two runs (D-348 to D-350) and the two flip-map captures that
+      chose its flip (R137, R138; D-343 to D-346), whose readings set FV3-C against it (D-353 (2)); and FV3-C's own run
+      (D-354). Read and holding no trial, so not listed (the header): the state-table solves and exports
+      (`results/state_policy*.csv`, engine-only, on binary outcomes or the table's own chain); the rung-share and
+      availability files (`results/fv3_rung_shares_2020.csv`, `results/fv3_rung_availability_2021.csv`: the shares of
+      the stops and of the R each trade's room permits, no outcome); the captures R117-R136 themselves (they record, the
+      scorers read); D-292's per-session reading of the regime map (nothing selected; FV3's grid stayed as declared);
+      the Studio's exports and mirrors of the counted runs' gate arms and the readings of recorded results (D-299,
+      D-303, D-328, D-336, D-337, D-354), diagnostics that reproduce or re-read rows already counted. Not in this pool:
+      NQB1's study bracket and the today-scale resolution map, read to price FV3-G/F's first flip (D-339 to D-342),
+      a form replaced before any run (D-343) -- their rows stay NQB1's and NQB2's.
+  - id: pool-2026-10-20-t23
+    description: >-
+      The search T23-D20 was chosen from (D-409 to D-417): the collect map's brackets at every hour (R145, D-381,
+      D-383), whose CHOICE cells the fixed-time screen read (D-410, D-411); the flip-only contract fit (D-412, D-413);
+      big trade first then flips (D-414, D-415); the per-trade capture R147 and R148 and its choice among four stop
+      distances (D-416, D-417). And, because T23-D20's side rule is A3, the direction atlases A3 was chosen in: the
+      08:30 flip-direction atlas (R142, D-371, D-372) and the any-time atlas that found A3 (R143, D-373, D-374). Not in
+      this pool: the flip design map (R144, D-375, D-376) and the after-win and speed studies (D-384 to D-397), which
+      priced FV3-C's table and chose nothing T23-D20 carries; R137's spread rows, read as costs, no selection.
+  - id: pool-2026-10-24-t24
+    description: >-
+      The search T24-GF15 was chosen from (D-425 to D-433), all on NQ minute data 2020 to June 2025 with a seeded coin's
+      side: T24's first screen of two sizing families on the T23 capture's schedule (D-426, D-427); the wide screen of
+      eight configurations at 40 and 60-point stops on T24's capture R149-R151 (D-429 to D-431; the 20-point width
+      refused by its table's oracles, no configuration run); and the execution screen of four configurations -- two
+      stop maps, two growth targets -- whose choice is T24-GF15's k (D-432, D-433; the tables refused by their oracles).
+      Not in this pool: T23's pool (its collect map chose T23's slots and A3 its side; T24 trades every hour with a
+      coin and chooses neither), stage one's model read in the scratchpad (no trade read), and the capture's
+      resolution by time and its throughput read in the scratchpad to set the operator's resolution rule (a property
+      of the clock and the market's pace, applied by D-432's declared rule; no outcome of a configuration chosen on it).
+
+  - id: pool-2026-10-30-a1
+    description: >-
+      The search A1-INS15 was chosen from (D-460, D-469): signal atlas family A1 on NQ minute bars, the local Databento
+      walk over 2020-01-01 to 2026-07-16 (D-458, D-461) -- fifteen mechanical patterns followed and faded and the clock's
+      seeded coin, 31 cells, five bars late at T24's m40 map, strictly one position at a time -- screened twice: the first
+      screen under T24's gf15 plan (31 cells attempted, eight refused by the engine's day capacity, the plan the wrong
+      one, D-469 (1)-(2)) and the rescreen under T24-GF15b's corrected plan (31 cells, D-469 (3)), whose rank 1 is the
+      model (D-460's rule). Both screens count, every cell a trial (D-189, D-469 (4); the handoff's §7 item 3: N the grid
+      size, counted). Not in this pool: the walk's identity against R149-R151 (`results/atlas_identity_a1.csv`) and the
+      independent event check (D-462), which measure the data and the pattern code and choose nothing; R137's spreads,
+      read as costs. COUNTED (D-472, upheld by the prereg-gatekeeper on 2026-10-30, D-473): T24's selection steps --
+      t24_screen, t24_wide, t24_exec and P-08's run (t24_gf15_dev_test) -- whose search chose the m40 stop map and the
+      growth-then-flip plan (gf15b from P-08's run and audit, D-438) that A1-INS15 keeps fixed, on overlapping NQ minute
+      bars; D-189 counts every row of the search a candidate's kept components came from (the precedents: T23-D20's pool
+      counts the direction atlases its side rule came from; FV3-C's counts FV1 and FV2). Not counted: P-09 and P-10 (each
+      tests one fixed configuration and chose nothing A1 keeps), T23's pool (A1 keeps neither its slots nor A3). N = 78.
+
+  - id: pool-2026-10-30-a2
+    description: >-
+      The search A2-NB158 was chosen from (D-481, declared before any A2 campaign ran; its rank 1, D-485): A2's screen --
+      family A1's 31 cells on A1's walk (NQ minute bars, the local Databento walk over 2020-01-01 to 2026-07-16, D-458,
+      D-461), each sized by FV3-C's kind of state table re-solved on the cell's own trades, ranked at the bound among the
+      cells whose table passes its oracles and whose offered R's resolve -- every cell a trial, a refused one included
+      (D-189; A1's first screen counted its refused cells, D-469 (4)). Counted with it, conservatively (D-481 (4)): A1's
+      two screens (atlas_a1_screen_gf15, atlas_a1_screen_gf15b: A2 keeps their grid, walk, map and seed); T24's
+      selection steps -- t24_screen, t24_wide, t24_exec and P-08's run (t24_gf15_dev_test) -- whose search chose the m40
+      stop map A2 keeps, as in pool-2026-10-30-a1 (D-472, D-473); and the FV3 rows whose search chose the table's
+      configuration A2 re-solves on each cell (config/state_policy_v12.yaml's rules, rent fixed point and export, D-329
+      to D-336): the selected cell's eleven development runs under the fidelity protocol (fv3_portfolio_development), the
+      two-stream candidate's two runs (fv3_gf_development) and the two flip maps (flip_map_minute, flip_map_seconds),
+      whose readings set FV3-C against FV3-G/F (D-353 (2)). THE FV3 ROWS COUNT (the prereg-gatekeeper's ruling,
+      2026-10-30, D-488; 109 without them rejected): they read NQ minute bars 2019-11-12 to 2025-06-30, inside A2's
+      window, and chose the sizing table A2 keeps (16 trials). COUNTED too (the gatekeeper, 2026-10-30, D-488): P-11,
+      A1-INS15's registered run, whose run and audit (D-477) chose A2's decision to size A1's signals by a table, as
+      P-08's run counts in T24-GF15b's pool (one trial). Not in this pool: FV1's rows and FV2's and FV3's signal
+      grids (fv2_grid, fv3_grid, fv3_grid_corrected), which chose FV3's signal, which A2 does not keep (D-481 (4));
+      FV3-C's own development run (fv3_corrected_development: it selected nothing, covered by FV3-C's k) and its
+      confirmation P-06; P-09 and P-10 (each tests one fixed configuration and chose nothing A2 keeps); T23's pool (A2
+      keeps neither its slots nor A3); the walk's identity and the independent event check (they measure the data and
+      the code); the state table's fix and its checks (D-480: engine code on stage one's rules, no market data); R137's
+      spreads, read as costs. N for a registration of A2's selected cell (k 1): 1 + 31 + 62 + 15 + 16 + 1 = 126 (the
+      gatekeeper's ruling, D-488; the draft's 125 lacked P-11, and 109 without the FV3 rows was rejected).
+
+  - id: pool-2026-10-30-a3
+    description: >-
+      The search a future A3 model will be chosen from (D-490, D-491, D-492; declared before any A3 campaign ran): A3's
+      screen -- family A1's 31 cells (A1's events, the local Databento walk over 2020-01-01 to 2026-07-16, D-458, D-461)
+      walked on FV3-C's 12.5 and 25-point rungs with FV3's breakeven, MAE and flatten, sized by FV3-C's exact exported
+      v12 policy under FV3-C's protocol (the day capacity raised to a cell's busiest day, the bounds over 21-session
+      blocks with P-11's era rule), ranked at the bound among the cells whose offered R's resolve -- every cell a trial
+      (D-189). Counted with it, conservatively (D-492 (5)), each for what A3 keeps: FV3's pool rows in the window -- FV2's
+      and FV3's grids and FV3's corrected re-score (fv2_grid, fv3_grid, fv3_grid_corrected: their search chose FV3's
+      rungs, breakeven move, flatten and quarter-R exit grid, which A3's walk keeps, unlike A2), the selected cell's
+      eleven development runs (fv3_portfolio_development), the two-stream runs and the two flip maps (fv3_gf_development,
+      flip_map_minute, flip_map_seconds) whose readings set FV3-C's protocol and table, and FV3-C's own development run
+      (fv3_corrected_development: A3 carries its exact table, protocol and edge cell); FV1's rows read no day in the
+      window and do not count; A1's two screens (atlas_a1_screen_gf15, atlas_a1_screen_gf15b: A3 keeps their grid,
+      events, side rules, delay and seed) and A2's screen (atlas_a2_screen_table: its reading, A1's shortfall in the plan,
+      led to D-485 (4)'s question); T24's selection steps (t24_screen, t24_wide, t24_exec, t24_gf15_dev_test: A3's rung
+      rule is D-432's map rule); P-11 and P-12, whose runs and audits chose the next families' plans (D-477, D-489);
+      D-487's decomposition (zero_edge_decomposition: nine cells and four post-hoc switches, whose reading chose A3's
+      design -- the v12 table, targets to 3R, no funded room cap -- D-490); and A3's step-0 read (a3_resolution_map: its
+      eligibility is A3's rung rule, D-491, D-492 (2); one test, as the resolution maps count). COUNTED too (the
+      prereg-gatekeeper's ruling on A3-BRK30's draft, 2026-10-30, D-499): P-06, FV3-C's confirmation, one trial -- its
+      PASS and its audit made FV3-C the confirmed design A3 keeps whole (D-361, D-365, D-382: the row to beat, its
+      table, rungs and protocol carried because they were confirmed), as P-11 counts in pool-2026-10-30-a2; its window
+      is development since D-461. Not in this pool: the Focused Trader Program sweep (ftp_sweep, D-497, D-498: an
+      exploratory reading beside FV3-C's and P-11's campaigns at declared thresholds, which chose no component of A3);
+      P-08's and P-09's and P-10's
+      configurations beyond t24_gf15_dev_test (each tests one fixed configuration A3 does not keep); T23's pool (A3
+      keeps neither T23's slots nor the direction rule its atlas named A3); the walk identities and the independent
+      event check (they measure the data and the code); the rung walk's agreement test with FV3's settlement (code, no
+      selection); R137's spreads (A3 charges one tick at entry, not R137's spreads). N for a registration of A3's
+      selected cell
+      (k 1), from count_n: 1 + 31 + 177 + 62 + 31 + 15 + 1 + 1 + 13 + 1 + 1 = 334 (the gatekeeper's ruling, D-499: the
+      step-0 row and P-06 both counted; the draft's 333 lacked P-06, and 332, D-492 (5)'s list, lacked the step-0 row too).
+
+  - id: pool-2026-10-31-cb20
+    description: >-
+      The search A3-BRK30-CB20 was chosen from (D-509, declared 2026-10-31 after D-504's exploratory read): P-13's
+      registered design -- A3-BRK30's trades, FV3-C's protocol, the operator's strict rule -- with the restraints D-501's
+      compliance study varied. Counted, conservatively, each for what it chose or what D-509 (1) declared: EVERY row
+      pool-2026-10-30-a3 counts (A3's screen, A3's step-0 read, D-487's decomposition, A2's and A1's screens, T24's
+      selection steps, the FV3 rows in the window, P-11, P-12 and P-06 -- 333 trials: everything A3-BRK30's k-less count
+      held, since the candidate keeps all of A3-BRK30); P-13 itself (one trial: its run and audit, D-500, chose the
+      design the restraints were tried on); D-501's compliance study (a3_compliance: its nine variants on P-13's campaign
+      -- the no-closure table, budgets of 10/20/30/40, both -- each a configuration the candidate was chosen among,
+      D-504); D-505's repeat on FV3-C (fv3c_compliance: the same nine variants on FV3-C's development campaign and on
+      P-06's window, 18; D-506's read corroborated dropping the closure and pricing the budget, D-509 cites it); D-508's
+      customer-slice study (customer_slices: seven readings, D-509 (1) declares it counted although D-509 fixed the
+      candidate and its slice lines before any slice result existed, D-510); and D-497/D-498's Focused Trader Program
+      sweep on FV3-C's and P-11's campaigns (ftp_sweep: ONE trial, count_tests false -- its reading, placement near
+      certain at low purchase thresholds, is what made a purchase restraint a component worth trying, but its 32 models
+      are the firm's possible enforcement levels, never configurations a trader chooses among, and the budget grid
+      10/20/30/40 is D-497's threshold grid, declared before D-498's read). NOT counted as trials: the Focused Trader
+      Program's models run beside each configuration (D-499:a3_brk30_ftp 16, D-501:a3_compliance_ftp 160,
+      D-505:fv3c_compliance_ftp 320) -- readings of a configuration under the firm's enforcement scenarios, as the
+      denial ladder's 10/25/50 % arms are readings and never trials (D-234, D-499); D-502's table solve (engine-only,
+      no market data); D-507's Studio export (no variant, a reproduction); the A3-BRK30 stop distribution (a reading of
+      the trades, no campaign). N for a registration of A3-BRK30-CB20 (k 1), from count_n:
+      1 + 333 + 1 + 9 + 18 + 7 + 1 = 370 (counting the program's 496 model readings too would give 866; counting
+      ftp_sweep's 32 models as trials, 401).
+
+  - id: pool-2026-11-02-rc
+    description: >-
+      The search RC (rc_s100_all, the 25-point coin re-entering when flat, all-day window) was chosen from (D-521 to
+      D-527, 2026-11-01..02): P-14's design with the signal replaced by a seeded coin. Counted, conservatively: EVERY row
+      pool-2026-10-31-cb20 counts (everything A3-BRK30-CB20's k-less count held -- 369 trials -- since RC keeps P-14's
+      money side whole: the no-closure table, the budget, the strict rule, FV3-C's rungs and protocol); P-14 itself (one
+      trial: its PASS, D-513, chose that money side); D-518's customer-journey study (customer_journey: 22 readings, 11
+      configurations at two arms, count_tests true -- it read P-14's family and FV3-C's on the measures D-521 was
+      declared after, so each reading counts, the hypothetical_hedge rows included, conservatively); D-523's fixed-slot
+      screen (rc_screen: 2 cells, count_tests true -- its fault, D-525, changed the family's design, so its cells were
+      read before the carried cell was chosen); and D-525's re-entry screen (rc_reentry_screen: 8 cells, count_tests
+      true -- the carried cell was selected among them by D-525 (6)'s rule; the customer windows are product readings
+      but each counts as a trial). NOT counted: the scoreboard's coin columns (D-528, a reading of result files); the
+      stop distributions (readings of the trades); the hypothetical hedge studies D-514/D-515 (in no pool, as every
+      hypothetical study). N for a registration of RC (k 1), from count_n: 1 + 369 + 1 + 22 + 2 + 8 = 403 (counting
+      only D-518's 16 non-hypothetical readings, 397; without D-518 at all, 381; without P-14 as a trial, 402). T23's
+      fixed-time search is in no RC row: RC keeps none of its choices (its slots, its d20 stop, A3's direction), D-499
+      (2)'s rule, as pool-2026-10-24-t24 and the a-pools exclude it (D-521 (4)'s parenthetical corrected by D-530).
+
+  - id: pool-2026-11-03-rc150
+    description: >-
+      The search RC150 (rc_s150_all_nr, the 37.5-point news-safe coin re-entering when flat, all-day window) was chosen
+      from (D-533 to D-544, 2026-11-02..03): P-15's cell, made news-safe, then widened by D-538's stop-width screen and
+      kept after D-542's funded-risk diagnostic. Counted, conservatively: EVERY row of pool-2026-11-02-rc (P-15's pool, 402
+      trials: RC150 keeps everything RC kept -- P-14's money side, the coin, the re-entry, the cutoff, the all-day
+      window); P-15 itself (one trial: its PASS, D-532, is the result the wider stop was read against); D-535's news-safe
+      reading (rc_nr_dev: one, count_tests false -- it read the D-533 (2) cut RC150 keeps; the cut is a conduct fix chosen
+      without a reading, but its development reading was run before the stop was chosen); D-538's stop-width screen
+      (rc_width_screen: 8 cells, count_tests true -- the selected cell was chosen among them by D-538 (4)); and D-542's
+      diagnostic (rc_width_diag: one -- its reading kept the cell as a candidate, D-544). NOT counted: D-536's robustness
+      study (rc_robust: it selects nothing -- 101 coin seeds, two extra-cost and a bisection run, three delays, seven
+      years, all readings of the 25-point cell with no component chosen from them, D-536 (1), D-541; under D-499 (2)'s
+      rule a row counts when its run chose a component the candidate keeps, and RC150 keeps none of its choices); the
+      scoreboard's coin columns (D-528) and the stop distributions (readings). N for a registration of RC150 (k 1), from
+      count_n: 1 + 402 + 1 + 1 + 8 + 1 = 414 (counting D-536's four reading families as one trial each, 418; leaving
+      out the diagnostic, 413; leaving out P-15 as a trial, 413). T23's fixed-time search stays out (D-530 (3)).
+
+rows:
+  # ---------------------------------------------------------------------------------------------- models and registrations
+  - id: IM1
+    kind: model
+    title: IM1, intraday momentum with a noise band (Zarattini, Aziz & Barbon 2024), ES, CL, 6E and NG
+    decisions: [D-155, D-157, D-161]
+    date: 2026-09-26
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-09-26-im1
+    reason: SHORTLIST.md candidate 1, chosen with its markets on 2026-09-26 (IM1.md); withdrawn before any data (D-161).
+
+  - id: IM2
+    kind: model
+    title: IM2, IM1's entries under stage one's lifecycle, ES, CL, 6E and NG
+    decisions: [D-161, D-162, D-163, D-172]
+    date: 2026-09-27
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-09-26-im1
+    reason: IM1's signal with stage one's per-state bracket, size and trade limit (D-161); a pre-door entry under D-191.
+
+  - id: P-01
+    kind: withdrawn_registration
+    title: IM1, registered then withdrawn before any data was read
+    decisions: [D-155, D-161]
+    date: 2026-09-26
+    commit: 8fdb08e
+    model: IM1
+    k: 1
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: No data was read under P-01 (D-161); it holds no trial.
+
+  - id: P-02
+    kind: withdrawn_registration
+    title: IM2 with a $150 harvest, withdrawn before any data was read
+    decisions: [D-163]
+    date: 2026-09-27
+    commit: 90b394c
+    model: IM2
+    in_k: true
+    k: 3
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: No data was read under P-02 (D-163).
+
+  - id: P-03
+    kind: withdrawn_registration
+    title: IM2 with a $300 harvest, withdrawn before any data was read
+    decisions: [D-163, D-172]
+    date: 2026-09-27
+    commit: bcd3e5f
+    model: IM2
+    in_k: true
+    k: 4
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: No data was read under P-03 (REGISTRY.md; D-172).
+
+  - id: P-04
+    kind: registration
+    title: IM2 (harvest at $300) with the fidelity audits' fixes; eight development runs R053-R060
+    decisions: [D-172, D-189, D-200]
+    date: 2026-09-27
+    commit: c8aacfb
+    model: IM2
+    in_k: true
+    k: 4
+    development_window: ["2009-06-01", "2019-12-31"]
+    registered_markets: [ES, CL, 6E, NG]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2009-05-01", "2019-12-31"]]
+    markets: {ES: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: false
+    pools: []
+    reason: The registration under test; its k = 4 counts the four funded policies it was chosen from (P-04 §1).
+
+  - id: IM2_funded_policy_choice
+    kind: protocol_option
+    title: IM2's funded policy, one of four stage-one policies (build then harvest at $300)
+    decisions: [D-161, D-162, D-163]
+    date: 2026-09-27
+    model: IM2
+    in_k: true
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: P-04's own k = 4; its data look is the IM2 screen, its own row.
+
+  - id: IM2_cheap_screen
+    kind: screen
+    title: IM2's cheap screen, the day's first qualifying entry against no information, on the bracket map (NQ, ES)
+    decisions: [D-155, D-161]
+    date: 2026-09-27
+    commit: e4f7430
+    model: IM2
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: >-
+      IM2's own look at development outcomes; its measured s chose among P-04's four policies, which k counts, but the
+      look itself is not in k, so it counts, once per market read.
+
+  # ---------------------------------------------------------------------------------------------- the search IM1 came from
+  - id: gap_reversal_ES
+    kind: development
+    title: Opening-gap reversal on ES (2B R-03; Grant et al. 2005), existence gate and 12 variants
+    decisions: [D-105, D-112, D-113]
+    date: 2026-09-25
+    commit: 89c8173
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 13}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: A candidate search on ES before the shortlist; the gate and its 12 declared variants were selection steps.
+
+  - id: open_reversion_ES_test1
+    kind: development
+    title: Reversion to the opening price on ES (Test 1), gate and 6 variants (6 baselines beside them)
+    decisions: [D-116, D-118, D-121]
+    date: 2026-09-25
+    commit: 9d7491c
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 7}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: A candidate search on ES; the gate and 6 variants could select (the baselines are not trials).
+
+  - id: open_reversion_ES_rescore_R028
+    kind: outcome_check
+    title: Test 1 re-scored with next-open fills (R028)
+    decisions: [D-122, D-123]
+    date: 2026-09-25
+    commit: 01da0b8
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 24}
+    count_tests: false
+    pools: [pool-2026-09-26-im1]
+    reason: >-
+      A second look at Test 1's cells on the same data that could have revived the model; it selects nothing new
+      (D-122), so it counts once.
+
+  - id: open_reversion_NQ_R029
+    kind: development
+    title: Reversion to the opening price on NQ (R029)
+    decisions: [D-124, D-125, D-139]
+    date: 2026-09-25
+    commit: 0d31eb4
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {NQ: 12}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: A candidate search in the pool, on NQ only.
+
+  - id: atlas_D126
+    kind: atlas_family
+    title: The effect atlas's D-126 family (H01-H21 per market), BH q 0.10, survivors checked once
+    decisions: [D-126, D-128, D-136]
+    date: 2026-09-26
+    commit: 5c3852d
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 20, NQ: 21, CL: 21, 6E: 20, ZN: 21}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: >-
+      Every test could make a survivor and a candidate (D-136 read the survivors); the shortlist cites its H02, H03 and
+      H07. Each test is a trial (D-189: "the true cost of the atlas work"). GC's 21, outside the family, are not listed.
+
+  - id: atlas_F
+    kind: atlas_family
+    title: The atlas's F family (price-and-volume features), BH q 0.10
+    decisions: [D-128, D-136]
+    date: 2026-09-26
+    commit: 5c3852d
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 10, NQ: 10, CL: 10, 6E: 10, GC: 10, ZN: 10}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: Screen tests that could make a survivor.
+
+  - id: atlas_R
+    kind: atlas_family
+    title: The atlas's R family (volatility predictors), BH q 0.10
+    decisions: [D-128, D-136]
+    date: 2026-09-26
+    commit: 5c3852d
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 3, NQ: 3, CL: 3, 6E: 3, GC: 3, ZN: 3}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: Screen tests; their survivors became sizing inputs (D-136), a selection.
+
+  - id: atlas_O
+    kind: atlas_family
+    title: The atlas's O family (options positioning), BH q 0.10
+    decisions: [D-128, D-136, D-137]
+    date: 2026-09-26
+    commit: 5c3852d
+    resolution: minute
+    windows: [["2012-01-01", "2014-05-27"]]
+    markets: {ES: 3, NQ: 3}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: Screen tests; O01 went to 2B as a hypothesis (D-137).
+
+  - id: shortlist_first_look
+    kind: first_look
+    title: The shortlist's first look at last-30-minute momentum (Baltussen et al. 2021; Gao et al. 2018)
+    decisions: []
+    date: 2026-09-25
+    commit: 287c03b
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 1, NQ: 1, CL: 1, GC: 1, 6E: 1, ZN: 1}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: SHORTLIST.md cites it as evidence for candidate 1; one trade per market, each a look that could select.
+
+  - id: FV1_development
+    kind: development
+    title: FV1, the fair-value model, four configurations per market, the highest lower bound selected
+    decisions: [D-141, D-142]
+    date: 2026-09-26
+    commit: 54d11b9
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 4, NQ: 4}
+    count_tests: true
+    pools: [pool-2026-09-26-im1, pool-2026-10-04-fv2, pool-2026-10-05-fv3]
+    reason: A candidate search whose four configurations per market were a selection (config/model_fv.yaml).
+
+  - id: FV1_extension_1419
+    kind: outcome_check
+    title: FV1's four configurations on 2014-2019, nothing selected
+    decisions: [D-142, D-144]
+    date: 2026-09-25
+    commit: 4a9c1b9
+    resolution: minute
+    windows: [["2014-05-28", "2019-12-31"]]
+    markets: {ES: 4, NQ: 4}
+    count_tests: false
+    pools: [pool-2026-09-26-im1, pool-2026-10-04-fv2, pool-2026-10-05-fv3]
+    reason: A look at FV1's outcomes on new years that could have revived it; nothing selected (D-144's declaration), once.
+
+  - id: FV1_campaign_gate
+    kind: outcome_check
+    title: FV1 through the D-145 campaign gate (and its D-156 re-run)
+    decisions: [D-145, D-156]
+    date: 2026-09-25
+    commit: 3b89279
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 2, NQ: 2}
+    count_tests: false
+    pools: [pool-2026-09-26-im1, pool-2026-10-04-fv2, pool-2026-10-05-fv3]
+    reason: The same configurations through the gate; selects nothing new, counts once.
+
+  - id: bracket_map_screen
+    kind: screen
+    title: The bracket outcome map, every lifecycle geometry x stop width x half-hourly decision x side x feature bucket
+    decisions: [D-149, D-150]
+    date: 2026-09-26
+    commit: a8ef037
+    resolution: minute
+    windows: [["2009-05-01", "2019-12-31"]]
+    markets: {ES: 14652, NQ: 14724}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: >-
+      BH q 0.10 per family, survivors checked on 2017-2019 and passed to the outcome check, which produced the NQ 08:35
+      lead that stood beside the shortlist (NEXT_STEPS 5g): its tests were selection steps, so each counts.
+
+  - id: bracket_map_outcome_check
+    kind: outcome_check
+    title: The bracket map's outcome check of the screen's survivors through the gate
+    decisions: [D-149, D-150, D-156]
+    date: 2026-09-26
+    commit: ff2dd41
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 8, NQ: 23}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: Each surviving cell was tested again and one was selected (the NQ 08:35 lead); counted as the rule is written.
+
+  - id: bracket_map_vix_check
+    kind: first_look
+    title: The bracket map's entries by VIX tercile
+    decisions: [D-149]
+    date: 2026-09-26
+    commit: 0bd6b74
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 3, NQ: 3}
+    count_tests: true
+    pools: [pool-2026-09-26-im1]
+    reason: A look at outcomes by condition that could have selected a filter (it stopped an options-data trial).
+
+  # ---------------------------------------------------------------------------------------------- not in IM2's pool
+  - id: C007_legs
+    kind: development
+    title: C-007 (2B S-001), its four legs' per-day records and standard deviations
+    decisions: [D-91, D-102, D-103, D-104]
+    date: 2026-09-24
+    commit: 1e4d455
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 1, CL: 1, 6E: 1, GC: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      Only the legs' standard deviations were measured here, never a mean or an edge -- no look at the outcome; C-007's
+      edge evidence and its k are 2B's ledger's. Withdrawn before the shortlist (D-103).
+
+  - id: family_K
+    kind: atlas_family
+    title: Family K, pre-release drift (2B F-032), ES and ZN
+    decisions: [D-164, D-166]
+    date: 2026-09-27
+    commit: 866d829
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 1, ZN: 2}
+    count_tests: true
+    pools: []
+    reason: Ran on 2026-09-27, after IM1 was chosen; not an alternative to IM1 or IM2 (D-161 names none). No survivor.
+
+  - id: test1_diagnosis
+    kind: diagnostic
+    title: Test 1's failure decomposed (direction and cost components)
+    decisions: [D-121, D-122]
+    date: 2026-09-25
+    commit: "2162757"
+    resolution: minute
+    windows: [["2009-06-01", "2014-05-27"]]
+    markets: {ES: 24}
+    count_tests: false
+    pools: []
+    reason: The failure protocol on a closed verdict; it decomposes, it cannot select.
+
+  - id: data_and_fill_diagnostics
+    kind: diagnostic
+    title: Dataset and coverage checks, fill reconciliations, atlas data extras and context, kit failures, spreads
+    decisions: [D-89, D-90, D-93, D-94, D-127, D-128, D-129, D-132, D-135]
+    date: 2026-09-23
+    resolution: minute
+    windows: [["2008-11-03", "2014-05-27"]]
+    markets: {ES: 1, NQ: 1, CL: 1, 6E: 1, NG: 1, GC: 1, ZN: 1}
+    count_tests: false
+    pools: []
+    reason: Measured data, fills or costs, never a strategy's outcome (R001-R008, R033, R035-R040, R044, atlas spreads).
+
+  - id: FV1_verification
+    kind: diagnostic
+    title: FV1's exported trades audited against its rules
+    decisions: [D-148]
+    date: 2026-09-25
+    commit: d1fc5ee
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1}
+    count_tests: false
+    pools: []
+    reason: A rule audit, not a look at outcomes.
+
+  - id: IM2_data_integrity
+    kind: diagnostic
+    title: The data-integrity check of IM2's development runs
+    decisions: [D-198]
+    date: 2026-09-28
+    commit: 968cc80
+    resolution: minute
+    windows: [["2009-05-01", "2019-12-31"]]
+    markets: {ES: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: false
+    pools: []
+    reason: No R outcome was averaged (the report, lines 14-16).
+
+  - id: IM2_period_decomposition
+    kind: diagnostic
+    title: IM2's development results by year, half, volatility at entry and session thinness (EXPLORATORY)
+    decisions: [D-210, D-211]
+    date: 2026-10-01
+    model: IM2
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The failure protocol's decomposition of a closed verdict, at the operator's question; it selects nothing. A
+      model later built on a period or condition it shows must count these cuts in its own k.
+
+  - id: IM2_second_implementation
+    kind: diagnostic
+    title: IM2's band and signals written again and compared session by session (R063-R070)
+    decisions: [D-193, D-200]
+    date: 2026-09-30
+    commit: 9c5c1f6
+    resolution: minute
+    windows: [["2009-05-01", "2019-12-31"]]
+    markets: {ES: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: false
+    pools: []
+    reason: Compares signals, not outcomes.
+
+  - id: hypothetical_hedge_studies
+    kind: hypothetical
+    title: Hedged pairs, their VIX variant and the hedge campaign (HYPOTHETICAL, tier 1)
+    decisions: [D-153, D-156]
+    date: 2026-09-26
+    commit: 75497a9
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1}
+    count_tests: false
+    pools: []
+    reason: A study of a prohibited structure, never a candidate search.
+
+  - id: firm_H
+    kind: hypothetical
+    title: Firm H, two parties hedging each other (HYPOTHETICAL)
+    decisions: [D-203, D-204, D-205, D-206]
+    date: 2026-09-29
+    commit: 4fb7d4c
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: A driftless synthetic walk; no market data.
+
+  - id: hypothetical_hedge_a3
+    kind: hypothetical
+    title: The cross-firm hedge pair on P-14's design, two Topstep-contract firms (HYPOTHETICAL, tier 1)
+    decisions: [D-514]
+    date: 2026-11-01
+    commit: 68ccdaf
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: A study of a prohibited structure (hypothetical_hedge), never a candidate search; P-14's trades unchanged.
+
+  - id: T7_protocol_comparison_draft
+    kind: protocol_option
+    title: The T7 protocol comparison draft, 324 arms, never registered
+    decisions: [D-114, D-119, D-151]
+    date: 2026-09-25
+    commit: 5382ccb
+    k: 324
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    reason: No market data; its arms will count against the candidate it runs on when it is registered.
+# ---------------------------------------------------------------------------------------------- NQB1 (D-226, D-229)
+  - id: NQB1
+    kind: model
+    title: NQB1, NQ no-edge brackets under stage one's zero-edge geometry, one Combine live (docs/candidates/cards/NQB1.md)
+    decisions: [D-226, D-227, D-228, D-229]
+    date: 2026-10-02
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-02-nqb1
+    reason: D-221's rule on the today-scale map chose it (D-226); its campaign on measured inputs passed the gate (D-228).
+
+  - id: resolution_screen_first_look
+    kind: first_look
+    title: The regular-session first look at bracket resolution on the bracket map's ES and NQ records (D-213)
+    decisions: [D-213]
+    date: 2026-10-01
+    resolution: minute
+    windows: [["2009-06-01", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-02-nqb1, pool-2026-10-02-nqb2]
+    reason: >-
+      results/resolution_screen.csv, read from R049-R052's counts; it sent the question to Topstep's whole day (D-214)
+      but chose no NQB1 parameter, so it counts once per market read, outside NQB1's k.
+
+  - id: rmap_development_scale
+    kind: screen
+    title: The resolution map at the development scale, R071-R081, ES, NQ, CL, 6E and NG (R079 unusable, D-223)
+    decisions: [D-214, D-215, D-221, D-223, D-224]
+    date: 2026-10-02
+    model: NQB1
+    in_k: true
+    resolution: minute
+    windows: [["2009-05-25", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: true
+    pools: [pool-2026-10-02-nqb1, pool-2026-10-02-nqb2]
+    reason: Its markets, stops, hours and R are the grid NQB1's k counts.
+
+  - id: rmap_today_scale
+    kind: screen
+    title: The resolution map at today's price level, R082-R087, ES, NQ and CL (6E and NG read from the development runs)
+    decisions: [D-225, D-226]
+    date: 2026-10-02
+    model: NQB1
+    in_k: true
+    resolution: minute
+    windows: [["2009-05-25", "2019-12-31"]]
+    markets: {ES: 1, NQ: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: true
+    pools: [pool-2026-10-02-nqb1, pool-2026-10-02-nqb2]
+    reason: The price scale and the choice among caps and geometries are in NQB1's k.
+
+  - id: nqb1_campaign_screen
+    kind: screen
+    title: NQB1's cheap screen, the campaign on its measured inputs, one Combine live and five (D-227)
+    decisions: [D-227, D-228]
+    date: 2026-10-02
+    model: NQB1
+    in_k: true
+    resolution: minute
+    windows: [["2009-05-25", "2019-12-31"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-02-nqb1, pool-2026-10-02-nqb2]
+    reason: Its two caps are within NQB1's k (results/nq_noedge_campaign.csv).
+  - id: P-05
+    kind: registration
+    title: NQB1's one confirmation on NQ's held-back window, kit R088 (R089 only if R088 is unusable)
+    decisions: [D-229, D-230, D-231, D-232]
+    date: 2026-10-02
+    model: NQB1
+    in_k: true
+    k: 126720
+    development_window: ["2009-06-01", "2019-12-31"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2019-12-23", "2026-09-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-02-nqb2]
+    reason: >-
+      The registration under test (D-229 safeguard b): its one look at NQ's held-back window, two registered brackets at
+      13 slots; a later model's N counts it.
+
+# ---------------------------------------------------------------------------------------------- NQB2 (D-241, D-242)
+  - id: NQB2
+    kind: model
+    title: NQB2, NQ no-edge brackets under T5 2a's best pair at zero edge, evening entries, one Combine live (docs/candidates/cards/NQB2.md)
+    decisions: [D-239, D-240, D-241, D-242]
+    date: 2026-10-02
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-02-nqb2
+    reason: D-240's rule on the regime map's 2020-2025 brackets built it; its campaign grew at its lower bounds (D-241).
+
+  - id: regime_map
+    kind: screen
+    title: The whole-day regime map at actual prices, R090-R094, ES, NQ, CL, 6E and NG (D-238), read then against now (D-239)
+    decisions: [D-238, D-239]
+    date: 2026-10-02
+    model: NQB2
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {ES: 1, NQ: 1, CL: 1, 6E: 1, NG: 1}
+    count_tests: true
+    pools: [pool-2026-10-02-nqb2, pool-2026-10-03-ss1, pool-2026-10-03-orb1, pool-2026-10-03-orb2,
+            pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: Its markets, stops and decision times are the grid NQB2's k counts; its reading chose SS1's stops and markets.
+
+  - id: today_noedge_campaign
+    kind: screen
+    title: Stage one's geometries on NQ's and ES's 2020-2025 brackets, the campaign on measured inputs (D-240, D-241)
+    decisions: [D-240, D-241]
+    date: 2026-10-02
+    model: NQB2
+    in_k: true
+    resolution: minute
+    windows: [["2020-01-01", "2025-06-30"]]
+    markets: {NQ: 1, ES: 1}
+    count_tests: false
+    pools: [pool-2026-10-02-nqb2]
+    reason: Its geometries and caps are within NQB2's k (results/today_noedge_campaign.csv).
+
+# ---------------------------------------------------------------------------------------------- SS1 (D-245)
+  - id: session_setups_screen
+    kind: screen
+    title: The session-setup screen SS1, R097 NQ and R098 ES -- six windows, eleven rules, three stops, four R (D-245)
+    decisions: [D-244, D-245]
+    date: 2026-10-03
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 792, ES: 792}
+    count_tests: true
+    pools: [pool-2026-10-03-ss1, pool-2026-10-03-orb1, pool-2026-10-03-orb2, pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      A declared search: each market's 6 x 11 x 3 x 4 variants are selection steps; a model chosen from it carries the
+      row in its k (in_k), any other model in this pool counts its tests (ORB1's: its lead came from the screen).
+
+# ---------------------------------------------------------------------------------------------- ORB1 (D-249)
+  - id: ORB1
+    kind: model
+    title: ORB1, the opening-range breakout on NQ and ES (Zarattini, Barbon & Aziz 2024), the 5-, 15-, 30- and 60-minute ranges and their COMBO, two exits
+    decisions: [D-248, D-249, D-250]
+    date: 2026-10-03
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-03-orb1
+    reason: The paper's rules on the open the screen's diagnostic pointed at (D-248); its fingerprints declared first (D-249).
+
+  - id: orb1_development
+    kind: screen
+    title: ORB1's development run, R099 NQ and R100 ES, 2009-2019 -- four ranges and their COMBO, the paper's exit and six bracket exits (D-249, D-250)
+    decisions: [D-249, D-250]
+    date: 2026-10-03
+    model: ORB1
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2019-12-31"]]
+    markets: {NQ: 35, ES: 35}
+    count_tests: true
+    pools: [pool-2026-10-03-orb1, pool-2026-10-03-orb2, pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      Its two markets, five entry sets and seven exits are ORB1's k, 70 (results/orb_dev_score.csv), covered by ORB1's
+      k (in_k); for ORB2, chosen from this reading (D-252, D-253), each of its 35 tests per market was a selection step.
+
+  - id: orb_cost_split
+    kind: diagnostic
+    title: ORB1's paper-exit trades split into the move before any cost and the costs, per market and range (EXPLORATORY)
+    decisions: [D-252]
+    date: 2026-10-03
+    model: ORB1
+    resolution: minute
+    windows: [["2009-04-20", "2019-12-31"]]
+    markets: {NQ: 4, ES: 4}
+    count_tests: true
+    pools: [pool-2026-10-03-orb2, pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      The failure protocol's decomposition of ORB1's closed reading (results/orb_cost_split.csv). ORB2 is built on the
+      market it shows (D-253), so, as IM2_period_decomposition's reason says, its cuts -- the four ranges on each
+      market -- count in ORB2's pool (D-254).
+
+# ---------------------------------------------------------------------------------------------- ORB2 (D-253)
+  - id: ORB2
+    kind: model
+    title: ORB2, the opening-range breakout on NQ, four ranges one position at a time, D-212's brackets at stage one's R
+    decisions: [D-252, D-253]
+    date: 2026-10-03
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-03-orb2
+    reason: ORB1's rules on NQ alone, chosen after ORB1's reading and its EXPLORATORY decomposition (D-252); fixed in D-253.
+
+  - id: orb2_screen
+    kind: screen
+    title: ORB2's screen, R101 NQ 2020 to June 2025 -- the kill line K1-K5 fixed before the run (D-253)
+    decisions: [D-253]
+    date: 2026-10-03
+    model: ORB2
+    in_k: true
+    resolution: minute
+    windows: [["2019-11-18", "2025-06-30"]]
+    markets: {NQ: 8}
+    count_tests: true
+    pools: [pool-2026-10-03-orb2, pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      Its market and three funded sizes are ORB2's k, 6 (results/orb2_screen.csv), covered by ORB2's k (in_k); for
+      ORB3, whose grid its findings set (D-256), each of its six variants was a selection step, and so were its two
+      report-only hold-to-close rows, which chose ORB3's direction mode (D-257).
+
+# ---------------------------------------------------------------------------------------------- ORB3 (D-256)
+  - id: ORB3
+    kind: model
+    title: ORB3, the opening-range breakout on NQ, a declared optimisation of stop width, exit mode, latest fill, ranges and filter
+    decisions: [D-255, D-256]
+    date: 2026-10-03
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-03-orb3
+    reason: The operator's optimisation of the opening-range breakout after ORB2's screen (D-256); one configuration chosen by the declared search.
+
+  - id: orb3_search
+    kind: development
+    title: ORB3's declared search, R102-R104 NQ 2009 to June 2025 -- 640 configurations, the plateau rule, the walk-forward (D-256)
+    decisions: [D-256]
+    date: 2026-10-03
+    model: ORB3
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 640}
+    count_tests: true
+    pools: [pool-2026-10-03-orb3, pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      Its 640 configurations are ORB3's k (results/orb3_search.csv), covered by ORB3's k (in_k); for ORB4, re-scored
+      after its result (D-258), each was a selection step.
+
+# ---------------------------------------------------------------------------------------------- ORB4 (D-258)
+  - id: ORB4
+    kind: model
+    title: ORB4, ORB3's search re-scored with the operator's sizing rule (whole-micro risk within $100), EXPLORATORY
+    decisions: [D-258]
+    date: 2026-10-03
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-03-orb4
+    reason: Chosen after ORB3's result at the operator's instruction (D-258); only a confirmation on the held-back window can decide.
+
+  - id: orb4_reselect
+    kind: development
+    title: ORB4's re-selection on R102-R104 -- ORB3's 640 configurations with the $100 sizing tolerance, and with the fit set aside (D-258)
+    decisions: [D-258]
+    date: 2026-10-03
+    model: ORB4
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 640}
+    count_tests: true
+    pools: [pool-2026-10-03-orb4, pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: Its 640 configurations are ORB4's k (results/orb4_reselect.csv once scored).
+
+# ---------------------------------------------------------------------------------------------- ORB5 (D-270, D-273)
+  - id: orb5_studio_views
+    kind: first_look
+    title: The Studio views of R105 and R107 -- ORB4's ranges and stop at 1R, the original fill and the hand-traded entry under skip, rest and chase (D-270)
+    decisions: [D-270]
+    date: 2026-10-04
+    resolution: minute
+    windows: [["2009-04-20", "2014-12-31"], ["2019-11-18", "2025-06-30"]]
+    markets: {NQ: 4}
+    count_tests: true
+    pools: [pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: >-
+      Exploratory views of four entries' campaigns the operator saw before ORB5 was declared; ORB5's design is not
+      blind to them (D-270), so each entry counts as a selection step.
+
+  - id: ORB5
+    kind: model
+    title: ORB5, the opening-range breakout on NQ traded by hand at five minutes, a declared grid of 7,680 configurations (D-273)
+    decisions: [D-266, D-267, D-269, D-271, D-272, D-273]
+    date: 2026-10-04
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-04-orb5
+    reason: One configuration chosen by ORB5's declared grid (D-273); the walk-forward is its multiplicity control and the held-back window its one confirmation.
+
+  - id: orb5_grid
+    kind: development
+    title: ORB5's declared screen on R102-R107 -- 7,680 configurations, the plateau rule, the walk-forward, the gate (D-273); killed (D-275)
+    decisions: [D-273, D-275]
+    date: 2026-10-04
+    model: ORB5
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 7680}
+    count_tests: true
+    pools: [pool-2026-10-04-orb5, pool-2026-10-04-orb6]
+    reason: Its 7,680 configurations are ORB5's k (results/orb5_grid.csv), each a selection step; covered by ORB5's k (in_k).
+
+  - id: orb5_last_levers
+    kind: outcome_check
+    title: D-276's two checks on ORB5's selection -- NQ minis with MNQ micros at the verified fees, and the gate's out-of-sample trades at today's costs (EXPLORATORY)
+    decisions: [D-276]
+    date: 2026-10-04
+    commit: 3c8ed08
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-10-04-orb6]
+    reason: >-
+      Two re-scorings of ORB5's declared grid after its verdict (results/orb5_exploratory.csv); they reopen nothing
+      (D-277), but ORB6's fee model is set from them, so each counts as a selection step for ORB6.
+
+# ---------------------------------------------------------------------------------------------- ORB6 (D-277, D-278)
+  - id: ORB6
+    kind: model
+    title: ORB6, the first retest of NQ's opening-range breakout traded by hand five minutes after the alert, a declared grid of 960 configurations (D-278)
+    decisions: [D-276, D-277, D-278]
+    date: 2026-10-04
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-04-orb6
+    reason: One configuration chosen by ORB6's declared grid (D-278); the walk-forward is its multiplicity control and the held-back window its one confirmation.
+
+  - id: orb6_grid
+    kind: development
+    title: ORB6's declared screen on R102-R110 -- 960 configurations, the plateau rule, the walk-forward, the per-side drift benchmark, the gate (D-278); killed (D-281)
+    decisions: [D-278, D-281]
+    date: 2026-10-04
+    model: ORB6
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 960}
+    count_tests: true
+    pools: [pool-2026-10-04-orb6]
+    reason: Its 960 configurations are ORB6's k (results/orb6_grid.csv), each a selection step; covered by ORB6's k (in_k).
+
+# ---------------------------------------------------------------------------------------------- FV2 (D-279, D-283)
+  - id: FV2
+    kind: model
+    title: FV2, JJ Simon's fair-value strategy on NQ from his own rules, traded seated at two minutes, a declared grid of 96 configurations (D-283)
+    decisions: [D-279, D-282, D-283]
+    date: 2026-10-04
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-04-fv2
+    reason: One configuration chosen by FV2's declared grid (D-283); the walk-forward is its multiplicity control and the held-back window its one confirmation.
+
+  - id: fv2_grid
+    kind: development
+    title: FV2's declared screen on R111-R116 -- 96 configurations, the walk-forward, the per-side drift benchmark, the gate (D-283); killed (D-286)
+    decisions: [D-283, D-286]
+    date: 2026-10-04
+    model: FV2
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 96}
+    count_tests: true
+    pools: [pool-2026-10-04-fv2, pool-2026-10-05-fv3, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Its 96 configurations are FV2's k (results/fv2_grid.csv), each a selection step; covered by FV2's k (in_k). FV3
+      was designed after its kill (D-286; FV3's card), so for the fair-value family's later models each is a selection
+      step too.
+
+# ---------------------------------------------------------------------------------------------- FV3 (D-293, D-295, D-298)
+  - id: FV3
+    kind: model
+    title: FV3, JJ Simon's fair-value strategy on NQ from his own transcripts, sized by the account-state table, a declared grid of 32 configurations (D-295)
+    decisions: [D-290, D-291, D-293, D-295, D-298]
+    date: 2026-10-05
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-05-fv3
+    reason: >-
+      A new candidate after FV2's kill (D-286; docs/candidates/cards/drafts/FV3.md), one configuration to be chosen by
+      its declared grid (D-295); killed by W1 (D-298). Its chosen_from is the family's pool, which also holds what came
+      after it; FV3 is not to be registered, so only FV3-C's count reads that pool.
+
+  - id: fv3_grid
+    kind: screen
+    title: FV3's declared screen on R117-R136 -- 32 configurations, the walk-forward, the per-side drift benchmark, the gate, the mechanics report (D-295); killed (D-298)
+    decisions: [D-295, D-297, D-298]
+    date: 2026-10-05
+    commit: fcd7f0b
+    model: FV3
+    in_k: true
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 32}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Its 32 configurations are FV3's k (results/fv3_grid.csv; results/variants.jsonl D-295:fv3_grid), each a selection
+      step; covered by FV3's k (in_k); for FV3-C, whose cell comes from this family, each counts. Its mechanics rows are
+      descriptive (the card: nothing selected from them) and chose nothing FV3-C carries (D-298's reading pointed at AM
+      continuations alone; FV3-C keeps the walk-forward's cell), so they are counted within this row, not apart.
+
+  - id: fv3_grid_corrected
+    kind: screen
+    title: FV3's screen corrected in six places and re-scored once beside D-298's verdict (D-301, D-302) -- killed by W1, W2 and B, its gate not killed and not acted on (D-303)
+    decisions: [D-300, D-301, D-302, D-303]
+    date: 2026-10-05
+    commit: b7b597a
+    model: FV3
+    resolution: minute
+    windows: [["2009-04-20", "2025-06-30"]]
+    markets: {NQ: 32}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The 32 configurations re-scored under the six corrections (results/fv3_grid_corrected.csv; results/variants.jsonl
+      D-302:fv3_grid_corrected). Sixteen are new -- the declared BOS-only cells, which the first run scored as an
+      undeclared variant (D-298 (2); D-303: 48 distinct configurations across the two runs) -- and its walk-forward chose,
+      in every test year, the one cell every later FV3 run carries (D-306 (e)); so each of its 32 tests is a selection
+      step and counts, not once as a re-measure that selects nothing would (D-208). Not in FV3's k: a second selection
+      over it.
+
+  - id: fv3_portfolio_development
+    kind: development
+    title: The selected cell under the fidelity protocol, eleven recorded development runs fv3_portfolio, _v2, _v3 and _v6 to _v13 (D-306 to D-352), the protocol changed between them, frozen at f41c492 (D-336) and again at 856a7e7 (D-352)
+    decisions: [D-306, D-307, D-308, D-309, D-310, D-311, D-318, D-319, D-321, D-323, D-326, D-327, D-329, D-332, D-333, D-334, D-335, D-336, D-351, D-352]
+    date: 2026-10-06
+    model: FV3
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"]]
+    markets: {NQ: 11}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Recounted two ways that agree. results/variants.jsonl holds eleven ledger lines of the `fv3_portfolio` family, one
+      per run (D-306:fv3_portfolio, D-308:fv3_portfolio_v2, D-310:_v3, D-318:_v6, D-321:_v7, D-326:_v8, D-329:_v9,
+      D-333:_v10, D-334:_v11, D-335:_v12, D-351:_v13), and results/ holds the same eleven result files with their
+      manifests (fv3_portfolio.csv, fv3_portfolio_v2.csv, _v3, _v6 to _v13); run v13's manifest carries variant_count 11
+      by the same family rule (D-352). v4 and v5 have neither: D-313's run was superseded before it ran and D-316's
+      stopped before it wrote (D-316, D-318). Each run is one configuration of the one cell on the ten captures R127 to
+      R136 (2020 to June 2025, warm-ups from 2019-11-12) and was read before the protocol's next change (D-334 counts
+      eight reshapes after development outcomes, D-335 a ninth, D-351 reopened the freeze), so each was a selection step
+      on what FV3-C carries. v12 and v13 were identity checks (D-336, D-352) and count too -- their readings fed the
+      freeze and the baseline FV3-C was chosen against (D-353) -- which errs high by two at most. The scratchpad looks
+      at the development gate behind the changes (D-313, D-314, D-315, D-318, D-333; exploratory, no result file) are
+      part of the steps counted here, not apart; the state-table solves the runs read hold no trial (the pool). In
+      pool-2026-10-30-a2 too, conservatively: the runs' readings chose the state table's configuration family A2
+      re-solves on each cell (D-481 (4); the gatekeeper rules at registration).
+
+# ---------------------------------------------------------------------------------------------- FV3-G/F (D-339 to D-350)
+  - id: FV3-GF
+    kind: model
+    title: FV3-G/F, the two-stream candidate -- frozen FV3 as the growth stream, a scheduled flip bracket in the funded table and the two firm-rule corrections (D-339 to D-349); closed as read (D-353)
+    decisions: [D-337, D-338, D-339, D-341, D-343, D-345, D-346, D-348, D-349, D-350, D-353]
+    date: 2026-10-10
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-05-fv3
+    reason: >-
+      The operator's two-category idea after frozen FV3's development runs were read (D-337, D-338; EXPLORATORY), every
+      parameter fixed before its runs (D-339; the flip changed by the operator's rules before any run, D-343 to D-346);
+      its runs did not support it and it closed as read (D-350, D-353). Not to be registered.
+
+  - id: fv3_gf_development
+    kind: development
+    title: FV3-G/F's development runs fv3_gf_v1 (the cross-account rule inert on the growth stream, D-348) and fv3_gf_v2 (the rule real, D-349, D-350)
+    decisions: [D-346, D-348, D-349, D-350]
+    date: 2026-10-12
+    model: FV3-GF
+    in_k: true
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Two recorded runs (results/fv3_gf_v1.csv and fv3_gf_v2.csv with their manifests; results/variants.jsonl
+      D-346:fv3_gf_v1 and D-349:fv3_gf_v2; the family count 2, D-350) of one configuration on frozen FV3's growth log
+      (R127-R136, identical to run v11's, D-349 (1)) with the flip read from the five-micro flip map (R138). v1's reading
+      set D-348's and D-349's fixes and v2's set FV3-C against FV3-G/F (D-350, D-353 (2)), so each counts for FV3-C;
+      covered by FV3-G/F's own k (in_k), which will never be registered. In pool-2026-10-30-a2 too, conservatively, as
+      a step of the search that chose the table A2 re-solves (D-481 (4); the gatekeeper rules at registration).
+
+  - id: flip_map_minute
+    kind: screen
+    title: The flip map at minute resolution, R137 -- NQ one-mini brackets of 10 to 20 points at the trading day's hour starts and 08:30 CT, on time and a minute late, inside a ten-minute box (D-343, D-344)
+    decisions: [D-343, D-344]
+    date: 2026-10-11
+    model: FV3-GF
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      A bracket-resolution map, counted as the resolution maps are in the pools that hold them (rmap_development_scale,
+      rmap_today_scale): one test per market. It looked at outcomes -- each slot's and width's target and stop shares
+      and net edge (results/flip_map_nq.csv) -- and its slot rule chose the two slots R138 measured (D-344 (3)), a
+      selection step for FV3-G/F, whose runs' reading set FV3-C against it (D-353 (2)); its shares were never built on
+      (D-344 (2)) and FV3-C carries no flip. Its slots and widths are not FV3-G/F's k (k 1 counts the run's
+      configuration), so not in_k. In pool-2026-10-30-a2 too, conservatively, as a step of the search that chose the
+      table A2 re-solves (D-481 (4); the gatekeeper rules at registration).
+
+  - id: flip_map_seconds
+    kind: screen
+    title: The flip map at second resolution, R138 -- 08:30 and 09:00 CT, widths of 10 to 25 points, on time and 60 seconds late (D-344, D-345), and its re-score at five micros (D-346)
+    decisions: [D-344, D-345, D-346]
+    date: 2026-10-11
+    model: FV3-GF
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Two scorings of one capture, each applying the slot rule fixed before the data was read (D-343, corrected by D-344)
+      -- results/flip_map_nq_seconds.csv (one mini; 08:30 CT at 20 points, D-345) and
+      results/flip_map_nq_seconds_micros.csv (five micros by D-346's sizing rule; the same slot and width, re-priced) --
+      each a look at the brackets' net edge that could have chosen another flip, so each counts, one per market as
+      flip_map_minute's reason says; the micros reading is the flip both FV3-G/F runs carried. The kit read one-second
+      bars in the 08:29-09:11 CT window and its trading day in minute bars; listed at minute, the header's convention for
+      every QuantConnect kit. In pool-2026-10-30-a2 too, conservatively, as a step of the search that chose the table A2
+      re-solves (D-481 (4); the gatekeeper rules at registration).
+
+# ---------------------------------------------------------------------------------------------- FV3-C (D-353, D-354)
+  - id: FV3-C
+    kind: model
+    title: FV3-C, the corrected candidate -- frozen FV3 (the one cell, the state table v10 in its export 12) under the firm's two rules, no signal against an open opposite position on another account and the funded seat refilled the evening it frees (D-353)
+    decisions: [D-336, D-350, D-351, D-352, D-353, D-354]
+    date: 2026-10-12
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-05-fv3
+    reason: >-
+      The operator's choice among D-350 (5)'s options after frozen FV3's re-measure (D-352) and the two-stream runs: the
+      two corrections D-336 scheduled, applied to the frozen candidate (D-353; the twelfth declared candidate,
+      EXPLORATORY in that they were applied after the two-stream runs were read), k 1
+      (config/fv3_corrected_portfolio.yaml); frozen at c561ec9 after its one development run (D-354).
+
+  - id: fv3_corrected_development
+    kind: development
+    title: FV3-C's development run fv3_corrected_v1 on R127-R136, judged by P1-P4 -- continue (D-353, D-354)
+    decisions: [D-353, D-354]
+    date: 2026-10-13
+    commit: c561ec9
+    model: FV3-C
+    in_k: true
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-05-fv3, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      One run of the one configuration FV3-C's k counts (results/fv3_corrected_v1.csv; results/variants.jsonl
+      D-353:fv3_corrected_v1; variant_count 1 under the family rule), declared before it ran (D-353) and read once
+      (D-354); it selected nothing, so it is covered by the registration's k (in_k), as a model's own reading of its k
+      configurations is (fv2_grid, nqb1_campaign_screen).
+  - id: P-06
+    kind: registration
+    title: FV3-C's one confirmation on NQ's held-back window, kits R139-R141 (2025 H2, 2026 H1, 2026 Q3)
+    decisions: [D-237, D-312, D-353, D-354, D-355, D-356]
+    date: 2026-10-13
+    model: FV3-C
+    in_k: true
+    k: 1
+    development_window: ["2009-06-01", "2025-06-30"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2025-05-12", "2026-09-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-353 (4), D-355): one configuration frozen at c561ec9 (k 1), its one look at NQ's
+      held-back window (D-237; NQ's second of D-107's three tests, P-05 the first); its N from pool-2026-10-05-fv3. A later
+      model on NQ adds its pool here. In pool-2026-10-30-a3 as one trial (the prereg-gatekeeper on A3-BRK30's draft,
+      2026-10-30, D-499): its PASS and audit made FV3-C the confirmed design A3 keeps whole (D-361, D-365, D-382), as
+      P-11 counts in pool-2026-10-30-a2; its window is development since D-461.
+  - id: T23-D20
+    kind: model
+    title: T23-D20, brackets at six fixed times on NQ -- the Combine 1:1, the big funded trade 1.5:1, the $200 flip after the big win -- strictly one trade at a time (D-417, D-418)
+    decisions: [D-409, D-416, D-417, D-418, D-419]
+    date: 2026-10-23
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-20-t23
+    reason: >-
+      D-416's rule's choice among four stop distances (d20; k 4), carried to its registered test by the operator
+      (D-418).
+  - id: P-07
+    kind: registration
+    title: T23-D20's registered test on development data -- the captured trades through five accounts, strictly one at a time; PASS at 0.05/N, CONTINUE at 0.05, FAIL below
+    decisions: [D-418, D-419, D-420, D-421]
+    date: 2026-10-23
+    model: T23-D20
+    in_k: true
+    k: 4
+    development_window: ["2020-01-01", "2025-06-30"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The registration under test (D-418, D-421): d20 frozen (k 4), read on development data already in its pool, no
+      held-back window spent (count_tests false); its N from pool-2026-10-20-t23.
+  - id: T24-GF15
+    kind: model
+    title: T24-GF15, coin-flip trades at the bracket each fixed time resolves (the m40 map) on NQ -- the Combine 1:1 at $1,600, the funded growth trade 1:1.5 at $1,600, $240 flips above the start -- strictly one trade at a time (D-432, D-433, D-434)
+    decisions: [D-425, D-426, D-429, D-432, D-433, D-434]
+    date: 2026-10-25
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-24-t24
+    reason: >-
+      D-432's execution screen's lead among four configurations (m40 with the 1:1.5 growth trade; k 4), carried to its
+      registered test by the operator (D-434).
+  - id: P-08
+    kind: registration
+    title: T24-GF15's registered test on development data -- the coin's trades at the bracket each hour resolves, growth then flip, strictly one at a time; PASS at 0.05/N with resolution, CONTINUE at 0.05, FAIL below
+    decisions: [D-434, D-435, D-436]
+    date: 2026-10-25
+    model: T24-GF15
+    in_k: true
+    k: 4
+    development_window: ["2020-01-01", "2025-06-30"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The registration under test (D-434, D-436): m40 gf15 frozen (k 4), read on development data already in its pool,
+      no held-back window spent (count_tests false); its N from pool-2026-10-24-t24.
+  - id: T24-GF15b
+    kind: model
+    title: T24-GF15b, T24-GF15 with every state closing the account once its room cannot carry a full trade of that state's size, the gap booked as a cost (D-438, D-439)
+    decisions: [D-438, D-439]
+    date: 2026-10-25
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-24-t24
+    reason: >-
+      T24-GF15 corrected after P-08's audit (F1, D1) by the operator's ruling (D-438); one configuration (k 1).
+  - id: P-09
+    kind: registration
+    title: T24-GF15b's registered development test -- T24-GF15 with every state closing once it cannot carry its trade, the gap booked as a cost; PASS at 0.05/N with resolution, CONTINUE at 0.05, FAIL below
+    decisions: [D-438, D-439, D-440]
+    date: 2026-10-25
+    model: T24-GF15b
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2025-06-30"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The registration under test (D-439, D-440): T24-GF15b frozen (k 1), read on development data already in its pool,
+      no held-back window spent (count_tests false); its N from pool-2026-10-24-t24.
+  - id: P-10
+    kind: registration
+    title: T24-GF15b's one confirmation on NQ's held-back window, kit R152-t24c-NQ-2026 (2025 H2 and 2026 H1 counted, 2026 Q3 to July 16 reported), runnable only after P-09 reads PASS or CONTINUE
+    decisions: [D-237, D-355, D-438, D-439, D-440]
+    date: 2026-10-25
+    model: T24-GF15b
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2025-06-30"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2025-06-20", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The registration under test (D-439, D-440): one configuration frozen (k 1), its one look at NQ's held-back window
+      (D-237; NQ's third and last of D-107's three tests, after P-05 and P-06); its N from pool-2026-10-24-t24. Runnable
+      only after P-09 reads PASS or CONTINUE; recorded abandoned, unrun, if P-09 fails.
+  - id: t24_gf15_dev_test
+    kind: screen
+    title: P-08 -- T24-GF15's registered development test, read before T24-GF15b was declared (D-437, D-438)
+    decisions: [D-437, D-438, D-442]
+    model: T24-GF15
+    in_k: true
+    date: 2026-10-25
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1}
+    count_tests: true
+    pools: [pool-2026-10-24-t24, pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      P-08's campaign (results/t24_gf15_gate.csv) and its audit were read before T24-GF15b's correction was declared, so
+      T24-GF15b's pool counts it; P-08's own configuration, so covered by P-08's k (in_k, D-442: P-08's N stays 14).
+  - id: t24_screen
+    kind: screen
+    title: T24's first screen -- coin-flip trades at the T23 capture's six fixed times, two sizing families (D-426, D-427); neither met the kill line
+    decisions: [D-426, D-427]
+    date: 2026-10-24
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-10-24-t24, pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Two families (results/t24_screen.csv; results/variants.jsonl D-426:t24_screen).
+  - id: t24_wide
+    kind: screen
+    title: T24's wide screen -- coin-flip trades at 40 and 60-point stops with targets to 3:1, the table and the two-shot Combine, the strict and the firm's rule (D-429 to D-431); the 20-point width refused
+    decisions: [D-429, D-430, D-431]
+    date: 2026-10-24
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 8}
+    count_tests: true
+    pools: [pool-2026-10-24-t24, pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Eight configurations (results/t24_wide_d40.csv, results/t24_wide_d60.csv; results/variants.jsonl D-429:t24_wide);
+      the 20-point width ran none (its oracles refused it).
+  - id: t24_exec
+    kind: screen
+    title: T24's execution screen -- each fixed time at the bracket it resolves, two stop maps, the growth-then-flip plans at 1:2 and 1:1.5 (D-432, D-433); m40 gf15 chosen
+    decisions: [D-432, D-433]
+    date: 2026-10-25
+    model: T24-GF15
+    in_k: true
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 4}
+    count_tests: true
+    pools: [pool-2026-10-24-t24, pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Its four configurations are T24-GF15's k (results/t24_exec_m40.csv, results/t24_exec_m60.csv;
+      results/variants.jsonl D-432:t24_exec); covered by the registration's k (in_k); the tables ran none.
+  - id: flip_direction_atlas
+    kind: atlas_family
+    title: The 08:30 flip-direction atlas on R142 -- ten measures known before 08:30, chosen on 2010-2019 with Benjamini-Hochberg (D-371, D-372)
+    decisions: [D-371, D-372]
+    date: 2026-10-15
+    resolution: minute
+    windows: [["2009-12-20", "2025-06-30"]]
+    markets: {NQ: 10}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Ten direction measures tested (k 10, results/flip_direction_nq.csv); none held out of sample, but its hint led to
+      the any-time atlas that found A3, T23-D20's side rule.
+  - id: flip_anytime_atlas
+    kind: atlas_family
+    title: The any-time direction atlas on R143 -- the 2022 hint at thirteen slots (A, k 1) and seven pooled measures (B, k 7), A3 among them (D-373, D-374)
+    decisions: [D-373, D-374]
+    date: 2026-10-15
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 8}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Eight tests (k 1 + 7, results/flip_anytime_nq.csv); A3, following the last sixty minutes' move, held on both spans
+      and is T23-D20's side rule, so each test counts.
+  - id: collect_map
+    kind: screen
+    title: The collect map on R145 -- $200-target brackets with stops 1x to 8x at every hour, boxes to two hours, on time and a minute late; its CHOICE qualification (D-381, D-383)
+    decisions: [D-381, D-383]
+    date: 2026-10-16
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 1932}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Its 1,932 on-time CHOICE cells (results/collect_map_nq.csv; results/variants.jsonl D-381:collect_map) qualified
+      the slots and brackets T23's fixed-time screen read, so each is a selection step for T23-D20.
+  - id: t23_fixed_time
+    kind: screen
+    title: T23's fixed-time screen -- the collect map's qualifying slots per contract count and stop and the largest non-overlapping schedule (D-410, D-411)
+    decisions: [D-410, D-411]
+    date: 2026-10-22
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 15}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Fifteen (contracts, stop) schedules (results/t23_fixed_time_screen.csv; results/variants.jsonl
+      D-410:t23_fixed_time), each a selection step toward the protocol's schedule.
+  - id: t23_contract_fit
+    kind: screen
+    title: T23's flip-only contract fit -- ten schedules' legs in stage one's model at their measured net edge (D-412, D-413); failed
+    decisions: [D-412, D-413]
+    date: 2026-10-22
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 10}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Ten pairs (results/t23_contract_fit.csv; results/variants.jsonl D-412:t23_contract_fit), each read at the
+      measured edge; none passed, which turned T23 to the big trade first.
+  - id: t23_big_then_flip
+    kind: screen
+    title: T23's big trade first then flips -- two variants in stage one's model (D-414, D-415)
+    decisions: [D-414, D-415]
+    date: 2026-10-23
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Two variants (results/t23_contract_fit_big.csv; results/variants.jsonl D-414:t23_big_then_flip); the stage-one
+      anchor's passed and shaped the capture's configurations.
+  - id: t23_capture_choice
+    kind: screen
+    title: T23's per-trade capture R147 and R148 and its choice among four stop distances by the schedule and stage one's contract fit (D-416, D-417); d20 chosen
+    decisions: [D-416, D-417]
+    date: 2026-10-23
+    model: T23-D20
+    in_k: true
+    resolution: minute
+    windows: [["2019-12-20", "2025-06-30"]]
+    markets: {NQ: 4}
+    count_tests: true
+    pools: [pool-2026-10-20-t23]
+    reason: >-
+      Its four configurations are T23-D20's k (results/t23_choice.csv; results/variants.jsonl D-416:t23_capture); covered
+      by the registration's k (in_k).
+  # ----------------------------------------------------------------- signal atlas family A1 (D-460, D-469, D-472)
+  - id: A1-INS15
+    kind: model
+    title: A1-INS15, family A1's selected cell -- the 15-minute inside-bar break followed, five bars late, at T24's m40 map, under T24-GF15b's plan, strictly one position at a time, on NQ (D-460, D-469, D-472)
+    decisions: [D-460, D-469, D-472]
+    date: 2026-10-30
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-30-a1
+    reason: >-
+      D-460's selection rule on the rescreen (rank 1 of results/atlas_screen_a1_gf15b.csv by growth on the required
+      bankroll at each R's bound, D-469); one configuration, its registration's k 1. The selected cell is also one of the
+      rescreen's 31 counted below: the ledger cannot take one cell out of a screen's count, so that cell counts twice in N
+      (once in k, once in the screen), the conservative side by one trial.
+  - id: atlas_a1_screen_gf15
+    kind: screen
+    title: Family A1's first screen -- 31 cells (15 patterns followed and faded, the clock's coin) five bars late at the m40 map under T24's gf15 plan; 23 ran, eight refused by the engine's day capacity (D-460, D-469)
+    decisions: [D-460, D-469]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 31}
+    count_tests: true
+    pools: [pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Every attempted cell a trial (results/atlas_screen_a1.csv, its 23 ranked cells; results/variants.jsonl
+      D-460:atlas_A1, 23 entries): the eight the engine refused (the 15 and 30-minute breakouts and the n-bar breaks, followed and
+      faded, their busiest day beyond T24's 23 trades) were attempted and their walks read, and the screen was read before
+      the rescreen was declared (D-469 (1)-(2)), so all 31 count (D-189).
+  - id: atlas_a1_screen_gf15b
+    kind: screen
+    title: Family A1's rescreen -- the same 31 cells under T24-GF15b's corrected plan, the day capacity raised only where 23 is too few; rank 1 inside15 followed (D-469)
+    decisions: [D-469]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 31}
+    count_tests: true
+    pools: [pool-2026-10-30-a1, pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Its 31 cells (results/atlas_screen_a1_gf15b.csv; results/variants.jsonl D-460:atlas_A1, 31 entries), each a
+      selection step for A1-INS15, its rank 1; not marked in_k, since the registration's k counts only the selected cell
+      (see A1-INS15's row).
+  - id: P-11
+    kind: registration
+    title: A1-INS15's registered development test -- family A1's selected cell, the 15-minute inside-bar break followed, five bars late, at T24's m40 map under T24-GF15b's plan, strictly one position at a time; PASS at 0.05/N with the lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-460, D-469, D-472, D-473]
+    date: 2026-10-30
+    model: A1-INS15
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-472, D-473): A1-INS15 frozen (k 1), read on development data already in its pool,
+      no confirmation window spent (count_tests false); its N from pool-2026-10-30-a1 (78, unchanged: this row is not in
+      that pool and is covered by A1-INS15's k). In pool-2026-10-30-a2 as one trial (the prereg-gatekeeper, 2026-10-30,
+      D-488): its run and audit (D-477) chose A2's decision to size A1's signals by a table, as P-08's run counts in
+      T24-GF15b's pool.
+  # ----------------------------------------------------------------- signal atlas family A2 (D-481, D-485)
+  - id: A2-NB158
+    kind: model
+    title: A2-NB158, family A2's selected cell -- the 15-minute eight-bar break followed, five bars late, at T24's m40 map, sized by its own re-solved state table (FV3-C's kind), strictly one position at a time, on NQ (D-481, D-482, D-485)
+    decisions: [D-481, D-482, D-485]
+    date: 2026-10-30
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-30-a2
+    reason: >-
+      D-481 (3)'s selection rule on family A2's screen (rank 1 of results/atlas_screen_a2.csv by growth on the required
+      bankroll at each R's bound among the cells whose table passed its oracles and whose offered R's resolve, D-485);
+      one configuration, its registration's k 1. The selected cell is also one of the screen's 31 counted below: the
+      ledger cannot take one cell out of a screen's count, so that cell counts twice in N (once in k, once in the
+      screen), the conservative side by one trial, as A1-INS15's did. Its N: 126 -- the prereg-gatekeeper ruled
+      (2026-10-30, D-488) that the pool's FV3 rows count (109 without them rejected) and that P-11 belongs in the pool
+      (the draft's 125 lacked it) (D-481 (4), D-482 (4)).
+  - id: atlas_a2_screen_table
+    kind: screen
+    title: Family A2's screen -- family A1's 31 cells on A1's walk, each sized by FV3-C's kind of state table re-solved on its own trades, the oracles first (a failing table REFUSED, never ranked), ranked at the bound among the cells whose table passes and whose offered R's resolve; rank 1 nbar15x8 followed (D-481, D-485)
+    decisions: [D-481]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 31}
+    count_tests: true
+    pools: [pool-2026-10-30-a2, pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Declared before it runs (D-481 (6)); entered now so the count is fixed before any cell's table or campaign is read.
+      Every one of its 31 cells is a selection step and a trial, refused or not (D-189; A1's first screen counted its
+      refused cells, D-469 (4)): results/atlas_screen_a2.csv, results/variants.jsonl D-481:atlas_A2 once it runs. Its
+      rank 1 (D-485) is A2's model row, A2-NB158, chosen_from pool-2026-10-30-a2, its registration's k 1; not marked
+      in_k, so the selected cell counts twice (in k and here), the conservative side by one, as A1-INS15's did.
+  - id: P-12
+    kind: registration
+    title: A2-NB158's registered development test -- family A2's selected cell, the 15-minute eight-bar break followed, five bars late, at T24's m40 map, sized by its own re-solved state table, strictly one position at a time; PASS at 0.05/N with the lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-481, D-482, D-485, D-486, D-488]
+    date: 2026-10-30
+    model: A2-NB158
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-486, D-488): A2-NB158 frozen (k 1), read on development data already in its pool,
+      no confirmation window spent (count_tests false); its N from pool-2026-10-30-a2 (126).
+  # ----------------------------------------------------------------- D-487's decomposition and family A3 (D-490 to D-492)
+  - id: zero_edge_decomposition
+    kind: diagnostic
+    title: The decomposition of FV3-C's zero-edge money -- nine declared cells crossing FV3-C's and A1-INS15's trades with FV3-C's v12 table and T24-GF15b's plan under FV3-C's and P-11's protocols, and four post-hoc single-switch cells (D-485 (4), D-487); EXPLORATORY
+    decisions: [D-485, D-487]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"], ["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 13}
+    count_tests: true
+    pools: [pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Its own ledger row (the P-12 addendum's condition 2; D-490 (3)): results/zero_edge_decomposition.csv (nine cells)
+      and results/zero_edge_decomposition_switches.csv (four switches, post-hoc), results/variants.jsonl
+      D-485:zero_edge_decomposition -- 13 distinct configurations, 9 + 4. It read FV3-C's development gate trades (FV3's
+      QuantConnect captures, 2019-11-12 warm-ups to 2025-06-30) and A1-INS15's (the Databento walk, 2020-01-01 to
+      2026-07-16), and its reading chose A3's design (D-490), so each configuration counts as a selection step for A3;
+      it chose nothing for A2-NB158 (selected before it ran) and is not in pool-2026-10-30-a2.
+  - id: a3_resolution_map
+    kind: screen
+    title: A3's step 0 -- A1's mechanical events on FV3-C's rungs at every quarter R to 3R, the resolution map per hour, rung and R and D-490's kill line (SURVIVES; D-490, D-491); EXPLORATORY
+    decisions: [D-490, D-491]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: true
+    pools: [pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      One read (results/a3_resolution_map.csv; results/variants.jsonl D-490:a3_step0, one entry), counted (D-490 (2)) as
+      the resolution maps are, one test per market (rmap_development_scale, flip_map_minute): it looked at outcomes --
+      each hour's, rung's and R's target, stop and flatten shares -- and its eligibility is A3's rung rule (D-492 (2)),
+      a selection step for every A3 cell. Counted conservatively; D-492 (5)'s list does not name it (the gatekeeper rules).
+  - id: atlas_a3_screen
+    kind: screen
+    title: Family A3's screen -- family A1's 31 cells walked on FV3-C's 12.5 and 25-point rungs (the rung per hour by step 0's 1:1 map), sized by FV3-C's exported v12 policy under FV3-C's protocol (the day capacity raised to a cell's busiest day, block bounds with the era rule), ranked at the bound among the cells whose offered R's resolve (D-492)
+    decisions: [D-492]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 31}
+    count_tests: true
+    pools: [pool-2026-10-30-a3, pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      Declared before it runs (D-492 (7)); entered now so the count is fixed before any cell's campaign is read. Every one
+      of its 31 cells is a selection step and a trial (D-189): results/atlas_screen_a3.csv, results/variants.jsonl
+      D-492:atlas_A3 once it runs. Its rank 1 becomes A3's model row, chosen_from pool-2026-10-30-a3, its registration's
+      k 1; not marked in_k, so the selected cell counts twice (in k and here), the conservative side by one, as
+      A1-INS15's and A2-NB158's did.
+  - id: A3-BRK30
+    kind: model
+    title: A3-BRK30, family A3's selected cell -- the 30-minute breakout followed, five bars late, on FV3-C's 12.5 and 25-point rungs by D-492's rung rule, sized by FV3-C's exact exported v12 policy under FV3-C's protocol (the day capacity at the busiest day), on NQ (D-492, D-494)
+    decisions: [D-492, D-493, D-494]
+    date: 2026-10-30
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-30-a3
+    reason: >-
+      D-492 (4)'s selection rule on family A3's screen (rank 1 of results/atlas_screen_a3.csv by growth on the required
+      bankroll at each R's bound among the cells whose offered R's resolve, D-494); one configuration, its registration's
+      k 1. The selected cell is also one of the screen's 31 counted in atlas_a3_screen: the ledger cannot take one cell
+      out of a screen's count, so that cell counts twice in N (once in k, once in the screen), the conservative side by
+      one trial, as A1-INS15's and A2-NB158's did. Its N from pool-2026-10-30-a3: 334 -- A3's step-0 read and P-06 both
+      counted (the prereg-gatekeeper's ruling on the draft, 2026-10-30, D-499; the draft's 333 lacked P-06, 332 the
+      step-0 row too).
+  - id: P-13
+    kind: registration
+    title: A3-BRK30's registered development test -- family A3's selected cell, the 30-minute breakout followed, five bars late, on FV3-C's 12.5 and 25-point rungs by D-492's rung rule, sized by FV3-C's exact exported v12 policy under FV3-C's protocol, strictly one position at a time; PASS at 0.05/N with the lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-492, D-493, D-494, D-496, D-499]
+    date: 2026-10-30
+    model: A3-BRK30
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-496, D-499): A3-BRK30 frozen (k 1), read on development data already in its pool,
+      no confirmation window spent (count_tests false); its N from pool-2026-10-30-a3 (334). In pool-2026-10-31-cb20 as
+      one trial (D-509 (1)): its PASS and audit (D-500) chose the design A3-BRK30-CB20 restrains.
+  # ----------------------------------------------------------------- the compliance and slice studies, A3-BRK30-CB20 (D-501 to D-509)
+  - id: ftp_sweep
+    kind: diagnostic
+    title: The Focused Trader Program sweep -- D-497's 16 declared models (Combine purchases and resets in 21 days at 10/20/30/40/60, funded accounts lost at 3/5/10, each alone, Slowdown and Corrective) on FV3-C's development campaign and P-11's, 150 paths each (D-495, D-497, D-498); EXPLORATORY
+    decisions: [D-495, D-497, D-498]
+    date: 2026-10-30
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"], ["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 32}
+    count_tests: false
+    pools: [pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/ftp_sweep.csv; results/variants.jsonl D-495:ftp_sweep (32: 16 models on each of two campaigns). Entered
+      2026-10-31 (D-509): it read FV3-C's development gate trades (QuantConnect captures, 2019-11-12 warm-ups to
+      2025-06-30) and P-11's (the Databento walk, 2020-01-01 to 2026-07-16). Not in pool-2026-10-30-a3 (D-499: it chose no
+      component of A3). In pool-2026-10-31-cb20 once (count_tests false): its reading -- placement near certain at low
+      purchase thresholds (D-498) -- made a purchase restraint a component worth trying (D-501 (1b)), but its models are
+      the firm's possible enforcement levels, not configurations a trader chooses among, and the budget grid is D-497's
+      threshold grid, fixed before D-498 read anything.
+  - id: a3_compliance
+    kind: diagnostic
+    title: D-501's compliance study on P-13's registered campaign -- the no-closure table (D-502), a purchase budget of 10/20/30/40 Combine purchases and resets in any 21 trading days, and both -- nine variants at P-13's seed and 500 paths, each with the Focused Trader Program's 16 models at 150 (D-501 to D-504); EXPLORATORY
+    decisions: [D-501, D-502, D-503, D-504]
+    date: 2026-10-31
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 9}
+    count_tests: true
+    pools: [pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/a3_compliance.csv and its per-path file; results/variants.jsonl D-501:a3_compliance (9; the reference is
+      P-13's registered configuration, not a variant) and D-501:a3_compliance_ftp (160 program readings, not trials:
+      each is a configuration read under one of the firm's enforcement scenarios, as a denial arm is). A3-BRK30-CB20 is
+      its c_noclose_budget20 variant, chosen after D-504's read, so each of the nine configurations is a selection step
+      for it (count_tests true).
+  - id: fv3c_compliance
+    kind: diagnostic
+    title: D-505's repeat of D-501's compliance study on FV3-C -- the same nine variants on FV3-C's development campaign and on P-06's confirmation gate arm (its held-back window, a description, never a second confirmation), 500 paths, the program at 150 (D-505, D-506); EXPLORATORY
+    decisions: [D-505, D-506]
+    date: 2026-10-31
+    resolution: minute
+    windows: [["2019-11-12", "2025-06-30"], ["2025-05-12", "2026-09-30"]]
+    markets: {NQ: 18}
+    count_tests: true
+    pools: [pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/fv3c_compliance.csv and its per-path file; results/variants.jsonl D-505:fv3c_compliance (18: nine on each
+      campaign) and D-505:fv3c_compliance_ftp (320 program readings, not trials, as a3_compliance's). Its read (D-506)
+      corroborated dropping the closure at request and priced the budget on FV3-C itself, and D-509 cites it, so each of
+      its configurations counts as a selection step for A3-BRK30-CB20, conservatively (count_tests true).
+  - id: customer_slices
+    kind: diagnostic
+    title: D-508's customer-experience (slice) study -- every start day's first 21, 63 and 126 sessions in historical order for P-13's configuration (verdict and point arms), its no-closure variants without a budget and with budgets of 20 and 30, FV3-C's development configuration and its no-closure budget-20 variant (D-508, D-510); EXPLORATORY
+    decisions: [D-508, D-510]
+    date: 2026-10-31
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"], ["2019-11-12", "2025-06-30"]]
+    markets: {NQ: 7}
+    count_tests: true
+    pools: [pool-2026-10-31-cb20, pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/customer_slices.csv; results/variants.jsonl D-508:customer_slices (7 readings). D-509 fixed A3-BRK30-CB20
+      and its slice lines before any slice result existed (D-510 read it after), so the study chose nothing for the
+      candidate; D-509 (1) declares it counted anyway, and each reading counts as a trial, conservatively (count_tests
+      true). Its p13_noclose_b20 and fv3c rows are the slices the registered test must reproduce.
+  - id: A3-BRK30-CB20
+    kind: model
+    title: A3-BRK30-CB20, P-13's design (A3-BRK30's trades, FV3-C's protocol, the strict rule) with FV3-C's v12 table re-solved without closure at request and a self-imposed budget of 20 Combine purchases and resets in any 21 trading days, on NQ (D-501, D-502, D-504, D-509)
+    decisions: [D-501, D-502, D-504, D-506, D-508, D-509]
+    date: 2026-10-31
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-10-31-cb20
+    reason: >-
+      D-509 (1): D-504 named the compliance study's c_noclose_budget20 variant as the protocol to carry, and D-509 made it
+      a candidate after that exploratory read -- so a new candidate whose pool counts the read; one configuration, its
+      registration's k 1. Its configuration is one of a3_compliance's nine, so it counts twice (in k and there), the
+      conservative side by one, as every atlas cell does. Its N from pool-2026-10-31-cb20: 370.
+  - id: P-14
+    kind: registration
+    title: A3-BRK30-CB20's registered development test -- P-13's design (A3-BRK30's trades, FV3-C's protocol, the strict rule) with FV3-C's v12 table re-solved without closure at request and a budget of 20 Combine purchases and resets in any 21 trading days on every arm, every resampled arm at the fresh seed 20261131; PASS at 0.05/N with the lines and D-509's four slice lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-501, D-502, D-504, D-509, D-511, D-512]
+    date: 2026-10-31
+    model: A3-BRK30-CB20
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-509, D-511, D-512): A3-BRK30-CB20 frozen (k 1), read on development data already in
+      its pool, no confirmation window spent (count_tests false); its N from pool-2026-10-31-cb20 (370). Registered on the
+      prereg-gatekeeper's second review (2026-10-31). In pool-2026-11-02-rc as one trial (D-521 (3)): its PASS (D-513)
+      chose the money side family RC keeps exactly.
+  # ----------------------------------------------------------------- family RC, the resolved coin (D-518 to D-527)
+  - id: customer_journey
+    kind: diagnostic
+    title: D-518's customer-journey study -- every start day in historical order and the recorded runs' 500 resampled paths, 11 configurations (FV3-C, its no-closure budget-20 variant, P-13, P-13 without closure and with budgets 20 and 30, P-14, the two-firm unhedged arm, and three hypothetical_hedge arms) at both arms, milestones to 126 sessions (D-518, D-519, D-520); EXPLORATORY
+    decisions: [D-518, D-519, D-520]
+    date: 2026-11-01
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"], ["2019-11-12", "2025-06-30"]]
+    markets: {NQ: 22}
+    count_tests: true
+    pools: [pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/customer_journey.csv and its per-path file; results/variants.jsonl D-518:customer_journey (16: the seven
+      Topstep configurations and the two-firm unhedged arm, two arms each) and D-518:hypothetical_hedge (6: the three
+      hedge arms, two arms each), counted by VariantCounter. Read before D-521 declared family RC, on P-14's family and
+      FV3-C's; each reading counts as a trial for RC, conservatively (count_tests true).
+  - id: rc_screen
+    kind: screen
+    title: D-521's fixed-slot screen of family RC -- a seeded coin at clock slots chosen by D-515's resolution rule, on FV3-C's 12.5 and 25-point rungs, through P-14's engine call (D-521, D-522, D-523); EXPLORATORY; its slot rule a fault (D-525)
+    decisions: [D-521, D-522, D-523, D-525]
+    date: 2026-11-01
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 2}
+    count_tests: true
+    pools: [pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/rc_screen.csv; results/variants.jsonl D-521:rc_screen (2). Its scheduling fault (D-525 (1)) re-declared the
+      family, so its two cells were read before the carried cell was chosen (count_tests true).
+  - id: rc_reentry_screen
+    kind: screen
+    title: D-525's re-entry screen of family RC -- a seeded coin offered every five minutes, taken by P-14's strict router when every account is flat, on the 12.5 and 25-point rungs in four customer windows (all, asia, london, us), through P-14's engine call (D-525, D-526, D-527); EXPLORATORY
+    decisions: [D-525, D-526, D-527]
+    date: 2026-11-02
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 8}
+    count_tests: true
+    pools: [pool-2026-11-02-rc, pool-2026-11-03-rc150]
+    reason: >-
+      results/rc_reentry_screen.csv; results/variants.jsonl D-525:rc_screen (8). The carried cell rc_s100_all was selected
+      among its cells by D-525 (6)'s rule, so each cell is a selection step (count_tests true); the carried cell counts
+      here and in k, the conservative side by one.
+  - id: RC
+    kind: model
+    title: RC (rc_s100_all), the resolved coin -- a seeded coin offered every five minutes all session, taken when every account is flat, on FV3-C's 25-point rung, with P-14's money side exactly (the no-closure table, 20 purchases in 21 days, the strict rule, five Topstep seats), on NQ (D-521, D-525, D-527)
+    decisions: [D-521, D-522, D-525, D-526, D-527]
+    date: 2026-11-02
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-11-02-rc
+    reason: >-
+      D-527: the re-entry screen's carried all-day cell, chosen after its exploratory read -- a new candidate whose pool
+      counts the read; one configuration, its registration's k 1. Its N from pool-2026-11-02-rc: 403.
+  - id: P-15
+    kind: registration
+    title: RC's registered development test -- rc_s100_all, a seeded coin offered every five minutes all session on FV3-C's 25-point rung and taken when every account is flat, with P-14's money side exactly (the no-closure table, 20 Combine purchases and resets in any 21 trading days, the strict rule, five Topstep seats), every resampled arm at the fresh seed 20261204; PASS at 0.05/N with the lines and D-509's four slice lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-521, D-525, D-527, D-529, D-530]
+    date: 2026-11-02
+    model: RC
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-11-03-rc150]
+    reason: >-
+      The registration under test (D-527, D-529, D-530): RC's rc_s100_all frozen (k 1), read on development data already
+      in its pool, no confirmation window spent (count_tests false); its N from pool-2026-11-02-rc (403). Registered on
+      the prereg-gatekeeper's second review (2026-11-02; the first refused it, D-530). In pool-2026-11-03-rc150 as one
+      trial (D-544): its PASS (D-532) is the result the 37.5-point cell was read against.
+
+  # ----------------------------------------------------------------- RC150, the 37.5-point news-safe coin (D-533 to D-544)
+  - id: rc_nr_dev
+    kind: diagnostic
+    title: D-533 (2)'s news-safe variant rc_s100_all_nr -- P-15's cell with no report-day entry before 07:35 CT -- read on development data beside P-15 at P-15's registered seed (D-533, D-534, D-535); EXPLORATORY
+    decisions: [D-533, D-534, D-535]
+    date: 2026-11-02
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-11-03-rc150]
+    reason: >-
+      results/rc_nr_dev.csv; results/variants.jsonl D-533:rc_nr (1). The cut is a conduct fix (tier 1, D-145) chosen
+      without a reading, and RC150 keeps it; its development reading was run before the stop width was chosen, so it
+      counts once for RC150, conservatively. In no earlier pool (P-15's N was registered before it).
+  - id: rc_robust
+    kind: diagnostic
+    title: D-536's robustness study of rc_s100_all_nr -- 100 other coin seeds, extra costs of 1, 2 and up to 6 ticks a side, entries 1, 3 and 5 bars late, each calendar year alone (D-536, D-537, D-540, D-541); EXPLORATORY; selects nothing
+    decisions: [D-536, D-537, D-540, D-541]
+    date: 2026-11-03
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 4}
+    count_tests: false
+    pools: []
+    reason: >-
+      results/rc_robust.csv; results/variants.jsonl D-536:rc_robust (4: one per reading family). Selects nothing (D-536
+      (1)): no coin seed, cost or delay is ever chosen from it, and RC150 keeps none of its readings' choices -- D-499 (2)'s
+      rule -- so it is in no pool; counting its four families as trials would raise RC150's N to 418.
+  - id: rc_width_screen
+    kind: screen
+    title: D-538's stop-width screen of the news-safe coin -- 37.5 and 50-point stops in four customer windows, through P-14's engine call at the screen's seed, beside the 25-point news-safe reference (D-538, D-539, D-542); EXPLORATORY
+    decisions: [D-538, D-539, D-542]
+    date: 2026-11-03
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 8}
+    count_tests: true
+    pools: [pool-2026-11-03-rc150]
+    reason: >-
+      results/rc_width_screen.csv; results/variants.jsonl D-538:rc_width (8). The selected cell rc_s150_all was chosen
+      among its cells by D-538 (4) (an all-window cell beating the reference and resolving), so each cell is a selection
+      step (count_tests true); the selected cell counts here and in k, the conservative side by one.
+  - id: rc_width_diag
+    kind: diagnostic
+    title: D-542's funded-risk diagnostic -- rc_s150_all with the funded leg's realised risk held to the 25-point cell's (D-542, D-543, D-544); EXPLORATORY
+    decisions: [D-542, D-543, D-544]
+    date: 2026-11-03
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: [pool-2026-11-03-rc150]
+    reason: >-
+      results/rc_width_diag.csv; results/variants.jsonl D-538:rc_width_diag (1). Its reading kept the 37.5-point cell as
+      a candidate (D-544), so it counts once, conservatively.
+  - id: RC150
+    kind: model
+    title: RC150 (rc_s150_all_nr), the 37.5-point news-safe coin -- a seeded coin offered every five minutes all session at a 150-tick stop, no report-day entry before 07:35 CT, taken when every account is flat, sized as the table sizes it, with P-14's money side exactly (the no-closure table, 20 purchases in 21 days, the strict rule, five Topstep seats), on NQ (D-538, D-542, D-544)
+    decisions: [D-533, D-538, D-542, D-544]
+    date: 2026-11-03
+    resolution: none
+    windows: []
+    markets: {}
+    count_tests: false
+    pools: []
+    chosen_from: pool-2026-11-03-rc150
+    reason: >-
+      D-544: the stop-width screen's all-day 37.5-point cell, kept after the funded-risk diagnostic -- a new candidate whose
+      pool counts the reads; one configuration, its registration's k 1. Its N from pool-2026-11-03-rc150: 414.
+  - id: P-16
+    kind: registration
+    title: RC150's registered development test -- rc_s150_all_nr, a seeded coin offered every five minutes all session at a 150-tick (37.5-point) stop, no report-day entry before 07:35 CT, taken when every account is flat, sized as the table sizes it (no funded cap), with P-14's money side exactly (the no-closure table, 20 Combine purchases and resets in any 21 trading days, the strict rule, five Topstep seats), every resampled arm at the fresh seed 20261206; the funded-capped cell and the multi-breach share beside; PASS at 0.05/N with the lines and D-509's four slice lines, CONTINUE at 0.05, FAIL below
+    decisions: [D-533, D-538, D-542, D-544, D-545]
+    date: 2026-11-03
+    model: RC150
+    in_k: true
+    k: 1
+    development_window: ["2020-01-01", "2026-07-16"]
+    registered_markets: [NQ]
+    registered_resolution: minute
+    resolution: minute
+    windows: [["2020-01-01", "2026-07-16"]]
+    markets: {NQ: 1}
+    count_tests: false
+    pools: []
+    reason: >-
+      The registration under test (D-544, D-545): RC150's rc_s150_all_nr frozen (k 1), read on development data already
+      in its pool, no confirmation window spent (count_tests false); its N from pool-2026-11-03-rc150 (414). Registered on
+      the prereg-gatekeeper's first review (2026-11-03).

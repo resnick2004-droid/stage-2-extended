@@ -1,0 +1,100 @@
+# The account-state risk policy of the two-stream candidate FV3-G/F, version 14 (D-341): config/state_policy_v13.yaml
+# with ONE change -- the funded table's tie-break prefers the flip at equal risk (`funded_rules.tie_prefer:
+# small_risk_flip_first`). The v13 solve (D-340) showed the flip ($250 at 1:1 at its own measured edge) and the strategy's
+# own $250 1R trade (at the cell's edge) within the $5 tie-break tolerance across many funded and paid bands; at equal
+# risk the rule (D-325, D-329: the smallest dollar risk, then the better value) let a few dollars of value -- the
+# strategy's trade realises $200 on the double rung's days and $250 otherwise, the flip $250 always -- decide between
+# "wait for a signal" and "place the bracket" band by band (the Studio's map of the v13 export: a checkerboard at four
+# and five winning days in the paid phase, isolated cells in the funded phase). Within the tolerance the two are
+# declared equivalent; among equivalents the flip is preferred: a scheduled bracket needs no signal, leaves the queue to
+# the growth stream's accounts (a campaign-level gain the one-account table cannot price) and is offered every day.
+# Nothing else changes: the same menus, rules, rent, bands and flip statistics as v13. Export version 14. A NEW solve.
+# EXPLORATORY and engine-only. The result: results/state_policy_v14.csv and its policies file.
+decision: D-341
+script: scripts/state_policy_dp.py
+module: propedge/campaign/state_policy.py
+
+outcomes:
+  model: "stage one's binary process: p = (1 + e) / (1 + R), the same e at every R (propsim D-06); a trade risking more than the room above the floor is raced against the floor by the engine's p_race / theta_from_edge (floor_mode truncate, edge_mode drift) -- under the room cap a Combine trade never does; a realised win is rounded to the $50 grid and its probability read at the R the grid makes of it, so every action is exactly fair at zero edge; D-318: an action's R offered at each rung on its availability share of days, no trade otherwise (fair: no trade moves nothing); D-339: the flip action's p from its own measured net edge at every cell, offered every day"
+  edges: [-0.05, -0.025, 0.0, 0.025, 0.05, 0.10]     # D-290's grid, unchanged
+
+rules: "rules_for_method('aeropay') from config/rules.yaml -- the verified ledger; D-289: the Standard path, no placement"
+horizon_days: 504
+slot_rent_per_day: fixed_point                       # D-329: lambda* per edge (see the header); D-291's $25 was a cell tried, never derived
+rent_fixed_point:
+  start: 25.0                                        # the first round's rent (D-291's); each later edge starts from the previous edge's lambda*
+  tolerance: 0.25                                    # dollars per slot-day: converged when the rate the policy earns is within it of the rent it was solved at
+  max_rounds: 10
+
+menu:                                                # the funded leg's menu (v5's, unchanged)
+  step: 50.0
+  risks: [250, 500, 750, 1000, 1500, 2000]
+  rrs: [1.0, 1.5, 2.0, 2.5, 3.0]
+  skip: true
+
+funded_flip:                                         # D-339: the flip stream's action (funded menu only), unchanged from v13
+  risk: 250.0                                        # two MNQ at the $125-a-micro bracket: $250 at risk, $250 to win
+  rr: 1.0
+  source_file: results/nq_noedge_campaign.csv        # the no-edge bracket study on NQ at today's price level, 2009-2019 (D-225 to D-228; development data)
+  row: {section: inputs, leg: combine, year: pooled, R: 1.0, stop_dollars: 125.0}   # the pooled row of the 1:1 $125 bracket
+  edge_field: e_net                                  # its net edge per attempt (the target share, the stop share, an open bracket a full loss, less the cost)
+  lower_bound_field: e_net_lower_bound               # the one-sided 95 % bound over its eleven yearly blocks (the engine's lower-bound arm reads it)
+  availability: 1.0                                  # a scheduled bracket is always offered; the table's availability for it is one
+
+combine_menu:                                        # D-316's, unchanged
+  risks: [250, 500, 750, 1000, 1500, 2000, 2500, 3000]
+  rrs: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
+  min_rr: 0.25
+
+rungs:                                               # D-306's, with D-318's availability
+  file: results/fv3_rung_shares_2020.csv
+  availability_file: results/fv3_rung_availability_2021.csv   # D-318: from results/fv3_studio_portfolio_v3_point_trades.csv (D-310's declared cell under the fidelity protocol's fixed stops, every quarter R carried), 2021 on
+  phase: all
+  stops_ticks: {half: 50, full: 100, double: 200}
+  tick_value: 0.5
+  combine_cap_micros: 50
+  funded_caps: {0: 20, 1500: 30, 2000: 50}
+  exit_grid: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+
+combine_rules:                                       # D-313's two rules, unchanged; D-329's tie-break and abandon
+  room_cap: true
+  consistency_cap: true
+  tie_break_tol: 5.0                                 # among the trades within $5 of the state's best value, the higher R
+  tie_prefer: high_rr
+  abandon: true                                      # the attempt cancelled at the close that decides it (8284121; D-334), worth 0, the slot freed; taken exactly where nothing beats it
+
+funded_rules:                                        # D-325's two rules, unchanged; D-329's abandon; D-341's preference at equal risk
+  tie_break_tol: 5.0                                 # among the trades within $5 of the state's best value, the smallest dollar risk (no trade the smallest)
+  tie_prefer: small_risk_flip_first                  # D-341: at equal risk within the tolerance the flip before the strategy's trade (v13: the better value, a few dollars either way, band by band)
+  profit_risk_cap: 500.0                             # once the balance is above its start (every paid state), no action risks more than $500
+  abandon: true                                      # the XFA closed at the trader's request (10657969 -- its terms unstated, D-336 (ii)), nothing credited, worth 0, the slot freed; taken exactly where nothing beats it
+
+funded:
+  balance_cap: 6000.0
+  payout_grid_step: 50.0
+
+objective: "expected cash from one attempt within the horizon: the Combine's subscription accrued per trading day (subscription / billing_days), the activation at a pass, net payouts (profit split, the method's fee), less the slot rent per account-day -- the rent lambda* per edge (D-329); an abandoned account pays no rent from the day it is dropped; no credit for survival"
+
+baselines:                                           # the fixed legs under the same allowance, the Combine's two rules and the availability, at lambda*; neither the funded rules, abandon nor the flip applies to a fixed leg
+  - {name: s1_1to1_1500, combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  - {name: s1_1p5to1_1000, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}
+  - {name: fv3_fresh, combine_rr: 0.75, combine_risk: 2000, funded_rr: 3.0, funded_risk: 2000}   # D-317's v5 fresh geometry
+
+oracles:                                             # CLAUDE.md: a value outside a ceiling is an engine error (abandon only lowers a pass probability and pays nothing; the oracle's funded table is solved without the flip, whose edge is its own)
+  zero_edge_no_fees_max_p_pass: 0.327131
+  zero_edge_no_fees_p_pass_1to1_1500: 0.32653061224   # 16/49 (the fixed geometry without rungs or rules: the contract's own oracle)
+  zero_edge_no_fees_max_gross_payouts: 2000.0
+
+export:
+  balance_band: 250.0
+  cushion_band: 250.0
+
+campaign_check:                                      # D-290 (8): the engine's own binary campaign (its draw takes no need, so neither exit, the room cap nor the availability applies there -- D-317: not a test of this table); D-340: a flip leaf runs through the table's binary model of the flip
+  accounts: 5
+  combines: 5
+  bankroll: 5000
+  horizon_days: 504
+  n_paths: 500
+  payout_method: aeropay
+  seed: 20261016
+  fixed_legs: {combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}

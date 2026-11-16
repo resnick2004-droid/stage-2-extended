@@ -1,0 +1,154 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "holds",
+    "check",
+    "subject",
+    "arm",
+    "scheme",
+    "mean_block",
+    "step",
+    "shift_r",
+    "bound_fresh_funded_r",
+    "pf_growth_on_base_p50",
+    "pf_required_p90",
+    "pf_required_p50",
+    "pf_required_p99",
+    "v1_share_below_start",
+    "mean_max_drawdown",
+    "v1_payout_drought_p90",
+    "v1_payouts_per_path_p50",
+    "mean_combine_purchases",
+    "mean_r_used",
+    "paths",
+    "horizon_days",
+    "v1_net_p10",
+    "v1_net_p50",
+    "median_days_to_first_payout",
+    "mean_accounts_funded",
+    "growth_se",
+    "required_p90_se",
+    "mc_resamples",
+    "growth_above_zero",
+    "registered_bound_fresh_funded_r",
+    "break_even_e_fresh_funded_r",
+    "bracketed",
+    "break_even_shift",
+    "margin",
+    "margin_at_least",
+    "steps_run",
+    "first_step_at_or_below_zero",
+    "note",
+    "interpolated"
+  ],
+  "description": "EXPLORATORY (D-663): V1's part B2 on P-16's registered gate and FV3-C's confirmation P-06 -- read beside the registered verdicts, changing none.",
+  "exploratory": true,
+  "git_commit": "c0b1ee9909c848e3d4a73a99a9b4206d03e0363c",
+  "git_dirty": false,
+  "notes": {
+    "readings": "propedge/research/v1_validation.py's docstring",
+    "selection": "none: beside the registered verdicts",
+    "status": "EXPLORATORY (D-663): block-resampled days, the bound's calibration and execution stress on P-16's and FV3-C's registered gates; beside the registered verdicts, changes none, selects nothing"
+  },
+  "parameters": {
+    "a2": {
+      "horizon": 252,
+      "paths": 500,
+      "step": 21
+    },
+    "b1": {
+      "auto": {},
+      "blocks": [
+        1,
+        5,
+        21
+      ],
+      "replicates": 200000,
+      "verified": 5
+    },
+    "b2": {
+      "max_steps": 8,
+      "mean_block": 21,
+      "step": 0.02
+    },
+    "b3": {
+      "mean_block": 21,
+      "replicates": 20000
+    },
+    "c1": {
+      "arms": [
+        [
+          "drop10",
+          "trade",
+          0.1
+        ],
+        [
+          "drop25",
+          "trade",
+          0.25
+        ],
+        [
+          "session10",
+          "session",
+          0.1
+        ]
+      ],
+      "realisations": 3,
+      "seeds": "v1_validation.c1_seed: lockstep.child_seed(SEED_C1, 3 x subject + arm, realisation)"
+    },
+    "campaign_seeds": {
+      "S1": 20261206,
+      "S2": 20261019
+    },
+    "decision": "D-663",
+    "declaration_sha256": "133ce5031afae834c3469b6d55fcfaebe501e801587ff0811f497fba4d54d2ea",
+    "engine_keyword": "gate.run_gate(mean_block=...), shared_days.StationaryDayTable; off by default",
+    "identity_columns": [
+      "mean_r_used",
+      "pf_growth_on_base_p50",
+      "pf_required_p50",
+      "pf_required_p90",
+      "pf_required_p99",
+      "median_log_growth",
+      "mean_final_cash",
+      "median_final_cash",
+      "mean_max_drawdown",
+      "p90_max_drawdown",
+      "mean_combine_purchases"
+    ],
+    "ledger_n": {
+      "S1": 414,
+      "S2": 183
+    },
+    "mean_blocks": [
+      1,
+      5,
+      21,
+      63
+    ],
+    "part": "B2",
+    "paths": 500,
+    "seconds": 8649.4,
+    "seeds": {
+      "A2": 20262101,
+      "B1": 20262102,
+      "B3": 20262103,
+      "C1": 20262104
+    },
+    "subjects": [
+      "S1",
+      "S2"
+    ],
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "v1_validation_b2.csv",
+  "rows": 43,
+  "script": "scripts/v1_validation.py",
+  "seed": 20261206,
+  "sha256": "79723004483e23162ae00c5c1506bc80b162e754128dc4a75964e8e2a0e7d449",
+  "timestamp": "2026-11-15T19:10:38+00:00",
+  "variant_count": 32
+}

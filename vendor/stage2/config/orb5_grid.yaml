@@ -1,0 +1,92 @@
+# config/orb5_grid.yaml -- ORB5: the opening-range breakout on NQ as the operator would trade it (T16 item 4; D-273),
+# declared before it is scored. ORB4's search re-built on the rules recorded since: the operator trades by hand five
+# minutes after each signal (D-266); a Combine takes a bracket whose target is at most $1,500 and never passes the
+# consistency line (D-267); each range may go to its own account, direction-locked (D-269); behaviour is estimated in R
+# on every year, money only under today's tick economics (D-271); every trade is sized within 10 % of its risk or not
+# taken (D-272). ORB5's design is not blind to the D-270 views of R105 and R107 the operator saw; the walk-forward is its
+# multiplicity control (D-263) and the held-back window, untouched, the one clean test.
+
+model: ORB5
+market: NQ
+runs: [R102-orb3-NQ-0914, R103-orb3-NQ-1519, R104-orb3-NQ-2025, R105-orb5-NQ-0914, R106-orb5-NQ-1519, R107-orb5-NQ-2025]
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]
+
+# FIXED -- not searched
+fixed:
+  entry: "ORB1's: the ranges from 08:30 CT, direction from each range's candle (a doji none), a stop order at the range's edge"
+  execution:                                          # D-266
+    mode: manual
+    latency_minutes: 5                                # the order works from the signal + 5 minutes
+    verdict_at: 5                                     # the verdict is at the latency; L = 0 (the original fill) reported beside
+  combine: {rr: 1.0, risk: 1500, target_dollars: 1500, max_trades_per_account_day: 1}
+    # propsim D-08's 1:1 $1,500 (D-262); D-267: the target at most $1,500 and the best day within 55 % of $3,000 --
+    # one Combine trade per account a day keeps the best day at or under $1,500 (a stricter reading than D-267's,
+    # which would also allow a trade after a loss)
+  funded:
+    risk: "of 1000, 750 and 500 dollars, the one deploying the most risk a day at the cell's stop width -- the risk times the share of 2020 to June 2025's trading days sizeable at it (fixed.stand_aside), ties to the larger -- (D-273, replacing D-272 (3)'s 90 %-of-days rule, which no width meets: results/orb5_prep.csv); a width at which no candidate is sizeable on any day is infeasible"
+    max_trades_per_account_day: null
+  stand_aside: "D-272 (1): a trade is taken in an account state only if min(floor(risk / stop $), cap) x stop $ >= 90 % of the state's risk and the stop is at least the cost-drag floor (results/stop_band.csv: caps 37 Combine, 15 funded below +$2,000; floor 45 MNQ ticks)"
+  reading: strict                                     # a fill bar reaching the stop is stopped (D-254)
+  flatten: "a trade still open at the 15:08 bar is closed at the worst price of 15:07-15:10 (the record's worst, from its own fill) less 2 ticks (D-263); the 15:08 close where no bar was recorded"
+  costs: "the entry max(1 micro tick, the recorded bid-ask spread at its fill minute, D-265) beyond the price the move is measured from; the round-turn fee of the assumed profile (D-95); the exit 1 tick on a stop, none at a target's limit, 2 ticks on the flatten"
+  last_bar: "15:08"
+
+# SEARCHED -- the grid; k is the product
+search:
+  ranges: [[5], [5, 15], [5, 15, 30], [5, 15, 30, 60]]
+  relative_volume_min: [null, 1.00]
+  stop_atr: [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30]
+  last_fill_ct: ["09:00", "09:30", "10:30", "12:00", "15:07"]     # the hand-traded entry's fill at or before this bar
+  missed_trigger: [skip, rest, chase]                             # D-266: a trigger before the order works
+  coordination: [one_at_a_time, ranges_locked]                    # D-160 or D-269
+  funded_rr: [1.5, 2.0, 3.0, 5.0]                                 # stage one's 1.5R, and T16 2(d)'s farther targets
+k: 7680                                               # 4 x 2 x 8 x 5 x 3 x 2 x 4
+
+# DROPPED -- with the reason
+dropped:
+  direction_exits: "D-267 bars them in a Combine; the funded leg keeps brackets so every trade resolves (D-212, the operator's 'all trades need to resolve'), and holding to the close is not the bounded P&L the operator asked for (D-267)"
+  other_combine_risks: "the Combine is stage one's 1:1 $1,500; $500-$2,000 at the $1,500 target are swept beside the gate on the final selection's out-of-sample trades, reported, not selected (T16 2(b))"
+  time_stops_trailing_breakeven: "as ORB3 (D-256)"
+  other_markets_and_opens: "ES and the other session opens screened (D-252, D-248); more executions from new captures only if ORB5 falls short (T16 item 7)"
+
+# SELECTION -- fixed now
+selection:
+  metric: "per trade, its move before any cost in R (from the price before the entry's slippage; a target credited at R x the stop rounded down to a whole tick; the flatten as fixed above) less the configuration's median round-trip cost in R over its filled trades of 2020 to June 2025, priced as a stop exit (fixed.costs, no outcome) -- the behaviour from every year, today's costs (D-257, D-271 (2))"
+  legs: "the Combine leg (1R) and the funded leg (funded_rr); a configuration's value on a set of years is the smaller of its two legs' one-sided 95 % lower bounds of the yearly mean metric"
+  coordination: "one_at_a_time: fill-bar order, the shorter range first, an entry skipped while a position is open (D-160); ranges_locked: every entry of the ranges on the side of the day's first entry, each in its own account, the other side skipped (D-269)"
+  feasible:
+    frequency: "the Combine leg's trades on 2020 to June 2025, kept only when sizeable at $1,500 under 37 micros (fixed.stand_aside), per trading day of those years and per account of the gate's five in rotation, at or above D-154's minimum per account for the 1:1 $1,500 Combine at zero edge (results/setups_per_day.csv with D-274's fractional frequencies) -- the check validate_card makes of a card"
+    resolution: "at most 2 % of each leg's trades reach the 15:08 bar, overall and in every year of the set (D-212)"
+    funded_risk: "fixed.funded.risk exists at the cell's stop width"
+  plateau: "of the feasible configurations, the one maximising the smaller of its own value and the median value of every configuration one step or fewer away in stop_atr and in last_fill_ct (same ranges, filter, missed_trigger, coordination and funded_rr), feasible or not, one with no value counting as the lowest; ties to the earlier configuration in the order of `search`"
+  walk_forward: "anchored: for each test year from 2013 to 2025 (January to June), select on every earlier development year by the rule above and score the selection on the test year: the year's value the smaller leg's mean metric in it; a selection with no trade in the test year scores 0 there (declared, T16 2(c))"
+  eras:                                               # D-271 (1)
+    split: [[2009, 2017], [2018, 2025]]
+    flag: "the 95 % interval of the difference in the eras' mean gross R per trade, from a bootstrap resampling whole years within each era (reps 2000, seed below), excludes zero -- read per leg; flagged in either leg flags the configuration"
+    when_flagged: "the final value is the lower of the two eras' bounds (yearly-means one-sided 95 %), never the pooled one"
+  drift: "D-271 (5): each leg's long/short-balanced metric -- per year the mean of its long trades' and its short trades' mean metric -- so a constant drift, which adds to one side what it takes from the other, cancels; its yearly-means bound is the drift-free value"
+
+# KILL LINES -- fixed now; any one ends ORB5, recorded as a negative result
+kill_line:
+  W1: "the walk-forward's test-year values have their one-sided 95 % lower bound at or below zero, or a test year has no feasible selection"
+  W2: "the final selection on every development year is infeasible, or its value (the lower era's when flagged) is at or below zero"
+  B: "the final selection's drift-free value (selection.drift, the smaller leg's) is at or below zero"
+  G: "the D-145 gate on the walk-forward's out-of-sample trades fails: the median yearly log growth of cash at 0 % denial is at or below zero with each leg's outcomes shifted to its one-sided 95 % lower bound (gate below)"
+gate:
+  trades: "each test year's trades of the configuration selected on the years before it (both legs; the funded leg's outcomes at that selection's funded_rr, keyed under the final selection's), net of their costs; under one_at_a_time the trades the funded leg's sequence keeps (its exits are the later ones, so fewer trades -- the conservative reading), each carrying both legs' outcomes and the funded leg's exit time for the engine's flat routing (D-159)"
+  bound: "per leg, the yearly-means one-sided 95 % lower bound of the out-of-sample net R; e the mean"
+  stops: "D-271 (4): each trade's stop in dollars a micro drawn (seeded) from 2020 to June 2025's trading days at its stop width; a trade whose drawn stop is not sizeable in both states (fixed.stand_aside, the funded risk of the selection) is left out"
+  campaign: {bankroll: 5000, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 0.75}
+  protocol: "the Combine 1:1 $1,500, one trade an account a day; funded at the final selection's funded risk and funded_rr; payout standard"
+  conduct: "the gate's own: the Responsible Trading Program's consequences on (D-145 tier 2), denial 0 % decides (D-234), 10/25/50 % reported"
+seeds: {eras: 20261004, stops: 20261005, gate: 20261006, spa: 20261007}
+
+# REPORTED BESIDE -- never a verdict
+reported:
+  - "the final selection at L = 0 (the original fill), its value and gross"
+  - "each leg's e, its bound, gross and net, hit rate, flatten share, trades a day, per era and pooled"
+  - "trades the ranges_locked option adds over one_at_a_time for the final cell: their own e, bound and costs (D-269 (2))"
+  - "Hansen's SPA p-value over the feasible configurations' yearly values (stationary bootstrap of years, seed above) and the deflated Sharpe ratio of the final selection's yearly values at N = k (D-263)"
+# ORB5's grid is its cheap screen (step 3, D-155), declared by D-273 as ORB3's search was by D-256; the pre-registration
+# (step 4) is the confirmation's
+then: "continue -> the final selection's card completed and one confirmation registered on NQ's held-back window (2025-07-01 to 2026-06-30, D-237), one QuantConnect capture and the D-145 gate; T16 2(a)'s room-fraction sizing and 2(b)'s Combine sweep reported beside, exploratory"

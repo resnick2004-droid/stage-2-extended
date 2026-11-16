@@ -1,0 +1,20 @@
+# config/resolution_map_today.yaml -- the resolution map read at today's price levels (D-225). EXPLORATORY: chosen on
+# 2026-10-02 after D-224's negative reading, at the operator's instruction ("Ok let's test in todays era then"), and
+# reported beside D-224, never instead.
+#
+# Everything is config/resolution_map.yaml's (the window, decisions, stops, R, spreads, halves, the feasibility rule)
+# except each day's reference price (D-106): the day's first bar's open maps here, so a fixed-dollar stop is read as
+# the share of price it is at today's levels. Public index and settlement levels of 30 September 2026 (not bar data,
+# as D-106's P_ref): S&P 500 close 7,651.54; Nasdaq-100 close 30,595.15; WTI front month 90.39-90.42; EUR/USD
+# 1.133-1.152; Henry Hub November 2.967 (TheStreet, Yahoo Finance, CNBC, Fortune, Forbes, valutafx, energyintel, read
+# 2026-10-02). Costs do not move with the reference (fees in dollars, spreads in raw ticks); only resolution does.
+
+as_of: "2026-09-30"
+p_ref:
+  ES: 7650.0
+  NQ: 30600.0
+  CL: 90.0
+# rerun at today's levels; the others are read from their development-scale runs, whose reference is today's or
+# close to it: NG 3.00 (unchanged), 6E 1.10 (today about 1.15, a stop about 4 % wider in price share)
+rerun: [ES, NQ, CL]
+reused: {NG: "p_ref 3.00, today's level", 6E: "p_ref 1.10; today about 1.15"}

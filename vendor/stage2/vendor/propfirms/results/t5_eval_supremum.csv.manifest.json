@@ -1,0 +1,104 @@
+{
+  "columns": [
+    "config",
+    "firm_stage",
+    "G",
+    "D",
+    "frac",
+    "lock",
+    "h",
+    "sup",
+    "iterations",
+    "converged",
+    "ceiling"
+  ],
+  "description": "P-04 T5a: evaluation supremum per firm over all fair strategies (generalized concave-envelope value iteration), h in {100, 50}, plus BluSky funnel products. Deterministic value iteration - no randomness anywhere, hence require_seed=False (P-04 \u00a76). Verdict: PASS.",
+  "exploratory": false,
+  "git_commit": "4be23954d64326a569d4e5c0c6a11ba22d3497a5-dirty",
+  "git_dirty": true,
+  "notes": {
+    "checks": {
+      "alpha_achievability": true,
+      "ceilings": true,
+      "converged": true,
+      "h_monotone": true,
+      "lock_monotone": true,
+      "s0_equality_h100": true,
+      "s0_equality_h50": true
+    },
+    "verdict": "PASS"
+  },
+  "parameters": {
+    "alpha_exact_chain_floor": 0.25,
+    "checks": {
+      "alpha_achievability": true,
+      "ceilings": true,
+      "converged": true,
+      "h_monotone": true,
+      "lock_monotone": true,
+      "s0_equality_h100": true,
+      "s0_equality_h50": true
+    },
+    "ex_max": 300.0,
+    "h_values": [
+      100.0,
+      50.0
+    ],
+    "max_iter": 20000,
+    "pinned_rules_yaml_sha256": {
+      "alpha-futures": "db2366e7b921b44f21c0be66b88797ab22313fce0a2ba764ec6de5646f2f3047",
+      "blusky": "259b9a069563fc192fcf8830867870438c9d8e8feb9e8269a3ab83bee8655378",
+      "funded-next": "af7cdb6f424e02076135fd34d4f2885a6476c7ee8d14129c34f31be8ef2a38c0",
+      "lucid-trading": "6a0423b50db56201213fc1a7f63db0d1a0d129b9e58f89ccfc0ba0214b67fffd",
+      "my-funded-futures-rapid-eod": "b356bfd61f24e107441b28d54f4a28d0148814107a00ad124a101900a5e8271d"
+    },
+    "prereg": "P-04",
+    "tol": 1e-10
+  },
+  "prereg_id": "P-04",
+  "provenance": {
+    "alpha-futures": {
+      "firm": "Alpha Futures",
+      "program": "Standard 50K \u2014 the mainstream one-step plan (\"Standard Evaluation\" leading to a \"Standard Qualified Account\"), $129/month, captured per D-06 as the tier closest to $50,000. Other plan types exist at 50K (Zero, Advanced, Direct) \u2014 see ledger \u00a7E.",
+      "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\alpha-futures\\rules.yaml",
+      "rules_yaml_sha256": "db2366e7b921b44f21c0be66b88797ab22313fce0a2ba764ec6de5646f2f3047"
+    },
+    "blusky": {
+      "firm": "BluSky",
+      "program": "BluSky Trading Company LLC (dba BluSky.pro) \u2014 Launch 50K futures evaluation (the firm's entry/flagship plan line; phases: Phase 1 Evaluation -> Phase 2 Buffer -> Phase 3 Sim Funded -> Phase 4 Live Brokerage). Captured 2026-10-04 under D-06 (tier closest to $50,000). Other plan types exist at the 50K tier (Propel, Orbit, Static Growth, Instant Sim Funded / Direct 2 Funded) \u2014 see RULES_LEDGER.md section E.",
+      "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\blusky\\rules.yaml",
+      "rules_yaml_sha256": "259b9a069563fc192fcf8830867870438c9d8e8feb9e8269a3ab83bee8655378"
+    },
+    "engine": {
+      "docstring_first_line": "propsim.py \u2014 Gate-1 contract engine for Topstep 50K (A0, 2026-09-12b, no-DLL instance).",
+      "engine": "propsim (stage one, vendored)",
+      "module_file": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\vendor\\propsim\\propsim.py",
+      "path": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\vendor\\propsim"
+    },
+    "funded-next": {
+      "firm": "FundedNext",
+      "program": "FundedNext FUTURES program (separate from the forex/CFD 'Stellar' products) \u2014 Flex Challenge, $50K tier (D-06: tier closest to $50,000), single-phase challenge then 'Flex FundedNext Account' (sim-funded). Other futures plan types at the $50K tier exist and are NOT captured here: Rapid Pro, Rapid Daily, Legacy (see ledger \u00a7E); an Instant Account (FNL:003) and an invitation-only Live Trading Program also exist.",
+      "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\funded-next\\rules.yaml",
+      "rules_yaml_sha256": "af7cdb6f424e02076135fd34d4f2885a6476c7ee8d14129c34f31be8ef2a38c0"
+    },
+    "lucid-trading": {
+      "firm": "Lucid Trading",
+      "program": "LucidFlex, $50,000 account (futures evaluation -> sim-funded -> live after 5 payouts). Chosen per D-06 as the mainstream plan at the tier closest to $50K: LucidFlex is the first plan listed on the firm's own help centre and has the fullest rule set. Other plans at the same tier exist (LucidDaily, LucidPro, LucidDirect, LucidBlack legacy, LucidMaxx, LucidLive) \u2014 see ledger \u00a7E.",
+      "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\lucid-trading\\rules.yaml",
+      "rules_yaml_sha256": "6a0423b50db56201213fc1a7f63db0d1a0d129b9e58f89ccfc0ba0214b67fffd"
+    },
+    "my-funded-futures-rapid-eod": {
+      "firm": "My Funded Futures",
+      "program": "Rapid EOD Plan $50,000 (EOD trailing drawdown in BOTH stages) \u2014 eval stage + Sim Funded stage, captured 2026-10-04 per D-15. Companion capture to firms/my-funded-futures (Rapid intraday $50K, D-09); that directory is unchanged.",
+      "rules_yaml": "C:\\Users\\resni\\OneDrive\\Desktop\\Stage 1- XFA Eval Repository\\firms\\my-funded-futures-rapid-eod\\rules.yaml",
+      "rules_yaml_sha256": "b356bfd61f24e107441b28d54f4a28d0148814107a00ad124a101900a5e8271d"
+    }
+  },
+  "result_file": "t5_eval_supremum.csv",
+  "rows": 22,
+  "script": "scripts/run_t5_supremum.py",
+  "seed": null,
+  "sha256": "a095fdc86cef54c385ec77026b381296faedb0e6d38ec3010e5eed2dce0a305f",
+  "timestamp": "2026-10-04T20:35:00+00:00",
+  "variant_count": 18
+}

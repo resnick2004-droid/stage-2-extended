@@ -1,0 +1,73 @@
+# config/orb3_search.yaml -- ORB3: a declared optimisation of the opening-range breakout on NQ (T15 item 9; D-256,
+# with the pre-run review's changes, D-257), fixed before any of its data is read. The operator, 2026-10-03: "We need to look at optimizations for ORB not just
+# close it like we discussed", then "Search both modes".
+#
+# What ORB1 and ORB2 showed (D-252, D-255): the move after the open is there on NQ in both eras before costs; the
+# paper's tight stop let costs take it in 2009-2019; brackets at stage one's R cut it to about nothing; holding to the
+# close kept more of it but broke D-212; the funded account's sizes did not fit the paper's stops. ORB3 searches the
+# parameters those findings point at, classes every parameter, counts every variant, picks from a plateau, tests the
+# selection procedure by walk-forward, and leaves one untouched window -- NQ's held-back year -- for one test.
+
+model: ORB3
+market: NQ                                            # ES dropped: no move before costs at any range (D-252)
+
+# FIXED -- not searched
+fixed:
+  entry: "ORB1's: the range from 08:30 CT, direction from its candle (a doji none), a stop order at its edge filled one micro tick beyond or at a gapped bar's open plus the tick"
+  atr_days: 14                                        # the stop's scale: the 14-day ATR of Topstep's session (ORB1)
+  relative_volume_days: 14
+  positions: one at a time                            # fill-bar order, the shorter range first; an entry skipped while a position is open (D-253)
+  combine: {rr: 2.0, risk: 750}                       # T5 2a's pair at an edge of 0 to 0.05 (propsim D-36)
+  funded: {rr: 1.5, risk_candidates: [1000, 750, 500]}   # the largest that fits the stops (D-253)
+  last_bar: "15:08"                                   # flat at 15:08 CT (D-247)
+  fomc_excluded: true
+  costs: assumed                                      # D-95
+  accounts: 1
+
+# SEARCHED -- the grid; k is the product
+search:
+  stop_atr: [0.05, 0.075, 0.10, 0.125, 0.15, 0.20, 0.25, 0.30]   # the stop, a fraction of the 14-day ATR (the paper: 0.10)
+  exit_mode: [bracket, direction]
+    # bracket: the target at stage one's R (2R Combine, 1.5R funded), held to stop or target; D-212 applies in full
+    # direction: held to its stop or the 15:08 bar, no target -- the operator's "trade on direction"; an exception to
+    #   D-212's 2 % flatten rule for ORB3 only (D-256), coded in propedge/research/model_card.py so a direction-mode
+    #   card can be registered (D-257); D-212's consistent risk still applies
+  last_fill_ct: ["09:00", "09:30", "10:30", "12:00", "15:07"]     # no entry filled after this bar
+  ranges: [[5], [5, 15], [5, 15, 30], [5, 15, 30, 60]]
+  relative_volume_min: [null, 1.00]                   # off, or the paper's filter
+k: 640                                                # 8 x 2 x 5 x 4 x 2
+
+# DROPPED -- with the reason
+dropped:
+  ES: "no move before costs at any range, 2009-2019 (D-252)"
+  other_targets: "R is stage one's, not the strategy's (T5 2a; D-114)"
+  trailing_or_breakeven_stops: "the records hold first passages only; automated break-even sits beside tier 1's simulator-fill rule"
+  conditioning_on_gap_preopen_atr_state: "P4-P6 found no effect on 2009-2019 (D-252)"
+  time_stops: "D-212: no time stop; the direction mode's only exit beside its stop is the 15:08 bar"
+
+# the records (kits R102-R104): for each range and stop width, the first bar the adverse move from the fill reaches the
+# stop and the first bars the favourable move trades through 1.5 and 2 x the stop, the 15:08 close, the fill bar's
+# excursions and close -- so every grid cell is scored from the same runs
+runs:
+  R102-orb3-NQ-0914: {warm: "2009-04-20", start: "2009-06-01", end: "2014-12-31"}
+  R103-orb3-NQ-1519: {warm: "2014-11-17", start: "2015-01-01", end: "2019-12-31"}
+  R104-orb3-NQ-2025: {warm: "2019-11-18", start: "2020-01-01", end: "2025-06-30"}
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]
+
+# SELECTION -- the procedure, fixed now
+selection:
+  reading: strict                                     # a fill bar reaching the stop counts as stopped (D-254); the kit's reading reported
+  metric: "the yearly one-sided 95 % lower bound of e, each trade's move before any cost (a target credited at R x the stop rounded down to a whole tick, where its limit sits) less the configuration's median round-trip cost in R over every filled record of 2020 to June 2025, priced as a stop exit -- the behaviour from every year, the costs of the market the confirmation trades in, no outcome in the cost"
+  legs: "bracket mode: the smaller of the Combine leg's (2R) and the funded leg's (1.5R) bounds; direction mode: one leg"
+  feasible:
+    frequency: "one-at-a-time trades per trading day of the window (every session) at or above D-154's minimum for the 2:1 $750 Combine (results/setups_per_day.csv), in each leg"
+    resolution: "bracket mode only: at most 2 % of the trades reach the 15:08 bar, overall and in every year, in each leg (D-212)"
+    contract_fit: "on the stops of every filled record of 2020 to June 2025 for the configuration's ranges, filter and latest fill, before one-at-a-time (today's prices; no outcome enters): the Combine at $750 and at least one funded size pass D-201's band, D-190's unsizeable share and D-212's consistent risk"
+  plateau: "of the feasible configurations, the one maximising the smaller of its own value and the median value of every configuration one step or fewer away in stop_atr and in last_fill_ct (same mode, ranges and filter), feasible or not, one with no value counting as the lowest -- so neither a lone peak nor a poor cell among good ones is chosen; ties to the earlier configuration in the order mode, ranges, filter, stop_atr, last_fill_ct"
+  walk_forward: "anchored: for each test year from 2013 to 2025 (January to June), select on every earlier development year by the rule above and score the selection on the test year: the year's value its trades' mean metric, in bracket mode the smaller leg's"
+
+# the kill line for the search, fixed now -- either ends the optimisation, recorded as a negative result
+kill_line:
+  W1: "the walk-forward's test-year values (each the selected configuration's mean metric in that year, the smaller leg's in bracket mode) have their one-sided 95 % lower bound at or below zero, or a test year has no feasible selection or no value"
+  W2: "the final selection on every development year (2009-06-01 to 2025-06-30) is infeasible or its metric is at or below zero"
+then: "continue -> the final selection's card completed and one confirmation registered on NQ's held-back window (2025-07-01 to 2026-06-30, D-237; NQ's second of three, D-107), decided by the D-145 gate; the walk-forward and the final selection reported beside it"

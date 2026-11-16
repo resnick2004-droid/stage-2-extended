@@ -1,0 +1,89 @@
+# The account-state risk policy of D-329 (config/state_policy_v10.yaml: the rent derived, abandon exact, the Combine's
+# tie-break) with its EXPORT corrected (D-332) -- fixed before scripts/state_policy_dp.py --declaration D-332 runs.
+# EXPLORATORY and engine-only. The table is v10's to the bit (the same menus, rules, rungs, availability, funded and
+# Combine rules, the same fixed point per edge); what changes is the export (version 11): every band the state space
+# contains gets a cell -- the most-visited action where the table's own chain visited the band, and otherwise the
+# table's own day-0 decision there by state count -- so the engine, whose tier lookup takes the nearest band below,
+# never inherits a neighbouring band's choice for a state the chain happened not to reach. In v10's export the band
+# just above the start (D-326's split) had been visited only within $250 of the floor with two winning days, where
+# the table abandons, and the engine closed every funded account that landed there -- about half of them, a fifth
+# near-fresh with the full cushion (the audit of D-329's run, docs/audits/fv3_portfolio_v9_2026-10-10.md). The
+# result: results/state_policy_v11.csv and its policies file.
+decision: D-332
+script: scripts/state_policy_dp.py
+module: propedge/campaign/state_policy.py
+
+outcomes:
+  model: "stage one's binary process: p = (1 + e) / (1 + R), the same e at every R (propsim D-06); a trade risking more than the room above the floor is raced against the floor by the engine's p_race / theta_from_edge (floor_mode truncate, edge_mode drift) -- under the room cap a Combine trade never does; a realised win is rounded to the $50 grid and its probability read at the R the grid makes of it, so every action is exactly fair at zero edge; D-318: an action's R offered at each rung on its availability share of days, no trade otherwise (fair: no trade moves nothing)"
+  edges: [-0.05, -0.025, 0.0, 0.025, 0.05, 0.10]     # D-290's grid, unchanged
+
+rules: "rules_for_method('aeropay') from config/rules.yaml -- the verified ledger; D-289: the Standard path, no placement"
+horizon_days: 504
+slot_rent_per_day: fixed_point                       # D-329: lambda* per edge (see the header); D-291's $25 was a cell tried, never derived
+rent_fixed_point:
+  start: 25.0                                        # the first round's rent (D-291's); each later edge starts from the previous edge's lambda*
+  tolerance: 0.25                                    # dollars per slot-day: converged when the rate the policy earns is within it of the rent it was solved at
+  max_rounds: 10
+
+menu:                                                # the funded leg's menu (v5's, unchanged)
+  step: 50.0
+  risks: [250, 500, 750, 1000, 1500, 2000]
+  rrs: [1.0, 1.5, 2.0, 2.5, 3.0]
+  skip: true
+
+combine_menu:                                        # D-316's, unchanged
+  risks: [250, 500, 750, 1000, 1500, 2000, 2500, 3000]
+  rrs: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
+  min_rr: 0.25
+
+rungs:                                               # D-306's, with D-318's availability
+  file: results/fv3_rung_shares_2020.csv
+  availability_file: results/fv3_rung_availability_2021.csv   # D-318: from results/fv3_studio_portfolio_v3_point_trades.csv (D-310's declared cell under the fidelity protocol's fixed stops, every quarter R carried), 2021 on
+  phase: all
+  stops_ticks: {half: 50, full: 100, double: 200}
+  tick_value: 0.5
+  combine_cap_micros: 50
+  funded_caps: {0: 20, 1500: 30, 2000: 50}
+  exit_grid: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+
+combine_rules:                                       # D-313's two rules, unchanged; D-329's tie-break and abandon
+  room_cap: true
+  consistency_cap: true
+  tie_break_tol: 5.0                                 # among the trades within $5 of the state's best value, the higher R
+  tie_prefer: high_rr
+  abandon: true                                      # the attempt cancelled at the session's start (8284121), worth 0, the slot freed; taken exactly where nothing beats it
+
+funded_rules:                                        # D-325's two rules, unchanged; D-329's abandon
+  tie_break_tol: 5.0                                 # among the trades within $5 of the state's best value, the smallest dollar risk (no trade the smallest)
+  profit_risk_cap: 500.0                             # once the balance is above its start (every paid state), no action risks more than $500
+  abandon: true                                      # the XFA closed at the trader's request (10657969), nothing credited, worth 0, the slot freed; taken exactly where nothing beats it
+
+funded:
+  balance_cap: 6000.0
+  payout_grid_step: 50.0
+
+objective: "expected cash from one attempt within the horizon: the Combine's subscription accrued per trading day (subscription / billing_days), the activation at a pass, net payouts (profit split, the method's fee), less the slot rent per account-day -- the rent lambda* per edge (D-329); an abandoned account pays no rent from the day it is dropped; no credit for survival"
+
+baselines:                                           # the fixed legs under the same allowance, the Combine's two rules and the availability, at lambda*; neither the funded rules nor abandon applies to a fixed leg
+  - {name: s1_1to1_1500, combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  - {name: s1_1p5to1_1000, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}
+  - {name: fv3_fresh, combine_rr: 0.75, combine_risk: 2000, funded_rr: 3.0, funded_risk: 2000}   # D-317's v5 fresh geometry
+
+oracles:                                             # CLAUDE.md: a value outside a ceiling is an engine error (abandon only lowers a pass probability and pays nothing)
+  zero_edge_no_fees_max_p_pass: 0.327131
+  zero_edge_no_fees_p_pass_1to1_1500: 0.32653061224   # 16/49 (the fixed geometry without rungs or rules: the contract's own oracle)
+  zero_edge_no_fees_max_gross_payouts: 2000.0
+
+export:
+  balance_band: 250.0
+  cushion_band: 250.0
+
+campaign_check:                                      # D-290 (8): the engine's own binary campaign (its draw takes no need, so neither exit, the room cap nor the availability applies there -- D-317: not a test of this table)
+  accounts: 5
+  combines: 5
+  bankroll: 5000
+  horizon_days: 504
+  n_paths: 500
+  payout_method: aeropay
+  seed: 20261016
+  fixed_legs: {combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}

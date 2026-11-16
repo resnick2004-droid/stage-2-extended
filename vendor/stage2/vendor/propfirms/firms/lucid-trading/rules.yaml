@@ -1,0 +1,655 @@
+# Machine-readable copy of RULES_LEDGER.md — keys match the ledger 1:1.
+#
+# propfirms/spec.py loads this file and RAISES for any rule whose status is not
+# `verified`. Written together with the ledger by the rules-verifier agent
+# (/verify-rule); never hand-edit one without the other.
+#
+# Each rule:
+#   value:      canonical value the code loads (number, string enum, bool) — null until read
+#   status:     verified | carried_reverify | unverified_human_input_required | third_party
+#   article_id: the official page/article id (or page slug if the site has no ids)
+#   url:        the official URL read
+#   date_read:  YYYY-MM-DD
+#   verified_by: who/what read it
+#   note:       the EXACT quoted text from the official page
+#
+# History: first captured 2026-10-04 (D-07; operator reads D-22, D-28). Every row
+# re-read 2026-10-30 (D-30); a changed row keeps its earlier value in its note.
+
+firm: "Lucid Trading"
+program: "LucidFlex, $50,000 account (futures evaluation -> sim-funded -> at most 5 payouts per account, then Lucid's live review pool; the live move is at the risk team's discretion, article 16558826). Chosen per D-06 as the mainstream plan at the tier closest to $50K: LucidFlex is the first plan listed on the firm's own help centre and has the fullest rule set. Since the October 2026 customization (article 16226050) the checkout has two settings — Daily Loss Limit on/off and evaluation consistency 40 % (standard) or 50 % (paid add-on), four configurations; the rows carry the standard 40 % and the modelled variant is DLL OFF (docs/T4_ENGINE_FIT.md §1; D-30). Other plans at the same tier exist (LucidDaily, LucidPro, LucidDirect, LucidBlack legacy, LucidMaxx, LucidLive) — see ledger §E."
+official_domains: ["lucidtrading.com", "support.lucidtrading.com", "intercom.help/lucid-trading"]
+# lucidtrading.com refuses non-browser clients (HTTP 403 on 2026-10-04; not readable by an
+# agent on 2026-10-30 either), so the readings are from the firm's official help centre.
+# On 2026-10-04 it was read at intercom.help/lucid-trading; on 2026-10-30 its canonical host
+# is support.lucidtrading.com (same article ids; masthead "Lucid Home" links to
+# lucidtrading.com), and every 2026-10-30 reading below is from that host.
+
+rules:
+  eval_profit_target:
+    value: 3000
+    status: verified
+    article_id: "12945790-lucidflex-evaluation-account"
+    url: "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      $50,000 table row (page updated 2026-10-19): "$50,000 | $3,000 | $2,000 | 40%
+      (50% with add-on) | 4 mini or 40 micros" (columns: Account Size | Profit Target |
+      Max Loss Limit | Consistency % | Max Size). Article opens: "The LucidFlex
+      evaluation is a simulated account with a profit target that must be hit before
+      traders are eligible to upgrade to a LucidFlex funded account."
+      Re-verified 2026-10-30, value unchanged (first read 2026-10-04, D-07).
+
+  eval_drawdown_amount:
+    value: 2000
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Drawdown table (page updated 2026-08-26), $50,000 row: "$50,000 | $2,000 |
+      $52,100 | $50,100" (columns: Account Size | MLL Amount | Initial Trail Balance |
+      Locked MLL Balance). Matches the evaluation-account table's "Max Loss Limit"
+      column (article 12945790). Re-verified 2026-10-30, value unchanged (D-07).
+
+  eval_drawdown_type:
+    value: "eod_trailing"
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "LucidFlex evaluation and funded accounts use an End-of-Day Drawdown (EOD
+      Drawdown) system to calculate the Max Loss Limit (MLL)." — "At the end of each
+      trading session, the system calculates the account's highest closing balance"
+      — "The MLL increases as your balance grows, up to a defined point."
+      Re-verified 2026-10-30, value unchanged (D-07).
+
+  eval_drawdown_lock:
+    value: "locks_at_start_plus_100"
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Once your account exceeds the Initial Trail Balance, the MLL locks and no
+      longer moves." and "Once the account exceeds the trail, the MLL locks at the
+      initial balance plus $100". For the $50,000 account the table gives Initial
+      Trail Balance $52,100 and Locked MLL Balance $50,100 — i.e. the trailing floor
+      stops at starting balance + $100 once the highest end-of-session close exceeds
+      start + MLL + $100. Re-verified 2026-10-30, value unchanged (D-07).
+
+  eval_daily_loss_limit:
+    value: "optional_at_checkout"
+    status: verified
+    article_id: "16226050-lucidflex-customization"
+    url: "https://support.lucidtrading.com/en/articles/16226050-lucidflex-customization"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Evaluation article (12945790): "Customize at checkout: Daily Loss Limit On or
+      Off, and 40% or 50% consistency (see LucidFlex Customization)". Customization
+      article (page updated 2026-10-20): "Two settings can be adjusted to create the
+      trading experience that best fits your risk preferences." — "Daily Loss Limit:
+      On or Off" / "Consistency: 40% or 50%" — "These settings create four unique
+      LucidFlex account configurations." "The DLL is a soft breach, so if you hit it
+      you will simply be locked out until the next trading session." DLL ON: "A Daily
+      Loss Limit is enforced on both evaluation and funded accounts", "Results in a
+      lower evaluation purchase price", "Your funded account gets On Demand Payouts".
+      DLL OFF: "No Daily Loss Limit is applied during either the evaluation or funded
+      phase", "Results in a higher evaluation purchase price", "Payouts follow the
+      regular end-of-day schedule". "Once selected, these settings cannot be changed
+      for an active account". The DLL dollar amount when enabled is still NOT stated
+      in any LucidFlex article read. Value unchanged since 2026-10-04 (D-07), when the
+      page read "One setting can be adjusted" (the DLL only); the soft breach and the
+      DLL-on payout timing are new on 2026-10-30 and unmodelled — the modelled variant
+      is DLL OFF (D-30).
+      ADDED 2026-11-05 (D-31, the official pricing cards, evidence/2026-11-05/): the
+      $50K amount when ON is $1,200 (the card's switch reads "$1,200 ON"; 25K $600,
+      100K $1,800), and DLL OFF costs "+$35" on the list price. Value unchanged: the
+      modelled variant stays DLL OFF.
+
+  eval_consistency_rule:
+    value: 0.40
+    status: verified
+    article_id: "12945805-lucidflex-consistency-percentage"
+    url: "https://support.lucidtrading.com/en/articles/12945805-lucidflex-consistency-percentage"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      CHANGED 2026-10-30 (D-30). Page updated 2026-10-19: "In LucidFlex evaluation
+      accounts your Consistency Percentage must be 40% or less to be eligible to
+      upgrade to a LucidFlex funded account. If you added the 50% consistency add-on
+      at checkout, it must be 50% or less." Formula: "Largest Single Day Profit /
+      Account Profit = Consistency Percentage". Customization (16226050): "40%
+      (standard): your largest day must be 40% or less of your evaluation profit.
+      Lowest price." and "50% (add-on): your largest day can be up to 50%, so you can
+      pass in as few as 2 days. Added at checkout for a small fee." The cushion is
+      described for the add-on only ("There is a small cushion built into the 50%
+      consistency add-on"). Evaluation only: "The consistency requirement (40%, or
+      50% with the add-on) applies only during the evaluation stage." This row carries
+      the standard 40 %; the 50 % add-on (and its price) is not modelled.
+      HISTORY: was 0.50, read 2026-10-04 (D-07) — then the only option, quoted as
+      "The LucidFlex evaluation 50% consistency has cushion built in, so you can pass
+      in two days" (12945790).
+
+  eval_min_days:
+    value: 3
+    status: verified
+    article_id: "12945790-lucidflex-evaluation-account"
+    url: "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      CHANGED 2026-10-30 (D-30). No standalone minimum-trading-days rule is stated in
+      any LucidFlex article read; the binding constraint is the consistency rule, and
+      the firm states the fastest pass: "Pass in as few as 3 days with 40%
+      consistency, or 2 days with the 50% consistency add-on" (page updated
+      2026-10-19). Under the standard 40 % cap two days can carry at most 80 % of the
+      profit, so three profitable days is the arithmetic minimum (non-binding beside
+      eval_consistency_rule, like the other firms' rows).
+      HISTORY: was 2, read 2026-10-04 (D-07): "The LucidFlex evaluation 50%
+      consistency has cushion built in, so you can pass in two days" — now the add-on
+      configuration's figure.
+
+  eval_position_limit:
+    value: "4 minis / 40 micros"
+    status: verified
+    article_id: "12945790-lucidflex-evaluation-account"
+    url: "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      $50,000 table row Max Size: "4 mini or 40 micros". Full size is available from
+      the start of the evaluation: "There is no scaling plan in the evaluation phase."
+      (article 12945808). Re-verified 2026-10-30, value unchanged (D-07).
+
+  eval_fee:
+    value: 115.50
+    status: verified
+    article_id: "lucidtrading.com 50K Flex Eval pricing card (operator screenshots 2026-11-05, evidence/2026-11-05/); billing basis 12945790; configurations 16226050"
+    url: "https://lucidtrading.com"
+    date_read: "2026-11-05"
+    verified_by: "operator, browser screenshots of the official pricing cards relayed in session 2026-11-05 (the H-6 channel); recorded D-31"
+    note: |
+      VERIFIED 2026-11-05 (D-31): $115.50, one-time, for the modelled configuration
+      (LucidFlex $50K, Daily Loss Limit OFF, On Demand Payouts OFF, 40 % standard
+      consistency). The 50K Flex Eval card reads "ONE TIME FEE $165 $115.50 W/ COUPON
+      AT CHECKOUT" with the DLL switch at OFF ("+$35") and consistency at 40 %
+      (evidence/2026-11-05/50k_eval_dll-off_od-off_40pct.png). The operator: "Coupons
+      are a multiple time thing not one time thing" — the coupon price is paid on
+      every purchase, so it is the recorded value; $165 is the struck list price.
+      CONFIGURATION PRICES (50K, with coupon; list in brackets):
+        DLL OFF + 40 %: $115.50 [$165] (this row's value)
+        DLL OFF + 50 % add-on: $130.20 [$185] (the card shows the add-on "+$14.70")
+        DLL ON ($1,200) + 40 %: $80.50 [$115]
+        DLL ON + 50 % add-on: not captured
+      The On Demand Payouts switch carries no price difference on the cards
+      captured (it is ON with the DLL ON and OFF with the DLL OFF, as 16226050
+      describes). Other sizes on the same cards (DLL on, 40 %): 25K $45.50 [$65],
+      100K $150.50 [$215] — not modelled.
+      HISTORY: REOPENED 2026-10-30 (D-30). Billing basis re-verified: "One-time fee, no monthly
+      rebilling, take as long as you need to pass" (12945790). The PRICE is not
+      re-verifiable: since the customization (16226050, page updated 2026-10-20) the
+      checkout sells four configurations — "Option 1: Daily Loss Limit ON + 40%
+      Consistency" ("Cheapest version of LucidFlex") through "Option 4: Daily Loss
+      Limit OFF + 50% Consistency" ("Highest pricing version of LucidFlex"), the 50 %
+      add-on "Added at checkout for a small fee" — and no help-centre article states
+      a price. lucidtrading.com could not be read by an agent on 2026-10-30 (bot
+      protection; not worked around). Needs the operator's checkout read of the four
+      $50K prices (H-6).
+      HISTORY: was {basis: one_time, dll_on_usd: 90, dll_off_usd: 105}, status
+      verified, operator browser read 2026-10-04 (D-22: "DLL 90 on vs 105 0ff").
+      That read predates the consistency setting and cannot be mapped onto the four
+      configurations; Stage 2's same-day reader (stage-two D-463) also found an
+      indexed price listing that conflicts with it. The P-05..P-07 batteries fixed
+      $105 in their pre-registrations; that stays their recorded basis.
+
+  eval_reset_fee:
+    value: 115
+    status: verified
+    article_id: "lucidtrading.com 50K Flex Eval pricing card (operator screenshots 2026-11-05, evidence/2026-11-05/); policy 11404620, 11404632, 13424914"
+    url: "https://lucidtrading.com"
+    date_read: "2026-11-05"
+    verified_by: "operator, browser screenshots of the official pricing cards relayed in session 2026-11-05 (the H-6 channel); recorded D-31"
+    note: |
+      VERIFIED 2026-11-05 (D-31): $115 per reset for the modelled configuration
+      (LucidFlex $50K, DLL OFF, 40 %). The card's "Reset Fee $115" sits under the
+      $115.50 one-time fee (evidence/2026-11-05/50k_eval_dll-off_od-off_40pct.png).
+      CONFIGURATION RESET PRICES (50K):
+        DLL OFF + 40 %: $115 (this row's value)
+        DLL OFF + 50 % add-on: $130
+        DLL ON ($1,200) + 40 %: $80
+        DLL ON + 50 % add-on: not captured
+      The policy text below (read 2026-10-30) still governs when a reset may be
+      bought; a reset returns the account to its starting conditions.
+      HISTORY: CHANGED 2026-10-30 (D-30): resets are sold; the price was not stated. "If a
+      trader fails an evaluation account, they may purchase a reset from the trader
+      dashboard. A reset returns the account to its original starting conditions,
+      including balance and risk parameters." (11404620). "If an evaluation is
+      breached (has hit Max Loss Limit), it is still eligible for a reset." — "All
+      breached accounts will be automatically deleted after 30 days if not reset." —
+      "Traders can manually purchase a reset at any time before that 30-day period
+      expires." (11404632). LucidFlex accounts are among those reset: "This is for
+      accounts purchased/reset on 2/27/26 and prior." (13424914, LucidFlex Live
+      (Legacy)). No price in any article read; lucidtrading.com not readable by an
+      agent. Needs the operator's dashboard/checkout read (H-6).
+      HISTORY: was "none_published_model_repurchase_at_eval_fee", status verified,
+      operator read 2026-10-04 (D-28: "Lucid doesnt mention a reset"). The repurchase
+      at the evaluation price stays the recorded basis of P-05..P-07 — an assumption
+      now, not a verified rule.
+
+  eval_count_limit:
+    value: 10
+    status: verified
+    article_id: "11404617-maximum-number-of-accounts"
+    url: "https://support.lucidtrading.com/en/articles/11404617-maximum-number-of-accounts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Account Limit: Up to 10 active evaluation accounts per household or family."
+      Shared pool with funded accounts: "Traders may hold a maximum of 10 accounts in
+      total across evaluation accounts and funded accounts."; "You may keep 5
+      evaluation accounts in reserve while you have 5 funded accounts." and "You may
+      trade evaluation accounts while they are in reserve." But reserved evaluations
+      close when the trader is moved live (16558826, see max_accounts).
+      Re-verified 2026-10-30, value unchanged (D-07).
+
+  eval_time_limit:
+    value: "none"
+    status: verified
+    article_id: "12945790-lucidflex-evaluation-account"
+    url: "https://support.lucidtrading.com/en/articles/12945790-lucidflex-evaluation-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "One-time fee, no monthly rebilling, take as long as you need to pass". Caveat —
+      de facto activity requirement from the Inactivity Policy (article 11404632):
+      "Accounts that have not been traded resulting in at least a net profit or loss
+      of 1$ within 30 calendar days will be deemed abandoned and will be permanently
+      deleted from our systems." Re-verified 2026-10-30, value unchanged (D-07).
+
+  funded_type:
+    value: "sim_funded"
+    status: verified
+    article_id: "12945795-lucidflex-funded-account"
+    url: "https://support.lucidtrading.com/en/articles/12945795-lucidflex-funded-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Article description (page updated 2026-10-13): "The LucidFlex funded account is
+      a simulated futures trading account where traders build capital to earn payouts
+      and potentially be moved to live markets." Activation fee: "No activation fees
+      to upgrade to funded account" (article 12945790); activation is "Real-time
+      activation, upgrade to funded account within 5-30 minutes of hitting profit
+      target". Finite sim life: "Traders may take up to 5 payouts from each LucidFlex
+      account after which they will be moved live." (12945796, page updated
+      2026-07-28) — but the live move is now DISCRETIONARY (New Live Structure,
+      16558826, page updated 2026-10-14): "Traders enter the live review pool when
+      one or more of the following conditions are met: After receiving the final
+      payout (Payout 5) on their Flex, Pro, or Direct plan"; "Payout 5 represents the
+      maximum payout level, not a guaranteed minimum for live eligibility."; "All live
+      transitions occur at the discretion of the Lucid risk team." Value unchanged;
+      the 2026-10-04 reading (D-07) took the live move after 5 payouts as automatic.
+
+  funded_drawdown_amount:
+    value: 2000
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      The drawdown article covers both phases with one table: "LucidFlex evaluation
+      and funded accounts use an End-of-Day Drawdown (EOD Drawdown) system to
+      calculate the Max Loss Limit (MLL)." $50,000 row: MLL $2,000. Funded-account
+      article (12945795) $50K row: "$50,000 | $2,000 | Optional | Yes | 4 mini or 40
+      micros" (Account Size | Max Loss Limit | DLL | Scaling Plan | Max Size).
+      Re-verified 2026-10-30, value unchanged (D-07).
+
+  funded_drawdown_type:
+    value: "eod_trailing"
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "LucidFlex evaluation and funded accounts use an End-of-Day Drawdown (EOD
+      Drawdown) system to calculate the Max Loss Limit (MLL)." Lock: "Once your
+      account exceeds the Initial Trail Balance, the MLL locks and no longer moves."
+      ($52,100 / $50,100 for the $50K account). After a payout request the lock is
+      forced: "Once you request a payout from LucidFlex, your MLL automatically
+      adjusts to the Locked MLL Balance" ($50,100 = start + $100). Funded article:
+      "EOD trailing drawdown." Re-verified 2026-10-30, value unchanged (D-07).
+
+  funded_daily_loss_limit:
+    value: "optional_at_checkout"
+    status: verified
+    article_id: "12945795-lucidflex-funded-account"
+    url: "https://support.lucidtrading.com/en/articles/12945795-lucidflex-funded-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "LucidFlex funded accounts have an optional Daily Loss Limit, no consistency
+      rule and no payout buffer." — "The ability to customize whether each Flex
+      Funded account has a Daily Loss Limit at the time of evaluation purchase". The
+      checkout DLL choice carries through (16226050): with DLL ON it is enforced on
+      both evaluation and funded accounts, is "a soft breach, so if you hit it you
+      will simply be locked out until the next trading session", and brings On
+      Demand Payouts; with DLL OFF no DLL applies in either phase. DLL amount when
+      enabled not stated in the articles read. Value unchanged since 2026-10-04
+      (D-07); the soft-breach and payout-timing text is new (D-30).
+      ADDED 2026-11-05 (D-31): the 50K Flex Funded rules card reads "DLL (Below
+      Initial Trail) $1,200" — the amount when the DLL is ON, measured below the
+      initial trail (evidence/2026-11-05/50k_funded_rules.png). Value unchanged; the
+      modelled variant is DLL OFF, where no funded DLL applies.
+
+  funded_consistency_rule:
+    value: "none"
+    status: verified
+    article_id: "12945795-lucidflex-funded-account"
+    url: "https://support.lucidtrading.com/en/articles/12945795-lucidflex-funded-account"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "There is no Consistency Percentage on LucidFlex funded accounts"; "LucidFlex
+      funded accounts have an optional Daily Loss Limit, no consistency rule and no
+      payout buffer." Customization (16226050): "Consistency applies to the
+      evaluation only. Funded LucidFlex accounts have no consistency rule." Payout
+      eligibility has its own winning-days gate instead — see payout_frequency_gate.
+      Re-verified 2026-10-30, value unchanged (D-07).
+
+  funded_position_limit:
+    value: "4 minis / 40 micros, profit-scaled (2 at $0-999, 3 at $1,000-1,999, 4 at $2,000+), updates end of session"
+    status: verified
+    article_id: "12945808-lucidflex-scaling-plan"
+    url: "https://support.lucidtrading.com/en/articles/12945808-lucidflex-scaling-plan"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "The scaling plan controls how much of your max size is available to trade
+      based on the simulated profits in your account." $50K scaling column (page
+      updated 2026-05-06): $0 - $999 -> "2 minis or 20 micros"; $1,000 - $1,999 ->
+      "3 minis or 30 micros"; $2,000 - $2,999 -> "4 minis or 40 micros" (full size;
+      the funded max size for $50K is "4 mini or 40 micros", article 12945795). "The
+      scaling plan updates at the end of each session, so your limits will not update
+      in real-time throughout the day." FAQ: "Since payouts reduce your simulated
+      balance, your scaling tier may adjust downward to reflect the updated profit
+      level." Re-verified 2026-10-30, value unchanged (D-07).
+      CROSS-CHECK 2026-11-05 (D-31): the 50K Flex Funded rules card reads "Max Size 4
+      Mini OR 40 Micros" and "Scaling Plan Yes" — consistent; the tiers are this
+      article's.
+
+  funded_monthly_fee:
+    value: null
+    status: unverified_human_input_required
+    article_id: "11404620-simulated-account-fees"
+    url: "https://support.lucidtrading.com/en/articles/11404620-simulated-account-fees"
+    date_read: "2026-10-30"
+    verified_by: null
+    note: |
+      Still unstated on 2026-10-30. No recurring funded-account fee is mentioned in
+      any article read (LucidFlex Funded Account 12945795, Simulated Account Fees
+      11404620, LucidFlex Customization 16226050). The billing language is one-time
+      with no activation fee ("One-time fee, no monthly rebilling", "No activation
+      fees to upgrade to funded account"; 11404620 now says "There is no subscription
+      and no automatic rebilling" of "LucidPro Evaluation and LucidDirect accounts"),
+      which implies $0, but no official sentence states the absence of a funded
+      recurring/data fee for LucidFlex explicitly — left unverified rather than
+      assumed (as on 2026-10-04, D-07).
+      2026-11-05 (D-31): the 50K Flex Funded rules card (operator screenshot) lists
+      "Account Activation Fee: FREE" and no recurring fee; absence on a card is not a
+      statement, so the row stays unverified.
+
+  payout_min:
+    value: 500
+    status: verified
+    article_id: "12945796-lucidflex-payouts"
+    url: "https://support.lucidtrading.com/en/articles/12945796-lucidflex-payouts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Minimum payout request: $500" (page updated 2026-07-28). Re-verified
+      2026-10-30, value unchanged (D-07).
+
+  payout_cap:
+    value: "min(0.50 * profits, 2000) per request"
+    status: verified
+    article_id: "12945796-lucidflex-payouts"
+    url: "https://support.lucidtrading.com/en/articles/12945796-lucidflex-payouts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      $50K row of the Payout Maximum table: "50% of Profit up to $2,000". The bullet
+      above the table words it differently — "Maximum payout request: Futures traders
+      may request 50% of their account balance up to a maximum dollar amount." — the
+      per-size table cell is the controlling statement and the engine's recorded
+      reading ("profits" = balance above start) stands. "Unlike our other prop firm
+      funded accounts, the maximums here do not scale up with more payouts."
+      Lifetime: "Traders may take up to 5 payouts from each LucidFlex account after
+      which they will be moved live." and "Payout 5 represents the maximum payout
+      level" (16558826) — so at most 5 x $2,000 = $10,000 can ever be withdrawn from
+      one $50K sim-funded account. Re-verified 2026-10-30, value unchanged (D-07).
+
+  payout_frequency_gate:
+    value: "any day, per cycle: net profit >= $1 and 5 days with daily profit >= $150; max 5 payouts per account, then the live review pool (live move at the risk team's discretion)"
+    status: verified
+    article_id: "12945796-lucidflex-payouts"
+    url: "https://support.lucidtrading.com/en/articles/12945796-lucidflex-payouts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "There is no fixed payout window, you may request a payout any day after meeting
+      all eligibility criteria." Per cycle: "Traders must earn at least the minimum
+      required profit on 5 separate days during the payout cycle. The minimum profit
+      on trading days reset and must be earned again after every approved payout." —
+      the $50K minimum daily profit is "$150" — and "Traders must have positive net
+      profit (even just $1) during each payout cycle in order to request a payout."
+      Lifetime: "Traders may take up to 5 payouts from each LucidFlex account after
+      which they will be moved live." (12945796, page updated 2026-07-28); the New
+      Live Structure (16558826, page updated 2026-10-14) makes the move a review:
+      "Traders enter the live review pool when one or more of the following
+      conditions are met: After receiving the final payout (Payout 5) on their Flex,
+      Pro, or Direct plan"; "All live transitions occur at the discretion of the
+      Lucid risk team." Timing: with the DLL OFF (the modelled variant) "Payouts
+      follow the regular end-of-day schedule"; with the DLL ON the funded account
+      "can request payouts during the trading session, from profit made that session
+      (6:00 PM to 3:45 PM ET)" and "After requesting an intraday payout, trading on
+      your funded LucidFlex account is paused until the end of the trading day."
+      (16226050). CHANGED 2026-10-30 (D-30) in the post-cap wording only: was "...;
+      max 5 payouts per account, then moved live" (D-07). The per-cycle gate and the
+      5-payout maximum are unchanged.
+      CROSS-CHECK 2026-11-05 (D-31): the 50K Flex Funded rules card reads "Min Days
+      of Profit 5 of $150", "Days to Payout 5", "Payouts to Live: 5" and "Account
+      Activation Fee: FREE" (evidence/2026-11-05/50k_funded_rules.png) — consistent
+      with this row; "Days to Payout 5" is read as the same five profitable days, not
+      a separate calendar wait. With the DLL ON, the card's "On Demand Payouts" switch
+      is ON (intraday payouts, 16226050); the modelled DLL-OFF variant has it OFF.
+
+  payout_split:
+    value: 0.90
+    status: verified
+    article_id: "12945796-lucidflex-payouts"
+    url: "https://support.lucidtrading.com/en/articles/12945796-lucidflex-payouts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "All LucidFlex funded account payouts are split 90% to the trader and 10% to
+      Lucid Trading." (funded article 12945795: "90/10 profit split."). Third-party
+      pages advertising other splits were not used. Re-verified 2026-10-30, value
+      unchanged (D-07).
+
+  payout_processing_days:
+    value: 2
+    status: verified
+    article_id: "12945796-lucidflex-payouts"
+    url: "https://support.lucidtrading.com/en/articles/12945796-lucidflex-payouts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Once approved: "Funds will be deducted from your account within a few minutes."
+      and "Payouts will be disbursed to your payment method within 2 business days."
+      (upper bound; the Payout Methods article 12890325 is described as "payouts
+      averaging about 15 minutes once approved", Plaid offers "Instant bank transfers
+      for U.S.-based traders", and via WorkMarket by ADP "Funds can typically be
+      received as early as the next business day"). Re-verified 2026-10-30, value
+      unchanged (D-07).
+
+  payout_fee:
+    value: null
+    status: unverified_human_input_required
+    article_id: "12890325-payout-methods"
+    url: "https://support.lucidtrading.com/en/articles/12890325-payout-methods"
+    date_read: "2026-10-30"
+    verified_by: null
+    note: |
+      Still unstated on 2026-10-30. The Payout Methods article lists Plaid (US bank),
+      WorkMarket by ADP ("Can withdraw via bank transfer or Paypal") and
+      cryptocurrency (BTC, ETH, LTC, USDT, USDC; "Available for International
+      Traders"), but states no per-payout fee for any method. No fee schedule found
+      elsewhere in the help centre. Needs human input (dashboard or support), as on
+      2026-10-04 (D-07).
+      2026-11-05 (D-31): no payout fee appears on the pricing or funded-rules cards
+      (operator screenshots); still unverified.
+
+  payout_balance_consequence:
+    value: "MLL locks at start + $100 ($50,100 on $50K) upon payout request"
+    status: verified
+    article_id: "12945815-lucidflex-drawdown"
+    url: "https://support.lucidtrading.com/en/articles/12945815-lucidflex-drawdown"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Once you request a payout from LucidFlex, your MLL automatically adjusts to the
+      Locked MLL Balance" — $50,100 for the $50,000 account (table). No buffer:
+      "There is no buffer balance that must be maintained in LucidFlex funded
+      accounts." (article 12945796, which also says "Important: If you take a trade
+      before your payout is processed that drops your balance below the required
+      amount, your request may be denied."). Re-verified 2026-10-30, value unchanged
+      (D-07).
+
+  max_accounts:
+    value: 5
+    status: verified
+    article_id: "11404617-maximum-number-of-accounts"
+    url: "https://support.lucidtrading.com/en/articles/11404617-maximum-number-of-accounts"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Account Limit: Up to 5 active funded accounts per household or family." —
+      "Shared Limit: Different types of funded accounts combined may not exceed 5
+      accounts total." Also: "Up to 10 active evaluation accounts per household or
+      family.", "Traders may hold a maximum of 10 accounts in total across evaluation
+      accounts and funded accounts.", "You may keep 5 evaluation accounts in reserve
+      while you have 5 funded accounts.", and "Up to 5 active LucidLive accounts per
+      household or family." The cap is per HOUSEHOLD or family, not per person.
+      New Live Structure (16558826, page updated 2026-10-14) — what the live move
+      does to the pool: "All eligible funded prop accounts (with at least one payout)
+      are moved when a trader transitions to live."; "All simulated prop accounts
+      are closed when a trader is moved live, or opts out of trading live via
+      cash-out."; "If one household member is trading live, others may not trade
+      simulated accounts." Value re-verified 2026-10-30, unchanged (D-07); the
+      live-move consequences are new on record (D-30) and unmodelled.
+
+  copy_trading_terms:
+    value: "permitted"
+    status: verified
+    article_id: "11404728-other-trading-activities"
+    url: "https://support.lucidtrading.com/en/articles/11404728-other-trading-activities"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      "Automated trading systems and trade copiers are permitted" — "All automated
+      activity must comply with Lucid Trading rules"; "Traders are fully responsible
+      for any software errors, malfunctions, or unintended outcomes". On live
+      accounts (16558826): "Hedging live accounts is strictly prohibited by both
+      Lucid and the CME. This includes any copytrader issues that may arise.
+      Violations will result in a permanent ban." Re-verified 2026-10-30, value
+      unchanged (D-07).
+
+  multi_account_same_strategy:
+    value: "permitted"
+    status: verified
+    article_id: "11404728-other-trading-activities"
+    url: "https://support.lucidtrading.com/en/articles/11404728-other-trading-activities"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      No article addresses same-strategy-across-accounts by name, but trade copiers —
+      identical trades on several accounts — are expressly allowed: "Automated trading
+      systems and trade copiers are permitted". The only cross-account restriction is
+      OPPOSING positions (11404734, page updated 2026-10-06): "Hedging refers to the
+      use of multiple accounts to take opposing positions on the same trade." —
+      prohibited including "Hedging across multiple accounts held by the same user",
+      "Hedging between different users' accounts", "Hedging between different firms
+      or funded platforms"; "you cannot go long / short the same contract but one is
+      minis or micros in separate accounts"; "you cannot go long / short different
+      contracts in separate accounts with correlated assets" ("Example: You cannot go
+      long ES in one account and short NQ in a separate account."; "Correlated assets
+      go for groupings in equities, metals, energies, etc."). Re-verified 2026-10-30,
+      value unchanged (D-07).
+
+  news_trading_terms:
+    value: "allowed"
+    status: verified
+    article_id: "11404728-other-trading-activities"
+    url: "https://support.lucidtrading.com/en/articles/11404728-other-trading-activities"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      News trading: "Allowed on Flex, Pro and Direct" — "Traders may enter or exit
+      positions around scheduled or unscheduled news events on these plans without it
+      being a breach"; "Not allowed on Daily" — "Trading red folder news on the
+      LucidDaily is a hard breach". Traders "assume full responsibility for all
+      outcomes when trading during news events". (Captured plan is LucidFlex ->
+      allowed.) Re-verified 2026-10-30, value unchanged (D-07).
+
+  prohibited_conduct:
+    value: "microscalping; hedging (same-account, cross-account, cross-user, cross-firm, correlated opposing); HFT; exploiting platform/sim mechanics"
+    status: verified
+    article_id: "11404732-trade-with-integrity"
+    url: "https://support.lucidtrading.com/en/articles/11404732-trade-with-integrity"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Trade with Integrity (11404732) prohibits "Taking advantage of system errors or
+      update delays", "Exploiting discrepancies in simulated prices", "Using tactics
+      that do not reflect real-world trading conditions"; "These behaviors violate
+      the spirit of the program and undermine the integrity of the trading ecosystem
+      we are building."; "We're here to fund real traders not opportunists."
+      Microscalping (11404742): flagged if "More than 50% of your profits are
+      generated from trades held for 5 seconds or less" — manual review, written
+      warning, then "All profits from microscalping activity will be forfeited" and
+      possible permanent restriction; appeals allowed. Hedging (11404734): "You will
+      receive an email notice & the associated accounts will be reset to prior days
+      balance. Despite the balance reset, this does not reset the total remaining
+      drawdown on these accounts."; "After repeated offenses all involved accounts
+      will be breached and you may be permanently restricted from using Lucid Trading
+      services."; "Accounts with a Hedging Violation are not eligible for intraday
+      payouts." (16226050). HFT (11404736): first offense written warning; repeated
+      offenses profit removal, account closure, permanent restriction; appeals
+      allowed. Martingaling is "strongly discouraged" but not prohibited (11404728).
+      Genuine scalping, DCA, scaling in, flipping ("Flipping is allowed") and
+      automation are permitted (11404728). Re-verified 2026-10-30, value unchanged
+      (D-07); the drawdown-not-reset and no-intraday-payout consequences are new text.
+
+  permitted_products:
+    value: "CME Group futures (CME, CBOT, NYMEX, COMEX): equity index, currency, energy, metals, agricultural; minis and micros"
+    status: verified
+    article_id: "11508978-approved-products-and-commissions"
+    url: "https://support.lucidtrading.com/en/articles/11508978-approved-products-and-commissions"
+    date_read: "2026-10-30"
+    verified_by: "rules-verifier agent, session 2026-10-30 (D-30)"
+    note: |
+      Commission schedule per side includes: ES $1.75, MES $0.50, NQ $1.75, MNQ $0.50,
+      RTY $1.75, M2K $0.50, YM $1.75 (CBOT), MYM $0.50, NKD $1.75; seven CME currency
+      pairs (6A, 6B, 6C, 6E, 6J, 6S, 6N) at $2.40; crude oil $0.50 (micro) to $2.00;
+      natural gas $1.30-$2.00; metals $0.80-$2.30 (incl. SIL $1.60); livestock and
+      grains $2.80 (CME/CBOT). All per side ("Commission (Per Side)" column).
+      Re-verified 2026-10-30, value unchanged (D-07; the 2026-10-04 note counted six
+      currency pairs — the table lists seven).

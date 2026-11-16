@@ -1,0 +1,388 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "config",
+    "arm",
+    "check",
+    "holds",
+    "compared",
+    "differing",
+    "refuses",
+    "cell",
+    "base",
+    "role",
+    "block",
+    "measure",
+    "what",
+    "direction",
+    "unit",
+    "measure_role",
+    "value",
+    "n",
+    "counted",
+    "overrides",
+    "row_to_beat",
+    "chosen",
+    "line",
+    "reference",
+    "reference_value",
+    "difference",
+    "lower",
+    "level",
+    "k",
+    "boot_block",
+    "draws",
+    "seed",
+    "first_date",
+    "last_date",
+    "worse_by",
+    "allowed",
+    "blank",
+    "n_reference",
+    "own_row_to_beat",
+    "own_row_to_beat_value",
+    "year",
+    "worse",
+    "years_worse",
+    "status",
+    "verdict",
+    "first_failing",
+    "family",
+    "decision",
+    "cells",
+    "program_cells",
+    "program_families"
+  ],
+  "description": "EXPLORATORY (D-621, program U): the lever family seats (D-635) on P-16's and P-14's replay setup -- every cell on every start day, the scorecard, the choice on the early block and the judgement on the late one against R*, the reverse beside, the year rule, and for the chosen cell the coin guard and the gate floor; the identities first.",
+  "exploratory": true,
+  "git_commit": "1d027679a94cfdaa0edc841cd908fcb38ba7b358",
+  "git_dirty": false,
+  "notes": {
+    "selection": "D-621 (3): CARRIED only if every line holds; a carried cell is a new candidate for its own registered development test",
+    "status": "EXPLORATORY (D-621, program U): a lever family judged on the user's milestones by the declared selection rule; beside the gate, never a verdict of the gate (D-234); a carried cell is a new candidate, not a change to any verdict",
+    "variant_count_rule": "one per cell, under D-635:u_seats; the reference cell, the chosen cell's point arm, coin replays and gate floor are readings of cells already counted"
+  },
+  "parameters": {
+    "arm": "verdict",
+    "bases": {
+      "p14": {
+        "coin_design": false,
+        "override_kinds": [
+          "accounts",
+          "combines",
+          "total_accounts",
+          "purchase_budget",
+          "protocol",
+          "payout_timing",
+          "wallet_stop",
+          "pause_after_funded",
+          "seat_ramp"
+        ],
+        "reference_cell": "reference_p14",
+        "refused_kinds": {
+          "funded_cap_share": "P-14 trades the 12.5- and 25-point rungs, neither wider than the reference stop: a share there scales both rungs' funded micro cap alike, which is not D-544's reading (a reference stop over the coin's one wider stop)"
+        },
+        "setup": "U1's p14 configuration (P-14)"
+      },
+      "p16": {
+        "coin_design": true,
+        "override_kinds": [
+          "accounts",
+          "combines",
+          "total_accounts",
+          "purchase_budget",
+          "funded_cap_share",
+          "protocol",
+          "payout_timing",
+          "wallet_stop",
+          "pause_after_funded",
+          "seat_ramp"
+        ],
+        "reference_cell": "reference",
+        "refused_kinds": {},
+        "setup": "U1's p16 configuration (P-16)"
+      }
+    },
+    "blocks": {
+      "early": "starts to the last start of 2023 less the reading's horizon",
+      "late": "starts from the first session of 2024 with the reading's horizon left"
+    },
+    "bootstrap": {
+      "block": 63,
+      "draws": 2000,
+      "interval": "one-sided: the lower limit is the level's quantile",
+      "seed": 20261700
+    },
+    "cells": [
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "seats1",
+        "overrides": {
+          "accounts": 1,
+          "combines": 1,
+          "total_accounts": 1
+        },
+        "rules": []
+      },
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "seats2",
+        "overrides": {
+          "accounts": 2,
+          "combines": 2,
+          "total_accounts": 2
+        },
+        "rules": []
+      },
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "seats3",
+        "overrides": {
+          "accounts": 3,
+          "combines": 3,
+          "total_accounts": 3
+        },
+        "rules": []
+      },
+      {
+        "base": "p16",
+        "equals_u1": null,
+        "name": "seats4",
+        "overrides": {
+          "accounts": 4,
+          "combines": 4,
+          "total_accounts": 4
+        },
+        "rules": []
+      },
+      {
+        "base": "p14",
+        "equals_u1": null,
+        "name": "seats1_p14",
+        "overrides": {
+          "accounts": 1,
+          "combines": 1,
+          "total_accounts": 1
+        },
+        "rules": []
+      },
+      {
+        "base": "p14",
+        "equals_u1": null,
+        "name": "seats2_p14",
+        "overrides": {
+          "accounts": 2,
+          "combines": 2,
+          "total_accounts": 2
+        },
+        "rules": []
+      },
+      {
+        "base": "p14",
+        "equals_u1": null,
+        "name": "seats3_p14",
+        "overrides": {
+          "accounts": 3,
+          "combines": 3,
+          "total_accounts": 3
+        },
+        "rules": []
+      },
+      {
+        "base": "p14",
+        "equals_u1": null,
+        "name": "seats4_p14",
+        "overrides": {
+          "accounts": 4,
+          "combines": 4,
+          "total_accounts": 4
+        },
+        "rules": []
+      }
+    ],
+    "chosen_base": "p16",
+    "coin_guard": {
+      "applies": "a coin design's only: not applicable to a cell on base p14",
+      "every": 21,
+      "ran": false,
+      "registered_coin": 20261102,
+      "sequences": [
+        20261600,
+        20261601,
+        20261602,
+        20261603,
+        20261604,
+        20261605,
+        20261606,
+        20261607,
+        20261608,
+        20261609,
+        20261610,
+        20261611,
+        20261612,
+        20261613,
+        20261614,
+        20261615,
+        20261616,
+        20261617,
+        20261618,
+        20261619,
+        20261620,
+        20261621,
+        20261622,
+        20261623,
+        20261624,
+        20261625,
+        20261626,
+        20261627,
+        20261628,
+        20261629,
+        20261630,
+        20261631,
+        20261632,
+        20261633,
+        20261634,
+        20261635,
+        20261636,
+        20261637,
+        20261638,
+        20261639,
+        20261640,
+        20261641,
+        20261642,
+        20261643,
+        20261644,
+        20261645,
+        20261646,
+        20261647,
+        20261648,
+        20261649
+      ],
+      "starts": "every 21st of the judged block's common start dates",
+      "wins_needed": 40
+    },
+    "decision": "D-621",
+    "declaration_sha256": "0c7a89b6c4e42c5623e1a0e4f69d1af5b4d91fbfcf1ec9913ea35d4c7a50f4df",
+    "expensive_lines": "the gate floor and the coin guard run for the chosen cell only, each only while every line before it holds (the verdict is the first failing line)",
+    "family": "seats",
+    "family_decision": "D-635",
+    "family_id": "D-635:u_seats",
+    "gate_floor": {
+      "paths": 500,
+      "ran": false,
+      "registered_call": {
+        "p14": "a3_brk30_cb20's gate campaign at seed 20261131, 500 paths, against a3_brk30_cb20_gate.csv's section gate rows at 0 % and a3_brk30_cb20_gate_paths.csv's gate run path for path",
+        "p16": "rc_screen.Runner's form at seed 20261131, 500 paths, against rc_width_screen.csv's rc_s150_all row"
+      },
+      "row_to_beat": "P-06",
+      "seed": 20261801
+    },
+    "k": 3,
+    "level": 0.004166666666666667,
+    "p": "months 1 to 3 ending above zero over three, on the starts with 63 sessions",
+    "program_by_family": {
+      "D-629:u_budget": 8,
+      "D-635:u_seats": 8
+    },
+    "program_cells": 16,
+    "r_star": "p14",
+    "r_star_is_a_stand_in": false,
+    "references": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "a3_brk30_cb20_gate_paths.csv": "a4d06e79055ecce1feeb04a717323065dce021f1f014c345235b645625fe14f7",
+      "a3_brk30_cb20_gate_slices.csv": "b70701cec6adbcf7cfa1dd2d1bdc1ae47caf5ad500582eb789ed9b68bd7c17f5",
+      "a3_brk30_gate.csv": "c230f65e329f1c0817e7db29523fd2c6e4d5deed2f203063d7d93902c7f2c880",
+      "atlas_screen_a3.csv": "f353658410aa0c5d5b71dd149cfc7f2d780c851378f66c52ee281213db25f7c5",
+      "customer_journey.csv": "5b19b0dcf6e1ddccee3e279ed8ab195500cba4844f6d380fe343fbd2650dad43",
+      "rc_s150_all_gate_slices.csv": "31831695ac5a1ec7d193fcf5d64913d6f38ae2354253202970cfcaa633a42833",
+      "rc_width_screen.csv": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+      "scoreboard.csv": "1c6b2beb424ad4e7d3f67d69a9b2be1dc72f9ae254368ca61c2d83dabc03f712",
+      "user_journey.csv": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "rows_to_beat": {
+      "P": "p14",
+      "S1": "p14",
+      "S3a": "p14",
+      "S3b": "p14",
+      "S3c": "p16",
+      "S4a": "p14",
+      "S4b": "p14",
+      "S5a": "p14",
+      "S5b": "p16",
+      "S5c": "p16"
+    },
+    "seconds": 2186.2,
+    "seeds": {
+      "bootstrap": 20261700,
+      "campaign": 20261131,
+      "coin": 20261102,
+      "note": "a replay draws nothing"
+    },
+    "timing": {
+      "p14|verdict": {
+        "seconds": 195.7,
+        "starts": 1691
+      },
+      "p16|verdict": {
+        "seconds": 284.2,
+        "starts": 1691
+      },
+      "seats1_p14|verdict": {
+        "seconds": 91.7,
+        "starts": 1691
+      },
+      "seats1|verdict": {
+        "seconds": 154.7,
+        "starts": 1691
+      },
+      "seats2_p14|verdict": {
+        "seconds": 127.5,
+        "starts": 1691
+      },
+      "seats2|verdict": {
+        "seconds": 196.2,
+        "starts": 1691
+      },
+      "seats3_p14|verdict": {
+        "seconds": 159.3,
+        "starts": 1691
+      },
+      "seats3|point": {
+        "seconds": 229.7,
+        "starts": 1691
+      },
+      "seats3|verdict": {
+        "seconds": 226.3,
+        "starts": 1691
+      },
+      "seats4_p14|verdict": {
+        "seconds": 184.0,
+        "starts": 1691
+      },
+      "seats4|verdict": {
+        "seconds": 249.7,
+        "starts": 1691
+      }
+    },
+    "tolerances": {
+      "blank": "a blank on either side fails the line",
+      "relative": 0.1,
+      "share": 0.05,
+      "zero_reference": "no relative tolerance"
+    },
+    "workers": 2
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_seats.csv",
+  "rows": 227,
+  "script": "scripts/u_family.py",
+  "seed": 20261700,
+  "sha256": "f3686c5a56adbddf41250b6ada614854a5ed3bee5d01a37837a49bada23809bf",
+  "timestamp": "2026-11-14T21:20:53+00:00",
+  "variant_count": 8
+}

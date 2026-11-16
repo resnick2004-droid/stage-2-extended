@@ -1,0 +1,42 @@
+# config/flip_map.yaml -- the flip map (D-343): the fast, time-boxed bracket for the two-stream candidate's flip days,
+# fixed before any of its data is read.
+#
+# The question (the operator, 2026-10-11): a flip day's only job is a winning day of $150 or more; its trade must
+# RESOLVE WITHIN MINUTES so it does not hold a direction against the other accounts' signals, be ENTERED AT A KNOWN
+# MINUTE so a hand trader is prepared, and be COPIED across the flip-state accounts. So: at the start of every hour of
+# Topstep's trading day (17:00 CT the evening before to 14:00 CT) and at the 08:30 CT open, a long and a short bracket
+# in ONE NQ mini at each fixed width in points, 1:1, entered at the open of the slot's first bar one tick adverse
+# (on time) and at the next bar's open (one minute late: the hand trader's sensitivity), walked for at most `box_minutes`
+# bars to its target, its stop, or closed at market at the box's last bar (a SCRATCH: no winning day, its P&L kept).
+# Actual prices, no rescaling (D-240's convention for today's regime; a width in points is a width in points). Only
+# counts leave the cloud (D-120): per year, slot, width and entry delay the brackets at the target, at the stop and
+# scratched, the minutes to resolution, how many resolved within five minutes, the scratches' P&L in ticks, and the
+# entry minute's spread.
+#
+# Direction-neutral: both sides at every slot, pooled; no edge is read. The choice rules below are fixed in advance.
+
+market: NQ
+run: R137-flipmap-NQ
+window: {warm: "2019-12-20", start: "2020-01-01", end: "2025-06-30"}   # development only (D-237); the held-back window is never read
+day:
+  open_ct: "17:00"              # Topstep's trading day resumes at 17:00 CT (8284206)
+  flatten_ct: "15:10"
+  decision_every_min: 60        # every hour start from 17:00 to 14:00 CT (22 decisions) ...
+  last_decision_ct: "14:00"
+  extra_decisions_ct: ["08:30"] # ... plus the 08:30 CT open (the most active minute of the day)
+widths_points: [10, 12.5, 15, 20]   # the bracket's stop AND target in NQ points (1:1), one NQ mini: $200, $250, $300, $400 at risk
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+entry_delays_min: [0, 1]      # on time (the slot's first bar's open) and one minute late (the next bar's open)
+slip_ticks: 1                 # one tick adverse at entry and at a scratch exit (D-95); a stop exit's tick is costed by the scorer
+box_minutes: 10               # a bracket neither at target nor stop by the box's last bar is closed at that bar's close
+within_minutes: 5             # reported beside: the share resolved by the end of the fifth bar from the entry bar
+spread: {wide_ticks: 4, cap_ticks: 50}   # as the resolution map (D-215): wide quotes counted, absurd ones kept out of the mean
+
+# what the scorer (scripts/score_flip_map.py) reads from the counts, fixed before any count is read:
+rules:
+  resolved_in_box_min: 0.90   # a width qualifies at a slot when at least 90 % of its brackets resolve to target or stop
+                              # inside the box, pooled AND in every year (full sessions; the on-time entry)
+  width_choice: widest        # among a slot's qualifying widths the WIDEST: the most room for a hand trader's seconds of delay
+  slot_choice: "the slot whose chosen width resolves inside the box most often (pooled, on time); ties to the earlier slot; the 08:30 and 09:00 CT slots reported beside"
+  cost: "one NQ mini: the round turn from config/fills.yaml, the entry's measured spread beyond the tick the walk charged (at least zero), one tick on a stop exit weighted by its share; a scratch's own tick is in its P&L; all over the width's dollars"
+  edge: "per attempt, in units of the risk: the target share less the stop share plus the mean scratch P&L over the risk, less the cost; the one-sided 95 % lower bound over the yearly blocks (2025 a half year) beside"

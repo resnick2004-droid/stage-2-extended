@@ -1,0 +1,31 @@
+# config/flip_map_seconds.yaml -- the flip map at SECOND resolution (D-344), fixed before any of its data is read.
+#
+# Why: the minute-bar flip map (config/flip_map.yaml, kit R137, results/flip_map_nq.csv) found the slot -- at the 08:30 CT
+# open every width resolves inside the ten-minute box on 97 % or more of attempts, 09:00 nearly as well, every other hour
+# fails -- but its walk decides most of those brackets on their entry bar, and a bar touching both the target and the stop
+# is the stop's, so the small widths read 40 % targets against 60 % stops: a lower bound set by the bars, not a measure of
+# the bracket. This kit measures the same brackets on one-second bars for the two slots, where a bar touching both sides
+# is rare. One run; the window's second bars come by one history request at each trading day's close, after the window;
+# nothing else of the day is read (the minute bars serve only the day's roll and early-close bookkeeping). Only counts
+# leave the cloud (D-120). The spread at the two slots is the minute kit's measurement (results/manual_R137_flipmap_NQ.csv,
+# spread rows), read by the scorer; this kit records trade bars only.
+
+market: NQ
+run: R138-flipmap-NQ-seconds
+window: {warm: "2019-12-20", start: "2020-01-01", end: "2025-06-30"}   # development only (D-237)
+window_ct: {start: "08:29", end: "09:11"}     # the second bars requested each day: 42 minutes around the two slots
+slots_ct: ["08:30", "09:00"]                  # the two slots the minute map found; the entry is the slot's first second bar's open
+widths_points: [10, 12.5, 15, 20, 25]         # the minute map's four widths and one wider, one NQ mini: $200 to $500 at risk
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0}
+entry_delays_seconds: [0, 60]                 # on time, and one minute late (the hand trader's sensitivity)
+slip_ticks: 1                                 # one tick adverse at entry and at a scratch exit (D-95)
+box_seconds: 600                              # the ten-minute box, in seconds
+within_seconds: 300                           # reported beside: resolved by the end of the fifth minute
+spread_source: {file: results/manual_R137_flipmap_NQ.csv, kind: spread}   # the entry minute's spread per slot, from the minute kit
+
+rules:
+  resolved_in_box_min: 0.90   # a width qualifies at a slot when at least 90 % of its brackets resolve inside the box, pooled AND in every year (full sessions; on time)
+  width_choice: widest        # the widest qualifying width: the most room for a hand trader's seconds of delay
+  slot_choice: "corrected after the minute map (D-344): among the slots with a qualifying width, the one whose chosen width has the best net edge per attempt -- the cheapest flip; both slots reported"
+  cost: "one NQ mini: the round turn from config/fills.yaml, the entry's measured spread (the minute kit's, at the slot) beyond the tick the walk charged, one tick on a stop exit weighted by its share; a scratch's own tick is in its P&L; all over the width's dollars"
+  edge: "per attempt, in units of the risk: the target share less the stop share plus the mean scratch P&L over the risk, less the cost; the one-sided 95 % lower bound over the yearly blocks beside"

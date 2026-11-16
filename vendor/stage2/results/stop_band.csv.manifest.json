@@ -1,0 +1,62 @@
+{
+  "columns": [
+    "market",
+    "micro",
+    "state",
+    "risk",
+    "tick_size",
+    "tick_value",
+    "cap_micros",
+    "cap_stop_ticks",
+    "cost_drag_floor_ticks",
+    "narrow_ticks",
+    "wide_ticks"
+  ],
+  "description": "D-201 (2): the sizeable stop band in the micro's ticks, per market with a micro and per lifecycle state: the narrow edge the larger of the size-cap stop and the 0.10 cost-drag stop, the wide edge the widest stop buying one whole micro.",
+  "exploratory": false,
+  "git_commit": "f00738a026a91dfe9a408babc731565d23e8d517-dirty",
+  "git_dirty": true,
+  "notes": null,
+  "parameters": {
+    "cost_drag_floor": 0.1,
+    "decision": "D-201 (2)",
+    "family": [
+      [
+        "combine",
+        1500.0,
+        "combine",
+        0.0
+      ],
+      [
+        "funded_below_2000",
+        1000.0,
+        "funded",
+        0.0
+      ],
+      [
+        "funded_at_or_above_2000",
+        300.0,
+        "funded",
+        2000.0
+      ]
+    ],
+    "fill_profile": "assumed",
+    "max_outside": 0.25
+  },
+  "prereg_id": null,
+  "provenance": {
+    "inputs_sha256": {
+      "config/fills.yaml": "40b561b0a2c13f6110c06aeaa44ec116377536c83a5317932c5870b920484c2b",
+      "config/instruments.yaml": "013a81fbd464ff5d695da11100a35b1e0150a72ba1cdd2f264701f608807b7c6",
+      "config/rules.yaml": "fb10af1a65ff3a280b4a1c94e4ae3b3c78d8d9413a755bc6c98449b6514b6b83",
+      "propedge/research/stop_band.py": "b70d4dc8e10ee4757f78e4eb0a4e96518df3f4d498f278422eb3b50739b17b9a"
+    }
+  },
+  "result_file": "stop_band.csv",
+  "rows": 15,
+  "script": "scripts/stop_band.py",
+  "seed": null,
+  "sha256": "b7557a2d1bea447f19a54325a865692b11ace966c2222d69fbc2168740bbb227",
+  "timestamp": "2026-11-15T00:53:16+00:00",
+  "variant_count": null
+}

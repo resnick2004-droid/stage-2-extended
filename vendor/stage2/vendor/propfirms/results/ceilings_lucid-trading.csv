@@ -1,0 +1,8 @@
+quantity,stage,value,units,formula,rule_keys,note
+eval_p_pass_ceiling,evaluation,0.4,probability,D/(G+D) = 2000/(3000+2000),eval_profit_target;eval_drawdown_amount;eval_drawdown_type,"zero-edge martingale bound; trailing floor never falls below -D, breach truncated at the floor; consistency/day/size rules only restrict, so the bound holds for every fair strategy"
+funded_cushion_usd,funded,2000.0,usd,start-to-floor distance at funded entry,funded_drawdown_amount;funded_drawdown_type,"T = balance + gross withdrawals is a martingale; floor never falls below -C, so E[gross withdrawals] <= C from funded entry"
+funded_gross_payouts_hard_cap_usd,funded,10000.0,usd,finite sum over the contract's payouts,payout_frequency_gate;payout_cap,"5 payouts x $2000 per-request cap, then moved live; floor only rises on request (locks at start+$100)"
+funded_e_gross_payouts_ceiling_usd,funded,2000.0,usd,"min(C, K) = min(2000, 10000)",funded_drawdown_amount;funded_drawdown_type;payout_frequency_gate;payout_cap,zero-edge ceiling on expected gross withdrawals from funded entry
+per_attempt_e_gross_payouts_ceiling_usd,attempt,800.0,usd,"p_eval x min(C, K) = 2/5 x 2000",,"upper bounds compose: P(reach funded) x funded ceiling; T5's EV-per-attempt oracle (gross, no fees)"
+payout_split_trader_share,payout,0.9,fraction,,payout_split,trader share of each gross withdrawal
+per_attempt_e_net_after_split_ceiling_usd,attempt,720.0,usd,split x per-attempt ceiling = 9/10 x 800,payout_split,fees NOT subtracted (open H-6 rows); omitting nonnegative costs preserves the upper bound

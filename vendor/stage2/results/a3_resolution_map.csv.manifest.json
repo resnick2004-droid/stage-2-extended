@@ -1,0 +1,103 @@
+{
+  "columns": [
+    "section",
+    "hour",
+    "stop_ticks",
+    "stop_points",
+    "rr",
+    "target_ticks",
+    "offered",
+    "unresolved",
+    "unresolved_worst_year",
+    "worst_year",
+    "eligible",
+    "share_target",
+    "share_stop",
+    "share_breakeven",
+    "events_per_session",
+    "pattern_events_per_session",
+    "events_per_session_with_clock",
+    "eligible_1r_same_rung",
+    "eligible_hours",
+    "n_eligible_hours",
+    "events_per_session_at_eligible_hours",
+    "max_single_hour_events_per_session",
+    "offered_at_eligible_hours",
+    "reaches",
+    "verdict",
+    "rule"
+  ],
+  "description": "EXPLORATORY (D-490 (2)): A1's events five bars late on FV3-C's rungs (12.5 / 25 / 50 points) at every quarter R to 3R with FV3's breakeven move and 15:10 flatten -- the resolution map per event hour, rung and R on normal days, and D-490's kill line.",
+  "exploratory": true,
+  "git_commit": "bca86d7fb17cfeb908ee00e8da93d43fd61f956e",
+  "git_dirty": false,
+  "notes": {
+    "status": "EXPLORATORY step 0 read (D-490): a kill test, no selection, no money decision",
+    "variant_count_rule": "one read, recorded under D-490:a3_step0"
+  },
+  "parameters": {
+    "a1_cache_inputs": {
+      "bars_parquet_sha256": "c391d97ad1c11db3ce0da0c65f0d0ac9df1582617666b37c00ad206c3add2041",
+      "code_sha256": "8e6bd9be4d16bb190788183d79a5be48e2d60fb1103617fda58324b6e5f035ae",
+      "config_sha256": "921a717fbc32f63f4e9318a8e69bbe4f03909eb46051733d79c2b793a58dc265",
+      "days": 1691,
+      "first": "2020-01-02",
+      "last": "2026-07-16",
+      "purpose": "development"
+    },
+    "a1_config": "config/atlas_a1.yaml",
+    "bars": "data/bars/NQ (Databento GLBX.MDP3 ohlcv-1m, D-458)",
+    "breakeven": "score_fv3_grid.Signals3.outcome's (fv3_core.next_open)",
+    "decision": "D-490",
+    "delay_bars": 5,
+    "distinct_event_minutes": 134448,
+    "events_per_session": "distinct pooled event minutes at the hour / sessions walked ('n' + 'b')",
+    "family_walked": "A1",
+    "flatten": "the worst of 15:07-15:10 CT less 2 ticks; the 15:08 close where none (FV3-C's execution.flatten)",
+    "kill_min_events_per_session": 1.0,
+    "kill_rs": [
+      2.5,
+      3.0
+    ],
+    "map_days": [
+      "n"
+    ],
+    "pool": "A1's 15 mechanical patterns (clock_t24 out), both side rules, distinct event minutes walked long and short; 'n' and 'b' days, a 'b' day's events before 07:30 CT dropped",
+    "rr_grid": [
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      1.75,
+      2.0,
+      2.25,
+      2.5,
+      2.75,
+      3.0
+    ],
+    "sessions": 1576,
+    "stops_ticks": [
+      50,
+      100,
+      200
+    ],
+    "target_rounding": "floor(R x stop + 1e-9) ticks (score_fv3_grid.Signals3.outcome)",
+    "unresolved": "flattened at 15:10 (breakeven resolved)",
+    "unresolved_max": 0.05,
+    "variant_id": "3921ff6c78a1",
+    "verdict": "SURVIVES",
+    "walk_module": "propedge/research/fv3_rung_walk.py",
+    "walks": 268896
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "a3_resolution_map.csv",
+  "rows": 835,
+  "script": "scripts/a3_resolution_map.py",
+  "seed": null,
+  "sha256": "784b20accd0609f2995fb5babe93ff1b69e3f9f482eb126f217c97061f3bf4b8",
+  "timestamp": "2026-10-30T20:21:22+00:00",
+  "variant_count": 1
+}

@@ -1,0 +1,102 @@
+# config/orb6_grid.yaml -- ORB6: the retest of NQ's 08:30 opening-range breakout, traded by hand (T16 item 9; D-276,
+# D-277, D-278), declared by D-278 before any of its data is read; the operator agreed the search as drafted
+# (2026-10-04), and the fee model is set from the D-276 cost check.
+#
+# The hypothesis: after the opening range breaks, a limit at the broken edge filled on the first retest -- with the
+# stop at the range's far side or at an ATR width -- has a positive edge before costs that clears today's costs, in
+# the states declared below. ORB6 is a new candidate (D-277): designed after ORB5's verdict and the outside review the
+# operator relayed, so not blind to ORB5's results; its multiplicity controls are the walk-forward, the count k, SPA and
+# the deflated Sharpe ratio, and the held-back window (2025-07-01 on), untouched, is its one clean test.
+
+model: ORB6
+market: NQ
+runs: [R102-orb3-NQ-0914, R103-orb3-NQ-1519, R104-orb3-NQ-2025, R105-orb5-NQ-0914, R106-orb5-NQ-1519, R107-orb5-NQ-2025,
+       R108-orb6-NQ-0914, R109-orb6-NQ-1519, R110-orb6-NQ-2025]
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]
+
+# FIXED -- not searched
+fixed:
+  hypothesis_entry: "the retest: the breakout is the operator's alert; a limit at the broken edge works from the end of the breakout's bar + 5 minutes and fills on the first later bar that trades through it by a tick -- at the level, or at that bar's open plus a tick when it opens through the level (a marketable limit, the chase's convention, D-266), never worse than the level (D-278; never a touch, D-145 tier 1). A retest whose fill is at or beyond the range's far side (the market already through the whole range when the order starts working, so the range stop has no distance) is taken in no cell: every cell trades the same retests, and the stop changes only how they exit; their count, and the share of retests filled at a gapped open, reported"
+  baseline_entry: "the hand-traded stop entry of D-266 under ORB5's chase policy, at the same cell -- reported beside every figure, never selected from (D-277 (1))"
+  execution:
+    mode: manual
+    latency_minutes: 5
+    alert_to_order: "at least 5 minutes from the alert to the order, every entry: the range's close for the stop entry (D-266), the breakout for the retest (the operator, 2026-10-04: \"I want at least 5 minutes to be ready from an execution from the time I get an alert to the time I actually need to place an execution\")"
+  combine: {rr: 1.0, risk: 1500, target_dollars: 1500, max_trades_per_account_day: 1}     # propsim D-08; D-262; D-267
+  funded:
+    risk: "of 1000, 750 and 500 dollars, the one deploying the most risk a day at the cell's stop -- risk times the share of 2020 to June 2025's days sizeable at it -- ties to the larger (D-273)"
+    max_trades_per_account_day: null
+  stand_aside: "D-272 (1): a trade is taken only if min(floor(risk / stop $), cap) x stop $ >= 90 % of the state's risk and the stop is at least the cost-drag floor (results/stop_band.csv: caps 37 Combine, 15 funded below +$2,000; floor 45 MNQ ticks); the range stop is sized on its own distance that day"
+  reading: strict                                   # a fill bar reaching the stop is stopped (D-254)
+  flatten: "a trade still open at the 15:08 bar is closed at the worst price of 15:07-15:10 less 2 ticks (D-263)"
+  costs: "the retest's entry as recorded (the level, or the open plus a tick when the bar opened through it), no further spread or slippage; the baseline's as ORB5's; the round-turn fee of NQ minis with MNQ micros where the risk allows -- per trade the micro-equivalent size's tens as minis, the rest as micros, at the verified fees (article 8284213; D-276's mix, scripts/orb5_exploratory.py `mini_mix_fee`; set by D-278: at the same size it costs no more than micros alone); the exit 1 tick on a stop, none at a target's limit, 2 ticks on the flatten"
+  last_bar: "15:08"
+  ranges_measured_from: "08:30 CT, as ORB1"
+
+# SEARCHED -- the grid; k is the product
+search:
+  ranges: [[5], [5, 15], [5, 15, 30], [5, 15, 30, 60]]
+  stop: [range, 0.10, 0.15, 0.20, 0.25]            # the range's far side, or x the 14-day ATR
+  state: [none, vwap_with, gap_with, overnight_with]
+    # vwap_with: the range closed on the breakout's side of the Globex session's VWAP (from 17:00 CT, the overnight
+    # included -- not the cash session's); gap_with: the 08:30 open gapped from the
+    # previous close in the breakout's direction; overnight_with: the 08:30 open is beyond the session's first open in
+    # the breakout's direction -- each "the session's flow agrees with the breakout"; a missing value takes no trade
+  last_fill_ct: ["10:30", "12:00"]                   # the retest filled at or before this bar
+  coordination: [one_at_a_time, ranges_locked]       # D-160 or D-269
+  funded_rr: [1.5, 2.0, 3.0]                         # the funded leg's target in multiples of its stop
+k: 960                                               # 4 x 5 x 4 x 2 x 2 x 3
+
+# DROPPED -- with the reason
+dropped:
+  relative_volume: "ORB6's states are the three flows declared; ORB5's volume filter is not carried"
+  other_stop_widths: "0.05 and 0.075 x ATR are mostly below the Combine's sizing band today; 0.125 and 0.30 thin the grid (D-277: no fine sweeps)"
+  targets_below_1R: "0.5R and 0.75R of the range stop are captured but not stage one's geometry (1:1 Combine, 1.5R+ funded)"
+  funded_5R: "not captured for the retest"
+  other_missed_trigger_policies: "the retest is a resting limit; skip and rest belong to the baseline, reported"
+  direction_exits_time_stops: "as ORB5 (D-212, D-267)"
+  other_markets_and_opens: "D-277's boundary: this declaration is NQ's 08:30 open"
+
+# SELECTION -- fixed now
+selection:
+  metric: "per trade, its move before any cost in R (from the level; a target credited at R x the stop rounded down to a whole tick; the flatten as fixed above) less the configuration's median round-trip cost in R over its filled trades of 2020 to June 2025 (fixed.costs, no outcome) -- D-271 (2)"
+  legs: "the Combine leg (1R) and the funded leg (funded_rr); a configuration's value on a set of years is the smaller of its two legs' one-sided 95 % lower bounds of the yearly mean metric"
+  coordination: "as ORB5's (D-160, D-269)"
+  feasible:
+    frequency: "the Combine leg's sizeable trades on 2020 to June 2025 per trading day and per account of the gate's five, at or above D-154's minimum (results/setups_per_day.csv)"
+    resolution: "at most 2 % of each leg's trades reach the 15:08 bar, overall and in every year of the set (D-212)"
+    funded_risk: "fixed.funded.risk exists at the cell's stop"
+  plateau: "of the feasible configurations, the one maximising the smaller of its own value and the median value of every configuration one step or fewer away in stop (along the ATR widths; the range stop's neighbours are in last_fill only) and in last_fill_ct, the rest equal, feasible or not, one with no value counting as the lowest; ties to the earlier in the order of `search`"
+  walk_forward: "anchored: each test year from 2013 to 2025 (January to June) scored with the selection made on every earlier year; a selection with no trade in the test year scores 0 there"
+  eras:
+    split: [[2009, 2017], [2018, 2025]]
+    flag: "as ORB5 (D-271 (1)): a whole-year bootstrap of the eras' difference in mean gross R per trade, reps 2000"
+    when_flagged: "the lower era's bound"
+  drift: "D-277 (2): each trade's metric less its benchmark -- the year's mean metric of R108-R110's unconditional entries of the same side, at the latest benchmark slot before the trade's fill bar (08:40, 08:50, 09:05, 09:35, then every 30 minutes to 11:35), with the same stop (its ATR width, or the range's own stop: that range plus a tick) and the same R, read strictly and priced alike (entered at the bar's open with no slip, the same cost model); the drift-free value is the yearly-means bound of that excess. The benchmark's range stop is the range plus a tick, the retest's at the level; a retest filled at a gapped open has a shorter one"
+
+# KILL LINES -- fixed now; the stopping points are D-277's
+kill_line:
+  W1: "the walk-forward's test-year values have their one-sided 95 % lower bound at or below zero, or a test year has no feasible selection -- the execution model is invalidated and the 08:30 NQ breakout branch closed"
+  W2: "the final selection on every development year is infeasible, or its value (the lower era's when flagged) is at or below zero"
+  B: "the final selection's drift-free value (selection.drift, the smaller leg's) is at or below zero"
+  G: "the D-145 gate on the walk-forward's out-of-sample trades, at today's costs, fails: median yearly log growth at 0 % denial at or below zero with each leg shifted to its one-sided 95 % lower bound"
+  stopping: "W1 fails: closed for good; W1 passes but W2, B or G fails: this specification closed; all pass: one confirmation on the held-back window, which closes it if it fails; no parameter changed after any gate's result (D-277)"
+gate:
+  trades: "as ORB5's (D-273), each trade net of today's cost (D-276's correction)"
+  bound: "per leg, the yearly-means one-sided 95 % lower bound of the out-of-sample net R"
+  stops: "each trade's stop in dollars drawn (seeded) from 2020 to June 2025's days at its stop (D-271 (4)); not sizeable in both states, left out"
+  campaign: {bankroll: 5000, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 0.75}
+  protocol: "the Combine 1:1 $1,500, one trade an account a day; funded at the final selection's funded risk and funded_rr; payout standard"
+  conduct: "the Responsible Trading Program's consequences on (D-145 tier 2); denial 0 % decides (D-234), 10/25/50 % reported"
+seeds: {eras: 20261008, stops: 20261009, gate: 20261010, spa: 20261011}
+
+# REPORTED BESIDE -- never a verdict
+reported:
+  - "the baseline (the hand-traded stop entry, chase; skip and rest beside) at the final cell: value, gross and net"
+  - "each leg's e, its bound, gross and net, hit rate, trades a day, per era and pooled; long and short apart, each less its benchmark, and combined (D-277 (2))"
+  - "the share of trades reaching the flatten and their mean R (D-277 (3))"
+  - "the edge-to-friction ratio, gross edge over today's cost in R, per configuration (D-277 (4))"
+  - "the retest's fill rate (breakouts retested by last_fill) and minutes from fill to resolution; the share filled at a gapped open, and the retests left out because their fill was at or beyond the range's far side"
+  - "trades the ranges_locked option adds over one_at_a_time at the final cell"
+  - "Hansen's SPA p-value over the feasible configurations' yearly values and the deflated Sharpe ratio at N = k"
+then: "continue -> the final selection's card completed and one confirmation registered on NQ's held-back window (2025-07-01 to 2026-06-30, D-237), one QuantConnect capture and the D-145 gate"

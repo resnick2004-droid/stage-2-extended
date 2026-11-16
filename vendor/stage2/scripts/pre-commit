@@ -1,0 +1,100 @@
+#!/bin/sh
+# Stage two git pre-commit hook. Install with `make hooks` (or `.\scripts\make.ps1 hooks`),
+# which copies this into .git/hooks/pre-commit.
+#
+# Runs vendor integrity and the stage-two suite's FAST tier (-m "not slow and not heavy", about three
+# minutes) -- not the whole of verify. A commit that breaks either is refused, because a broken
+# foundation committed is a broken foundation someone later trusts.
+#
+# The full suite (slow and heavy tests included) and the vendored stage-one suite run in `make verify`
+# / `.\scripts\make.ps1 verify` and in CI on every push to master (.github/workflows/verify.yml); run
+# the full suite before any verdict run (R10). The vendored suite cannot change between commits
+# without the integrity check above failing first, so leaving it to verify and CI loses nothing here.
+#
+# Bypass with `git commit --no-verify` only when you know why; say so in the commit message.
+
+set -e
+
+# Run under git's own sh, found from git itself (`git var GIT_SHELL_PATH`), never from PATH.
+# On Windows `bash` on PATH can be WSL's (installed with Docker), which cannot see this checkout
+# the way git does. git already runs hooks with its own sh; this also covers the hook being
+# started by hand with some other shell. The marker stops the re-exec from repeating.
+if [ -z "$PRECOMMIT_UNDER_GIT_SH" ]; then
+    GIT_SH=$(git var GIT_SHELL_PATH 2>/dev/null) || GIT_SH=
+    if [ -n "$GIT_SH" ] && [ -x "$GIT_SH" ]; then
+        PRECOMMIT_UNDER_GIT_SH=1
+        export PRECOMMIT_UNDER_GIT_SH
+        exec "$GIT_SH" "$0" "$@"
+    fi
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# Pick a Python that actually runs.
+#
+# `command -v python3` is not enough on Windows: the App Execution Alias stubs for python3.exe
+# and python.exe exist on PATH and resolve, but running them prints "Python was not found; run
+# without arguments to install from the Microsoft Store" and exits non-zero. So each candidate
+# is *executed* rather than merely located.
+pick_python() {
+    for candidate in "$PYTHON" python3 python py; do
+        [ -n "$candidate" ] || continue
+        if "$candidate" -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PYTHON=$(pick_python) || {
+    echo "pre-commit: no working python interpreter found (tried \$PYTHON, python3, python, py)." >&2
+    echo "pre-commit: set PYTHON to a working interpreter, or commit with --no-verify and say why." >&2
+    exit 1
+}
+
+# Keep .pyc files out of the read-only vendored tree (D-01).
+export PYTHONDONTWRITEBYTECODE=1
+
+# `-o addopts=` clears the project's own `-q` from pyproject.toml; without it the inherited -q
+# compounds with the explicit one into -qq and the pass count is suppressed.
+PYTEST="$PYTHON -m pytest -o addopts= -q"
+
+# The fast tier (R10): every test not marked slow or heavy in pyproject.toml.
+FAST_TIER="not slow and not heavy"
+
+echo "pre-commit: vendor integrity + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON"
+echo "pre-commit: the full suite and the vendored stage-one suite run in make verify and in CI, not here"
+
+echo "--- vendor integrity ---"
+# D-367: a failed check must stop the hook on every branch. `set -e` does not fire inside an `a && b` list, so the
+# earlier `(check) && echo OK` form let a failed sha256sum / shasum check through; it went unseen while this machine
+# had no sha256sum (the Python branch, a plain command, did stop) and surfaced when Git for Windows put one on PATH.
+vendor_failed() {
+    echo "pre-commit: vendor integrity FAILED -- vendor/propsim differs from vendor/MANIFEST.sha256 (D-01)." >&2
+    exit 1
+}
+if command -v sha256sum >/dev/null 2>&1; then
+    (cd vendor && sha256sum -c MANIFEST.sha256 --quiet) || vendor_failed
+    echo "vendor/propsim: OK (sha256sum)"
+elif command -v shasum >/dev/null 2>&1; then
+    (cd vendor && shasum -a 256 -c MANIFEST.sha256 --quiet) || vendor_failed
+    echo "vendor/propsim: OK (shasum -a 256)"
+else
+    $PYTHON scripts/hashes.py check vendor/MANIFEST.sha256 || vendor_failed
+fi
+
+# git exports GIT_INDEX_FILE (and, depending on the invocation, GIT_DIR / GIT_WORK_TREE /
+# GIT_PREFIX) to its hooks. Inherited by the suite, they point every nested `git` -- the tests
+# that build a temporary repository, and the provenance code those tests exercise -- at THIS
+# repository's index: 12 tests fail, and the fixture's `git add` stages its file into the real
+# index (seen 2026-09-25: `algorithms/check.py` appeared staged and deleted in the working tree
+# after a refused commit). The suite must see the environment `make verify` gives it from a
+# shell, so the hook drops them before running anything that might call git.
+unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX
+
+echo "--- stage-two tests, fast tier ---"
+$PYTEST -m "$FAST_TIER"
+
+echo "pre-commit: OK (fast tier; the full suite runs in make verify and in CI)"

@@ -1,0 +1,64 @@
+# config/flip_direction.yaml -- the flip-direction atlas (D-371), fixed before any of its data is read.
+#
+# Why: the 08:30 CT flip (D-345, D-346) resolves in about two minutes but is a coin flip -- its direction is mechanical
+# and no edge is claimed -- so after its costs every attempt loses a little. The operator (2026-10-15): "I like the idea of
+# the direction edge, anything we can systematically measure and see if win rate increases". This screen asks, in the
+# effect atlas's manner (D-126: many measures at once, a false-discovery correction, chosen on one span and checked on a
+# later one), whether anything known before 08:30 CT tells the side the open's first move takes. A survivor is a
+# pattern, not a strategy: it becomes a candidate record (D-191) and goes into the flip's table only by its own row.
+#
+# One QuantConnect run, NQ at actual prices. Per trading day only per-day numbers leave the cloud (D-120, as the atlas,
+# D-126): the pre-08:30 measures below in ticks, and the 08:30 brackets' outcomes both ways on one-second bars (R138's
+# history request and walk, D-344). Development data only (D-237: everything before 2025-07-01).
+
+status: fixed
+market: NQ
+run: R142-flipdir-NQ
+window: {warm: "2009-11-02", start: "2010-01-04", end: "2025-06-30"}
+periods:
+  choice: ["2010-01-04", "2019-12-31"]      # the rule's side is chosen here, with the false-discovery correction
+  check: ["2020-01-01", "2025-06-30"]       # today's market (D-144's reason): a survivor must hold here
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0}
+
+# --- the outcome: the 08:30 CT bracket both ways (R138's walk on one-second bars) --------------------------------------
+slot_ct: "08:30"                            # entry at the slot's first second bar's open, one tick adverse
+window_ct: {start: "08:29", end: "08:42"}   # the second bars requested each day: the slot, its box, the late entry
+box_seconds: 600                            # the ten-minute box; a bracket still open at its last bar is a scratch
+within_seconds: 300
+entry_delays_seconds: [0, 60]               # on time, and one minute late (the hand trader's sensitivity, beside)
+slip_ticks: 1
+fallback: "a day the history cannot serve with second bars is walked on its own minute bars (the decision at the bar
+  ending 08:30, the box ten bars, the late entry one bar) and flagged (res 2): a bar touching both sides is the stop's for
+  both, so such a day can dilute an effect, never make one; the share is reported per period"
+widths:
+  atr_fractions: [0.03, 0.05, 0.08]         # 1:1 widths as fractions of ATR20 (below), so the bracket is as hard to
+  primary_fraction: 0.05                    #   resolve in 2012 as in 2024; 0.05 is about the declared flip's 20 points
+  fixed_points: [20]                        #   today. The declared flip's own 20 points: the money bar, on CHECK only
+  min_ticks: 2
+atr_days: 20                                # ATR20: the mean full-session range (high less low, one contract) of the
+                                            #   previous 20 complete trading days (early closes left out)
+
+# --- the measures known before 08:30 CT (P = the close of the bar ending 08:30 CT) -------------------------------------
+# Each gives a signal +1 (up), -1 (down) or 0 (none). "Follow" trades the signal's side, "fade" the other.
+features:
+  F01_gap: "P less the previous trading day's last close at or before 15:00 CT (the same contract only)"
+  F02_overnight: "P less the trading day's first open (17:00 CT the evening before)"
+  F03_last60: "P less the close of the bar ending 07:30 CT"
+  F04_last15: "P less the close of the bar ending 08:15 CT"
+  F05_last1: "the bar ending 08:30 CT: its close less its open (the flip's mechanical side, D-343)"
+  F06_range_position: "P in the top third of the trading day's range so far (bars ending up to 08:30) +1, bottom third -1, else 0"
+  F07_prior_rth: "the previous day's regular session: its last close at or before 15:00 CT less its 08:30 CT open (same contract)"
+  F08_prior_close_location: "that close in the top third of the previous regular session's range +1, bottom third -1, else 0"
+  F09_release_reaction: "on a scheduled 07:30 CT release day (data/release_days_0830_2009_2025.csv, the BLS calendar) the sign of F03; else 0"
+  F10_big_gap: "the sign of F01 when |F01| / ATR20 is at or above the top-tercile cut of the CHOICE days, else 0"
+
+# --- the statistics ------------------------------------------------------------------------------------------------------
+statistics:
+  outcome: "the primary bracket (0.05 x ATR20, on time): per day with a signal and both sides entered, z = 1 if the follow side reached its target first, minus 1 if the fade side did (a scratch is neither); effect = mean z = follow's win share less fade's"
+  inference: "Newey-West standard error of mean z over the period's days, lag 5"
+  choice: "two-sided p per measure; Benjamini-Hochberg at q = 0.10 across the ten (k = 10); a survivor's side is follow when its effect is positive, else fade"
+  check: "a survivor holds when its CHECK effect has the same sign, a one-sided p below 0.05 and at least half the CHOICE size (the atlas's rule, D-126)"
+  money: "for a measure that holds: on CHECK, the chosen side at the declared flip (20 points, on time) -- its win share, its net outcome per attempt in units of the risk (+1 at the target, -1 at the stop, the scratch's P&L over the width, less the flip's measured cost per attempt read from results/flip_map_nq_seconds_micros.csv, 08:30, 20 points, on time, pooled) and that outcome's one-sided 95 % Newey-West lower bound; TRADABLE when the bound is above zero"
+  coverage: "the share of CHECK days with a signal, reported beside every measure"
+  beside: "every measure's CHOICE and CHECK effect and win shares, per year; the 0.03 and 0.08 widths and the 60-second-late entry as sensitivities -- descriptions, not tests"
+counting: "ten tests, family flip_direction (k = 10), recorded in results/variants.jsonl; nothing here touches NQ's held-back data (2025-07-01 on)"

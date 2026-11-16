@@ -1,0 +1,141 @@
+{
+  "columns": [
+    "section",
+    "base",
+    "phase",
+    "state",
+    "measure",
+    "value",
+    "n",
+    "unit",
+    "note"
+  ],
+  "description": "EXPLORATORY (D-668, program U's U5): the contract's value map -- P-14's and P-16's state tables re-solved at $50K at the bound edge (D-667's solves), every held state's value, leaf, the value of a win over a loss and the edge a dollar is worth; where accounts spend their days (the solver's forward; beside, the registered campaigns' records); the campaign value of +1 point of win probability by place of an account's life; the bar a signal of a given frequency must clear. The identities first (section identity). No seed of its own (an exact chain; the records at the registered seeds).",
+  "exploratory": true,
+  "git_commit": "485996fd465e0e5d0c2f02880b48d67742a447ce",
+  "git_dirty": false,
+  "notes": {
+    "status": "EXPLORATORY (D-668): a reading of the solved tables; no campaign run for it, no variant counted, selects nothing",
+    "value_model": "every value is the table's model's -- a state's continuation under the solver, not a campaign's cash path (D-668 (5))"
+  },
+  "parameters": {
+    "bases": {
+      "p14": "P-14 (A3-BRK30-CB20, its 12.5- and 25-point rungs)",
+      "p16": "P-16 (rc_s150_all, its 37.5-point stop)"
+    },
+    "config": "config/state_policy_v12.yaml with funded_rules.abandon false (a3_compliance.noclose_config)",
+    "cost": {
+      "d667_identity_solves_seconds": 217.6,
+      "p14": {
+        "map_seconds": 56.3,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb_after_map": 1683.1,
+        "rent_rounds": 3,
+        "rungs": 2,
+        "solve_peak_mb": 1024.2,
+        "solve_seconds": 95.3
+      },
+      "p14_records": {
+        "paths": 100,
+        "peak_mb": 1683.1,
+        "policy_id": "state_dp_e-0.050_lamstar_noclose",
+        "seconds": 48.2
+      },
+      "p16": {
+        "map_seconds": 41.7,
+        "nA_combine": 66,
+        "nA_funded": 31,
+        "nS_combine": 4141,
+        "nS_funded": 253452,
+        "peak_mb_after_map": 1683.1,
+        "rent_rounds": 4,
+        "rungs": 1,
+        "solve_peak_mb": 1683.1,
+        "solve_seconds": 105.9
+      },
+      "p16_records": {
+        "paths": 100,
+        "peak_mb": 1683.1,
+        "policy_id": "state_dp_e-0.050_lamstar_noclose",
+        "seconds": 106.0
+      }
+    },
+    "d650_commit": "8d8e73b",
+    "d667_commit": "99c1c7d",
+    "decision": "D-668",
+    "dp": 0.01,
+    "edge_set": "bound",
+    "exported_tables_sha256": {
+      "p14": "ad6e0260bf5fe633cb2f0af5c6e419cf2e48c0e8170616a8191be87d4beebbf0",
+      "p16": "468cc7897ba8acad573cc59914d34023c1c41a673ce518e82223d61c8bd06a97"
+    },
+    "frequencies": [
+      12,
+      36,
+      52,
+      104,
+      250
+    ],
+    "horizon_days": 504,
+    "interpretations": [
+      "The re-solve is D-667's own solve (scripts/u_size_fit.solve) at $50K and the bound edge set; D-667 wrote no table for its bound solves, so 'equals D-667's solve' is checked on its rent and every reading it wrote for that solve (to 1e-9), with the solver's code unchanged since D-667's commit; the exported table's sha256 is recorded.",
+      "The solver's outcome is binary per rung: a win (its target at the action's R on the $50 grid, or in the evaluation the need-aware or consistency exit the solver applies) or a loss of the realised stake (cut to the room; at the floor the account ends, worth 0); the race against the floor lowers p and adds no outcome. The gate's shifted outcome distribution enters only as each R's lower win probability (its lb_by_rr); the solver has no intraday partial outcomes (no scratch, time exit or partial fill). dv is the value after the win outcome less after the stop outcome.",
+      "dv is read at the next session's value: for a funded or paid account the value at the close after the trade, the table's payout choice there included; for the evaluation the next session's value, a pass worth the funded account's value over the days left less the activation fee (the solver's pass value).",
+      "dv per state and day is averaged over the rungs by the rung's share times the share of its trades offering the action's R (conditional on a trade being taken); p_trade is that weight's sum. Per state, value and p_trade are occupancy-weighted over the days the state is held and dv is trade-weighted (occupancy x p_trade); the leaf shown is the action holding most of the state's occupancy.",
+      "Values are the solver's objective: expected cash within the 504-session horizon less lambda* a live account-day (the evaluation's subscription accrued per day as well).",
+      "The occupancy is the solver's forward: a fresh evaluation run to its pass, failure or abandonment; a fresh funded account run over the whole horizon from session 0 (the table's cycle accounting, as D-667's readings and state_policy_dp.cycle_rate read it), its unpaid states up to its first payout and its paid states after. A session on which the table abandons holds no account-day.",
+      "The place values are first-order: with the table held fixed, +dp on every trade of a place changes an attempt's value by dp x sum(occupancy x p_trade x dv) over the place (exact at a fixed table, tested against a perturbed table; a re-solved table gains the same to first order). Per trade affected: dp x the trade-weighted mean dv.",
+      "Place (c), the funded opening, is each funded account's first trade: the forward's mass at the fresh state that has never traded (every trade leaves the fresh state, so this is a layer of its own); (d) is the rest of the unpaid states' trades; (e) the paid states'; (b) the evaluation's; (a) all of them, a funded place per attempt counted at P(pass) times its funded figure.",
+      "Per year of a five-seat campaign, forward basis: trades of the place an attempt x attempts a seat-year (252 sessions over the slot-days an attempt holds: the evaluation's days plus P(pass) times the funded account's, as cycle_rate counts them) x 5 seats -- the table's model, every seat an independent account trading whenever its leaf trades. Records basis, beside: the place's trades a year in U2's re-run of the registered campaign (its first 100 paths at the bound arm, 504 sessions = 2 years), whose router, budget and strict one-at-a-time rule limit the trades -- and which trades the table on file (solved at FV3-C's single edge), not this re-solve.",
+      "The bar: extra win probability = target / (uses x the place's mean dv), uses = the frequency N or, where the place offers fewer trades a year on that basis, that supply (flagged 'capped'); the best place is the single place (b to e) with the highest mean dv; 'every trade' uses place (a).",
+      "The records' state at a session's start is the account's previous recorded close (the fresh start on its first session); it is banded by the exported table's bands, because the engine's balances leave the $50 grid (costs) and its records carry no winning-day count; a funded session is 'paid' after the session of the first payout request (the engine's first_payout_day).",
+      "The state section lists the states holding at least 0.0001 of their phase's account-days; the phase rows give how many states are held and the share listed. Every phase total and place value uses every state."
+    ],
+    "places": {
+      "a_every_trade": "(a) every trade",
+      "b_evaluation": "(b) the evaluation's trades only",
+      "c_funded_opening": "(c) the funded account's opening trade only",
+      "d_funded_later": "(d) the funded account's later trades before its first payout",
+      "e_paid": "(e) the paid account's trades"
+    },
+    "read_files_sha256": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "a3_brk30_cb20_gate_paths.csv": "a4d06e79055ecce1feeb04a717323065dce021f1f014c345235b645625fe14f7",
+      "rc150_table_screen.csv": "e67b517167a766ba19f00415f11799587512ec8cf016e437c8d8dd11c242e735",
+      "rc150_table_screen_policies.json": "e3dd3c7893d518b28f6924b96c5de01876398f58d6dfe2ed6b7d202010d41eef",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "rc_s150_all_gate_paths.csv": "97f7e9c587da3541d6c543f6cb6666c44b0d4e1dee403a6ac9387654a70268fc",
+      "rc_width_screen.csv": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+      "state_policy_v12_noclose.csv": "1eba6230d2d133115f3ad847707088f40e73e40a3de850881b4831d811e905de",
+      "state_policy_v12_noclose_policies.json": "9bd9c1c3c21c6e4fec7f4302de1da947af82397bd7128e326c07394c7588bdec",
+      "u_size_fit.csv": "603a7182d07bd5d315c204e3f71d786f679ca3a48f518484ca1ea8a7dd4de4c6"
+    },
+    "records": {
+      "arm": "verdict",
+      "denial": 0.0,
+      "paths": 100,
+      "script": "scripts/u_xfa_day_budget.py (U2)"
+    },
+    "seats": 5,
+    "seconds": 762.3,
+    "sessions_per_year": 252.0,
+    "size": "50k",
+    "state_keep_share": 0.0001,
+    "targets": [
+      500.0,
+      1000.0
+    ]
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_value_map.csv",
+  "rows": 27216,
+  "script": "scripts/u_value_map.py",
+  "seed": null,
+  "sha256": "9a1ae69fb88adaf7dfd89f11b24edd42764127705a3aedf717bfa52d0641d5b5",
+  "timestamp": "2026-11-16T05:51:10+00:00",
+  "variant_count": null
+}

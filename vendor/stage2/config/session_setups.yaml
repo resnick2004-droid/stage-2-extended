@@ -1,0 +1,62 @@
+# config/session_setups.yaml -- the session-setup screen SS1 (T15 item 8; D-244, D-245), fixed before any of its data
+# is read.
+#
+# The question (the operator, 2026-10-02/03): which entry setups, at which times of Topstep's trading day, have a net
+# edge per trade on NQ and ES -- "Look for models not just for the AM session. I am assuming AM session will work better
+# due to the volume". A search, so every variant is declared here and counted (D-189): the families come from known
+# intraday ideas (opening-range breakout and fade, prior-range tests, early momentum), applied alike in six windows, so
+# the AM hypothesis is read against the rest of the day rather than assumed. Development data only, selected on
+# 2009-2019 and validated on 2020-2025 (D-237); counts only leave QuantConnect (D-120); EXPLORATORY until a survivor
+# becomes a model card and passes one registered confirmation on the held-back year.
+
+# every signal is judged on completed one-minute bars and enters at the open of the next bar, one micro tick adverse
+# (the `assumed` profile, D-95); the bracket then walks as the regime map's (D-238): the stop wins ties and bars opening
+# through it (overshoot measured), a target needs a trade-through, a bracket open at the last bar at or before 15:10 CT
+# is flattened. One trade per rule, window and day: the window's first signal.
+windows:                      # start (CT) and the minutes after it in which a signal may come
+  - {name: globex_open,  start_ct: "17:00", span_min: 90}
+  - {name: london_open,  start_ct: "02:00", span_min: 90}
+  - {name: us_data,      start_ct: "07:30", span_min: 90}
+  - {name: cash_open,    start_ct: "08:30", span_min: 90}
+  - {name: late_morning, start_ct: "11:00", span_min: 90}
+  - {name: afternoon,    start_ct: "13:00", span_min: 90}
+
+# the rules, each from a known idea; N is the opening range's (or the first move's) minutes after the window's start.
+#   orb_N:     the window's first N minutes set a range; the first bar closing above it goes long, below it short
+#   fade_N:    the same range; after a bar closes outside it, the first bar closing back inside trades back toward it
+#   prior_break:  the prior range -- the trading day's bars from 17:00 to the window's start (the previous trading
+#              day's full session for the 17:00 window) -- the first bar closing beyond it trades the break
+#   prior_reject: the first bar that trades beyond the prior range and closes back inside it trades back in
+#   momo_N:    at N minutes after the start, the direction of the move from the window's first open goes on
+rules: [orb_5, orb_15, orb_30, fade_5, fade_15, fade_30, prior_break, prior_reject, momo_5, momo_15, momo_30]
+
+# stops as multiples of the trailing range (the mean of the previous 20 full sessions' ranges, as D-238), rounded to the
+# micro's tick, at least one tick -- scale-free, so 2009 and 2024 compare; each trade is sized to a constant dollar risk
+# in whole micros later (D-212). A day without the trailing range counts nothing (`noatr`).
+stops_range: {days: 20, multiples: [0.05, 0.10, 0.15]}
+rr: [1.0, 1.5, 2.0, 3.0]
+spread: {wide_ticks: 4, cap_ticks: 50}
+
+markets:
+  NQ: {micro: MNQ, tick: 0.25, micro_tick: 0.25, micro_point_value: 2.0}
+  ES: {micro: MES, tick: 0.25, micro_tick: 0.25, micro_point_value: 5.0}
+
+# one run per market over the development period; the warm-up fills the trailing range
+dates: {warm: "2009-04-20", start: "2009-06-01", end: "2025-06-30"}
+
+# the screen's reading, applied by scripts/score_session_setups.py, fixed here before any count is read
+screen:
+  selection_years: [2009, 2019]     # choose here
+  validation_years: [2020, 2025]    # check here, never chosen on
+  resolved_share_min: 0.98          # D-212, overall and in every year of the period
+  min_trades: 200                   # a variant with fewer trades in the selection period is not ranked
+  shortlist: 10                     # the best distinct setups by the selection lower bound, if above zero, go on
+  # a variant survives validation if its net edge and its lower bound (yearly blocks) are both above zero there
+  # The variant count k (markets x windows x rules x stops x R) is reported with every reading (D-189).
+  # D-246, before any count was read (an external review of D-245): the validation bound is one-sided at
+  # 0.05 / shortlist -- ten setups tested at 5 % each would pass a null about four times in ten -- and a variant must
+  # beat the no-skill baseline in both periods: the regime map's random-direction entries (R090, R091; D-238) at the
+  # same window (decision slots from its start to the end of its span), trailing-range stop and R, net of the same
+  # cost. Both eras are required (the operator, 2026-10-03): an edge only after 2020 is listed, never carried forward.
+  validation_alpha: 0.005
+  baseline_runs: {NQ: R090-regime-NQ, ES: R091-regime-ES}

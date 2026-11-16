@@ -1,0 +1,295 @@
+# config/effect_atlas.yaml -- a declared, knob-free screen of the development data (PROPOSED).
+#
+# STATUS: fixed 2026-09-25 (D-126), approved by the operator before any bar is read. Purpose:
+# RESEARCH, not candidacy. It maps which simple, settings-free effects show up in six markets' 2009-2014
+# development data, so candidates come from evidence rather than one idea at a time. Nothing here is
+# eligible for the confirmation window; a survivor becomes a hypothesis for 2B (its T13), and only a
+# designed candidate with a prior ever reaches a pre-registration.
+#
+# Every statistic below is fixed before any bar is read. The multiple-testing plan is fixed too.
+# Written after ES and NQ mornings were looked at for related questions (D-112, D-121, D-125); the
+# statistics that overlap those looks are marked `seen: true` and reported apart from the clean ones.
+
+status: fixed           # D-126, approved by the operator 2026-09-25, before any bar is read
+purpose: research screen (2B T13 input); never a candidate, never the confirmation window
+
+markets:                  # regular-hours anchors per market, CT; settlement minute is the day's close
+  # tick = the standard contract's tick (the bars are standard contracts); floor = the micro's pinned
+  # cost-floor stop in ITS ticks, used only to express effect sizes against a trade's cost (reporting)
+  ES: {open: "08:30", settle: "15:00", tick: 0.25,     vehicle: MES, floor_ticks: 20, vehicle_tick: 0.25,     filter_days: 120, settle_status: verified D-50}
+  NQ: {open: "08:30", settle: "15:00", tick: 0.25,     vehicle: MNQ, floor_ticks: 40, vehicle_tick: 0.25,     filter_days: 120, settle_status: "to verify (CME equity-index procedure)"}
+  CL: {open: "08:00", settle: "13:30", tick: 0.01,     vehicle: MCL, floor_ticks: 26, vehicle_tick: 0.01,     filter_days: 120, settle_status: verified D-50}
+  GC: {open: "07:20", settle: "12:30", tick: 0.10,     vehicle: MGC, floor_ticks: 30, vehicle_tick: 0.10,     filter_days: 200, settle_status: verified D-50}
+  6E: {open: "07:20", settle: "14:00", tick: 0.00005,  vehicle: M6E, floor_ticks: 18, vehicle_tick: 0.0001,   filter_days: 120, settle_status: verified D-50}
+  ZN: {open: "07:20", settle: "14:00", tick: 0.015625, vehicle: ZN,  floor_ticks: 12, vehicle_tick: 0.015625, filter_days: 120, settle_status: "to verify (CBOT Treasury procedure)"}
+screened_markets: [ES, NQ, CL, 6E, ZN]
+gc_amendment: >
+  D-126, before any bar is read: QuantConnect's GC minute data starts 2012-11-01 (D-90), so GC has no
+  2009-2011 screen half. GC is run and its tests are reported over its own span as a short-span
+  DESCRIPTION, outside the corrected family and never a survivor. The family is 5 markets x 20 tests +
+  3 cross-market = 103 tests.
+markets_note: >
+  the regular-hours opens are the pit-era conventions; the in-cloud clock check (the open bar wider
+  than the pre-open bars) verifies each market empirically before any statistic is read
+
+development: {start: 2009-06-01, end: 2014-05-27, screen_half_end: 2011-12-31, check_half_start: 2012-01-01}
+
+# ---------------------------------------------------------------- per-day measurements (computed in the cloud)
+# All returns are 100 x ln(price ratio), in percent. S0 = previous settlement; O = the open bar's open;
+# P(t) = the close of the bar ending at t; S = today's settlement-minute close. Only these numbers leave
+# QuantConnect (D-120): about 20 per market per day.
+measures:
+  r_on:        "overnight: ln(O / S0)"
+  r_30:        "first 30 minutes: ln(P(open+30) / O)"
+  r_60:        "first 60 minutes: ln(P(open+60) / O)"
+  r_rest30:    "open+30 to settlement: ln(S / P(open+30))"
+  r_mid:       "open+30 to settlement-30: ln(P(settle-30) / P(open+30))"
+  r_last30:    "the settlement window: ln(S / P(settle-30))"
+  r_day:       "open to settlement: ln(S / O)"
+  rv_30:       "realised variance, first 30 one-minute returns"
+  rv_day:      "realised variance, open to settlement"
+  range_30:    "first-30-minute range: (high - low) / O"
+  gap_filled:  "1 if price traded back to S0 between the open and settlement, else 0"
+  brk_dir:     "direction of the first break of the first-30-minute range after open+30 (+1 up, -1 down, 0 none)"
+  brk_ret:     "from the break bar's close to settlement, in the break direction: brk_dir x ln(S / P(break))"
+  integrity:   [bad-bar count, open-bar range, mean pre-open range, bars recorded]
+calendar_flags:            # computed in the repository from dates, not in the cloud
+  - weekday
+  - last trading day of the month
+  - first trading day of the month
+  - monthly options expiration (third Friday) and the day after
+  - roll window (the five sessions before the contract switch)
+
+# ---------------------------------------------------------------- the screen: statistics, fixed now
+# Each is one number per market with a declared sign; the test is two-sided unless noted. `seen` marks
+# overlap with earlier looks at ES/NQ mornings.
+statistics:
+  H01_overnight_reversal:    {form: "slope of r_day on r_on",               expect: "negative = reversal", seen: [ES, NQ]}
+  H02_first30_to_rest:       {form: "slope of r_rest30 on r_30",            expect: "sign = continuation(+) / reversal(-)", seen: [ES, NQ]}
+  H03_first30_to_last30:     {form: "slope of r_last30 on r_30",            expect: "positive = intraday momentum (S-001)"}
+  H04_overnight_to_last30:   {form: "slope of r_last30 on r_on",            expect: "either"}
+  H05_gap_toward_S0:         {form: "slope of r_60 on r_on",                expect: "negative = gap fills early", seen: [ES]}
+  H06_gap_fill_rate:         {form: "mean of (gap_filled - p_bm) on days with |r_on| above its screen-half median, where p_bm = 2 x (1 - Phi(|r_on| / sqrt(rv_day))) is a driftless random walk's chance of touching the previous settlement that day", expect: "positive = gaps fill more than chance"}
+  H07_range_break_follow:    {form: "mean of brk_ret on break days",        expect: "positive = breakouts continue (ORB)"}
+  H08_settlement_drift:      {form: "mean of r_last30",                     expect: "either"}
+  H09_settlement_momentum:   {form: "slope of r_last30 on r_mid",           expect: "either"}
+  H10_weekday:               {form: "mean r_day by weekday (5 tests)",      expect: "either"}
+  H11_month_end:             {form: "mean r_day, last and first trading day of the month (2 tests)", expect: "either"}
+  H12_expiry:                {form: "mean r_day on the third Friday and the day after (2 tests)", expect: "either"}
+  H13_roll_window:           {form: "mean r_day in the roll window",        expect: "either"}
+  H14_vol_state:             {form: "H02's slope, high minus low tercile of the previous day's rv_day", expect: "either"}
+cross_market:              # ES leads the others (same calendar day); 3 tests in the family (GC descriptive)
+  H15_es_leads:              {form: "slope of market X's r_rest30 on ES's r_30, X in NQ, CL, ZN", expect: "either"}
+
+count: >
+  20 tests per screened market x 5 markets + 3 cross-market = 103 tests in the corrected family, plus GC's
+  20 descriptive tests. The count is recorded with every result, and every test is reported whatever its
+  outcome.
+
+# ---------------------------------------------------------------- the multiple-testing plan, fixed now
+screen:
+  data: screen half (2009-06-01 to 2011-12-31)
+  inference: slope and mean tests with Newey-West standard errors (5 lags) and a 20-day block bootstrap check
+  correction: Benjamini-Hochberg false discovery rate at q = 0.10 across ALL tests at once
+  seen_tests: screened with the others but listed separately, labelled as looked-at before
+check:
+  data: check half (2012-01-01 to 2014-05-27), looked at ONCE, only for the screen's survivors
+  pass: same sign, one-sided p < 0.05, effect at least half its screen-half size
+output:
+  survivors: sent to 2B (T13) with sign, size in percent, and the size against the market's cost floor in
+    percent; a survivor is a pattern in development data, NOT a strategy
+  everything: all ~130 tests, both halves where computed, in one result file with a manifest
+never:
+  - no statistic added, removed or redefined after the run; a change is a new, counted screen
+  - no parameter tuned; no strategy built from a survivor without a declared design
+  - no data on or after 2014-05-28
+
+# ---------------------------------------------------------------- which days count (fixed now)
+scoreable_day: >
+  no kit skip; the day's settlement bar recorded (not a holiday or early-close session); the open bar
+  recorded; at least 90 % of the open-to-settlement minutes recorded; and the previous recorded day
+  settled and is the day the reference settlement comes from. Days after a holiday or early close are
+  therefore excluded (conservative; decided before data).
+inference_detail:
+  slopes: OLS with Newey-West (Bartlett, 5 lags) standard errors; H14 as the interaction coefficient in
+    y = a + b x + c hi + d (x * hi), high versus low tercile of the previous day's rv_day (middle tercile
+    dropped; tercile cuts from the screen half)
+  means: Newey-West (5 lags) standard error of the mean
+  p_values: two-sided normal on the Newey-West t; the 20-day block bootstrap p is reported beside it
+  calendar: last and first trading day of the month, third Fridays and the next session, and the roll
+    window (five recorded sessions before a change of contract) come from the recorded dates
+runs: {ES: R030-atlas-ES, NQ: R031-atlas-NQ, CL: R032-atlas-CL, GC: R042-atlas-GC3, 6E: R034-atlas-6E, ZN: R043-atlas-ZN3}
+# D-132: version 2 contract bookkeeping (roll at the first bar at or after the settlement minute; only contracts
+# still in the universe; a vanished contract dropped); measurements identical to version 1. R030-R032 ran on
+# version 1 with every day recorded; R033 (GC, version 1) stopped after 18 days and stays on record as retired.
+kit_v2: [R035-atlas-ZN, R041-atlas-GC2]    # D-133: R034 (6E) ran on version 1, copied before D-132; it stays version 1
+# D-134: version 3 -- the roll only on a bar from the settlement minute to CME's 16:00 CT break, and a missed roll
+# caught up only for a recorded session; version 2 wiped Friday's reference on every Sunday evening (R035).
+kit_v3: [R042-atlas-GC3, R043-atlas-ZN3]
+retired_runs: {R033-atlas-GC: GC, R035-atlas-ZN: ZN, R041-atlas-GC2: GC}   # R033, R035 ran and are on record; R041 never ran
+# D-135: the integrity step's bad-bar share joins inconsistent bars with off-grid prices. A market whose share fails
+# may pass only on a grid-check run that shows NO inconsistent bar and NO offset beyond the vendor's price rounding
+# in any year; the screen reads that run's result and refuses otherwise. ZN's 2009-2011 prices are rounded to five
+# decimals (R044); returns are unaffected, but its spw (share of minutes wider than a tick) for those years is
+# inflated by the rounding and is reported with that caveat.
+integrity_grid_checks: {ZN: R044-zn-grid-check}
+
+# ================================================================ amendment D-128 (before any atlas bar is read)
+# D-127 asked which extra free datasets arrive (R036, R037: every answer read, config/data_sources.yaml).
+# This amendment adds what did arrive. Everything above is UNCHANGED: the 103-test family, its measures, its
+# statistics, its screen and its check. The new tests form their own declared families, each corrected on
+# its own, each with the same check rule. No atlas bar has been read (R030-R035 never ran; they are
+# regenerated to record the extra measures).
+amendment_d128:
+  why: >
+    Operator, 2026-09-25: "are we limiting ourselves when we don't have to"; research is for deriving
+    structural features (like the strong-closure definition) that can predict under the prop-firm conditions.
+    Quote bars, volume, the VIX index and index options all arrive in every development year they exist in.
+  extra_measures:          # computed in the cloud by the same atlas kits, per day, per market (D-120)
+    hi:      "session high above the open: ln(H / O), H = highest high from the open bar to settlement"
+    lo:      "session low below the open: ln(L / O)"
+    cl30:    "opening-range close location: (P(open+30) - L30) / (H30 - L30), in [0, 1]; missing if H30 = L30"
+    v30:     "contracts traded in the first 30 minutes (the active contract's minute volume)"
+    vd:      "contracts traded from the open to settlement"
+    sp:      "median quoted spread in ticks over the open-to-settlement minutes with a valid quote"
+    sp30:    "mean quoted spread in ticks over the first 30 minutes"
+    spw:     "share of quoted open-to-settlement minutes with a spread above one tick"
+    qcov:    "share of open-to-settlement minutes with a valid quote (bid > 0, ask >= bid)"
+    imb30:   "mean top-of-book size imbalance over the first 30 minutes: (bid size - ask size) / (bid size + ask size), each minute's last quote"
+    quote_rule: "quotes are the active contract's RAW minute quote bars, closing values; ratio-adjusted prices are never used (R036's note)"
+  context_run:             # one daily kit, per session date, joined to every market by date (D-120: numbers only)
+    run: R040-atlas-context2   # D-129; R038-atlas-context (D-128's version) is on record and unusable for gamma
+    span: [2009-06-01, 2014-05-27]
+    vix_close: "the VIX index daily close, per session"
+    nge: >
+      net gamma exposure of option market makers, Baltussen, Da, Lammers and Martens (2021, JFE 142, eq. 13-15),
+      per session from January 2012: sum over contracts of gamma x open interest x 100 x the index level,
+      calls counted +, puts counted - (their assumption: market makers long calls, short puts). SPX options for
+      ES, NDX options for NQ. D-129: read in the option filter from the platform's end-of-day universe, which
+      holds every strike and expiry, so the sum is over the whole chain as in the paper (D-128's truncation to
+      40 strikes and 90 days is withdrawn), with that universe's open interest, implied volatility and index
+      level from the session's close. Gamma is computed in the kit from each contract's implied volatility with
+      Black-Scholes, r = q = 0 (nge_b, the one tested); the platform's own gamma gives nge_l beside it.
+      Integrity: the two agree in sign on at least 95 % of sessions, and the universe's index level equals the
+      session's index close on at least 95 % of sessions; otherwise the options family is not run.
+    timing: "a feature for day t uses the context of the last session strictly before t; nothing from day t"
+  repository_features:     # computed in the repository from the per-day rows; each defined only when the
+                           # previous recorded day is scoreable and on the same contract (lagged prices)
+    clv_prev:   "previous day's close location (S - L) / (H - L), minus 0.5"
+    outside:    "+1 if today's open is above the previous day's session high, -1 if below its low, else 0"
+    comp:       "range compression: ln(range of day t-1) - ln(median range of days t-21..t-2); range = hi - lo"
+    vsurge:     "opening volume surge: ln(v30_t) - ln(median v30 of days t-20..t-1)"
+    rev5:       "sum of (r_on + r_day) over the five previous recorded days"
+    dvix:       "VIX change the session before: ln(VIX_{t-1} / VIX_{t-2})"
+    vix_hi:     "D-129: 1 if vix_rel_{t-1} is in the screen half's top tercile, 0 if in its bottom tercile, else excluded; vix_rel = ln(VIX / its median over the trailing 120 sessions, at least 60), so the state is elevated-versus-recent, not an absolute level that shifted between the halves"
+    vol_hi:     "1 if vsurge is in the screen half's top tercile, 0 if in its bottom tercile, else excluded"
+    r_rod:      "Baltussen et al.'s rest-of-day return: r_on + r_30 + r_mid (previous settlement to settlement - 30)"
+    nge_neg:    "1 if NGE of the last session before t is negative, 0 if positive"
+    rv_rest:    "rv_day - rv_30"
+  families:
+    F:                     # directional features; 10 per screened market x 5 = 50 tests
+      F01_prev_close_location_day:  {form: "slope of r_day on clv_prev",                   expect: "+ = strong closes continue"}
+      F02_prev_close_location_on:   {form: "slope of r_on on clv_prev",                    expect: "+ = strong closes continue overnight"}
+      F03_open_outside_range:       {form: "mean of outside x r_rest30 on days with outside != 0", expect: "+ = continuation, - = back into the range"}
+      F04_compression_breakout:     {form: "slope of brk_ret on comp, break days only",    expect: "- = breakouts after compressed days follow through more"}
+      F05_volume_surge_continuation: {form: "H02's slope, top minus bottom vsurge tercile (interaction)", expect: "+ = volume confirms the opening move"}
+      F06_opening_close_location:   {form: "slope of r_rest30 on (cl30 - 0.5)",            expect: "+ = a strong opening-range close continues"}
+      F07_short_term_reversal:      {form: "slope of r_day on rev5",                       expect: "- = reversal", seen_in_literature: true}
+      F08_vix_change:               {form: "slope of r_day on dvix",                       expect: "either (equities: - after VIX spikes means bounce)"}
+      F09_vix_state_continuation:   {form: "H02's slope, top minus bottom VIX tercile (interaction)", expect: "either"}
+      F10_opening_imbalance:        {form: "slope of r_rest30 on imb30",                   expect: "+ = book pressure continues (expected weak at this horizon)"}
+    R:                     # size (risk) features, for sizing and survival only, never a source of edge; 3 x 5 = 15
+      R01_vix_level_vol:            {form: "partial slope of ln rv_day on ln VIX_{t-1}, controlling for ln rv_day_{t-1}", expect: "+"}
+      R02_compression_vol:          {form: "partial slope of ln rv_day on comp, controlling for ln rv_day_{t-1}",         expect: "either"}
+      R03_volume_surge_vol:         {form: "partial slope of ln rv_rest on vsurge, controlling for ln rv_30",             expect: "+"}
+    O:                     # options positioning, ES (SPX) and NQ (NDX), 2012-01-01 to 2014-05-27 only; 3 x 2 = 6
+      O01_gamma_intraday_momentum:  {form: "slope of r_last30 on r_rod, negative minus positive NGE (interaction)", expect: "+ (Baltussen et al. 2021, Table 7)", seen_in_literature: true}
+      O02_gamma_opening_continuation: {form: "H02's slope, negative minus positive NGE (interaction)",           expect: "+"}
+      O03_gamma_vol:                {form: "partial slope of ln rv_rest on nge_neg, controlling for ln rv_day_{t-1}", expect: "+ (short gamma amplifies moves)"}
+  # the values the screen code reads (propedge/research/atlas_amendment.py)
+  fdr_q: 0.10
+  options_markets: {ES: gs, NQ: gn}          # market: its context column (SPX, NDX net gamma exposure)
+  o_halves: {start: 2012-01-01, screen_end: 2013-02-28, check_start: 2013-03-01}
+  gamma_sign_agreement_min: 0.95
+  underlying_match_min: 0.95                 # D-129: share of sessions whose universe index level is that close
+  context_max_age_days: 5                    # a context older than this before day t is treated as missing
+  lookback: {range_days: 20, volume_days: 20, min_periods: 15, reversal_days: 5, vix_rel_days: 120, vix_rel_min: 60}
+  multiple_testing:
+    F: "Benjamini-Hochberg q = 0.10 across the 50 F tests on the screen half (2009-06-01 to 2011-12-31); check as above"
+    R: "Benjamini-Hochberg q = 0.10 across the 15 R tests, same halves; reported as sizing inputs, never as edge"
+    O: "Benjamini-Hochberg q = 0.10 across the 6 O tests; own halves: screen 2012-01-01 to 2013-02-28, check 2013-03-01 to 2014-05-27; short span, stated with every result"
+    GC: "GC's F and R tests are reported over its own span as description, outside every family (as D-126)"
+    inference: "as D-126: Newey-West (5 lags); interactions as in H14; partial slopes are the coefficient in OLS with the control; D-129: a regime test (interaction, or a partial slope on a 0/1 flag) with fewer than 10 days in either regime, or a singular design, is reported as not computable (NaN), never forced"
+  descriptive:
+    spreads: >
+      per market and year: median of the daily sp, mean sp30, mean spw, mean qcov -- a cost measurement for T2
+      (config/fills.yaml), not a test
+  count: "103 (D-126, unchanged) + F 50 + R 15 + O 6 = 174 tests, each family corrected on its own; GC descriptive"
+
+
+# ================================================================ amendment D-164 (2026-09-27; before any release bar is read)
+# 2B's F-032: Kurov, Sancetta, Strasser and Wolfe (2018, JFQA, doi 10.1017/s0022109018000625). Prices start moving
+# in the direction of the coming surprise about 30 minutes before nine market-moving US releases, and the drift is
+# about 40 % of the total adjustment (ES and ZN, second-by-second CME data, 2008-2014). Family K tests whether that
+# holds on this repository's own development data. Everything above is UNCHANGED. Research screen only: a survivor
+# is a pattern (a conditioning feature for a release trade, 2B's use (b)), never a candidate.
+amendment_d164:
+  why: >
+    Operator, 2026-09-27: run 2B's first recommended feature test. 2B (D-63, F-032): the pre-release drift
+    is the only shortlisted feature with direct evidence on ES and ZN, sampled inside the development window,
+    computable from minute closes with no proxy loss, not in the atlas, and powered on ZN.
+  calendar:
+    file: config/release_calendar.csv
+    built_by: 2B session script (build_calendar.py, 2026-09-27); columns date, time_et, time_ct, code, release, markets, source, method
+    sources:
+      alfred_vintage: >
+        release dates = ALFRED vintage dates (alfred.stlouisfed.org/series/downloaddata?seid=<series>, read
+        2026-09-27, no key): ICSA (initial claims, weekly, 260 dates, Wednesdays in holiday weeks), GDPC1 (GDP:
+        the 59 vintages cycle third, advance, second, anchored at the 2009-06-25 third estimate; advance = GDPA,
+        second = GDPP; the 2013 shutdown-delayed releases fall in place), RSAFS (advance retail sales: the first
+        vintage of each month; the four later April/May vintages are annual revisions, excluded)
+      rule: >
+        ISM Manufacturing on the first and ISM Non-Manufacturing on the third business day of the month (weekdays
+        that are not federal holidays), 10:00 ET; Conference Board Consumer Confidence on the last Tuesday of the
+        month, 10:00 ET (conference-board.org/topics/consumer-confidence, read 2026-09-27). A rule date that falls
+        on a federal holiday is dropped (the 2012-12-25 Conference Board date).
+    dropped: >
+      Existing home sales and pending home sales (both in the paper's nine): the National Association of Realtors
+      publishes no historical release schedule reachable here and ALFRED carries no vintages for them; so ES keeps
+      two of the paper's four drifting releases (ISM manufacturing and non-manufacturing) and ZN seven of nine.
+    time_zone: times are ET as published; CT = ET - 1 hour (both observe daylight saving together); the kits run on Chicago time
+    joint: two releases at the same minute of the same day are one event whose code joins theirs with '+'
+  events: {ES: [ISMM, ISMN], ZN: [ISMM, ISMN, CBCC, GDPA, GDPP, RSAL, ICSA]}
+  windows: {pre_start_min: 30, pre_end_min: 1, post_min: 5, grace_min: 3}
+  measures:                 # computed in the cloud per event by propedge/research/release_core.py (embedded); D-120
+    prd:  "pre-release return: 100 x ln(P(t-1 min) / P(t-30 min)), closes of the bars ENDING at those minutes"
+    post: "release return: 100 x ln(P(t+5 min) / P(t-1 min))"
+    nb:   "bars present with END minute in [t-30, t+5] (36 when complete)"
+    a_b_e: "minutes early of the three closes actually used when the exact bar was missing (grace 3 minutes)"
+    p:    "the pre-end close, the one price per event that leaves (tick conversion), as the atlas exports S"
+    roll: "1 if the mapped contract changed inside the window"
+  exclusions: {roll: "excluded when 1", min_bars: 33, max_offset_min: 2, joint_events: "merged (above)"}
+  tests:
+    - {id: K01_es_pre_release_drift, market: ES, form: "slope of post on prd, all usable ES events", expect: "+ (one-sided)"}
+    - {id: K02_zn_pre_release_drift, market: ZN, form: "slope of post on prd, all usable ZN events", expect: "+ (one-sided)"}
+    - {id: K03_zn_ex_claims,         market: ZN, form: "as K02 without events containing initial claims", expect: "+ (one-sided)", exclude_code: ICSA}
+  reported_beside: [sign-agreement rate of prd and post with its binomial p, mean |prd| and |post| in percent and in ticks, Newey-West slope SE (5 lags), 20-event block bootstrap p]
+  screen: {data: "screen half (2009-06-01 to 2011-12-31)", inference: "one-sided p of the Newey-West t", correction: "Benjamini-Hochberg q = 0.10 across the 3 K tests"}
+  check: {data: "check half (2012-01-01 to 2014-05-27), once, survivors only", pass: "same sign, one-sided p < 0.05, effect at least half its screen-half size"}
+  fdr_q: 0.10
+  min_screen_events: 40
+  power_note: >
+    ES has about 118 events over the five years (2 monthly releases): marginal power, t about 2.5-3 if the
+    paper's magnitudes hold. ZN has about 510 event windows. Declared in advance.
+  prior: >
+    F-032: drift = 40 % of the total adjustment; the total adjustment to a one-sd surprise is about 0.12 % on ES
+    and 0.04 % on ZN, so the expected post-release share is 5-9 ES ticks and 2-3 ZN ticks per one-sd surprise;
+    a pass makes the feature a conditioning input for a release trade, never a trade by itself.
+  runs: {ES: R061-release-ES, ZN: R062-release-ZN}
+  count: 3 tests, counted with every result
+  never:
+    - no test added, removed or redefined after the run; a change is a new, counted family
+    - no data on or after 2014-05-28 (the kits end 2014-05-27; the repository's confirmation boundary is later)
+    - no strategy built from a survivor without a declared design and a 2B prior
+  falsified_if: "the slope is not positive in either market on the screen half, or a survivor fails its check"
+

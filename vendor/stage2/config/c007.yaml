@@ -1,0 +1,43 @@
+# config/c007.yaml -- Stage 2B's C-007 as this repository measures it (D-97, D-100).
+# C-007 WITHDRAWN 2026-09-24 (D-103): kept for the record of the D-100 measurement; never registered.
+#
+# Source: Stage 2B - Hypothesis Research, records/combinations/C-007.json, read 2026-09-24
+# (2B commit 579e2a5). C-007 has NOT been handed off yet; these are 2B's current values. If 2B
+# changes them, update this file with the new source and recompute -- never choose values by
+# comparing results (D-100).
+
+source: "Stage 2B records/combinations/C-007.json @ 579e2a5, read 2026-09-24 (not yet handed off)"
+stop_multiplier: 2.0            # stop = max(2.0 x 30-min vol forecast, floor), in vehicle ticks
+leg_risk_budget_usd: 62.5       # contracts = floor(budget / (stop ticks x vehicle tick value))
+
+legs:
+  GC: {vehicle: MGC, floor_ticks: 30, evidence: results/manual_R017_leg_GC3.csv}
+  CL: {vehicle: MCL, floor_ticks: 26, evidence: results/manual_R014_leg_CL2.csv}
+  6E: {vehicle: M6E, floor_ticks: 18, evidence: results/manual_R015_leg_6E2.csv}
+  ES: {vehicle: MES, floor_ticks: 20, evidence: results/manual_R016_leg_ES2.csv}
+
+# D-100 estimator settings, fixed before any computation.
+har:
+  lags: [1, 5, 22]
+  min_fit_days_per_market: 60
+bootstrap:
+  block_days: 20
+  replicates: 10000
+  seed: 20260924
+  planning_quantile: 0.95
+
+# The confirmation test (T5). Fixed in the draft pre-registration prereg/DRAFT_C007_confirmation.md;
+# `prereg_id` stays null until the gatekeeper registers it, and until then the confirmation kits
+# cannot be generated (the template refuses a confirmation-window span without a runnable id).
+confirmation:
+  prereg_id: null
+  k: null                       # C-007's variant count from 2B's ledger, fixed at registration
+  # Two cloud parts per leg. `run` spans a few warm-up days before `own`, so the first owned day
+  # has a previous settlement; only `own` days are used, the overlap is compared and reported.
+  parts:
+    - {part: 1, run: ["2014-05-19", "2020-06-30"], own: ["2014-05-28", "2020-06-30"]}
+    - {part: 2, run: ["2020-06-22", "2026-08-31"], own: ["2020-07-01", "2026-08-31"]}
+  # Evidence is found by run id (propedge/data/run_kit.py CONF_RUNS -> results/manual_R0xx_*.csv),
+  # so nothing here changes after registration and this whole file can be pinned.
+  seed: 20261001
+  bootstrap_replicates: 10000

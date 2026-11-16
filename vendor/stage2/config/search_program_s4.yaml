@@ -1,0 +1,47 @@
+# Batch S4 of the rolling model search (D-578), declared under D-610 before its code is built or any outcome is read.
+# A separate file because config/search_program.yaml is pinned by sha256 (D-579); S4's build pins this one the same way.
+# Its source is the operator's Point & Figure catapult spec (2026-11-11) and D-607's contract-fit count (read in D-609:
+# descriptive only, no outcome). The rules use D-607's engine (propedge/research/pnf.py) exactly.
+batch:
+  id: S4
+  decision: D-610
+  program: D-578                   # the program's rules, guards, data window and reference (P-16) apply unchanged
+  name: sided coin, Point & Figure direction
+  source: the operator's P&F catapult spec (2026-11-11); D-607, D-608, D-609
+  alpha: 0.0025                    # 0.05 / (4 * 5), batch 4's share of the program-wide 5 %
+  idea: >-
+    S3's design exactly (D-579's and D-587's readings): P-16's schedule, stop (150 ticks), windows, news-safe cut, table
+    and engine; only each offer's side changes -- it comes from a declared rule, not a coin. Follow and fade are one
+    two-sided test (fade = minus follow). A tie (no qualifying setup yet today) is excluded from the lift and takes P-16's
+    own coin side in the campaign (G1) and that sequence's coin in G2; the tie share is reported. This is the handoff's
+    arm B (the catapult as side and timing under P-16's bracket) and, at box 6.25, its arm C (the box sized from the
+    contract, D-114: the box at which the fixed catapult's median natural stop, six boxes in pf_fit.csv's
+    D_over_b_median, is 37.5 points; fixed by D-609, never searched).
+  latency: >-
+    D-589 / D-266: a rule at mark t reads only setups whose trigger bar ENDED at or before t - 5 minutes, on the same
+    trading day (the trading-day clock); the order then works at the first bar after t exactly as P-16's.
+  stop_ticks: 150
+  chart: >-
+    D-607's engine (pnf.scan) on the development bars, continuous across sessions, restarting at every roll, reversal 3,
+    one fixed box per rule; setups in Topstep's hours or not (a trigger after 15:10 CT never precedes a mark).
+  rules:                           # 10 rules; side = the setup's side (bull / buy +1, bear / sell -1); none yet today -> tie
+    pfc2_5:  side of the most recent catapult (D-607's fixed reading r7_low, bull or bear), box 2.5 points
+    pfc5:    the same, box 5 points
+    pfc6_25: the same, box 6.25 points (arm C)
+    pfc7_5:  the same, box 7.5 points
+    pfc10:   the same, box 10 points
+    pft2_5:  side of the most recent plain triple top buy / triple bottom sell (the PDF's benchmark), box 2.5 points
+    pft5:    the same, box 5 points
+    pft6_25: the same, box 6.25 points
+    pft7_5:  the same, box 7.5 points
+    pft10:   the same, box 10 points
+  stage_1:                         # cheap, exact: per-offer lift over the coin twin, every offered mark
+    lift: (rule side's net R - other side's net R) / 2 at every offered R (0.25, 1, 1.5, 2, 2.5, 3), P-16's walk and costs
+    hypotheses: 60                 # 10 rules x 6 R
+    test: studentised max-statistic, stationary block bootstrap by session (block 21, 2,000 reps, seed 20261712), family-wise at alpha; Benjamini-Hochberg at 10 % beside, never selecting
+  stage_2:                         # survivors only (rule, sign): the campaign, every survivor through all four guards
+    engine: rc150_routing's paired run -- the cell's coins replaced by the rule's sides; campaign seed 20261131, 500 paths
+    guards: D-578's four (paired +0.05 at the bound; every offered R resolves; at least 40 of 50 coin sequences, seeds 20261600 + i, 200 paths; not below P-16 on either span alone)
+  with_no_survivor: stage 1 and the reference's paired row only
+  variants: 10
+  writes: results/s4_pf_side.csv (EXPLORATORY, variants under D-578:S4)

@@ -1,0 +1,75 @@
+# The account-state risk policy exported with the funded leg's payout conditions (D-321; the operator, 2026-10-08: "we
+# need to fix all the errors and issues before considering running the OOS tests"), on D-318's table
+# (config/state_policy_v6.yaml) -- fixed before scripts/state_policy_dp.py --declaration D-321 runs. EXPLORATORY and
+# engine-only. The table is v6's to the bit (the same menu, rules, rungs and availability); what changes is the export
+# (version 7): a funded decision is keyed by its Standard-path winning days and, once paid, by its payout-line band
+# (profit since the last payout: below -$1,000, -$1,000 to -$500, -$500 to -$250, -$250 to the line, over it), which the
+# (balance, cushion) export marginalised away -- so an account below its payout line with its winning days in hand sizes
+# up as the table decides instead of trading the band's most-visited $250. The result: results/state_policy_v7.csv and
+# its policies file.
+decision: D-321
+script: scripts/state_policy_dp.py
+module: propedge/campaign/state_policy.py
+
+outcomes:
+  model: "stage one's binary process: p = (1 + e) / (1 + R), the same e at every R (propsim D-06); a trade risking more than the room above the floor is raced against the floor by the engine's p_race / theta_from_edge (floor_mode truncate, edge_mode drift) -- under the room cap a Combine trade never does; a realised win is rounded to the $50 grid and its probability read at the R the grid makes of it, so every action is exactly fair at zero edge; D-318: an action's R offered at each rung on its availability share of days, no trade otherwise (fair: no trade moves nothing)"
+  edges: [-0.05, -0.025, 0.0, 0.025, 0.05, 0.10]     # D-290's grid, unchanged
+
+rules: "rules_for_method('aeropay') from config/rules.yaml -- the verified ledger; D-289: the Standard path, no placement"
+horizon_days: 504
+slot_rent_per_day: [25.0]                            # the rent config/fv3_portfolio.yaml declares
+
+menu:                                                # the funded leg's menu (v5's, unchanged)
+  step: 50.0
+  risks: [250, 500, 750, 1000, 1500, 2000]
+  rrs: [1.0, 1.5, 2.0, 2.5, 3.0]
+  skip: true
+
+combine_menu:                                        # D-316's, unchanged
+  risks: [250, 500, 750, 1000, 1500, 2000, 2500, 3000]
+  rrs: [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0]
+  min_rr: 0.25
+
+rungs:                                               # D-306's, with D-318's availability
+  file: results/fv3_rung_shares_2020.csv
+  availability_file: results/fv3_rung_availability_2021.csv   # D-318: from results/fv3_studio_portfolio_v3_point_trades.csv (D-310's declared cell under the fidelity protocol's fixed stops, every quarter R carried), 2021 on
+  phase: all
+  stops_ticks: {half: 50, full: 100, double: 200}
+  tick_value: 0.5
+  combine_cap_micros: 50
+  funded_caps: {0: 20, 1500: 30, 2000: 50}
+  exit_grid: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+
+combine_rules:                                       # D-313's two rules, unchanged
+  room_cap: true
+  consistency_cap: true
+
+funded:
+  balance_cap: 6000.0
+  payout_grid_step: 50.0
+
+objective: "expected cash from one attempt within the horizon: the Combine's subscription accrued per trading day (subscription / billing_days), the activation at a pass, net payouts (profit split, the method's fee), less the slot rent per account-day; no credit for survival"
+
+baselines:                                           # the fixed legs under the same allowance, the Combine's two rules and the availability
+  - {name: s1_1to1_1500, combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  - {name: s1_1p5to1_1000, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}
+  - {name: fv3_fresh, combine_rr: 0.75, combine_risk: 2000, funded_rr: 3.0, funded_risk: 2000}   # D-317's v5 fresh geometry
+
+oracles:                                             # CLAUDE.md: a value outside a ceiling is an engine error
+  zero_edge_no_fees_max_p_pass: 0.327131
+  zero_edge_no_fees_p_pass_1to1_1500: 0.32653061224   # 16/49 (the fixed geometry without rungs or rules: the contract's own oracle)
+  zero_edge_no_fees_max_gross_payouts: 2000.0
+
+export:
+  balance_band: 250.0
+  cushion_band: 250.0
+
+campaign_check:                                      # D-290 (8): the engine's own binary campaign (its draw takes no need, so neither exit, the room cap nor the availability applies there -- D-317: not a test of this table)
+  accounts: 5
+  combines: 5
+  bankroll: 5000
+  horizon_days: 504
+  n_paths: 500
+  payout_method: aeropay
+  seed: 20261016
+  fixed_legs: {combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}

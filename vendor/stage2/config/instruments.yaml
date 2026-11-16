@@ -1,0 +1,410 @@
+# config/instruments.yaml — instrument definitions
+#
+# Loaded by propedge/execution/instruments.py.
+#
+# EVERY value marked `source: HUMAN INPUT REQUIRED - verify` must be confirmed against the
+# exchange contract specification (CME) and the broker's platform before any result computed
+# with it is reported. The numbers below are the widely published values; they are written
+# here so the code runs, and they are NOT verified by this repository. Getting tick_value
+# wrong scales every dollar figure in the stage by a constant factor without changing any
+# test outcome, which is exactly the kind of error that survives to a final report.
+#
+# Session times are US/Central (CT) because the firm's day boundary is 16:00 CT and the
+# flatten is 15:10 CT. Keep every time in CT here; convert at the data boundary, not here.
+
+meta:
+  timezone: America/Chicago
+  # The firm's day lock. Stage one's engine applies pass/payout/ratchet checks after this.
+  day_lock_ct: "16:00"
+  # The flatten: positions not resolved by this time are closed at market and their ACTUAL
+  # P&L recorded. vendor/propsim/HANDOFF.md: "do not assume binary".
+  flatten_ct: "15:10"
+  generated: 2026-09-21
+
+instruments:
+
+  ES:
+    name: E-mini S&P 500
+    exchange: CME
+    tick_size: 0.25                # index points
+    tick_value: 12.50              # USD per tick per contract
+    point_value: 50.00             # USD per index point per contract
+    currency: USD
+    session_open_ct: "17:00"       # previous day (Globex open)
+    session_close_ct: "16:00"
+    flatten_ct: "15:10"
+    source: cmegroup.com contract specs, read 2026-09-24 by Claude (page text via search summaries); earlier user confirmation 2026-09-22
+    note: >
+      Verify tick_size, tick_value and point_value against the CME contract spec. Also confirm
+      the firm's own session and holiday calendar - the data-integrity agent checks session
+      boundaries against this block.
+
+  MES:
+    name: Micro E-mini S&P 500
+    exchange: CME
+    tick_size: 0.25
+    tick_value: 1.25
+    point_value: 5.00
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    first_listed: 2019-05-06       # CME Clearing advisory 19-118, "Effective Date 06 May 2019";
+                                   # cmegroup.com/notices/clearing/2019/04/Chadv19-118.html, read by the
+                                   # operator 2026-09-25 (D-115). Before this date the vehicle did not exist.
+    flatten_ct: "15:10"
+    source: cmegroup.com contract specs, read 2026-09-24 by Claude (page text via search summaries); earlier user confirmation 2026-09-22
+    note: >
+      One tenth of ES. Micros are what a $50K account with a small dollar risk will actually
+      trade, so the integer-rounding penalty (propedge/execution/instruments.py) and the
+      cost drag (propedge/execution/costs.py) are both computed on this contract, not on ES.
+
+  NQ:
+    name: E-mini Nasdaq-100
+    exchange: CME
+    tick_size: 0.25                # index points
+    tick_value: 5.00
+    point_value: 20.00
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    flatten_ct: "15:10"
+    source: cmegroup.com contract specs, read 2026-09-24 by Claude (page text via search summaries); earlier user confirmation 2026-09-22
+
+  MNQ:
+    name: Micro E-mini Nasdaq-100
+    exchange: CME
+    tick_size: 0.25
+    tick_value: 0.50
+    point_value: 2.00
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    first_listed: 2019-05-06       # CME Clearing advisory 19-118, same listing as MES (D-115)
+    flatten_ct: "15:10"
+    source: cmegroup.com contract specs, read 2026-09-24 by Claude (page text via search summaries); earlier user confirmation 2026-09-22
+
+  # IM2's other micros (P-04, 2026-09-27; the fill audit's finding 4: MNG's specification was not loadable). The
+  # values are the ones already verified below under candidate_instruments (MCL, M6E) and
+  # additional_candidate_groups.natural_gas (MNG), from cmegroup.com product pages read 2026-09-23; the fill audit
+  # re-checked the tick values against CME on 2026-09-27 (MCL 1.00, M6E 1.25, MNG 1.00 USD). MCL and MNG listed in
+  # 2021: before that IM2 trades their price paths on the standard contracts (D-106), as MES before 2019 (D-115).
+
+  MCL:
+    name: Micro WTI Crude Oil
+    exchange: NYMEX (CME Group)
+    tick_size: 0.01                # USD per barrel
+    tick_value: 1.00               # 100 barrels
+    point_value: 100.00
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    flatten_ct: "15:10"
+    source: cmegroup.com Micro WTI contract specs, read 2026-09-23 by Claude (candidate_instruments.MCL); tick value re-checked 2026-09-27 (docs/audits/fill_cost_fidelity_2026-09-27.md)
+
+  M6E:
+    name: Micro EUR/USD
+    exchange: CME
+    tick_size: 0.0001              # NOT 6E's 0.00005: the micro's tick is coarser
+    tick_value: 1.25               # EUR 12,500
+    point_value: 12500.00
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    flatten_ct: "15:10"
+    source: cmegroup.com Euro FX / Micro EUR/USD contract specs, read 2026-09-23 by Claude (candidate_instruments.M6E); tick value re-checked 2026-09-27 (docs/audits/fill_cost_fidelity_2026-09-27.md)
+
+  MNG:
+    name: Micro Henry Hub Natural Gas
+    exchange: NYMEX (CME Group)
+    tick_size: 0.001               # USD per MMBtu
+    tick_value: 1.00               # "1/10 of one cent per mmBTU, making a one-tick move equivalent to one dollar"
+    point_value: 1000.00           # 1,000 MMBtu
+    currency: USD
+    session_open_ct: "17:00"
+    session_close_ct: "16:00"
+    flatten_ct: "15:10"
+    source: cmegroup.com Micro Henry Hub Natural Gas contract specs, read 2026-09-23 by Claude (additional_candidate_groups.natural_gas); tick value re-checked 2026-09-27 (docs/audits/fill_cost_fidelity_2026-09-27.md)
+
+# ---------------------------------------------------------------------------------------------
+# candidate_instruments — the multi-market pool (DECISIONS.md D-37)
+#
+# NOT loaded by propedge/execution/instruments.py: these are candidates for a pooled test, not
+# instruments this repo can yet size or cost. They are here, outside `instruments:`, precisely so
+# that nothing can trade them by accident before their contract specs are verified.
+#
+# `electronic_start` is what the pooled-window calculation needs. Where it could not be
+# established from CME the value is null, and results/multimarket_frontier.csv falls back to the
+# latest date that IS established across the pool (2007).
+# ---------------------------------------------------------------------------------------------
+candidate_instruments:
+
+  # Contract specifications verified 2026-09-23 by Claude from cmegroup.com product pages
+  # (read as page text via search result summaries of the CME contract-spec pages named in
+  # each `spec_source`). Topstep round-turn costs verified the same day from help.topstep.com
+  # article 8284213, the same published schedule as the index products (D-33): a broker
+  # schedule, not measured fills.
+
+  ZN:
+    name: 10-Year U.S. Treasury Note futures
+    exchange: CBOT (CME Group)
+    permitted: true
+    permitted_source: help.topstep.com/en/articles/8284206, read 2026-09-22 by Claude (page text)
+    contract_launch: 1982-05-03
+    contract_launch_source: CME Group product history page, read 2026-09-22 by Claude (page text)
+    electronic_start: null
+    contract_size: 100000            # USD face value
+    tick_size: 0.015625              # one half of 1/32 of a point
+    tick_value: 15.625
+    tick_convention: half of 1/32 of one point
+    round_turn_cost: 2.62
+    spec_status: verified
+    spec_source: >
+      cmegroup.com 10-Year T-Note contract specs, read 2026-09-23 by Claude: $100,000 face
+      value; minimum tick one half of 1/32 of one point = $15.625.
+    micro_contract: null
+    micro_note: >
+      THERE IS NO MICRO CONTRACT TRACKING ZN. Two CME products look like one and neither is:
+      (1) Micro Treasury YIELD futures (e.g. 10Y) are quoted in YIELD, $10 per basis point,
+      cash settled to BrokerTec's 3pm ET yield fixing - a different quantity that moves
+      INVERSELY to price; (2) Micro Ultra 10-Year futures cash settle to the ULTRA 10-Year
+      note futures (TN), a different contract from ZN with a different deliverable basket and
+      DV01. Neither is a 1/10 ZN. ZN can therefore only be traded at full size, which at the
+      entry tier costs a whole mini-equivalent - see DECISIONS.md D-47.
+
+  CL:
+    name: Light Sweet Crude Oil (WTI) futures
+    exchange: NYMEX (CME Group)
+    permitted: true
+    permitted_source: help.topstep.com/en/articles/8284206, read 2026-09-22 by Claude (page text)
+    contract_launch: 1983-03-30
+    contract_launch_source: CME Group product history page, read 2026-09-22 by Claude (page text)
+    electronic_start: 2006-06-12
+    electronic_start_source: >
+      CME Group: NYMEX products began trading on CME Globex 2006-06-12 (financially settled);
+      the physically-settled contract followed 2006-09-05. Read 2026-09-22 by Claude (page text).
+    contract_size: 1000              # barrels
+    tick_size: 0.01                  # USD per barrel
+    tick_value: 10.00
+    round_turn_cost: 4.02
+    spec_status: verified
+    spec_source: >
+      cmegroup.com WTI Crude Oil contract specs, read 2026-09-23 by Claude: 1,000 barrels;
+      minimum tick $0.01 per barrel = $10.00 per contract. Physically settled.
+    micro_contract: MCL
+
+  GC:
+    name: Gold futures
+    exchange: COMEX (CME Group)
+    permitted: true
+    permitted_source: help.topstep.com/en/articles/8284206, read 2026-09-22 by Claude (page text)
+    contract_launch: 1974-12-31
+    contract_launch_source: CME Group product history page, read 2026-09-22 by Claude (page text)
+    electronic_start: 2006-12-04
+    electronic_start_source: >
+      CME Group: COMEX metals began side-by-side trading on CME Globex 2006-12-04.
+      Read 2026-09-22 by Claude (page text).
+    contract_size: 100               # troy ounces
+    tick_size: 0.10                  # USD per troy ounce
+    tick_value: 10.00
+    round_turn_cost: 4.32
+    spec_status: verified
+    spec_source: >
+      cmegroup.com Gold contract specs, read 2026-09-23 by Claude: 100 troy ounces; quoted in
+      10-cent increments; minimum tick $10.00 per contract.
+    micro_contract: MGC
+
+  6E:
+    name: Euro FX futures
+    exchange: CME
+    permitted: true
+    permitted_source: help.topstep.com/en/articles/8284206, read 2026-09-22 by Claude (page text)
+    contract_launch: 1972-05-16
+    contract_launch_source: >
+      CME Group: the IMM launched the first financial futures, including FX, 1972-05-16. The euro
+      contract itself dates from the euro's introduction in 1999. Read 2026-09-22 by Claude.
+    electronic_start: null
+    contract_size: 125000            # euro
+    tick_size: 0.00005               # USD per euro (half-tick)
+    tick_value: 6.25
+    round_turn_cost: 4.22
+    spec_status: verified
+    spec_source: >
+      cmegroup.com Euro FX contract specs, read 2026-09-23 by Claude: EUR 125,000; minimum
+      fluctuation 0.00005 = $6.25 (0.0001 = $12.50 per point).
+    micro_contract: M6E
+    note: >
+      "No Forex" on help.topstep.com 8284206 excludes SPOT FX, not this futures contract, which
+      is a CME Group product. Easy to get backwards; recorded deliberately.
+
+  # --- micro counterparts, where one exists on the SAME underlying -----------------------
+
+  MGC:
+    name: Micro Gold futures
+    exchange: COMEX (CME Group)
+    tracks: GC
+    same_underlying: true
+    size_ratio_to_standard: 0.1
+    contract_size: 10                # troy ounces
+    tick_size: 0.10
+    tick_value: 1.00
+    tick_value_ratio_to_standard: 0.1
+    round_turn_cost: 1.92
+    spec_status: verified
+    spec_source: >
+      cmegroup.com Micro Gold contract specs, read 2026-09-23 by Claude: 10 troy ounces;
+      quoted in 10-cent increments like GC, so one tick = $1.00. Clean 1/10 of GC.
+
+  MCL:
+    name: Micro WTI Crude Oil futures
+    exchange: NYMEX (CME Group)
+    tracks: CL
+    same_underlying: true
+    size_ratio_to_standard: 0.1
+    contract_size: 100               # barrels
+    tick_size: 0.01
+    tick_value: 1.00
+    tick_value_ratio_to_standard: 0.1
+    round_turn_cost: 1.52
+    # Re-read 2026-09-26 (D-158): 8284213 still shows $1.52, but announces a CME exchange-fee rise on
+    # MCL "starting the October 1, 2026 trading day" ($0.50 -> $0.60 per side). From that date this
+    # figure is stale; see config/fills.yaml round_turn_by_instrument.scheduled_changes.
+    spec_status: verified
+    spec_source: >
+      cmegroup.com Micro WTI contract specs, read 2026-09-23 by Claude: 100 barrels; tick
+      $0.01/barrel = $1.00. Clean 1/10 of CL.
+    note: >
+      MCL is FINANCIALLY settled where CL is PHYSICALLY settled. Same underlying price, different
+      settlement - irrelevant to an intraday strategy that never holds to expiry, but it is a
+      real difference and is recorded rather than glossed.
+
+  M6E:
+    name: Micro EUR/USD futures
+    exchange: CME
+    tracks: 6E
+    same_underlying: true
+    size_ratio_to_standard: 0.1
+    contract_size: 12500             # euro
+    tick_size: 0.0001                # NOT 0.00005 - the micro's tick is COARSER
+    tick_value: 1.25
+    tick_value_ratio_to_standard: 0.2
+    round_turn_cost: 1.00
+    spec_status: verified
+    spec_source: >
+      cmegroup.com Euro FX / Micro EUR/USD contract specs, read 2026-09-23 by Claude: minimum
+      tick value $6.25 for standard and E-mini, $1.25 for the E-micro.
+    note: >
+      THE ONE THAT IS NOT A CLEAN TENTH. M6E is 1/10 the notional of 6E but its tick is 0.0001
+      against 6E's 0.00005, so its tick VALUE is 1/5, not 1/10. A stop of N ticks on M6E is
+      therefore twice the price move of a stop of N ticks on 6E. Never convert stops between
+      them by the size ratio.
+
+# ---------------------------------------------------------------------------------------------
+# additional_candidate_groups — markets that could widen the partition (D-62)
+#
+# Permitted list read 2026-09-23 by Claude from help.topstep.com/en/articles/8284206, which
+# names products individually rather than by exchange. Tick VALUES below are read from CME
+# product pages the same day; contract sizes are recorded only where read, and are null where
+# they were not.
+#
+# GROUPING follows D-58's conservative rule: merge unless clearly independent. Silver and
+# platinum join GOLD (precious metals); RBOB and heating oil join CRUDE (refined products);
+# Russell, Dow and Nikkei join EQUITY_INDEX; every G10 currency joins EURO_FX (shared dollar
+# factor). Only three genuinely new groups survive that test.
+#
+# Every correlation statement here is an ASSUMPTION until measured on development data.
+# ---------------------------------------------------------------------------------------------
+additional_candidate_groups:
+
+  base_metals:
+    standard: HG
+    micro: MHG
+    permitted: true
+    permitted_source: help.topstep.com 8284206 ("Copper", "Micro Copper"), read 2026-09-23
+    micro_tick_value: 1.25
+    standard_tick_value: 12.50
+    tick_ratio: 0.1
+    spec_source: >
+      cmegroup.com Micro Copper contract specs, read 2026-09-23 by Claude: tick $0.0005 per
+      pound, "every minimum move equating to just $1.25 per contract". Standard HG tick $12.50.
+    assumed_correlation_with_existing: >
+      MODERATE, not weak. Copper is a growth/industrial proxy, so it co-moves with equity index
+      and with crude. Assume rho 0.2-0.4 against those two, lower against rates and gold.
+      ASSUMPTION - not measured.
+
+  natural_gas:
+    standard: NG
+    micro: MNG
+    permitted: true
+    permitted_source: help.topstep.com 8284206 ("Natural Gas", "Micro Natural Gas"), read 2026-09-23
+    micro_tick_value: 1.00
+    standard_tick_value: 10.00
+    tick_ratio: 0.1
+    spec_source: >
+      cmegroup.com Micro Henry Hub Natural Gas: tick "1/10 of one cent per mmBTU, making a
+      one-tick move equivalent to one dollar", against $10 for the standard contract.
+      Read 2026-09-23 by Claude.
+    assumed_correlation_with_existing: >
+      THE BEST NEW CANDIDATE. Henry Hub is driven by weather, storage and US production, none of
+      which drive the other five groups. Assume rho 0.2-0.4 against crude (shared energy
+      complex) and near zero against equity index, gold, euro and rates. ASSUMPTION.
+
+  crypto:
+    standard: null
+    micro: MBT, MET
+    permitted: true
+    permitted_source: >
+      help.topstep.com 8284206 lists "Micro Bitcoin" and "Micro Ether" among CME Equity Futures,
+      read 2026-09-23 by Claude.
+    micro_tick_value: null
+    standard_tick_value: null
+    spec_source: NOT READ - tick sizes and values for MBT/MET are unverified
+    spec_status: UNVERIFIED - CME contract specs not read
+    assumed_correlation_with_existing: >
+      A distinct factor most of the time, but it converges with equity index in risk-off stress,
+      which is exactly when a correlated multi-account drawdown matters. Treat the assumed
+      correlation as REGIME-DEPENDENT and do not assume the calm-period value. ASSUMPTION.
+
+  # --- markets examined and NOT made into new groups, with the reason -------------------------
+  merged_or_rejected:
+    silver_and_platinum: >
+      Silver (SI/SIL) and Platinum are permitted and Micro Silver exists, but they belong in the
+      GOLD group: precious metals share a monetary/real-rates factor. Merging is the D-58
+      conservative call. NOTE Micro Silver is NOT a clean tenth - 1,000 oz against SI's 5,000
+      (1/5 the size) with a tick value of $1 against $25 (1/25), a different tick convention,
+      the same trap as M6E.
+    refined_products: >
+      RBOB and Heating Oil are permitted but no micro is listed, and they belong in the CRUDE
+      group in any case.
+    other_equity_index: >
+      Russell 2000, Mini-DOW and Nikkei are permitted with micros (Micro Russell, Micro
+      Mini-DOW), but under D-58 all equity index futures are ONE group. They add expressiveness
+      inside the group, not a new group.
+    other_g10_fx: >
+      Australian $, British Pound, Canadian $, Japanese Yen, Swiss Franc, New Zealand $ and
+      Mexican Peso are permitted, with micros for AUD and GBP. Under D-58's conservative rule
+      they share the dollar factor with 6E and join EURO_FX. JPY and CHF are arguably distinct
+      safe-haven exposures; splitting them out is a decision to take deliberately, with support
+      confirmation, not by default.
+    grains_and_livestock: >
+      Corn, Wheat, Soybeans, Soybean Meal, Soybean Oil, Lean Hogs and Live Cattle are permitted
+      and would be genuinely weakly correlated with the financial groups - BUT no micro contract
+      is listed for any of them. They are full-size only, the same problem as ZN, so one
+      contract costs a whole mini-equivalent and they are not expressible at the entry tier.
+      They become available at higher scaling tiers, not before.
+    rates_extensions: >
+      2-Year, 5-Year, 10-Year Ultra, 30-Year Bond and Ultra-Bond are permitted but all belong in
+      the RATES group, and none has a micro on the same underlying (see D-47 on the yield and
+      Ultra micros).
+
+  open_question_asterisk:
+    issue: >
+      Article 8284206 says "See Prohibited Conduct for restrictions on specific products marked
+      with an asterisk", and the asterisk is carried by the MICRO versions and the Mexican Peso.
+      Neither 10296582 (Prohibited Conduct) nor 10305426 (Prohibited Trading Strategies) states
+      any product-specific restriction when read on 2026-09-23. The pointer is dangling.
+    why_it_matters: >
+      The entire sizing plan is built on micros. A restriction on them would be material. The
+      verified position-limit rule (8284197) states micros count 10:1 and that the micro-to-mini
+      ratio functionality is available for the Combine and the XFA, so micros are clearly usable;
+      the asterisk most likely flags something minor. Recorded as an OPEN QUESTION rather than
+      assumed away - see docs/HUMAN_INPUTS.md.

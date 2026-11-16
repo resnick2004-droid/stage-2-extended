@@ -1,0 +1,48 @@
+# The P&F catapult's natural bracket (the handoff's arm A), declared under D-611 before its code is built or any outcome is
+# read. Not a program S batch: program S keeps P-16's bracket and only changes sides or gates (D-578), and this arm changes
+# the bracket -- so it is the cheap screen (research protocol step 3, D-155) of its own signal-atlas family, PFA. Its kill
+# lines are contract-fit lines; its P&L readings are reported beside and decide nothing. A box that survives every kill
+# line gets its campaign (P-16's engine with each trade's own stop) declared in its own row as a family pre-registration.
+screen:
+  id: PFA
+  decision: D-611
+  source: the operator's P&F catapult spec (2026-11-11); D-607 (the engine and the setups), D-609 (the fit)
+  data: NQ development only, 2020-01-01 .. 2026-07-16 (config/windows.yaml); nothing later is read
+  setups: >-
+    D-607's setups in Topstep's hours (trigger bar end slot below 1330), the fixed reading r7_low for catapults, bull and
+    bear; the plain triple top buy / bottom sell beside (the PDF's benchmark); boxes 2.5, 5, 6.25, 7.5, 10 points
+    (6.25: D-609's contract-sized box). P-16's news-safe cut applied to the fill time (a report day's fills before 07:35 CT
+    dropped, D-533).
+  bracket: >-
+    entry T = the setup's entry (H(k) + b; bear L(k) - b), stop = the setup's stop (L(k+1) - b; bear H(k+1) + b), target =
+    the horizontal count (D-607 (3)); P-16's entry slip on every fill; the stop and target never move; no trailing exit,
+    no time exit, held to stop or target; 15:10 CT reached first = unresolved (D-212).
+  walk: >-
+    P-16's walk convention (FV3-C's rung walk) bar by bar on 1-minute bars from the fill bar: a bar reaching both the stop
+    and the target counts as the stop; the fill bar itself is walked from the fill price only as that convention does.
+  latency_minutes: 5               # D-266: the order works only from the alert bar's end + 5 minutes
+  policies:
+    rest:                          # the card's policy (D-609: skip starves supply)
+      fill: >-
+        from alert + 5 minutes, on the first bar that opens beyond T's near side (below T for a buy, above for a sell) and
+        trades through T, at T plus the slip; a bar opening at or beyond T does not fill (a buy-stop cannot rest below the
+        market).
+      cancel: before the fill, price reaching the stop level or the target, or 15:10 CT
+    skip:                          # beside
+      fill: only if the trigger has not printed by alert + 5 (missed_L5 false in pf_fit_setups.csv); then at T, or at the bar's open if it opens beyond T, plus the slip
+    chase:                         # beside
+      fill: >-
+        if the trigger printed before alert + 5, at the open of the first bar starting at or after alert + 5 plus the slip
+        (no trade if that open is at or beyond the stop or the target); otherwise as skip. The stop and target are
+        unchanged, so the realised risk is the fill's distance to the stop.
+  kill_lines:                      # on the card's policy (rest), the fixed reading, each box; any one kills that box
+    K1_supply: filled catapult trades a session in Topstep's hours below 1.0 (D-154 for five seats -- results/setups_per_day.csv's 0.2 a day per account at 1:1, $1,500 -- times five)
+    K2_resolution: more than 5 % of filled trades unresolved at 15:10 CT overall or in any calendar year with at least 63 sessions (D-212, D-308, D-604's year rule)
+    K3_risk: D-212 (1)'s risk consistency (propedge.research.model_card.risk_consistency) failing at P-16's fresh Combine and fresh funded risk from its no-closure table, with Topstep's full micro allowance (D-289)
+  beside:                          # decide nothing
+    - gross and net R at the count target per trade (P-16's costs at each trade's stop in ticks), e and its one-sided 95 % bound (stationary session-block bootstrap, block 21, 2,000 reps, seed 20261811)
+    - the target-hit share, the realised R:R (realised risk over the setup's D), the minutes held, per year, per window
+    - the same readings under skip and chase, and for the plain triple tops
+    - the drift-matched baseline (D-271): the same fills with the side from a seeded fair coin (seed 20261811), same bracket distances
+  cells: 20                        # 5 boxes x 3 policies for catapults + 5 boxes at rest for the plain triple tops
+  writes: results/pfa_screen.csv and results/pfa_trades.csv (EXPLORATORY, variants under D-611:pfa_screen)

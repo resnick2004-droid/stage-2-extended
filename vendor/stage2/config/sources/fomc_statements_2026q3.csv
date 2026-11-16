@@ -1,0 +1,8 @@
+# FOMC policy statements dated 2026-09-01..2026-09-30, as linked from the Federal Reserve's calendar page
+# (federalreserve.gov/monetarypolicy/fomccalendars.htm), read 2026-10-13 for FV3-C's confirmation (D-355): the frozen
+# calendar the candidate's config reads (config/im2_release_calendar.csv, built from config/sources/fomc_statements.csv)
+# ends 2026-08-31, and the calendar page lists one 2026 statement after it, the September 15-16 meeting's. release_line:
+# the time line printed on the statement page itself; that page, as fetched 2026-10-13, was 82,636 bytes with sha256
+# e1d8bfe78e5961890928c25556bc4cc185143a02bca5443177bbcdf636596401.
+date,meeting,press_conference,statement_url,release_line
+2026-09-16,September 15-16 Meeting - 2026,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm,For release at 2:00 p.m. EDT

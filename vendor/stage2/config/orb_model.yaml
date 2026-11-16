@@ -1,0 +1,74 @@
+# config/orb_model.yaml -- ORB1, the 5-minute opening-range breakout on NQ and ES, with the paper's 15-, 30- and
+# 60-minute ranges and their combination (T15 item 9; D-248, D-249, D-250), fixed before any of its data is read.
+#
+# The hypothesis (grade B, D-191): the cash open's first five minutes reveal the day's institutional supply-demand
+# imbalance, and when the opening volume is abnormal the imbalance persists through the session (Zarattini, Barbon &
+# Aziz 2024, SSRN 4729284, read from the operator's download 2026-10-03; for index futures, Tsai et al. 2019, IEEE
+# Access, as that paper reports; for volatility states, Lundstrom 2013/2017, as it reports). Who pays: the traders on
+# the other side of the imbalance while it is still being worked.
+
+model: ORB1
+source: "Zarattini, Barbon & Aziz (2024), A Profitable Day Trading Strategy For The U.S. Equity Market, SSRN 4729284, sections 2.1 and 4"
+
+markets:
+  NQ: {micro: MNQ, tick: 0.25, micro_tick: 0.25, micro_point_value: 2.0}
+  ES: {micro: MES, tick: 0.25, micro_tick: 0.25, micro_point_value: 5.0}
+
+# FIXED by the paper -- changing any is a different hypothesis, never a tune
+fixed:
+  opening_range: {start_ct: "08:30", minutes: 5}     # 9:30-9:35 ET
+  direction: first candle                            # bullish -> long only; bearish -> short only; doji -> none
+  entry: stop order at the range's high (long) or low (short), filled at the level plus one micro tick, or at the bar's open plus the tick on a gap
+  stop_atr: 0.10                                     # the stop loss: 10 % of the 14-day ATR from the fill
+  atr_days: 14
+  relative_volume: {days: 14, min: 1.00}             # the range's volume over the previous 14 days' mean; trade at >= 100 %
+  last_entry_ct: "15:07"
+  flatten_ct: "15:08"                                # Topstep's Risk Managers begin flattening at 3:08 PM CT (8284206, D-247)
+  # Where it departs from the paper, stated: the exit is 15:08 CT, not the 16:00 ET (15:00 CT) cash close; the ATR is
+  # the simple mean of 14 true ranges of Topstep's 17:00-15:10 session (widened to the previous close on the same
+  # contract), not the regular session's, so the stop is wider; relative volume sums every contract's volume; there is
+  # no top-20 cross-section -- two index futures, every day they qualify.
+
+# the paper's other ranges and their combination (its section 5, Table 3; D-250, the operator 2026-10-03: "Yes, add
+# 15/30/60 now"), for more than one entry a morning: the same rules on the first 15, 30 and 60 minutes, each range's
+# relative volume over its own window's 14-day mean (the paper's). The COMBO takes every range's trade, with one rule
+# the paper does not need: NQ and ES are one correlated group (D-55), so an entry opposite a position still open in
+# either market (from its fill bar to its exit bar, both counted) is skipped -- never two accounts on opposite sides
+# (cross-account hedging, tier 1). Entries are taken in fill-bar order; on the same bar, the shorter range first, then
+# NQ before ES.
+ranges:
+  minutes: [5, 15, 30, 60]                           # 5 the primary: the ladder's fingerprints are read on it
+  combo: {lock: opposite_direction_across_the_group, order: [fill_slot, or_minutes, market]}
+
+# the two exits, both pre-registered (the operator, 2026-10-03: "Test both, decide by results")
+exits:
+  paper: {target: none, flat: "15:08"}               # the paper's; a one-off exception to D-212 for ORB1 (D-249)
+  bracket: {rr: [1.0, 1.5, 2.0, 3.0, 4.0, 5.0], finish_min: 0.98}   # D-212's; R the one searched parameter
+
+# the fingerprints, each with its sign, written before any count (D-249): checked on 2009-2019 before any P&L verdict
+predictions:
+  P1: "continuation: the signed move after the range, in the range's direction, is above zero at 30, 60 and 120 minutes and at 15:08 -- present if the lower bound is above zero at all four"
+  P2: "relative volume: the paper exit's edge and the continuation rise with the range's relative volume (at or above 100 % against below) -- present if both rise and the edge's rise has its lower bound above zero"
+  P3: "decay: the continuation per minute is largest in the first 30 minutes and falls interval by interval"
+  P4: "information arrival: continuation is larger after a larger overnight gap (as a share of the ATR)"
+  P5: "pre-open activity: continuation is larger when the 07:30-07:35 CT volume (the 08:30 ET releases) is high against its 14-day mean (the record's pre-open move is the 07:30-08:30 hour)"
+  P6: "volatility state: continuation is larger when the ATR is high against its own past year (Lundstrom)"
+  P7: "the shorter range is stronger (the paper's Table 3): the 5-minute range's paper-exit edge is above each of the 15-, 30- and 60-minute ranges' (descriptive, not a rung of the ladder; D-250)"
+excluded_days: "FOMC announcement days (config/im2_release_calendar.csv, code FOMC), where a different mechanism dominates"
+
+# development (2009-2019) is read first; the check years (2020 to June 2025) are a separate run per market, generated
+# only after the pre-registration is registered, so this model's records there are read once. Not untouched: the lead
+# itself was chosen after the session-setup screen read 2020-2025 (D-248), which the trial ledger counts. Before the
+# check run the FOMC calendar is completed for 2020-2023 (it holds no rows there).
+runs:
+  dev: {warm: "2009-04-20", start: "2009-06-01", end: "2019-12-31"}
+  check: {warm: "2019-11-18", start: "2020-01-01", end: "2025-06-30"}
+
+# the decision ladder (D-249, D-250): the 5-minute range's fingerprints P1-P2 absent or reversed -> the mechanism is
+# dead on our data, stop; present without a net edge -> alive, the problem is geometry (the drift profile and
+# results/geometry_region.csv); both -> pre-register the check. The net edge is judged on both markets together over
+# five entry sets (the four ranges and the COMBO) x seven exits.
+screen:
+  min_trades: 200                                    # an exit with fewer trades on both markets together is not judged
+  edge_alpha_over: 35                                # the ladder's bound is one-sided at 0.05 / 35 (5 entry sets x 7 exits; D-249's 7 before D-250)
+  ladder: [fingerprints, net_edge, preregister_check]

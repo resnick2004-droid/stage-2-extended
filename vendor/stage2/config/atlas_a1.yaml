@@ -1,0 +1,75 @@
+# Signal atlas family A1 (R5/R6, D-460): simple mechanical breakouts and candle patterns on NQ, fixed before the family
+# reads any bar. The patterns' job is supply, resolution and cost (D-452; the handoff's §4): many decisive trades a
+# session, each held to its stop or target. A signal's own edge is a bonus, read beside the verdict, never required.
+#
+# One declaration, two runners that share the code (`propedge/outcomes/atlas_core.py` with collect_core and t23_core):
+# the local walk on the operator's Databento bars (`propedge/research/atlas_local.py`, the primary runner, D-460) and a
+# QuantConnect kit as the cross-check. Every (pattern, side rule, delay, stop map) cell is one trial counted in N.
+status: fixed
+decision: D-460
+family: A1
+market: NQ
+bars: local                         # data/bars/NQ (D-458), read through config/windows.yaml (D-459)
+development:
+  start: "2020-01-01"
+  end: "2026-07-16"                 # NQ's spent held-back year folded into development (D-461); the reserve unread
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:
+  first_decision_ct: "17:00"        # events from the session's open (slot 0: T24's first slot) ...
+  last_decision_ct: "14:00"         # ... to 14:00 CT: a 40 to 60-point bracket needs the afternoon (D-212)
+  flatten_ct: "15:10"
+entry_delays_min: [0, 5]            # walked: on time (R149-R151's identity) and five bars late
+screen_delay_min: 5                 # screened: five bars late only -- the operator's manual entry (D-428 (1)); the
+                                    # automated track (D-399) is no faster than the modelled latency
+slip_ticks: 1                       # one tick adverse at entry and at an end (D-95); the screen costs the rest
+side_rules: [follow, fade]          # trade the event's direction, or against it -- both walked from one capture;
+                                    # the clock pattern takes T24's seeded coin instead (COIN_SEED 20261025), one cell
+brackets:                           # T24's twelve (config/t24_capture.yaml), so the clock pattern is R149-R151's identity
+  - [20, 20]
+  - [30, 20]
+  - [40, 20]
+  - [60, 20]
+  - [40, 40]
+  - [60, 40]
+  - [80, 40]
+  - [120, 40]
+  - [60, 60]
+  - [90, 60]
+  - [120, 60]
+  - [180, 60]
+stop_maps: [m40]                    # T24's m40 (D-432, D-433: it led): each event hour's stop the widest to 40 points
+                                    # at which 1:1 resolves (at most 5 % unresolved on normal days, overall and every
+                                    # year), every R offered there that resolves
+cells: "15 patterns x 2 side rules + the clock's coin = 31 cells, each one trial in N (D-189)"
+patterns:                           # ids are positions; definitions in atlas_core's docstring
+  - {name: clock_t24, kind: clock}  # T24's 23 decision slots, both sides -- the null family and R149-R151's identity
+  - {name: brk15, kind: brk, k: 15}
+  - {name: brk30, kind: brk, k: 30}
+  - {name: brk60, kind: brk, k: 60}
+  - {name: inside15, kind: inside, k: 15}
+  - {name: inside30, kind: inside, k: 30}
+  - {name: nbar15x4, kind: nbar, k: 15, n: 4}
+  - {name: nbar15x8, kind: nbar, k: 15, n: 8}
+  - {name: orb_rth5, kind: orb, open_ct: "08:30", m: 5}
+  - {name: orb_rth15, kind: orb, open_ct: "08:30", m: 15}
+  - {name: orb_rth30, kind: orb, open_ct: "08:30", m: 30}
+  - {name: orb_globex30, kind: orb, open_ct: "17:00", m: 30}
+  - {name: orb_london30, kind: orb, open_ct: "02:00", m: 30}
+  - {name: pdhl, kind: pdhl}        # the prior trading day's 08:30-15:10 CT high and low
+  - {name: engulf15, kind: engulf, k: 15}
+  - {name: engulf30, kind: engulf, k: 30}
+plan: gf15b                         # AMENDED by D-469 after the first screen (labelled): T24-GF15b's corrected plan (D-438,
+                                    # D-439: every state closes once its room cannot carry its trade). The first screen
+                                    # ran gf15 (results/atlas_screen_a1.csv), whose funded seats stuck after payouts.
+                                    # T24's growth then flip (D-432, D-433): Combine two-shot 1:1 $1,600, funded growth
+                                    # 1:1.5 $1,600 at or below the start, a $240 1:1 flip above it; one trade a session
+                                    # an account; strictly one position at a time (D-429)
+screen:
+  paths: 150                        # the Studio's convention for screens; the verdict runs 500
+  seed: 20261030
+  rank: "growth on the required bankroll at each R's one-sided 95 % bound (the gate row), highest first"
+  carry: "the top cell goes to the development verdict at 0.05/N; every cell is reported"
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv, config/sources/fomc_statements_2026q3.csv]
+  bls: [data/release_days_0830_2009_2025.csv, data/release_days_0830_2026.csv]
+  bls_cut_ct: "07:30"

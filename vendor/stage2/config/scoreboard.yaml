@@ -1,0 +1,231 @@
+# The scoreboard (R2; docs/HANDOFF_RESET_2026-10-29.md §7 item 6): every registered run's gate rows side by side, read
+# from the run's own result file by `propedge/reporting/scoreboard.py`; `scripts/scoreboard.py` writes
+# `results/scoreboard.csv` with its manifest. No number is typed here: a run names its file and how its rows are read.
+#
+# Adding a run: append an entry under `runs` with its result file and engine, rebuild (`python scripts/scoreboard.py`),
+# rebuild the report (`python scripts/build_report.py`), commit. `tests/test_scoreboard.py` refuses a scoreboard whose
+# sources changed since it was built.
+#
+# engine:
+#   coin_screen -- the resolved coin's screen (D-521, D-527): `cell` names the carried cell of its file's section
+#                 "cell"; its growth on the required bankroll is the portfolio engine's measure; a screen, never a verdict.
+#   portfolio  -- the D-312 portfolio engine: the gate row is section "gate" at the lower bound, 0 % denial, placement
+#                 off; its metric is `pf_growth_on_base_p50` on `pf_required_p90` (growth on the required bankroll).
+#   notional   -- the older engine (before D-312): only `median_log_growth` on a notional bankroll exists; it is reported
+#                 in its own columns and never compared with the portfolio engine's growth.
+#
+# kind: development | confirmation. "Beat FV3-C's row or stop" (D-365, D-382, D-452) compares a run with FV3-C's row of
+# the same kind -- a development run with FV3-C's development baseline, a confirmation with P-06 -- because a one-year
+# confirmation reads a wider bound than five development years (D-451); both comparisons are in the file.
+#
+# flags: FLAG columns (docs/SUCCESS_CRITERIA.md §5; D-457, D-475) read each portfolio run's gate row against
+#   results/success_thresholds.csv, levels from P-06's campaign (504 sessions, 500 paths, Topstep's seats). A run of
+#   another kind of campaign -- horizon, path count or firm -- declares `flags: false` and reads "not applicable".
+
+row_to_beat:
+  development: FV3-C-dev
+  confirmation: P-06
+
+# The coin baseline (D-521 (7), D-527): every growth row's lift over it (`growth_bound_minus_coin`), and beside it each
+# run's lift over its own zero-edge twin (`signal_lift_over_zero_edge_twin`).
+coin_baseline: RC-coin
+
+runs:
+  - id: FV3-C-dev
+    prereg: null
+    candidate: FV3-C
+    kind: development
+    role: baseline
+    market: NQ
+    window: 2020-01 to 2025-06
+    file: fv3_corrected_v1.csv
+    engine: portfolio
+    decision: D-354
+    verdict: CONTINUE
+    note: "FV3-C's development campaign, frozen c561ec9 (D-354); exploratory by its manifest"
+
+  - id: P-04
+    prereg: P-04
+    candidate: IM2
+    kind: development
+    role: registered
+    market: ES, CL, 6E, NG
+    window: development (P-04)
+    file: im2_development_gate.csv
+    engine: notional
+    notional_rows: {shift: lower_bound, enforcement_p: 0.0}
+    decision: D-210
+    verdict: FAIL
+    note: "older engine; the best lower-bound row at 0 % denial"
+
+  - id: P-05
+    prereg: P-05
+    candidate: NQB1
+    kind: confirmation
+    role: registered
+    market: NQ
+    window: NQ held-back window (P-05)
+    file: nqb1_confirmation.csv
+    engine: notional
+    notional_rows: {section: campaign, denial_p: 0.0}
+    decision: D-233
+    verdict: FAIL
+    note: "older engine; FAIL at the registered 25 % denial; later ruled cross-account hedging (D-243)"
+
+  - id: P-06
+    prereg: P-06
+    candidate: FV3-C
+    kind: confirmation
+    role: registered
+    market: NQ
+    window: 2025-07 to 2026-07-16
+    file: fv3_confirmation.csv
+    engine: portfolio
+    decision: D-361
+    verdict: PASS
+    note: "the only confirmed pass; its route is the paper shadow period (D-337)"
+
+  - id: P-07
+    prereg: P-07
+    candidate: T23-D20
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2025-06
+    file: t23_d20_gate.csv
+    engine: portfolio
+    decision: D-423
+    verdict: FAIL
+    note: "no entry information; 20-point costs"
+
+  - id: P-08
+    prereg: P-08
+    candidate: T24-GF15
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2025-06
+    file: t24_gf15_gate.csv
+    engine: portfolio
+    decision: D-437
+    verdict: PASS
+    note: "stuck seats found by audit (D-438)"
+
+  - id: P-09
+    prereg: P-09
+    candidate: T24-GF15b
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2025-06
+    file: t24_gf15b_gate.csv
+    engine: portfolio
+    decision: D-443
+    verdict: PASS
+    note: "closing rule; identity with P-08"
+
+  - id: P-10
+    prereg: P-10
+    candidate: T24-GF15b
+    kind: confirmation
+    role: registered
+    market: NQ
+    window: 2025-07 to 2026-07-16
+    file: t24_confirmation.csv
+    engine: portfolio
+    decision: D-450
+    verdict: FAIL (C3)
+    note: "C1, C2, C4 met; C3 is payout denial, beside the verdict from R1 (D-234, D-452); the window is spent"
+
+  - id: P-11
+    prereg: P-11
+    candidate: A1-INS15
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: a1_ins15_gate.csv
+    engine: portfolio
+    decision: D-477
+    verdict: PASS
+    note: "family A1's selected cell (inside15 followed), N = 78; development only -- no confirmation window open on NQ (D-461)"
+
+  - id: P-12
+    prereg: P-12
+    candidate: A2-NB158
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: a2_nb158_gate.csv
+    engine: portfolio
+    decision: D-489
+    verdict: CONTINUE
+    note: "family A2's top cell (nbar15x8 followed) sized by its own re-solved table, N = 126; development only"
+
+  - id: P-13
+    prereg: P-13
+    candidate: A3-BRK30
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: a3_brk30_gate.csv
+    engine: portfolio
+    decision: D-500
+    verdict: PASS
+    note: "family A3's top cell: FV3-C's design on the 30-minute breakout, the strict rule, N = 334; development only; the money is the design's; near-total tier-3 exposure"
+
+  - id: P-14
+    prereg: P-14
+    candidate: A3-BRK30-CB20
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: a3_brk30_cb20_gate.csv
+    engine: portfolio
+    decision: D-513
+    verdict: PASS
+    note: "P-13's design without closure at request and with a 20-purchase budget; D-509's slice lines hold; N = 370; development only; chosen from D-501's search"
+
+  - id: P-15
+    prereg: P-15
+    candidate: RC (rc_s100_all)
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: rc_s100_all_gate.csv
+    engine: portfolio
+    decision: D-532
+    verdict: PASS
+    note: "the resolved coin re-entering when flat (25-point rung, all-day window) on P-14's design; N = 403; development only; no fitted signal; its confirmation needs unread data not yet bought"
+
+  - id: P-16
+    prereg: P-16
+    candidate: RC150 (rc_s150_all_nr)
+    kind: development
+    role: registered
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: rc_s150_all_gate.csv
+    engine: portfolio
+    decision: D-547
+    verdict: PASS
+    note: "the news-safe coin at 37.5 points re-entering when flat on P-14's design, as the table sizes it (a larger funded risk than the 25-point coin -- the confound, capped reading beside); N = 414; development only; the coin carried to the confirmation by D-546's rule"
+
+  - id: RC-coin
+    prereg: null
+    candidate: RC
+    kind: development
+    role: coin_baseline
+    market: NQ
+    window: 2020-01 to 2026-07-16
+    file: rc_reentry_screen.csv
+    engine: coin_screen
+    cell: rc_s100_all
+    flags: false
+    decision: D-527
+    verdict: SCREEN (carried to a registered test)
+    note: "the resolved coin re-entering when flat on P-14's protocol (25-point rung, all-day window, the cell D-525's rule carries); EXPLORATORY; the baseline for the lift columns"

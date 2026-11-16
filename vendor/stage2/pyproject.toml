@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "propedge"
+version = "0.1.0"
+description = "Stage two: demonstrated edge and protocol selection for the Topstep 50K Combine and Express Funded Account"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "pyarrow>=15",          # the local bar store and the atlas cache are parquet (D-458, D-460)
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+include = ["propedge*"]
+exclude = ["vendor*", "tests*", "scripts*", "data*", "results*", "docs*", "prereg*", "config*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "slow: tests that run large Monte Carlo samples (the stage-one reproduction checks)",
+    "heavy: tests too slow for the commit-time fast tier (seconds each, or a slow file as a whole); they run in `make verify` and in CI",
+]
+# Two tiers (R10). The fast tier -- `-m "not slow and not heavy"` -- is what scripts/pre-commit and the .py-edit hook
+# (scripts/hooks/run_tests.py) run, in about three minutes. The full suite (`make verify`, `.\scripts\make.ps1 verify`,
+# .github/workflows/verify.yml on every push to master) runs everything; run it before any verdict run.

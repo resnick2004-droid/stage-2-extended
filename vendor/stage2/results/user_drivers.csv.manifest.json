@@ -1,0 +1,477 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "subject",
+    "subject_kind",
+    "measure",
+    "value",
+    "n",
+    "lo",
+    "hi",
+    "unit",
+    "note",
+    "arm",
+    "block",
+    "month",
+    "statistic",
+    "outcome",
+    "variable",
+    "direction",
+    "draws",
+    "draws_valid",
+    "mechanical",
+    "name",
+    "family",
+    "family_decision",
+    "base",
+    "label",
+    "description",
+    "overrides",
+    "pool",
+    "on_frontier",
+    "dominated_by",
+    "pick",
+    "picked",
+    "limit",
+    "floor",
+    "eligible",
+    "tied",
+    "meaning",
+    "modelled",
+    "check",
+    "holds",
+    "compared",
+    "differing",
+    "refuses",
+    "source_file",
+    "source_sha256",
+    "source_section"
+  ],
+  "description": "EXPLORATORY (D-656, program U, U3): the user's journey as one portfolio outcome. Within each of U1's nine configurations across start days: each journey variable's rank correlation with the net cash and with being ahead at months 1 to 3, a standardised regression, moving-block bootstrap intervals, and the accounting split of the net into payouts and fees. Design against luck: the share of the net's variance that is the design. Between the cells of families 1 to 7 and the three rows to beat (hypothetical cells in no row; Lucid cells marked upper bounds): each scorecard measure's rank correlation with P, a standardised regression, intervals from resampling whole families; the frontier and a menu by declared limits. No engine, no variant: a re-reading of files on record; the identities first.",
+  "exploratory": true,
+  "git_commit": "c6d946b085a0c688c60cba06cf983b4be6bb6d7d",
+  "git_dirty": false,
+  "notes": {
+    "between_designs": "a description of related designs, never a test (D-656 (4))",
+    "labels": "lucid_upper_bound: carried on the six Lucid cells and on U1's 5 + 1 configuration -- every figure of them is an upper bound; hypothetical_hedge: those cells are in no row",
+    "seed": "the moving-block bootstrap over start days (20261900); the family bootstrap between designs has its own (20261901); nothing else is drawn",
+    "selection": "none: the menu is a reading aid, no pick is a candidate, no verdict of families 1 to 7 changes; the limits were set after those families were read (D-656 (5))",
+    "status": "EXPLORATORY (D-656, program U, U3): the user's journey as one outcome -- which variable goes with being ahead, design against luck, the frontier and a menu by declared limits -- re-read from the result files on record; no engine run, no variant counted, nothing selected; beside the gate, never a verdict of it (D-234)",
+    "variant_count_rule": "none: no engine run and no variant counted -- every row is a re-reading of a result file on record"
+  },
+  "parameters": {
+    "arm": "verdict",
+    "beside_arm": "point",
+    "bootstrap_between": {
+      "draws": 2000,
+      "interval": 0.95,
+      "kind": "whole families with replacement; the three rows to beat are one family",
+      "seed": 20261901
+    },
+    "bootstrap_within": {
+      "block": 63,
+      "draws": 2000,
+      "interval": 0.95,
+      "kind": "moving block over start days (user_journey.block_indices)",
+      "seed": 20261900
+    },
+    "cells": {
+      "family_cells": 58,
+      "frontier_pool": 54,
+      "hypothetical_left_out": [
+        "l1_day0_hedged",
+        "l1_day0_hedged_combines",
+        "l1_seq_hedged",
+        "l1_seq_hedged_combines",
+        "l2_day0_hedged",
+        "l2_day0_hedged_combines",
+        "l2_seq_hedged",
+        "l2_seq_hedged_combines",
+        "l5_day0_hedged",
+        "l5_day0_hedged_combines",
+        "l5_seq_hedged",
+        "l5_seq_hedged_combines"
+      ],
+      "in_the_table": 61,
+      "lucid_upper_bound": [
+        "l1_day0",
+        "l1_seq",
+        "l2_day0",
+        "l2_seq",
+        "l5_day0",
+        "l5_seq"
+      ],
+      "on_frontier": [
+        "budget10_p14",
+        "budget15_p14",
+        "budget30_p14",
+        "flat250",
+        "flat250_cons",
+        "flat250_cons_p14",
+        "flat250_p14",
+        "flat500",
+        "flat500_cons_p14",
+        "flat500_p14",
+        "nobudget_p14",
+        "p14",
+        "pause2_p14",
+        "us25",
+        "wallet1000",
+        "wallet1000_p14",
+        "wallet1500_p14",
+        "wallet2000_p14"
+      ],
+      "rows_to_beat": 3
+    },
+    "censoring": "a variable not reached by the month's last session is read at it: sessions = that session; cash before the first payout or pass = the fees paid by it; first payout dollars = 0",
+    "configurations": [
+      "fv3c",
+      "p13",
+      "p14",
+      "p15",
+      "p16",
+      "p16_funded_cap",
+      "p16_4+0",
+      "p16_5+1",
+      "rc_s150_london"
+    ],
+    "decision": "D-656",
+    "families": [
+      {
+        "decision": "D-629",
+        "family": "budget",
+        "file": "u_budget.csv"
+      },
+      {
+        "decision": "D-630",
+        "family": "entry",
+        "file": "u_entry.csv"
+      },
+      {
+        "decision": "D-635",
+        "family": "seats",
+        "file": "u_seats.csv"
+      },
+      {
+        "decision": "D-639",
+        "family": "hours",
+        "file": "u_hours.csv"
+      },
+      {
+        "decision": "D-644",
+        "family": "firms",
+        "file": "u_firms.csv"
+      },
+      {
+        "decision": "D-646",
+        "family": "consistency",
+        "file": "u_consistency.csv"
+      },
+      {
+        "decision": "D-653",
+        "family": "plan",
+        "file": "u_plan.csv"
+      }
+    ],
+    "frontier_measures": [
+      [
+        "P",
+        "higher"
+      ],
+      [
+        "S1",
+        "lower"
+      ],
+      [
+        "S3a",
+        "higher"
+      ],
+      [
+        "S5a",
+        "higher"
+      ]
+    ],
+    "indicator_beside": "paid_by_month",
+    "menu": {
+      "floor": 0.95,
+      "floor_measure": "S4b",
+      "limit_measure": "S1",
+      "limits": {
+        "balanced": 2500.0,
+        "best_result": null,
+        "lowest_cost": 2000.0
+      },
+      "picks": {
+        "balanced": "budget10_p14",
+        "best_result": "nobudget_p14",
+        "lowest_cost": "seats1_p14"
+      },
+      "tie": "highest P, then lower S1, then higher S3a, then higher S5a, then the first in file order"
+    },
+    "month_sessions": 21,
+    "outcome_months": [
+      1,
+      2,
+      3,
+      6,
+      12
+    ],
+    "outcomes": [
+      "net",
+      "ahead"
+    ],
+    "program": "U",
+    "r_star": "p14",
+    "regression": "ordinary least squares on columns rescaled to mean 0 and spread 1; within a design: each outcome on the six variables; between designs: P on S1, S3a, S3c, S5a",
+    "rows_to_beat": [
+      "p14",
+      "p15",
+      "p16"
+    ],
+    "schema": {
+      "core_columns": [
+        "section",
+        "subject",
+        "measure",
+        "value",
+        "n",
+        "lo",
+        "hi",
+        "unit",
+        "note"
+      ],
+      "key": [
+        "section",
+        "subject_kind",
+        "subject",
+        "arm",
+        "month",
+        "measure"
+      ],
+      "measures": {
+        "accounting": [
+          "mean_net",
+          "mean_payouts",
+          "mean_fees",
+          "share_ahead",
+          "sd_net",
+          "payouts_per_fee_dollar_pooled",
+          "spread_share_payouts",
+          "spread_share_fees"
+        ],
+        "between_designs": [
+          "spearman.S1",
+          "spearman.S3a",
+          "spearman.S3b",
+          "spearman.S3c",
+          "spearman.S4a",
+          "spearman.S4b",
+          "spearman.S5a",
+          "spearman.S5b",
+          "spearman.S5c",
+          "beta.S1",
+          "beta.S3a",
+          "beta.S3c",
+          "beta.S5a",
+          "r2"
+        ],
+        "definitions": [],
+        "design_table": [
+          "P",
+          "S1",
+          "S3a",
+          "S3b",
+          "S3c",
+          "S4a",
+          "S4b",
+          "S5a",
+          "S5b",
+          "S5c"
+        ],
+        "design_vs_luck": [
+          "design_share",
+          "start_day_share",
+          "between_variance",
+          "within_variance",
+          "total_variance",
+          "sd_of_design_means",
+          "mean_sd_across_starts",
+          "designs"
+        ],
+        "frontier": [
+          "on_frontier"
+        ],
+        "funded_facts": [
+          "won_opening_share",
+          "won_opening_paid_share",
+          "lost_opening_lived_share",
+          "lost_opening_paid_share",
+          "lost_opening_share_of_days",
+          "won_opening_share_of_days",
+          "sessions_opening_to_request_p50",
+          "sessions_opening_to_request_p90"
+        ],
+        "identity": [
+          "holds"
+        ],
+        "menu": [
+          "P",
+          "S1",
+          "S3a",
+          "S3b",
+          "S3c",
+          "S4a",
+          "S4b",
+          "S5a",
+          "S5b",
+          "S5c"
+        ],
+        "parameters": [
+          "month_sessions",
+          "p_first_month",
+          "p_last_month",
+          "boot_block",
+          "boot_draws",
+          "boot_seed",
+          "cluster_seed",
+          "interval_level",
+          "menu_floor",
+          "menu_floor_month",
+          "hypothetical_cells_left_out",
+          "lucid_cells_shown",
+          "menu_limit_lowest_cost",
+          "menu_limit_balanced",
+          "menu_limit_best_result"
+        ],
+        "within_design": [
+          "spearman.net.bankroll",
+          "spearman.net.sessions_to_first_pass",
+          "spearman.net.sessions_to_first_payout",
+          "spearman.net.first_payout_dollars",
+          "spearman.net.payouts_per_fee_dollar",
+          "spearman.net.cash_before_first_pass",
+          "spearman.net.paid_by_month",
+          "spearman.ahead.bankroll",
+          "spearman.ahead.sessions_to_first_pass",
+          "spearman.ahead.sessions_to_first_payout",
+          "spearman.ahead.first_payout_dollars",
+          "spearman.ahead.payouts_per_fee_dollar",
+          "spearman.ahead.cash_before_first_pass",
+          "spearman.ahead.paid_by_month",
+          "beta.net.bankroll",
+          "beta.net.sessions_to_first_pass",
+          "beta.net.sessions_to_first_payout",
+          "beta.net.first_payout_dollars",
+          "beta.net.payouts_per_fee_dollar",
+          "beta.net.cash_before_first_pass",
+          "beta.ahead.bankroll",
+          "beta.ahead.sessions_to_first_pass",
+          "beta.ahead.sessions_to_first_payout",
+          "beta.ahead.first_payout_dollars",
+          "beta.ahead.payouts_per_fee_dollar",
+          "beta.ahead.cash_before_first_pass",
+          "r2.net",
+          "r2.ahead"
+        ]
+      }
+    },
+    "study": "U3",
+    "tolerance": 1e-09,
+    "variables": [
+      "bankroll",
+      "sessions_to_first_pass",
+      "sessions_to_first_payout",
+      "first_payout_dollars",
+      "payouts_per_fee_dollar",
+      "cash_before_first_pass"
+    ],
+    "within_months": [
+      1,
+      2,
+      3
+    ]
+  },
+  "prereg_id": null,
+  "provenance": {
+    "sources": {
+      "u_budget.csv": {
+        "git_commit": "b7f9d2958b213b05f81c00bf04be928d5e460d10",
+        "rows": 227,
+        "script": "scripts/u_family.py",
+        "sha256": "bd7ad8cea9b533611fea53c44280cf51e6d0348276c5c7e09900227950f73174",
+        "timestamp": "2026-11-14T19:23:23+00:00"
+      },
+      "u_consistency.csv": {
+        "git_commit": "d9134aa4d1a67553b72d1e4dc5f2904f9fcb9708",
+        "rows": 171,
+        "script": "scripts/u_family.py",
+        "sha256": "487242d6907c9ac6e34590a444e861d8ca678cd56156cf28febdf8814a325915",
+        "timestamp": "2026-11-15T01:41:46+00:00"
+      },
+      "u_entry.csv": {
+        "git_commit": "fd283ee0bf97cd49c0ad7a1c9da350e25797c3e1",
+        "rows": 389,
+        "script": "scripts/u_family.py",
+        "sha256": "8a02ea153d391e2fa617670933d53e67d22138a242ecf9fd63ecc60ad465c352",
+        "timestamp": "2026-11-14T20:44:05+00:00"
+      },
+      "u_firms.csv": {
+        "git_commit": "587e0d9c3b75a046059977eb230c742d33d2a98f",
+        "rows": 583,
+        "script": "scripts/u_family.py",
+        "sha256": "5a93c73b2526220b96b162d542dcf842094cc810faa3513cd220a73013cc3b8d",
+        "timestamp": "2026-11-15T07:49:06+00:00"
+      },
+      "u_hours.csv": {
+        "git_commit": "8754f203ccf070b8dd433c06539e535600b3b8d4",
+        "rows": 399,
+        "script": "scripts/u_family.py",
+        "sha256": "ce35f4d4bc3d32214cb994f9bc6a1102269429038357ed0dcad9c5f0be7b1832",
+        "timestamp": "2026-11-14T23:18:02+00:00"
+      },
+      "u_plan.csv": {
+        "git_commit": "841cfa3b59ef1c8dfa7f4cf32d0c37e8aede3052",
+        "rows": 481,
+        "script": "scripts/u_family.py",
+        "sha256": "0c30833cd274c74841f42ba16e3c134dc252739db556f37bc390976ac1a994a1",
+        "timestamp": "2026-11-15T10:34:54+00:00"
+      },
+      "u_seats.csv": {
+        "git_commit": "1d027679a94cfdaa0edc841cd908fcb38ba7b358",
+        "rows": 227,
+        "script": "scripts/u_family.py",
+        "sha256": "f3686c5a56adbddf41250b6ada614854a5ed3bee5d01a37837a49bada23809bf",
+        "timestamp": "2026-11-14T21:20:53+00:00"
+      },
+      "u_xfa_day_budget.csv": {
+        "git_commit": "8d8e73b736977ec3349de89b9a4e6a6612a0d4d9",
+        "rows": 2709,
+        "script": "scripts/u_xfa_day_budget.py",
+        "sha256": "93bbe2b45cb39b52c42b4646603daee653add00b9b4b7b90dbf29b295e7f5a28",
+        "timestamp": "2026-11-15T07:55:12+00:00"
+      },
+      "user_journey.csv": {
+        "git_commit": "d39d9968624a7cef80a4a59b0c0e229d7506ed31",
+        "rows": 31991,
+        "script": "scripts/user_journey.py",
+        "sha256": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc",
+        "timestamp": "2026-11-14T17:32:46+00:00"
+      },
+      "user_scoreboard.csv": {
+        "git_commit": "f17da1fb8ef106f060e0c137e1855203ca389eed",
+        "rows": 889,
+        "script": "scripts/user_scoreboard.py",
+        "sha256": "c6eef934fdcea2e8dc3fd8f15f1293a22ecf37c86609c1482728231db8438081",
+        "timestamp": "2026-11-14T21:59:36+00:00"
+      }
+    }
+  },
+  "result_file": "user_drivers.csv",
+  "rows": 3295,
+  "script": "scripts/user_drivers.py",
+  "seed": 20261900,
+  "sha256": "0ea08cb81bbdb754491783291bcdf0dcbfe446a92996362b48b3d261a1b0cdaf",
+  "timestamp": "2026-11-15T12:11:17+00:00",
+  "variant_count": 0
+}

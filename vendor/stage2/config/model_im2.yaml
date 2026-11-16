@@ -1,0 +1,59 @@
+# IM2 -- the paper's noise-band entries, bracketed at 1, 2 and 3 R (P-04 §3, which carries P-03 §3 forward; the model
+# card docs/candidates/cards/IM2.md §2 and §4, with IM1's card §4 for the market rules).
+# Every value here is restated from the pre-registration; nothing is chosen in this file.
+# Read by propedge/data/qc_algorithms.im2_params (the kits R053-R060) and the scorer (propedge/research/im2_score.py).
+
+lookback_sessions: 14           # sigma: the mean of |close / open - 1| over the previous 14 complete sessions
+volatility_multiplier: 1.0
+decision_every_minutes: 30      # every :00 and :30 mark ...
+decision_margin_minutes: 30     # ... from the first at least 30 minutes after the open to the last at least 30 before the close
+brackets_r: [1, 2, 3]           # R = 1 and 2 are the lifecycle's; R = 3 is reported only
+sequencing_r: 2                 # a market is busy until its entry's 2:1 bracket ends ...
+wait_minutes: 5                 # ... then 5 minutes (D-160, D-61's gap); a signal inside the wait is dropped
+min_coverage: 0.9               # a complete session: a bar at the close time and at least 90 % of the minutes (D-149)
+fill_profile: assumed           # config/fills.yaml (D-95): one micro tick on entry, stop and close; targets at their price
+
+# Sessions (CT), the standard contract's tick (the data), the traded micro and its tick (fills and the order grid), and
+# the reference price each session's open is rescaled to for fills, costs and R (D-106). P-04 §3 "Market rules". The
+# micros' tick values are config/instruments.yaml's (loaded there; MNG added by P-04).
+markets:
+  ES: {open: "08:30", close: "15:00", tick: 0.25, micro: MES, micro_tick: 0.25, p_ref: 4000.0}
+  CL: {open: "08:00", close: "13:30", tick: 0.01, micro: MCL, micro_tick: 0.01, p_ref: 70.0}
+  6E: {open: "07:20", close: "14:00", tick: 0.00005, micro: M6E, micro_tick: 0.0001, p_ref: 1.10}
+  NG: {open: "08:00", close: "13:30", tick: 0.001, micro: MNG, micro_tick: 0.001, p_ref: 3.00}
+
+# The development period (P-04 §2), in the two halves every development kit here uses (the bracket map's), each run
+# preceded by a warm-up that fills the lookback and records nothing: (warm-up start, window start, window end).
+development_windows:
+  "0914": ["2009-05-01", "2009-06-01", "2014-05-27"]
+  "1419": ["2014-04-25", "2014-05-28", "2019-12-31"]
+
+# ---------------------------------------------------------------------------------------------------------------------
+# P-04: the fidelity audits of 2026-09-27 (docs/audits/). Every value below is fixed before any IM2 bar is read.
+
+# Release minutes (fill audit, finding 1): the releases Topstep 8284211 names for these markets, dated by
+# scripts/build_im2_release_calendar.py (propedge/data/im2_releases.py). In the release minute and the next, market
+# orders fill at the bar's worst price (propedge/outcomes/im2_core.py).
+release_calendar: config/im2_release_calendar.csv
+release_hot_minutes: 2
+
+# Holding within 2 % of a price lock limit (Topstep 10296582; rule audit, finding 3). Topstep's own definition
+# (8284225, read 2026-09-27 by the rules-verifier): "Stop trading below: Settlement × (1 − Price Limit% + 2%)"; "With
+# a 7% downside-only limit: Stop below: 2,814 × 0.95 = 2,673". Of IM2's markets only ES has such a fixed daily limit:
+# its day-session downside limit, 7 % below the prior settlement (CL, NG and 6E have CME's dynamic circuit breakers,
+# fill audit finding 3; CME's own pages block automated reads). A trade is flagged when the lowest price while it was
+# held (the kit's `mn`) is at or below the prior close x (1 - 0.07 + 0.02); the prior close (the kit's `pc`, the
+# active contract's close at 15:00 CT) stands in for the settlement.
+price_lock:
+  ES: {limit_down: 0.07, within: 0.02}
+
+# The declared cost sensitivity for the micros whose spreads were never measured (fill audit, finding 2): extra ticks
+# per round trip on MCL and MNG trades, reported beside the verdict, never instead of it.
+cost_sensitivity_extra_ticks: {CL: 2, NG: 2}
+
+# The fees P-04 §3 requires before anything is scored: MCL and MNG at the totals Topstep 8284213 states when re-read on
+# or after this date (recorded in config/fills.yaml provenance `date_read`), or the derived floors if it states none.
+# D-209 moved the date from 2026-10-01 to 2026-09-30 at the operator's instruction (the fee change is not to pause
+# scoring); a re-read on or after 2026-10-01 stating a total above a floor replaces it and IM2 is scored again with it.
+fees_reread_on_or_after: "2026-09-30"
+fee_floor_round_turn: {MCL: 1.72, MNG: 1.92}

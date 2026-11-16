@@ -1,0 +1,54 @@
+# config/regime_map.yaml -- the whole-day regime map (T15; D-237, D-238), fixed before any of its data is read.
+#
+# The question (the operator, 2026-10-02): how far do bracket resolution, stop overshoot, spread, volume and range --
+# and so the brackets a Topstep account can trade -- differ between 2009-2019 and today, through the whole trading
+# day? Development data only (2009-06-01 to 2025-06-30, D-237); counts only leave QuantConnect (D-120); EXPLORATORY:
+# the map chooses nothing, and every cell counts in the trial ledger of any model later chosen from it (D-189).
+#
+# Unlike the resolution map (D-214), prices are ACTUAL -- no rescaling (D-106 does not apply): the question is what a
+# fixed stop in points did in each year. The trailing-range stops are the scale-free reading beside it.
+
+window:
+  open_ct: "17:00"          # Topstep's trading day resumes 17:00 CT the evening before (8284206)
+  flatten_ct: "15:10"       # a bracket still open at the day's last bar at or before 15:10 CT is counted open
+  # decisions every 30 minutes from 17:00 to 14:30 CT (44), and every 5 minutes through each market's open
+  # (`open_ct` below, the 30 minutes from it: 5 more). A decision enters at the open of the first bar after it, one
+  # micro tick adverse (the `assumed` fill profile, D-95), long and short both counted.
+  decision_every_min: 30
+  last_decision_ct: "14:30"
+  open_step_min: 5
+  open_span_min: 30
+
+# stops as multiples of the trailing range: the mean of the previous `days` complete full-session trading days'
+# range (highest high less lowest low, 17:00-15:10 CT, the day's own contract), rounded to the micro's tick (at least
+# one tick). A day with fewer than `days` such days before it counts only the fixed stops (`noatr`).
+stops_range:
+  days: 20
+  multiples: [0.05, 0.10, 0.15, 0.25, 0.40]
+
+rr: [1.0, 1.5, 2.0, 3.0]    # targets at 1, 1.5, 2 and 3 times the stop
+
+# spreads as the resolution map (D-215): only a two-sided, uncrossed quote counts; one wider than `cap_ticks` micro
+# ticks is kept out of the mean and counted (badq); those above `wide_ticks` are counted (wide)
+spread: {wide_ticks: 4, cap_ticks: 50}
+
+# fixed stops in POINTS of the market's price (actual prices). The widest index stop is two micros at stage one's
+# $1,500 Combine risk (NQ 375 x $2 x 2, ES 150 x $5 x 2); the narrowest is a few ticks above the entry slip. `open_ct`
+# is the market's open for the 5-minute steps: the index cash open (08:30), the energy floor open (08:00), the US data
+# releases for the euro (07:30).
+markets:
+  NQ: {micro: MNQ, tick: 0.25,    micro_tick: 0.25,   micro_point_value: 2.0,     open_ct: "08:30",
+       stops_points: [10, 20, 40, 60, 100, 150, 250, 375]}
+  ES: {micro: MES, tick: 0.25,    micro_tick: 0.25,   micro_point_value: 5.0,     open_ct: "08:30",
+       stops_points: [2.5, 5, 10, 15, 25, 40, 75, 150]}
+  CL: {micro: MCL, tick: 0.01,    micro_tick: 0.01,   micro_point_value: 100.0,   open_ct: "08:00",
+       stops_points: [0.05, 0.10, 0.20, 0.30, 0.50, 0.75, 1.00, 1.50]}
+  6E: {micro: M6E, tick: 0.00005, micro_tick: 0.0001, micro_point_value: 12500.0, open_ct: "07:30",
+       stops_points: [0.0005, 0.0010, 0.0015, 0.0020, 0.0030, 0.0050, 0.0075, 0.0100]}
+  NG: {micro: MNG, tick: 0.001,   micro_tick: 0.001,  micro_point_value: 1000.0,  open_ct: "08:00",
+       stops_points: [0.010, 0.020, 0.030, 0.050, 0.075, 0.100, 0.150, 0.250]}
+
+# one QuantConnect run per market over the whole development period, counted per calendar year; the warm-up (about
+# six weeks) fills the trailing range and records nothing else. It ends the day before the confirmation window (D-237).
+# The analysis reads "then" as 2009-2019 and "now" as 2020-2025, beside every year.
+dates: {warm: "2009-04-20", start: "2009-06-01", end: "2025-06-30"}

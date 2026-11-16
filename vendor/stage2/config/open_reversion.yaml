@@ -1,0 +1,122 @@
+# config/open_reversion.yaml -- reversion to the opening price with stage two's OWN execution model.
+#
+# STATUS: draft, awaiting a prior from Stage 2B. Nothing is scored from this file until 2B supplies a
+# mechanism and published evidence for reversion toward the opening price, the design is fixed with a
+# DECISIONS.md entry, and the scorer's known-answer tests pass. Written 2026-09-25 AFTER the
+# gap-reversal results (D-112) were seen on the same evidence; recorded, not hidden.
+#
+# The idea is JJ Simon's (a fair-value anchor at the open, a move away, a structural reversal back).
+# The execution is NOT his fixed 1.5R bracket with a point stop: the target is fair value itself, the
+# stop is structural, and reward-to-risk is a per-trade filter. Operator instruction 2026-09-25: the
+# document inspires the model; it is not the model.
+
+status: exploratory   # D-118: operator runs it as a learning exercise without a prior (D-116 closed it as a candidate)
+exploratory:
+  decision: D-118
+  purpose: learning the modelling framework (feature definition, search, overfitting control, interpretation)
+  eligible_for_confirmation: false    # never; the 2014-2026 window is not touched
+  stage2_runs_regardless_of_gate: true   # declared BEFORE any result; the gate verdict governs interpretation
+  money: none
+source:
+  idea: 'the "JJ Simon Fair Value Theory NQ Strategy" document (FX Replay), read 2026-09-24 -- the anchor and the entry idea'
+  execution_model: stage two's own (D-114 when fixed) -- fair-value target, structural stop, R filter
+  prior: PENDING -- Stage 2B request (reversion toward the opening price within the first hour)
+  evidence: results/manual_R027_gap_ES2.csv        # ES 1-min bars 08:27-10:30 CT, 2009-06-01..2014-05-27
+  data_seen_before_rule: >
+    the gap-reversal gate and grid (D-112, D-113) were computed from the same bars before this design
+    was written; no statistic about reversion to the open has been computed.
+
+instrument: {market: ES, vehicle: MES}
+development: {start: 2009-06-01, end: 2014-05-27, selection_end: 2011-12-31, validation_start: 2012-01-01}
+
+# ---------------------------------------------------------------- fixed
+reference:
+  fair_value: open of the 08:30 CT minute bar (the first trade at or after 08:30:00)
+days: "all weekdays with a usable settlement chain (the gap design's skip rules); reported by weekday"
+sides: both -- short when price is above fair value at the trigger, long when below; reported by side
+trigger:
+  window_ct: ["08:40", "09:30"]                    # a move away must have had time to form; the first hour
+  window_sensitivity_ct: ["08:40", "10:00"]        # reported for the selected variant only
+  requires: a confirmed swing extreme on the far side of price from fair value, formed since the 08:30 bar
+  structural: >
+    the first bar in the window that is both a market structure break (close beyond the most recent
+    confirmed swing in the direction of fair value) and a displacement bar (counter-wick <= 0.20 x
+    (extreme - open)) in that direction; Williams fractals, 2 bars each side
+  displacement_w: 0.20                              # JJ Simon's value; the gap grid showed no sensitivity
+  entry: market at the close of the trigger bar, one tick adverse
+target:
+  price: fair value                                 # a resting limit at the open price, trade-through fill
+  room_past: none                                   # reversion TO fair value is the thesis
+exits: {time_cutoff: close of the 10:29-10:30 bar (end of the evidence), same_bar: stop first,
+        gap_through_stop: fill at the bar open, management: none}
+fills: assumed
+sizing:                                             # a T7 parameter, not part of the strategy test (D-114)
+  baseline: >
+    stage one's admissible pairs (vendor/propsim/edge/T5_RESULTS.md 2a): Combine 1.5:1 $500 or 2:1 $750,
+    funded 1.5:1 $1000, set separately for the two account types
+  diagnostic_risk_per_trade_usd: [250, 500, 1000]   # contracts = min(20, floor(risk / (stop_ticks * 1.25))) reported at each
+  trades_per_day: 1
+u: net pnl / (stop_ticks * 1.25 * contracts)        # intended risk, size-free; winners variable, losers about -1
+scale: {selection_price_level: 4000, reported_price_levels: [actual, 2000, 4000, 6500]}   # D-106
+
+# ---------------------------------------------------------------- stage 1: the existence gate, NO knobs
+gate:
+  question: after an initial move away from the open, does price on average come back toward it?
+  statistic: >
+    beta_m = OLS slope of y_m on x over all scoreable days, with x = 100 * ln(close 08:45 / fair value)
+    and y_m = 100 * ln(close(08:45 + m) / close 08:45), m in {30, 45, 60}. Reversion is beta < 0.
+    Effect size = -beta_45 * sd(x): the expected move back toward the open 45 minutes after a one-sd
+    initial excursion. Independent of every execution feature below.
+  pass:
+    beta_45_one_sided_95_upper_bound_below: 0.0
+    effect_size_pct_at_least: 0.0335               # the gap gate's bar; replaced by 2B's published effect size
+  bootstrap: {block_days: 20, replicates: 10000, seed: 20261006}
+  also_reported: [beta at 30 and 60, by side, by weekday, by year, per half, with a 10-minute setup window]
+
+# ---------------------------------------------------------------- stage 2: the search, 6 variants
+features_searched:
+  stop_anchor:                                      # where the reversal thesis is wrong
+    grid: [trigger_bar, swing_extreme]
+    trigger_bar: the trigger bar's extreme on the far side from fair value, plus one tick
+    swing_extreme: the extreme of the confirmed swings on the far side since the 08:30 bar (the top of
+      the move away for a short, the bottom for a long), plus one tick
+    floor: stop distance = max(anchor distance, 20 ticks) from the entry fill   # cost floor, MES
+    floor_ticks: 20
+  r_min:                                            # reward-to-risk at entry, |fair value - entry| / stop distance
+    grid: [1.0, 1.5, 2.0]                           # 1.5 is JJ Simon's; below r_min there is no trade
+search:
+  variants: 6
+  ablation_baseline: >
+    a plain entry at the close of the first bar in the window at which the R filter holds, with no
+    structure-break or displacement requirement, same anchor and r_min; the structural trigger is
+    chosen only if it beats this on the selection half
+  selection_statistic: one-sided 95 % lower bound of mean(u), net, 20-day block bootstrap, 10000 reps,
+    on the path rescaled to scale.selection_price_level; the actual scale is reported
+  selection_seed: 20261007
+  plateau_rule: on r_min (ordered); the anchor is binary and is compared directly
+  validation: the selected variant scored once on [2012-01-01, 2014-05-27]
+  permutation_null: {permutations: 200, seed: 20261008, rule: flip each day's direction with probability 1/2}
+  diagnostics: [R at entry distribution, realised mean win over mean loss (must exceed 1), exit-type shares,
+                floor-bound share, mean minutes held, mean(u) by side and by year, trades per year]
+
+# ---------------------------------------------------------------- changing a feature later, without overfitting
+change_and_retest_protocol:
+  - a change is a NEW declared variant set with its own count, written here and in DECISIONS.md before any rerun
+  - the family the permutation null prices is every variant ever tried on this evidence, so the bar rises with each addition
+  - selection stays on the selection half; the validation half is looked at once per family, never used to choose
+  - a result that motivated the change is reported beside the new result and labelled exploratory
+  - the confirmation window (from 2014-05-28) is never touched by any of this
+
+go_no_go: [gate passed, null cleared, validation-half mean(u) >= 0, realised mean win over mean loss above 1,
+           floor-bound fallback applied if above 0.8, operator decision recorded]
+if_no_go: negative development result for this effect; no second grid on this data without a new declared family
+
+considered_not_searched:
+  - {fork: fixed 1.5R bracket (JJ Simon's), why: tested twice in this project; the operator wants the mechanism's own target}
+  - {fork: room past fair value, why: not in the thesis}
+  - {fork: ATR-multiple stop, why: the structural stop is the thesis's own invalidation}
+  - {fork: 14:00 CT afternoon session, why: not in the evidence; a new kit if the morning gate passes and 2B's prior covers it}
+  - {fork: continuation trades in the first 10-15 min, why: the gap evidence showed no first-10-minute continuation}
+  - {fork: w other than 0.20, why: JJ Simon's value; the gap grid showed no sensitivity across 0.10-0.30}
+  - {fork: VWAP, news reversions, second attempts, "A+ setups", why: discretionary or without evidence}
+  - {fork: NQ / MNQ, why: a transfer needing its own gate and its own kit}

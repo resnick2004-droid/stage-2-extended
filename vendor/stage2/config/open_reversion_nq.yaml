@@ -1,0 +1,59 @@
+# config/open_reversion_nq.yaml -- the open-reversion model on NQ, declared before any NQ bar is read (D-124).
+#
+# The SAME model as config/open_reversion.yaml (fair value = the 08:30 CT open; structural or plain entry
+# toward it between 08:40 and 09:30; target = fair value; structural stop with two anchors; minimum
+# reward-to-risk filter; 10:30 exit), applied to NQ with NQ's OWN contract terms. Operator instruction
+# 2026-09-25: NQ is JJ Simon's instrument and differs from ES in volume and divergence; test it on its own.
+# Exploratory like D-118 (no published prior); never eligible for the confirmation window.
+
+status: declared
+decision: D-124
+inherits: config/open_reversion.yaml          # every feature not overridden here, unchanged
+exploratory: true
+
+instrument:
+  market: NQ                                   # E-mini Nasdaq-100 bars (AlgoSeek via QuantConnect, from 2008-11-03)
+  vehicle: MNQ                                 # tick 0.25, $0.50, round turn $1.22 (config/instruments.yaml, fills.yaml)
+  bars: 1-minute trade bars, extended hours, contract by prior-session volume (D-94, D-98, D-109)
+
+overrides:
+  floor_ticks: 40                              # MNQ cost floor (candidate_constraints stop_width_band; D-46: per instrument)
+  selection_price_level: 10000                 # NQ's rough 2014-2026 midpoint (about 3,700 in 2014, about 21,000 in 2025);
+                                               # a declared public index level, not bar data (D-106's convention)
+  fill_primary: next_open                      # the standing rule since D-123; close is also computed, for comparison
+
+development: {start: 2009-06-01, end: 2014-05-27, selection_end: 2011-12-31, validation_start: 2012-01-01}
+
+# ---------------------------------------------------------------- what is measured
+measures:
+  gate: >
+    the knob-free slope of the 08:45 -> 08:45+m return on the 08:30 -> 08:45 move, m = 30, 45, 60, all
+    scoreable days; effect size = -beta_45 x sd(x) in percent. Reported; not the decision (D-121 finding 3)
+  directional_part: >
+    per cell, the zero-cost real trade minus its mirror, halved (D-121): whether price moved toward fair
+    value, independent of costs and fill rules. THE decision-bearing measure
+  decomposition: price-only, slippage, commission, net, per cell
+  integrity_in_cloud: per day, bars failing low <= min(open, close) <= max(open, close) <= high or off the 0.25
+    grid; the 08:30 bar's range and the mean pre-open range (a timezone check)
+
+# ---------------------------------------------------------------- the decision rule, fixed now
+required_directional_part: 0.24                # 0.10 criterion + commission 1.22/(40 x $0.50) = 0.061 + slippage about 0.05
+                                               # + fill rules about 0.03, at the 40-tick floor
+verdict:                                       # on the 12 plain-entry cells (6 variants x 2 scales), next_open fill
+  scrap: every plain-entry directional part has its 90 % upper bound below 0.24
+  inconclusive: some cell's 90 % interval contains 0.24 -> more independent data, never more optimisation
+  proceed: some cell's 90 % lower bound is at or above 0.24 -> the selection stage below, then execution work
+selection_stage:                               # only on "proceed"; declared now so it cannot be shaped by the gate
+  statistic: one-sided 95 % lower bound of mean(u), net, 20-day block bootstrap, 10,000 reps, selection half, P_ref
+  rules: plateau on r_min; anchors compared directly; ablation against the plain entry; one look at the validation half
+  null: random direction per day (the geometry flip at zero cost), 200 permutations, best-of-6 lower bound, seed 20261010
+
+integrity_gate:                                # before any statistic is read
+  days_expected_about: 1285                    # NQ trades the ES calendar; a large shortfall is a BLOCK
+  max_bad_bar_share: 0.001
+  open_bar_wider_than_preopen: true            # the 08:30 CT bar must be the wider one, or the clock is wrong
+
+considered_not_searched:
+  - {fork: ES-tuned values carried over, why: none are; the floor and the price level are NQ's own}
+  - {fork: 14:00 CT session, why: not in this kit; separate replication if wanted}
+  - {fork: continuation trades, why: a different hypothesis (see the Test 1 audit, section B)}

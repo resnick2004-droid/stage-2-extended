@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaign Viewer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-2: #eb6834; --deemph: #d6d5ce;
+    --status-warning: #fab219; --status-critical: #d03b3b; --good: #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-2: #d95926; --deemph: #3a3a37;
+      --good: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --deemph: #3a3a37;
+    --good: #0ca30c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  h2 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
+  .sub { color: var(--ink-2); margin: 0 0 16px; }
+  .banner { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--border);
+            border-left: 4px solid var(--status-warning); background: var(--surface-1);
+            border-radius: 6px; padding: 10px 12px; margin: 0 0 16px; }
+  .banner .icon { font-weight: 700; color: var(--status-warning); }
+  .filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 0 0 16px; }
+  .filters label { color: var(--ink-2); }
+  select { font: inherit; color: var(--ink); background: var(--surface-1); border: 1px solid var(--border);
+           border-radius: 6px; padding: 4px 8px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 0 0 16px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .tile .label { color: var(--ink-2); font-size: 13px; }
+  .tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+  .tile .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  figure { background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+           padding: 14px 16px 10px; margin: 0 0 16px; }
+  figcaption { margin: 0 0 8px; }
+  figcaption p { margin: 0; color: var(--ink-2); }
+  svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .row > div { flex: 1 1 380px; min-width: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--ink-2); font-size: 13px; margin: 6px 0 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { display: inline-block; width: 18px; height: 0; border-top: 2px solid; border-radius: 2px; }
+  .key-line.thin { border-top-width: 1px; }
+  .key-rect { display: inline-block; width: 14px; height: 10px; border-radius: 3px; }
+  .key-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 2px var(--surface-1); }
+  .key-x { font-weight: 700; color: var(--status-critical); }
+  text { font-family: inherit; fill: var(--ink-2); font-size: 12px; }
+  text.tick { fill: var(--muted); font-variant-numeric: tabular-nums; }
+  text.dl { fill: var(--ink); font-weight: 600; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axisline { stroke: var(--axis); stroke-width: 1; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
+  th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--ink-2); font-weight: 600; }
+  .tip { position: fixed; z-index: 10; pointer-events: none; background: var(--surface-1); color: var(--ink);
+         border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px;
+         box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-width: 280px; }
+  .tip .t { color: var(--ink-2); margin-bottom: 4px; }
+  .tip .r { display: flex; gap: 8px; align-items: baseline; }
+  .tip .r b { font-weight: 600; min-width: 64px; }
+  .tip .r i { display: inline-block; width: 12px; border-top: 2px solid; border-radius: 2px; font-style: normal; }
+  footer { color: var(--ink-2); font-size: 13px; }
+  footer code { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .prov { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 6px 0; }
+  .hit { fill: transparent; }
+  .hit:hover + .mark, .mark.hover { filter: brightness(1.12); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">Campaign viewer</h1>
+    <p class="sub" id="subtitle"></p>
+    <div class="banner" id="banner" hidden>
+      <span class="icon" aria-hidden="true">&#9888;</span>
+      <div><strong>Exploratory.</strong> <span id="banner-text"></span></div>
+    </div>
+  </header>
+
+  <section class="filters">
+    <label>Arm <select id="arm"></select></label>
+    <label>Theme <select id="theme"><option value="">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+  </section>
+
+  <section class="tiles" id="tiles"></section>
+
+  <figure id="fig-cash">
+    <figcaption><h2>Campaign cash over the horizon</h2><p id="cash-sub"></p></figcaption>
+    <div id="cash-chart"></div>
+    <div class="legend"><span><i class="key-line thin" style="border-color: var(--deemph)"></i>sampled paths</span><span><i class="key-line" style="border-color: var(--series-1)"></i>median across the sampled paths</span></div>
+    <details><summary>Table view</summary><div id="cash-table"></div></details>
+  </figure>
+
+  <figure id="fig-rank">
+    <figcaption><h2>Every arm, side by side</h2><p>The ranking metric beside ruin. One axis each; the selected arm is highlighted.</p></figcaption>
+    <div class="row"><div id="rank-growth"></div><div id="rank-ruin"></div></div>
+    <div class="row"><div id="rank-dd"></div><div id="rank-latency"></div></div>
+    <details><summary>Table view</summary><div id="rank-table"></div></details>
+  </figure>
+
+  <figure id="fig-timeline">
+    <figcaption><h2>One path's accounts</h2><p id="tl-sub"></p></figcaption>
+    <div id="timeline"></div>
+    <div class="legend"><span><i class="key-rect" style="background: var(--series-2)"></i>Combine</span><span><i class="key-rect" style="background: var(--series-1)"></i>Funded</span><span><i class="key-dot" style="background: var(--series-1)"></i>payout</span><span class="key-x">&times; loss limit hit</span></div>
+    <details><summary>Table view</summary><div id="tl-table"></div></details>
+  </figure>
+
+  <footer id="prov"></footer>
+</div>
+<div id="tip" class="tip" hidden></div>
+
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+(function () {
+  "use strict";
+  const P = JSON.parse(document.getElementById("payload").textContent);
+  const NS = "http://www.w3.org/2000/svg";
+  const $ = (id) => document.getElementById(id);
+  const fmtMoney = (v) => v == null ? "n/a" : (v < 0 ? "-" : "") + "$" + Math.round(Math.abs(v)).toLocaleString("en-US");
+  const fmtPct = (v) => v == null ? "n/a" : (100 * v).toFixed(1) + "%";
+  const fmtRate = (v) => v == null ? "n/a" : (v === -Infinity ? "-inf" : (v >= 0 ? "+" : "") + v.toFixed(3) + " /yr");
+  const fmtNum = (v, d) => v == null ? "n/a" : Number(v).toFixed(d == null ? 1 : d);
+  const tip = $("tip");
+
+  function el(tag, attrs, parent, text) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function h(tag, cls, parent, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function showTip(ev, title, rows) {
+    tip.replaceChildren();
+    h("div", "t", tip, title);
+    for (const r of rows) {
+      const d = h("div", "r", tip);
+      const i = h("i", null, d); i.style.borderColor = r.color || "transparent";
+      h("b", null, d, r.value);
+      h("span", null, d, r.label);
+    }
+    tip.hidden = false;
+    const x = Math.min(ev.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+    const y = Math.min(ev.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.hidden = true; }
+
+  function niceTicks(lo, hi, n) {
+    if (!(hi > lo)) { hi = lo + 1; }
+    const span = hi - lo, step0 = span / Math.max(n, 1), mag = Math.pow(10, Math.floor(Math.log10(step0)));
+    const r = step0 / mag, step = (r >= 5 ? 10 : r >= 2 ? 5 : r >= 1 ? 2 : 1) * mag;
+    const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(10));
+    return out;
+  }
+  function quantile(sorted, q) {
+    if (!sorted.length) return null;
+    const pos = (sorted.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  }
+  function table(parent, columns, rows) {
+    parent.replaceChildren();
+    const t = h("table", null, parent), thead = h("thead", null, t), tr = h("tr", null, thead);
+    for (const c of columns) h("th", null, tr, c.label);
+    const tb = h("tbody", null, t);
+    for (const r of rows) { const tr2 = h("tr", null, tb); for (const c of columns) h("td", null, tr2, c.fmt ? c.fmt(r[c.key]) : String(r[c.key])); }
+  }
+
+  // ---------------------------------------------------------------- header, provenance
+  const meta = P.meta, notes = meta.notes || {};
+  $("title").textContent = meta.exploratory ? "Campaign dry run viewer" : "Campaign comparison viewer";
+  $("subtitle").textContent = meta.description || "";
+  if (meta.exploratory) {
+    $("banner").hidden = false;
+    const parts = [];
+    for (const k in notes) parts.push(k.replace(/_/g, " ") + ": " + notes[k]);
+    $("banner-text").textContent = "Every number on this page comes from result files whose manifests carry exploratory=True. " + parts.join(". ") + ".";
+  }
+  const prov = $("prov"); h("h2", null, prov, "Provenance");
+  const g = h("div", "prov", prov);
+  const provRows = [["script", meta.script], ["git commit", meta.git_commit], ["seed", String(meta.seed)], ["written", meta.timestamp]];
+  for (const k in meta.files) provRows.push([meta.files[k].file, "sha256 " + meta.files[k].sha256.slice(0, 16) + "… (" + meta.files[k].rows + " rows)"]);
+  for (const [k, v] of provRows) { h("div", null, g, k); const c = h("code", null, g, v); }
+  h("p", null, prov, "Numbers are read from the result CSVs through the hash-verified loader; a file that no longer matches its manifest cannot reach this page. Nothing here is a finding.");
+
+  // ---------------------------------------------------------------- filters
+  const armSel = $("arm");
+  for (const a of P.arms) { const o = document.createElement("option"); o.value = a.arm; o.textContent = a.arm; armSel.appendChild(o); }
+  try { const saved = localStorage.getItem("campaign-viewer-arm"); if (saved && P.arms.some(a => a.arm === saved)) armSel.value = saved; } catch (e) {}
+  armSel.addEventListener("change", () => { try { localStorage.setItem("campaign-viewer-arm", armSel.value); } catch (e) {} render(); });
+  const themeSel = $("theme");
+  try { const t = localStorage.getItem("campaign-viewer-theme"); if (t) { themeSel.value = t; document.documentElement.dataset.theme = t; } } catch (e) {}
+  themeSel.addEventListener("change", () => { const v = themeSel.value; if (v) document.documentElement.dataset.theme = v; else delete document.documentElement.dataset.theme; try { localStorage.setItem("campaign-viewer-theme", v); } catch (e) {} });
+
+  // ---------------------------------------------------------------- tiles
+  function renderTiles(a) {
+    const box = $("tiles"); box.replaceChildren();
+    const items = [
+      ["Median log growth of the fee bankroll", fmtRate(a.median_log_growth), "primary ranking metric, per year (D-14)"],
+      ["Ruin probability", fmtPct(a.ruin_probability), "paths whose bankroll could not take its next step"],
+      ["Bankroll drawdown, p90", fmtMoney(a.p90_max_drawdown), "peak to trough of campaign cash"],
+      ["Days to first payout, median", fmtNum(a.median_days_to_first_payout, 0), "trading days; share of accounts that ever pay " + fmtPct(a.share_accounts_ever_paid)],
+      ["Same-day multi-account loss-limit days", fmtNum(a.mean_same_day_multi_breach_days, 2), "mean per path (RTP trigger 1, D-30)"],
+      ["Trades at the tier cap", fmtPct(a.share_trades_at_tier_cap), "must stay below one half (D-117); realised/intended risk " + fmtNum(a.realised_to_intended_risk, 3)],
+    ];
+    const ps = (P.path_stats || {})[a.arm];
+    if (ps) items.push(["Final cash, p10 / median / p90", fmtMoney(ps.final_cash_p10) + " / " + fmtMoney(ps.final_cash_p50) + " / " + fmtMoney(ps.final_cash_p90), "over " + ps.n + " paths; mean attempts " + fmtNum(ps.mean_attempts, 1) + ", accounts funded " + fmtNum(ps.mean_accounts_funded, 1)]);
+    for (const [label, value, note] of items) { const t = h("div", "tile", box); h("div", "label", t, label); h("div", "value", t, value); h("div", "note", t, note); }
+  }
+
+  // ---------------------------------------------------------------- cash chart
+  function renderCash(a) {
+    const series = P.cash[a.arm] || [];
+    const box = $("cash-chart"); box.replaceChildren();
+    $("cash-sub").textContent = series.length + " sampled paths of " + a.n_paths + ", " + a.horizon_days + " trading days from " + fmtMoney(a.initial_bankroll) + ".";
+    if (!series.length) { h("p", null, box, "No cash series in the result file."); return; }
+    const W = 960, H = 320, m = { l: 68, r: 16, t: 12, b: 36 };
+    const n = Math.max(...series.map(s => s.length));
+    const days = Array.from({ length: n }, (_, i) => i);
+    const med = days.map(d => { const v = series.map(s => s[d]).filter(x => x != null).sort((x, y) => x - y); return quantile(v, 0.5); });
+    const p10 = days.map(d => { const v = series.map(s => s[d]).filter(x => x != null).sort((x, y) => x - y); return quantile(v, 0.1); });
+    const p90 = days.map(d => { const v = series.map(s => s[d]).filter(x => x != null).sort((x, y) => x - y); return quantile(v, 0.9); });
+    let lo = 0, hi = 0; for (const s of series) for (const v of s) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    const yt = niceTicks(lo, hi, 5); lo = Math.min(lo, yt[0]); hi = Math.max(hi, yt[yt.length - 1]);
+    const x = d => m.l + (d / Math.max(n - 1, 1)) * (W - m.l - m.r);
+    const y = v => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+    const svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "campaign cash by day" }, box);
+    for (const v of yt) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "gridline" }, svg); el("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", class: "tick" }, svg, fmtMoney(v)); }
+    for (const d of niceTicks(0, n - 1, 6)) { el("text", { x: x(d), y: H - m.b + 18, "text-anchor": "middle", class: "tick" }, svg, String(d)); }
+    el("text", { x: W - m.r, y: H - 4, "text-anchor": "end", class: "tick" }, svg, "trading day");
+    el("line", { x1: m.l, x2: W - m.r, y1: y(lo), y2: y(lo), class: "axisline" }, svg);
+    const path = (arr) => arr.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+    for (const s of series) el("path", { d: path(s), fill: "none", stroke: "var(--deemph)", "stroke-width": 1, "stroke-linejoin": "round" }, svg);
+    el("path", { d: path(med), fill: "none", stroke: "var(--series-1)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    const last = med[n - 1]; el("circle", { cx: x(n - 1), cy: y(last), r: 4.5, fill: "var(--series-1)", stroke: "var(--surface-1)", "stroke-width": 2 }, svg);
+    el("text", { x: x(n - 1) - 6, y: y(last) - 8, "text-anchor": "end", class: "dl" }, svg, "median " + fmtMoney(last));
+    const cross = el("line", { x1: 0, x2: 0, y1: m.t, y2: H - m.b, stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden" }, svg);
+    const dot = el("circle", { r: 4.5, fill: "var(--series-1)", stroke: "var(--surface-1)", "stroke-width": 2, visibility: "hidden" }, svg);
+    const hit = el("rect", { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, class: "hit" }, svg);
+    hit.addEventListener("pointermove", (ev) => {
+      const r = svg.getBoundingClientRect(); const px = (ev.clientX - r.left) * (W / r.width);
+      const d = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / (W - m.l - m.r) * (n - 1))));
+      cross.setAttribute("x1", x(d)); cross.setAttribute("x2", x(d)); cross.setAttribute("visibility", "visible");
+      dot.setAttribute("cx", x(d)); dot.setAttribute("cy", y(med[d])); dot.setAttribute("visibility", "visible");
+      showTip(ev, "day " + d, [
+        { value: fmtMoney(med[d]), label: "median", color: "var(--series-1)" },
+        { value: fmtMoney(p10[d]), label: "p10 of sampled paths", color: "var(--deemph)" },
+        { value: fmtMoney(p90[d]), label: "p90 of sampled paths", color: "var(--deemph)" },
+      ]);
+    });
+    hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); hideTip(); });
+    table($("cash-table"), [
+      { key: "day", label: "day" }, { key: "med", label: "median", fmt: fmtMoney },
+      { key: "p10", label: "p10", fmt: fmtMoney }, { key: "p90", label: "p90", fmt: fmtMoney },
+    ], days.filter(d => d % 21 === 0 || d === n - 1).map(d => ({ day: d, med: med[d], p10: p10[d], p90: p90[d] })));
+  }
+
+  // ---------------------------------------------------------------- ranking bars
+  function barChart(parent, title, key, fmt, selected, opts) {
+    parent.replaceChildren();
+    h("h2", null, parent, title);
+    const rows = P.arms.map(a => ({ arm: a.arm, v: a[key] })).filter(r => r.v != null && isFinite(r.v));
+    const W = 480, rowH = 26, m = { l: 150, r: 60, t: 8, b: 26 }, H = m.t + rows.length * rowH + m.b;
+    let lo = Math.min(0, ...rows.map(r => r.v)), hi = Math.max(0, ...rows.map(r => r.v));
+    if (opts && opts.max != null) hi = Math.max(hi, opts.max);
+    const xt = niceTicks(lo, hi, 4); lo = Math.min(lo, xt[0]); hi = Math.max(hi, xt[xt.length - 1]);
+    const x = v => m.l + (v - lo) / (hi - lo) * (W - m.l - m.r);
+    const svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": title }, parent);
+    for (const v of xt) { el("line", { x1: x(v), x2: x(v), y1: m.t, y2: H - m.b, class: "gridline" }, svg); el("text", { x: x(v), y: H - m.b + 16, "text-anchor": "middle", class: "tick" }, svg, fmt(v)); }
+    el("line", { x1: x(0), x2: x(0), y1: m.t, y2: H - m.b, class: "axisline" }, svg);
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, bh = 16, x0 = x(0), x1 = x(r.v);
+      const left = Math.min(x0, x1), width = Math.max(Math.abs(x1 - x0), 0.5), rr = Math.min(4, width);
+      const sel = r.arm === selected;
+      el("text", { x: m.l - 8, y: yc + 4, "text-anchor": "end", class: sel ? "dl" : "" }, svg, r.arm);
+      const d = r.v >= 0
+        ? "M" + left + " " + (yc - bh / 2) + " h" + (width - rr) + " a" + rr + " " + rr + " 0 0 1 " + rr + " " + rr + " v" + (bh - 2 * rr) + " a" + rr + " " + rr + " 0 0 1 -" + rr + " " + rr + " h-" + (width - rr) + " z"
+        : "M" + (left + width) + " " + (yc - bh / 2) + " h-" + (width - rr) + " a" + rr + " " + rr + " 0 0 0 -" + rr + " " + rr + " v" + (bh - 2 * rr) + " a" + rr + " " + rr + " 0 0 0 " + rr + " " + rr + " h" + (width - rr) + " z";
+      const mark = el("path", { d, fill: sel ? "var(--series-1)" : "var(--deemph)", class: "mark" }, svg);
+      if (sel) el("text", { x: r.v >= 0 ? x1 + 6 : x1 - 6, y: yc + 4, "text-anchor": r.v >= 0 ? "start" : "end", class: "dl" }, svg, fmt(r.v));
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      hit.addEventListener("pointermove", (ev) => { mark.classList.add("hover"); showTip(ev, r.arm, [{ value: fmt(r.v), label: title, color: sel ? "var(--series-1)" : "var(--deemph)" }]); });
+      hit.addEventListener("pointerleave", () => { mark.classList.remove("hover"); hideTip(); });
+      hit.addEventListener("click", () => { armSel.value = r.arm; armSel.dispatchEvent(new Event("change")); });
+    });
+  }
+  function renderRanking(selected) {
+    barChart($("rank-growth"), "median log growth, per year", "median_log_growth", (v) => fmtRate(v).replace(" /yr", ""), selected);
+    barChart($("rank-ruin"), "ruin probability", "ruin_probability", fmtPct, selected, { max: 0.1 });
+    barChart($("rank-dd"), "bankroll drawdown, p90", "p90_max_drawdown", fmtMoney, selected);
+    barChart($("rank-latency"), "days to first payout, median", "median_days_to_first_payout", (v) => fmtNum(v, 0), selected);
+    table($("rank-table"), [
+      { key: "arm", label: "arm" }, { key: "accounts", label: "accounts" },
+      { key: "median_log_growth", label: "median log growth", fmt: (v) => fmtRate(v) },
+      { key: "ruin_probability", label: "ruin", fmt: fmtPct },
+      { key: "p90_max_drawdown", label: "drawdown p90", fmt: fmtMoney },
+      { key: "median_days_to_first_payout", label: "days to 1st payout", fmt: (v) => fmtNum(v, 0) },
+      { key: "share_accounts_ever_paid", label: "accounts that pay", fmt: fmtPct },
+      { key: "mean_same_day_multi_breach_days", label: "multi-breach days", fmt: (v) => fmtNum(v, 2) },
+      { key: "share_trades_at_tier_cap", label: "at tier cap", fmt: fmtPct },
+      { key: "realised_to_intended_risk", label: "realised/intended", fmt: (v) => fmtNum(v, 3) },
+    ], P.arms);
+  }
+
+  // ---------------------------------------------------------------- timeline
+  function renderTimeline(a) {
+    const rows = (P.accounts[a.arm] || []).slice().sort((p, q) => p.start_day - q.start_day || (p.kind === q.kind ? p.index - q.index : (p.kind === "combine" ? -1 : 1)));
+    const box = $("timeline"); box.replaceChildren();
+    $("tl-sub").textContent = "Path 0 of " + a.arm + ": every Combine and funded account, its span on the calendar, its payouts and its end.";
+    if (!rows.length) { h("p", null, box, "No accounts in the result file for this arm."); return; }
+    const horizon = a.horizon_days, W = 960, rowH = 22, m = { l: 90, r: 16, t: 8, b: 30 }, H = m.t + rows.length * rowH + m.b;
+    const x = d => m.l + (d / horizon) * (W - m.l - m.r);
+    const svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "account timelines" }, box);
+    for (const d of niceTicks(0, horizon, 6)) { el("line", { x1: x(d), x2: x(d), y1: m.t, y2: H - m.b, class: "gridline" }, svg); el("text", { x: x(d), y: H - m.b + 16, "text-anchor": "middle", class: "tick" }, svg, String(d)); }
+    el("text", { x: W - m.r, y: H - 4, "text-anchor": "end", class: "tick" }, svg, "trading day");
+    rows.forEach((r, i) => {
+      const yc = m.t + i * rowH + rowH / 2, end = r.end_day < 0 ? horizon : r.end_day, color = r.kind === "combine" ? "var(--series-2)" : "var(--series-1)";
+      const label = (r.kind === "combine" ? "Combine " : "Funded ") + r.index;
+      el("text", { x: m.l - 8, y: yc + 4, "text-anchor": "end" }, svg, label);
+      const w = Math.max(x(end) - x(r.start_day), 2);
+      const mark = el("rect", { x: x(r.start_day), y: yc - 6, width: w, height: 12, rx: 4, fill: color, class: "mark" }, svg);
+      for (const pd of r.payout_days) el("circle", { cx: x(pd), cy: yc, r: 4, fill: "var(--series-1)", stroke: "var(--surface-1)", "stroke-width": 2 }, svg);
+      if (r.breach_day >= 0) el("text", { x: x(r.breach_day), y: yc + 5, "text-anchor": "middle", fill: "var(--status-critical)", "font-weight": 700, "font-size": 14 }, svg, "×");
+      const hit = el("rect", { x: 0, y: yc - rowH / 2, width: W, height: rowH, class: "hit" }, svg);
+      hit.addEventListener("pointermove", (ev) => {
+        mark.classList.add("hover");
+        showTip(ev, label, [
+          { value: r.start_day + " to " + (r.end_day < 0 ? "horizon" : r.end_day), label: "trading days on the calendar", color },
+          { value: r.outcome, label: "outcome" + (r.breach_day >= 0 ? " (loss limit hit on day " + r.breach_day + ")" : "") },
+          { value: String(r.n_payouts), label: "payouts" },
+          { value: fmtMoney(r.balance), label: "balance at the end" },
+        ]);
+      });
+      hit.addEventListener("pointerleave", () => { mark.classList.remove("hover"); hideTip(); });
+    });
+    table($("tl-table"), [
+      { key: "label", label: "account" }, { key: "start_day", label: "start" }, { key: "end", label: "end" },
+      { key: "outcome", label: "outcome" }, { key: "days", label: "days" }, { key: "trades", label: "trades" },
+      { key: "n_payouts", label: "payouts" }, { key: "balance", label: "balance", fmt: fmtMoney },
+    ], rows.map(r => ({ label: (r.kind === "combine" ? "Combine " : "Funded ") + r.index, start_day: r.start_day, end: r.end_day < 0 ? "horizon" : r.end_day, outcome: r.outcome, days: r.days, trades: r.trades, n_payouts: r.n_payouts, balance: r.balance })));
+  }
+
+  function render() {
+    const a = P.arms.find(z => z.arm === armSel.value) || P.arms[0];
+    if (!a) return;
+    renderTiles(a); renderCash(a); renderRanking(a.arm); renderTimeline(a);
+  }
+  render();
+})();
+</script>
+</body>
+</html>

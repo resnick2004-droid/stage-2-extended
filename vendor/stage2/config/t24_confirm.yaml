@@ -1,0 +1,46 @@
+# config/t24_confirm.yaml -- T24-GF15b's one confirmation capture (D-439, D-440): T24's kit (D-428) on NQ's held-back window.
+#
+# The same twelve brackets, 23 fixed times, both sides, on time and five bars late, the same walk, ties and news rules as
+# R149-R151 (whose identity against R147/R148 held exactly, D-428 (4)); only the window changes: 2025-07-01 to
+# 2026-07-16, QuantConnect's NQ data end (P-06 found it ends 2026-07-17; nothing from 2026-07-17 is ever read). The kit is
+# generated only under a runnable registration embedded in its code (D-81) AND after T24-GF15b's development test reads
+# PASS or CONTINUE (D-440): `prereg_id` stays `pending` until the gatekeeper registers the confirmation. Records only: no bar or price leaves (D-120).
+status: fixed
+decision: D-439
+market: NQ
+prereg_id: P-10
+runs:
+  - {run: R152-t24c-NQ-2026, warm: "2025-06-20", start: "2025-07-01", end: "2026-07-16"}
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:
+  open_ct: "17:00"
+  flatten_ct: "15:10"
+  decision_every_min: 60
+  last_decision_ct: "14:00"
+  extra_decisions_ct: ["08:30"]
+entry_delays_min: [0, 5]
+slip_ticks: 1
+sides: "long and short at every slot-day (the side is the confirmation's coin, seed 20261025)"
+brackets:
+  - [20, 20]
+  - [30, 20]
+  - [40, 20]
+  - [60, 20]
+  - [40, 40]
+  - [60, 40]
+  - [80, 40]
+  - [120, 40]
+  - [60, 60]
+  - [90, 60]
+  - [120, 60]
+  - [180, 60]
+fills: "as config/t24_capture.yaml (collect_core's walk, D-381)"
+ties: "as config/t24_capture.yaml"
+end: "as config/t24_capture.yaml"
+a3: "recorded beside, unused"
+early_close_days: skipped
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv, config/sources/fomc_statements_2026q3.csv]
+  bls: [data/release_days_0830_2009_2025.csv, data/release_days_0830_2026.csv]   # 2025 H2 and 2026 (D-358's 2026 file)
+  bls_cut_ct: "07:30"
+counting: "the confirmation's one configuration under its registration"

@@ -1,0 +1,87 @@
+# FV3's declared screen (T17 item 3; the card docs/candidates/cards/drafts/FV3.md): the mechanics report, the primary
+# family's grid, the walk-forward, the eras, the per-side drift benchmark, the D-145 gate under the state policy, and
+# D-277's stopping points -- fixed here before any FV3 outcome is read; declared by D-295.
+decision: D-302                          # the declared screen as declared, corrected (D-301, D-302): D-295's run is on record (D-298)
+correction: "D-301: the displacement axis's off quoted (YAML read it as false); the frequency rule at the Combine's full allowance; the funded benchmark at the funded target; the gate's placement off in the base case (D-289) with the placement-on reading beside; D-272's stand-aside applied in the engine's sizing per leg. D-302: the state table's no-trade decisions exported as no-trade states (the version-2 files below; at this gate's cell no band qualified, so the policy is unchanged there). Nothing else changed from D-295."
+model: FV3
+market: NQ
+runs: [R117-fv3-NQ-0910, R118-fv3-NQ-1111, R119-fv3-NQ-1212, R120-fv3-NQ-1313, R121-fv3-NQ-1414, R122-fv3-NQ-1515,
+       R123-fv3-NQ-1616, R124-fv3-NQ-1717, R125-fv3-NQ-1818, R126-fv3-NQ-1919, R127-fv3-NQ-20H1, R133-fv3-NQ-20H2,
+       R128-fv3-NQ-2121, R129-fv3-NQ-22H1, R134-fv3-NQ-22H2, R130-fv3-NQ-23H1, R135-fv3-NQ-23H2, R131-fv3-NQ-24H1,
+       R136-fv3-NQ-24H2, R132-fv3-NQ-2525]                    # the twenty kits of D-294 and D-296 (capacity cuts, no outcome read)
+window: {start: "2009-06-01", end: "2025-06-30"}            # development only (D-237); the held-back window is never read
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # FOMC days excluded, FV2's own line (D-283; D-297)
+
+execution:
+  mode: manual
+  latency_minutes: 2                     # seated (D-282); L = 0 and 5 reported from the capture's codes at the base stop
+  entry: "a market order working from the signal bar's close + L, filled at the next bar's open; the spread and a tick charged"
+  coordination: one_at_a_time            # D-160: a trade only after the previous one's exit bar; at most one trade an account a day
+  accounts: 5
+  max_trades_per_day: 5
+  breakeven: "a trade open at the next session's open has its stop moved to the entry when the open there is in its favour (the capture's be_* fields)"
+  flatten: "the worst of 15:07-15:10 CT less 2 ticks (D-263); the 15:08 close where none was recorded"
+
+ladder:                                  # his stop in points by room, scaled by the ATR (25 / 381.25); the dollars and R by state
+  base_stop_atr: 0.06557377049180328     # 25 / 381.25 (fv3_core.STOP_ATR)
+  rungs:
+    half:   {stop_frac: 0.5, room_min_frac: 0.6, room_max_frac: 1.2}     # 15-30 pts of room at a 25-pt base: 12.5-pt stop
+    full:   {stop_frac: 1.0, room_min_frac: 1.2}                         # 30 pts and over: 25-pt stop
+    double: {stop_frac: 2.0, continuation_open_body_frac: 1.0}           # a continuation when the opening candle body exceeds the base: 50-pt stop
+  room_target_frac: 0.8                  # room >= 0.8 x the target, his "80 % of my trade"
+  funded_room_min_frac: 2.0              # funded trades only with 50+ pts of room (the room rule at 2.5R gives the same)
+  double_room_frac: 3.04                 # the 50/76 variant for reversions: 76 pts of room at a 25-pt base
+
+state_policy:                            # D-290, D-291: both legs' R and dollar risk from the table at the slot rent carried
+  file: results/state_policy_v2.csv                          # D-302's re-export: the same solution, export version 2
+  policies_json: results/state_policy_v2_policies.json
+  slot_rent: 25.0
+  fresh: {combine_rr: 1.0, combine_risk: 1500, funded_rr: 2.5, funded_risk: 2000}   # the table's fresh-account geometry: the behaviour steps' legs
+  edge_cell: "the policy at the edge nearest FV3's own lower bound, chosen after the bound is read -- never the 0.025 cell by default"
+  allowance: {combine_micros: 50, funded_micros_by_balance: {0: 20, 1500: 30, 2000: 50}}   # D-289: the full verified allowance
+  stand_aside:                                                                             # D-272 (1), applied in the engine's sizing per leg (D-300, D-301)
+    combine: {min_risk_share: 0.9, floor_ticks: 45}                                        # a Combine trade only where the allowance carries 90 % of the state's risk, over the cost floor
+    funded: {min_risk_share: 0.0, floor_ticks: 45}                                         # a funded trade at the largest the allowance carries (the card's clause), over the cost floor
+  contracts: "whole minis (10 micros) at the rung's stop: risk / (stop points x $20), capped by the allowance"
+
+search:                                  # the primary family, k = 32: his definitions fixed as he states them
+  sessions: [[am], [am, pm], [am, eve, asia], [eve, asia, am, pm]]
+  continuation: [true, false]
+  displacement: [rule, "off"]            # rule: his reading (no swing between price and fair, or under 30 pts of room; BOS only after two losses); off: BOS only (quoted: YAML reads a bare off as false, D-298's audit)
+  double_rung_reversions: [false, true]  # the 50/76 variant for reversions with 76+ pts of room
+k: 32
+
+selection:
+  rule: "no axis is ordered: the feasible cell with the highest value; ties to the earlier (D-283's reading)"
+  value: "the Combine leg's mean metric per trade on the selection years (gross R less the cell's median cost of 2020 to June 2025)"
+  feasibility: "D-154's minimum at zero edge for the state table's fresh Combine (1:1 $1,500); the funded risk sizeable; the cap share at most 2 %"
+  eras: {split: [[2009, 2017], [2018, 2025]], bootstrap_years: 2000}
+  walkforward: {first_test_year: 2013, selection: "every development year before the test year"}
+
+mechanics_report:                        # descriptive, declared; nothing selected from it (the card's layer 1)
+  group_by: [phase, trigger_kind, session, room_band, swing_bars_class, era]
+  swing_bars_classes: [1, 2, "3+"]
+  eras: ["2009-2017", "2018-2025", "2020-2025"]
+  min_trades: 50
+  per_group: [n, trades_per_day, gross_e, net_e_today, lower_bound_95, hit_rate, mean_r_at_1p5, mean_r_at_fv, median_mae_r, share_at_target, b_vs_benchmark]
+  also: [consecutive_losses_before, reanchor_state, minutes_since_open_band, latency_0_vs_2_vs_5]
+
+benchmark:                               # D-277 (2): per side, the capture's unconditional entries at the latest slot before the entry
+  slots: fv3_core.BENCH
+  settle: "the same rung's stop and the same target, from the benchmark's own profiles"
+
+gate:                                    # D-145 at 0 % denial, placement off (D-289), today's costs, the state policy
+  trades: "each test year's out-of-sample trades of the configuration selected on the years before it, both legs by the table's state, settled from the profiles with the true MAE"
+  settlement: mae
+  campaign: {bankroll: 5000, accounts: 5, combines: 5, horizon_days: 504, n_paths: 500, mode: rotation, settlement: mae, payout_method: aeropay, sizing: current_tier, headroom: 1.0, rtp: false}   # headroom 1.0: the full allowance (D-289)
+  denial_levels: [0.0, 0.10, 0.25, 0.50]
+  costs: "NQ minis with MNQ micros at the verified fees (D-276); the spread and a tick at entry; a tick on a stop, two on the flatten"
+
+kill_lines:                              # D-277's stopping points
+  W1: "walk-forward test years 2013-2025: the one-sided 95 % t bound of the yearly out-of-sample values above zero"
+  W2: "the final selection's value above zero, the lower era's when the eras are flagged"
+  B: "the final selection's value over its drift benchmark above zero"
+  G: "the D-145 gate passes at 0 % denial under the state policy"
+  stopping: "W1 failing closes this specification and the fair-value branch as traded by his own rules; a later line failing closes the specification; no parameter change after any gate's result"
+
+seeds: {eras: 20261017, stops: 20261018, gate: 20261019, spa: 20261020}

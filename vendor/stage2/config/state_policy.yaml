@@ -1,0 +1,48 @@
+# The account-state risk policy by dynamic programming (D-290), fixed before scripts/state_policy_dp.py runs.
+# EXPLORATORY and engine-only: no market data; the outcome process is stage one's binary edge convention.
+decision: D-290
+script: scripts/state_policy_dp.py
+module: propedge/campaign/state_policy.py
+
+outcomes:
+  model: "stage one's binary process: p = (1 + e) / (1 + R), the same e at every R (propsim D-06); a trade risking more than the room above the floor is raced against the floor by the engine's p_race / theta_from_edge (floor_mode truncate, edge_mode drift)"
+  edges: [-0.05, -0.025, 0.0, 0.025, 0.05, 0.10]     # FV2's region, zero, JJ Simon's 41 % at 1.5R (e = 0.025), the research criterion
+
+rules: "rules_for_method('aeropay') from config/rules.yaml -- the verified ledger; D-289: the Standard path, no placement"
+horizon_days: 504                                    # the gate's campaign horizon (config/fv2_grid.yaml)
+slot_rent_per_day: [0.0, 10.0, 25.0]                 # lambda, dollars per account-day: 0 is pure expected value
+
+menu:
+  step: 50.0                                         # the balance grid, dollars; every outcome lands on it
+  risks: [250, 500, 750, 1000, 1500, 2000]
+  rrs: [1.0, 1.5, 2.0, 2.5, 3.0]                     # R >= 1 (D-151); combinations off the grid are left out
+  skip: true                                         # no trade that day
+funded:
+  balance_cap: 6000.0                                # balances above it are held at it (payouts are capped at $2,000 anyway)
+  payout_grid_step: 50.0                             # a request is any grid amount from payout_min to the allowed cap, or none
+
+objective: "expected cash from one attempt within the horizon: the Combine's subscription accrued per trading day (subscription / billing_days), the activation at a pass, net payouts (profit split, the method's fee), less the slot rent per account-day; no credit for survival"
+
+baselines:                                           # the fixed legs, evaluated as policies by the same machinery
+  - {name: s1_1to1_1500, combine_rr: 1.0, combine_risk: 1500, funded_rr: 1.5, funded_risk: 1000}
+  - {name: s1_1p5to1_1000, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}
+  - {name: fv2_final, combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 500}
+
+oracles:                                             # CLAUDE.md: a value outside a ceiling is an engine error, never a finding
+  zero_edge_no_fees_max_p_pass: 0.327131
+  zero_edge_no_fees_p_pass_1to1_1500: 0.32653061224   # 16/49
+  zero_edge_no_fees_max_gross_payouts: 2000.0
+
+export:                                              # the DP's policy projected onto the engine's policy tree
+  balance_band: 250.0
+  cushion_band: 250.0
+
+campaign_check:                                      # D-290 (8): the engine's own campaign, the exported policy against the fixed legs
+  accounts: 5
+  combines: 5
+  bankroll: 5000
+  horizon_days: 504
+  n_paths: 500
+  payout_method: aeropay
+  seed: 20261016
+  fixed_legs: {combine_rr: 1.5, combine_risk: 1000, funded_rr: 1.5, funded_risk: 1000}   # stage one's geometry (D-267)

@@ -1,0 +1,56 @@
+{
+  "columns": [
+    "rr",
+    "risk",
+    "edge",
+    "setups_per_day",
+    "source",
+    "p_pass",
+    "median_days_to_resolve",
+    "mean_days_to_resolve",
+    "share_resolved_in_one_billing_period",
+    "mean_subscriptions",
+    "passes_per_100_usd_fees",
+    "min_setups_per_day",
+    "best_setups_per_day_for_passes"
+  ],
+  "description": "Combine time to resolve, subscriptions and passes per fee dollar by size, setups per day and edge; the contract's minimum setups per day.",
+  "exploratory": false,
+  "git_commit": "cda9c25cfa1d23f1a408c62981462b3b8fb41773",
+  "git_dirty": false,
+  "notes": {
+    "decision": "D-154, D-274",
+    "process": "stage one's binary process through the engine's accounts; a contract calculation, not a strategy"
+  },
+  "parameters": {
+    "billing_days": 21,
+    "combines_per_cell": 2000,
+    "edges": [
+      0.0,
+      0.05,
+      0.1
+    ],
+    "frequencies": [
+      0.1,
+      0.2,
+      0.25,
+      0.3333333333333333,
+      0.5,
+      1,
+      2,
+      3,
+      5,
+      8
+    ],
+    "min_rule": "fewest setups a day with the median Combine resolved inside one billing period"
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "setups_per_day.csv",
+  "rows": 360,
+  "script": "scripts/setups_per_day.py",
+  "seed": 20261113,
+  "sha256": "495ba21bb3a80e4740b18a12d5d3c609b188464626f03bb59166447f6b5eb02f",
+  "timestamp": "2026-10-25T18:42:43+00:00",
+  "variant_count": null
+}

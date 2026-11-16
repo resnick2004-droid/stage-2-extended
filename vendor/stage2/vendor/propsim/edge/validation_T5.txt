@@ -1,0 +1,11 @@
+combine stage done 26s
+xfa stage done 122s
+V1 exact vs MC: 120 comparisons, 2 beyond 3 SE, max |z| 3.26 -> PASS
+V2 chain 1:1 $1,500 at e=0 minus 16/49 = -1.74e-14 (PASS); grid reproduction: 10 cells, max |z| 2.32 -> PASS
+V3 e=0 gross <= 2000: PASS; e=0 E[B+Q] <= 0: PASS (max z +1.45); monotone in edge: PASS
+composed 1200 pairs; total 122s
+V1 follow-up (D-40; seeds fixed before running), 4 largest deviations at N = 1,000,000:
+1.5:1 $1000 e=0.05: exact 0.324050  MC(1M, seed 55500) 0.323498  z -1.18
+1.5:1 $750 e=0.1: exact 0.355532  MC(1M, seed 55501) 0.356247  z +1.49
+3.0:1 $1000 e=0.0: exact 0.170173  MC(1M, seed 55502) 0.170976  z +2.13
+2.0:1 $500 e=0.0: exact 0.277285  MC(1M, seed 55503) 0.276919  z -0.82

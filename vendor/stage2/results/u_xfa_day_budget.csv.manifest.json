@@ -1,0 +1,258 @@
+{
+  "columns": [
+    "design",
+    "prereg",
+    "arm",
+    "section",
+    "group",
+    "measure",
+    "value",
+    "n",
+    "basis",
+    "note"
+  ],
+  "description": "EXPLORATORY (D-649, program U's U2): the registered gate campaigns of P-14, P-15 and P-16 re-run identically with the engine's records on -- the evaluation and funded funnels, each funded account's days by class, survival and accrual, the table's leaves, signal supply (D-363's sections); the opening funded trade, the sessions and trading days to the fifth winning day and the first payout request, winning days per account-week; and, beside, what the Consistency test would have read day by day (a description from the records, not a run on that path). The identities first (section identity). No design run; nothing selected.",
+  "exploratory": true,
+  "git_commit": "8d8e73b736977ec3349de89b9a4e6a6612a0d4d9",
+  "git_dirty": false,
+  "notes": {
+    "consistency": "a description from the records of Standard-path accounts, not a run on the Consistency path (D-649 (3))",
+    "seed": "none of its own: each design's paths are drawn at its registered campaign seed (parameters.seeds)",
+    "selection": "none (D-649 (4): its reading gets its own decision row)",
+    "status": "EXPLORATORY (D-649; program U's second measurement, U2): the funded account's days on registered designs, read off the engine's own records; no design run, no variant counted, nothing selected",
+    "variant_count_rule": "none: a measurement of registered designs; no design run, no variant recorded (D-649; D-363's script recorded none)"
+  },
+  "parameters": {
+    "arms": {
+      "point": "as traded",
+      "verdict": "every R shifted to its 0.05 bound (the gate row's lower-bound arm)"
+    },
+    "conditions": "0 % denial, the Standard path, the placement off (D-234, D-289); the engine's per-trade ledger and daily account recorder on, no engine file changed",
+    "day_classes": {
+      "losing": "losing_day",
+      "no_signal": "no_trade_routed",
+      "qualifying_win": "qualifying_winning_day",
+      "sat_out": "sat_out_by_table",
+      "win_under_min": "winning_day_under_min"
+    },
+    "decision": "D-649",
+    "declaration_sha256": "bcb42c70428f8bdb1b6b13241efaeae7c27be9b564713efbabdbe50e2e991515",
+    "designs": {
+      "p14": {
+        "cell": "a3_brk30_cb20",
+        "gate_file": "a3_brk30_cb20_gate.csv",
+        "model": "A3-BRK30-CB20",
+        "paths_file": "a3_brk30_cb20_gate_paths.csv",
+        "policy_id": "state_dp_e-0.050_lamstar_noclose",
+        "prereg": "P-14",
+        "seed": 20261131
+      },
+      "p15": {
+        "cell": "rc_s100_all",
+        "gate_file": "rc_s100_all_gate.csv",
+        "model": "RC",
+        "paths_file": "rc_s100_all_gate_paths.csv",
+        "policy_id": "state_dp_e-0.050_lamstar_noclose",
+        "prereg": "P-15",
+        "seed": 20261204
+      },
+      "p16": {
+        "cell": "rc_s150_all",
+        "gate_file": "rc_s150_all_gate.csv",
+        "model": "RC150",
+        "paths_file": "rc_s150_all_gate_paths.csv",
+        "policy_id": "state_dp_e-0.050_lamstar_noclose",
+        "prereg": "P-16",
+        "seed": 20261206
+      }
+    },
+    "horizon": 504,
+    "identity_columns": [
+      "final_cash",
+      "fees",
+      "payouts",
+      "accounts_funded",
+      "combine_attempts",
+      "xfas",
+      "trades"
+    ],
+    "identity_columns_more": [
+      "trades_sized",
+      "attempts_started",
+      "realised_risk",
+      "intended_capped_risk",
+      "days_to_first_payout",
+      "combine_slot_days",
+      "xfa_slot_days",
+      "combines_abandoned",
+      "xfas_abandoned"
+    ],
+    "identity_tolerance": 1e-06,
+    "paths": 100,
+    "references": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "a3_brk30_cb20_gate_paths.csv": "a4d06e79055ecce1feeb04a717323065dce021f1f014c345235b645625fe14f7",
+      "rc_s100_all_gate.csv": "7e9a599a7cc931b6ebc5161e3f97e8a68cf34838b0f531d0c2cdcf4202b117ed",
+      "rc_s100_all_gate_paths.csv": "9443a34f0adf41911f14633784528236c9d85a5b9bfa93bb90f4815e950372ed",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "rc_s150_all_gate_paths.csv": "97f7e9c587da3541d6c543f6cb6666c44b0d4e1dee403a6ac9387654a70268fc"
+    },
+    "rule": {
+      "p14": {
+        "cons_cap": 3000.0,
+        "cons_max_day_frac": 0.4,
+        "cons_min_days": 3,
+        "eps": 1e-09,
+        "keep_balance": 0.0,
+        "payout_frac": 1.0,
+        "payout_max_frac": 0.5,
+        "payout_min": 125.0,
+        "std_cap": 2000.0,
+        "win_days": 5,
+        "win_min": 150.0
+      },
+      "p15": {
+        "cons_cap": 3000.0,
+        "cons_max_day_frac": 0.4,
+        "cons_min_days": 3,
+        "eps": 1e-09,
+        "keep_balance": 0.0,
+        "payout_frac": 1.0,
+        "payout_max_frac": 0.5,
+        "payout_min": 125.0,
+        "std_cap": 2000.0,
+        "win_days": 5,
+        "win_min": 150.0
+      },
+      "p16": {
+        "cons_cap": 3000.0,
+        "cons_max_day_frac": 0.4,
+        "cons_min_days": 3,
+        "eps": 1e-09,
+        "keep_balance": 0.0,
+        "payout_frac": 1.0,
+        "payout_max_frac": 0.5,
+        "payout_min": 125.0,
+        "std_cap": 2000.0,
+        "win_days": 5,
+        "win_min": 150.0
+      }
+    },
+    "rule_rows": [
+      "xfa_std_winning_day_min",
+      "xfa_std_winning_days",
+      "xfa_std_cap",
+      "xfa_cons_min_days",
+      "xfa_cons_max_day_frac",
+      "xfa_cons_cap",
+      "payout_min"
+    ],
+    "seconds": 334.4,
+    "seeds": {
+      "p14": 20261131,
+      "p15": 20261204,
+      "p16": 20261206
+    },
+    "since": [
+      5,
+      10,
+      15,
+      20,
+      30,
+      40,
+      60,
+      90
+    ],
+    "study": "U2",
+    "timing": {
+      "p14": {
+        "inputs_peak_mb": 367.0,
+        "inputs_seconds": 9.1,
+        "inputs_working_mb": 354.0,
+        "point": {
+          "paths": 100,
+          "peak_mb": 422.0,
+          "processes": 1,
+          "seconds": 29.2,
+          "seconds_a_path": 0.292,
+          "working_mb": 287.0
+        },
+        "sessions": 1691,
+        "trades": 45191,
+        "verdict": {
+          "paths": 100,
+          "peak_mb": 422.0,
+          "processes": 1,
+          "seconds": 28.6,
+          "seconds_a_path": 0.286,
+          "working_mb": 422.0
+        }
+      },
+      "p15": {
+        "inputs_peak_mb": 1999.0,
+        "inputs_seconds": 61.3,
+        "inputs_working_mb": 612.0,
+        "point": {
+          "paths": 100,
+          "peak_mb": 1999.0,
+          "processes": 1,
+          "seconds": 40.6,
+          "seconds_a_path": 0.406,
+          "working_mb": 498.0
+        },
+        "sessions": 1691,
+        "trades": 295296,
+        "verdict": {
+          "paths": 100,
+          "peak_mb": 1999.0,
+          "processes": 1,
+          "seconds": 40.4,
+          "seconds_a_path": 0.403,
+          "working_mb": 721.0
+        }
+      },
+      "p16": {
+        "inputs_peak_mb": 1999.0,
+        "inputs_seconds": 47.9,
+        "inputs_working_mb": 613.0,
+        "point": {
+          "paths": 100,
+          "peak_mb": 1999.0,
+          "processes": 1,
+          "seconds": 37.2,
+          "seconds_a_path": 0.372,
+          "working_mb": 492.0
+        },
+        "sessions": 1691,
+        "trades": 239768,
+        "verdict": {
+          "paths": 100,
+          "peak_mb": 1999.0,
+          "processes": 1,
+          "seconds": 37.4,
+          "seconds_a_path": 0.373,
+          "working_mb": 548.0
+        }
+      }
+    },
+    "week_sessions": 5,
+    "words": {
+      "before_a_first_payout": "the sessions up to and including the first request's, or to the account's end",
+      "lost_on_the_opening_trade": "the balance after the account's first trade is at or under its floor",
+      "n": "the units the value rests on (a share's denominator, a percentile's sample)",
+      "percentiles": "numpy's linear",
+      "session": "a trading session an account was live for, its first counted 1",
+      "trading_day": "a session with at least one trade (8284208)"
+    },
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_xfa_day_budget.csv",
+  "rows": 2709,
+  "script": "scripts/u_xfa_day_budget.py",
+  "seed": null,
+  "sha256": "93bbe2b45cb39b52c42b4646603daee653add00b9b4b7b90dbf29b295e7f5a28",
+  "timestamp": "2026-11-15T07:55:12+00:00",
+  "variant_count": null
+}

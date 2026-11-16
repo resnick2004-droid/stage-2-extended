@@ -1,0 +1,805 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "config",
+    "arm",
+    "check",
+    "holds",
+    "compared",
+    "differing",
+    "refuses",
+    "label",
+    "label_note",
+    "cell",
+    "base",
+    "role",
+    "block",
+    "measure",
+    "what",
+    "direction",
+    "unit",
+    "measure_role",
+    "value",
+    "n",
+    "counted",
+    "overrides",
+    "row_to_beat",
+    "chosen",
+    "line",
+    "reference",
+    "reference_value",
+    "difference",
+    "lower",
+    "level",
+    "k",
+    "boot_block",
+    "draws",
+    "seed",
+    "first_date",
+    "last_date",
+    "worse_by",
+    "allowed",
+    "blank",
+    "n_reference",
+    "own_row_to_beat",
+    "own_row_to_beat_value",
+    "year",
+    "worse",
+    "years_worse",
+    "status",
+    "verdict",
+    "first_failing",
+    "family",
+    "decision",
+    "cells",
+    "program_cells",
+    "program_families",
+    "note"
+  ],
+  "description": "EXPLORATORY (D-621, program U): the lever family firms (D-644) on P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0's and P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0, the hedged_combines deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived's and P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0's and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0, the hedged_combines deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived's and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0's and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0, the hedged_combines deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived's and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge)'s and P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge)'s replay setup -- every cell on every start day, the scorecard, the choice on the early block and the judgement on the late one against R*, the reverse beside, the year rule, and for the chosen cell the coin guard and the gate floor; the identities first.",
+  "exploratory": true,
+  "git_commit": "587e0d9c3b75a046059977eb230c742d33d2a98f",
+  "git_dirty": false,
+  "notes": {
+    "selection": "D-621 (3): CARRIED only if every line holds; a carried cell is a new candidate for its own registered development test",
+    "status": "EXPLORATORY (D-621, program U): a lever family judged on the user's milestones by the declared selection rule; beside the gate, never a verdict of the gate (D-234); a carried cell is a new candidate, not a change to any verdict",
+    "variant_count_rule": "one per cell, under D-644:u_firms; the reference cell, the chosen cell's point arm, coin replays and gate floor are readings of cells already counted"
+  },
+  "parameters": {
+    "arm": "verdict",
+    "bases": {},
+    "blocks": {
+      "early": "starts to the last start of 2023 less the reading's horizon",
+      "late": "starts from the first session of 2024 with the reading's horizon left"
+    },
+    "bootstrap": {
+      "block": 63,
+      "draws": 2000,
+      "interval": "one-sided: the lower limit is the level's quantile",
+      "seed": 20261700
+    },
+    "cells": [
+      {
+        "base": "l1_day0",
+        "equals_u1": null,
+        "name": "l1_day0",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l1_day0_hedged",
+        "equals_u1": null,
+        "name": "l1_day0_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l1_day0_hedged_combines",
+        "equals_u1": null,
+        "name": "l1_day0_hedged_combines",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l1_seq",
+        "equals_u1": null,
+        "name": "l1_seq",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l1_seq_hedged",
+        "equals_u1": null,
+        "name": "l1_seq_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l1_seq_hedged_combines",
+        "equals_u1": null,
+        "name": "l1_seq_hedged_combines",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_day0",
+        "equals_u1": null,
+        "name": "l2_day0",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_day0_hedged",
+        "equals_u1": null,
+        "name": "l2_day0_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_day0_hedged_combines",
+        "equals_u1": null,
+        "name": "l2_day0_hedged_combines",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_seq",
+        "equals_u1": null,
+        "name": "l2_seq",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_seq_hedged",
+        "equals_u1": null,
+        "name": "l2_seq_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l2_seq_hedged_combines",
+        "equals_u1": null,
+        "name": "l2_seq_hedged_combines",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_day0",
+        "equals_u1": null,
+        "name": "l5_day0",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_day0_hedged",
+        "equals_u1": null,
+        "name": "l5_day0_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_day0_hedged_combines",
+        "equals_u1": null,
+        "name": "l5_day0_hedged_combines",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_seq",
+        "equals_u1": null,
+        "name": "l5_seq",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_seq_hedged",
+        "equals_u1": null,
+        "name": "l5_seq_hedged",
+        "overrides": {},
+        "rules": []
+      },
+      {
+        "base": "l5_seq_hedged_combines",
+        "equals_u1": null,
+        "name": "l5_seq_hedged_combines",
+        "overrides": {},
+        "rules": []
+      }
+    ],
+    "chosen_base": "l1_day0",
+    "coin_guard": {
+      "applies": "a coin design's only: not applicable to a cell on base p14",
+      "every": 21,
+      "ran": false,
+      "registered_coin": 20261102,
+      "sequences": [
+        20261600,
+        20261601,
+        20261602,
+        20261603,
+        20261604,
+        20261605,
+        20261606,
+        20261607,
+        20261608,
+        20261609,
+        20261610,
+        20261611,
+        20261612,
+        20261613,
+        20261614,
+        20261615,
+        20261616,
+        20261617,
+        20261618,
+        20261619,
+        20261620,
+        20261621,
+        20261622,
+        20261623,
+        20261624,
+        20261625,
+        20261626,
+        20261627,
+        20261628,
+        20261629,
+        20261630,
+        20261631,
+        20261632,
+        20261633,
+        20261634,
+        20261635,
+        20261636,
+        20261637,
+        20261638,
+        20261639,
+        20261640,
+        20261641,
+        20261642,
+        20261643,
+        20261644,
+        20261645,
+        20261646,
+        20261647,
+        20261648,
+        20261649
+      ],
+      "starts": "every 21st of the judged block's common start dates",
+      "wins_needed": 40
+    },
+    "decision": "D-621",
+    "declaration_sha256": "0c7a89b6c4e42c5623e1a0e4f69d1af5b4d91fbfcf1ec9913ea35d4c7a50f4df",
+    "expensive_lines": "the gate floor and the coin guard run for the chosen cell only, each only while every line before it holds (the verdict is the first failing line)",
+    "family": "firms",
+    "family_decision": "D-644",
+    "family_id": "D-644:u_firms",
+    "gate_floor": {
+      "paths": 500,
+      "ran": false,
+      "registered_call": {
+        "p14": "a3_brk30_cb20's gate campaign at seed 20261131, 500 paths, against a3_brk30_cb20_gate.csv's section gate rows at 0 % and a3_brk30_cb20_gate_paths.csv's gate run path for path",
+        "p16": "rc_screen.Runner's form at seed 20261131, 500 paths, against rc_width_screen.csv's rc_s150_all row"
+      },
+      "row_to_beat": "P-06",
+      "seed": 20261801
+    },
+    "hypothetical": {
+      "cells": [
+        "l1_day0_hedged",
+        "l1_day0_hedged_combines",
+        "l1_seq_hedged",
+        "l1_seq_hedged_combines",
+        "l2_day0_hedged",
+        "l2_day0_hedged_combines",
+        "l2_seq_hedged",
+        "l2_seq_hedged_combines",
+        "l5_day0_hedged",
+        "l5_day0_hedged_combines",
+        "l5_seq_hedged",
+        "l5_seq_hedged_combines"
+      ],
+      "label": "hypothetical_hedge",
+      "note": "HYPOTHETICAL (D-644 (4), D-514): hypothetical_hedge -- a cross-firm hedge pair, prohibited at Topstep (13747047, 10296582) and Lucid (11404734), tier 1; modelled as if the rule did not exist; never chosen, judged, ranked, a row to beat or a candidate. Also lucid_upper_bound: Lucid's funded monthly fee and payout fee are unpriced, so every figure is an upper bound on them. The bound arm flatters a hedged cell (the bound's shift partly cancels inside a mirrored pair, D-516): read the point arm beside it.",
+      "refused_in": [
+        "the choice",
+        "the judgement",
+        "the guards",
+        "the rows to beat"
+      ],
+      "written": "the scorecard at both arms and the deal's shares, section cell"
+    },
+    "joint_bases": {
+      "l1_day0": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_day0",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": "p16_5+1",
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0 (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l1_day0_hedged": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_day0_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l1_day0_hedged_combines": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_day0_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat from day 0, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l1_seq": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_seq",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": null,
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l1_seq_hedged": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_seq_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l1_seq_hedged_combines": {
+        "added_lucid_row": "5+1",
+        "cell": "l1_seq_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          1
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 1 Lucid seat opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_day0": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_day0",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": null,
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0 (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_day0_hedged": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_day0_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_day0_hedged_combines": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_day0_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats from day 0, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_seq": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_seq",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": null,
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_seq_hedged": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_seq_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l2_seq_hedged_combines": {
+        "added_lucid_row": "5+2",
+        "cell": "l2_seq_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          2
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 2 Lucid seats opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_day0": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_day0",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": null,
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0 (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_day0_hedged": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_day0_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_day0_hedged_combines": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_day0_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "day 0",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats from day 0, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_seq": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_seq",
+        "counted_under": "D-644:u_firms",
+        "deal": "unhedged",
+        "eligible": true,
+        "equals_u1": null,
+        "label": "lucid_upper_bound",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_seq_hedged": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_seq_hedged",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived, the hedged deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      },
+      "l5_seq_hedged_combines": {
+        "added_lucid_row": "5+5",
+        "cell": "l5_seq_hedged_combines",
+        "counted_under": "D-644:hypothetical_hedge",
+        "deal": "hedged_combines",
+        "eligible": false,
+        "equals_u1": null,
+        "label": "hypothetical_hedge",
+        "seats": [
+          5,
+          5
+        ],
+        "second_firm": "lucid",
+        "second_firm_opens": "first_payout_arrival",
+        "setup": "P-16's trades through the joint engine, 5 Topstep seats plus 5 Lucid seats opened when the campaign's first payout has arrived, the hedged_combines deal (hypothetical_hedge) (D-643; D-593's conventions; U1's p16_5+1 builder)",
+        "waits_for": "Lucid's funded monthly fee and payout fee are unpriced (D-561, D-575): every figure of the cell is an upper bound on them, and the cell waits for the two prices"
+      }
+    },
+    "k": 5,
+    "level": 0.0016666666666666668,
+    "p": "months 1 to 3 ending above zero over three, on the starts with 63 sessions",
+    "program_by_family": {
+      "D-629:u_budget": 8,
+      "D-630:u_entry": 14,
+      "D-635:u_seats": 8,
+      "D-639:u_hours": 6,
+      "D-644:u_firms": 18
+    },
+    "program_cells": 54,
+    "r_star": "p14",
+    "r_star_is_a_stand_in": false,
+    "references": {
+      "rc150_added_lucid.csv": "81e24e636c31033288564ee5d3f6c9a8edeed1c5a073b7596056362638879de8",
+      "rc_width_screen.csv": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+      "scoreboard.csv": "1c6b2beb424ad4e7d3f67d69a9b2be1dc72f9ae254368ca61c2d83dabc03f712",
+      "user_journey.csv": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "rows_to_beat": {
+      "P": "p14",
+      "S1": "p14",
+      "S3a": "p14",
+      "S3b": "p14",
+      "S3c": "p16",
+      "S4a": "p14",
+      "S4b": "p14",
+      "S5a": "p14",
+      "S5b": "p16",
+      "S5c": "p16"
+    },
+    "seconds": 22019.1,
+    "seeds": {
+      "bootstrap": 20261700,
+      "campaign": 20261131,
+      "coin": 20261102,
+      "note": "a replay draws nothing"
+    },
+    "timing": {
+      "l1_day0_hedged_combines|point": {
+        "seconds": 428.3,
+        "starts": 1691
+      },
+      "l1_day0_hedged_combines|verdict": {
+        "seconds": 456.1,
+        "starts": 1691
+      },
+      "l1_day0_hedged|point": {
+        "seconds": 434.7,
+        "starts": 1691
+      },
+      "l1_day0_hedged|verdict": {
+        "seconds": 891.5,
+        "starts": 1691
+      },
+      "l1_day0|point": {
+        "seconds": 461.4,
+        "starts": 1691
+      },
+      "l1_day0|verdict": {
+        "seconds": 617.3,
+        "starts": 1691
+      },
+      "l1_seq_hedged_combines|point": {
+        "seconds": 741.8,
+        "starts": 1691
+      },
+      "l1_seq_hedged_combines|verdict": {
+        "seconds": 811.8,
+        "starts": 1691
+      },
+      "l1_seq_hedged|point": {
+        "seconds": 694.3,
+        "starts": 1691
+      },
+      "l1_seq_hedged|verdict": {
+        "seconds": 822.3,
+        "starts": 1691
+      },
+      "l1_seq|verdict": {
+        "seconds": 891.5,
+        "starts": 1691
+      },
+      "l2_day0_hedged_combines|point": {
+        "seconds": 609.1,
+        "starts": 1691
+      },
+      "l2_day0_hedged_combines|verdict": {
+        "seconds": 569.3,
+        "starts": 1691
+      },
+      "l2_day0_hedged|point": {
+        "seconds": 514.1,
+        "starts": 1691
+      },
+      "l2_day0_hedged|verdict": {
+        "seconds": 572.4,
+        "starts": 1691
+      },
+      "l2_day0|verdict": {
+        "seconds": 571.3,
+        "starts": 1691
+      },
+      "l2_seq_hedged_combines|point": {
+        "seconds": 899.4,
+        "starts": 1691
+      },
+      "l2_seq_hedged_combines|verdict": {
+        "seconds": 809.7,
+        "starts": 1691
+      },
+      "l2_seq_hedged|point": {
+        "seconds": 928.5,
+        "starts": 1691
+      },
+      "l2_seq_hedged|verdict": {
+        "seconds": 802.4,
+        "starts": 1691
+      },
+      "l2_seq|verdict": {
+        "seconds": 865.3,
+        "starts": 1691
+      },
+      "l5_day0_hedged_combines|point": {
+        "seconds": 520.3,
+        "starts": 1691
+      },
+      "l5_day0_hedged_combines|verdict": {
+        "seconds": 642.7,
+        "starts": 1691
+      },
+      "l5_day0_hedged|point": {
+        "seconds": 524.2,
+        "starts": 1691
+      },
+      "l5_day0_hedged|verdict": {
+        "seconds": 575.1,
+        "starts": 1691
+      },
+      "l5_day0|verdict": {
+        "seconds": 633.7,
+        "starts": 1691
+      },
+      "l5_seq_hedged_combines|point": {
+        "seconds": 914.7,
+        "starts": 1691
+      },
+      "l5_seq_hedged_combines|verdict": {
+        "seconds": 758.2,
+        "starts": 1691
+      },
+      "l5_seq_hedged|point": {
+        "seconds": 766.5,
+        "starts": 1691
+      },
+      "l5_seq_hedged|verdict": {
+        "seconds": 769.8,
+        "starts": 1691
+      },
+      "l5_seq|verdict": {
+        "seconds": 915.6,
+        "starts": 1691
+      },
+      "twin_5+0|verdict": {
+        "seconds": 459.4,
+        "starts": 1691
+      }
+    },
+    "tolerances": {
+      "blank": "a blank on either side fails the line",
+      "relative": 0.1,
+      "share": 0.05,
+      "zero_reference": "no relative tolerance"
+    },
+    "workers": 2
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "u_firms.csv",
+  "rows": 583,
+  "script": "scripts/u_family.py",
+  "seed": 20261700,
+  "sha256": "5a93c73b2526220b96b162d542dcf842094cc810faa3513cd220a73013cc3b8d",
+  "timestamp": "2026-11-15T07:49:06+00:00",
+  "variant_count": 18
+}

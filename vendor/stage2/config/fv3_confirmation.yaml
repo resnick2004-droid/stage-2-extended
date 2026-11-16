@@ -1,0 +1,83 @@
+# config/fv3_confirmation.yaml -- FV3-C's one confirmation on NQ's held-back window (D-355), fixed before any of the
+# window is read. FV3-C is frozen FV3 under the firm's two rules (D-353; config/fv3_corrected_portfolio.yaml; its
+# development run results/fv3_corrected_v1.csv, CONTINUE by P1-P4, audited, D-354; frozen at c561ec9). This file is
+# everything the confirmation does; the pre-registration cites it, and the kits (propedge/data/fv3_kit.py
+# FV3_CONFIRM_RUNS), the ingest (scripts/ingest_fv3_run.py on a `confirm` kit), the verdict (scripts/confirm_fv3.py) and
+# the tests read it. Nothing here was chosen after reading the held-back window.
+
+model: FV3-C
+prereg_id: P-06                  # registered 2026-10-13 (D-357), approved by the operator (D-359); written in the same commit as --freeze and the kits R139-R141 (D-358)
+market: NQ
+candidate_config: config/fv3_corrected_portfolio.yaml   # the frozen candidate (D-353, D-354): every rule of the campaign
+engine_commit: c561ec9           # FV3-C's freeze (D-354): the campaign engine and the scorer must equal this commit's
+
+# D-237's held-back window, read once: 2025-07-01 to the end of QuantConnect's NQ data or 2026-09-30, whichever is
+# earlier. Three periods, one capture kit each; the warm-up days before a period's start only fill the 14-day histories
+# and record nothing.
+window: {start: "2025-07-01", end: "2026-09-30"}
+periods:
+  - {id: "2025H2", label: 202507, run: R139-fv3-confirm-NQ-25H2, warm: "2025-05-12", start: "2025-07-01", end: "2025-12-31", min_days: 60}
+  - {id: "2026H1", label: 202601, run: R140-fv3-confirm-NQ-26H1, warm: "2025-11-10", start: "2026-01-01", end: "2026-06-30", min_days: 60}
+  - {id: "2026Q3", label: 202607, run: R141-fv3-confirm-NQ-26Q3, warm: "2026-05-11", start: "2026-07-01", end: "2026-09-30", min_days: 0}
+# `label`: the period's tag in the scorer's `year` slot (an opaque label there; the eras, the walk-forward selection and
+# W1/W2/B do not run -- the cell is frozen). `min_days`: a run whose HEAD reports fewer days is UNUSABLE (D-230's single
+# test, judged from its log before any record is parsed) -- about half the period's sessions for the two half-years,
+# which lie wholly inside QuantConnect's data (it reached 2026-07-04 when R088 ran); none for 2026 Q3, which may be cut
+# short by the data's end and is then simply not counted (below), never refused.
+
+# a period is COUNTED when its capture records at least this many days (D-356, the wording made exact: the days with a
+# capture record -- the kit records full sessions only, an early close carries no record -- FOMC days out); an uncounted
+# period's trades still join C1's pool and its figures are reported beside; C2 and C4's per-period conditions run on the
+# counted periods; fewer than two counted periods is a FAIL (the window cannot be re-read)
+period_min_days: 40
+counted_periods_min: 2
+
+# D-356 (the gatekeeper's finding 2): THE ORDER. No run is timed after part of the window has been read. The operator runs
+# the three kits; each run is judged completely -- its log, the parser on its output in memory, its days inside the period
+# -- before any period's records are saved (`scripts/ingest_fv3_run.py --usability-only` writes runs/<run>/usable.json and
+# saves nothing; the ingest that saves records refuses until every period has a run judged usable, and refuses outright
+# once a period is unusable twice). A fix kit therefore runs before any record of the window is saved. 2026 Q3 ends at
+# 2026-09-30 or at QuantConnect's last day of NQ data on the day its kit (or its fix) runs, whichever is earlier -- a
+# date no record of the window can have informed. The records saved for a period are those of the backtest judged
+# usable, identified by its backtest id and the sha256 of its downloaded log and results (usable.json); the saving
+# ingest refuses any other backtest or files, and the verdict refuses a period whose saved run is not the one judged.
+order: judge_every_period_before_any_record
+
+# D-230's rule: a run is unusable if END is missing, the log or the operator reports an error or a time limit, HEAD's
+# days fall below the period's min_days, or the parser refuses its output; it is recorded in runs/<run>/unusable.json
+# and its records are never read. One fixed kit per period may follow -- kit mechanics only, every rule here unchanged,
+# the fix recorded in a decision before it runs; a period unusable twice is a FAIL of the confirmation.
+fixes_per_period: 1
+
+# FOMC days out, as the frozen config rules (D-283, D-297): its two sources, plus the one statement after the frozen
+# calendar's end (2026-08-31) inside the window, read from the Fed's calendar page 2026-10-13 (D-355)
+fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv, config/sources/fomc_statements_2026q3.csv]
+# the BLS 08:30 ET release days FV3's AM fair price anchors on (fv3_core.NEWS, 2009-2025): 2026's, from BLS's 2026
+# schedule page with its provenance (D-355), added to the kits' embedded table after the cores -- fv3_core.py and the
+# twenty development kits stay byte-identical
+news_2026: data/release_days_0830_2026.csv
+
+# the bound's block: 21 trading sessions, a trading month (D-237 (4): the window is too short for yearly blocks); each
+# trade's block is its date's position among the window's trading days (FOMC days out), integer-divided by this
+block_days: 21
+
+# the lines, read on the window as the frozen config words them (its `portfolio` block: break-even 0.25, the gate at 10 %
+# denial, realised over intended 0.9; D-308's flatten share 0.05)
+lines:
+  C1: "the D-145 gate: the gate row's median path growth on its required bankroll (p90 plus the margin, a year's rate) above zero, both legs' outcomes shifted to the one-sided 95 % lower bound of e over 21-session blocks, placement off, 0 % denial"
+  C2: "every counted period's campaign (its own trades, resampled within it, the walk-forward's path count, on the outcomes as measured -- the point arm, as the development walk-forward's P1): growth on its required bankroll above zero, its activity bound above one half, and no path's Sharpe changing sign without its idle blocks"
+  C3: "the gate row's break-even denial rate at least 0.25, and the lower-bound arm's growth above zero at 10 % denial"
+  C4: "realised risk at least 0.9 of the allowance-capped intention on the gate row; each leg's flatten share at most 0.05 overall and in every counted period; no counted period without a gate trade; at least two counted periods"
+flatten_share_max: 0.05
+
+# D-189: each leg's bound at one-sided 0.05/N reported beside the verdict, never as it; N the trial ledger's count for
+# FV3-C (propedge.research.ledger.count_n on prereg/models.yaml, pool pool-2026-10-05-fv3; the gatekeeper recounts it)
+ledger_n: 183
+# the registration's assumed per-trade sd at the fresh Combine's 1.5R: the sample sd of r_net_1.5 over run
+# fv3_corrected_v1's 4,017 development gate trades (results/fv3_studio_corrected_v1_point_trades.csv); the realised value
+# on the window reported beside the verdict
+assumed_sd: 1.209709
+# whatever the verdict, the machinery is audited the same way: the opus auditor re-derives the verdict from the files
+# without the producing code, on a PASS as on a FAIL (D-355 (5)); a defect found by that audit re-runs the verdict only
+# if the code contradicts this file or the registration, the fix changing no rule
+audit: symmetric

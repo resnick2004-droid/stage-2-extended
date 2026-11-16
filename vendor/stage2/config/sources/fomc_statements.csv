@@ -1,0 +1,111 @@
+# FOMC policy statements dated 2009-05-01..2019-12-31 and 2024-04-01..2026-08-31, as linked from the Federal
+# Reserve's calendar pages (federalreserve.gov/monetarypolicy/fomchistorical2009.htm .. fomchistorical2020.htm and
+# fomccalendars.htm), read 2026-09-27. release_line: the time line printed on the statement page itself, empty
+# where the page prints none (2009-2015 pages say only 'For immediate release').
+date,meeting,press_conference,statement_url,release_line
+2009-06-24,June 23-24 Meeting - 2009,0,https://www.federalreserve.gov/newsevents/press/monetary/20090624a.htm,
+2009-08-12,August 11-12 Meeting - 2009,0,https://www.federalreserve.gov/newsevents/press/monetary/20090812a.htm,
+2009-09-23,September 22-23 Meeting - 2009,0,https://www.federalreserve.gov/newsevents/press/monetary/20090923a.htm,
+2009-11-04,November 3-4 Meeting - 2009,0,https://www.federalreserve.gov/newsevents/press/monetary/20091104a.htm,
+2009-12-16,December 15-16 Meeting - 2009,0,https://www.federalreserve.gov/newsevents/press/monetary/20091216a.htm,
+2010-01-27,January 26-27 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100127a.htm,
+2010-03-16,March 16 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100316a.htm,
+2010-04-28,April 27-28 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100428a.htm,
+2010-05-09,May 9 Conference Call - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100509a.htm,For release at 9:15 p.m. EDT
+2010-06-23,June 22-23 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100623a.htm,
+2010-08-10,August 10 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100810a.htm,
+2010-09-21,September 21 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20100921a.htm,
+2010-11-03,November 2-3 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20101103a.htm,
+2010-12-14,December 14 Meeting - 2010,0,https://www.federalreserve.gov/newsevents/press/monetary/20101214a.htm,
+2011-01-26,January 25-26 Meeting - 2011,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110126a.htm,
+2011-03-15,March 15 Meeting - 2011,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110315a.htm,
+2011-04-27,April 26-27 Meeting - 2011,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110427a.htm,
+2011-06-22,June 21-22 Meeting - 2011,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110622a.htm,
+2011-08-09,August 9 Meeting - 2011,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110809a.htm,
+2011-09-21,September 20-21 Meeting - 2011,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20110921a.htm,
+2011-11-02,November 1-2 Meeting - 2011,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20111102a.htm,
+2011-12-13,December 13 Meeting - 2011,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20111213a.htm,
+2012-01-25,January 24-25 Meeting - 2012,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120125a.htm,
+2012-03-13,March 13 Meeting - 2012,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120313a.htm,
+2012-04-25,April 24-25 Meeting - 2012,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120425a.htm,
+2012-06-20,June 19-20 Meeting - 2012,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120620a.htm,
+2012-08-01,July 31-August 1  Meeting - 2012,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120801a.htm,
+2012-09-13,September 12-13 Meeting - 2012,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20120913a.htm,
+2012-10-24,October 23-24 Meeting - 2012,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20121024a.htm,
+2012-12-12,December 11-12 Meeting - 2012,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20121212a.htm,
+2013-01-30,January 29-30 Meeting - 2013,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130130a.htm,
+2013-03-20,March 19-20 Meeting - 2013,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130320a.htm,
+2013-05-01,April/May 30-1 Meeting - 2013,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130501a.htm,
+2013-06-19,June 18-19 Meeting - 2013,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130619a.htm,
+2013-07-31,July 30-31 Meeting - 2013,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130731a.htm,
+2013-09-18,September 17-18 Meeting - 2013,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20130918a.htm,
+2013-10-30,October 29-30 Meeting - 2013,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20131030a.htm,
+2013-12-18,December 17-18 Meeting - 2013,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20131218a.htm,
+2014-01-29,January 28-29 Meeting - 2014,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140129a.htm,
+2014-03-19,March 18-19 Meeting - 2014,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140319a.htm,
+2014-04-30,April 29-30 Meeting - 2014,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140430a.htm,
+2014-06-18,June 17-18 Meeting - 2014,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140618a.htm,
+2014-07-30,July 29-30 Meeting - 2014,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140730a.htm,
+2014-09-17,September 16-17 Meeting - 2014,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20140917a.htm,
+2014-10-29,October 28-29 Meeting - 2014,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20141029a.htm,
+2014-12-17,December 16-17 Meeting - 2014,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20141217a.htm,
+2015-01-28,January 27-28 Meeting - 2015,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150128a.htm,
+2015-03-18,March 17-18 Meeting - 2015,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150318a.htm,
+2015-04-29,April 28-29 Meeting - 2015,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150429a.htm,
+2015-06-17,June 16-17 Meeting - 2015,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150617a.htm,
+2015-07-29,July 28-29 Meeting - 2015,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150729a.htm,
+2015-09-17,September 16-17 Meeting - 2015,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20150917a.htm,
+2015-10-28,October 27-28 Meeting - 2015,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20151028a.htm,
+2015-12-16,December 15-16 Meeting - 2015,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20151216a.htm,
+2016-01-27,January 26-27 Meeting - 2016,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160127a.htm,For release at 2:00 p.m. EST
+2016-03-16,March 15-16 Meeting - 2016,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160316a.htm,For release at 2:00 p.m. EDT
+2016-04-27,April 26-27 Meeting - 2016,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160427a.htm,For release at 2:00 p.m. EDT
+2016-06-15,June 14-15 Meeting - 2016,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160615a.htm,For release at 2:00 p.m. EDT
+2016-07-27,July 26-27 Meeting - 2016,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160727a.htm,For release at 2:00 p.m. EDT
+2016-09-21,September 20-21 Meeting - 2016,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20160921a.htm,For release at 2:00 p.m. EDT
+2016-11-02,November 1-2 Meeting - 2016,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20161102a.htm,For release at 2:00 p.m. EDT
+2016-12-14,December 13-14 Meeting - 2016,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20161214a.htm,For release at 2:00 p.m. EST
+2017-02-01,Jan/Feb 31-1 Meeting - 2017,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170201a.htm,For release at 2:00 p.m. EST
+2017-03-15,March 14-15 Meeting - 2017,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170315a.htm,For release at 2:00 p.m. EDT
+2017-05-03,May 2-3 Meeting - 2017,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170503a.htm,For release at 2:00 p.m. EDT
+2017-06-14,June 13-14 Meeting - 2017,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170614a.htm,For release at 2:00 p.m. EDT
+2017-07-26,July 25-26 Meeting - 2017,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170726a.htm,For release at 2:00 p.m. EDT
+2017-09-20,September 19-20 Meeting - 2017,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20170920a.htm,For release at 2:00 p.m. EDT
+2017-11-01,Oct/Nov 31-1 Meeting - 2017,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20171101a.htm,For release at 2:00 p.m. EDT
+2017-12-13,December 12-13 Meeting - 2017,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20171213a.htm,For release at 2:00 p.m. EST
+2018-01-31,January 30-31 Meeting - 2018,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180131a.htm,For release at 2:00 p.m. EST
+2018-03-21,March 20-21 Meeting - 2018,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180321a.htm,For release at 2:00 p.m. EDT
+2018-05-02,May 1-2 Meeting - 2018,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180502a.htm,For release at 2:00 p.m. EDT
+2018-06-13,June 12-13 Meeting - 2018,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180613a.htm,For release at 2:00 p.m. EDT
+2018-08-01,Jul/Aug 31-1 Meeting - 2018,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180801a.htm,For release at 2:00 p.m. EDT
+2018-09-26,September 25-26 Meeting - 2018,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20180926a.htm,For release at 2:00 p.m. EDT
+2018-11-08,November 7-8 Meeting - 2018,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20181108a.htm,For release at 2:00 p.m. EST
+2018-12-19,December 18-19 Meeting - 2018,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20181219a.htm,For release at 2:00 p.m. EST
+2019-01-30,January 29-30 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190130a.htm,For release at 2:00 p.m. EST
+2019-03-20,March 19-20 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190320a.htm,For release at 2:00 p.m. EDT
+2019-05-01,April/May 30-1 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190501a.htm,For release at 2:00 p.m. EDT
+2019-06-19,June 18-19 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190619a.htm,For release at 2:00 p.m. EDT
+2019-07-31,July 30-31 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190731a.htm,For release at 2:00 p.m. EDT
+2019-09-18,September 17-18 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20190918a.htm,For release at 2:00 p.m. EDT
+2019-10-11,October 4 (unscheduled) - 2019,0,https://www.federalreserve.gov/newsevents/pressreleases/monetary20191011a.htm,For release at 11:00 a.m. EDT
+2019-10-30,October 29-30 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20191030a.htm,For release at 2:00 p.m. EDT
+2019-12-11,December 10-11 Meeting - 2019,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20191211a.htm,For release at 2:00 p.m. EST
+2024-05-01,Apr/May 30-1,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20240501a.htm,For release at 2:00 p.m. EDT
+2024-06-12,June 11-12*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20240612a.htm,For release at 2:00 p.m. EDT
+2024-07-31,July 30-31,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20240731a.htm,For release at 2:00 p.m. EDT
+2024-09-18,September 17-18*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20240918a.htm,For release at 2:00 p.m. EDT
+2024-11-07,November 6-7,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20241107a.htm,For release at 2:00 p.m. EST
+2024-12-18,December 17-18*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20241218a.htm,For release at 2:00 p.m. EST
+2025-01-29,January 28-29,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250129a.htm,For release at 2:00 p.m. EST
+2025-03-19,March 18-19*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250319a.htm,For release at 2:00 p.m. EDT
+2025-05-07,May 6-7,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250507a.htm,For release at 2:00 p.m. EDT
+2025-06-18,June 17-18*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250618a.htm,For release at 2:00 p.m. EDT
+2025-07-30,July 29-30,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250730a.htm,For release at 2:00 p.m. EDT
+2025-09-17,September 16-17*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20250917a.htm,For release at 2:00 p.m. EDT
+2025-10-29,October 28-29,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20251029a.htm,For release at 2:00 p.m. EDT
+2025-12-10,December 9-10*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20251210a.htm,For release at 2:00 p.m. EST
+2026-01-28,January 27-28,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260128a.htm,For release at 2:00 p.m. EST
+2026-03-18,March 17-18*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260318a.htm,For release at 2:00 p.m. EDT
+2026-04-29,April 28-29,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260429a.htm,For release at 2:00 p.m. EDT
+2026-06-17,June 16-17*,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260617a.htm,For release at 2:00 p.m. EDT
+2026-07-29,July 28-29,1,https://www.federalreserve.gov/newsevents/pressreleases/monetary20260729a.htm,For release at 2:00 p.m. EDT

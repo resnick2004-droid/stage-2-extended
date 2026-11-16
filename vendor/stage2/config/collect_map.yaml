@@ -1,0 +1,80 @@
+# config/collect_map.yaml -- the collect map (D-381), fixed before any of its data is read.
+#
+# Why (the operator, 2026-10-16): after an XFA's one big win, the job is the four remaining winning days of $150 or more
+# that the Standard path needs (8284233) -- "the fastest way to acquire green days ... without the potential of blowing
+# the capital we already secured"; speed is "how many days it takes to get the 4 winning days", not how long a trade
+# lasts. With no edge, how often a day turns green is set by how far the stop sits beyond the target, not by the size;
+# D-369's and D-379's take-profit tests read a $150 target only at a quarter of the stop or more (FV3's captures carry
+# exit targets from 0.25R), so they undercounted how often a small target is hit. This map measures uneven brackets
+# directly -- a fixed $200 target (the win after fees clears the operator's $175: "maybe we trade something like $175 to
+# mitigate any pricing issues"), stops one to eight times the target -- at every hour of the trading day ("I will trade
+# anytime if it means the results are better"), so the stop size, the hour, the contract count and the time limit are
+# chosen by the rules below from measured resolution and slippage ("it should be determined based on the previous runs
+# and research to make sure resolution speed of the actual trade is reasonable, without the chance for slippage to harm
+# PNL too much"), preferring a plateau ("ideally there will be multiple options that yield similar results").
+#
+# One QuantConnect run, NQ at actual prices, 2020-01-01 to 2025-06-30 (development only, D-237), on minute bars; a minute
+# in which a bracket first reaches both its target and its stop is settled on that minute's one-second bars (R138's
+# history request, D-344). Only counts leave the cloud (D-120): per year, slot, contract count, stop multiple, box and
+# entry delay -- both sides pooled, no direction claimed.
+
+status: fixed
+decision: D-381
+market: NQ
+run: R145-collect-NQ
+window: {warm: "2019-12-20", start: "2020-01-01", end: "2025-06-30"}   # development only; the held-back window is never read
+contract: {ticker: NQ, tick: 0.25, point_value: 20.0, micro: MNQ, micro_point_value: 2.0}
+day:                            # R137's slots (D-343), so R137's measured entry spreads price every slot
+  open_ct: "17:00"
+  flatten_ct: "15:10"
+  decision_every_min: 60        # every hour start from 17:00 to 14:00 CT (22 decisions) ...
+  last_decision_ct: "14:00"
+  extra_decisions_ct: ["08:30"] # ... plus the 08:30 CT open
+
+target:
+  gross_dollars: 200            # the win at the target before fees, every bracket: a cell of the table's $50 grid
+  net_min_dollars: 175          # the operator's margin: the win after the round turn must clear $175 (the kit refuses less)
+  contracts: [5, 10, 20]        # MNQ; the target in points is gross / (contracts x $2): 20, 10 and 5 points
+stop_multiples: [1, 1.5, 2, 3, 4, 6, 8]   # the stop in points is the multiple x the target: $200 to $1,600 at risk
+boxes_minutes: [10, 30, 60, 120]          # a bracket at neither target nor stop by its box's last bar is closed there
+entry_delays_min: [0, 1]        # on time (the slot's first bar's open) and one minute late (the hand trader's guard)
+slip_ticks: 1                   # one tick adverse at entry and at a scratch exit (D-95); the scorer costs the rest
+sides: "long and short at every slot-day, pooled: no direction is claimed (D-372 to D-376 found none that holds)"
+fills: "a target is reached when a bar trades THROUGH it (a resting limit); a stop when a bar touches it or opens beyond
+  it -- an open beyond it fills there, the gap beyond the stop measured and costed"
+ties: "a minute bar that first reaches a bracket's target and its stop is settled on that minute's one-second bars; a
+  second reaching both, or a minute the history cannot serve, is the stop's (counted)"
+early_close_days: skipped       # holiday sessions, known in advance (D-215): counted, no bracket
+news:
+  fomc: [config/im2_release_calendar.csv, config/sources/fomc_statements_2020_2024q1.csv]   # FV3's (D-283, D-297): no bracket that trading day
+  bls: data/release_days_0830_2009_2025.csv   # BLS releases at 08:30 ET (07:30 CT), FV3's news days: a bracket still
+  bls_cut_ct: "07:30"           #   open is closed at the close of the last bar before 07:30 CT (a scratch) -- never held into it
+
+# --- what the scorer (scripts/score_collect_map.py) reads, fixed before any count is read -------------------------------
+periods: {choice: ["2021-01-01", "2023-12-31"], check: ["2024-01-01", "2025-06-30"], beside: ["2020-01-01", "2020-12-31"]}
+cost: "per attempt at the bracket's micros: the MNQ round turn (config/fills.yaml), the slot's entry spread beyond the
+  walk's tick (R137's spread rows, results/manual_R137_flipmap_NQ.csv, the period's years), a tick on a stop exit, and
+  the slot's measured gap beyond the stop per stop at that stop's distance"
+qualify:
+  resolved_min: 0.90            # D-343's floor: at least this share resolves inside the box, CHOICE pooled AND every CHOICE year
+  slippage: "the entry's expected slippage -- the slot's spread beyond the walk's tick plus the walk's tick, in dollars at
+    the bracket's micros -- at most the operator's margin: net_min_dollars less the winning-day bar (8284233, read)"
+  late_entry_max_drop: 0.03     # the one-minute-late entry's target share at most this far below on time (CHOICE)
+reference_multiple: 3           # the stop at which slots and contract counts are compared ($600 for a $200 target)
+choice: "each (slot, contracts) at the reference multiple in its SHORTEST qualifying box; the one with the lowest cost per
+  winning day on CHOICE (cost per attempt over the target share); ties within 2 % to the faster mean resolution, then the
+  fewer micros, then the earlier slot"
+alternatives: 0.10              # every (slot, contracts) within 10 % of the chosen cost per winning day: the plateau
+menu: "at the chosen (slot, contracts), every stop multiple that qualifies in some box, each in its shortest qualifying
+  box: the funded table's collect brackets"
+check: "each menu bracket on CHECK: resolved in its box (pooled), its target share against CHOICE's, its cost per winning
+  day, the trading days to four winning days at one attempt a day (four over the target share), its mean net per attempt
+  with the one-sided 95 % bound over the yearly blocks -- reported, no edge claimed"
+identity: "before any choice: the 5-micro 1:1 bracket (20 points) at 08:30 in the 10-minute box, on time, every year
+  pooled, against R138's second-resolution reading of the same bracket (results/flip_map_nq_seconds_micros.csv, its
+  chosen row, read): target, stop and scratch shares each within 0.02, or the walk is not trusted and nothing is chosen"
+then: "the menu priced as the funded table's collect brackets (a new table version under its own row) and the stream run
+  against FV3-C by D-365's procedure; a stop larger than the target is the RTP's 'losers not smaller than winners'
+  pattern (placement off in the base case, D-289; the placement-on reading beside)"
+counting: "every (slot, contracts, stop multiple, box) evaluated is in results/variants.jsonl under D-381:collect_map; the
+  choice is one (slot, contracts) and its menu"
