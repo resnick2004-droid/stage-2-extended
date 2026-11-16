@@ -188,6 +188,26 @@ def test_conservative_fallback_rejects_only_where_every_block_length_does():
     assert np.array_equal(cf, each[0] & each[1] & each[2])
 
 
+def test_many_levels_equals_the_per_level_functions():
+    rng = np.random.default_rng(20261911)
+    S, N = _clustered(rng, 500)
+    S = S + 0.02 * N
+    levels = (0.05 / 132, 0.01, 0.05)
+    for m in ("t21e", "t21w", "t63w", "hac21", "cons"):
+        rej, mdl = LB.many_levels(m, S, N, levels)
+        for i, a in enumerate(levels):
+            assert np.array_equal(rej[i], LB.rejects(m, S, N, level=a)), m
+            assert np.allclose(mdl[i], LB.mdl_draws(m, S, N, level=a)), m
+
+
+def test_bootstrap_many_levels_equals_one_level():
+    rng = np.random.default_rng(20261911)
+    S, N = _iid(rng, 3, n=126)
+    c1 = LB.cbb_crit_many(S, N, levels=(0.01, 0.05), block=21, draws=4000)
+    for i, a in enumerate((0.01, 0.05)):
+        assert np.allclose(c1[i], LB.cbb_critical(S, N, level=a, block=21, draws=4000))
+
+
 def test_clopper_pearson():
     lo, hi = LB.clopper_pearson(0, 100)
     assert lo == 0.0 and hi == pytest.approx(0.0362, abs=1e-4)

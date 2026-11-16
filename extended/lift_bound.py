@@ -216,10 +216,10 @@ def cbb_tstar(S, N, *, block: int = BLOCK, draws: int, seed: int = BOOT_SEED) ->
 
 
 def cbb_critical(S, N, *, level: float, block: int = BLOCK, draws: int | None = None, seed: int = BOOT_SEED):
-    """The bootstrap's critical value(s): the (1 - level) quantile of t*, NaN draws dropped (a resample with no trade)."""
+    """The bootstrap's critical value(s): the ceil(level x draws)-th largest t* (a resample with no trade, NaN, is
+    counted as the smallest, so it never sets the tail)."""
     d = draws_for(level) if draws is None else int(draws)
-    t = cbb_tstar(S, N, block=block, draws=d, seed=seed)
-    return np.nanquantile(t, 1.0 - float(level), axis=0, method="higher")
+    return cbb_crit_many(S, N, levels=(float(level),), block=block, draws=d, seed=seed)[0]
 
 
 def cbb_crit_many(S, N, *, levels, block: int = BLOCK, draws: int, seed: int = BOOT_SEED) -> np.ndarray:
@@ -230,7 +230,7 @@ def cbb_crit_many(S, N, *, levels, block: int = BLOCK, draws: int, seed: int = B
     for a in levels:
         k = int(math.ceil(float(a) * t.shape[0]))                              # the k-th largest t*
         out.append(-np.partition(-t, k - 1, axis=0)[k - 1])
-    return np.vstack(out)
+    return np.asarray(out)                                                     # (levels,) or (levels, reps)
 
 
 # ------------------------------------------------------------------------------------------------ the decisions
@@ -295,6 +295,30 @@ def mdl_draws(method: str, S, N, *, level: float, seed: int = BOOT_SEED, draws: 
     est, se, crit = _parts(method, S, N, level, seed=seed, draws=draws)
     with np.errstate(invalid="ignore"):
         return np.where(np.isfinite(se) & (np.asarray(se) > 0), crit * se - est, np.inf)
+
+
+def many_levels(method: str, S, N, levels) -> tuple[np.ndarray, np.ndarray]:
+    """(rejections, minimum detectable lifts), each (len(levels), reps): `rejects` and `mdl_draws` at several levels
+    from one computation of the statistic (the calibration's form; the bootstrap is not offered here)."""
+    levels = [float(a) for a in levels]
+    if method == "cons":
+        parts = [many_levels(m, S, N, levels) for m in ("t21w", "t42w", "t63w")]
+        return (parts[0][0] & parts[1][0] & parts[2][0]), np.maximum.reduce([p[1] for p in parts])
+    if method in ("t21e", "t21w", "t42w", "t63w"):
+        b = int(method[1:3])
+        est, se, df = t_stats(S, N, block=b, weight="equal" if method.endswith("e") else "trades")
+        with np.errstate(invalid="ignore"):
+            crit = [np.where(df >= 1, stats.t.ppf(1.0 - a, np.maximum(df, 1)), np.nan) for a in levels]
+    elif method == "hac21":
+        est, se, G = hac_stats(S, N, block=21, lags=2)
+        crit = [np.full(np.shape(est), fixed_b_critical(int(G), 2, a)) for a in levels]
+    else:
+        raise ValueError(f"many_levels does not take {method!r}")
+    ok = np.isfinite(se) & (np.asarray(se) > 0)
+    with np.errstate(invalid="ignore"):
+        rej = np.vstack([np.asarray((est - c * se) > 0.0) & ok for c in crit])
+        mdl = np.vstack([np.where(ok, c * se - est, np.inf) for c in crit])
+    return rej, mdl
 
 
 def bound(method: str, x, session, n_sessions: int, *, level: float, seed: int = BOOT_SEED) -> Bound:
