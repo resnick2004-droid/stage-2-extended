@@ -340,7 +340,7 @@ def load_pairs(pq: Path, cal: list[str]) -> tuple[pd.DataFrame, dict]:
     sha = hashlib.sha256(pq.read_bytes()).hexdigest()
     if not str(meta.get("identity", "")).startswith("HOLDS") or meta.get("parquet_sha256") != sha:
         raise SystemExit(f"REFUSED: {pq} is not the identity-checked output of scripts/q16_p16_pairs.py")
-    p = pd.read_parquet(pq, columns=PAIR_COLS)  # one-door-exempt: E-035 -- this repository's own derived file (P-16's registered pairs, scripts/q16_p16_pairs.py's identity-checked output), not Stage 2's bars or walks
+    p = pd.read_parquet(pq, columns=PAIR_COLS)  # one-door-exempt: E-056 -- p16_pairs.parquet, this repository's own derived file (P-16's registered pairs, scripts/q16_p16_pairs.py's identity-checked output), not Stage 2's bars or walks
     p["date"] = p["date"].astype(str)
     p = p[(p["date"] >= JUDGED_FIRST) & (p["date"] <= JUDGED_LAST)]
     pos = {d: i for i, d in enumerate(cal)}
