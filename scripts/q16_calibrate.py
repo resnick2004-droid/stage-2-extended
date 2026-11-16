@@ -123,7 +123,7 @@ def _dirty() -> bool:
 
 
 def judged_calendar() -> list[str]:
-    d = pd.read_parquet(DAYS_FILE)  # one-door-exempt: E-035 -- this repository's own derived file (P-16's registered pairs or its day calendar), not Stage 2's bars or walks
+    d = pd.read_parquet(DAYS_FILE)  # one-door-exempt: E-052 -- A1's days.parquet, Stage 2's atlas table: its dates and day kinds only (no walk, no outcome)
     ds = sorted(str(x) for x in d["date"])
     return [x for x in ds if JUDGED_FIRST <= x <= DEV_LAST]
 
@@ -136,7 +136,7 @@ def real_streams(pairs_path: Path) -> tuple[dict, int, dict]:
         raise SystemExit(f"REFUSED: {pairs_path} is not the identity-checked output of scripts/q16_p16_pairs.py")
     cal = judged_calendar()
     pos = {d: i for i, d in enumerate(cal)}
-    p = pd.read_parquet(pairs_path, columns=["date", "slot", "coin", "kl_1", "ks_1", "rl_3", "rs_3",  # one-door-exempt: E-035 -- this repository's own derived file (P-16's registered pairs or its day calendar), not Stage 2's bars or walks
+    p = pd.read_parquet(pairs_path, columns=["date", "slot", "coin", "kl_1", "ks_1", "rl_3", "rs_3",  # one-door-exempt: E-052 -- p16_pairs.parquet, this repository's own derived file (P-16's registered pairs, scripts/q16_p16_pairs.py), not Stage 2's bars or walks
                                              f"xl_{R_SCHED:g}", f"xs_{R_SCHED:g}"])
     p = p[(p["date"].astype(str) >= JUDGED_FIRST) & (p["date"].astype(str) <= DEV_LAST)].copy()
     p["date"] = p["date"].astype(str)
@@ -585,7 +585,7 @@ def judged_offers(pairs_path: Path):
         raise SystemExit(f"REFUSED: {pairs_path} is not the identity-checked output of scripts/q16_p16_pairs.py")
     cal = judged_calendar()
     pos = {d: i for i, d in enumerate(cal)}
-    p = pd.read_parquet(pairs_path, columns=["date", "slot", "coin", "kl_1", "ks_1", "rl_3", "rs_3"])  # one-door-exempt: E-035 -- this repository's own derived file (P-16's registered pairs or its day calendar), not Stage 2's bars or walks
+    p = pd.read_parquet(pairs_path, columns=["date", "slot", "coin", "kl_1", "ks_1", "rl_3", "rs_3"])  # one-door-exempt: E-052 -- p16_pairs.parquet, this repository's own derived file (P-16's registered pairs, scripts/q16_p16_pairs.py), not Stage 2's bars or walks
     p["date"] = p["date"].astype(str)
     p = p[(p["date"] >= JUDGED_FIRST) & (p["date"] <= DEV_LAST)].sort_values(["date", "slot"], kind="stable")
     s = p["date"].map(pos).to_numpy(np.int64)

@@ -838,36 +838,203 @@ def _python_files() -> list[Path]:
     return [p for p in out if p.is_file() and "__pycache__" not in p.parts]
 
 
+#: E-035 (5): a read may be exempted on its line by `# one-door-exempt: E-nnn -- <the file> <why>`. Q-85 (E-052,
+#: E-053): the marker is checked -- the row it names must exist in DECISIONS.md and mention "one-door" or "exempt" and
+#: the exempted file's path or basename. The file is the read's own path where the code names it (string parts of the
+#: path expression, a name followed through its module's top-level assignments), else the file the marker names; when
+#: both are known they must agree.
+EXEMPT_MARK = re.compile(r"one-door-exempt:\s*(E-\d{3,})")
+DATA_FILE = re.compile(r"[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)*\.(?:parquet|feather|arrow|csv|jsonl|json)(?![A-Za-z0-9_])")
+#: the keyword a read call may name its file by, when not positionally
+PATH_KEYWORDS = ("path", "source", "path_or_paths", "filepath_or_buffer")
+#: rows a marker may name before they are in DECISIONS.md: the lead's row announced in Q-85's brief (E-052 (4): the
+#: exempted files and A1 days.parquet's corrected label). While it is absent a marker naming it is pending; the moment
+#: it exists it is checked as every other row is -- so it must then name the files, or the scan fails.
+PENDING_ROWS = frozenset({"E-052"})
+
+
+def _top_assignments(tree: ast.Module) -> dict[str, ast.expr]:
+    out: dict[str, ast.expr] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name):
+                    out[t.id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+            out[node.target.id] = node.value
+    return out
+
+
+def _path_parts(expr: ast.AST | None, assigns: dict[str, ast.expr], seen: tuple[str, ...] = ()) -> list[str]:
+    """The string parts of a path expression, in order (`ROOT / "a" / "b.parquet"`, `Path("a/b.parquet")`,
+    `d.joinpath("b.parquet")`, an f-string's literal parts); a name followed through the module's own top-level
+    assignments, any other name contributing nothing."""
+    if expr is None:
+        return []
+    if isinstance(expr, ast.Constant):
+        return [expr.value] if isinstance(expr.value, str) else []
+    if isinstance(expr, ast.Name):
+        if expr.id in assigns and expr.id not in seen:
+            return _path_parts(assigns[expr.id], assigns, (*seen, expr.id))
+        return []
+    if isinstance(expr, ast.BinOp):
+        return _path_parts(expr.left, assigns, seen) + _path_parts(expr.right, assigns, seen)
+    if isinstance(expr, ast.JoinedStr):
+        return [v.value for v in expr.values if isinstance(v, ast.Constant) and isinstance(v.value, str)]
+    if isinstance(expr, ast.Call):
+        head = _path_parts(expr.func.value, assigns, seen) if isinstance(expr.func, ast.Attribute) else []
+        return head + [s for a in expr.args for s in _path_parts(a, assigns, seen)]
+    return []
+
+
+def _read_file(call: ast.Call, assigns: dict[str, ast.expr]) -> str | None:
+    """The basename of the data file a read call opens, where the code names it; None when it does not (a parameter)."""
+    arg = call.args[0] if call.args else next((k.value for k in call.keywords if k.arg in PATH_KEYWORDS), None)
+    path = "/".join(s.strip("/\\") for s in _path_parts(arg, assigns) if s.strip("/\\")).replace("\\", "/")
+    base = path.rsplit("/", 1)[-1] if path else ""
+    return base if DATA_FILE.fullmatch(base) else None
+
+
+def _names_file(row: str, base: str) -> bool:
+    return re.search(rf"(?<![A-Za-z0-9_\-]){re.escape(base)}(?![A-Za-z0-9_])", row) is not None
+
+
+def exemption_problem(line: str, call: ast.Call, assigns: dict[str, ast.expr], decisions: str) -> str | None:
+    """Why an exempted read's marker does not hold (None when it does, or when it names a pending row still absent)."""
+    m = EXEMPT_MARK.search(line)
+    assert m is not None
+    row_id = m.group(1)
+    row = R.decision_row(decisions, row_id)
+    if row is None:
+        return None if row_id in PENDING_ROWS else f"its marker names {row_id}, which is no row of DECISIONS.md"
+    low = row.lower()
+    if "one-door" not in low and "exempt" not in low:
+        return f"its marker names {row_id}, whose row does not mention a one-door exemption"
+    in_code = _read_file(call, assigns)
+    named = DATA_FILE.search(line[m.end():])
+    in_mark = named.group(0).rsplit("/", 1)[-1] if named else None
+    if in_code and in_mark and in_code != in_mark:
+        return f"its marker names {in_mark} but the read opens {in_code}"
+    base = in_code or in_mark
+    if base is None:
+        return "the file it reads is not named in the code -- name it in the marker (`one-door-exempt: E-nnn -- <file>`)"
+    if not _names_file(row, base):
+        return f"its marker names {row_id}, whose row does not name {base}"
+    return None
+
+
+def one_door_problems(rel: str, src: str, decisions: str) -> list[str]:
+    """Every way a module of this repository reads Stage 2's bars or walks other than through the reader."""
+    bad = []
+    lines = src.splitlines()
+    tree = ast.parse(src, filename=rel)
+    assigns = _top_assignments(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("propedge.data"):
+            names = {a.name for a in node.names}
+            if node.module.startswith("propedge.data.bars") or "bars" in names:
+                bad.append(f"{rel}:{node.lineno} imports Stage 2's bar reader")
+        elif isinstance(node, ast.Import):
+            bad += [f"{rel}:{node.lineno} imports {a.name}" for a in node.names
+                    if a.name.startswith("propedge.data.bars")]
+        elif isinstance(node, ast.Call):
+            f = node.func
+            name = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
+            line = lines[node.lineno - 1] if node.lineno <= len(lines) else ""
+            if name in READ_CALLS:
+                if not EXEMPT_MARK.search(line):
+                    bad.append(f"{rel}:{node.lineno} calls {name}")
+                else:
+                    why = exemption_problem(line, node, assigns, decisions)
+                    if why:
+                        bad.append(f"{rel}:{node.lineno} calls {name} exempted, but {why}")
+            if name in READER_CALLS and not rel.startswith("tests/") and \
+                    any(k.arg == "repo" for k in node.keywords):
+                bad.append(f"{rel}:{node.lineno} points the reader at another tree (repo=)")
+    return bad
+
+
 def test_this_repositorys_code_reads_bars_and_walks_only_through_the_reader():
     """A deterrent in test form (the audit's H-2): no module here imports Stage 2's bar reader or reads a parquet file
-    except `extended/reader.py`; outside the tests, nothing points the reader at another tree (`repo=`). Stage 2's
-    engine reading inside a vendored call is not seen here -- such a runner records its read with
-    `extended.reader.authorise_engine_read` first."""
+    except `extended/reader.py`, unless the read is exempted on its line by a row that admits it (E-035 (5); checked,
+    Q-85); outside the tests, nothing points the reader at another tree (`repo=`). Stage 2's engine reading inside a
+    vendored call is not seen here -- such a runner records its read with `extended.reader.authorise_engine_read`
+    first."""
+    decisions = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
     bad = []
     for p in _python_files():
         rel = p.relative_to(ROOT).as_posix()
         if rel == "extended/reader.py":
             continue
-        src = p.read_text(encoding="utf-8")
-        lines = src.splitlines()
-        tree = ast.parse(src, filename=rel)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("propedge.data"):
-                names = {a.name for a in node.names}
-                if node.module.startswith("propedge.data.bars") or "bars" in names:
-                    bad.append(f"{rel}:{node.lineno} imports Stage 2's bar reader")
-            elif isinstance(node, ast.Import):
-                bad += [f"{rel}:{node.lineno} imports {a.name}" for a in node.names
-                        if a.name.startswith("propedge.data.bars")]
-            elif isinstance(node, ast.Call):
-                f = node.func
-                name = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
-                # E-035: a read of this repository's own derived file (not Stage 2's bars or walks) may be exempted on
-                # its line by `# one-door-exempt: E-nnn -- <why>`, naming the decision row that admits it.
-                exempt = re.search(r"one-door-exempt:\s*E-\d{3}", lines[node.lineno - 1]) if node.lineno <= len(lines) else None
-                if name in READ_CALLS and not exempt:
-                    bad.append(f"{rel}:{node.lineno} calls {name}")
-                if name in READER_CALLS and not rel.startswith("tests/") and \
-                        any(k.arg == "repo" for k in node.keywords):
-                    bad.append(f"{rel}:{node.lineno} points the reader at another tree (repo=)")
+        bad += one_door_problems(rel, p.read_text(encoding="utf-8"), decisions)
     assert not bad, "read Stage 2's bars and walks through extended.reader: " + "; ".join(bad)
+
+
+def test_pending_rows_are_rows_not_yet_written():
+    """A pending row is one the lead announced and has not yet written: never a number the log has passed (a row
+    skipped or written under another number would otherwise excuse a marker forever)."""
+    ids = [int(m.group(1)[2:]) for line in (ROOT / "DECISIONS.md").read_text(encoding="utf-8").splitlines()
+           if (m := R.ROW.match(line))]
+    for row_id in PENDING_ROWS:
+        exists = R.decision_row((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), row_id) is not None
+        assert exists or int(row_id[2:]) > max(ids), f"{row_id} is pending but the log is already at E-{max(ids):03d}"
+
+
+ONE_DOOR_LOG = ("| id | date | decision | basis |\n|---|---|---|---|\n"
+                "| E-801 | 2026-11-16 | **A row about something else** -- `cal.parquet` named, nothing admitted | t |\n"
+                "| E-802 | 2026-11-16 | **Exempted from the one door:** `results/x/pairs.parquet`, a derived file | t |\n"
+                "| E-803 | 2026-11-16 | **one-door-exempt:** A1's `vendor/stage2/data/atlas/A1/days.parquet` | t |\n"
+                "| E-804 | 2026-11-16 | **A one-door exemption** for nothing named | t |\n")
+
+
+def _scan(body: str, decisions: str = ONE_DOOR_LOG) -> list[str]:
+    return one_door_problems("scripts/probe.py", textwrap.dedent(body), decisions)
+
+
+@pytest.mark.parametrize("body,why", [
+    ('import pandas as pd\nd = pd.read_parquet("cal.parquet")\n', "calls read_parquet"),
+    ('import pandas as pd\nd = pd.read_parquet("x.parquet")  # one-door-exempt: E-899 -- x.parquet\n', "no row"),
+    ('import pandas as pd\nd = pd.read_parquet("cal.parquet")  # one-door-exempt: E-801 -- cal.parquet\n',
+     "does not mention a one-door exemption"),
+    ('import pandas as pd\nd = pd.read_parquet("days.parquet")  # one-door-exempt: E-802 -- days\n', "does not name days.parquet"),
+    ('import pandas as pd\nd = pd.read_parquet(VENDOR / "atlas" / "A1" / "events.parquet")  # one-door-exempt: E-803\n',
+     "does not name events.parquet"),
+    ('import pandas as pd\ndef f(p):\n    return pd.read_parquet(p)  # one-door-exempt: E-802 -- a derived file\n',
+     "not named in the code"),
+    ('import pandas as pd\ndef f(p):\n    return pd.read_parquet(p)  # one-door-exempt: E-804 -- p16.parquet\n',
+     "does not name p16.parquet"),
+    ('import pandas as pd\nF = ROOT / "data" / "days.parquet"\nd = pd.read_parquet(F)  # one-door-exempt: E-802 -- pairs.parquet\n',
+     "names pairs.parquet but the read opens days.parquet"),
+    ('import pyarrow.parquet as pq\nt = pq.read_table(source="vendor/stage2/data/bars/NQ/bars.parquet")  # one-door-exempt: E-803\n',
+     "does not name bars.parquet"),
+], ids=["unmarked", "no-row", "row-not-an-exemption", "row-names-another-file", "path-in-code-not-in-row",
+        "parameter-unnamed", "parameter-named-not-in-row", "marker-disagrees-with-code", "keyword-path"])
+def test_an_exemption_marker_whose_row_does_not_admit_the_read_is_refused(body, why):
+    bad = _scan(body)
+    assert len(bad) == 1 and why in bad[0], bad
+
+
+@pytest.mark.parametrize("body", [
+    # the row names the basename; the path is in the code (a module constant followed), the marker silent on it
+    'import pandas as pd\nDAYS = ROOT / "vendor" / "stage2" / "data" / "atlas" / "A1" / "days.parquet"\n'
+    'd = pd.read_parquet(DAYS)  # one-door-exempt: E-803 -- A1 days: dates and day kinds only\n',
+    # an unresolved head, the rest literal
+    'import pandas as pd\nd = pd.read_parquet(V / "data" / "atlas" / "A1" / "days.parquet",  # one-door-exempt: E-803\n'
+    '                    columns=["date"])\n',
+    # a parameter: the marker names the file, the row (which says "exempted") names it with its path
+    'import pandas as pd\ndef f(p):\n    return pd.read_parquet(p)  # one-door-exempt: E-802 -- pairs.parquet, derived\n',
+    'import pandas as pd\nd = pd.read_parquet(path=f"{OUT}/pairs.parquet")  # one-door-exempt: E-802 -- pairs.parquet\n',
+], ids=["module-constant", "unresolved-head", "parameter-named-in-marker", "keyword-fstring"])
+def test_an_exemption_marker_whose_row_admits_the_read_holds(body):
+    assert _scan(body) == []
+
+
+def test_a_pending_row_excuses_a_marker_only_until_it_is_written():
+    body = 'import pandas as pd\nd = pd.read_parquet(V / "A1" / "days.parquet")  # one-door-exempt: E-052 -- days.parquet\n'
+    assert _scan(body) == [], "E-052 not yet in the log: pending"
+    written = ONE_DOOR_LOG + "| E-052 | 2026-11-16 | **Something else entirely** | t |\n"
+    assert "does not mention a one-door exemption" in " ".join(_scan(body, written)), "written: checked as any row"
+    admits = ONE_DOOR_LOG + "| E-052 | 2026-11-16 | **one-door-exempt:** A1's `days.parquet` (dates, day kinds) | t |\n"
+    assert _scan(body, admits) == []
+    other = body.replace("E-052", "E-053")
+    assert "no row" in " ".join(_scan(other)), "only the listed row is pending"

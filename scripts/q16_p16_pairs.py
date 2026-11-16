@@ -87,7 +87,7 @@ def _authorise(a) -> int | None:
     end = reader.JUDGED_END
     if a.smoke_days is not None:                         # a smoke reads the first development days only
         import pandas as _pd
-        d = _pd.read_parquet(VENDOR_STAGE2 / "data" / "atlas" / "A1" / "days.parquet",  # one-door-exempt: E-035 -- the calendar only
+        d = _pd.read_parquet(VENDOR_STAGE2 / "data" / "atlas" / "A1" / "days.parquet",  # one-door-exempt: E-052 -- A1's days.parquet, Stage 2's atlas table: its dates only here
                              columns=["date"])["date"].astype(str).sort_values()
         end = d.iloc[min(int(a.smoke_days), len(d)) - 1]
     print(f"reader: purpose={READ_PURPOSE} declaration={READ_ROW} span {reader.CHOICE_START} to {end} files "
