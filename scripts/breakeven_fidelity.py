@@ -6,7 +6,7 @@ nothing is chosen from these readings.
 
     python scripts/breakeven_fidelity.py --check --starts 4 --paths 4    # the pipeline: every identity at its size,
                                                                          #   written to a temporary folder, removed
-    python scripts/run_clean.py --name breakeven-fidelity --task Q-20 --hours 4 --mem-gb 1.6 -- python scripts/breakeven_fidelity.py
+    python scripts/run_clean.py --name breakeven-fidelity --task Q-20 --hours 4 --mem-gb 1.8 -- python scripts/breakeven_fidelity.py
 
 **The substitution** (`extended/breakeven.py`): only the trades' walk -- Stage 2's entries walked by
 `extended.walker` under each rule set (`stage2` = `STAGE2`, `stop_first`, `delay5`, `both`) -- in A3's cached walk's

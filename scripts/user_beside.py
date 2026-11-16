@@ -7,7 +7,7 @@ the verdict stays at 0 % denial with the placement off (E-008 (2)); nothing is c
                                                                          #   identity lines and timing only; written
                                                                          #   to a temporary folder, removed
     python scripts/user_beside.py --check --starts 4 --designs p14 --responses off,denial_50,forfeit_10
-    python scripts/run_clean.py --name user-beside --task Q-17 --hours 10 --mem-gb 1.6 -- python scripts/user_beside.py
+    python scripts/run_clean.py --name user-beside --task Q-17 --hours 7 --mem-gb 2.2 -- python scripts/user_beside.py
 
 **Identity first, refusing.** For each design, before any of its responses is run: with every response off, the
 adapter's start rows equal `vendor/stage2/results/user_journey.csv`'s section `start` for that design and both arms

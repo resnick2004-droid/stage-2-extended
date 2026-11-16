@@ -112,13 +112,24 @@ def a3_inputs() -> dict[str, Any]:
 
 
 def a3_frame(rules: W.Rules, X: dict[str, Any]) -> pd.DataFrame:
-    """A3's rung walk re-walked under `rules` from the development bars (A3's minutes, delay, tick, rungs, R grid)."""
+    """A3's rung walk re-walked under `rules` from the development bars (A3's minutes, delay, tick, rungs, R grid),
+    a calendar year of bars in memory at a time (the walk is day by day, so the frame is the same; the runner's
+    identity holds it to the cache's under `STAGE2`)."""
     import atlas_a3 as A
 
     cfg, mins = X["cfg"], X["minutes"]
-    arr = A.bar_arrays(cfg, sorted(mins["date"].astype(str).unique()))
-    return walk_minutes_for(rules)(mins, arr, int(cfg["screen_delay_min"]), float(cfg["contract"]["tick"]),
-                                   A.stops(cfg), A.rrs(cfg))
+    walk = walk_minutes_for(rules)
+    dates = mins["date"].astype(str)
+    parts = []
+    for year in sorted(dates.str[:4].unique()):
+        m = mins[(dates.str[:4] == year).to_numpy()]
+        arr = A.bar_arrays(cfg, sorted(m["date"].astype(str).unique()))
+        parts.append(walk(m, arr, int(cfg["screen_delay_min"]), float(cfg["contract"]["tick"]), A.stops(cfg),
+                          A.rrs(cfg)))
+        del arr
+    w = pd.concat(parts, ignore_index=True)
+    w = w.astype({c: parts[0][c].dtype for c in w.columns})
+    return w.sort_values(["date", "slot", "side"], kind="stable").reset_index(drop=True).copy()   # consolidated
 
 
 @contextmanager
