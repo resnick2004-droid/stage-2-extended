@@ -1,0 +1,147 @@
+# config/calendar_early_closes.csv -- Q-40 (E-022 (3)): the scheduled early closes and holidays of CME Globex
+# equity-index futures (NQ), trading days 2020-01-02 to 2026-07-16, and the bar store's data-defect candidates.
+# Compiled 2026-11-16 by scripts/build_calendar_early_closes.py (extended/calendar_early_closes.py); how it was
+# built: config/calendar_early_closes.md. Pinned by sha256 (LF) under a decision row and never edited: a change is a
+# new file under a new row.
+#
+# SOURCE. CME Group's own holiday-calendar pages were NOT read: cmegroup.com answered the first scripted request
+# (2026-11-16) with HTTP 403 and the statement that scripts, robots and other scraping mechanisms are prohibited by
+# CME Group's website Data Terms of Use. The schedule is built from the standard U.S. exchange holiday rules below, as
+# CME applies them to its equity-index futures, and then cross-checked against the bar store's own record.
+#
+# CROSS-CHECK. The bar store's manifest, vendor/stage2/data/bars/NQ/manifest.json (metadata only, no bar file read;
+# its entries for trading days 2020-01-02 to 2026-07-16 only), of the store whose parquet_sha256 is
+# c391d97ad1c11db3ce0da0c65f0d0ac9df1582617666b37c00ad206c3add2041.
+#
+# DATES are trading days as the bar store dates them: a session opens at 17:00 CT the evening before, and its bars
+# carry the next calendar date. CME books a holiday's abbreviated session to the next business day's trade date; the
+# store dates it to the holiday itself, the date given here.
+#
+# KINDS.
+#   holiday                the NYSE is closed. close_ct blank: Globex equity-index futures are closed and hold no
+#                          session for the date. close_ct HH:MM: Globex trades an abbreviated session from 17:00 CT
+#                          the evening before and halts at close_ct; it reopens at 17:00 CT for the next trading day.
+#   early_close            a business day on which the NYSE closes at 13:00 ET and Globex equity-index futures at
+#                          close_ct.
+#   data_defect_candidate  a day the store's manifest lists as ending before 15:00 CT (early_end_days), starting
+#                          after the 17:00 CT open (late_start_days) or holding fewer than 1,000 bars (short_days),
+#                          that no rule below explains. close_ct blank (no scheduled close). For the lead's decision.
+# close_ct: when trading stops, Chicago time (the last one-minute bar starts a minute earlier).
+# source: the rule id and name, then what the store shows ("store: ..."): "(as scheduled)" when its last bar is the
+# minute before close_ct (or it holds no day for a closed date), "not as scheduled" / "not shown by the store"
+# otherwise. Read with extended.calendar_early_closes.read_calendar, or pandas.read_csv(path, comment="#",
+# dtype=str, keep_default_na=False).
+#
+# OBSERVANCE (NYSE Rule 7.2): a holiday on a Saturday is observed the Friday before, on a Sunday the Monday after.
+#
+# RULES.
+# H1 New Year's Day: 1 January; on a Sunday observed Monday 2 January; on a Saturday not observed (the Friday before
+#     closes a yearly accounting period). Globex equity-index futures closed: no session for the date.
+# H2 Martin Luther King Jr. Day: the third Monday of January. NYSE closed; Globex equity abbreviated session, halt
+#     12:00 CT.
+# H3 Washington's Birthday (Presidents' Day): the third Monday of February. NYSE closed; Globex equity abbreviated
+#     session, halt 12:00 CT.
+# H4 Good Friday: Easter Sunday less two days (the anonymous Gregorian computus), when no Employment Situation release
+#     is scheduled that day. Globex equity-index futures closed: no session for the date.
+# H4b Good Friday with the Employment Situation release: a Good Friday on which BLS scheduled the Employment Situation
+#     at 08:30 ET (the vendored BLS calendars vendor/stage2/data/releases_bls_0830_*.csv, published in advance). NYSE
+#     closed; Globex equity trades an abbreviated morning session closing 08:15 CT (CME's practice on such Good
+#     Fridays, from the public record; not read on CME's pages).
+# H5 Memorial Day: the last Monday of May. NYSE closed; Globex equity abbreviated session, halt 12:00 CT.
+# H6 Juneteenth National Independence Day: 19 June (observed), an exchange holiday from 2022 (2021-06-18 was a
+#     business day). NYSE closed; Globex equity abbreviated session, halt 12:00 CT.
+# H7 Independence Day: 4 July (observed). NYSE closed; Globex equity abbreviated session, halt 12:00 CT.
+# H8 Labor Day: the first Monday of September. NYSE closed; Globex equity abbreviated session, halt 12:00 CT.
+# H9 Thanksgiving Day: the fourth Thursday of November. NYSE closed; Globex equity abbreviated session, halt 12:00 CT.
+# H10 Christmas Day: 25 December (observed). Globex equity-index futures closed: no session for the date.
+# E1 Day after Thanksgiving: the Friday after the fourth Thursday of November. NYSE closes 13:00 ET; Globex equity
+#     12:15 CT.
+# E2 Christmas Eve: 24 December when it falls Monday to Thursday (on a Friday it is the observed Christmas Day, H10).
+#     NYSE closes 13:00 ET; Globex equity 12:15 CT.
+# E3 Day before Independence Day: 3 July when it falls Monday to Thursday (on a Friday it is the observed Independence
+#     Day, H7). NYSE closes 13:00 ET; Globex equity 12:15 CT.
+# S1 National Day of Mourning for President Jimmy Carter: 2025-01-09 only: an announced closure (NYSE and CME notices
+#     of late December 2024), not a recurring rule. NYSE closed; Globex equity-index futures halt 08:30 CT.
+date,kind,close_ct,source
+2020-01-20,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2020-02-17,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2020-03-16,data_defect_candidate,,store: bars 17:00-15:59 CT; short day 589 bars; reason: no reason given in the manifest
+2020-03-18,data_defect_candidate,,store: bars 17:00-15:59 CT; short day 955 bars; reason: no reason given in the manifest
+2020-04-10,holiday,,H4 Good Friday; store: no day (as scheduled)
+2020-05-25,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2020-07-01,data_defect_candidate,,store: late_start_days; bars 19:00-15:59 CT; reason: Databento condition degraded on UTC 2020-06-30; Databento condition degraded on UTC 2020-07-01
+2020-07-03,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2020-09-07,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2020-11-26,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2020-11-27,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled)
+2020-12-24,early_close,12:15,E2 Christmas Eve; store: last bar 12:14 CT (as scheduled)
+2020-12-25,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2021-01-01,holiday,,H1 New Year's Day; store: no day (as scheduled)
+2021-01-18,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2021-02-15,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2021-04-02,holiday,08:15,H4b Good Friday with the Employment Situation release; store: last bar 08:14 CT (as scheduled); short day 910 bars
+2021-05-31,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2021-07-05,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2021-09-06,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2021-11-25,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2021-11-26,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled)
+2021-12-24,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2022-01-17,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2022-02-21,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2022-04-15,holiday,,H4 Good Friday; store: no day (as scheduled)
+2022-05-30,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2022-06-20,holiday,12:00,H6 Juneteenth National Independence Day; store: last bar 11:59 CT (as scheduled)
+2022-07-04,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2022-09-05,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2022-11-24,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2022-11-25,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled)
+2022-12-26,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2023-01-02,holiday,,H1 New Year's Day; store: no day (as scheduled)
+2023-01-16,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2023-02-20,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2023-04-07,holiday,08:15,H4b Good Friday with the Employment Situation release; store: last bar 08:14 CT (as scheduled); short day 913 bars
+2023-05-29,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2023-06-19,holiday,12:00,H6 Juneteenth National Independence Day; store: last bar 11:59 CT (as scheduled)
+2023-07-03,early_close,12:15,E3 Day before Independence Day; store: last bar 12:14 CT (as scheduled)
+2023-07-04,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2023-09-04,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2023-11-23,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2023-11-24,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled)
+2023-12-25,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2024-01-01,holiday,,H1 New Year's Day; store: no day (as scheduled)
+2024-01-15,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2024-02-19,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2024-03-29,holiday,,H4 Good Friday; store: no day (as scheduled)
+2024-05-27,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2024-06-19,holiday,12:00,H6 Juneteenth National Independence Day; store: last bar 11:59 CT (as scheduled)
+2024-07-03,early_close,12:15,E3 Day before Independence Day; store: last bar 12:14 CT (as scheduled)
+2024-07-04,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2024-09-02,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2024-11-28,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2024-11-29,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled)
+2024-12-24,early_close,12:15,E2 Christmas Eve; store: last bar 12:14 CT (as scheduled)
+2024-12-25,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2025-01-01,holiday,,H1 New Year's Day; store: no day (as scheduled)
+2025-01-09,holiday,08:30,S1 National Day of Mourning for President Jimmy Carter; store: last bar 08:29 CT (as scheduled); short day 930 bars
+2025-01-20,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2025-02-17,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2025-04-03,data_defect_candidate,,store: late_start_days; bars 17:02-15:59 CT; reason: no reason given in the manifest
+2025-04-18,holiday,,H4 Good Friday; store: no day (as scheduled)
+2025-05-26,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled)
+2025-06-19,holiday,12:00,H6 Juneteenth National Independence Day; store: last bar 11:59 CT (as scheduled)
+2025-06-30,data_defect_candidate,,store: early_end_days; bars 17:00-18:59 CT; short day 120 bars; reason: purchase edge (import 1 of 2: its query ends 2025-06-30T00:00Z inside this session)
+2025-07-01,data_defect_candidate,,store: late_start_days; bars 19:00-15:59 CT; reason: purchase edge (import 2 of 2: its query starts 2025-07-01T00:00Z inside this session)
+2025-07-03,early_close,12:15,E3 Day before Independence Day; store: last bar 12:14 CT (as scheduled)
+2025-07-04,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
+2025-09-01,holiday,12:00,H8 Labor Day; store: last bar 11:59 CT (as scheduled)
+2025-11-27,holiday,12:00,H9 Thanksgiving Day; store: last bar 11:59 CT (as scheduled)
+2025-11-28,early_close,12:15,E1 Day after Thanksgiving; store: last bar 12:14 CT (as scheduled); short day 508 bars; Databento condition degraded on UTC 2025-11-28
+2025-12-24,early_close,12:15,E2 Christmas Eve; store: last bar 12:14 CT (as scheduled)
+2025-12-25,holiday,,H10 Christmas Day; store: no day (as scheduled)
+2026-01-01,holiday,,H1 New Year's Day; store: no day (as scheduled)
+2026-01-19,holiday,12:00,H2 Martin Luther King Jr. Day; store: last bar 11:59 CT (as scheduled)
+2026-02-16,holiday,12:00,H3 Washington's Birthday (Presidents' Day); store: last bar 11:59 CT (as scheduled)
+2026-04-03,holiday,08:15,H4b Good Friday with the Employment Situation release; store: last bar 08:14 CT (as scheduled); short day 909 bars
+2026-05-25,holiday,12:00,H5 Memorial Day; store: last bar 11:59 CT (as scheduled); Databento condition degraded on UTC 2026-05-24
+2026-06-19,holiday,12:00,H6 Juneteenth National Independence Day; store: last bar 11:59 CT (as scheduled)
+2026-07-03,holiday,12:00,H7 Independence Day; store: last bar 11:59 CT (as scheduled)
