@@ -42,11 +42,12 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
 | wt-levels | wt/wt-levels | Q-24 the red team on F-02's draft | running |
 | wt-user | wt/wt-user | Q-17 the readings beside the user scorecard, then Q-20 (`docs/briefs/Q-17_2026-11-15.md`) | running |
-| wt-features | wt/wt-features | -- (Q-11 done, E-016) | idle |
+| wt-features | wt/wt-features | Q-22 P-15's identity, then Q-18 P-14's stress checks (heavy, under the lock) | running |
+| wt-lit | wt/wt-lit | Q-28 the literature scout | running |
 | wt-firms | wt/wt-firms | Q-26 the short-ranked firms' terms | running |
 | wt-payout | wt/wt-payout | Q-25 a payout-policy family's draft | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
-| wt-scout | wt/wt-scout | Q-23 the red team on family B's draft | running |
+| wt-scout | wt/wt-scout | -- (Q-23 done) | idle |
 
 ## Running now
 
