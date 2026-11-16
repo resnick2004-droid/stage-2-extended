@@ -43,8 +43,9 @@ BLOCK = 21
 #: the fixed-b critical values' simulation seed, and the default seed of the bootstrap's resample matrix (Q-16 seeds)
 FIXED_B_SEED = 20261913
 BOOT_SEED = 20261914
-#: the statistic the pass line uses -- chosen by the calibration (docs/research/calibration_2026-11-15.md)
-SHIPPED = "t21w"
+#: the statistic the pass line uses -- chosen by the calibration (docs/research/calibration_2026-11-15.md section 5.1):
+#: the conservative fallback, the only candidate at or below its level on every real and realistic synthetic null
+SHIPPED = "cons"
 
 METHODS = ("t21e", "t21w", "t42w", "t63w", "hac21", "cbb21", "cons")
 
@@ -207,8 +208,8 @@ def cbb_tstar(S, N, *, block: int = BLOCK, draws: int, seed: int = BOOT_SEED) ->
     R = S.shape[1]
     M = np.asarray(C @ Q)                                                      # (draws, 5 reps)
     sS, sN, sSS, sSN, sNN = (M[:, i * R:(i + 1) * R] for i in range(5))
-    est = S.sum(axis=0) / N.sum(axis=0)
     with np.errstate(invalid="ignore", divide="ignore"):
+        est = S.sum(axis=0) / N.sum(axis=0)
         th = sS / sN
         var = G / (G - 1.0) * (sSS - 2.0 * th * sSN + th * th * sNN) / (sN * sN)
         t = (th - est[None, :]) / np.sqrt(np.maximum(var, 0.0))
@@ -321,6 +322,100 @@ def many_levels(method: str, S, N, levels) -> tuple[np.ndarray, np.ndarray]:
     return rej, mdl
 
 
+# ------------------------------------------------------------------------------------------------ two-sample forms
+#
+# E-022 (F-02's C1': the level lift minus the placebo lift) and E-023 (a filter that keeps the coin's side, against its
+# placebo-selection twin) both compare two per-trade means on the same sessions: est = sum(S1)/sum(N1) - sum(S2)/sum(N2).
+# Its variance is cluster-robust on the same session blocks, from the linearised residual block sums
+#     u_g = (BS1_g - th1 BN1_g) / n1 - (BS2_g - th2 BN2_g) / n2,
+# which holds whether the two samples are disjoint (level and placebo fills) or nested (the selected offers and every
+# offer). The placebo-selection twin is the expectation of a seeded random filter firing on the same share of the same
+# offers -- the population's own mean -- so no placebo noise is added; one seeded draw instead of the expectation is
+# itself a two-sample comparison of two random subsets, covered by the C1' form.
+
+DIFF_METHODS = ("t21w", "t42w", "t63w", "cons")
+
+
+def diff_stats(S1, N1, S2, N2, *, block: int = BLOCK, empty_second: bool = False):
+    """(estimate, se, df) of the difference of two per-trade means from their session sums (vectorised like
+    `t_stats`); CR1's G' / (G' - 1) with G' the blocks holding a trade of either sample, df = G' - 1. With
+    `empty_second`, a second sample with no trade contributes nothing (the one-sample statistic)."""
+    B1, C1, _ = _block_sums(S1, N1, block)
+    B2, C2, _ = _block_sums(S2, N2, block)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        n1, n2 = C1.sum(axis=0), C2.sum(axis=0)
+        th1 = B1.sum(axis=0) / n1
+        u = (B1 - th1 * C1) / n1
+        if empty_second:
+            th2 = np.where(n2 > 0, B2.sum(axis=0) / np.where(n2 > 0, n2, 1.0), 0.0)
+            u2 = np.where(n2 > 0, (B2 - th2 * C2) / np.where(n2 > 0, n2, 1.0), 0.0)
+        else:
+            th2 = B2.sum(axis=0) / n2
+            u2 = (B2 - th2 * C2) / n2
+        u = u - u2
+        Gp = ((C1 + C2) > 0).sum(axis=0)
+        se = np.sqrt(Gp / (Gp - 1) * (u ** 2).sum(axis=0))
+    return th1 - th2, se, Gp - 1
+
+
+def diff_many_levels(method: str, S1, N1, S2, N2, levels) -> tuple[np.ndarray, np.ndarray]:
+    """(rejections, minimum detectable differences), each (len(levels), reps), for `method` in `DIFF_METHODS` -- the
+    MDL as a shift added to every trade of sample 1 (the estimate moves by it, the se does not)."""
+    levels = [float(a) for a in levels]
+    if method == "cons":
+        parts = [diff_many_levels(m, S1, N1, S2, N2, levels) for m in ("t21w", "t42w", "t63w")]
+        return (parts[0][0] & parts[1][0] & parts[2][0]), np.maximum.reduce([p[1] for p in parts])
+    if method not in ("t21w", "t42w", "t63w"):
+        raise ValueError(f"the two-sample form takes {DIFF_METHODS}, not {method!r}")
+    est, se, df = diff_stats(S1, N1, S2, N2, block=int(method[1:3]))
+    ok = np.isfinite(se) & (np.asarray(se) > 0) & (np.asarray(df) >= 1)
+    with np.errstate(invalid="ignore"):
+        crit = [np.where(df >= 1, stats.t.ppf(1.0 - a, np.maximum(df, 1)), np.nan) for a in levels]
+        rej = np.vstack([np.asarray((est - c * se) > 0.0) & ok for c in crit])
+        mdl = np.vstack([np.where(ok, c * se - est, np.inf) for c in crit])
+    return rej, mdl
+
+
+def diff_rejects(method: str, S1, N1, S2, N2, *, level: float):
+    """Whether the difference of the two samples' per-trade means is above zero at one-sided `level`."""
+    return diff_many_levels(method, S1, N1, S2, N2, [level])[0][0]
+
+
+def two_sample_bound(x1, s1, x2, s2, n_sessions: int, *, level: float, method: str | None = None) -> Bound:
+    """F-02's C1' form (E-022): sample 1's per-trade mean (the level fills' pair differences) minus sample 2's (the
+    placebo fills'), each trade on its session's ordinal; the bound by `method` (default `SHIPPED`)."""
+    m = SHIPPED if method is None else method
+    S1, N1 = session_sums(x1, s1, n_sessions)
+    S2, N2 = session_sums(x2, s2, n_sessions)
+    return _diff_bound(m, S1, N1, S2, N2, level)
+
+
+def placebo_selection_bound(y, session, selected, n_sessions: int, *, level: float, method: str | None = None) -> Bound:
+    """E-023's test of a filter that keeps the coin's side: the selected offers' per-trade outcome `y` minus what a
+    random filter firing on the same share of the same offers selects on average (every offer's mean); one-sided."""
+    m = SHIPPED if method is None else method
+    y = np.asarray(y, dtype=float)
+    sel = np.asarray(selected, dtype=bool)
+    if sel.shape != y.shape:
+        raise ValueError("selected must flag every offer")
+    S1, N1 = session_sums(y[sel], np.asarray(session)[sel], n_sessions)
+    S2, N2 = session_sums(y, session, n_sessions)
+    return _diff_bound(m, S1, N1, S2, N2, level)
+
+
+def _diff_bound(method: str, S1, N1, S2, N2, level: float) -> Bound:
+    if method == "cons":
+        parts = [_diff_bound(m, S1, N1, S2, N2, level) for m in ("t21w", "t42w", "t63w")]
+        low = min(parts, key=lambda p: p.lower if np.isfinite(p.lower) else -np.inf)
+        return Bound("cons", low.estimate, low.se, low.critical, low.lower if all(np.isfinite(p.lower) for p in parts)
+                     else float("nan"), float(level), low.df, low.blocks, low.trades)
+    est, se, df = (float(v) for v in diff_stats(S1, N1, S2, N2, block=int(method[1:3])))
+    crit = float(stats.t.ppf(1.0 - level, df)) if df >= 1 else float("nan")
+    low = est - crit * se if (math.isfinite(se) and se > 0 and math.isfinite(crit)) else float("nan")
+    _, BN1, _ = _block_sums(S1, N1, int(method[1:3]))
+    return Bound(method, est, se, crit, low, float(level), df, int((BN1 > 0).sum()), int(np.sum(N1)))
+
+
 def bound(method: str, x, session, n_sessions: int, *, level: float, seed: int = BOOT_SEED) -> Bound:
     """One sample's reading by `method`: the trades' pair differences `x` and their sessions' ordinals."""
     S, N = session_sums(x, session, n_sessions)
@@ -337,7 +432,9 @@ def bound(method: str, x, session, n_sessions: int, *, level: float, seed: int =
     else:
         df = float("nan")
     est, se, crit = float(est), float(se), float(crit)
-    return Bound(method, est, se, crit, est - crit * se, float(level), df, int((BN > 0).sum()), int(N.sum()),
+    # a standard error that is not positive (one block, no spread) can carry nothing: the bound is blank
+    low = est - crit * se if (math.isfinite(se) and se > 0 and math.isfinite(crit)) else float("nan")
+    return Bound(method, est, se, crit, low, float(level), df, int((BN > 0).sum()), int(N.sum()),
                  draws_for(level) if method == "cbb21" else 0)
 
 
@@ -362,4 +459,5 @@ def cbb_t(x, session, n_sessions: int, *, level: float, block: int = BLOCK, seed
 
 __all__ = ["K_RANGE", "BLOCK", "SHIPPED", "METHODS", "FIXED_B_SEED", "BOOT_SEED", "family_level", "clopper_pearson",
            "session_sums", "block_index", "t_stats", "hac_stats", "fixed_b_critical", "draws_for", "cbb_tstar",
-           "cbb_critical", "cbb_crit_many", "Bound", "rejects", "mdl_draws", "bound", "t_block", "cbb_t"]
+           "cbb_critical", "cbb_crit_many", "Bound", "rejects", "mdl_draws", "bound", "t_block", "cbb_t", "DIFF_METHODS",
+           "diff_stats", "diff_many_levels", "diff_rejects", "two_sample_bound", "placebo_selection_bound"]

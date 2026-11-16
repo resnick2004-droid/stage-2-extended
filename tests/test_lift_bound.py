@@ -165,6 +165,11 @@ def test_shipped_statistic_holds_its_size_on_a_fixed_null(gen, seed):
         assert k / reps <= hi, f"{LB.SHIPPED} at {a}: {k}/{reps} rejections, above the nominal's 99.9 % interval"
 
 
+@pytest.mark.xfail(strict=True, reason=(
+    "Q-16, kept on record (the failure protocol): written before the choice, on a 300-session calendar; the shipped "
+    "`cons` finds the planted 5-se lift 62.6 % of the time there, because its 63-session member has 4 blocks (df 3). "
+    "Diagnosed (scratch dbg/diag_power.py): on the judged block's 657 sessions (10 blocks, df 9) it finds it 96 %. "
+    "Not loosened; the judged-calendar check is test_power_on_the_judged_calendar"))
 def test_power_is_not_vacuous_and_mdl_matches_the_power_definition():
     rng = np.random.default_rng(20261910)
     S, N = _iid(rng, 4000)
@@ -177,6 +182,24 @@ def test_power_is_not_vacuous_and_mdl_matches_the_power_definition():
     se = np.median(LB.t_stats(S, N, block=21, weight="trades")[1])
     rej5 = LB.rejects(LB.SHIPPED, S + 5 * se * N, N, level=level)
     assert rej5.mean() > 0.9
+
+
+def test_mdl_matches_the_power_definition():
+    rng = np.random.default_rng(20261910)
+    S, N = _iid(rng, 4000, n=657)
+    for m in ("t21w", "cons"):
+        mdl = LB.mdl_draws(m, S, N, level=0.01)
+        q80 = float(np.quantile(mdl, 0.8))
+        assert 0.79 <= LB.rejects(m, S + (q80 + 1e-9) * N, N, level=0.01).mean() <= 0.81, m
+
+
+def test_power_on_the_judged_calendar():
+    """On the judged block's 657 sessions a lift of five of the binding member's (63-session) standard errors is found
+    nearly always by the shipped statistic (seed 20261910 + the calendar)."""
+    rng = np.random.default_rng([20261910, 657])
+    S, N = _iid(rng, 4000, n=657)
+    se63 = np.median(LB.t_stats(S, N, block=63, weight="trades")[1])
+    assert LB.rejects(LB.SHIPPED, S + 5 * se63 * N, N, level=0.01).mean() > 0.9
 
 
 def test_conservative_fallback_rejects_only_where_every_block_length_does():
@@ -208,6 +231,24 @@ def test_bootstrap_many_levels_equals_one_level():
         assert np.allclose(c1[i], LB.cbb_critical(S, N, level=a, block=21, draws=4000))
 
 
+@pytest.mark.parametrize("method", LB.METHODS)
+def test_degenerate_samples_never_pass(method):
+    level = 0.01
+    cases = [(np.array([]), np.array([], dtype=int)),                          # no trade
+             (np.array([0.5, 0.5, -0.5]), np.array([0, 1, 2])),                 # every trade in one block
+             (np.full(40, 0.5), np.arange(0, 640, 16))]                         # no spread at all
+    for x, s in cases:
+        b = LB.bound(method, x, s, 657, level=level)
+        assert not b.rejects, (method, b)
+        S, N = LB.session_sums(x, s, 657)
+        assert not bool(LB.rejects(method, S, N, level=level)), method
+
+
+def test_the_shipped_statistic_is_the_conservative_fallback():
+    """The calibration's choice (docs/research/calibration_2026-11-15.md section 5.1)."""
+    assert LB.SHIPPED == "cons"
+
+
 def test_clopper_pearson():
     lo, hi = LB.clopper_pearson(0, 100)
     assert lo == 0.0 and hi == pytest.approx(0.0362, abs=1e-4)
@@ -226,3 +267,93 @@ def test_full_calibration_script_runs_small(tmp_path):
                        capture_output=True, text=True, timeout=900)
     assert r.returncode == 0, r.stdout[-2000:] + r.stderr[-2000:]
     assert (tmp_path / "lift_size.csv").is_file() and (tmp_path / "lift_power.csv").is_file()
+
+
+# ------------------------------------------------------------------------------------------------ two-sample forms
+# E-022 (F-02's C1': the level lift minus a placebo lift) and E-023 (a side-keeping filter against its placebo-selection
+# twin): a difference of two per-trade means, sessions clustered, the same block statistics.
+
+
+def test_diff_stats_by_hand():
+    # sample 1 on sessions 0..9 (two blocks of 5), sample 2 likewise
+    S1 = np.array([1.0, 0, 0, 0, 0, 2, 0, 0, 0, 0]); N1 = np.array([2.0, 0, 0, 0, 0, 2, 0, 0, 0, 0])
+    S2 = np.array([1.0, 1, 0, 0, 0, 0, 0, 0, 0, 1]); N2 = np.array([2.0, 2, 0, 0, 0, 0, 0, 0, 0, 2])
+    est, se, df = LB.diff_stats(S1, N1, S2, N2, block=5)
+    t1, t2 = 3 / 4, 3 / 6
+    u = np.array([(1 - t1 * 2) / 4 - (2 - t2 * 4) / 6, (2 - t1 * 2) / 4 - (1 - t2 * 2) / 6])
+    assert est == pytest.approx(t1 - t2) and df == 1
+    assert se == pytest.approx(math.sqrt(2 / 1 * (u ** 2).sum()))
+
+
+def test_diff_against_the_same_sample_is_zero_and_never_passes():
+    rng = np.random.default_rng([20261910, 3])
+    S, N = _clustered(rng, 50)
+    est, se, _ = LB.diff_stats(S, N, S, N, block=21)
+    assert np.allclose(est, 0.0) and np.allclose(se, 0.0)
+    rej, _ = LB.diff_many_levels("cons", S, N, S, N, [0.01])
+    assert not rej.any()
+
+
+def test_diff_with_an_empty_second_sample_is_the_one_sample_statistic():
+    rng = np.random.default_rng([20261910, 4])
+    S, N = _clustered(rng, 30)
+    z = np.zeros_like(S)
+    e1, s1, d1 = LB.t_stats(S, N, block=21, weight="trades")
+    e2, s2, d2 = LB.diff_stats(S, N, z, z, block=21, empty_second=True)
+    assert np.allclose(e1, e2) and np.allclose(s1, s2) and np.array_equal(d1, d2)
+
+
+def test_diff_vectorised_and_many_levels():
+    rng = np.random.default_rng([20261911, 3])
+    S1, N1 = _clustered(rng, 400)
+    S2, N2 = _clustered(rng, 400)
+    S1 = S1 + 0.03 * N1
+    levels = (0.05 / 132, 0.01, 0.05)
+    for m in ("t21w", "t42w", "t63w", "cons"):
+        rej, mdl = LB.diff_many_levels(m, S1, N1, S2, N2, levels)
+        for i, a in enumerate(levels):
+            assert np.array_equal(rej[i], LB.diff_rejects(m, S1, N1, S2, N2, level=a)), m
+        q80 = float(np.quantile(mdl[1], 0.8))                       # the MDL: adding it to sample 1 rejects 80 %
+        assert 0.79 <= LB.diff_rejects(m, S1 + (q80 + 1e-9) * N1, N1, S2, N2, level=0.01).mean() <= 0.81, m
+
+
+def test_placebo_selection_bound_and_two_sample_bound():
+    rng = np.random.default_rng([20261910, 5])
+    s = np.sort(rng.integers(0, 657, 6000))
+    y = (rng.random(6000) < 0.5).astype(float)
+    sel = rng.random(6000) < 0.1
+    b = LB.placebo_selection_bound(y, s, sel, 657, level=0.01)
+    assert b.estimate == pytest.approx(y[sel].mean() - y.mean()) and b.method == LB.SHIPPED
+    assert not LB.placebo_selection_bound(y, s, np.ones(6000, bool), 657, level=0.01).rejects
+    y2 = y + 0.4 * sel                                              # a filter that picks trades 40 points better
+    assert LB.placebo_selection_bound(y2, s, sel, 657, level=LB.family_level(15)).rejects
+    b2 = LB.two_sample_bound(y[sel], s[sel], y[~sel], s[~sel], 657, level=0.01)
+    assert b2.estimate == pytest.approx(y[sel].mean() - y[~sel].mean())
+
+
+@pytest.mark.parametrize("seed", [20261910, 20261911])
+def test_shipped_diff_holds_its_size_on_a_fixed_null(seed):
+    """Random selections of 10 % of clustered offers, independent of the outcomes, against the whole population (the
+    placebo-selection twin's expectation): 20,000 replications at 1 % and 5 %."""
+    rng = np.random.default_rng([seed, 6])
+    reps, n = 20000, 300
+    M = rng.poisson(8.0, size=(n, reps)).astype(np.int64)                        # offers a session
+    a = rng.standard_normal((n, reps)) * math.sqrt(0.35)
+    W = rng.binomial(M, stats.norm.cdf(a / math.sqrt(0.65)))                       # wins among them
+    B = rng.binomial(M, 0.1)                                                       # selected offers
+    A = rng.hypergeometric(W, M - W, B)                                            # wins among the selected
+    rej, _ = LB.diff_many_levels(LB.SHIPPED, A.astype(float), B.astype(float), W.astype(float), M.astype(float),
+                                 (0.01, 0.05))
+    for i, al in enumerate((0.01, 0.05)):
+        lo, hi = LB.clopper_pearson(int(round(al * reps)), reps, conf=0.999)
+        assert rej[i].mean() <= hi, (al, rej[i].mean())
+
+
+def test_diff_broadcasts_a_fixed_second_sample():
+    rng = np.random.default_rng([20261911, 8])
+    S1, N1 = _clustered(rng, 20)
+    S2, N2 = _clustered(rng, 1)
+    a = LB.diff_stats(S1, N1, S2, N2, block=21)
+    b = LB.diff_stats(S1, N1, np.repeat(S2, 20, 1), np.repeat(N2, 20, 1), block=21)
+    for x, y in zip(a, b):
+        assert np.allclose(x, y)
