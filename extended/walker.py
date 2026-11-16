@@ -66,6 +66,11 @@ F-01's build uses `DECLARED_F01`; the lead decides any change, under a decision 
 | flatten price | the worst of the bars ending 15:08-15:10 less two ticks (else the last close by 15:08) | the close of the last bar by 15:10 |
 | breakeven | FV3's: at the next session open (17:00, 19:00, 08:30, 13:00 CT; its first bar within five minutes), if that open is a tick or more in favour and the trade still open, the stop moves to the entry; a later touch exits at zero ('b'), unless the target trades through on an earlier bar (a bar touching both is the target's) | none (the declared walk names no stop move) |
 
+Q-20 (E-012 (2), E-013 (2)) adds two options to the move, defaults Stage 2's (`Rules.breakeven_tie`,
+`Rules.breakeven_delay`), and three presets on `STAGE2`: `STAGE2_BE_STOP_FIRST` (a bar touching the entry and trading
+through the target after the move is the stop's), `STAGE2_BE_DELAY5` (the move in force five minutes after the open
+bar's open, the original bracket governing until then) and `STAGE2_BE_BOTH`.
+
 Common to both: the stop reached by a touch, the target by a trade through, the stop first on a two-barrier bar, a stop
 booked at exactly S ticks (no gap beyond it is charged -- Stage 2's convention; F-01 is silent), the costs above with
 the flatten's two exit ticks (under `STAGE2` the flatten is thus charged two ticks in its price and two in its cost, as
@@ -149,26 +154,47 @@ def brackets(stops: Sequence[int], rrs: Sequence[float]) -> list[tuple[int, floa
 # ------------------------------------------------------------------------------------------------ the rules
 
 
+BREAKEVEN_TIES = ("target", "stop")
+
+
 @dataclass(frozen=True)
 class Rules:
     """How a walk ends (see the module docstring's table). `walk_end`: the last bar a position is held to (a slot
     index); `flatten`: 'close' (the close of the last bar by `walk_end`) or 'worst_less_two' (Stage 2's: the worst of
-    `FLATTEN_BARS` less two ticks, else the last close by the walk's end); `breakeven`: Stage 2's FV3 stop move."""
+    `FLATTEN_BARS` less two ticks, else the last close by the walk's end); `breakeven`: Stage 2's FV3 stop move, with
+    two options (Q-20; E-012 (2), E-013 (2)) whose defaults are Stage 2's:
+
+    * `breakeven_tie`: on a bar after the move that both touches the entry and trades through the target -- 'target'
+      (Stage 2's walk, `fv3_rung_walk.py:184-185`) or 'stop' (the walk's own stop-first convention);
+    * `breakeven_delay`: the move's latency in minutes -- decided on the session's open bar's open as before, in force
+      from the first present bar at or after that bar + `breakeven_delay` (0: on the open bar itself, Stage 2's; 5:
+      D-266's five minutes from alert to order). Until the move is in force the original bracket governs, and a trade
+      the original bracket ends on the move's first bar keeps that exit (Stage 2's rule at the open bar, unchanged)."""
 
     name: str
     walk_end: int
     flatten: str
     breakeven: bool
+    breakeven_tie: str = "target"
+    breakeven_delay: int = 0
 
     def __post_init__(self) -> None:
         if self.flatten not in ("close", "worst_less_two"):
             raise ValueError(f"unknown flatten rule {self.flatten!r}")
         if not 1 <= int(self.walk_end) <= C_FLAT:
             raise ValueError(f"walk_end {self.walk_end} is not a bar of the trading day (1..{C_FLAT})")
+        if self.breakeven_tie not in BREAKEVEN_TIES:
+            raise ValueError(f"unknown breakeven tie rule {self.breakeven_tie!r}; one of {BREAKEVEN_TIES}")
+        if int(self.breakeven_delay) < 0:
+            raise ValueError(f"breakeven_delay is minutes at or after the open bar, got {self.breakeven_delay}")
 
 
 STAGE2 = Rules("stage2_fv3", FLAT_ENTRY, "worst_less_two", True)
 DECLARED_F01 = Rules("f01_declared", C_FLAT, "close", False)
+#: Q-20's corrections of Stage 2's breakeven move (E-012 (2), E-013 (2)): each alone, and both
+STAGE2_BE_STOP_FIRST = Rules("stage2_be_stop_first", FLAT_ENTRY, "worst_less_two", True, breakeven_tie="stop")
+STAGE2_BE_DELAY5 = Rules("stage2_be_delay5", FLAT_ENTRY, "worst_less_two", True, breakeven_delay=5)
+STAGE2_BE_BOTH = Rules("stage2_be_both", FLAT_ENTRY, "worst_less_two", True, breakeven_tie="stop", breakeven_delay=5)
 
 
 # ------------------------------------------------------------------------------------------------ orders and fills
@@ -401,13 +427,23 @@ def walk(o, h, l, c, fill_bars, fill_prices, sides, resting, bracket_list, *, ti
             if xs:
                 jn[je == u] = xs[0]
         has_jn = jn != NONE
+        # the move's first bar: the open bar itself (Stage 2's), or the first present bar `breakeven_delay` on
+        delay = int(rules.breakeven_delay)
+        jm = jn.copy()
+        if delay:
+            nxt_p = np.full(n + 1, NONE)
+            for j in range(min(end, n - 1), 0, -1):
+                nxt_p[j] = j if present[j] else nxt_p[j + 1]
+            want = np.where(has_jn, jn + delay, n)
+            jm = np.where(has_jn & (want <= end), nxt_p[np.minimum(want, n)], NONE)
+        has_jm = jm != NONE
         with np.errstate(invalid="ignore"):
             be_fav = np.where(has_jn, np.round(d * (o[np.where(has_jn, jn, 0)] - e) / tick), 0.0)
             reach = np.where(long, l[None, :] <= e[:, None], h[None, :] >= e[:, None])
-        touch_m = (present[None, :] & (J[None, :] >= jn[:, None]) & (J[None, :] <= end) & has_jn[:, None] & reach)
+        touch_m = (present[None, :] & (J[None, :] >= jm[:, None]) & (J[None, :] <= end) & has_jm[:, None] & reach)
         k = touch_m.argmax(axis=1)
         touch = np.where(touch_m[rows, k], k, NONE)
-        be_ok = has_jn & (be_fav > 0)
+        be_ok = has_jn & has_jm & (be_fav > 0)
     mae_all = mae_at(np.full(Wn, n - 1))
     stops_at: dict[int, np.ndarray] = {}
     targets_at: dict[int, np.ndarray] = {}
@@ -424,8 +460,9 @@ def walk(o, h, l, c, fill_bars, fill_prices, sides, resting, bracket_list, *, ti
         ex = np.where(off != NONE, off, int(rules.walk_end))
         mae = np.where(stop, float(S), np.where(tgt, mae_at(js), mae_all))
         if rules.breakeven:
-            app = be_ok & ((off == NONE) | (jn < off))
-            bt = app & (touch != NONE) & ((js == NONE) | (touch < js))
+            app = be_ok & ((off == NONE) | (jm < off))
+            first_ = (touch <= js) if rules.breakeven_tie == "stop" else (touch < js)
+            bt = app & (touch != NONE) & ((js == NONE) | first_)
             btg = app & ~bt & (js != NONE)
             bop = app & ~bt & ~btg
             kind = np.where(bt, BREAKEVEN, np.where(btg, TARGET, np.where(bop, FLATTEN, kind)))
@@ -606,5 +643,6 @@ def trade(order: Order, o, h, l, c, stop_ticks: int, rrs: Sequence[float], *, ru
 __all__ = ["TICK", "SLIP_TICKS", "C_FLAT", "FLAT_ENTRY", "FLATTEN_BARS", "SESSION_OPENS", "NONE", "STOP", "TARGET",
            "FLATTEN", "BREAKEVEN", "AMBIGUOUS", "KIND_CODE", "EXIT_TICKS", "MARKET", "STOP_ENTRY", "LIMIT_ENTRY",
            "FILL_BAR_MODES", "MIRROR_BOOKINGS", "slot", "bar_of", "target_ticks", "brackets", "Rules", "STAGE2",
-           "DECLARED_F01", "Order", "Fill", "last_bar", "walk_end", "price_at", "fill_order", "market_fill_bars",
+           "DECLARED_F01", "BREAKEVEN_TIES", "STAGE2_BE_STOP_FIRST", "STAGE2_BE_DELAY5", "STAGE2_BE_BOTH",
+           "Order", "Fill", "last_bar", "walk_end", "price_at", "fill_order", "market_fill_bars",
            "walk", "Costs", "cost_r", "net_r", "mirror_price", "walk_pair", "Outcome", "Trade", "trade"]
