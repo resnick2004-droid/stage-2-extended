@@ -7,7 +7,7 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 |---|---|---|---|---|
 | 1 | **NQ 1-minute bars from 2026-07-17** (Databento GLBX.MDP3 ohlcv-1m, at least six months) | the declared confirmation window of any carried candidate (F-01 section 6; Stage 2 `docs/OPERATOR_SETUP.md` item 6) | nothing is confirmed; development work continues | open -- a purchase: the price is quoted by Databento at the time; not authorised |
 | 2 | **ES 1-minute bars** | more markets raise the power of every family (Stage 2 `docs/OPERATOR_SETUP.md` item 1) | NQ only | open -- a purchase; not authorised |
-| 3 | **Topstep support questions** -- closing a funded account at request to free its seat; seat timing (Stage 2 item 5) | an unverified rule (`xfa_closure_at_request`) no design may use until answered | no design closes funded accounts at request | open |
+| 3 | **Topstep support questions** -- closing a funded account at request to free its seat; seat timing (Stage 2 item 5); and, optional (E-013), whether a funded account's first trade sized several times its later trades breaches Terms of Use s.8 -- text below | an unverified rule (`xfa_closure_at_request`) no design may use until answered | no design closes funded accounts at request | open |
 | 4 | **Lucid's two unpriced fees** (funded monthly, payout) | a Lucid design cannot be priced in full | Lucid stays a reading beside, never a candidate | open |
 | 5 | **A private GitHub remote for this repository** | backup; push after every commit | -- | done by the session (E-004): `resnick2004-droid/stage-2-extended`, private |
 | 6 | **May this repository live outside OneDrive?** (asked once) | OneDrive locks files under a running job and has broken in-repo worktrees before; the worktrees and clean runs already live outside it, in `%LOCALAPPDATA%` | it stays at `Desktop\Stage 2 - Extended`; GitHub is the backup | **answered 2026-11-15** -- the operator: "Pushing the updates to github is best". The repository stays where it is; every commit and every worker branch is pushed to the private remote (the post-commit hook) |
@@ -55,3 +55,15 @@ older era is used (Stage 2 D-271's era rule) before any of it is read.
 Nothing is required. If convenient, before leaving the machine for a while, close idle applications (spare editor
 windows, games, WSL, browser tabs) or tell any session the hours the machine is usually idle; heavy runs are then
 scheduled into them. A heavy run never starts without the memory it needs.
+
+## Item 3 -- the optional question on position size (E-013)
+
+If you write to Topstep support, this is the question, ready to paste:
+
+> Your Terms of Use (section 8) say risk standards are not met where a trader opens "substantially larger position
+> sizes compared to your other trades". On an Express Funded Account, is it a breach to size the account's first
+> trade larger than its later ones -- for example a first trade risking about $1,000-1,500 and later trades risking
+> about $250 each, every trade within the account's position limits and the scaling plan? If there is a threshold
+> or a guideline, where is it published?
+
+Tell any session what they answer; it is recorded in a decision row. Until then the clause is priced as a risk.

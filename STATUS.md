@@ -23,8 +23,9 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 **Answered 2026-11-15 (E-008):** new designs are judged on their trades first (lift over the coin twin, calibrated),
 the user scorecard beside against P-14; the verdict keeps 0 % denial with the placement off; hand entry only stays.
 
-**Open:** the tiers of the breakeven stop move inside P-14/P-15/P-16 ("auto-breakeven", 10305426) and of Terms of Use
-s.8 (outsized positions) against the state table -- asked once the rules readings (Q-19) are in.
+**Answered 2026-11-15 (E-013):** Terms of Use s.8 is priced as a risk (tier 3, the denial ladder beside); the breakeven move is allowed as made (its modelling fixed in Q-20).
+
+**Open:** none.
 
 **The gate (E-008):** families may be declared (next k = 11) and built; no judged-block read until the U1 identity holds
 (Q-05) and the calibrated statistic exists (Q-16). Safe defaults stand (E-007): F-01 withdrawn; `or30` out; the
