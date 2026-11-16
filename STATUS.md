@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-057).
+**Updated:** 2026-11-16 (E-059).
 
 ## Phase
 
@@ -46,11 +46,11 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-82 the pass line's fresh-seed validation | running |
 | wt-levels | wt/wt-levels | Q-84 F-02's seventh text (K0, C0, the pin conditions) | running |
-| wt-user | wt/wt-user | Q-76 the adapter's funded-account class | running |
+| wt-user | wt/wt-user | -- (Q-76 merged, E-059; its identity Q-93 in the chain) | idle |
 | wt-features | wt/wt-features | -- (Q-70 merged, E-055; its identities Q-89 in the chain) | idle |
 | wt-lit | wt/wt-lit | Q-87 family O's third draft | running |
-| wt-firms | wt/wt-firms | Q-88 the red team's read of the firms reading | running |
-| wt-payout | wt/wt-payout | -- (Q-71 merged, E-049; its identities Q-80 in the chain) | idle |
+| wt-firms | wt/wt-firms | Q-91 the firms reading's third draft | running |
+| wt-payout | wt/wt-payout | Q-92 F-P's third draft | running |
 | wt-report | wt/wt-report | Q-86 money spent and return on spend per start day | running |
 | wt-scout | wt/wt-scout | Q-81 family B's sixth draft | running |
 | wt-infra | wt/wt-infra | Q-85 the exemption scan checks its row | running |
@@ -59,11 +59,12 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 - Heavy, one at a time under `run.lock`, each from a clean checkout: the second leg at c7e01bd (E-041) -- Q-55 (the
   calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45; then the
-  third leg: Q-80 (the re-composed gate's 500-path identities), Q-89 (the place recorder's identities), Q-35
+  third leg: Q-80 (the re-composed gate's 500-path identities), Q-89 (the place recorder's identities), Q-93 (the
+  adapter's class), Q-35
   (where the openings fall); then Q-83
   (the fresh-seed validation F-02's pin needs).
-- Light: Q-87 (family O's third draft), Q-86, Q-88, Q-81 (family B's sixth draft), Q-84 (F-02's seventh text), Q-85,
-  Q-76, Q-82.
+- Light: Q-87 (family O's third draft), Q-86, Q-91, Q-92, Q-81 (family B's sixth draft), Q-84 (F-02's seventh text), Q-85,
+  Q-82.
 
 ## Machine
 
