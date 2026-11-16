@@ -2,13 +2,13 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-046).
+**Updated:** 2026-11-16 (E-047).
 
 ## Phase
 
 **Phase 1** -- families declared and red-teamed (F-02 levels, family B, family O; described readings F-P, RD firms).
 The pass line's statistic is `cons` (E-035); no family reads the judged block before its pin, and the first pin
-(F-02, k = 11) waits for its sixth draft (Q-72) and Q-55's clean rerun of the calibration.
+(F-02, k = 11) waits for the gatekeeper's re-read of its sixth text (Q-66b) and Q-55's clean rerun.
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 
@@ -45,21 +45,21 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | worktree | branch | task | state |
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-68 a red-team read of the pass-line code | running |
-| wt-levels | wt/wt-levels | Q-72 F-02's sixth draft (the gatekeeper's four gaps) | running |
+| wt-levels | wt/wt-levels | -- (Q-72 merged, E-047; the gatekeeper's re-read, then the pin after Q-55) | idle |
 | wt-user | wt/wt-user | Q-35's script | running |
 | wt-features | wt/wt-features | Q-70 the place-recording adapter | running |
 | wt-lit | wt/wt-lit | Q-75 the red team's second read of family O | running |
 | wt-firms | wt/wt-firms | Q-73 the FOMC-minutes dates (a scout) | running |
 | wt-payout | wt/wt-payout | Q-71 the RD firms gate seam | running |
 | wt-report | wt/wt-report | Q-69 the scorecard page for Q-44's file | running |
-| wt-scout | wt/wt-scout | Q-65 family B's fifth draft | running |
+| wt-scout | wt/wt-scout | Q-77 the red team's fifth read of family B | running |
 | wt-infra | wt/wt-infra | Q-67 the ledger's union on collection, then Q-74 the reader's RD- files | running |
 
 ## Running now
 
 - Heavy, one at a time under `run.lock`, each from a clean checkout: the second leg at c7e01bd (E-041) -- Q-55 (the
   calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45.
-- Light: Q-75 (family O's second read), Q-65 (family B's fifth draft), Q-72 (F-02's sixth draft), Q-67 then Q-74,
+- Light: Q-75 (family O's second read), Q-77 (family B's fifth read), Q-66b (F-02's gatekeeper re-read), Q-67 then Q-74,
   Q-68, Q-69, Q-70, Q-71, Q-73, Q-35's script.
 
 ## Machine

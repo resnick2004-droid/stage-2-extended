@@ -80,18 +80,20 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-62 | The red team's fourth read of family B | wt-scout | done: must be redrafted, ruled (E-044); Q-65 | Q-56 | light | 0 | E-040 |
 | Q-63 | Family O's second draft per its red team | wt-lit | done: merged cd2cbe7 (E-046); Q-75 | Q-60 | light | 0 | E-042 |
 | Q-64 | F-02's final narrow redraft (drop `break` at `pdc`; pin after Q-55) | wt-levels | done: merged 2c9b6c2 (E-044); the pin waits for Q-55 and Q-66 | Q-53 | light | 0 | E-042 |
-| Q-65 | Family B's fifth draft per its fourth read (M4-1, M4-2 as ruled; the six minors) | wt-scout | running (the family B drafter) | Q-62 | light | 0 | E-044 |
+| Q-65 | Family B's fifth draft per its fourth read (M4-1, M4-2 as ruled; the six minors) | wt-scout | done: merged (E-047); Q-77 | Q-62 | light | 0 | E-044 |
 | Q-66 | The prereg-gatekeeper's read of F-02 v5 (a verdict only; the pin follows Q-55) | lead | done: REFUSE, narrow (E-045); Q-72 | Q-64 | light | 0 | E-044 |
 | Q-67 | `scripts/run_clean.py --collect`: the append-only files collected as a union (the run's new lines appended), tested | wt-infra | running | -- | light | 0 | E-044 |
 | Q-68 | A red-team read of the pass-line code (`extended/lift_bound.py`, `extended/p_bound.py`, the calibration scripts) against E-035 and F-02 v5, before the pin | wt-verify | running | Q-55 | light | 0 | E-044 |
 | Q-69 | The scorecard page for Q-44's `results/user_beside.csv`, built from its writer's schema on a synthetic fixture (Q-27's tool) | wt-report | running | Q-17 | light | 0 | E-044 |
 | Q-70 | The place-recording adapter (family B section 20 item 9, family O 18.1): every simulated trade's offer, R and place; its 4-path identity a heavy chain step | wt-features | running | -- | light | 0 | E-044 |
 | Q-71 | The RD firms gate seam (A-8): `run_gate` gains `payout_lag_days`, `household_closure`, `combine_account_cls`; the campaign re-composed in `extended/`, pinned by source hash; identity at no class | wt-payout | running | Q-47 | light | 0 | E-044 |
-| Q-72 | F-02's sixth draft, narrow: the gatekeeper's four gaps; the title and status in pin-time form | wt-levels | running (its drafter) | Q-66 | light | 0 | E-045 |
+| Q-72 | F-02's sixth draft, narrow: the gatekeeper's four gaps; the title and status in pin-time form | wt-levels | done: merged c09730e (E-047); the gatekeeper's re-read Q-66b | Q-66 | light | 0 | E-045 |
 | Q-73 | The FOMC-minutes release dates 2020-01-02 to 2026-07-16 from federalreserve.gov (a scout's cited note and CSV); then a pinned `config/` calendar (a builder, as E-029) | wt-firms | running (the scout) | Q-54b | light | 0 | E-045 |
 | Q-74 | The reader admits pinned `prereg/RD-nn_*.md` declarations; the strict expected failures tracking the gap become passing tests | wt-infra | queued (after Q-67, same worker) | Q-58 | light | 0 | E-045 |
 | Q-75 | The red team's second read of family O | wt-lit | running | Q-63 | light | 0 | E-046 |
 | Q-76 | Q-17's adapter carries a declared funded-account class (`extended/user_beside.py`; U1's start-row identity at the default) | wt-user | queued (after Q-35's script) | Q-63 | light | 0 | E-046 |
+| Q-77 | The red team's fifth read of family B | wt-scout | running | Q-65 | light | 0 | E-047 |
+| Q-66b | The gatekeeper re-reads F-02's sixth text (c09730e) -- a verdict only | lead | running | Q-72 | light | 0 | E-047 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
