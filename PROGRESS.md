@@ -51,3 +51,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | Family B's fourth draft merged (E-040); Q-61 (snapshot extension) and Q-62 (fourth read) dispatched. |
 | 2026-11-16 | lead | Q-58 merged (E-041): the three readings authorise through the reader. The chain's second leg (Q-44, Q-18, Q-45) prepared to start after Q-22 and Q-51. |
 | 2026-11-16 | lead | Q-22 HOLDS (P-15, every start). Q-61 merged (710 files, E-043). E-042: F-02's last defect ruled (drop `break` at `pdc`), family O to a second draft. The chain's second leg starting on a fixed commit. |
+| 2026-11-16 | lead | E-044: Q-51 HOLDS (the rebuilt gate, both designs). F-02 v5 merged (15 cells; the pin waits for Q-55; its gatekeeper running). Family B's fourth read merged: M4-1 and M4-2 ruled, the fifth draft Q-65 running. Six light items dispatched to idle worktrees (Q-67..Q-71, Q-35's script). The status board refreshed (Phase 1). |

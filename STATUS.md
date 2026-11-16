@@ -2,12 +2,13 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-15 (session 2, the bootstrap's Part 7).
+**Updated:** 2026-11-16 (E-044).
 
 ## Phase
 
-**Phase 0** -- setup and the research-structure audit (bootstrap Part 4). No model family runs until the audit gate
-(TASK_QUEUE Q-08) is passed.
+**Phase 1** -- families declared and red-teamed (F-02 levels, family B, family O; described readings F-P, RD firms).
+The pass line's statistic is `cons` (E-035); no family reads the judged block before its pin, and the first pin
+(F-02 as F-11) waits for Q-55's clean rerun of the calibration.
 
 ## The identity (refusing: nothing of this repository is believed until it holds)
 
@@ -17,6 +18,7 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 | P-16's registered gate paths (500, same) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`, all 1,691 starts, both arms, all 68 columns) | **HOLDS**, wt-verify at 8010969 under the lock | E-010 |
 | U1's start rows for P-15 (every start) | **HOLDS**, clean checkout of 1d1ab9f under the lock | E-042 |
+| the gate rebuilt in `extended/` against P-14's and P-16's gate runs (500 paths, both shifts, no class and pass-through) | **HOLDS**, clean checkout of 6325e09 under the lock | E-044 |
 | the walker against P-16's pinned trades (`TRADES_SHA256`, all 239,768 trades) | **HOLDS** (the lead, under the lock, wt-levels at 318d45b) | E-011 |
 
 ## NEEDS_OPERATOR
@@ -42,21 +44,23 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 
 | worktree | branch | task | state |
 |---|---|---|---|
-| wt-verify | wt/wt-verify | Q-55 the calibration's clean-run entry point | running |
-| wt-levels | wt/wt-levels | Q-64 F-02's final narrow redraft | running |
-| wt-user | wt/wt-user | -- (Q-40 done, E-029) | idle |
-| wt-features | wt/wt-features | -- (Q-61 done, E-043) | idle |
+| wt-verify | wt/wt-verify | Q-68 a red-team read of the pass-line code | running |
+| wt-levels | wt/wt-levels | -- (Q-64 merged, E-044; the pin waits for Q-55) | idle |
+| wt-user | wt/wt-user | Q-35's script | running |
+| wt-features | wt/wt-features | Q-70 the place-recording adapter | running |
 | wt-lit | wt/wt-lit | Q-63 family O's second draft | running |
-| wt-firms | wt/wt-firms | Q-59 DayTraders' and TradeDay's remaining rules | running |
-| wt-payout | wt/wt-payout | -- (Q-54 drafted, E-038) | idle |
-| wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
-| wt-scout | wt/wt-scout | Q-62 the red team's fourth read of family B | running |
-| wt-infra | wt/wt-infra | -- (Q-58 done, E-041) | idle |
+| wt-firms | wt/wt-firms | Q-54b the firms draft updated with Q-59's readings | running |
+| wt-payout | wt/wt-payout | Q-71 the RD firms gate seam | running |
+| wt-report | wt/wt-report | Q-69 the scorecard page for Q-44's file | running |
+| wt-scout | wt/wt-scout | Q-65 family B's fifth draft | running |
+| wt-infra | wt/wt-infra | Q-67 the ledger's union on collection | running |
 
 ## Running now
 
-- Q-16's calibration holds the lock (wt-verify). After it, the heavy chain (E-028 (3)): Q-22 every start, Q-51, Q-44, Q-18, Q-45, Q-46, each from a clean checkout of master.
-- Light: Q-43 (family B's third draft), Q-50 (F-02's fourth draft), Q-40 (the calendar), Q-48 (identities through the reader), Q-39 (rules readings).
+- Heavy, one at a time under `run.lock`, each from a clean checkout: the second leg at c7e01bd (E-041) -- Q-55 (the
+  calibration), Q-22b (P-15 through Stage 2's own builder), Q-44 (the readings beside), Q-18, Q-45.
+- Light: Q-63 (family O's second draft), Q-65 (family B's fifth draft), Q-54b (the firms draft), Q-66 (F-02's
+  gatekeeper), Q-67, Q-68, Q-69, Q-70, Q-71, Q-35's script.
 
 ## Machine
 
