@@ -26,3 +26,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-15 | lead | The operator stated the goal as an evenly distributed path over a collective of journey variables (E-014). Break-even timing and evenness measures added to Q-17 (message to the wt-user worker); the comparison method asked. |
 | 2026-11-15 | lead | The operator chose limits-first with the lead proposing the levels, on condition they never fail profitable models and that dispersion is carried through (E-015). CHARTER section 2 and the gatekeeper amended; the levels to be proposed from Q-17's file. |
 | 2026-11-15 | lead | Q-11 merged (E-016); the gatekeeper aligned with E-008; Q-22 queued; Q-23 (red team on family B's draft) dispatched to wt-scout. |
+| 2026-11-15 | lead | Q-21 merged (E-017); two skills corrected; Q-23 and Q-24 (the red team on the two drafts) launched. |

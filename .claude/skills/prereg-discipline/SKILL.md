@@ -56,11 +56,15 @@ grids are contract arithmetic and verified rule values (Stage 2 D-621 (4)(d)).
 **Seeds, now.** Every bootstrap, coin twin and campaign seed an integer in the file; a campaign seed one never used
 before (in Stage 2 or here). A seed chosen after seeing a result is a variant.
 
-**The selection rule.** The objective is `CHARTER.md` sections 2-3, not Stage 2's long-run gate: **P**, the mean share
-of start days ahead (net cash above zero) at months 1, 2 and 3, on the `verdict` arm (every R's outcome at the
-one-sided 95 % lower bound of its edge), with Stage 2 D-621's guarded measures; S3c the screening target; the frontier
-on P, S1, S3a and S5a reported, never one number. A design is CARRIED only by Stage 2 D-621 (3) unchanged against
-**R\* = P-14** at the family's level -- the paired P difference's moving-block interval (63-session blocks, seed
+**The selection rule (the operator, E-008, E-014, E-015).** A design is **judged on its trades first**: the lift over
+the coin twin on the same brackets, on the judged block, one-sided at the family's level 0.05/(k(k+1)) by **the
+calibrated statistic** (TASK_QUEUE Q-16), its value-map price at that bound at least the family's declared bar; the
+long-run gate (growth on the required bankroll at the bound, Stage 2 D-145), every offered R resolving, verified rules
+and conduct tier 1 as floors. **The user scorecard is beside, never the pass line**: P and the guarded measures
+against **R\* = P-14**, the frontier, E-007 (e)'s readings and CHARTER section 2's journey scorecard, each measure a
+distribution over start days, the operator's limits as menu flags only; the verdict at 0 % denial with the placement
+off, the rest beside. *For the record only -- Stage 2 D-621 (3), which no longer decides (its line (i) does not
+deliver its level, E-007):* a design CARRIED against **R\* = P-14** at the family's level -- the paired P difference's moving-block interval (63-session blocks, seed
 20261700, 2,000 draws) excluding zero; no guarded measure worse by more than five points on a share or ten per cent on
 dollars, sessions and ratios; **the long-run gate (growth on the required bankroll at the bound, Stage 2 D-145) as a
 floor**, above zero and above P-06's row at a fresh campaign seed, every R resolving, every rule verified; a coin

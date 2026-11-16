@@ -42,8 +42,9 @@ For each candidate alert `t`:
 - **Entry:** market at the open of the bar stamped `t + 5`, or a resting order live from `t + 5` -- a stop fills when a
   bar trades at its price (gap-through fills at the bar's open, plus slippage); a **limit fills only on a trade
   through its level by at least one tick**, at the limit price, never better.
-- **Stop** from the stop band (`vendor/stage2/results/stop_band.csv`; the registered rungs are 25 and 37.5 NQ points;
-  under 45 ticks costs eat the trade, Stage 2 D-527); **targets** at each declared R.
+- **Stop** from the stop band (`vendor/stage2/results/stop_band.csv`, which also holds the cost-drag floor of 45 ticks --
+  Stage 2 D-271 (3), not D-527; the registered designs trade 12.5 and 25 points (P-14) and 25 and 37.5 points (the
+  coins P-15, P-16)); **targets** at each declared R.
 - **Resolution** by 15:10 CT: win (target), loss (stop) or flatten (at 15:10, its actual P&L). No time stop.
 - **Ties:** a bar that could hit both stop and target is read **stop first**; on a resting order's fill bar a stop
   touch counts and a target touch does not -- **for one trade's own outcome only.** In a comparison of a resting
