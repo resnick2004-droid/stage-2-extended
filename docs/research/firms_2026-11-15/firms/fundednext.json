@@ -1,0 +1,281 @@
+{
+  "firm": "FundedNext Futures",
+  "slug": "fundednext",
+  "official_domains": ["fundednext.com", "helpfutures.fundednext.com"],
+  "date_read": "2026-11-15",
+  "unreadable": [],
+  "plans_seen": [
+    {"name": "Flex 50K", "drawdown": "EOD trailing $1,500, locks at $50,100 (eval and funded); first withdrawal resets MLL to $50,100", "consistency_eval": "40% (best day <= 40% of target, else target recalculated)", "consistency_funded": "none",
+     "quote": {"file": "raw/fundednext/a-consistency.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230245-is-there-any-consistency-rule-to-be-followed-in-the-fundednext-futures-challenge-fundednext-account", "article_id": "17230245", "page_date": "Updated over 3 weeks ago", "text": "| Flex | ✅ 40% | ❌ None"}},
+    {"name": "Rapid Pro 50K", "drawdown": "EOD trailing $2,000, locks at $50,100 (eval and funded); optional DLL add-on $1,000", "consistency_eval": "none", "consistency_funded": "40% (withdrawal gate)",
+     "quote": {"file": "raw/fundednext/a-consistency.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230245-is-there-any-consistency-rule-to-be-followed-in-the-fundednext-futures-challenge-fundednext-account", "article_id": "17230245", "page_date": "Updated over 3 weeks ago", "text": "| Rapid Pro | ❌ None | ✅ 40%"}},
+    {"name": "Rapid Daily 50K", "drawdown": "EOD trailing $2,000, locks at $50,100; daily loss limit $1,000 (soft) at every stage; funded buffer $52,100", "consistency_eval": "none", "consistency_funded": "none (buffer rule)",
+     "quote": {"file": "raw/fundednext/a-consistency.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230245-is-there-any-consistency-rule-to-be-followed-in-the-fundednext-futures-challenge-fundednext-account", "article_id": "17230245", "page_date": "Updated over 3 weeks ago", "text": "| Rapid Daily | ❌ None | ❌ None (uses buffer rule)"}},
+    {"name": "Direct Account 50K (no evaluation)", "drawdown": "EOD trailing $2,000, locks at $50,100; DLL $1,000; $2,100 buffer; 7-day inactivity breach", "consistency_eval": "n/a (no challenge)", "consistency_funded": "20% perpetual (all-time best day <= 20% of current cycle profit)",
+     "quote": {"file": "raw/fundednext/a-consistency.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230245-is-there-any-consistency-rule-to-be-followed-in-the-fundednext-futures-challenge-fundednext-account", "article_id": "17230245", "page_date": "Updated over 3 weeks ago", "text": "| Direct | N/A | ✅ 20%"}},
+    {"name": "Legacy 50K (discontinued)", "drawdown": "EOD trailing $2,000, locks at initial balance", "consistency_eval": "40%", "consistency_funded": "none",
+     "quote": {"file": "raw/fundednext/a-legacy-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229536-fundednext-futures-legacy-challenge-all-rules", "article_id": "17229536", "page_date": "Updated over 3 weeks ago", "text": "Important Notice: As of October 11, Legacy Accounts are no longer available for purchase. Existing Legacy Accounts are also not eligible for resets."}},
+    {"name": "Bolt 50K (discontinued)", "drawdown": "not read (product withdrawn); MLL set to $50,100 after first withdrawal per the withdrawal article", "consistency_eval": "not read", "consistency_funded": "not read",
+     "quote": {"file": "raw/fundednext/a-withdraw-how.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242064-how-can-i-withdraw-my-performance-reward", "article_id": "17242064", "page_date": "October 12, 2026", "text": "Note: Effective 10 July 2026, Rapid and Bolt accounts will no longer be available for new purchases or account resets."}},
+    {"name": "FNL:003 50K Instant (Labs limited release)", "drawdown": "EOD trailing, locks at $50,100", "consistency_eval": "n/a (no challenge)", "consistency_funded": "20% perpetual",
+     "quote": {"file": "raw/fundednext/a-fnl003.txt", "url": "https://helpfutures.fundednext.com/en/articles/16847874-what-is-the-fundednext-futures-fnl-003-50k-instant-account", "article_id": "16847874", "page_date": "September 8, 2026", "text": "Each trader can purchase 3 FNL:003 Instant Accounts, and these are not counted against your standard 5 FundedNext Account maximum allocation limit."}}
+  ],
+  "plan_captured": "Flex 50K",
+  "screen": {
+    "drawdown_eval": {"value": "eod_trailing; $1,500; locks at $50,100", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "It follows a Trailing End-of-Day (EOD) system, updating once per day based on your highest balance that day."},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| Account Size | Maximum Loss Limit | MLL Locks At"},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| $50,000 | $1,500 | $50,100"}
+      ],
+      "note": "A floating loss that touches the MLL breaches intraday; the level itself moves only at end of day (05:00 PM CT per the loss-limit article)."},
+    "drawdown_funded": {"value": "eod_trailing; $1,500; locks at $50,100; first withdrawal resets MLL to $50,100", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "The Maximum Loss Limit (MLL) continues to apply on your funded account, using the same Trailing End-of-Day (EOD) system as the Challenge:"},
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "Your first withdrawal resets the MLL to the lock point for your size ($50,100 / $100,100 / $150,100)."}
+      ]},
+    "consistency_eval": {"value": "40% of profit target per day; exceeding it raises the target to best day / 0.40 (no breach)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "Yes. The Consistency Rule applies throughout the Challenge Phase. Your profit on any single day cannot exceed 40% of your total profit target."},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "Required Total Profit = Highest Daily Profit ÷ 40%"}
+      ]},
+    "consistency_funded": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "No. Unlike the Challenge Phase, there is no Consistency Rule on the Flex FundedNext Account. You have full flexibility in how much you earn on any given day."}
+      ],
+      "note": "The payout gate instead is 5 Benchmark Days of $200 and $500 cycle profit (see terms.payout_frequency_gate)."},
+    "max_funded_accounts": {"value": "5 active FundedNext accounts (per user and per household); max 10 issued per calendar month; challenges up to $750,000 combined allocation", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-max-accounts.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available", "article_id": "17225812", "page_date": "September 30, 2026", "text": "FundedNext Accounts: You can hold up to 5 active FundedNext Accounts at any given moment, regardless of individual account sizes or models. This limit applies per user and per household."},
+        {"file": "raw/fundednext/a-max-accounts.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available", "article_id": "17225812", "page_date": "September 30, 2026", "text": "A maximum of 10 FundedNext Accounts can be issued to you within a calendar month."}
+      ],
+      "note": "Household = same residential address or IP. A passed challenge beyond the cap is held pending until a slot frees."},
+    "copy_trading": {"value": "allowed between own accounts (and to own accounts at other prop firms, same registered name); copying others or signals prohibited", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-copy.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230319-what-is-copy-group-trading-policy-at-fundednext-futures", "article_id": "17230319", "page_date": "September 30, 2026", "text": "Copy trading within FundedNext is allowed. Traders can freely copy trades between their own FundedNext Accounts."}
+      ]},
+    "opposite_positions": {"value": "prohibited (reverse hedging within or across own accounts, incl. NQ vs MNQ and correlated instruments in the same asset group)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Reverse hedging is when a single trader, a single beneficial owner, holds both sides of the offset, buying one and selling the other."},
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "It can be done across the trader's own accounts or within a single account."}
+      ]},
+    "news": {"value": "not restricted (except for traders enrolled in the Disciplined Trader Program)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "No — FundedNext Futures does not restrict news trading."},
+        {"file": "raw/fundednext/a-disciplined.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230400-what-is-the-disciplined-trader-program-of-fundednext-futures-and-how-does-it-help-traders-build-consistency", "article_id": "17230400", "page_date": "September 30, 2026", "text": "News Trading: Strictly prohibited during high-impact economic events."}
+      ],
+      "note": "The prohibition applies only inside the corrective Disciplined Trader Program (entered after a warning for high-risk behaviour)."},
+    "automation": {"value": "EAs/bots allowed (no support; customised, distinct strategy); HFT prohibited and automated systems monitored", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "At FundedNext Futures, you are allowed to use automated trading systems such as Expert Advisors (EAs) and trading bots during both the Challenge and on FundedNext Accounts."},
+        {"file": "raw/fundednext/a-hft.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230388-does-fundednext-futures-allow-high-frequency-trading-hft", "article_id": "17230388", "page_date": "September 30, 2026", "text": "No, FundedNext Futures does not allow High-Frequency Trading."}
+      ],
+      "note": "Our trades are hand-entered; nothing found forbids that."},
+    "sizing_gambling": {"value": "all-in / account flipping prohibited; contracts over the limit have profits deducted; micro-scalping (trades closed within 10 s) >= 40% of cycle profit is deducted on funded accounts", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Account flipping and inconsistent contract execution involve using high margin to rapidly grow or blow up accounts through reckless, oversized positions."},
+        {"file": "raw/fundednext/a-microscalp.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230376-what-is-the-micro-scalping-policy-in-fundednext-futures", "article_id": "17230376", "page_date": "September 30, 2026", "text": "A Micro-Scalping percentage at or above 40% constitutes a violation."}
+      ]},
+    "verdict": "PASS",
+    "verdict_reason": "Flex 50K: EOD trailing MLL on the funded account and no funded consistency rule; 5 funded accounts per person/household; hand-entered one-direction bracket trades are not prohibited (only tight two-sided no-slippage bracket straddles, micro-scalping and tick scalping are).",
+    "note": "Caveat for the design: the prohibited 'Bracket Strategies' item targets two-sided buy-stop/sell-stop brackets with tight targets exploiting no slippage on NQ; a single entry with its stop and target is not that pattern, but tight targets held < 10 s would fall under micro-scalping. 'Account Rolling' (buying many challenges and sacrificing some) is monitored and can cut purchase rights."
+  },
+  "terms": {
+    "eval_profit_target": {"value": 2500, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| Account Size | Profit Target | Maximum Loss Limit | MLL Locks At"},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| $50,000 | $2,500 | $1,500 | $50,100"}
+      ]},
+    "eval_drawdown_amount": {"value": 1500, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| $50,000 | $2,500 | $1,500 | $50,100"}
+      ]},
+    "eval_drawdown_type": {"value": "eod_trailing", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "The MLL adjusts at the end of each trading day, not in real time."},
+        {"file": "raw/fundednext/a-dll-mll.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230292-daily-loss-limit-and-maximum-loss-limit-at-fundednext-futures", "article_id": "17230292", "page_date": "Updated over 3 weeks ago", "text": "It updates once per day at the end of the trading day (05:00 PM CT) — not in real time."}
+      ],
+      "note": "Intraday floating loss reaching the MLL breaches instantly."},
+    "eval_drawdown_lock": {"value": "locks at $50,100 (initial + $100)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "It stops trailing and locks once your balance reaches the lock point for your size ($50,100 / $100,100 / $150,100)."}
+      ],
+      "note": "Read as: the MLL level stops trailing once it reaches $50,100 (i.e. after the EOD balance reaches $51,600); the article's wording says 'once your balance reaches the lock point', which is the MLL level."},
+    "eval_daily_loss_limit": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "No. The Flex Challenge has no daily loss limit at any stage, giving you more flexibility in trade management."}
+      ]},
+    "eval_consistency_rule": {"value": "40% of profit target per day; overshoot recalculates target = best day / 0.40", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "If you earn $1,500 in a day: $1,500 ÷ 0.40 = $3,750. You would now need $3,750 total to pass, instead of $2,500."}
+      ]},
+    "eval_min_days": {"value": "UNVERIFIED (no minimum-days rule stated)", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules ; https://helpfutures.fundednext.com/en/articles/17229807-what-is-fundednext-futures-flex-challenge ; https://helpfutures.fundednext.com/en/articles/17230209-what-are-benchmark-days-at-fundednext-futures",
+      "note": "The Benchmark Days article says no Benchmark Day requirement in any Challenge Phase. The 40% rule implies at least 3 profitable days to reach $2,500 without raising the target (arithmetic, not a stated rule)."},
+    "eval_position_limit": {"value": "3 e-mini / 30 micro (1:10 mix); fixed, no scaling", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| $50,000 | 3 e-mini / 30 micro e-mini"},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "If you exceed the limit, only the excess contracts count as violations: profit from them is deducted, while losses still count."}
+      ]},
+    "eval_fee": {"value": "one-time: $141.99 list; $74.99 first 2 purchases, $84.99 from the 3rd (with coupon FNFLEX)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| Account Size | Account Price | First 2 Purchases | 3 Purchases Onward"},
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "| $50,000 | $141.99 | $74.99 | $84.99"},
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "One-Time Fee Only: A single fee is paid at the start when you purchase a Challenge."}
+      ],
+      "note": "The discount offer article says 47% off the first 2 and 40% off from the 3rd with coupon FNFLEX; offer prices may change."},
+    "eval_reset_fee": {"value": 82.99, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-reset.txt", "url": "https://helpfutures.fundednext.com/en/articles/17228852-what-are-the-reset-conditions-and-fees-at-fundednext-futures", "article_id": "17228852", "page_date": "Updated over a week ago", "text": "| Flex 50K | $141.99 | $82.99"}
+      ],
+      "note": "Resets are unlimited up to the $750,000 challenge allocation; funded accounts cannot be reset."},
+    "activation_fee": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "Free Transition: Moving from a Challenge to a FundedNext Account involves no additional cost."}
+      ]},
+    "eval_count_limit": {"value": "no limit on purchases; combined challenge allocation up to $750,000 at a time", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-max-accounts.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available", "article_id": "17225812", "page_date": "September 30, 2026", "text": "Challenge Accounts: Up to $750,000 in total allocation at any one time."}
+      ]},
+    "eval_time_limit": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-chal.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229829-fundednext-futures-flex-challenge-all-rules", "article_id": "17229829", "page_date": "October 13, 2026", "text": "No. There is no time limit — take as long as you need to reach your profit target while following the rules."}
+      ],
+      "note": "Subject to the 30-calendar-day inactivity breach."},
+    "funded_type": {"value": "simulated FundedNext Account; concluded after the 5th Performance Reward; live review pool after 15 Performance Rewards across the profile", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "After your 5th Performance Reward, the Flex FundedNext Account is concluded."},
+        {"file": "raw/fundednext/a-road-live.txt", "url": "https://helpfutures.fundednext.com/en/articles/16522296-road-to-live-trading-rapid-flex-direct", "article_id": "16522296", "page_date": "Updated over 3 weeks ago", "text": "New to live: 15 Performance Rewards across your FundedNext journey."}
+      ],
+      "note": "On reaching the 15th reward all accounts are closed for review; live selection is discretionary; challenge accounts are closed without refund at transition."},
+    "funded_drawdown_amount": {"value": 1500, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| $50,000 | $1,500 | $50,100"}
+      ]},
+    "funded_drawdown_type": {"value": "eod_trailing", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "The Maximum Loss Limit (MLL) continues to apply on your funded account, using the same Trailing End-of-Day (EOD) system as the Challenge:"}
+      ]},
+    "funded_drawdown_lock": {"value": "locks at $50,100", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "It stops trailing and locks once your balance reaches the lock point for your size ($50,100 / $100,100 / $150,100)."}
+      ]},
+    "payout_balance_consequence": {"value": "first withdrawal sets the MLL to $50,100 (initial + $100); withdrawn amount leaves the balance", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "Your first withdrawal resets the MLL to your account initial balance + $100."},
+        {"file": "raw/fundednext/a-reward-share.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242096-what-will-be-my-reward-share-from-the-futures-fundednext-account", "article_id": "17242096", "page_date": "October 12, 2026", "text": "A trader with a $50K Flex FundedNext Account with a 95% Reward Share makes $3,000 growth and decides to withdraw $1,500 (the 50% amount, which is under the limit)."},
+        {"file": "raw/fundednext/a-reward-share.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242096-what-will-be-my-reward-share-from-the-futures-fundednext-account", "article_id": "17242096", "page_date": "October 12, 2026", "text": "Account balance after withdrawal: $51,500"}
+      ],
+      "note": "Since the lock is an MLL level, a first payout taken before the MLL has trailed to $50,100 raises the floor immediately to $50,100."},
+    "funded_daily_loss_limit": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "No. There is no daily loss limit on the Flex FundedNext Account."}
+      ]},
+    "funded_consistency_rule": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "No. Unlike the Challenge Phase, there is no Consistency Rule on the Flex FundedNext Account."}
+      ]},
+    "funded_position_limit": {"value": "3 e-mini / 30 micro; fixed, no scaling plan", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "Your contract limit is fixed at account creation and does not increase with profit. Flex applies the same limits on the FundedNext Account as during the Challenge:"},
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| $50,000 | 3 e-mini / 30 micro e-mini"}
+      ]},
+    "funded_monthly_fee": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "No Monthly Subscription Fees: You are not required to pay recurring fees for maintaining a Challenge or FundedNext Account."}
+      ]},
+    "payout_min": {"value": 250, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| Minimum Withdrawal | $250 | $250 | $250"}
+      ],
+      "note": "Bank transfer as a method has its own $1,000 minimum."},
+    "payout_cap": {"value": "per cycle: up to 50% of accumulated profit, max $1,500 (50K); lifetime cap not stated (account concludes after 5 rewards)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| Maximum Withdrawal | Up to 50% (max $1,500) | Up to 50% (max $2,500) | Up to 50% (max $4,000)"},
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "You can withdraw up to 50% of your accumulated profit per cycle, capped by size ($1,500 / $2,500 / $4,000), with a $250 minimum and at least $500 profit in the current cycle."}
+      ],
+      "note": "Five rewards at the $1,500 cap would bound gross requests at $7,500 per account; that is arithmetic, not a stated lifetime cap."},
+    "payout_frequency_gate": {"value": "per cycle: 5 Benchmark Days (days with >= $200 profit) and >= $500 profit in the current cycle; request at end of a day with no new trade", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| Benchmark Days | 5 days of $200 | 5 days of $200 | 5 days of $250"},
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "| Minimum Profit (current cycle) | $500 | $500 | $500"},
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "Please note: placing a trade on the same day removes the transfer-to-wallet option for that day."}
+      ],
+      "note": "No buffer rule on Flex. Benchmark days need not be consecutive (not stated either way)."},
+    "payout_split": {"value": "95%", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "You receive a 95% Reward Share of the requested Performance Reward"}
+      ]},
+    "payout_processing_days": {"value": "within 24 hours of transfer initiation (Brand Promise, $1,000 compensation if late; excludes bank transfer and manual cases)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-brand-promise.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242434-what-is-fundednext-futures-brand-promise", "article_id": "17242434", "page_date": "September 30, 2026", "text": "Timely Processing: Withdrawal requests are processed within 24 hours."},
+        {"file": "raw/fundednext/a-withdraw-methods.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242085-what-methods-are-available-for-performance-reward-withdrawal-in-fundednext-futures", "article_id": "17242085", "page_date": "Updated this week", "text": "Note: Performance Reward requests submitted via Bank Transfer are not eligible for the FundedNext Brand Promise."}
+      ],
+      "note": "The futures homepage shows '40 hours Avg. Processing Time' (marketing statistic)."},
+    "payout_fee": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://helpfutures.fundednext.com/en/articles/17242064-how-can-i-withdraw-my-performance-reward ; https://helpfutures.fundednext.com/en/articles/17242085-what-methods-are-available-for-performance-reward-withdrawal-in-fundednext-futures ; https://helpfutures.fundednext.com/en/articles/17242096-what-will-be-my-reward-share-from-the-futures-fundednext-account",
+      "note": "Methods: USDT/USDC, RiseWorks, card, bank transfer (min $1,000), FNmarkets; no fee schedule stated."},
+    "payout_count_limit": {"value": 5, "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-flex-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229848-fundednext-futures-flex-fundednext-account-all-rules", "article_id": "17229848", "page_date": "Updated over 3 weeks ago", "text": "After your 5th Performance Reward, the Flex FundedNext Account is concluded."}
+      ]},
+    "max_accounts": {"value": "5 active funded (per user and household), 10 issued per calendar month; challenges up to $750,000 combined", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-max-accounts.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available", "article_id": "17225812", "page_date": "September 30, 2026", "text": "A household is defined as family members or multiple users who share the same residential address or IP address."},
+        {"file": "raw/fundednext/a-max-accounts.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225812-how-many-accounts-can-i-hold-with-fundednext-futures-and-what-is-the-maximum-allocation-available", "article_id": "17225812", "page_date": "September 30, 2026", "text": "Maximum allocation limits are subject to periodic review and may be adjusted at FundedNext’s discretion."}
+      ]},
+    "inactivity_rule": {"value": "breach after 30 consecutive calendar days with no trade (challenge and funded)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-inactivity.txt", "url": "https://helpfutures.fundednext.com/en/articles/17228935-is-there-any-inactivity-period-in-fundednext-futures", "article_id": "17228935", "page_date": "October 12, 2026", "text": "FundedNext Accounts: Marked as inactive and deactivated after 30 consecutive calendar days of no trades."}
+      ]},
+    "copy_trading_terms": {"value": "own accounts only (FundedNext and other prop firms under the same registered name); signal services, group trading and copying others prohibited", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-copy.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230319-what-is-copy-group-trading-policy-at-fundednext-futures", "article_id": "17230319", "page_date": "September 30, 2026", "text": "Copy trading between FundedNext and other prop firms is allowed if the trader owns all accounts involved."},
+        {"file": "raw/fundednext/a-copy.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230319-what-is-copy-group-trading-policy-at-fundednext-futures", "article_id": "17230319", "page_date": "September 30, 2026", "text": "Traders cannot subscribe to any trading signal services or use external signals to guide their trading decisions."}
+      ]},
+    "cross_account_hedging": {"value": "prohibited: reverse hedging across own accounts or within one, coordinated hedging, and opposite positions in correlated instruments of the same asset group", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Reverse hedging (across accounts): A trader opens a buy on NQ in Account A and a sell on MNQ in Account B, both under their control."},
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Hedging with correlated instruments means holding opposing positions, one long and one short, at the same time on two different underlyings that move together within the same Asset Group."}
+      ]},
+    "news_trading_terms": {"value": "not restricted (FAQ and stop-loss article); prohibited only for traders in the Disciplined Trader Program", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-sl-tp.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230325-which-order-types-should-i-use-for-stop-loss-and-take-profit-in-futures-trading", "article_id": "17230325", "page_date": null, "text": "News trading is allowed, but riskier. FundedNext Futures doesn't restrict news trading, but during news the market can move rapidly and your SL may not fill at your intended price."},
+        {"file": "raw/fundednext/a-disciplined.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230400-what-is-the-disciplined-trader-program-of-fundednext-futures-and-how-does-it-help-traders-build-consistency", "article_id": "17230400", "page_date": "September 30, 2026", "text": "Trading during high-impact economic news events is strictly prohibited, as these periods often lead to heightened volatility and emotionally driven decisions rather than strategic execution."}
+      ],
+      "note": "The prohibited-strategies page also bans 'trading within 2% of CME price limits' and gapped/illiquid market trading."},
+    "automation_terms": {"value": "EAs and bots permitted with conditions (own customised strategy, no identical trades with other traders, no Telegram/WhatsApp-linked EAs, no latency abuse or order flooding); HFT prohibited", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "Each EA or bot is required to employ a distinct strategy, avoiding identical trades across other traders accounts within FundedNext."},
+        {"file": "raw/fundednext/a-hft.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230388-does-fundednext-futures-allow-high-frequency-trading-hft", "article_id": "17230388", "page_date": "September 30, 2026", "text": "Automated trading systems and algorithms are monitored on FundedNext Futures Accounts."}
+      ]},
+    "sizing_or_gambling_terms": {"value": "all-in / oversized flipping prohibited; excess contracts' profit deducted; Disciplined Trader Program (1% max risk, mandatory stop) imposed after warning for gambling-style behaviour", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "A trader qualifies for a FundedNext Account and immediately places an all-in trade, risking the entire account balance on one position."},
+        {"file": "raw/fundednext/a-disciplined.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230400-what-is-the-disciplined-trader-program-of-fundednext-futures-and-how-does-it-help-traders-build-consistency", "article_id": "17230400", "page_date": "September 30, 2026", "text": "Maximum Risk at a Time: Must not exceed 1% of the account’s initial balance."},
+        {"file": "raw/fundednext/a-disciplined.txt", "url": "https://helpfutures.fundednext.com/en/articles/17230400-what-is-the-disciplined-trader-program-of-fundednext-futures-and-how-does-it-help-traders-build-consistency", "article_id": "17230400", "page_date": "September 30, 2026", "text": "Breaching multiple accounts within a short period"}
+      ],
+      "note": "'Breaching multiple accounts within a short period' is listed as a trigger for the program: a design that runs several accounts with correlated losses could trip it."},
+    "other_conduct_bearing": {"value": "tight/no-slippage bracket strategies prohibited; micro-scalping threshold (trades closed within 10 s, 40% of cycle profit); tick scalping and simulated-execution exploitation prohibited; account rolling monitored; positions closed by 3:10 PM CT", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Exploiting the lack of slippage or using tight brackets to benefit from favorable trade executions is prohibited."},
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Account rolling is a high-risk practice in which multiple Challenge Accounts are purchased with the intention of quickly progressing to FundedNext Accounts, often by intentionally sacrificing some accounts while focusing on passing others."},
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Violations may result in restrictions on purchasing new accounts or adjustments to the lifetime allocation limit."},
+        {"file": "raw/fundednext/a-prohibited.txt", "url": "https://helpfutures.fundednext.com/en/articles/14298337-what-are-the-prohibited-trading-strategies-of-fundednext-futures", "article_id": "14298337", "page_date": "September 30, 2026", "text": "Tick scalping is the repeated practice of opening and closing positions within a very short window to collect a few ticks of profit per trade from favourable simulated fills, often at large or maximum position size."},
+        {"file": "raw/fundednext/a-faq.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225788-fundednext-futures-most-frequently-asked-questions", "article_id": "17225788", "page_date": "Updated over a week ago", "text": "All positions must be closed by 3:10 PM CT each trading day, and any open positions are closed automatically at that time."}
+      ],
+      "note": "The bracket prohibition's example is a two-sided buy-stop/sell-stop straddle on NQ with tight targets; a single-direction entry with its stop and target is not described as prohibited. 'Account sharing' is defined oddly as 'a trader manages multiple accounts or allows another individual to trade on their behalf' - read in context as other people's accounts, since 5 own funded accounts are allowed."},
+    "permitted_products": {"value": "CME equity index futures NQ, MNQ, ES, MES, RTY, M2K (plus FX, metals, energy, ags, YM/MYM)", "status": "verified",
+      "quotes": [
+        {"file": "raw/fundednext/a-symbols.txt", "url": "https://helpfutures.fundednext.com/en/articles/17225740-which-symbols-instruments-can-i-trade-on-fundednext-futures", "article_id": "17225740", "page_date": "September 30, 2026", "text": "E-mini NASDAQ 100 (NQ), Micro E-mini NASDAQ 100 (MNQ), E-mini S&P 500 (ES), Micro E-mini S&P 500 (MES), E-mini Russell 2000 (RTY), Micro E-mini Russell 2000 (M2K)"}
+      ]}
+  },
+  "conflicts_and_changes": [
+    {"note": "Rapid Pro 50K payout cap conflicts between pages: the Rapid Pro funded-rules article gives $1,000 (withdrawals 1-3) / $1,250 (4-5); the withdrawal how-to article says a maximum of 1,200 for 50K. Not the captured plan.",
+     "quotes": [
+       {"file": "raw/fundednext/a-withdraw-how.txt", "url": "https://helpfutures.fundednext.com/en/articles/17242064-how-can-i-withdraw-my-performance-reward", "article_id": "17242064", "page_date": "October 12, 2026", "text": "Once you meet the 40% Consistency Rule and have $500 profit in the cycle, you can withdraw a maximum of 800(25K), 1,200(50K), or 2,500(100K)."},
+       {"file": "raw/fundednext/a-rapidpro-funded.txt", "url": "https://helpfutures.fundednext.com/en/articles/17229713-fundednext-futures-rapid-pro-fundednext-account-all-rules", "article_id": "17229713", "page_date": "Updated over a week ago", "text": "| 1 to 3 | $250 | $1,000"}
+     ]},
+    {"note": "Product changes: Bolt and the former Rapid ended for new purchases on 10 July 2026; Legacy ended for purchase on October 11 (2026). Flex is the current low-cost plan.", "quotes": []}
+  ]
+}

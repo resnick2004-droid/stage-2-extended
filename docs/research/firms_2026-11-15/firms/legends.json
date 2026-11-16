@@ -1,0 +1,112 @@
+{
+  "firm": "Legends Trading (The Legends Trading Group, Inc.)",
+  "slug": "legends",
+  "official_domains": ["thelegendstrading.com", "knowledge.thelegendstrading.com", "dashboard.thelegendstrading.com"],
+  "date_read": "2026-11-15",
+  "identity_note": "The starting point given, legendstrading.com, is a different business: 'LegendsTrading LLC', an options-trading signals and education Discord ($149/month chat), with no prop evaluation. The futures prop firm 'Legends Trading' is The Legends Trading Group, Inc. at thelegendstrading.com (Calabasas, CA); that URL was located with a web search (search text not used as evidence) and its identity read from its own Terms of Service and plan pages.",
+  "identity_quotes": [
+    {"file": "raw/legends/program.txt", "url": "https://www.legendstrading.com/legends-program", "article_id": null, "page_date": null, "text": "At Legends Trading we are dedicated stock market traders who specialize in options trading."},
+    {"file": "raw/legends/tl-terms.txt", "url": "https://thelegendstrading.com/terms-conditions", "article_id": null, "page_date": "This agreement is in effect as of Feb 20, 2023.", "text": "Welcome to Legends Trading. This website is owned and operated by The Legends Trading Group, Inc."}
+  ],
+  "unreadable": [
+    {"url": "https://knowledge.thelegendstrading.com/", "what": "403 Cloudflare challenge to curl; WebFetch refused (HTTP 403). This is the firm's rules knowledge base ('Visit our help center'), so conduct rules, payout gates and account limits are unread."}
+  ],
+  "access_note": "thelegendstrading.com Terms of Service clause (c) says 'You specifically agree not to access (or attempt to access) any of our Resources through any automated, unethical or unconventional means.' Three pages (home, plans, terms) were fetched by curl before it was read; no further pages were fetched.",
+  "plans_seen": [
+    {"name": "Elite 50K (one-time)", "drawdown": "EOD trailing $2,200; no DLL", "consistency_eval": "40%", "consistency_funded": "Master stage: 30% payout gate per homepage (details UNVERIFIED)",
+     "quote": {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$2,700 Profit Target - $2,200 EOD trailing max loss - Daily Loss Limit: None - Consistency: 40% - Contracts: 4 Minis / 40 Micros - Activation Fee: None"}},
+    {"name": "Apprentice 50K (monthly subscription)", "drawdown": "EOD trailing $2,000", "consistency_eval": "30%", "consistency_funded": "Master stage: 30% (UNVERIFIED details)",
+     "quote": {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "3.000 profit goal - $2,000 EOD trailing max loss - Consistency 30% - 4 days - $99 Activation Fee"}},
+    {"name": "Straight to Master 50K (one-time)", "drawdown": "trailing $2,000 (card does not say EOD; FAQ says EOD Max Drawdown on Straight To Master)", "consistency_eval": "30%", "consistency_funded": "30% (UNVERIFIED details)",
+     "quote": {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$3,000 profit goal - $2,000 trailing max loss - Consistency 30% - 10 days"}}
+  ],
+  "plan_note": "Cards carry no plan label in the text; mapped to the tab order Apprentice / Elite / Straight to master (monthly cards with '80% off' = Apprentice, matching the '80% off Apprentice' banner; one-time no-DLL 40% cards = Elite; '10 days' cards = Straight to master).",
+  "plan_captured": "Elite 50K (screen only; verdict UNDETERMINED)",
+  "screen": {
+    "drawdown_eval": {"value": "eod_trailing; $2,200", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$2,700 Profit Target - $2,200 EOD trailing max loss - Daily Loss Limit: None"},
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "We calculate your Max Drawdown at the end of each trading day."}
+      ],
+      "note": "Lock level not stated on readable pages."},
+    "drawdown_funded": {"value": "eod (Master stage 'EOD Max Drawdown'); amount and lock UNVERIFIED", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-plans.txt", "url": "https://thelegendstrading.com/plans", "article_id": null, "page_date": null, "text": "On a Master or Straight To Master account, if you exceed your EOD Max Drawdown, your account will liquidated and you will need to purchase a Reset if you plan to continue trading."}
+      ]},
+    "consistency_eval": {"value": "40% (Elite); exceeding it 'adjusts the extra' rather than failing", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Daily Loss Limit: None - Consistency: 40% - Contracts: 4 Minis / 40 Micros"}
+      ],
+      "note": "Mechanics (best-day share of what) UNVERIFIED."},
+    "consistency_funded": {"value": "30% consistency gates payouts (Master stage), mechanics UNVERIFIED", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Our 30% consistency rule allows flexibility. If you exceed it, we adjust the extra—no account deactivation, no penalties."},
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Once you meet the consistency rule, you can request payouts—up to twice per month."}
+      ],
+      "note": "The homepage does not say in so many words that the 30% rule applies at the Master stage; the payout sentence implies a consistency gate on payouts."},
+    "max_funded_accounts": {"value": "multiple accounts allowed, up to $1,500,000 total; per-person count UNVERIFIED", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Trade up to $1,500,000 on multiple accounts"},
+        {"file": "raw/legends/tl-plans.txt", "url": "https://thelegendstrading.com/plans", "article_id": null, "page_date": null, "text": "Yes. You can manage multiple accounts at one time using the same credentials."}
+      ],
+      "note": "Not stated whether the $1.5M applies to funded (Master) accounts or evaluations, or per household."},
+    "copy_trading": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thelegendstrading.com/ ; https://thelegendstrading.com/plans ; https://thelegendstrading.com/terms-conditions (knowledge base blocked)"},
+    "opposite_positions": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thelegendstrading.com/ ; https://thelegendstrading.com/plans ; https://thelegendstrading.com/terms-conditions (knowledge base blocked)"},
+    "news": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thelegendstrading.com/ ; https://thelegendstrading.com/plans ; https://thelegendstrading.com/terms-conditions (knowledge base blocked)"},
+    "automation": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thelegendstrading.com/ ; https://thelegendstrading.com/plans ; https://thelegendstrading.com/terms-conditions (knowledge base blocked)",
+      "note": "The Terms of Service clause on 'automated ... means' concerns access to the website's Resources, not order entry."},
+    "sizing_gambling": {"value": "UNVERIFIED", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thelegendstrading.com/ ; https://thelegendstrading.com/plans ; https://thelegendstrading.com/terms-conditions (knowledge base blocked)"},
+    "verdict": "UNDETERMINED",
+    "verdict_reason": "EOD drawdown on the Master (funded) stage and multiple accounts are stated, but every conduct rule lives on knowledge.thelegendstrading.com, which serves a Cloudflare block (WebFetch refused too).",
+    "note": "The readable pages also do not give a per-person account count or the Master-stage drawdown amount."
+  },
+  "terms": {
+    "note": "Partial: only what the readable plan pages state for Elite 50K; the verdict is UNDETERMINED, so full terms were not pursued.",
+    "eval_profit_target": {"value": 2700, "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$2,700 Profit Target - $2,200 EOD trailing max loss"}
+      ]},
+    "eval_drawdown_amount": {"value": 2200, "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$2,700 Profit Target - $2,200 EOD trailing max loss"}
+      ]},
+    "eval_daily_loss_limit": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$2,200 EOD trailing max loss - Daily Loss Limit: None"}
+      ]},
+    "eval_position_limit": {"value": "4 minis / 40 micros", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Max 4 Minis / 40 Micros"}
+      ]},
+    "eval_fee": {"value": "$149 one-time list; $96.85 with code LTG", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "$149 $96.85 / one time Save $52.15 with code LTG"}
+      ],
+      "note": "Banner says 45% off Elite, but $96.85 / $149 is 35% off; the card's own saving line is quoted."},
+    "activation_fee": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Contracts: 4 Minis / 40 Micros - Activation Fee: None"}
+      ]},
+    "payout_split": {"value": "90%", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Join live funded after 2nd payout, and keep your 90/10 split — a unique industry offer."}
+      ]},
+    "payout_frequency_gate": {"value": "after meeting the consistency rule; up to twice per month", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "Once you meet the consistency rule, you can request payouts—up to twice per month."}
+      ]},
+    "payout_processing_days": {"value": "1-5 days (stated for funded accounts with funding partners)", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-plans.txt", "url": "https://thelegendstrading.com/plans", "article_id": null, "page_date": null, "text": "Simply log into the client portal and request funds which will be processed within 1-5 days."}
+      ]},
+    "funded_type": {"value": "Master simulation stage; 'live funded after 2nd payout'", "status": "verified",
+      "quotes": [
+        {"file": "raw/legends/tl-home.txt", "url": "https://thelegendstrading.com/", "article_id": null, "page_date": null, "text": "After passing the challenge, enter the Master Simulation stage. Manage risk and earn real rewards from your profitable trades"}
+      ]}
+  }
+}
