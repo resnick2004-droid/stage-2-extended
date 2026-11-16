@@ -1,5 +1,5 @@
-"""Q-37 (family O's draft): the bracket arithmetic, the twin's estimand and the clock the draft leans on, on synthetic
-walks only.
+"""Q-37, Q-63 (family O's draft, first and second versions): the bracket arithmetic, the twin's estimand, the pass
+line's input form, the wait's calendar and the clock the draft leans on, on synthetic walks only.
 
 The draft (`prereg/DRAFT_F-O_opening_timing.md`, sections 1, 6 and 7) times the funded account's 3R opening by a
 side-free state and keeps the coin's side. Its case rests on four facts it states before anything is read:
@@ -36,6 +36,13 @@ What each test holds:
     a state that sees the regime); and over 400 fresh noise draws the realised lift averages that part;
   * `test_an_uninformative_state_has_no_lift` -- 400 seeded states independent of the regimes: their exact lifts
     average zero within 4 standard errors;
+  * `test_centred_values_through_placebo_selection_bound_give_the_exact_lift` (second version, review F1) -- Q-16's
+    `extended.lift_bound.placebo_selection_bound` (`cons`, treated-cluster df) on the stratum-centred values c - mu_g
+    estimates exactly the exact-form lift; on the raw c it adds the strata-composition term, non-zero when the firing
+    share differs by year;
+  * `test_an_ordered_calendar_keeps_the_wait_an_independent_one_destroys` (second version, review F2) -- a persistent
+    daily state: the fallback share at W = 5 in history's order is more than twice that on independently drawn days,
+    which is about (2/3)^5;
   * `test_rolling_third_fires_on_a_third_and_reads_only_the_past` -- the draft's mid-rank share over the 250 prior
     sessions (at least 120): on an iid series its top third fires on about a third of days (4 standard errors), and a
     day's state is unchanged when every later value is replaced;
@@ -260,6 +267,57 @@ def test_an_uninformative_state_has_no_lift():
         lifts.append(exact_lift(c, stratum, state))
     lifts = np.asarray(lifts)
     assert abs(lifts.mean()) < Z * lifts.std(ddof=1) / np.sqrt(lifts.size)
+
+
+def test_centred_values_through_placebo_selection_bound_give_the_exact_lift():
+    """The second version's C1 call (review F1): Q-16's `placebo_selection_bound` has no strata, so the family passes
+    the stratum-centred values c - mu_g with every population offer as sample 2. Its estimate is then exactly the
+    exact-form lift L; on the raw c it is L plus the strata-composition term (the in-state offers' mean stratum mean
+    less the population mean), which a year-varying firing share makes non-zero with no selection effect at all."""
+    from extended import lift_bound as LB
+
+    rng = np.random.default_rng([SEED, 7])
+    sessions, marks, years = 300, 6, 3
+    year = np.repeat(np.arange(years), sessions // years)
+    stratum = year[:, None] * marks + np.arange(marks)[None, :]
+    c = (np.array([0.0, -0.10, 0.05])[year][:, None] + 0.02 * np.arange(marks)[None, :]
+         + rng.normal(0.0, 1.0, (sessions, marks)))
+    share = np.array([0.15, 0.55, 0.30])[year]                     # a firing share that differs by year
+    sees = rng.random(sessions) < share
+    state = np.repeat(sees[:, None], marks, axis=1)
+    session = np.repeat(np.arange(sessions)[:, None], marks, axis=1)
+    mu = {s: c[stratum == s].mean() for s in np.unique(stratum)}
+    mu_g = np.vectorize(mu.get)(stratum)
+    L = exact_lift(c, stratum, state)
+    b = LB.placebo_selection_bound((c - mu_g).ravel(), session.ravel(), state.ravel(), sessions, level=0.01)
+    assert b.method == LB.SHIPPED == "cons" and LB.DIFF_DF_RULE == "treated"
+    assert abs(b.estimate - L) < 1e-12
+    raw = LB.placebo_selection_bound(c.ravel(), session.ravel(), state.ravel(), sessions, level=0.01)
+    composition = mu_g[state].mean() - c.mean()
+    assert abs(raw.estimate - (L + composition)) < 1e-12
+    assert abs(composition) > 0.01                                 # the raw form credits the strata to the state
+
+
+def test_an_ordered_calendar_keeps_the_wait_an_independent_one_destroys():
+    """Review F2: a daily state firing on a third of days with in-state runs of about 20 sessions. A waiting account
+    starting on a uniform day falls back when none of its next W = 5 sessions is in state. In history's order (the U1
+    replay) that is far more frequent than on independently drawn days (the gate's `SharedDayTable`), where it is
+    about (2/3)^5 whatever the persistence -- so K5 must be read on an ordered calendar."""
+    rng = np.random.default_rng([SEED, 8])
+    n, W = 20000, 5
+    stay_in = 1.0 - 1.0 / 20.0                                     # mean in-state run 20 sessions
+    leave_out = (1.0 - stay_in) * (1.0 / 3.0) / (2.0 / 3.0)        # so the long-run share is a third
+    state = np.zeros(n, dtype=bool)
+    state[0] = rng.random() < 1.0 / 3.0
+    u = rng.random(n)
+    for t in range(1, n):
+        state[t] = (u[t] < stay_in) if state[t - 1] else (u[t] < leave_out)
+    starts = np.arange(n - W)
+    ordered = np.array([not state[s:s + W].any() for s in starts]).mean()
+    independent = np.array([not state[rng.integers(0, n, W)].any() for _ in starts]).mean()
+    assert abs(state.mean() - 1.0 / 3.0) < 0.05
+    assert abs(independent - (2.0 / 3.0) ** W) < 0.02
+    assert ordered > 2.0 * independent
 
 
 # ------------------------------------------------------------------------------------------------ the rolling third
