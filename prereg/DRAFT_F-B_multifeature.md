@@ -70,6 +70,7 @@ review's M4-1 row is superseded:** the fifth version's model-own term in (d) and
 | m5-3 | `tests/test_family_b_level_power.py`: level **and power** at the family's level for C1-f, for the conjunction of the deciding lines, for the confirmation's C1-f and for the fill-intensity check; the build's declared-construction test at the family's level, of level and power (12, 20 item 8) |
 | E-052 fill intensity | stated beside the side's persistence (12).<br>**K0** at stage A, outcome-free, before stage B (section 8 item 9): `cons`'s size at the family's level on Q-16's `cluster` null with each cell's own choice-block counts; a cell whose 95 % interval lies wholly above the level is killed.<br>The same check on the pick's judged counts before any outcome, on C2's routed counts after the campaign, and on the confirmation's counts; a pass is not claimed above the level (13, 16).<br>A `side` cell's counts cannot persist (every admitted mark is offered); a `filter` cell's and C2's routed counts can |
 | E-055 | the place-recording adapter is built (`extended/place_records.py`, `extended/place_fields.py`) and its identities named; the recorder's defaults against this family's run (13, 20 item 10) |
+| E-059 | the funded class said: the registered `FundedAccount`, no class of its own, so the Focused Trader models are read as registered (14) |
 | n5-1 | this family is k >= 12 (F-02 is k = 11, E-045 (4)): 0.05/156 at k = 12; the worked figures updated (header, 8, 18) |
 | n5-2 | section 9's hash list adds the partialled reading's 60 x 5 coefficients and `z~_res` (9) |
 | n5-3 | section 19 says that `m41_d_diag.py` draws the test's own seeds `[20261968, 65]` and `[20261968, 66]` (19) |
@@ -947,6 +948,12 @@ nominal and B2's critical value (section 12).
 - **E-007 (e)'s readings:** the denial ladder (10/25/50 %; E-013 (1)), the placement on, the binding Focused Trader
   models, P by month, mean net, CVaR10, P under a bankroll limit, the effective sample size and the minimum detectable
   difference before the read;
+- **the funded account's class (E-059):** this family runs **the registered, vendored `FundedAccount`** -- it declares
+  no funded class of its own, so the U1 adapter's `funded_account_cls` is left at the engine's own, and the ten Focused
+  Trader models, which the engine refuses for any other class
+  (`vendor/stage2/propedge/campaign/lockstep.py` 1403-1408), are read as registered: nothing in
+  E-007 (e)'s readings changes for this family. A later family of its own class reports those readings without the ten
+  models, labelled so;
 - Stage 2 D-621 (3)'s rule against P-14, beside as E-008 keeps it, deciding nothing;
 - **not modelled, said wherever the scorecard appears:** a user who stops when their own money runs out, the user's
   time, taxes.
