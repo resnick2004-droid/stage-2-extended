@@ -40,3 +40,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | Q-42 merged (E-025): F-P as a described reading; the declarations test widened to `RD-` files; Q-46 (exploratory D-566 check) queued; Q-47 (the gate adapter) dispatched. |
 | 2026-11-16 | lead | Merged Q-22/Q-18 (built), Q-32 (the seal), Q-34 (struck; the scout's scratch copy also deleted by the lead); Q-41: F-02 to a fourth draft (Q-50). E-026. Fast tier 265 passed. Heavy queue behind Q-16: Q-22 every start, Q-44, Q-18, Q-45, Q-46. |
 | 2026-11-16 | lead | Q-27 merged (E-027): the dispersion report and its demonstration page, the first traced numbers. The post-edit hook skips worktrees. Q-48 and Q-39 dispatched. |
+| 2026-11-16 | lead | Merged Q-47 (gate adapter, synthetic identity holds) and Q-38 (family R's draft, pin deferred). E-028 orders the heavy chain behind Q-16. |

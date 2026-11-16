@@ -45,16 +45,17 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | Q-50 F-02's fourth draft | running |
 | wt-user | wt/wt-user | Q-40 the early-close calendar (readings Q-44/Q-45 are the lead's, under the lock) | running |
 | wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
-| wt-lit | wt/wt-lit | Q-38 family R's draft (resolution forecasts) | running |
+| wt-lit | wt/wt-lit | -- (Q-38 drafted, pin deferred, E-028) | idle |
 | wt-firms | wt/wt-firms | Q-39 three rules readings (news size, GDP, payout amount) | running |
-| wt-payout | wt/wt-payout | Q-47 the gate rebuilt in `extended/` (another funded-account class) | running |
+| wt-payout | wt/wt-payout | -- (Q-47 built, E-028; its identity Q-51 is the lead's) | idle |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
 | wt-scout | wt/wt-scout | Q-43 family B's third draft | running |
 | wt-infra | wt/wt-infra | Q-48 the identities routed through the reader | running |
 
 ## Running now
 
-- The four worktree items above; no heavy run (the lock is free).
+- Q-16's calibration holds the lock (wt-verify). After it, the heavy chain (E-028 (3)): Q-22 every start, Q-51, Q-44, Q-18, Q-45, Q-46, each from a clean checkout of master.
+- Light: Q-43 (family B's third draft), Q-50 (F-02's fourth draft), Q-40 (the calendar), Q-48 (identities through the reader), Q-39 (rules readings).
 
 ## Machine
 
