@@ -50,4 +50,263 @@ meta:
       - help.topstep.com
       - topstep.com
 
-rules: []
+rules:
+
+  # ---- Q-19 reading 1 of 3: the Terms of Use s.8 sizing clause (E-007 item 4, E-008; audit E N2) ----------------
+  - key: tou_s8_relative_position_size
+    firm: topstep
+    value: "market-standard risk management is not met where a trader opens substantially larger position sizes, or a smaller or larger number of positions, compared to their other trades"
+    units: text
+    status: verified
+    article_id: "terms-of-use s.8"
+    url: https://www.topstep.com/terms-of-use
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms of Use, "8. User section" (page "Last updated: November 4, 2026"):
+      "You agree to apply market standard risk management rules for trading on financial markets at all times while using the Sites and Services. You acknowledge that these standards are not met where you open substantially (i) larger position sizes compared to your other trades, or (ii) a smaller or larger number of positions compared to your other trades."
+      The two sentences that follow it begin: "Topstep reserves the right to determine, at its own discretion, whether certain trades, practices" ... and "If you engage in any Prohibited Conduct, Topstep may (a) consider it as a failure to meet the conditions" ...
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (Stage 2's ledger has no row for it; the Phase 0 audit found it, E_rules_currency.md N2).
+      FETCHES: topstep.com/terms-of-use read five times on 2026-11-15 with differently worded prompts (the page is
+      104,876 characters; its last 4,876 were read separately and hold no numbered section and nothing on position
+      size). Of the two s.8 sentences in `quote`, the second came back whole in two fetches and in part in a third.
+      The first came back whole in one fetch and up to "at all times" in two others, one of which gave "while using
+      the Sites and Services" outside its quotation marks. Both match the audit's raw-HTML extraction word for word.
+      THE SENTENCES THAT FOLLOW were read verbatim once, in the fourth fetch; the fifth returned the same opening
+      words and the same content in paraphrase: "Topstep reserves the right to
+      determine, at its own discretion, whether certain trades, practices, strategies, or situations are Prohibited
+      Conduct." / "If you engage in any Prohibited Conduct, Topstep may (a) consider it as a failure to meet the
+      conditions of the particular Trading Combine®, (b) remove the transactions that violate the prohibition from
+      your trading history and/or not count their results in the profits and/or losses achieved by such Simulated
+      Trading, or (c) immediately cancel all Services provided to you and subsequently terminate your Account."
+      WHAT THE PAGE DOES NOT SAY: no number, percentage, multiple or example for "substantially" (the threshold is
+      its own entry, tou_s8_relative_position_size_threshold); no consequence attached to this sentence itself --
+      the consequence route is Topstep's discretionary classing of a practice as Prohibited Conduct, then (a)-(c);
+      and no comparison base: "your other trades" does not say whether it means the same account, the same account
+      type, or every account under the one profile. A READING, NOT A RULING (the tier is the operator's, E-007
+      item 4): the state table varies size by account state by design (handoff section 2.5,
+      vendor/stage2/docs/HANDOFF_NEW_REPO_2026-11-15.md: a fresh evaluation asks 1.5R at $2,000; the funded
+      opening trade asks 3R at $2,000, the scaling cap binding; then mostly $250 at 1R), so every funded account's
+      record holds one opening trade several times the size of the trades after it -- the plain words "substantially
+      (i) larger position sizes compared to your other trades" reach that pattern. RELATED HELP-CENTRE TEXT, none
+      of which elaborates "substantially": 10406542 ("What is Responsible Trading?", page date "August 13, 2026",
+      two fetches): "Maximum position size is a tool, not a default setting."; "Use max size strategically — not
+      habitually."; its No list "Size up after a loss" and "Go full port, especially on news"; "If we see habits that
+      won't hold up in Live markets, we'll put you on the Responsible Trading Program." 13620045 ("What is the
+      Responsible Trading Program?", page date October 15, 2026, two fetches): the trigger "You max position a
+      majority of your trades", with "max position" and "majority" defined nowhere on the page. RETRIEVAL: ToU s.28
+      forbids "Using any manual or automated software, devices, or other processes to “crawl” or “spider” any web
+      pages contained in the Sites or Services"; robots.txt on www.topstep.com (Disallow /api, /design-pages) and
+      on help.topstep.com (Disallow /not-authorized, /not-found, /[helpCenterIdentifier]/; Crawl-delay 1) allows
+      every page read here. Read as a ban on crawling (link-following traversal, by hand or by machine), not on
+      reading named pages one at a time, so the brief's stop condition was taken as not met -- an interpretation
+      the lead may overrule.
+
+  - key: tou_s8_relative_position_size_threshold
+    firm: topstep
+    value: unstated
+    units: text
+    status: verified
+    article_id: "terms-of-use s.8; 10406542; 13620045"
+    url: https://www.topstep.com/terms-of-use
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read states a number, ratio, multiple or example for "substantially (i) larger position sizes compared to your other trades" (Terms of Use s.8, "Last updated: November 4, 2026").
+      10406542 gives sizing advice, not a limit: "Maximum position size is a tool, not a default setting."; "Use max size strategically — not habitually."
+      13620045's nearest trigger has no threshold either: "You max position a majority of your trades".
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, recorded as a verified reading of the published rules in the form of Stage 2's "none stated" rows
+      (combine_min_trading_days, account_start_rate_limit): every page read was asked directly for a number and
+      none gives one. Pages read on 2026-11-15: the whole Terms of Use (five fetches, including the last 4,876
+      characters); 10406542 (two fetches); 13620045 (two fetches). A site-restricted search of help.topstep.com for
+      position size compared to other trades found no other official page. "Unstated" is NOT a permission: the
+      clause applies with no published line, and Topstep decides case by case (the s.8 sentences that follow it,
+      quoted in tou_s8_relative_position_size's note). 10406542's "Even in the Trading Combine® (TC), start with 1–2
+      lots." was returned verbatim by one fetch only (the second paraphrased it); it is advice, not a threshold.
+
+  # ---- Q-19 reading 2 of 3: the breakeven stop move against 10305426's "auto-breakeven" (red team M6; audit C m-6) ---
+  - key: prohibited_strategy_auto_breakeven_sim_fills
+    firm: topstep
+    value: "prohibited, as an example of exploiting the simulator: using tight brackets or auto-breakeven to take advantage of favorable SIM fills; neither term is defined; the page calls the listed behaviours intentional and systematic, usually hundreds or thousands of trades per day lasting seconds"
+    units: text
+    status: verified
+    article_id: "10305426"
+    url: https://help.topstep.com/en/articles/10305426
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      10305426, "Prohibited Trading Strategies at Topstep" (page date "June 10, 2026"), section "The Do’s and Don’ts of SIM Fills":
+      "SIM fills aren’t free money."
+      "Exploiting the simulator will get you removed from the program."
+      "Topstep prohibits using the simulated environment to gain an unfair edge."
+      "We retain the right to reject profit claims if abuse is suspected."
+      "If you’re here to trade, this isn’t about you."
+      "Examples of exploiting or manipulating the Topstep simulator include, but are not limited to:"
+      "Running scalping algorithms designed to exploit unrealistic SIM fills"
+      "Making hundreds of rapid trades to take advantage of preferential queue position in SIM"
+      "Initiating reckless trades in gapped markets to profit from stray fills — these are improbable in live markets"
+      "Repeatedly exploiting the relative lack of slippage in SIM to achieve impossible stop-loss execution"
+      "Using tight brackets or auto-breakeven to take advantage of favorable SIM fills"
+      Then the section "If this doesn't sound like you, it probably isn't.":
+      "The vast majority of Traders are here to learn and build toward consistent profitability."
+      "A few lucky fills won't get your Payout rejected."
+      "The behaviors above are intentional and systematic — usually hundreds or thousands of trades per day, with average durations measured in seconds, not minutes."
+      "Topstep shuts this down quickly to keep risk managers and coaches focused on helping Traders — not monitoring abuse."
+      And the page's framing: "These aren't gray areas — they're hard stops."
+    stage2_key: prohibited_trading_strategies
+    stage2_value: true
+    note: >
+      FETCHES: 10305426 read five times on 2026-11-15 with differently worded prompts. The SIM-fill section, its list
+      and "These aren't gray areas — they're hard stops." came back identical in two fetches. The closing section was
+      read three times: "A few lucky fills won't get your Payout rejected." and "The behaviors above are intentional
+      and systematic" verbatim in all three; the rest of that sentence ("— usually hundreds or thousands of trades per
+      day, with average durations measured in seconds, not minutes.") verbatim in one, in two segments, and in close
+      paraphrase in the other two ("hundreds or thousands of trades per day", "average durations in seconds rather
+      than minutes"). The page defines neither "auto-breakeven" nor "favorable SIM fills" (asked directly; absent).
+      Stage 2's prohibited_trading_strategies (true, read 2026-10-30, page date June 10, 2026) holds the same item;
+      the page date is unchanged, and the closing section "If this doesn't sound like you" is new to the record.
+      ON TOPSTEP'S OWN PLATFORM: 14434175 ("TopstepX™", "Updated this week", two fetches): "Breakeven ("B/E") Order —
+      appears once a position shows a positive unrealized P&L." / "Tap it to place a Stop Market order at your average
+      entry price." (Mobile DOM; a tap by the trader; the page describes no automatic breakeven setting for brackets).
+      NOT READ: a search result pointed to article 8284165 on intercom.help (not an official domain, so not read);
+      help.topstep.com/en/articles/8284165 returned HTTP 404 on two fetches.
+      THE DESIGNS' MOVE, FROM THE CODE: vendor/stage2/propedge/research/fv3_rung_walk.py:16-21 (the rule),
+      :140-155, :165, :182-190 (the code), :51 (its cost). At the first FV3 session open after the entry bar --
+      17:00, 19:00, 08:30 or 13:00 CT (vendor/stage2/propedge/outcomes/fv3_core.py:53, SESSIONS; the open's first
+      bar with an open within five minutes, fv3_rung_walk.py:143-148) -- if that bar's open is at least one tick in
+      the trade's favour and the bracket has not exited before that bar, the stop moves to the entry price, once. The
+      trade then exits at the entry ('b', zero gross, one tick of exit cost like any stop, plus fees) on the first bar
+      from that open that touches the entry, unless the target is traded through on an earlier bar; if neither
+      happens it flattens at 15:10. It is FV3's original rule (vendor/stage2/scripts/score_fv3_grid.py:710-716), and
+      it is in both designs' trades: P-14's through atlas_a3.walk_minutes (vendor/stage2/scripts/a3_brk30.py:13-16;
+      vendor/stage2/scripts/atlas_a3.py:160-172), and P-16's through the same walk at its 150-tick stop
+      (vendor/stage2/propedge/research/resolved_coin.py:10-13, 349-351). The engine models a clock rule and no
+      platform; Stage 2 recorded it as "no auto-breakeven -- the breakeven move is at a session open, by hand"
+      (vendor/stage2/prereg/P-06_fv3c-confirmation.md:189-191), and this repository allows hand entry only (E-008 (3)).
+      HOW OFTEN IT IS THE EXIT: vendor/stage2/results/a3_resolution_map.csv (section `map`, column `share_breakeven`)
+      gives it per event hour, rung (12.5 / 25 / 50 points) and R, on A1's pooled event minutes on normal days -- not
+      on P-14's or P-16's own trades, and with no row at P-16's 37.5-point stop. It is zero at hours with no session
+      open before the flatten, and largest for events just before the 08:30 open and at high R.
+      A READING, NOT A RULING (the tier is the operator's, E-007 item 4): the prohibited item needs both
+      "auto-breakeven" and "to take advantage of favorable SIM fills", and the page describes what it targets as
+      "intentional and systematic — usually hundreds or thousands of trades per day, with average durations measured
+      in seconds, not minutes." The designs' move is not automatic: it is made by hand, once a trade, at a fixed session
+      open, and only when the position shows a profit -- the moment TopstepX offers its own manual "B/E" button. The
+      designs make about one trade per account per day, held for minutes to hours. On the page's own words the item
+      does not reach the move as the designs make it. One thing stays open: the engine prices the breakeven exit at one
+      tick, as it prices every stop. No live fill measurement backs that, and the page's neighbouring item "Repeatedly
+      exploiting the relative lack of slippage in SIM to achieve impossible stop-loss execution" is the wording a
+      too-kind stop fill would meet. That is a question of fill fidelity, not of this item's wording.
+
+  # ---- Q-19 reading 3 of 3: coordinated trading against one user's own five accounts (red team M4; E-007 (c)) -------
+  - key: coordinated_trading_prohibited
+    firm: topstep
+    value: "prohibited: performing trades in concert with others (including unconnected accounts or third parties) to pool risk, hedge aggregate positions, or trade the same or opposite strategy simultaneously"
+    units: text
+    status: verified
+    article_id: "10296582"
+    url: https://help.topstep.com/en/articles/10296582
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      10296582, "Prohibited Conduct" ("Updated this week"), under "What Is Prohibited Conduct?":
+      "Coordinated trading — performing trades in concert with others (including unconnected accounts or third parties) to pool risk, hedge aggregate positions, or trade the same or opposite strategy simultaneously"
+      "Cross-account hedging (single-user) — holding opposite positions across multiple accounts simultaneously"
+    stage2_key: prohibited_conduct
+    stage2_value: true
+    note: >
+      FETCHES: 10296582 read three times on 2026-11-15. Both items in `quote` came back verbatim in two fetches (the
+      coordinated-trading item in two segments that join at "third parties)" / "to pool risk"), matching the audit's
+      raw-HTML text (E_rules_currency.md section 2.6). Stage 2's prohibited_conduct row (true, 2026-10-30) holds both
+      items; they read the same today. ALSO ON THE PAGE: "Trading on behalf of others" ... "including sharing
+      incentives as part of any business arrangement" (one fetch). A friends-and-family passage, verbatim in one
+      fetch and the same in paraphrase in another: "no coordinated group trading, no account-sharing, no
+      single-account rule workarounds". WHAT THE PAGE DOES NOT SAY (asked directly): the words "own accounts",
+      "connected accounts" and "copier" do not appear, and no item covers the same trades or the same strategy on
+      several of one trader's own accounts. The only single-user item is the hedging one ("(single-user)", opposite
+      positions only). A READING, NOT A RULING: the item needs "in concert with others", so its object is other
+      people (the page's own example is "unconnected accounts or third parties"). One user trading their own five
+      funded accounts, each account its own trades (Stage 2 D-157) and one position at a time across the firm
+      (Stage 2 D-429), acts with no one. A signal service whose users place the same tickets is what the item's words
+      describe ("in concert with others" ... "trade the same ... strategy simultaneously"). E-007 (c) dropped that
+      purpose.
+
+  - key: tou_s27_same_trades_in_concert
+    firm: topstep
+    value: "prohibited: in concert with others, including between unconnected accounts and third parties, performing the same trading strategy (i.e. the same trades in the same time increments), the opposite strategy, or other activity meant to pool or hedge the risk of the aggregate, unconnected accounts"
+    units: text
+    status: verified
+    article_id: "terms-of-use s.27"
+    url: https://www.topstep.com/terms-of-use
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Terms of Use, "27. Prohibited conduct" (page "Last updated: November 4, 2026"), from its list introduced "In connection with use of the Site or Services, User is prohibited from" ... "(collectively, “Prohibited Conduct”):":
+      "In concert with others, including between unconnected accounts and third parties, performing the same trading strategy (i.e., performing the same trades in the same time increments), opposite strategy, or other activity meant to pool or hedge risk of the aggregate, unconnected accounts;"
+      and, from the same list:
+      "Performing, alone or in concert with any other persons, including between connected accounts, or accounts held with different Topstep Parties, trades, or combinations of trades, the purpose of which is to manipulate, abuse, or give User an unfair advantage while using the Site or Services, for example, by engaging in any short term or high frequency trades or simultaneously entering into opposite positions;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      FETCHES: the Terms of Use read twice more for s.27 on 2026-11-15 (seven reads of the page in all, for the three
+      readings). The first item came back whole in one fetch (three consecutive segments) and in its key phrases
+      verbatim in the other ("performing the same trading strategy (i.e., performing the same trades in the same time
+      increments)"; "In concert with others, including between unconnected accounts and third parties,"; "or other
+      activity meant to pool or hedge risk of the aggregate, unconnected accounts;"). The second item came back whole
+      in one fetch (five segments) and its opening verbatim in the other. Both match the clause Stage 2 quoted in
+      cross_account_opposite_positions' note from the September 21, 2026 version. Stage 2 has no key for the clause
+      itself, so stage2_key is null. NOT DEFINED (asked directly; absent): "connected accounts", "unconnected
+      accounts", and whether one person's several accounts are "connected". The forfeiture sentence, read once in two
+      segments: "you will not be entitled to receive any withdrawals from any other account maintained with Topstep"
+      ... "all of which will be forfeited and closed immediately." The Terms also say, read once: "you are only
+      permitted to have one Account". A READING, NOT A RULING: the same-trades item needs "in concert with others"
+      and aims at "the aggregate, unconnected accounts", which is other people again. The item that does reach one
+      person's own ("alone ... including between connected accounts") needs a purpose "to manipulate, abuse, or give
+      User an unfair advantage". Its examples are "short term or high frequency trades" and "simultaneously entering
+      into opposite positions". Under one position at a time across the firm (Stage 2 D-429) no two accounts are ever
+      in a position together, so neither "the same trades in the same time increments" nor simultaneous opposite
+      positions can occur between the user's accounts.
+
+  - key: multi_account_same_strategy
+    firm: topstep
+    value: permitted
+    units: text
+    status: verified
+    article_id: "8284215"
+    url: https://help.topstep.com/en/articles/8284215
+    date_read: 2026-11-15
+    verified_by: rules-verifier (Q-19, worktree wt-firms, branch wt/wt-firms); re-read to answer Q-19 reading 3's own-accounts question
+    quote: |
+      8284215, "Express Funded Account™ Parameters" ("Updated over a week ago"), FAQ "Can I trade across multiple XFAs at once?":
+      "Yes, up to $750K buying power using a trade copier." ... "Hedging across accounts and coordinated trading with others is prohibited."
+      13747047, "Understanding Hedging" ("July 27, 2026"), FAQ "Can I trade the same instrument across multiple accounts?":
+      "Yes! You can trade the same markets across different accounts." "What's prohibited is holding opposite positions simultaneously in a way that eliminates market risk."
+      Its best practices: "Trade each account independently based on your own analysis"; "Don't coordinate positions across accounts (or other traders) to offset risk"; "Trade a single account to completely avoid the possibility of hedging".
+      14434175, "TopstepX™" ("Updated this week"): "The Trade Copier lets you mirror trades from a Lead account to 1 or more Follower accounts automatically" ... "so you can run the same strategy across multiple accounts without placing every order manually."; "Trade copying is only available for Trading Combine® and Express Funded Account® accounts." "Live Funded Account® accounts cannot use the Trade Copier."
+    stage2_key: multi_account_same_strategy
+    stage2_value: permitted
+    note: >
+      RE-READ 2026-11-15, UNCHANGED from Stage 2's value (permitted; Stage 2 last read 2026-10-03 on 8284215, which
+      showed "August 5, 2026" then and shows "Updated over a week ago" now). Each page was read twice with
+      differently worded prompts, and every sentence in `quote` came back in both. Two more came back in one fetch
+      only, so they stay out of `quote`: 8284215 "See What is a Trade Copier." and 13747047 "Hedging attempts are
+      tracked at the Trader level." THE ANSWER TO "DOES ANY OFFICIAL PAGE ADDRESS ONE
+      PERSON'S OWN ACCOUNTS SPECIFICALLY?": yes. 13747047 answers one trader's question about their own several accounts
+      ("Yes! You can trade the same markets across different accounts."), and so does Topstep's own Trade Copier
+      (14434175: "run the same strategy across multiple accounts", on Combines and XFAs only). 8284215 puts the line
+      at "coordinated trading with others". For one's own accounts the pages name exactly two prohibitions: opposite
+      positions held at once (13747047; 10296582 "Cross-account hedging (single-user)") and, in the Terms, trades
+      across connected accounts made to manipulate or gain an unfair advantage (s.27). The copier page does not say
+      the linked accounts must belong to one trader (asked; absent). The best practice "Trade each account
+      independently based on your own analysis" is advice, not a rule. A READING, NOT A RULING: the designs route
+      different trades to the user's accounts in turn (Stage 2 D-157) and never hold two positions at once (Stage 2
+      D-429), which is further from the coordinated-trading item than the copier Topstep sells. The live conduct
+      exposure across one's own accounts is the Responsible Trading Program trigger "Multiple accounts hit the
+      Maximum Loss Limit in one day" (13620045, re-read today in reading 1). That is tier 2, already modelled and
+      off in the base case (Stage 2 D-145, D-289).
