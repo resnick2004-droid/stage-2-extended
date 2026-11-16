@@ -1,15 +1,19 @@
-# DRAFT F-O: a side-free timing filter for the funded account's 3R opening (family O) -- third version, not declared
+# F-XX: a side-free timing filter for the funded account's 3R opening (family O)
 
-**Status: DRAFT, third version, 2026-11-16 (TASK_QUEUE Q-87): one edit on the red team's second read
-(`docs/reviews/DRAFT_F-O_opening_timing_v2_2026-11-16.md`, "pinnable once its named external conditions are met"), with
-the lead's rulings of E-054 and the additions of E-052 and E-055. Not pinned, not numbered, not declared.** The first
-version is a39a80a (Q-37, E-039), the second cd2cbe7 (Q-63, E-046). Nothing of it is built. No bar, walk, trade or result
-value was read for it, no state was computed, nothing was fitted and no outcome was computed. The code is synthetic
-tests: of the arithmetic, the twin, the pass line's input form, the wait's calendar, the `close` walk, A10's
-consequence and this file's own reads line and seeds (`tests/test_family_o_persistence.py`, T-1), and the toys that show
-the level and power at the family's level of the rules this version adds (`tests/test_family_o_toys.py`, slow tier;
-18.3). This file may be edited until the lead pins it. From the pinning row on, nothing in it is edited: a change is a
-new family.
+**Status: declared before anything of it is built or read.** It is pinned by the sha256 of its LF text in its decision
+row. Nothing declared is edited: a change is a new family under a new row. No bar, walk, trade or result value has been
+read for it, no state computed, nothing fitted and no outcome of any trade computed. The code it carries is synthetic
+tests: `tests/test_family_o_persistence.py` (T-1) and `tests/test_family_o_toys.py` (slow tier, T-15; 18.3).
+
+**Its text's history.** It was drafted and reviewed as `prereg/DRAFT_F-O_opening_timing.md`:
+- commits a39a80a (Q-37, E-039), cd2cbe7 (Q-63, E-046), 0ae90d5 (Q-87, E-071) and this text (Q-87c);
+- two red-team reads (`docs/reviews/DRAFT_F-O_opening_timing_2026-11-16.md`,
+  `docs/reviews/DRAFT_F-O_opening_timing_v2_2026-11-16.md`) and the prereg-gatekeeper's refusal of the third text
+  (E-073), each answered in section 0 (0.2, 0.3, 0.4).
+
+At the pin the file is renamed `prereg/F-NN_opening_timing.md` (NN the F-number the gatekeeper assigns; the reader's
+`DECLARATION_PATH`) and `F-XX` becomes `F-NN`; nothing else changes. **This file writes no program family number k:**
+the pinning row names k (k >= 12), the commit and the sha256 it pins, and the cells 6.6's drop rule drops.
 
 **Its rules come from the operator's ruling of 2026-11-16 (E-023; `CHARTER.md` section 3, "Levers that do not choose a
 side").** The filter keeps the coin's side and chooses *when* a newly funded account takes its opening, so E-008's lift
@@ -17,24 +21,28 @@ over the coin twin is zero by construction (E-021 (1)). It is a filter of E-023 
 a **placebo-selection twin**, one-sided at the family's level by the calibrated statistic E-035 (2) adopted, valued at
 that bound, with section 3's floors and the journey scorecard beside. It can be carried.
 
-**It cannot be pinned before:**
-- **Q-55's clean rerun** of Q-16's calibration is on record (E-035 (4)), **reproducing `cons` and the treated two-sample
-  `cons` holding** on the selection nulls, and the per-cell power table (6.6) is filled from its Table 9's **k = 15
-  column**, the drop rule of 6.6 applied mechanically (E-035 (6); the reviews' F4 and m2-9). Until then no figure of
-  Q-16 is cited, and the marks **[Q-55]** stand;
-- **Q-83's fresh-seed validation holds** (E-052 (2), on the fresh seeds that row fixes -- not written out here, as that
-  run checks them unused before it starts; HOLDS if, at every k in 11..15, no real or realistic null's 95 % interval
-  lies wholly above nominal);
-- the whole-window identities have run in their own identity script under their own row (A0, 9; the second read's
-  m2-2);
-- the items of section 20 are closed.
+**The pin's conditions -- external only (E-052 (2); E-073 item 1).** It is pinned only if all three hold:
+1. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) reproduces `cons`, and the treated two-sample `cons`,
+   holding on the selection nulls; and **6.6's drop rule is applied to its result file by the lead at the pin**, the
+   dropped cells recorded in the pinning row (no figure of Q-16 is cited before that rerun, or typed into this file);
+2. **Q-83's fresh-seed validation HOLDS** on E-052 (2)'s criterion (its fresh seeds are that row's, not written out here,
+   as that run checks them unused before it starts): at every k in 11..15, no real or realistic null's 95 % interval
+   lies wholly above nominal;
+3. **the family number** is assigned.
 
-**The withdrawal clause (m2-8; E-052; E-054 (2)).** This file is **withdrawn, or redrafted, before any read** if Q-55's
-clean rerun does not reproduce `cons` and the treated two-sample `cons` holding, or if Q-83 does not hold by E-052
-(2)'s criterion. **The pass-line code is pinned by git blob id:** `extended/lift_bound.py`
-`984f3467a4a05aa790d3ea43e94ac7761f0725b2` and `extended/p_bound.py` `f5b29710e243f97a2795e57f6458512fea99199b` (E-052;
-the same bytes since Q-16, merged 4d3e503); every run of this family refuses a commit whose blobs of those two files
-differ (A1). A changed module is a new row and a redraft.
+**The withdrawal clause (m2-8; E-052; E-054 (2)).** If Q-55's clean rerun does not reproduce `cons` and the treated
+two-sample `cons` holding, or if Q-83 does not hold by E-052 (2)'s criterion, this text is **withdrawn before any read**,
+to be re-declared under a new row, and nothing of it runs. **The pass-line code is pinned by git blob id:**
+`extended/lift_bound.py` `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and `extended/p_bound.py`
+`f5b29710e243f97a2795e57f6458512fea99199b` (E-052; the same bytes since Q-16, merged 4d3e503); every run of this family
+refuses a commit whose blobs of those two files differ (A1). A changed module is a new row and a new family.
+
+**Before run 1, not before the pin (the pre-run conditions; E-073 item 1, the lead's choice).** Declare before
+building: nothing of this family is built or run before the pin. After the pin and before run 1, in this order, each
+refusing: **the infrastructure identities** -- Q-89 (Q-70's place records at 100 paths), Q-93 (Q-76's class on the U1
+replay), Q-101 (Q-94's replay recorder, E-068) and Q-80 (the gate's 500-path identities, E-049) -- on record as holding;
+then **this family's build** (the seam and its tests, 18); then **A0**, the whole-window identities in
+`identity/family_o_identity.py` under their own identity row; then run 1, which opens with A1 (9, 19.2).
 
 Where the funded openings fall (Q-35; its script merged, E-051 (2)) is not needed before the pin: it is counted in stage
 A, on the choice block, in history's order (5.5).
@@ -42,9 +50,9 @@ A, on the choice block, in history's order (5.5).
 | field | value |
 |---|---|
 | family | O: a side-free timing filter for a newly funded account's 3R opening -- the opening keeps P-16's coin side and waits, at most W sessions, for a state that predicts persistent moves |
-| id | F-XX -- the gatekeeper's |
-| program family number k | **the next free at the pin, k >= 12**: F-01 spent 10 (E-007 (a)); F-02 holds 11 (E-045 (4)); family B's draft is ahead of this one; family R's draft is held unpinned (E-028 (2)); described readings take none (E-023 (1)) |
-| level | one-sided **0.05 / (k (k + 1))**: 0.05 / 156 at k = 12, 0.05 / 182 at k = 13, 0.05 / 210 at k = 14, 0.05 / 240 at k = 15 |
+| id | F-XX (`prereg/F-NN_opening_timing.md` at the pin) |
+| program family number k | **written in the pinning row only: the next free at the pin, k >= 12** -- F-01 spent 10 (E-007 (a)); F-02 holds 11 (E-045 (4)); family B's draft is ahead of this one; family R's draft is held unpinned (E-028 (2)); described readings take none (E-023 (1)) |
+| level | one-sided **0.05 / (k (k + 1))** at the pinning row's k: 0.05 / 156 at k = 12, 0.05 / 182 at k = 13, 0.05 / 210 at k = 14, 0.05 / 240 at k = 15 |
 | the pass-line code | `extended/lift_bound.py` blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2`, `extended/p_bound.py` blob `f5b29710e243f97a2795e57f6458512fea99199b` (E-052) |
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16 only, read through `extended/reader.py` (E-026 (2)) |
 | base | P-16 (`rc_s150_all_nr`, `vendor/stage2/prereg/P-16_rc-s150-all-nr.md`) as registered, its report-day 07:35 entry kept (E-039 (1)); R\* = P-14 beside |
@@ -52,7 +60,7 @@ A, on the choice block, in history's order (5.5).
 | choice block | sessions 2020-01-02 to 2023-12-29. Stages A and B read 2021-01-04 to 2023-12-29; 2020 is the states' warm-up and u3's first training fold |
 | judged block | sessions 2024-01-02 to 2026-07-16 |
 | confirmation | NQ from 2026-07-17 (`config/windows.yaml`, `reserve`); not on disk, a purchase (section 15) |
-| cells (`k_cells`) | **4**: s1, s2, s3, u3 -- each at R = 3, the 150-tick stop, place (c), W = 5 sessions: 4 x 1 x 1 x 1 = 4, each counted whether dropped before the pin (6.6), killed or read |
+| cells (`k_cells`) | **4**: s1, s2, s3, u3 -- each at R = 3, the 150-tick stop, place (c), W = 5 sessions: 4 x 1 x 1 x 1 = 4, each counted whether dropped at the pin (6.6), killed or read |
 | judged | one cell: stage B's pick |
 | pass line | E-023 (2), every line by **`cons`** with the treated-cluster df (`extended.lift_bound`, E-035 (2)) and each member's critical value the larger of its t and stage B2's: **C1**, the offer-level lift of the in-state offers' stratum-centred side-symmetric 3R value over the twin (`placebo_selection_bound`); **C1-close**, the same under the `close` flatten convention; **C2**, the per-opening difference between the design's openings and the twin design's (`two_sample_bound`), on the U1 replay in history's order, priced at place (c) at the design's openings a year, at least $500 a year; **C3**, both sides' halves above zero; section 3's floors; the scorecard beside. **Before any of them, K0** (E-052 (1)): `cons`'s size at the family's level on a sign null built with each cell's own counts, a cell lax by it killed, a pass on lax judged counts not claimed (9, A11; 12) |
 | the wait W | 5 sessions, fixed (section 5.4) |
@@ -129,7 +137,7 @@ bracket held for hours. The honest prior is no effect, and the data may only be 
 | **F1** the pass line's statistic | C1 and C1-close by `cons` through `extended.lift_bound.placebo_selection_bound` with the treated-cluster df, on the **stratum-centred** values c - mu_g (the function has no strata; every population offer is sample 2, so the twin's expectation is the population mean of the centred values, zero); C2 by `cons` in the module's two-sample form, `two_sample_bound` (its non-nested case, the same statistic E-035 (2) adopts); 7.2's raw session series z_s dropped as a variance series; **B2's critical value defined per member** (t21w, t42w, t63w each at the larger of its t and its B2 quantile; `cons` passes only if all three do); **what Q-16 calibrated** (the coin side's own outcome, not the side-symmetric value) and what follows: the level on c rests on B2 and is checked by a new choice-span control (A10); a synthetic test of the centring identity (T-1) | header, 7.2, 7.4, 9 (A10), 11, 12 |
 | **F2** the wait's calendar | stage A's counts, K5, V_B and V are read on **the U1 replay in history's order** (Q-17's adapter), never on the gate's independent-day table; the gate is kept for A1's identities and floor (iii) only; which calendar each reading uses is a table (4 item 5); a synthetic test of the difference (T-1) | 4, 5.5, 7.4, 9, 10, 12 |
 | **F3** V not differenced | **C2's value line is the design's openings against the twin design's openings** (two twin draws pooled), both from paired U1 replays; V(P-16), the base's own routing deviation, and V(design) undifferenced beside; **the fallbacks' values defined**: every P-16 mark is labelled (both sides at 3R) as labels only, so an opening at 08:30-09:00 or at the report-day 07:35 mark has its own stratum mean | 5.2, 5.3, 7.4, 11, 12 |
-| **F4** persistence and power before the pin | each cell's persistence class stated with its reason (6.6); its power read from Q-55's Table 9 and written into 6.6 before the pin **[Q-55]**; a cell that cannot reach power in its class is dropped before the pin, counted; Q-55 a prerequisite; an optional bars-only run-length count named as the lead's call | 6.6, 9 (A9), 20 |
+| **F4** persistence and power before the pin | each cell's persistence class stated with its reason (6.6); its power read from Q-55's Table 9 (the fourth text states the rule whole, 0.4); a cell that cannot reach power in its class is dropped at the pin, counted; Q-55 a prerequisite; an optional bars-only run-length count named as the lead's call | 6.6, 9 (A9), 20 |
 | m1 the 17:30 start | one rule: s1 and s2 start at the 17:30 mark, half an hour of the night, a declared choice; the 15-bar minimum is a separate missing-bars rule | 6.2, 6.3, 8 |
 | **m2 (the lead's ruling, E-039 (1))** | the non-opening trades and the fallback openings are P-16's registered trades and keep its 07:35 report-day entry; **the openings this family places obey 07:40**; stage A counts every design's trades and openings at the report-day 07:35:00 entry, reported beside the verdict | 3, 5.1, 5.2, 9 (A2) |
 | m3 the flatten convention | **C1-close** is a further line of the same intersection: C1 under the `close` flatten convention | 12 |
@@ -159,9 +167,23 @@ put to K0's use).
 | **m2-10** the forfeiture collision | the waiting class **composed with Q-17's `ForfeitFundedAccount`** for the forfeiture responses, held to Q-17's forfeiture rows with the wait switched off; what is needed from Q-76's declared keyword named | 5.4, 13, 18.1 |
 | **m2-11** B2's day kind | B2 draws **within day kind**: two stationary bootstraps of mean block 63, normal days and report days, each judged session filled from its own kind's sequence | 11 |
 | **E-052 (1)** fill intensity | the openings-per-session (and in-state-offers-per-session) persistence stated beside the side persistence; **K0**, outcome-free, before stage B: `cons`'s size at the family's level on a sign null built with each cell's own choice-block counts (seed 20261989), a cell whose 95 % interval lies wholly above nominal killed; the same check on the pick's judged counts before any outcome is read, a pass not claimed above nominal; its level and power on toys | 6.6, 9 (A11), 12, 16, 18.3 |
-| **E-055** the place records | Q-70's adapter cited at family B's section 20 **item 10**; its identities relied on named (P-16 at 4 paths on `PATH_COLS`; P-16 and P-14 at 100 paths against `trades_per_year_records`); **recording on the U1 replay** (`record_days` beside `record_trades`, Q-76's keyword) listed as this family's build item; **declined offers are counted by the gating wrapper**, not the recorder | 9 (A1), 18 |
+| **E-055** the place records | Q-70's adapter cited at family B's section 20 **item 10**; its identities relied on named (P-16 at 4 paths on `PATH_COLS`; P-16 and P-14 at 100 paths against `trades_per_year_records`, Q-89); **recording on the U1 replay** -- listed in the third text as this family's build item, **built since by Q-94** (E-068: `extended/replay_records.py`'s `ReplayRecorder`, passed as `user_beside.run_starts(..., recorder=)`; its heavy identity Q-101), what it leaves to this family named (the fallback flag, the joins by offer id, the restricted replay job); **declined offers are counted by the gating wrapper**, not the recorder | 9 (A1), 18 |
 | **E-059** Q-76 merged | the family's class reaches the U1 replay through Q-76's keyword, forfeiture composed over it; **E-007 (e)'s readings reported without the ten Focused Trader models, labelled so** (the engine refuses them for any funded class but the vendored one, `lockstep.py` 1403-1408); a re-composed path admitting them is a separate build under its own row, not now | 5.4, 13, 18.1 |
 | n2-1..n2-10 | readings: the drafter's four questions answered; S2's pre-read reworded; Q-51 HOLDS (E-044 (3)); the seed check excludes the data junctions; T-10's runtime; "inside Table 9's grid" means 40 standard errors; K5's censored waits reported; floor (iii)'s gate waits less than the traded design; the stage-B pick inherits m2-1; the module's variance under stratum-varying shares conservative | 4, 6.6, 9, 10, 12, 16, 18 |
+
+## 0.4 What the fourth text corrects (the prereg-gatekeeper's refusal of the third, E-073)
+
+The design and every ruling the third text applied stand; seven text items, as one edit. Nothing else moves.
+
+| item | what changed | where |
+|---|---|---|
+| 1 the pin's conditions | the pin waits only on external conditions -- Q-55 (with the drop rule applied), Q-83, the family number; A0, the seam and the family's own identities run **after the pin and before run 1**, refusing; the infrastructure identities (Q-89, Q-93, Q-101, Q-80) are **pre-run conditions** | header, 9 (A0), 19.2, 20 |
+| 2 the drop rule whole | the result file and section (`results/calibration_power.csv`, its placebo-selection power rows), the `cons` k = 15 column, the value row (`net3`, and why), **one** deciding class per cell (s1 `window`, and why), the share (0.25: the grid's nearest to the states' one third); applied by the lead at the pin, the dropped cells recorded in the pinning row; no figure typed in, no placeholder for Q-55's figures left | 6.6, 8 |
+| 3 the fixed values | W = 5, K5 at one half, the 250-session third, the 17:30 start, two twin draws, K0's 200,000 replications are the file's values; the sentence that let the text be edited until the pin struck | header, 20 |
+| 4 the pin-time form | the title and status as they read when pinned; the pin changes only the file name and `F-XX`; k in the pinning row only | header |
+| 5 tier 2 | each of `conduct.py`'s four patterns stated for the openings and for the base's trades, off in the base case (D-289), on beside | 3 |
+| 6 the readings beside floor (iii) | the break-even denial, the zero-edge twin, e and its bound, stage one's D-47 criterion -- the last three P-16's by construction, said so | 12 |
+| 7 Q-94 merged | `extended/replay_records.py`, `run_starts(..., recorder=)` and its heavy identity Q-101 cited | 0.3, 9 (A1), 18, 20 |
 
 ## 1. Hypothesis: the mechanism, its sources, and each state's sign stated in advance
 
@@ -308,7 +330,7 @@ no result value was opened beyond what the rows above and the handoff's tables s
 | the 08:30-09:00 window (Stage 2 D-281 (3); E-030; E-036 M3-2) | **no entry of this family's choosing falls there** (the population ends at the 08:25 mark), and **no state reads a bar of the alert's day stamped 08:30-08:59** (the latest alert is 08:20; 6.1, T-2). A fallback opening (after W) may be a window offer, as P-16's own are |
 | no time stops (D-212 (2)) | none. The wait chooses an entry; it never ends a trade |
 | conduct tier 1 (D-145) | no hedging (one position across the firm); no simulator-fill exploitation (37.5-point brackets held hours); no maximum size into major news as E-034 reads it (above); no copying across accounts (D-157); nothing concealed: the rule is a published state on closed bars |
-| conduct tier 2 (D-289) | as P-16: the Responsible Trading Program's placement off in the base case, on beside |
+| conduct, tier 2 (Stage 2 D-145; `vendor/stage2/propedge/campaign/conduct.py`) | each pattern is **modelled off in the base case (D-289) and on beside**: in the scorecard's placement-on reading (Q-17's `rtp` response, 13) and beside floor (iii)'s campaign (12). **(1) R at or below 1** (`conduct.MIN_RR`): not the openings, which are 3R; it applies to the base's own trades -- the table's 1R leaves after the opening and in the paid phase, and Combine trades the engine's need-aware exits close below 1R -- as P-16 registered them; the wait changes none of them. **(2) Maximum position on most trades:** applies to the openings -- a fresh funded account's 3R opening is sized by the table at its allowance, 20 micros at 150 ticks (P-16's registration section 3), so every opening, in-wait or fallback, is at its account's maximum position; and to the base's trades wherever their table sizes at the allowance, as registered. **(3) An account-deciding position** (`MAX_FUNDED_RISK_FRACTION_OF_DRAWDOWN`: a funded position risking more than half the $2,000 drawdown): applies to every opening -- 20 micros x 150 ticks x $0.50 = $1,500, above the half, $1,000 -- P-16's openings and the design's alike, since the wait moves an opening and never its size; the base's later funded trades as their table sizes them, as registered. **(4) Several accounts at the MLL in one day:** a campaign pattern, not one trade's -- the wait moves openings in time and can bunch them with the base's trades, so the share of such days is reported beside for the design, its twin and P-16 (the gate's same-day multi-breach columns, as P-16's registration reports `share_paths_with_same_day_multi_breach`) |
 | conduct tier 3 (E-013 (1)) | the opening's size is already priced under Terms of Use s.8; 0 % denial in the verdict, 10, 25 and 50 % beside (Q-17's adapter) |
 | firm rules | none loaded by the family; the engine runs Stage 2's verified ledger as P-16 does. No inactivity rule for a waiting XFA is on the verified ledger as read (the review's last open point); none is modelled |
 | the breakeven move (E-013 (2)) | allowed as made; P-16's walk; Q-20's corrected moves beside |
@@ -638,13 +660,13 @@ so u3's forecast is reviewed here as restated. If family R is pinned first, the 
 - **No calibration** (family R's 6.4 maps the forecast to a probability; here only its rank matters), so the 10
   calibration values family R fits are not fitted here.
 
-### 6.6 Each cell's persistence, fill intensity and power, stated before the pin (E-035 (6); E-052 (1); the reviews' F4, m2-9)
+### 6.6 Each cell's persistence, fill intensity and the drop rule (E-035 (6); E-052 (1); the reviews' F4, m2-9; E-073 item 2)
 
 Q-16's calibration found that a placebo-selection test's power depends far more on how persistent the filter is than on
 its firing share, and that a filter persistent for a quarter cannot be tested on the judged block (calibration note
 7.3). Its Table 9 gives the detectable difference by persistence class (`offer`, `window`, `session`, `block5`,
-`block21`, `block63`) and firing share. Its figures are exploratory until Q-55's clean rerun (E-035 (4)), so none is
-quoted; the power column is filled from Q-55's Table 9 before the pin **[Q-55]**.
+`block21`, `block63`) and firing share. Its figures are exploratory until Q-55's clean rerun (E-035 (4)); none is cited
+or typed here, and the drop rule below reads them from Q-55's file at the pin.
 
 **Fill intensity (E-052 (1)).** Beside the selection's persistence, E-052 (1) asks for the persistence of the **counts**
 each line's statistic weights: here the in-state offers per session (C1, C1-close) and the openings per session (C2).
@@ -653,36 +675,47 @@ When a few blocks hold most of the counts, the cluster-robust variance has fewer
 states**, so they persist exactly as the states do: K0 (A11) checks `cons`'s size on each cell's own counts before
 stage B, and on the pick's judged counts before any outcome is read.
 
-| cell | what can make it persist | expected class | fill intensity: in-state offers a session (C1) and openings a session (C2) | power at its class, shares 0.25 and 0.5, k = 15 (Q-55's Table 9) |
+| cell | what can make it persist | deciding class (one) | why that class | fill intensity: in-state offers a session (C1) and openings a session (C2) |
 |---|---|---|---|---|
-| **s1** | the range so far only grows through the night, so once a night runs ahead of its forecast it tends to stay ahead for the rest of it; the next day's HAR forecast absorbs the surprise, so the clustering across nights is short (volatility surprises bunch for a few nights) | **window** within a night, with clustering across a few nights (between `window` and `block5`) | C1: a share of each night, varying night to night, bunched over a few nights; C2: openings spread over nights, bunched where surprises bunch | **[Q-55]** |
-| **s2** | a night's displacement from its open changes slowly through the night; across nights, trending nights are close to independent (daily returns carry little autocorrelation), normalised by the forecast range | **window** | C1: a share of each night, close to independent across nights; C2: spread | **[Q-55]** |
-| **s3** | a daily state; the HAR forecast's 22-session term and the 250-session reference make calm spells last weeks to months | **block21**, possibly **block63** (the slower decides) | **all or nothing a session, in runs of weeks to months** -- the most count-persistent cell; C2: openings bunched in the calm spells | **[Q-55]** |
-| **u3** | its daily terms are ratios to the trailing month, which revert within weeks; x3 moves within the night | **session** to **block5** (the slower decides) | mostly all or nothing a session, in runs of days; C2: bunched in fast spells | **[Q-55]** |
+| **s1** | the range so far only grows through the night, so once a night runs ahead of its forecast it tends to stay ahead for the rest of it; the next day's HAR forecast absorbs the surprise, so the clustering across nights is short (volatility surprises bunch for a few nights) | **`window`** | its selection is a run of offers within a night, which is Q-16's `window` model (a contiguous run of offers in each session at a random start); `block5` selects whole sessions for five sessions together, which s1 never does -- it fires on part of a night and its run across nights is a few nights, not a fixed week. The cross-night bunching that `window` leaves out is K0's and A9's to read on the cell's own counts and pattern | a share of each night, varying night to night, bunched over a few nights; C2: openings spread over nights, bunched where surprises bunch |
+| **s2** | a night's displacement from its open changes slowly through the night; across nights, trending nights are close to independent (daily returns carry little autocorrelation), normalised by the forecast range | **`window`** | a run of offers within a night, near-independent across nights: Q-16's `window` model | a share of each night, close to independent across nights; C2: spread |
+| **s3** | a daily state; the HAR forecast's 22-session term and the 250-session reference make calm spells last weeks to months | **`block21`** | a daily state, every offer of a session together, its runs set by the HAR forecast's 22-session term, about a month; `block63` would be the quarter-long regime, which the state's own threshold crossings break up more often | **all or nothing a session, in runs of weeks to months** -- the most count-persistent cell; C2: openings bunched in the calm spells |
+| **u3** | its daily terms are ratios to the trailing month, which revert within weeks; x3 moves within the night | **`block5`** | its daily terms hold for days, about a week, while `session` (whole sessions drawn independently) has no persistence across sessions at all | mostly all or nothing a session, in runs of days; C2: bunched in fast spells |
 
-- **The rule, before the pin -- mechanical (the second read's m2-9):** a cell whose class row (the slower of two where
-  two are named) does not reach 80 % power inside Table 9's grid at the nearer of its shares **in Table 9's k = 15
-  column** -- stricter than any k from 12 to 15, and Table 9 carries `cons` at k = 11 and 15 only -- is **dropped before
-  the pin and counted** (E-035 (6): a cell the block cannot judge spends nothing by being run, and is still counted).
-  The others stay. **The lead records the drop as the rule gives it, with no confirmation and no discretion.** The drafter
-  expects s3 to be dropped by this rule and the other three to stay.
-- **What "inside Table 9's grid" means (the second read's n2-7):** a detectable shift of at most 40 median standard
-  errors (`scripts/q16_calibrate.py`'s grid; calibration note 7.3) -- a weak condition, so power against the money bar
-  is A9's job, not the drop rule's.
+**The drop rule, stated whole (applied by the lead at the pin; no figure typed into this file):**
+
+- **The file:** Q-55's `results/calibration_power.csv`, written with its manifest by `scripts/q55_calibration.py` from a
+  clean checkout (E-035 (4)).
+- **The rows:** `part` = `two_sample`, `df_rule` = `treated`, `form` = `placebo-selection` (the placebo-selection twin's
+  power rows, Table 9's) with `method` = `cons` and **`k` = 15** -- Table 9 carries `cons` at k = 11 and 15 only, and
+  this family's k is 12 to 15, so k = 15 is the strictest it can face (the second read's m2-9).
+- **The value row: `value` = `net3`** -- Table 9's other row, `win1`, is the coin's win at 1R, another bracket in another
+  unit; `net3` is net R at 3R, this family's bracket and its lines' unit. It is the coin side's own net R, not the
+  side-symmetric c (whose direction noise is removed), so it is an upper guide to c's detectable difference, the
+  conservative direction for a rule that keeps a cell.
+- **The class:** the cell's one deciding class (the table above) as `model`.
+- **The share: `share` = 0.25** -- each state fires on about a third of its offers over the long run, by the rolling
+  third's construction (6.4); of Table 9's grid of shares (0.02, 0.05, 0.10, 0.25, 0.50) the nearest to one third is
+  0.25 (one third less 0.25 is a twelfth; 0.50 less one third is a sixth).
+- **The test:** if that one row's `difference80` is empty -- 80 % power not reached inside the grid of shifts, which
+  reaches 40 median standard errors (`scripts/q16_calibrate.py`'s grid; the second read's n2-7) -- **the cell is
+  dropped at the pin and counted** (E-035 (6): a cell the block cannot judge spends nothing by being run, and is
+  still counted). Otherwise it stays. A cell with no such row is dropped and counted too.
+- **Who applies it:** the lead, mechanically, at the pin, recording the dropped cells in the pinning row -- no
+  confirmation, no discretion, nothing written into this file. The drafter expects s3 to be dropped by it.
+
+Readings beside the rule, deciding nothing:
+
+- **"Inside Table 9's grid" is a weak condition** (40 median standard errors), so power against the money bar is A9's
+  job, not the drop rule's.
 - **What the toys show (18.3), as an illustration, not a result:** in the nested two-sample form, sample 2 (every offer)
   holds the selected offers, so a lift on a clustered selection also raises the between-block spread of the population's
   mean, and the standard error grows with the lift. For a whole-session selection in runs of weeks the t statistic
   then rises toward a ceiling set by how unevenly the selection fills the blocks, and power at the family's level can
   stay well short of one however large the lift; a within-night window selection does not have this ceiling. This is
   the shape of Table 9's "--" for its block classes (Q-16's power code shifts both samples, as here).
-- **What Table 9 measures, and what that means here.** Its outcome is the coin side's own 3R net R; this family's is
-  the side-symmetric value c (5.3), with the coin's direction noise removed. So Table 9 is an upper guide to the
-  detectable difference for c, not its calibration; A9 reads the cell's own MDL in stage A, beside.
-- **Measured, if the lead prefers measuring to arguing** (the review's F4 remedy, the lead's call under a row): each
-  state's in-state session run lengths on the choice block -- bars only, no walk, no outcome, minutes -- read before the
-  pin to place each cell in its class. It is a choice-block read before the pin.
-- **And at run time:** stage A reports each cell's run lengths on 2021-2023 and stage C the pick's on the judged block,
-  before any outcome, with the class they imply.
+- **At run time:** stage A reports each cell's run lengths on 2021-2023 and stage C the pick's on the judged block,
+  before any outcome, with the class they imply -- beside, never moving a cell's deciding class.
 
 ## 7. The twin and the estimands
 
@@ -824,7 +857,7 @@ mean_dv(c) is a common positive factor across cells, so the value map cannot mov
 | K1 | the least supply | fixed | 21 sessions holding an in-state offer in each of 2021, 2022, 2023 | a month of sessions |
 | K2 | resolution | fixed | at most 5 % unresolved at 3R among in-state offers, overall and every year; 4 % in the worst year to be eligible as the pick | D-212; family B's M2-4 margin |
 | K5 | the wait binding | fixed | at most one half of a design's openings taken as fallbacks, on the choice-block replays | the scout's K5; 4 item 5 |
-| the drop rule | a cell the block cannot judge | fixed | 6.6, from Q-55's Table 9's k = 15 column, before the pin, mechanical | E-035 (6); the second read's m2-9 |
+| the drop rule | a cell the block cannot judge | fixed | 6.6: Q-55's `calibration_power.csv`, placebo-selection rows, `cons`, k = 15, `net3`, the cell's one deciding class (s1 `window`, s2 `window`, s3 `block21`, u3 `block5`), share 0.25; dropped if `difference80` is empty; applied by the lead at the pin | E-035 (6); the second read's m2-9; E-073 item 2 |
 | K0 | the counts' persistence | fixed | `cons`'s size at the family's level on the sign null with each cell's own counts, 200,000 replications; killed if the 95 % interval lies wholly above nominal (A11); at stage C, a pass not claimed | E-052 (1) |
 | A10's consequence | `cons` lax on c | fixed | the deciding rule on a pseudo-judged split; lax too: the cell closed, counted (A10) | the second read's m2-4 |
 | A4's default | if u3's forecast has no skill | fixed | u3 closed, counted | the review's n7 |
@@ -853,10 +886,11 @@ does), the U1 replays' **routing records** (where openings fall) and the counts 
 **the population's centred values' dispersion under random selections** -- never a cell's in-state mean. It reads no lift
 of any cell. Every kill is counted and recorded.
 
-**A0. The whole-window identities, before run 1 (refusing; the second read's m2-2).** The identities that compare
-whole-window registered objects need the judged block's bars and walks, which the reader admits only from an identity
-script. So they run in **`identity/family_o_identity.py`**, under its own identity row, from a clean run under the lock,
-before run 1, and are held there as Q-22's and Q-51's are:
+**A0. The whole-window identities, after the pin and before run 1 (refusing; the second read's m2-2; E-073 item 1).**
+The identities that compare whole-window registered objects need the judged block's bars and walks, which the reader
+admits only from an identity script. So they run in **`identity/family_o_identity.py`**, under its own identity row,
+from a clean run under the lock, **after the pin, after the infrastructure identities (header) and the family's build,
+and before run 1**, and are held there as Q-22's and Q-51's are:
 
 1. the population builder's P-16 cell gives P-16's trades, `TRADES_SHA256` exactly; the labels at every P-16 mark (5.2)
    reproduce the cell's coin-side columns at those marks;
@@ -887,11 +921,17 @@ before run 1, and are held there as Q-22's and Q-51's are:
    recorder does not see it (E-055 (4)).
 6. **The restricted replay:** with each start's history ending at 2023-12-29, the replay's start rows equal U1's on
    every start whose horizon ends inside the choice block.
-7. The place-recording adapter's identities as built (Q-70, E-055): **P-16 at 4 paths** -- every `PATH_COLS` column and
-   row with recording on equal to the same call with it off -- and **P-16 and P-14 at 100 paths, the bound arm, U2's
-   seed**, whose recorded counts by place reproduce `u_value_map.csv`'s `trades_per_year_records` for `p16` and `p14`
-   (`identity/place_records_identity.py`); and the replay recording's own identity (18.1 item 4): on the U1 replay the
-   openings it records equal the replay ledger's, and with recording on every start's row equals the unrecorded one.
+7. The place records' identities, **cited as pre-run conditions** (header): Q-70's (E-055) -- **P-16 at 4 paths**,
+   every `PATH_COLS` column and row with recording on equal to the same call with it off, and **P-16 and P-14 at 100
+   paths, the bound arm, U2's seed**, whose recorded counts by place reproduce `u_value_map.csv`'s
+   `trades_per_year_records` for `p16` and `p14` (`identity/place_records_identity.py`, Q-89) -- and Q-94's (E-068) on
+   the U1 replay: `extended/replay_records.py`'s `ReplayRecorder` through `user_beside.run_starts(..., recorder=)`,
+   recording on equal to off bit for bit and the recorded openings the replay ledger's (its 19 synthetic tests), and
+   U1's start rows for P-16 and P-14 with recording on, every start (`identity/replay_records_identity.py --u1-starts
+   all --row E-068`, Q-101). In run 1, this family's own on top of them, at 4 choice-block starts: with the recorder and
+   the family's class both given and the wait switched off, every start's row equals the unrecorded vendored-class
+   replay's; the fallback flags, the joins by offer id and the declined-offer counts (18.1 item 4) reproduce a
+   hand-checked start.
 
 **A2. Where the openings fall (5.5), on the U1 replay in history's order.** The counts for P-16, each cell's design and
 its two twin designs, written to the `openings` section: by mark, hour, day kind, the 08:30-09:00 share, the report-day
@@ -1152,6 +1192,20 @@ value (11):
   - the share of the design's openings on report days, at the report-day 07:35:00 entry, and by hour; the in-state
     share of P-16's own judged openings; the judged run lengths and the class they imply (6.6);
   - u3's judged forecast skill, if u3 is the pick;
+  - **beside floor (iii)'s campaign** (the design's own gate campaign, seed 20261983; E-073 item 6, the template's
+    section 5), each reported and never a line:
+    - **the break-even denial:** `propedge.campaign.portfolio.break_even_denial(fees, payouts)` on the design's campaign
+      at the bound -- one minus fees over payouts, the share of payouts the firm could deny before the gain is gone;
+    - **the placement on:** tier 2's patterns (section 3) modelled (D-289), with the share of the design's openings at
+      full allowance and of days with several accounts at the MLL;
+    - **the zero-edge twin:** the same gate call at the same seed with every R shifted to a zero mean, each R by its
+      own e (Stage 2's `scripts/portfolio_stage.zero_edge_blocks`), its growth on the required bankroll and the design's
+      point growth less the twin's (`signal_lift_over_zero_edge_twin`, the form of `propedge/reporting/scoreboard.py`);
+    - **e and its bound for each R, and stage one's D-47 criterion** (propsim D-47: e at least 0.10 and its bound at
+      least 0.05): **P-16's by construction, said so and not recomputed.** The design's gate blocks are P-16's trades --
+      the same offers, walked the same way -- and its bound arm takes P-16's registered shift at each R (C2 above), so
+      e, its one-sided bound and D-47 are P-16's registered values, cited from its registration; the wait changes which
+      offer an opening takes, never the trades' outcomes or the shift;
   - Stage 2's S-program guard (the design's paired growth at the bound against P-16's, D-568 (2)), never a line.
 
 **Dropped (E-031 (2)):** the reverse walk-forward.
@@ -1239,7 +1293,7 @@ floor):
 
 - the reason goes in a decision row;
 - a close at B or C reads **"no selection lift above the MDL at this family's level"**, never "timing does not help";
-- a cell dropped before the pin by 6.6 reads **"not judgeable on this block at its persistence"**;
+- a cell dropped at the pin by 6.6 reads **"not judgeable on this block at its persistence"**;
 - **the closure binds** (D-277's boundary): a later family on these states or this population names this closure, says
   what changed and why it is a different hypothesis, and is not judged on this family's judged block.
 
@@ -1323,7 +1377,7 @@ identity); 20261131 (P-14's, beside); 20261600 + i and 20261700 (Stage 2's coin 
 1. **k.** The next free program family number at the pin, with level 0.05 / (k (k + 1)), written by the gatekeeper in
    the pinning row.
 2. **Counted:**
-   - **4 cells** (s1, s2, s3, u3), each counted whether dropped before the pin (6.6), killed at A, closed at B or read
+   - **4 cells** (s1, s2, s3, u3), each counted whether dropped at the pin (6.6), killed at A, closed at B or read
      at C; u3 is counted although its stated sign is negative;
    - **0 searched configurations**;
    - **11 fitted values** (u3's coefficients) inside the walk-forward, fitted in each of its three folds and the final
@@ -1365,21 +1419,27 @@ identity); 20261131 (P-14's, beside); 20261600 + i and 20261700 (Stage 2's coin 
    class carries none); (iii) every start's output naming the class; (iv) with the keyword given and the class's wait
    switched off, every response's rows Q-17's, the forfeiture rows among them (A0 item 4). **What it does not give:**
    the ten Focused Trader models, which the engine refuses for any class but the vendored one (E-059; the readings are
-   reported without them, 13); and the replay's `record_trades` and `record_days`, which this family's build adds
-   (item 4). If the build finds the class
+   reported without them, 13). Recording on the replay is Q-94's `recorder=` keyword, beside it (item 4). If the build
+   finds the class
    cannot reach the draw the router registered (`TierSizedDraw` registers itself, sizing.py), the seam is composed
    instead at the funded draw factory in Q-47's form (the vendored body, one keyword, a source-hash guard), under a row.
    Either way A0's and A1's identities refuse.
-4. **The place records (Q-70, merged, E-055: `extended/place_records.py`, `extended/place_fields.py`; family B's draft
-   section 20 item 10).** On the gate it records every simulated trade's offer, R and place, and every funded account's
-   opening, and is held to its built identities: **P-16 at 4 paths** (every `PATH_COLS` column and row with recording
-   on equal to the call with it off) and **P-16 and P-14 at 100 paths, the bound arm, U2's seed, against
-   `u_value_map.csv`'s `trades_per_year_records`** (`identity/place_records_identity.py`; at 4 paths only `PATH_COLS`
-   can be compared). **This family's build item: recording on the U1 replay**, which Q-70 did not wire -- the replay run
-   with the engine's `record_days` beside `record_trades` (through Q-76's keyword, item 3), its records read by
-   `place_records.record_path`, each opening's wait and fallback flag added from the wrapper; its identity: on the
-   replay the openings it records equal the replay ledger's, and every start's row with recording on equals the
-   unrecorded one (A1 item 7).
+4. **The place records.** On the gate: Q-70 (merged, E-055: `extended/place_records.py`, `extended/place_fields.py`;
+   family B's draft section 20 item 10) records every simulated trade's offer, R and place, and every funded account's
+   opening, held to its built identities -- **P-16 at 4 paths** (every `PATH_COLS` column and row with recording on
+   equal to the call with it off) and **P-16 and P-14 at 100 paths, the bound arm, U2's seed, against
+   `u_value_map.csv`'s `trades_per_year_records`** (`identity/place_records_identity.py`, its heavy run Q-89; at 4 paths
+   only `PATH_COLS` can be compared). **On the U1 replay: Q-94 (merged, E-068)** -- `extended/replay_records.py`'s
+   `ReplayRecorder`, passed as **`user_beside.run_starts(..., recorder=)`**, a declared keyword off by default: each
+   start's long replay runs with the engine's ledger and day recorder on and is reduced by Q-70's `record_path` to the
+   same compact records (`place_fields`' replay schemas), handed on as the unrecorded path; its synthetic identity holds
+   (19 fast tests: recording on equals off bit for bit on every response, with the pass-through class; the records are
+   the replay ledger's rows, Q-35's openings and `FundedAccount.days`); **its heavy identity is Q-101**
+   (`identity/replay_records_identity.py --u1-starts all --row E-068`: U1's start rows for P-16 and P-14 with recording
+   on, every start), a pre-run condition. **What Q-94 leaves to this family's build (E-068):** the fallback flag
+   (`opened & opening_session >= W`), the mark, hour and day-kind joins by the offer id (as Q-35 does), the declined
+   offers (the wrapper's own count, item 3) and the restricted replay job (each choice-block start's history ending at
+   2023-12-29); their identity is A1 item 7's.
 5. **The estimand.** c_i, the strata means, y, the calls of 7.2 and 7.4, each member's statistic, B2 (within day kind,
    a\* by 11 item 3), the halves, V_line, V(P-16), V(design) and V_other, from the population frame and the routing
    records; **K0** (A11) on counts; the clustered twin (7.1).
@@ -1402,7 +1462,7 @@ identity); 20261131 (P-14's, beside); 20261600 + i and 20261700 (Stage 2's coin 
 | T-10 (slow tier: an hour or more per setting, the second read's n2-6) | **B2's machinery on synthetic data at declared levels (the first read's m7):** a synthetic population with a planted slow component and a clustered daily selection independent of it; the per-member larger-of rule under `cons` at one-sided **1 % and 5 %**; **2,000 outer replications**, each B2 quantile from **20,000 inner replicates** (`[20261988, 200, j]`). **Failure rule:** the test fails if a level's rejection rate has its 95 % Clopper-Pearson interval wholly above the nominal; a failure is kept on record and runs the failure protocol, never a rerun to pass. The family's level rests on the larger-of rule at the family's level, not on T-10 |
 | T-11 | this file's seeds appear nowhere else in the build's commit except the family's own modules and tests |
 | T-12 (slow) | A0 items 2 and 3 and A1 items 4 to 6 at 4 paths and 4 starts; the full 500 paths and every start are A0's identity run and run 1's first stage (heavy) |
-| T-13 | the place records (18.1 item 4): **the identities Q-70 built and this family relies on** -- P-16 at 4 paths (`PATH_COLS` with recording on equal to off) and, slow, P-16 and P-14 at 100 paths against `trades_per_year_records` (`identity/place_records_identity.py`); and the replay recording's own: at 4 starts the recorded openings equal the replay ledger's and every row equals the unrecorded one |
+| T-13 | the place records (18.1 item 4): **the identities this family relies on, built by Q-70 and Q-94** -- Q-70's P-16 at 4 paths (`PATH_COLS` with recording on equal to off) and, heavy, P-16 and P-14 at 100 paths against `trades_per_year_records` (Q-89); Q-94's `ReplayRecorder` through `run_starts(..., recorder=)`, its 19 synthetic tests and, heavy, U1's start rows with recording on, every start (`identity/replay_records_identity.py`, Q-101) -- re-run at the build's commit; and this family's own on top: at 4 choice-block starts, with the recorder and the family's class (wait off) every row equals the unrecorded vendored replay's, and the fallback flags, offer-id joins and declined-offer counts reproduce a hand-checked start |
 | T-14 | the stage-B pick is a function of the choice section alone: re-running stage B on the written section gives the same pick |
 | T-15 (slow tier, **written now**) | `tests/test_family_o_toys.py`: K0 and B2's (d) floor at the family's level on toys, their level and power printed (18.3; E-051's rule) |
 | T-16 | K0 on the family's own code: on counts drawn iid it equals the toy's machinery; its verdict is the Clopper-Pearson interval's and nothing else; it reads no value column (a planted value column changes nothing) |
@@ -1470,6 +1530,8 @@ tree, ledgered before it reads. No choosing or fitting purpose is named, and the
   fitted values); every seed and parameter; u3's frozen forecast hash; the population frame's and the states' hashes;
   the calendar of each section (4 item 5); the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`. Every file is
   EXPLORATORY until a carried design is registered.
+- **The order, after the pin:** the infrastructure identities on record (Q-89, Q-93, Q-101, Q-80; header); the family's
+  build (18) and its tests; **the identity run (A0)**; run 1; the lead's row; run 2. Nothing runs before the pin.
 - **The runs: an identity run and two family runs, each once**, from a clean checkout of a named commit
   (`scripts/run_clean.py`), under the run lock, watched to its end.
   - **The identity run (A0):** `identity/family_o_identity.py` under its own identity row, the whole window read as
@@ -1491,38 +1553,37 @@ tree, ledgered before it reads. No choosing or fitting purpose is named, and the
     killed or closed in run 1 has no run 2).
   - A run aborted or restarted is recorded by the lead with its log, and only the first complete run of each is read.
 
-## 20. Open before the pin
+## 20. The pin's conditions, the pre-run conditions, and what this file fixes
 
-**The lead's:**
+**At the pin -- the only conditions (header; E-073 item 1):**
 
-1. **Q-55's clean rerun on record**, reproducing `cons` and the treated two-sample `cons` holding (E-035 (4); E-052),
-   and **6.6's power column filled from its Table 9's k = 15 column**, the drop rule applied mechanically and recorded
-   in the pinning row (the reviews' F4, m2-9).
-2. **Q-83's fresh-seed validation holding** by E-052 (2)'s criterion; if it or Q-55 does not hold, this file is withdrawn
-   or redrafted before any read (the withdrawal clause, header).
-3. **Optional, the lead's call:** the bars-only run-length count of 6.6 on the choice block before the pin, under a row
-   (the second read recommends it, n2-1 (iii)).
-4. **u3's fitted values under E-031 (1)** (11 coefficients, inside the choice-block walk-forward, hashed and pinned
-   before the judged read): confirmed as admitted.
-5. **Q-76's declared funded-account keyword** with the four properties of 18.1 item 3, and **the seam** (the build's
-   finding, under a row, the identities refusing).
-6. **The replay recording** (18.1 item 4: `record_days` beside `record_trades` on the U1 replay) built and held to its
-   identity; Q-70's gate identities (P-16 at 4 paths; P-16 and P-14 at 100 paths) held; **Q-80's 500-path gate
-   identities** held (E-049).
-7. **The identity script and its row** (A0; m2-2), run under the lock before run 1.
-8. **The fixed values a reviewer may question:** W = 5 sessions, K5 at one half, the 250-session third, the 17:30 start
-   of s1 and s2, two twin draws, K0's 200,000 replications -- confirmed as the file's, or changed before the pin (each a
-   declaration choice, not a search).
-9. **The bound arm's shift:** P-16's registered shift at each R for every design here (12, C2).
-10. **The value bar** of $500 a year at place (c), and **V_other beside** rather than inside C2 (7.4).
-11. **The family number** (k >= 12): family B may be pinned first.
-12. **The seeds** (section 16) confirmed unique at the pin, by the data-excluding search.
-13. **Q-35's ordering** (the first read's n6): stage A's choice-block count accepted as the substitute E-021 (2)'s
-    ordering asked for; if Q-35 runs first, its both-block counts recorded as a pre-read (4 item 4).
-14. **The row between the two family runs** (19.2): run 1's result file, the pick and u3's forecast hash pinned before
-    run 2.
-15. **The gatekeeper's read of this edit's diff** (E-054 (2)); a third red-team read only if the edit goes beyond the
-    second read's minors.
+1. **Q-55's clean rerun** reproducing `cons` and the treated two-sample `cons` holding (E-035 (4); E-052), and **6.6's
+   drop rule applied to its `calibration_power.csv` by the lead**, the dropped cells recorded in the pinning row.
+2. **Q-83 HOLDS** on E-052 (2)'s criterion. If it or Q-55 does not hold, this text is withdrawn before any read (the
+   withdrawal clause, header).
+3. **The family number** (k >= 12), written in the pinning row; family B may be pinned first.
+
+**After the pin, before run 1 -- the pre-run conditions, in order, each refusing (header; 19.2):**
+
+4. **The infrastructure identities on record as holding:** Q-89 (Q-70's place records, P-16 and P-14 at 100 paths), Q-93
+   (Q-76's declared class on the U1 replay), **Q-101 (Q-94's replay recorder, `identity/replay_records_identity.py
+   --u1-starts all --row E-068`)** and Q-80 (the gate's 500-path identities, E-049).
+5. **The family's build** (18.1): the seam -- the waiting class through Q-76's keyword (18.1 item 3) and through
+   `extended.gate.run_gate(funded_account_cls=...)`, or the draw-factory composition in Q-47's form if the class cannot
+   reach the router's draw, under a row -- and **what Q-94 leaves to it** (18.1 item 4: the fallback flag, the joins by
+   offer id, the declined-offer counts, the restricted replay job), with their tests (18.2).
+6. **A0**, `identity/family_o_identity.py` under its own identity row (9).
+7. Then run 1, opening with A1 (9); between the two family runs, **the lead's row** pinning run 1's result file, the
+   pick and u3's forecast hash (19.2).
+
+**Fixed by this file, not open (E-073 item 3):** W = 5 sessions; K5 at one half; the 250-session third; the 17:30 start
+of s1 and s2; two twin draws; K0's 200,000 replications; the drop rule's file, rows, classes and share (6.6); u3's 11
+coefficients fitted inside the choice-block walk-forward as E-031 (1) admits them, hashed and pinned before the judged
+read; the bound arm's shift (P-16's registered shift at each R, 12, C2); the value bar of $500 a year at place (c), with
+V_other beside rather than inside C2 (7.4); the seeds (section 16), checked unique again at the pin by the
+data-excluding search; stage A's choice-block count of the openings as the substitute E-021 (2)'s ordering of Q-35 asked
+for (if Q-35 runs first, its both-block counts recorded as a pre-read, 4 item 4). Each is the file's value; none is
+changed before the pin.
 
 *Answered since the first version, no longer open:* the twin's form (E-035; the first read's n2); whether earlier
 sessions' 08:30-08:59 bars inside H and IV are in the closed branch (E-036 M3-2; n1); the report-day entry of the
