@@ -7,10 +7,11 @@ repository**, computed from the syntax (`IC.imports`), with nothing unresolved a
 knows; the import model itself on a synthetic tree (`from extended import x`, `import extended.x`, `from identity
 import ...`, relative imports, bare names through `identity/`, `vendor/` never followed, function-local and
 `try` imports, dynamic imports followed or reported); `cover` refusing an unknown id; and `held` on a throwaway git
-repository built with an empty hooks folder: an identity is not held once its own script (or a manifest) changed after
-its token, is held across a change to the log or a file it does not cover, and a list without the script accepts the
-edit (the loophole the cover closes). Fast tier: no data, no engine, no result; the git repository is a temporary
-folder. Tokens are composed from `IT.STEM` at run time, never written out here.
+repository built with an empty hooks folder: an identity is not held once its own script, a manifest or any file
+under `config/` (edited or added; E-117) changed after its token, is held across a change to the log or a file it does
+not cover, and a list without the script accepts the edit (the loophole the cover closes). Fast tier: no data, no
+engine, no result; the git repository is a temporary folder. Tokens are composed from `IT.STEM` at run time, never
+written out here.
 """
 from __future__ import annotations
 
@@ -59,16 +60,18 @@ def test_the_shared_ids_are_the_four_with_their_scripts_and_rows():
 
 
 def test_every_cover_path_exists_at_head():
+    """A file is at HEAD (or staged as an addition: the commit being made); a folder (`config/`) holds a file there."""
     paths = sorted(set().union(*IC.COVER.values()))
-    at_head = set(git(ROOT, "ls-tree", "-r", "--name-only", "HEAD", "--", *paths).splitlines())
-    staged = set(git(ROOT, "diff", "--cached", "--name-only", "--diff-filter=A", "--", *paths).splitlines())
-    missing = [p for p in paths if p not in at_head and p not in staged]
+    known = set(git(ROOT, "ls-tree", "-r", "--name-only", "HEAD", "--", *paths).splitlines()) | \
+        set(git(ROOT, "diff", "--cached", "--name-only", "--diff-filter=A", "--", *paths).splitlines())
+    missing = [p for p in paths if (not any(f.startswith(p) for f in known) if p.endswith("/") else p not in known)]
     assert not missing, f"covered paths not at HEAD (nor staged as an addition): {missing}"
-    assert [p for p in paths if not (ROOT / p).is_file()] == []
+    assert [p for p in paths if not ((ROOT / p).is_dir() if p.endswith("/") else (ROOT / p).is_file())] == []
 
 
 def test_base_leads_every_cover_and_every_path_is_plain():
-    assert IC.BASE == ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
+    assert IC.BASE == ("extended/__init__.py", "config/", "vendor/MANIFEST_stage2.sha256",
+                       "vendor/DATA_MANIFEST_stage2.sha256")                # E-117: config/ whole
     for ident in IDS:
         c = IC.COVER[ident]
         assert c[:len(IC.BASE)] == IC.BASE, ident
@@ -77,6 +80,8 @@ def test_base_leads_every_cover_and_every_path_is_plain():
         for p in c:
             assert p == p.strip() and "\\" not in p and not p.startswith(("/", ".")) and ".." not in p.split("/")
             assert not p.startswith("vendor/") or p in IC.BASE         # vendor/ only through its manifests
+            assert not p.endswith("/") or p in IC.BASE                 # the one folder is BASE's config/
+        assert "config/" in IC.cover(ident)
 
 
 def test_each_cover_holds_its_script_and_stage2_identity_where_imported():
@@ -145,7 +150,9 @@ def test_uncovered_names_what_a_runners_list_lacks():
     gaps = IC.uncovered(IC.SCRIPT["Q-80"], short)
     assert "identity/gate_identity.py: not covered" in gaps
     assert {g.split(":")[0] for g in gaps} == set(IC.COVER["Q-80"]) - set(short)
-    assert IC.uncovered(IC.SCRIPT["Q-80"], ["extended", "identity\\", "vendor"]) == []   # folders cover what is under
+    assert IC.uncovered(IC.SCRIPT["Q-80"], ["extended", "identity\\", "vendor", "config/"]) == []   # folders: all under
+    assert IC.uncovered(IC.SCRIPT["Q-80"], ["extended", "identity", "vendor", "config/rules_extended.yaml"]) == \
+        ["config/: not covered"]                                         # one file of config/ is not the folder
     with pytest.raises(TypeError):
         IC.uncovered(IC.SCRIPT["Q-80"], "extended")
     with pytest.raises(ValueError):
@@ -196,8 +203,9 @@ def test_the_closure_follows_every_import_form_and_never_vendor(tmp_path):
                             "extended/pkg/deep.py", "extended/d.py", "extended/e.py", "extended/g.py",
                             "extended/f.py", "scripts/tool.py"}
     assert "extended/unused.py" not in c.files                           # reached only through vendor/: not followed
-    assert IC.uncovered("identity/s.py", ["vendor", "extended", "identity", "scripts"], root) == []
-    assert IC.uncovered("identity/s.py", ["vendor", "extended", "identity"], root) == ["scripts/tool.py: not covered"]
+    assert IC.uncovered("identity/s.py", ["vendor", "config", "extended", "identity", "scripts"], root) == []
+    assert IC.uncovered("identity/s.py", ["vendor", "config", "extended", "identity"], root) == \
+        ["scripts/tool.py: not covered"]
 
 
 def test_the_closure_reports_what_it_cannot_resolve(tmp_path, monkeypatch):
@@ -232,7 +240,7 @@ def test_the_closure_reports_what_it_cannot_resolve(tmp_path, monkeypatch):
     assert lines == [3, 6, 7, 8, 9, 10, 11, 12], c.unresolved
     assert any("found only through this process's own path" in u for u in c.unresolved)
     assert all(u.startswith("identity/bad.py:") for u in c.unresolved)
-    assert IC.uncovered("identity/bad.py", ["extended", "identity", "vendor"], tmp_path) == \
+    assert IC.uncovered("identity/bad.py", ["extended", "identity", "vendor", "config"], tmp_path) == \
         [f"unresolved: {u}" for u in c.unresolved]
 
 
@@ -258,8 +266,9 @@ def token_row(n: int, ident: str, sha: str) -> str:
 
 @pytest.fixture(scope="module")
 def tokens_repo(tmp_path_factory) -> dict:
-    """c0: every covered path of the four (stubs), the log, a note; c1 (`log`): the log with each identity's token at
-    c0. From c1, one branch a change: each identity's own script (its id), a manifest (`manifest`), and the note with a
+    """c0: every covered path of the four (stubs; the folder `config/` with one file), the log, a note; c1 (`log`):
+    the log with each identity's token at c0. From c1, one branch a change: each identity's own script (its id), a
+    manifest (`manifest`), a file under config/ edited (`config`) and one added (`config_new`), and the note with a
     later row (`notes`)."""
     hooks = tmp_path_factory.mktemp("empty_hooks")
     t = tmp_path_factory.mktemp("cover_repo")
@@ -277,11 +286,14 @@ def tokens_repo(tmp_path_factory) -> dict:
         return git(t, "rev-parse", "HEAD")
 
     paths = sorted(set().union(*IC.COVER.values()))
-    c0 = commit("c0", {**{p: f"# {p}\n" for p in paths}, "DECISIONS.md": HEADER, "notes.md": "a note\n"})
+    stubs = {(f"{p}rules_extended.yaml" if p.endswith("/") else p): f"# {p}\n" for p in paths}
+    c0 = commit("c0", {**stubs, "DECISIONS.md": HEADER, "notes.md": "a note\n"})
     text = HEADER + "\n".join(token_row(900 + i, ident, c0[:12]) for i, ident in enumerate(IDS)) + "\n"
     out = {"path": t, "text": text, "c0": c0, "log": commit("c1: the tokens", {"DECISIONS.md": text})}
     changes = {**{i: {IC.SCRIPT[i]: f"# {IC.SCRIPT[i]}, edited after its token\n"} for i in IDS},
                "manifest": {"vendor/MANIFEST_stage2.sha256": "a new snapshot\n"},
+               "config": {"config/rules_extended.yaml": "# a rule changed after the tokens\n"},
+               "config_new": {"config/calendar_new.csv": "date,kind\n"},
                "notes": {"notes.md": "another note\n",
                          "DECISIONS.md": text + "| E-990 | 2026-11-16 | A later row. | the test |\n"}}
     for name, files in changes.items():
@@ -328,3 +340,12 @@ def test_not_held_once_a_manifest_changed(tokens_repo, ident):
     tok, why = IT.held_report(tokens_repo["text"], ident, tokens_repo["path"], tokens_repo["manifest"],
                               list(IC.cover(ident)))
     assert tok is None and "vendor/MANIFEST_stage2.sha256" in why[0], why
+
+
+@pytest.mark.parametrize("ident", IDS)
+def test_not_held_once_a_file_under_config_changed(tokens_repo, ident):
+    """E-117: config/ is in BASE whole -- a file under it edited, or one added, after the token fails every wait."""
+    r = tokens_repo
+    for head, changed in (("config", "config/rules_extended.yaml"), ("config_new", "config/calendar_new.csv")):
+        tok, why = IT.held_report(r["text"], ident, r["path"], r[head], list(IC.cover(ident)))
+        assert tok is None and len(why) == 1 and changed in why[0], (head, why)

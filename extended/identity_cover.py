@@ -10,11 +10,16 @@ an edit to the script after its token was still accepted. This module is that li
 
 **The rule.** An identity's cover is exactly
 
-1. `BASE`: `extended/__init__.py` (the one door to the vendored engine, `use_vendored_stage2`) and the vendored
-   snapshot's two manifests -- `vendor/MANIFEST_stage2.sha256` (every vendored byte: the engine, its scripts, its
-   config and its registered results) and `vendor/DATA_MANIFEST_stage2.sha256` (the licensed bars and atlas). A new
-   snapshot changes a manifest, so every identity must hold again on it. The manifests stand for everything under
-   `vendor/`, which no cover lists file by file (`tests/test_vendor_integrity.py` holds the tree to them);
+1. `BASE`: `extended/__init__.py` (the one door to the vendored engine, `use_vendored_stage2`); **the folder
+   `config/`, whole** (E-117) -- this repository's data files (`config/rules_extended.yaml`, the calendars'
+   `config/calendar_*.csv`), which change what code computes without changing the code: a cover of modules alone
+   would let such a change pass. A folder covers everything under it, as `held` reads it, so **any change under
+   `config/` after a token -- an edit, an addition, a removal -- re-requires every identity**; that is deliberate, a
+   change of configuration being always a decision-row event; and the vendored snapshot's two manifests --
+   `vendor/MANIFEST_stage2.sha256` (every vendored byte: the engine, its scripts, its config with Stage 2's verified
+   rules ledger, and its registered results) and `vendor/DATA_MANIFEST_stage2.sha256` (the licensed bars and atlas).
+   A new snapshot changes a manifest, so every identity must hold again on it. The manifests stand for everything
+   under `vendor/`, which no cover lists file by file (`tests/test_vendor_integrity.py` holds the tree to them);
 2. the identity's own script (`SCRIPT`): what runs and what compares;
 3. every file of this repository the script imports, directly or transitively -- `identity/stage2_identity.py` among
    them wherever the script imports it. Every `import` and `from ... import` statement of a file counts, wherever it
@@ -42,10 +47,10 @@ test can hold `SEARCH` to the code: a new folder on the path is a new place a mo
 
 * `DECISIONS.md`. The identities read it (the engine's read is authorised under their row) but the token's own row is
   written after the commit it names, so a cover holding the log would make every token fail;
-* what the covered code reads at run time without importing it. Outside `vendor/` (the manifests) these identities
-  read only the run's state -- the decision log, git's commit and status, and inside a clean run the read ledger they
-  append to (`results/read_ledger.jsonl`) -- never code or a configuration of this repository. A file a runner's own
-  reading reads belongs to that runner's own list;
+* what the covered code reads at run time without importing it, outside `config/` (in `BASE`) and `vendor/` (the
+  manifests): the run's state -- the decision log, git's commit and status, and inside a clean run the read ledger
+  the identities append to (`results/read_ledger.jsonl`). A file elsewhere that a runner's own reading reads belongs
+  to that runner's own list;
 * the run's arguments (`--paths 500`, `--cls all`, ...): the token's row says what was run, and the lead writes it
   only for the run its row names.
 
@@ -71,8 +76,10 @@ from typing import Iterator, NamedTuple, Sequence
 
 from extended import ROOT
 
-#: in every cover, first: the door to the engine and the vendored snapshot's two manifests (code and data)
-BASE: tuple[str, ...] = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
+#: in every cover, first: the door to the engine, this repository's configuration folder whole (E-117: a folder, written
+#: with its `/`; `held` reads it as everything under it), and the vendored snapshot's two manifests (code and data)
+BASE: tuple[str, ...] = ("extended/__init__.py", "config/", "vendor/MANIFEST_stage2.sha256",
+                         "vendor/DATA_MANIFEST_stage2.sha256")
 #: this repository's own packages, through which a closure is followed (and any other repository file it reaches)
 PACKAGES: tuple[str, ...] = ("extended", "identity", "scripts")
 #: the folders an import is looked up in (repository-relative; "." the root): what `use_vendored_stage2` and the
@@ -167,9 +174,9 @@ COVER: dict[str, tuple[str, ...]] = {
 
 
 def cover(ident: str) -> tuple[str, ...]:
-    """The covered paths of the shared identity `ident` (repository-relative, `/`-separated; `BASE` first, then its
-    script), for `extended.identity_tokens.held`. Refused (`ValueError`): an id that is not one of `COVER`'s -- a
-    runner's own identity declares its cover itself, by this module's rule."""
+    """The covered paths of the shared identity `ident` (repository-relative, `/`-separated, a folder ending in `/`;
+    `BASE` first, then its script), for `extended.identity_tokens.held`. Refused (`ValueError`): an id that is not one
+    of `COVER`'s -- a runner's own identity declares its cover itself, by this module's rule."""
     if not isinstance(ident, str) or ident not in COVER:
         raise ValueError(f"{ident!r} is no shared identity of extended/identity_cover.py ({', '.join(COVER)}); a "
                          "runner's own identity declares its own cover by the same rule (BASE, its script, its "
