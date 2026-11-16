@@ -30,8 +30,8 @@ session's file would stamp it `-dirty`. So a run gets its own tree:
    so two runs made from commits whose copies lack each other's lines must both come home, whichever is collected
    first. For such a file the base is its copy at the run's commit, as the checkout holds it (`git cat-file
    --filters`; empty if the commit has none), and the collection is refused (nothing copied) unless the run's copy
-   starts with that base byte for byte (the run only appended) and its appended part ends in a newline (no cut line),
-   and this tree's copy -- which later commits and earlier collections may have extended -- ends in a newline and has
+   starts with that base byte for byte (the run only appended) and its appended part ends in a newline (no cut line)
+   and holds no blank line (a union would drop it silently), and this tree's copy -- which later commits and earlier collections may have extended -- ends in a newline and has
    lost no line of the base, nor of this tree's HEAD (`extended.reader.missing_lines`, a multiset); then each line of
    the run's copy this tree's copy lacks (counted with multiplicity, so collecting twice is a no-op) is appended to
    it, in the run's order, the result verified (the ledger by `extended.reader.read_ledger`) and put in place
@@ -205,9 +205,15 @@ def _union(wt: Path, sha: str, p: str) -> tuple[bytes | None, int]:
                          "copied (the lead looks first)")
     try:
         run_t, base_t, tree_t = run.decode("utf-8"), base.decode("utf-8"), tree.decode("utf-8")
+        added_t = added.decode("utf-8")
         head_t = _blob("HEAD", p, W.ROOT, as_checked_out=False).decode("utf-8")
     except UnicodeDecodeError:
         raise SystemExit(f"a copy of {p} is not UTF-8 text; nothing copied") from None
+    # missing_lines skips blank lines, so the union would drop one silently; neither writer writes one
+    blank = [i for i, line in enumerate(added_t.split("\n")[:-1], 1) if not line.strip()]
+    if blank:
+        raise SystemExit(f"the run's copy of {p} has a blank line in what it appended (its appended line {blank[0]}) "
+                         "-- one record a line; nothing copied (the lead looks first)")
     lost = missing_lines(base_t, tree_t)
     if lost:
         raise SystemExit(f"this tree's copy of {p} has lost {len(lost)} line(s) of the run's commit's ({sha[:7]}) copy, "
@@ -219,7 +225,7 @@ def _union(wt: Path, sha: str, p: str) -> tuple[bytes | None, int]:
     new = missing_lines(run_t, tree_t)
     if not new:
         return None, 0
-    if missing_lines("\n".join(new), added.decode("utf-8")):          # by construction (the base is in the tree)
+    if missing_lines("\n".join(new), added_t):                        # by construction (the base is in the tree)
         raise SystemExit(f"the union of {p} would take a line that is not in the run's appended part; nothing copied")
     return tree + "".join(f"{line}\n" for line in new).encode("utf-8"), len(new)
 

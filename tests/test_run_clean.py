@@ -340,6 +340,24 @@ def test_a_cut_or_unverifiable_line_is_refused(repo, tail, why):
     assert _results(repo) == names, "no temporary file is left behind"
 
 
+@pytest.mark.parametrize("path", [LEDGER, VARIANTS])
+@pytest.mark.parametrize("blank", [b"\n", b"  \r\n"], ids=["empty", "spaces"])
+def test_a_blank_line_in_what_the_run_appended_is_refused(repo, path, blank):
+    """`missing_lines` skips blank lines, so a union alone would drop one silently (and `--remove` would then count
+    the run home): neither writer ever writes one, so it is refused, nothing copied, the run kept for a look."""
+    first = rec(1, "base") if path == LEDGER else b'{"v": 1}\n'
+    (repo / path).write_bytes(first)
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "the base")
+    sha = git(repo, "rev-parse", "HEAD")
+    _run_appends("k1", sha, rec(3, "k1"), blank, rec(4, "k1"), path=path)
+    with pytest.raises(SystemExit, match="blank line"):
+        RC.main(["--name", "k1", "--collect"])
+    assert (repo / path).read_bytes() == first
+    with pytest.raises(SystemExit, match="not brought home"):
+        RC.main(["--name", "k1", "--remove"])
+
+
 def test_a_tree_copy_without_its_last_newline_is_refused(repo):
     sha = _commit_ledger(repo)
     _run_appends("w1", sha, rec(3, "w1"))
