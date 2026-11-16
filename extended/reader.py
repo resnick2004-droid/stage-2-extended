@@ -70,7 +70,8 @@ ledger is append-only: a line that does not parse, or a file that does not end i
 (`LedgerError`); `ledger_history_problems` reports any line committed in the history that is no longer in HEAD, or in
 HEAD that is no longer in the working copy (`tests/test_reader.py` runs it on this repository); the hook
 `scripts/hooks/protect_results.py` warns on any tool edit that changes an existing line; `scripts/run_clean.py
---collect` brings a run's lines home only when its ledger extends this tree's.
+--collect` brings a run's new lines home as a union (Q-67): only when the run only appended to its commit's ledger and
+this tree's has lost no line, the result verified by `read_ledger` before it replaces this tree's.
 
 **What it does not do.** It cannot see a read made inside a vendored call (Stage 2's engine opens the bars and the
 atlas itself in the identities and the U1 replay) -- such a runner calls `authorise_engine_read` with the files the
