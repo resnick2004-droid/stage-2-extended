@@ -51,7 +51,8 @@ LADDER = ("denial_10", "denial_25", "denial_50")
 #: 10.2 item 7: series per coverage setting
 COVERAGE_SERIES = 20_000
 #: the ledger fields 9.3's counts read (the rest of each row dropped where the start ran: memory)
-LEDGER_KEEP = ("kind", "index", "day", "historical_day", "trade_index", "contracts", "pnl", "fee")
+LEDGER_KEEP = ("kind", "index", "day", "historical_day", "trade_index", "contracts", "pnl", "fee", "u", "rr",
+               "rr_used", "fee_adj_r", "at_need", "stretch")
 
 
 # ------------------------------------------------------------------------------------------------ a run's inputs
@@ -62,16 +63,18 @@ def stream_of(run: T.Run) -> str:
 
 
 def arm_inputs(point: dict[str, Any], arm_job: dict[str, Any], s: T.Settings, arm: str
-               ) -> tuple[list[Any], dict[float, float] | None, dict[str, int]]:
+               ) -> tuple[list[Any], list[Any] | None, dict[str, int]]:
     """One arm's blocks for a plan: TradeDay's tier-1 booking on the point blocks then the arm's own shift (A-11);
-    every other plan the arm's blocks as built. Also Quick Pay's per-R shift on the verdict arm (A-7) and A-11's
-    counts."""
+    every other plan the arm's blocks as built. Also the run's point-arm blocks Quick Pay's bracket reads on every arm
+    (M3: A-11's booking applied, no shift), and A-11's counts."""
     delta_r, dby = (0.0, None) if arm == "point" else F.arm_delta(point["blocks"], arm_job["blocks"])
     counts: dict[str, int] = {}
     blocks = list(arm_job["blocks"])
+    ref = list(point["blocks"])
     if s.plan in ("FP", "QP"):
-        blocks, counts = F.tier1_arm(point["blocks"], point["dates"], s.tier1, delta_r, dby)
-    return blocks, (dby if s.plan == "QP" else None), counts
+        ref, counts = F.tier1_arm(point["blocks"], point["dates"], s.tier1)
+        blocks = ref if arm == "point" else F.tier1_arm(point["blocks"], point["dates"], s.tier1, delta_r, dby)[0]
+    return blocks, (ref if s.plan == "QP" else None), counts
 
 
 def cell_job(arm_job: dict[str, Any], s: T.Settings, blocks: Sequence[Any], *, ladder: bool = False
@@ -130,14 +133,14 @@ def _slim(lp: Any) -> Any:
 
 
 def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, start: int,
-                 kw: dict[str, Any], r_shift: dict[float, float] | None, every: int) -> dict[str, Any]:
+                 kw: dict[str, Any], point: list[Any] | None, every: int) -> dict[str, Any]:
     """One start, replayed directly as A-9's task replays it: the long run (its ledger kept for 9.3) and the
     exact-length runs where A-9 makes them, with the start's classes. Returns the runs and the ledger."""
     from propedge.research import user_journey as U
 
     if resp.kind == "forfeit":
         raise ValueError("RD-01 reads no forfeiture")
-    c_cls, f_cls = F.start_classes(s, job["dates"], int(start), r_shift)
+    c_cls, f_cls = F.start_classes(s, job["dates"], int(start), point)
     f_cls = f_cls if f_cls is not None else kw.get("funded_account_cls")
     args = job["args"] if c_cls is None else {**job["args"], "path": {**job["args"]["path"], "combine_account_cls": c_cls}}
     hc = kw.get("household_closure")
@@ -181,27 +184,63 @@ def priced_output(design: str, arm: str, resp: Any, d: dict[str, Any], run_price
 
 
 def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, starts: Sequence[int],
-             kw: dict[str, Any], r_shift: dict[float, float] | None, *, direct: bool = True,
+             kw: dict[str, Any], point: list[Any] | None, *, direct: bool = True,
              exact_every: int | None = None) -> dict[str, Any]:
     """Every chosen start of one cell: A-9's outputs (the runner), and -- `direct` -- each start's direct runs, held
     equal to A-9's output at the run price (refusing: `problems`)."""
     every = 1 if resp.kind == "off" else int(B.EXACT_EVERY if exact_every is None else exact_every)
-    runs = F.run_plan(design, arm, resp, job, s, list(starts), kw, r_shift=r_shift)
+    runs = F.run_plan(design, arm, resp, job, s, list(starts), kw, point=point)
     outs = [o for o, _ in runs]
     counts = [c[0] if c else [] for _, c in runs]
     problems: list[str] = []
     directs = []
+    checks = {"trades": 0, "accounts": 0}
     if direct:
         from user_beside_identity import first_difference
 
         for o, st in zip(outs, starts):
-            d = direct_start(design, arm, resp, job, s, int(st), kw, r_shift, every)
+            d = direct_start(design, arm, resp, job, s, int(st), kw, point, every)
             mine = priced_output(design, arm, resp, d, d["sub"], d["sub"])
             diff = first_difference(o, mine)
             if diff:
                 problems.append(f"{design} {arm} {resp.name} start {st}: the direct runs are not A-9's -- {diff}")
+            # 9.1 items 4 and 5 on every replay (m4): the trades are the base's; no other plan's class
+            tp = trade_problems(d["ledger"], job["blocks"][int(st):])
+            problems += [f"{design} {arm} {resp.name} start {st}: item 4: {p}" for p in tp[:3]]
+            problems += [f"{design} {arm} {resp.name} start {st}: item 5: {p}" for p in class_problems(d["counts"], s)]
+            checks["trades"] += len(d["ledger"])
+            checks["accounts"] += len(d["counts"])
             directs.append(d)
-    return {"outs": outs, "counts": counts, "directs": directs, "problems": problems}
+    return {"outs": outs, "counts": counts, "directs": directs, "problems": problems, "checks": checks}
+
+
+def trade_problems(ledger: Sequence[dict[str, Any]], blocks: Sequence[Any]) -> list[str]:
+    """9.1 item 4 on one replay's ledger: each trade's day and index are a trade of `blocks` (the replay's own), its
+    outcome the block's own at its R plus its fee re-pricing (D-324) -- or, at Quick Pay, at most that (a breach at a
+    floor its own peak raised ends it sooner, 5.4)."""
+    probs = []
+    for r in ledger:
+        h, j = int(r.get("historical_day", -1)), int(r.get("trade_index", -1))
+        if not (0 <= h < len(blocks)) or not (0 <= j < len(blocks[h].pnl)):
+            probs.append(f"a trade at day {h} index {j} is not in the design's blocks")
+            continue
+        R = r.get("rr_used", r.get("rr"))
+        if R is None or blocks[h].r_by_rr is None or r.get("at_need") or r.get("stretch") or r.get("u") is None:
+            continue
+        want = float(blocks[h].r_by_rr[float(R)][j]) + float(r.get("fee_adj_r") or 0.0)
+        if not np.isclose(float(r["u"]), want, atol=1e-9):
+            probs.append(f"the trade at day {h} index {j} books {r['u']} at R {R}, the block's own is {want}")
+    return probs
+
+
+def class_problems(counts: Sequence[dict[str, Any]], s: T.Settings) -> list[str]:
+    """9.1 item 5 on one replay (m4): at TS and LU no adapter account; at a plan every adapter account of exactly the
+    class `classes_for` names for its kind (through the per-start subclasses' bases)."""
+    c_cls, f_cls = A.classes_for(s)
+    want = {"combine": None if c_cls is None else c_cls.__name__, "funded": None if f_cls is None else f_cls.__name__}
+    bad = [g for g in counts if g.get("family") != want.get(g["kind"])]
+    return [f"{len(bad)} accounts not of the plan's own class (first: {bad[0]['class']} as {bad[0]['kind']}, want "
+            f"{want.get(bad[0]['kind'])})"] if bad else []
 
 
 def reading_outs(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Settings) -> list[dict[str, Any]]:
@@ -509,20 +548,18 @@ def grid_problems(at: dict[float, list[dict]], other: dict[str, Any] | None, oth
 def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate: Callable, *, workers: int = 1,
               hook_factory: Callable[[str], tuple[Any, list]] | None = None
               ) -> tuple[list[dict[str, Any]], dict[str, list], list[str]]:
-    """10.1 item 8 for one corner: the gate's rows at the plan's arguments (A-1 on the gate, A-8's seams), point and
-    bound, and its zero-edge twin (every R at a zero mean: the bound arm with every bound at 0). Quick Pay by the
-    ruling of E-089: the point rows from a call whose bound equals the point (`lb_by_rr = e_by_rr`) with the unshifted
-    class, the bound rows from a call with the class reading the bound's per-R shift (`with_shift`); the twin likewise
-    with the twin's shift. Labelled: A-11 off; DayTraders' inactivity on 21 sessions; its recurring fee left out.
-    `kw`: the registered call's keywords (its `e`, `lb`, `e_by_rr`, `lb_by_rr` among them); `hook_factory(label)`: each
-    call's own path hook and the list it fills (the registered `portfolio_stage.composed_hook`'s sink). Returns (rows,
-    sinks by call, labels)."""
-    g = F.gate_args(kw, s)
+    """10.1 item 8 for one corner: the gate's rows at the plan's arguments (A-1 on the gate, A-8's seams; the placement
+    off), point and bound, and its zero-edge twin -- the bound arm with every bound at 0 (every R's outcomes shifted to a
+    zero mean). One call each, at every plan: Quick Pay's class holds the gate's point blocks and classifies on them on
+    both arms (M3), which settles E-089's route. Labelled: A-11 off; DayTraders' inactivity on 21 sessions; its
+    recurring fee left out. `kw`: the registered call's keywords (its `e`, `lb`, `e_by_rr`, `lb_by_rr` among them);
+    `hook_factory(label)`: each call's own path hook and the list it fills. Returns (rows, sinks by call, labels)."""
+    g = F.gate_args(kw, s, point_blocks=blocks if s.plan == "QP" else None)
     e, lb = float(g["e"]), float(g["lb"])
     e_by_rr, lb_by_rr = dict(g["e_by_rr"]), dict(g["lb_by_rr"])
     g = {k: v for k, v in g.items() if k not in ("e", "lb", "e_by_rr", "lb_by_rr", "path_hook")}
-    if g.get("rtp", True) is not False:
-        raise ValueError("RD-01's gate beside runs with the placement off (rtp=False), as the registered gates do")
+    if s.plan != "TS" and g.get("rtp", True) is not False:
+        raise ValueError("RD-01's gate beside runs with the placement off (rtp=False) at every plan but TS")
     sinks: dict[str, list] = {}
     labels = []
     if s.plan in ("FP", "QP"):
@@ -531,44 +568,22 @@ def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate
         labels += ["inactivity on 21 sessions, not 30 calendar days", "recurring Pro fee left out: an upper bound"]
     zero = {k: 0.0 for k in lb_by_rr}
 
-    def call(label: str, lb_s: float, lb_by: dict[float, float], cls: type | None, keep: tuple[str, ...],
-             at: tuple[list[Any], float, dict[float, float]] | None = None) -> list[dict[str, Any]]:
+    def call(label: str, lb_s: float, lb_by: dict[float, float], keep: tuple[str, ...]) -> list[dict[str, Any]]:
         k = dict(g)
-        if cls is not None:
-            k["funded_account_cls"] = cls
         if hook_factory is not None:
             k["path_hook"], sinks[label] = hook_factory(label)
-        if at is None:
-            rows, _passed = run_gate(blocks, e=e, lb=lb_s, e_by_rr=e_by_rr, lb_by_rr=lb_by, workers=workers, **k)
-        else:                                   # both of the call's shifts are these blocks (shifted already)
-            blk, e_at, by_at = at
-            rows, _passed = run_gate(blk, e=e_at, lb=e_at, e_by_rr=by_at, lb_by_rr=by_at, workers=workers, **k)
+        rows, _passed = run_gate(blocks, e=e, lb=lb_s, e_by_rr=e_by_rr, lb_by_rr=lb_by, workers=workers, **k)
         return [{**r, "reading": label} for r in rows.to_dict("records") if r.get("shift") in keep]
 
-    out = []
-    if s.plan == "QP":
-        base_cls = g["funded_account_cls"]
-        delta = {float(k): float(lb_by_rr[k]) - float(e_by_rr[k]) for k in e_by_rr}
-        out += call("plan_point", e, dict(e_by_rr), base_cls, ("point",))
-        from propedge.campaign.gate import shifted_blocks
-
-        # the class reads the bound's shift, so neither of its call's shifts may be the point: the call is made on the
-        # bound's blocks themselves (the gate's own `shifted_blocks(blocks, lb - e, delta)`), a shift of zero
-        out += call("plan_bound", lb, lb_by_rr, A.with_shift(base_cls, delta), ("lower_bound",),
-                    at=(shifted_blocks(blocks, lb - e, delta), lb, dict(lb_by_rr)))
-        twin = {k: -float(e_by_rr[k]) for k in e_by_rr}
-        out += call("zero_edge", 0.0, zero, A.with_shift(base_cls, twin), ("lower_bound",),
-                    at=(shifted_blocks(blocks, -e, twin), 0.0, dict(zero)))
-    else:
-        out += call("plan", lb, lb_by_rr, None, ("point", "lower_bound"))
-        out += call("zero_edge", 0.0, zero, None, ("lower_bound",))
+    out = call("plan", lb, lb_by_rr, ("point", "lower_bound")) + call("zero_edge", 0.0, zero, ("lower_bound",))
     return [{**r, "section": "gate", "labels": "; ".join(labels)} for r in out], sinks, labels
 
 
 __all__ = ["DECLARATION", "PURPOSES", "BLOCKS", "LADDER", "stream_of", "arm_inputs", "cell_job", "compose",
            "direct_start", "priced_output", "run_cell", "reading_outs", "paired_rows", "paired_scorecard_rows",
            "tier1_count_rows", "p16_count_nonzero", "ledger_rows", "exit_problems", "account_count_rows",
-           "differs_rows", "grid_prices", "grid_rows", "grid_problems", "gate_rows", "coverage_of"]
+           "differs_rows", "grid_prices", "grid_rows", "grid_problems", "gate_rows", "coverage_of", "compact",
+           "trade_problems", "class_problems"]
 
 
 def compact(cell: dict[str, Any]) -> dict[str, Any]:

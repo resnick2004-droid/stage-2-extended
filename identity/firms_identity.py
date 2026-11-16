@@ -27,12 +27,14 @@ vendored joint engine's one-firm run of `rc150_firm_split.lucid_setup` at five s
 `n_firms=1`, through `user_journey.run_job`), start for start, both arms, every column of U1's start rows, at both
 readings of Lucid's reach (the joint setup's own household rule, and `household_closure=False` on its path) -- P-16.
 
-**Item 4 -- the trades are the base's.** On a sample of starts (`--trade-starts`, default 4) of every plan's strict
+**Item 4 -- the trades are the base's.** On a sample of starts (labelled a sample: the reading's runner repeats items
+4 and 5 on every replay of every run and writes their counts, `firm_reading.run_cell`) (`--trade-starts`, default 4) of every plan's strict
 corner on both streams, each trade the replay's accounts take (`record_trades`) is a trade of the design's blocks at
 that start (its day and index in range), its outcome the block's own at its R plus its fee re-pricing.
 
 **Item 5 -- off where off.** On the same sample: at TS no adapter account exists; with the twins every adapter counter
-is zero; at each plan every adapter account is that plan's class. Counted and printed.
+is zero; at each plan every adapter account is of exactly the class `classes_for` names (m4: through the per-start
+subclasses' bases, so Fast Pass's and Quick Pay's evaluation classes are told apart). Counted and printed.
 
 E-010's negative control (`--control`): item 1's comparison with Fast Pass's strict corner in place of TS must be
 refused (the comparison can tell a plan from TS).
@@ -73,6 +75,7 @@ import stage2_identity as SI  # noqa: E402
 import user_beside_identity as UBI  # noqa: E402
 
 from extended import firm_accounts as A  # noqa: E402
+from extended import firm_reading as RD  # noqa: E402
 from extended import firm_terms as T  # noqa: E402
 from extended import firms as F  # noqa: E402
 from extended import reader  # noqa: E402
@@ -265,11 +268,12 @@ def sample_items(n_starts: int) -> dict[str, list[str]]:
                 runs = [("TS", TS, None, None), ("twins", TS, TWIN["A-4"], TWIN["A-7"])]
                 runs += [(p, T.settings_for(p, T.STRICT), None, None) for p in ("LU", "DT", "FP", "QP")]
                 for tag, st, c_twin, f_twin in runs:
-                    blocks = job["blocks"]
+                    blocks, point_ref = job["blocks"], None
                     if st.plan in ("FP", "QP"):
                         blocks, _n = F.tier1_arm(jobs["point"]["blocks"], job["dates"], st.tier1, delta_r, dby)
+                        point_ref, _n = F.tier1_arm(jobs["point"]["blocks"], job["dates"], st.tier1)   # M3
                     args, kw = F.plan_args(job["args"], st, blocks=blocks if st.plan not in ("TS", "LU") else None)
-                    c_cls, f_cls = F.start_classes(st, job["dates"], s0, dby if st.plan == "QP" else None)
+                    c_cls, f_cls = F.start_classes(st, job["dates"], s0, point_ref)
                     c_cls, f_cls = c_twin or c_cls, f_twin or f_cls or kw.get("funded_account_cls")
                     path = {**args["path"], "record_trades": True}
                     if c_cls is not None:
@@ -286,23 +290,21 @@ def sample_items(n_starts: int) -> dict[str, list[str]]:
                     if tag == "TS" and got:
                         out["item 5"].append(f"{name} {arm} start {s0}: {len(got)} adapter accounts at TS")
                     if tag == "twins":
-                        fired = [g for g in got if any(v for k, v in g.items() if k not in ("class", "kind", "index", "day"))]
+                        fired = [g for g in got if any(v for k, v in g.items()
+                                                       if k not in ("class", "family", "kind", "index", "day"))]
                         if fired:
                             out["item 5"].append(f"{name} {arm} start {s0}: a twin's switch fired ({fired[0]})")
-                    if tag in ("DT", "FP", "QP"):
-                        prefix = {"DT": "DayTraders", "FP": ("TradeDay", "FastPass"),
-                                  "QP": ("TradeDay", "QuickPay")}[tag]
-                        alien = [g["class"] for g in got if not g["class"].startswith(prefix)]
-                        if alien:
-                            out["item 5"].append(f"{name} {arm} {tag} start {s0}: another plan's class {alien[0]}")
+                    if tag in ("LU", "DT", "FP", "QP"):           # m4: by the exact class classes_for names
+                        out["item 5"] += [f"{name} {arm} {tag} start {s0}: {p}" for p in RD.class_problems(got, st)]
                         for g in got:
                             for k, v in g.items():
-                                if k not in ("class", "kind", "index", "day") and isinstance(v, (int, float)):
+                                if k not in ("class", "family", "kind", "index", "day") and isinstance(v, (int, float)):
                                     counts[f"{tag}.{k}"] = counts.get(f"{tag}.{k}", 0) + int(v)
                     del lp
         del jobs
         gc.collect()
-    print("item 5's counts (sampled starts): " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())), flush=True)
+    print("item 5's counts (a sample of starts; the reading's runner repeats items 4 and 5 on every replay of every "
+          "run and writes them): " + ", ".join(f"{k} {v}" for k, v in sorted(counts.items())), flush=True)
     return out
 
 

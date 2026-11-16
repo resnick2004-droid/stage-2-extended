@@ -27,8 +27,9 @@ def test_the_scorecard_end_to_end():
     r = found()
     assert r["sc_problems"] == []           # the direct runs equal A-9's on every start; A-10 at the price run's end
     assert r["sc_runs"] == ["DT-16-price", "DT-16-s", "FP-16-s", "LU-16-l", "QP-16-req", "QP-16-s", "TS-14", "TS-16"]
-    assert r["sc_sections"] == ["break_even", "counts", "extra", "paired", "paired_card", "path", "price_grid",
-                                "response", "scorecard"]
+    assert r["sc_sections"] == ["break_even", "counts", "extra", "identity_items_4_5", "paired", "paired_card", "path",
+                                "price_grid", "response", "scorecard"]
+    assert r["sc_items_4_5"]["trades"] > 0 and r["sc_items_4_5"]["accounts"] > 0     # m4: on every replay
     assert r["sc_paired_blocks"] == ["all", "early", "late"] and r["sc_paired_months"] == [1, 2, 3, 6, 9, 12]
     assert r["sc_grid_prices"] == [float(p) for p in range(25, 251, 25)]
     assert r["sc_grid_P_falls_with_price"] is True
@@ -45,7 +46,7 @@ def test_the_ladder_and_the_gate_end_to_end():
     assert r["ld_runs"] == ["DT-16-l", "DT-16-s", "FP-16-l", "FP-16-s", "LU-16-l", "LU-16-s", "QP-16-l", "QP-16-s",
                             "TS-16"]
     assert r["gt_problems"] == [] and r["gt_runs"] == 16
-    assert r["gt_readings_qp"] == ["plan_bound", "plan_point", "zero_edge"]   # E-089's ruling: two calls and a twin
+    assert r["gt_readings_qp"] == ["plan", "zero_edge"]      # M3: one call reads both arms on the point outcomes
     assert r["gt_readings_dt"] == ["plan", "zero_edge"]
     assert r["gt_labels_fp"] == ["tier-1 liquidation not applied"]
 

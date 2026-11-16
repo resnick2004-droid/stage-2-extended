@@ -96,7 +96,7 @@ def test_the_tier1_blocks_book_counted_trades_and_skip_entries_inside():
     blocks, dates = [day, quiet], [d, date(2024, 1, 4)]
     strict, n_s = C.tier1_blocks(blocks, dates, "strict")
     walked, n_w = C.tier1_blocks(blocks, dates, "walked")
-    assert n_s == n_w == {"open_at_start": 1, "entries_inside": 1}
+    assert n_s == n_w == {"open_at_start": 1, "entries_inside": 1, "days_with_both_windows": 0}
     b = strict[0]
     assert b.r_by_rr[1.0][0] == pytest.approx(C.book(1.0, 150, 1.22, "strict"))
     assert b.r_by_rr[3.0][0] == pytest.approx(C.book(3.0, 150, 1.22, "strict"))

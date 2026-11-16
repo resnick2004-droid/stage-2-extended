@@ -68,7 +68,7 @@ def paired_reading(diff: np.ndarray, h: int) -> dict[str, Any]:
                            "signs": {"above": int((means > 0).sum()), "equal": int((means == 0).sum()),
                                      "below": int((means < 0).sum())},
                            "n_eff": n_eff_bartlett(d, lag=int(h)), "interval": None, "mdd": None, "note": ""}
-    if n_w and bool(np.all(means == 0.0)):
+    if n_w and all(bool(np.all(w == 0.0)) for w in wins):          # item 6 (m3): the values, not the means
         out["note"] = IDENTICAL
         return out
     if n_w < MIN_WINDOWS:

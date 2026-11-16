@@ -43,6 +43,8 @@ from propedge.contract.rules import load_rules  # noqa: E402
 from propedge.outcomes.distribution import DayBlock  # noqa: E402
 
 SEED = 20261992
+#: m2: the second toy stream a child of section 12's toy seed (20261993 is reserved, never drawn)
+KIDS = np.random.SeedSequence(SEED).spawn(2)
 RS = (1.0, 1.5, 2.0, 2.5, 3.0)
 TV, FEE, N_DAYS, STARTS = 0.5, 1.22, 150, 5
 out: dict = {}
@@ -100,7 +102,7 @@ def args() -> dict:
 
 DELTA = {R_: -0.03 - 0.01 * i for i, R_ in enumerate(RS)}
 streams, gates = {}, {}
-for name, seed, start in (("p16", SEED, "2023-08-01"), ("p14", SEED + 7, "2023-08-01")):
+for name, seed, start in (("p16", SEED, "2023-08-01"), ("p14", KIDS[0], "2023-08-01")):
     pt, days = toy(seed, start)
     vd = shifted_blocks(pt, DELTA[2.0], DELTA)
     streams[name] = {"jobs": {"point": {"engine": "single", "blocks": pt, "dates": days, "args": args()},
@@ -139,6 +141,8 @@ out["sc_fp_counts"] = {k: cnt.get(k) for k in ("trades", "fee_off_schedule", "fu
 dtc = df[(df["section"] == "counts") & (df["run"] == "DT-16-s")].set_index("measure")["value"].to_dict()
 out["sc_dt_counts"] = {k: dtc.get(k) for k in ("martingale_per_account", "martingale_firm_wide", "funded.q")}
 out["sc_tier1"] = int((df["section"] == "tier1_count").sum())
+ids = df[(df["section"] == "identity_items_4_5")]
+out["sc_items_4_5"] = {k: float(ids[ids["measure"] == k]["value"].sum()) for k in ("trades", "accounts")}
 out["sc_seconds"] = round(time.time() - t0, 1)
 
 # the pro fee: DT's readings carry it (the card's fees differ from the A-9 outputs' where a Pro account lived 21+ sessions)

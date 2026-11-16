@@ -25,7 +25,7 @@ per-R shift (`gate.shifted_blocks`, as `customer_slices.arm_blocks` applies it):
 every outcome at that R (5.5, note C). Off in the gate.
 
 **The runner** (`run_plan`): A-9 (`user_beside.run_starts`) one start at a time in the calling process, each start
-with its own classes -- DayTraders' calendar (`with_calendar`), Quick Pay's arm shift (`with_shift`) -- and the
+with its own classes -- DayTraders' calendar (`with_calendar`), Quick Pay's point outcomes (`with_point`) -- and the
 adapters' counts read after it (`firm_accounts.collect`); `workers` processes of the runner's own take the starts in
 chunks.
 """
@@ -121,6 +121,9 @@ def _lucid(args: dict[str, Any], s: T.Settings) -> tuple[dict[str, Any], dict[st
     cls = path.pop("funded_account_cls")
     path.pop("household_closure")
     path["conduct"] = V["ConductModel"](rtp=False, enforcement_p=0.0)
+    fs = lu.draws["sizing"].fee_schedule
+    if fs is not None and tuple(float(x) for x in fs) != T.fee_schedule("LU"):
+        raise ValueError(f"REFUSED (A-1, 4.8): the design's fee schedule {fs} is not LU's {T.fee_schedule('LU')}")
     kw: dict[str, Any] = {"funded_account_cls": cls}
     if s.household is False:                       # the lenient reach; the strict one is the class's own rule (A-9)
         kw["household_closure"] = False
@@ -164,32 +167,41 @@ def plan_args(args: dict[str, Any], s: T.Settings, *, blocks: Sequence[Any] | No
     return out, kw
 
 
-def gate_args(gate_kw: dict[str, Any], s: T.Settings) -> dict[str, Any]:
+def gate_args(gate_kw: dict[str, Any], s: T.Settings, *, point_blocks: Sequence[Any] | None = None
+              ) -> dict[str, Any]:
     """A-1 on a design's gate arguments (`extended.gate.run_gate`'s keywords): the rules, sizing, lag, request timing,
-    classes and household reading (A-8's seams). TS: unchanged. LU: Stage 2's composition through the same seams.
-    DayTraders' classes in the gate read 21 sessions (no calendar); DayTraders' recurring fee is not in the gate."""
+    classes and household reading (A-8's seams), and the placement off (`rtp=False`, m5: no conduct model runs at LU,
+    DT, FP or QP, 2.3). TS: unchanged. LU: `rc150_firm_split.lucid_setup`'s own output (m5), on a setup made from the
+    gate's arguments. DayTraders' classes read 21 sessions (no calendar); its recurring fee is not in the gate. Quick
+    Pay's class holds the gate's point blocks (`point_blocks`, M3): its bracket reads them on both of the gate's arms,
+    the shifted arm keeping the point list's order; refused without them."""
     if s.plan == "TS":
         return gate_kw
     if s.plan == "LU":
-        from propedge.contract.lucid import (LUCID_PAYOUT_TIMING, OPEN_ROWS_UPPER_BOUND, STANDARD_40,
-                                             LucidFundedAccount, lucid_rules, lucid_sizing_rule, lucid_terms)
+        import rc150_firm_split as RS
 
-        sz = gate_kw["sizing"]
-        lz = lucid_sizing_rule(sz.mode, headroom_frac=sz.headroom_frac)
-        out = {**gate_kw, "rules": lucid_rules(open_rows=OPEN_ROWS_UPPER_BOUND, configuration=STANDARD_40),
-               "sizing": dataclasses.replace(sz, ladder=lz.ladder, combine_limit_micros=lz.combine_limit_micros),
-               "payout_lag_days": int(lucid_terms().payout_processing_days), "payout_timing": LUCID_PAYOUT_TIMING,
-               "funded_account_cls": LucidFundedAccount}
+        from propedge.research import hypo_hedge as hh
+
+        lu = RS.lucid_setup(hh.FirmSetup(protocol=gate_kw["protocol"], draws={"sizing": gate_kw["sizing"]},
+                                         path={"rules": gate_kw["rules"]}))
+        out = {**gate_kw, "rules": lu.path["rules"], "sizing": lu.draws["sizing"],
+               "payout_lag_days": int(lu.path["payout_lag_days"]), "payout_timing": lu.path["payout_timing"],
+               "funded_account_cls": lu.path["funded_account_cls"], "rtp": False}
         if s.household is False:
             out["household_closure"] = False
         return out
     V = _vendored()
     t = T.plan_terms(s.plan)
     combine_cls, funded_cls = A.classes_for(s)
+    if s.plan == "QP":
+        if point_blocks is None:
+            raise ValueError("REFUSED (A-7, M3): Quick Pay's gate class classifies on the point outcomes: give the "
+                             "gate's point blocks")
+        funded_cls = A.with_point(funded_cls, point_blocks)
     return {**gate_kw, "rules": plan_rules(gate_kw["rules"], s), "sizing": plan_sizing(gate_kw["sizing"], s),
             "payout_lag_days": int(s.lag) if s.plan == "DT" else int(t.lag_days),
             "payout_timing": V["AT_CLOSE"] if s.plan == "QP" else V["AFTER_5PM"],
-            "combine_account_cls": combine_cls, "funded_account_cls": funded_cls}
+            "combine_account_cls": combine_cls, "funded_account_cls": funded_cls, "rtp": False}
 
 
 # ------------------------------------------------------------------------------------------------ A-10
@@ -318,15 +330,18 @@ def tier1_arm(point: Sequence[Any], dates: Sequence[Any], reading: str, delta_r:
 # ------------------------------------------------------------------------------------------------ the runner
 
 
-def start_classes(s: T.Settings, dates: Sequence[Any], start: int, r_shift: dict[float, float] | None
+def start_classes(s: T.Settings, dates: Sequence[Any], start: int, point: Sequence[Any] | None
                   ) -> tuple[type | None, type | None]:
     """One start's (evaluation class, funded class): the plan's, with DayTraders' calendar from that start's sessions
-    and Quick Pay's arm shift."""
+    and Quick Pay's point outcomes from that start (`point`: the run's point-arm blocks, A-11 applied; M3), refused
+    at Quick Pay without them."""
     c_cls, f_cls = A.classes_for(s)
     if s.plan == "DT" and s.inactivity:
         c_cls, f_cls = A.with_calendar(c_cls, dates[start:]), A.with_calendar(f_cls, dates[start:])
-    if s.plan == "QP" and r_shift:
-        f_cls = A.with_shift(f_cls, r_shift)
+    if s.plan == "QP":
+        if point is None:
+            raise ValueError("REFUSED (A-7, M3): Quick Pay's class classifies on the run's point outcomes: give them")
+        f_cls = A.with_point(f_cls, point[start:])
     return c_cls, f_cls
 
 
@@ -342,13 +357,13 @@ def split_runs(counts: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
 
 
 def _chunk(task: tuple) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
-    design, arm, resp_name, job, s, starts, kw, r_shift = task
+    design, arm, resp_name, job, s, starts, kw, point = task
     from extended import user_beside as B
 
     resp = B.BY_NAME[resp_name]
     out = []
     for st in starts:
-        c_cls, f_cls = start_classes(s, job["dates"], int(st), r_shift)
+        c_cls, f_cls = start_classes(s, job["dates"], int(st), point)
         j = job
         if c_cls is not None:
             j = {**job, "args": {**job["args"], "path": {**job["args"]["path"], "combine_account_cls": c_cls}}}
@@ -360,7 +375,7 @@ def _chunk(task: tuple) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
 
 
 def run_plan(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, starts: Sequence[int],
-             keywords: dict[str, Any], *, r_shift: dict[float, float] | None = None, workers: int = 1,
+             keywords: dict[str, Any], *, point: Sequence[Any] | None = None, workers: int = 1,
              chunk: int = 20) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
     """Every start of one design, arm, response and plan setting: (A-9's output, the long replay's account counts),
     in start order. `job` carries the plan's arguments (`plan_args`), without the classes, which are made per start;
@@ -370,7 +385,7 @@ def run_plan(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
     if s.plan in ("TS", "LU") and keywords.get("funded_account_cls") is not None:
         kw["funded_account_cls"] = keywords["funded_account_cls"]
     chunks = [list(starts[i:i + chunk]) for i in range(0, len(starts), chunk)]
-    tasks = [(design, arm, resp.name, job, s, c, kw, r_shift) for c in chunks]
+    tasks = [(design, arm, resp.name, job, s, c, kw, point) for c in chunks]
     if int(workers) <= 1:
         res = [_chunk(t) for t in tasks]
     else:

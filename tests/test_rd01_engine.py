@@ -86,6 +86,9 @@ def test_t4_quick_pay_page_examples_and_bounds():
     # the trade's own exit ($50 less its loss) stays above the floor it started at (-$150): only its peak breaches it
     assert t["raised_floor_breach"][:3] == [-52.5, -2.5, 1] and 50.0 + t["raised_floor_breach"][3] > -150.0
     assert t["won_at"] == [True, True, False] and t["won_at_refuses_above"] is True
+    # M3: on a shifted arm the bracket reads the point outcomes -- the unshifted trade's peak and floor
+    assert t["shifted_arm"][:2] == p["won_at_2_pess"][:2]
+    assert t["no_point_refused"] is True and t["start_classes_refuses"] is True
 
 
 def test_t4_quick_pay_on_the_toy_campaign():
@@ -101,6 +104,7 @@ def test_t5_tradeday_minimum_days_and_the_day_logging_micro():
         assert x["problems"] == [], k
         assert x["two_a_session"] == 0 and x["one_micro"] is True, k
         assert x["logging_sessions"] == x["logging_oracle"], k
+        assert x["intended_is_table"] is True and x["stand_aside_kept"] is True, k      # m1
     assert r["FP7"]["logging_sessions"] > 0 and r["FP7"]["redealt"] > 0
     assert r["FP3"]["passes"] >= r["FP7"]["passes"] > 0
 
@@ -125,6 +129,8 @@ def test_t10_t12_t13_compositions():
     r = found()
     assert r["t10_ts_unchanged"] is True
     assert r["t10_dt_seams"] == ["combine_account_cls", "funded_account_cls", "payout_lag_days", "payout_timing"]
+    assert r["t10_lu_same"] == [True] * 5                                # m5: lucid_setup's own, as in the replay
+    assert r["t10_rtp"] == {"LU": False, "DT": False, "FP": False, "QP": False, "TS": True}
     assert r["t13_gate_has_no_tier1"] is True
     for k, (sched, twenty_six, want) in r["t12"].items():
         assert twenty_six == pytest.approx(want), k                     # 26 micros: two minis and six micros
@@ -134,6 +140,8 @@ def test_t10_t12_t13_compositions():
     (n_st, n_wk) = r["t13_counts"]
     assert n_st == n_wk and n_st["open_at_start"] > 0
     assert r["t13_untouched_same"] is True
+    for rd in ("strict", "lenient", "walked"):                          # M1: booked only where still open
+        assert r["t13_per_r"][rd] == pytest.approx(r["t13_per_r_want"][rd]), rd
     per_acct, brute, n, n_led = r["t13_martingale"]
     assert per_acct == brute and n == n_led
     assert r["t13_sessions"]["sessions_above_line"] == 0
@@ -143,6 +151,9 @@ def test_t14_the_table_inputs():
     r = found()
     assert r["t14_rules"] == {"TS": [5, 150.0], "DT": [5, 200.0], "FP": [5, 150.0], "QP": [5, 150.0]}
     assert r["t14_fp_problems"] == []
+    m2 = r["t14_m2"]                                                    # M2: held at 4 whatever the profit since
+    assert m2["150.0"][:3] == [None, 4, 1] and m2["-50.0"][:3] == [None, 4, 1]
+    assert m2["150.0"][3] is False and m2["-50.0"][3] is False
 
 
 def test_t15_a9_keywords():

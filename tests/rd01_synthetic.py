@@ -49,6 +49,8 @@ from propedge.contract.rules import load_rules  # noqa: E402
 from propedge.outcomes.distribution import DayBlock  # noqa: E402
 
 SEED = 20261992
+#: m2: every other toy draw a child of section 12's seed for the toy campaigns (20261993 is reserved, never drawn)
+KIDS = np.random.SeedSequence(SEED).spawn(16)
 RS = (1.0, 1.5, 2.0, 2.5, 3.0)
 TV = 0.5
 LOG_FEE = 1.22
@@ -206,7 +208,7 @@ def run_plan_direct(blocks, days, s: T.Settings, policy=None, start: int = 0, tr
     """One replay of the toy campaign under a plan's settings (A-1's arguments, the plan's classes with the start's
     calendar and no arm shift), the traced classes when asked."""
     args, kw = F.plan_args(toy_args(policy), s, blocks=blocks)
-    c_cls, f_cls = F.start_classes(s, days, start, None)
+    c_cls, f_cls = F.start_classes(s, days, start, blocks)
     if f_cls is None:
         f_cls = kw.get("funded_account_cls")
     c_cls = c_cls or CombineAccount
@@ -510,20 +512,40 @@ class Inner:
 peaks = {}
 for k, by in cases.items():
     for peak in ("pess", "opt"):
-        a = qp({"INTRADAY": True, "PEAK": peak}, [], B0=1000.0)
+        inner = Inner(by)
+        a = qp({"INTRADAY": True, "PEAK": peak, "POINT": tuple(inner._r_by_rr)}, [], B0=1000.0)
         a.F = -1000.0
         u = by[2.0]
         lt = {"historical_day": 0, "trade_index": 0, "realised_risk": N4 * S4 * TV, "contracts": N4,
               "risk_per_contract": S4 * TV, "rr": 2.0, "mae": 0.5 * N4 * S4 * TV}
-        got = a._through_trade(u * N4 * S4 * TV, lt, Inner(by))
+        got = a._through_trade(u * N4 * S4 * TV, lt, inner)
         peaks[f"{k}_{peak}"] = [round(a.g_peak - 1000.0, 9), round(a.F, 9), round(got, 9)]
 t4["peaks"] = peaks
 # a peak that raises the floor above the trade's later low: ended at the raised floor
-a = qp({"INTRADAY": True, "PEAK": "pess"}, [], B0=50.0)        # $1,800 paid: the floor at -$150 before the trade
+inner = Inner(cases["lo_1_flatten"] | {2.0: stop_u})
+a = qp({"INTRADAY": True, "PEAK": "pess", "POINT": tuple(inner._r_by_rr)}, [], B0=50.0)   # $1,800 paid: floor -$150
 a.gross_paid, a.g_peak, a.F = 1800.0, 1850.0, -150.0
 lt = {"historical_day": 0, "trade_index": 0, "realised_risk": N4 * S4 * TV, "contracts": N4,
       "risk_per_contract": S4 * TV, "rr": 2.0, "mae": 0.5 * N4 * S4 * TV}
-got = a._through_trade(stop_u * N4 * S4 * TV, lt, Inner(cases["lo_1_flatten"] | {2.0: stop_u}))
+got = a._through_trade(stop_u * N4 * S4 * TV, lt, inner)
+# M3: on a shifted arm (every R moved by -0.02 R, as a bound arm moves it) the bracket reads the point outcomes
+shifted = {R: u - 0.02 for R, u in cases["won_at_2"].items()}
+pt_inner, sh_inner = Inner(cases["won_at_2"]), Inner(shifted)
+a_sh = qp({"INTRADAY": True, "PEAK": "pess", "POINT": tuple(pt_inner._r_by_rr)}, [], B0=1000.0)
+a_sh.F = -1000.0
+lt2 = {**lt, "rr": 2.0}
+got_sh = a_sh._through_trade(shifted[2.0] * N4 * S4 * TV, lt2, sh_inner)
+t4["shifted_arm"] = [round(a_sh.g_peak - 1000.0, 9), round(a_sh.F, 9), round(got_sh, 9)]
+try:
+    qp({"INTRADAY": True, "PEAK": "pess"}, [], B0=1000.0)._through_trade(1.0, lt2, sh_inner)
+    t4["no_point_refused"] = False
+except RuntimeError:
+    t4["no_point_refused"] = True
+try:
+    F.start_classes(T.settings_for("QP", T.STRICT), days, 0, None)
+    t4["start_classes_refuses"] = False
+except ValueError:
+    t4["start_classes_refuses"] = True
 t4["raised_floor_breach"] = [round(got, 9), round(a.F, 9), a.breaches_at_raised_floor, round(stop_u * N4 * S4 * TV, 9)]
 t4["won_at"] = [A.won_at(won[2.0], 2.0, S4, FEE4), A.won_at(won[2.0] + 1.0 / S4, 2.0, S4, FEE4),
                 A.won_at(won[2.0] - 1.0 / S4, 2.0, S4, FEE4)]
@@ -579,6 +601,7 @@ for plan, d in (("FP", 3), ("FP", 7), ("QP", 5), ("QP", 7)):
     led = list(lp.trades)
     t = T.plan_terms(plan)
     n_log_oracle = 0
+    intended_ok = True
     for c in comb:
         td, prev = 0, {"B": 0.0, "best": 0.0, "trades": 0}
         for row in c.trace:
@@ -598,13 +621,15 @@ for plan, d in (("FP", 3), ("FP", 7), ("QP", 5), ("QP", 7)):
                 n_log_oracle += 1
                 rs = [x for x in led if x["kind"] == "combine" and x["index"] == c.index and x["day"] == row["day"]]
                 logging_two += int(len(rs) > 1)
+                intended_ok = intended_ok and all(abs(float(x["intended_risk"]) - 150.0) < 1e-9 for x in rs)
                 one_micro = one_micro and all(int(x["contracts"]) == 1 for x in rs)
                 n_sig = len(blocks[row["day"] - 1].pnl)
                 others = [x for x in led if x["day"] == row["day"] and not (x["kind"] == "combine"
                                                                             and x["index"] == c.index)]
                 redealt += int(len(rs) == 1 and n_sig > 1 and bool(others))
             prev = row
-    res5[f"{plan}{d}"] = {"problems": p5[:6], "logging_oracle": n_log_oracle,
+    res5[f"{plan}{d}"] = {"problems": p5[:6], "logging_oracle": n_log_oracle, "intended_is_table": intended_ok,
+                          "stand_aside_kept": all(c.draw.rule.stand_aside == SIZING.stand_aside for c in comb),
                           "logging_sessions": int(sum(c.logging_sessions for c in comb)),
                           "logging_trades": int(sum(c.logging_trades for c in comb)), "two_a_session": logging_two,
                           "one_micro": one_micro, "redealt": redealt,
@@ -635,14 +660,14 @@ out["t6_seconds"] = round(time.time() - t0, 1)
 # ------------------------------------------------------------------------------------------------ T-7: 9.2's oracles
 
 t0 = time.time()
-zero_blocks, _ = toy_blocks(seed=SEED + 1, fee=0.0, quiet=(), zero=True)
+zero_blocks, _ = toy_blocks(seed=KIDS[0], fee=0.0, quiet=(), zero=True)
 oracle = {}
 for plan in ("DT", "FP", "QP"):
     s = T.settings_for(plan, T.STRICT)
     gross, n_f, passes, n_c = [], 0, 0, 0
     fee_bad = 0
     for k in range(12):
-        perm = np.random.default_rng(SEED + 100 + k).permutation(len(zero_blocks))
+        perm = np.random.default_rng(KIDS[1 + k]).permutation(len(zero_blocks))
         bl = [zero_blocks[i] for i in perm]
         lp, _, args = run_plan_direct(bl, days, s, trace=False)
         rule = args["draws"]["sizing"]
@@ -664,7 +689,7 @@ out["t7_seconds"] = round(time.time() - t0, 1)
 
 # ------------------------------------------------------------------------------------------------ T-10, T-12, T-13
 
-gkw = {"rules": RULES, "sizing": SIZING, "seed": 1}
+gkw = {"rules": RULES, "sizing": SIZING, "seed": 1, "protocol": PROTO, "rtp": True}
 out["t10_ts_unchanged"] = F.gate_args(gkw, T.settings_for("TS", "reference")) is gkw
 g_dt = F.gate_args(gkw, T.settings_for("DT", T.STRICT))
 out["t10_dt_seams"] = sorted(k for k in g_dt if k not in gkw)
@@ -696,6 +721,15 @@ st, n_st = C.tier1_blocks(b13, dates, "strict")
 _, n_wk = C.tier1_blocks(b13, dates, "walked")
 out["t13_minutes_day"] = None if i13 is None else str(mins[0])
 out["t13_counts"] = [n_st, n_wk]
+# M1: the hand-built trade is open at 12:58 at R >= 1.5 only (at R 1 its target filled at 12:50): booked there alone
+j13 = list(b13[i13].entry_t).index(float(W.bar_of(12, 30)))
+lt13, _ = C.tier1_blocks(b13, dates, "lenient")
+wk13, _ = C.tier1_blocks(b13, dates, "walked")
+out["t13_per_r"] = {rd: {str(R): float(bl[i13].r_by_rr[R][j13]) for R in RS} for rd, bl in
+                    (("strict", st), ("lenient", lt13), ("walked", wk13))}
+out["t13_per_r_want"] = {rd: {str(R): float(open_t["r"][R]) if R <= 1.0 else C.book(R, S13, LOG_FEE, rd)
+                              for R in RS} for rd in ("strict", "lenient")}
+out["t13_per_r_want"]["walked"] = {str(R): float(open_t["r"][R]) for R in RS}
 out["t13_untouched_same"] = all(x is y for x, y, d in zip(st, b13, dates) if d not in C.tier1_days())
 lp13, _, a13 = run_plan_direct(st, days, T.settings_for("FP", T.STRICT), trace=False)
 led13 = [{"account": (r["kind"], r["index"]), "day": r["day"],
@@ -745,6 +779,27 @@ for a in [x for x in accts if isinstance(x, FundedAccount)]:
             p14.append(f"FP {a.index}: since_pay {row['since_pay']} is not the profit since the request {since_want}")
 out["t14_fp_problems"] = p14[:6]
 out["t14_fp_held"] = int(sum(a.sessions_held for a in accts if isinstance(a, FundedAccount)))
+# M2: after a payout, five days counted, the 45 % rule blocking: held at 4 whatever the profit since the request
+FP_RULES = F.plan_rules(RULES, T.settings_for("FP", T.STRICT))
+m2 = {}
+for day_pnl in (150.0, -50.0):
+    cls = type("FPProbe", (A.FastPassFunded,), {"PASS_OVER": False, "FIFTH": None, "__module__": __name__})
+    a = cls(index=0, activation_day=0, draw=Stub([day_pnl]), horizon_days=10**6, floor_start=FP_RULES.xfa_mll_start)
+    a.B, a.gross_paid, a.n_payouts, a.paid_once, a.F = 150.0, 1000.0, 1, True, 0.0
+    a._true_win_days, a._life_best, a.since_pay = 5, 900.0, 0.0
+    net = a.trade_day(FP_RULES, Pol(), 1500.0, 10, 11)
+    m2[str(day_pnl)] = [net, a.win_days, a.share_blocked, a.last_eligible]
+out["t14_m2"] = m2
+# m5: Lucid's gate from lucid_setup equals the replay's composition; the placement off at every plan but TS
+lu_r, lu_k = F.plan_args(toy_args(), T.settings_for("LU", T.STRICT))
+lu_g = F.gate_args(gkw, T.settings_for("LU", T.STRICT))
+out["t10_lu_same"] = [I.first_difference(dataclasses.asdict(lu_g["rules"]), dataclasses.asdict(lu_r["path"]["rules"]))
+                      is None, lu_g["sizing"] == lu_r["draws"]["sizing"],
+                      lu_g["payout_lag_days"] == lu_r["path"]["payout_lag_days"],
+                      lu_g["payout_timing"] == lu_r["path"]["payout_timing"],
+                      lu_g["funded_account_cls"] is lu_k["funded_account_cls"]]
+out["t10_rtp"] = {p: F.gate_args(gkw, T.settings_for(p, T.STRICT), point_blocks=blocks).get("rtp")
+                  for p in ("LU", "DT", "FP", "QP")} | {"TS": F.gate_args(gkw, T.settings_for("TS", "reference"))["rtp"]}
 
 # ------------------------------------------------------------------------------------------------ T-15: A-9
 

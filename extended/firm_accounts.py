@@ -38,9 +38,8 @@ purchase on the replay's day 0 is dated the day before its first session.
 **Counts** (9.3): each account keeps its counters (`counters()`); every adapter account built in a process is registered
 in `TALLY` until `collect()` reads and clears it, so a runner reads them after each replay.
 
-**Calendars and arms.** `with_calendar` makes a subclass holding one start's session dates; `with_shift` a Quick Pay
-class holding the arm's per-R shift (`gate.shifted_blocks`' delta), so the peak bracket reads each trade's point
-outcomes. Both are made in the process that replays (they are not module attributes and do not pickle); the module's
+**Calendars and arms.** `with_calendar` makes a subclass holding one start's session dates; `with_point` a Quick Pay
+class holding the run's point outcomes (M3), so the peak bracket reads each trade's point outcomes on every arm. Both are made in the process that replays (they are not module attributes and do not pickle); the module's
 own classes (`CLASSES`, `TWINS`) pickle by name.
 """
 from __future__ import annotations
@@ -48,7 +47,7 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 from datetime import date, timedelta
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Sequence
 
 import numpy as np
 
@@ -65,6 +64,8 @@ STRICT, LENIENT = T.STRICT, T.LENIENT
 
 #: every adapter account built in this process since the last `collect()` (9.3's counts)
 TALLY: list[Any] = []
+#: the names of the module's own run classes (`CLASSES`): a per-start subclass's family is the first of them in its MRO
+NAMED: set[str] = set()
 
 
 def collect() -> list[dict[str, Any]]:
@@ -87,8 +88,10 @@ class _Counted:
     def counters(self) -> dict[str, Any]:
         kind = "funded" if isinstance(self, FundedAccount) else "combine"
         day = self.activation_day if kind == "funded" else self.purchase_day
-        return {"class": type(self).__name__, "kind": kind, "index": int(self.index), "day": int(day),
-                **{k: getattr(self, k) for k in self.COUNTERS}}
+        family = next((c.__name__ for c in type(self).__mro__ if c.__name__ in NAMED and c.__module__ == __name__),
+                      type(self).__name__)
+        return {"class": type(self).__name__, "family": family, "kind": kind, "index": int(self.index),
+                "day": int(day), **{k: getattr(self, k) for k in self.COUNTERS}}
 
 
 # ------------------------------------------------------------------------------------------------ inactivity (A-2, A-3)
@@ -300,12 +303,13 @@ class TradeDayCombine(_Counted, _DecisionSeam, CombineAccount):
     PLAN: ClassVar[str] = "FP"
     MIN_DAYS: ClassVar[int] = 0
     SELLS_RESET: ClassVar[bool] = False
-    COUNTERS = ("trade_days", "sessions_held", "logging_sessions", "logging_trades")
+    COUNTERS = ("trade_days", "sessions_held", "logging_sessions", "logging_trades", "logging_stood_aside")
 
     def __post_init__(self) -> None:
         super().__post_init__()
         self._sizing_rule = None
         self._logging_now = False
+        self._table_risk = 0.0
         self._register()
 
     def reset(self, calendar_day: int, *, rtp_dll: float | None = None) -> None:
@@ -333,10 +337,11 @@ class TradeDayCombine(_Counted, _DecisionSeam, CombineAccount):
             return dec                                                  # the cell sits the session out
         if rule is None or not hasattr(draw, "target_risk") or rule.cap_micros("combine", float(self.B)) is None:
             raise RuntimeError("A-4's day-logging micro needs the design's tier-sized draw")
-        sa = None if rule.stand_aside is None else (tuple(e for e in rule.stand_aside if e[0] != "combine") or None)
-        draw.rule = replace(self._sizing_rule, combine_limit_micros=1, headroom_frac=1.0, stand_aside=sa)
+        # one micro (m1): the design's own stand-aside kept; a headroom of 1 so a one-micro limit floors to one
+        draw.rule = replace(self._sizing_rule, combine_limit_micros=1, headroom_frac=1.0)
         rpc = getattr(draw, "_rpc", None) or []
         top = max((float(np.max(r)) for r in rpc if len(r)), default=0.0)
+        self._table_risk = float(draw.target_risk)
         draw.target_risk = max(float(draw.target_risk), top)            # one micro at every stop, at the table's R
         self._logging_now = True
         self.logging_sessions += 1
@@ -345,15 +350,34 @@ class TradeDayCombine(_Counted, _DecisionSeam, CombineAccount):
     def trade_day(self, rules: Any, policy: Any, rel_day: int, calendar_day: int, ledger: Any = None,
                   need_aware: bool = False, consistency_cap: bool = False) -> None:
         n0 = self.trades
+        st0 = int(getattr(getattr(self.draw, "stats", None), "stood_aside", 0))
         super().trade_day(rules, policy, rel_day, calendar_day, ledger=ledger, need_aware=need_aware,
                           consistency_cap=consistency_cap)
         if self._logging_now:
             self.logging_trades += self.trades - n0
+            self.logging_stood_aside += int(getattr(getattr(self.draw, "stats", None), "stood_aside", 0)) - st0
+            if self.trades > n0:
+                self._record_table_risk(ledger)
         if self.trades > n0:
             self.trade_days += 1
         if self.passed and self.trade_days < int(self.MIN_DAYS):
             self.passed, self.pass_day, self.resolved_on = False, -1, None
             self.sessions_held += 1
+
+    def _record_table_risk(self, ledger: Any) -> None:
+        """m1: a day-logging trade's intended risk recorded as the table's (the draw sized it at a raised target so
+        that one micro buys at every stop) -- in the trade's record, the draw's stats and the ledger row."""
+        lt = getattr(self.draw, "last_trade", None)
+        if not lt or not lt.get("contracts"):
+            return
+        table = float(self._table_risk)
+        capped = min(table, float(lt["risk_per_contract"]) * int(lt["cap_micros"] or 1))
+        stats = self.draw.stats
+        stats.intended_risk += table - float(lt["intended_risk"])
+        stats.intended_capped_risk += capped - float(lt["intended_capped_risk"])
+        lt["intended_risk"], lt["intended_capped_risk"] = table, capped
+        if ledger and ledger[-1].get("kind") == "combine" and int(ledger[-1].get("index", -1)) == int(self.index):
+            ledger[-1]["intended_risk"], ledger[-1]["intended_capped_risk"] = table, capped
 
 
 # ------------------------------------------------------------------------------------------------ A-5
@@ -407,11 +431,13 @@ class FastPassFunded(_Counted, _DecisionSeam, FundedAccount):
             return base
         t = T.plan_terms("FP")
         self._life_best = max(self._life_best, float(self.last_day_pnl))
-        base = base and self.B > EPS
         share_ok = self._life_best <= float(t.funded_consistency) * (self.B + self.gross_paid) + EPS
-        self._held = bool(base and not share_ok)
+        # 4.9's Fast Pass row (M2): held whenever the five days are counted and the 45 % rule blocks -- whatever the
+        # profit since the request (the table's own line_gap) and the balance; eligibility needs all of them
+        days_done = self.win_days >= int(rules.std_winning_days)
+        self._held = bool(days_done and not share_ok)
         self.share_blocked += int(self._held)
-        return bool(base and share_ok)
+        return bool(base and self.B > EPS and share_ok)
 
     def _after_payout(self, calendar_day: int) -> None:
         if self.FIFTH == "paid" and self.n_payouts >= int(T.plan_terms("FP").fifth_request):
@@ -464,8 +490,10 @@ class _PeakDraw:
         res = inner(n, day, slot, cushion, **kw)
         pnl = float(np.asarray(res, float).ravel()[0])
         lt = getattr(inner, "last_trade", None)
-        if not np.isfinite(pnl) or not lt or not lt.get("contracts"):
+        if not np.isfinite(pnl):
             return res
+        if not lt or not lt.get("contracts"):
+            raise RuntimeError("A-7 brackets a trade sized in contracts; this draw sizes none (n9: fixed risk refused)")
         return np.array([acct._through_trade(pnl, lt, inner)])
 
 
@@ -515,7 +543,9 @@ class QuickPayFunded(_Counted, FundedAccount):
     CEILING: ClassVar[str | None] = STRICT
     REQUEST: ClassVar[str] = "every"
     TABLE_INPUTS: ClassVar[bool] = True
-    R_SHIFT: ClassVar[dict[float, float]] = {}
+    #: M3: the run's point outcomes, one `r_by_rr` a historical day of the draw's own day list (`with_point`): the
+    #: bracket reads them on every arm; a class without them refuses to bracket
+    POINT: ClassVar[tuple | None] = None
     COUNTERS = ("floor_rises", "breaches_at_raised_floor", "split_low", "split_high", "split_crossing",
                 "ceiling_ended", "ceiling_withdrawn", "mae_unknown")
 
@@ -549,8 +579,14 @@ class QuickPayFunded(_Counted, FundedAccount):
         fees, by = inner._fee[h], inner._r_by_rr[h]
         if fees is None or by is None or lt.get("rr") is None:
             raise RuntimeError("A-7's bracket needs each trade's fee and its outcomes at the menu's R (4.8, 5.4)")
+        if self.POINT is None or h >= len(self.POINT) or self.POINT[h] is None:
+            raise RuntimeError("A-7 classifies on the run's point outcomes on every arm (M3): this class holds none "
+                               "for this day (firm_accounts.with_point)")
+        ref = self.POINT[h]
+        if set(map(float, ref)) != set(map(float, by)) or any(len(ref[R]) != len(by[R]) for R in ref):
+            raise RuntimeError("A-7's point reference is not this draw's day: the menu or the trades differ")
         R_x = float(lt["rr"])
-        point = {float(R): float(v[j]) - float(self.R_SHIFT.get(float(R), 0.0)) for R, v in by.items()}
+        point = {float(R): float(v[j]) for R, v in ref.items()}
         br = peak_bracket(point, R_x, S, float(fees[j]))
         B0, G0 = float(self.B), float(self.B + self.gross_paid)
         if br["won"]:
@@ -667,6 +703,7 @@ class QuickPayFunded(_Counted, FundedAccount):
 def _named(base: type, name: str, attrs: dict[str, Any]) -> type:
     cls = type(name, (base,), {**attrs, "__module__": __name__, "__qualname__": name})
     globals()[name] = cls
+    NAMED.add(name)
     return cls
 
 
@@ -725,15 +762,16 @@ def classes_for(settings: T.Settings) -> tuple[type | None, type | None]:
     raise ValueError(f"unknown plan {p!r}")
 
 
-def with_shift(cls: type, r_shift: dict[float, float]) -> type:
-    """A Quick Pay class reading an arm whose outcomes at R were shifted by `r_shift[R]` (`gate.shifted_blocks`), so the
-    peak bracket classifies each trade on its point outcomes. Made per arm, in the replaying process."""
+def with_point(cls: type, point_blocks: Sequence[Any]) -> type:
+    """A Quick Pay class holding the run's point outcomes (each block's `r_by_rr`), so the
+    peak bracket classifies each trade on its point outcomes on every arm (M3: the draw's day list, a replay's start
+    slice or the gate's whole list, whose shifted arm keeps its order). Made in the running process."""
     if not issubclass(cls, QuickPayFunded):
-        raise TypeError("only Quick Pay's class reads the arm's shift")
-    return type(f"{cls.__name__}Shifted", (cls,), {"R_SHIFT": {float(k): float(v) for k, v in r_shift.items()},
-                                                   "__module__": cls.__module__})
+        raise TypeError("only Quick Pay's class reads the point outcomes")
+    return type(f"{cls.__name__}Point", (cls,), {"POINT": tuple(b.r_by_rr for b in point_blocks),
+                                                 "__module__": cls.__module__})
 
 
 __all__ = ["TALLY", "collect", "gate_window_sessions", "with_calendar", "DayTradersCombine", "DayTradersFunded",
            "TradeDayCombine", "FastPassFunded", "QuickPayFunded", "ticks_of", "won_at", "peak_bracket", "CLASSES",
-           "TWINS", "classes_for", "with_shift"]
+           "TWINS", "classes_for", "with_point", "NAMED"]

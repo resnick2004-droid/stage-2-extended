@@ -153,7 +153,7 @@ def tier1_blocks(blocks: Sequence[Any], dates: Sequence[date], reading: str) -> 
         raise ValueError(f"unknown reading {reading!r}")
     days = tier1_days()
     spec = window_spec()
-    out, n_open, n_in = [], 0, 0
+    out, n_open, n_in, both_windows = [], 0, 0, 0
     for b, d in zip(blocks, dates):
         kinds = days.get(d if isinstance(d, date) else date.fromisoformat(str(d)[:10]))
         if not kinds or b.r_by_rr is None or b.exit_by_rr is None or b.entry_t is None or len(b.pnl) == 0:
@@ -163,9 +163,12 @@ def tier1_blocks(blocks: Sequence[Any], dates: Sequence[date], reading: str) -> 
         mae_by = None if b.mae_by_rr is None else {k: np.array(v, float) for k, v in b.mae_by_rr.items()}
         pnl = np.array(b.pnl, float)
         changed = False
+        both_windows += int(len(windows_of(kinds)) > 1)
+        order = sorted(windows_of(kinds), key=lambda w: spec[w][0])      # a day's windows in time order
         for j in range(len(b.pnl)):
             ex = {float(k): float(v[j]) for k, v in b.exit_by_rr.items() if np.isfinite(float(r_by[k][j]))}
-            for w in windows_of(kinds):
+            own = float(pnl[j] / b.risked[j]) if b.risked[j] > 0 else math.nan
+            for w in order:                                               # the trade counted once, at its first window
                 t0 = spec[w][0]
                 if entry_inside(float(b.entry_t[j]), w):
                     n_in += 1
@@ -173,24 +176,28 @@ def tier1_blocks(blocks: Sequence[Any], dates: Sequence[date], reading: str) -> 
                     for k in r_by:
                         r_by[k][j] = np.nan
                     pnl[j] = np.nan
-                elif open_at(float(b.entry_t[j]), ex, t0):
+                    break
+                if open_at(float(b.entry_t[j]), ex, t0):
                     n_open += 1
                     if reading == "walked":
-                        continue
-                    changed = True
+                        break
                     S = int(round(float(b.risk_per_contract[j]) / W.Costs(fee_micro_eq=0.0).tick_value))
                     fee = float(b.fee[j]) if b.fee is not None else 0.0
-                    own = float(pnl[j] / b.risked[j]) if b.risked[j] > 0 else math.nan
                     for k in r_by:
-                        if np.isfinite(r_by[k][j]):
-                            hit = math.isclose(float(r_by[k][j]), own, abs_tol=1e-12)
-                            r_by[k][j] = book(float(k), S, fee, reading)
-                            if mae_by is not None and k in mae_by:
-                                mae_by[k][j] = max(float(mae_by[k][j]), -float(r_by[k][j]))
-                            if hit:
-                                pnl[j] = r_by[k][j] * float(b.risked[j])
+                        # 5.5 (M1): booked only at an R at which the position is still open at the window's start --
+                        # its exit bar there at or after it; at every other R the walked outcome and MAE stay
+                        if not np.isfinite(r_by[k][j]) or not ex.get(float(k), -np.inf) >= t0 + 1:
+                            continue
+                        hit = math.isclose(float(r_by[k][j]), own, abs_tol=1e-12)
+                        changed = True
+                        r_by[k][j] = book(float(k), S, fee, reading)
+                        if mae_by is not None and k in mae_by:
+                            mae_by[k][j] = max(float(mae_by[k][j]), -float(r_by[k][j]))
+                        if hit:
+                            pnl[j] = r_by[k][j] * float(b.risked[j])
+                    break
         out.append(replace(b, r_by_rr=r_by, mae_by_rr=mae_by, pnl=pnl) if changed else b)
-    return out, {"open_at_start": n_open, "entries_inside": n_in}
+    return out, {"open_at_start": n_open, "entries_inside": n_in, "days_with_both_windows": both_windows}
 
 
 # ------------------------------------------------------------------------------------------------ the 9.3 counts

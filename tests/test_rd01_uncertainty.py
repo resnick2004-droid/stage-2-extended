@@ -12,6 +12,9 @@ from scipy import stats
 
 from extended import firm_uncertainty as U
 
+#: m2: T-9's draws are children of section 12's seed for T-9 (20261991), none other
+KIDS = np.random.SeedSequence(U.SEED).spawn(4)
+
 
 def test_every_other_window_is_kept_and_no_two_kept_windows_share_a_session():
     h = 5
@@ -28,7 +31,7 @@ def test_every_other_window_is_kept_and_no_two_kept_windows_share_a_session():
 
 def test_the_interval_needs_four_kept_windows():
     h = 3
-    rng = np.random.default_rng(1)
+    rng = np.random.default_rng(KIDS[0])
     six = rng.normal(size=6 * h * 2)                     # 12 windows -> 6 kept
     r = U.paired_reading(six, h)
     assert r["n_w"] == 6 and r["interval"] is not None
@@ -62,7 +65,7 @@ def test_a_series_zero_on_every_kept_window_is_identical():
 def test_the_effective_sample_size_is_audit_bs_form():
     from extended.user_measures import n_eff_bartlett
 
-    x = np.random.default_rng(3).normal(size=200)
+    x = np.random.default_rng(KIDS[1]).normal(size=200)
     assert U.paired_reading(x, 21)["n_eff"] == pytest.approx(n_eff_bartlett(x, lag=21))
 
 
@@ -79,7 +82,16 @@ def test_the_coverage_on_one_small_overlapping_setting_and_the_label():
 
 
 def test_overlapping_series_are_built_as_the_readings_measures_are():
-    rng = np.random.default_rng(0)
+    rng = np.random.default_rng(KIDS[2])
     sess = rng.normal(size=30)
     y = U.per_start_sums(sess, 5, 20)
     assert len(y) == 20 and y[3] == pytest.approx(sess[3:8].sum())
+
+
+def test_identical_reads_the_values_not_the_window_means():
+    # m3: a 0 / +-1 paired series whose kept windows each hold equal helps and hurts is not "identical"
+    h = 2
+    x = np.array([1.0, -1.0, 0.0, 0.0] * 4)                # kept windows [1, -1] each: means zero, values not
+    r = U.paired_reading(x, h)
+    assert r["note"] != U.IDENTICAL
+    assert U.paired_reading(np.zeros(16), h)["note"] == U.IDENTICAL

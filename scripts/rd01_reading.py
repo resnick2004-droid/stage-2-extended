@@ -79,6 +79,21 @@ READING = ("DESCRIBED (RD-01, E-023 (1)): other firms' contracts on the register
            "or carried; 0 % denial and the placement off in the headline (E-008)")
 LADDER_PLANS = ("LU", "DT", "FP", "QP")
 PATHS = 500
+#: the build's readings printed in every manifest (the red team's n1, n2, n4, n8; E-092)
+CONVENTIONS = {
+    "dt_inactivity": "windows of 30 calendar days from the purchase (an evaluation) or the activation (a Pro account): "
+                     "the first [that date, that date + 29 days]; a later purchase dated its session's date, a day-0 "
+                     "purchase the calendar day before the first session; the account ends at the first close at which "
+                     "a window has ended, or will end before the next session, without a $200 day; 21 sessions in the "
+                     "gate",
+    "dt_30_percent": "the cycle's best day and profit as the engine's Consistency path keeps them (w_best, w_profit): "
+                     "the request day's P&L out of the cycle",
+    "qp_ceiling": "read at the close (an intraday crossing that falls back by the close is not a pause)",
+    "dt_inactivity_flag": "an evaluation closed for inactivity carries the engine's `abandoned` flag; counted as "
+                          "`inactive_closed`, never as a cash refusal",
+    "qp_bracket": "A-7 classifies won-at-R on the run's point outcomes on every arm (M3)",
+    "a4_logging": "a day-logging trade at one micro under the design's own stand-aside, its intended risk the table's",
+}
 #: the seeds the readings use (section 12; the gate's are each stream's registered gate seed)
 SEEDS = {"ladder": 20261990, "coverage": 20261991, "gate_p16": 20261206, "gate_p14": 20261131}
 
@@ -186,9 +201,9 @@ def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], sta
             if got is None:
                 job = st["jobs"][arm]
                 chosen = UJ.start_choice(len(job["blocks"]), starts)
-                blocks, r_shift, a11 = R.arm_inputs(st["jobs"]["point"], job, s, arm)
+                blocks, point_ref, a11 = R.arm_inputs(st["jobs"]["point"], job, s, arm)
                 cjob, kw = R.cell_job(job, s, blocks)
-                cell = R.run_cell(name, arm, off, cjob, s, chosen, kw, r_shift, direct=True)
+                cell = R.run_cell(name, arm, off, cjob, s, chosen, kw, point_ref, direct=True)
                 outs = R.reading_outs(cell, name, arm, off, s)
                 srows, table = UR.summary(name, arm, off, outs)
                 probs = list(cell["problems"]) + UR.consistency_problems(srows, outs, key)
@@ -198,6 +213,8 @@ def scorecard_reading(streams: dict[str, dict[str, Any]], runs: list[T.Run], sta
                 crows += _tag(R.account_count_rows(cell), **head)
                 crows += _tag([{"section": "counts", "measure": f"a11_{k}", "value": float(v)} for k, v in a11.items()],
                               **head)
+                crows += _tag([{"section": "identity_items_4_5", "measure": k, "value": float(v)}
+                               for k, v in cell["checks"].items()], **head)
                 recs = [o["rec"] for o in outs]
                 got = {"rows": crows, "table": UR.rounded(table).assign(run=run.name), "problems": probs,
                        "recs": recs, "cell": R.compact(cell) if run.plan == "TS" else None, "head": head}
@@ -243,11 +260,11 @@ def ladder_reading(streams: dict[str, dict[str, Any]], starts: int | None) -> tu
     cells = [("TS-16", T.settings_for("TS", "reference"))]
     cells += [(f"{p}-16-{c[0]}", T.settings_for(p, c)) for p in LADDER_PLANS for c in (T.STRICT, T.LENIENT)]
     for name, s in cells:
-        blocks, r_shift, _ = R.arm_inputs(st["jobs"]["point"], job, s, "verdict")
+        blocks, point_ref, _ = R.arm_inputs(st["jobs"]["point"], job, s, "verdict")
         cjob, kw = R.cell_job(job, s, blocks, ladder=True)
         for resp_name in R.LADDER:
             resp = B.BY_NAME[resp_name]
-            cell = R.run_cell("p16", "verdict", resp, cjob, s, chosen, kw, r_shift, direct=s.plan == "DT")
+            cell = R.run_cell("p16", "verdict", resp, cjob, s, chosen, kw, point_ref, direct=s.plan == "DT")
             outs = R.reading_outs(cell, "p16", "verdict", resp, s)
             srows, _t = UR.summary("p16", "verdict", resp, outs)
             problems += list(cell["problems"]) + UR.consistency_problems(srows, outs, f"{name} {resp_name}")
@@ -423,7 +440,8 @@ def main(argv: list[str] | None = None) -> int:
     runs = list(T.RUNS)
     params = {"declaration": R.DECLARATION, "purpose": a.purpose, "identity_row": a.identity_row,
               "repeat": a.repeat, "commit_read": commit, "starts": "every start", "runs": [r.name for r in runs],
-              "paths": PATHS, "workers": a.workers, "seeds": SEEDS, "code_blobs": code_blobs()}
+              "paths": PATHS, "workers": a.workers, "seeds": SEEDS, "code_blobs": code_blobs(),
+              "conventions": CONVENTIONS}
     if a.purpose == "firm_gate_beside":
         rows, paths, probs = gate_reading(PATHS, a.workers)
         frames = [pd.DataFrame(rows), paths]
