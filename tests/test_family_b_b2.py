@@ -46,6 +46,13 @@ required, here with each component's critical value the larger of its nominal on
   the null (the fourth review's check H), the coin-sided routing does not -- why C2's line takes the lesser;
 * **the confirmation (m4-3):** `t21w` at 126 sessions and one-sided 0.05, at the larger of 1.3 times nominal and B2
   over the development window, holds the level pooled and within 1.5 times it for every side series.
+
+**The sixth draft (Q-81, E-051)** names C1-f's null **(A), the realised paired lift on the judged block**: B2's slow
+follow components are centred within each replicate's block. The three C1-f tests here (seeds 60, 65, 66) hold the
+fourth and fifth drafts' null **(B), the expected lift across regimes**, whose components are centred at their
+expectation only; they stay as the record of that construction and of why (A) names the twin-sat-low case a
+generalisation question (`test_c1f_amplitude_rule_with_the_judged_block_term`). The family-level tests of level and
+power -- the sixth draft's rules -- are in `tests/test_family_b_level_power.py`, which imports this file's helpers.
 """
 from __future__ import annotations
 
@@ -186,6 +193,7 @@ def follow_x(rng, n_rep, g_amp, centred):
 
 
 def test_c1f_follow_component_centred_and_no_smaller_than_the_judged_amplitude():
+    """The record of null (B) (the fourth and fifth drafts), at 0.01; not the sixth draft's rule (module docstring)."""
     rng = np.random.default_rng([SEED, 60])
     for g in (0.02, 0.03):
         truth = follow_x(rng, R, g, True)
@@ -296,7 +304,11 @@ def test_c1f_amplitude_rule_with_the_judged_block_term():
     * the review's remedy alone -- also B2 at the twin's largest absolute judged calendar-year lift -- still
       over-rejects, in the replicates where the twin's lift sat low through all the judged years;
     * the fifth draft's -- that term taken over the twin's **and the model's own** judged yearly lifts, both read after
-      the judgement, both able only to raise the critical value -- holds the level."""
+      the judgement, both able only to raise the critical value -- holds the level.
+
+    The record of null (B), at 0.01. The sixth draft drops the model's term (E-051: at the family's level it leaves
+    C1-f no power) and names this case -- the twin's lift low through every judged year -- a generalisation question
+    under null (A), left to the confirmation."""
     rng = np.random.default_rng([SEED, 65])
     g_judged, a_choice = 0.03, 0.002
     g_pre = 3 * a_choice
@@ -327,7 +339,7 @@ def test_c1f_amplitude_rule_with_the_judged_block_term():
 def test_c1f_symmetric_slow_component():
     """m4-4: the model's own lift follows an independent slow regime of the twin's amplitude. B2 with both slow
     components holds the level; with the twin's only it rejects more (at this amplitude; at larger ones the difference
-    vanishes -- the scratch check m45_sym.py)."""
+    vanishes -- the scratch check m45_sym.py). The record of null (B), at 0.01."""
     rng = np.random.default_rng([SEED, 66])
     g = 0.03
     gt = g * (1.0 + markov(rng, 1 / 250, R, FOLLOW_N))
