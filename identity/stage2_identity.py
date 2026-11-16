@@ -60,8 +60,16 @@ starts must be reproduced one for one and their count must equal the manifest's 
 Beside the columns, the study's own refusing checks on the same runs: D-620's declaration (`user_journey.declaration_
 problems`), the builders' identity rows, and every run's payouts and fees against the engine's own totals.
 
+**The read (Q-48).** Stage 2's engine opens the bars and the atlas itself, so before it runs `main` authorises the read
+through `extended.reader.authorise_engine_read` (purpose `identity`; the window 2020-01-02 to 2026-07-16, every table
+being read whole; the decision row that registered the parts run -- **E-004** for the gate rows alone, **E-010** when
+U1's start rows run; the files `engine_reads` names). A refusal ends the run (exit 3) before anything is read. The read
+is ledgered (`results/read_ledger.jsonl`) only inside a clean run (E-026); elsewhere it is checked and nothing is
+written.
+
 Exit 0 when every part run holds; 3 when one is refused (the differing columns printed). Nothing is written except
-`--log-reads`. The process's peak memory is printed last (Windows: `GetProcessMemoryInfo`).
+`--log-reads` (and, inside a clean run, the read's ledger line). The process's peak memory is printed last (Windows:
+`GetProcessMemoryInfo`).
 """
 from __future__ import annotations
 
@@ -90,6 +98,45 @@ U1_MONEY = ("first_payout_cash", "spent_before_first_pass", "spent_before_first_
             *[f"net_month_{k}" for k in range(1, 13)], *[f"fees_month_{k}" for k in range(1, 13)], "net_30")
 U1_RATIO = ("monthly_mean_over_sd",)
 U1_TOL = 1e-6
+
+#: Q-48: the data files Stage 2's engine opens in this repository's identities (paths under the Stage 2 tree), as
+#: traced in the vendored code. P-14's inputs, for every design (`atlas_a3.load_inputs`, through `rc_screen.inputs`,
+#: `a3_brk30.inputs` and `customer_slices.p13_campaign`): A1's events and days (`a3_resolution_map.load_a1`) and A3's
+#: cached walk (`atlas_a3.cached_walk`). The bars (`atlas_a3.bar_arrays`) wherever a walk is made afresh: P-15's and
+#: P-16's coins (`rc_width_screen.build`, through `rc_dev_test` / `rc150_dev_test.build_cells`), the walker's and the
+#: breakeven re-walks. The manifests beside them (`manifest.json`: hashes, day lists) are read too; they hold no bar.
+A1_FILES = ("data/atlas/A1/events.parquet", "data/atlas/A1/days.parquet")
+A3_FILES = ("data/atlas/A3/walks.parquet",)
+BARS_FILES = ("data/bars/NQ/bars.parquet",)
+#: the decision rows that registered this script's identities: the gate rows (E-004) and U1's start rows (E-010)
+GATE_ROW, U1_ROW = "E-004", "E-010"
+#: U1's configurations whose inputs walk the bars afresh (the coins); P-14's come from the cached walks alone
+U1_WALKED = ("p15", "p16")
+
+
+def engine_files(root: Path, *, a3: bool = True, bars: bool) -> list[Path]:
+    """The data files Stage 2's engine opens under `root`: A1's, A3's walk when `a3`, the bars when `bars`."""
+    return [Path(root) / f for f in (*A1_FILES, *(A3_FILES if a3 else ()), *(BARS_FILES if bars else ()))]
+
+
+def engine_reads(root: Path, only: str | None, paths: int, u1_starts: str | None,
+                 u1_configs: Sequence[str]) -> tuple[str, list[Path], str]:
+    """(the decision row, the files, the description) of the engine's read for the parts this run makes: P-14's gate
+    rows (A1, A3), P-16's (and the bars), U1's configurations (A1, A3, the bars for P-15's and P-16's)."""
+    p14, p16 = only in (None, "p14"), only in (None, "p16")
+    u1 = u1_starts is not None and only in (None, "u1")
+    parts = ([f"P-14's gate paths ({paths})"] if p14 else []) + ([f"P-16's gate paths ({paths})"] if p16 else [])
+    if u1:
+        parts.append(f"U1's start rows for {', '.join(u1_configs)} ({u1_starts} starts)")
+    bars = p16 or (u1 and any(c in U1_WALKED for c in u1_configs))
+    row = U1_ROW if u1 else GATE_ROW
+    return row, engine_files(root, bars=bars), f"{row}'s identity (identity/stage2_identity.py): " + "; ".join(parts)
+
+
+def refusal(exc: BaseException) -> str:
+    """A refused read as one line beginning REFUSED (the reader's own messages already do)."""
+    text = str(exc)
+    return text if text.startswith("REFUSED") else f"REFUSED: {type(exc).__name__}: {text}"
 
 
 def _setup(root: Path) -> None:
@@ -476,6 +523,17 @@ def main(argv: list[str] | None = None) -> int:
     if not (root / "data" / "bars").is_dir() or not (root / "data" / "atlas").is_dir():
         print(f"REFUSED: {root / 'data'} has no bars or atlas (licensed, never committed; "
               "scripts/vendor_stage2.py --data copies them from Stage 2 and checks their hashes)")
+        return 3
+    if str(HERE) not in sys.path:
+        sys.path.insert(0, str(HERE))
+    from extended import reader                     # stdlib only: no engine, no sys.path change
+
+    row, files, what = engine_reads(root, a.only, a.paths, a.u1_starts, u1_configs)
+    try:                                            # Q-48: the engine's read authorised (ledgered in a clean run only)
+        reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
+                                     declaration=row, files=files, what=what)
+    except (reader.ReadRefused, FileNotFoundError) as exc:
+        print(refusal(exc), flush=True)
         return 3
     reads: set[str] = set()
     if a.log_reads is not None:

@@ -27,10 +27,12 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
 **The rules for a read touching the judged block** (`JudgedBlockSealed` otherwise), checked in this order:
 
 1. it declares a `purpose` -- a plain name such as `stage_C_judgement` or `identity` (letters, digits, underscores);
-2. **`identity`** -- the identities that must read Stage 2's whole window (E-004, E-010, E-011): the declaration is
-   the decision row of the identity (`"E-004"`), which must exist in `DECISIONS.md` and mention an identity, and the
-   process's script must be one of this repository's identity scripts (`identity/*.py`). Allowed in any tree, as
-   often as it runs; ledgered like every judged read;
+2. **`identity`** -- the identities that must read Stage 2's whole window (E-004, E-010, E-011, E-024, E-028): the
+   declaration is the decision row of the identity (`"E-004"`), which must exist in `DECISIONS.md` and mention an
+   identity, and the process's script must be one of this repository's identity scripts (`identity/*.py`). Allowed
+   in any tree, as often as it runs, and checked wherever it runs; **ledgered only inside a clean run** (E-026, the
+   lead's rule: `S2X_CLEAN_RUN` set -- and then the tree must be that run's checkout of a committed tree, with its
+   run id, as a family read's must), so a worktree's or the suite's identity runs write nothing (Q-48);
 3. every other purpose: a purpose containing a choice or fitting word (`choose`, `choice`, `fit`, `select`, `search`,
    `tune`, `train`, ...) never reads the judged block, whatever a declaration says (the audit's H-2); the declaration
    is a family file `prereg/F-NN_<name>.md` (or its id `F-NN`) that exists, is **pinned** -- its sha256 (of the LF text)
@@ -48,8 +50,9 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
    refused (`JudgedBlockReadTwice`) unless `repeat="E-NNN"` names a decision row that names the declaration -- one
    row, one more run. One run may read as often as it needs (bars, then walks; its own workers share the run id).
 
-**The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every read
-touching the judged block appends one line **before the data is read** (a ledger that cannot be written means no read)
+**The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every family's
+read touching the judged block, and every identity's read inside a clean run (`Authorisation.ledgered`), appends one
+line **before the data is read** (a ledger that cannot be written means no read)
 -- who (the script, its arguments, the calling function, the commit, the dirty flag, the process, the clean run and
 run id), what (each file with its sha256, size and whether it matches `vendor/DATA_MANIFEST_stage2.sha256`; the
 columns; the description), which dates (the span, the blocks, the judged part), which declaration (its path or row,
@@ -62,7 +65,8 @@ HEAD that is no longer in the working copy (`tests/test_reader.py` runs it on th
 
 **What it does not do.** It cannot see a read made inside a vendored call (Stage 2's engine opens the bars and the
 atlas itself in the identities and the U1 replay) -- such a runner calls `authorise_engine_read` with the files the
-engine will open, which checks and ledgers exactly as a read here does; nor a script that opens the files by hand
+engine will open, which checks and ledgers exactly as a read here does (every identity's `main` does, Q-48); nor a
+script that opens the files by hand
 (the scan in the tests is a deterrent for this repository's committed code, not proof). Withdrawn families are not
 machine-readable yet (the audit's R-8 registry): a withdrawn family's pinned file authorises a read if it names the
 purpose on its line -- F-01 names none.
@@ -155,6 +159,9 @@ class Authorisation:
     declaration_sha256: str | None
     kind: str | None                      # "family" | "identity" | None (a choice-block read)
     repeat: str | None
+    #: whether the read appends its line to the ledger: every family's judged read; an identity's only inside a clean
+    #: run (E-026); never a choice-block read
+    ledgered: bool = False
 
 
 # ------------------------------------------------------------------------------------------------- dates and blocks
@@ -464,12 +471,15 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
         raise JudgedBlockSealed(f"REFUSED: {head} and declares no purpose. A choice-block read needs no tag; a "
                                 "judged read declares its purpose and the pinned declaration that names it")
     if purpose == IDENTITY:
-        return Authorisation(s, e, blocks, True, first, e, purpose, _identity(declaration, tree, head), None,
-                             "identity", repeat)
+        ref = _identity(declaration, tree, head)
+        inside = bool(_run()[0])                        # E-026: an identity's read is ledgered only in a clean run,
+        if inside:                                      # and a clean run's marker is checked as a family read's is
+            _clean_run(tree, head)
+        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, "identity", repeat, inside)
     ref, sha = _family(declaration, purpose, tree, head)
     _clean_run(tree, head)
     _once(tree, ref, purpose, repeat, head)
-    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, "family", repeat)
+    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, "family", repeat, True)
 
 
 # ------------------------------------------------------------------------------------------------------- the ledger
@@ -662,7 +672,7 @@ def read_bars(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     from propedge.data.windows import assert_readable
 
     assert_readable(market, a.start, a.end, "development", what=what)     # Stage 2's guard first: no line if it refuses
-    if a.judged:
+    if a.ledgered:
         _record(a, "bars", [path], cols, what, tree)
     df = vendored_read_bars(market, a.start.isoformat(), a.end.isoformat(), "development", store=store, what=what)
     check_returned(df["day"].unique(), a.start, a.end)
@@ -693,7 +703,7 @@ def read_walks(family: str, table: str, start: Any, end: Any, *, purpose: str | 
     from propedge.data.windows import assert_readable
 
     assert_readable(market, a.start, a.end, "development", what=what)
-    if a.judged:
+    if a.ledgered:
         _record(a, "walks", [path], cols, what, tree)
     import pandas as pd
 
@@ -709,7 +719,8 @@ def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], 
                           repo: Path | str | None = None) -> Authorisation:
     """For a runner whose reads happen inside Stage 2's engine (the identities, the U1 replay, a cell rebuilt by
     `build_cells`): the same checks as a read here, and the same ledger line, for the `files` the engine will open.
-    Reads no data; call it before the engine runs."""
+    Reads no data; call it before the engine runs. A judged read names its files and they must exist, ledgered or
+    not (an identity outside a clean run, E-026)."""
     tree = Path(repo).resolve() if repo is not None else ROOT
     a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, repo=tree, what=what)
     paths = [Path(f) if Path(f).is_absolute() else tree / f for f in files]
@@ -719,6 +730,7 @@ def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], 
         absent = [str(p) for p in paths if not p.is_file()]
         if absent:
             raise FileNotFoundError(f"{what}: {absent[:3]} do not exist")
+    if a.ledgered:
         _record(a, "engine", paths, None, what, tree)
     return a
 

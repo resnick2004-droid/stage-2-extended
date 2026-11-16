@@ -9,8 +9,9 @@ What is asserted (the brief's item 4, and what the mechanism needs to be one):
   its pin, or that does not name the purpose on its `Judged-block reads:` line raises; a choice or fitting purpose
   never reads the judged block; a family's judged read runs only inside a clean run of a committed tree; the
   purpose `identity` is allowed from `identity/` scripts under a decision row that names an identity;
-* every judged read appends exactly one line (who, what, which dates, which declaration and purpose, when) and the
-  ledger only grows; a second run under the same declaration and purpose is refused unless a decision row names it;
+* every family's judged read appends exactly one line (who, what, which dates, which declaration and purpose, when)
+  and the ledger only grows; an identity's read is checked everywhere but ledgered only inside a clean run (E-026),
+  every time it runs there; a second run under the same declaration and purpose is refused unless a decision row names it;
   a ledger that was tampered with refuses the next read; a committed line removed or rewritten later is reported by
   the history check, here on a temporary repository and on this repository's own history;
 * this repository's code reads parquet files only through the reader.
@@ -211,9 +212,9 @@ def test_returned_rows_are_checked_after_the_read():
 
 def test_a_choice_block_read_needs_no_tag(tree):
     a = R.authorise("2020-01-02", "2023-12-29", repo=tree)
-    assert not a.judged and a.blocks == ("choice",) and a.purpose is None
+    assert not a.judged and a.blocks == ("choice",) and a.purpose is None and not a.ledgered
     a = R.authorise_engine_read("2020-01-02", "2023-12-29", files=[tree / BARS], what="t", repo=tree)
-    assert not a.judged
+    assert not a.judged and not a.ledgered
     for declaration in ("F-90", FAMILY, DRAFT, "E-904"):              # named, it must exist (no pin needed)
         assert R.authorise("2020-01-02", "2023-12-29", purpose="stage_A_supply", declaration=declaration,
                            repo=tree).declaration == declaration
@@ -250,7 +251,7 @@ def test_the_declaration_must_name_the_purpose_on_its_judged_block_line(tree):
         R.authorise("2024-01-02", "2026-07-16", purpose="stage_A_supply", declaration=FAMILY, repo=tree)
     for purpose in ("stage_C_judgement", "stage_D_scorecard"):
         a = R.authorise("2024-01-02", "2026-07-16", purpose=purpose, declaration=FAMILY, repo=tree)
-        assert a.judged and a.kind == "family" and a.declaration == FAMILY
+        assert a.judged and a.kind == "family" and a.declaration == FAMILY and a.ledgered
         assert a.declaration_sha256 == sha_lf(FAMILY_TEXT)
     a = R.authorise("2024-01-02", "2024-01-02", purpose="stage_C_judgement", declaration="F-90", repo=tree)
     assert a.declaration == FAMILY, "an F-id names its one file"
@@ -302,7 +303,7 @@ def test_identity_reads_are_allowed_from_identity_scripts(tree, monkeypatch):
     monkeypatch.delenv("S2X_CLEAN_RUN")                                    # identities run anywhere (E-004, E-010)
     monkeypatch.setattr(R, "_main_script", lambda: tree / "identity" / "probe.py")
     a = R.authorise("2020-01-02", "2026-07-16", purpose="identity", declaration="E-901", repo=tree)
-    assert a.judged and a.kind == "identity" and a.declaration == "E-901"
+    assert a.judged and a.kind == "identity" and a.declaration == "E-901" and not a.ledgered
     for declaration, why in (("E-904", "identity"), ("E-999", "no decision row"), (FAMILY, "decision row"),
                              (None, "decision row")):
         with pytest.raises(R.JudgedBlockSealed, match=why):
@@ -383,19 +384,64 @@ def test_a_second_run_under_the_same_declaration_and_purpose_raises(tree, monkey
         judged(tree, repeat="E-903")                              # one row, one more run
 
 
-def test_identity_reads_are_ledgered_and_never_limited(tree, monkeypatch):
+def test_identity_reads_are_ledgered_only_inside_a_clean_run_and_never_limited(tree, monkeypatch):
+    """E-026 (the lead's rule, Q-48): an identity's read is checked everywhere and ledgered only inside a clean run
+    (`S2X_CLEAN_RUN` set), so a worktree's or the suite's identity runs write nothing; inside one every run is ledgered
+    (never limited to once), under the clean run's own checks."""
+    ident = dict(purpose="identity", declaration="E-901", files=[tree / BARS, tree / WALKS], what="identity", repo=tree)
+    led = tree / "results" / "read_ledger.jsonl"
     monkeypatch.delenv("S2X_CLEAN_RUN")
     monkeypatch.delenv("S2X_RUN_ID")
     monkeypatch.setattr(R, "_main_script", lambda: tree / "identity" / "probe.py")
     for _ in range(3):
-        R.authorise_engine_read("2020-01-02", "2026-07-16", purpose="identity", declaration="E-901",
-                                files=[tree / BARS, tree / WALKS], what="identity", repo=tree)
+        a = R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+        assert a.judged and a.kind == "identity" and not a.ledgered
+    assert not led.exists(), "outside a clean run no ledger file appears"
+    # outside a clean run the authorisation is still checked, before anything is read
+    with pytest.raises(R.JudgedBlockSealed, match="does not mention an identity"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **{**ident, "declaration": "E-904"})
+    with pytest.raises(R.JudgedBlockSealed, match="no decision row"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **{**ident, "declaration": "E-999"})
+    with pytest.raises(FileNotFoundError):
+        R.authorise_engine_read("2020-01-02", "2026-07-16",
+                                **{**ident, "files": [tree / "vendor/stage2/data/atlas/A9/walks.parquet"]})
+    monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "probe.py")
+    with pytest.raises(R.JudgedBlockSealed, match="identity/"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+    assert not led.exists()
+
+    # inside a clean run: one line a read, every time
+    monkeypatch.setattr(R, "_main_script", lambda: tree / "identity" / "probe.py")
+    monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
+    monkeypatch.setenv("S2X_RUN_ID", "q32-sim@run-1")
+    for i in range(3):
+        if i == 2:
+            monkeypatch.setenv("S2X_RUN_ID", "q32-sim@run-2")            # another run: never limited to once
+        a = R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+        assert a.judged and a.kind == "identity" and a.ledgered
+        assert len(ledger_lines(tree)) == i + 1
     recs = [json.loads(x) for x in ledger_lines(tree)]
-    assert len(recs) == 3 and all(r["declaration"] == {"ref": "E-901", "sha256": None, "kind": "identity"}
-                                  for r in recs)
-    assert recs[0]["who"]["script"] == "identity/probe.py" and recs[0]["who"]["clean_run"] is None
-    assert recs[0]["dates"]["blocks"] == ["choice", "judged"]
+    assert all(r["declaration"] == {"ref": "E-901", "sha256": None, "kind": "identity"} and r["purpose"] == "identity"
+               for r in recs)
+    assert recs[0]["who"]["script"] == "identity/probe.py" and recs[0]["who"]["clean_run"] == RUN
+    assert [r["who"]["run_id"] for r in recs] == ["q32-sim@run-1", "q32-sim@run-1", "q32-sim@run-2"]
+    assert recs[0]["dates"]["blocks"] == ["choice", "judged"] and recs[0]["dates"]["judged_first"] == "2024-01-02"
     assert [f["path"] for f in recs[0]["what"]["files"]] == [BARS, WALKS]
+    assert all(f["in_data_manifest"] for f in recs[0]["what"]["files"])
+
+    # a clean run's marker is a claim, checked as a family read's: the checkout it names, its run id, committed code
+    monkeypatch.setenv("S2X_CLEAN_RUN", "another-run")
+    with pytest.raises(R.JudgedBlockSealed, match="clean run"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+    monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
+    monkeypatch.delenv("S2X_RUN_ID")
+    with pytest.raises(R.JudgedBlockSealed, match="S2X_RUN_ID"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+    monkeypatch.setenv("S2X_RUN_ID", "q32-sim@run-3")
+    (tree / "code.py").write_text("x = 2\n", encoding="utf-8")
+    with pytest.raises(R.JudgedBlockSealed, match="uncommitted"):
+        R.authorise_engine_read("2020-01-02", "2026-07-16", **ident)
+    assert len(ledger_lines(tree)) == 3, "a refused read writes nothing"
 
 
 @pytest.mark.parametrize("tamper", ["not json\n", '{"ledger": 1}\n', "TRUNCATE"])
@@ -555,6 +601,7 @@ from pathlib import Path
 sys.path.insert(0, {root!r})
 import extended.reader as R
 tree = Path(__file__).resolve().parent.parent
+R.RUNS_DIR = tree.parent                       # the temporary tree is the simulated clean run's checkout
 try:
     df = R.read_bars("2023-12-29", "2026-07-16", purpose="identity", declaration="E-901", repo=tree, what="probe")
     out = {{"days": sorted(set(df["day"]))}}
@@ -564,25 +611,36 @@ print(json.dumps(out))
 """
 
 
+@pytest.mark.parametrize("clean", [False, True])
 @pytest.mark.parametrize("where,ok", [("identity", True), ("scripts", False)])
-def test_an_identity_script_reads_the_whole_window_outside_a_clean_run(tmp_path, where, ok):
+def test_an_identity_script_reads_the_whole_window_ledgered_only_in_a_clean_run(tmp_path, where, ok, clean):
+    """An identity script reads the whole window in any tree; its read is ledgered only inside a clean run (E-026),
+    where it is one line. Any other script is refused, in a clean run or not, and writes nothing."""
     t = make_tree(tmp_path)
     probe = t / where / "probe.py"
     probe.parent.mkdir(exist_ok=True)
     probe.write_text(PROBE.format(root=str(ROOT)), encoding="utf-8")
+    git(t, "add", "-A")
+    git(t, "commit", "-q", "-m", "the probe")                    # a clean run's checkout is of a committed tree
     e = {k: v for k, v in os.environ.items() if k not in ("S2X_CLEAN_RUN", "S2X_RUN_ID")}
+    if clean:
+        e.update({"S2X_CLEAN_RUN": RUN, "S2X_RUN_ID": "q48-sim@probe"})
     r = subprocess.run([sys.executable, f"{where}/probe.py"], cwd=t, capture_output=True, text=True, timeout=300,
                        env=e)
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
     out = json.loads(r.stdout.strip().splitlines()[-1])
-    recs = [json.loads(x) for x in ledger_lines(t)]
+    led = t / "results" / "read_ledger.jsonl"
     if ok:
         assert out["days"] == ["2023-12-29", "2024-01-02", "2026-07-16"], out
-        assert len(recs) == 1 and recs[0]["purpose"] == "identity" and recs[0]["who"]["script"] == "identity/probe.py"
-        assert recs[0]["who"]["clean_run"] is None and recs[0]["dates"]["judged_first"] == "2024-01-02"
     else:
         assert out["error"] == "JudgedBlockSealed" and "identity/" in out["msg"], out
-        assert recs == []
+    if ok and clean:
+        recs = [json.loads(x) for x in ledger_lines(t)]
+        assert len(recs) == 1 and recs[0]["purpose"] == "identity" and recs[0]["who"]["script"] == "identity/probe.py"
+        assert recs[0]["who"]["clean_run"] == RUN and recs[0]["who"]["run_id"] == "q48-sim@probe"
+        assert recs[0]["dates"]["judged_first"] == "2024-01-02" and recs[0]["what"]["kind"] == "bars"
+    else:
+        assert not led.exists(), "no ledger file outside a clean run, and none for a refused read"
 
 
 # ------------------------------------------------------------------------------------------------------- one door

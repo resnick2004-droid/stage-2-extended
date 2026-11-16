@@ -33,7 +33,14 @@ distinct over 3,000 starts.
 `--control <response>` (a negative control, E-010's kind): the same comparison with that response on must be refused
 -- the identity can tell a response on from off.
 
-Exit 0 when every part run holds; 3 when one is refused. Nothing is written. Peak memory printed last.
+**The read (Q-48).** With `--u1-starts` (and `--control`), before anything runs, `main` authorises Stage 2's engine's
+read through `extended.reader.authorise_engine_read` (purpose `identity`, declaration **E-024**, the window 2020-01-02
+to 2026-07-16; the files: A1's events and days and A3's cached walk for every configuration, the bars for P-15's and
+P-16's walks); a refusal ends the run (exit 3) before anything is read. Ledgered only inside a clean run (E-026).
+`--synthetic` reads no bar or walk and authorises nothing.
+
+Exit 0 when every part run holds; 3 when one is refused. Nothing is written (inside a clean run, the read's ledger
+line). Peak memory printed last.
 """
 from __future__ import annotations
 
@@ -57,8 +64,13 @@ import numpy as np  # noqa: E402
 
 import stage2_identity as SI  # noqa: E402  (identity/stage2_identity.py: u1_compare, the file's name, peak memory)
 
+from extended import reader  # noqa: E402
 from extended import user_beside as B  # noqa: E402
 
+#: the Stage 2 tree the engine reads (its data checked and named for the read's authorisation, Q-48)
+VENDOR = ROOT / "vendor" / "stage2"
+#: the decision row that registered this identity (Q-17's, merged under E-024)
+READ_ROW = "E-024"
 U1_CONFIGS = ("p14", "p16")
 #: the synthetic campaigns' declared draw seed and the path seeds tried (the brief's block)
 SYN_DRAW_SEED = B.SEED_BLOCK[1]
@@ -374,6 +386,22 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if not a.synthetic and a.u1_starts is None:
         ap.error("give --synthetic and/or --u1-starts")
+    configs = tuple(x for x in a.configs.split(",") if x)
+    if a.u1_starts is not None:
+        root = VENDOR / "data"
+        if not ((root / "bars").is_dir() and (root / "atlas").is_dir()):
+            print("REFUSED: no bars or atlas (scripts/vendor_stage2.py --data)")
+            return 3
+        files = SI.engine_files(VENDOR, bars=any(c in SI.U1_WALKED for c in configs))
+        what = (f"{READ_ROW}'s identity (identity/user_beside_identity.py): U1's start rows for {', '.join(configs)} "
+                f"({a.u1_starts} starts) through the adapter, "
+                + ("every response off" if a.control is None else f"the negative control {a.control}"))
+        try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
+            reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
+                                         declaration=READ_ROW, files=files, what=what)
+        except (reader.ReadRefused, FileNotFoundError) as exc:
+            print(SI.refusal(exc), flush=True)
+            return 3
     rc = 0
     if a.synthetic:
         t0 = time.time()
@@ -388,11 +416,6 @@ def main(argv: list[str] | None = None) -> int:
                   f"denial; {time.time() - t0:.0f} s)", flush=True)
     if a.u1_starts is not None:
         starts = None if a.u1_starts == "all" else int(a.u1_starts)
-        configs = tuple(x for x in a.configs.split(",") if x)
-        root = ROOT / "vendor" / "stage2" / "data"
-        if not ((root / "bars").is_dir() and (root / "atlas").is_dir()):
-            print("REFUSED: no bars or atlas (scripts/vendor_stage2.py --data)")
-            return 3
         if a.control is not None:
             for name, r in u1_problems(configs, starts, a.workers, a.control).items():
                 if r["problems"]:
