@@ -93,7 +93,7 @@ def _authorise(a) -> int | None:
     print(f"reader: purpose={READ_PURPOSE} declaration={READ_ROW} span {reader.CHOICE_START} to {end} files "
           + ", ".join(f"vendor/stage2/{f}" for f in READ_FILES), flush=True)
     try:
-        reader.authorise_engine_read(reader.CHOICE_START, end, purpose=READ_PURPOSE, declaration=READ_ROW,
+        reader.authorise_engine_read(reader.CHOICE_START, end, purpose=READ_PURPOSE, declaration=READ_ROW, design="P-16",
                                      files=files, what=f"{READ_ROW}: P-16's registered pairs (scripts/q16_p16_pairs.py)")
     except (reader.ReadRefused, FileNotFoundError, ValueError) as exc:
         text = str(exc)
