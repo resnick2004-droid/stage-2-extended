@@ -33,11 +33,13 @@ multiplicity is a refusal. No red-team review at all: refuse, unless the caller'
 
 ## How this repository adapts the templates
 
-The objective is not Stage 2's long-run gate. It is `CHARTER.md` sections 2-3: **P**, the mean share of start days
-ahead (net cash above zero) at months 1, 2 and 3, on the `verdict` arm (every R's outcome at the one-sided 95 % lower
-bound of its edge), with Stage 2 D-621's guarded measures; **S3c** (payouts per fee dollar at month 3) the screening
-target; the frontier on P, S1, S3a, S5a reported, never one number; **R\* = P-14**; and Stage 2 D-621 (3)'s selection
-rule at the family's level **0.05 / (k (k + 1))**. Stage 2's long-run gate (growth on the required bankroll at the
+The objective is `CHARTER.md` sections 2-3 **as the operator amended them (E-008, E-014, E-015)**: a design is
+**judged on its trades first** -- the lift over the coin twin on the same brackets, on the judged block, one-sided at
+the family's level **0.05 / (k (k + 1))** by **the calibrated statistic** (TASK_QUEUE Q-16; refuse to pin a family
+before it is merged), its value-map price at that bound at least a declared bar; **the user scorecard beside, never
+the pass line** -- P, Stage 2 D-621's guarded measures, the frontier against **R\* = P-14**, E-007 (e)'s readings and
+E-014/E-015's journey scorecard. Stage 2 D-621 (3) stays on record and no longer decides (its line (i) does not deliver
+its level, E-007). Stage 2's long-run gate (growth on the required bankroll at the
 bound, D-145) stays a **floor** inside that rule, not the pass line. Stage one's e >= 0.10 with bound >= 0.05 (propsim
 D-47) is reported beside, never a line.
 
@@ -81,9 +83,12 @@ D-47) is reported beside, never a line.
    limits (bankroll, time to first payout) fixed in the file before the read; the long-run gate beside. A promised
    measure that later goes missing is a deviation the auditor will find; say so if one is vague.
 
-6. **The selection rule, unweakened.** Kill lines on supply, resolution (at most 5 % to the 15:10 CT flatten, no time
-   stops) and realised risk (Stage 2 D-308) read **before any outcome**; one pick chosen on the choice block by a
-   stated rule; judged on the judged block by Stage 2 D-621 (3) unchanged: (i) the paired difference in P from R\* above
+6. **The selection rule, unweakened -- E-008's.** Kill lines on supply, resolution (at most 5 % to the 15:10 CT flatten,
+   Stage 2 D-212 as D-308 raised it; no time stops) and realised risk (90 % of trades within 10 %, Stage 2 D-212) read
+   **before any outcome**; one pick chosen on the choice block by a stated rule; judged on the judged block by **the
+   trades' calibrated lift at the family's level and its valued lift at the declared bar**, with the long-run gate,
+   every offered R resolving, verified rules and conduct tier 1 as floors; the user scorecard and its limits (E-015)
+   beside as menu flags, never failing a design. *Stage 2 D-621 (3), which no longer decides, read:* (i) the paired difference in P from R\* above
    zero with the moving-block bootstrap interval (63-session blocks, seed 20261700, 2,000 draws) excluding zero at the
    family's level; (ii) no guarded measure worse than R\* by more than five percentage points on a share or ten per cent
    on dollars, sessions and ratios; (iii) the gate as a floor -- growth on the required bankroll at the bound above zero
