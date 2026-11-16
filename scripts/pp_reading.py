@@ -2,8 +2,8 @@
 months, described, never carried -- the 11 runs on both arms, the 32 replays and 8 gates beside, from a clean checkout,
 its reads authorised under the declaration's three purposes, after its identities.
 
-    python scripts/run_clean.py --name pp-reading --task Q-105 --hours 8 --mem-gb 2.5 -- \\
-        python scripts/pp_reading.py --workers 2
+    python scripts/run_clean.py --name pp-reading --commit <the run's commit> --task Q-105 --hours 8 --mem-gb 2.5 \\
+        -- python scripts/pp_reading.py --workers 2
     python scripts/pp_reading.py --synthetic --results-dir <a temporary folder>    # the pipeline on a synthetic toy
 
 **Refusing, before any of the engine's work** (exit 3, nothing written, nothing ledgered):
@@ -226,7 +226,8 @@ def main(argv: list[str] | None = None) -> int:
                        "references": sum(1 for r in runs if r[1] == "ref"),
                        "rule_sensitivity": sum(1 for r in runs if r[2] == "minimal"),
                        "replays_beside": len(RUN.BESIDE) * sum(1 for r in runs if r[2] == "declared"),
-                       "gates": 2 * len(RUN.NEW_CELLS) * len(designs)},
+                       "gates": len(RUN.NEW_CELLS) * len(designs),        # the new cells' gates (section 12),
+                       "gate_twins": len(RUN.NEW_CELLS) * len(designs)},  # each with its zero-edge twin (9.1 item 8)
         "beside": {"responses": list(RUN.BESIDE), "arm": "verdict", "cells": "the policy cells (not the sensitivity)"},
         "gates": {"cells": list(RUN.NEW_CELLS), "paths": int(inputs.n_paths()), "twin": True, "levels": [0.0]},
         "recorder_columns": list(RUN.RECORD_COLUMNS),

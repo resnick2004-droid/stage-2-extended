@@ -141,7 +141,7 @@ def section_e2e() -> None:
     check(par.get("run_count") == 11, f"the synthetic run counts {par.get('run_count')} runs, not 11 (two designs: "
                                       "2 references, 6 new, 3 rule sensitivity)")
     check(par.get("run_counts") == {"policy_runs": 8, "new": 6, "references": 2, "rule_sensitivity": 3,
-                                    "replays_beside": 32, "gates": 12}, f"the run counts {par.get('run_counts')}")
+                                    "replays_beside": 32, "gates": 6, "gate_twins": 6}, f"the run counts {par.get('run_counts')}")
     import test_pp_draft as D
 
     check(par.get("seeds", {}).get("honesty_series") == D.COVERAGE_SEED,
