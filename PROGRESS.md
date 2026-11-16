@@ -48,3 +48,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | **Q-16 merged (E-035): the pass line has a calibrated statistic (`cons`).** Q-39 merged (E-034). Q-52: family B to a fourth draft; M3-2 ruled outside the closed branch with a partialled-out lift beside (E-036). The one-door scan gained a recorded exemption for derived files. Q-56, Q-57 dispatched; the heavy chain started (Q-22, Q-51, Q-44, Q-18, Q-45, then Q-55). |
 | 2026-11-16 | lead | Q-48 merged (E-037). Q-58 dispatched. The heavy chain started: Q-22 (P-15's start rows, every start), Q-51 (the gate identities at 500 paths). |
 | 2026-11-16 | lead | Family O and F-02's Q-16 marks merged (E-039); Q-53, Q-60, Q-59, Q-55 dispatched; the heavy chain running (Q-22 first). |
+| 2026-11-16 | lead | Family B's fourth draft merged (E-040); Q-61 (snapshot extension) and Q-62 (fourth read) dispatched. |

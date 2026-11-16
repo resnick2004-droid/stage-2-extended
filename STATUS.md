@@ -44,12 +44,12 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-verify | wt/wt-verify | Q-55 the calibration's clean-run entry point | running |
 | wt-levels | wt/wt-levels | Q-53 F-02's final red-team read | running |
 | wt-user | wt/wt-user | -- (Q-40 done, E-029) | idle |
-| wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
+| wt-features | wt/wt-features | Q-61 the snapshot extended with six result files | running |
 | wt-lit | wt/wt-lit | Q-60 the red team on family O | running |
 | wt-firms | wt/wt-firms | Q-59 DayTraders' and TradeDay's remaining rules | running |
 | wt-payout | wt/wt-payout | -- (Q-54 drafted, E-038) | idle |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
-| wt-scout | wt/wt-scout | Q-56 family B's fourth draft | running |
+| wt-scout | wt/wt-scout | Q-62 the red team's fourth read of family B | running |
 | wt-infra | wt/wt-infra | Q-58 the readings scripts through the reader | running |
 
 ## Running now
