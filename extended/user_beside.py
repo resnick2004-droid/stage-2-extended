@@ -48,6 +48,30 @@ Everything a start reads is made by the vendored functions: `user_journey._one_s
 runs, the checks of every run's payouts and fees against the engine's totals), `customer_journey.single_events`,
 `customer_slices.slice_measures`, `user_journey.payout_arrivals`. Added per start: its daily path measures
 (`extended.user_measures.daily`, from the long replay's close-by-close cash) and what the response did.
+
+**Q-76 (E-046 (3)): a declared funded-account class.** `run_starts(..., funded_account_cls=C)` (and
+`response_args(..., funded_account_cls=C)`) replays a design whose funded accounts are `C` -- the vendored
+`FundedAccount` or a subclass of it, the keyword named after `extended.gate.run_gate`'s (Q-47) and checked by the
+gate's own check (`TypeError` for anything else, and, at more than one worker, for a class that cannot pickle; it
+travels to the workers in the task). With the keyword absent (None) every behaviour is as before Q-76: the same tasks,
+the same replay arguments, the same outputs bit for bit, and `base_problems` still refuses a path that already carries
+`funded_account_cls` -- with the keyword given too: the keyword is the one way in. When given:
+
+* the class is passed to every replay's path (`funded_account_cls`) as given -- except under the next two kinds of
+  response;
+* **forfeiture** composes over it: `forfeit_class(C)` is `C` with the forfeiture's household rule raised by a denial
+  (the default `ForfeitFundedAccount`'s three members over `C`); refused (`ValueError`) for a class with a household
+  rule of its own (`HOUSEHOLD_CLOSES_AT_LIVE` or `closes_household`), whose reading the forfeiture would override;
+* **the Focused Trader models** are refused (`ValueError`) for any class but the vendored `FundedAccount` itself -- the
+  engine's own rule (`simulate_lockstep_path`: "the Focused Trader Program is Topstep's ... it applies to Topstep's
+  FundedAccount only"), raised here before any start runs;
+* every start's output gains one last key, `funded_account_cls` (the class's module and name, `class_name`), and
+  `class_parameters(C)` is the entry a runner puts in its result's parameters (empty when absent): named only when
+  given, as the engine names a class in its provenance only when given.
+
+Its identities: `tests/q76_synthetic.py` (absent = the adapter before Q-76 bit for bit on all 19 responses; a
+pass-through class equal apart from naming; a probe class's documented effect; the refusals) and
+`identity/user_beside_identity.py --funded-cls` (U1's start rows at the default and with the gate's pass-through class).
 """
 from __future__ import annotations
 
@@ -131,12 +155,19 @@ def start_seed(start_day: int, base: int = DENIAL_SEED) -> int:
 
 
 _FORFEIT_CLS: list[type] = []
+#: Q-76: the forfeiture composed over a declared class, one a class (made in the process that replays, never pickled)
+_FORFEIT_OVER: dict[type, type] = {}
 
 
-def forfeit_class() -> type:
+def forfeit_class(base: type | None = None) -> type:
     """`ForfeitFundedAccount`: Topstep's funded account (the vendored `FundedAccount`, unchanged) with the engine's
     household rule (R7) raised by a tier-3 denial -- so the denied account's close ends every other live account, no
-    pass waiting is activated and the path buys nothing more (`lockstep.py:1955-1975`, 2043-2046, 2131)."""
+    pass waiting is activated and the path buys nothing more (`lockstep.py:1955-1975`, 2043-2046, 2131).
+
+    Q-76: with `base` (a declared funded-account class) the same three members over `base` instead (`forfeit_over`);
+    None is the class above, unchanged."""
+    if base is not None:
+        return forfeit_over(base)
     if not _FORFEIT_CLS:
         from propedge.campaign.lockstep import FundedAccount
 
@@ -152,6 +183,100 @@ def forfeit_class() -> type:
 
         _FORFEIT_CLS.append(ForfeitFundedAccount)
     return _FORFEIT_CLS[0]
+
+
+# ------------------------------------------------------------------------------------------------ Q-76: the class
+
+
+def check_funded_account_cls(funded_account_cls: type | None, workers: int = 1) -> None:
+    """Q-76: the gate's check (`extended.gate.check_funded_account_cls`, Q-47): None passes; a class that is not the
+    vendored `FundedAccount` or a subclass of it is refused (`TypeError`), and so, at more than one worker, is one that
+    cannot pickle (the class travels to the workers in the task; one defined inside a function cannot). Anything that
+    is not a class is refused first by its type's name alone (the gate's message shows the object's `repr`, which an
+    object can fail to make -- a half-built dataclass instance raises `AttributeError` there)."""
+    if funded_account_cls is None:
+        return
+    if not isinstance(funded_account_cls, type):
+        raise TypeError("funded_account_cls must be the vendored FundedAccount or a subclass of it (a class), got a "
+                        f"{type(funded_account_cls).__name__}")
+    from extended.gate import check_funded_account_cls as gate_check
+
+    gate_check(funded_account_cls, int(workers))
+
+
+def class_name(funded_account_cls: type) -> str:
+    """The class's module and name: the gate's `class_name`, as it names a class on its rows (and the engine in its
+    provenance)."""
+    from extended.gate import class_name as gate_name
+
+    return gate_name(funded_account_cls)
+
+
+def class_parameters(funded_account_cls: type | None) -> dict[str, Any]:
+    """Q-76: the entry naming the class in a result's parameters (and provenance) -- `{"funded_account_cls": <its
+    module and name>}` when given, empty when absent (named only when given, as the engine does)."""
+    return {} if funded_account_cls is None else {"funded_account_cls": class_name(funded_account_cls)}
+
+
+def own_household_rule(funded_account_cls: type) -> bool:
+    """Whether a funded class carries a household rule of its own (`HOUSEHOLD_CLOSES_AT_LIVE`, or `closes_household`
+    raised by its own accounts) -- which the forfeiture's rule would override."""
+    return hasattr(funded_account_cls, "HOUSEHOLD_CLOSES_AT_LIVE") or hasattr(funded_account_cls, "closes_household")
+
+
+def forfeit_over(base: type) -> type:
+    """The forfeiture over a declared class: `base` with `ForfeitFundedAccount`'s three members (the household rule
+    declared on, the account's flag off, raised by `deny_last_payout` after `base`'s own). One a class, cached, made
+    where the replay runs (inside the task), so it never has to pickle. Refused for a class that is not a
+    `FundedAccount` subclass (`TypeError`) and for one with a household rule of its own (`ValueError`): the forfeiture
+    would override that rule's reading, a combination no declaration has made."""
+    check_funded_account_cls(base, 1)
+    if own_household_rule(base):
+        raise ValueError(f"REFUSED (Q-76): {class_name(base)} has a household rule of its own; all-accounts forfeiture "
+                         "over it would override that rule's reading -- not declared")
+    if base not in _FORFEIT_OVER:
+
+        class ForfeitFundedAccount(base):
+            """A denied payout forfeits the profile (Terms of Use s.27 as audit C read it), over a declared class."""
+
+            HOUSEHOLD_CLOSES_AT_LIVE = True
+            closes_household = False
+
+            def deny_last_payout(self, calendar_day: int) -> None:
+                super().deny_last_payout(calendar_day)
+                self.closes_household = True
+
+        ForfeitFundedAccount.__qualname__ = f"forfeit_over.<locals>.ForfeitFundedAccount[{class_name(base)}]"
+        _FORFEIT_OVER[base] = ForfeitFundedAccount
+    return _FORFEIT_OVER[base]
+
+
+def class_problems(funded_account_cls: type | None, resp: Response) -> list[str]:
+    """Q-76: why a response cannot run with the declared class (empty when absent): a Focused Trader model with any
+    class but the vendored `FundedAccount` (the engine's own rule, `simulate_lockstep_path`), the forfeiture over a
+    class with a household rule of its own."""
+    if funded_account_cls is None:
+        return []
+    from propedge.campaign.lockstep import FundedAccount
+
+    out = []
+    if resp.kind == "ftp" and funded_account_cls is not FundedAccount:
+        out.append(f"{resp.name}: the Focused Trader Program is Topstep's and the engine applies it to the vendored "
+                   f"FundedAccount only (simulate_lockstep_path), not {class_name(funded_account_cls)}")
+    if resp.kind == "forfeit" and own_household_rule(funded_account_cls):
+        out.append(f"{resp.name}: {class_name(funded_account_cls)} has a household rule of its own; all-accounts "
+                   "forfeiture over it would override that rule's reading -- not declared")
+    return out
+
+
+def check_class_response(funded_account_cls: type | None, resp: Response, workers: int = 1) -> None:
+    """Q-76: the class checked (`TypeError`), then against the response (`ValueError`); nothing when absent."""
+    if funded_account_cls is None:
+        return
+    check_funded_account_cls(funded_account_cls, int(workers))
+    bad = class_problems(funded_account_cls, resp)
+    if bad:
+        raise ValueError("REFUSED (Q-76): " + "; ".join(bad))
 
 
 def base_problems(args: dict[str, Any]) -> list[str]:
@@ -171,14 +296,17 @@ def base_problems(args: dict[str, Any]) -> list[str]:
     return out
 
 
-def response_args(args: dict[str, Any], resp: Response) -> dict[str, Any]:
+def response_args(args: dict[str, Any], resp: Response, funded_account_cls: type | None = None) -> dict[str, Any]:
     """The replay's arguments (`customer_slices.engine_args`) with one response switched on; refuses arguments that are
-    not the vendored 0 %, placement-off call."""
+    not the vendored 0 %, placement-off call. Q-76: `funded_account_cls` (default None: as before) is the declared
+    funded-account class, checked (`check_class_response`) and put on the path -- for the forfeiture, composed
+    (`forfeit_class(funded_account_cls)`)."""
     from propedge.campaign.lockstep import ConductModel, FocusedTraderModel
 
     bad = base_problems(args)
     if bad:
         raise ValueError("REFUSED (Q-17): " + "; ".join(bad))
+    check_class_response(funded_account_cls, resp)                              # Q-76: nothing when absent
     path = dict(args["path"])
     path["conduct"] = ConductModel(rtp=bool(resp.rtp), enforcement_p=float(resp.enforcement_p),
                                    rtp_warnings=int(resp.rtp_warnings))
@@ -187,10 +315,12 @@ def response_args(args: dict[str, Any], resp: Response) -> dict[str, Any]:
             {"funded_lost": int(resp.ftp_threshold)}
         path["focused_trader"] = FocusedTraderModel(path=str(resp.ftp_path), window_days=FTP_WINDOW, **kw)
     elif resp.kind == "forfeit":
-        path["funded_account_cls"] = forfeit_class()
+        path["funded_account_cls"] = forfeit_class(funded_account_cls)          # Q-76: None -> the default, as before
         path["household_closure"] = True
     elif resp.kind not in ("off", "denial", "rtp"):
         raise ValueError(f"unknown response kind {resp.kind!r}")
+    if funded_account_cls is not None and resp.kind != "forfeit":               # Q-76: on the path only when given
+        path["funded_account_cls"] = funded_account_cls
     return {**args, "path": path}
 
 
@@ -299,9 +429,11 @@ def response_record(lp: Any, resp: Response, info: dict[str, Any] | None = None)
 
 
 def _task(task: tuple) -> list[dict[str, Any]]:
-    """(design, arm, response name, blocks, dates, args, starts) -> each start's output: the vendored
-    `user_journey._one_start` on this adapter's runs (long and exact-length), with the start's daily path measures and
-    what the response did. The heavy parts of `_one_start`'s output (D-518's side) are dropped."""
+    """(design, arm, response name, blocks, dates, args, starts, exact_every[, funded_account_cls]) -> each start's
+    output: the vendored `user_journey._one_start` on this adapter's runs (long and exact-length), with the start's
+    daily path measures and what the response did. The heavy parts of `_one_start`'s output (D-518's side) are
+    dropped. Q-76: the ninth item, present only when a class is declared, is that class; each output then names it
+    (its last key, `funded_account_cls`)."""
     import warnings
 
     import customer_journey as CJ
@@ -312,9 +444,11 @@ def _task(task: tuple) -> list[dict[str, Any]]:
     from propedge.research import user_journey as U
 
     warnings.filterwarnings("ignore")
-    design, arm, rname, blocks, dates, args, starts, exact_every = task
+    design, arm, rname, blocks, dates, args, starts, exact_every = task[:8]
+    cls = task[8] if len(task) > 8 else None                                    # Q-76
+    named = class_parameters(cls)                                               # Q-76: empty when absent
     resp = BY_NAME[rname]
-    a = response_args(args, resp)
+    a = response_args(args, resp) if cls is None else response_args(args, resp, cls)
     sub = float(args["path"]["subscription"])
     lag = int(args["path"]["payout_lag_days"])
     n = len(blocks)
@@ -351,7 +485,8 @@ def _task(task: tuple) -> list[dict[str, Any]]:
         rel = np.asarray(long_run.path.cash_series, float) - float(long_run.path.initial_bankroll)
         out.append({"rec": o["rec"], "differs": o["differs"], "checked": o["checked"], "pay_bad": o["pay_bad"],
                     "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
-                    "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": start_seed(s)})
+                    "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": start_seed(s),
+                    **named})                                                   # Q-76: named only when given
     return out
 
 
@@ -377,21 +512,35 @@ def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
 
 
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
-               chunk: int = 20, exact_every: int | None = None) -> list[dict[str, Any]]:
+               chunk: int = 20, exact_every: int | None = None,
+               funded_account_cls: type | None = None) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
-    `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start)."""
+    `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start).
+
+    Q-76: `funded_account_cls` (default None: every behaviour as before) is the design's declared funded-account class
+    on every replay; checked, with the design's arguments, before any start runs (`TypeError` for a class that is not
+    a `FundedAccount` subclass or, at more than one worker, cannot pickle; `ValueError` for a response it cannot run
+    with, or a path already carrying a class); added to each task as its ninth item, and named on every start's
+    output, only when given."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
         raise ValueError("Q-17 replays single-firm designs only")
+    if funded_account_cls is not None:                                          # Q-76: refused before any start
+        check_class_response(funded_account_cls, resp, int(workers))
+        response_args(job["args"], resp, funded_account_cls)
     every = 1 if resp.kind == "off" else int(EXACT_EVERY if exact_every is None else exact_every)
     chunks = [list(starts[j:j + chunk]) for j in range(0, len(starts), chunk)]
     tasks = [(design, arm, resp.name, job["blocks"], job["dates"], job["args"], c, every) for c in chunks]
+    if funded_account_cls is not None:                                          # Q-76: the ninth item, only when given
+        tasks = [(*t, funded_account_cls) for t in tasks]
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
     return [x for part in res for x in part]
 
 
 __all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "EXACT_EVERY", "FTP_BINDING", "FTP_BUDGET", "Response",
            "RESPONSES", "BY_NAME", "start_seed", "forfeit_class", "base_problems", "response_args", "replay",
-           "binding_ftp", "forfeit_view", "response_record", "long_record", "run_starts"]
+           "binding_ftp", "forfeit_view", "response_record", "long_record", "run_starts",
+           "check_funded_account_cls", "class_name", "class_parameters", "own_household_rule", "forfeit_over",
+           "class_problems", "check_class_response"]

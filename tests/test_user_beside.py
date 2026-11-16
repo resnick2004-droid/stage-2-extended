@@ -8,6 +8,9 @@
   the binding models are the vendored grid's; the start seeds are distinct.
 * slow (`--u1-starts 4`): with every response off, the adapter reproduces `results/user_journey.csv`'s start rows for
   P-14 and P-16 at 4 starts, both arms, every column (E-010's comparison).
+* Q-76, slow (`--u1-starts 4 --funded-cls both`) and heavy (`--u1-starts all --funded-cls both`): the same at the
+  class keyword's default and with the gate's pass-through class given; the class run's outputs are the default's
+  apart from naming. The keyword's synthetic checks are `tests/test_user_beside_class.py` (fast).
 """
 from __future__ import annotations
 
@@ -39,6 +42,29 @@ def test_every_response_off_reproduces_u1s_start_rows():
     r = run("--u1-starts", "4", timeout=1800)
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
     assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
+
+
+@pytest.mark.slow
+def test_u1s_start_rows_at_the_class_keywords_default_and_with_the_pass_through_class():
+    """Q-76: the same identity at `funded_account_cls`'s default and with the gate's pass-through class given -- U1's
+    start rows for both, and the class run's outputs the default's bit for bit apart from its naming."""
+    if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    r = run("--u1-starts", "4", "--funded-cls", "both", timeout=3600)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
+    assert r.stdout.count("and with the pass-through class (Q-76)") == 2, r.stdout
+
+
+@pytest.mark.heavy
+def test_u1s_start_rows_every_start_at_the_class_keywords_default_and_with_the_pass_through_class():
+    """Q-76, heavy (the run lock; the lead's): the same at every start of P-14 and P-16, both arms, all 68 columns."""
+    if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    r = run("--u1-starts", "all", "--funded-cls", "both", timeout=4 * 3600)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
+    assert r.stdout.count("and with the pass-through class (Q-76)") == 2, r.stdout
 
 
 @pytest.mark.slow
