@@ -134,9 +134,10 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-92c | A gatekeeper's pin check of reading PP (a verdict and the RD-02 pinning row) | lead | done: APPROVE; pinned as RD-02 (E-082) | Q-92b | light | 0 | E-081 |
 | Q-105 | Reading PP's build (the adapter, the counters' channel T-10, `identity/pp_identity.py`, T-1..T-11) | wt-payout | built (E-088); merge after Q-106's read | Q-92c | light | 0 | E-082 |
 | Q-105b | RD-02's runner (section 14: cells x arms x blocks, counts, the honesty table, the menu) | wt-payout | running (its drafter) | Q-105 | light | 0 | E-088 |
-| Q-106 | The red team's read of RD-02's build before its merge | wt-payout (read-only) | running | Q-105 | light | 0 | E-088 |
+| Q-106 | The red team's read of RD-02's build before its merge | wt-payout (read-only) | done: fix first, code and tests only (E-090); Q-105c | Q-105 | light | 0 | E-088 |
 | Q-104b | RD-01's runner (scorecard, beside reports, 9.3's counts, A-10's price grid) | wt-firms | running (its drafter) | Q-104 | light | 0 | E-089 |
 | Q-107 | The red team's read of RD-01's build before its merge | wt-firms (read-only) | running | Q-104 | light | 0 | E-089 |
+| Q-105c | RD-02's build fixes from Q-106 (M1, m1-m5), then the runner continued | wt-payout | running (its drafter) | Q-106 | light | 0 | E-090 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
