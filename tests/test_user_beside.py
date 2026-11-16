@@ -5,7 +5,8 @@
   seed decides the denials; all-accounts forfeiture closes everything at the denial's close, buys nothing after it,
   takes out every later arrival and passes U1's own payout and fee checks, and is the off arm where nothing is denied;
   the placement and a Focused Trader model reach the engine; the adapter refuses a non-vendored call and a flip stream;
-  the binding models are the vendored grid's; the start seeds are distinct.
+  the binding models are the vendored grid's; the start seeds are distinct. On its six path seeds it is slow-tier
+  since Q-96 (21 s); the fast tier runs the same `synthetic_problems`, every check, on the first two seeds.
 * slow (`--u1-starts 4`): with every response off, the adapter reproduces `results/user_journey.csv`'s start rows for
   P-14 and P-16 at 4 starts, both arms, every column (E-010's comparison).
 * Q-76, slow (`--u1-starts 4 --funded-cls both`) and heavy (`--u1-starts all --funded-cls both`): the same at the
@@ -29,10 +30,36 @@ def run(*args: str, timeout: int = 900) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True, timeout=timeout)
 
 
+@pytest.mark.slow          # Q-96: 21 s; the fast tier keeps the smoke below (the same check on two path seeds)
 def test_the_adapters_mechanics_on_synthetic_campaigns():
     r = run("--synthetic")
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
     assert "synthetic identity HOLDS" in r.stdout, r.stdout
+
+
+#: the smoke's child: the identity's own `synthetic_problems`, on the first two of its six path seeds
+SYNTHETIC_SMOKE = """
+import json, sys
+sys.path.insert(0, {identity!r})
+import user_beside_identity as UI
+UI.SYN_PATH_SEEDS = UI.SYN_PATH_SEEDS[:2]
+probs, seen = UI.synthetic_problems()
+print(json.dumps({{"problems": probs, "seeds": list(UI.SYN_PATH_SEEDS), "denied": seen["denied"]}}))
+"""
+
+
+def test_the_adapters_mechanics_on_synthetic_campaigns_smoke():
+    """Q-96: the fast tier's cover for the case above (slow): the identity's `synthetic_problems` -- every one of its
+    checks, the not-vacuous ones included (a payout denied at 50 % on some path, two seeds giving two paths) -- on the
+    first two of its six path seeds, with no problem."""
+    import json
+
+    code = SYNTHETIC_SMOKE.format(identity=str(ROOT / "identity"))
+    r = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=900)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    out = json.loads(r.stdout.strip().splitlines()[-1])
+    assert out["problems"] == [], out["problems"][:12]
+    assert len(out["seeds"]) == 2 and any(d > 0 for d in out["denied"]), out
 
 
 @pytest.mark.slow

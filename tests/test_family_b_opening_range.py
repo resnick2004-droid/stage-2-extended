@@ -109,6 +109,17 @@ def test_no_used_feature_reads_the_opening_range(bars, base, cal):
     assert all(v > 0 for v in changed.values()), changed
 
 
+def _close_as_of(bars: pd.DataFrame, when: np.ndarray) -> np.ndarray:
+    """The close of the last bar stamped at or before each time in `when` -- for each t the value of
+    `bars[bars["ts"] <= t]["close"].iloc[-1]`, by one binary search over the bars' time order (Q-96: that per-row scan
+    of every bar took most of these tests' time). Refuses bars not in strict time order, or a time before them."""
+    ts = bars["ts"].to_numpy()
+    assert (np.diff(ts) > 0).all(), "the bars are not in strict time order: the as-of lookup needs it"
+    idx = np.searchsorted(ts, np.asarray(when), side="right") - 1
+    assert (idx >= 0).all(), "a time before the first bar has no as-of close"
+    return bars["close"].to_numpy(dtype=float)[idx]
+
+
 def _or_quantities(bars: pd.DataFrame, X: pd.DataFrame) -> dict[str, np.ndarray]:
     """Per row of X (a day and an alert): the opening range's width, the position of c in it, its net move and the
     distance of c to its VWAP, each in X's ATR units -- from the bars, independently of the library."""
@@ -121,9 +132,16 @@ def _or_quantities(bars: pd.DataFrame, X: pd.DataFrame) -> dict[str, np.ndarray]
                         "VW": g["pv"].sum() / g["volume"].sum()})
     rows = per.reindex(X["day"].to_numpy())
     A = X["norm_atr14"].to_numpy()
-    c = np.array([float(bars[bars["ts"] <= t - 60]["close"].iloc[-1]) for t in X["alert_ts"].to_numpy()])
+    c = _close_as_of(bars, X["alert_ts"].to_numpy() - 60)
     H, L, O, C, VW = (rows[k].to_numpy() for k in ("H", "L", "O", "C", "VW"))
     return {"width": (H - L) / A, "position": (c - L) / (H - L), "move": (C - O) / A, "vwap": (c - VW) / A}
+
+
+def test_the_as_of_close_is_the_per_row_scan_it_replaced(bars, base):
+    """Q-96: `_close_as_of` gives, row for row, what the per-row scan gave, on a spread of the admitted alerts."""
+    rows = base.iloc[:: max(1, len(base) // 250)]
+    want = np.array([float(bars[bars["ts"] <= t - 60]["close"].iloc[-1]) for t in rows["alert_ts"].to_numpy()])
+    assert len(want) >= 200 and np.array_equal(_close_as_of(bars, rows["alert_ts"].to_numpy() - 60), want)
 
 
 def _identical_over_days(x: np.ndarray, y: np.ndarray) -> bool:
