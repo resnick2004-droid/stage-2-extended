@@ -15,7 +15,8 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 |---|---|---|
 | P-14's registered gate paths (500, point and bound, every `PATH_COLS` column to 1e-6) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | P-16's registered gate paths (500, same) | HOLDS, clean clone of ba2d3b5 | E-004 |
-| U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`) | **running**: every start, under the lock (Q-05, wt-verify) | -- |
+| U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`, all 1,691 starts, both arms, all 68 columns) | **HOLDS**, wt-verify at 8010969 under the lock | E-010 |
+| the walker against P-16's pinned trades (`TRADES_SHA256`) | holds on synthetic days and P-16's first 10 days; **the full run owed** (heavy, waits for memory) | E-010 |
 
 ## NEEDS_OPERATOR
 

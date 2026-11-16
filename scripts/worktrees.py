@@ -42,8 +42,21 @@ def is_link(p: Path) -> bool:
 
 
 def changed(cwd: Path) -> list[str]:
-    out = git("status", "--porcelain", "--untracked-files=all", cwd=cwd)
-    return [line[3:] for line in out.splitlines() if line.strip()]
+    """Paths `git status` reports, untracked included. Parsed from `-z` output, never stripped: stripping cost the first
+    entry its leading status space and so its path its first character (found by the Q-05 worker, E-010)."""
+    out = subprocess.run(["git", "status", "--porcelain", "-z", "--untracked-files=all"], cwd=cwd,
+                         capture_output=True, text=True, encoding="utf-8")
+    if out.returncode:
+        raise SystemExit(f"git status (in {cwd}): {out.stderr.strip()}")
+    paths, skip = [], False
+    for entry in out.stdout.split("\0"):
+        if skip:
+            skip = False
+            continue
+        if len(entry) > 3:
+            paths.append(entry[3:])
+            skip = entry[0] in "RC"
+    return paths
 
 
 def link(wt: Path, store: str) -> None:
