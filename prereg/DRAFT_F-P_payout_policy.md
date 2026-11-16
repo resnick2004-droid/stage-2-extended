@@ -1,18 +1,24 @@
-# DRAFT: payout policy in a user's first months (reading PP) -- a described reading, unnumbered, not declared
+# RD-xx: payout policy in a user's first months (reading PP) -- a described reading, unnumbered
 
-**Status: DRAFT, third version, 2026-11-16 (TASK_QUEUE Q-92).** It brings the second version (Q-42, merged under E-025)
-to the program's current standard, for its red team:
+**Status: declared before anything of it is built or read.** It is pinned by the sha256 of its LF text in its decision
+row. Nothing declared is edited: a change is a new declaration under a new row. It takes no program family number
+(E-023 (1)).
 
-- the interval's windows and its honesty check rebuilt (E-058 (5));
-- the reader's rules (E-041, E-053);
-- the gate and the U1 replay through the merged adapters and their identities (E-028, E-044 (3), E-049; Q-76);
-- the readings beside without the Focused Trader models, which the engine refuses for this reading's class;
-- the comparison at a level dropped (E-023 (1), E-025);
-- E-034's unstated rules, and E-029's and E-050's pinned calendars.
+**Its text's history.** It was drafted and reviewed as `prereg/DRAFT_F-P_payout_policy.md`:
 
-Section 0 maps every change to its source row. The second version redrafted the first (Q-25, E-018) on the red team's
-review (`docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md`, Q-31) and under the operator's ruling **E-023 (1)**
-(`CHARTER.md` section 3).
+- the first text (Q-25, E-018) and its red team's read (`docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md`, Q-31),
+  answered in the second (Q-42, E-025) under the operator's ruling **E-023 (1)** (`CHARTER.md` section 3);
+- the third text (Q-92, 349fc2b, E-070), which brought it to the program's standard: the interval's windows and its
+  honesty check rebuilt (E-058 (5)); the reader's rules (E-041, E-053); the gate and the U1 replay through the merged
+  adapters and their identities (E-028, E-044 (3), E-049, E-059); the readings beside without the Focused Trader
+  models, which the engine refuses for this reading's class; the comparison at a level dropped (E-023 (1), E-025);
+  E-034's unstated rules, and E-029's and E-050's pinned calendars;
+- the red team's read of the third text (Q-102, `docs/reviews/DRAFT_F-P_payout_policy_v3_2026-11-16.md`, ecb3858),
+  every remedy adopted in this text (Q-92b, E-074), with the pin-time form the gatekeeper requires (E-075).
+
+Section 0 maps every change to its source row. At the pin the file is renamed `prereg/RD-02_payout_policy.md` (the
+reader's `DECLARATION_PATH`), and its placeholder id, on three lines only -- the title, the `id` row and section 14's
+`prereg_id` -- becomes `RD-02`; nothing else changes. The pinning row names the commit and the sha256 it pins.
 
 **What E-023 (1) makes of it.** Levers that add no trades are **described, never carried**. So this file is a
 **described reading**, not a family:
@@ -23,8 +29,8 @@ review (`docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md`, Q-31) and under th
 - it is declared and pinned before its run, by its own decision row with its sha256, so nothing in it is chosen after
   a look.
 
-**Not pinned. No engine has been run for it, no cell built, no outcome of any payout policy computed or read.**
-Anything chosen after a reading is exploratory and reported apart.
+**When it was pinned, no engine had been run for it, no cell built, and no outcome of any payout policy computed or
+read.** Anything chosen after a reading is exploratory and reported apart.
 
 **Appendix A is a separate, labelled item.** It is an EXPLORATORY check of Stage 2 D-566's buffer reading (the red
 team's N1). It is not part of this reading, and it gets its own decision row when run.
@@ -32,6 +38,7 @@ team's N1). It is not part of this reading, and it gets its own decision row whe
 | field | value |
 |---|---|
 | reading | PP: how much a funded account withdraws, and when, in a user's first months -- on P-14's registered trades, P-16's beside |
+| id | RD-xx (`prereg/RD-02_payout_policy.md` at the pin); every result's `prereg_id` is `RD-xx` (section 14) |
 | kind | a **described reading** (E-023 (1)): never carried; the operator chooses from its menu |
 | program family number | **none** (E-023 (1)); the next numbered family's k is unchanged by this file |
 | level, pass line, pick | **none** |
@@ -44,24 +51,28 @@ team's N1). It is not part of this reading, and it gets its own decision row whe
 | judged-block reads | three purposes, on the line of section 5 item 6; the identities from `identity/*.py` under their own row (8.1) |
 | seeds | from 20261940 to 20261949: two in use, one reserved, seven retired and never used; the denial ladder's start seeds inherited from Q-17 (section 11) |
 | confirmation | none: nothing is carried (section 10) |
+| `confirmation_tests_on_this_market` | 3: NQ's three of Stage 2 D-107's three are spent (P-05, P-06, P-10; `vendor/stage2/config/windows.yaml`, `held_back_2025`); this reading adds none and reads no NQ from 2026-07-17 |
 
 ---
 
 ## 0. What changed, by source row
 
-### 0.1 From the second version to this one (Q-92)
+### 0.1 From the second version to this one (Q-92; Q-102's read, E-074; the gatekeeper's form, E-075)
+
+The rows down to the drafter's two are the third text's (Q-92), with its first row as Q-102's M1 corrected it. The rows
+after them are this text's, and in them the third column holds what the third text said.
 
 | source row | what it asks | the second version | this version | where |
 |---|---|---|---|---|
-| **E-058 (5)**, as the brief Q-92 states it; the firms reading's review M5 and its Appendix A1 (`docs/reviews/DRAFT_RD_firms_2026-11-16.md`) | adjacent h-start windows share sessions, so a 90 % interval on them under-covers, and an honesty check on independent windows cannot see it | n_w consecutive non-overlapping h-start windows; the honesty check on independent window means | **windows separated by h starts** (every other window kept, from the block's first start), so no two share a session; the interval, the sign count and the MDD on the kept windows; **the honesty check rebuilt on overlapping series**, built from sessions as the reading's own are (the lumpy and persistent shapes now on sessions; the mirror dropped, since a two-sided interval covers a series and its negation alike, and the misses above and below printed instead); a reading whose coverage at its window count is below 0.88 labelled; T-6's rule held on synthetic series in this commit (`tests/test_pp_draft.py`) | 5 item 4, 9.2, 13.3 |
+| **E-058 (5)**, as the brief Q-92 states it; the firms reading's review M5 and its Appendix A1 (`docs/reviews/DRAFT_RD_firms_2026-11-16.md`) | adjacent h-start windows share sessions, so a 90 % interval on them under-covers, and an honesty check on independent windows cannot see it | n_w consecutive non-overlapping h-start windows; the honesty check on independent window means | **windows separated by h starts** (every other window kept, from the block's first start), so no two share a session; the interval, the sign count and the MDD on the kept windows; **the honesty check rebuilt on overlapping series**, built from sessions as the reading's own are (the lumpy and persistent shapes now on sessions; the mirror dropped, since a two-sided interval covers a series and its negation alike, and the misses above and below printed instead); **an interval labelled "under-covers at this window count" where the lowest coverage of the three shapes built like the reading's own series (gauss, ahead, paired) at its (h, n_w) is below 0.88; the lowest lumpy or persistent coverage, with its misses above and below, printed beside every interval without a threshold** (Q-102's M1: on all 21 shapes the label fired on every interval); T-6's rule held on synthetic series (`tests/test_pp_draft.py`) | 5 item 4, 7.1, 9.2, 13.3 |
 | **E-023 (1), E-025**; the firms review's m1 (the same item there) | a described reading has no level and carries nothing | 9.2 item 8: Q-16's calibrated paired comparison beside, at a one-tailed 0.05 | **dropped**: no comparison at any level is printed; seed 20261944 retired, never used; the MDD stated as a resolution, not as a test's power | 9.2, 11 |
 | **E-041**; E-053 (2) | a pinned described reading declares its judged-block reads | no line | **the `Judged-block reads:` line**, three purposes, none a choosing word, parsed by `extended.reader.declared_purposes` in `tests/test_pp_draft.py` | 5 item 6 |
 | **E-053** (the drafters' stale items); E-025 (1) | strike the stale pin item | 15 item 1: the hash test re-hashes only `prereg/F-` files | **struck**: E-025 (1) widened the hash test to `prereg/RD-` files and E-041 the reader; what stays open is the file's name at the pin | 15 |
 | **E-053** (the once-rule, `extended/reader.py`); E-026 | each declared purpose allows one clean run | "only the first complete run is read" | a restart, a rerun after a failure, or any further run under one of the line's purposes needs **`repeat='E-NNN'`**, a decision row naming this file -- one row, one more run | 14 |
 | **E-026, E-037, E-041** (the reader's `identity` rule) | whole-window identities run only from `identity/*.py` | 8.1 as the reading's own first stage | the identities against registered files (8.1 items 1-3) run first from **`identity/pp_identity.py`**, under the purpose `identity` and their own decision row; the reading's run repeats only comparisons on its own replays | 8.1, 14 |
 | **E-028** (Q-47), **E-044 (3)** (Q-51), **E-049** (Q-71, Q-80) | the held-state policy's gate is `extended/gate.py`'s declared funded-account class, held to its identities | "the build composes the same campaign call in `extended/`" | **`extended/gate.py`'s `run_gate(funded_account_cls=...)`**; Q-51 held for the gate before Q-71; Q-80 owed for the re-composed campaign; this reading's gates wait for Q-80 and for their own identity | 8.1, 9.1 item 8, 13.1 item 3, 14 |
-| **E-046 (3)** (Q-76: `extended/user_beside.py`'s `funded_account_cls`, wt/wt-user f92ac5e, its merge pending at this draft) | the U1 replay with a declared funded-account class | through `customer_slices.replay`'s path arguments | **through `run_starts(..., funded_account_cls=...)`**; its U1 start-row identity with a class owed (heavy) | 13.1 item 1, 14 |
-| **E-007 (e)**; the engine (`lockstep.py` 1403-1408); Q-76 | the engine refuses the Focused Trader models for any class but the vendored `FundedAccount` | the binding Focused Trader models read for every cell | **not read for any cell** (every cell runs this reading's class); reported beside: the denial ladder, the placement on, P by month, mean net, CVaR10, P under a bankroll limit, n_eff and the MDD; the bases' Focused Trader readings cited from Q-44's file, never rerun or paired; the gap named on the menu | 7.2, 9.1 item 7 |
+| **E-046 (3), E-059 (1)** (Q-76: `extended/user_beside.py`'s `funded_account_cls`, wt/wt-user f92ac5e, merged under E-059) | the U1 replay with a declared funded-account class | through `customer_slices.replay`'s path arguments | **through `run_starts(..., funded_account_cls=...)`**; its U1 start-row identity with a class owed (heavy, Q-93) | 13.1 item 1, 14 |
+| **E-007 (e)**, **E-059 (2)**; the engine (`lockstep.py` 1403-1408); Q-76 | the engine refuses the Focused Trader models for any class but the vendored `FundedAccount` | the binding Focused Trader models read for every cell | **not read for any cell** (every cell runs this reading's class); reported beside: the denial ladder, the placement on, P by month, mean net, CVaR10, P under a bankroll limit, n_eff and the MDD; the bases' Focused Trader readings cited from Q-44's file, never rerun or paired; the gap named on the menu | 7.2, 9.1 item 7 |
 | **E-024** (Q-17's seeds); the firms review's m4 | Q-76 draws each start's denial seed from Q-17's base, and no keyword takes another | the ladder drawn from seed 20261945 | the ladder's start seeds are **Q-17's**, as `run_starts` draws them: common to every cell, its base and Q-44's reading of the base; 20261945 retired, never used; the `ref` cell's ladder rows checked against Q-44's per-start file | 8.1 item 6, 9.1 item 7, 11 |
 | **E-034** | the payout request amount: unstated; F-P's half request stays an assumption | an optional rules-verifier reading open (15 item 3) | **read** (Q-39): unstated, and 8284233's worked examples show requests below the maximum; `half` stays an assumption, named wherever it is read; the open item closed | 4, 15 |
 | **E-034** | the unstated news rules in every scorecard's "not modelled" note | -- | listed in 4 and 9.1 item 11: which events count, holding a position through a release, the GDP release minute; the full-size funded opening held through an unnamed release kept as registered | 4, 9.1 item 11 |
@@ -70,6 +81,15 @@ team's N1). It is not part of this reading, and it gets its own decision row whe
 | the declaration discipline (`prereg-discipline`: every parameter classed) | fixed / searched / dropped | classes "described", "assumed", "fixed, a design choice" | **fixed** (each lever's two values both run; an assumption labelled as one) or **dropped**; searched: none | 7 |
 | the drafter, on `lockstep.py` 800-811 and 1500-1503 (no row) | what the placement on does to the levers | "the levers apply as 6.1 defines them" | stated: L2 applies to the placement's Consistency accounts (the engine's placement policy keeps `payout_frac`); L1 and the held-state rule do not (both are defined on the Standard path's eligibility); those accounts' eligible-and-unpaid sessions counted | 9.1 item 7 |
 | the drafter (cost; the firms reading's 7.4 form) | which arm the readings beside run on | unstated | the verdict arm only, with Q-76's exact-length check (`EXACT_EVERY`) | 9.1 item 7, 12 |
+| **Q-102 m1** (E-074) | the identity door is unlimited and unledgered outside a clean run | `identity/pp_identity.py` runs "the whole adapter" | it runs **the reference policy only**: its lever flags and payout fields are constants, no argument selects a policy, and it asserts the levers off before its first start or path; held by T-11 | 8.1, 13.3, 14, 15 |
+| **Q-102 m2** | every measure's horizon declared | h for P and months 1-12 only; T-3 at 63, 126 and 252 | **a horizon table** for every measure (U1's card's own horizons, Q-17's windows of 126 and 252); T-3 over every h in it, 21 and 189 included; the by-year readings stated as means, not purged | 5 item 3, 9.1 item 10, 13.3 |
+| **Q-102 m3**; E-068 (Q-94, its identity Q-101) | each count's source named | "the recorder's `eligible` column" (no recorder on) and "the engine's own count" (`at_max`, a per-account total) | **the class's own counters** (8.1 item 4; 8.3's lever and held counts; the placement's counts), carried out by a declared channel held by T-10; **the engine's own records** (`payout_days`) for the holiday-hours reach; **Q-94's replay recorder** for 8.1 item 5 and the FOMC-minutes count, with Q-101 among the run's waits | 8.1, 8.3, 13.1, 13.3, 14 |
+| **Q-102 m4** | what a failed check leaves behind | items 4 to 6 checked "on its own replays", in no stated order | `ref` replayed and checked first (items 2's repeat, 4, 6), then each new run, checked under item 5 before anything of it is read; **on any failure nothing of a new run is computed, written or printed** | 8.1, 14 |
+| **Q-102 m5** | many marginal intervals | none counted | the menu prints the number of intervals, that each is marginal and not simultaneous, and the count expected to exclude zero by chance alone (a tenth) -- a count, not a level | 9.1 item 10 |
+| **Q-102 m6** | `lock` under the placement | stated as if by definition | the engine's constraint (no seam at a Consistency close); those rows labelled **"L1 on Standard-path accounts only"**; the Consistency first payouts taken with the floor below $0 counted per cell | 9.1 item 7 |
+| **Q-102 m7**; E-059 | stale citations | Q-76 "pending"; the owed identity unnamed; "Q-76's commit" | E-059 (1), (2) cited; Q-93 named; the manifest records the adapter commit actually run | 0.1, 8.1, 13.1, 14 |
+| **Q-102 n2** | the cost of every cell on the class | the gap named for every cell | the menu's gap line names **`half`**: the lever that keeps accounts alive has no Focused Trader reading, though `ref` and `half` could have kept one through a held rule in the risk policy (declined, E-070 (5)) | 9.1 item 7 |
+| **E-075** (the gatekeeper's refusal of the firms reading's draft-form text, applied here) | the title, status and header true of the pinned file | "DRAFT", "Not pinned", "this draft", "this commit" | **pin-time form**: the title and status of `prereg/RD-02_payout_policy.md`; an `id` row (a placeholder id, `RD-02` at the pin) and `prereg_id` as that id; `confirmation_tests_on_this_market`; E-015's limits flag the menu only if approved before the run's commit, a later flag exploratory; both pinned calendars cited by their LF sha256 wherever they are read; the seed search's sentence states exactly what it finds, code and tests included | header, 8.3, 9.1 item 10, 11, 14, 15 |
 
 ### 0.2 From the first version to the second (Q-42, E-025), finding by finding
 
@@ -202,8 +222,11 @@ no purge removes it. The `point` arm, read beside, carries no such shift.
   (f92ac5e); `lockstep.py`'s funded account (525-860), its class checks (1380-1420) and the placement's policy
   (1500-1503); `risk_policy.account_state`; the Q-39 entries of `config/rules_extended.yaml`; the headers of the two
   pinned calendars; and the header of `scripts/user_beside.py`. Code, rules and calendars only.
-- No result file of any payout cell was opened. Q-44's files do not exist yet. The synthetic coverage figures of
-  `tests/test_pp_draft.py` were computed (no data), as the firms review's A1 had computed them.
+- **For this text, in addition:** the red team's read of the third text and its appendix code; Q-94's replay recorder
+  (`extended/replay_records.py`, `extended/place_fields.py`'s replay schemas) and `extended/user_beside.py` as
+  merged with it; `lockstep.py`'s funded record (891-998); `u_select`'s card (160-200). Code only.
+- No result file of any payout cell was opened. Q-44's files did not exist when this text was written. The synthetic
+  coverage figures of `tests/test_pp_draft.py` were computed (no data), as the firms review's A1 had computed them.
 
 **What is already known of the direction (disclosed).** A lever that delays or shrinks the first payout is expected to
 cost month 1 (handoff 1.2). On P-16's trades, half requests cost long-run growth (D-566 (3)).
@@ -301,8 +324,8 @@ loaded through the engine's own rule loader and never typed into code (13.2).
    definitions are used unchanged. A month is 21 sessions.
 2. **Pairing.** Each cell and its base run on the same start days, the same blocks and the same seeds. The per-start
    difference is the unit of every paired reading.
-3. **The blocks, per measure (F6).** Every reading at horizon h (63 for P and months 1 to 3, 126 for month 6, 189 for
-   month 9, 252 for month 12) is read on three sets of starts:
+3. **The blocks, per measure (F6).** Every reading is made at its measure's horizon h -- the sessions a start needs for
+   it, from the table below -- on three sets of starts:
    - **all starts** with h sessions left (`u_select.block(records, None, h)`) -- the menu's headline;
    - **the early block**, `u_select.block(records, "early", h)` (`propedge/research/u_select.py`): the starts of 2023
      and before, less every start within h sessions of 2023's last start. No early reading touches a 2024 session,
@@ -312,6 +335,25 @@ loaded through the engine's own rule loader and never typed into code (13.2).
    This is the house rule, D-621 (4)(b); program U applied it, and the first version's sentence that it had not was
    wrong. Nothing is chosen on any block. The early and late blocks are read separately so that the menu can flag a
    policy whose effect changes sign between them (9.1 item 10).
+
+   **Each measure's horizon (Q-102's m2).** The card's keys take `u_select`'s own horizons (`u_select.MEASURES`);
+   E-014's journey variables take Q-17's windows (`extended/user_readings.py`: `FIRST_WINDOW` 126, `YEAR_WINDOW` 252);
+   the rest are declared here.
+
+   | measure (9.1 items 1, 2, 4 and 7) | h | source |
+   |---|---|---|
+   | S3a, the share paid by session 21 | 21 | `u_select.MEASURES` |
+   | P; the shares ahead at months 1, 2 and 3; S3c; S5a; the mean net at months 1 to 3; CVaR10 of the month-3 net; P under a bankroll limit | 63 | `u_select.MEASURES` (`P_HORIZON`); Q-17's `extra` |
+   | S1; S3b; S4a; S5b; S5c; sessions and cash to the first pass and to the first payout | 126 | `u_select.MEASURES`; Q-17's `FIRST_WINDOW` |
+   | S2 (the first pass), S3d (the first payout's cash) and Q (Q1 keeps a 126-session net) -- U1's reported rows | 126 | declared here: the first-pass and first-payout window Q-17 reads, and Q1's own length |
+   | the share ahead and the net at month 9 | 189 | 9 months of 21 sessions |
+   | S4b; sessions to break-even, and the share that later falls back below zero; the deepest fall after break-even; the twelve-month evenness measures (the share of positive months, the longest run without a payout, the spread of monthly net, payouts per month, the largest month's share) | 252 | `u_select.MEASURES`; Q-17's `YEAR_WINDOW` |
+   | a share at month m -- broken even by m (m = 1, 2, 3, 6, 12), and the paired better / equal / worse shares (m = 1, 2, 3, 6, 9, 12) | 63 for m up to 3, else 21 m | P's horizon for months 1 to 3, as P reads them |
+   | S6's form (the start day's share of the variance, 9.1 item 3), and every reading beside (9.1 item 7) | the measure's own h | this table |
+
+   So the horizons read are 21, 63, 126, 189 and 252 sessions, and T-3 covers each. **By start year** (9.1 item 10):
+   each year's starts with the measure's h left, **means only, not purged** -- a start late in a year reads sessions of
+   the next -- and labelled so; the purged comparison is the early and late blocks'.
 4. **How much each block holds.** The late block holds about nine non-overlapping 63-start windows (B_objective, Q3),
    and fewer at months 6 and 12. All starts hold several times more. The interval keeps only every other window, so
    that no two of its windows share a session (9.2 item 1, E-058 (5)): about half as many. At month 12 even all starts
@@ -445,14 +487,15 @@ labelled wherever it is read.
 | arms | outcome shift | fixed | `verdict` the headline, `point` beside | CHARTER section 2; N2 |
 | denial, placement | firm discretion | fixed | 0 % and the placement off in the headline; the denial ladder (10, 25, 50 %) and the placement on (Q-17's `rtp`) beside | E-008; E-007 (e); D-234, D-289 |
 | the readings beside: arm and exact runs | where the ladder and the placement are read | fixed | the verdict arm; U1's exact-length runs on every 21st start index (Q-76's `EXACT_EVERY`), their differing count reported | 9.1 item 7; E-024 |
+| the replay recorder | where per-trade records come from | fixed | Q-94's `ReplayRecorder`, on every run's `off` replays, both arms, keeping the trade columns `date`, `entry_t`, `exit_t`, `at_cap` and `kind` (its checks run on the full record where the start ran) | 8.1 item 5, 8.3; E-068; Q-102's m3 |
 | the ladder's start seeds | the denial draws | fixed (inherited) | Q-17's: `lockstep.child_seed(20261920, 0, start_day)`, as `run_starts` draws them | E-024; section 11 |
 | horizons | replay length | fixed | U1's: the long replay to 252 sessions, and the exact runs | D-620 |
-| reading horizons h | the sessions a reading needs | fixed | 63 for P and months 1 to 3; 126, 189 and 252 for months 6, 9 and 12 | 5 item 3 |
+| reading horizons h | the sessions a reading needs | fixed | each measure's, from 5 item 3's table: 21, 63, 126, 189 or 252 | 5 item 3; `u_select.MEASURES`; Q-17's windows |
 | blocks | which starts | fixed | all; early and late per measure (section 5) | D-621 (4)(b); F6 |
 | the interval's windows | which starts the interval rests on | fixed | h consecutive starts, every other window kept from the block's first start | 9.2 item 1; E-058 (5) |
 | the interval | the uncertainty on each paired reading | fixed | two-sided 90 % Student t on the kept windows' means, from 4 windows | 9.2 item 2; E-007 (e); F1, F8 |
 | the honesty check | the interval's coverage beside | fixed | 9.2 item 7's shapes and grid, 20,000 series a setting, seed 20261948 | 9.2 item 7; E-058 (5) |
-| the coverage label | when an interval is labelled | fixed | below 0.88 on any shape at its (h, n_w) | 9.2 item 7; the firms review's M5 remedy 3 |
+| the coverage label | when an interval is labelled | fixed | the lowest coverage of gauss, ahead and paired at its (h, n_w) below 0.88; the lumpy and persistent shapes' lowest coverage and its misses printed beside, with no threshold | 9.2 item 7; the firms review's M5 remedy 3; Q-102's M1 |
 
 ### 7.2 Dropped, and why
 
@@ -508,15 +551,24 @@ labelled wherever it is read.
   shifts, every `PATH_COLS` column to 1e-6, no class and the pass-through class). Since Q-71 every call passes through
   the re-composed campaign, so Q-51 no longer covers it, and nothing reads through `extended/gate.py` here until Q-80
   holds.
-- **The U1 replay with a declared class (Q-76).** `identity/user_beside_identity.py --funded-cls both`: U1's start
-  rows for P-14 and P-16, both arms, every start, at no class and with the gate's pass-through class (heavy, owed).
+- **The U1 replay with a declared class (Q-76, E-059 (1)).** Q-93: `identity/user_beside_identity.py --u1-starts all
+  --funded-cls both` -- U1's start rows for P-14 and P-16, both arms, every start, at no class and with the gate's
+  pass-through class (heavy, owed).
+- **The replay recorder (Q-94, E-068).** Q-101: `identity/replay_records_identity.py --u1-starts all --row E-068` --
+  U1's start rows for P-16 and P-14 with recording on, every start (heavy, owed). Master's adapter carries Q-94's
+  `recorder` keyword; absent, it equals Q-76's adapter bit for bit (E-068).
 
 **This reading's own: items 1 to 3**, run first, from **`identity/pp_identity.py`** (built with the adapter; it calls
 the comparisons of `identity/gate_identity.py` and `identity/user_beside_identity.py` with this reading's class),
 from a clean checkout of the reading's commit, under the purpose `identity` and the decision row that registers it
 (the lead's) -- never under this file's `Judged-block reads:` line. The reference policy (`elig`, `max`) runs with
-the whole adapter in place -- this reading's funded-account class, the held-state rule and the payout fields -- and
-must reproduce:
+the whole adapter in place -- this reading's funded-account class, the held-state rule and the payout fields.
+
+**The script runs the reference policy only (Q-102's m1).** The reader's `identity` purpose is allowed in any tree, as
+often as it runs, and is ledgered only inside a clean run, so the script must never be able to read a policy cell. Its
+lever flags and payout fields are constants equal to `ref`'s; no argument selects a policy, a lever or a payout field;
+before its first start and its first path it asserts that both levers are off, and refuses otherwise. A fast test holds
+this (T-11). It must reproduce:
 
 1. **P-14's registered gate paths:** `vendor/stage2/results/a3_brk30_cb20_gate_paths.csv`, `gate` run, 0 % denial,
    point and bound, through `extended/gate.py` with the class given. Every `zero_edge_decomposition.PATH_COLS` column
@@ -530,20 +582,27 @@ must reproduce:
 
 **Inside the reading's own run, on its own replays (no further read):**
 
-4. **The levers are off in `ref`:** the held-state rule fires on no start and no path, no first request is held, and
-   the recorder's `eligible` column equals the vendored engine's on every account-day. All three are counted and
-   written -- on the starts here, and on the paths by `identity/pp_identity.py` in its gate runs (items 1 and 3). And
-   the reading's own `ref` start rows equal U1's again (item 2's comparison, refusing).
-5. **The trades are the base's:** every trade any cell's account takes is one of its base's registered offered trades.
-   This is checked for every new cell before any reading of it.
+4. **The levers are off in `ref`,** by **the class's own counters** (13.1 item 1; no recorder needed): the held-state
+   rule fires on no account-session, no first request is held, and at no close does the policy's eligibility differ
+   from the firm's. All three are counted and written -- on the starts here, and on the paths by
+   `identity/pp_identity.py` in its gate runs (items 1 and 3). And the reading's own `ref` start rows equal U1's again
+   (item 2's comparison, refusing). That the daily recorder writes the firm's `eligible` (F7) is T-2's, on toy
+   campaigns with the engine's day recorder on: here the comparison could not fail, since the class restores the value
+   from the vendored method it would be compared with.
+5. **The trades are the base's,** by **Q-94's replay recorder** (its per-start check that every routed trade is in the
+   start's blocks, Q-70's `record_path`): every trade any run's account takes is one of its base's registered offered
+   trades. Checked for every run but the references, on both arms, before anything of that run is read.
 6. **The readings beside, at `ref`:** the `ref` cell under `denial_10`, `denial_25`, `denial_50` and `rtp`, verdict
    arm, equals Q-44's `results/user_beside_starts.csv` for the same design, arm and response, start for start, every
    column that file writes, at its precision (money to the cent), apart from the class's name. The draws are the same
    (section 11), and Q-76's pass-through identity shows a class that changes nothing changes no row.
 
-Any failure stops the reading, and the failure protocol applies; nothing is rerun until it passes, and a rerun is a
-further judged read under `repeat=` (section 14). E-010's negative controls (the verdict rows against the point rows;
-a 2e-6 nudge) show that the comparison is not vacuous.
+**The order, and what a failure leaves (Q-102's m4).** Inside the run, `ref` comes first: its `off` replays (items 2's
+repeat and 4), then its ladder and placement replays (item 6); only then each new run, checked under item 5 before
+anything of it is read (14 step 2). Any failure stops the reading: **nothing of a new run is computed, written or
+printed** (Q-17's runner's rule, "any failure: nothing written"); the failure protocol applies; nothing is rerun until
+it passes, and a rerun is a further judged read under `repeat=` (section 14). E-010's negative controls (the verdict
+rows against the point rows; a 2e-6 nudge) show that the comparison is not vacuous.
 
 ### 8.2 Oracles (an output outside them is an engine error, never a finding)
 
@@ -557,17 +616,23 @@ a 2e-6 nudge) show that the comparison is not vacuous.
 ### 8.3 The mechanics, printed first
 
 For each new cell and each block, these are printed before any paired outcome measure. They describe where a lever
-binds, not whether it helps:
+binds, not whether it helps. Each names its source (Q-102's m3):
 
-- the share of starts on which the cell differs from its base at all within 63, 126 and 252 sessions;
-- the number of first requests `lock` holds, and of requests `half` cuts below $125;
-- the held account-sessions, split by 6.3's three classes;
-- the share of starts with an account held at sessions 63, 126 and 252;
+- the share of starts on which the cell differs from its base at all within 63, 126 and 252 sessions (each start's
+  output against its base's);
+- the number of first requests `lock` holds, and of requests `half` cuts below $125 (**the class's counters**);
+- the held account-sessions, split by 6.3's three classes (**the class's counters**);
+- the share of starts with an account held at sessions 63, 126 and 252 (**the class's counters**, by session);
 - **the holiday-hours reach** (section 4, not modelled): the requests made at a session that closes early, or at the
-  last session before a scheduled holiday, by E-029's pinned calendar -- per cell, against its base;
-- **an unnamed release** (section 4, E-034): per stream, the offered trades open at 13:00 CT on a day of E-050's
-  pinned FOMC-minutes calendar; per cell, how many of them were executed at the full contract allowance (the engine's
-  own count of trades sized at the allowance);
+  last session before a scheduled holiday, by E-029's pinned calendar (`config/calendar_early_closes.csv`, LF sha256
+  `72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2`) -- per cell, against its base (**the engine's
+  own records**: each funded account's `payout_days`, dated through the replay's own dates);
+- **an unnamed release** (section 4, E-034), by E-050's pinned FOMC-minutes calendar
+  (`config/calendar_fomc_minutes.csv`, LF sha256 `0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7`):
+  per stream, the offered trades open at 13:00 CT on a release day (the blocks' own entry and exit times); per cell,
+  how many of them were executed at the tier's full allowance (**Q-94's replay recorder**: a trade row's `date`,
+  `entry_t` before 13:00 and `exit_t` at or after it, `at_cap` true). A trade is timed by its block's single logged
+  exit (`exit_t`); one whose exit at its own R differs is counted by that logged time, and the count says so;
 - **E-029's voided days.** No day is voided here: the registered streams are replayed whole (8.1 needs them whole),
   and a day sits in both members of every pair alike. The three days E-029 voids for families (2020-07-01, 2025-06-30,
   2025-07-01) are listed, with the number of starts, per block and horizon, whose h sessions hold one.
@@ -624,14 +689,23 @@ nothing.
    - **the placement on** (`rtp`: the gate's reading, the strictest). Accounts activated after the placement are on the
      Consistency path (13620045; the engine's `rtp_policy`, `lockstep.py` 1500-1503). **L2 applies to them** -- the
      engine's placement policy is the protocol's with only the path changed, so `payout_frac` carries. **L1 and the
-     held-state rule do not** -- both are defined on the Standard path's eligibility, which a Consistency account never
-     consults (`lockstep.py` 800-811). So under the placement, L1 acts only on accounts activated before it, though
-     its effects carry through the rest of the path (0.3). Printed beside: per cell, the Consistency account-sessions
-     that start eligible and unpaid (a `half` request below $125), which the table reads as it stands;
+     held-state rule do not reach them -- the engine's constraint, not the lever's definition** (Q-102's m6): 6.1
+     defines `lock` by the loss limit's lock on either path, and the floor hardens at $0 on any payout, a Consistency
+     one included (`lockstep.py` 832); but a Consistency account's eligibility is computed inline in `trade_day`
+     (`lockstep.py` 800-806), with no seam at the close at which a request could be held. So under the placement, L1
+     acts only on accounts on the Standard path, though its effects carry through the rest of the path (0.3), and the
+     `rtp` rows of `lock` and `lock_half` are labelled **"L1 on Standard-path accounts only"**. Printed beside, per
+     cell (**the class's counters**): the Consistency accounts' first payouts taken with the floor below $0 -- the ones
+     `lock` would have held -- and the Consistency account-sessions that start eligible and unpaid (a `half` request
+     below $125), which the table reads as it stands;
    - P by month, mean net, CVaR10, P under a bankroll limit, the effective sample size and the MDD (9.2);
-   - **not read: the binding Focused Trader models** (7.2). The engine applies them to the vendored `FundedAccount`
-     only, and every cell runs this reading's class. The bases' readings are cited from Q-44's file, never paired with
-     a cell; the menu says the policies' effect under that program is not read.
+   - **not read: the binding Focused Trader models** (7.2; E-059 (2): a reading that runs its own class reports
+     E-007 (e)'s readings without them, labelled so). The engine applies them to the vendored `FundedAccount` only, and
+     every cell runs this reading's class. The bases' readings are cited from Q-44's file, never paired with a cell.
+     The menu's gap line says the policies' effect under that program is not read, and **names `half`** (Q-102's n2):
+     the lever that keeps accounts alive has no Focused Trader reading, though the models count accounts lost, and
+     `ref` and `half` could have kept one through a held rule in the risk policy -- declined, every cell on one class
+     (E-070 (5)).
 8. **The long-run gate beside, every policy cell:**
    - **the run.** Each of the 8 policy cells' gate at its base's registered seed (P-14's 20261131, P-16's 20261206),
      500 paths, point and bound, with its zero-edge twin, paired with the base's registered gate paths, through
@@ -646,15 +720,20 @@ nothing.
    costs.
 10. **The menu.**
     - **What it shows.** Each policy's scorecard and paired readings, all starts as the headline, the early and late
-      blocks beside, and by start year.
+      blocks beside, and by start year (means only, not purged, labelled so: 5 item 3).
     - **The stability flag.** A policy whose mean paired difference in P, or in any guarded measure, has opposite signs
       on the early and late blocks is flagged "not stable across blocks". The flag is mechanical, not a line.
-    - **E-015's limits** are flags only, once the operator approves them: a policy crossing one is shown with which
-      limit and by how much. Until then the menu is read without flags, and says so.
+    - **E-015's limits** are flags only, and **only limits the operator approved before the reading's run commit**
+      (the commit the clean run checks out) flag the menu: a policy crossing one is shown with which limit and by how
+      much. A limit approved later is applied only in a re-reading labelled exploratory (`exploratory=True`, its own
+      row), never in this reading's menu. With none approved by then, the menu is read without flags and says so.
+    - **How many intervals, and what chance alone gives (Q-102's m5).** The menu prints the number of 90 % intervals it
+      shows, that each is a marginal interval and none is simultaneous, and the count expected to exclude zero by
+      chance alone were there no effect anywhere -- a tenth of them. A count, not a level and not a correction.
 11. **Not modelled, and said so wherever this scorecard appears:** a user who stops when their own money runs out, the
     user's time, taxes; payouts unavailable in holiday hours; the move to a Live Funded Account; Topstep's unstated news
     rules (section 4, E-034: which releases count, holding through one, the GDP minute); the Focused Trader Program for
-    any policy cell (item 7).
+    any policy cell, `half` named (item 7).
 
 ### 9.2 The uncertainty on each paired reading (fixed now; E-058 (5); F1, F8, N5)
 
@@ -666,7 +745,7 @@ no reading has a level (E-023 (1), E-025).
    other window is kept, from the first**.
    - Why: a start reads its own h sessions, so adjacent windows share h - 1 sessions. With independent sessions their
      means' lag-1 correlation is about one quarter, and a 90 % t interval on them covers about 0.83 (the firms
-     review's M5 and its Appendix A1; this commit's `tests/test_pp_draft.py` finds the same). Two kept windows are
+     review's M5 and its Appendix A1; `tests/test_pp_draft.py` finds the same). Two kept windows are
      separated by h starts and share no session.
    - n_w, the number of kept windows, is printed with every reading.
    - Only items 2, 3 and 5 rest on the kept windows. Every other reading -- the distributions, the shares, the mean
@@ -709,13 +788,20 @@ no reading has a level (E-023 (1), E-025).
    - **The mirror is dropped** (the second version had it): a two-sided interval covers a series and its negation
      alike. Instead, beside the coverage, the shares of series whose interval misses above and misses below are
      printed, which is where a skewed shape shows.
-   - **What is printed with every interval:** the lowest coverage over the shapes at its (h, n_w), and the shape it
-     comes from. Where that is below **0.88**, the interval is labelled "under-covers at this window count" (the firms
-     review's M5 remedy 3).
+   - **The label (Q-102's M1).** An interval is labelled "under-covers at this window count" where the lowest coverage
+     of **the three shapes built like the reading's own series -- gauss, ahead and paired --** at its (h, n_w) is below
+     **0.88** (the firms review's M5 remedy 3). Those three share the reading's dependence, so the label moves with the
+     window count. The lumpy and persistent shapes do not set it: at every (h, n_w) the blocks give they cover well
+     below 0.88 (Q-102's Appendix A1), because a rare session may fall in no kept window at all -- their shortfall is
+     rarity, not the window count, and a label fired by them would fire on every interval.
+   - **What is printed with every interval, with no threshold:** one line, "if the difference is rare and lumpy": the
+     lowest coverage over the 18 lumpy and persistent shapes at its (h, n_w), the shape it comes from, and that shape's
+     misses above and below.
 
-   The reader then sees how far a 90 % interval on a lumpy, persistent payout difference can be trusted at that
-   count. The second version built these series as independent window means. That check reports near-nominal coverage
-   for adjacent windows too, so it could not see their shortfall (`tests/test_pp_draft.py`).
+   The reader then sees how far a 90 % interval can be trusted at that count, and how far less if the payout
+   difference is rare and lumpy. The second version built these series as independent window means. That check
+   reports near-nominal coverage for adjacent windows too, so it could not see their shortfall
+   (`tests/test_pp_draft.py`).
 
 ## 10. What the reading delivers, and what it does not
 
@@ -741,25 +827,35 @@ no reading has a level (E-023 (1), E-025).
 | 20261945 | **retired, never used** | the second version's denial-ladder draws (the ladder now draws Q-17's start seeds, below) |
 | 20261946 | **retired, never used** | the first version's confirmation (none now) |
 | 20261947 | in use | the build's toy campaigns (T-1, T-2, T-4, T-5, T-7) and T-3's synthetic late block; already drawn by Q-47's synthetic gate identity, this reading's build (`identity/gate_identity.py`, E-028), whose fixture Q-70's identity imports (`identity/place_records_identity.py`, E-055) |
-| 20261948 | in use | 9.2 item 7's honesty series (keys `[20261948, 1, shape, h, n_w]`) and T-6 (keys `[20261948, 0, ...]`; drawn in this commit by `tests/test_pp_draft.py`) |
+| 20261948 | in use | 9.2 item 7's honesty series (keys `[20261948, 1, shape, h, n_w]`) and T-6 (keys `[20261948, 0, ...]`, drawn by `tests/test_pp_draft.py` since the third text) |
 | 20261949 | reserved, unused | -- |
 
-**Retired seeds are not reassigned,** so no seed changes meaning between versions. Every result file lists them as
-retired. 20261948 keeps its meaning (the honesty series and T-6); only the series' construction is rebuilt (9.2 item
-7), and no draw was made under it before this version.
+**Retired seeds are not reassigned,** so no seed changes meaning between texts. Every result file lists them as
+retired. 20261948 keeps its meaning (the honesty series and T-6); the third text rebuilt only the series' construction
+(9.2 item 7), and the only draws under it are T-6's, under key 0.
 
-**The check, 2026-11-16 (this version).** A word-bounded search of the worktree, the vendored snapshot and its results
-included and the licensed data excluded (`grep -rIow --exclude-dir=.git --exclude-dir=data -E "2026194[0-9]" .`), the
-same search on every branch and remote branch (`git grep -IwoE "2026194[0-9]"` per ref), and the same search of the
-other worktrees' working files, find the block only in:
+**The check, 2026-11-16, on this text.** Three word-bounded searches for `2026194[0-9]`, every file type, repository
+code and tests included, the licensed data excluded:
 
-- this file;
-- the Q-25 brief and E-018, which record the block;
-- the red team's review, and the F-B, F-O and F-R drafts, each listing "20261940-49" as taken (20261940, retired);
-- `identity/gate_identity.py` and `identity/place_records_identity.py`: 20261947, as above.
+- `grep -rIow --exclude-dir=.git --exclude-dir=data -E "2026194[0-9]" .` on this worktree, the vendored snapshot and
+  its results included;
+- `git grep -IwoE "2026194[0-9]"` on every local and remote ref;
+- the first search on the other worktrees' working files.
 
-`tests/test_pp_draft.py` repeats the check on every run: no seed in use or reserved appears in any other declaration,
-anywhere in the vendored snapshot, or in a review's or audit's scratch.
+They find the block in these files, and in no other:
+
+- this file -- all ten;
+- `DECISIONS.md` (E-018) and the Q-25 brief (`docs/briefs/Q-25_2026-11-15.md`) -- 20261940 and 20261949, the block's
+  two ends, as its record;
+- the first review (`docs/reviews/DRAFT_F-P_payout_policy_2026-11-16.md`) and the F-B, F-O and F-R drafts -- 20261940
+  only, each listing "20261940-49" as taken;
+- `identity/gate_identity.py` and `identity/place_records_identity.py` -- 20261947, as its row says;
+- `tests/test_pp_draft.py` -- 20261940 and 20261949 (the block's two ends, where it names the block it checks) and
+  20261948 (T-6).
+
+The vendored snapshot holds none. `tests/test_pp_draft.py` repeats two parts of the check on every run: no seed in use
+or reserved appears in any other declaration, anywhere in the vendored snapshot, or in a review's or audit's scratch;
+and the tracked code and tests that hold a seed of the block are exactly the three `.py` files named above.
 
 **Inherited, and used only as their owners registered them:**
 
@@ -793,11 +889,19 @@ anywhere in the vendored snapshot, or in a review's or audit's scratch.
    `simulate_lockstep_path(funded_account_cls=...)`. **Every cell runs it, `ref` included**, so a base's four cells
    share one code path and 8.1's reference identity tests the class every cell runs.
    - **In the U1 replay** it goes through Q-76's keyword: `extended.user_beside.run_starts(design, arm, response, job,
-     starts, workers, funded_account_cls=<this class>)` (E-046 (3); wt/wt-user f92ac5e, its merge pending at this
-     draft), which puts it on every replay's path. The headline is the response `off` (the vendored replay's 0 %,
-     placement-off call, U1's exact-length runs on every start); the readings beside are `denial_10`, `denial_25`,
-     `denial_50` and `rtp`. Q-76 refuses the Focused Trader models for this class before any start runs (7.2).
+     starts, workers, funded_account_cls=<this class>)` (E-046 (3); Q-76, f92ac5e, merged under E-059 (1)), which puts
+     it on every replay's path. The headline is the response `off` (the vendored replay's 0 %, placement-off call, U1's
+     exact-length runs on every start), with Q-94's `recorder` given on it (E-068; 7.1); the readings beside are
+     `denial_10`, `denial_25`, `denial_50` and `rtp`, with no recorder. Q-76 refuses the Focused Trader models for this
+     class before any start runs (7.2).
    - **In the gate** it goes through `extended/gate.py`'s keyword (item 3).
+   - **Its counters (Q-102's m3).** The class counts, on each account: the held-state rule's fires by 6.3's class and
+     by session; the first requests L1 holds; the requests L2 cuts below $125; the closes at which the policy's
+     eligibility differs from the firm's; and, on Consistency-path accounts, the first payouts taken with the floor
+     below $0 and the sessions that start eligible and unpaid. The engine's records do not carry a subclass's own
+     fields (`lockstep._record_funded`), so the build adds a declared channel that carries the counters out of every
+     replay start and every gate path, off by default and absent everywhere else (Q-94's pattern): with it on, every
+     row, record and output equals it off, at one worker and at two (T-10).
    - **`lock`** overrides `_standard_eligible`. It computes the firm's eligibility (the vendored method), stores it in a
      field of its own, and returns the firm's eligibility and (paid once, or floor at $0).
    - **The firm's eligibility recorded (F7).** After `trade_day` returns, the subclass sets `last_eligible` back to the
@@ -815,7 +919,7 @@ anywhere in the vendored snapshot, or in a review's or audit's scratch.
 3. **The gate.** `extended/gate.py`'s `run_gate` with its keyword `funded_account_cls` (Q-47, merged under E-028):
    the vendored gate's body, every helper imported, nothing substituted, refused unless the vendored source hashes to
    its pin. This reading gives the class, `half`'s Protocol through `protocol` and the held-state rule as item 2 says,
-   and none of Q-71's seams and no recorder.
+   and none of Q-71's seams and no recorder; the class's counters come out through item 1's channel.
    - **Its identities.** Q-51 held at 500 paths for the gate before Q-71 (E-044 (3)). Since Q-71 every call passes
      through the re-composed campaign (`extended/campaign.py`, E-049), so Q-80's 500-path identities through it are
      owed, and this reading's gates wait for them (8.1).
@@ -835,16 +939,18 @@ A test fails on the literals 2000, 125 or 0.5 in the adapter outside comments.
 
 | test | what it asserts |
 |---|---|
-| T-0 (this draft's commit) | `tests/test_pp_draft.py`: one `Judged-block reads:` line, its purposes parsed by `extended.reader.declared_purposes`, none choosing, none `identity` or `registered_design`; section 11 holds 20261940..20261949 once each, and a seed in use or reserved appears in no other declaration, nowhere in the vendored snapshot and in no review's or audit's scratch; no level in 9.2; section 0 cites every source row; and T-6's draft-stage form (below) |
+| T-0 (with this text) | `tests/test_pp_draft.py`: the pin-time form (the `id` and `confirmation_tests_on_this_market` rows; no draft-form status; every pinned calendar cited by its file's own LF sha256); one `Judged-block reads:` line, its purposes parsed by `extended.reader.declared_purposes`, none choosing, none `identity` or `registered_design`; section 11 holds 20261940..20261949 once each, and a seed in use or reserved appears in no other declaration, nowhere in the vendored snapshot and in no review's or audit's scratch; the code and tests holding a seed of the block are exactly section 11's; no level in 9.2; section 0 cites every source row; the reader end to end; and T-6's declaration-stage form (below) |
 | T-1 | with both levers off, the adapter's funded account equals the vendored one bit for bit on toy campaigns (seed 20261947): every day's balance, floor, request, payout, cash and recorded `eligible` |
 | T-2 | `lock`: no first payout while the floor is below $0; the first request at the first eligible close with the floor at $0, at the maximum; later requests as P-14's; an account that reached $2,000 and fell back is not held; **at a held close the recorder writes `eligible` True (the firm's) and `requested` 0**; under the placement on, a Consistency-path account is never held by `lock` |
-| T-3 | every early-block reading at horizon h is byte-identical when every session from 2024-01-02 on is replaced (seed 20261947), for h = 63, 126 and 252 -- the per-measure purge (F6) -- with the verdict arm's bound held at its registered constant (N2) |
+| T-3 | every early-block reading at horizon h is byte-identical when every session from 2024-01-02 on is replaced (seed 20261947), for every h of 5 item 3's table -- 21, 63, 126, 189 and 252 -- the per-measure purge (F6) -- with the verdict arm's bound held at its registered constant (N2) |
 | T-4 | the held-state rule: it fires only on accounts held at the last close, is re-read at every close, and never fires under P-14's rule; a held account's decision equals the table's four-day leaf, the state otherwise the same; the leaf read trades at every balance of at least $250 with no request the day before, funded and paid; from the policy file, it lists the bands where the four-day leaf equals the five-day leaf, where it rescues a no-trade leaf, and **the two bands where it changes R**; the minimal rescue's mode differs only in those two bands |
 | T-5 | `half`: every request is half the maximum and at least $125; a balance below $500 holds; the scaling tier follows the balance after a payout; under the placement on, a Consistency-path account's request is half of its maximum too |
-| T-6 | 9.2: the kept windows (every other one; kept windows share no session, adjacent ones share h - 1), n_w, the interval only from 4 kept windows with a spread, the sign count, the zero-series rule, the MDD's formula and its rate of about 80 %; the coverage on overlapping series at one small fixed setting (keys `[20261948, 0, ...]`): the adjacent rule clearly below 0.90 and the separated rule near it, and the second version's independent-means check near 0.90 for the adjacent rule; the declared shapes' zero means. **Its draft-stage form is in this commit** (`tests/test_pp_draft.py`); the build's code is held to the same assertions |
+| T-6 | 9.2: the kept windows (every other one; kept windows share no session, adjacent ones share h - 1), n_w, the interval only from 4 kept windows with a spread, the sign count, the zero-series rule, the MDD's formula and its rate of about 80 %; the coverage on overlapping series at one small fixed setting (keys `[20261948, 0, ...]`): the adjacent rule clearly below 0.90 and the separated rule near it, and the second version's independent-means check near 0.90 for the adjacent rule; the declared shapes' zero means; **the label is not constant** (Q-102's M1): at 13 kept windows at h = 63 it is off on gauss, ahead and paired while a lumpy shape there covers below 0.88, and it is on where one of the three is below the floor. **Its declaration-stage form is `tests/test_pp_draft.py`**; the build's code is held to the same assertions |
 | T-7 | 8.2's oracles on toy campaigns |
 | T-8 (`slow`) | 8.1 items 1 to 3 at 4 paths and at 4 starts per configuration and arm, through `identity/pp_identity.py`; the full 500 paths and every start are that script's heavy run (8.1) |
 | T-9 | section 11's seeds appear nowhere else in the build's commit; 13.2's literal check |
+| T-10 | 13.1 item 1's counters' channel: with it on, every replay output, gate row and path record equals it off, at one worker and at two; the counters it carries equal the class's own on toy campaigns (seed 20261947), and in `ref` every one is zero |
+| T-11 | `identity/pp_identity.py` runs the reference policy only (Q-102's m1): its lever flags and payout fields are constants equal to `ref`'s; its argument parser has no option naming a policy, a lever or a payout field; with any lever flag flipped its guard refuses before the first start and the first path |
 
 ## 14. Outputs and the run
 
@@ -855,23 +961,38 @@ A test fails on the literals 2000, 125 or 0.5 in the adapter outside comments.
   - `results/pp_menu.csv`, the menu with its flags.
 
   Each is written with its sidecar manifest through `extended.results.write_result`, carrying:
-  - `prereg_id`: the reading's id (unnumbered) and its pinning row;
-  - the decision row under which 8.1 items 1 to 3 held, and Q-80's and Q-76's identity rows;
+  - `prereg_id`: `RD-xx`, this file's id (unnumbered: no program family number), and its pinning row;
+  - the decision row under which 8.1 items 1 to 3 held, and the rows under which Q-80, Q-93 and Q-101 held;
   - the run counts (11; 6 new, 2 references, 3 rule sensitivity; 32 replays and 8 gates beside);
   - every seed, with the retired ones, and the inherited ladder seeds named as Q-17's;
   - every parameter, and the assumptions of section 4;
-  - the funded-account class's name (`extended.user_beside.class_parameters`), and Q-76's commit;
-  - the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`, and of the two pinned calendars read (section 4);
+  - the funded-account class's name (`extended.user_beside.class_parameters`), and **the commit of
+    `extended/user_beside.py`, `extended/replay_records.py` and `extended/gate.py` actually run** -- the run's own
+    commit, with each file's blob id (Q-102's m7);
+  - the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`, and the LF sha256 of the two pinned calendars read (section
+    4: `72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2`,
+    `0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7`), each checked against its file before the
+    first read;
+  - the E-015 limits the menu flags, with the rows that approved them (9.1 item 10), or "none approved before the
+    run's commit";
   - `exploratory=False` for the declared reading, since nothing in it is chosen after a look. Every cell is still
     labelled "described, not carried".
 - **The run, in two steps, each from a clean checkout of the same named commit (`scripts/run_clean.py`), under the run
   lock, watched to its end:**
-  1. **the identities** (8.1 items 1 to 3): `identity/pp_identity.py`, under the purpose `identity` and its own
-     decision row (the reader admits `identity` only from `identity/*.py`, E-026, E-041). Any failure stops the
-     reading: the failure protocol applies, and the lead records it;
-  2. **the reading**, only after the lead's row records step 1 as held: the runner authorises its engine reads under
-     the three purposes of section 5 item 6, checks 8.1 items 4 to 6 on its own replays (any failure stops it), then
-     prints the oracles and the mechanics (8.2, 8.3), then the reading.
+  1. **the identities** (8.1 items 1 to 3): `identity/pp_identity.py`, the reference policy only (8.1; T-11), under
+     the purpose `identity` and its own decision row (the reader admits `identity` only from `identity/*.py`, E-026,
+     E-041). Any failure stops the reading: the failure protocol applies, and the lead records it;
+  2. **the reading**, only after the lead's row records step 1 as held. The runner authorises its engine reads under
+     the three purposes of section 5 item 6, then, in this order (Q-102's m4):
+     - (a) `ref` at `off`, both arms, the recorder on: item 2's repeat and item 4 (8.1);
+     - (b) `ref` under the ladder and the placement, verdict arm: item 6;
+     - (c) each new run -- the 6 new cells and the 3 rule-sensitivity runs -- at `off`, both arms, the recorder on,
+       checked under item 5 before anything of it is read; then its readings beside (verdict arm); then the 6 new
+       gates;
+     - (d) the oracles and the mechanics (8.2, 8.3), then the reading.
+
+     **On any failure, nothing of a new run is computed, written or printed**: the run stops at the failed check,
+     and its log and the failed check's own lines are all it leaves.
   - **weight: heavy.** E-010's U1 identity for two configurations peaked near 1.4 GB. Eleven runs' replays on two
     arms, every start, 32 replays beside and six gates add up to several hours at two workers.
   - **a restart or a rerun (E-053).** Each purpose on the line allows one clean run: once a run has read under a
@@ -882,41 +1003,42 @@ A test fails on the literals 2000, 125 or 0.5 in the adapter outside comments.
 - **Waits:**
   - Q-05 holds (E-010);
   - the pinning row;
-  - **Q-76 merged**, and its U1 identity with a class (`identity/user_beside_identity.py --funded-cls both`, every
-    start) held -- for every replay;
+  - **Q-93 held** (E-059 (1)): Q-76's U1 identity with a class (`identity/user_beside_identity.py --u1-starts all
+    --funded-cls both`, every start) -- for every replay;
+  - **Q-101 held** (E-068): the replay recorder's U1 identity -- for every recorded replay (8.1 item 5, 8.3);
   - **Q-80 held** (E-049) -- for every gate;
   - **Q-44's file on master** (`results/user_beside_starts.csv`) -- for 8.1 item 6;
-  - the adapter built with T-1 to T-9, and step 1 held under its row.
+  - the adapter built with T-1 to T-11, and step 1 held under its row.
 
-  It does not wait for E-015's limits (flags only).
+  It does not wait for E-015's limits: only those approved before the run's commit flag the menu (9.1 item 10).
 
-## 15. Open before the pin
+## 15. What the pin requires, and what stays open after it
 
-**The lead's:**
+**The pin.** The file is renamed `prereg/RD-02_payout_policy.md` (E-025 (1)) and its placeholder id becomes `RD-02` on
+the three lines the status names, nothing else changing; the DRAFT file goes in the same commit
+(`tests/test_pp_draft.py` asserts exactly one payout-policy declaration under `prereg/`, and the placeholder on those
+three lines only). The hash test re-hashes `prereg/RD-` files (E-025 (1)) and the reader admits them (E-041).
+E-058's committed text is the one 9.2 cites (Q-102's reading, its "what I tried" item 14).
 
-1. **The name at the pin:** `prereg/RD-nn_payout_policy.md` (E-025 (1)), the DRAFT file removed in the same commit
-   (`tests/test_pp_draft.py` asserts exactly one payout-policy declaration under `prereg/`). The second version's item
-   here -- that the hash test re-hashed only `prereg/F-` files -- is struck: E-025 (1) widened it to `prereg/RD-`
-   files, and E-041 admitted them to the reader.
-2. **E-058's text.** This draft cites E-058 (5) as the brief Q-92 states it (windows separated by h starts; the honesty
-   check rebuilt on overlapping series). The row was not yet in `DECISIONS.md` when this version was written; if its
-   final text differs, the difference is the red team's to read.
-3. **The identities' row.** 8.1 items 1 to 3 run from `identity/pp_identity.py` under a row of their own, which the
+**The lead's, after the pin:**
+
+1. **The identities' row.** 8.1 items 1 to 3 run from `identity/pp_identity.py` under a row of their own, which the
    reader requires to mention an identity; the row is the lead's, at the build's merge.
-4. **Appendix A** (Q-46, queued). Whether and when to run it, and the purpose its reads take (it is not under this
+2. **Appendix A** (Q-46, queued). Whether and when to run it, and the purpose its reads take (it is not under this
    file's line; `registered_design`, under a row naming P-16, is the nearest the reader has). Its row is its own.
 
-Closed since the second version: the gate adapter (built, Q-47, E-028; its identities 8.1); F11 (read by Q-39, E-034:
+Closed before the pin: the gate adapter (built, Q-47, E-028; its identities 8.1); F11 (read by Q-39, E-034:
 unstated, and `half` stays an assumption).
 
 **The operator's:**
 
-1. **The levels of E-015's limits.** Approval is pending; they are flags only and never block.
+1. **The levels of E-015's limits.** They are flags only and never block; only those approved before the run's
+   commit flag this reading's menu (9.1 item 10).
 2. **After the run:** the choice from the menu, if any.
 
 ## 16. Anything chosen after seeing results
 
-*(Empty at declaration. Anything added after a reading is exploratory, reported apart, `exploratory=True` in its
+*(Empty at the pin. Anything added after a reading is exploratory, reported apart, `exploratory=True` in its
 manifest, and recorded in its own decision row -- never in this file.)*
 
 ---
@@ -927,7 +1049,7 @@ manifest, and recorded in its own decision row -- never in this file.)*
 its own clean checkout under its own decision row, labelled EXPLORATORY (TASK_QUEUE Q-46). **Heavy under the lock
 rule** (E-025 (3): it rebuilds P-16's cell), though small: 20 paths. **It reads no growth, no journey and no P** --
 only counts of an engine state. **Its reads** go through `extended/reader.py` under its own row, never under this
-file's `Judged-block reads:` line (15, the lead's item 4).
+file's `Judged-block reads:` line (15, the lead's item 2).
 
 **The doubt, on code and table (the review's N1 confirmed it on both).**
 

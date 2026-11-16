@@ -1,5 +1,5 @@
-"""Q-92: reading PP's declaration (`prereg/DRAFT_F-P_payout_policy.md`, renamed `prereg/RD-nn_payout_policy.md` at its
-pin, E-025 (1)) -- its text, and the numerical rules of its section 9.2 that a synthetic check can hold before any
+"""Q-92, Q-92b: reading PP's declaration (`prereg/DRAFT_F-P_payout_policy.md`, renamed `prereg/RD-02_payout_policy.md`
+at its pin, E-025 (1)) -- its text, and the numerical rules of its section 9.2 that a synthetic check can hold before any
 build: the 90 % interval's windows and its coverage on overlapping series (E-058 (5); the firms reading's review M5,
 `docs/reviews/DRAFT_RD_firms_2026-11-16.md`, and its Appendix A1).
 
@@ -18,10 +18,15 @@ What it checks (no engine, no bar, no result file; synthetic series only):
   covers clearly below nominal and on separated windows near it; the second version's honesty check (independent
   window means) reports near nominal for the adjacent rule -- it cannot see the shortfall;
 - **the declared null shapes have the known zero mean** they are declared with (the lumpy and the persistent ones);
-- **the text**: one `Judged-block reads:` line whose purposes `extended.reader.declared_purposes` parses, none choosing,
-  none `identity` or `registered_design`; section 11's seed block 20261940..20261949 once each, a seed in use or
-  reserved found in no other declaration, nowhere in the vendored snapshot and in no review's or audit's scratch; no
-  level in section 9.2; section 0 citing every source row of the third version;
+- **the coverage label** (9.2 item 7; Q-102's M1): it reads gauss, ahead and paired only, and is not constant -- off on
+  them at 13 kept windows (h = 63), where a lumpy shape covers below 0.88;
+- **the text**: in pin-time form (E-075: the title and status of the pinned file, the `id` row with `RD-xx`, the
+  `confirmation_tests_on_this_market` row, `prereg_id` as that id); every pinned calendar cited by its file's own LF
+  sha256; one `Judged-block reads:` line whose purposes `extended.reader.declared_purposes` parses, none choosing, none
+  `identity` or `registered_design`; section 11's seed block 20261940..20261949 once each, a seed in use or reserved
+  found in no other declaration, nowhere in the vendored snapshot and in no review's or audit's scratch; the tracked
+  code and tests holding a seed of the block exactly the ones section 11 names; no level in section 9.2; section 0
+  citing every source row;
 - **the reader, end to end** (as `tests/test_rd_firms_draft.py` does for the firms reading): this text, pinned in a
   temporary tree, authorises the engine's reads under each purpose of its line once, and a further run only under
   `repeat=` naming a row that names the file (section 14, E-053).
@@ -62,6 +67,9 @@ REPS = 4000                # series per synthetic setting in this test (the read
 CHUNK = 500                # series generated at once (memory: one small block at a time)
 
 SEED_ROW = re.compile(r"^\|\s*(\d{8})\s*\|\s*([^|]+?)\s*\|", re.MULTILINE)
+#: 9.2 item 7 (Q-102's M1): the label reads only the shapes built like the reading's own series, at this floor
+LABEL_SHAPES = ("gauss", "ahead", "paired")
+LABEL_FLOOR = 0.88
 
 
 # ----------------------------------------------------------------------------------------- the declared method
@@ -178,7 +186,8 @@ def persistent_sessions(rng, shape: tuple[int, int], h: int, p: float, s: float,
     return np.where(rare, -g * (1 - pi) / pi, g) + rng.normal(0.0, s * np.sqrt(h), shape)
 
 
-def start_series(kind: str, rng, reps: int, n_starts: int, h: int) -> np.ndarray:
+def start_series(kind: str, rng, reps: int, n_starts: int, h: int, p: float | None = None,
+                 s: float | None = None) -> np.ndarray:
     """(reps, n_starts) per-start series of known zero mean, built from sessions as the reading's own are:
     `gauss` a start's h-session mean of N(0, 1) sessions; `ahead` 1{its h-session sum > 0} - 1/2; `paired` the
     difference of two such indicators on walks sharing a common part (0.8 z + 0.6 e each)."""
@@ -192,10 +201,20 @@ def start_series(kind: str, rng, reps: int, n_starts: int, h: int) -> np.ndarray
         a = per_start_sums(0.8 * z + 0.6 * rng.standard_normal((reps, n_sess)), h)
         b = per_start_sums(0.8 * z + 0.6 * rng.standard_normal((reps, n_sess)), h)
         return (a > 0).astype(float) - (b > 0).astype(float)
+    if kind in ("lumpy", "persistent"):
+        make = lumpy_sessions if kind == "lumpy" else persistent_sessions
+        return per_start_means(make(rng, (reps, n_sess), h, p, s), h)
     raise ValueError(kind)
 
 
-def coverage(kind: str, n_w: int, rule: str, case: int, h: int = H, reps: int = REPS) -> float:
+def label(cov: dict[str, float]) -> bool:
+    """9.2 item 7's label: "under-covers at this window count" where the lowest coverage of gauss, ahead and paired is
+    below 0.88; the lumpy and persistent shapes are printed beside and never set it."""
+    return min(float(cov[k]) for k in LABEL_SHAPES) < LABEL_FLOOR
+
+
+def coverage(kind: str, n_w: int, rule: str, case: int, h: int = H, reps: int = REPS, p: float | None = None,
+             s: float | None = None) -> float:
     """The share of `reps` zero-mean series whose 90 % interval on `rule`'s windows holds 0."""
     rng = np.random.default_rng([COVERAGE_SEED, T6_KEY, case])
     n_starts = starts_needed(n_w, h, rule)
@@ -204,7 +223,7 @@ def coverage(kind: str, n_w: int, rule: str, case: int, h: int = H, reps: int = 
     t = stats.t.ppf(0.5 + LEVEL / 2, n_w - 1)
     hits = 0
     for k in range(0, reps, CHUNK):
-        y = start_series(kind, rng, min(CHUNK, reps - k), n_starts, h)
+        y = start_series(kind, rng, min(CHUNK, reps - k), n_starts, h, p, s)
         m = np.stack([y[:, a:b].mean(axis=1) for a, b in w], axis=1)
         se = m.std(axis=1, ddof=1) / np.sqrt(n_w)
         hits += int(np.sum(np.abs(m.mean(axis=1)) <= t * se))
@@ -306,6 +325,21 @@ def test_the_declared_lumpy_and_persistent_shapes_have_zero_mean():
                  lambda: persistent_sessions(rng, (400, 2 * H), H, 0.10, 0.005)):
         vals = np.concatenate([per_start_means(make(), H)[:, 0] for _ in range(10)])
         assert abs(vals.mean()) < 4 * vals.std(ddof=1) / np.sqrt(vals.size)
+
+
+def test_the_label_reads_the_three_regular_shapes_only_and_is_not_constant():
+    """Q-102's M1: the label fired on every interval when it read the lowest of all 21 shapes. It reads gauss, ahead
+    and paired only: off where they cover near nominal -- here at 13 kept windows at h = 63, where a lumpy shape covers
+    well below 0.88 (the old rule would have fired) -- and on where one of them is below the floor."""
+    rare = {"lumpy_0.05_0.005": 0.40, "persistent_0.05_0.0025": 0.35}
+    assert not label({"gauss": 0.90, "ahead": 0.89, "paired": 0.91, **rare})
+    assert label({"gauss": 0.90, "ahead": LABEL_FLOOR - 0.01, "paired": 0.91, **rare})
+    cov = {k: coverage(k, 13, "separated", 200 + i) for i, k in enumerate(LABEL_SHAPES)}
+    assert all(v >= LABEL_FLOOR for v in cov.values()), cov
+    lumpy = coverage("lumpy", 13, "separated", 210, p=0.05, s=0.005)
+    assert lumpy < LABEL_FLOOR, lumpy
+    assert not label({**cov, "lumpy_0.05_0.005": lumpy})
+    assert min([*cov.values(), lumpy]) < LABEL_FLOOR                    # the third text's rule would have fired
 
 
 # ------------------------------------------------------------------------------------------------- the text
@@ -454,5 +488,62 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
 def test_section_0_maps_every_change_to_its_source_row():
     s0 = section(text(), "## 0.")
     for row in ("E-058", "E-023", "E-025", "E-041", "E-053", "E-026", "E-028", "E-044", "E-049", "E-046", "E-024",
-                "E-007", "E-034", "E-029", "E-050"):
+                "E-007", "E-034", "E-029", "E-050", "E-059", "E-068", "Q-102", "E-075"):
         assert re.search(rf"\b{row}\b", s0), f"section 0 does not cite {row}"
+
+
+def _sha256_lf(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+#: the placeholder id in the declaration's text before its pin; the pin substitutes `RD-02` for it
+PLACEHOLDER = "RD-xx"
+
+
+def test_the_text_is_in_pin_time_form():
+    """E-075: the title, status and header are true of the pinned file `prereg/RD-02_payout_policy.md`. The pin
+    substitutes `RD-02` for the placeholder id on exactly three lines -- the title, the `id` row, section 14's
+    `prereg_id` -- and changes nothing else, so the placeholder appears on no other line (before the pin; after it, the
+    same three lines carry `RD-02`)."""
+    body = text()
+    rid = PLACEHOLDER if draft_path().name.startswith("DRAFT_") else "RD-02"
+    head = body.split("\n## 0.", 1)[0]
+    status = head.split("**Its text's history.**", 1)[0]
+    assert head.startswith(f"# {rid}: "), head[:80]
+    for stale in ("DRAFT", "Not pinned", "not declared", "this draft"):
+        assert stale not in status, stale
+    assert re.search(rf"^\| id \| {rid} \(`prereg/RD-02_payout_policy\.md` at the pin\)", head, re.MULTILINE)
+    assert re.search(r"^\| `confirmation_tests_on_this_market` \| 3: ", head, re.MULTILINE)
+    assert f"`prereg_id`: `{rid}`" in section(body, "## 14.")
+    assert "RD-nn" not in body
+    lines = [ln for ln in body.split("\n") if PLACEHOLDER in ln]
+    if rid == PLACEHOLDER:
+        assert len(lines) == 3, lines
+        assert lines[0].startswith("# RD-xx: ") and lines[1].startswith("| id | RD-xx (")
+        assert "`prereg_id`: `RD-xx`" in lines[2]
+    else:
+        assert not lines, lines
+
+
+def test_every_pinned_calendar_is_cited_by_its_own_lf_sha256():
+    """E-075: each `config/calendar_*.csv` the text reads is cited with the LF sha256 of the file itself (E-029,
+    E-050), and every such citation is right."""
+    body = text()
+    cited = set(re.findall(r"`(config/calendar_[a-z_]+\.csv)`", body))
+    assert cited == {"config/calendar_early_closes.csv", "config/calendar_fomc_minutes.csv"}, cited
+    pairs = re.findall(r"`(config/calendar_[a-z_]+\.csv)`[^`]{0,40}sha256\s*`([0-9a-f]{64})`", body)
+    assert {c for c, _ in pairs} == cited, pairs
+    for c, h in pairs:
+        assert h == _sha256_lf(ROOT / c), (c, h)
+
+
+def test_the_tracked_code_and_tests_holding_the_block_are_exactly_section_11s():
+    """E-075: section 11's seed search states exactly what it finds, repository code and tests included. Every tracked
+    `.py` file holding a seed of the block (word-bounded) is named in section 11's list, and every `.py` file named
+    there holds one."""
+    out = subprocess.run(["git", "ls-files", "*.py"], cwd=ROOT, capture_output=True, text=True, check=True)
+    pat = re.compile(rb"\b2026194[0-9]\b")
+    found = {rel for rel in out.stdout.splitlines() if pat.search((ROOT / rel).read_bytes())}
+    named = set(re.findall(r"`([\w/.-]+\.py)`", section(text(), "## 11.").split("**The check", 1)[1]
+                           .split("**Inherited", 1)[0]))
+    assert found == named, {"found, not named": sorted(found - named), "named, not found": sorted(named - found)}
