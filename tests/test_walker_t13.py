@@ -168,3 +168,26 @@ def test_t13_the_declared_settlement_is_not_side_neutral(t13):
 def test_t13_the_pair_rule_with_the_symmetric_booking_is_side_neutral(t13):
     bad = outside("pair_symmetric", t13)
     assert not bad, "outside the mirror's zero: " + "; ".join(bad)
+
+
+#: all four settlement x booking combinations, for the attribution (`python tests/test_walker_t13.py --report`): the
+#: modes draw nothing, so the paths, tickets and fills are the test's exactly; decides nothing
+REPORT_MODES = {"declared_rule_fill": ("declared", "rule_fill"), "declared_symmetric": ("declared", "symmetric"),
+                "pair_rule_fill": ("pair", "rule_fill"), "pair_symmetric": ("pair", "symmetric")}
+
+
+def report(days: int = DAYS, seed: int = SEED) -> None:
+    res = run(days, seed, modes=REPORT_MODES)
+    print(f"T-13 (synthetic): {days} days, seed {seed}; lift in points of win probability, se clustered by day")
+    for mo in REPORT_MODES:
+        for ru in RULES:
+            for r in stats(res[(mo, ru)]):
+                flag = "OUTSIDE" if abs(r["lift"]) > Z * r["se"] else "within"
+                print(f"{mo:19s} {ru:5s} R {r['R']:<3g} fills {r['fills']:6d}  lift {100 * r['lift']:+6.2f} "
+                      f"(se {100 * r['se']:.2f}, half-width {100 * r['half_width']:.2f})  {flag}  ambiguous "
+                      f"{100 * r['ambiguous']:.1f} %  spanning {100 * r['span']:.1f} %")
+
+
+if __name__ == "__main__":
+    if "--report" in sys.argv[1:]:
+        report()
