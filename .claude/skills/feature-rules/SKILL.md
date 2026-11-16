@@ -10,8 +10,9 @@ checked by tests, not by care.
 
 ## 1. Time: what "closed at or before t" means here
 
-- Stage 2's bars carry the bar's **open** time (`vendor/stage2/data/README.md`, `timestamp`: "Bar OPEN time"),
-  US/Central. A 1-minute bar stamped 08:25 covers 08:25:00-08:25:59 and **closes at 08:26**.
+- Stage 2's bar store (`bars.parquet`, `vendor/stage2/data/README.md`) carries **`ts`, the bar's START**, in epoch
+  seconds **UTC** (the README's generic input schema calls it `timestamp`, "Bar OPEN time"); session times are read in
+  US/Central after converting (DST-aware). A 1-minute bar stamped 08:25 covers 08:25:00-08:25:59 and **closes at 08:26**.
 - So at an alert time `t` (on a minute boundary) the last closed bar is the one stamped **`t - 1 minute`**. A feature at
   `t` reads bars with `timestamp <= t - 1 min` and nothing else. "The 08:25 bar's close" is known at 08:26, not 08:25.
 - Entry is no earlier than `t + 5 min` (Stage 2 D-266): a market entry fills at the open of the bar stamped `t + 5`;
