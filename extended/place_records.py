@@ -45,10 +45,10 @@ difference is a problem (`PlaceRecorder.problems`), never silently kept.
 traded; every trade's P&L is its balance change and an account's trades in a session chain; every trade has its day row;
 every routed trade's (historical day, trade index) is in the blocks; R equals the table's where the table sets it.
 
-**Not here** (the hand-back's open items): the U1 replay (Q-17's adapter, `extended/user_beside.py`) is not wired --
-`record_path` reads any `LockstepPath` recorded with both recorders on, so a replay's records can be read by it once
-that adapter takes a declared keyword (family O's 18.1 item 3 asks the same extension for its class); offers a
-waiting account declines are not trades and are not recorded (family O's own gating wrapper sees them).
+**The U1 replay** (Q-17's adapter, `extended/user_beside.py`) is wired by Q-94: `extended/replay_records.py` records a
+replay's long runs through `user_beside.run_starts(recorder=...)` and reads each with `record_path` over the start's
+window of the blocks (`BlockMeta.window`). **Not here:** offers a waiting account declines are not trades and are not
+recorded (family O's own gating wrapper sees them).
 """
 from __future__ import annotations
 
@@ -179,6 +179,22 @@ class BlockMeta:
     @property
     def n_blocks(self) -> int:
         return int(len(self.lengths))
+
+    def window(self, start: int, length: int) -> "BlockMeta":
+        """Q-94: blocks `start` .. `start + length - 1` as a meta of their own (views of these arrays, nothing copied)
+        -- what a replay of that window of the blocks sees: its historical day 0 is the window's first block, its dates
+        and offer ids the window's. Refuses (`ValueError`) a window that is not inside the blocks."""
+        s, n = int(start), int(length)
+        if s < 0 or n < 0 or s + n > self.n_blocks:
+            raise ValueError(f"the window {s} .. {s + n - 1} is not inside the {self.n_blocks} blocks")
+        a, b = int(self.offsets[s]), int(self.offsets[s + n])
+        w = object.__new__(BlockMeta)
+        w.lengths = self.lengths[s:s + n]
+        w.offsets = self.offsets[s:s + n + 1] - a
+        w.entry_t, w.exit_t, w.side = self.entry_t[a:b], self.exit_t[a:b], self.side[a:b]
+        w.dates = None if self.dates is None else self.dates[s:s + n]
+        w.offers = None if self.offers is None else self.offers[a:b]
+        return w
 
     def at(self, h: int, j: int) -> int | None:
         """The flat position of block h's trade j, or None when it is not in the blocks."""

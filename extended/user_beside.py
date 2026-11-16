@@ -72,6 +72,20 @@ the same replay arguments, the same outputs bit for bit, and `base_problems` sti
 Its identities: `tests/q76_synthetic.py` (absent = the adapter before Q-76 bit for bit on all 19 responses; a
 pass-through class equal apart from naming; a probe class's documented effect; the refusals) and
 `identity/user_beside_identity.py --funded-cls` (U1's start rows at the default and with the gate's pass-through class).
+
+**Q-94 (E-055, E-059): place recording on the replay.** `run_starts(..., recorder=R)` with an
+`extended.replay_records.ReplayRecorder` records every start's long replay -- Q-70's compact records (each simulated
+trade's offer, the table's R, place, account and state, booking; each funded account's opening and wait) -- into `R`,
+beside the outputs, which it does not change. With the keyword absent (None) every task, replay and output is as before
+Q-94, bit for bit. When given: the recorder is checked and its reducer made before any start runs (`TypeError` for
+anything but a `ReplayRecorder`; `ValueError` for a path already carrying `record_trades` or `record_days`, or offer ids
+that do not number the blocks; `RuntimeError` for a run the recorder already holds); each task gains the reducer as its
+tenth item (its ninth the class, or None); in the task each start's long replay runs with the engine's two recorders on,
+is read by the reducer and handed on as the unrecorded call's path; the exact-length runs run unrecorded, as before; the
+task returns (its outputs, their records), and `run_starts` hands the records to `R` and returns the outputs alone.
+Its identities: `tests/q94_synthetic.py` (with it on, every output equals it off bit for bit, on all 19 responses and
+with the pass-through class; the records against the replay ledger, Q-35's openings, the engine's `FundedAccount.days`)
+and `identity/replay_records_identity.py` (U1's start rows with recording on).
 """
 from __future__ import annotations
 
@@ -428,12 +442,14 @@ def response_record(lp: Any, resp: Response, info: dict[str, Any] | None = None)
     return out
 
 
-def _task(task: tuple) -> list[dict[str, Any]]:
-    """(design, arm, response name, blocks, dates, args, starts, exact_every[, funded_account_cls]) -> each start's
-    output: the vendored `user_journey._one_start` on this adapter's runs (long and exact-length), with the start's
-    daily path measures and what the response did. The heavy parts of `_one_start`'s output (D-518's side) are
+def _task(task: tuple) -> Any:
+    """(design, arm, response name, blocks, dates, args, starts, exact_every[, funded_account_cls[, reducer]]) -> each
+    start's output: the vendored `user_journey._one_start` on this adapter's runs (long and exact-length), with the
+    start's daily path measures and what the response did. The heavy parts of `_one_start`'s output (D-518's side) are
     dropped. Q-76: the ninth item, present only when a class is declared, is that class; each output then names it
-    (its last key, `funded_account_cls`)."""
+    (its last key, `funded_account_cls`). Q-94: the tenth item, present only when recording (the ninth then the class
+    or None), is the run's `replay_records.ReplayReducer`: each start's long replay is recorded and reduced, and the
+    task returns (the outputs, one record a start)."""
     import warnings
 
     import customer_journey as CJ
@@ -446,15 +462,22 @@ def _task(task: tuple) -> list[dict[str, Any]]:
     warnings.filterwarnings("ignore")
     design, arm, rname, blocks, dates, args, starts, exact_every = task[:8]
     cls = task[8] if len(task) > 8 else None                                    # Q-76
+    red = task[9] if len(task) > 9 else None                                    # Q-94: the replay's reducer
     named = class_parameters(cls)                                               # Q-76: empty when absent
     resp = BY_NAME[rname]
     a = response_args(args, resp) if cls is None else response_args(args, resp, cls)
+    a_rec = None if red is None else red.recording_args(a)                     # Q-94: both recorders on
+    recs: list[dict[str, Any]] = []                                             # Q-94: one record a start
     sub = float(args["path"]["subscription"])
     lag = int(args["path"]["payout_lag_days"])
     n = len(blocks)
 
-    def run(s: int, h: int):
-        lp = replay(blocks[s:s + h], a, start_seed(s))
+    def run(s: int, h: int, record: bool = False):
+        if record:                                                              # Q-94: recorded, read, handed on plain
+            lp, r = red.reduce(replay(blocks[s:s + h], a_rec, start_seed(s)), s, h, start_seed(s), dates[s])
+            recs.append(r)
+        else:
+            lp = replay(blocks[s:s + h], a, start_seed(s))
         if resp.kind == "forfeit":
             return forfeit_view(lp, lag)
         return lp, None
@@ -468,7 +491,7 @@ def _task(task: tuple) -> list[dict[str, Any]]:
     out = []
     for s in starts:
         L = min(U.HORIZON, n - s)
-        long_run, info = run(s, L)
+        long_run, info = run(s, L, red is not None)                             # Q-94: the long run alone recorded
         if len(long_run.path.cash_series) != L + 1:
             raise RuntimeError(f"{design} {arm} {rname} start {s}: {len(long_run.path.cash_series)} closes, not {L + 1}")
         mine = long_record(s, dates[s], long_run, pay, totals)
@@ -487,7 +510,7 @@ def _task(task: tuple) -> list[dict[str, Any]]:
                     "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
                     "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": start_seed(s),
                     **named})                                                   # Q-76: named only when given
-    return out
+    return out if red is None else (out, recs)                                  # Q-94: the records beside
 
 
 def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
@@ -513,7 +536,7 @@ def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
 
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
                chunk: int = 20, exact_every: int | None = None,
-               funded_account_cls: type | None = None) -> list[dict[str, Any]]:
+               funded_account_cls: type | None = None, recorder: Any = None) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
     `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start).
@@ -522,7 +545,10 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     on every replay; checked, with the design's arguments, before any start runs (`TypeError` for a class that is not
     a `FundedAccount` subclass or, at more than one worker, cannot pickle; `ValueError` for a response it cannot run
     with, or a path already carrying a class); added to each task as its ninth item, and named on every start's
-    output, only when given."""
+    output, only when given.
+
+    Q-94: `recorder` (default None: every behaviour as before) is an `extended.replay_records.ReplayRecorder`: every
+    start's long replay is recorded into it, the outputs unchanged (the module's docstring)."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
@@ -530,13 +556,25 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     if funded_account_cls is not None:                                          # Q-76: refused before any start
         check_class_response(funded_account_cls, resp, int(workers))
         response_args(job["args"], resp, funded_account_cls)
+    red = None
+    if recorder is not None:                                                    # Q-94: refused before any start
+        from extended import replay_records as RR
+
+        red = RR.check_recorder(recorder).reducer(design, arm, resp, job)
     every = 1 if resp.kind == "off" else int(EXACT_EVERY if exact_every is None else exact_every)
     chunks = [list(starts[j:j + chunk]) for j in range(0, len(starts), chunk)]
     tasks = [(design, arm, resp.name, job["blocks"], job["dates"], job["args"], c, every) for c in chunks]
     if funded_account_cls is not None:                                          # Q-76: the ninth item, only when given
         tasks = [(*t, funded_account_cls) for t in tasks]
+    if red is not None:                                                         # Q-94: the tenth, only when recording
+        tasks = [(*t, red) if len(t) == 9 else (*t, None, red) for t in tasks]
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
-    return [x for part in res for x in part]
+    if red is None:
+        return [x for part in res for x in part]
+    out = [x for part, _ in res for x in part]                                  # Q-94: the outputs, as without it
+    recorder.collect(design, arm, resp.name, [r for _, part in res for r in part],
+                     [x["rec"]["start_day"] for x in out])
+    return out
 
 
 __all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "EXACT_EVERY", "FTP_BINDING", "FTP_BUDGET", "Response",

@@ -17,6 +17,16 @@ as the vendored `u_value_map.records_counts` classifies them (checked path by pa
 **The draft sources** (`SOURCES`): the drafts are still drafts; the citations are by section and phrase, so a
 renumbered item can still be found. A field needed by neither draft but asked by Q-70's brief ("its place (path,
 account, the account's state, session, time) and what the engine booked") cites `brief`.
+
+**Q-94: the same records on the U1 replay** (`extended/replay_records.py`, through Q-17's adapter
+`extended/user_beside.py`). A replay's record is the gate's record with its campaign group -- the gate's arm, level,
+path and path seed (`GATE_CAMPAIGN`), which a replay does not have -- replaced by the replay's own
+(`REPLAY_CAMPAIGN_FIELDS`: the design, U1's arm, the firm response and its level, the start, its date and its path
+seed); every other column is the gate record's, read the same way: `day` is the engine's calendar session on the
+start's replay (day t is the session `dates[start_day + t - 1]`, `ReplayTable`), `historical_day` the block of the
+start's own window (the window's session `start_day + historical_day`, the same session as the trade's in a replay),
+`account_session` the account's live sessions before this one (`FundedAccount.days` at routing; a funded opening's
+wait). `REPLAY_TRADE_FIELDS` and `REPLAY_ACCOUNT_FIELDS` are the two schemas.
 """
 from __future__ import annotations
 
@@ -36,8 +46,12 @@ SOURCES: dict[str, str] = {
             "u_value_map.csv's records_leaf (the table's leaf by phase)",
     "O-18": "family O section 18.1 item 4: 'every simulated trade's offer, R and place, and for each opening its wait "
             "and whether it was a fallback'; its identity against trades_per_year_records for p16; and 'on the U1 "
-            "replay as well as the gate' -- 'the openings it records equal the replay ledger's' (the replay is not "
-            "wired here: Q-70's open item)",
+            "replay as well as the gate' -- 'the openings it records equal the replay ledger's' (the replay is wired "
+            "by Q-94: extended/replay_records.py)",
+    "O-A2": "family O section 9, A2 ('on the U1 replay in history's order'): the counts of where the openings fall "
+            "for P-16, each cell's design and its two twin designs -- by mark, hour, day kind, the sessions from "
+            "activation, each design's wait distribution -- and 5.5: 'each opening is counted once per start in whose "
+            "replay it falls (a start is one user's journey)'",
     "O-5.5": "family O section 5.5 and A2 (stage A, on the U1 replay in history's order): every funded opening's "
              "'(date, mark), hour, day kind, whether it is at 08:30-09:00, whether at the report-day 07:35:00 entry, "
              "the sessions from activation, and whether the offer is in each cell's state'; 'each opening's wait and "
@@ -50,6 +64,8 @@ SOURCES: dict[str, str] = {
     "O-A1": "family O A1 item 6: 'every in-wait opening's (date, mark), read by the place-recording adapter, is in the "
             "placebo's set'",
     "brief": "Q-70's brief: 'its place (path, account, the account's state, session, time) and what the engine booked'",
+    "brief-Q94": "Q-94's brief: on Q-17's U1 replay, 'the same compact records (offer, the table's R, place, account "
+                 "and state, booking; each funded account's opening and wait)', riding out beside each start's output",
 }
 
 #: the field groups, in the record's column order
@@ -200,6 +216,39 @@ ACCOUNT_FIELDS: tuple[Field, ...] = (
 TRADE_COLUMNS = tuple(f.name for f in TRADE_FIELDS)
 ACCOUNT_COLUMNS = tuple(f.name for f in ACCOUNT_FIELDS)
 
+# ---- Q-94: the U1 replay's records (`extended/replay_records.py`)
+
+#: the gate record's campaign columns, which a replay does not have and its record replaces
+GATE_CAMPAIGN = ("shift", "enforcement_p", "path", "path_seed")
+
+#: a replay record's campaign group: which replay, which start
+REPLAY_CAMPAIGN_FIELDS: tuple[Field, ...] = (
+    _f("design", "campaign", "str", "the replayed configuration (U1's configuration name, as `user_beside.run_starts` "
+       "was given it)", "extended.user_beside.run_starts' design", "O-A2", "O-18"),
+    _f("arm", "campaign", "str", "U1's arm the replay ran: 'verdict' (every R shifted to its bound, the gate row's "
+       "lower-bound arm) or 'point' (as traded)", "extended.user_beside.run_starts' arm", "O-A2"),
+    _f("response", "campaign", "str", "the firm response the replay ran under ('off': the vendored 0 %, "
+       "placement-off call; `user_beside.RESPONSES`)", "extended.user_beside.Response.name", "O-A2", "brief-Q94"),
+    _f("enforcement_p", "campaign", "float", "the response's payout-denial level (0.0 for 'off')",
+       "extended.user_beside.Response.enforcement_p", "brief-Q94"),
+    _f("start_day", "campaign", "int", "the start's index in the configuration's window: the replay's first session "
+       "is the window's session start_day (one start is one user's journey)", "extended.user_beside._task's start",
+       "O-A2", "O-5.5"),
+    _f("start_date", "campaign", "str", "the start's first session (the job's dates[start_day])", "the job's dates",
+       "O-A2", "brief-Q94"),
+    _f("start_seed", "campaign", "int", "the start's path seed (`user_beside.start_seed`: it drives only the "
+       "enforcement stream)", "extended.user_beside.start_seed", "brief-Q94"),
+)
+#: one row a simulated trade of a start's replay: the replay's campaign group, then the gate record's other columns
+REPLAY_TRADE_FIELDS: tuple[Field, ...] = REPLAY_CAMPAIGN_FIELDS + tuple(f for f in TRADE_FIELDS
+                                                                        if f.name not in GATE_CAMPAIGN)
+#: one row a funded account of a start's replay (opened or not): its opening and its wait
+REPLAY_ACCOUNT_FIELDS: tuple[Field, ...] = REPLAY_CAMPAIGN_FIELDS + tuple(f for f in ACCOUNT_FIELDS
+                                                                          if f.name not in GATE_CAMPAIGN)
+REPLAY_CAMPAIGN_COLUMNS = tuple(f.name for f in REPLAY_CAMPAIGN_FIELDS)
+REPLAY_TRADE_COLUMNS = tuple(f.name for f in REPLAY_TRADE_FIELDS)
+REPLAY_ACCOUNT_COLUMNS = tuple(f.name for f in REPLAY_ACCOUNT_FIELDS)
+
 
 def by_name(fields: tuple[Field, ...] = TRADE_FIELDS) -> dict[str, Field]:
     return {f.name: f for f in fields}
@@ -207,9 +256,10 @@ def by_name(fields: tuple[Field, ...] = TRADE_FIELDS) -> dict[str, Field]:
 
 def problems() -> list[str]:
     """The schema's own checks: unique names, known groups and dtypes, every field needed by a known source, and every
-    draft source used by some field."""
+    draft source used by some field; and (Q-94) the replay schemas are the gate's with the campaign group replaced."""
     out = []
-    for fields, what in ((TRADE_FIELDS, "trade"), (ACCOUNT_FIELDS, "account")):
+    for fields, what in ((TRADE_FIELDS, "trade"), (ACCOUNT_FIELDS, "account"),
+                         (REPLAY_TRADE_FIELDS, "replay trade"), (REPLAY_ACCOUNT_FIELDS, "replay account")):
         names = [f.name for f in fields]
         if len(set(names)) != len(names):
             out.append(f"{what} fields: a name repeats")
@@ -225,17 +275,26 @@ def problems() -> list[str]:
                 out.append(f"{what} field {f.name}: unknown sources {bad}")
             if not f.meaning or not f.engine:
                 out.append(f"{what} field {f.name}: undocumented")
-    used = {k for f in TRADE_FIELDS + ACCOUNT_FIELDS for k in f.needed_by}
+    used = {k for f in TRADE_FIELDS + ACCOUNT_FIELDS + REPLAY_CAMPAIGN_FIELDS for k in f.needed_by}
     unused = sorted(set(SOURCES) - used)
     if unused:
         out.append(f"sources no field cites: {unused}")
+    for gate, replay, what in ((TRADE_FIELDS, REPLAY_TRADE_FIELDS, "trade"),
+                               (ACCOUNT_FIELDS, REPLAY_ACCOUNT_FIELDS, "account")):
+        rest = tuple(f for f in gate if f.name not in GATE_CAMPAIGN)
+        k = len(REPLAY_CAMPAIGN_FIELDS)
+        if replay[k:] != rest or replay[:k] != REPLAY_CAMPAIGN_FIELDS:
+            out.append(f"the replay {what} fields are not the replay's campaign group and the gate's other fields")
+        if not set(GATE_CAMPAIGN) & {f.name for f in gate}:
+            out.append(f"the gate {what} fields carry none of the gate's campaign columns")
     return out
 
 
 def describe() -> str:
     """The field list as text: name, group, dtype, the draft keys, the meaning."""
     lines = []
-    for fields, what in ((TRADE_FIELDS, "trades"), (ACCOUNT_FIELDS, "funded accounts")):
+    for fields, what in ((TRADE_FIELDS, "trades"), (ACCOUNT_FIELDS, "funded accounts"),
+                         (REPLAY_CAMPAIGN_FIELDS, "a U1 replay's campaign group (Q-94; in place of the gate's)")):
         lines.append(f"# {what}")
         for f in fields:
             lines.append(f"{f.name:22s} {f.group:9s} {f.dtype:6s} [{', '.join(f.needed_by)}] {f.meaning}")
@@ -243,4 +302,6 @@ def describe() -> str:
 
 
 __all__ = ["SOURCES", "GROUPS", "Field", "TRADE_FIELDS", "ACCOUNT_FIELDS", "TRADE_COLUMNS", "ACCOUNT_COLUMNS",
-           "by_name", "problems", "describe"]
+           "GATE_CAMPAIGN", "REPLAY_CAMPAIGN_FIELDS", "REPLAY_TRADE_FIELDS", "REPLAY_ACCOUNT_FIELDS",
+           "REPLAY_CAMPAIGN_COLUMNS", "REPLAY_TRADE_COLUMNS", "REPLAY_ACCOUNT_COLUMNS", "by_name", "problems",
+           "describe"]
