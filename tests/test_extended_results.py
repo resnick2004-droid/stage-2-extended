@@ -163,3 +163,122 @@ def test_clean_run_writes_and_never_overwrites(tmp_path):
     assert Path(out["csv"]) == tmp_path / "runs" / "q04-sim" / "results" / "t_clean.csv"
     assert out["prov"]["clean_run"]["name"] == "q04-sim"
     assert out["again"] == "refused", "a result file is never overwritten (DIRECTIVE Part 1)"
+
+
+# ------------------------------------------------------------------------------------------------ Q-97: the ledger
+#
+# A clean run that reads through `extended.reader` appends its read's line to `results/read_ledger.jsonl` in its own
+# checkout, before it writes any result; the vendored writer would count that as an uncommitted change and stamp the
+# manifest `-dirty`. Inside a clean run the writer records the ledger as the run's own write (D-207's `note_written`)
+# only when it differs from HEAD's copy by appended lines alone, each a ledger record -- any other change still marks
+# the manifest. Each case is a simulated clean checkout: a temporary git repository at <runs>/<name>.
+
+LEDGER_KEYS = ("ledger", "when", "who", "what", "dates", "declaration", "purpose", "repeat")
+
+
+def _record(i: int) -> str:
+    rec = {k: None for k in LEDGER_KEYS}
+    rec.update({"ledger": 1, "when": f"2026-11-16T10:00:{i:02d}+00:00", "purpose": "registered_design",
+                "who": {"run_id": f"sim@{i}"}, "declaration": {"ref": "E-035"}})
+    return json.dumps(rec, sort_keys=True, separators=(",", ":"))
+
+
+def _git(repo: Path, *a: str) -> str:
+    r = subprocess.run(["git", *a], cwd=repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return r.stdout.strip()
+
+
+def _checkout(runs: Path, name: str, committed: list[str] | None) -> Path:
+    """A committed tree like a clean run's: the ledger's LF rule, a code file, and the ledger (or none)."""
+    wt = runs / name
+    (wt / "results").mkdir(parents=True)
+    _git(wt, "init", "-q")
+    _git(wt, "config", "user.email", "t@example.invalid")
+    _git(wt, "config", "user.name", "t")
+    (wt / ".gitattributes").write_bytes(b"* text=auto\nresults/read_ledger.jsonl text eol=lf\nresults/*.csv -text\n")
+    (wt / "code.py").write_bytes(b"x = 1\n")
+    if committed is not None:
+        (wt / "results" / "read_ledger.jsonl").write_bytes("".join(f"{x}\n" for x in committed).encode())
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-q", "-m", "base")
+    return wt
+
+
+def test_a_clean_runs_own_ledger_appends_do_not_dirty_its_manifests(tmp_path):
+    runs = tmp_path / "runs"
+    a, b, c = _record(1), _record(2), _record(3)
+    cases = {
+        # name: (the committed ledger, the ledger the run leaves (bytes; None = none), another file changed, clean?)
+        "unchanged": ([a], f"{a}\n".encode(), False, True),
+        "appended": ([a], f"{a}\n{b}\n{c}\n".encode(), False, True),
+        "created": (None, f"{b}\n".encode(), False, True),               # Q-55's case: no ledger at the run's commit
+        "no_ledger": (None, None, False, True),
+        "edited": ([a, b], f"{a}\n{b.replace('10:00:02', '10:00:09')}\n{c}\n".encode(), False, False),
+        "removed": ([a, b], f"{a}\n{c}\n".encode(), False, False),
+        "emptied": ([a], b"", False, False),
+        "deleted": ([a], None, False, False),
+        "reordered": ([a, b], f"{b}\n{a}\n".encode(), False, False),
+        "not_json": ([a], f"{a}\nnot a record\n".encode(), False, False),
+        "not_a_record": ([a], f"{a}\n" + json.dumps({"ledger": 1}) + "\n", False, False),
+        "blank_line": ([a], f"{a}\n\n{b}\n".encode(), False, False),
+        "cut": ([a], f"{a}\n{b}".encode(), False, False),
+        "other_file": ([a], f"{a}\n{b}\n".encode(), True, False),
+    }
+    for name, (committed, now, other, _) in cases.items():
+        wt = _checkout(runs, name, committed)
+        led = wt / "results" / "read_ledger.jsonl"
+        if now is None:
+            if led.exists():
+                led.unlink()
+        else:
+            led.write_bytes(now if isinstance(now, bytes) else now.encode())
+        if other:
+            (wt / "code.py").write_bytes(b"x = 2\n")
+    out = child("""
+        import pandas as pd
+        import extended.results as X
+        runs = Path(os.environ["S2X_TMP"]) / "runs"
+        X.RUNS_DIR = runs
+        got = {}
+        for wt in sorted(runs.iterdir()):
+            os.environ["S2X_CLEAN_RUN"] = wt.name
+            X.ROOT, X.RESULTS_DIR = wt, wt / "results"
+            csv, man = X.write_result(pd.DataFrame({"a": [1]}), "t_ledger", script="t", seed=1, parameters={})
+            m = json.loads(Path(man).read_text(encoding="utf-8"))
+            head = __import__("subprocess").run(["git", "rev-parse", "HEAD"], cwd=wt, capture_output=True,
+                                                text=True).stdout.strip()
+            got[wt.name] = {"commit": m["git_commit"], "head": head, "ledger": m["provenance"].get("read_ledger")}
+        print(json.dumps(got))
+    """, tmp_path)
+    for name, (_, _, _, clean) in cases.items():
+        g = out[name]
+        assert g["commit"].startswith(g["head"]), (name, g)
+        assert g["commit"].endswith("-dirty") is (not clean), (name, g)
+        assert g["ledger"], name                                         # the manifest says what the writer saw
+    assert "2 line(s) appended" in out["appended"]["ledger"] and "1 line(s) appended" in out["created"]["ledger"]
+    for name in ("edited", "removed", "reordered", "not_json", "not_a_record", "blank_line", "cut", "emptied",
+                 "deleted"):
+        assert "-dirty" in out[name]["ledger"], (name, out[name]["ledger"])
+
+
+def test_a_ledger_noted_then_edited_marks_the_next_manifest(tmp_path):
+    runs = tmp_path / "runs"
+    a, b = _record(1), _record(2)
+    wt = _checkout(runs, "later", [a])
+    (wt / "results" / "read_ledger.jsonl").write_bytes(f"{a}\n{b}\n".encode())
+    out = child("""
+        import pandas as pd
+        import extended.results as X
+        runs = Path(os.environ["S2X_TMP"]) / "runs"
+        X.RUNS_DIR, X.ROOT = runs, runs / "later"
+        X.RESULTS_DIR = X.ROOT / "results"
+        _, m1 = X.write_result(pd.DataFrame({"a": [1]}), "t_one", script="t", seed=1, parameters={})
+        led = X.ROOT / "results" / "read_ledger.jsonl"
+        led.write_bytes(led.read_bytes().replace(b"10:00:01", b"10:00:07"))      # an earlier line edited afterwards
+        _, m2 = X.write_result(pd.DataFrame({"a": [2]}), "t_two", script="t", seed=1, parameters={})
+        print(json.dumps({k: json.loads(Path(m).read_text(encoding="utf-8"))["git_commit"]
+                          for k, m in (("first", m1), ("second", m2))}))
+    """, tmp_path, env={"S2X_CLEAN_RUN": "later"})
+    assert not out["first"].endswith("-dirty")
+    assert out["second"].endswith("-dirty"), "a ledger recorded as the run's write is unrecorded once it is edited"

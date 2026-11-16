@@ -62,8 +62,9 @@ into this tree's `results/` only inside the clean run `scripts/run_clean.py` mad
 | `q82_judged_sessions.csv` | the judged block's session list as the calibration uses it: ordinal, date; its count and the sha256 of the ISO dates joined by "\\n" (no trailing newline) in the manifest's parameters |
 
 Every result file is built before the first is written; a write that fails leaves the earlier files, each whole with
-its manifest, and the log names them. The run's own read-ledger lines are noted as this run's writes (D-207) once
-checked to be appends, so they do not stamp the manifests `-dirty`.
+its manifest, and the log names them. The run's own read-ledger lines are recorded as this run's writes (D-207) once
+checked to be appended ledger records, so they do not stamp the manifests `-dirty` (`extended.results.
+note_ledger_appends`, Q-97; the writer applies it to every write inside a clean run).
 
 **Refusals (exit 3, before any step):** this tree's `results/` outside a clean run; a result file that exists; a
 `lift_bound.py` other than the validated blob; any seed of E-052's block named elsewhere -- in code, data, a result or
@@ -885,24 +886,6 @@ def _step(name: str, args: list[str]) -> None:
     _log(f"step {name}: done, {time.time() - t0:.0f} s")
 
 
-def _note_ledger_appends(vendored_note_written) -> str:
-    """D-207: the run's own read-ledger lines (this run's reads, ledgered inside the clean run) are this run's writes;
-    noted only when the ledger only grew against HEAD, so they do not stamp the manifests `-dirty`."""
-    led = ROOT / "results" / "read_ledger.jsonl"
-    if not led.is_file():
-        return "no ledger"
-    r = subprocess.run(["git", "show", "HEAD:results/read_ledger.jsonl"], cwd=ROOT, capture_output=True)
-    head = r.stdout.replace(b"\r\n", b"\n") if r.returncode == 0 else b""
-    now = led.read_bytes().replace(b"\r\n", b"\n")
-    if now == head:
-        return "unchanged"
-    if not now.startswith(head):
-        return "CHANGED other than by appending: left to mark the manifests -dirty"
-    vendored_note_written(led)
-    added = now[len(head):].count(b"\n")
-    return f"{added} line(s) appended by this run: noted as its writes (D-207)"
-
-
 def _versions() -> dict:
     import scipy
 
@@ -996,9 +979,7 @@ def main(argv=None) -> int:
     _log(f"scalar re-decision: {checked} decisions checked against lift_bound's scalar functions, {mism} mismatched"
          + (" -- DIFFERS" if mism else ""))
 
-    from propedge.reporting.results import note_written       # the vendored writer's D-207 record (on the path now)
-
-    _log(f"read ledger: {_note_ledger_appends(note_written)}")
+    _log(f"read ledger: {XR.note_ledger_appends()}")             # Q-97's shared helper (the writer repeats it)
     blobs = {rel: blob_id(ROOT / rel) for rel in ("extended/lift_bound.py", "extended/count_nulls.py",
                                                   "scripts/q16_calibrate.py", SCRIPT, "scripts/q16_p16_pairs.py")}
     common = {

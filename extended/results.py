@@ -10,6 +10,16 @@
   and the marker is recorded in the manifest's `provenance.clean_run`. A result file there is never overwritten
   (`ResultExists`; DIRECTIVE Part 1). Any other folder (a test's temporary one) is written as the vendored writer
   writes it.
+* **The read ledger inside a clean run** (Q-97, E-062): a run that reads through `extended.reader` appends its read's
+  line to `results/read_ledger.jsonl` in its own checkout before it writes a result, and the vendored writer would
+  count that as an uncommitted change and stamp the manifest `-dirty`. So inside a clean run `write_result` first
+  calls `note_ledger_appends`: when the ledger differs from HEAD's copy (as the checkout holds it) **only by appended
+  lines** -- HEAD's copy a byte-for-byte prefix ending at a line, the appended part whole lines ending in a newline,
+  none blank, each a ledger record, the whole file read by `extended.reader.read_ledger` -- those appends are recorded
+  as the run's own writes (the vendored writer's D-207 `note_written`, as it records its own CSVs), so the manifest's
+  commit is clean; any other change to the ledger (a line edited, dropped, moved or cut; the file removed) is not
+  recorded -- and a record made earlier in the process is withdrawn -- so it marks the manifest `-dirty`, as does any
+  other changed file. What the writer saw is in the manifest's `provenance.read_ledger`.
 * `read_result` verifies the manifest first (the vendored check); `text=True` reads every cell as text, blanks as
   empty strings (day lists such as `"25 40"` and digit strings stay text). A relative name is read from `results/`.
 
@@ -18,11 +28,14 @@ of its own, not in the test runner's.
 """
 from __future__ import annotations
 
+import json
 import os
+import subprocess
 from pathlib import Path
 from typing import Any
 
 from extended import CLEAN_RUN_ENV, RESULTS_DIR, ROOT, RUNS_DIR, use_vendored_stage2
+from extended.reader import LEDGER_KEYS, LEDGER_REL, LedgerError, read_ledger   # the reader imports no engine
 
 use_vendored_stage2()
 
@@ -78,6 +91,78 @@ def clean_run_problem() -> str | None:
     return None
 
 
+def _head_copy(repo: Path, rel: str) -> bytes | None:
+    """HEAD's copy of `rel` as a checkout holds it (its end-of-line rule applied, `git cat-file --filters`, as
+    `scripts/run_clean.py --collect` reads it); b"" when HEAD has no such file; None when git cannot tell."""
+    ls = subprocess.run(["git", "ls-tree", "-z", "--name-only", "HEAD", "--", rel], cwd=repo, capture_output=True)
+    if ls.returncode:
+        return None
+    if rel.encode("utf-8") not in ls.stdout.split(b"\0"):
+        return b""
+    out = subprocess.run(["git", "cat-file", "--filters", f"HEAD:{rel}"], cwd=repo, capture_output=True)
+    return out.stdout if out.returncode == 0 else None
+
+
+def ledger_growth(repo: Path | str | None = None) -> tuple[str, int, str]:
+    """How the read ledger's working copy differs from HEAD's: `("unchanged", 0, why)`, `("appended", n, why)` when it
+    differs only by `n` appended ledger records, else `("changed", 0, why)`. Reads; records nothing."""
+    tree = Path(repo) if repo is not None else ROOT
+    path = tree / LEDGER_REL
+    base = _head_copy(tree, LEDGER_REL)
+    now = path.read_bytes() if path.is_file() else None
+    if base is None:
+        return ("unchanged", 0, "no ledger") if now is None else ("changed", 0, "git cannot read HEAD's copy")
+    if now is None:
+        return ("unchanged", 0, "no ledger at HEAD or here") if not base else ("changed", 0, "the ledger was removed")
+    if now == base:
+        return "unchanged", 0, "the ledger is HEAD's"
+    if base and not base.endswith(b"\n"):
+        return "changed", 0, "HEAD's copy does not end in a newline, so no append starts at a line"
+    if not now.startswith(base):
+        return "changed", 0, "it does not start with HEAD's copy byte for byte (a line edited, dropped or moved)"
+    added = now[len(base):]
+    if not added.endswith(b"\n"):
+        return "changed", 0, "its last line was cut (no final newline)"
+    try:
+        lines = added.decode("utf-8").split("\n")[:-1]
+    except UnicodeDecodeError:
+        return "changed", 0, "what was appended is not UTF-8 text"
+    for i, line in enumerate(lines, 1):
+        if not line.strip():
+            return "changed", 0, f"appended line {i} is blank"
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            return "changed", 0, f"appended line {i} is not JSON"
+        if not isinstance(rec, dict) or any(k not in rec for k in LEDGER_KEYS):
+            return "changed", 0, f"appended line {i} is not a ledger record (the keys {LEDGER_KEYS})"
+    try:
+        read_ledger(path)
+    except LedgerError as exc:
+        return "changed", 0, f"the ledger does not verify ({str(exc)[:160]})"
+    return "appended", len(lines), "only whole ledger records appended to HEAD's copy"
+
+
+def note_ledger_appends(repo: Path | str | None = None) -> str:
+    """D-207 for the read ledger: record its appended lines as this process's own writes when it differs from HEAD's
+    copy only by appended ledger records (`ledger_growth`), so the vendored writer's dirty check leaves it out; any
+    other change is not recorded (a record made earlier in this process is withdrawn), so it marks the manifest
+    `-dirty`. Returns what was seen, for the log and the manifest."""
+    tree = Path(repo) if repo is not None else ROOT
+    path = tree / LEDGER_REL
+    kind, n, why = ledger_growth(tree)
+    if kind == "appended":
+        _vendored.note_written(path)
+        return (f"{n} line(s) appended to {LEDGER_REL} by this run, each a ledger record: recorded as its own writes "
+                "(D-207)")
+    written = getattr(_vendored, "_WRITTEN", None)              # the vendored writer's D-207 record (read, not edited)
+    if written is not None:
+        written.discard(_vendored._key(path))
+    if kind == "unchanged":
+        return f"{LEDGER_REL}: {why}"
+    return f"{LEDGER_REL} changed other than by appended records -- {why}: not recorded, so it marks the manifest -dirty"
+
+
 def write_result(df: pd.DataFrame, name: str, *, script: str, seed: int | None, parameters: dict[str, Any],
                  results_dir: Path | str | None = None, provenance: dict[str, Any] | None = None,
                  **kw: Any) -> tuple[Path, Path]:
@@ -101,6 +186,7 @@ def write_result(df: pd.DataFrame, name: str, *, script: str, seed: int | None, 
             raise ResultExists(f"REFUSED: {csv} exists; a result file is never overwritten (DIRECTIVE Part 1) -- a new "
                                "reading is a new file under its own decision row")
         prov["clean_run"] = {"name": os.environ[CLEAN_RUN_ENV], "checkout": str(ROOT), "marker": CLEAN_RUN_ENV}
+        prov["read_ledger"] = note_ledger_appends(ROOT)      # Q-97: the run's own ledger appends are its writes
     return _vendored.write_result(df, name, script=script, seed=seed, parameters=parameters, results_dir=target,
                                   provenance=prov or None, repo=ROOT, **kw)
 
@@ -133,4 +219,5 @@ def list_results(results_dir: Path | str | None = None) -> list[dict[str, Any]]:
 
 
 __all__ = ["write_result", "read_result", "verify_result", "list_results", "read_manifest", "manifest_path_for",
-           "protected", "clean_run_problem", "CleanRunRequired", "ResultExists", "MissingProvenanceError"]
+           "protected", "clean_run_problem", "CleanRunRequired", "ResultExists", "MissingProvenanceError",
+           "ledger_growth", "note_ledger_appends"]
