@@ -119,3 +119,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-116: RD-02's last two changes in; it merges once the shared identity cover lands. |
 | 2026-11-16 | lead | E-117: RD-01's runner complete, its cost measured and cut by the single pass; a last diff read before merge; identity covers include `config/`. |
 | 2026-11-16 | lead | E-118: RD-01's last read -- merge after its references are held to Stage 2's rows on the new route and the covers take `config/`. |
+| 2026-11-16 | lead | E-119: one shared list of what each shared identity covers merged, derived from the scripts' imports, `config/` included; the three runners move to it. |
