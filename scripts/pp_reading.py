@@ -22,7 +22,8 @@ its reads authorised under the declaration's three purposes, after its identitie
   read as text with its columns and rows; each design's registered gate row, one a shift);
 * **E-015's limits (D5)**: read only from the rows recording the operator's approval
   (`| E-NNN | YYYY-MM-DD | e015-limits: <COLUMN> max|min <BOUND>; ... -- <text> |`, `pp_run.limit_rows`), each column one
-  of the menu's (`pp_run.limit_columns`); a malformed limits row refuses. No bound is typed on the command line; with no
+  of the menu's (`pp_run.limit_columns`), the newest row naming a column superseding the earlier ones (recorded in
+  the manifest); a malformed limits row, or one whose words negate the approval, refuses. No bound is typed on the command line; with no
   such row the menu is read without flags;
 * unless the adapter's files are the commit's (their blob ids are recorded, Q-102's m7);
 * unless the reads are authorised under each of `payout_scorecard`, `payout_ladder_beside` and `payout_gate_beside`
@@ -62,28 +63,64 @@ SCRIPT = "scripts/pp_reading.py"
 VENDOR = ROOT / "vendor" / "stage2"
 RESULTS = ("pp_reading", "pp_gate", "pp_menu")
 MAX_WORKERS = 2
-VENDOR_PINS = ("vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
-#: section 14's waits: each waited identity, what it certifies, and the files it covers -- the code it certifies, so a
-#: wait is met only at a commit with none of them changed since (D1; every path real at HEAD, `IT.held` refuses one
-#: that is not)
-WAITS: dict[str, tuple[str, tuple[str, ...]]] = {
+#: what every identity rests on, whatever it certifies: the package root (it chooses the vendored tree and the thread
+#: count for every identity) and the two vendored manifests (the engine's code and the data, by proxy)
+BASE = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
+#: each wait's own instrument: the script, or the test, that *is* the identity (the fourth read's L1); editing it after
+#: its token voids the wait
+WAIT_SCRIPTS = {"pp_identity": "identity/pp_identity.py", "Q-80": "identity/gate_identity.py",
+                "Q-93": "identity/user_beside_identity.py", "Q-101": "identity/replay_records_identity.py",
+                "t10w2": "tests/pp_synthetic.py"}
+#: RD-02's own waits, declared here: what each certifies, and the code it covers (its instrument, BASE included)
+OWN_WAITS: dict[str, tuple[str, tuple[str, ...]]] = {
     "pp_identity": ("RD-02's own identity (8.1 items 1 to 3, item 4 on its paths and starts, item 6 at ref): the "
                     "reference policy through the whole adapter and RealInputs, the reading's step 1",
-                    ("extended/pp_inputs.py", "extended/payout_policy.py", "extended/user_beside.py", "extended/gate.py",
-                     "extended/campaign.py", "extended/user_readings.py", "extended/user_measures.py",
-                     "extended/results.py", "identity/user_beside_identity.py", "identity/stage2_identity.py",
-                     *VENDOR_PINS)),
-    "Q-80": ("the gate through its re-composed campaign, 500 paths, every arm (E-049)",
-             ("extended/gate.py", "extended/campaign.py", *VENDOR_PINS)),
-    "Q-93": ("U1's start rows through run_starts with a declared class, every start (E-059 (1))",
-             ("extended/user_beside.py", "extended/user_measures.py", *VENDOR_PINS)),
-    "Q-101": ("U1's start rows with the replay recorder on, every start (E-068)",
-              ("extended/replay_records.py", "extended/place_records.py", "extended/place_fields.py",
-               "extended/openings.py", "extended/user_beside.py", "extended/user_measures.py", *VENDOR_PINS)),
+                    ("identity/pp_identity.py", "extended/pp_inputs.py", "extended/payout_policy.py",
+                     "extended/user_beside.py", "extended/gate.py", "extended/campaign.py", "extended/user_readings.py",
+                     "extended/user_measures.py", "extended/results.py", "identity/user_beside_identity.py",
+                     "identity/stage2_identity.py", *BASE)),
     "t10w2": ("T-10 at two workers: the counters' channel on the replay and the table-bearing gate (13.1 item 1)",
-              ("extended/payout_policy.py", "extended/user_beside.py", "extended/gate.py", "extended/campaign.py",
-               *VENDOR_PINS)),
+              ("tests/pp_synthetic.py", "identity/gate_identity.py", "extended/payout_policy.py",
+               "extended/user_beside.py", "extended/gate.py", "extended/campaign.py", *BASE)),
 }
+#: the shared waits: the identities other runners wait on too (RD-01's among them), their covered paths from one
+#: declaration for every runner -- `extended/identity_cover.cover` (Q-111) once it is on master; until then this list
+#: (the fourth read's remedy: each identity's own script and the identity/ modules it imports, BASE included)
+SHARED_WAITS: dict[str, str] = {
+    "Q-80": "the gate through its re-composed campaign, 500 paths, every arm (E-049)",
+    "Q-93": "U1's start rows through run_starts with a declared class, every start (E-059 (1))",
+    "Q-101": "U1's start rows with the replay recorder on, every start (E-068)",
+}
+_SHARED_COVER: dict[str, tuple[str, ...]] = {
+    "Q-80": ("identity/gate_identity.py", "identity/stage2_identity.py", "extended/gate.py", "extended/campaign.py",
+             *BASE),
+    "Q-93": ("identity/user_beside_identity.py", "identity/stage2_identity.py", "extended/user_beside.py",
+             "extended/user_measures.py", *BASE),
+    "Q-101": ("identity/replay_records_identity.py", "identity/user_beside_identity.py", "identity/stage2_identity.py",
+              "extended/replay_records.py", "extended/place_records.py", "extended/place_fields.py",
+              "extended/openings.py", "extended/user_beside.py", "extended/user_measures.py", *BASE),
+}
+
+
+def shared_cover(ident: str) -> tuple[str, ...]:
+    """The covered paths of a shared wait, by its id -- the one place `extended/identity_cover.cover(ident)` (Q-111)
+    replaces when it reaches master."""
+    if ident not in _SHARED_COVER:
+        raise KeyError(f"{ident} is not one of the shared waits {sorted(_SHARED_COVER)}")
+    return tuple(_SHARED_COVER[ident])
+
+
+def wait_table() -> dict[str, tuple[str, tuple[str, ...]]]:
+    """Section 14's waits: each waited identity, what it certifies, and the files it covers -- the code it certifies,
+    its own instrument and BASE, so a wait is met only at a commit with none of them changed since (D1, L1; every path
+    real at HEAD: `IT.held` refuses one that is not)."""
+    out = dict(OWN_WAITS)
+    out.update({k: (what, shared_cover(k)) for k, what in SHARED_WAITS.items()})
+    order = ("pp_identity", "Q-80", "Q-93", "Q-101", "t10w2")
+    return {k: out[k] for k in order}
+
+
+WAITS: dict[str, tuple[str, tuple[str, ...]]] = wait_table()
 
 
 def _git(repo: Path | str, *args: str) -> subprocess.CompletedProcess:
@@ -165,6 +202,7 @@ def main(argv: list[str] | None = None) -> int:
     text = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
     waits: dict[str, list[str]] = {}
     limit_rows_used: list[str] = []
+    limits_superseded: list[dict[str, Any]] = []
     head = _git(ROOT, "rev-parse", "HEAD").stdout.strip()
     if a.synthetic:
         if not a.results_dir:
@@ -189,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         probs = wait_problems(text, a.workers, ROOT, head)      # IT.problems first, then every wait (D1)
         waits = wait_rows(text, ROOT, head) if not probs else {}
-        limits, limit_rows_used, lp = RUN.limit_rows(text)        # D5: from the operator's approving rows only
+        limits, limit_rows_used, lp, limits_superseded = RUN.limit_rows(text)   # D5, L2: approving rows, newest a column
         probs += lp
         q44 = ROOT / "results" / "user_beside_starts.csv"
         ok, msg = XR.verify_result(q44) if q44.is_file() else (False, "absent")
@@ -257,7 +295,7 @@ def main(argv: list[str] | None = None) -> int:
         "funded_account_cls": {c: f"{PP.cell_class(c).__module__}.{PP.cell_class(c).__qualname__}" for c in PP.CELLS},
         "adapter": prov, "calendars": dict(RUN.CALENDARS),
         "data_manifest_sha256": sha256_of(ROOT / "vendor" / "DATA_MANIFEST_stage2.sha256"),
-        "limits": ({"rows": limit_rows_used, "limits": limits} if limits else
+        "limits": ({"rows": limit_rows_used, "limits": limits, "superseded": limits_superseded} if limits else
                    "none approved before the run's commit: no e015-limits row in DECISIONS.md"), "repeat": a.repeat,
         "workers": int(a.workers), "synthetic": bool(a.synthetic), "seconds": round(time.time() - t0, 1),
     }

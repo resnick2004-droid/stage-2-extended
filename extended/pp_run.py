@@ -1450,20 +1450,26 @@ def limit_problems(limits: Sequence[Mapping[str, Any]]) -> list[str]:
 LIMITS_PREFIX = "e015-limits:"
 LIMIT_ROW = re.compile(r"^\| (E-\d+) \| (\d{4}-\d{2}-\d{2}) \| " + re.escape(LIMITS_PREFIX) + r" (.+?) -- (.+?) \|")
 LIMIT_ITEM = re.compile(r"^(\S+) (max|min) (\S+)$")
+#: L2 (the fourth read): words that negate an approval -- a limits row carrying any of them anywhere in its own words
+#: is refused, never read as approved (not approved, not yet approved, unapproved, disapproved, declined, withdrawn,
+#: rejected, refused, revoked, rescinded)
+NEGATED_APPROVAL = re.compile(r"\bnot\s+(?:yet\s+|been\s+|be\s+)*approv|\bunapprov|\bdisapprov|\bdeclin|\bwithdr[ae]w|"
+                              r"\breject|\brefus|\brevok|\brescind", re.IGNORECASE)
 
 
-def limit_rows(text: str) -> tuple[list[dict[str, Any]], list[str], list[str]]:
-    """D5: E-015's limits (9.1 item 10) read only from the rows recording the operator's approval -- each row of
+def limit_rows(text: str) -> tuple[list[dict[str, Any]], list[str], list[str], list[dict[str, Any]]]:
+    """D5, L2: E-015's limits (9.1 item 10) read only from the rows recording the operator's approval -- each row of
     `text` (the checkout's DECISIONS.md, so approved before the run's commit) that begins
     `| E-NNN | YYYY-MM-DD | e015-limits: <COLUMN> max|min <BOUND>; <COLUMN> max|min <BOUND> -- <text> |`, positional,
-    no backticks; a string of that shape anywhere else is not a limits row. Returns (the limits, the rows used, the
-    problems): a limits row whose items do not parse, name a column outside `limit_columns()` or a bound that is not a
-    number, or whose own words do not name the operator's approval, is a problem (the run refuses). No bound is ever
-    typed on a command line."""
-    limits: list[dict[str, Any]] = []
-    rows: list[str] = []
+    no backticks; a string of that shape anywhere else is not a limits row. A row is refused -- a problem, and the run
+    refuses -- whose items do not parse, name a column outside `limit_columns()` or a bound that is not a number, whose
+    own words do not name the operator's approval, or carry a word negating it (`NEGATED_APPROVAL`). **For each column
+    the newest admitted row wins** (the highest E-number; file order breaks a tie): a later row naming a column
+    supersedes every earlier row's limits on that column. Returns (the limits in force, the rows they come from, the
+    problems, the superseded limits -- each with the row that superseded it). No bound is ever typed on a command line."""
+    admitted: list[tuple[int, int, str, list[dict[str, Any]]]] = []
     probs: list[str] = []
-    for line in text.splitlines():
+    for n, line in enumerate(text.splitlines()):
         m = LIMIT_ROW.match(line)
         if not m:
             continue
@@ -1478,14 +1484,29 @@ def limit_rows(text: str) -> tuple[list[dict[str, Any]], list[str], list[str]]:
         low = words.lower()
         if "operator" not in low or "approv" not in low:
             bad.append(f"{rid}: a limits row whose words do not name the operator's approval")
+        neg = NEGATED_APPROVAL.search(words)
+        if neg:
+            bad.append(f"{rid}: a limits row whose words negate the approval ({neg.group(0)!r}): never read as approved")
         bad += [f"{rid}: {q}" for q in limit_problems(mine)]
         if not mine:
             bad.append(f"{rid}: a limits row with no limit")
         probs += bad
         if not bad:                                      # a row with any problem gives no limit (and the run refuses)
-            limits += mine
-            rows.append(rid)
-    return limits, rows, probs
+            admitted.append((int(rid[2:]), n, rid, mine))
+    admitted.sort(key=lambda x: (x[0], x[1]))           # oldest first: a later row's column replaces an earlier one's
+    newest: dict[str, str] = {}
+    for _, _, rid, mine in admitted:
+        for lim in mine:
+            newest[lim["column"]] = rid
+    limits, superseded = [], []
+    for _, _, rid, mine in admitted:
+        for lim in mine:
+            if newest[lim["column"]] == rid:
+                limits.append(lim)
+            else:
+                superseded.append({**lim, "superseded_by": newest[lim["column"]]})
+    rows = [rid for _, _, rid, _ in admitted if any(lim["row"] == rid for lim in limits)]
+    return limits, rows, probs, superseded
 
 
 def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any]],

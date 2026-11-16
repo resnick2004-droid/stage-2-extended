@@ -19,7 +19,8 @@ one section a process (the vendored engine on this process's `sys.path`):
   describing the tokens, never does; a breach of the rule (`IT.problems`) refuses before any wait is read; this
   tree's DECISIONS.md breaches nothing and meets no wait today; every covered path is tracked; the workers' rule
   and the rows named.
-* `limits` -- D5 (E-104): E-015's limits read only from the operator's approving rows (`e015-limits: ...`, positional);
+* `limits` -- D5 (E-104), L2: E-015's limits read only from the operator's approving rows (`e015-limits: ...`,
+  positional), a row negating the approval refused, the newest row per column in force and the rest recorded;
   a row only mentioning E-015, a quoted one or one in a later column gives none; a malformed one refuses; a crossing is
   shown with its limit and by how much.
 * `authorise` -- n1: every purpose checked before any is ledgered; a refusal of the second, or a missing file, leaves
@@ -275,6 +276,40 @@ def _repo(d: Path) -> tuple[Path, dict[str, str]]:
     return d, shas
 
 
+def _repo_paths(d: Path, paths: list[str], edits: dict[str, str]) -> tuple[Path, str, dict[str, str]]:
+    """A throwaway git repository holding `paths` (stand-in contents) at a base commit, and for each named edit a
+    branch from the base whose one commit changes that file (creating it if absent): (the folder, the base, {name: the
+    edit's commit})."""
+    d.mkdir(parents=True, exist_ok=True)
+    hooks = d.parent / "no_hooks"                        # an empty hooks folder: the throwaway commits run no hook
+    hooks.mkdir(exist_ok=True)
+
+    def git(*a: str) -> str:
+        r = subprocess.run(["git", "-C", str(d), "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+                            "-c", f"core.hooksPath={hooks}", *a], capture_output=True, text=True)
+        if r.returncode:
+            raise RuntimeError(f"git {a}: {r.stderr}")
+        return r.stdout.strip()
+
+    git("init", "-q", "-b", "main")
+    for p in paths:
+        (d / p).parent.mkdir(parents=True, exist_ok=True)
+        (d / p).write_text(f"# {p}\n", encoding="utf-8")
+    git("add", "-A")
+    git("commit", "-q", "-m", "base")
+    base = git("rev-parse", "HEAD")
+    out = {}
+    for name, p in edits.items():
+        git("checkout", "-q", "-b", f"edit_{name}", base)
+        (d / p).parent.mkdir(parents=True, exist_ok=True)
+        (d / p).write_text(f"# {p}, edited after the token\n", encoding="utf-8")
+        git("add", "-A")
+        git("commit", "-q", "-m", f"edit {name}")
+        out[name] = git("rev-parse", "HEAD")
+        git("checkout", "-q", "main")
+    return d, base, out
+
+
 #: the token's prefix and the limits row's, built here so that no file of this repository writes a token's shape
 TOK = "identity-holds" + ":"
 LIM = "e015-limits" + ":"
@@ -375,44 +410,95 @@ def section_waits() -> None:
                                                                  "t10w2": "E-902"}, f"the rows named: {got}")
     newer = rows + "\n" + _token_row("E-950", "pp_identity", sh["a"])
     check(S.wait_rows(newer, d, sh["b"], toy)["pp_identity"].row == "E-950", "the newest holding row is not the one named")
+    # L1 (the fourth read): every wait covers its own instrument and BASE, and editing the instrument after the token
+    # voids the wait -- on a throwaway repository holding every declared path (stand-in contents), one branch an edit
+    check(S.shared_cover("Q-80") == S.WAITS["Q-80"][1], "L1: the shared waits do not come through shared_cover")
+    try:
+        S.shared_cover("pp_identity")
+        check(False, "L1: shared_cover answered for a wait that is not shared")
+    except KeyError:
+        pass
+    for k, (_, covered) in S.WAITS.items():
+        check(S.WAIT_SCRIPTS[k] in covered and all(b in covered for b in S.BASE),
+              f"L1: the wait for {k} does not cover its own script {S.WAIT_SCRIPTS[k]} and BASE {S.BASE}")
+    check(set(S.WAIT_SCRIPTS) == set(S.WAITS), "L1: a wait without its declared instrument")
+    d2, base2, edits = _repo_paths(TMP / "repo_l1", sorted({f for _, cov in S.WAITS.values() for f in cov}),
+                                   {k: S.WAIT_SCRIPTS[k] for k in S.WAITS} | {"control": "unrelated.py"})
+    for k, (_, covered) in S.WAITS.items():
+        row = _token_row("E-960", k, base2)
+        t0 = IT.held(row, k, d2, base2, list(covered))
+        t1 = IT.held(row, k, d2, edits[k], list(covered))
+        tc = IT.held(row, k, d2, edits["control"], list(covered))
+        check(t0 is not None and t0.row == "E-960", f"L1: the wait for {k} is not met at its own commit")
+        check(t1 is None, f"L1: editing {S.WAIT_SCRIPTS[k]} after the token left the wait for {k} met")
+        check(tc is not None, f"L1: an edit to an uncovered file voided the wait for {k} (the control)")
     out["waits"] = {"waits": {k: list(v[1]) for k, v in S.WAITS.items()}}
 
 
 def section_limits() -> None:
-    """D5 (E-104): E-015's limits read only from the operator's approving rows, by position; no typed bound."""
+    """D5 (E-104), L2 (the fourth read): E-015's limits read only from the operator's approving rows, by position; no
+    typed bound; a row negating the approval refused; the newest row per column in force, the rest recorded."""
     import pp_reading as S
 
     from extended import pp_run as RUN
 
     opts = [o for a in S.parser()._actions for o in a.option_strings]
     check("--limit" not in opts, "the --limit option is still there (D5: no typed bound)")
-    lims, rows, probs = RUN.limit_rows((REPO / "DECISIONS.md").read_text(encoding="utf-8"))
-    check(lims == [] and rows == [] and probs == [], f"this tree's DECISIONS.md gives limits {lims} {rows} {probs}")
-    good = (f"| E-950 | 2026-11-17 | {LIM} card_S1_level max 2500; P_mean_difference min -0.02 -- the operator's "
-            "approval of E-015's limits, 2026-11-17 | basis |")
-    lims, rows, probs = RUN.limit_rows("| E-015 | 2026-11-15 | **E-015 itself** | x |\n" + good)
-    check(probs == [] and rows == ["E-950"] and lims == [
+    lims, rows, probs, sup = RUN.limit_rows((REPO / "DECISIONS.md").read_text(encoding="utf-8"))
+    check(lims == [] and rows == [] and probs == [] and sup == [],
+          f"this tree's DECISIONS.md gives limits {lims} {rows} {probs} {sup}")
+
+    def lim_row(rid: str, items: str, words: str = "the operator's approval of E-015's limits, 2026-11-17") -> str:
+        return f"| {rid} | 2026-11-17 | {LIM} {items} -- {words} | basis |"
+
+    good = lim_row("E-950", "card_S1_level max 2500; P_mean_difference min -0.02")
+    lims, rows, probs, sup = RUN.limit_rows("| E-015 | 2026-11-15 | **E-015 itself** | x |\n" + good)
+    check(probs == [] and rows == ["E-950"] and sup == [] and lims == [
         {"row": "E-950", "column": "card_S1_level", "kind": "max", "bound": 2500.0},
         {"row": "E-950", "column": "P_mean_difference", "kind": "min", "bound": -0.02}],
         f"D5: the approving row's limits: {lims} {rows} {probs}")
     for what, row in (("mentioning E-015 only", "| E-951 | 2026-11-17 | E-015's limits are owed | basis |"),
                       ("in backticks", good.replace(f"| {LIM}", f"| `{LIM}").replace(" -- the", "` -- the")),
                       ("in a later column", f"| E-951 | 2026-11-17 | words | {LIM} P_level min 0.1 -- approved |")):
-        lims, rows, probs = RUN.limit_rows(row)
+        lims, rows, probs, _ = RUN.limit_rows(row)
         check(lims == [] and rows == [] and probs == [], f"D5: a row {what} gave limits: {lims} {probs}")
     for what, row in (("an unknown column", good.replace("card_S1_level", "card_S9_level")),
                       ("a bad kind", good.replace(" max 2500", " below 2500")),
                       ("a bound that is not a number", good.replace("2500", "lots")),
                       ("no operator's approval", good.replace("the operator's approval of", "a proposal for"))):
-        lims, rows, probs = RUN.limit_rows(row)
+        lims, rows, probs, _ = RUN.limit_rows(row)
         check(probs and lims == [] and rows == [], f"D5: a limits row with {what} was not refused: {lims} {probs}")
+    # L2: words negating the approval, each refused (the fourth read's D.2 row among them)
+    for words in ("drafted for the operator; not approved: the operator declined",
+                  "the operator's approval: not approved", "the operator has not yet approved these",
+                  "the operator declined to approve these", "approved by the operator, since withdrawn",
+                  "the operator rejected this approval request", "the operator refused approval",
+                  "unapproved by the operator", "the operator disapproved", "the operator's approval, revoked",
+                  "the operator's approval was withdrawn"):
+        lims, rows, probs, _ = RUN.limit_rows(lim_row("E-952", "P_level min 0.1", words))
+        check(lims == [] and rows == [] and any("negate the approval" in q for q in probs),
+              f"L2: a row whose words negate the approval was not refused: {words!r} -> {lims} {probs}")
+    # L2: the newest row per column -- a later row's column supersedes the earlier rows' limits on it
+    older = lim_row("E-950", "card_S1_level max 2500; P_mean_difference min -0.02")
+    newer = lim_row("E-955", "card_S1_level max 2200", "the operator's approval of a revised S1 limit")
+    lims, rows, probs, sup = RUN.limit_rows(newer + "\n" + older)           # file order reversed: the E-number decides
+    check(probs == [] and sorted((x["row"], x["column"], x["bound"]) for x in lims) ==
+          [("E-950", "P_mean_difference", -0.02), ("E-955", "card_S1_level", 2200.0)],
+          f"L2: the newest row per column is not the one in force: {lims} {probs}")
+    check(sup == [{"row": "E-950", "column": "card_S1_level", "kind": "max", "bound": 2500.0, "superseded_by": "E-955"}],
+          f"L2: the superseded limit is not recorded with its successor: {sup}")
+    check(rows == ["E-950", "E-955"], f"L2: the rows in force: {rows}")
+    whole = lim_row("E-956", "card_S1_level max 2100; P_mean_difference min -0.01", "the operator's approval, revised")
+    lims, rows, probs, sup = RUN.limit_rows(older + "\n" + newer + "\n" + whole)
+    check(rows == ["E-956"] and len(lims) == 2 and {x["row"] for x in sup} == {"E-950", "E-955"},
+          f"L2: a row superseding every column leaves the older rows unused: {rows} {lims} {sup}")
     reading = pd.DataFrame([RUN._row(section="scorecard", part="card", design="syn", arm="verdict", cell="lock",
                                      mode="declared", block="all", measure="card_S1", stat="value", value=3000.0)])
-    lims, _, _ = RUN.limit_rows(good)
+    lims, _, _, _ = RUN.limit_rows(good)
     menu = RUN.menu_table(reading, lims)
     check("E-950: card_S1_level 3000 above 2500 by 500" in str(menu["limits_crossed"].iloc[0]),
           f"D5: the crossing is not shown with its limit and by how much: {menu['limits_crossed'].iloc[0]!r}")
-    out["limits"] = "read from the approving rows only"
+    out["limits"] = "read from the approving rows only; negations refused; the newest row per column"
 
 
 def section_authorise() -> None:
