@@ -44,6 +44,19 @@ order). Not with `--control`.
     python identity/user_beside_identity.py --u1-starts 4 --funded-cls both            # slow (the lock)
     python identity/user_beside_identity.py --u1-starts all --funded-cls both          # heavy (the lock; the lead's)
 
+**`--q100` (Q-100, the firms reading's A-9): the adapter's household route and seed base.** `none` (the default) is
+the comparison above, unchanged -- both keywords at their defaults. `given` runs it with `Q100_GIVEN` given --
+`household_closure=False` (Topstep's class declares no household rule, so the engine's no-op) and `seed_base=20261920`
+(the default base, given explicitly): U1's start rows, every column, as above, and every start's output naming both
+after its `seed`. `both` runs the default and then the given run on the same starts, and holds the given run's outputs
+equal to the default's **bit for bit** apart from the two keys that name the keywords (`seam_outs_problems`). Not with
+`--control`; with `--funded-cls` the runs are `identity_runs`' (the default once, as the base of both given runs).
+
+    python identity/user_beside_identity.py --u1-starts 4 --q100 both                  # slow (the lock)
+    python identity/user_beside_identity.py --u1-starts all --q100 both                # heavy (the lock; the lead's)
+    python identity/user_beside_identity.py --u1-starts all --funded-cls both --q100 both   # heavy: Q-93's and
+                                                                                            #   Q-100's in one run
+
 **The read (Q-48).** With `--u1-starts` (and `--control`), before anything runs, `main` authorises Stage 2's engine's
 read through `extended.reader.authorise_engine_read` (purpose `identity`, declaration **E-024**, the window 2020-01-02
 to 2026-07-16; the files: A1's events and days and A3's cached walk for every configuration, the bars for P-15's and
@@ -92,6 +105,10 @@ SYN_SHORT = 43
 #: Q-76: the funded-account class arms of the U1 comparison (`--funded-cls`), in the order run
 FUNDED_CLS_ARMS = {"none": ("none",), "pass_through": ("pass_through",), "both": ("none", "pass_through")}
 CLASS_KEY = "funded_account_cls"
+#: Q-100: the adapter's two keywords as the U1 comparison gives them (`--q100 given|both`): the household reading False
+#: (Topstep's class has no household rule, so the engine's no-op) and the default seed base, given explicitly
+Q100_GIVEN = {"household_closure": False, "seed_base": B.DENIAL_SEED}
+Q100_ARMS = {"none": ("none",), "given": ("given",), "both": ("none", "given")}
 
 
 # ------------------------------------------------------------------------------------------------ Q-76: the class
@@ -172,6 +189,51 @@ def class_outs_problems(base: list[dict[str, Any]], given: list[dict[str, Any]],
             probs.append(f"{what}: with the class the outputs are not the default's -- {d}")
             break
     return probs
+
+
+# ------------------------------------------------------------------------------------------------ Q-100: two keywords
+
+
+def seam_outs_problems(base: list[dict[str, Any]], given: list[dict[str, Any]], seam: dict[str, Any],
+                       what: str) -> list[str]:
+    """Q-100: a run with the adapter's keywords `seam` given (`household_closure`, `seed_base`) against the default run
+    on the same starts: as many outputs; every one names exactly those keywords, with their values and types, right
+    after its `seed` and last; the default run names none; and, those keys taken out, every output is the default's
+    bit for bit (`first_difference`) -- its `seed` included, so a seed base other than the default is refused here."""
+    keys = list(seam)
+    if len(base) != len(given):
+        return [f"{what}: {len(given)} starts with the keywords against {len(base)} without"]
+    probs = []
+    unnamed = [i for i, x in enumerate(given)
+               if not x or "seed" not in x or list(x)[list(x).index("seed") + 1:] != keys
+               or any(type(x[k]) is not type(v) or x[k] != v for k, v in seam.items())]
+    if unnamed:
+        probs.append(f"{what}: {len(unnamed)} of {len(given)} starts do not name {seam} after their seed, last "
+                     f"(first: start index {unnamed[0]})")
+    named = [i for i, x in enumerate(base) if any(k in x for k in keys)]
+    if named:
+        probs.append(f"{what}: {len(named)} starts of the default run name a keyword")
+    for i, (x, y) in enumerate(zip(base, given)):
+        d = first_difference(x, {k: v for k, v in y.items() if k not in seam}, f"start index {i}")
+        if d:
+            probs.append(f"{what}: with the keywords the outputs are not the default's -- {d}")
+            break
+    return probs
+
+
+def identity_runs(funded_cls: str = "none", q100: str = "none") -> list[str]:
+    """The U1 comparison's runs, in order: `default` (every keyword at its default), `pass_through` (Q-76's class
+    given), `q100` (Q-100's keywords given, `Q100_GIVEN`). The default runs when neither option names a given run alone
+    -- both at `none`, or either at `both` (it is then the bit-for-bit base of the others). With both at `none` this is
+    E-010's comparison, unchanged; `--funded-cls` alone runs as before Q-100."""
+    runs = []
+    if (funded_cls == "none" and q100 == "none") or "both" in (funded_cls, q100):
+        runs.append("default")
+    if "pass_through" in FUNDED_CLS_ARMS[funded_cls]:
+        runs.append("pass_through")
+    if "given" in Q100_ARMS[q100]:
+        runs.append("q100")
+    return runs
 
 
 # ------------------------------------------------------------------------------------------------ synthetic
@@ -440,10 +502,13 @@ def u1_compare_outs(name: str, c: dict[str, Any], arm: str, outs: list[dict[str,
 
 
 def u1_problems(configs: Sequence[str], starts: int | None, workers: int, response: str = "off",
-                funded_cls: str = "none") -> dict[str, dict[str, Any]]:
+                funded_cls: str = "none", q100: str = "none") -> dict[str, dict[str, Any]]:
     """Each configuration's problems against U1's file. Q-76: `funded_cls` (`FUNDED_CLS_ARMS`) -- `none` is E-010's
     comparison, unchanged; `pass_through` the same with the gate's pass-through class given; `both` the two in turn,
-    the class run's outputs held to the default's bit for bit apart from its naming (`class_outs_problems`)."""
+    the class run's outputs held to the default's bit for bit apart from its naming (`class_outs_problems`). Q-100:
+    `q100` (`Q100_ARMS`) -- `given` the same with `Q100_GIVEN` given; `both` the default and then that, the given run's
+    outputs held to the default's bit for bit apart from its naming (`seam_outs_problems`). The runs and their order:
+    `identity_runs`."""
     import gc
 
     import user_journey as UJ
@@ -463,14 +528,28 @@ def u1_problems(configs: Sequence[str], starts: int | None, workers: int, respon
             of = len(job["blocks"])
             chosen = UJ.start_choice(of, starts)
             base = None
-            for which in FUNDED_CLS_ARMS[funded_cls]:                           # Q-76: `none` alone by default
-                cls = funded_cls_of(which)
-                if cls is None:
+            for which in identity_runs(funded_cls, q100):                       # Q-76, Q-100: `default` alone by default
+                if which == "default":
                     outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers)
                     ran = len(outs)
                     probs += u1_compare_outs(name, c, arm, outs, ref, of, starts)
                     base = outs
                     continue
+                if which == "q100":                                             # Q-100: the two keywords given
+                    outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers, **Q100_GIVEN)
+                    ran = len(outs)
+                    what = f"Q-100's keywords given: {name} {arm}"
+                    probs += [f"Q-100's keywords given: {p}"
+                              for p in u1_compare_outs(name, c, arm, outs, ref, of, starts)]
+                    if base is not None:
+                        probs += seam_outs_problems(base, outs, Q100_GIVEN, what)
+                    elif not all(list(x)[-len(Q100_GIVEN):] == list(Q100_GIVEN)
+                                 and all(x[k] == v and type(x[k]) is type(v) for k, v in Q100_GIVEN.items())
+                                 for x in outs):
+                        probs.append(f"{what}: a start's output does not name {Q100_GIVEN} last")
+                    del outs
+                    continue
+                cls = funded_cls_of(which)
                 outs = B.run_starts(name, arm, B.BY_NAME[response], job, chosen, workers, funded_account_cls=cls)
                 ran = len(outs)
                 what = f"the pass-through class: {name} {arm}"
@@ -502,11 +581,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--funded-cls", default="none", choices=tuple(FUNDED_CLS_ARMS),
                     help="Q-76: the U1 comparison at the class keyword's default (none), with the gate's pass-through "
                     "class (pass_through), or both, the class run held to the default's outputs bit for bit")
+    ap.add_argument("--q100", default="none", choices=tuple(Q100_ARMS),
+                    help="Q-100: the U1 comparison at the adapter's household_closure and seed_base defaults (none), "
+                    "with household_closure=False and seed_base=20261920 given (given), or both, the given run held "
+                    "to the default's outputs bit for bit")
     a = ap.parse_args(argv)
     if not a.synthetic and a.u1_starts is None:
         ap.error("give --synthetic and/or --u1-starts")
     if a.funded_cls != "none" and (a.u1_starts is None or a.control is not None):
         ap.error("--funded-cls applies to the U1 comparison (--u1-starts), not with --control")
+    if a.q100 != "none" and (a.u1_starts is None or a.control is not None):
+        ap.error("--q100 applies to the U1 comparison (--u1-starts), not with --control")
     configs = tuple(x for x in a.configs.split(",") if x)
     if a.u1_starts is not None:
         root = VENDOR / "data"
@@ -517,7 +602,8 @@ def main(argv: list[str] | None = None) -> int:
         what = (f"{READ_ROW}'s identity (identity/user_beside_identity.py): U1's start rows for {', '.join(configs)} "
                 f"({a.u1_starts} starts) through the adapter, "
                 + ("every response off" if a.control is None else f"the negative control {a.control}")
-                + ("" if a.funded_cls == "none" else f", the funded-account class arm {a.funded_cls} (Q-76)"))
+                + ("" if a.funded_cls == "none" else f", the funded-account class arm {a.funded_cls} (Q-76)")
+                + ("" if a.q100 == "none" else f", the household-closure and seed-base arm {a.q100} (Q-100)"))
         try:                                        # Q-48: the engine's read authorised (ledgered in a clean run only)
             reader.authorise_engine_read(reader.CHOICE_START, reader.JUDGED_END, purpose=reader.IDENTITY,
                                          declaration=READ_ROW, files=files, what=what)
@@ -554,7 +640,13 @@ def main(argv: list[str] | None = None) -> int:
         extra = {"none": "", "pass_through": " -- with the pass-through class (Q-76) given, every start naming it",
                  "both": " and with the pass-through class (Q-76) given, every start naming it and every output else "
                          "the default's bit for bit"}[a.funded_cls]
+        given = ", ".join(f"{k}={v}" for k, v in Q100_GIVEN.items())               # Q-100's keywords as given
+        extra += {"none": "", "given": f" -- with Q-100's {given} given, every start naming them",
+                  "both": f" and with Q-100's {given} given, every start naming them and every output else the "
+                          "default's bit for bit"}[a.q100]
         cls_kw = {} if a.funded_cls == "none" else {"funded_cls": a.funded_cls}   # Q-76: the default call as before
+        if a.q100 != "none":                                                       # Q-100: likewise
+            cls_kw["q100"] = a.q100
         for name, r in u1_problems(configs, starts, a.workers, **cls_kw).items():
             if r["problems"]:
                 rc = 3
