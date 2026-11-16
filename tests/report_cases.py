@@ -513,8 +513,14 @@ def case_memo(base: Path) -> None:
         problems.append(f"extended/trace.py traces {sorted(T.REPORT_PAGES)}; extended/report.py registers "
                         f"{sorted(R.REPORTS)}")
     names = {c.label.split(':')[0] for c in T.REGISTRY}
-    if not set(R.REPORTS) <= names:
-        problems.append(f"the registry holds no numbers of {sorted(set(R.REPORTS) - names)}")
+    # Q-69: a registered page waiting for its files (neither they nor the page exist) has no number to register; any
+    # other page must have its numbers in the registry, and a waiting page must truly have nothing written
+    if not set(R.REPORTS) - set(T.WAITING) <= names:
+        problems.append(f"the registry holds no numbers of {sorted(set(R.REPORTS) - set(T.WAITING) - names)}")
+    for name in T.WAITING:
+        spec = R.REPORTS[name]
+        if R.waiting(spec) is None or R.page_path(spec).exists() or R.source_path(spec).exists():
+            problems.append(f"{name} is listed as waiting but its file or page exists")
 
 
 CASES = {"measures": case_measures, "build": case_build, "build_monthly": case_build_monthly,

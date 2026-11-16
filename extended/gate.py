@@ -47,8 +47,8 @@ named on every row only when given (so with all three absent the rows are the ve
    re-composed campaign -- on every call, with or without it: that campaign with no class is the vendored one.
 
 Rows gain `payout_lag_days`, `household_closure` and `combine_account_cls` (the class's module and name), each only when
-given. `gate_recomposition_problems` checks that this `run_gate`, with every line marked Q-47 or Q-71 removed, parses
-to the vendored `run_gate` statement for statement.
+given. `gate_recomposition_problems` checks that this `run_gate`, with every line marked Q-47, Q-71 or Q-70 removed,
+parses to the vendored `run_gate` statement for statement.
 
 **The identities** (`identity/gate_identity.py`):
 
@@ -56,6 +56,14 @@ to the vendored `run_gate` statement for statement.
   and with every seam given at Topstep's values; each Q-71 keyword has its documented effect on toy campaigns;
 - slow: P-14's and P-16's registered gate paths at 4 paths, under the run lock;
 - heavy, the lead's: all 500 paths of each.
+
+**Q-70's addition, the place recorder** (`extended/place_records.py`): the keyword `recorder` (default None), an
+`extended.place_records.PlaceRecorder`. For each (shift, level) it records, the campaign (`extended.campaign`'s) gets
+one more keyword, `path_reducer`, which runs every path with the engine's ledger and day recorder on and reads each
+path into compact columns where it ran, dropping the rows; after the call the records go to the recorder and the paths
+handed on are the unrecorded campaign's (`recorded_paths`). Every other (shift, level), and every call with None, calls
+the campaign exactly as without a recorder: the rows, the hooks and the gate flag are unchanged and the row carries no
+new column (`identity/place_records_identity.py`). Its lines in `run_gate` are marked Q-70.
 """
 from __future__ import annotations
 
@@ -86,6 +94,9 @@ from propedge.campaign.lockstep import CombineAccount, FundedAccount  # noqa: E4
 from propedge.outcomes.distribution import DayBlock  # noqa: E402
 
 from extended import campaign as _xc  # noqa: E402  (Q-71: the campaign re-composed to pass combine_account_cls)
+
+#: the comment markers on every added line of `run_gate` (Q-47's class, Q-71's seams, Q-70's recorder)
+GATE_MARKERS = ("Q-47", "Q-71", "Q-70")
 
 #: sha256 of the vendored `propedge.campaign.gate.run_gate`'s source text (LF), from which `run_gate` below was composed
 #: (Stage 2 f1b42e2, vendored under E-002)
@@ -217,9 +228,44 @@ def topstep_payout_lag_days(ledger: Any | None = None) -> int:
 
 
 def gate_recomposition_problems() -> list[str]:
-    """This module's `run_gate` against the vendored one, statement for statement, with every line marked Q-47 or
-    Q-71 removed (`extended.campaign.recomposition_problems`); empty when the only differences are the marked lines."""
-    return _xc.recomposition_problems(run_gate, _vg.run_gate, ("Q-47", "Q-71"))
+    """This module's `run_gate` against the vendored one, statement for statement, with every line marked Q-47, Q-71
+    or Q-70 removed (`extended.campaign.recomposition_problems`); empty when the only differences are the marked
+    lines."""
+    return _xc.recomposition_problems(run_gate, _vg.run_gate, GATE_MARKERS)
+
+
+# ------------------------------------------------------------------------------------------------ Q-70 (the recorder)
+
+
+def check_recorder(recorder: Any) -> None:
+    """None, or an `extended.place_records.PlaceRecorder` (`TypeError` for anything else); with one, the vendored path
+    runner it re-composes is checked against its pins first."""
+    if recorder is None:
+        return
+    from extended.place_records import PlaceRecorder, check_vendored_runner_source
+
+    if not isinstance(recorder, PlaceRecorder):
+        raise TypeError(f"recorder must be an extended.place_records.PlaceRecorder, got {type(recorder).__name__}")
+    check_vendored_runner_source()
+
+
+def recorder_arguments(recorder: Any, shift: str, enforcement_p: float, blk: Sequence[DayBlock], rules: Any
+                       ) -> dict[str, Any]:
+    """The campaign's keyword for one (shift, level): `path_reducer` when the recorder records it, else nothing (so
+    the campaign is called exactly as without a recorder)."""
+    if recorder is None or not recorder.wants(shift, float(enforcement_p)):
+        return {}
+    return {"path_reducer": recorder.reducer(shift, float(enforcement_p), blk, rules)}
+
+
+def recorded_paths(recorder: Any, rec_kw: dict[str, Any], paths: list, *, shift: str, enforcement_p: float,
+                   n_paths: int, horizon_days: int, seed: int) -> list:
+    """The campaign's paths as the gate reads them: unchanged when nothing was recorded; else each path's record taken
+    into the recorder and the path handed on as the unrecorded campaign's (`PlaceRecorder.collect`)."""
+    if not rec_kw:
+        return paths
+    return recorder.collect(shift, float(enforcement_p), paths, n_paths=int(n_paths), horizon_days=int(horizon_days),
+                            seed=int(seed))
 
 
 def run_gate(
@@ -266,21 +312,26 @@ def run_gate(
     payout_lag_days: int | None = None,                                         # Q-71
     household_closure: bool | None = None,                                      # Q-71
     combine_account_cls: type | None = None,                                    # Q-71
+    recorder: Any = None,                                                       # Q-70
 ) -> tuple[pd.DataFrame, bool]:
     """The vendored `propedge.campaign.gate.run_gate` (its docstring holds every argument's meaning), plus
     `funded_account_cls` (Q-47): the funded account's class on every path of every arm -- the vendored `FundedAccount`
     or a subclass of it -- passed to the campaign only when given, and named on every row (`funded_account_cls`) only
     when given; and Q-71's `payout_lag_days`, `household_closure` and `combine_account_cls` (the module docstring, items
     4-6), each passed and named only when given. With none of the four given the engine call is the vendored one --
-    through `extended.campaign`'s re-composed campaign, which with no evaluation class is the vendored campaign."""
+    through `extended.campaign`'s re-composed campaign, which with no evaluation class is the vendored campaign.
+
+    `recorder` (Q-70): an `extended.place_records.PlaceRecorder`; the (shift, level) campaigns it asks for are recorded
+    into it (its `trades()`, `accounts()`, `per_year()`, `problems()` afterwards), every row and path unchanged."""
     check_vendored_source()                                                     # Q-47
     _xc.check_vendored_source()                                                 # Q-71
     check_funded_account_cls(funded_account_cls, int(workers))                  # Q-47
     cls_kw: dict[str, Any] = {} if funded_account_cls is None else {"funded_account_cls": funded_account_cls}  # Q-47
     seam_kw = seam_arguments(payout_lag_days, household_closure, combine_account_cls,  # Q-71
                              funded_account_cls, int(workers))                  # Q-71
+    check_recorder(recorder)                                                    # Q-70
 
-    # ---- from here to the end, the vendored body; the additions are marked Q-47 and Q-71
+    # ---- from here to the end, the vendored body; the additions are marked Q-47, Q-71 and Q-70
     from propedge.contract.payout_timing import DEFAULT_PAYOUT_TIMING, check_payout_timing
     from propedge.outcomes.settlement import default_trade_log_settlement
 
@@ -358,6 +409,7 @@ def run_gate(
                                    hold_to_own_exit=hold_to_own_exit, one_at_a_time=one_at_a_time,
                                    routing_rule=routing_rule, **block_kw)
 
+                rec_kw = recorder_arguments(recorder, shift, float(p), blk, rules)                     # Q-70
                 summary, paths = simulate_lockstep_campaign(
                     protocol, edge=0.0, seed=seed, rules=rules, initial_bankroll=bankroll, horizon_days=horizon_days,
                     n_paths=n_paths, payout_method="aeropay", max_concurrent_accounts=accounts,
@@ -368,7 +420,10 @@ def run_gate(
                     **ftp_kw,                                                                           # D-495 (4)
                     **cls_kw,                                                                           # Q-47
                     **seam_kw,                                                                          # Q-71
+                    **rec_kw,                                                                           # Q-70
                 )
+                paths = recorded_paths(recorder, rec_kw, paths, shift=shift, enforcement_p=float(p),     # Q-70
+                                       n_paths=n_paths, horizon_days=horizon_days, seed=seed)          # Q-70
                 every = draws.tallies()                  # each path's router counts, in path order (R11)
                 tallies = [x for x in every if x is not None]
                 routed = sum(x[0] for x in tallies)
@@ -455,4 +510,5 @@ def run_gate(
 __all__ = ["VENDORED_RUN_GATE_SHA256", "vendored_run_gate_sha256", "check_vendored_source", "PassThroughFundedAccount",
            "check_funded_account_cls", "class_name", "PassThroughCombineAccount", "check_combine_account_cls",
            "check_payout_lag_days", "check_household_closure", "seam_arguments", "seam_columns",
-           "topstep_payout_lag_days", "gate_recomposition_problems", "run_gate"]
+           "topstep_payout_lag_days", "gate_recomposition_problems", "GATE_MARKERS", "check_recorder",
+           "recorder_arguments", "recorded_paths", "run_gate"]
