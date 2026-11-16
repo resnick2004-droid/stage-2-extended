@@ -86,6 +86,39 @@ task returns (its outputs, their records), and `run_starts` hands the records to
 Its identities: `tests/q94_synthetic.py` (with it on, every output equals it off bit for bit, on all 19 responses and
 with the pass-through class; the records against the replay ledger, Q-35's openings, the engine's `FundedAccount.days`)
 and `identity/replay_records_identity.py` (U1's start rows with recording on).
+
+**Q-100 (the firms reading's A-9, `prereg/DRAFT_RD_firms.md` 4.6, 15, 16; its re-read's n2): two more declared keywords,
+off by default, generic.** `run_starts(..., household_closure=H, seed_base=S)` (and `response_args(...,
+household_closure=H)`). With both absent (None) every task, replay and output is the adapter's before Q-100 (master's at
+be41efd) bit for bit, and `base_problems` still refuses a path that already carries `household_closure` -- with the
+keyword given too: the keyword is the one way in.
+
+* **`household_closure`** -- the engine's household rule (Stage 2 R7, multi-firm D-30; `simulate_lockstep_path`,
+  `lockstep.py` 1392-1397, 1955-1975): None (absent) leaves the path without it, so the engine takes the funded class's
+  own default (`HOUSEHOLD_CLOSES_AT_LIVE`; Lucid's strict reach); False only counts the triggers (Lucid's lenient
+  reach: only the account that raised the rule ends); True closes every other live account at the first close one
+  raises it, and the path buys nothing more. Checked by the gate's own check (`extended.gate.check_household_closure`,
+  Q-71): `TypeError` for anything but None, True or False; True refused (`ValueError`, as the engine refuses it) unless
+  the declared funded class -- the vendored `FundedAccount` when none is declared -- declares a household rule; Topstep's
+  has none, so on it False is the engine's no-op. Given, it is put on every replay's path as given, except under the
+  **forfeiture**, whose path keeps its own `household_closure=True` (its rule is the adapter's, raised by a denial, not
+  the declared class's; the forfeiture composes only over a class with no household rule of its own, Q-76, on which the
+  keyword can only be False -- the no-op). The ten **Focused Trader** models run with Topstep's class alone (Q-76), on
+  which, again, only False passes.
+* **`seed_base`** -- the base the start seeds are drawn from: given, each start's path seed is `lockstep.child_seed(S,
+  START_KIND, start_day)` (`start_seed(start_day, S)`), the same construction; absent, `DENIAL_SEED` as before. A whole
+  number of at least 0 (`TypeError` for a bool, a float or anything not an integer; `ValueError` for a negative). The
+  path seed drives the enforcement stream alone, so a base changes the denial ladder's draws (and the forfeiture's)
+  and nothing at 0 % (the placement, the Focused Trader models and `off` are equal apart from each start's `seed`).
+
+Both are checked before any start runs, with the design's arguments (`response_args`), and composed with Q-76's class
+and Q-94's recorder: each task gains, only when one is given, an eleventh item -- `seam_parameters(H, S)`, the keywords
+given (its ninth then the class or None, its tenth the reducer or None); every start's output then names each given
+keyword (`household_closure`, `seed_base`, after `seed` and before Q-76's `funded_account_cls`, which stays last), its
+`seed` is the start's seed from the base, and a recorded start's record carries that seed. `seam_parameters(H, S)` and
+`run_parameters(C, H, S)` are the entries a runner puts in its result's parameters (empty when absent). Its identities:
+`tests/q100_synthetic.py` and `identity/user_beside_identity.py --q100` (U1's start rows at the defaults and with
+`household_closure=False` and `seed_base=20261920` given).
 """
 from __future__ import annotations
 
@@ -310,17 +343,80 @@ def base_problems(args: dict[str, Any]) -> list[str]:
     return out
 
 
-def response_args(args: dict[str, Any], resp: Response, funded_account_cls: type | None = None) -> dict[str, Any]:
+# ------------------------------------------------------------------------------------------------ Q-100: two keywords
+
+
+def _household_value(household_closure: Any) -> bool | None:
+    """None, or the reading as a bool (numpy's bool taken); `TypeError` for anything else -- an int, a string."""
+    if household_closure is None:
+        return None
+    if not isinstance(household_closure, (bool, np.bool_)):
+        raise TypeError(f"household_closure must be None, True or False, got {household_closure!r}")
+    return bool(household_closure)
+
+
+def check_household_closure(household_closure: Any, funded_account_cls: type | None = None) -> bool | None:
+    """Q-100: None (absent), or the household rule's reading as a bool -- the gate's check
+    (`extended.gate.check_household_closure`, Q-71): `TypeError` for anything but None, True or False; True refused
+    (`ValueError`, as the vendored path refuses it) unless the declared funded class -- the vendored `FundedAccount`
+    when none is declared -- declares a household rule (`HOUSEHOLD_CLOSES_AT_LIVE`). Topstep's has none."""
+    value = _household_value(household_closure)
+    if value is None:
+        return None
+    from extended.gate import check_household_closure as gate_check
+
+    return gate_check(value, funded_account_cls)
+
+
+def check_seed_base(seed_base: Any) -> int | None:
+    """Q-100: None (absent: the start seeds from `DENIAL_SEED`, as before), or the base the start seeds are drawn from
+    (`start_seed(start_day, base)`), a whole number of at least 0. Refused: a bool, a float, a string or anything else
+    that is not an integer (`TypeError`; numpy's integers taken), and a negative (`ValueError`: the engine's generator
+    seeds take none)."""
+    if seed_base is None:
+        return None
+    if isinstance(seed_base, (bool, np.bool_)) or not isinstance(seed_base, (int, np.integer)):
+        raise TypeError(f"seed_base must be a whole number, got {seed_base!r}")
+    if int(seed_base) < 0:
+        raise ValueError(f"seed_base must be at least 0, got {seed_base!r}")
+    return int(seed_base)
+
+
+def seam_parameters(household_closure: Any = None, seed_base: Any = None) -> dict[str, Any]:
+    """Q-100: the entries naming the keywords given -- `household_closure` (a bool), then `seed_base` (an int), each only
+    when given; empty when both are absent. The same entries name them on each start's output and in a result's
+    parameters (named only when given, as the engine names its options)."""
+    out: dict[str, Any] = {}
+    hc, sb = _household_value(household_closure), check_seed_base(seed_base)
+    if hc is not None:
+        out["household_closure"] = hc
+    if sb is not None:
+        out["seed_base"] = sb
+    return out
+
+
+def run_parameters(funded_account_cls: type | None = None, household_closure: Any = None,
+                   seed_base: Any = None) -> dict[str, Any]:
+    """Every declared keyword given, as a result's parameters name them, in the order a start's output names them:
+    Q-100's (`seam_parameters`), then Q-76's class (`class_parameters`). Empty when all are absent."""
+    return {**seam_parameters(household_closure, seed_base), **class_parameters(funded_account_cls)}
+
+
+def response_args(args: dict[str, Any], resp: Response, funded_account_cls: type | None = None,
+                  household_closure: Any = None) -> dict[str, Any]:
     """The replay's arguments (`customer_slices.engine_args`) with one response switched on; refuses arguments that are
     not the vendored 0 %, placement-off call. Q-76: `funded_account_cls` (default None: as before) is the declared
     funded-account class, checked (`check_class_response`) and put on the path -- for the forfeiture, composed
-    (`forfeit_class(funded_account_cls)`)."""
+    (`forfeit_class(funded_account_cls)`). Q-100: `household_closure` (default None: as before) is checked
+    (`check_household_closure`, against the declared class) and put on the path as given -- for the forfeiture, the path
+    keeps its own True (the module docstring)."""
     from propedge.campaign.lockstep import ConductModel, FocusedTraderModel
 
     bad = base_problems(args)
     if bad:
         raise ValueError("REFUSED (Q-17): " + "; ".join(bad))
     check_class_response(funded_account_cls, resp)                              # Q-76: nothing when absent
+    hc = check_household_closure(household_closure, funded_account_cls)         # Q-100: None when absent
     path = dict(args["path"])
     path["conduct"] = ConductModel(rtp=bool(resp.rtp), enforcement_p=float(resp.enforcement_p),
                                    rtp_warnings=int(resp.rtp_warnings))
@@ -335,6 +431,8 @@ def response_args(args: dict[str, Any], resp: Response, funded_account_cls: type
         raise ValueError(f"unknown response kind {resp.kind!r}")
     if funded_account_cls is not None and resp.kind != "forfeit":               # Q-76: on the path only when given
         path["funded_account_cls"] = funded_account_cls
+    if hc is not None and resp.kind != "forfeit":                               # Q-100: on the path only when given;
+        path["household_closure"] = hc                                          # the forfeiture keeps its own True
     return {**args, "path": path}
 
 
@@ -443,13 +541,16 @@ def response_record(lp: Any, resp: Response, info: dict[str, Any] | None = None)
 
 
 def _task(task: tuple) -> Any:
-    """(design, arm, response name, blocks, dates, args, starts, exact_every[, funded_account_cls[, reducer]]) -> each
-    start's output: the vendored `user_journey._one_start` on this adapter's runs (long and exact-length), with the
-    start's daily path measures and what the response did. The heavy parts of `_one_start`'s output (D-518's side) are
-    dropped. Q-76: the ninth item, present only when a class is declared, is that class; each output then names it
-    (its last key, `funded_account_cls`). Q-94: the tenth item, present only when recording (the ninth then the class
-    or None), is the run's `replay_records.ReplayReducer`: each start's long replay is recorded and reduced, and the
-    task returns (the outputs, one record a start)."""
+    """(design, arm, response name, blocks, dates, args, starts, exact_every[, funded_account_cls[, reducer[,
+    keywords]]]) -> each start's output: the vendored `user_journey._one_start` on this adapter's runs (long and
+    exact-length), with the start's daily path measures and what the response did. The heavy parts of `_one_start`'s
+    output (D-518's side) are dropped. Q-76: the ninth item, present only when a class is declared, is that class; each
+    output then names it (its last key, `funded_account_cls`). Q-94: the tenth item, present only when recording (the
+    ninth then the class or None), is the run's `replay_records.ReplayReducer`: each start's long replay is recorded and
+    reduced, and the task returns (the outputs, one record a start). Q-100: the eleventh item, present only when one of
+    its keywords is given (the ninth and tenth then as above, or None), is `seam_parameters(household_closure,
+    seed_base)`: the household reading goes on every replay's path (`response_args`), the start seeds come from the
+    base (`start_seed(s, base)`), and each output names the keywords given after its `seed`."""
     import warnings
 
     import customer_journey as CJ
@@ -463,21 +564,30 @@ def _task(task: tuple) -> Any:
     design, arm, rname, blocks, dates, args, starts, exact_every = task[:8]
     cls = task[8] if len(task) > 8 else None                                    # Q-76
     red = task[9] if len(task) > 9 else None                                    # Q-94: the replay's reducer
-    named = class_parameters(cls)                                               # Q-76: empty when absent
+    seam = dict(task[10]) if len(task) > 10 else {}                             # Q-100: the keywords given
+    hc = seam.get("household_closure")                                          # Q-100: None when absent
+    base = DENIAL_SEED if seam.get("seed_base") is None else int(seam["seed_base"])
+    named = {**seam_parameters(hc, seam.get("seed_base")), **class_parameters(cls)}   # Q-76, Q-100: empty when absent
     resp = BY_NAME[rname]
-    a = response_args(args, resp) if cls is None else response_args(args, resp, cls)
+    if hc is None:
+        a = response_args(args, resp) if cls is None else response_args(args, resp, cls)
+    else:                                                                       # Q-100: the household reading given
+        a = response_args(args, resp, cls, household_closure=hc)
     a_rec = None if red is None else red.recording_args(a)                     # Q-94: both recorders on
     recs: list[dict[str, Any]] = []                                             # Q-94: one record a start
     sub = float(args["path"]["subscription"])
     lag = int(args["path"]["payout_lag_days"])
     n = len(blocks)
 
+    def seed_of(s: int) -> int:                                                 # Q-100: from the base given, or as before
+        return start_seed(s, base)
+
     def run(s: int, h: int, record: bool = False):
         if record:                                                              # Q-94: recorded, read, handed on plain
-            lp, r = red.reduce(replay(blocks[s:s + h], a_rec, start_seed(s)), s, h, start_seed(s), dates[s])
+            lp, r = red.reduce(replay(blocks[s:s + h], a_rec, seed_of(s)), s, h, seed_of(s), dates[s])
             recs.append(r)
         else:
-            lp = replay(blocks[s:s + h], a, start_seed(s))
+            lp = replay(blocks[s:s + h], a, seed_of(s))
         if resp.kind == "forfeit":
             return forfeit_view(lp, lag)
         return lp, None
@@ -508,8 +618,8 @@ def _task(task: tuple) -> Any:
         rel = np.asarray(long_run.path.cash_series, float) - float(long_run.path.initial_bankroll)
         out.append({"rec": o["rec"], "differs": o["differs"], "checked": o["checked"], "pay_bad": o["pay_bad"],
                     "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
-                    "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": start_seed(s),
-                    **named})                                                   # Q-76: named only when given
+                    "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": seed_of(s),
+                    **named})                                                   # Q-76, Q-100: named only when given
     return out if red is None else (out, recs)                                  # Q-94: the records beside
 
 
@@ -536,7 +646,8 @@ def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
 
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
                chunk: int = 20, exact_every: int | None = None,
-               funded_account_cls: type | None = None, recorder: Any = None) -> list[dict[str, Any]]:
+               funded_account_cls: type | None = None, recorder: Any = None, household_closure: Any = None,
+               seed_base: Any = None) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
     `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start).
@@ -548,7 +659,14 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     output, only when given.
 
     Q-94: `recorder` (default None: every behaviour as before) is an `extended.replay_records.ReplayRecorder`: every
-    start's long replay is recorded into it, the outputs unchanged (the module's docstring)."""
+    start's long replay is recorded into it, the outputs unchanged (the module's docstring).
+
+    Q-100: `household_closure` and `seed_base` (each default None: every behaviour as before) -- the household rule's
+    reading on every replay's path, and the base the start seeds are drawn from (the module's docstring). Each is
+    checked before any start runs (`check_household_closure` against the declared class, `check_seed_base`), the
+    design's arguments with them (`response_args`: a path already carrying `household_closure` is refused); given, the
+    tasks gain `seam_parameters(household_closure, seed_base)` as their eleventh item and every start's output names
+    them."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
@@ -556,6 +674,11 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     if funded_account_cls is not None:                                          # Q-76: refused before any start
         check_class_response(funded_account_cls, resp, int(workers))
         response_args(job["args"], resp, funded_account_cls)
+    hc = check_household_closure(household_closure, funded_account_cls)         # Q-100: refused before any start
+    sb = check_seed_base(seed_base)
+    seam = seam_parameters(hc, sb)                                              # Q-100: empty when both are absent
+    if seam:
+        response_args(job["args"], resp, funded_account_cls, household_closure=hc)
     red = None
     if recorder is not None:                                                    # Q-94: refused before any start
         from extended import replay_records as RR
@@ -568,6 +691,8 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
         tasks = [(*t, funded_account_cls) for t in tasks]
     if red is not None:                                                         # Q-94: the tenth, only when recording
         tasks = [(*t, red) if len(t) == 9 else (*t, None, red) for t in tasks]
+    if seam:                                                                    # Q-100: the eleventh, only when given
+        tasks = [(*t, *([None] * (10 - len(t))), dict(seam)) for t in tasks]
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
     if red is None:
         return [x for part in res for x in part]
@@ -581,4 +706,5 @@ __all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "EXACT_EVERY", "FTP_BIN
            "RESPONSES", "BY_NAME", "start_seed", "forfeit_class", "base_problems", "response_args", "replay",
            "binding_ftp", "forfeit_view", "response_record", "long_record", "run_starts",
            "check_funded_account_cls", "class_name", "class_parameters", "own_household_rule", "forfeit_over",
-           "class_problems", "check_class_response"]
+           "class_problems", "check_class_response", "check_household_closure", "check_seed_base", "seam_parameters",
+           "run_parameters"]

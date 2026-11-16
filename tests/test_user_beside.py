@@ -11,6 +11,10 @@
 * Q-76, slow (`--u1-starts 4 --funded-cls both`) and heavy (`--u1-starts all --funded-cls both`): the same at the
   class keyword's default and with the gate's pass-through class given; the class run's outputs are the default's
   apart from naming. The keyword's synthetic checks are `tests/test_user_beside_class.py` (fast).
+* Q-100, slow (`--u1-starts 4 --q100 both`) and heavy (`--u1-starts all --q100 both`): the same at the household route's
+  and the seed base's defaults and with `household_closure=False` and `seed_base=20261920` given; the given run's
+  outputs are the default's apart from naming. The keywords' synthetic checks are `tests/test_user_beside_seams.py`
+  (fast).
 """
 from __future__ import annotations
 
@@ -65,6 +69,31 @@ def test_u1s_start_rows_every_start_at_the_class_keywords_default_and_with_the_p
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
     assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
     assert r.stdout.count("and with the pass-through class (Q-76)") == 2, r.stdout
+
+
+@pytest.mark.slow
+def test_u1s_start_rows_at_q100s_defaults_and_with_its_keywords_given():
+    """Q-100: the same identity at `household_closure`'s and `seed_base`'s defaults and with `household_closure=False`
+    and `seed_base=20261920` given -- U1's start rows for both, and the given run's outputs the default's bit for bit
+    apart from its naming (`identity/user_beside_identity.py --q100 both`)."""
+    if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    r = run("--u1-starts", "4", "--q100", "both", timeout=3600)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
+    assert r.stdout.count("and with Q-100's household_closure=False, seed_base=20261920 given") == 2, r.stdout
+
+
+@pytest.mark.heavy
+def test_u1s_start_rows_every_start_at_q100s_defaults_and_with_its_keywords_given():
+    """Q-100, heavy (the run lock; the lead's): the same at every start of P-14 and P-16, both arms, all 68 columns --
+    E-010's comparison at the keywords' defaults and with them given."""
+    if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    r = run("--u1-starts", "all", "--q100", "both", timeout=4 * 3600)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
+    assert r.stdout.count("identity HOLDS: Q-17 U1") == 2, r.stdout
+    assert r.stdout.count("and with Q-100's household_closure=False, seed_base=20261920 given") == 2, r.stdout
 
 
 @pytest.mark.slow
