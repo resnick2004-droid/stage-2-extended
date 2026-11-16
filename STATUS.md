@@ -40,7 +40,8 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | worktree | branch | task | state |
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
-| wt-levels | wt/wt-levels | -- (Q-10 done, E-011; a corrected level family waits for Q-16) | idle |
+| wt-levels | wt/wt-levels | Q-21 the corrected level family's draft (`docs/briefs/Q-21_2026-11-15.md`) | running |
+| wt-user | wt/wt-user | Q-17 the readings beside the user scorecard, then Q-20 (`docs/briefs/Q-17_2026-11-15.md`) | running |
 | wt-features | wt/wt-features | Q-11 the feature library and family B's draft (`docs/briefs/Q-11_2026-11-15.md`) | running |
 | wt-firms | wt/wt-firms | -- (Q-19 done, E-012) | idle |
 | wt-scout | wt/wt-scout | -- | idle |
