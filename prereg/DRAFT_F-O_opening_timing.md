@@ -1,12 +1,15 @@
-# DRAFT F-O: a side-free timing filter for the funded account's 3R opening (family O) -- second version, not declared
+# DRAFT F-O: a side-free timing filter for the funded account's 3R opening (family O) -- third version, not declared
 
-**Status: DRAFT, second version, 2026-11-16 (TASK_QUEUE Q-63), redrafted on the red team's first read
-(`docs/reviews/DRAFT_F-O_opening_timing_2026-11-16.md`). Not pinned, not numbered, not declared.** The first version is
-a39a80a (Q-37, merged 975fd91, E-039). Nothing of it is built. No bar, walk, trade or result value was read for it, no
-state was computed, nothing was fitted and no outcome was computed. The one piece of code is a synthetic test of the
-arithmetic, the twin, the pass line's input form, the wait's calendar and this file's own reads line and seeds
-(`tests/test_family_o_persistence.py`, section 18.2, T-1). This file may be edited until the lead pins it. From the
-pinning row on, nothing in it is edited: a change is a new family.
+**Status: DRAFT, third version, 2026-11-16 (TASK_QUEUE Q-87): one edit on the red team's second read
+(`docs/reviews/DRAFT_F-O_opening_timing_v2_2026-11-16.md`, "pinnable once its named external conditions are met"), with
+the lead's rulings of E-054 and the additions of E-052 and E-055. Not pinned, not numbered, not declared.** The first
+version is a39a80a (Q-37, E-039), the second cd2cbe7 (Q-63, E-046). Nothing of it is built. No bar, walk, trade or result
+value was read for it, no state was computed, nothing was fitted and no outcome was computed. The code is synthetic
+tests: of the arithmetic, the twin, the pass line's input form, the wait's calendar, the `close` walk, A10's
+consequence and this file's own reads line and seeds (`tests/test_family_o_persistence.py`, T-1), and the toys that show
+the level and power at the family's level of the rules this version adds (`tests/test_family_o_toys.py`, slow tier;
+18.3). This file may be edited until the lead pins it. From the pinning row on, nothing in it is edited: a change is a
+new family.
 
 **Its rules come from the operator's ruling of 2026-11-16 (E-023; `CHARTER.md` section 3, "Levers that do not choose a
 side").** The filter keeps the coin's side and chooses *when* a newly funded account takes its opening, so E-008's lift
@@ -15,21 +18,34 @@ a **placebo-selection twin**, one-sided at the family's level by the calibrated 
 that bound, with section 3's floors and the journey scorecard beside. It can be carried.
 
 **It cannot be pinned before:**
-- **Q-55's clean rerun** of Q-16's calibration is on record (E-035 (4)), and the per-cell power table (6.6) is filled
-  from its Table 9, with the drop rule of 6.6 applied (E-035 (6); the review's F4). Until then no figure of Q-16 is
-  cited, and the marks **[Q-55]** stand;
+- **Q-55's clean rerun** of Q-16's calibration is on record (E-035 (4)), **reproducing `cons` and the treated two-sample
+  `cons` holding** on the selection nulls, and the per-cell power table (6.6) is filled from its Table 9's **k = 15
+  column**, the drop rule of 6.6 applied mechanically (E-035 (6); the reviews' F4 and m2-9). Until then no figure of
+  Q-16 is cited, and the marks **[Q-55]** stand;
+- **Q-83's fresh-seed validation holds** (E-052 (2), on the fresh seeds that row fixes -- not written out here, as that
+  run checks them unused before it starts; HOLDS if, at every k in 11..15, no real or realistic null's 95 % interval
+  lies wholly above nominal);
+- the whole-window identities have run in their own identity script under their own row (A0, 9; the second read's
+  m2-2);
 - the items of section 20 are closed.
 
-Q-16 itself is merged (E-035; 4d3e503, wt/wt-verify 3837256) and is named in every line (section 11). Where the funded
-openings fall (Q-35) is not needed before the pin: it is counted in stage A, on the choice block, in history's order
-(5.5).
+**The withdrawal clause (m2-8; E-052; E-054 (2)).** This file is **withdrawn, or redrafted, before any read** if Q-55's
+clean rerun does not reproduce `cons` and the treated two-sample `cons` holding, or if Q-83 does not hold by E-052
+(2)'s criterion. **The pass-line code is pinned by git blob id:** `extended/lift_bound.py`
+`984f3467a4a05aa790d3ea43e94ac7761f0725b2` and `extended/p_bound.py` `f5b29710e243f97a2795e57f6458512fea99199b` (E-052;
+the same bytes since Q-16, merged 4d3e503); every run of this family refuses a commit whose blobs of those two files
+differ (A1). A changed module is a new row and a redraft.
+
+Where the funded openings fall (Q-35; its script merged, E-051 (2)) is not needed before the pin: it is counted in stage
+A, on the choice block, in history's order (5.5).
 
 | field | value |
 |---|---|
 | family | O: a side-free timing filter for a newly funded account's 3R opening -- the opening keeps P-16's coin side and waits, at most W sessions, for a state that predicts persistent moves |
 | id | F-XX -- the gatekeeper's |
-| program family number k | **the next free at the pin.** F-01 spent 10 (E-007 (a)); F-02's and F-B's drafts are ahead of this one; family R's draft is held unpinned (E-028 (2)); described readings take none (E-023 (1)) |
-| level | one-sided **0.05 / (k (k + 1))**: 0.05 / 132 at k = 11, 0.05 / 156 at k = 12, 0.05 / 182 at k = 13, 0.05 / 210 at k = 14, 0.05 / 240 at k = 15 |
+| program family number k | **the next free at the pin, k >= 12**: F-01 spent 10 (E-007 (a)); F-02 holds 11 (E-045 (4)); family B's draft is ahead of this one; family R's draft is held unpinned (E-028 (2)); described readings take none (E-023 (1)) |
+| level | one-sided **0.05 / (k (k + 1))**: 0.05 / 156 at k = 12, 0.05 / 182 at k = 13, 0.05 / 210 at k = 14, 0.05 / 240 at k = 15 |
+| the pass-line code | `extended/lift_bound.py` blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2`, `extended/p_bound.py` blob `f5b29710e243f97a2795e57f6458512fea99199b` (E-052) |
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16 only, read through `extended/reader.py` (E-026 (2)) |
 | base | P-16 (`rc_s150_all_nr`, `vendor/stage2/prereg/P-16_rc-s150-all-nr.md`) as registered, its report-day 07:35 entry kept (E-039 (1)); R\* = P-14 beside |
 | population | P-16's offers at the marks 17:00-08:25 CT of its walked sessions (on a BLS report day 07:40-08:25: the entries this family chooses are strictly after 07:35:00, E-007 (d), E-039 (1)), each walked long and short at 3R (section 5.2) |
@@ -38,7 +54,7 @@ openings fall (Q-35) is not needed before the pin: it is counted in stage A, on 
 | confirmation | NQ from 2026-07-17 (`config/windows.yaml`, `reserve`); not on disk, a purchase (section 15) |
 | cells (`k_cells`) | **4**: s1, s2, s3, u3 -- each at R = 3, the 150-tick stop, place (c), W = 5 sessions: 4 x 1 x 1 x 1 = 4, each counted whether dropped before the pin (6.6), killed or read |
 | judged | one cell: stage B's pick |
-| pass line | E-023 (2), every line by **`cons`** with the treated-cluster df (`extended.lift_bound`, E-035 (2)) and each member's critical value the larger of its t and stage B2's: **C1**, the offer-level lift of the in-state offers' stratum-centred side-symmetric 3R value over the twin (`placebo_selection_bound`); **C1-close**, the same under the `close` flatten convention; **C2**, the per-opening difference between the design's openings and the twin design's (`two_sample_bound`), on the U1 replay in history's order, priced at place (c) at the design's openings a year, at least $500 a year; **C3**, both sides' halves above zero; section 3's floors; the scorecard beside |
+| pass line | E-023 (2), every line by **`cons`** with the treated-cluster df (`extended.lift_bound`, E-035 (2)) and each member's critical value the larger of its t and stage B2's: **C1**, the offer-level lift of the in-state offers' stratum-centred side-symmetric 3R value over the twin (`placebo_selection_bound`); **C1-close**, the same under the `close` flatten convention; **C2**, the per-opening difference between the design's openings and the twin design's (`two_sample_bound`), on the U1 replay in history's order, priced at place (c) at the design's openings a year, at least $500 a year; **C3**, both sides' halves above zero; section 3's floors; the scorecard beside. **Before any of them, K0** (E-052 (1)): `cons`'s size at the family's level on a sign null built with each cell's own counts, a cell lax by it killed, a pass on lax judged counts not claimed (9, A11; 12) |
 | the wait W | 5 sessions, fixed (section 5.4) |
 | seeds | proposed 20261980 to 20261989, checked unique (section 16) |
 | model card | only if u3 is the pick (its forecast's 11 coefficients, section 6.5); none otherwise |
@@ -123,6 +139,29 @@ bracket held for hours. The honest prior is no effect, and the data may only be 
 | m7 T-10 | its levels, replications and failure rule declared; the family's level rests on B2's larger-of rule, not on T-10 | 18.2 |
 | m8 the per-year share | "a third by construction" corrected: a third over the long run, per year it follows the state's persistence; per-year shares beside K1; W's rationale moved off the iid argument | 5.4, 6.4, 9 (A5) |
 | n1-n8 | readings: E-036 M3-2 answers the open question on H and IV; E-035 answers the twin's form; the 1R mirror holds for gross only; x3's frame named and T-2's cuts extended; V is gross of the wait's cost; Q-35's ordering recorded; A4's default declared (u3 closed, counted); V's conversion first-order and its price uncalibrated | 1, 6.1, 6.5, 7.4, 9, 12, 20 |
+
+## 0.3 What the third version corrects (the red team's second read; E-052, E-054, E-055; Q-87's brief)
+
+Nothing else moves: the cells, the twin's estimand in C1, the level, the reads line and the seeds (one reserved seed
+put to K0's use).
+
+| item | what changed | where |
+|---|---|---|
+| **m2-1** C2's residual | "removes it" corrected to **"removes it to first order"**; the residual (the state's clustering against the placebo's, at the router) stated beside C2 as an assumption that carries the value; **the twin designs now draw a clustered placebo** -- the state's own in-state indicator shifted circularly by a seeded offset within each (calendar year, day kind) sequence of sessions, all marks of a session together -- which keeps every stratum's count and the state's runs, so the waits and routing positions match; C1's twin, the exact expectation, unchanged | 7.1, 7.4, 12, 13 |
+| **m2-2** the seal and the whole-window identities | the identities against whole-window registered objects (P-16's trades, gate paths, U1 rows, Q-51's) move to **`identity/family_o_identity.py`** under its own identity row, run and held under the lock before run 1 (A0); run 1 builds the population on the choice block only; T-3 compares run 1's sections other than `identity` | 4, 9 (A0, A1), 18, 19.2 |
+| **m2-3** B2's slow amplitude (**E-051's ruling, E-054 (2)**) | the deciding lines' null is **the realised judged population** (the twin's exact expectation on the judged block), B2's slow components **centred within the block** (shaping dependence, not the mean); the case of "a state that sat in one regime throughout the judged block" named and left to the confirmation; a\* the largest of (a) the choice span's, (b) Stage 2's recorded follow lift, and **(d) the judged block's out-of-state offers only, each centred by its own stratum's out-of-state mean -- no term from the design's own lift**; the unsourced "three times (a)" **dropped** (E-051: "the 3 dropped unless sourced"); the level and power of (d) at the family's level shown on toys | 11, 18.3 |
+| **m2-4** A10's consequence | relabelled "`cons` lax on c in this class"; if so in a surviving cell's class, **the deciding rule itself** runs on the same replications as a pseudo-judged split (B2 from 2021-2022, the statistic on 2023); **if it is lax too, the cell is closed, counted**, before stage B reads any lift; its chance of closing a cell whose rule holds shown exactly (T-1) | 9 (A10), 18 |
+| **m2-5** the confirmation's value line | always C1's bound x **the design's in-wait openings** a start-year x mean_dv(c) / 4, at least $500, with C2 on the window's replays beside; the window sized for this line as for C1; B2's source named (the development window's values, both blocks); the in-wait count also in 12's beside valuation | 12, 15 |
+| **m2-6** the P statistic | **`pcons`** (`extended/p_bound.SHIPPED`, E-035 (3)) for the paired P differences, beside, one-sided at 0.05, never a line; `bm63c` beside once its table is pinned; D-621 (3)'s line (i) labelled as not holding its level (E-007 (1)) | 13 |
+| **m2-7** C1-close's walk | the named instance **`Rules("fo_stage2_close", FLAT_ENTRY, "close", True)`**: STAGE2's walk end (15:08) and every other rule, the flatten priced at the close of the bar ending 15:08; a test that it differs from STAGE2 only at a flattened trade's price | 5.3, 8, T-1 |
+| **m2-8** Q-55's failure branch; blob ids (**E-052, E-054 (2)**) | the withdrawal clause (Q-55 or Q-83 not holding); the two modules pinned by blob id, a run refusing other blobs | header, 9 (A1), 20 |
+| **m2-9** the drop rule's column | **k >= 12**; Table 9's **k = 15 column** (stricter than any k from 12 to 15); the drop **mechanical** -- the lead records it, no confirmation | header, 6.6 |
+| **m2-10** the forfeiture collision | the waiting class **composed with Q-17's `ForfeitFundedAccount`** for the forfeiture responses, held to Q-17's forfeiture rows with the wait switched off; what is needed from Q-76's declared keyword named | 5.4, 13, 18.1 |
+| **m2-11** B2's day kind | B2 draws **within day kind**: two stationary bootstraps of mean block 63, normal days and report days, each judged session filled from its own kind's sequence | 11 |
+| **E-052 (1)** fill intensity | the openings-per-session (and in-state-offers-per-session) persistence stated beside the side persistence; **K0**, outcome-free, before stage B: `cons`'s size at the family's level on a sign null built with each cell's own choice-block counts (seed 20261989), a cell whose 95 % interval lies wholly above nominal killed; the same check on the pick's judged counts before any outcome is read, a pass not claimed above nominal; its level and power on toys | 6.6, 9 (A11), 12, 16, 18.3 |
+| **E-055** the place records | Q-70's adapter cited at family B's section 20 **item 10**; its identities relied on named (P-16 at 4 paths on `PATH_COLS`; P-16 and P-14 at 100 paths against `trades_per_year_records`); **recording on the U1 replay** (`record_days` beside `record_trades`, Q-76's keyword) listed as this family's build item; **declined offers are counted by the gating wrapper**, not the recorder | 9 (A1), 18 |
+| **E-059** Q-76 merged | the family's class reaches the U1 replay through Q-76's keyword, forfeiture composed over it; **E-007 (e)'s readings reported without the ten Focused Trader models, labelled so** (the engine refuses them for any funded class but the vendored one, `lockstep.py` 1403-1408); a re-composed path admitting them is a separate build under its own row, not now | 5.4, 13, 18.1 |
+| n2-1..n2-10 | readings: the drafter's four questions answered; S2's pre-read reworded; Q-51 HOLDS (E-044 (3)); the seed check excludes the data junctions; T-10's runtime; "inside Table 9's grid" means 40 standard errors; K5's censored waits reported; floor (iii)'s gate waits less than the traded design; the stage-B pick inherits m2-1; the module's variance under stratum-varying shares conservative | 4, 6.6, 9, 10, 12, 16, 18 |
 
 ## 1. Hypothesis: the mechanism, its sources, and each state's sign stated in advance
 
@@ -227,7 +266,7 @@ A judged reading is worth only what the judged block's freshness allows. Every r
 | D-652 (U2), D-667-D-669 (U5) | `u_xfa_day_budget.csv` sections `opening_trade`, `after_opening`, `signal_supply`; `u_value_map.csv` sections `place_values`, `bar`, `records_leaf` | P-16's registered campaign, both blocks pooled, the bound arm | the base's funded opening (the share that won it, its realised risk), what follows it, and the value of a win by place | **the drafter has seen the handoff's tables of these** (sections 2.5 and 2.7; values not typed here): the base opening's won share at 3R, pooled over both blocks and not by any state, is the quantity this family tries to raise. It can bias the decision to propose the family, not the selection |
 | E-021; the scout's note section 5.1 | the states s1-s3 proposed from the literature | none | -- | the design, adapted to E-023 |
 | family R's draft (Q-38, E-028) | the HAR-type forecast u3 restates (section 6.5) | none | -- | u3's definition; nothing read |
-| **Q-35** (queued, heavy) | where P-14's and P-16's funded openings fall | both blocks, if it runs | -- | **if it runs before the pin, its counts over both blocks are a disclosed pre-read** (direction-free); this file's rules use stage A's choice-block count only (5.5; the review's n6) |
+| **Q-35** (its script merged, E-051 (2): `extended/openings.py`, `scripts/q35_openings.py`; its run in the heavy chain's third leg) | where P-14's and P-16's funded openings fall, by mark, hour, entry delay, the 08:30-09:00 window, report day, FOMC day, weekday, year and stop; no outcome column | both blocks, when it runs | -- | **if it runs before the pin, its counts over both blocks are a disclosed pre-read** (direction-free); this file's rules use stage A's choice-block count only (5.5; the first read's n6) |
 | this repository | F-02's and family B's drafts (nothing read); Q-17, Q-18, Q-20, Q-22 when run (P-16's journeys and readings on both blocks) | -- | -- | the scorecard's base readings, beside |
 
 **The drafter's own reads (disclosed).** Code, configuration, decision rows, the review, the calibration note's text
@@ -285,7 +324,10 @@ no result value was opened beyond what the rows above and the handoff's tables s
    under the purposes on section 19.1's line, from a clean run of a committed tree, once each; each read appends to
    `results/read_ledger.jsonl` first. Choice-block reads need no tag; this file names them anyway: `fit_forecast`
    (u3's fit), `stage_A_supply`, `stage_B_choice`. The reader refuses any choosing or fitting purpose on the judged block
-   whatever this file says. T-3 is the second proof: the choice stages' outputs are unchanged when the judged block is
+   whatever this file says. **Run 1 builds the population, the states and every replay on the choice block only**; the
+   identities that compare whole-window registered objects run apart, in `identity/family_o_identity.py` under their
+   own identity row (A0; the second read's m2-2), as the reader admits a whole-window read only from an identity
+   script. T-3 is the second proof: run 1's sections other than `identity` are unchanged when the judged block is
    replaced.
 4. **Disclosed pre-reads** -- inputs fixed or read over 2020-2026 that T-3 cannot see:
 
@@ -295,7 +337,7 @@ no result value was opened beyond what the rows above and the handoff's tables s
    | P-16's per-R bounds (the bound arm's shift), estimated over both blocks | a constant per R | the level of every replay and campaign number, design and twin alike | the lift (computed on net R before any shift) |
    | `u_value_map.csv` (D-668) | `mean_dv` at place (c) | C2's dollars and stage B's ranking | the lift or its bound |
    | `u_xfa_day_budget.csv` `opening_trade` (via the handoff) | the base opening's won share, pooled | the decision to propose the family | the state's selection |
-   | S2's readings (D-582) | volatility and trend gates on P-16's marks | the choice of states (disclosed in 6.3) | the pick, the lift |
+   | S2's readings (D-582) | volatility and trend gates on P-16's marks | **which hypotheses are tested**: the states were proposed knowing that S2's high-volatility and trend cells read close to, or just below, P-16 over both blocks, so the choice leans toward relatives that looked good on the judged block, and so toward a higher chance of a pass (the second read's n2-2; the honesty sentence, 17 item 4) | the computation of the lift, the pick |
    | Q-16's calibration (E-035) on P-16's judged offers | coin-side outcomes under random selections | the statistic (program-wide) | this family's selection |
    | S1's and S3's vendored lifts (11) | follow lifts by R, whole window | B2's amplitude, upward only | any selection, the pick |
    | Q-35's counts, if run before the pin | where the base's openings fall, both blocks | nothing of the lift (counts only) | -- |
@@ -308,12 +350,14 @@ no result value was opened beyond what the rows above and the handoff's tables s
 
    | reading | calendar |
    |---|---|
-   | A1's identities against P-16's registered gate paths | the gate, as registered (seed 20261206) |
-   | A1's identities against P-16's U1 start rows; the never-on and placebo-set identities | the U1 replay |
+   | A0's whole-window identities against P-16's registered gate paths (and Q-51's) | the gate, as registered (seed 20261206), in the identity script |
+   | A0's identities against P-16's U1 start rows | the U1 replay, whole window, in the identity script |
+   | A1's never-on, placebo-set and restricted-replay identities | the U1 replay of choice-block starts, in run 1 |
+   | K0's counts (A11) | the choice span's population (C1's form) and the choice-block replays (C2's form) |
    | A2's counts, A7's K5, the waits, A9's u_c, stage B's V_B | the U1 replay of every choice-block start from 2021-01-04, each start's history ending at 2023-12-29 |
    | C1, C1-close, C3, K1, K2 | none: offer-level, on the population's walks |
    | C2's V, V(P-16), V(design), the openings' counts on the judged block | the U1 replay of every judged-block start, U1's own start set and horizon rule |
-   | floor (iii), the long-run gate | the gate, the design's own campaign (seed 20261983), as the gate is defined (E-022 (2)) |
+   | floor (iii), the long-run gate | the gate, the design's own campaign (seed 20261983), as the gate is defined (E-022 (2)); on its independent days the design waits less than it does traded in history's order, said beside the floor (the second read's n2-8) |
    | the scorecard (13) | the U1 replay, as U1 is defined |
 
 6. **No NQ from 2026-07-17** is on disk or read (section 15).
@@ -359,9 +403,15 @@ rows):
 
 - **The walker:** `extended/walker.py`, preset **`STAGE2`** (E-011): P-16's own walk -- FV3's rung walk, a stop on a
   touch, a target on a trade through, stop first on a two-barrier bar, the breakeven move, the walk's end the bar ending
-  15:08 CT and the flatten at the worst of the bars ending 15:08-15:10 less two ticks, Stage 2's costs. The `close`
-  convention beside and in C1-close: `DECLARED_F01`'s flatten (at the close of the bar ending 15:10), every other rule
-  `STAGE2`'s.
+  15:08 CT and the flatten at the worst of the bars ending 15:08-15:10 less two ticks, Stage 2's costs.
+- **The `close` convention, in C1-close and beside (the second read's m2-7): the named instance
+  `extended.walker.Rules("fo_stage2_close", FLAT_ENTRY, "close", True)`** -- STAGE2's walk end (the bar ending 15:08),
+  its breakeven move and every other rule, the flatten priced at the close of the bar ending 15:08 instead of the worst of
+  the bars ending 15:08-15:10 less two ticks. The walk's end is STAGE2's, so every trade's kind, exit bar and MAE are the
+  same under both and only a flattened trade's price differs (by at least the two slipped ticks): the line isolates the
+  flatten convention and nothing else (T-1's `test_the_close_instance_differs_from_stage2_only_at_the_flatten_price`).
+  `DECLARED_F01`'s 15:10 walk end is not used: it would also let stops and targets fill on the bars ending 15:09 and
+  15:10.
 - **Kinds:** stop, target, flatten (unresolved), breakeven. "Unresolved" means the flatten kind.
 - **The values at R = 3** for offer i: the long's net R l_i, the short's net R r_i, and the **side-symmetric value**
   **c_i = (l_i + r_i) / 2**: the coin's expected net outcome at offer i without its noise (F-01's convention for a twin's
@@ -391,17 +441,28 @@ rows):
   of offers by construction"; that holds only over the long run, and per year a persistent state's share follows its
   persistence. How often the wait binds for each cell is **read on the U1 replay in history's order** (A7, K5), where a
   calm spell of weeks can outlast W; it is not assumed. Other values of W are variants and are dropped (8).
-- **The twin design.** The same rule with the cell's drawn placebo selection (7.1) in place of the state.
+- **The twin design.** The same rule with the cell's **clustered placebo** (7.1) in place of the state: the state's own
+  in-state indicator shifted by a seeded offset, so the twin designs wait and reach offers as the design does
+  (the second read's m2-1).
 - **The seam** (18.1). The gating answer wraps the vendored draw's `can_take`, registered with the router under the
   account's key by a `FundedAccount` subclass (Q-47's `funded_account_cls` seam in `extended/gate.py`) and held strongly
   by the account (the router keeps draws weakly). `can_take` receives neither the calendar day nor the account's age,
   so the wrapper carries its account's wait counter and the (historical day, trade index) to (date, mark) lookup of
-  the states. Q-17's adapter refuses a path that already carries `funded_account_cls` (`base_problems`), so the build
-  adds the family's class to it as a declared keyword, held to Q-17's identity with the class off. Never an edit of a
-  vendored file or a substituted vendored attribute (E-002; the lesson of E-011's first run).
-- **The identities that bite** (A1, refusing; the review's m4): with the state always on, or W = 0, the design is P-16
-  bit for bit; with the state **never on**, every waiting account's opening falls on its sixth live session; with the
-  state **equal to the drawn placebo set**, every in-wait opening's (date, mark) is in the set.
+  the states. **The wrapper also counts every offer it declines** (account, historical day, trade index, the account's
+  wait session): a declined offer is not a trade, so Q-70's place recorder never sees it (`extended/place_records.py`,
+  its "Not here"; E-055 (4)). Q-17's adapter refuses a path that already carries `funded_account_cls`
+  (`base_problems`), and its forfeiture responses set that same slot; so the family's class goes through **Q-76's
+  declared keyword** (`run_starts(..., funded_account_cls=C)`, merged, E-059), which for every `forfeit_*` response
+  **composes** forfeiture over it (`forfeit_class(C)`: the forfeiture's household rule raised by a denial over C; a
+  class with a household rule of its own is refused, and the waiting class has none), held to Q-17's forfeiture rows
+  with the wait switched off (the second read's m2-10; 18.1 item 3). **The engine refuses the ten Focused Trader models
+  for any funded class but the vendored `FundedAccount`** (`lockstep.py` 1403-1408; E-059), so this family's scorecard
+  reports E-007 (e)'s readings without them (13).
+  Never an edit of a vendored file or a substituted vendored attribute (E-002; the lesson of E-011's first run).
+- **The identities that bite** (A1, refusing; the first read's m4): with the state always on, or W = 0, the design is
+  P-16 bit for bit; with the state **never on**, every waiting account's opening falls on its sixth live session; with
+  the state **equal to the drawn placebo set**, every in-wait opening's (date, mark) is in the set, and every offer the
+  wrapper declined was out of the set (from the wrapper's own count).
 
 ### 5.5 Where the funded openings fall: counted in stage A; what changes if they mostly fall at 08:30-09:00
 
@@ -577,7 +638,7 @@ so u3's forecast is reviewed here as restated. If family R is pinned first, the 
 - **No calibration** (family R's 6.4 maps the forecast to a probability; here only its rank matters), so the 10
   calibration values family R fits are not fitted here.
 
-### 6.6 Each cell's persistence and power, stated before the pin (E-035 (6); the review's F4)
+### 6.6 Each cell's persistence, fill intensity and power, stated before the pin (E-035 (6); E-052 (1); the reviews' F4, m2-9)
 
 Q-16's calibration found that a placebo-selection test's power depends far more on how persistent the filter is than on
 its firing share, and that a filter persistent for a quarter cannot be tested on the judged block (calibration note
@@ -585,17 +646,35 @@ its firing share, and that a filter persistent for a quarter cannot be tested on
 `block21`, `block63`) and firing share. Its figures are exploratory until Q-55's clean rerun (E-035 (4)), so none is
 quoted; the power column is filled from Q-55's Table 9 before the pin **[Q-55]**.
 
-| cell | what can make it persist | expected class | power at its class, shares 0.25 and 0.5, the family's k (Q-55's Table 9) |
-|---|---|---|---|
-| **s1** | the range so far only grows through the night, so once a night runs ahead of its forecast it tends to stay ahead for the rest of it; the next day's HAR forecast absorbs the surprise, so the clustering across nights is short (volatility surprises bunch for a few nights) | **window** within a night, with clustering across a few nights (between `window` and `block5`) | **[Q-55]** |
-| **s2** | a night's displacement from its open changes slowly through the night; across nights, trending nights are close to independent (daily returns carry little autocorrelation), normalised by the forecast range | **window** | **[Q-55]** |
-| **s3** | a daily state; the HAR forecast's 22-session term and the 250-session reference make calm spells last weeks to months | **block21**, possibly **block63** (the slower decides) | **[Q-55]** |
-| **u3** | its daily terms are ratios to the trailing month, which revert within weeks; x3 moves within the night | **session** to **block5** (the slower decides) | **[Q-55]** |
+**Fill intensity (E-052 (1)).** Beside the selection's persistence, E-052 (1) asks for the persistence of the **counts**
+each line's statistic weights: here the in-state offers per session (C1, C1-close) and the openings per session (C2).
+When a few blocks hold most of the counts, the cluster-robust variance has fewer effective clusters than its df says
+(the pass-line review's M1); none of Q-16's nulls let counts persist across sessions. **This family's counts move with its
+states**, so they persist exactly as the states do: K0 (A11) checks `cons`'s size on each cell's own counts before
+stage B, and on the pick's judged counts before any outcome is read.
 
-- **The rule, before the pin:** a cell whose class row (the slower of two where two are named) does not reach 80 %
-  power inside Table 9's grid at the nearer of its shares at the family's k is **dropped before the pin and counted**
-  (E-035 (6): a cell the block cannot judge spends nothing by being run, and is still counted). The others stay. The
-  drafter expects s3 to be dropped by this rule and the other three to stay; the lead confirms under the pinning row.
+| cell | what can make it persist | expected class | fill intensity: in-state offers a session (C1) and openings a session (C2) | power at its class, shares 0.25 and 0.5, k = 15 (Q-55's Table 9) |
+|---|---|---|---|---|
+| **s1** | the range so far only grows through the night, so once a night runs ahead of its forecast it tends to stay ahead for the rest of it; the next day's HAR forecast absorbs the surprise, so the clustering across nights is short (volatility surprises bunch for a few nights) | **window** within a night, with clustering across a few nights (between `window` and `block5`) | C1: a share of each night, varying night to night, bunched over a few nights; C2: openings spread over nights, bunched where surprises bunch | **[Q-55]** |
+| **s2** | a night's displacement from its open changes slowly through the night; across nights, trending nights are close to independent (daily returns carry little autocorrelation), normalised by the forecast range | **window** | C1: a share of each night, close to independent across nights; C2: spread | **[Q-55]** |
+| **s3** | a daily state; the HAR forecast's 22-session term and the 250-session reference make calm spells last weeks to months | **block21**, possibly **block63** (the slower decides) | **all or nothing a session, in runs of weeks to months** -- the most count-persistent cell; C2: openings bunched in the calm spells | **[Q-55]** |
+| **u3** | its daily terms are ratios to the trailing month, which revert within weeks; x3 moves within the night | **session** to **block5** (the slower decides) | mostly all or nothing a session, in runs of days; C2: bunched in fast spells | **[Q-55]** |
+
+- **The rule, before the pin -- mechanical (the second read's m2-9):** a cell whose class row (the slower of two where
+  two are named) does not reach 80 % power inside Table 9's grid at the nearer of its shares **in Table 9's k = 15
+  column** -- stricter than any k from 12 to 15, and Table 9 carries `cons` at k = 11 and 15 only -- is **dropped before
+  the pin and counted** (E-035 (6): a cell the block cannot judge spends nothing by being run, and is still counted).
+  The others stay. **The lead records the drop as the rule gives it, with no confirmation and no discretion.** The drafter
+  expects s3 to be dropped by this rule and the other three to stay.
+- **What "inside Table 9's grid" means (the second read's n2-7):** a detectable shift of at most 40 median standard
+  errors (`scripts/q16_calibrate.py`'s grid; calibration note 7.3) -- a weak condition, so power against the money bar
+  is A9's job, not the drop rule's.
+- **What the toys show (18.3), as an illustration, not a result:** in the nested two-sample form, sample 2 (every offer)
+  holds the selected offers, so a lift on a clustered selection also raises the between-block spread of the population's
+  mean, and the standard error grows with the lift. For a whole-session selection in runs of weeks the t statistic
+  then rises toward a ceiling set by how unevenly the selection fills the blocks, and power at the family's level can
+  stay well short of one however large the lift; a within-night window selection does not have this ceiling. This is
+  the shape of Table 9's "--" for its block classes (Q-16's power code shifts both samples, as here).
 - **What Table 9 measures, and what that means here.** Its outcome is the coin side's own 3R net R; this family's is
   the side-symmetric value c (5.3), with the coin's direction noise removed. So Table 9 is an upper guide to the
   detectable difference for c, not its calibration; A9 reads the cell's own MDL in stage A, beside.
@@ -618,11 +697,17 @@ quoted; the power column is filled from Q-55's Table 9 before the pin **[Q-55]**
 - **In C1 the twin enters as its exact expectation**, the population mean of each stratum: *answered (the review's
   n2):* that is the form Q-16 calibrated ("carries no placebo noise", calibration note 7.3). A seeded draw is reported
   beside (draw 0).
-- **In C2 the twin is a design**: the waiting rule with a drawn placebo selection, two draws (d = 0, 1) pooled, so one
-  draw's noise does not bind.
-- **What it does not match:** the state's clustering over marks and sessions (the placebo fires independently offer by
-  offer). The statistic's dependence on that clustering is section 11's business; the twin designs' waits (shorter,
-  because the placebo does not cluster) are reported in stage A, and section 13 says what that does to the scorecard.
+- **In C2, V_B and the scorecard the twin is a design, and its placebo is clustered (the second read's m2-1).** The
+  waiting rule with **the state's own in-state indicator shifted circularly**, within each (calendar year, day kind)
+  sequence of sessions, by a seeded uniform offset (`[20261982, c, b, d]`, d = 0, 1), all marks of a session moved
+  together: offer (session j, mark m) is in the twin's selection when the state held at (session j + offset, mark m)
+  of the same sequence. It keeps each stratum's count exactly (a shift permutes the sessions of a sequence) and the
+  state's runs (up to the wrap), so the twin designs wait and reach offers at the same routing positions as the design;
+  its expectation over the offset is the stratum's share, so its offers are the stratum mean in expectation, as the
+  exact twin's are. Two draws (d = 0, 1) pooled for C2 and V_B; draw 0 for the scorecard.
+- **What the clustered twin still does not match:** which particular sessions are in state -- the state's alignment
+  with the night's own routing (how fast earlier trades exit). That residual is stated beside C2 (7.4). The per-offer
+  placebo, which matched neither the runs nor the waits, is no longer used for any design.
 
 ### 7.2 C1's estimand: the lift over the twin at the offer level
 
@@ -633,7 +718,10 @@ quoted; the power column is filled from Q-55's Table 9 before the pin **[Q-55]**
 - **The call (the review's F1):** `extended.lift_bound.placebo_selection_bound(y, session, selected, n_sessions,
   level=0.05 / (k (k + 1)))` with `y = c - mu_g` for **every population offer** (sample 2), `selected` the in-state flag,
   `session` the offer's ordinal in the block's calendar (every trading session counted), at the module's
-  `SHIPPED = "cons"` and `DIFF_DF_RULE = "treated"` (E-035 (2); merged 4d3e503).
+  `SHIPPED = "cons"` and `DIFF_DF_RULE = "treated"` (E-035 (2); the module at blob
+  `984f3467a4a05aa790d3ea43e94ac7761f0725b2`, E-052). The runner asserts the level equal to `family_level(k)` for the
+  pinned k, and `n_sessions` and the session list equal to Q-83's judged-block count and sha256 (E-052 (3)'s
+  assertions, carried here).
   - **The strata enter by the centring.** The function compares the selected offers' mean with every offer's mean and
     has no strata. On y the second mean is zero by construction and the estimate is exactly L_c; on the raw c it would
     add the strata-composition term -- the in-state offers' mean stratum mean less the population mean -- which a firing
@@ -659,7 +747,13 @@ quoted; the power column is filled from Q-55's Table 9 before the pin **[Q-55]**
 **Why a difference.** The offer a waiting account opens at is selected by the router: under the one-position rule it
 is the first offer after earlier trades on that night have exited, so it depends on how fast that night resolves, its
 kind mix and its persistence. So the deviation at a reached offer is not mean-zero even for P-16, which has no state
-(the review's check 5, a toy). The twin design's openings carry the same routing selection; the difference removes it.
+(the first read's check 5, a toy). The twin designs' openings carry the same routing selection; **the difference
+removes it to first order** (the second read's m2-1). With the clustered twin (7.1) the twin designs wait and reach
+offers as the design does, which removes most of what remains; what still remains -- the state's own alignment with
+the night's routing, which the shifted twin does not share -- is **not in B2's null for C2** (B2 holds the uses fixed
+and draws values from other sessions, so its D\* is centred at zero by construction). It is stated beside C2 with the
+verdict, as **an assumption that carries the value**, and stage B's pick by V_B inherits it (the second read's n2-9;
+mean_dv(c) is a common positive factor across cells, so the value map cannot move the pick).
 
 - **The samples.** On the paired U1 replays in history's order (4 item 5) -- the design and its two twin designs on the
   same starts -- every funded opening j of a start (in-wait or fallback) is one use: its offer i(j), its value
@@ -706,7 +800,7 @@ kind mix and its persistence. So the deviation at a reached offer is not mean-ze
 | population | the offers a state may pick | fixed | P-16's marks 17:00 .. 08:25 CT (report days 07:40 ..) | 5.2; D-281 (3); E-007 (d); E-039 (1) |
 | labels | values for fallbacks | fixed | every P-16 mark, both sides, every table R, labels only | 5.2; the review's F3 |
 | entry | how a trade starts | fixed | P-16's: market at the first bar at or after the mark, one tick adverse; by hand; the alert at m - 5 | D-266; E-008 |
-| walk | how a trade ends | fixed | `extended.walker.STAGE2`; `close` for C1-close | E-011 |
+| walk | how a trade ends | fixed | `extended.walker.STAGE2`; for C1-close `Rules("fo_stage2_close", FLAT_ENTRY, "close", True)` (5.3) | E-011; the second read's m2-7 |
 | costs | fees and slippage | fixed | Stage 2's (`fee_by_stop`, `fills.yaml`) | E-010 |
 | the states' formulas | what each cell waits for | fixed | 6.2, 6.3 | the literature (1 (ii)); the scout's 5.1 |
 | first defined mark | when s1 and s2 exist | fixed | 17:30: half an hour of the night | 6.3 (the review's m1) |
@@ -720,17 +814,19 @@ kind mix and its persistence. So the deviation at a reached offer is not mean-ze
 | routing | who gets an offer | fixed | P-16's, unchanged | 5.4 |
 | strata | what the twin matches | fixed | (mark, day kind, calendar year) | E-023 (2); 3 (report days) |
 | the twin's form | C1's comparison | fixed | the exact expectation (the population mean of the centred values); one seeded draw beside | E-035; calibration 7.3 (the review's n2) |
-| the twin designs | C2's comparison | fixed | two seeded draws pooled | 7.1, 7.4 |
-| the pass statistic | every line's test | fixed | `cons` (`extended.lift_bound.SHIPPED`), treated-cluster df (`DIFF_DF_RULE`); `placebo_selection_bound` on y for C1 and C1-close, `two_sample_bound` for C2 | E-035 (2); merged 4d3e503 |
+| the twin designs | C2's, V_B's and the scorecard's comparison | fixed | the clustered placebo: the state's indicator shifted by a seeded offset within each (year, day kind) sequence; two draws pooled (draw 0 for the scorecard) | 7.1, 7.4; the second read's m2-1 |
+| the pass statistic | every line's test | fixed | `cons` (`extended.lift_bound.SHIPPED`), treated-cluster df (`DIFF_DF_RULE`); `placebo_selection_bound` on y for C1 and C1-close, `two_sample_bound` for C2; the modules at blobs `984f3467...` and `f5b29710...` | E-035 (2); E-052 |
 | each member's critical value | t21w, t42w, t63w | fixed | the larger of its t (its treated df) and B2's (1 - level) quantile of the same member | 11 |
-| B2 | the conditional null | fixed | section 11 (63-session blocks; a slow component switching 1/63 per session; its amplitude by 11 item 2; at least 1,000,000 replicates per line) | family B's form (E-030, E-040) |
+| B2 | the conditional null | fixed | section 11: the realised judged population as the null, slow components centred within the block; stationary bootstraps of mean block 63 within day kind; a slow sign switching 1/63 per session, its amplitude the largest of (a), (b) and (d); exactly 1,000,000 replicates per line | family B's form (E-030, E-040); E-051; the second read's m2-3, m2-11 |
 | the calendar for the wait and value | where waits and openings are read | fixed | the U1 replay in history's order | 4 item 5 (the review's F2) |
 | C2's bar | the least worth | fixed | $500 a year at the family's level, on V_line | `u_value_map.csv` section `bar` (`target=500`); F-02, F-B |
 | valuation base | where a win is priced | fixed | `p16`, place (c) | `u_value_map.csv` |
 | K1 | the least supply | fixed | 21 sessions holding an in-state offer in each of 2021, 2022, 2023 | a month of sessions |
 | K2 | resolution | fixed | at most 5 % unresolved at 3R among in-state offers, overall and every year; 4 % in the worst year to be eligible as the pick | D-212; family B's M2-4 margin |
 | K5 | the wait binding | fixed | at most one half of a design's openings taken as fallbacks, on the choice-block replays | the scout's K5; 4 item 5 |
-| the drop rule | a cell the block cannot judge | fixed | 6.6, from Q-55's Table 9, before the pin | E-035 (6) |
+| the drop rule | a cell the block cannot judge | fixed | 6.6, from Q-55's Table 9's k = 15 column, before the pin, mechanical | E-035 (6); the second read's m2-9 |
+| K0 | the counts' persistence | fixed | `cons`'s size at the family's level on the sign null with each cell's own counts, 200,000 replications; killed if the 95 % interval lies wholly above nominal (A11); at stage C, a pass not claimed | E-052 (1) |
+| A10's consequence | `cons` lax on c | fixed | the deciding rule on a pseudo-judged split; lax too: the cell closed, counted (A10) | the second read's m2-4 |
 | A4's default | if u3's forecast has no skill | fixed | u3 closed, counted | the review's n7 |
 | MDL factor | when the family is only a screen | fixed | 3 | family B 8 item 8; family R |
 | campaign | floor (iii) only | fixed | the design's gate campaign, 500 paths, seed 20261983 | E-022 (2) |
@@ -753,30 +849,49 @@ kind mix and its persistence. So the deviation at a reached offer is not mean-ze
 ## 9. Stage A: the gates, before any outcome (2021-01-04 to 2023-12-29)
 
 Stage A reads **bars** (the states, u3's forecast), the walks' **kind columns** (resolution, side-free, as D-525 (4)
-does), the U1 replays' **routing records** (where openings fall) and, for A9 and A10 only, **the population's centred
-values' dispersion under random selections** -- never a cell's in-state mean. It reads no lift of any cell. Every kill
-is counted and recorded.
+does), the U1 replays' **routing records** (where openings fall) and the counts K0 reads, and, for A9 and A10 only,
+**the population's centred values' dispersion under random selections** -- never a cell's in-state mean. It reads no lift
+of any cell. Every kill is counted and recorded.
 
-**A1. Identities (refusing).** Any failure stops the family; the failure protocol applies.
+**A0. The whole-window identities, before run 1 (refusing; the second read's m2-2).** The identities that compare
+whole-window registered objects need the judged block's bars and walks, which the reader admits only from an identity
+script. So they run in **`identity/family_o_identity.py`**, under its own identity row, from a clean run under the lock,
+before run 1, and are held there as Q-22's and Q-51's are:
 
-1. E-011's walker identity holds at the build's commit.
-2. The population builder's P-16 cell gives P-16's trades, `TRADES_SHA256` exactly; the labels at every P-16 mark
-   (5.2) reproduce the cell's coin-side columns at those marks.
-3. **The design with the state always on** (every offer in state): through the family's gate call
+1. the population builder's P-16 cell gives P-16's trades, `TRADES_SHA256` exactly; the labels at every P-16 mark (5.2)
+   reproduce the cell's coin-side columns at those marks;
+2. **the design with the state always on** (every offer in state): through the family's gate call
    (`extended.gate.run_gate(funded_account_cls=...)`), P-16's gate paths, 500 paths at seed 20261206, every `PATH_COLS`
-   column to 1e-6 (E-004's comparison); and through Q-17's adapter with the family's class (its declared extension,
-   5.4), P-16's U1 start rows `p16`, both arms, every start (E-010's comparison).
-4. **The design with W = 0**: the same two comparisons.
-5. **The state never on** (m4): on the U1 replay of P-16's choice-block starts, every waiting account's opening falls on
-   its sixth live session (its first routed offer once `FundedAccount.days` reaches 5), and from there on the path is
-   P-16's routing with every opening so delayed.
-6. **The state equal to the drawn placebo set** (m4): every in-wait opening's (date, mark), read by the place-recording
-   adapter, is in the placebo's set, and every out-of-set offer routed to a waiting account was declined.
-7. **The restricted replay:** with each start's history ending at 2023-12-29, the replay's start rows equal U1's on
+   column to 1e-6 (E-004's comparison); and through Q-17's adapter with the family's class (through Q-76's keyword,
+   5.4), P-16's U1 start rows `p16`, both arms, every start (E-010's comparison);
+3. **the design with W = 0**: the same two comparisons;
+4. **Q-51 HOLDS** (E-044 (3): P-14's and P-16's registered gate runs at 500 paths through `extended/gate.py`, with no
+   class and with the pass-through class) is cited, not re-run; and Q-17's adapter identity
+   (`identity/user_beside_identity.py`) is re-run with the family's class passed and switched off, the forfeiture rows
+   with the composed class (5.4) and the wait switched off among them.
+
+**A1. Identities in run 1 (refusing).** Any failure stops the family; the failure protocol applies.
+
+1. **The pass-line code's blobs:** `git rev-parse HEAD:extended/lift_bound.py` is
+   `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and `HEAD:extended/p_bound.py` is
+   `f5b29710e243f97a2795e57f6458512fea99199b` at the run's commit, else the run refuses (m2-8; E-052). Run 2 checks
+   the same.
+2. E-011's walker identity holds at the build's commit.
+3. A0's identity row exists and records every A0 item as held.
+4. **The state never on** (the first read's m4): on the U1 replay of P-16's choice-block starts, every waiting account's
+   opening falls on its sixth live session (its first routed offer once `FundedAccount.days` reaches 5), and from there
+   on the path is P-16's routing with every opening so delayed.
+5. **The state equal to the drawn placebo set** (m4): every in-wait opening's (date, mark), read by the place-recording
+   adapter, is in the placebo's set; and every offer routed to a waiting account and out of the set was declined -- read
+   from **the gating wrapper's own count of declined offers** (5.4): a declined offer is not a trade, so the place
+   recorder does not see it (E-055 (4)).
+6. **The restricted replay:** with each start's history ending at 2023-12-29, the replay's start rows equal U1's on
    every start whose horizon ends inside the choice block.
-8. Q-47's registered-path gate identities at 500 paths (E-028 (3), owed under the lock) and Q-17's adapter identity
-   (`identity/user_beside_identity.py`) have held, the latter also with the family's class passed and switched off.
-9. The place-recording adapter's identity (18.1 item 4).
+7. The place-recording adapter's identities as built (Q-70, E-055): **P-16 at 4 paths** -- every `PATH_COLS` column and
+   row with recording on equal to the same call with it off -- and **P-16 and P-14 at 100 paths, the bound arm, U2's
+   seed**, whose recorded counts by place reproduce `u_value_map.csv`'s `trades_per_year_records` for `p16` and `p14`
+   (`identity/place_records_identity.py`); and the replay recording's own identity (18.1 item 4): on the U1 replay the
+   openings it records equal the replay ledger's, and with recording on every start's row equals the unrecorded one.
 
 **A2. Where the openings fall (5.5), on the U1 replay in history's order.** The counts for P-16, each cell's design and
 its two twin designs, written to the `openings` section: by mark, hour, day kind, the 08:30-09:00 share, the report-day
@@ -806,8 +921,9 @@ beside: the same for the whole population, and each cell's worst year (stage B's
 
 **A7. The wait (K5, a kill), on the U1 replay in history's order.** **A cell whose design takes more than one half of
 its openings as fallbacks is killed**: it is not the declared rule. Reported: the wait distribution, the twin designs'
-waits and fallback shares (expected shorter: the placebo does not cluster, 7.1), and each cell's in-state run lengths
-(6.6).
+waits and fallback shares (the clustered twin should wait about as the design does, 7.1), each cell's in-state run
+lengths (6.6), and **the censored waits** -- accounts still waiting when a start's truncated choice-block history ends,
+which are the long waits K5's share cannot count -- beside K5 (the second read's n2-8).
 
 **A8. Realised risk.** The openings' realised risk against intended in P-14's registered allowance-capped form (E-022
 (1), E-032). A build check: the table's sizing is unchanged.
@@ -828,9 +944,34 @@ own outcome (11 item 5). On the choice span's population, random selections inde
 Table 9's six persistence classes at shares 0.25 and 0.5, 2,000 per class and share (`[20261984, class, share, j]`),
 and `cons` with the treated df is applied to y = c - mu_g through `placebo_selection_bound` at one-sided 1 % and 5 %.
 A class whose rejection rate's 95 % Clopper-Pearson interval lies wholly above the nominal (the calibration's own
-criterion) is recorded as **"`cons` not shown to hold on c in this class"**; for a cell of that class the level then
-rests on B2's larger-of rule alone, which section 11 makes the rule anyway, and the verdict says so. A10 reads the
-population's values under random selections, not any cell's selection; it kills nothing.
+criterion) is recorded as **"`cons` lax on c in this class"** (the second read's m2-4: an interval wholly above shows
+it lax). A10 reads the population's values under random selections, not any cell's selection.
+
+**A10's consequence, declared now (m2-4).** If A10 records `cons` lax on c, at 1 % or 5 %, in a surviving cell's class,
+**the deciding rule itself** -- each member at the larger of its t and B2's quantile (11) -- is run on the same A10
+replications as a **pseudo-judged split**: B2 built from 2021-2022's values, the random selections and the statistic on
+2023, at the same levels. **If the deciding rule is lax there too (its interval wholly above nominal), that cell is
+closed, counted, before stage B reads any lift.** If the deciding rule holds there, the cell stays and the verdict says
+"`cons` lax on c in this class; the larger-of rule held on the pseudo-judged split". A cell whose rule holds is closed
+by this at most as often as A10's first check flags a holding `cons`, which the binomial bounds exactly at 2.5 % or
+less per (class, level) (T-1 prints the exact probabilities at 1 % and 5 % over 2,000 selections). It is a check at 1 %
+and 5 %, a proxy: the family's level cannot be checked by a choice-span control of this size, and the consequence can
+only remove cells, so it cannot raise the family's size. Cost: the A10 replications times a B2 of 20,000 inner draws
+on about 250 sessions, CPU hours, light in memory.
+
+**A11. K0: the counts' persistence (a kill, outcome-free; E-052 (1)).** For each surviving cell and each of its two
+count forms -- **C1's** (the in-state offers per session within the population's offers per session, on the choice
+span) and **C2's** (the design's openings per session against its two twin designs' openings per session, uses counted
+per start, on the choice-block replays) -- `cons`'s size at the family's level 0.05 / (k (k + 1)), the pinned k, on
+**the sign null of Q-16's `cluster` form**: each offer or use 1/2 sign(a_s + e), the session effect a_s shared by every
+offer of the session and by both samples (icc 0.35), so the null is exact; each replication takes the judged block's
+length of sessions from the cell's choice-span count series at a seeded uniform circular offset
+(`[20261989, cell, form, j]`, form 0 C1's, 1 C2's); 200,000 replications; C1's form by `placebo_selection_bound`'s
+nested two-sample statistic, C2's by `two_sample_bound`'s. **A cell whose 95 % Clopper-Pearson interval lies wholly
+above nominal in either form is killed**, counted, before stage B. It reads counts only -- no value of an offer -- so it
+carries no direction (the pass-line review's M1 remedy, adopted as E-052 (1)). K0 changes no statistic: a cell it keeps
+keeps `cons`'s level and power, and a cell it kills had a size above its level (18.3 shows it on toy count patterns of
+this family's classes). Cost: about a minute and well under 200 MB a cell and form.
 
 ## 10. Stage B: choose on the choice block (2021-01-04 to 2023-12-29)
 
@@ -846,7 +987,7 @@ population's values under random selections, not any cell's selection; it kills 
    - K2's margin: at most 4 % unresolved at 3R among its in-state offers in its worst year;
    - **both halves positive on the span** (C3's choice-block form: L_c^long > 0 and L_c^short > 0);
    - **C1-close's form positive on the span** (L_c under the `close` convention above zero);
-   - K1 and K5 passed; not dropped by 6.6.
+   - K1, K5 and K0 (A11) passed; A10's consequence passed; not dropped by 6.6.
 4. **The pick:** among the eligible cells above q_B, the largest lower limit of **V_B**, the choice-block form of
    V_line (7.4) on the choice-block replays (the design's openings against its two twin designs'): V_B's per-opening
    difference D_B less q_B x SE(D_B), priced as V_line, its SE from the same bootstrap with the uses held fixed
@@ -873,59 +1014,98 @@ judged selection and widened by a declared slow component, as family B's are.
    quantile of the same member's t statistic**, and each member's lower bound is its estimate less that critical value
    times its se. **`cons` passes only if all three members' lower bounds are above zero; its bound is their minimum.**
    Always the larger-of rule -- no tolerance, no pretest. The module's own nominal bound is reported beside.
-2. **B2's null at stage C, conditional on the pick's real judged selection** (read under `stage_C_states` and hashed
-   before any outcome is read):
+2. **B2's null at stage C (E-051's ruling for family B, applied here by E-054 (2)).** **The deciding lines' null is the
+   realised judged population**: the twin's exact expectation is the judged block's own stratum means, so under the
+   null the in-state offers' centred values average zero against the block as it actually came out. B2 is conditional
+   on the pick's real judged selection (read under `stage_C_states` and hashed before any outcome is read) and shapes
+   the null's **dependence**, never its mean:
    - **The values:** each null replicate y\* is built from the choice span's own per-offer centred values y at 3R (every
-     population offer, and every labelled P-16 mark for C2's fallbacks, 2021-2023), at the session level:
-     - resampled by a stationary bootstrap with **mean block 63 sessions** to the judged block's session count;
-     - each judged session's offers take the drawn session's values at the same marks (a missing mark dropped);
+     population offer, and every labelled P-16 mark for C2's fallbacks, 2021-2023), at the session level, **within day
+     kind** (the second read's m2-11): two stationary bootstraps of mean block 63 sessions of their own kind, one over
+     the choice span's normal days and one over its report days, each to the number of judged sessions of that kind;
+     each judged session takes a drawn session **of its own kind**, its offers that session's values at the same marks
+     (a missing mark dropped -- now only where the two sessions' admitted marks differ within a kind);
    - **plus a declared slow component** a\* x rho_t: rho_t a two-state Markov sign switching with probability 1/63 per
-     session (a random start); **a\* the largest of** (the review's m6, E-036's precedent):
-     - **(a)** the largest absolute mean, over the choice span's disjoint 63-session blocks in session order, of the
-       per-session mean of y;
-     - **(b)** the largest absolute per-offer follow lift at R = 3 that Stage 2 recorded for the rules its S1 and S3
-       batches found surviving, followed -- `mom15` and `lbrk5` in `vendor/stage2/results/s1_sided_coin.csv`, `lnbar1x4`
-       in `s3_event_kinds.csv` and, at latency 5, in `s3_latency.csv`, each file's section `lift`, `mean_lift` at R
-       3.0 -- a disclosed pre-read (E-040; Q-61), read at run time, upward only. Two cautions, stated now: those files
-       hold the lifts **over the whole development window only** (their `lift` sections carry no span; the early/late
-       split exists only for campaign growth, section `g3`), and Stage 2 found the follow effect in the late span, so a
-       whole-window figure may understate the judged block's; and a sided lift and a side-symmetric deviation are
-       different quantities in the same unit (net R per offer at 3R), so (b) is a declared floor, not a model of c;
-     - **(c)** three times (a), fixed now -- the floor that covers both cautions;
-   - **then re-centred within the judged strata**, so the twin's expectation is zero exactly in every replicate;
+     judged session (a random start);
+   - **then re-centred within the judged strata** -- so the twin's expectation is zero exactly in every replicate, and
+     **the slow component is centred within the block**: it adds dependence, never a mean (E-051);
    - the line's member statistics recomputed with the real judged selection (for C2, with both designs' judged uses
      held fixed, read under `stage_C_campaign`);
-   - **draws** `default_rng([20261985, line, j])`, line 0 for C1, 1 for C1-close and 2 for C2, at least
-     **1,000,000 replicates** per line (light in memory; CPU minutes to hours).
-3. **"A slow component larger than declared"** is beside the verdict as an assumption that carries the level.
-4. **What it cannot see:** a slow component slower or larger than the declared one. The confirmation on unread data
-   carries the decision against it.
+   - **draws** `default_rng([20261985, line, j])`, line 0 for C1, 1 for C1-close and 2 for C2, **exactly 1,000,000
+     replicates** per line (the replicate count fixed, as E-051's minors fix family B's; light in memory, CPU hours).
+3. **a\*, the slow amplitude: the largest of (a), (b) and (d)** (the second read's m2-3; E-036's and E-051's precedents):
+   - **(a)** the largest absolute mean, over the choice span's disjoint 63-session blocks in session order, of the
+     per-session mean of y;
+   - **(b)** the largest absolute per-offer follow lift at R = 3 that Stage 2 recorded for the rules its S1 and S3
+     batches found surviving, followed -- `mom15` and `lbrk5` in `vendor/stage2/results/s1_sided_coin.csv`, `lnbar1x4`
+     in `s3_event_kinds.csv` and, at latency 5, in `s3_latency.csv`, each file's section `lift`, `mean_lift` at R 3.0 --
+     a disclosed pre-read (E-040; Q-61), read at run time, upward only. Those files hold the lifts over the whole
+     development window only (their `lift` sections carry no span; the early/late split exists only for campaign growth,
+     section `g3`), and a sided lift and a side-symmetric deviation are different quantities in the same unit (net R per
+     offer at 3R): (b) is a sourced floor, not a model of c;
+   - **(d)** the judged block's own: the largest absolute mean, over the judged block's disjoint 63-session blocks in
+     session order, of the per-session mean of the **out-of-state** offers' values (for C2, the labelled marks with
+     them), **each centred by its own stratum's out-of-state mean**. No in-state offer enters (d), and the out-of-state
+     offers are not centred by the population's means (which hold the in-state offers), so **(d) takes no term from the
+     design's own lift** (E-054 (2)). It is read after `stage_C_judgement`; B2 for C1 and C1-close is computed at the
+     a\* it gives, and B2 for C2 at the a\* of C2's own (d); it can only raise a critical value;
+   - **dropped:** the second version's "(c) three times (a)" -- an unsourced factor, which E-051 drops for family B
+     ("the 3 dropped unless sourced"); (d) now covers the case it stood for (a judged slow component larger than the
+     choice span's), from the judged block itself.
+   - **Its level and power at the family's level, shown before the pin (E-051's rule):** `tests/test_family_o_toys.py`
+     (18.3) runs the larger-of rule with (a) alone and with (a) and (d), against `cons` at its nominal values, on toys of
+     the family's two selection kinds, with a judged slow component equal to and three times the choice span's.
+4. **What it cannot see, named and left to the confirmation (E-051's "twin sat low" case, in this family's terms):** a
+   state whose in-state sessions sat on one side of a slow regime **throughout** the judged block. The realised lift is
+   then the regime's alignment, real on this block; no resampling within the block can tell it from a selection that
+   generalises, and no amplitude rule can either without taking a term from the lift itself. Whether it generalises is a
+   question for new data: the confirmation on unread data carries it. "A slow component larger than (a), (b) and (d)
+   allow" is also beside the verdict, as an assumption that carries the level.
 5. **What Q-16 calibrated, and what it means for the side-symmetric value (the review's F1).** Q-16's selection nulls
    used **the coin side's own outcome** -- the win at 1R and net R at 3R of P-16's judged offers (calibration note 2.4)
    -- under random selections in six persistence classes. This family's outcome is the side-symmetric c (and its centred
    y), which differs in two ways: the coin's direction noise is removed, so its per-offer dispersion is smaller; and its
    main slow part is the volatility-driven mix of exit kinds and any persistence regime, which the coin's noise no
    longer dilutes. So its dependence is **not in the class Q-16 calibrated** ("a level is only as good as the null
-   class", calibration note 7.4 item 1). What follows: (i) `cons`'s level on c is not established by Q-16 and is checked
-   on the choice span by A10; (ii) the level each line is judged at rests on the per-member larger-of rule with B2's null
-   built from c's own choice-span values, which is why the rule applies always; (iii) Table 9's power is an upper guide
-   for c, not its calibration (6.6). C2's two-sample form on routed openings, with offers reused across starts, is
-   likewise outside Q-16's nulls and rests on B2 in the same way.
+   class", calibration note 7.4 item 1). Nor do Q-16's nulls let the **counts** persist (E-052 (1)), and this family's
+   counts move with its states. What follows: (i) `cons`'s level on c is not established by Q-16 and is checked on the
+   choice span by A10, with a consequence (A10's, 9); (ii) the counts' effect is checked by K0 (A11) before stage B and
+   on the judged counts before any outcome (12); (iii) the level each line is judged at rests on the per-member
+   larger-of rule with B2's null built from c's own choice-span values, which is why the rule applies always; (iv) Table
+   9's power is an upper guide for c, not its calibration (6.6). C2's two-sample form on routed openings, with offers
+   reused across starts, is likewise outside Q-16's nulls and rests on B2 and K0 in the same way. *Reading (the second
+   read's n2-1 (ii)):* the two pooled twin draws suffice for validity (inference is conditional on the draws, and a draw
+   independent of y adds no bias), and the reuse of an offer across starts is carried by the session-block clustering
+   (a reused offer's uses sit in one session, inside one block's residual sum; the two samples' covariance is inside the
+   per-block difference of residuals).
 6. Fixed now. T-10 checks B2's machinery at declared levels (18.2); **the family's level rests on the larger-of rule,
-   not on T-10**.
+   not on T-10**. *Reading (n2-10):* on centred y the module's variance weights every offer of sample 2 by 1 / N, while
+   L_c's exact linear form weights offer i by p_g(i) / N_F; the difference adds the between-strata spread of the firing
+   share, conservative in expectation (the first read's check 1). No change.
 
 ## 12. Stage C: judge the pick once, on the judged block (2024-01-02 to 2026-07-16)
 
 **The judge's inputs:** the pick and u3's frozen forecast by their pinned hashes (T-9); the strata within the judged
-block. **In order:** `stage_C_states` (bars: the selection, the strata counts and the run lengths, hashed) -> B2 for C1
-and C1-close -> `stage_C_judgement` (the population's walks at 3R, both sides, under both flatten conventions: L, the
-halves, C1-close) -> `stage_C_campaign` (the paired U1 replays of the design, its two twin designs and P-16 on the judged
-starts, the routing records; B2 for C2; V_line; the design's gate campaign for floor (iii)) -> `stage_C_scorecard` (13).
+block. **In order:**
+1. `stage_C_states` (bars: the selection, the strata counts and the run lengths, hashed);
+2. **K0 on the pick's judged C1 counts** (A11's machinery on the judged in-state and population offers per session,
+   `[20261989, cell, 2, j]`), before any outcome is read;
+3. `stage_C_judgement` (the population's walks at 3R, both sides, under both flatten conventions, and the labels): L,
+   the halves; then (d) (11 item 3) from the out-of-state offers; then B2 for C1 and C1-close at a\* = the largest of
+   (a), (b) and (d); then C1 and C1-close;
+4. `stage_C_campaign` (the paired U1 replays of the design, its two clustered twin designs and P-16 on the judged starts,
+   the routing records); **K0 on the pick's judged C2 counts** (`[20261989, cell, 3, j]`), read from the routing records
+   before any y is attached to them; B2 for C2; V_line; the design's gate campaign for floor (iii);
+5. `stage_C_scorecard` (13).
 
 **The design passes only if every line holds. A fail of any line closes the family**, its reason in a decision row.
 Each line at the family's level 0.05 / (k (k + 1)), by `cons` with each member at the larger of its t and B2's critical
 value (11):
 
+- **K0 at stage C (E-052 (1)):** if either of the pick's judged count forms puts `cons`'s 95 % interval wholly above
+  nominal, **a pass is not claimed** whatever the lines read: the verdict is "not claimed: the judged counts make `cons`
+  lax", and the family closes. A check that can only remove passes cannot raise the size; it reads counts, which carry
+  no direction under the null; and it is declared now, not after the read.
 - **C1, the pass line (E-023 (2)):** `placebo_selection_bound(y, session, selected, ...)` on the judged block's
   population, y = c - mu_g (7.2); **its `cons` lower bound above zero.**
 - **C1-close:** the same under the `close` flatten convention (the review's m3): a lift that is only Stage 2's
@@ -940,6 +1120,10 @@ value (11):
     selection).
   - **Not calibrated, said with the verdict:** the value-map price at the bound (calibration note 7.4 item 10); the
     two-sample form on reused routed openings (11 item 5); V is gross of the wait's cost (7.4).
+  - **An assumption that carries the value, said with the verdict (the second read's m2-1):** the differencing removes
+    the routing selection to first order, and the clustered twin matches the waits and routing positions; what remains
+    -- the state's own alignment with the night's routing, which the shifted twin does not share -- is not in B2's null
+    for C2 (its D\* is centred at zero by construction).
 - **C3, both sides:** L^long > 0 and L^short > 0 on the judged block (point estimates). A persistence lift raises both; a
   lift carried by one side is drift (1 (v) (b)) and closes the family.
 - **The floors (CHARTER section 3; E-022), all on the design's own judged-block run:**
@@ -949,7 +1133,8 @@ value (11):
   - (ii) realised risk in P-14's registered allowance-capped form (E-022 (1), E-032);
   - (iii) **the long-run gate:** growth on the required bankroll at the bound above zero, on this design's own gate
     campaign (500 paths, seed 20261983, the gate's own day table as the gate is defined), never taken from P-16's
-    registered pass (E-022 (2));
+    registered pass (E-022 (2)); said beside it: on the gate's independent days the design waits less than it does
+    traded in history's order (the second read's n2-8);
   - (iv) every firm rule verified (Stage 2's ledger);
   - (v) conduct tier 1 (section 3).
 - **Beside, deciding nothing:**
@@ -958,9 +1143,12 @@ value (11):
     target share's change at fixed costs, and the part from the kinds' cost composition (1 (v) (c));
   - L under Q-20's corrected moves (`STAGE2_BE_BOTH`, merged b7232ba);
   - the seeded twin's draw (`[20261982, c, 0, 0]`), by `two_sample_bound`;
-  - each member's nominal and B2 critical values; the A10 class verdict for the pick's class;
+  - each member's nominal and B2 critical values, a\*'s three parts and which one set it; the A10 class verdict for
+    the pick's class; K0's judged rates for both forms;
   - V(P-16), V(design) undifferenced, V(design) - V(twin design) in dollars, V's in-state and fallback parts,
-    **V_other** (7.4), and the uniform-lift valuation (C1's bound x u_d x mean_dv(c) / 4) beside V_line;
+    **V_other** (7.4), and the uniform-lift valuation beside V_line -- C1's bound x **the design's in-wait openings** a
+    start-year x mean_dv(c) / 4 (the fallbacks carry no selection, so counting them would overstate it by up to
+    1 / (1 - the fallback share); the second read's m2-5);
   - the share of the design's openings on report days, at the report-day 07:35:00 entry, and by hour; the in-state
     share of P-16's own judged openings; the judged run lengths and the class they imply (6.6);
   - u3's judged forecast skill, if u3 is the pick;
@@ -975,11 +1163,13 @@ at Kill B reads none.
 
 - **The design** (P-16 with the waiting opening at the pick's state), **its twin design** (draw 0), and **P-16**,
   paired (the same starts and coin), with R\* = P-14 beside.
-- **What each pair shows.** The design against its twin is the selection's journey effect -- mixed with the difference
-  in waits, because the placebo does not cluster as the state does (7.1); the waits of both are reported beside it. The
-  twin design against P-16 is the wait's and the move's own effect (5.5 item 2).
+- **What each pair shows.** The design against its twin is the selection's journey effect: the clustered twin (7.1)
+  waits and reaches offers as the design does, so the pair no longer mixes the selection with a difference in waits
+  (the second read's m2-1); the waits of both are reported beside it. The twin design against P-16 is the wait's and
+  the move's own effect (5.5 item 2).
 - Journeys from the vendored U1 replay through Q-17's adapter (`extended/user_beside.py`), with the family's account
-  class passed through its declared extension (5.4).
+  class passed through Q-76's declared keyword, composed with `ForfeitFundedAccount` for the forfeiture responses (5.4;
+  the second read's m2-10), so all-accounts forfeiture stays among the readings.
 
 **On which starts.** The judged block's starts (`stage_C_scorecard`), labelled as such; beside, 2021-2023's starts (a
 choice-block read, u3 out of fold), **purged by horizon per measure** so that no choice-block journey reads a
@@ -1002,13 +1192,24 @@ judged-block session (Stage 2's `u_select.block` purge, the F-P review's F6); 20
 - **Every measure as a distribution over start days** (median, p10, p90), with its uncertainty from the effective number
   of independent starts and the start day's share of the variance (`user_drivers.csv` section `design_vs_luck`).
 - **The paired readings:** the per-start difference against P-16 and against the twin design as distributions, and the
-  shares of starts better, equal and worse at months 1, 2, 3, 6 and 12. Draws from `[20261987, 0]`.
+  shares of starts better, equal and worse at months 1, 2, 3, 6 and 12.
+- **The P comparison's statistic (the second read's m2-6; E-035 (3)):** **`pcons`** (`extended/p_bound.SHIPPED`, blob
+  `f5b29710e243f97a2795e57f6458512fea99199b`) for the paired P differences against P-14, P-16 and the twin design,
+  one-sided at 0.05, beside, never a line; `bm63c` (`p_bound.RECOMMENDED`) beside once its critical-value table is
+  pinned. `pcons` simulates with `p_bound`'s own seed; `[20261987, 0]` draws only the block-bootstrap intervals of the
+  paired distributions above (their median, p10 and p90), nothing `pcons` draws.
 - **The frontier** on P, S1, S3a and S5a; **the menu** under E-015's limits once the operator approves them, as **flags
   only** (a limit never fails a design, E-015 (3)); **the evenness trade-off curve** (E-015 (4)).
 - **E-007 (e)'s readings** (Q-17's adapter): the denial ladder at 10, 25 and 50 % (draws `[20261987, 1]`); the placement
-  on; the binding Focused Trader models; all-accounts forfeiture; P by month, mean net, CVaR10, P under a bankroll limit,
-  the effective sample size and the minimum detectable difference.
-- Stage 2 D-621 (3)'s rule against P-14, beside as E-008 keeps it, deciding nothing.
+  on; all-accounts forfeiture (composed over the family's class, 5.4); P by month, mean net, CVaR10, P under a bankroll
+  limit, the effective sample size and the minimum detectable difference -- **without the ten binding Focused Trader
+  models, labelled so wherever these readings appear**: the engine refuses them for any funded class but the vendored
+  `FundedAccount` (`lockstep.py` 1403-1408), and the lead's ruling (E-059) is that a family running its own class
+  reports E-007 (e)'s readings without them; a re-composed path that admitted them would be a separate build under its
+  own row, not this family's. The paired readings leave them out for all three designs (the design, its twin and P-16),
+  so each pair compares like with like; P-16's own Focused Trader readings are its registered design's (Q-44's file).
+- Stage 2 D-621 (3)'s rule against P-14, beside as E-008 keeps it, deciding nothing -- **its line (i) labelled as not
+  holding its level** (E-007 (1); E-035 (3)).
 - **Not modelled, said wherever the scorecard appears:** a user who stops when their own money runs out, the user's
   time, taxes; **and the unstated news rules (E-034):** which events count as "major news" under 10305426 and whether
   holding an open position through one counts -- unstated; the GDP release minute -- unstated; the share of openings
@@ -1052,9 +1253,14 @@ floor):
   operator decides whether it can still confirm this pick.
 - **What it tests -- the pick's trades, not P.** With the state (and u3's pinned forecast) fixed:
   - C1 and C1-close on the window's population, one-sided at the registered 0.05, by `cons` with B2 re-simulated at the
-    window's length (`[20261985, 10 + line, j]`), the bound at 0.05 / N beside (D-189's form);
-  - C2 on the window's U1 replays if their starts hold at least 21 openings of each design, else C1's bound priced at
-    stage C's u_d and mean_dv(c) / 4 at the 95 % bound, at least $500 a year;
+    window's length (`[20261985, 10 + line, j]`) -- **B2's values from the development window, both blocks** (by then
+    read), within day kind, a\* by 11 item 3 with (d) from the window's own out-of-state offers -- the bound at 0.05 / N
+    beside (D-189's form);
+  - K0 on the window's counts (`[20261989, cell, 4, j]`), a pass not claimed above nominal;
+  - **the value line, always (the second read's m2-5):** C1's bound on the window x **the design's in-wait openings** a
+    start-year (stage C's, from the judged replays) x mean_dv(c) / 4, **at least $500 a year**; C2 on the window's U1
+    replays is read beside, never a line -- on six months `cons`'s 63-session member has two blocks and one degree of
+    freedom, so C2 there could pass only by luck;
   - C3 and floor (i) on the window, overall and in every calendar year with at least 63 sessions (a stub year pooled,
     D-604);
   - Q-16's draws, if any, from `[20261986, 1]`; the twins' from `[20261982, c, 2, d]`.
@@ -1062,7 +1268,8 @@ floor):
   exists there (the phase-0 red team's M1). The scorecard on the window is descriptive.
 - **How much data:** at least six months (D-604), and at least the months at which the pick's expected in-state
   sessions (the lower of its two blocks' rates) reach the count at which `cons`, one-sided at 0.05, has 80 % power for a
-  lift equal to **the pick's judged lower bound at the family's level**, at the pick's persistence class. That count is
+  lift equal to **the pick's judged lower bound at the family's level**, at the pick's persistence class -- the same
+  count serving C1 and the value line, which both rest on C1's bound. That count is
   computed when the pick is carried and written in the carrying row, before any confirmation data exist. If it is more
   than the operator will buy, no confirmation is registered, and the pick stays a development finding.
 
@@ -1078,8 +1285,8 @@ floor):
 | 20261985 | stage B2's replicates `[20261985, line, j]` (line 0 C1, 1 C1-close, 2 C2); the confirmation's re-simulation `[20261985, 10 + line, j]` |
 | 20261986 | Q-16's statistic's draws, if any: `[20261986, 0]` stage C, `[20261986, 1]` the confirmation |
 | 20261987 | the scorecard's paired draws `[20261987, 0]`; the denial ladder for this file's designs `[20261987, 1]` |
-| 20261988 | the build's synthetic tests: `tests/test_family_o_persistence.py` (`[20261988, j, ...]`, j = 0..8); T-3's synthetic judged block `[20261988, 100]`; T-10's synthetic selections `[20261988, 200, j]` |
-| 20261989 | reserved; unused, and every result file says so |
+| 20261988 | the synthetic tests: `tests/test_family_o_persistence.py` (`[20261988, j, ...]`, j = 0..9); `tests/test_family_o_toys.py` (K0's toys `[20261988, 300, ...]`, B2's toys `[20261988, 400, ...]`); T-3's synthetic judged block `[20261988, 100]`; T-10's synthetic selections `[20261988, 200, j]` |
+| 20261989 | **K0 (A11; E-052 (1))**: `[20261989, cell, form, j]` -- form 0 C1's choice-span counts, 1 C2's choice-block counts, 2 the pick's judged C1 counts, 3 its judged C2 counts, 4 the confirmation's counts; the random circular offset and the sign null's draws (formerly reserved, unused) |
 
 The U1 replays draw nothing at 0 % denial with the placement off; where Q-17's adapter draws (the denial ladder
 beside), its per-start seeds are its own rule over 20261987's.
@@ -1089,9 +1296,16 @@ beside), its per-start seeds are its own rule over 20261987's.
 - At the first version (2026-11-16): `grep -rIowh --exclude-dir=.git -E "2026198[0-9]" .` over the whole working tree,
   the vendored snapshot and its results included, and `git grep -I -E "2026198[0-9]"` over every commit of every local
   and remote branch (`git rev-list --all`, after a fetch): no hit before that item.
-- At this version, on master 905eb19 (the vendored snapshot extended to 710 files, Q-61), the same two searches: hits in
-  this file, its test and the review (`docs/reviews/DRAFT_F-O_opening_timing_2026-11-16.md`, which quotes them), and
-  nowhere else.
+- At the second version, on master 905eb19 (the vendored snapshot extended to 710 files, Q-61), the same two
+  searches: hits in this file, its test and the first review, which quotes them, and nowhere else.
+- **At this version, on master 8d80481, with the licensed data excluded** (the second read's n2-5: a plain `grep -r`
+  in a worktree follows the junctions into `vendor/stage2/data/bars` and `atlas` and opens the licensed files, judged
+  block included, before skipping them as binary -- an open outside the one door, harmless in content but avoided):
+  `grep -rIlw --exclude-dir=.git --exclude-dir=data -E "2026198[0-9]" .` and `git grep -I -l -E "2026198[0-9]"` over
+  every commit of every branch: hits in this file, its two test files, the toys' printed output
+  (`docs/reviews/scripts/family_o_drafter/q87_toys_output.txt`) and the two reviews of this family, which quote them;
+  and in family R's test, where 20261980 appears only as the exclusive upper end of family R's own seed range, not as a
+  seed. Nowhere else.
 - T-1 asserts that no other file under `prereg/` names any of them.
 - **Not searched:** Stage 2's working tree beyond its vendored snapshot (its decision log and scripts are vendored and
   were searched).
@@ -1115,8 +1329,9 @@ identity); 20261131 (P-14's, beside); 20261600 + i and 20261700 (Stage 2's coin 
    - **11 fitted values** (u3's coefficients) inside the walk-forward, fitted in each of its three folds and the final
      fit, none searched.
 
-   The identities, the controls (A4, A10), the counts of stage A, B2's replicates, the seeded twins and the readings
-   beside are not trials: nothing is chosen from them.
+   The identities, the controls (A4, A10), the counts of stage A, K0's and B2's replications, the seeded twins and the
+   readings beside are not trials: nothing is chosen from them. A cell killed by K0 or closed by A10's consequence is
+   counted like any killed cell.
 3. **One cell reaches judgement.** C1, C1-close, C2, C3 and the floors are an intersection at one level. Stage B spends
    nothing of the program's budget.
 4. **The program's honesty sentence:** Stage 2 ran programs S and U on this window, each with its own 5 %; the sided
@@ -1140,37 +1355,92 @@ identity); 20261131 (P-14's, beside); 20261600 + i and 20261700 (Stage 2's coin 
 3. **The waiting account.** A subclass of the vendored `FundedAccount` that registers, under its draw's key, a gating
    wrapper of the vendored draw with the router and holds it strongly; the wrapper answers `can_take` with the vendored
    draw's answer **and** "the offer is in state, or the account has traded, or its wait is over" (5.4), carrying its
-   wait counter and the (historical day, trade index) to (date, mark) lookup. Passed as `funded_account_cls` to
-   `extended.gate.run_gate` (Q-47) and, through a declared keyword added to Q-17's adapter (which otherwise refuses a
-   path carrying `funded_account_cls`), to the U1 replay; Q-17's identity is re-run with the keyword given and the class
-   off. If the build finds the class cannot reach the draw the router registered (`TierSizedDraw` registers itself,
-   sizing.py), the seam is composed instead at the funded draw factory in Q-47's form (the vendored body, one keyword, a
-   source-hash guard), under a row. Either way A1 items 3 to 6 refuse.
-4. **The place-recording adapter** (family B's draft section 20 item 8), on the U1 replay as well as the gate: every
-   simulated trade's offer, R and place, and for each opening its wait and whether it was a fallback; held to its
-   identity -- P-16's registered campaign re-run as U2 ran it reproduces `u_value_map.csv`'s
-   `trades_per_year_records` for `p16`; and on the replay, the openings it records equal the replay ledger's.
-5. **The estimand.** c_i, the strata means, y, the calls of 7.2 and 7.4, each member's statistic, B2, the halves, V_line,
-   V(P-16), V(design) and V_other, from the population frame and the routing records.
+   wait counter, the (historical day, trade index) to (date, mark) lookup, and **its own count of every offer it
+   declines** (a declined offer is not a trade, so no recorder sees it; E-055 (4)). Passed as `funded_account_cls` to
+   `extended.gate.run_gate` (Q-47) and, through **Q-76's declared keyword** (merged, E-059: wt/wt-user f92ac5e,
+   `extended.user_beside.run_starts(..., funded_account_cls=C)` and `response_args(..., funded_account_cls=C)`), to the
+   U1 replay. **What this family uses of it (the second read's m2-10):** (i) the class checked as the gate checks it (a
+   subclass of the vendored `FundedAccount`, able to reach a path worker); (ii) for every `forfeit_*` response,
+   forfeiture composed over the class (`forfeit_class(C)`; a class with its own household rule refused -- the waiting
+   class carries none); (iii) every start's output naming the class; (iv) with the keyword given and the class's wait
+   switched off, every response's rows Q-17's, the forfeiture rows among them (A0 item 4). **What it does not give:**
+   the ten Focused Trader models, which the engine refuses for any class but the vendored one (E-059; the readings are
+   reported without them, 13); and the replay's `record_trades` and `record_days`, which this family's build adds
+   (item 4). If the build finds the class
+   cannot reach the draw the router registered (`TierSizedDraw` registers itself, sizing.py), the seam is composed
+   instead at the funded draw factory in Q-47's form (the vendored body, one keyword, a source-hash guard), under a row.
+   Either way A0's and A1's identities refuse.
+4. **The place records (Q-70, merged, E-055: `extended/place_records.py`, `extended/place_fields.py`; family B's draft
+   section 20 item 10).** On the gate it records every simulated trade's offer, R and place, and every funded account's
+   opening, and is held to its built identities: **P-16 at 4 paths** (every `PATH_COLS` column and row with recording
+   on equal to the call with it off) and **P-16 and P-14 at 100 paths, the bound arm, U2's seed, against
+   `u_value_map.csv`'s `trades_per_year_records`** (`identity/place_records_identity.py`; at 4 paths only `PATH_COLS`
+   can be compared). **This family's build item: recording on the U1 replay**, which Q-70 did not wire -- the replay run
+   with the engine's `record_days` beside `record_trades` (through Q-76's keyword, item 3), its records read by
+   `place_records.record_path`, each opening's wait and fallback flag added from the wrapper; its identity: on the
+   replay the openings it records equal the replay ledger's, and every start's row with recording on equals the
+   unrecorded one (A1 item 7).
+5. **The estimand.** c_i, the strata means, y, the calls of 7.2 and 7.4, each member's statistic, B2 (within day kind,
+   a\* by 11 item 3), the halves, V_line, V(P-16), V(design) and V_other, from the population frame and the routing
+   records; **K0** (A11) on counts; the clustered twin (7.1).
+6. **`identity/family_o_identity.py`** (A0; the second read's m2-2): the whole-window identities, reading through the
+   reader as `identity` under its own row, from a clean run under the lock, before run 1.
 
 ### 18.2 Tests (fast tier unless marked; written before the code they test)
 
 | test | what it asserts |
 |---|---|
-| T-1 | **written now:** `tests/test_family_o_persistence.py` (16 tests). The driftless walk's long and short target-first shares are 1/(1+R) exactly; on the persistent random walk the side-symmetric 3R win rate rises with persistence and the long equals the short; at R = 1 the two sides' gross outcomes cancel on every resolved path; a fixed drift splits the halves at first order and moves their mean by less than a tenth of the split; the twin's exact form equals the mean of 2,000 seeded placebo draws, its noise-free part is exactly the in-state excess share of persistent sessions times the regimes' gap, and over fresh noise the lift averages it; an uninformative state's lift averages zero; **`extended.lift_bound.placebo_selection_bound` on the centred values estimates exactly the exact-form lift, and on the raw values adds the strata-composition term (F1)**; **on a persistent daily state the fallback share at W = 5 in history's order is more than twice that on independently drawn days (F2)**; the rolling third fires on about a third of an iid series and reads only the past; the population's latest alert reads no 08:30-08:59 bar; this file's `Judged-block reads:` line gives exactly section 19.1's purposes by `extended.reader.declared_purposes`, none a choice or fitting purpose; this file's seed table is 20261980-20261989 once each, and no other `prereg/` file names them (seeds `[20261988, ...]`) |
+| T-1 | **written now:** `tests/test_family_o_persistence.py` (18 tests). The driftless walk's long and short target-first shares are 1/(1+R) exactly; on the persistent random walk the side-symmetric 3R win rate rises with persistence and the long equals the short; at R = 1 the two sides' gross outcomes cancel on every resolved path; a fixed drift splits the halves at first order and moves their mean by less than a tenth of the split; the twin's exact form equals the mean of 2,000 seeded placebo draws, its noise-free part is exactly the in-state excess share of persistent sessions times the regimes' gap, and over fresh noise the lift averages it; an uninformative state's lift averages zero; **`extended.lift_bound.placebo_selection_bound` on the centred values estimates exactly the exact-form lift, and on the raw values adds the strata-composition term (F1)**; **on a persistent daily state the fallback share at W = 5 in history's order is more than twice that on independently drawn days (F2)**; the rolling third fires on about a third of an iid series and reads only the past; the population's latest alert reads no 08:30-08:59 bar; this file's `Judged-block reads:` line gives exactly section 19.1's purposes by `extended.reader.declared_purposes`, none a choice or fitting purpose; this file's seed table is 20261980-20261989 once each, and no other `prereg/` file names them; **(third version) the named `close` instance differs from STAGE2 only at a flattened trade's price, by at least the two slipped ticks, on synthetic days (m2-7)**; **A10's consequence closes a holding cell at most 2.5 % of the time per check, exactly by the binomial, printed at 1 % and 5 % (m2-4)** (seeds `[20261988, ...]`) |
 | T-2 | the states' and y_hat's shift invariance (A3): replacing, and deleting, every bar stamped at or after m - 5 changes no state, at cuts including 17:30, 18:00 and 18:05; replacing the alert day's 08:30-08:59 bars changes none; x3 equals 2 x `rv_tod` at every RTH alert where the library computes it; no window wraps at an overnight slot; no state all-undefined or constant |
-| T-3 (heavy, under the run lock) | stages A and B, their result sections and u3's final forecast hash are byte-identical when every judged-block bar is replaced by a seeded synthetic walk (`[20261988, 100]`) |
+| T-3 (heavy, under the run lock) | run 1's result sections **other than `identity`**, and u3's final forecast hash, are byte-identical when every judged-block bar is replaced by a seeded synthetic walk (`[20261988, 100]`); the whole-window identities are A0's, apart (m2-2) |
 | T-4 | the population: only P-16's marks 17:00-08:25 on its day kinds; on report days from 07:40 only; never an FOMC day, an early close or a mark in 08:30-09:00; the labels cover every other P-16 mark; the strata as declared |
 | T-5 | **through the vendored router and lockstep loop on a synthetic campaign**: within W a waiting account takes only in-state offers; after W it takes the next routed offer; after its opening it is P-16's; "its first W live sessions" are those with `FundedAccount.days` 0 to W - 1 at routing; with the state always on, or W = 0, every path equals the vendored one; with the state never on, every opening is on the sixth live session; with the state the placebo set, every in-wait opening is in the set; a collected wrapper is impossible (the account holds it) |
 | T-6 | the estimand on the family's own code: L equals the drawn twins' mean (T-1's identity) and `placebo_selection_bound`'s estimate on y; an uninformative state's lift averages zero; the halves average to L; on a synthetic routing record, D and V_line equal their hand sums, and a fallback at a labelled mark takes its label's value |
 | T-7 | u3's least-squares fit equals a direct normal-equations solve on synthetic data to 1e-8; a planted HAR process is recovered with the right signs; if family R is pinned first, its fit and this one give the same coefficients on a shared synthetic set |
 | T-8 | the reader: every bar and walk read goes through `extended/reader.py` with its purpose; an untagged judged read raises (Q-32's own tests, re-run at the build's commit) |
 | T-9 | the judge's entry point reads u3's frozen forecast by its hash and cannot fit; stage C reads the pick from stage B's result file by its sha256 |
-| T-10 (slow tier, minutes) | **B2's machinery on synthetic data at declared levels (the review's m7):** a synthetic population with a planted slow component and a clustered daily selection independent of it; the per-member larger-of rule under `cons` at one-sided **1 % and 5 %**; **2,000 outer replications**, each B2 quantile from **20,000 inner replicates** (`[20261988, 200, j]`). **Failure rule:** the test fails if a level's rejection rate has its 95 % Clopper-Pearson interval wholly above the nominal; a failure is kept on record and runs the failure protocol, never a rerun to pass. The family's level rests on the larger-of rule at the family's level, not on T-10 |
+| T-10 (slow tier: an hour or more per setting, the second read's n2-6) | **B2's machinery on synthetic data at declared levels (the first read's m7):** a synthetic population with a planted slow component and a clustered daily selection independent of it; the per-member larger-of rule under `cons` at one-sided **1 % and 5 %**; **2,000 outer replications**, each B2 quantile from **20,000 inner replicates** (`[20261988, 200, j]`). **Failure rule:** the test fails if a level's rejection rate has its 95 % Clopper-Pearson interval wholly above the nominal; a failure is kept on record and runs the failure protocol, never a rerun to pass. The family's level rests on the larger-of rule at the family's level, not on T-10 |
 | T-11 | this file's seeds appear nowhere else in the build's commit except the family's own modules and tests |
-| T-12 (slow) | A1 items 3 to 7 at 4 paths and 4 starts; the full 500 paths and every start are the run's first stage (heavy) |
-| T-13 | the place-recording adapter's identity (18.1 item 4) at 4 paths and 4 starts; the full count in the run |
+| T-12 (slow) | A0 items 2 and 3 and A1 items 4 to 6 at 4 paths and 4 starts; the full 500 paths and every start are A0's identity run and run 1's first stage (heavy) |
+| T-13 | the place records (18.1 item 4): **the identities Q-70 built and this family relies on** -- P-16 at 4 paths (`PATH_COLS` with recording on equal to off) and, slow, P-16 and P-14 at 100 paths against `trades_per_year_records` (`identity/place_records_identity.py`); and the replay recording's own: at 4 starts the recorded openings equal the replay ledger's and every row equals the unrecorded one |
 | T-14 | the stage-B pick is a function of the choice section alone: re-running stage B on the written section gives the same pick |
+| T-15 (slow tier, **written now**) | `tests/test_family_o_toys.py`: K0 and B2's (d) floor at the family's level on toys, their level and power printed (18.3; E-051's rule) |
+| T-16 | K0 on the family's own code: on counts drawn iid it equals the toy's machinery; its verdict is the Clopper-Pearson interval's and nothing else; it reads no value column (a planted value column changes nothing) |
+| T-17 | the clustered twin: every stratum's count equals the state's; the state's runs survive except at the wrap; over many offsets each offer's selection frequency is its stratum's share |
+
+### 18.3 The level and power, at the family's level, of the rules this version adds (E-051's program rule)
+
+E-051: "a tightening is accepted only with its level and power at the family's level shown before the pin". The new
+rules are K0 (A11), B2's judged-block floor (d) (11 item 3) and A10's consequence (9). They are shown on synthetic toys
+only -- no bar, walk or result file is read -- by `tests/test_family_o_toys.py` (slow tier, T-15) and, for A10's
+consequence, by T-1's exact binomial test. **The figures are synthetic, select nothing and are not results of this
+family**; their printed output, with the command and commit, is kept in
+`docs/reviews/scripts/family_o_drafter/q87_toys_output.txt`, and the hand-back of Q-87 quotes them. What they show:
+
+- **K0 (A11).** On toy count series of this family's classes -- offers (Q-16's iid reference), a window clustered across
+  nights (s1, s2), whole sessions in runs of 5 (u3), 21 and 63 (s3), and C2's openings (the design's uses bunched on
+  in-state sessions against two clustered twin draws) -- `cons`'s size at the family's level (k = 12 and 15, 200,000
+  replications each) lies well below nominal in every pattern, and K0 keeps every one. K0 changes no statistic, so a
+  cell it keeps keeps `cons`'s level and power; its only cost is a cell whose real counts are lax, which then has no
+  valid level to lose. Real counts can be more bunched than these toys (the pass-line review's M1 found `cons` lax when
+  the log count intensity has sd 1.5); that is what K0 reads on each cell's own counts.
+- **A10's consequence.** A cell whose rule holds is closed by it at most as often as A10's first check flags a holding
+  `cons` -- exactly at most 2.5 % per (class, level) by the Clopper-Pearson construction over 2,000 selections (T-1
+  prints the exact figures at 1 % and 5 %); it can only remove cells, so it cannot raise the family's size.
+- **B2 with (d) (11 item 3).** On toys of this family's two selection kinds -- whole sessions in runs of about a month
+  (s3, u3) and a window clustered across nights (s1, s2) -- with a judged slow component equal to the choice span's and
+  three times it, B2 as declared (within the block, the quantile non-decreasing in a\*), at k = 12 and 15:
+  - **level:** over 200,000 null judged blocks per setting and k, the larger-of rule with (a) and (d) rejects no more
+    often than with (a) alone, which rejects no more often than `cons` at its nominal values (asserted), and all three
+    stay a small fraction of nominal in every setting, including the one where the judged slow component is three
+    times the choice span's;
+  - **power:** for whole sessions, (d) costs nothing -- B2's quantiles stay below the members' t critical values and the
+    three rules have the same power; for the window, (d) costs a few points of power at middle lifts against (a) alone,
+    and none at large lifts;
+  - **the ceiling (6.6):** for whole sessions at k = 15 with equal slow components, power at the largest toy lift stays
+    well short of one under all three rules -- the nested form's ceiling, which no rule here causes and none removes.
+
+  So (d) is accepted on E-051's terms: it does not raise the level, and its power cost is small where power exists.
 
 ## 19. Outputs, the reads and the run
 
@@ -1200,11 +1470,13 @@ tree, ledgered before it reads. No choosing or fitting purpose is named, and the
   fitted values); every seed and parameter; u3's frozen forecast hash; the population frame's and the states' hashes;
   the calendar of each section (4 item 5); the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`. Every file is
   EXPLORATORY until a carried design is registered.
-- **The runs: two, each once**, from a clean checkout of a named commit (`scripts/run_clean.py`), under the run lock,
-  watched to its end.
-  - **Run 1 (the choice block only):** stage A (identities first; A10), u3's walk-forward and final fit, stage B. It
-    writes the `identity` to `choice` sections, u3's frozen forecast and its hash, and the pick. It reads no judged-block
-    bar or walk.
+- **The runs: an identity run and two family runs, each once**, from a clean checkout of a named commit
+  (`scripts/run_clean.py`), under the run lock, watched to its end.
+  - **The identity run (A0):** `identity/family_o_identity.py` under its own identity row, the whole window read as
+    `identity`; its record goes in that row before run 1.
+  - **Run 1 (the choice block only):** stage A (A1 first; A10 and its consequence; K0), u3's walk-forward and final
+    fit, stage B. It writes the `identity` to `choice` sections, u3's frozen forecast and its hash, and the pick. It
+    builds the population, the states and every replay on the choice block only, and reads no judged-block bar or walk.
   - **Between them, the lead's row:** u3's final fit's hash and the pick, by the sha256 of run 1's result file, pinned in
     a decision row and committed.
   - **Run 2 (from a clean checkout of that commit):** `stage_C_states`, B2, `stage_C_judgement`, `stage_C_campaign`, the
@@ -1223,40 +1495,44 @@ tree, ledgered before it reads. No choosing or fitting purpose is named, and the
 
 **The lead's:**
 
-1. **Q-55's clean rerun on record** (E-035 (4)), and **6.6's power column filled from its Table 9**, the drop rule
-   applied and recorded under the pinning row (the review's F4).
-2. **Optional, the lead's call:** the bars-only run-length count of 6.6 on the choice block before the pin, under a row.
-3. **u3's fitted values under E-031 (1)** (11 coefficients, inside the choice-block walk-forward, hashed and pinned
+1. **Q-55's clean rerun on record**, reproducing `cons` and the treated two-sample `cons` holding (E-035 (4); E-052),
+   and **6.6's power column filled from its Table 9's k = 15 column**, the drop rule applied mechanically and recorded
+   in the pinning row (the reviews' F4, m2-9).
+2. **Q-83's fresh-seed validation holding** by E-052 (2)'s criterion; if it or Q-55 does not hold, this file is withdrawn
+   or redrafted before any read (the withdrawal clause, header).
+3. **Optional, the lead's call:** the bars-only run-length count of 6.6 on the choice block before the pin, under a row
+   (the second read recommends it, n2-1 (iii)).
+4. **u3's fitted values under E-031 (1)** (11 coefficients, inside the choice-block walk-forward, hashed and pinned
    before the judged read): confirmed as admitted.
-4. **The seam (18.1 item 3)** and **Q-17's adapter extension** (the family's class as a declared keyword): the build's
-   finding, under a row, the identities refusing.
-5. **The place-recording adapter** (family B's item 8), on the replay too, built and held to its identity; **Q-47's
-   500-path identities** held (E-028 (3)).
-6. **The fixed values a reviewer may question:** W = 5 sessions, K5 at one half, the 250-session third, the 17:30 start
-   of s1 and s2, two twin draws -- confirmed as the file's, or changed before the pin (each a declaration choice, not a
-   search).
-7. **The bound arm's shift:** P-16's registered shift at each R for every design here (12, C2).
-8. **The value bar** of $500 a year at place (c), and **V_other beside** rather than inside C2 (7.4).
-9. **The family number:** F-02 and family B may be pinned first.
-10. **The seeds** (section 16) confirmed unique at the pin.
-11. **Q-35's ordering** (the review's n6): stage A's choice-block count accepted as the substitute E-021 (2)'s ordering
-    asked for; if Q-35 runs first, its both-block counts recorded as a pre-read (4 item 4).
-12. **The row between the two runs** (19.2): run 1's result file, the pick and u3's forecast hash pinned before run 2.
-13. **A red-team read of this version.**
+5. **Q-76's declared funded-account keyword** with the four properties of 18.1 item 3, and **the seam** (the build's
+   finding, under a row, the identities refusing).
+6. **The replay recording** (18.1 item 4: `record_days` beside `record_trades` on the U1 replay) built and held to its
+   identity; Q-70's gate identities (P-16 at 4 paths; P-16 and P-14 at 100 paths) held; **Q-80's 500-path gate
+   identities** held (E-049).
+7. **The identity script and its row** (A0; m2-2), run under the lock before run 1.
+8. **The fixed values a reviewer may question:** W = 5 sessions, K5 at one half, the 250-session third, the 17:30 start
+   of s1 and s2, two twin draws, K0's 200,000 replications -- confirmed as the file's, or changed before the pin (each a
+   declaration choice, not a search).
+9. **The bound arm's shift:** P-16's registered shift at each R for every design here (12, C2).
+10. **The value bar** of $500 a year at place (c), and **V_other beside** rather than inside C2 (7.4).
+11. **The family number** (k >= 12): family B may be pinned first.
+12. **The seeds** (section 16) confirmed unique at the pin, by the data-excluding search.
+13. **Q-35's ordering** (the first read's n6): stage A's choice-block count accepted as the substitute E-021 (2)'s
+    ordering asked for; if Q-35 runs first, its both-block counts recorded as a pre-read (4 item 4).
+14. **The row between the two family runs** (19.2): run 1's result file, the pick and u3's forecast hash pinned before
+    run 2.
+15. **The gatekeeper's read of this edit's diff** (E-054 (2)); a third red-team read only if the edit goes beyond the
+    second read's minors.
 
-*Answered since the first version, no longer open:* the twin's form (E-035; the review's n2); whether earlier sessions'
-08:30-08:59 bars inside H and IV are in the closed branch (E-036 M3-2; n1); the report-day entry of the base's trades
-(E-039 (1)); the news hold (E-034).
+*Answered since the first version, no longer open:* the twin's form (E-035; the first read's n2); whether earlier
+sessions' 08:30-08:59 bars inside H and IV are in the closed branch (E-036 M3-2; n1); the report-day entry of the
+base's trades (E-039 (1)); the news hold (E-034); the drafter's four questions to the red team (the second read's
+n2-1: B2 and A10 held at 5 % and 1 % in its checks B and C, the margins being m2-3 and m2-4, now ruled; two twin draws
+suffice and reuse is carried by the clustering; the classes plausible as argued; a\* by m2-3).
 
-**The red team's, in particular:**
-
-- whether the per-member larger-of rule with B2's null built from c's own choice-span values, and A10's control, are
-  enough for a dependence class Q-16 did not calibrate (11 item 5);
-- whether two pooled twin draws are enough for C2, and whether the reuse of offers across starts' replays is carried by
-  the session clustering;
-- whether the persistence classes of 6.6 are right, and the drop rule's choice of the slower class where two are named;
-- whether B2's amplitude rule (11 item 2) is the right floor given that the vendored S1/S3 files hold whole-window lifts
-  only.
+**What the gatekeeper may check on the diff:** that every item of 0.3 is where it says; that no cell, the twin's
+estimand in C1, the level, the reads line or a seed's meaning moved, beyond 20261989 put to K0's use; and that each new
+rule's level and power at the family's level are shown (18.3) before the pin (E-051).
 
 **The operator's (only when they arise):**
 
