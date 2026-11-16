@@ -15,14 +15,18 @@ list -- with none it runs Stage 2's own registry.
 **The report pages (Q-27).** Every number of every page named in `REPORT_PAGES` (`extended.report.REPORTS`, built by
 `scripts/build_report.py` into docs/report/<name>/) is registered here at import: `extended.report.traced_numbers`
 lists what the page prints from the current file and code, each entry recomputing its value from the file. A page
-whose numbers cannot be listed registers one entry that fails, saying why -- never silence.
+whose numbers cannot be listed registers one entry that fails, saying why -- never silence. **A page waiting for its
+file** (Q-69: a spec naming the task that writes it, `awaits`, while neither its files nor the page exist --
+`extended.report.waiting`) has no number anywhere to trace: it is listed in `WAITING` with the reason, not registered
+and not passed; `scripts/trace_check.py` prints it. The moment a file or the page exists it is traced in full.
 
 **One read a file a run.** The vendored check reads a result file once per number (`read_result` after
 `verify_result`, for every entry); a page of hundreds of numbers on one file is hundreds of reads. `run` therefore lends
 the vendored module, for its own duration only, a `read_result` that keeps each file's frame once it has been read:
 keyed by the file's path, size, modification time and its manifest's sha256, after the vendored `verify_result` has
 passed for that very check (the vendored order, unchanged). Every check still verifies its file; the original
-`read_result` is put back when the run ends, whatever happens.
+`read_result` is put back when the run ends, whatever happens. Each frame it keeps is stamped
+(`frame.attrs[READ_KEY]`, the same key), so a page's recompute can parse a file once per run (`extended.journey_page`).
 
 Importing this module puts the vendored tree on `sys.path`: import it in a process of its own.
 """
@@ -45,7 +49,11 @@ from propedge.reporting.trace import TraceReport, TracedNumber, run_trace_check 
 #: this repository's traced numbers, registered as each is produced
 REGISTRY: list[TracedNumber] = []
 #: the report pages whose every number is registered (Q-27): names in `extended.report.REPORTS`
-REPORT_PAGES: tuple[str, ...] = ("demo_stage2_u1",)
+REPORT_PAGES: tuple[str, ...] = ("demo_stage2_u1", "journey_scorecard")
+#: the registered pages waiting for their files (name -> why), filled by `report_checks`
+WAITING: dict[str, str] = {}
+#: the stamp `run` puts on each frame it keeps: (path, size, mtime, the manifest's sha256, verified)
+READ_KEY = "s2x_read"
 
 
 def registry() -> list[TracedNumber]:
@@ -54,16 +62,22 @@ def registry() -> list[TracedNumber]:
 
 def report_checks(names: Iterable[str] = REPORT_PAGES, *, root: Path | str | None = None) -> list[TracedNumber]:
     """Every number of each named report page, as `TracedNumber` entries; a page whose numbers cannot be listed gives
-    one entry that fails with the reason."""
+    one entry that fails with the reason; a page waiting for its files (`extended.report.waiting`) gives none and is
+    recorded in `WAITING`."""
     from extended import report as R
 
     root = Path(root) if root is not None else ROOT
     out: list[TracedNumber] = []
     for name in names:
         spec = R.REPORTS.get(name)
+        WAITING.pop(name, None)
         try:
             if spec is None:
                 raise KeyError(f"{name!r} is not in extended.report.REPORTS")
+            why = R.waiting(spec, root)
+            if why:
+                WAITING[name] = why
+                continue
             out += R.traced_numbers(spec, root=root)
         except Exception as exc:  # noqa: BLE001 -- a page that cannot be listed must fail the check, not vanish
             out.append(_unlisted(name, spec, root, exc))
@@ -102,6 +116,7 @@ def _one_read_per_file() -> Iterator[dict]:
         key = (os.path.normcase(str(p.resolve())), st.st_size, st.st_mtime_ns, sha, bool(verify))
         if key not in cache:
             cache[key] = original(p, verify=verify)
+            cache[key].attrs[READ_KEY] = key
         return cache[key].copy(deep=False)
 
     _vtrace.read_result = read
@@ -126,4 +141,5 @@ def run(checks: Iterable[TracedNumber] | None = None, *, results_dir: Path | str
 
 REGISTRY.extend(report_checks())
 
-__all__ = ["REGISTRY", "REPORT_PAGES", "TracedNumber", "TraceReport", "registry", "report_checks", "run"]
+__all__ = ["REGISTRY", "REPORT_PAGES", "WAITING", "READ_KEY", "TracedNumber", "TraceReport", "registry", "report_checks",
+           "run"]
