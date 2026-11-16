@@ -51,15 +51,26 @@ Added for the second version (Q-78; the draft's sections 0.2, 6.2-6.3, 7.3-7.4, 
   * `test_the_draft_names_its_judged_reads` -- `extended.reader.declared_purposes` on the draft gives exactly the five
     purposes of its section 20.1, none containing a choice or fitting word;
   * `test_the_draft_seeds_are_its_own_block` -- the draft's seed table lists 20261970-20261979 once each, the reverse
-    walk-forward's struck stream and 20261979 stated reserved and unused, and no other file under `prereg/` names any of
-    them except as the taken range ("20261970-79").
+    walk-forward's struck stream stated reserved and unused, 20261979 assigned to K0 and C0, and no other file under
+    `prereg/` names any of them except as the taken range ("20261970-79").
+
+Added for E-052 (the lead's addition to Q-78: the pass-line code review's M1; the draft's 6.6, A8, A10 and C0):
+
+  * `test_twin_design_form_has_power_at_the_family_level` -- a tightening shows its power, not only its size: C2's
+    twin-design form at one-sided 0.05 / 182 reaches 80 % power on a planted lift above its arithmetic MDL, and costs
+    power against the expectation form on the same draws;
+  * `test_k0_kills_only_an_interval_wholly_above_the_family_level` -- K0's and C0's rule at 200,000 replications (a kill
+    only when the Clopper-Pearson interval lies wholly above 0.05 / 182), and its layout (a circular run of the cell's
+    own counts from a seeded offset);
+  * `test_the_amplitude_rule_is_stated_in_the_same_words` -- B2's amplitude rule appears once in section 8 and once in
+    section 11, in the same words.
 
 Every Monte Carlo comparison is at 4 standard errors (a two-sided 4-sigma band: about 6e-5 false failures each).
 
 A demonstration of the declared arithmetic and of the draft's text, not the family's code: it reads no bar, no walk and
 no result file. Lattice walks step +-1 (slow) or +-2 (fast) with the barriers on even sites, so a walk lands on them
 exactly. Seeds `numpy.random.default_rng([20261977, j, ...])`, j = 0..9, the draft's section 17 (its build's synthetic
-tests): j = 0..5 the first version's, 6 and 7 the second's.
+tests): j = 0..5 the first version's, 6 and 7 the second's, 8 and 9 E-052's.
 """
 from __future__ import annotations
 
@@ -412,10 +423,97 @@ def test_the_draft_seeds_are_its_own_block():
     rows = re.findall(r"^\| (2026197\d) \|", text, flags=re.MULTILINE)
     assert sorted(int(r) for r in rows) == list(SEEDS)
     assert "**`[20261972, 1]` is reserved and unused**" in text   # the struck reverse walk-forward's stream
-    assert re.search(r"^\| 20261979 \| reserved; unused", text, flags=re.MULTILINE)
+    assert re.search(r"^\| 20261979 \| the level at the counts \(E-052\)", text, flags=re.MULTILINE)  # K0 and C0
     assert "reverse walk-forward's beside" not in text and "fitted on the judged block and read" not in text
     pat = re.compile(r"\b2026197\d\b")
     for p in sorted((ROOT / "prereg").glob("*.md")):
         if p.name != DRAFT.name:
             other = re.sub(r"\b20261970-79\b", "", p.read_text(encoding="utf-8"))   # the taken range, named
             assert not pat.search(other), p.name
+
+
+# ------------------------------------------------------------------------------------------------ E-052's addition
+
+
+def test_twin_design_form_has_power_at_the_family_level():
+    """E-052: a tightening shows its power at the family's level, not only its size. C2's twin-design form (7.4) pays
+    for removing the routing selection with the twin's own noise. On the routing toy without a routing selection
+    (every admitted offer taken with probability 1/2) and a planted lift -- the design's admitted offers better by
+    delta before centring, so the centred lift is (1 - 0.3) delta -- `two_sample_bound` against two pooled twin draws
+    is compared with the expectation form (`placebo_selection_bound` on the same routed uses against every offer), both
+    at one-sided 0.05 / 182 (k = 13), 200 seeded draws each. By the arithmetic of 7.4 (about 1,080 design uses and 2,160
+    twin uses on 600 sessions, nine 63-session blocks) the MDL is near 0.24 in lift: at delta = 0.5 (a lift of 0.35)
+    both forms must reach 80 % power; at delta = 0.25 the twin-design form must have less power than the expectation
+    form, and its mean lower bound must sit below the expectation form's at both deltas -- the cost on record."""
+    sessions, marks, years, reps, share = 600, 12, 3, 200, 0.3
+    level = LB.family_level(13)
+    year = np.repeat(np.arange(years), sessions // years)
+    stratum = year[:, None] * marks + np.arange(marks)[None, :]
+    session = np.repeat(np.arange(sessions)[:, None], marks, axis=1)
+    counts = {int(s): int(round(share * (stratum == s).sum())) for s in np.unique(stratum)}
+    power, mean_lower = {}, {}
+    for delta in (0.25, 0.5):
+        hits = {"two": 0, "exp": 0}
+        lows = {"two": [], "exp": []}
+        for r in range(reps):
+            rng = np.random.default_rng([SEED, 8, int(delta * 100), r])
+            admitted = _admit_per_stratum(rng, stratum, counts)
+            y, _ = _centre(rng.normal(0.0, 1.0, (sessions, marks)) + delta * admitted, stratum)
+            design = admitted & (rng.random((sessions, marks)) < 0.5)
+            twins = [_admit_per_stratum(rng, stratum, counts) & (rng.random((sessions, marks)) < 0.5) for _ in range(2)]
+            y2 = np.concatenate([y[t] for t in twins])
+            s2 = np.concatenate([session[t] for t in twins])
+            two = LB.two_sample_bound(y[design], session[design], y2, s2, sessions, level=level)
+            exp = LB.placebo_selection_bound(y.ravel(), session.ravel(), design.ravel(), sessions, level=level)
+            for name, b in (("two", two), ("exp", exp)):
+                low = b.lower if np.isfinite(b.lower) else -np.inf
+                hits[name] += low > 0
+                lows[name].append(low)
+        power[delta] = {k: v / reps for k, v in hits.items()}
+        mean_lower[delta] = {k: float(np.mean(v)) for k, v in lows.items()}
+    assert power[0.5]["two"] >= 0.8 and power[0.5]["exp"] >= 0.8
+    assert power[0.25]["two"] < power[0.25]["exp"]
+    for delta in (0.25, 0.5):
+        assert mean_lower[delta]["two"] < mean_lower[delta]["exp"]
+
+
+def _k0_kills(rejections: int, replications: int, level: float) -> bool:
+    """K0's and C0's rule (A10, C0): kill (claim no pass) only when the rejection rate's 95 % Clopper-Pearson interval
+    lies wholly above the nominal level."""
+    lo, _ = LB.clopper_pearson(rejections, replications)
+    return lo > level
+
+
+def test_k0_kills_only_an_interval_wholly_above_the_family_level():
+    n = 200_000                                                     # A10's replications per cell
+    level = LB.family_level(13)                                     # 0.05 / 182
+    expected = level * n                                            # about 55 rejections at the nominal rate
+    assert 54 < expected < 56
+    assert not _k0_kills(55, n, level)                              # at nominal: kept
+    assert not _k0_kills(65, n, level)                              # above nominal, but the interval reaches it
+    assert _k0_kills(80, n, level)                                  # an interval wholly above: killed
+    assert _k0_kills(int(2 * expected), n, level)                   # twice nominal: killed
+    # the layout (A10): a consecutive run of the cell's own choice-span counts from a seeded offset, read circularly
+    rng = np.random.default_rng([SEED, 9])
+    choice_counts = rng.poisson(3.0, 755)
+    T = 630
+    offset = int(rng.integers(0, len(choice_counts)))
+    laid = choice_counts[(offset + np.arange(T)) % len(choice_counts)]
+    assert np.array_equal(np.diff(laid[: len(choice_counts) - offset]), np.diff(choice_counts[offset:offset + T]))
+    assert laid[0] == choice_counts[offset] and len(laid) == T
+
+
+def _amplitude_rules(text: str) -> list[str]:
+    flat = re.sub(r"\s+", " ", text.replace("**", "").replace("\\", ""))
+    return re.findall(r"\(a\) = the larger of \(a1\).*?`a\*_post`\(R\) = the larger of `a\*_pre`\(R\) and \(d\)\.", flat)
+
+
+def test_the_amplitude_rule_is_stated_in_the_same_words():
+    """B2's amplitude (E-047 (1)'s form), one rule stated identically in sections 8 and 11 (family B's M4-1 lesson)."""
+    text = DRAFT.read_text(encoding="utf-8")
+    sec8 = text[text.index("## 8. Parameters"):text.index("## 9. Stage A")]
+    sec11 = text[text.index("## 11. Stage B2"):text.index("## 12. Stage C")]
+    r8, r11 = _amplitude_rules(sec8), _amplitude_rules(sec11)
+    assert len(r8) == 1 and len(r11) == 1
+    assert r8[0] == r11[0]
+    assert "`a*_pre`(R) = 3 (a)" in r11[0] and "of the pick itself and of its seeded twin draw (draw 0)" in r11[0]
