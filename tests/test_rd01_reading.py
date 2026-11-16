@@ -173,9 +173,73 @@ def test_the_runner_refuses_before_any_read_without_the_identity_rows():
     p = _cli()
     assert p.returncode == 3 and "REFUSED (RD-01 9.1, 15)" in p.stdout
     for task in ("Q-104", "Q-80", "Q-93"):
-        assert f"identity-holds: {task}" in p.stdout
+        assert f"no row carries a token for {task}" in p.stdout
     assert (led.read_bytes() if led.is_file() else b"") == before            # nothing ledgered: no read authorised
     p = _cli("--plan")
     assert p.returncode == 0 and "would run, in order: firm_scorecard, firm_ladder_beside, firm_gate_beside" in p.stdout
+    assert "E-015's limits: none approved" in p.stdout and "the purposes' pre-check" in p.stdout
+    assert "refused by the shared parser" not in p.stdout          # every covered path (E-113's cover) is at HEAD
     p = _cli("--purpose", "firm_scorecard")                                   # one run, the three purposes in order
     assert p.returncode == 2
+
+
+# ------------------------------------------------------------------------------------------------ the third read
+
+
+def test_g_one_pass_through_a9_is_the_two_pass_route_bit_for_bit():
+    sp = found()["single_pass"]
+    assert sorted(sp) == sorted(f"{r}|{a}" for r in ("TS-16", "DT-16-s", "FP-16-s", "QP-16-s")
+                                for a in ("point", "verdict"))
+    assert all(v == [True, True] for v in sp.values())          # outputs unchanged; ledger, counts, logs the same
+
+
+def test_g_the_break_even_search_gives_the_plain_searchs_answers():
+    r = found()
+    for cell, by in r["break_even_same"].items():
+        assert by and all(v[0] is True for v in by.values()), cell
+    for nm, (same, mine, plain) in r["break_even_toy"].items():
+        assert same is True and mine < plain, nm                   # the same price, fewer recompositions
+
+
+def test_m1_s2_s3d_s6_and_q_as_user_milestones_defines_them():
+    r = found()
+    assert r["u1_lines"] == ["Q", "S2", "S3d", "S6"] and r["fr_u1_lines"] == ["Q", "S2", "S3d", "S6"]
+    assert r["u1_keys"] == ["first_pass:days_p90", "first_pass:spent_before_p90", "first_payout:cash_p50",
+                            "luck:monthly_mean_over_sd_p10", "luck:monthly_mean_over_sd_p50",
+                            "luck:monthly_mean_over_sd_p90", "luck:net_mean", "luck:sd_net_across_starts",
+                            "quit:q1_mean_net", "quit:q2_mean_net"]
+    assert r["u1_years"] and r["u1_blocks"] == ["all", "early", "late"]
+    assert r["u1_luck_runs"] == ["a", "all", "b"] and r["fr_u1_luck"] > 0
+    assert r["fr_u1_paired"] == ["plan", "ts"]
+
+
+def test_m2_m3_drained_only_open_the_ladders_control_and_the_years_on_u1s_months():
+    r = found()
+    g = r["g10"]
+    assert (g["drained_open"], g["drained_ended"], g["drained_breached"]) == (1, 0, 0)
+    assert g["idle_gaps"][0] < 31 <= g["idle_gaps"][1] and g["idle_at"] == [0, 1]       # n3: 30 days between
+    assert r["uncapped_control"] == [0, 1]
+    assert r["fr_months_ahead_u1"] is True and r["fm_year_measures"] == ["P"]
+
+
+def test_m4_m5_the_twin_at_the_logs_fees_and_over_resolved_evaluations():
+    r = found()
+    assert r["twin_fees"][0] is not None and r["twin_fees"][1] is None
+    assert r["twin_resolved"] == [0.5, 4.0, 2.0]
+
+
+def test_m6_n5_the_menus_windows_on_start_positions():
+    r = found()
+    n_w, has_interval, cov, hole, zero_level, zero_paired = r["menu_windows"]
+    assert n_w == 4.0 and has_interval is True and cov == 0.9
+    assert hole == "a kept window holds no defined value: no interval"
+    assert zero_level == "zero on every kept window" and zero_paired == "identical on these trades"
+    assert r["coverage_settings"] == [[63, 5]]
+
+
+def test_m7_and_d1_rows_spilled_and_the_identity_rows_without_the_token():
+    r = found()
+    assert r["spill_parts"] == 4
+    rows, shas, heads, in_csv, in_manifest = r["fr_identity"]
+    assert rows == ["E-000"] and shas == ["abab"] and heads == ["cdcd"]
+    assert in_csv is False and in_manifest is False                  # the row, sha and HEAD; never the token

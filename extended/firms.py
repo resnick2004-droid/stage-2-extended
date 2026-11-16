@@ -356,8 +356,34 @@ def split_runs(counts: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
     return runs
 
 
-def _chunk(task: tuple) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
-    design, arm, resp_name, job, s, starts, kw, point = task
+def captured_run(B: Any, design: str, arm: str, resp: Any, job: dict[str, Any], start: int, kw: dict[str, Any]
+                 ) -> tuple[dict[str, Any], dict[tuple[int, int], Any]]:
+    """The single pass (the third read's (g)): one start through A-9 (`run_starts`) with its long replay recorded by
+    A-9's own Q-94 recorder seam, and every replay A-9 makes captured in this process as `user_beside.replay` returns
+    it -- {(path seed, sessions): the engine's path}, the long run's with its per-trade ledger. Nothing A-9 is handed
+    changes but the recorder; Q-94's identity holds its outputs bit for bit with it on. The wrap of this repository's
+    `user_beside.replay` (not a vendored function) is restored whatever happens."""
+    from extended import replay_records as RR
+
+    got: dict[tuple[int, int], Any] = {}
+    orig = B.replay
+
+    def spy(blocks: Any, args: Any, path_seed: int) -> Any:
+        lp = orig(blocks, args, path_seed)
+        got[(int(path_seed), len(blocks))] = lp
+        return lp
+
+    B.replay = spy
+    try:
+        o = B.run_starts(design, arm, resp, job, [int(start)], 1, recorder=RR.ReplayRecorder(columns=()), **kw)
+    finally:
+        B.replay = orig
+    return o[0], got
+
+
+def _chunk(task: tuple) -> list[tuple]:
+    design, arm, resp_name, job, s, starts, kw, point = task[:8]
+    capture = bool(task[8]) if len(task) > 8 else False
     from extended import user_beside as B
 
     resp = B.BY_NAME[resp_name]
@@ -369,23 +395,31 @@ def _chunk(task: tuple) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
             j = {**job, "args": {**job["args"], "path": {**job["args"]["path"], "combine_account_cls": c_cls}}}
         k = {**kw, **({} if f_cls is None else {"funded_account_cls": f_cls})}
         A.TALLY.clear()
-        o = B.run_starts(design, arm, resp, j, [int(st)], 1, **k)
-        out.append((o[0], split_runs(A.collect())[:1]))
+        if capture:                                # every replay's counts and request logs, and its paths
+            o, got = captured_run(B, design, arm, resp, j, int(st), k)
+            out.append((o, split_runs(A.collect(with_requests=True)), got))
+        else:
+            o = B.run_starts(design, arm, resp, j, [int(st)], 1, **k)
+            out.append((o[0], split_runs(A.collect())[:1]))
     return out
 
 
 def run_plan(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, starts: Sequence[int],
              keywords: dict[str, Any], *, point: Sequence[Any] | None = None, workers: int = 1,
-             chunk: int = 20) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
+             chunk: int = 20, capture: bool = False) -> list[tuple]:
     """Every start of one design, arm, response and plan setting: (A-9's output, the long replay's account counts),
     in start order. `job` carries the plan's arguments (`plan_args`), without the classes, which are made per start;
     `keywords` A-9's (the funded class is replaced by each start's own). At `workers` > 1 the starts run in chunks in
-    processes of this runner's own, each at one engine worker."""
+    processes of this runner's own, each at one engine worker. `capture` (one worker only): the single pass
+    (`captured_run`) -- each start's (output, every replay's account counts with their request logs, its replays'
+    paths by (seed, sessions))."""
     kw = {k: v for k, v in keywords.items() if k != "funded_account_cls"}
     if s.plan in ("TS", "LU") and keywords.get("funded_account_cls") is not None:
         kw["funded_account_cls"] = keywords["funded_account_cls"]
+    if capture and int(workers) > 1:
+        raise ValueError("the single pass captures the replays in this process: one worker")
     chunks = [list(starts[i:i + chunk]) for i in range(0, len(starts), chunk)]
-    tasks = [(design, arm, resp.name, job, s, c, kw, point) for c in chunks]
+    tasks = [(design, arm, resp.name, job, s, c, kw, point, capture) for c in chunks]
     if int(workers) <= 1:
         res = [_chunk(t) for t in tasks]
     else:
@@ -398,4 +432,4 @@ def run_plan(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
 
 __all__ = ["LADDER_SEED", "plan_rules", "plan_sizing", "fee_problems", "plan_args", "gate_args", "subscription_days",
            "pro_fee_days", "bankroll_never_binds", "repriced", "break_even_price", "arm_delta", "tier1_arm",
-           "start_classes", "split_runs", "run_plan"]
+           "start_classes", "split_runs", "captured_run", "run_plan"]

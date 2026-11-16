@@ -74,11 +74,20 @@ def paired_reading(diff: np.ndarray, h: int) -> dict[str, Any]:
     if n_w < MIN_WINDOWS:
         out["note"] = TOO_FEW
         return out
+    out["interval"], out["mdd"] = interval_of_means(means)
+    return out
+
+
+def interval_of_means(means: np.ndarray) -> tuple[tuple[float, float], float]:
+    """Items 2 and 5 on the kept windows' means (at least `MIN_WINDOWS`): the two-sided 90 % Student-t interval with
+    n_w - 1 degrees of freedom, and the minimum detectable difference at 80 % power."""
+    means = np.asarray(means, float)
+    n_w = len(means)
+    if n_w < MIN_WINDOWS:
+        raise ValueError("the interval is printed only from four kept windows")
     se = float(means.std(ddof=1)) / math.sqrt(n_w)
     tq = float(stats.t.ppf(0.5 + LEVEL / 2.0, n_w - 1))
-    out["interval"] = (float(means.mean() - tq * se), float(means.mean() + tq * se))
-    out["mdd"] = float((tq + float(stats.t.ppf(POWER, n_w - 1))) * se)
-    return out
+    return (float(means.mean() - tq * se), float(means.mean() + tq * se)),         float((tq + float(stats.t.ppf(POWER, n_w - 1))) * se)
 
 
 # ------------------------------------------------------------------------------------------------ item 7
@@ -163,4 +172,4 @@ def coverage_label(cov: float) -> str | None:
 
 
 __all__ = ["SEED", "LEVEL", "MIN_WINDOWS", "POWER", "COVERAGE_FLOOR", "N_SERIES", "TOO_FEW", "IDENTICAL", "n_windows",
-           "kept_windows", "paired_reading", "per_start_sums", "coverage_shapes", "coverage", "coverage_label"]
+           "kept_windows", "paired_reading", "interval_of_means", "per_start_sums", "coverage_shapes", "coverage", "coverage_label"]

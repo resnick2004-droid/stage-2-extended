@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import os
 import sys
 import tempfile
 import time
@@ -144,8 +145,8 @@ out["toy_tier1"] = {k: len(v) for k, v in C.tier1_trades(streams["p16"]["jobs"][
 names = ["TS-16", "TS-14", "DT-16-s", "DT-16-price", "FP-16-s", "QP-16-s", "QP-16-req", "LU-16-l"]
 runs = [r for r in T.RUNS if r.name in names]
 t0 = time.time()
-rows, ran = RDR.scorecard_reading(streams, runs, STARTS, coverage=True, coverage_series=COV_SERIES)
-df = pd.DataFrame(rows)
+sc_spill, ran = RDR.scorecard_reading(streams, runs, STARTS, coverage=True, coverage_series=COV_SERIES)
+df = sc_spill.frame()
 out["sc_ran"] = ran
 out["sc_sections"] = sorted(set(df["section"]))
 out["sc_subsections"] = sorted(set(df["subsection"].dropna()))
@@ -242,8 +243,8 @@ out["coverage_section_rows"] = len(R.coverage_rows())
 
 # ------------------------------------------------------------------------------------------------ the ladder
 t0 = time.time()
-lrows, lran = RDR.ladder_reading(streams, 3)
-ld = pd.DataFrame(lrows)
+ld_spill, lran = RDR.ladder_reading(streams, 3)
+ld = ld_spill.frame()
 out["ld_ran"] = lran
 out["ld_runs"] = sorted(set(ld["run"]))
 out["ld_responses"] = sorted(set(ld["response_name"]))
@@ -423,6 +424,124 @@ neg["flag_unread_terms"] = [r["raised"] for r in fl if r.get("flag") == "depends
                             and r.get("arm") == "verdict"]
 out["neg"] = neg
 
+# ------------------------------------------------------------------------------------------------ the third read's
+# the single pass (g): A-9's own replays captured are the outputs it gives without the capture, bit for bit, and their
+# ledger, counts and request logs are the second build's direct replays' (the route it replaces)
+from user_beside_identity import first_difference  # noqa: E402
+
+third: dict = {}
+for rname, s_ in (("TS-16", T.settings_for("TS", "reference")), ("DT-16-s", T.settings_for("DT", T.STRICT)),
+                  ("FP-16-s", T.settings_for("FP", T.STRICT)), ("QP-16-s", T.settings_for("QP", T.STRICT))):
+    for arm in ("point", "verdict"):
+        job = streams["p16"]["jobs"][arm]
+        blocks_, ref_, _ = R.arm_inputs(streams["p16"]["jobs"]["point"], job, s_, arm,
+                                        streams["p16"]["delta"].get(arm))
+        cj_, kw_ = R.cell_job(job, s_, blocks_)
+        plain = R.F.run_plan("p16", arm, B.BY_NAME["off"], cj_, s_, [0, 37, 74], kw_, point=ref_)
+        capt = R.F.run_plan("p16", arm, B.BY_NAME["off"], cj_, s_, [0, 37, 74], kw_, point=ref_, capture=True)
+        same_out = all(not first_difference(a_[0], b_[0]) for a_, b_ in zip(plain, capt))
+        same_led = True
+        for (o_, by_, got_), st_ in zip(capt, [0, 37, 74]):
+            dc = R.captured_start(cj_, s_, st_, kw_, ref_, B.BY_NAME["off"], 1, by_, got_)
+            dd = R.direct_start("p16", arm, B.BY_NAME["off"], cj_, s_, st_, kw_, ref_, 1)
+            same_led &= (dc["ledger"] == dd["ledger"] and dc["counts"] == dd["counts"]
+                         and dc["exact_counts"] == dd["exact_counts"]
+                         and sorted(dc["exact"] or {}) == sorted(dd["exact"] or {}))
+        third[f"{rname}|{arm}"] = [same_out, same_led]
+out["single_pass"] = third
+
+# the break-even search: the shared one gives the plain search's answers exactly, with fewer recompositions
+be_cmp = {}
+for rname, s_ in (("DT-16-s", T.settings_for("DT", T.STRICT)), ("FP-16-s", T.settings_for("FP", T.STRICT)),
+                  ("LU-16-l", T.settings_for("LU", T.LENIENT))):
+    job = streams["p16"]["jobs"]["point"]
+    blocks_, ref_, _ = R.arm_inputs(job, job, s_, "point")
+    cj_, kw_ = R.cell_job(job, s_, blocks_)
+    cell_ = R.run_cell("p16", "point", B.BY_NAME["off"], cj_, s_, [0, 37, 74, 111], kw_, ref_, direct=True)
+    tsj, tkw = R.cell_job(job, T.settings_for("TS", "reference"), job["blocks"])
+    ts_recs = [o["rec"] for o in R.run_cell("p16", "point", B.BY_NAME["off"], tsj, T.settings_for("TS", "reference"),
+                                            [0, 37, 74, 111], tkw, None, direct=False)["outs"]]
+    a_rows, _ = R.grid_rows(cell_, "p16", "point", B.BY_NAME["off"], s_, ts_recs, search="known")
+    b_rows, _ = R.grid_rows(cell_, "p16", "point", B.BY_NAME["off"], s_, ts_recs, search="plain")
+    ka = {r["measure"]: (r["price"], r["n"]) for r in a_rows if r["subsection"] == "break_even"}
+    kb = {r["measure"]: (r["price"], r["n"]) for r in b_rows if r["subsection"] == "break_even"}
+    be_cmp[rname] = {m: [repr(ka[m][0]) == repr(kb[m][0]), ka[m][1], kb[m][1]] for m in ka}
+out["break_even_same"] = be_cmp
+# and on a toy measure with a crossing inside a grid cell, at a cent's resolution
+fs = {"lin": lambda x: 1.0 - x / 200.0, "step": lambda x: 0.0 if x > 137.3 else 1.0}
+known_cmp = {}
+for nm, fn in fs.items():
+    calls = []
+    grid_ = {q: fn(q) for q in T.DT_PRICE_GRID}
+    a1 = R.break_even_known(lambda x: (calls.append(x), fn(x))[1], 0.3, grid_, 0.0, 250.0, 0.01)
+    plain_calls = []
+    a2 = R.F.break_even_price(lambda x: (plain_calls.append(x), fn(x))[1], 0.3, 0.0, 250.0, tol=0.01)
+    known_cmp[nm] = [repr(a1) == repr(a2), len(calls), len(plain_calls)]
+out["break_even_toy"] = known_cmp
+
+# m3: the uncapped ladder's control refuses a rebuild that misses a trade's own contracts
+fp_rule3 = dataclasses.replace(R.F.plan_sizing(SIZING, T.settings_for("FP", T.STRICT)), room_cap=None)
+row3 = {"kind": "funded", "index": 0, "day": 3, "balance_before": 500.0, "risk_per_contract": 30.0,
+        "intended_risk": 300.0, "contracts": 10, "room": 5000.0}
+out["uncapped_control"] = [R.uncapped_ladder_differs([row3], fp_rule3)[2],
+                           R.uncapped_ladder_differs([{**row3, "contracts": 9}], fp_rule3)[2]]
+
+# m2 and n3: G-10 on hand-made funded records (a CPI-free stretch of the toy's dates)
+ctx3 = R.stream_context("p16", streams["p16"]["jobs"]["point"])
+F3 = lambda **kw: SimpleNamespace(**{"index": 0, "activation_day": 1, "ended_on": None, "closed": False, "days": 40,  # noqa: E731
+                                     "balance": 10.0, "floor": 0.0, **kw})
+d30 = {"kind": "funded", "index": 0}
+out["g10"] = {
+    "drained_open": R.g10_counts([F3()], [], ctx3, 0, 60)["g10_accounts_drained"],
+    "drained_ended": R.g10_counts([F3(ended_on=30)], [], ctx3, 0, 60)["g10_accounts_drained"],
+    "drained_breached": R.g10_counts([F3(closed=True, ended_on=30)], [], ctx3, 0, 60)["g10_accounts_drained"],
+}
+k31 = next(k for k in range(2, 60) if (R._date_of(ctx3, 0, k) - R._date_of(ctx3, 0, 1)).days >= 31)
+out["g10"]["idle_gaps"] = [(R._date_of(ctx3, 0, k) - R._date_of(ctx3, 0, 1)).days for k in (k31 - 1, k31)]
+out["g10"]["idle_at"] = [R.g10_counts([F3(balance=5000.0, ended_on=k)], [{**d30, "day": 1}], ctx3, 0, 60)
+                         ["g10_accounts_idle_30"] for k in (k31 - 1, k31)]
+
+# m4 and m5: the twin call's sizing carries no fee schedule; its pass rate is over resolved evaluations
+seen_sz = []
+
+
+def spy_gate(blocks, **kw):
+    seen_sz.append(kw["sizing"].fee_schedule)
+    return run_gate(blocks, **kw)
+
+
+R.gate_rows(gates["p16"]["blocks"], gates["p16"]["kw"], T.settings_for("DT", T.LENIENT), spy_gate, fresh_rr=2.0)
+out["twin_fees"] = [list(seen_sz[0]) if seen_sz[0] is not None else None, seen_sz[1]]
+lp_toy = SimpleNamespace(funded=(), combines=(SimpleNamespace(passed=True, failed=False),
+                                              SimpleNamespace(passed=False, failed=True),
+                                              SimpleNamespace(passed=False, failed=False)))
+tm = R.twin_measures([lp_toy, lp_toy])
+out["twin_resolved"] = [tm["twin_pass_rate"], tm["twin_evaluations_resolved"],
+                        tm["twin_evaluations_unresolved_or_closed"]]
+
+# m6 and n5: the menu's windows on start positions
+x6 = np.arange(4 * 63 * 2, dtype=float) % 7 - 3.0
+gap = x6.copy()
+gap[5:9] = np.nan                                         # a gap inside a kept window: still its window
+hole = x6.copy()
+hole[0:63] = np.nan                                       # a kept window with no value: no interval
+cov6 = {(63, 4): 0.9}
+r_gap = FM._reading(gap, 63, cov6, paired=True)
+r_hole = FM._reading(hole, 63, cov6, paired=True)
+r_zero = FM._reading(np.zeros(8 * 63), 63, cov6, paired=False)
+out["menu_windows"] = [r_gap["n_w"], "interval_lo" in r_gap, r_gap.get("coverage"), r_hole["note"], r_zero["note"],
+                       FM._reading(np.zeros(8 * 63), 63, cov6, paired=True)["note"]]
+out["coverage_settings"] = sorted(R.coverage_settings(plan_t))
+
+# M1: U1's own reported lines on the tiled records, by block
+u1t = R.u1_reported_rows(plan_t)
+out["u1_lines"] = sorted({r["stat"] for r in u1t})
+out["u1_keys"] = sorted({r["measure"].split("@")[0] for r in u1t if not r["measure"].startswith("luck:share_paid")})
+out["u1_years"] = sorted({r["measure"] for r in u1t if r["measure"].startswith("luck:share_paid")})
+out["u1_blocks"] = sorted({r["block"] for r in u1t})
+la = R.luck_across({"a": u1t, "b": R.u1_reported_rows(ts_t)})
+out["u1_luck_runs"] = sorted({r["run"] for r in la})
+
 # the guards, on this tree: no decision row yet records the waited identities, so the run refuses
 probs, found = RDR.identity_problems()
 out["guard_refuses"] = [bool(probs), sorted(p.split(" ")[0] for p in probs), found]
@@ -434,19 +553,38 @@ out["record_entries"] = [len(entries), ebad[:3], sorted({e["plan"] for e in entr
 
 # ------------------------------------------------------------------------------------------------ the files
 with tempfile.TemporaryDirectory(prefix="rd01_e2e_") as td:
-    toy_found = {"Q-toy": {"row": "E-000", "commit": "0" * 40, "token": "`identity-holds: Q-toy`", "what": "a toy",
-                           "head": "0" * 40}}
+    toy_found = {"Q-7": {"row": "E-000", "sha": "ab" * 20, "head": "cd" * 20, "what": "a toy identity"}}
     params = RDR.manifest_params(toy_found, pin, entries, RULES, argparse.Namespace(repeat=None, workers=1), "toy")
     params["toy"] = True
     counts = {**ran, **lran, **gran}
-    # the scorecard's own coverage rows are empty on five starts; the tiled check's settings stand in for them
-    reading_rows = RDR.identity_rows(toy_found, pin) + rows + R.coverage_rows() + lrows + orows
-    wrote = RDR.write_all(reading_rows, grows, params, Path(td), counts)
+    # the scorecard's own coverage rows are empty on five starts; the tiled check's settings stand in for them; the
+    # rows spilled to a folder and read back once, as the run does (m7)
+    spill = RDR.Spill(Path(td) / "rows")
+    spill.add(RDR.identity_rows(toy_found, pin))
+    for part in (df, ld):
+        spill.add(part.to_dict("records"))
+    spill.add(R.coverage_rows() + orows)
+    out["spill_parts"] = len(list((Path(td) / "rows").glob("*.pkl")))
+    wrote = RDR.write_all(spill, grows, params, Path(td), counts)
     out["files"] = sorted(wrote)
     fr = read_result(Path(td) / "fc_reading.csv")
+    if os.environ.get("RD01_PROBE_DUMP"):                     # scripts/rd01_cost_probe.py's files stage, on request
+        fr.to_pickle(os.environ["RD01_PROBE_DUMP"])
     fg = read_result(Path(td) / "fc_gate.csv")
     fm = read_result(Path(td) / "fc_menu.csv")
     out["fr_sections"] = sorted(set(fr["section"]))
+    raw = (Path(td) / "fc_reading.csv").read_text(encoding="utf-8")
+    ident = fr[(fr["section"] == "identity") & (fr["subsection"] == "waited")]
+    out["fr_identity"] = [list(ident["row"]), [str(x)[:4] for x in ident["sha"]], [str(x)[:4] for x in ident["head"]],
+                          "identity-holds" in raw, "identity-holds" in (Path(td) / "fc_reading.csv.manifest.json"
+                                                                        ).read_text(encoding="utf-8")]
+    out["fr_u1_lines"] = sorted(set(fr[(fr["section"] == "scorecard") & (fr["subsection"] == "u1_reported")]["stat"]))
+    out["fr_u1_paired"] = sorted(set(fr[(fr["section"] == "paired") & (fr["subsection"] == "u1_reported")]["stat"]))
+    out["fr_u1_luck"] = int(((fr["section"] == "scorecard") & (fr["subsection"] == "u1_luck")).sum())
+    out["fr_months_ahead_u1"] = bool(pd.to_numeric(fr[fr["subsection"] == "start"]["months_ahead_u1"],
+                                                   errors="coerce").notna().any())
+    out["fm_year_measures"] = sorted(set(fm[(fm["section"] == "menu") & fm["block"].astype(str).str.startswith("year_")]
+                                         ["measure"]))
     out["fr_status"] = sorted(set(fr["status"])) + sorted(set(fg["status"])) + sorted(set(fm["status"]))
     out["fm_sections"] = sorted(set(fm["section"]))
     out["fm_flags"] = sorted(set(fm[fm["section"] == "flags"]["flag"].dropna()))

@@ -8,8 +8,8 @@ files are written, and writes `results/fc_menu.csv`. It draws nothing.
 
 * `menu` -- each run's row (TS's references, every plan's corners and one-at-a-time runs), verdict arm the headline and
   point beside: P under the plan and under TS on the same starts (`paired` / `card`), their difference and side, on all
-  starts (the headline), the early and late blocks and each start year (P from the long replays' month-end nets, a
-  start-year reading beside); every row carries its labels (`LABELS`: U-3's upper bounds, the gaps of 4.7 that touch
+  starts (the headline), the early and late blocks and each start year (the card's P on the year's starts, from U1's
+  own months ahead per start, m3); every row carries its labels (`LABELS`: U-3's upper bounds, the gaps of 4.7 that touch
   it, 4.8's open question, 16's open written questions, at QP its request rule) and the moot checks and conduct counts
   of 9.3 from the run's own counts.
 * `flags` -- 10.1 items 5 and 11, mechanical: "depends on its unread terms" (a plan whose two corners lie on opposite
@@ -18,7 +18,8 @@ files are written, and writes `results/fc_menu.csv`. It draws nothing.
   blocks), "no effect on these trades" (a plan whose daily cash equals TS's on every start within 252 sessions). E-015's
   limits flag nothing: none was approved before the run's commit (the menu says so).
 * `distribution` -- item 3: each per-start measure's p10, p50, p90 and mean over start days, with 10.2's reading on the
-  plan's own series (unpaired), by block at the measure's horizon.
+  plan's own series (unpaired), by block at the measure's horizon -- its windows cut on start positions (m6), a start
+  with no value kept in its place.
 * `variance_share` -- item 3's S6 form: across the plans' runs on one stream and arm, the start day's share of the
   variance of each measure (the within-run variance over starts against the variance of the runs' means).
 * `paired_more` -- item 4 for every per-start measure of items 1 and 2 the month-end nets do not already pair: plan less
@@ -216,25 +217,27 @@ def menu_rows(reading: pd.DataFrame) -> list[dict[str, Any]]:
                              "corner": h["corner"], "flip": h["flip"], "kind": h["kind"],
                              "request_rule": h.get("request_rule"), "block": b, "measure": "P", "plan_value": p,
                              "ts_value": q, "difference": p - q, "side": _side(p - q), "labels": lab})
-    # the start years beside: P from the long replays' month-end nets (months ahead over three), plan and TS
+    # the start years beside (m3): P on each start year's starts from U1's own months ahead (`u_select.months_ahead`
+    # through `Views`, written per start), so a year's P is the card's P on that year's starts
     st = _starts(reading, "scorecard")
     for (run, arm), t in st.groupby(["run", "arm"]):
         plan = str(t["plan"].iloc[0])
         if plan == "TS":
             continue
         ts = st[(st["plan"] == "TS") & (st["stream"] == t["stream"].iloc[0]) & (st["arm"] == arm)]
-        tsv = dict(zip(ts["start_day"].astype(int), pd.to_numeric(ts["months_ahead"], errors="coerce")))
+        tsv = dict(zip(ts["start_day"].astype(int), pd.to_numeric(ts["months_ahead_u1"], errors="coerce")))
         t = t[t["observed"].astype(int) >= 63]
         for y, ty in t.groupby(t["start_date"].astype(str).str[:4]):
-            x = pd.to_numeric(ty["months_ahead"], errors="coerce").to_numpy(float) / 3.0
+            x = pd.to_numeric(ty["months_ahead_u1"], errors="coerce").to_numpy(float) / 3.0
             z = np.array([tsv.get(int(s0), np.nan) for s0 in ty["start_day"].astype(int)], float) / 3.0
             ok = np.isfinite(x) & np.isfinite(z)
             rows.append({"section": "menu", "run": run, "plan": plan, "stream": t["stream"].iloc[0], "arm": arm,
-                         "block": f"year_{y}", "measure": "P_long_replay", "plan_value": float(x[ok].mean()) if ok.any()
+                         "block": f"year_{y}", "measure": "P", "plan_value": float(x[ok].mean()) if ok.any()
                          else float("nan"), "ts_value": float(z[ok].mean()) if ok.any() else float("nan"),
                          "difference": float((x[ok] - z[ok]).mean()) if ok.any() else float("nan"),
-                         "n": int(ok.sum()), "note": "a start-year reading beside: P from the long replays' month-end "
-                                                     "nets (the exact-length runs not substituted)"})
+                         "n": int(ok.sum()), "note": "a start-year reading beside: the card's P on the year's starts "
+                                                     "(U1's own months ahead, exact-length runs read where they "
+                                                     "differ)"})
     return rows
 
 
@@ -285,19 +288,46 @@ def flag_rows(reading: pd.DataFrame) -> list[dict[str, Any]]:
     return rows
 
 
-def _reading(x: np.ndarray, h: int, coverage: dict[tuple[int, int], float]) -> dict[str, Any]:
-    r = FU.paired_reading(x, h)
-    out = {"mean": r["mean"], "n_w": float(r["n_w"]), "n_eff": float(r["n_eff"]), "note": r["note"],
-           "windows_above": float(r["signs"]["above"]), "windows_equal": float(r["signs"]["equal"]),
-           "windows_below": float(r["signs"]["below"])}
-    if r["interval"] is not None:
-        out.update(interval_lo=float(r["interval"][0]), interval_hi=float(r["interval"][1]), mdd=float(r["mdd"]))
-        cov = coverage.get((int(h), int(r["n_w"])))
-        out["coverage"] = float("nan") if cov is None else float(cov)
-        if cov is None:
-            out["note"] = "coverage not computed by the run at this setting"
-        elif FU.coverage_label(cov):
-            out["note"] = FU.coverage_label(cov)
+NO_VALUE = "a kept window holds no defined value: no interval"
+ZERO_LEVEL = "zero on every kept window"
+
+
+def _reading(x: np.ndarray, h: int, coverage: dict[tuple[int, int], float], paired: bool) -> dict[str, Any]:
+    """10.2 on one series over a block's starts **in start order, a start with no value kept in its place** (m6): the
+    windows are cut on start positions, so kept windows stay h starts apart; each kept window's mean is over its
+    defined values; a kept window with none prints no interval. n_eff on the defined values; the coverage label from
+    the run's own coverage at (h, n_w). `paired`: a plan-less-TS series (a zero series is "identical on these trades");
+    otherwise the plan's own levels (n5: "zero on every kept window")."""
+    x = np.asarray(x, float)
+    wins = FU.kept_windows(x, h)
+    fin = [w[np.isfinite(w)] for w in wins]
+    means = np.array([float(f.mean()) if len(f) else float("nan") for f in fin])
+    n_w = len(means)
+    defined = x[np.isfinite(x)]
+    from extended.user_measures import n_eff_bartlett
+
+    ok = np.isfinite(means)
+    out: dict[str, Any] = {"mean": float(means[ok].mean()) if ok.any() else float("nan"), "n_w": float(n_w),
+                           "n_eff": float(n_eff_bartlett(defined, lag=int(h))) if len(defined) else float("nan"),
+                           "windows_above": float((means[ok] > 0).sum()), "windows_equal": float((means[ok] == 0).sum()),
+                           "windows_below": float((means[ok] < 0).sum()), "note": ""}
+    if n_w and all(len(f) and bool(np.all(f == 0.0)) for f in fin):
+        out["note"] = FU.IDENTICAL if paired else ZERO_LEVEL
+        return out
+    if n_w < FU.MIN_WINDOWS:
+        out["note"] = FU.TOO_FEW
+        return out
+    if not ok.all():
+        out["note"] = NO_VALUE
+        return out
+    (lo, hi), mdd = FU.interval_of_means(means)
+    out.update(interval_lo=lo, interval_hi=hi, mdd=mdd)
+    cov = coverage.get((int(h), int(n_w)))
+    out["coverage"] = float("nan") if cov is None else float(cov)
+    if cov is None:
+        out["note"] = "coverage not computed by the run at this setting"
+    elif FU.coverage_label(cov):
+        out["note"] = FU.coverage_label(cov)
     return out
 
 
@@ -327,14 +357,14 @@ def distribution_rows(reading: pd.DataFrame) -> list[dict[str, Any]]:
         for c, (v, h, _d) in series.items():
             for b in BLOCKS:
                 keep = t["start_day"].astype(int).isin(_block_days(t, b, h)).to_numpy()
-                x = v.to_numpy(float)[keep]
-                x = x[np.isfinite(x)]
+                xs = v.to_numpy(float)[keep]                     # the block's starts in order, gaps kept (m6)
+                x = xs[np.isfinite(xs)]
                 q = M.quantiles(x)
                 base = {"section": "distribution", "run": run, "plan": t["plan"].iloc[0], "stream": t["stream"].iloc[0],
                         "arm": arm, "block": b, "measure": c, "horizon": h, "n": int(len(x))}
                 rows += [{**base, "stat": f"p{p}", "value": q[f"p{p}"]} for p in M.PERCENTILES]
                 rows.append({**base, "stat": "mean_over_starts", "value": float(x.mean()) if len(x) else float("nan")})
-                r = _reading(x, h, cov)
+                r = _reading(xs, h, cov, paired=False)
                 rows += [{**base, "stat": k, "value": v_, "note": "10.2 on the plan's own series (unpaired)"}
                          for k, v_ in r.items() if k != "note"]
                 rows.append({**base, "stat": "reading_note", "value": float("nan"), "note": r["note"]})
@@ -392,7 +422,8 @@ def paired_more_rows(reading: pd.DataFrame) -> list[dict[str, Any]]:
                 x = np.array([pv[s0] for s0 in days], float)
                 y = np.array([tv[s0] for s0 in days], float)
                 ok = np.isfinite(x) & np.isfinite(y)
-                dlt = (x - y)[ok]
+                full = np.where(ok, x - y, np.nan)                 # the block's starts in order, gaps kept (m6)
+                dlt = full[ok]
                 good = dlt if direction == "higher" else -dlt
                 base = {"section": "paired_more", "run": run, "plan": plan, "stream": stream, "arm": arm, "block": b,
                         "measure": c, "horizon": h, "direction": direction, "n": int(ok.sum())}
@@ -400,7 +431,7 @@ def paired_more_rows(reading: pd.DataFrame) -> list[dict[str, Any]]:
                 rows += [{**base, "stat": f"difference_p{p}", "value": q[f"p{p}"]} for p in M.PERCENTILES]
                 for k, m_ in (("better", good > 1e-9), ("equal", np.abs(dlt) <= 1e-9), ("worse", good < -1e-9)):
                     rows.append({**base, "stat": f"share_{k}", "value": float(m_.mean()) if len(dlt) else float("nan")})
-                r = _reading(dlt, h, cov)
+                r = _reading(full, h, cov, paired=True)
                 rows += [{**base, "stat": k, "value": v_} for k, v_ in r.items() if k != "note"]
                 rows.append({**base, "stat": "reading_note", "value": float("nan"), "note": r["note"]})
     return rows

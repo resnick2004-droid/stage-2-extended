@@ -5,11 +5,13 @@ the beside readings (the denial ladder, the gate with its zero-edge twin) and A-
 built (Q-104); nothing here changes a rule, and no rule value is typed here: every bound is read from the plan's terms.
 
 **A cell** is one run of 7.3 (or a ladder response) at one arm: every chosen start through A-9 (`user_beside.run_starts`,
-one start at a time with that start's own classes, as `firms.run_plan` composes them) -- the runner's output -- and,
-beside it, the same start replayed directly (`direct_start`: the long replay with the engine's per-trade ledger and the
-adapters' request logs, and U1's exact-length runs where A-9 makes them), composed exactly as A-9's task composes them.
-**Refusing, at the first problem** (r5): the direct composition equals A-9's output bit for bit on every start
-(`user_beside_identity.first_difference`); 9.1 items 4 and 5 on every replay; **9.2's oracles** on every start -- every
+one start at a time with that start's own classes, as `firms.run_plan` composes them) -- **one pass** (the third read's
+(g)): A-9's own replays are kept in this process (`firms.captured_run`: the long run with the engine's per-trade ledger
+through A-9's Q-94 recorder seam, the exact-length runs as `user_beside.replay` returns them) with the adapters'
+counters and request logs (`captured_start`); no second replay (`direct_start` stays only as the single pass's control
+in the toys). **Refusing, at the first problem** (r5): the start's output composed again from the captured runs equals
+A-9's bit for bit (`user_beside_identity.first_difference`); 9.1 items 4 and 5 on every replay; **9.2's oracles** on
+every start -- every
 trade's fee its plan's schedule at the contracts it holds (`fee_problems`), every request inside its plan's bounds and
 every net its plan's split of it, to 1e-9 (`request_problems`: DayTraders' $50 increments, minimum, cap, request gate
 and balance left; Fast Pass's cap and minimum; Quick Pay's tiered split, recomputed here; at TS and Lucid the records'
@@ -238,11 +240,10 @@ def _slim(lp: Any) -> Any:
     return dataclasses.replace(lp, trades=(), account_days=(), campaign_days=())
 
 
-def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, start: int,
-                 kw: dict[str, Any], point: list[Any] | None, every: int) -> dict[str, Any]:
-    """One start, replayed directly as A-9's task replays it: the long run (its ledger and the adapters' counters and
-    request logs kept for 9.2 and 9.3) and the exact-length runs where A-9 makes them (their request logs kept), with
-    the start's classes."""
+def _start_args(job: dict[str, Any], s: T.Settings, start: int, kw: dict[str, Any], point: list[Any] | None,
+                resp: Any) -> tuple[dict[str, Any], int, int, Any, Any]:
+    """(the replay arguments A-9's task makes for this start, its path seed, its long run's sessions, the funded class,
+    the household reading) -- `user_beside._task`'s own composition, with the start's classes."""
     from propedge.research import user_journey as U
 
     if resp.kind == "forfeit":
@@ -254,9 +255,58 @@ def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Set
     a = B.response_args(args, resp, f_cls, household_closure=hc) if (f_cls is not None or hc is not None) \
         else B.response_args(args, resp)
     base = B.DENIAL_SEED if kw.get("seed_base") is None else int(kw["seed_base"])
-    seed = B.start_seed(int(start), base)
-    n = len(job["blocks"])
-    L = min(U.HORIZON, n - int(start))
+    return a, B.start_seed(int(start), base), min(U.HORIZON, len(job["blocks"]) - int(start)), f_cls, hc
+
+
+def _start_record(job: dict[str, Any], start: int, kw: dict[str, Any], a: dict[str, Any], seed: int, L: int,
+                  f_cls: Any, hc: Any, long_full: Any, exact: dict[int, Any] | None, counts: list[dict[str, Any]],
+                  exact_counts: dict[int, list[dict[str, Any]]]) -> dict[str, Any]:
+    named = {**B.seam_parameters(hc, kw.get("seed_base")), **B.class_parameters(f_cls)}
+    rules = a["path"]["rules"]
+    return {"start": int(start), "date": str(job["dates"][start]), "long": _slim(long_full), "exact": exact,
+            "ledger": [{k: r.get(k) for k in LEDGER_KEEP} for r in long_full.trades if r.get("contracts")],
+            "seed": seed, "named": named, "counts": counts, "exact_counts": exact_counts,
+            "sub": float(a["path"]["subscription"]), "lag": int(a["path"]["payout_lag_days"]),
+            "billing_days": int(a["path"]["billing_days"]), "activation": float(a["path"]["activation"]),
+            "payout_fee": float(rules.payout_fee), "split": float(rules.profit_split),
+            "payout_min": float(rules.payout_min), "std_cap": float(rules.std_cap), "sessions": int(L),
+            "sizing": a["draws"].get("sizing")}
+
+
+def captured_start(job: dict[str, Any], s: T.Settings, start: int, kw: dict[str, Any], point: list[Any] | None,
+                   resp: Any, every: int, counts_by_run: list[list[dict[str, Any]]],
+                   got: dict[tuple[int, int], Any]) -> dict[str, Any]:
+    """One start from A-9's own single pass (`firms.captured_run`): its long run (recorded, its ledger), its
+    exact-length runs where A-9 makes them, every run's adapter counters and request logs -- no second replay. Refused
+    unless the captured runs are exactly the start's (its seed, the long run and each exact length A-9 makes)."""
+    from propedge.research import user_journey as U
+
+    a, seed, L, f_cls, hc = _start_args(job, s, start, kw, point, resp)
+    with_exact = int(start) % int(every) == 0              # A-9 composes through `_one_start` here, even with none
+    hs = [h for h in U.EXACT if h < L] if with_exact else []
+    want = {(int(seed), int(L))} | {(int(seed), int(h)) for h in hs}
+    if set(got) != want:
+        raise Refused(f"start {start}: the single pass captured {sorted(got)}, not the start's runs {sorted(want)}")
+    adapters = s.plan not in ("TS", "LU")                 # TS and Lucid run no adapter account (9.1 item 5)
+    if len(counts_by_run) != ((1 + len(hs)) if adapters else 0):
+        raise Refused(f"start {start}: {len(counts_by_run)} replays' adapter accounts counted, not "
+                      f"{(1 + len(hs)) if adapters else 0}")
+    counts_by_run = counts_by_run or [[] for _ in range(1 + len(hs))]
+    long_full = got[(int(seed), int(L))]
+    if not long_full.trades and any(c.trades for c in long_full.combines):
+        raise Refused(f"start {start}: the recorded long run carries no ledger")
+    exact = {h: got[(int(seed), int(h))] for h in hs} if with_exact else None
+    return _start_record(job, start, kw, a, seed, L, f_cls, hc, long_full, exact, counts_by_run[0],
+                         {h: counts_by_run[1 + i] for i, h in enumerate(hs)})
+
+
+def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, start: int,
+                 kw: dict[str, Any], point: list[Any] | None, every: int) -> dict[str, Any]:
+    """One start replayed again, apart from A-9 (the second build's route, kept as the single pass's control): the long
+    run with the engine's ledger on, and the exact-length runs where A-9 makes them, with the start's classes."""
+    from propedge.research import user_journey as U
+
+    a, seed, L, f_cls, hc = _start_args(job, s, start, kw, point, resp)
     A.TALLY.clear()
     rec_args = {**a, "path": {**a["path"], "record_trades": True}}
     long_full = B.replay(job["blocks"][start:start + L], rec_args, seed)
@@ -269,16 +319,8 @@ def direct_start(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Set
                 exact[h] = B.replay(job["blocks"][start:start + h], a, seed)
                 exact_counts[h] = A.collect(with_requests=True)
     A.TALLY.clear()
-    named = {**B.seam_parameters(hc, kw.get("seed_base")), **B.class_parameters(f_cls)}
-    rules = a["path"]["rules"]
-    return {"start": int(start), "date": str(job["dates"][start]), "long": _slim(long_full), "exact": exact,
-            "ledger": [{k: r.get(k) for k in LEDGER_KEEP} for r in long_full.trades if r.get("contracts")],
-            "seed": seed, "named": named, "counts": counts[0] if counts else [], "exact_counts": exact_counts,
-            "sub": float(a["path"]["subscription"]), "lag": int(a["path"]["payout_lag_days"]),
-            "billing_days": int(a["path"]["billing_days"]), "activation": float(a["path"]["activation"]),
-            "payout_fee": float(rules.payout_fee), "split": float(rules.profit_split),
-            "payout_min": float(rules.payout_min), "std_cap": float(rules.std_cap), "sessions": int(L),
-            "sizing": a["draws"].get("sizing")}
+    return _start_record(job, start, kw, a, seed, L, f_cls, hc, long_full, exact, counts[0] if counts else [],
+                         exact_counts)
 
 
 def priced_output(design: str, arm: str, resp: Any, d: dict[str, Any], run_price: float, price: float,
@@ -449,16 +491,18 @@ def _trades(ledger: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
              "contracts": int(r["contracts"]), "pnl": float(r["pnl"])} for r in ledger]
 
 
-def uncapped_ladder_differs(ledger: Sequence[dict[str, Any]], rule: Any) -> tuple[int, int]:
+def uncapped_ladder_differs(ledger: Sequence[dict[str, Any]], rule: Any) -> tuple[int, int, int]:
     """9.3 (5.2's scaling row): of Fast Pass's funded trades, those an uncapped ladder (the record's two contracts plus
     one per step, without the evaluation's cap) would size differently at the session's balance -- the size it would
-    take at the trade's own intended risk, allowance and room -- and the funded trades read."""
+    take at the trade's own intended risk, allowance and room -- and the funded trades read. **Its control** (m3): the
+    same rebuild under the plan's own ladder must give every trade its own contracts; the third number is the trades
+    it does not (refusing, in `start_stats`)."""
     from propedge.campaign.sizing import ScalingLadder
 
     t = T.plan_terms("FP")
     rows = [r for r in ledger if r["kind"] == "funded" and r.get("risk_per_contract")]
     if not rows or rule is None:
-        return 0, len(rows)
+        return 0, len(rows), 0
     (b0, m0), (b1, m1) = t.ladder[0], t.ladder[1]
     per, step = float(b1) - float(b0), int(m1) - int(m0)
     first: dict[tuple[int, int], float] = {}
@@ -470,17 +514,43 @@ def uncapped_ladder_differs(ledger: Sequence[dict[str, Any]], rule: Any) -> tupl
                            minis=tuple(int(m0) + i * step for i in range(k)), micros_per_mini=int(t.micros_per_mini),
                            source="RD-01 9.3: Fast Pass's ladder without its cap")
     unc = dataclasses.replace(rule, ladder=ladder)
-    n = 0
-    for r in rows:
+
+    def size(rr: Any, r: dict[str, Any]) -> int:
         rpc = float(r["risk_per_contract"])
-        cap = unc.cap_micros("funded", first[(int(r["index"]), int(r["day"]))])
+        cap = rr.cap_micros("funded", first[(int(r["index"]), int(r["day"]))])
         want = int(math.floor(float(r["intended_risk"]) / rpc))
         if cap is not None:
             want = min(want, int(cap))
-        if unc.room_capped("funded") and r.get("room") is not None and np.isfinite(float(r["room"])):
+        if rr.room_capped("funded") and r.get("room") is not None and np.isfinite(float(r["room"])):
             want = min(want, int(math.floor(max(float(r["room"]), 0.0) / rpc + 1e-9)))
-        n += int(want != int(r["contracts"]))
-    return n, len(rows)
+        return want
+
+    control = sum(int(size(rule, r) != int(r["contracts"])) for r in rows)
+    return sum(int(size(unc, r) != int(r["contracts"])) for r in rows), len(rows), control
+
+
+def g10_counts(funded: Sequence[Any], ledger: Sequence[dict[str, Any]], ctx: dict[str, Any], start: int,
+               sessions: int) -> dict[str, float]:
+    """G-10 at Fast Pass and Quick Pay (9.3) on one replay's funded records and ledger: the sessions with no trade per
+    funded account (its live sessions less its trading ones); the accounts idle at least the record's 30 calendar days
+    -- that many days with no trade between its activation, its trading days and its end (n3: dates at least 31 days
+    apart); the accounts drained below the smallest tradable size -- left open at the replay's end (not breached, not
+    ended by a ceiling, a fifth request or a closure: m2) with a last cushion under one micro at the stream's smallest
+    stop."""
+    idle_days = int(T.parse_money(r"inactive for (\d+) days", T.record_value("tradeday.inactivity_rule"),
+                                  "tradeday.inactivity_rule"))
+    no_trade = idle = drained = 0
+    for f in funded:
+        days = sorted({int(r["day"]) for r in ledger if r["kind"] == "funded" and int(r["index"]) == int(f.index)})
+        no_trade += max(0, int(f.days) - len(days))
+        end = int(f.ended_on) if f.ended_on is not None else int(sessions)
+        marks = [int(f.activation_day)] + days + [end]
+        gaps = [(_date_of(ctx, start, b) - _date_of(ctx, start, a)).days for a, b in zip(marks, marks[1:])]
+        idle += int(bool(gaps) and max(gaps) - 1 >= idle_days)            # n3: the days between, not the gap
+        drained += int(f.ended_on is None and not f.closed                     # m2: left open, sitting drained
+                       and float(f.balance) - float(f.floor) < float(ctx["min_rpc"]) - 1e-9)
+    return {"g10_funded_sessions_no_trade": no_trade, "g10_funded_accounts": len(funded),
+            "g10_accounts_idle_30": idle, "g10_accounts_drained": drained}
 
 
 def start_stats(d: dict[str, Any], s: T.Settings, ctx: dict[str, Any]) -> tuple[dict[str, float], list[str]]:
@@ -567,24 +637,12 @@ def start_stats(d: dict[str, Any], s: T.Settings, ctx: dict[str, Any]) -> tuple[
         x["max_trades_session_account"] = ta["max_per_account"]
         x["max_trades_session_across"] = ta["max_across"]
         x["sessions_above_trade_line"] = ta["sessions_above_line"]
-        # G-10: sessions with no trade per funded account, accounts idle 30 calendar days, accounts drained
-        idle_days = int(T.parse_money(r"inactive for (\d+) days", T.record_value("tradeday.inactivity_rule"),
-                                      "tradeday.inactivity_rule"))
-        no_trade = idle = drained = 0
-        for f in lp.funded:
-            days = sorted({int(r["day"]) for r in led if r["kind"] == "funded" and int(r["index"]) == int(f.index)})
-            no_trade += max(0, int(f.days) - len(days))
-            end = int(f.ended_on) if f.ended_on is not None else int(d["sessions"])
-            marks = [int(f.activation_day)] + days + [end]
-            gaps = [(_date_of(ctx, st0, b) - _date_of(ctx, st0, a)).days for a, b in zip(marks, marks[1:])]
-            idle += int(bool(gaps) and max(gaps) >= idle_days)
-            drained += int(not f.closed and float(f.balance) - float(f.floor) < float(ctx["min_rpc"]) - 1e-9)
-        x["g10_funded_sessions_no_trade"] = no_trade
-        x["g10_funded_accounts"] = len(lp.funded)
-        x["g10_accounts_idle_30"] = idle
-        x["g10_accounts_drained"] = drained
+        x.update(g10_counts(lp.funded, led, ctx, st0, int(d["sessions"])))
     if s.plan == "FP":
-        n_u, n_f = uncapped_ladder_differs(led, d.get("sizing"))
+        n_u, n_f, n_c = uncapped_ladder_differs(led, d.get("sizing"))
+        if n_c:
+            probs.append(f"9.3's uncapped-ladder rebuild gives {n_c} of {n_f} funded trades other than their own "
+                         "contracts under the plan's own ladder (its control, m3)")
         x["fp_uncapped_ladder_differs"] = n_u
         x["fp_funded_trades_read"] = n_f
     if s.plan == "LU":
@@ -606,18 +664,23 @@ def compare_ts(d: dict[str, Any], ts: dict[str, Any] | None) -> dict[str, float]
         if len(a) > h and len(b) > h:
             out[f"differs_by_{h}"] = float(bool(np.any(np.abs(a[:h + 1] - b[:h + 1]) > 1e-9)))
     mine = {(int(r["historical_day"]), int(r["trade_index"])): (r["kind"], int(r["contracts"])) for r in d["ledger"]}
-    for kind in ("combine", "funded"):
-        both = [k for k, (kd, _n) in mine.items() if kd == kind and k in t["contracts"] and t["contracts"][k][0] == kind]
+    kinds = ("combine", "funded")
+    theirs = {(int(h), int(j)): (kinds[int(k)], int(n)) for h, j, k, n in zip(t["hd"], t["j"], t["kind"], t["n"])}
+    for kind in kinds:
+        both = [k for k, (kd, _n) in mine.items() if kd == kind and k in theirs and theirs[k][0] == kind]
         out[f"contracts_compared.{kind}"] = len(both)
-        out[f"contracts_differ.{kind}"] = sum(int(mine[k][1] != t["contracts"][k][1]) for k in both)
+        out[f"contracts_differ.{kind}"] = sum(int(mine[k][1] != theirs[k][1]) for k in both)
     return out
 
 
 def ts_compact(d: dict[str, Any]) -> dict[str, Any]:
-    """What TS keeps of a start for the pairing (9.3's differs and contracts)."""
+    """What TS keeps of a start for the pairing (9.3's differs and contracts), as arrays (memory: m7)."""
+    led = d["ledger"]
     return {"cash": np.asarray(d["long"].path.cash_series, float),
-            "contracts": {(int(r["historical_day"]), int(r["trade_index"])): (r["kind"], int(r["contracts"]))
-                          for r in d["ledger"]}}
+            "hd": np.array([int(r["historical_day"]) for r in led], np.int32),
+            "j": np.array([int(r["trade_index"]) for r in led], np.int32),
+            "kind": np.array([0 if r["kind"] == "combine" else 1 for r in led], np.int8),
+            "n": np.array([int(r["contracts"]) for r in led], np.int32)}
 
 
 # ------------------------------------------------------------------------------------------------ a cell
@@ -626,19 +689,23 @@ def ts_compact(d: dict[str, Any]) -> dict[str, Any]:
 def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Settings, starts: Sequence[int],
              kw: dict[str, Any], point: list[Any] | None, *, direct: bool = True, exact_every: int | None = None,
              ctx: dict[str, Any] | None = None, ts: dict[int, dict[str, Any]] | None = None,
-             keep_ts: bool = False) -> dict[str, Any]:
-    """Every chosen start of one cell: A-9's outputs (the runner), and -- `direct` -- each start's direct runs, held
-    equal to A-9's output at the run price, 9.1 items 4 and 5, 9.2's oracles and the start's 9.3 numbers. Stops at the
-    first start with a refusing problem (r5). Without `direct`, item 5 on A-9's own account counts."""
+             keep_ts: bool = False, keep_directs: bool = True) -> dict[str, Any]:
+    """Every chosen start of one cell. `keep_directs`: keep each start's runs for A-10 (DayTraders' reading and the
+    price grid reprice them); other cells drop them as each start's numbers are taken (memory). **One pass through
+    A-9** (the third read's (g)): with `direct`, A-9's own
+    replays are captured in this process (`firms.captured_run`: the long run through A-9's Q-94 recorder, the
+    exact-length runs as `user_beside.replay` returns them) and read for 9.1 items 4 and 5, 9.2's oracles, the start's
+    9.3 numbers and A-10 -- no second replay; the start's output composed again from the captured runs must be A-9's
+    bit for bit (`first_difference`; a guard on the capture, not a second run). Stops at the first start with a
+    refusing problem (r5). Without `direct`, item 5 on A-9's own account counts."""
     every = 1 if resp.kind == "off" else int(B.EXACT_EVERY if exact_every is None else exact_every)
-    runs = F.run_plan(design, arm, resp, job, s, list(starts), kw, point=point)
-    outs = [o for o, _ in runs]
-    counts = [c[0] if c else [] for _, c in runs]
     what = f"{design} {arm} {resp.name}"
     problems: list[str] = []
-    directs, stats, compact = [], {}, {}
     checks = {"starts_compared": 0, "trades": 0, "accounts": 0}
     if not direct:
+        runs = F.run_plan(design, arm, resp, job, s, list(starts), kw, point=point)
+        outs = [o for o, _ in runs]
+        counts = [c[0] if c else [] for _, c in runs]
         for o, c in zip(outs, counts):
             p = class_problems(c, s)
             checks["accounts"] += len(c)
@@ -649,12 +716,21 @@ def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
                 "ts": None}
     from user_beside_identity import first_difference
 
-    for o, st in zip(outs, starts):
-        d = direct_start(design, arm, resp, job, s, int(st), kw, point, every)
+    outs, counts, directs, stats, compact = [], [], [], {}, {}
+    for st in starts:
+        ((o, by_run, got),) = F.run_plan(design, arm, resp, job, s, [int(st)], kw, point=point, capture=True)
+        outs.append(o)
+        counts.append(by_run[0] if by_run else [])
+        try:
+            d = captured_start(job, s, int(st), kw, point, resp, every, by_run, got)
+        except Refused as exc:
+            problems.append(f"{what}: {exc}")
+            break
+        del got
         mine = priced_output(design, arm, resp, d, d["sub"], d["sub"])
         diff = first_difference(o, mine)
         if diff:
-            problems.append(f"{what} start {st}: the direct runs are not A-9's -- {diff}")
+            problems.append(f"{what} start {st}: the composition from the captured runs is not A-9's -- {diff}")
         tp = trade_problems(d["ledger"], job["blocks"][int(st):])
         problems += [f"{what} start {st}: item 4: {p}" for p in tp[:3]]
         problems += [f"{what} start {st}: item 5: {p}" for p in class_problems(d["counts"], s)]
@@ -668,7 +744,8 @@ def run_cell(design: str, arm: str, resp: Any, job: dict[str, Any], s: T.Setting
             problems += [f"{what} start {st}: 9.2: {p}" for p in sp]
         if keep_ts:
             compact[int(st)] = ts_compact(d)
-        directs.append(keep_direct(d))
+        if keep_directs:
+            directs.append(keep_direct(d))
         del d
         if problems:
             break                                                     # r5: the reading stops at the first refusal
@@ -905,6 +982,88 @@ def paired_scorecard_rows(plan: list[dict[str, Any]], ts: list[dict[str, Any]]) 
     return out
 
 
+def u1_reported_keys() -> list[tuple[str, str, int]]:
+    """10.1 item 1's reported lines as `USER_MILESTONES.md` defines them (M1), each (line, U1's key, the horizon a start
+    needs): S2 -- sessions to the first pass p90 and cash spent before it p90; S3d -- the first payout's cash p50; Q --
+    the mean value under Q1 (at 21 sessions, and 30 and 42 as its sensitivity) and Q2; S6 -- luck against design: the
+    net's spread across starts and its mean at months 1, 3, 6 and 12, each start's monthly mean over its spread (p10,
+    p50, p90). The share paid by session 21 by start year is S6's too (`u1_reported_rows`). The keys are U1's own
+    (`propedge.research.user_journey.metric_rows`), built from its constants."""
+    from propedge.research import user_journey as U
+
+    out = [("S2", f"first_pass:days_p90@{U.PASS_WINDOW}", U.PASS_WINDOW),
+           ("S2", f"first_pass:spent_before_p90@{U.PASS_WINDOW}", U.PASS_WINDOW),
+           ("S3d", f"first_payout:cash_p50@{U.PAYOUT_WINDOW}", U.PAYOUT_WINDOW)]
+    out += [("Q", f"quit:q1_mean_net@{d}", U.QUIT_END) for d in (U.QUIT_DAY, *U.QUIT_SENSITIVITY)]
+    out.append(("Q", f"quit:q2_mean_net@{U.QUIT_CHECK}", U.QUIT_END))
+    for m in U.LUCK_MONTHS:
+        out.append(("S6", f"luck:sd_net_across_starts@{U.MONTH * m}", U.MONTH * m))
+        out.append(("S6", f"luck:net_mean@{U.MONTH * m}", U.MONTH * m))
+    out += [("S6", f"luck:monthly_mean_over_sd_p{q}@{U.HORIZON}", U.HORIZON) for q in (10, 50, 90)]
+    return out
+
+
+def u1_reported_rows(recs: Sequence[dict[str, Any]], paired_with: Sequence[dict[str, Any]] | None = None
+                     ) -> list[dict[str, Any]]:
+    """M1: S2, S3d, Q and S6's per-run parts by U1's own readings (`user_journey.metric_rows` through `Views`, so a
+    start whose exact-length run differs is read from that run, D-620 (3)(f)), each on its block's starts with its own
+    horizon (`u_select.block`, as the card reads P and the guarded measures); `paired_with` -- the other side's records,
+    each line then read on the start dates both sides hold, as the paired card. No replay: the cell's records."""
+    from propedge.research import u_select as S
+    from propedge.research import user_journey as U
+
+    keys = u1_reported_keys()
+    year_key = f"luck:share_paid_by@{U.PAID_BY_YEAR_DAY}"
+    rows = []
+    for b in BLOCKS:
+        which = None if b == "all" else b
+        for h in sorted({k[2] for k in keys} | {U.PAID_BY_YEAR_DAY}):
+            mine = S.block(list(recs), which, h)
+            if paired_with is not None:
+                dates = {str(r["start_date"]) for r in S.block(list(paired_with), which, h)}
+                mine = [r for r in mine if str(r["start_date"]) in dates]
+            got = {r["key"]: r for r in U.metric_rows(U.Views(mine))} if mine else {}
+            want = [(line, key) for line, key, hh in keys if hh == h]
+            if h == U.PAID_BY_YEAR_DAY:
+                want += [("S6", k) for k in sorted(got) if k.startswith(year_key + "[")]
+            for line, key in want:
+                r = got.get(key)
+                rows.append({"subsection": "u1_reported", "block": b, "horizon": h, "measure": key, "stat": line,
+                             "value": float("nan") if r is None else float(r["value"]),
+                             "n": 0 if r is None else int(r["n"])})
+    return rows
+
+
+def luck_across(by_run: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """M1: S6's part that needs every configuration (`user_journey.luck_rows`) across one stream and arm's runs, by
+    block: at months 1, 3, 6 and 12 the spread of the runs' mean nets, and each run's spread across starts over it.
+    `by_run`: {run: its `u1_reported_rows` (unpaired)}."""
+    from propedge.research import user_journey as U
+
+    rows = []
+    for b in BLOCKS:
+        cfg = {run: [{"key": r["measure"], "value": r["value"]} for r in rs if r["block"] == b]
+               for run, rs in by_run.items()}
+        for r in U.luck_rows(cfg):
+            rows.append({"subsection": "u1_luck", "block": b, "run": r["config"], "measure": r["key"], "stat": "S6",
+                         "value": float(r["value"]), "n": int(r["n"])})
+    return rows
+
+
+def coverage_settings(recs: Sequence[dict[str, Any]]) -> set[tuple[int, int]]:
+    """m6: every (h, n_w) a reading of this stream can use -- each block's starts at each horizon, windowed on start
+    positions (10.2 item 1), with an interval from four kept windows -- known from the block sizes before any reading."""
+    from propedge.research import u_select as S
+
+    out = set()
+    for h in sorted(set(HORIZON_OF_MONTH.values())):
+        for b in BLOCKS:
+            nw = FU.n_windows(len(S.block(list(recs), None if b == "all" else b, h)), h)
+            if nw >= FU.MIN_WINDOWS:
+                out.add((int(h), int(nw)))
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ 9.3, the stream
 
 
@@ -974,22 +1133,84 @@ def _m3(recs: list[dict[str, Any]]) -> float:
 LUCID_NOTE = "Lucid's price is verified; beside"
 
 
+def break_even_known(measure: Callable[[float], float], target: float, known: dict[float, float], lo: float,
+                     hi: float, tol: float) -> float | None:
+    """`firms.break_even_price`'s bisection, step for step -- the same endpoints, midpoints, tests and answer -- with
+    each midpoint's side of the target read from the grid's own values where the measure's monotonicity decides it:
+    the measure falls in price (a dearer evaluation only subtracts cash, exactly, from every close), so between two
+    grid prices p1 < m < p2, f(p2) above the target puts f(m) above it and f(p1) below puts f(m) below it, strictly;
+    only an undecided midpoint is recomposed. `known` must be the measure's own values at the grid prices; refused
+    (`ValueError`) if they do not fall in price, which would void the inference."""
+    ks = sorted(known)
+    if any(known[q] > known[p_] + 1e-12 for p_, q in zip(ks, ks[1:])):
+        raise ValueError("the grid's values do not fall in price: the side of a midpoint cannot be read from them")
+
+    def f(x: float) -> float:
+        return float(known[x]) - target if x in known else float(measure(x)) - target
+
+    def side(m: float) -> float:
+        below, above = [q for q in ks if q < m], [q for q in ks if q > m]
+        if below and above:                       # a margin, so float noise at the target can never decide a side
+            if known[min(above)] - target > 1e-9:
+                return 1.0
+            if known[max(below)] - target < -1e-9:
+                return -1.0
+        return float(measure(m)) - target
+
+    f_lo, f_hi = f(float(lo)), f(float(hi))
+    if f_lo == 0.0:
+        return float(lo)
+    if f_hi == 0.0:
+        return float(hi)
+    if f_lo * f_hi > 0:
+        return None
+    x, y = float(lo), float(hi)
+    while y - x > tol:
+        m = 0.5 * (x + y)
+        fm = side(m)
+        if fm == 0.0:
+            return m
+        if (fm > 0) == (f_lo > 0):
+            x = m
+        else:
+            y = m
+    return 0.5 * (x + y)
+
+
+#: 10.1 item 9's break-even search: $0 to the grid's top, bisected to a cent (the build's resolution, unchanged)
+BREAK_EVEN_TOL = 0.01
+
+
 def grid_rows(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Settings,
-              ts_recs: list[dict[str, Any]] | None) -> tuple[list[dict[str, Any]], dict[float, list[dict]]]:
+              ts_recs: list[dict[str, Any]] | None, *, search: str = "known") -> tuple[list[dict[str, Any]],
+                                                                                         dict[float, list[dict]]]:
     """Every money measure and P at each price, by A-10's arithmetic on every run of every start; and the break-even
-    price against TS for P, S5a and the mean month-3 net (`firms.break_even_price`, $0 to $250; Lucid's too, r3,
-    labelled). Returns (rows, the records at each price)."""
+    price against TS for P, S5a and the mean month-3 net ($0 to $250, to a cent; Lucid's too, r3, labelled). One
+    recomposition per price, shared by the grid and the three searches (memoised); `search` "known" bisects through
+    `break_even_known` (the grid's values decide a midpoint's side where they can), "plain" through
+    `firms.break_even_price` -- the same answers, the toys show (`tests/rd01_reading_synthetic.py`). Returns (rows, the
+    records at each price); the recompositions made are counted on the break-even rows."""
     from propedge.research import u_select as S
 
     pro = (float(T.plan_terms("DT").funded_recurring_fee), int(T.stage2_value("billing_days"))) if s.plan == "DT" \
         else (0.0, None)
     run_price = float(cell["directs"][0]["sub"]) if cell["directs"] else float("nan")
     note = LUCID_NOTE if s.plan == "LU" else ""
+    memo: dict[float, list[dict[str, Any]]] = {}
 
     def recs_at(p: float) -> list[dict[str, Any]]:
-        return [priced_output(design, arm, resp, d, run_price, p, pro[0], pro[1])["rec"] for d in cell["directs"]]
+        if float(p) not in memo:
+            memo[float(p)] = [priced_output(design, arm, resp, d, run_price, p, pro[0], pro[1])["rec"]
+                              for d in cell["directs"]]
+        return memo[float(p)]
+
+    def value(recs: list[dict[str, Any]], key: str) -> float:
+        if key == "mean_net_month_3":
+            return _m3(S.block(recs, None, HORIZON_OF_MONTH[3]))
+        return _card(recs, None)[key]
 
     rows, at = [], {}
+    known: dict[str, dict[float, float]] = {"P": {}, "S5a": {}, "mean_net_month_3": {}}
     for p in [run_price] + [q for q in grid_prices(s) if q != run_price]:
         recs = recs_at(p)
         at[p] = recs
@@ -999,26 +1220,40 @@ def grid_rows(cell: dict[str, Any], design: str, arm: str, resp: Any, s: T.Setti
             for k, v in card.items():
                 rows.append({"subsection": "price_grid", "block": b, "price": p, "measure": k, "value": v,
                              "note": note})
+                if b == "all" and k in known:
+                    known[k][float(p)] = float(v)
             sub = S.block(recs, which, HORIZON_OF_MONTH[3])
+            m3 = _m3(sub)
             rows.append({"subsection": "price_grid", "block": b, "price": p, "measure": "mean_net_month_3",
-                         "value": _m3(sub), "note": note})
+                         "value": m3, "note": note})
+            if b == "all":
+                known["mean_net_month_3"][float(p)] = float(m3)
+    n_grid = len(memo)
     if ts_recs is not None:
         ts_card = _card(ts_recs, None)
         ts_m3 = _m3(S.block(ts_recs, None, HORIZON_OF_MONTH[3]))
+        hi = float(T.DT_PRICE_GRID[-1])
         for key, target in (("P", ts_card.get("P")), ("S5a", ts_card.get("S5a")), ("mean_net_month_3", ts_m3)):
             if target is None or not np.isfinite(target):
                 continue
 
-            def measure(p: float, key=key) -> float:
-                recs = recs_at(p)
-                if key == "mean_net_month_3":
-                    return _m3(S.block(recs, None, HORIZON_OF_MONTH[3]))
-                return _card(recs, None)[key]
+            calls = [0]
 
-            be = F.break_even_price(measure, float(target), 0.0, float(T.DT_PRICE_GRID[-1]), tol=0.01)
+            def measure(p: float, key=key, calls=calls) -> float:
+                calls[0] += 1
+                return value(recs_at(p), key)
+
+            before = len(memo)
+            if search == "plain":
+                be = F.break_even_price(measure, float(target), 0.0, hi, tol=BREAK_EVEN_TOL)
+            else:
+                kn = {q: v for q, v in known[key].items() if 0.0 <= q <= hi and np.isfinite(v)}
+                be = break_even_known(measure, float(target), kn, 0.0, hi, BREAK_EVEN_TOL)
             rows.append({"subsection": "break_even", "block": "all", "price": float("nan") if be is None else be,
-                         "measure": key, "value": float(target),
-                         "note": "; ".join(x for x in ("none in range" if be is None else "", note) if x)})
+                         "measure": key, "value": float(target), "n": len(memo) - before, "measure_calls": calls[0],
+                         "note": "; ".join(x for x in ("none in range" if be is None else "", note,
+                                                       f"{len(memo) - before} recompositions beyond the grid's "
+                                                       f"{n_grid}") if x)})
     return rows, at
 
 
@@ -1050,12 +1285,14 @@ def grid_problems(at: dict[float, list[dict]], other: dict[str, Any] | None, oth
 
 
 def twin_measures(paths: Sequence[Any]) -> dict[str, float]:
-    """9.2 on a gate arm's paths: the mean gross payouts per funded account and the pass rate per evaluation (each a
-    ratio of sums over paths) with their delta-method Monte Carlo standard errors."""
+    """9.2 on a gate arm's paths: the mean gross payouts per funded account and the pass rate per resolved evaluation
+    (passed or failed; m5 -- the others, unresolved at the horizon or closed otherwise, counted beside), each a ratio of
+    sums over paths, with their delta-method Monte Carlo standard errors."""
     g = np.array([sum(float(f.gross_paid) for f in lp.funded) for lp in paths], float)
     n = np.array([len(lp.funded) for lp in paths], float)
     w = np.array([sum(int(c.passed) for c in lp.combines) for lp in paths], float)
-    a = np.array([len(lp.combines) for lp in paths], float)
+    a = np.array([sum(int(bool(c.passed) or bool(c.failed)) for c in lp.combines) for lp in paths], float)   # m5
+    other = float(sum(len(lp.combines) for lp in paths) - a.sum())
 
     def ratio(num: np.ndarray, den: np.ndarray) -> tuple[float, float]:
         if den.sum() <= 0:
@@ -1069,7 +1306,8 @@ def twin_measures(paths: Sequence[Any]) -> dict[str, float]:
     rg, sg = ratio(g, n)
     rp, sp = ratio(w, a)
     return {"twin_funded": float(n.sum()), "twin_gross_per_funded": rg, "twin_gross_per_funded_se": sg,
-            "twin_evaluations": float(a.sum()), "twin_pass_rate": rp, "twin_pass_rate_se": sp}
+            "twin_evaluations_resolved": float(a.sum()), "twin_evaluations_unresolved_or_closed": other,
+            "twin_pass_rate": rp, "twin_pass_rate_se": sp}
 
 
 def twin_bounds(s: T.Settings, rules: Any) -> tuple[float, float]:
@@ -1104,7 +1342,8 @@ def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate
     """10.1 item 8 for one corner: the gate's rows at the plan's arguments (A-1 on the gate, A-8's seams; the placement
     off), point and bound, one call (Quick Pay's class holds the gate's point blocks and classifies on them on both
     arms, M3); and the zero-edge twin as Stage 2 builds it (r8: `portfolio_stage.zero_edge_blocks` at the design's
-    fresh R, every bound 0), read on its bound arm, with 9.2's two oracles (`twin_problems`). Labelled: A-11 off;
+    fresh R, every bound 0) at the log's own per-trade fees (m4: no plan schedule re-prices it, so its game is fair),
+    read on its bound arm, with 9.2's two oracles (`twin_problems`). Labelled: A-11 off;
     DayTraders' inactivity on 21 sessions; its recurring fee left out. Returns (rows, sinks by call, labels, the
     oracles' problems)."""
     import portfolio_stage as ps
@@ -1127,6 +1366,8 @@ def gate_rows(blocks: Sequence[Any], kw: dict[str, Any], s: T.Settings, run_gate
     def call(label: str, blk: Sequence[Any], e_s: float, lb_s: float, e_by: dict, lb_by: dict, keep: tuple[str, ...],
              oracle: bool) -> list[dict[str, Any]]:
         k = dict(g)
+        if oracle:                    # m4: the twin at the log's own per-trade fees, so exactly zero-edge (9.2's game)
+            k["sizing"] = dataclasses.replace(k["sizing"], fee_schedule=None)
         inner = None
         if hook_factory is not None:
             inner, sinks[label] = hook_factory(label)
@@ -1159,4 +1400,5 @@ __all__ = ["DECLARATION", "PURPOSES", "BLOCKS", "STATUS", "LADDER", "Refused", "
            "run_cell", "trade_problems", "class_problems", "reading_outs", "count_rows", "diverge_rows",
            "coverage_shapes_at", "coverage_of", "coverage_rows", "paired_rows", "paired_scorecard_rows",
            "tier1_count_rows", "p16_count_nonzero", "exit_problems", "grid_prices", "grid_rows", "grid_problems",
-           "twin_measures", "twin_bounds", "twin_problems", "gate_rows"]
+           "twin_measures", "twin_bounds", "twin_problems", "gate_rows", "break_even_known", "BREAK_EVEN_TOL",
+           "u1_reported_keys", "u1_reported_rows", "luck_across", "coverage_settings", "captured_start", "g10_counts"]
