@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-075).
+**Updated:** 2026-11-16 (E-076).
 
 ## Phase
 
@@ -49,7 +49,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
 | wt-user | wt/wt-user | Q-95 the red team's sixth read of family B | running |
 | wt-features | wt/wt-features | Q-100 the adapter's household and seed-base keywords | running |
-| wt-lit | wt/wt-lit | Q-87c family O's fourth text | running |
+| wt-lit | wt/wt-lit | -- (Q-87c merged, E-076; the gatekeeper's read Q-87d) | idle |
 | wt-firms | wt/wt-firms | Q-91d the firms reading's pin-form edit | running |
 | wt-payout | wt/wt-payout | Q-92b reading PP's small redraft | running |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
@@ -61,7 +61,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 - Heavy, one at a time under `run.lock`, one queue (E-062, E-066): Q-55 (the calibration, running to about
   17:36 UTC); Q-83 (the fresh-seed validation F-02's pin needs, at eba1564); then from f7eda0d: Q-44 (the
   readings beside), Q-98 (money spent), Q-22b, Q-80, Q-89, Q-93, Q-35, Q-18, Q-45, Q-101.
-- Light: Q-87c (family O's fourth text), Q-91d, Q-100, Q-92b, Q-96,
+- Light: Q-87d (family O's gatekeeper read), Q-91d, Q-100, Q-92b, Q-96,
   Q-95.
 
 ## Machine
