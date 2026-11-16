@@ -839,18 +839,14 @@ def _python_files() -> list[Path]:
 
 
 #: E-035 (5): a read may be exempted on its line by `# one-door-exempt: E-nnn -- <the file> <why>`. Q-85 (E-052,
-#: E-053): the marker is checked -- the row it names must exist in DECISIONS.md and mention "one-door" or "exempt" and
+#: E-056): the marker is checked -- the row it names must exist in DECISIONS.md and mention "one-door" or "exempt" and
 #: the exempted file's path or basename. The file is the read's own path where the code names it (string parts of the
 #: path expression, a name followed through its module's top-level assignments), else the file the marker names; when
-#: both are known they must agree.
+#: both are known they must agree. E-056 admits this repository's current exemptions, file by file.
 EXEMPT_MARK = re.compile(r"one-door-exempt:\s*(E-\d{3,})")
 DATA_FILE = re.compile(r"[A-Za-z0-9_\-]+(?:\.[A-Za-z0-9_\-]+)*\.(?:parquet|feather|arrow|csv|jsonl|json)(?![A-Za-z0-9_])")
 #: the keyword a read call may name its file by, when not positionally
 PATH_KEYWORDS = ("path", "source", "path_or_paths", "filepath_or_buffer")
-#: rows a marker may name before they are in DECISIONS.md: the lead's row announced in Q-85's brief (E-052 (4): the
-#: exempted files and A1 days.parquet's corrected label). While it is absent a marker naming it is pending; the moment
-#: it exists it is checked as every other row is -- so it must then name the files, or the scan fails.
-PENDING_ROWS = frozenset({"E-052"})
 
 
 def _top_assignments(tree: ast.Module) -> dict[str, ast.expr]:
@@ -900,13 +896,13 @@ def _names_file(row: str, base: str) -> bool:
 
 
 def exemption_problem(line: str, call: ast.Call, assigns: dict[str, ast.expr], decisions: str) -> str | None:
-    """Why an exempted read's marker does not hold (None when it does, or when it names a pending row still absent)."""
+    """Why an exempted read's marker does not hold (None when it does)."""
     m = EXEMPT_MARK.search(line)
     assert m is not None
     row_id = m.group(1)
     row = R.decision_row(decisions, row_id)
     if row is None:
-        return None if row_id in PENDING_ROWS else f"its marker names {row_id}, which is no row of DECISIONS.md"
+        return f"its marker names {row_id}, which is no row of DECISIONS.md"
     low = row.lower()
     if "one-door" not in low and "exempt" not in low:
         return f"its marker names {row_id}, whose row does not mention a one-door exemption"
@@ -970,16 +966,6 @@ def test_this_repositorys_code_reads_bars_and_walks_only_through_the_reader():
     assert not bad, "read Stage 2's bars and walks through extended.reader: " + "; ".join(bad)
 
 
-def test_pending_rows_are_rows_not_yet_written():
-    """A pending row is one the lead announced and has not yet written: never a number the log has passed (a row
-    skipped or written under another number would otherwise excuse a marker forever)."""
-    ids = [int(m.group(1)[2:]) for line in (ROOT / "DECISIONS.md").read_text(encoding="utf-8").splitlines()
-           if (m := R.ROW.match(line))]
-    for row_id in PENDING_ROWS:
-        exists = R.decision_row((ROOT / "DECISIONS.md").read_text(encoding="utf-8"), row_id) is not None
-        assert exists or int(row_id[2:]) > max(ids), f"{row_id} is pending but the log is already at E-{max(ids):03d}"
-
-
 ONE_DOOR_LOG = ("| id | date | decision | basis |\n|---|---|---|---|\n"
                 "| E-801 | 2026-11-16 | **A row about something else** -- `cal.parquet` named, nothing admitted | t |\n"
                 "| E-802 | 2026-11-16 | **Exempted from the one door:** `results/x/pairs.parquet`, a derived file | t |\n"
@@ -1027,14 +1013,3 @@ def test_an_exemption_marker_whose_row_does_not_admit_the_read_is_refused(body, 
 ], ids=["module-constant", "unresolved-head", "parameter-named-in-marker", "keyword-fstring"])
 def test_an_exemption_marker_whose_row_admits_the_read_holds(body):
     assert _scan(body) == []
-
-
-def test_a_pending_row_excuses_a_marker_only_until_it_is_written():
-    body = 'import pandas as pd\nd = pd.read_parquet(V / "A1" / "days.parquet")  # one-door-exempt: E-052 -- days.parquet\n'
-    assert _scan(body) == [], "E-052 not yet in the log: pending"
-    written = ONE_DOOR_LOG + "| E-052 | 2026-11-16 | **Something else entirely** | t |\n"
-    assert "does not mention a one-door exemption" in " ".join(_scan(body, written)), "written: checked as any row"
-    admits = ONE_DOOR_LOG + "| E-052 | 2026-11-16 | **one-door-exempt:** A1's `days.parquet` (dates, day kinds) | t |\n"
-    assert _scan(body, admits) == []
-    other = body.replace("E-052", "E-053")
-    assert "no row" in " ".join(_scan(other)), "only the listed row is pending"
