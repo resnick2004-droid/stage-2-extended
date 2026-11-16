@@ -28,10 +28,11 @@ Sections (each a list of problems; empty when the section holds; notes for check
   placement on, a Consistency-path account's request half of its own maximum.
 * `t7` -- 8.2's oracles on toy campaigns: the zero-edge martingale bound per cell; every request within its bounds and
   paid at the split less the fee; `lock`'s floor; `half`'s exact half.
-* `t10r`, `t10g` -- the counters' channel on the U1 replay and the gate: with it on, every output (replay) and every row
-  and path record (gate) equals it off, at one worker and at two (or NOT CHECKED when the memory guard allows one); the
-  counts equal the class's own (the replay run directly; the gate's per path, on the path's own accounts); in `ref`
-  every one zero; refusals.
+* `t10r`, `t10g` -- the counters' channel on the U1 replay and the gate, at one worker: with it on, every output
+  (replay) and every row and path record (gate) equals it off; the counts equal the class's own (the replay run
+  directly; each gate path's, on a table-bearing toy, collected where it ran by `tests/pp_gate_direct.py`); every held
+  close followed by its held read; the levers' counts (`LEVER_KEYS`) zero in `ref`, the engine's Consistency counts
+  carried under the placement; refusals. `t10w2` (slow): the two legs at two workers (Q-106's M1).
 * `absent` -- the adapter with the channel absent equals master's before Q-105 (`git show 4c57ce6:extended/
   user_beside.py`, its text pinned by sha256) bit for bit on all 19 responses; the gate's re-composition proof holds
   with Q-105's marker.
@@ -84,6 +85,13 @@ BASE_COMMIT = "4c57ce6"
 BASE_SHA256 = "23c26773274287674bf43873a5a3b846649985531ff6630401c9da3ca0a7227d"
 problems: list[str] = []
 notes: list[str] = []
+
+
+def _frames():
+    f = sys._getframe(1)
+    while f is not None:
+        yield f
+        f = f.f_back
 
 
 def rng(*key: int) -> np.random.Generator:
@@ -195,8 +203,9 @@ def check(cond: bool, what: str) -> None:
 
 
 def zero_counts(rows: dict[int, dict[str, Any]], what: str) -> None:
-    tot = PP.total_counters(rows.values())
-    check(not any(tot.values()), f"{what}: the counters are not all zero ({tot})")
+    """The levers off: the levers' own counts zero (`LEVER_KEYS`; the two `cons_*` counts are the engine's)."""
+    tot = PP.lever_totals(rows.values())
+    check(not any(tot.values()), f"{what}: the levers' counts are not all zero ({tot})")
 
 
 # ------------------------------------------------------------------------------------------------ T-1
@@ -258,9 +267,14 @@ def section_t2() -> None:
                 reached = reached or c["b"] >= lock_bal - EPS
             held_total += held_here
             first_total += int(rows[idx]["first_requests_held"])
-            check(int(rows[idx]["first_requests_held"]) == held_here,
-                  f"T-2: account {idx}: the class counts {rows[idx]['first_requests_held']} held first requests, the "
-                  f"record {held_here}")
+            check(int(rows[idx]["first_request_closes_held"]) == held_here,
+                  f"T-2: account {idx}: the class counts {rows[idx]['first_request_closes_held']} closes holding its "
+                  f"first request, the record {held_here}")
+            check(int(rows[idx]["first_requests_held"]) == int(held_here > 0),
+                  f"T-2: account {idx}: first requests held {rows[idx]['first_requests_held']}, per account, is not "
+                  f"{int(held_here > 0)}")
+        last = len(blocks_for(ps))
+        check(not PP.read_problems(rows.values(), last), f"T-2: {PP.read_problems(rows.values(), last)[:2]}")
     check(held_total > 0, "T-2: lock held no first request on the toys (nothing tested)")
     # an account whose floor locked and whose balance fell back is not held: the class's own eligibility
     acct = PP.PPLock(index=0, activation_day=0, draw=types.SimpleNamespace(settlement="pessimistic"),
@@ -278,7 +292,8 @@ def section_t2() -> None:
         problems.append("T-2: the placement toy put no account on the Consistency path (nothing tested)")
     for f in cons:
         r = rows[int(f.index)]
-        check(r["first_requests_held"] == 0 and not r["held_days"] and r["elig_differs"] == 0,
+        check(r["first_requests_held"] == 0 and r["first_request_closes_held"] == 0 and not r["held_days"]
+              and r["elig_differs"] == 0 and r["held_closes"] == 0,
               f"T-2: Consistency account {f.index} was held by lock ({r})")
     would = sum(int(rows[int(f.index)]["cons_first_payout_floor_below_lock"]) for f in cons)
     check(sum(int(f.n_payouts) for f in cons) > 0, "T-2: no Consistency-path account was paid (nothing tested)")
@@ -380,6 +395,46 @@ def section_t4() -> None:
         _, ref_rows = counted(PP.PPElig, protocol(), blocks_for(1), path_seed=1)
         zero_counts(ref_rows, "T-4 ref")
     check(all(cls_seen[k] > 0 for k in PP.HELD_CLASSES), f"T-4: the toy did not show every class: {cls_seen}")
+    # m2: every held close the account outlives is followed by one held read (the runner refuses otherwise)
+    for cls, frac in ((PP.PPLock, 1.0), (PP.PPElig, PP.half_fraction()), (PP.PPLockMinimal, 1.0)):
+        n_closes = 0
+        for ps in (1, 6):
+            blocks = blocks_for(ps)
+            _, rows = counted(cls, protocol(frac), blocks, path_seed=ps)
+            rp = PP.read_problems(rows.values(), len(blocks))
+            check(not rp, f"T-4 {cls.__name__}: {rp[:2]}")
+            n_closes += sum(r["held_closes"] for r in rows.values())
+        check(n_closes > 0, f"T-4 {cls.__name__}: no held close on the toys (the reads' check tests nothing)")
+    # m2: the held read's vendored sources are pinned, and a changed pin refuses
+    PP.check_vendored_sources()
+    keep = dict(PP.VENDORED_SOURCES_SHA256)
+    PP.VENDORED_SOURCES_SHA256["propedge.campaign.risk_policy.account_state"] = "0" * 64
+    PP._CACHE.pop("sources_ok", None)
+    try:
+        PP.check_vendored_sources()
+        problems.append("T-4: a changed vendored source was not refused")
+    except RuntimeError:
+        pass
+    finally:
+        PP.VENDORED_SOURCES_SHA256.update(keep)
+        PP._CACHE.pop("sources_ok", None)
+        PP.check_vendored_sources()
+    # m1 (X4): an AttributeError inside the held read is refused, never read as the engine's zero days
+    import dataclasses as _dc
+
+    @_dc.dataclass(frozen=True)
+    class FaultyTable(RiskPolicy):
+        def decide(self, state):
+            if any(f.f_code.co_name == "_held_read" for f in _frames()):
+                raise AttributeError("a planted fault inside the held read")
+            return RiskPolicy.decide(self, state)
+
+    faulty = FaultyTable(id="pp_faulty", root=toy_table().root)
+    try:
+        run(PP.PPLock, protocol(), blocks_for(6), table=faulty, path_seed=6)
+        problems.append("T-4: an AttributeError inside the held read was not refused (read as zero days?)")
+    except RuntimeError as exc:
+        check("REFUSED" in str(exc), f"T-4: the held read's fault refused without its reason: {exc}")
     # the registered table, walked (6.3's read of the vendored file)
     import a3_brk30_cb20 as C
 
@@ -431,6 +486,7 @@ def section_t4() -> None:
 
 def section_t5() -> None:
     half = PP.half_fraction()
+    check(half == 0.5, f"T-5: L2's half is {half}, not one half (the vendored fast_half arm, D-564's FRACS)")
     pmin = float(RULES.payout_min)
     rule = SizingRule.from_ledger()
     cut = posts = moved = 0
@@ -533,10 +589,10 @@ def _pool_note(text: str, what: str) -> bool:
     return ran
 
 
-def replay_job(frac: float = 1.0) -> dict[str, Any]:
+def replay_job(frac: float = 1.0, blocks: list | None = None) -> dict[str, Any]:
     from extended import user_beside as B
 
-    blocks = blocks_for(12, n=120)
+    blocks = blocks_for(12, n=120) if blocks is None else blocks
     days = [d.date().isoformat() for d in pd.bdate_range("2023-01-02", periods=len(blocks))]
     args = {"draws": {"protocol": protocol(frac), "mode": "rotation", "flip": None},
             "path": dict(edge=0.0, rules=RULES, initial_bankroll=1e9, max_concurrent_accounts=5,
@@ -573,26 +629,28 @@ def section_t10r() -> None:
                     B.replay(job["blocks"][s:s + L], a, B.start_seed(s))
                 check(GI.deep_difference(own, per[s], "counts") is None,
                       f"T-10 replay {cell} {rname} start {s}: the channel's counts are not the class's own")
-            tot = PP.total_counters(r for v in per.values() for r in v)
+            tot = PP.lever_totals(r for v in per.values() for r in v)
             if cell == "ref":
-                check(not any(tot.values()), f"T-10 replay ref {rname}: the counters are not zero ({tot})")
+                check(not any(tot.values()), f"T-10 replay ref {rname}: the levers' counts are not zero ({tot})")
             elif rname == "off":
-                check(tot["first_requests_held"] > 0, f"T-10 replay {cell}: lock held nothing (nothing tested)")
+                check(tot["first_requests_held"] > 0 and tot["held_sessions"] > 0,
+                      f"T-10 replay {cell}: lock held nothing, or no held read (nothing tested)")
+            for s, rows_s in per.items():
+                rp = PP.read_problems(rows_s, min(252, n - s))
+                check(not rp, f"T-10 replay {cell} {rname} start {s}: {rp[:1]}")
             out.setdefault("t10r", {})[f"{cell} {rname}"] = tot
-        # two workers: the same outputs and counts
-        buf = io.StringIO()
-        got2 = PP.ReplayCounters()
-        with contextlib.redirect_stdout(buf):
-            on2 = B.run_starts("toy", "verdict", B.BY_NAME["off"], job, starts, 2, chunk=2, funded_account_cls=cls,
-                               counters=got2)
-        sys.stdout.write(buf.getvalue())
-        if _pool_note(buf.getvalue(), f"T-10 replay {cell} at two workers"):
-            ref1 = PP.ReplayCounters()
-            one = B.run_starts("toy", "verdict", B.BY_NAME["off"], job, starts, 1, chunk=2, funded_account_cls=cls,
-                               counters=ref1)
-            check(GI.deep_difference(one, on2, "outputs") is None, f"T-10 replay {cell}: two workers' outputs differ")
-            check(GI.deep_difference(ref1.starts("toy", "verdict", "off"), got2.starts("toy", "verdict", "off"),
-                                     "counts") is None, f"T-10 replay {cell}: two workers' counts differ")
+    # X3: the placement toy -- under `rtp`, `ref`'s levers' counts zero while the engine's Consistency counts are
+    # carried and nonzero
+    pjob = replay_job(1.0, blocks_for(8, n=300, rr=1.0, p_win=0.65))
+    pstarts = [0, 4, 9]
+    pc = PP.ReplayCounters()
+    B.run_starts("toy", "verdict", B.BY_NAME["rtp"], pjob, pstarts, 1, funded_account_cls=PP.REF_CLASS, counters=pc)
+    prow = [r for v in pc.starts("toy", "verdict", "rtp").values() for r in v]
+    check(not any(PP.lever_totals(prow).values()), f"T-10 replay ref rtp (placement): {PP.lever_totals(prow)}")
+    ctot = PP.total_counters(prow)
+    check(any(r["consistency"] for r in prow) and ctot["cons_first_payout_floor_below_lock"] > 0,
+          f"T-10 replay ref rtp: no Consistency count carried through the channel ({ctot})")
+    out.setdefault("t10r", {})["ref rtp placement"] = ctot
     # with Q-94's recorder too (RD-02 runs its headline replays recorded, 7.1): the outputs and the records are the
     # recorder-only run's, the counts the counters-only run's
     from extended import replay_records as RR
@@ -623,66 +681,76 @@ def section_t10r() -> None:
             pass
 
 
+def _gate_fixture():
+    """T-10's gate toy (Q-106's M1): Q-47's synthetic blocks and keywords, with this harness's win-day-keyed table, so
+    held reads happen on gate paths."""
+    kw = dict(GI.syn_kwargs(), n_paths=6, risk_policy=toy_table())
+    return GI.syn_blocks(), kw
+
+
+def _gate(blocks, kw, cls: type, frac: float, workers: int, counters: Any = None, recorder: Any = None):
+    seen: dict[tuple[str, float], list] = {}
+
+    def hook(shift, p, paths):
+        seen[(shift, float(p))] = [(x.path, x.funded, x.combines, x.conduct) for x in paths]
+        return {}
+
+    k = dict(kw, protocol=dataclasses.replace(kw["protocol"], payout_frac=frac))
+    k.pop("levels", None)
+    rows, passed = GI.XG.run_gate(blocks, funded_account_cls=cls, workers=workers, path_hook=hook, counters=counters,
+                                  recorder=recorder, levels=(0.0, 0.25), **k)
+    return rows, passed, seen
+
+
 def section_t10g() -> None:
+    """One worker (the two-worker leg is `t10w2`, slow): with the table on the gate's paths, the channel changes no row
+    or path record, and each path's counts -- the held reads by class, their sessions, the held closes, every count --
+    equal the path's own counts collected where it ran (`tests/pp_gate_direct.CollectingRecorder`, the channel off)."""
+    import pp_gate_direct as GD
+
     from propedge.campaign.lockstep import path_seeds
 
-    kw = GI.syn_kwargs()
-    blocks = GI.syn_blocks()
-    kw = dict(kw, n_paths=6, risk_policy=None)
-
-    def gate(cls: type, frac: float, workers: int, counters: Any = None):
-        seen: dict[tuple[str, float], list] = {}
-
-        def hook(shift, p, paths):
-            seen[(shift, float(p))] = [(x.path, x.funded, x.combines, x.conduct) for x in paths]
-            return {}
-
-        k = dict(kw, protocol=dataclasses.replace(kw["protocol"], payout_frac=frac))
-        rows, passed = GI.XG.run_gate(blocks, funded_account_cls=cls, workers=workers, path_hook=hook,
-                                      counters=counters, levels=(0.0, 0.25), **{x: v for x, v in k.items()
-                                                                                if x != "levels"})
-        return rows, passed, seen
-
+    blocks, kw = _gate_fixture()
     for cell in ("lock", "half", "ref"):
         cls, frac = PP.cell_class(cell), PP.cell_payout_frac(cell)
-        r0, p0, s0 = gate(cls, frac, 1)
+        r0, p0, s0 = _gate(blocks, kw, cls, frac, 1)
         got = PP.GateCounters()
-        r1, p1, s1 = gate(cls, frac, 1, got)
+        r1, p1, s1 = _gate(blocks, kw, cls, frac, 1, counters=got)
         check(r0.equals(r1) and p0 == p1, f"T-10 gate {cell}: with the channel on the rows differ")
         check(GI.deep_difference(s0, s1, "paths") is None, f"T-10 gate {cell}: with the channel on the paths differ")
-        seeds = path_seeds(kw["seed"], kw["n_paths"])
-        tot = {k: 0 for k in PP.COUNTER_KEYS}
+        direct = GD.CollectingRecorder()
+        _gate(blocks, kw, cls, frac, 1, recorder=direct)
+        seeds = [int(s) for s in path_seeds(kw["seed"], kw["n_paths"])]
+        allrows = []
         for (shift, p), paths in s1.items():
             per = got.paths(shift, p)
-            check(sorted(per) == sorted(int(s) for s in seeds), f"T-10 gate {cell} {shift} {p}: counted paths")
+            check(sorted(per) == sorted(seeds), f"T-10 gate {cell} {shift} {p}: counted paths")
+            own = direct.got.get((shift, float(p)), {})
             for seed, (_, funded, _, _) in zip(seeds, paths):
-                mine = {(int(r["index"]), int(r["activation_day"])) for r in per[int(seed)]}
+                mine = {(int(r["index"]), int(r["activation_day"])) for r in per[seed]}
                 theirs = {(int(f.index), int(f.activation_day)) for f in funded}
                 check(mine == theirs, f"T-10 gate {cell} {shift} {p}: path {seed}'s counted accounts are not its own")
-                for r in per[int(seed)]:
-                    for k2 in PP.COUNTER_KEYS:
-                        tot[k2] += int(r[k2])
+                d = GI.deep_difference(per[seed], own.get(seed), "counts")
+                check(d is None, f"T-10 gate {cell} {shift} {p} path {seed}: the channel's counts are not the path's "
+                                 f"own: {d}")
+                rp = PP.read_problems(per[seed], int(kw["horizon_days"]) - 1)
+                check(not rp, f"T-10 gate {cell} {shift} {p} path {seed}: {rp[:1]}")
+                allrows += per[seed]
+        tot = PP.lever_totals(allrows)
         if cell == "ref":
-            check(not any(tot.values()), f"T-10 gate ref: the counters are not zero ({tot})")
-        elif cell == "lock":
-            check(tot["first_requests_held"] > 0, "T-10 gate lock: lock held nothing (nothing tested)")
-        out.setdefault("t10g", {})[cell] = tot
-        got2 = PP.GateCounters()
-        buf = io.StringIO()
-        with contextlib.redirect_stderr(buf):
-            r2, p2, s2 = gate(cls, frac, 2, got2)
-        sys.stderr.write(buf.getvalue())
-        if GI.GUARD_FELL_BACK in buf.getvalue():
-            notes.append(f"NOT CHECKED (not a pass): T-10 gate {cell} at two workers -- the memory guard allowed one")
+            check(not any(tot.values()), f"T-10 gate ref: the levers' counts are not zero ({tot})")
         else:
-            check(r0.equals(r2) and GI.deep_difference(s0, s2, "paths") is None,
-                  f"T-10 gate {cell}: two workers' rows or paths differ")
-            check(GI.deep_difference(sorted(got.keys()), sorted(got2.keys())) is None and all(
-                GI.deep_difference(got.paths(*k[:2])[k[2]], got2.paths(*k[:2])[k[2]]) is None for k in got.keys()),
-                f"T-10 gate {cell}: two workers' counts differ")
+            held = sum(tot[f"held_{k}"] for k in PP.HELD_CLASSES)
+            check(held > 0 and tot["held_sessions"] > 0, f"T-10 gate {cell}: no held read on a gate path ({tot})")
+            if cell == "lock":
+                check(tot["first_requests_held"] > 0, "T-10 gate lock: lock held nothing")
+        out.setdefault("t10g", {})[cell] = tot
     for what, call, exc in (
-            ("a collector of the wrong kind", lambda: gate(PP.PPLock, 1.0, 1, PP.ReplayCounters()), TypeError),
-            ("no RD-02 class", lambda: GI.XG.run_gate(blocks, counters=PP.GateCounters(), **kw), TypeError)):
+            ("a collector of the wrong kind",
+             lambda: _gate(blocks, kw, PP.PPLock, 1.0, 1, counters=PP.ReplayCounters()), TypeError),
+            ("no RD-02 class", lambda: GI.XG.run_gate(blocks, counters=PP.GateCounters(), **kw), TypeError),
+            ("counters with a recorder", lambda: _gate(blocks, kw, PP.PPLock, 1.0, 1, counters=PP.GateCounters(),
+                                                       recorder=GD.CollectingRecorder()), ValueError)):
         try:
             call()
             problems.append(f"T-10 gate: {what} was not refused")
@@ -690,6 +758,48 @@ def section_t10g() -> None:
             pass
     check(not GI.XG.gate_recomposition_problems() and "Q-105" in GI.XG.GATE_MARKERS,
           f"T-10 gate: the re-composition proof: {GI.XG.gate_recomposition_problems()}")
+
+
+def section_t10w2() -> None:
+    """T-10's two-worker legs (slow: the lead runs it under the lock, with memory, before the reading's run): the U1
+    replay and the table-bearing gate at two workers give the one-worker run's outputs, rows, paths and counts. A run
+    the memory guard holds to one worker is a problem here, never a pass."""
+    from extended import user_beside as B
+
+    starts = [0, 7, 30, 61, 95]
+    for cell in ("lock", "lock_half", "ref"):
+        cls, frac = PP.cell_class(cell), PP.cell_payout_frac(cell)
+        job = replay_job(frac)
+        c1, c2 = PP.ReplayCounters(), PP.ReplayCounters()
+        one = B.run_starts("toy", "verdict", B.BY_NAME["off"], job, starts, 1, chunk=2, funded_account_cls=cls,
+                           counters=c1)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            two = B.run_starts("toy", "verdict", B.BY_NAME["off"], job, starts, 2, chunk=2, funded_account_cls=cls,
+                               counters=c2)
+        sys.stdout.write(buf.getvalue())
+        if "on 2 process(es)" not in buf.getvalue():
+            problems.append(f"NOT CHECKED: T-10 replay {cell} at two workers -- the memory guard allowed one worker")
+        else:
+            check(GI.deep_difference(one, two, "outputs") is None, f"T-10 replay {cell}: two workers' outputs differ")
+            check(GI.deep_difference(c1.starts("toy", "verdict", "off"), c2.starts("toy", "verdict", "off"),
+                                     "counts") is None, f"T-10 replay {cell}: two workers' counts differ")
+    blocks, kw = _gate_fixture()
+    for cell in ("lock", "half", "ref"):
+        cls, frac = PP.cell_class(cell), PP.cell_payout_frac(cell)
+        g1, g2 = PP.GateCounters(), PP.GateCounters()
+        r1, p1, s1 = _gate(blocks, kw, cls, frac, 1, counters=g1)
+        buf = io.StringIO()
+        with contextlib.redirect_stderr(buf):
+            r2, p2, s2 = _gate(blocks, kw, cls, frac, 2, counters=g2)
+        sys.stderr.write(buf.getvalue())
+        if GI.GUARD_FELL_BACK in buf.getvalue():
+            problems.append(f"NOT CHECKED: T-10 gate {cell} at two workers -- the memory guard allowed one worker")
+            continue
+        check(r1.equals(r2) and p1 == p2 and GI.deep_difference(s1, s2, "paths") is None,
+              f"T-10 gate {cell}: two workers' rows or paths differ")
+        check(g1.keys() == g2.keys() and all(GI.deep_difference(g1.paths(*k[:2])[k[2]], g2.paths(*k[:2])[k[2]]) is None
+                                             for k in g1.keys()), f"T-10 gate {cell}: two workers' counts differ")
 
 
 # ------------------------------------------------------------------------------------------------ absent
@@ -731,7 +841,8 @@ def section_absent() -> None:
 
 
 SECTIONS = {"t1": section_t1, "t2": section_t2, "t3": section_t3, "t4": section_t4, "t5": section_t5,
-            "t7": section_t7, "t10r": section_t10r, "t10g": section_t10g, "absent": section_absent}
+            "t7": section_t7, "t10r": section_t10r, "t10g": section_t10g, "t10w2": section_t10w2,
+            "absent": section_absent}
 out: dict[str, Any] = {}
 
 if __name__ == "__main__":

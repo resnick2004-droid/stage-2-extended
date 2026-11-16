@@ -77,8 +77,15 @@ def guard(funded_class: Any = None, protocol: Any = None) -> None:
                            + "; ".join(bad))
 
 
-def _zero(rows: Any, what: str) -> list[str]:
-    tot = PP.total_counters(rows)
+#: 8.1 item 4: the counts this script checked, by (design, what, arm or shift) -- written on its HOLDS lines
+COUNTS: dict[tuple[str, str, str], dict[str, int]] = {}
+
+
+def _zero(rows: Any, what: str, key: tuple[str, str, str]) -> list[str]:
+    """8.1 item 4: the levers' own counts (`payout_policy.LEVER_KEYS`; the two `cons_*` counts are the engine's)
+    zero, counted and kept for the log."""
+    tot = PP.lever_totals(rows)
+    COUNTS[key] = tot
     return [] if not any(tot.values()) else [f"{what}: the levers are not off ({tot})"]
 
 
@@ -149,7 +156,9 @@ def gate_problems(design: str, n: int, workers: int) -> list[str]:
     XG.run_gate(kw.pop("blocks"), workers=int(workers), funded_account_cls=FUNDED_CLASS, counters=counters, **kw)
     probs = zd.path_problems(g["sink"], read_result(RESULTS_DIR / g["ref"]),
                              [(g["label"], s, "gate", s) for s in ("point", "lower_bound")], int(n))
-    probs += _zero((r for k in counters.keys() for r in counters.paths(*k[:2])[k[2]]), f"{design} gate")
+    for shift in ("point", "lower_bound"):
+        probs += _zero((r for k in counters.keys() if k[0] == shift for r in counters.paths(*k[:2])[k[2]]),
+                       f"{design} gate {shift}", (design, "gate paths", shift))
     return probs
 
 
@@ -185,7 +194,8 @@ def u1_problems(design: str, starts: int | None, workers: int) -> list[str]:
         outs = B.run_starts(design, arm, B.BY_NAME["off"], job, chosen, int(workers), funded_account_cls=FUNDED_CLASS,
                             counters=counters)
         probs += UI.u1_compare_outs(design, c, arm, outs, ref, n_window, starts)
-        probs += _zero((r for v in counters.starts(design, arm, "off").values() for r in v), f"{design} {arm} starts")
+        probs += _zero((r for v in counters.starts(design, arm, "off").values() for r in v), f"{design} {arm} starts",
+                       (design, "U1 start rows", arm))
     return probs
 
 
@@ -234,7 +244,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"identity FAILS: RD-02 ref {d} {what} -- {len(probs)} problem(s): " + "; ".join(probs[:6]),
                       flush=True)
             else:
-                print(f"identity HOLDS: RD-02 ref {d} {what} ({time.time() - t0:.0f} s)", flush=True)
+                counts = "; ".join(f"{k[2]}: {v}" for k, v in COUNTS.items() if k[:2] == (d, what))
+                print(f"identity HOLDS: RD-02 ref {d} {what} ({time.time() - t0:.0f} s); 8.1 item 4, the levers' counts "
+                      f"-- {counts}", flush=True)
     pm = SI.peak_memory()
     if pm:
         print(pm)

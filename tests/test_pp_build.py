@@ -6,6 +6,8 @@ uncertainty `extended/pp_reading.py` -- held to the declared tests on synthetic 
   that process's `sys.path`), each a list of problems that must be empty; a check the memory guard did not let run at
   two workers is printed NOT CHECKED, never counted a pass;
 * the channel absent: the replay adapter equals master's before Q-105 bit for bit on all 19 responses (`absent`);
+* T-10's gate leg on a table-bearing toy: each path's counts equal the path's own, collected where it ran by an
+  independent route (`tests/pp_gate_direct.py`); the two-worker legs are `t10w2`, slow (Q-106's M1);
 * T-6's build form: `extended/pp_reading.py` gives what `tests/test_pp_draft.py`'s declaration-stage functions give,
   value for value, on the same inputs and the same draws;
 * T-9: section 11's seeds appear in none of the build's files (each imports its seed from its one home), and 13.2's
@@ -31,7 +33,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 SYN = ROOT / "tests" / "pp_synthetic.py"
 BUILD_FILES = ("extended/payout_policy.py", "extended/pp_reading.py", "identity/pp_identity.py", "tests/pp_synthetic.py",
-               "tests/test_pp_build.py", "tests/test_pp_identity.py")
+               "tests/test_pp_build.py", "tests/test_pp_identity.py", "tests/pp_identity_check.py",
+               "tests/pp_gate_direct.py", "extended/user_beside.py", "extended/gate.py")
 
 
 def _run(section: str, timeout: int = 300) -> dict:
@@ -50,6 +53,14 @@ def _run(section: str, timeout: int = 300) -> dict:
 @pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t7", "t10r", "t10g", "absent"])
 def test_section_holds(section):
     out = _run(section)
+    assert out["n_problems"] == 0, "\n".join(out["problems"])
+
+
+@pytest.mark.slow
+def test_t10_two_worker_legs():
+    """T-10 at two workers (Q-106's M1): the replay and the table-bearing gate -- the lead's, under the lock, with
+    memory for two path workers, before the reading's run; a run the memory guard holds to one worker fails here."""
+    out = _run("t10w2", timeout=1200)
     assert out["n_problems"] == 0, "\n".join(out["problems"])
 
 

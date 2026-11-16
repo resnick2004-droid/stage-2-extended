@@ -361,8 +361,12 @@ def mechanics_rows(design: str, arm: str, cell: str, mode: str, outs: list, base
                         value=float(np.mean(diff)) if diff else np.nan, n=len(diff), h=h,
                         note="differs: a month-end net, a payout's or a pass's day up to session h"))
     tot = PP.total_counters(row for rows in counts.values() for row in rows)
+    note = ("the minimal rescue: only the rescued reads were read under the rule; the unchanged and R-changed reads "
+            "were answered with the firm's count (n4)") if mode == "minimal" else ""
     for k, v in tot.items():
-        out.append(_row(**key, block="all", measure=k, stat="count", value=float(v), n=len(counts)))
+        out.append(_row(**key, block="all", measure=k, stat="count", value=float(v), n=len(counts),
+                        note=note if k.startswith("held_") and k != "held_closes" else
+                        ("the engine's count, for any class" if k.startswith("cons_") else "")))
     for h in HELD_SESSIONS:
         held = [any(h in set(row["held_days"]) for row in rows) for s, rows in counts.items()
                 if int(by_start.get(s, {}).get("observed", 0)) >= h]
@@ -473,9 +477,10 @@ def run_reading(inputs: Inputs, *, designs: Sequence[str] = DESIGNS, starts: int
             outs = B.run_starts(design, arm, B.BY_NAME["off"], job, chosen, workers, funded_account_cls=PP.REF_CLASS,
                                 recorder=rec, counters=cnt)
             probs = inputs.identity_problems(design, arm, outs) + [f"recorder: {p}" for p in rec.problems()]
-            tot = PP.total_counters(r for v in cnt.starts(design, arm, "off").values() for r in v)
+            tot = PP.lever_totals(r for v in cnt.starts(design, arm, "off").values() for r in v)
             if any(tot.values()):
                 probs.append(f"8.1 item 4: the levers are not off in ref ({tot})")
+            probs += read_check(cnt, design, arm, "off", job)
             rows.append(_row(section="identity", design=design, arm=arm, cell="ref", measure="8.1 items 2 and 4",
                              stat="holds", value=float(not probs), n=len(outs), note="; ".join(probs[:4])))
             if probs:
@@ -494,6 +499,9 @@ def run_reading(inputs: Inputs, *, designs: Sequence[str] = DESIGNS, starts: int
             outs = B.run_starts(design, "verdict", B.BY_NAME[rname], job, chosen, workers,
                                 funded_account_cls=PP.REF_CLASS, counters=cnt)
             probs = inputs.ladder_problems(design, rname, outs)
+            tot = PP.lever_totals(r for v in cnt.starts(design, "verdict", rname).values() for r in v)
+            if any(tot.values()):                        # the levers' own counts; the cons_* are the engine's (m4)
+                probs.append(f"8.1 item 4 under {rname}: the levers are not off in ref ({tot})")
             rows.append(_row(section="identity", design=design, arm="verdict", cell="ref", response=rname,
                              measure="8.1 item 6", stat="holds", value=float(not probs), n=len(outs),
                              note="; ".join(probs[:4])))
@@ -514,6 +522,7 @@ def run_reading(inputs: Inputs, *, designs: Sequence[str] = DESIGNS, starts: int
                 outs = B.run_starts(design, arm, B.BY_NAME["off"], job, chosen, workers, funded_account_cls=cls,
                                     recorder=rec, counters=cnt)
                 probs = [f"8.1 item 5 (recorder): {p}" for p in rec.problems()]
+                probs += [f"the held-state rule (m2): {p}" for p in read_check(cnt, design, arm, "off", job)]
                 rows.append(_row(section="identity", design=design, arm=arm, cell=cell, mode=mode,
                                  measure="8.1 item 5", stat="holds", value=float(not probs), n=len(outs),
                                  note="; ".join(probs[:4])))
@@ -533,6 +542,9 @@ def run_reading(inputs: Inputs, *, designs: Sequence[str] = DESIGNS, starts: int
                     cnt = PP.ReplayCounters()
                     outs = B.run_starts(design, "verdict", B.BY_NAME[rname], job, chosen, workers,
                                         funded_account_cls=cls, counters=cnt)
+                    rp = read_check(cnt, design, "verdict", rname, job)
+                    if rp:
+                        raise Refused(f"{design} {cell} {rname}: the held-state rule (m2): " + "; ".join(rp[:4]))
                     outs_of[("verdict", cell, mode, rname)] = outs
                     frames[("verdict", cell, mode, rname)] = start_frame(design, "verdict", rname, outs)
                     counts_all[(design, "verdict", cell, mode, rname)] = cnt.starts(design, "verdict", rname)
@@ -592,6 +604,16 @@ def run_reading(inputs: Inputs, *, designs: Sequence[str] = DESIGNS, starts: int
     menu = menu_table(reading, approved_limits)
     return {"reading": reading, "gate": pd.concat(gate_rows, ignore_index=True) if gate_rows else pd.DataFrame(),
             "menu": menu, "honesty_seed": seed, "honesty_settings": sorted(honesty), "runs": run_list}
+
+
+def read_check(cnt: Any, design: str, arm: str, response: str, job: dict[str, Any]) -> list[str]:
+    """Q-106's m2: on every start, each held close the account outlives is followed by exactly one held read (the
+    held-state rule fired where it must); the start's last session is its long replay's."""
+    n = len(job["blocks"])
+    out = []
+    for s, rows in cnt.starts(design, arm, response).items():
+        out += [f"start {s}: {p}" for p in PP.read_problems(rows, min(252, n - int(s)))]
+    return out
 
 
 def oracle_rows(design: str, arm: str, cell: str, mode: str, outs: list) -> list[dict[str, Any]]:
@@ -871,4 +893,4 @@ class RealInputs(Inputs):
 
 __all__ = ["RealInputs", "DECLARATION", "PREREG_ID", "PIN_ROW", "PURPOSES", "DESIGNS", "ARMS", "NEW_CELLS", "BESIDE",
            "RECORD_COLUMNS", "CALENDARS", "Refused", "declared_seed", "section_11", "calendar_frames", "Inputs", "cell_job", "runs_of",
-           "start_frame", "MEASURES", "run_reading", "honesty_table", "menu_table", "adapter_provenance"]
+           "start_frame", "MEASURES", "read_check", "run_reading", "honesty_table", "menu_table", "adapter_provenance"]

@@ -184,7 +184,51 @@ def section_labels() -> None:
     out["labels"] = {"intervals": len(ci), "settings": sorted(honesty)}
 
 
-SECTIONS = {"e2e": section_e2e, "refusals": section_refusals, "labels": section_labels}
+def section_t3() -> None:
+    """Q-106's n6: T-3 on the runner's composed reading -- every early-block row of `distribution_rows` and
+    `paired_rows` (the distributions, the shares, the kept windows' means and interval, the sign count, n_eff, the MDD)
+    is byte-identical when every session from 2024-01-02 on is replaced; the late block's rows change."""
+    from extended import pp_reading as RD
+    from extended import pp_run as RUN
+
+    g = np.random.default_rng([RUN.declared_seed("9.2 item 7's honesty series", REPO), 0, 901])
+    days = [d.date().isoformat() for d in pd.bdate_range("2020-01-02", "2026-07-16")]
+    n = len(days)
+    cut = next(i for i, d in enumerate(days) if d >= "2024-01-02")
+    sx, sy = g.normal(size=(2, n)), g.normal(size=(2, n))
+    sy[:, :cut] = sx[:, :cut]
+    sy[:, cut:] = g.normal(3.0, 2.0, size=(2, n - cut))      # every session from 2024-01-02 replaced
+
+    def frame(sess: np.ndarray) -> pd.DataFrame:
+        t = pd.DataFrame({"start_day": np.arange(n), "start_date": days, "observed": n - np.arange(n)})
+        c = np.concatenate([[0.0], np.cumsum(sess)])
+        for _, col, hkey, _ in RUN.MEASURES:                   # each start's value reads its own h sessions only
+            h = RD.horizon(hkey)
+            v = np.full(n, np.nan)
+            ok = np.arange(n) + h <= n
+            idx = np.arange(n)[ok]
+            v[ok] = c[idx + h] - c[idx]
+            t[col] = v
+        return t
+
+    key = dict(design="syn", arm="verdict", cell="lock", mode="declared", response="off")
+    hx, hy = {}, {}
+    ax = RUN.paired_rows(frame(sx[0]), frame(sx[1]), key, hx) + RUN.distribution_rows(frame(sx[0]), key)
+    ay = RUN.paired_rows(frame(sy[0]), frame(sy[1]), key, hy) + RUN.distribution_rows(frame(sy[0]), key)
+    ex = [r for r in ax if r["block"] == "early"]
+    ey = [r for r in ay if r["block"] == "early"]
+    same = len(ex) == len(ey) and all(
+        (a["stat"], a["measure"], a["n"]) == (b["stat"], b["measure"], b["n"])
+        and np.float64(a["value"]).tobytes() == np.float64(b["value"]).tobytes() for a, b in zip(ex, ey))
+    check(same, "T-3 (composed): an early-block row changed when 2024 on was replaced")
+    lx = [r["value"] for r in ax if r["block"] == "late"]
+    ly = [r["value"] for r in ay if r["block"] == "late"]
+    check(np.float64(lx).tobytes() != np.float64(ly).tobytes(), "T-3 (composed): the late block did not change")
+    check(any(r["stat"] == "ci90_low" for r in ex), "T-3 (composed): no early-block interval was tested")
+    out["t3"] = {"early_rows": len(ex), "early_intervals": sum(r["stat"] == "ci90_low" for r in ex)}
+
+
+SECTIONS = {"e2e": section_e2e, "refusals": section_refusals, "labels": section_labels, "t3": section_t3}
 
 if __name__ == "__main__":
     SECTIONS[SECTION]()

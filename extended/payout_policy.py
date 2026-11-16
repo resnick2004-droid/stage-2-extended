@@ -36,11 +36,16 @@ is no-trade (`max_trades` 0); elsewhere the firm's count, so the table's own fiv
 **The firm's eligibility recorded (F7).** `lock` overrides `_standard_eligible` and returns the policy's eligibility to
 the engine; after `trade_day` the class puts the firm's back in `last_eligible`, which only the daily recorder reads.
 
-**The counters (13.1 item 1; T-10).** Each account counts, at its closes and reads: the held reads by 6.3's class
-(`unchanged`, `rescued`, `r_changed`) and the sessions they fall on; the first requests L1 holds; the requests L2 cuts
-below the minimum; the closes at which the policy's eligibility differs from the firm's; and, on Consistency-path
-accounts (the placement's), the first payouts taken with the floor below `xfa_lock_at` and the sessions that start
-eligible and unpaid. The engine's records do not carry a subclass's fields (`lockstep._record_funded`), so the counters
+**The counters (13.1 item 1; T-10; the red team's Q-106 m3, m4).** Each account counts, at its closes and reads:
+the held reads by 6.3's class (`unchanged`, `rescued`, `r_changed`) and the sessions they fall on, and the held closes it
+outlives (each must be followed by one held read: `read_problems`, which the runner refuses on); the first requests L1
+holds (per account, and the closes holding them); the requests L2 cuts below the minimum (a close held by both levers
+is L1's); the closes at which the policy's eligibility differs from the firm's -- the levers' own counts, `LEVER_KEYS`,
+zero in `ref` -- and, on Consistency-path accounts (the placement's), the engine's own counts for any class: the first
+payouts taken with the floor below `xfa_lock_at` and the sessions that start eligible and unpaid while the base's
+request reaches the minimum. The held read's two vendored sources (`account_state`, `simulate_lockstep_path`) are
+pinned by sha256 (`VENDORED_SOURCES_SHA256`), refused on change; any failure inside the read refuses, never the
+engine's `getattr` default of zero days (m1, m2). The engine's records do not carry a subclass's fields (`lockstep._record_funded`), so the counters
 come out through a declared channel, off by default: `collecting()` around one path in the process that runs it --
 `extended.user_beside.run_starts(..., counters=ReplayCounters())` for the U1 replay, and
 `extended.gate.run_gate(..., counters=GateCounters())` for the gate (its draws wrapped by `CountingDraws`, which
@@ -76,11 +81,35 @@ CELL_LEVERS = {"ref": ("elig", "max"), "lock": ("lock", "max"), "half": ("elig",
 HELD_MODES = ("declared", "minimal")
 #: RD-02 6.3: the held reads' classes
 HELD_CLASSES = ("unchanged", "rescued", "r_changed")
-#: the counters each account carries (13.1 item 1), in this order
-COUNTER_KEYS = ("held_unchanged", "held_rescued", "held_r_changed", "first_requests_held", "half_cut_below_min",
-                "elig_differs", "cons_first_payout_floor_below_lock", "cons_eligible_unpaid_sessions")
+#: the counters each account carries (13.1 item 1; 8.3; 9.1 item 7), in this order (Q-106's m3):
+#: * `held_unchanged`, `held_rescued`, `held_r_changed` -- the held reads, by 6.3's class, one a session;
+#: * `held_closes` -- the held closes the account outlives (each must be followed by one held read: m2);
+#: * `first_requests_held` -- 1 if the account's first request was ever held by L1 (8.3's "first requests lock holds",
+#:   counted per first request), and `first_request_closes_held` -- the closes at which it was held;
+#: * `half_cut_below_min` -- the closes at which L2 cut a request the base would make below the minimum, L1 not holding
+#:   it (a close held by both levers is L1's);
+#: * `elig_differs` -- the closes at which the policy's eligibility differs from the firm's;
+#: * `cons_first_payout_floor_below_lock` -- a Consistency-path account's first payout taken with the floor below the
+#:   lock (the ones `lock` would have held; the engine's, for any class);
+#: * `cons_eligible_unpaid_sessions` -- the sessions a Consistency-path account starts eligible and unpaid while the
+#:   base's request reaches the minimum (9.1 item 7: a `half` request below $125; the engine's, for any class).
+COUNTER_KEYS = ("held_unchanged", "held_rescued", "held_r_changed", "held_closes", "first_requests_held",
+                "first_request_closes_held", "half_cut_below_min", "elig_differs", "cons_first_payout_floor_below_lock",
+                "cons_eligible_unpaid_sessions")
+#: the levers' own counts (8.1 item 4's three -- the held reads, the first requests held, the eligibility differing --
+#: and L2's cut): zero in `ref`, always; the two `cons_*` counts are the engine's and are not among them (Q-106's m4)
+LEVER_KEYS = ("held_unchanged", "held_rescued", "held_r_changed", "held_closes", "first_requests_held",
+              "first_request_closes_held", "half_cut_below_min", "elig_differs")
 
 _ACCOUNT_STATE_CODE = _rp.account_state.__code__
+
+#: Q-106's m2: the vendored sources the held read leans on, pinned by the sha256 of their LF text -- `account_state`
+#: (the one reader the read answers, through `getattr` in its own frame) and `simulate_lockstep_path` (its two call
+#: sites, the session's `_decide` and the close's look-ahead read, with `risk_policy` in their frames); refused on change
+VENDORED_SOURCES_SHA256 = {
+    "propedge.campaign.risk_policy.account_state": "c9bfa1b927016ed223f905e7ec6a6f7d1a1b9b05c7ed9e9100c4d28957e04d42",
+    "propedge.campaign.lockstep.simulate_lockstep_path": "6435af74aa34030463cd8a7d8eb34c61869425ee2f2267c38abeaee2fd523271",
+}
 
 
 # ------------------------------------------------------------------------------------------------ the ledger's values
@@ -115,6 +144,31 @@ def held_win_days(rules: Any | None = None) -> int:
     """6.3: the winning days a held account is read at -- the ledger's `std_winning_days` less one."""
     r = ledger_rules() if rules is None else rules
     return int(r.std_winning_days) - 1
+
+
+def vendored_sources_sha256() -> dict[str, str]:
+    """The sha256 of the LF source text of each function `VENDORED_SOURCES_SHA256` names."""
+    import hashlib
+    import inspect
+
+    from propedge.campaign import lockstep as _ls
+
+    fns = {"propedge.campaign.risk_policy.account_state": _rp.account_state,
+           "propedge.campaign.lockstep.simulate_lockstep_path": _ls.simulate_lockstep_path}
+    return {k: hashlib.sha256(inspect.getsource(f).replace("\r\n", "\n").encode("utf-8")).hexdigest()
+            for k, f in fns.items()}
+
+
+def check_vendored_sources() -> None:
+    """Refuse (`RuntimeError`) unless the held read's vendored sources are the pinned ones (once a process)."""
+    if _CACHE.get("sources_ok"):
+        return
+    got = vendored_sources_sha256()
+    bad = {k: v for k, v in got.items() if VENDORED_SOURCES_SHA256.get(k) != v}
+    if bad:
+        raise RuntimeError(f"REFUSED (RD-02 13.1 item 2; Q-106's m2): the held read's vendored sources changed: {bad}; "
+                           "a newer snapshot is a new row, and this adapter is re-checked under it")
+    _CACHE["sources_ok"] = True
 
 
 def half_fraction() -> float:
@@ -166,7 +220,8 @@ def account_counters(a: "PayoutPolicyFundedAccount") -> dict[str, Any]:
     return {"index": int(a.index), "activation_day": int(a.activation_day),
             "consistency": bool(a.policy_override is not None),
             **{k: int(c.get(k, 0)) for k in COUNTER_KEYS},
-            "held_days": tuple(sorted(a.__dict__.get("_pp_held_days") or ()))}
+            "held_days": tuple(sorted(a.__dict__.get("_pp_held_days") or ())),
+            "held_close_days": tuple(sorted(a.__dict__.get("_pp_held_close_days") or ()))}
 
 
 def total_counters(rows: Iterable[dict[str, Any]]) -> dict[str, int]:
@@ -177,6 +232,25 @@ def total_counters(rows: Iterable[dict[str, Any]]) -> dict[str, int]:
         for k in COUNTER_KEYS:
             out[k] += int(r[k])
         out["held_sessions"] += len(r["held_days"])
+    return out
+
+
+def lever_totals(rows: Iterable[dict[str, Any]]) -> dict[str, int]:
+    """The levers' own counts summed (`LEVER_KEYS`), with the held sessions: all zero when the levers are off."""
+    tot = total_counters(rows)
+    return {k: tot[k] for k in (*LEVER_KEYS, "held_sessions")}
+
+
+def read_problems(rows: Iterable[dict[str, Any]], last_day: int | None = None) -> list[str]:
+    """Q-106's m2: every held close the account outlived is followed by exactly one held read, on the next session,
+    and every held read follows a held close; `last_day` the path's last session (a held close on it has no read)."""
+    out = []
+    for r in rows:
+        closes = {int(d) + 1 for d in r["held_close_days"] if last_day is None or int(d) + 1 <= int(last_day)}
+        reads = {int(d) for d in r["held_days"]}
+        if reads != closes:
+            out.append(f"account {r['index']}: held reads {sorted(reads)[:6]} are not its held closes' next sessions "
+                       f"{sorted(closes)[:6]} -- the held-state rule did not fire where it must")
     return out
 
 
@@ -203,13 +277,17 @@ class PayoutPolicyFundedAccount(FundedAccount):
     HELD_MODE: str = "declared"
 
     def __post_init__(self) -> None:
+        check_vendored_sources()
         super().__post_init__()
         d = self.__dict__
         d.setdefault("_pp_held", False)
         d["_pp_counts"] = Counter()
         d["_pp_held_days"] = set()
+        d["_pp_held_close_days"] = set()
         d["_pp_firm_elig"] = None
         d["_pp_reading"] = False
+        d["_pp_held_count"] = None
+        d["_pp_first_held"] = False
         if _OPEN is not None:
             _OPEN.append(self)
 
@@ -223,7 +301,11 @@ class PayoutPolicyFundedAccount(FundedAccount):
         f = sys._getframe(1)
         if f.f_code is not _ACCOUNT_STATE_CODE:
             return wd
-        return self._held_read(f, wd)
+        try:
+            return self._held_read(f, wd)
+        except AttributeError as exc:                           # Q-106's m1: never the engine's getattr default (0)
+            raise RuntimeError("REFUSED (RD-02 13.1 item 2): the held read failed inside the engine's read of the "
+                               f"winning days ({exc!r}); the account is not read at zero days") from exc
 
     @win_days.setter
     def win_days(self, value: int) -> None:
@@ -246,7 +328,9 @@ class PayoutPolicyFundedAccount(FundedAccount):
             five = _rp.account_state(self, kind="funded", day=loc["day"], mll=loc["mll"], cents=loc["cents"])
         finally:
             d["_pp_reading"] = False
-        held = held_win_days()
+        held = d["_pp_held_count"]                              # set at the held close, from the engine's rules
+        if held is None:
+            raise RuntimeError("REFUSED (RD-02 13.1 item 2): a held account with no held count from its close")
         d5, d4 = rp.decide(five), rp.decide(dict(five, win_days=held))
         cls = held_class(d5, d4)
         day = int(loc["day"])
@@ -288,19 +372,27 @@ class PayoutPolicyFundedAccount(FundedAccount):
             cell_req = min(cell_req, max(balance - float(policy.keep_balance), 0.0))
         c = d["_pp_counts"]
         held = False
+        goes_on = not self.closed and self.ended_on is None      # the account has a next session
         if standard and firm and not requested and not self.closed and reaches:
             held = True
+            d["_pp_held_count"] = int(rules.std_winning_days) - 1   # 6.3, from the engine's own rules (n2)
+            if goes_on:
+                c["held_closes"] += 1
+                d["_pp_held_close_days"].add(int(calendar_day))
             blocked = self.LOCK and paid_before == 0 and float(self.F) < float(rules.xfa_lock_at) - EPS
-            if blocked and cell_req >= float(rules.payout_min) - EPS:
-                c["first_requests_held"] += 1
-            if not blocked and cell_req < float(rules.payout_min) - EPS:
+            if blocked:                                         # L1's, whatever L2 would ask (a close held by both)
+                c["first_request_closes_held"] += 1
+                if not d["_pp_first_held"]:
+                    d["_pp_first_held"] = True
+                    c["first_requests_held"] += 1
+            elif cell_req < float(rules.payout_min) - EPS:
                 c["half_cut_below_min"] += 1
         if not standard:
             if requested and paid_before == 0:
                 f_close = min(float(rules.xfa_lock_at), max(floor_before, balance - float(rules.mll)))
                 if f_close < float(rules.xfa_lock_at) - EPS:
                     c["cons_first_payout_floor_below_lock"] += 1
-            if bool(self.last_eligible) and not requested and not self.closed:
+            if bool(self.last_eligible) and not requested and goes_on and reaches:
                 c["cons_eligible_unpaid_sessions"] += 1
         d["_pp_held"] = held
         return net
@@ -415,6 +507,8 @@ class CountingDraws:
     def _close(self) -> None:
         cur = self.__dict__.get("_cur")
         if cur is not None:
+            if cur in self._bag:
+                raise RuntimeError(f"REFUSED (Q-105): path seed {cur} counted twice in one campaign")
             self._bag[cur] = close_collection()
             self.__dict__["_cur"] = None
 
@@ -429,7 +523,11 @@ class CountingDraws:
         imp = getattr(self._inner, "import_state", None)
         if state.get("inner") is not None and callable(imp):
             imp(state["inner"])
-        self._bag.update(state.get("counters") or {})
+        got = state.get("counters") or {}
+        twice = set(got) & set(self._bag)
+        if twice:
+            raise RuntimeError(f"REFUSED (Q-105): path seeds {sorted(twice)[:4]} counted twice in one campaign")
+        self._bag.update(got)
 
     def finish(self) -> dict[int, list[dict[str, Any]]]:
         """The counts by path seed (the last path closed here)."""
@@ -486,8 +584,10 @@ def check_counted_class(funded_account_cls: Any) -> None:
 
 
 __all__ = ["L1_VALUES", "L2_VALUES", "CELLS", "CELL_LEVERS", "HELD_MODES", "HELD_CLASSES", "COUNTER_KEYS",
+           "LEVER_KEYS", "VENDORED_SOURCES_SHA256", "vendored_sources_sha256", "check_vendored_sources",
            "ledger_rules", "lock_balance", "base_request", "held_win_days", "half_fraction", "open_collection",
-           "close_collection", "collecting", "account_counters", "total_counters", "held_class",
+           "close_collection", "collecting", "account_counters", "total_counters", "lever_totals", "read_problems",
+           "held_class",
            "PayoutPolicyFundedAccount", "PPElig", "PPLock", "PPEligMinimal", "PPLockMinimal", "REF_CLASS",
            "cell_class", "cell_payout_frac", "cell_protocol", "levers_off", "ReplayCounters", "CountingDraws",
            "GateCounters", "check_counters", "check_counted_class"]

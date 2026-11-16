@@ -6,7 +6,9 @@ the pinned text's section 14) on synthetic inputs only -- no bar, no atlas, no r
   every identity row holding in 14 step 2's order, every section, the menu's labels and notes, the gates;
 * `refusals` -- a planted failure writes nothing; the real mode refuses outside a clean run; a protected folder is
   refused; the waits' rows are checked;
-* `labels` -- the paired readings' intervals, MDDs and labels from the honesty table, and the menu's count.
+* `labels` -- the paired readings' intervals, MDDs and labels from the honesty table, and the menu's count;
+* `t3` -- T-3 on the runner's composed reading (Q-106's n6): the early block's rows byte-identical when 2024 on is
+  replaced.
 
 Each runs in its own process (`tests/pp_run_check.py`). The build's seed rule (T-9) holds for these files too: none
 writes a seed of RD-02's block (the runner reads its seeds from the pinned file).
@@ -24,10 +26,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 FILES = ("extended/pp_run.py", "extended/pp_run_synthetic.py", "scripts/pp_reading.py", "tests/pp_run_check.py",
-         "tests/test_pp_run.py")
+         "tests/test_pp_run.py", "tests/pp_gate_direct.py")
 
 
-@pytest.mark.parametrize("section", ["e2e", "refusals", "labels"])
+@pytest.mark.parametrize("section", ["e2e", "refusals", "labels", "t3"])
 def test_runner_section_holds(section, tmp_path):
     env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1",
                PYTHONDONTWRITEBYTECODE="1")
