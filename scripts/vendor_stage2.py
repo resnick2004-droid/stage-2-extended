@@ -3,6 +3,7 @@
     python scripts/vendor_stage2.py --source "../Stage 2"            # the snapshot (refused if one exists)
     python scripts/vendor_stage2.py --source "../Stage 2" --data     # also the licensed bars and the atlas walks
     python scripts/vendor_stage2.py --verify                         # the snapshot and the data against their manifests
+    python scripts/vendor_stage2.py --source "../Stage 2" --extend Q-61   # add listed results, same commit (Q-61)
 
 **What is taken.** `git archive` of Stage 2 at `COMMIT` (never the working copy, so nothing uncommitted can enter) for
 the paths in `CODE` (the engine, its scripts, its configuration and rules, stage one's vendored tree, the protocol
@@ -18,18 +19,23 @@ the path lists to `vendor/STAGE2_SOURCE.json`.
 git, never committed -- and their hashes written to `vendor/DATA_MANIFEST_stage2.sha256` (names and hashes only), or,
 when that manifest already exists, checked against it.
 
+**Adding result files (`--extend TASK`, Q-61).** A result file of the same commit that later work needs is added to
+`RESULTS` (with a comment naming why) and taken by `--extend`: from the snapshot's own commit only, after a fresh
+archive of the whole snapshot's paths has reproduced every file already in it hash for hash; nothing already vendored
+is rewritten, and `STAGE2_SOURCE.json` records the extension (task, files added, counts, the prior manifest's sha256).
+
 Nothing under `vendor/stage2/` is ever edited; a newer Stage 2 is a new snapshot under a new decision row.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
-import io
 import json
 import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -67,6 +73,15 @@ RESULTS = (
     "u_value_map.csv", "u_xfa_day_budget.csv", "stop_band.csv", "setups_per_day.csv", "rc_width_screen.csv",
     "v1_validation_a0.csv", "v1_validation_a1.csv", "v1_validation_a2.csv", "v1_validation_b1.csv",
     "v1_validation_b2.csv", "v1_validation_b3.csv", "v1_validation_c1.csv", "v1_validation_c2.csv",
+    # --- added by `--extend Q-61` from the same commit (E-002's 698 files unchanged) ---
+    # family B's follow amplitude (E-036): Stage 2's sided coin (batch S1) and the event-kind and latency screens (S3)
+    "s1_sided_coin.csv", "s3_event_kinds.csv", "s3_latency.csv",
+    # P-15's screen file, so its own builder runs (`user_journey.build_p15` -> `rc_dev_test.trade_problems`, which
+    # checks the file against the pinned `rc_dev_test.SCREEN_SHA256`; E-026)
+    "rc_reentry_screen.csv",
+    # P-13's gate row and stop distribution, so Stage 2's own P-14-against-P-13 checks run (`a3_brk30_cb20`'s
+    # `P13_RESULT` against its pinned sha256, and `P13_STOPS`' fresh decisions; E-026)
+    "a3_brk30_gate.csv", "a3_brk30_stop_distribution.csv",
 )
 
 DATA_DIRS = ("data/bars", "data/atlas")
@@ -109,11 +124,9 @@ def git(source: Path, *args: str) -> bytes:
     return subprocess.run(["git", "-C", str(source), *args], check=True, capture_output=True).stdout
 
 
-def snapshot(source: Path) -> int:
-    if DEST.exists() and any(DEST.iterdir()):
-        print(f"REFUSED: {DEST} exists; the snapshot is read-only (a newer Stage 2 is a new decision row)")
-        return 3
-    full = git(source, "rev-parse", f"{COMMIT}^{{commit}}").decode().strip()
+def result_paths(source: Path, full: str) -> list[str] | None:
+    """`RESULTS` as paths in Stage 2's tree at `full`, each followed by its `.manifest.json` where one exists; None
+    (refused, printed) when a listed file is not in that tree."""
     listed = set(git(source, "ls-tree", "-r", "--name-only", full).decode().splitlines())
     res = []
     for name in RESULTS:
@@ -122,12 +135,31 @@ def snapshot(source: Path) -> int:
                 res.append(rel)
         if f"results/{name}" not in listed:
             print(f"REFUSED: results/{name} is not in Stage 2's tree at {full[:7]}")
-            return 3
-    paths = list(CODE) + res
-    tar = git(source, "archive", "--format=tar", full, "--", *paths)
-    DEST.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(fileobj=io.BytesIO(tar)) as tf:
-        tf.extractall(DEST, filter="data")
+            return None
+    return res
+
+
+def archive_into(source: Path, full: str, paths: list[str], dest: Path) -> None:
+    """`git archive` of `paths` at commit `full` (the committed tree, never the working copy), extracted into `dest`.
+    The tar goes through a temporary file, not memory."""
+    with tempfile.TemporaryFile() as fh:
+        subprocess.run(["git", "-C", str(source), "archive", "--format=tar", full, "--", *paths], check=True,
+                       stdout=fh, stderr=subprocess.PIPE)
+        fh.seek(0)
+        dest.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(fileobj=fh) as tf:
+            tf.extractall(dest, filter="data")
+
+
+def snapshot(source: Path) -> int:
+    if DEST.exists() and any(DEST.iterdir()):
+        print(f"REFUSED: {DEST} exists; the snapshot is read-only (a newer Stage 2 is a new decision row)")
+        return 3
+    full = git(source, "rev-parse", f"{COMMIT}^{{commit}}").decode().strip()
+    res = result_paths(source, full)
+    if res is None:
+        return 3
+    archive_into(source, full, list(CODE) + res, DEST)
     hashes = tree_hashes(DEST, skip=DATA_DIRS)
     write_manifest(MANIFEST, hashes)
     SOURCE_JSON.write_text(json.dumps({
@@ -139,6 +171,79 @@ def snapshot(source: Path) -> int:
         "data_not_committed": list(DATA_DIRS),
     }, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"snapshot: {len(hashes)} files from Stage 2 {full[:7]} into {DEST.relative_to(ROOT)}; manifest written")
+    return 0
+
+
+def extend(source: Path, task: str) -> int:
+    """Add to the existing snapshot the result files `RESULTS` lists that it lacks, from **the snapshot's own commit**,
+    leaving every file already in it byte-identical. Refusing, with nothing written, unless (1) the snapshot matches
+    its manifest, (2) `COMMIT` is the commit `STAGE2_SOURCE.json` records, (3) every listed result is in that commit's
+    tree, and (4) a fresh `git archive` of the whole snapshot's paths at that commit reproduces every file already in
+    the snapshot, hash for hash, and holds nothing beyond them but the files to add. Only then are the new files
+    copied from that archive; the tree is hashed again and every old file's hash must be unchanged and every new
+    file's the archive's before the manifest and the source record are rewritten. The record keeps each extension:
+    its task, the files added, the counts before and after and the sha256 of the manifest it started from."""
+    if not (DEST.is_dir() and MANIFEST.is_file() and SOURCE_JSON.is_file()):
+        print(f"REFUSED: no snapshot to extend at {DEST} (take one first)")
+        return 3
+    old = read_manifest(MANIFEST)
+    if tree_hashes(DEST, skip=DATA_DIRS) != old:
+        print(f"REFUSED: {DEST} differs from {MANIFEST.name} (scripts/vendor_stage2.py --verify); nothing added")
+        return 3
+    rec = json.loads(SOURCE_JSON.read_text(encoding="utf-8"))
+    full = git(source, "rev-parse", f"{COMMIT}^{{commit}}").decode().strip()
+    if rec.get("commit") != full:
+        print(f"REFUSED: the snapshot is of Stage 2 {str(rec.get('commit'))[:7]} but COMMIT names {full[:7]}; an "
+              "extension takes files from the snapshot's own commit (a newer Stage 2 is a new snapshot under a new "
+              "decision row); nothing added")
+        return 3
+    res = result_paths(source, full)
+    if res is None:
+        return 3
+    new = [r for r in res if r not in old]
+    if not new:
+        print(f"extend: nothing to add; vendor/stage2 holds every listed result ({len(old)} files)")
+        return 0
+    with tempfile.TemporaryDirectory(prefix="vendor_stage2_extend_") as tmp:
+        fresh_dir = Path(tmp) / "stage2"
+        archive_into(source, full, list(CODE) + res, fresh_dir)
+        fresh = tree_hashes(fresh_dir)
+        differ = sorted(k for k in old if fresh.get(k) != old[k])
+        if differ:
+            print(f"REFUSED: Stage 2 {full[:7]}'s archive does not reproduce {len(differ)} of the snapshot's "
+                  f"{len(old)} files (e.g. {differ[:3]}; a different git core.autocrlf would do it); nothing added")
+            return 3
+        extra, missing = sorted(set(fresh) - set(old) - set(new)), sorted(set(new) - set(fresh))
+        if extra or missing:
+            print(f"REFUSED: the archive holds {extra[:3]} beyond the snapshot, or lacks {missing[:3]}; nothing added")
+            return 3
+        there = [r for r in new if (DEST / r).exists()]
+        if there:
+            print(f"REFUSED: {there[:3]} already exist under {DEST}; nothing is overwritten")
+            return 3
+        for rel in new:
+            (DEST / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(fresh_dir / rel, DEST / rel)
+    after = tree_hashes(DEST, skip=DATA_DIRS)
+    changed = sorted(k for k in old if after.get(k) != old[k])
+    wrong = sorted(set(after) ^ (set(old) | set(new))) + sorted(r for r in new if after.get(r) != fresh[r])
+    if changed or wrong:
+        print(f"FAILED: after the copy, old files changed {changed[:3]} or new ones are wrong {wrong[:3]}; the "
+              "manifest is not rewritten (the tree now fails --verify)")
+        return 3
+    before_sha = sha256(MANIFEST)
+    write_manifest(MANIFEST, after)
+    rec["result_files"] = res
+    rec["files"] = len(after)
+    rec.setdefault("extensions", []).append({
+        "task": task, "taken": datetime.now(timezone.utc).isoformat(timespec="seconds"), "commit": full,
+        "method": "git archive of the same commit; every file already in the snapshot reproduced hash for hash by the "
+                  "archive and unchanged after the copy; only the added files copied",
+        "added": new, "files_before": len(old), "files_after": len(after), "manifest_before_sha256": before_sha,
+    })
+    SOURCE_JSON.write_text(json.dumps(rec, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"extend ({task}): {len(new)} files added from Stage 2 {full[:7]}; {len(old)} files unchanged; manifest "
+          f"{len(old)} -> {len(after)} files, sha256 {sha256(MANIFEST)}")
     return 0
 
 
@@ -192,11 +297,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--source", type=Path, default=ROOT.parent / "Stage 2")
     ap.add_argument("--data", action="store_true")
     ap.add_argument("--verify", action="store_true")
+    ap.add_argument("--extend", metavar="TASK", help="add the listed results the snapshot lacks, from its own commit "
+                                                    "(TASK, e.g. Q-61, is recorded in STAGE2_SOURCE.json)")
     a = ap.parse_args(argv)
     if a.verify:
         return verify()
     src = a.source.resolve()
-    if not (DEST.exists() and any(DEST.iterdir())):
+    if a.extend:
+        rc = extend(src, a.extend)
+        if rc:
+            return rc
+    elif not (DEST.exists() and any(DEST.iterdir())):
         rc = snapshot(src)
         if rc:
             return rc
