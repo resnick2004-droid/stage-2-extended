@@ -94,18 +94,19 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-76 | Q-17's adapter carries a declared funded-account class (`extended/user_beside.py`; U1's start-row identity at the default) | wt-user | running (wt-user, E-052) | Q-63 | light | 0 | E-046 |
 | Q-77 | The red team's fifth read of family B | wt-scout | done: must be redrafted, ruled (E-051); Q-81 | Q-65 | light | 0 | E-047 |
 | Q-66b | The gatekeeper re-reads F-02's sixth text (c09730e) -- a verdict only | lead | done: APPROVE, contingent on Q-55 only (E-048) | Q-72 | light | 0 | E-047 |
-| Q-78 | Family R's second draft to the program's current rules | wt-levels | running | Q-38 | light | 0 | E-048 |
+| Q-78 | Family R's second draft to the program's current rules | wt-levels | done: merged (E-057); its third draft Q-90 | Q-38 | light | 0 | E-048 |
 | Q-79 | `config/calendar_fomc_minutes.csv` built from Q-73's cited dates (builder, loader, tests), then pinned by the lead | wt-firms | done: merged and pinned (E-050) | Q-73 | light | 0 | E-048 |
 | Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | queued (after the second leg) | Q-71 | heavy | 0 | E-049 |
 | Q-81 | Family B's sixth draft: C1-f's null the realised paired lift (the model's term dropped), the conjoint MDL, level and power at the family's level | wt-scout | running (the family B drafter) | Q-77 | light | 0 | E-051 |
 | Q-82 | The pass line's fresh-seed validation, built (seeds 20262010-20262019; criterion fixed in E-052) | wt-verify | running | Q-68 | light | 0 | E-052 |
 | Q-83 | Q-82's run from a clean checkout under the lock -- F-02's pin needs it | lead | queued (after Q-82) | Q-82, Q-55 | heavy | 0 | E-052 |
-| Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | queued (after Q-78) | Q-68 | light | 0 | E-052 |
+| Q-84 | F-02's seventh text: K0 (fill-intensity size per cell) and the judged-count check; the pin conditions Q-55 and Q-83; the runner's assertions; then the gatekeeper's re-read | wt-levels | running (its drafter, wt-levels, E-057) | Q-68 | light | 0 | E-052 |
 | Q-85 | The one-door scan checks that the row an exemption names exists and says so; the hook's "prereg/F-xx" message | wt-infra | running | Q-68 | light | 0 | E-052 |
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | running | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | running (its drafter) | Q-75 | light | 0 | E-054 |
 | Q-88 | The red team's first read of the firms reading's second draft | wt-firms | running | Q-54 | light | 0 | E-054 |
 | Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | queued (after the second leg) | Q-70 | heavy | 0 | E-055 |
+| Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | queued (after F-02 and family B) | Q-78 | light | 0 | E-057 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
