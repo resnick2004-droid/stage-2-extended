@@ -91,7 +91,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-73 | The FOMC-minutes release dates 2020-01-02 to 2026-07-16 from federalreserve.gov (a scout's cited note and CSV); then a pinned `config/` calendar (a builder, as E-029) | wt-firms | done: 53 releases cited (E-048); the calendar Q-79 | Q-54b | light | 0 | E-045 |
 | Q-74 | The reader admits pinned `prereg/RD-nn_*.md` declarations; the strict expected failures tracking the gap become passing tests | wt-infra | done: nothing to widen (E-041 had); an end-to-end test merged (E-053) | Q-58 | light | 0 | E-045 |
 | Q-75 | The red team's second read of family O | wt-lit | done: pinnable after one edit (E-054); Q-87 | Q-63 | light | 0 | E-046 |
-| Q-76 | Q-17's adapter carries a declared funded-account class (`extended/user_beside.py`; U1's start-row identity at the default) | wt-user | running (wt-user, E-052) | Q-63 | light | 0 | E-046 |
+| Q-76 | Q-17's adapter carries a declared funded-account class (`extended/user_beside.py`; U1's start-row identity at the default) | wt-user | done: merged (E-059); its identity Q-93 | Q-63 | light | 0 | E-046 |
 | Q-77 | The red team's fifth read of family B | wt-scout | done: must be redrafted, ruled (E-051); Q-81 | Q-65 | light | 0 | E-047 |
 | Q-66b | The gatekeeper re-reads F-02's sixth text (c09730e) -- a verdict only | lead | done: APPROVE, contingent on Q-55 only (E-048) | Q-72 | light | 0 | E-047 |
 | Q-78 | Family R's second draft to the program's current rules | wt-levels | done: merged (E-057); its third draft Q-90 | Q-38 | light | 0 | E-048 |
@@ -104,9 +104,12 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-85 | The one-door scan checks that the row an exemption names exists and says so; the hook's "prereg/F-xx" message | wt-infra | running | Q-68 | light | 0 | E-052 |
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | running | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | running (its drafter) | Q-75 | light | 0 | E-054 |
-| Q-88 | The red team's first read of the firms reading's second draft | wt-firms | running | Q-54 | light | 0 | E-054 |
+| Q-88 | The red team's first read of the firms reading's second draft | wt-firms | done: must be redrafted, remedies adopted (E-058); Q-91 | Q-54 | light | 0 | E-054 |
 | Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | queued (after the second leg) | Q-70 | heavy | 0 | E-055 |
 | Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | queued (after F-02 and family B) | Q-78 | light | 0 | E-057 |
+| Q-91 | The firms reading's third draft: Q-88's five MATERIAL and twelve minors | wt-firms | running (its drafter) | Q-88 | light | 0 | E-058 |
+| Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | running | Q-42 | light | 0 | E-059 |
+| Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued (after the second leg) | Q-76 | heavy | 0 | E-059 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
