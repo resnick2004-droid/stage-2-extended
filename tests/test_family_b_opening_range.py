@@ -14,6 +14,19 @@ alert, no feature family B uses reads a bar stamped 08:30-08:59 CT of the alert'
   the red team found at the 09:00 alert (`range_rth` = `or_width`, `pos_rth` = `or_pos` on every day);
 * **the declaration says the same:** the draft's table of used features lists exactly `FAMILY_B_FEATURES`.
 
+**Added for the fourth draft** (the third review's M3-2 and m3-1; the lead's ruling E-036):
+
+* **the disclosed identity:** `d_pdc - gap - ret_60 = (C[t-61] - C[08:29]) / atr14` exactly at every admitted alert
+  of a non-roll day -- the move from the 08:29 close to the close as of t - 61, which at 10:30 is the 60-minute
+  opening range's net move. No single feature reads the half-hour; this combination of three carries its net move;
+* **linear recoverability, as the draft discloses it:** on a synthetic year, the 60-minute range's net move at
+  10:30 is a linear function of the 37 features (R-squared at least 0.99), while the half-hour's **width** and the
+  **position** in it -- which a breakout needs -- are not (R-squared below 0.9 at 10:05, 10:30 and 12:00);
+* **the as-of rule (m3-1):** with no bar stamped 09:00-09:24 on a day, the 60-minute windows' as-of close at the
+  alerts 10:05-10:25 falls back into the half-hour. The declared per-row rule (`or_free_rows`, a reference for the
+  build's refusing check) flags exactly those rows, and only on them does replacing the half-hour move a used
+  feature.
+
 Synthetic bars only (`extended.synthetic_bars`); seeds `numpy.random.default_rng([20261968, 20 + i])`, the draft's
 proposed build-test seed (its section 19).
 """
@@ -144,3 +157,98 @@ def test_the_draft_declares_these_features():
     assert block, "the draft's table of used features is not marked"
     names = re.findall(r"^\| `([a-z0-9_]+)` \|", block.group(1), re.M)
     assert tuple(names) == FAMILY_B_FEATURES
+
+
+# --------------------------------------------------------------- the fourth draft: the identity, recoverability, m3-1
+
+AS_OF_OFFSETS = (1, 6, 16, 31, 61)        # c, ret_5, ret_15, ret_30 / eff_30 / up_share_30, ret_60 / rv_60's first change
+
+
+def _slots(bars: pd.DataFrame) -> np.ndarray:
+    local = pd.to_datetime(bars["ts"], unit="s", utc=True).dt.tz_convert(sb.CHICAGO).dt.tz_localize(None)
+    return ((local.dt.hour * 60 + local.dt.minute - 17 * 60) % 1440).to_numpy()
+
+
+def or_free_rows(bars: pd.DataFrame, X: pd.DataFrame) -> np.ndarray:
+    """The declared per-row rule (m3-1): a row (session, alert slot s) is kept only if the bars the 37 features read
+    as of s - 1, s - 6, s - 16, s - 31 and s - 61, and the day's first bar, are none of them stamped 08:30-08:59."""
+    sl = _slots(bars)
+    by_day = {d: np.sort(sl[(bars["day"] == d).to_numpy()]) for d in X["day"].unique()}
+    keep = np.ones(len(X), dtype=bool)
+    for i, (d, s) in enumerate(zip(X["day"].to_numpy(), X["slot"].to_numpy())):
+        present = by_day[d]
+        if present.size == 0 or OR_LO <= present[0] < OR_HI:
+            keep[i] = False
+            continue
+        for off in AS_OF_OFFSETS:
+            j = np.searchsorted(present, s - off, side="right") - 1
+            if j >= 0 and OR_LO <= present[j] < OR_HI:
+                keep[i] = False
+                break
+    return keep
+
+
+def test_the_disclosed_identity(bars, base):
+    sl = _slots(bars)
+    b = bars.assign(slot=sl)
+    rows = base[np.isfinite(base["d_pdc"]) & np.isfinite(base["gap"]) & np.isfinite(base["ret_60"])]
+    assert len(rows) > 500
+    got = (rows["d_pdc"] - rows["gap"] - rows["ret_60"]).to_numpy()
+    want = []
+    for d, s, A in zip(rows["day"], rows["slot"], rows["norm_atr14"]):
+        day = b[b["day"] == d]
+        c61 = float(day.loc[day["slot"] <= s - 61, "close"].iloc[-1])
+        c829 = float(day.loc[day["slot"] <= OR_LO - 1, "close"].iloc[-1])
+        want.append((c61 - c829) / A)
+    assert np.allclose(got, np.array(want), rtol=0, atol=1e-9)
+
+
+def test_linear_recoverability_is_as_disclosed(cal):
+    year = sb.generate(sb.Spec(date(2021, 1, 4), date(2021, 12, 31),
+                               seed=int(np.random.default_rng([SEED, 29]).integers(1, 2**31))))
+    marks = [F.slot(10, 5), F.slot(10, 30), F.slot(12, 0)]
+    X = F.compute(year, marks, cal, normalisers=True)
+    X = X[X["day"] >= "2021-02-05"].reset_index(drop=True)
+    q = _or_quantities(year, X)
+    b = year.assign(slot=_slots(year))
+    first = b[b["slot"] >= OR_LO].groupby("day")["open"].first()
+    c929 = b[b["slot"] <= F.slot(9, 29)].groupby("day")["close"].last()
+    q["move60"] = (c929.reindex(X["day"]).to_numpy() - first.reindex(X["day"]).to_numpy()) / X["norm_atr14"].to_numpy()
+
+    def r2(rows, y):
+        Z = pd.get_dummies(X.loc[rows, list(FAMILY_B_FEATURES)], columns=["dow"], drop_first=True, dtype=float)
+        Zv = Z.to_numpy(dtype=float)
+        ok = np.isfinite(Zv).all(1) & np.isfinite(y)
+        A = np.c_[np.ones(ok.sum()), Zv[ok]]
+        beta, *_ = np.linalg.lstsq(A, y[ok], rcond=None)
+        return 1.0 - np.var(y[ok] - A @ beta) / np.var(y[ok])
+
+    for s in marks:
+        rows = (X["slot"] == s).to_numpy()
+        assert r2(rows, q["width"][rows]) < 0.9, F.slot_label(s)
+        assert r2(rows, q["position"][rows]) < 0.9, F.slot_label(s)
+    rows = (X["slot"] == F.slot(10, 30)).to_numpy()
+    assert r2(rows, q["move60"][rows]) >= 0.99
+
+
+def test_the_as_of_rule_flags_exactly_the_rows_that_read_the_half_hour(bars, cal):
+    day = "2021-03-24"
+    sl = _slots(bars)
+    gap = (bars["day"].to_numpy() == day) & (sl >= F.slot(9, 0)) & (sl <= F.slot(9, 24))
+    holed = bars.loc[~gap].reset_index(drop=True)
+    X = F.compute(holed, FAMILY_B_ALERTS, cal)
+    keep = or_free_rows(holed, X)
+    flagged = X.loc[~keep, ["day", "alert"]]
+    assert list(flagged["day"]) == [day] * 5
+    assert list(flagged["alert"]) == ["10:05", "10:10", "10:15", "10:20", "10:25"]
+    after = F.compute(replace_opening_range(holed, day, int(np.random.default_rng([SEED, 33]).integers(1, 2**31))),
+                      FAMILY_B_ALERTS, cal)
+    a = X[X["day"] == day].reset_index(drop=True)
+    b2 = after[after["day"] == day].reset_index(drop=True)
+    k = keep[(X["day"] == day).to_numpy()]
+    moved = np.zeros(len(a), dtype=bool)
+    for name in FAMILY_B_FEATURES:
+        x, y = a[name].to_numpy(), b2[name].to_numpy()
+        moved |= ~((x == y) | (np.isnan(x) & np.isnan(y)))
+    assert not moved[k].any()                 # every kept row is invariant
+    assert moved[~k].all()                    # every flagged row does read the half-hour
