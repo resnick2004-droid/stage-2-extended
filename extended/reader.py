@@ -33,11 +33,19 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
    in any tree, as often as it runs, and checked wherever it runs; **ledgered only inside a clean run** (E-026, the
    lead's rule: `S2X_CLEAN_RUN` set -- and then the tree must be that run's checkout of a committed tree, with its
    run id, as a family read's must), so a worktree's or the suite's identity runs write nothing (Q-48);
+2a. **`registered_design`** -- re-reading Stage 2's own registered designs, already judged in Stage 2 (E-037, Q-58):
+   the readings scripts beside them (Q-17's `scripts/user_beside.py`, Q-20's `scripts/breakeven_fidelity.py`, Q-18's
+   `scripts/p14_validation.py`). `design=` names the designs read, each one of `REGISTERED_DESIGNS` (P-14, P-15,
+   P-16; nothing else, on either block); the declaration is a decision row that exists and names each of them
+   (never a family's or a described reading's file: a family can never use this purpose, whatever its line says);
+   the process's script must be one of this repository's `scripts/*.py`. Checked wherever it runs and ledgered only
+   inside a clean run, exactly as an identity's read; never limited to once;
 3. every other purpose: a purpose containing a choice or fitting word (`choose`, `choice`, `fit`, `select`, `search`,
    `tune`, `train`, ...) never reads the judged block, whatever a declaration says (the audit's H-2); the declaration
-   is a family file `prereg/F-NN_<name>.md` (or its id `F-NN`) that exists, is **pinned** -- its sha256 (of the LF text)
-   in a decision row, read exactly as `tests/test_declarations_fixed.py` reads the pins -- and still hashes to that pin,
-   and whose text **names the purpose for the judged block** on a line of the form
+   is a family file `prereg/F-NN_<name>.md` (or its id `F-NN`) or a described reading's `prereg/RD-NN_<name>.md` (or
+   `RD-NN`; E-023 (1), E-025 (1), Q-58: on exactly the same rules) that exists, is **pinned** -- its sha256 (of the LF
+   text) in a decision row, read exactly as `tests/test_declarations_fixed.py` reads the pins -- and still hashes to
+   that pin, and whose text **names the purpose for the judged block** on a line of the form
 
        - **Judged-block reads:** `stage_C_judgement`, `stage_D_scorecard`
 
@@ -51,12 +59,13 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
    row, one more run. One run may read as often as it needs (bars, then walks; its own workers share the run id).
 
 **The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every family's
-read touching the judged block, and every identity's read inside a clean run (`Authorisation.ledgered`), appends one
-line **before the data is read** (a ledger that cannot be written means no read)
--- who (the script, its arguments, the calling function, the commit, the dirty flag, the process, the clean run and
-run id), what (each file with its sha256, size and whether it matches `vendor/DATA_MANIFEST_stage2.sha256`; the
+or described reading's read touching the judged block, and every identity's or registered design's read inside a clean
+run (`Authorisation.ledgered`), appends one line **before the data is read** (a ledger that cannot be written means no
+read) -- who (the script, its arguments, the calling function, the commit, the dirty flag, the process, the clean run
+and run id), what (each file with its sha256, size and whether it matches `vendor/DATA_MANIFEST_stage2.sha256`; the
 columns; the description), which dates (the span, the blocks, the judged part), which declaration (its path or row,
-its sha256) and purpose, and when (UTC). Choice-block reads are not ledgered (the brief: judged reads only). The
+its sha256, its kind -- `family`, `described_reading`, `identity`, `registered_design` -- and a registered design's
+`designs`) and purpose, and when (UTC). Choice-block reads are not ledgered (the brief: judged reads only). The
 ledger is append-only: a line that does not parse, or a file that does not end in a newline, refuses the next read
 (`LedgerError`); `ledger_history_problems` reports any line committed in the history that is no longer in HEAD, or in
 HEAD that is no longer in the working copy (`tests/test_reader.py` runs it on this repository); the hook
@@ -100,6 +109,9 @@ CONFIRMATION_START = date(2026, 7, 17)
 SEAL_START = CHOICE_END + timedelta(days=1)
 
 IDENTITY = "identity"
+#: re-reading Stage 2's own registered, already-judged designs (E-037, Q-58), only these
+REGISTERED_DESIGN = "registered_design"
+REGISTERED_DESIGNS = ("P-14", "P-15", "P-16")
 LEDGER_REL = "results/read_ledger.jsonl"
 LEDGER_VERSION = 1
 LEDGER_KEYS = ("ledger", "when", "who", "what", "dates", "declaration", "purpose", "repeat")
@@ -115,11 +127,13 @@ PURPOSE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")
 #: the declared line: "Judged-block reads[ anything]: `purpose`, `purpose`" at a line's start (after markers)
 DECLARED_LINE = re.compile(r"^[ \t>*_\-]*judged-block reads\b[^:\n]*:(.*)$", re.IGNORECASE | re.MULTILINE)
 PURPOSE_TOKEN = re.compile(r"`([A-Za-z][A-Za-z0-9_]*)`")
-#: a pin, exactly as tests/test_declarations_fixed.py reads it
-PIN = re.compile(r"`(prereg/F-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`")
+#: a pin, exactly as tests/test_declarations_fixed.py reads it: a family's (`F-nn`) or a described reading's (`RD-nn`)
+PIN = re.compile(r"`(prereg/(?:F|RD)-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`")
 ROW = re.compile(r"\|\s*(E-\d+)\s*\|")
-DECLARATION_PATH = re.compile(r"prereg/F-\d+[^/`]*\.md")
-F_ID = re.compile(r"F-\d+")
+DECLARATION_PATH = re.compile(r"prereg/(?:F|RD)-\d+[^/`]*\.md")
+#: a declaration's id: a family's `F-nn` or a described reading's `RD-nn`
+F_ID = re.compile(r"(?:F|RD)-\d+")
+DECLARATION_ID = re.compile(r"prereg/((?:F|RD)-\d+)")
 E_ID = re.compile(r"E-\d+")
 NAME = re.compile(r"[A-Za-z0-9_]+")
 THIS_FILE = Path(__file__).resolve()
@@ -157,11 +171,14 @@ class Authorisation:
     purpose: str | None
     declaration: str | None
     declaration_sha256: str | None
-    kind: str | None                      # "family" | "identity" | None (a choice-block read)
+    #: "family" | "described_reading" | "identity" | "registered_design" | None (a choice-block read)
+    kind: str | None
     repeat: str | None
-    #: whether the read appends its line to the ledger: every family's judged read; an identity's only inside a clean
-    #: run (E-026); never a choice-block read
+    #: whether the read appends its line to the ledger: every family's or described reading's judged read; an
+    #: identity's or a registered design's only inside a clean run (E-026, E-037); never a choice-block read
     ledgered: bool = False
+    #: the registered designs a `registered_design` read re-reads, in `REGISTERED_DESIGNS`' order (else empty)
+    designs: tuple[str, ...] = ()
 
 
 # ------------------------------------------------------------------------------------------------- dates and blocks
@@ -226,7 +243,8 @@ def declared_purposes(text: str) -> frozenset[str]:
 
 
 def pins(decisions_text: str) -> dict[str, set[str]]:
-    """{`prereg/F-..md`: {sha256, ...}} from the decision log, as `tests/test_declarations_fixed.py` reads it."""
+    """{`prereg/F-..md` or `prereg/RD-..md`: {sha256, ...}} from the decision log, as
+    `tests/test_declarations_fixed.py` reads it."""
     out: dict[str, set[str]] = {}
     for rel, h in PIN.findall(decisions_text):
         out.setdefault(rel, set()).add(h)
@@ -274,8 +292,9 @@ def _family_ref(declaration: Any, repo: Path, what: str) -> str:
     if Path(s).is_absolute():
         s = _rel(Path(s), repo) or s
     if not DECLARATION_PATH.fullmatch(s):
-        raise JudgedBlockSealed(f"REFUSED: {what}: a judged-block read serves a family's declaration, a file "
-                                f"prereg/F-NN_<name>.md of this repository (pinned by its decision row), not {s!r}")
+        raise JudgedBlockSealed(f"REFUSED: {what}: a judged-block read serves a family's or a described reading's "
+                                "declaration, a file prereg/F-NN_<name>.md or prereg/RD-NN_<name>.md of this repository "
+                                f"(pinned by its decision row), not {s!r}")
     if not (repo / s).is_file():
         raise JudgedBlockSealed(f"REFUSED: {what}: the declaration {s} does not exist in {repo}")
     return s
@@ -371,6 +390,47 @@ def _identity(declaration: Any, repo: Path, what: str) -> str:
     return str(declaration)
 
 
+def names_design(row: str, design: str) -> bool:
+    """Whether a decision row names a registered design (`P-14`, not `P-140` or `XP-14`)."""
+    return re.search(rf"(?<![\w-]){re.escape(design)}(?!\d)", row) is not None
+
+
+def _designs(design: Any, what: str) -> tuple[str, ...]:
+    """`design=` as the registered designs it names, in `REGISTERED_DESIGNS`' order; refused unless every name is one
+    of them and there is at least one."""
+    names = [design] if isinstance(design, str) else list(design) if isinstance(design, (list, tuple, set,
+                                                                                        frozenset)) else None
+    if not names:
+        raise JudgedBlockSealed(f"REFUSED: {what}: the purpose {REGISTERED_DESIGN!r} names the registered design(s) it "
+                                f"re-reads (design='P-14' or a list of {', '.join(REGISTERED_DESIGNS)}), not {design!r}")
+    bad = [d for d in names if d not in REGISTERED_DESIGNS]
+    if bad:
+        raise JudgedBlockSealed(f"REFUSED: {what}: {bad[0]!r} is not a registered design this purpose re-reads -- only "
+                                f"Stage 2's own judged designs {', '.join(REGISTERED_DESIGNS)} (E-037)")
+    return tuple(d for d in REGISTERED_DESIGNS if d in names)
+
+
+def _registered(declaration: Any, designs: tuple[str, ...], repo: Path, what: str) -> str:
+    script = _main_script()
+    if not _under(script, repo / "scripts"):
+        raise JudgedBlockSealed(
+            f"REFUSED: {what}: the purpose {REGISTERED_DESIGN!r} re-reads Stage 2's registered designs only from this "
+            f"repository's readings scripts (scripts/*.py, E-037); this process's script is "
+            f"{script or 'none (python -c or an interactive one)'}")
+    if declaration is None or not E_ID.fullmatch(str(declaration)):
+        raise JudgedBlockSealed(
+            f"REFUSED: {what}: a registered design's re-read names the decision row that admits it "
+            f"(declaration='E-NNN'), never a family's or a described reading's file; not {declaration!r}")
+    row = decision_row(_decisions(repo), str(declaration))
+    if row is None:
+        raise JudgedBlockSealed(f"REFUSED: {what}: {declaration} is no decision row of {repo / 'DECISIONS.md'}")
+    missing = [d for d in designs if not names_design(row, d)]
+    if missing:
+        raise JudgedBlockSealed(f"REFUSED: {what}: {declaration}'s row does not name {', '.join(missing)}; a "
+                                "registered design is re-read under a row that names it")
+    return str(declaration)
+
+
 def _family(declaration: Any, purpose: str, repo: Path, what: str) -> tuple[str, str]:
     if _choice_purpose(purpose):
         raise JudgedBlockSealed(
@@ -379,7 +439,8 @@ def _family(declaration: Any, purpose: str, repo: Path, what: str) -> tuple[str,
             "2023-12-29")
     if declaration is None:
         raise JudgedBlockSealed(f"REFUSED: {what}: a read of the judged block for {purpose!r} names no declaration "
-                                "(declaration='prereg/F-NN_<name>.md', pinned, naming the purpose)")
+                                "(declaration='prereg/F-NN_<name>.md' or 'prereg/RD-NN_<name>.md', pinned, naming the "
+                                "purpose)")
     ref = _family_ref(declaration, repo, what)
     sha = sha256_lf(repo / ref)
     pinned = pins(_decisions(repo)).get(ref)
@@ -388,7 +449,7 @@ def _family(declaration: Any, purpose: str, repo: Path, what: str) -> tuple[str,
                                 "sha256 (a declaration is pinned by the lead's row before any judged read)")
     if pinned != {sha}:
         raise JudgedBlockSealed(f"REFUSED: {what}: {ref} was edited since its pin (its sha256 {sha[:12]} is not the "
-                                f"pinned {sorted(h[:12] for h in pinned)}); a change is a new family")
+                                f"pinned {sorted(h[:12] for h in pinned)}); a change is a new family (or reading)")
     if purpose not in declared_purposes((repo / ref).read_text(encoding="utf-8")):
         raise JudgedBlockSealed(f"REFUSED: {what}: {ref} does not name {purpose!r} on its 'Judged-block reads:' line "
                                 "(a purpose named elsewhere in the text authorises nothing)")
@@ -398,8 +459,8 @@ def _family(declaration: Any, purpose: str, repo: Path, what: str) -> tuple[str,
 def _clean_run(repo: Path, what: str) -> None:
     name, run_id = _run()
     if not name:
-        raise JudgedBlockSealed(f"REFUSED: {what}: a family's judged-block read runs only inside a clean run "
-                                f"(python scripts/run_clean.py), and {CLEAN_RUN_ENV} is not set")
+        raise JudgedBlockSealed(f"REFUSED: {what}: a family's or a described reading's judged-block read runs only "
+                                f"inside a clean run (python scripts/run_clean.py), and {CLEAN_RUN_ENV} is not set")
     want = Path(RUNS_DIR) / name
     if os.path.normcase(os.path.abspath(repo)) != os.path.normcase(os.path.abspath(want)):
         raise JudgedBlockSealed(f"REFUSED: {what}: {CLEAN_RUN_ENV}={name!r} but this tree is {repo}, not that clean "
@@ -422,7 +483,7 @@ def _once(repo: Path, ref: str, purpose: str, repeat: str | None, what: str) -> 
         if not E_ID.fullmatch(str(repeat)):
             raise ValueError(f"repeat names a decision row 'E-NNN', not {repeat!r}")
         row = decision_row(_decisions(repo), str(repeat))
-        fid = re.match(r"prereg/(F-\d+)", ref)
+        fid = DECLARATION_ID.match(ref)
         if row is None or not (ref in row or (fid and re.search(rf"\b{fid.group(1)}\b", row))):
             raise JudgedBlockSealed(f"REFUSED: {what}: {repeat} does not name {ref}; a further judged read is "
                                     "authorised by a decision row naming the declaration")
@@ -440,7 +501,8 @@ def _once(repo: Path, ref: str, purpose: str, repeat: str | None, what: str) -> 
 
 
 def _exists(declaration: Any, repo: Path) -> bool:
-    """A choice-block read's declaration, if it names one, exists: a decision row, an F-id, or a file of the tree."""
+    """A choice-block read's declaration, if it names one, exists: a decision row, an F- or RD-id, or a file of the
+    tree."""
     s = str(declaration).replace("\\", "/")
     if E_ID.fullmatch(s):
         return decision_row(_decisions(repo), s) is not None
@@ -450,20 +512,27 @@ def _exists(declaration: Any, repo: Path) -> bool:
 
 
 def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: Any = None,
-              repeat: str | None = None, repo: Path | str | None = None, what: str = "read") -> Authorisation:
+              repeat: str | None = None, design: Any = None, repo: Path | str | None = None,
+              what: str = "read") -> Authorisation:
     """Whether a read of `start` to `end` (trading days, inclusive) may happen, and under what; raises otherwise.
     Reads nothing and writes nothing. `repo` is the tree whose `DECISIONS.md`, `prereg/`, git state and ledger count
-    (this repository's root; tests pass a temporary tree)."""
+    (this repository's root; tests pass a temporary tree). `design` (a name or a list) belongs to the purpose
+    `registered_design` only."""
     tree = Path(repo).resolve() if repo is not None else ROOT
     s, e = span(start, end, what)
     if purpose is not None:
         _check_purpose(purpose)
+    if design is not None and purpose != REGISTERED_DESIGN:
+        raise ValueError(f"{what}: design= names Stage 2's registered designs for the purpose {REGISTERED_DESIGN!r} "
+                         f"only, not for {purpose!r}")
+    designs = _designs(design, what) if purpose == REGISTERED_DESIGN else ()
     blocks = blocks_of(s, e)
     if "judged" not in blocks:
         if declaration is not None and not _exists(declaration, tree):
             raise ReadRefused(f"REFUSED: {what}: the declaration {declaration!r} does not exist in {tree}")
         return Authorisation(s, e, blocks, False, None, None, purpose,
-                             str(declaration) if declaration is not None else None, None, None, repeat)
+                             str(declaration) if declaration is not None else None, None, None, repeat, False,
+                             designs)
     # the judged part as the judged block names it; a span inside the holiday gap alone keeps its own first day
     first = max(s, JUDGED_START) if e >= JUDGED_START else max(s, SEAL_START)
     head = f"{what} ({s} to {e}) reaches the judged block ({first} to {e})"
@@ -476,10 +545,18 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
         if inside:                                      # and a clean run's marker is checked as a family read's is
             _clean_run(tree, head)
         return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, "identity", repeat, inside)
+    if purpose == REGISTERED_DESIGN:
+        ref = _registered(declaration, designs, tree, head)
+        inside = bool(_run()[0])                        # E-037: ledgered only in a clean run, exactly as an identity
+        if inside:
+            _clean_run(tree, head)
+        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, REGISTERED_DESIGN, repeat, inside,
+                             designs)
     ref, sha = _family(declaration, purpose, tree, head)
     _clean_run(tree, head)
     _once(tree, ref, purpose, repeat, head)
-    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, "family", repeat, True)
+    kind = "described_reading" if ref.startswith("prereg/RD-") else "family"
+    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, kind, repeat, True)
 
 
 # ------------------------------------------------------------------------------------------------------- the ledger
@@ -560,7 +637,8 @@ def _record(a: Authorisation, kind: str, files: Sequence[Path], columns: list[st
         "dates": {"start": a.start.isoformat(), "end": a.end.isoformat(), "blocks": list(a.blocks),
                   "judged_first": a.judged_first.isoformat() if a.judged_first else None,
                   "judged_last": a.judged_last.isoformat() if a.judged_last else None},
-        "declaration": {"ref": a.declaration, "sha256": a.declaration_sha256, "kind": a.kind},
+        "declaration": {"ref": a.declaration, "sha256": a.declaration_sha256, "kind": a.kind,
+                        **({"designs": list(a.designs)} if a.designs else {})},
         "purpose": a.purpose,
         "repeat": a.repeat,
     }
@@ -652,12 +730,13 @@ def _columns(path: Path, columns: Sequence[str] | None, what: str) -> list[str]:
 
 def read_bars(start: Any, end: Any, *, purpose: str | None = None, declaration: Any = None,
               repeat: str | None = None, columns: Sequence[str] | None = None, market: str = "NQ",
-              what: str = "bar read", repo: Path | str | None = None):
+              what: str = "bar read", design: Any = None, repo: Path | str | None = None):
     """Stage 2's 1-minute bars of `market` for trading days `start` to `end` (inclusive), after the seal and Stage 2's
     own window guard (the vendored `propedge.data.bars.read_bars`, purpose `development`). A judged-block read is
     ledgered before the bars are read. `columns` selects columns (all by default)."""
     tree = Path(repo).resolve() if repo is not None else ROOT
-    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, repo=tree, what=what)
+    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
+                  what=what)
     if not NAME.fullmatch(market):
         raise ValueError(f"a market is a root such as 'NQ', not {market!r}")
     store = tree / STORE_REL
@@ -681,13 +760,14 @@ def read_bars(start: Any, end: Any, *, purpose: str | None = None, declaration: 
 
 def read_walks(family: str, table: str, start: Any, end: Any, *, purpose: str | None = None,
                declaration: Any = None, repeat: str | None = None, columns: Sequence[str] | None = None,
-               market: str = "NQ", what: str = "walk read", repo: Path | str | None = None):
+               market: str = "NQ", what: str = "walk read", design: Any = None, repo: Path | str | None = None):
     """A table of Stage 2's atlas walks (`vendor/stage2/data/atlas/<family>/<table>.parquet`, e.g. A3 `walks`, A1
     `events`/`days`/`walks`) for dates `start` to `end` (its `date` column), after the seal and Stage 2's own window
     guard (`propedge.data.windows.assert_readable`, purpose `development`). A judged-block read is ledgered before the
     table is read."""
     tree = Path(repo).resolve() if repo is not None else ROOT
-    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, repo=tree, what=what)
+    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
+                  what=what)
     for x in (family, table, market):
         if not NAME.fullmatch(str(x)):
             raise ValueError(f"{what}: {x!r} is not a plain name (a family such as 'A3', a table such as 'walks')")
@@ -716,13 +796,14 @@ def read_walks(family: str, table: str, start: Any, end: Any, *, purpose: str | 
 
 def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], what: str,
                           purpose: str | None = None, declaration: Any = None, repeat: str | None = None,
-                          repo: Path | str | None = None) -> Authorisation:
+                          design: Any = None, repo: Path | str | None = None) -> Authorisation:
     """For a runner whose reads happen inside Stage 2's engine (the identities, the U1 replay, a cell rebuilt by
     `build_cells`): the same checks as a read here, and the same ledger line, for the `files` the engine will open.
     Reads no data; call it before the engine runs. A judged read names its files and they must exist, ledgered or
     not (an identity outside a clean run, E-026)."""
     tree = Path(repo).resolve() if repo is not None else ROOT
-    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, repo=tree, what=what)
+    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
+                  what=what)
     paths = [Path(f) if Path(f).is_absolute() else tree / f for f in files]
     if a.judged:
         if not paths:
@@ -738,5 +819,6 @@ def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], 
 __all__ = ["CHOICE_START", "CHOICE_END", "JUDGED_START", "JUDGED_END", "CONFIRMATION_START", "SEAL_START", "IDENTITY",
            "LEDGER_REL", "Authorisation", "ReadRefused", "ConfirmationWindowRefused", "JudgedBlockSealed",
            "JudgedBlockReadTwice", "LedgerError", "span", "blocks_of", "check_returned", "declared_purposes", "pins",
+           "REGISTERED_DESIGN", "REGISTERED_DESIGNS", "names_design",
            "decision_row", "authorise", "read_bars", "read_walks", "authorise_engine_read", "ledger_path",
            "read_ledger", "missing_lines", "ledger_history_problems"]
