@@ -1,0 +1,100 @@
+# config/calendar_fomc_minutes.csv -- Q-79: the release days of the minutes of the Federal Open Market Committee
+# (FOMC) inside NQ's development window, 2020-01-02 to 2026-07-16 (nothing from 2026-07-17), with each release's time:
+# 53 releases, 2020-01-03 to 2026-07-08. Compiled 2026-11-16 by scripts/build_calendar_fomc_minutes.py
+# (extended/calendar_fomc_minutes.py) from docs/research/fomc_minutes_dates_2026-11-16.csv, rows copied unchanged
+# (sha256 of its LF text 3a50340f0b9a1d6248cd2c93cc1b5956f798727aae9f950c55a38901f7b7d81a); its note,
+# docs/research/fomc_minutes_dates_2026-11-16.md, records how every value was read. Pinned by sha256 (LF) under a
+# decision row and never edited: a change is a new file under a new row.
+#
+# DATES come from the Federal Reserve's own FOMC calendar pages, read 2026-11-16; each row's date_source names the
+# page its date was read from:
+#   https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm       meetings of 2021 on
+#   https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm  meetings of 2020
+#   https://www.federalreserve.gov/monetarypolicy/fomchistorical2019.htm  the December 10-11, 2019 meeting
+# A meeting's minutes cell reads "(Released <date>)". Every date was confirmed on the minutes' own press release,
+# which prints the same date. The dates are read, never inferred: the calendar page's "three weeks after the date of
+# the policy decision" does not give every date here (the note's section 5).
+#
+# TIME comes from the minutes' press release, at the URL (the release date without hyphens for <YYYYMMDD>):
+#   https://www.federalreserve.gov/newsevents/pressreleases/monetary<YYYYMMDD>a.htm
+# Each prints one of
+#   "For release at 2:00 p.m. EST"  or  "For release at 2:00 p.m. EDT"
+# as daylight saving stood on its date: 14:00 ET. The calendar pages print no time. time_ct is the same instant in
+# Chicago, converted on the date (America/New_York to America/Chicago). The sha256 of every page and press release as
+# fetched is in the note (section 1 and Appendix A).
+#
+# COLUMNS.
+#   release_date  the day the minutes were released (the calendar page's "Released" date)
+#   meeting_end   the meeting the minutes belong to, named by its policy-decision day (its last day; the date in its
+#                 minutes file's name, monetarypolicy/fomcminutes<YYYYMMDD>.htm)
+#   time_et       the release time, Eastern (HH:MM, 24-hour clock)
+#   time_ct       the same instant, Central (Chicago)
+#   date_source   the calendar page the release date was read from
+#   accessed      the day the pages were read
+#
+# NO MINUTES OF THEIR OWN (the note's section 4): the March 2, 2020 unscheduled meeting (its minutes follow the March
+# 15, 2020 meeting's, released 2020-04-08); the cancelled March 17-18, 2020 meeting; the notation votes of 2020-03-19,
+# 2020-03-23, 2020-03-31, 2020-08-27 and 2025-08-22.
+# STATEMENT DAYS. No release day here is an FOMC statement day of Stage 2's vendored calendars
+# (vendor/stage2/config/sources/fomc_*.csv; the FOMC rows of vendor/stage2/config/im2_release_calendar.csv): the
+# builder refuses one, and tests/test_calendar_fomc_minutes.py checks it.
+# EARLY CLOSES. The release days config/calendar_early_closes.csv (E-029) also lists. Their rows stay here; the
+# reading that uses this file resolves them:
+#   2020-07-01  data_defect_candidate (E-029 decides which such days families void)
+#   2024-07-03  early_close; trading stops 12:15 CT: the release at 13:00 CT comes after it
+# Read with extended.calendar_fomc_minutes.read_calendar (or release_days), or pandas.read_csv(path, comment="#",
+# dtype=str, keep_default_na=False).
+release_date,meeting_end,time_et,time_ct,date_source,accessed
+2020-01-03,2019-12-11,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2019.htm,2026-11-16
+2020-02-19,2020-01-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-04-08,2020-03-15,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-05-20,2020-04-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-07-01,2020-06-10,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-08-19,2020-07-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-10-07,2020-09-16,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2020-11-25,2020-11-05,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2021-01-06,2020-12-16,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomchistorical2020.htm,2026-11-16
+2021-02-17,2021-01-27,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-04-07,2021-03-17,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-05-19,2021-04-28,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-07-07,2021-06-16,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-08-18,2021-07-28,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-10-13,2021-09-22,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2021-11-24,2021-11-03,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-01-05,2021-12-15,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-02-16,2022-01-26,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-04-06,2022-03-16,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-05-25,2022-05-04,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-07-06,2022-06-15,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-08-17,2022-07-27,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-10-12,2022-09-21,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2022-11-23,2022-11-02,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-01-04,2022-12-14,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-02-22,2023-02-01,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-04-12,2023-03-22,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-05-24,2023-05-03,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-07-05,2023-06-14,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-08-16,2023-07-26,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-10-11,2023-09-20,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2023-11-21,2023-11-01,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-01-03,2023-12-13,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-02-21,2024-01-31,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-04-10,2024-03-20,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-05-22,2024-05-01,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-07-03,2024-06-12,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-08-21,2024-07-31,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-10-09,2024-09-18,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2024-11-26,2024-11-07,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-01-08,2024-12-18,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-02-19,2025-01-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-04-09,2025-03-19,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-05-28,2025-05-07,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-07-09,2025-06-18,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-08-20,2025-07-30,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-10-08,2025-09-17,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-11-19,2025-10-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2025-12-30,2025-12-10,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2026-02-18,2026-01-28,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2026-04-08,2026-03-18,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2026-05-20,2026-04-29,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
+2026-07-08,2026-06-17,14:00,13:00,https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm,2026-11-16
