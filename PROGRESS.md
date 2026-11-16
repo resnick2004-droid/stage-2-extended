@@ -43,3 +43,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | Merged Q-47 (gate adapter, synthetic identity holds) and Q-38 (family R's draft, pin deferred). E-028 orders the heavy chain behind Q-16. |
 | 2026-11-16 | lead | Q-40 (the calendar, pinned) and Q-43 (family B's third draft) merged; E-029..E-031: the data-defect days ruled, E-019 corrected, fitted values admitted inside the walk-forward only, the reverse walk-forward dropped. Q-52 dispatched. |
 | 2026-11-16 | lead | Q-50 merged (E-032): F-02's fourth draft; its reverse walk-forward purpose struck (E-031); CHARTER section 4 records the allowance-capped reading. Q-53 queued after Q-16. |
+| 2026-11-16 | lead | Launched Q-52, Q-48, Q-39 (recorded earlier but not yet launched -- a slip, now closed); dispatched Q-37 (wt-lit) and Q-54 (wt-payout). |
