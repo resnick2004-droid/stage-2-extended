@@ -12,10 +12,16 @@ level computed, no outcome of any order computed.
 At the pin the file is renamed `prereg/F-02_resting_levels.md` (the reader's `DECLARATION_PATH`) and `F-XX` becomes
 `F-02`; nothing else changes (N9). The pinning row names the commit and the sha256 it pins.
 
-**The pin's condition (the final read's M3).** It is pinned only after Q-55's clean rerun of Q-16's calibration
-(E-035 (4)) has reproduced `cons`, and the treated two-sample `cons`, at or below its level on every real and realistic
-null at k = 11. A rerun that did not would withdraw this text before any read, to be re-declared under a new row, and
-nothing of it would run. Stage A's planning reads that rerun's power tables, and no figure of Q-16 is cited before it.
+**The pin's conditions (the final read's M3; E-052 (2)).** It is pinned only if both hold:
+1. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) reproduces `cons`, and the treated two-sample `cons`, at or
+   below its level on every real and realistic null at k = 11;
+2. **Q-83's fresh-seed validation** (seeds 20262010-20262019, E-052 (2)) HOLDS on E-052's criterion: at every k in 11
+   to 15, no real or realistic null's 95 % interval lies wholly above nominal. Its count-persistent tables are reported
+   beside, met here by K0 and C0 (7.10, 9.0), and never folded in.
+
+If either does not hold, this text is withdrawn before any read, to be re-declared under a new row, and nothing of it
+runs. Stage A's planning reads Q-55's power tables, and no figure of Q-16 is cited before that rerun. The pinning row
+also cites the count and the sha256 of the judged session list Q-83 writes (9.1, 17 item 12).
 
 Q-16 is merged (E-035), and its statistics stand where the draft's marks stood (Q-57). The pass line is `cons`
 (`extended/lift_bound.SHIPPED`); C1' is its two-sample form; the scorecard's P comparison is `extended/p_bound`'s
@@ -140,6 +146,16 @@ apart.
 | 3 | D-663's stress readings left to "where Q-18's tooling exists" | each reading named, with its blocks, levels and seeds (20261933, 20261934, 20261936, reassigned before any use); A2 and B3 not run, and why | 11.5, 15 |
 | 4 | line 192: `s3_event_kinds.csv` "not vendored" | vendored by E-043 (905eb19); not read for this text | 2 |
 | notes | the pin-time form; E-015's limits; the Combine-headroom check | the title and status in pin-time form (k = 11, `prereg/F-02_resting_levels.md`); only limits approved before stage D flag the menu; F3 does not apply to a trades-lift confirmation | status, 12, 14 |
+
+### 0.6 The red team's read of the pass-line code (`docs/reviews/PASS_LINE_CODE_2026-11-16.md`; E-052, TASK_QUEUE Q-84)
+
+| finding | the defect | the correction | section |
+|---|---|---|---|
+| M1 (MAT) | no Q-16 null lets the fills per session persist, and on nulls where it does `cons` can exceed its level | the fill intensity's persistence stated beside the side's; **K0** at stage A and **C0** at stage C, `cons`'s size on the cell's or the pick's own counts, outcome-free, seeds 20262020-20262023; their level and power shown on synthetic toys before the pin (E-051's rule) | 7.10, 9.0, 9.1, 15 |
+| M2 (MAT) | Q-55 replays Q-16's own draws, so it can only reproduce | the pin also requires Q-83's fresh-seed validation to HOLD on E-052's criterion | status, 19 |
+| m1 | the level argument unchecked | the stage-C runner asserts the level equals `family_level(11)`, lies in (0, 0.5), and k is in `K_RANGE` -- a build check | 17 item 12 |
+| m2 | the calendar only half pinned | the runner asserts `n_sessions` and the judged session list against Q-83's count and sha256, cited in the pinning row -- a build check | 9.1, 17 item 12 |
+| -- | "K0" named the build's synthetic kills | renamed **KB**, so that K0 is E-052's | 5.5, 7.1, 17.6, 18.2 |
 
 ## 1. Hypothesis
 
@@ -348,7 +364,7 @@ is not read.
 - **C1 and C1'** use symmetric booking, unless the spread-and-jumps T-13 (17.5 (b)) finds symmetric booking's null
   interval wholly on the side favouring the rule. Then they move to rung 1.
 - **C2** uses rung 1, unless T-13 (b) finds rung 1's interval wholly on the rule's side. Then C2 (and a moved C1) uses
-  rung 2. If rung 2's interval is wholly on the rule's side too, that (cell, R) is killed (K0, 7.1).
+  rung 2. If rung 2's interval is wholly on the rule's side too, that (cell, R) is killed (KB, 7.1).
 
 **What T-13 (b) can move (N1).** Under its declared generator the bid-ask bounce dominates: symmetric booking leans
 toward `fade` and against `break`, so the switch can move only `fade` cells, and only where T-13 (b) has the power to
@@ -580,7 +596,7 @@ Read on the **choice block only**, per (cell, R), from fill, void and touch coun
 each rule trade and its mirror. The pooled reading is symmetric under a reflection of the price path, so it shows how
 far prices travelled, never which way. No lift is computed.
 
-1. **K0, the build's synthetic tests, before anything is read** (17.5, 17.6), each consequence recorded in the
+1. **KB, the build's synthetic tests, before anything is read** (17.5, 17.6), each consequence recorded in the
    `build` section:
    - T-14 (c) and (e) kill `break` at an `rn100` stop, or withdraw the fade's level claim there, as 17.6 declares;
    - T-13 (b) sets each (side rule, stop, R)'s bookings, and kills a (cell, R) at the ladder's end (5.5).
@@ -631,6 +647,32 @@ far prices travelled, never which way. No lift is computed.
    - the value bar in points at the cell's capped uses (10), and the ratio of the two.
 
    Every figure goes to the `planning` section; none is typed anywhere. R-16 is not adopted, and is not applied.
+10. **K0, `cons`'s size on the cell's own fill counts** (E-052 (1); the pass-line review's M1). Outcome-free, after K1,
+    K2 and K5, for every surviving (cell, R).
+    - **Its counts:** the (cell, R)'s fills per session on the choice block's calendar after its cutoff, in date order
+      -- every trading day the store holds from 2020-01-02 to 2023-12-29. Counts only.
+    - **Its null:** Q-16's `cluster` null: each fill 0.5 sign(a_s + e), a_s ~ N(0, 0.35) the session effect, e ~
+      N(0, 0.65) -- an exact null with sides reset daily.
+    - **Its replications:** 200,000. Each one lays a window of n_judged consecutive sessions of those counts at a random
+      circular offset, where n_judged is the judged calendar's session count Q-83 writes (9.1). It then draws the
+      outcomes and applies `cons` at one-sided **0.05/132** (`lift_bound.many_levels`).
+    - **The rule:** if the rate's 95 % Clopper-Pearson interval (`lift_bound.clopper_pearson`) lies **wholly above
+      0.05/132**, the (cell, R) is **killed before stage B**, and counted.
+    - **For a `break` cell** the same check runs on the treated two-sample `cons` (C1''s form): the level fills and the
+      placebo fills are laid at the same offset and share a_s, and a wholly-above interval kills the cell too.
+    - **Seeds:** `numpy.random.default_rng([20262020, c, r])` for C1's form and `[20262021, c, r]` for C1''s, with c
+      the cell's index in table order and r its R's (15).
+    - **Cost:** light. It reads counts only.
+    - **What it is: a check conditional on the cell's realised choice-block counts.** It sizes `cons` on the one count
+      path the cell actually has -- not on its profile.
+      - For a profile whose unconditional size is well above the level, some realised paths are killed and others
+        kept, each correctly by its own conditional size (family B's drafter's diagnosis, E-052).
+      - **A kept cell says its own counts are safe, never that its profile is.**
+    - **Why it costs no power where the size holds:** a (cell, R) whose size on its counts is at or below nominal is
+      killed only when the 95 % interval lies wholly above nominal -- a chance of at most 2.5 % at nominal, and far less
+      below it. Its level and power at the family's level were shown on synthetic toys before the pin (E-051's rule):
+      `docs/research/scripts/q84/k0c0_toys.py`, seeds 20262024 and 20262025. Its figures are in Q-84's hand-back,
+      regenerated by that script, and none is typed here.
 
 Every cell killed: the family closes at stage A.
 
@@ -684,8 +726,21 @@ it could run only inside stage B. It is not done.
 ## 9. Stage C: judge the pick on the judged block (the pass line, E-008)
 
 The pick alone, with its cutoff and every rule as fixed in stages A and B, on fills from 2024-01-02 to 2026-07-16.
-**C1 to C4 must all hold; any failure closes the family.**
+**C0 to C4 must all hold; any failure closes the family.**
 
+0. **C0, `cons`'s size on the pick's own judged counts** (E-052 (1)), **before any x is computed.**
+   - **When.** Inside `stage_C_judgement`, the pick's judged fills are first counted per session of the judged
+     calendar. The counts come from the fill rule alone; no pair term is computed.
+   - **The check:** K0's (7.10), on those counts as they are (no offset), with 200,000 replications. Seeds:
+     `default_rng([20262022, 0])`, and for a `break` pick also the two-sample form on the level's and the placebo's
+     judged counts, `[20262023, 0]`.
+   - **What it is:** like K0, a check conditional on the pick's **realised** judged counts. It is not a statement about
+     their profile.
+   - **The rule:** if the 95 % Clopper-Pearson interval lies wholly above 0.05/132, **no pass is claimed.** The family
+     closes at C0. Its judged lift is still computed and reported beside, labelled "not a claim".
+   - **The order:** C0's row is written to the result file before any x is computed, and the runner computes x only
+     after it (17 item 11).
+   - **Its level and power:** shown with K0's before the pin (7.10).
 1. **C1, direction.** The pick's lift under its C1 booking (5.5) on the judged block has a one-sided lower bound at
    **0.05 / (k (k + 1))** (0.05 / 132 at k = 11) **above zero**, by **`cons`** (E-035 (1)).
    - **The call:** `extended.lift_bound.bound(SHIPPED, x, session, n_sessions, level=...)`, with `SHIPPED = "cons"`.
@@ -694,10 +749,12 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
      `git rev-parse HEAD:extended/lift_bound.py` equals it before stage C, refusing otherwise.
    - **The estimate:** the per-fill mean of the pair terms x = w (5.6), every fill of the pick in the judged block,
      ambiguous pairs as zero.
-   - **The calendar (N2):** every trading day the bar store holds from 2024-01-02 to 2026-07-16, void for this family or
-     not, in date order. Its count is n_sessions, written in the result file. The fills are summed per session of that
-     calendar, every session counted with or without a fill (`session_sums`). Blocks are cut by `block_index` (session
-     j in block floor(j G / n), G = n // b), so the block edges follow that count.
+   - **The calendar (N2; E-052 (3)):** every trading day the bar store holds from 2024-01-02 to 2026-07-16, void for
+     this family or not, in date order. Its count, n_sessions, and the sha256 of its newline-joined dates are the ones
+     Q-83 writes and the pinning row cites. The runner asserts both (17 item 12) and writes them to the result file. The
+     fills are summed per session of that calendar, every session counted with or without a fill (`session_sums`).
+     Blocks are cut by `block_index` (session j in block floor(j G / n), G = n // b), so the block edges follow that
+     count.
    - **The bound:** the trade-weighted session-cluster t (CR1) on 21-, 42- and 63-session blocks of that calendar,
      each with df = the non-empty blocks - 1. C1 holds only if **all three** bounds are above zero; `cons`'s bound is
      their minimum.
@@ -705,6 +762,13 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
    - **The null class (E-035 (6); the calibration note, section 7.4 item 1).** A ticket's side is set each day at
      `t_pub` from that day's levels, and there is no multi-session regime filter. So the family's sides persist at most
      one session, inside the class Q-16 calibrated against (sides persisting up to a quarter).
+   - **The fill intensity (E-052 (1); the pass-line review's M1).** This is stated beside the side's persistence, and
+     the expected class is persistent:
+     - Resting orders at price levels fill when the price travels to them, so a cell's fills per session rise in
+       volatile stretches and fall in quiet ones. Its fill intensity can persist across sessions for weeks to months --
+       the regime-like class of the review's count-persistent nulls (a log-intensity AR(1) near 0.98, a busy quarter).
+     - That is outside the class Q-16 calibrated, whose counts are iid or uniform thinnings.
+     - So `cons`'s size is checked on each cell's own counts and on the pick's, outcome-free (K0, 7.10; C0, 9.0).
    - **The residual (R1, a reading).** What sizes the test is the dependence of the pair terms w, not the rule's daily
      reset. A momentum or reversal regime gives w a mean that persists as long as the regime. Q-16's real nulls (P-16's
      long-minus-short pairs, flipped by blocks of up to 63 sessions) do not model that, and `cons` was lax on the stress
@@ -1054,13 +1118,14 @@ The replay draws nothing.
 
 ## 13. What a pass and a fail mean
 
-- **CARRIED** (C1 to C4, C1' for a break pick, and stage D's floors all hold). The pick is a development finding on a
+- **CARRIED** (C0 to C4, C1' for a break pick, and stage D's floors all hold). The pick is a development finding on a
   late-development block. It takes a registration id (D-621 (9)'s house form), a model card, its registered development
   test, the auditor, and then **one confirmation** (section 14), which carries the decision (D-189).
   - **A break pass** is a direction at round numbers, beyond what a crossing matched on its side and an exchangeable
     distance carries.
   - **A fade pass** is a reversal after these crossings (9.7).
-- **CLOSED** at stage A, B, C (C1, C1', C2, C3 or C4) or D (a floor). The reason goes in a decision row.
+- **CLOSED** at stage A (K0 among its kills), B, C (C0, C1, C1', C2, C3 or C4) or D (a floor). The reason goes in a
+  decision row.
   - A close at B or C is recorded as **"no lift detectable at this power"**, with the planning section's MDL (or
     "above the 200-trade entry") at this family's level -- never as "no lift at levels" (D-4, M4).
   - A close at C carries stage D's scorecards beside it, and makes the judged block's start days prior exposure for
@@ -1137,6 +1202,21 @@ The replay draws nothing.
 | 20261937 | the confirmation's length rule (14): `default_rng([20261937, m])`, the sign flips of its power simulation at m months |
 | 20261938 | the build's walker tests: `default_rng([20261938, j])` -- j = 0 the shift test, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c), 4 T-13 (a)'s extension (today's T-13 keeps its own 20261118) |
 | 20261939 | the build's planted-effect tests, T-14: `default_rng([20261939, j])` -- j = 0 (a), 1 (b), 2 (c), 3 (e) gap follow, 4 (e) gap reversal |
+
+**The second block, 20262020-20262029 (E-052; the block above being fully used):**
+
+| seed | what it draws |
+|---|---|
+| 20262020 | K0's replications, C1's form (7.10): `default_rng([20262020, c, r])` per (cell, R) |
+| 20262021 | K0's replications, C1''s two-sample form for `break` cells: `default_rng([20262021, c, r])` |
+| 20262022 | C0's replications, C1's form (9.0): `default_rng([20262022, 0])` |
+| 20262023 | C0's replications, C1''s form for a `break` pick: `default_rng([20262023, 0])` |
+| 20262024 | the K0/C0 toys' count patterns (`docs/research/scripts/q84/k0c0_toys.py`): `default_rng([20262024, part, profile, pattern])` |
+| 20262025 | the K0/C0 toys' outcome draws: `default_rng([20262025, part, profile, pattern, purpose])` |
+| 20262026 to 20262029 | reserved for this family, unused; never assigned without a decision row |
+
+On 2026-11-16 a word-bounded search of the working tree (the vendored snapshot included, binary files skipped) and a
+`git grep` of every branch and remote found none of 20262020-20262029 before this text.
 
 **The check (T-12; N9).** A word-bounded search of the whole working tree (`grep -rIow --exclude-dir=.git -E
 "2026193[0-9]" .`, binary files skipped):
@@ -1285,7 +1365,7 @@ row records the diagnosis. That is not a kill.
        - **precision:** D's interval at that Z has a half-width of at most 1.0 point of win probability;
        - **visibility:** in (c), the break lift L's lower bound at that Z is above zero. (e) needs none at `rn100`: an
          overnight-sign drift moves the ticket above and the ticket below in opposite directions;
-       - **if D's interval lies wholly above zero:** `break` at that (kind, stop) is **killed** (K0) -- the placebo
+       - **if D's interval lies wholly above zero:** `break` at that (kind, stop) is **killed** (KB) -- the placebo
          would let a non-level effect pass C1' (N2);
        - **if it lies wholly below zero:** break is unaffected (conservative), but the placebo-differenced lift is
          **not used for a fade level claim** at that (kind, stop), where it would be anti-conservative;
@@ -1324,7 +1404,15 @@ row records the diagnosis. That is not a kill.
 9. **Q-16's own size test** passes at the build's commit.
 10. **T-12:** section 15's seeds are used nowhere else, telling references from uses.
 11. **T-7's analogue:** stage C reads the pick from stage B's result file by its sha256, and its entry point cannot run
-    stage B.
+    stage B. It writes C0's row before computing any x (9.0).
+12. **The stage-C runner's assertions** (E-052 (3); the pass-line review's m1 and m2). These are build checks: each
+    refuses the run, and a test shows each refusing.
+    - **The level:** `level = lift_bound.family_level(k)` with k = 11, asserted equal to `family_level(11)`, strictly
+      inside (0, 0.5), and with k in `lift_bound.K_RANGE`. That one value is the level passed to `bound`,
+      `two_sample_bound`, K0 and C0.
+    - **The calendar:** `n_sessions` and the judged session list (the session dates in order) are asserted against the
+      count and the sha256 Q-83 writes, which the pinning row cites. Each fill is mapped to its session's ordinal by the
+      session date the walker assigns, never by its calendar date.
 
 **Protocol items, not this family's to build:**
 - T-1 (the program ledger);
@@ -1378,11 +1466,12 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
   records every judged read.
 - **The run.** Once, from a clean checkout of a named commit (`scripts/run_clean.py`), under the run lock, watched to
   its end.
-  - The order is fixed: the build's synthetic K0 tests, stage A (the reachable count included, or its fallback), B,
-    C, then D. Each stage's file is written before the next reads anything.
+  - The order is fixed: the build's synthetic KB tests; stage A (K0 and the reachable count included, or its
+    fallback); B; C (C0 first); then D. Each stage's file is written before the next reads anything.
   - A kill stops the sequence.
   - A run aborted or restarted is recorded by the lead with its log, and only the first complete run is read.
-- **Waits.** The pin itself waits for Q-55's clean rerun reproducing `cons` holding (status; M3); no judged-block read
+- **Waits.** The pin itself waits for Q-55's clean rerun reproducing `cons` holding and for Q-83's fresh-seed validation
+  holding (status; M3; E-052 (2)); no judged-block read
   until this file is pinned (the reader refuses a draft). Q-05 holds (E-010) and Q-16 is merged (E-035). Before stage
   C, the run asserts `extended/lift_bound.py`'s blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and before stage D
   `extended/p_bound.py`'s blob `f5b29710e243f97a2795e57f6458512fea99199b` (N1).
@@ -1392,10 +1481,12 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
 **The lead's:**
 
 1. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) must reproduce `cons` and the treated two-sample `cons`
-   holding at the family's k before the pin; if it does not, this draft is withdrawn before any read (status; M3).
+   holding at the family's k, **and Q-83's fresh-seed validation must HOLD** on E-052's criterion (at every k in 11 to
+   15, no real or realistic null's 95 % interval wholly above nominal), before the pin. If either does not, this text is
+   withdrawn before any read (status; M3; E-052 (2)).
 2. **The pinning row** names `extended/lift_bound.py`'s blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and
    `extended/p_bound.py`'s `f5b29710e243f97a2795e57f6458512fea99199b` (N1), the pinned file `prereg/F-NN_<slug>.md` and
-   its diff from this reviewed text (N9).
+   its diff from this reviewed text (N9), and the judged session list's count and sha256 that Q-83 writes (E-052 (3)).
 3. **The readings beside.** Q-17's adapter is needed for section 12 item 4, and E-015's approved limits for 12 item 6.
 4. **Optional (V2):** a per-rung `dv` from D-667's solver would replace ρ.
 
