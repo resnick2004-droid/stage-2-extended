@@ -1974,3 +1974,272 @@ rules:
       Both sentences came back in both fetches. At daily resolution both give one business day. They conflict on the
       cut-off's time zone (5:30 pm ET or CT), an hour that this record does not settle. 103000405228 (once): "requests
       submitted before 5:30pm are processed the next business day."
+
+  # ==== Q-39 (2026-11-16): the designs' full-size trades against Topstep's news rules; the GDP minute; the request amount ==
+  # Brief: TASK_QUEUE Q-39 (E-021 (2)-(3); E-025 (4)). Hosts: help.topstep.com and www.topstep.com only. Every read was
+  # a WebFetch GET of one named page, or of the same article's markdown copy (<id>-<slug>.md), which the help centre's
+  # own index https://help.topstep.com/llms.txt (58 articles, read twice) links for every article. No login, form,
+  # chat or dashboard, and nothing was sent. Each rule page was fetched at least twice with differently worded prompts.
+  # `quote` holds text that came back verbatim in at least two fetches unless the note says otherwise. Web searches
+  # were used only to find official pages, and their summaries are not evidence: one still quoted 8284211's withdrawn
+  # "doesn't require you to flatten" sentence, which no fetch of the page returned today. Retrieval stays within
+  # E-012's reading of ToU s.28 (named pages one at a time). READINGS, NOT RULINGS: the tier is the operator's.
+
+  # ---- Q-39 reading 1 of 3: "maximum size into major news" against a full-size trade open at ISM or GDP -------------
+  - key: prohibited_strategy_max_size_into_major_news
+    firm: topstep
+    value: "prohibited: purposefully trading your full Maximum Position Size directly into a scheduled major news event; the page defines no 'scheduled major news event', names no release, and says nothing of a position opened before a release"
+    units: text
+    status: verified
+    article_id: "10305426"
+    url: https://help.topstep.com/en/articles/10305426
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      10305426, "Prohibited Trading Strategies at Topstep" (page date "June 10, 2026"), section "Trading Maximum Position Size into Major News Events", whose whole text is:
+      "Purposefully trading your full Maximum Position Size directly into a scheduled major news event."
+    stage2_key: prohibited_trading_strategies
+    stage2_value: true
+    note: >
+      RE-READ 2026-11-16, UNCHANGED from Stage 2's prohibited_trading_strategies (true, read 2026-10-30, page date
+      June 10, 2026, which is still the date shown). The same sentence is quoted in E-007's audit (section 2.6) and
+      in Stage 2 D-534 (3). FETCHES: three, two of the article and one of its .md copy. The sentence came back
+      verbatim in all three. The section heading came back in two, and the second fetch gave the section's whole text
+      as that one sentence. ASKED DIRECTLY: it names no release (none of CPI, FOMC, NFP, PPI, GDP, ISM; two fetches).
+      In the second fetch it also does not define "scheduled major news event", says nothing of positions opened
+      before a release, and links no article on news or economic releases. The first fetch found this sentence to be
+      the only one on the page that mentions news or Maximum Position Size. Its related articles are Topstep Learning,
+      Trading Combine® Parameters, Prohibited Conduct, What is Responsible Trading? and Understanding Hedging. READ
+      ONCE (the .md copy): the introduction "Topstep prohibits specific trading behaviors that exploit program
+      structure, contradict real-market discipline, or create financial risk for the firm." and "These aren't gray
+      areas — they're hard stops." (E-012 read the second twice). WHAT "FULL MAXIMUM POSITION SIZE" MEANS ON
+      TOPSTEP'S PAGES: 8284223 ("What is the Scaling Plan?", "July 16, 2026", read once): "It sets your Maximum
+      Position Size — the max contracts you can hold at one time — based on your current account balance." The Terms
+      of Use ("Last updated: November 4, 2026", read in two parts, at offsets 0 and 100,000) have no sentence with
+      "news", "economic release", "economic data", "announcement" or "Maximum Position Size". Which events count, and
+      whether holding through counts, are recorded as max_size_into_major_news_scope.
+
+  - key: max_size_into_major_news_scope
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "10305426; 13613539; 8284211; 10406542; 13620045"
+    url: https://help.topstep.com/en/articles/10305426
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read says which events are a "scheduled major news event" in 10305426's item, or whether a position opened before a release and held through it is "trading ... directly into" it.
+      10305426: "Purposefully trading your full Maximum Position Size directly into a scheduled major news event." (no release named; no definition)
+      13613539 gives its restricted list as examples: "Ahead of Tier 1 News Events (for example, CPI, FOMC, NFP, PPI), Topstep temporarily restricts new opening positions on equity index products and metals in SIM to protect Traders from extreme volatility." Its schedule table lists five events: CPI, FOMC rate decision, FOMC press conference, NFP/Unemployment Rate, PPI.
+      13613539 on positions already open: "Existing Positions: Traders holding existing positions in equity index products and metals prior to 5 minutes before the news event may keep them open and manage them through the Tier 1 News Events window."
+      8284211 lists seven releases: "CPI Report", "Unemployment Rate (Non-Farm Payroll)", "FOMC Statement", "Crude Oil Inventories (EIA)", "Natural Gas Inventories (EIA)", "Crop Production", "Producer Price index (PPI)".
+      10406542's advice ("What is Responsible Trading?", "August 13, 2026"): "Know the news and size accordingly" (Yes column); "Go full port, especially on news" (No column).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. NEW TO THIS RECORD: Stage 2 left it open (D-534 (3); its section C row: "No page
+      read lists what counts as a "major news event""), and so did E-007's audit (U7 (b)). IS GDP OR ISM NAMED? No.
+      Asked directly, "GDP" and "ISM" are absent from 10305426 and 8284211 (two fetches each). They are absent from
+      13613539 too (one fetch, which also found no "Gross Domestic Product" or "BEA"; a second fetch returned the whole
+      schedule table, with no GDP row), and from 13620045, 8284206 and 14434175 (one each). 10406542, 8284223 and the
+      Terms of Use hold no sentence on news beyond those quoted here. 13613539 does not say whether its table is
+      complete: asked once, it says only "for example". Asked once, it does not mention 10305426 or Prohibited
+      Conduct either. Its holding rule is about the platform ("TopstepX™ automatically enforces these limits, so no
+      manual adjustment is required for existing trades."), and it gives no conduct ruling. ALSO READ: 13620045
+      ("October 15, 2026", once) has the RTP triggers "You max position a majority of your trades" and "You go full port or trade on tilt, FOMO,
+      or revenge", and no sentence with "news". 14434175 (TopstepX, once) says "High-impact news events bring
+      volatility — wider spreads, fast price swings, and slippage." and "TopstepX auto-plots high-impact news events
+      directly on your charts — click a marker to see the event." The events plotted come from a third-party feed
+      ("powered by Financial Juice"), and the page sets no rule on them. 10406542's two cells and "Maximum position
+      size is a tool, not a default setting." / "Use max size strategically — not habitually." came back in two
+      fetches. They are advice, not a rule. A READING, NOT A RULING (the tier is the operator's, E-007 item 4). The
+      designs: the funded opening asks 3R at $2,000 with the scaling cap binding (handoff 2.5; E-012), so it is
+      opened at the account's Maximum Position Size as 8284223 defines it. Handoff 2.5 says "the size limit binding"
+      of the evaluation's trades too. No time stop (Stage 2 D-212). Entries come at clock marks, not at chosen
+      releases. P-16's file states the limit: "other scheduled releases (Census, BEA, DOL claims, ISM) are not
+      excluded -- a position at the table's full size can be open into one of them" (vendor/stage2/prereg/
+      P-16_rc-s150-all-nr.md:225-226). Stage 2 D-534 (2) counted P-14 (A3-BRK30) as entering and holding no position
+      across a BLS release, and it counted no ISM or GDP minute. Against the item's words: "full Maximum Position
+      Size" fits the opening; "scheduled major news event" is undefined, and ISM (10:00 ET, 09:00 CT) and GDP
+      (08:30 ET, 07:30 CT) are named nowhere; "purposefully ... directly into" is undefined and says nothing about
+      holding. The one platform page that addresses holding lets a position opened earlier be kept even through a
+      named Tier 1 window. So the pages' words neither reach a full-size opening held through ISM or GDP nor clear
+      it. The case nearest the item's words is P-16's entry AT the GDP release minute (tier1_window_gdp_release): an
+      entry made at the release, not held into it from earlier.
+
+  - key: tier1_news_events_restriction
+    firm: topstep
+    value: "Tier 1 News Events, 'for example, CPI, FOMC, NFP, PPI'; schedule (CT): CPI, NFP/Unemployment Rate and PPI at 7:30 AM, window 7:25 to 7:35 AM; FOMC rate decision 1:00 PM, window 12:55 to 1:05 PM; FOMC press conference 1:30 PM, window 1:25 to 1:35 PM. In SIM during a window: no new opening transactions in minis (NQ among them); micro openings (MNQ among them) capped, 3 on a 50K Combine, on a 50K XFA 1 below a $2,000 balance and 3 above; pending orders do not fill, and none can be placed to execute in it; TP/SL brackets that reduce or close are accepted; positions held from before 5 minutes ahead may be kept and managed through it"
+    units: text
+    status: changed
+    article_id: "13613539"
+    url: https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      13613539, "Risk Adjustments: High Risk/High Volatility" ("Updated this week"):
+      "Ahead of Tier 1 News Events (for example, CPI, FOMC, NFP, PPI), Topstep temporarily restricts new opening positions on equity index products and metals in SIM to protect Traders from extreme volatility."
+      "Micros (MES, M2K, MYM, MNQ, MGC): Opening transactions limited to 1, 3, 6, 9, and 15 contracts for the $25K, $50K, $100K, $150K, and $250K account sizes, respectively, during the window (see table below)"
+      "Existing Positions: Traders holding existing positions in equity index products and metals prior to 5 minutes before the news event may keep them open and manage them through the Tier 1 News Events window."
+      "TopstepX™ automatically enforces these limits, so no manual adjustment is required for existing trades."
+      "Pending orders are not open positions." ... "They will not fill during the 10-minute window, and new pending orders intended to execute during this timeframe cannot be placed."
+      "TP/SL brackets that are reducing/closing positions will be accepted during the window."
+      "How you'll be alerted: we'll email you and you'll see a banner at the top of the platform, so you're always prepared."
+      Schedule table, columns Event | Announcement (CT) | Window (CT):
+      "Consumer Price Index (CPI) | 7:30 AM | 7:25 to 7:35 AM"
+      "FOMC rate decision | 1:00 PM | 12:55 to 1:05 PM"
+      "FOMC press conference | 1:30 PM | 1:25 to 1:35 PM"
+      "Non Farm Payroll (NFP/Unemployment Rate) | 7:30 AM | 7:25 to 7:35 AM"
+      "Producer Price Index (PPI) | 7:30 AM | 7:25 to 7:35 AM"
+      Express Funded Accounts table, columns Account | Balance | Margin | Minis/Micros | SIL & MHG:
+      "$50K XFA | Below $1500 | $20,000 | 0/1 | 0/1"
+      "$50K XFA | $1500-$2000 | $30,000 | 0/1 | 0/1"
+      "$50K XFA | Above $2000 | $50,000 | 0/3 | 0/2"
+    stage2_key: "none in rules.yaml; RULES_LEDGER.md section C row 'CPI window restriction' (13613539)"
+    stage2_value: "CPI only: 'Ahead of Consumer Price Index (CPI) releases, Topstep temporarily restricts new opening transactions on equity index products (ES, RTY, YM, NQ, NKD) in SIM' (read 2026-09-27)"
+    note: >
+      CHANGED against Stage 2's section C reading (CPI only, 2026-09-27): five events now, each with a stated time and
+      window. This is E-007's audit finding C1, re-read today and unchanged since the audit's read of 2026-11-15. The
+      vendored engine loads no value for it, because it models no news window. What rests on the old reading is the
+      cited basis of Stage 2 D-530 (1) and D-170, and P-16's conduct check, which names 8284211's NQ list as the
+      Unemployment Rate and the FOMC Statement only (see economic_releases_list). E-007's audit C1 read the report-day
+      cut (no entry before 07:35 CT on a BLS 08:30 day; FOMC days out) as keeping the designs out of the CPI, NFP and
+      PPI windows, because the engine's BLS day file lists CPI, PPI and Employment Situation days. This reader did
+      not re-check the day file. FETCHES: four, two of the article and two of its .md copy. Every line in `quote`
+      came back verbatim in at least two fetches. The pending-order sentence and the "Ahead of" sentence came back
+      cut short in one of them. Verbatim in one fetch, and the same in substance in another: "Minis (ES, RTY, YM, NQ,
+      NKD, GC, SI, HG, PL): No new opening transactions permitted during the 10-minute window surrounding the
+      release (5 minutes before, 5 minutes after)." and the Trading Combine row
+      "50K Standard | $50,000 | 3 | Blocked | Capped at 3 micros". Verbatim in two: "Live traders with a balance
+      below $3,000 will be limited to 1 contract during Tier 1 News Events". Verbatim in one: "Other products
+      (energies, rates, FX, etc.) are unaffected." and "See details on your Maximum Position Size when accounting for
+      both Tier 1 News Event restrictions, and the Scaling Plan." NOT ON THE PAGE (asked, one fetch each): GDP, "Gross
+      Domestic Product", ISM, BEA; any statement that the list is complete; any link to 10305426. NOT SETTLED HERE:
+      whether the window's end, 7:35 AM, includes 07:35:00 (E-007's audit U7 (a)). It was not asked today, and the
+      page states the window only as "7:25 to 7:35 AM".
+
+  - key: economic_releases_list
+    firm: topstep
+    value: "seven releases listed with CT times: CPI Report 7:30 AM; Unemployment Rate (Non-Farm Payroll) 7:30 AM; FOMC Statement 1:00 PM; Crude Oil Inventories (EIA) 9:30 AM / 10:00 AM; Natural Gas Inventories (EIA) 9:30 AM; Crop Production 11:00 AM; Producer Price index (PPI) 7:30 AM; the page says Topstep restricts trading for a short period during Tier 1 News Events; no GDP or ISM; the 'doesn't require you to flatten' sentence is gone"
+    units: text
+    status: changed
+    article_id: "8284211"
+    url: https://help.topstep.com/en/articles/8284211-economic-releases
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284211, "Economic Releases" ("Updated this week"):
+      "Topstep restricts trading for a short period during Tier 1 News Events."
+      "Times are subject to change — Traders are responsible for knowing what releases are scheduled and when."
+      "Economic releases are scheduled government reports that give the market key data on the economy"
+      Table, columns "Release" | "Time (CT)*":
+      "CPI Report | 7:30 AM"
+      "Unemployment Rate (Non-Farm Payroll) | 7:30 AM"
+      "FOMC Statement | 1:00 PM"
+      "Crude Oil Inventories (EIA) | 9:30 AM / 10:00 AM"
+      "Natural Gas Inventories (EIA) | 9:30 AM"
+      "Crop Production | 11:00 AM"
+      "Producer Price index (PPI) | 7:30 AM"
+    stage2_key: "none in rules.yaml; RULES_LEDGER.md section C row 'Economic releases Topstep lists' (8284211)"
+    stage2_value: "five releases (Unemployment Rate, FOMC Statement, Crude Oil Inventories (EIA), Natural Gas Inventories (EIA), Crop Production), no CPI or PPI, with 'Topstep doesn't require you to flatten positions during economic releases — in SIM or Funded Accounts.' (read 2026-09-27)"
+    note: >
+      CHANGED against Stage 2's section C reading (2026-09-27). CPI and PPI are added. The no-flatten sentence is gone,
+      and the restriction sentence above has replaced it. So have the products-affected column and the footnote "Micro
+      contracts also apply." This is E-007's audit finding C2, re-read today. The vendored engine loads no value from
+      this page. What it moves is the cited basis of Stage 2 D-170 and D-530 (1), and P-16's conduct check
+      (vendor/stage2/prereg/P-16_rc-s150-all-nr.md:221-224), which says that "the firm's release list for NQ (8284211,
+      D-170) names the Unemployment Rate at 07:30 CT and the FOMC Statement at 13:00 CT". That list now also names
+      CPI and PPI at 7:30 AM. Stage 2's section C row recorded "Trades impacted by economic releases are not eligible
+      for exceptions or Reset credits". Asked directly, today's page has no sentence with "exception" or "Reset
+      credit". FETCHES: five, of the article, its .md copy and its older slug 8284211-what-are-economic-releases,
+      which serves the same page. The restriction sentence came back verbatim in four. The table rows came back in two
+      (the article and the .md). "Times are subject to change" and the "scheduled government reports" sentence came
+      back in two. ASKED DIRECTLY: "GDP" and "ISM" are absent (two fetches); "Gross Domestic Product", "BEA" and
+      "Bureau of Economic Analysis" are absent (one), and so are jobless claims, retail sales and durable goods (one).
+      "flatten" is absent too (three). Read once: the opening line "News drops. Prices spike. Know what you're
+      walking into."; "They can trigger extreme volatility and rapid price swings that make consistent, profitable
+      trading very difficult."; and that the restriction sentence's "here" link goes to 13613539. The table's
+      asterisk footnote reads "*Pending abbreviated trading hours." (once).
+
+  # ---- Q-39 reading 2 of 3: the GDP release minute (P-16's 07:30 CT mark on BEA days, E-021 (3)) ---------------------
+  - key: tier1_window_gdp_release
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "13613539; 8284211"
+    url: https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read names GDP ("GDP", "Gross Domestic Product", BEA) as a Tier 1 News Event, or restricts trading or order entry at a GDP release.
+      13613539 gives the Tier 1 list as examples: "Ahead of Tier 1 News Events (for example, CPI, FOMC, NFP, PPI), Topstep temporarily restricts new opening positions on equity index products and metals in SIM to protect Traders from extreme volatility." Its schedule table (columns Event | Announcement (CT) | Window (CT)) has five rows, and none is GDP: CPI, FOMC rate decision, FOMC press conference, NFP/Unemployment Rate, PPI.
+      How a window is announced: "How you'll be alerted: we'll email you and you'll see a banner at the top of the platform, so you're always prepared."
+      8284211's release table (seven rows) has no GDP row, and the page says: "Times are subject to change — Traders are responsible for knowing what releases are scheduled and when."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. NEW TO THIS RECORD. The pages do not name GDP, and do not say that the five-row
+      table is the whole list. The "for example" wording and the email-and-banner alert leave open whether Topstep
+      can declare a window on a day not in the table. No page read says it does so for GDP, and none says it never
+      does. A web search of help.topstep.com for GDP, "Gross Domestic Product" or ISM found no official article
+      beyond 8284211. Its other hits were third-party pages and topstep.com market commentary, which were not read
+      and are not rules. THE DESIGNS (a reading for the lead): GDP is released at 08:30 ET, which is 07:30 CT, the
+      announcement time of the three 7:30 AM rows. P-16 offers a mark every five minutes from 17:00 CT (Stage 2
+      D-525). Its report-day cut removes marks before 07:35 CT only on BLS 08:30 days. So on a BEA GDP day the
+      07:30 mark is offered, and its market entry falls at the release bar (E-021 (3); the mechanisms note, section
+      2 item 5). The published pages place no restriction on that entry. IF Topstep ever treated a GDP release like
+      the 7:30 AM rows, the window would be 7:25 to 7:35 AM. In SIM it would block a new NQ opening, cap a micro
+      opening at 3 on a 50K Combine and, on a 50K XFA, at 1 below a $2,000 balance and 3 above. Pending orders would
+      not fill. A position opened before 7:25 could be held (tier1_news_events_restriction). The engine models none
+      of this, as for every news window. For the conduct reading of a full-size entry at the release, see
+      max_size_into_major_news_scope.
+
+  # ---- Q-39 reading 3 of 3: the payout request amount (F-P's request-amount assumption, E-025 (4)) -------------------
+  - key: payout_request_amount_choice
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "8284233; 10513413"
+    url: https://help.topstep.com/en/articles/8284233-topstep-payout-policy
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-39, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read states whether a payout request may be any amount between the minimum and the maximum, or only fixed, preset or stepped amounts, and none describes the request form's amount field.
+      8284233, "Topstep Payout Policy" ("Updated this week"): "Minimum Payout: $125"; "Max Payout per request: 50% of your account balance up to the cap below."; "Request Payouts in the Express Funded Account (XFA) and Live Funded Account (LFA) via your Topstep Dashboard"
+      Its worked example, under "How the eligible Payout balance works", rows as the page shows them (each "Eligible?" cell opens with a check-mark symbol, written here as [check]):
+      "Payout 1 | $6,000 (starting from $0) | [check] No profit requirement on first Payout" / "Take $3,000 Payout | New balance: $3,000"
+      "Payout 2 | $4,000 (up from $3,000) | [check] Profitable since last Payout" / "Take $1,800 Payout | New balance: $2,200"
+      "Payout 3 | $4,500 (up from $2,200) | [check] Profitable since last Payout" / "Take $2,000 Payout | New balance: $2,500"
+      Under "Payout Methods": "Example (ACH, $500 request): $500 minus $50 (10% split) minus $30 (processing fee) = $420 received"
+      For the Live Funded Account's daily payouts only: "request as much of your unlocked balance as you want, once per day (min $125)."
+      10513413, "Getting Started with the Topstep Dashboard" ("September 23, 2026"): "Payout Tracker & Instant Deductions — Monitor Payout requests in real time." / "Amounts deduct instantly so you can get back to trading." (no step or field described)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. NEW TO THIS RECORD. Stage 2 has no key for it; the related keys payout_min (125.0)
+      and payout_max_frac_of_balance (0.5) read the same today: "Minimum Payout: $125" and "Max Payout per request:
+      50% of your account balance up to the cap below." (three fetches each). Those two entries are not re-recorded
+      here. FETCHES: 8284233 four times: three of the article, at /8284233 and at its slug URL, and one of its .md
+      copy. The example rows came back verbatim in two (the .md copy and the fourth fetch), and their "Take $" cells
+      in a third. The ACH example came back in three, and the Dashboard sentence in two. Read once: "Once you've
+      earned $150+ Net P&L on 30 non-consecutive days in your Live Funded Account, you unlock daily Payouts" and
+      "Requesting a full 100% Payout closes your LFA since the balance reaches the Maximum Loss Limit.". ASKED
+      DIRECTLY: no sentence says "any amount" (three fetches). In the first fetch, no sentence names an increment or
+      preset, or says whether the trader enters or selects the amount. 10513413 was fetched twice (the article and
+      its .md copy) and describes no request step or amount field. The help centre's index (llms.txt) has no article
+      on requesting payouts or payout methods beyond 8284233 (asked twice). Article 8284234 ("payout FAQs", seen in a search result on intercom.help, not an official domain, so not
+      read there) returned HTTP 404 on help.topstep.com twice, with and without its slug. 8284215 (once) has only the
+      cells "50% of balance, up to $5,000*" and "50% of balance, up to $6,000*" and "See the Payout Policy for Payout
+      cap details by account size.". The request form itself is behind the login and was not read (the brief).
+      WHAT THE EXAMPLES SHOW, AS WRITTEN: the example names no account size. Its Payout 1 takes $3,000 from $6,000,
+      which is above the 50K Standard per-request cap with no DLL in Stage 2's ledger (xfa_std_cap 2000.0), so the
+      example is not drawn at that cap. Its Payout 2 takes $1,800 from a $4,000 balance, below that balance's 50 %
+      maximum of $2,000. The ACH example prices a $500 request. So the page illustrates requests below the maximum and of amounts that are not
+      the minimum. It does not state the rule. A READING, NOT A RULING: F-P's `half` (half of the maximum, so any
+      dollar-and-cent amount) stays an assumption (E-025 (4); prereg/DRAFT_F-P_payout_policy.md section 4 item 2).
+      The page's partial-request examples are its nearest support. They are in round hundreds and do not show whether
+      an amount in cents, or one that is not a round figure, is accepted. Only a reading of the form would settle
+      that: the operator's browser (Stage 2 D-574's pattern), no purchase, no request submitted.
