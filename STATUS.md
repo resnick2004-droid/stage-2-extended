@@ -16,6 +16,7 @@ Only the lead edits this file (E-005). It holds states, not result numbers: ever
 | P-14's registered gate paths (500, point and bound, every `PATH_COLS` column to 1e-6) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | P-16's registered gate paths (500, same) | HOLDS, clean clone of ba2d3b5 | E-004 |
 | U1's start rows for P-14 and P-16 (`user_journey.csv` section `start`, all 1,691 starts, both arms, all 68 columns) | **HOLDS**, wt-verify at 8010969 under the lock | E-010 |
+| U1's start rows for P-15 (every start) | **HOLDS**, clean checkout of 1d1ab9f under the lock | E-042 |
 | the walker against P-16's pinned trades (`TRADES_SHA256`, all 239,768 trades) | **HOLDS** (the lead, under the lock, wt-levels at 318d45b) | E-011 |
 
 ## NEEDS_OPERATOR
@@ -42,15 +43,15 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | worktree | branch | task | state |
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-55 the calibration's clean-run entry point | running |
-| wt-levels | wt/wt-levels | Q-53 F-02's final red-team read | running |
+| wt-levels | wt/wt-levels | Q-64 F-02's final narrow redraft | running |
 | wt-user | wt/wt-user | -- (Q-40 done, E-029) | idle |
-| wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
-| wt-lit | wt/wt-lit | Q-60 the red team on family O | running |
+| wt-features | wt/wt-features | -- (Q-61 done, E-043) | idle |
+| wt-lit | wt/wt-lit | Q-63 family O's second draft | running |
 | wt-firms | wt/wt-firms | Q-59 DayTraders' and TradeDay's remaining rules | running |
 | wt-payout | wt/wt-payout | -- (Q-54 drafted, E-038) | idle |
 | wt-report | wt/wt-report | -- (Q-27 done, E-027; the page for Q-17's file waits for Q-44) | idle |
-| wt-scout | wt/wt-scout | Q-56 family B's fourth draft | running |
-| wt-infra | wt/wt-infra | Q-58 the readings scripts through the reader | running |
+| wt-scout | wt/wt-scout | Q-62 the red team's fourth read of family B | running |
+| wt-infra | wt/wt-infra | -- (Q-58 done, E-041) | idle |
 
 ## Running now
 

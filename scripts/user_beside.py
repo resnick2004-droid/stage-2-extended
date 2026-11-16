@@ -25,6 +25,13 @@ x 2 arms x 19 responses = 114 readings, exploratory, no family (they are beside,
 
 A resume folder outside the checkout keyed by the code's commit keeps each finished reading (D-540's pattern), so a
 run killed by the machine resumes where it stopped; `--no-resume` turns it off.
+
+**The read (Q-58, E-037).** Stage 2's engine opens the bars and the atlas itself, so before any of its work `main`
+authorises the read through `extended.reader.authorise_engine_read`: purpose `registered_design`, declaration
+**E-024** (the row that merged Q-17), the designs run (P-14, P-15, P-16), the window 2020-01-02 to 2026-07-16 (the
+tables are read whole), the files -- A1's events and days and A3's cached walk for every design, the bars for P-15's
+and P-16's walks (`identity/stage2_identity.py`'s names). A refusal ends the run (exit 3) before anything is read; the
+read is ledgered only inside a clean run, `--check` or not.
 """
 from __future__ import annotations
 
@@ -51,6 +58,7 @@ import pandas as pd  # noqa: E402
 
 import user_beside_identity as I  # noqa: E402
 
+from extended import reader  # noqa: E402
 from extended import user_beside as B  # noqa: E402
 from extended import user_readings as R  # noqa: E402
 
@@ -58,6 +66,10 @@ SCRIPT = "scripts/user_beside.py"
 RESULT = "user_beside"
 STARTS_RESULT = "user_beside_starts"
 DESIGNS = ("p14", "p15", "p16")
+#: Q-58: the registered designs' names, the row that admits their re-read (E-037), the Stage 2 tree the engine reads
+DESIGN_IDS = {"p14": "P-14", "p15": "P-15", "p16": "P-16"}
+READ_ROW = "E-024"
+VENDOR = ROOT / "vendor" / "stage2"
 TASK = "Q-17"
 READING = ("EXPLORATORY (Q-17, E-007 (e)): beside the verdict, never deciding; R* stays P-14; the verdict stays at 0 % "
            "denial with the placement off (E-008 (2))")
@@ -119,6 +131,16 @@ def main(argv: list[str] | None = None) -> int:
     if responses[0].name != "off" or any(d not in DESIGNS for d in designs):
         print("REFUSED (Q-17): the responses start with 'off' (the identity arm); designs are p14, p15, p16")
         return 2
+    try:                                            # Q-58: the engine's read authorised (ledgered in a clean run only)
+        reader.authorise_engine_read(
+            reader.CHOICE_START, reader.JUDGED_END, purpose=reader.REGISTERED_DESIGN, declaration=READ_ROW,
+            design=[DESIGN_IDS[d] for d in designs],
+            files=I.SI.engine_files(VENDOR, bars=any(d in I.SI.U1_WALKED for d in designs)),
+            what=f"{READ_ROW}'s readings ({SCRIPT}, {TASK}): {', '.join(designs)} under {len(responses)} responses, "
+                 + ("every start" if a.starts is None else f"{a.starts} starts") + (" (--check)" if a.check else ""))
+    except (reader.ReadRefused, FileNotFoundError) as exc:
+        print(I.SI.refusal(exc), flush=True)
+        return 3
     rd = RESULTS_DIR
     t_all = time.time()
     commit = _commit()

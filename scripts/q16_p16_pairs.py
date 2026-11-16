@@ -49,6 +49,12 @@ import pandas as pd  # noqa: E402
 
 STOP = 150
 CHUNK_DAYS = 40
+#: Q-55: Stage 2's engine reads the bars and A1's tables here, so the read is authorised through `extended.reader`
+#: first (E-037's purpose for re-reading Stage 2's registered designs -- P-16 here -- under the row naming it, E-035);
+#: a refusal ends the run before anything is read (exit 3)
+READ_PURPOSE = "registered_design"
+READ_ROW = "E-035"
+READ_FILES = ("data/atlas/A1/events.parquet", "data/atlas/A1/days.parquet", "data/bars/NQ/bars.parquet")
 
 
 class CoinArray:
@@ -73,11 +79,43 @@ def _rss_mb(peak: bool = False) -> float:
     return working_set_mb(peak)
 
 
+def _authorise(a) -> int | None:
+    """The reader's verdict on the engine's read (before anything is read): None to go on, else the exit code."""
+    from extended import VENDOR_STAGE2, reader
+
+    files = [VENDOR_STAGE2 / f for f in READ_FILES]
+    end = reader.JUDGED_END
+    if a.smoke_days is not None:                         # a smoke reads the first development days only
+        import pandas as _pd
+        d = _pd.read_parquet(VENDOR_STAGE2 / "data" / "atlas" / "A1" / "days.parquet",  # one-door-exempt: E-035 -- the calendar only
+                             columns=["date"])["date"].astype(str).sort_values()
+        end = d.iloc[min(int(a.smoke_days), len(d)) - 1]
+    print(f"reader: purpose={READ_PURPOSE} declaration={READ_ROW} span {reader.CHOICE_START} to {end} files "
+          + ", ".join(f"vendor/stage2/{f}" for f in READ_FILES), flush=True)
+    try:
+        reader.authorise_engine_read(reader.CHOICE_START, end, purpose=READ_PURPOSE, declaration=READ_ROW, design="P-16",
+                                     files=files, what=f"{READ_ROW}: P-16's registered pairs (scripts/q16_p16_pairs.py)")
+    except (reader.ReadRefused, FileNotFoundError, ValueError) as exc:
+        text = str(exc)
+        print(text if text.startswith("REFUSED") else f"REFUSED: {type(exc).__name__}: {text}", flush=True)
+        print("REFUSED: the read needs the reader to admit the purpose 'registered_design' under E-035 (E-037; "
+              "TASK_QUEUE Q-58); nothing was read", flush=True)
+        return 3
+    print("reader: AUTHORISED", flush=True)
+    return 0 if a.check_read else None
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--smoke-days", type=int, default=None)
+    ap.add_argument("--check-read", action="store_true",
+                    help="ask the reader whether the read is authorised, print its verdict, read and write nothing")
     a = ap.parse_args(argv)
+
+    rc = _authorise(a)
+    if rc is not None:
+        return rc
 
     import a3_brk30 as B
     import a3_brk30_cb20 as Cb

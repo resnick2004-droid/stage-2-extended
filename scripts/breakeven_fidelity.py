@@ -27,6 +27,12 @@ trades, the share of each exit kind, the mean net R, the trades whose kind or gr
 `extra`, `path` (`extended.user_readings`, response `off`, both arms, all starts and the judged block). Gate seeds:
 the registered campaigns' (P-14 20261131, P-16 20261206) -- common random numbers with the registered rows; the U1
 replay draws nothing at 0 % (its path seeds are Q-17's). Variant count 6 (three corrections x two designs).
+
+**The read (Q-58, E-037).** Before any of the engine's work `main` authorises it through
+`extended.reader.authorise_engine_read`: purpose `registered_design`, declaration **E-024** (the row that merged Q-20),
+the designs run (P-14, P-16), the window 2020-01-02 to 2026-07-16, the files -- A1's events and days, A3's cached walk
+and the bars for either design (P-14's A3 frame is re-walked from the bars, `extended.breakeven.a3_frame`; P-16's cell
+by `rc_width_screen.build`). A refusal ends the run (exit 3) before anything is read; ledgered only inside a clean run.
 """
 from __future__ import annotations
 
@@ -52,6 +58,7 @@ import pandas as pd  # noqa: E402
 import user_beside_identity as I  # noqa: E402
 
 from extended import breakeven as BE  # noqa: E402
+from extended import reader  # noqa: E402
 from extended import user_beside as B  # noqa: E402
 from extended import user_readings as R  # noqa: E402
 
@@ -59,6 +66,10 @@ SCRIPT = "scripts/breakeven_fidelity.py"
 RESULT = "breakeven_fidelity"
 TASK = "Q-20"
 DESIGNS = ("p14", "p16")
+#: Q-58: the registered designs' names, the row that admits their re-read (E-037), the Stage 2 tree the engine reads
+DESIGN_IDS = {"p14": "P-14", "p16": "P-16"}
+READ_ROW = "E-024"
+VENDOR = ROOT / "vendor" / "stage2"
 FULL_PATHS = 500
 READING = ("EXPLORATORY (Q-20; E-012 (2), E-013 (2)): beside the registered rows, never deciding; R* stays P-14 unless "
            "the operator rules otherwise")
@@ -84,6 +95,19 @@ def main(argv: list[str] | None = None) -> int:
         print("REFUSED (Q-20): the readings run every start and 500 gate paths of both designs; a smaller run is --check")
         return 2
     designs = DESIGNS if a.designs is None else tuple(x for x in a.designs.split(",") if x)
+    if not designs or any(d not in DESIGNS for d in designs):
+        print(f"REFUSED (Q-20): the designs are {', '.join(DESIGNS)}, not {', '.join(designs) or 'none'}")
+        return 2
+    try:                                            # Q-58: the engine's read authorised (ledgered in a clean run only)
+        reader.authorise_engine_read(
+            reader.CHOICE_START, reader.JUDGED_END, purpose=reader.REGISTERED_DESIGN, declaration=READ_ROW,
+            design=[DESIGN_IDS[d] for d in designs], files=I.SI.engine_files(VENDOR, bars=True),
+            what=f"{READ_ROW}'s readings ({SCRIPT}, {TASK}): {', '.join(designs)} re-walked under the breakeven "
+                 f"corrections, {a.paths} gate paths, " + ("every start" if a.starts is None else f"{a.starts} starts")
+                 + (" (--check)" if a.check else ""))
+    except (reader.ReadRefused, FileNotFoundError) as exc:
+        print(I.SI.refusal(exc), flush=True)
+        return 3
     rd = RESULTS_DIR
     t_all = time.time()
     ref = I.u1_reference(rd, designs)

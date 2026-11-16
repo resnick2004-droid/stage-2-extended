@@ -15,16 +15,16 @@ What it checks, on the file's own text and the records (no engine, no bar, no re
   in use" does appear somewhere else in the tree (else its retirement is not justified);
 - **its judged-block purposes can be declared** -- the file has a `Judged-block reads:` line whose purposes the
   reader (`extended/reader.py`) would parse, none a choosing or fitting purpose;
-- **and, kept as a strict expected failure until the lead's fix, the reader admits a described reading's file** --
-  E-025 (1) widened the hash test to `prereg/RD-` files; `extended/reader.py` still accepts only `prereg/F-` files as
-  the declaration of a judged-block read, so a pinned RD- reading could not authorise the U1 replay's engine reads.
+- **and the reader admits a described reading's file** -- E-025 (1) widened the hash test to `prereg/RD-` files;
+  `extended/reader.py` admits a pinned `prereg/RD-` file as a judged-block read's declaration on the rules F- files
+  follow (Q-58; a strict expected failure until then), so this reading, once pinned, can authorise the U1 replay's
+  engine reads.
 """
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-import pytest
 import yaml
 
 from extended import reader
@@ -167,10 +167,8 @@ def test_judged_block_purposes_are_declarable_and_choose_nothing():
     assert reader.IDENTITY not in purposes, "identity reads are declared by their E-row, not on this line"
 
 
-@pytest.mark.xfail(strict=True, reason="E-025 (1) widened the hash test to prereg/RD- files; extended/reader.py still "
-                                       "admits only prereg/F- files as a judged-block read's declaration (the lead's "
-                                       "fix before this reading's pin; then remove this marker)")
 def test_the_reader_admits_a_described_readings_file():
+    """A strict expected failure until Q-58 (E-038): the reader admits `prereg/RD-` files as F- files."""
     rel = "prereg/RD-01_firm_contracts.md"
     assert reader.DECLARATION_PATH.fullmatch(rel)
     assert reader.PIN.search(f"`{rel}` sha256 `{'0' * 64}`")

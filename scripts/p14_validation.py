@@ -50,6 +50,12 @@ many runs were read back. Every engine run beyond the two reproductions is a var
 
 Writes `results/p14_validation.csv` (EXPLORATORY) with its manifest, only from a clean checkout (`scripts/run_clean.py`;
 refused at the start otherwise), workers 1 by default.
+
+**The read (Q-58, E-037).** Before P-14 is built `main` authorises the engine's read through
+`extended.reader.authorise_engine_read`: purpose `registered_design`, declaration **E-026** (the row that merged Q-18),
+design P-14, the window 2020-01-02 to 2026-07-16, the files P-14's inputs open -- A1's events and days and A3's cached
+walk (`rc_screen.inputs`; no walk is made afresh, so not the bars). A refusal ends the run (exit 3) before anything is
+read; ledgered only inside a clean run, `--check` or not.
 """
 from __future__ import annotations
 
@@ -72,12 +78,16 @@ VENDORED = use_vendored_stage2()
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from extended import reader  # noqa: E402
 from extended import v1_adapter as X  # noqa: E402
 
 VS, V, ps16 = X.VS, X.V, X.ps16
 
 SCRIPT = "scripts/p14_validation.py"
 TASK = "Q-18"
+#: Q-58: the row that admits P-14's re-read (E-037) and the Stage 2 tree the engine reads
+READ_ROW = "E-026"
+VENDOR = ROOT / "vendor" / "stage2"
 RESULT = "p14_validation"
 VARIANT_ID = f"{TASK}:{RESULT}"
 P14_GATE, P14_PATHS = "a3_brk30_cb20_gate.csv", "a3_brk30_cb20_gate_paths.csv"
@@ -358,6 +368,19 @@ def main(argv: list[str] | None = None) -> int:
                   f"python scripts/run_clean.py --name p14-validation --task {TASK} --hours <h> --mem-gb <g> -- "
                   f"python {SCRIPT}")
             return 2
+    if str(ROOT / "identity") not in sys.path:
+        sys.path.append(str(ROOT / "identity"))      # after the vendored tree: the data files' names only
+    import stage2_identity as SI
+
+    try:                                            # Q-58: the engine's read authorised (ledgered in a clean run only)
+        reader.authorise_engine_read(
+            reader.CHOICE_START, reader.JUDGED_END, purpose=reader.REGISTERED_DESIGN, declaration=READ_ROW,
+            design=["P-14"], files=SI.engine_files(VENDOR, bars=False),
+            what=f"{READ_ROW}'s readings ({SCRIPT}, {TASK}): Stage 2 D-663's validation readings on P-14, parts "
+                 f"{', '.join(parts)}" + (" (--check)" if a.check else ""))
+    except (reader.ReadRefused, FileNotFoundError) as exc:
+        print(SI.refusal(exc), flush=True)
+        return 3
     t_all = time.time()
     n_paths = V.N_PATHS if declared else CHECK_PATHS
     t0 = time.time()

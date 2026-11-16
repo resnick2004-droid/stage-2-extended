@@ -1,21 +1,25 @@
 # DRAFT F-XX: resting orders at pre-session levels, corrected (family RL2) -- not declared
 
-**Status: DRAFT, fourth version, of 2026-11-16 (TASK_QUEUE Q-50), redrafted on the red team's third read
-(`docs/reviews/DRAFT_F-02_resting_levels_v3_2026-11-16.md`) and corrected per E-032 (1)-(2). Not pinned, not numbered,
+**Status: DRAFT, fifth version, of 2026-11-16 (TASK_QUEUE Q-64). This is the fourth version -- Q-50's, corrected per
+E-032 (1)-(2), with its `[Q-16]` marks filled by Q-57 -- redrafted narrowly on the final read
+(`docs/reviews/DRAFT_F-02_resting_levels_v4_2026-11-16.md`) and the lead's ruling on its G1. Not pinned, not numbered,
 not declared.** It replaces F-01
 (`prereg/F-01_resting_order_level_atlas.md`, withdrawn, its k = 10 spent, E-007 (a)). No bar has been read for it, no
-level computed, no outcome of any order computed. The versions: fc7747b (the first), 255e13b (the second, which E-022
-counts as the third), this one; the pinning row names the commit and sha256 it pins. It becomes a declaration only
-after the red team reads this version, the prereg-gatekeeper approves it (assigning F-XX and k), and the lead pins it.
+level computed, no outcome of any order computed. The versions are fc7747b, 255e13b, 9ee82e6 and 825f264, 0d40ece,
+and this one.
+The pinning row names the commit and sha256 it pins, and the diff between the pinned bytes and this reviewed text: the
+status lines change at the pin, and the pinned file is `prereg/F-NN_<slug>.md`, the reader's `DECLARATION_PATH` (N9).
+It becomes a declaration only after the prereg-gatekeeper approves it (assigning F-XX and k) and the lead pins it.
 
-**It cannot be pinned before** its final red-team read (Q-53, E-032).
+**It cannot be pinned before Q-55's clean rerun of Q-16's calibration (E-035 (4)) has reproduced `cons`, and the
+treated two-sample `cons`, at or below its level on every real and realistic null at the family's k (the final read's
+M3).** If the rerun shows either statistic above its level on such a null, this draft is **withdrawn before any read**
+and re-declared under a new row; nothing of it is run. Stage A's planning reads that rerun's power tables, and no figure
+of Q-16 is cited before it. The final red-team read (Q-53) is answered here.
 
 Q-16 is merged (E-035), and its statistics stand where the draft's marks stood (Q-57). The pass line is `cons`
 (`extended/lift_bound.SHIPPED`); C1' is its two-sample form; the scorecard's P comparison is `extended/p_bound`'s
 `pcons`.
-
-**No stage runs before** Q-55 reruns Q-16's calibration from a clean checkout (E-035 (4)). Stage A's planning reads
-that rerun's power tables, and no figure of Q-16 is cited before it.
 
 The early-close calendar this file reads is pinned (E-029).
 
@@ -34,8 +38,8 @@ exploratory and reported apart.
 | judged block | fills from 2024-01-02 to 2026-07-16 |
 | confirmation | NQ from 2026-07-17 (`reserve`, reserved): NQ's fourth (Stage 2 D-107, the operator's decision), a purchase |
 | confirmation tests already on NQ | three (P-05, P-06, P-10; `vendor/stage2/config/windows.yaml`) |
-| cells (`k_cells`) | `fade` at 4 kinds + `break` at 2 kinds (`pdc`, `rn100`), x 3 stops = (4 + 2) x 3 = **18**, each counted whether killed or read |
-| hypotheses | 18 cells x 3 R = **54** signed hypotheses over 36 (kind, stop, R) questions (section 5.9) |
+| cells (`k_cells`) | `fade` at 4 kinds + `break` at 1 kind (`rn100`), x 3 stops = (4 + 1) x 3 = **15**, each counted whether killed or read |
+| hypotheses | 15 cells x 3 R = **45** signed hypotheses over 36 (kind, stop, R) questions (section 5.9) |
 | the pass statistic | the lift over the coin twin on the same fills, by `cons` (`extended/lift_bound.SHIPPED`, E-035): the trade-weighted session-cluster t on 21-, 42- and 63-session blocks, all three required |
 | the value bar | $500 a year at that bound (`vendor/stage2/results/u_value_map.csv`, section `bar`, `target=500`) |
 | seeds | 20261930 to 20261939, each assigned in section 15 |
@@ -67,7 +71,7 @@ exploratory and reported apart.
 
 | finding | the correction (all confirmed as removing their defects by the third read, except where 0.3 says otherwise) | section |
 |---|---|---|
-| F1 | `break` at `on` and `pd` dropped (24 cells to 18); C1' kept at `pdc` and `rn100`; T-14 (c) | 6.2, 9.2, 17.6 |
+| F1 | `break` at `on` and `pd` dropped (24 cells to 18); C1' kept at `pdc` and `rn100` -- and since the final read's G1 at `rn100` only (18 cells to 15); T-14 (c) | 6.2, 9.2, 17.6 |
 | F2 | past-only placebo sources; placebo tickets in the shift test; block-total denominators | 5.8, 9.2, 17.3 |
 | F3 | the stop band per state; floor (ii)'s form (E-022 (1)); the 50-tick `dv` | 3, 6.3, 10 |
 | F4 | C2 at `rule_fill`; a spread-and-jumps T-13 | 5.5, 9.3, 17.5 |
@@ -105,6 +109,28 @@ exploratory and reported apart.
 | E-029 | the calendar | `config/calendar_early_closes.csv`, pinned | 4.5 |
 | E-035 (Q-57) | the `[Q-16]` marks | C1 and C2 by `cons`; C1' by `two_sample_bound` (treated-cluster df, count-centred residual sums); the year-by-year readings and the confirmation by `cons`; the P comparison by `pcons`; planning from Q-16's power tables as Q-55 reruns them; stage B's bootstrap stated as an uncalibrated selection device; the sides' persistence stated | header, 7.9, 8, 9, 12, 14, 15 |
 
+### 0.4 The final read (`docs/reviews/DRAFT_F-02_resting_levels_v4_2026-11-16.md`)
+
+| finding | the defect | the correction | section |
+|---|---|---|---|
+| G1 (MAT) | at `pdc` the placebo matches the overnight move's sign but not its size, which is the real level's distance; a size-dependent overnight effect gives D > 0 with no level effect | **the lead's ruling, option (a): `break` at `pdc` dropped** (18 cells to 15, 45 signed hypotheses over the same 36 questions); `fade` at `pdc` stays, judged on its trades, with **no level claim at `pdc`**; the same confound named for the `pd` and `on` readings | 1, 2, 5.8, 6.2, 9.2, 9.7, 13, 16, 17.6 |
+| M1 | T-14 (b)'s and T-13 (a)'s pass lines had no fixed cells or multiplicity; T-14 (a) had no target | each test's cells fixed, a Bonferroni Z over them, T-13 (a)'s walk per stop and its seed, (a)'s criterion a bound at the family's level | 15, 17.5, 17.6 |
+| M2 | T-3 replaced bars only, but the reachable count reads Stage 2's walks | the reachable count reads only through the reader's choice-block window and asserts every row's date; T-3 also poisons the judged rows of every file it opens, on temporary copies; the fallback recorded before stage A | 10, 17.7 |
+| M3 | nothing followed if Q-55 did not reproduce `cons` holding | the pin only after Q-55 reproduces it; otherwise withdrawn before any read | status, 19 |
+| M4 | the planning lookup was undefined for k = 12-14 and below 200 fills | the k = 15 column when k is not tabulated; "above the 200-trade entry" below; each figure's null stated; a close worded "no lift detectable at this power" | 7.9, 13 |
+| M5 | the news row stale; 8284211's EIA releases inside the resting window | E-034's 13613539 entry cited; a full-allowance ticket cancelled around the EIA releases; USDA Crop Production not modelled | 3, 11.2, 12 |
+| M6 | the confirmation's length rule not fully fixed | the construction fixed (session sums resampled with replacement, thinned, on 21 m sessions), its zero-lift rate beside | 14 |
+| N1 | `lift_bound.py` not hashed | its blob (and `p_bound.py`'s) recorded for the pinning row; the run asserts them | 9.1, 12 |
+| N2 | the judged calendar and the df unnamed | the day list named; df = non-empty blocks - 1 | 9.1 |
+| N3 | C2's λ the all-fills mean, stage D spending first fills | λ on first fills reported beside | 9.6 |
+| N4 | stage B's bootstrap called studentised | relabelled: normalised by the sample's se | 6.1, 8 |
+| N5 | T-14's kill multiplicity | Bonferroni over the kill checks; the rate stated | 17.6 |
+| N6 | the T-12 record stale | updated: references, and a range bound in code, are not uses | 15 |
+| N7 | stage D's ticket shift by `t21e` | stated as U1's form, consistent with R\*, lax at family levels | 11.4 |
+| N8 | stage D's ticket walks under `stage_D_gate_floor` | the row widened | 18.1 |
+| N9 | the pinned file's name and changed status lines | stated for the pinning row | status |
+| R1 | the null class reasoned from the side reset, not the pair terms' dependence | the residual stated; the pick's choice-block lift by quarter and its block lifts' lag-1 correlations beside | 9.1, 9.6 |
+
 ## 1. Hypothesis
 
 **The mechanism.** Orders cluster at prices everyone can see before the session: just beyond the prior session's high
@@ -120,12 +146,14 @@ For NQ it is untested here.
 
 **What this family can test on this window.**
 - **The rejection side (`fade`)** is tested at all four kinds.
-- **The cascade side (`break`)** is tested at the prior close and at round numbers only. At the two range-extreme kinds
-  a break is also a breakout of a long window, whose follow effect Stage 2 read three times on this window and closed
-  the window to (D-592), so `break` at `on` and `pd` is left to a test on unread data (6.2).
-- **At the prior close,** the level's side is set by the overnight move: a break there always trades against that move,
-  and a fade with it. Every comparison at `pdc` is therefore made with a placebo on the same side (5.8; the third read's
-  P1).
+- **The cascade side (`break`)** is tested at round numbers only.
+  - At the two range-extreme kinds a break is also a breakout of a long window, whose follow effect Stage 2 read three
+    times on this window and closed the window to (D-592), so `break` at `on` and `pd` is left to a test on unread data.
+  - At the prior close the level's distance from `P_ref` *is* the overnight move's size, so no placebo can match it
+    without collapsing onto the level, and a size-dependent overnight effect would pass as a level effect (the final
+    read's G1). So `break` at `pdc` is dropped too (6.2).
+- **At the prior close,** the level's side is also set by the overnight move: a fade there always trades with it. The
+  fade is judged on its trades, and no level claim is made there (9.7).
 
 **What Stage 2 did and did not do (F-01's line 23 corrected).**
 - **Stage 2 did enter at levels.**
@@ -161,7 +189,7 @@ with the user's journey reported beside (section 12).
 | atlas families A1 to A3 (D-460; `config/atlas_a1.yaml` to `a3.yaml`) | `pdhl` (the prior day's 08:30-15:10 CT high and low, the first close beyond) followed and faded, five bars late; `orb_rth5/15/30`, `orb_globex30`; P-13/P-14's `brk30` | 2020-01-01 to 2026-07-16 | P-14 (A3-BRK30-CB20) chosen from A3 | `pd`'s break and fade were read at the market; `pdhl` is defined on 08:30-15:10, this family's `pd` on the bars stamped 08:30-14:59 -- close, not identical |
 | A4, the coin-benchmarked atlas (D-550, D-555, D-557, D-558) | 34 patterns at 25 and 37.5 points, delays 0 and 5, lift over the coin twin, follow and fade one test: `brk` at k = 5, 10, 15, 30, 60 and 90 minutes; `orb` at the 08:30, 17:00 and 02:00 opens (17:00 and 02:00 at m = 15, 30, 60); `pdhl` | 2020-01-01 to 2026-07-16 | survivors "short breakouts and n-bar runs on 5- and 10-minute bars, a few at 15 and 60 minutes", all on the follow side (D-555); **`pdhl` is not among the survivors' classes**; "a genuine but tiny direction effect", no campaign value (D-558) | the follow effect reaches 60-minute breakouts -- the evidence behind dropping `break` at `on` and `pd`; `pdhl`'s own lift is in `results/a4_coin_atlas.csv`, not vendored |
 | program S, S1 (D-578, D-580) | the side of recent breakouts and momentum followed and faded, on P-16's schedule | 2020-01-02 to 2026-07-16 | two follow rules (15-minute momentum, the latest 5-minute breakout) survive the lift test; both grow less than P-16 on 2020-2023 and more on 2024-2026, so the span guard rejects them | the follow effect's sign by era |
-| program S, S3 (D-586, D-587, D-588, D-589) | 13 rules, among them `gap_glbx` (the session's first open against the previous trading day's last close at or before 16:00 CT) and `gap_rth` (the open after 08:30 against the same close), followed and faded against the coin twin | 2020-01-02 to 2026-07-16 | one survivor, `lnbar1x4_follow`; the Benjamini-Hochberg rejections "every one on the follow side and all but one on the breakout and n-bar rules" (D-588); the gap rules' own rows are in `results/s3_event_kinds.csv`, not vendored | **the overnight move's sign, read on this window: the reason `pdc`'s placebo is side-matched (5.8) and T-14 (e) exists** |
+| program S, S3 (D-586, D-587, D-588, D-589) | 13 rules, among them `gap_glbx` (the session's first open against the previous trading day's last close at or before 16:00 CT) and `gap_rth` (the open after 08:30 against the same close), followed and faded against the coin twin | 2020-01-02 to 2026-07-16 | one survivor, `lnbar1x4_follow`; the Benjamini-Hochberg rejections "every one on the follow side and all but one on the breakout and n-bar rules" (D-588); the gap rules' own rows are in `results/s3_event_kinds.csv`, not vendored | **the overnight move, read on this window: the reason `break` at `pdc` is dropped and the fade at `pdc` carries no level claim (6.2, 9.7; the final read's G1), after the side-matched placebo of the third read's P1 proved to match its sign but not its size** |
 | D-592 | S3's candidate at the five-minute latency | -- | fails; the follow effect "broad and slow rather than tied to the last bar"; "re-testing it on that window would reuse hypotheses already seen, so it is recorded as a lead for unread data" | `break` at range extremes dropped (6.2); C1' for the other breaks (9.2) |
 | Stage 2's effect atlas (`config/effect_atlas.yaml`, H01 to H04, F01 to F02) | the overnight return's, and the previous close's location's, relation to the day's move | Stage 2's development | returns, not levels | the overnight move's sign again; named for completeness |
 | program U, nine families (`results/u_budget.csv`, `u_resolve.csv`) | P on start days from 2024 | judged block of starts | all closed below P-14 | the judged block has been read for P nine times |
@@ -181,8 +209,8 @@ gap's side (S3).
 1. The judged block is late development, not out of sample (D_protocol P-3): a pass is a development finding whose
    evidence is its confirmation (section 14).
 2. `or30` is out, and `break` at `on` and `pd` is dropped (6.2).
-3. A `break` cell at `pdc` or `rn100` passes only if its lift also exceeds that of matched non-level crossings, the
-   match at `pdc` including the overnight move's sign (5.8, 9.2).
+3. A `break` cell, now only at `rn100`, passes only if its lift also exceeds that of matched non-level crossings, where
+   the placebo's distances are exchangeable with the level's (5.8, 9.2).
 4. The pick's year-by-year readings are reported with every judgement (9.6). The reverse walk-forward is dropped
    program-wide (E-031 (2)): it would make the judged block a block that chooses.
 
@@ -195,8 +223,8 @@ gap's side (S3).
 | every trade resolving: at most 5 % to the flatten, overall, per market and per year, no time stops (D-212 (2) as D-308 (3) raised it) | the cutoff rule and K2 (7.2); the pick's rule side on 2020-2023 (8.5); C3 on the judged block (9.4); each read with every trade's own fill-bar rule (N5) |
 | realised risk matching intended (D-212 (1)) | cannot fail in the walk (K3, 7.5). In stage D the ticket is sized by the engine's own form (6.3), under which the line can miss only by whole-micro rounding near a Combine's floor: a build check (11.1). **Against CHARTER section 4's words:** the charter now records this allowance-capped reading of D-212 (1) (E-032 (3)), the form R\* = P-14 was itself judged by (E-022 (1)); the letter's share is reported beside (11.5) |
 | the sizeable stop band (`vendor/stage2/results/stop_band.csv`, D-201 (2)) | the narrow edge per state of stage one's family: 82 ticks in the Combine, 134 ticks funded below +$2,000, and 45 ticks funded at or above +$2,000, where the cost-drag floor binds (`cost_drag_floor_ticks`, the stop at which costs reach a tenth of it; D-271 (3)'s 45 MNQ ticks). 50 ticks is inside the band in the last state only, 100 ticks in the Combine and the last, 150 ticks in all three (6.3). The bases' $50K table sizes by its own allowance, which 6.3 and section 10 use |
-| news | tickets go live at 08:30 CT: on a BLS 08:30 ET release day strictly after 07:35:00 CT (E-007 (d)), and outside Topstep's Tier 1 windows -- 07:25-07:35 CT on CPI, NFP and PPI days, and around both FOMC events, as Track E read them (E-007 (6), `docs/audits/phase0/E_rules_currency.md` C1). That citation is a reading: no entry for article 13613539 is in `config/rules_extended.yaml`, nothing loads it, and the tickets avoid the windows by construction; if the build ever asserts the windows, the rules-verifier records the article first (N12). FOMC days as 4.5 (d). Tickets rest through other 09:00 CT releases, as Stage 2's rule allows (D_protocol N-6) |
-| conduct, tier 1 (D-145) | no hedge (cancel-on-entry: never two positions in the firm); no simulator-fill exploitation (stops of at least 50 ticks, no stop move); no maximum size into news (above, and 4.5 (d)); no copying (each ticket on one account, D-157); nothing concealed (a resting order at a public level) |
+| news | tickets go live at 08:30 CT: on a BLS 08:30 ET release day strictly after 07:35:00 CT (E-007 (d)), and outside Topstep's Tier 1 windows -- 07:25-07:35 CT on CPI, NFP and PPI days, and around both FOMC events, as Track E read them (E-007 (6), `docs/audits/phase0/E_rules_currency.md` C1). The article is recorded by E-034 (`config/rules_extended.yaml`, key `tier1_news_events_restriction`, article 13613539, read 2026-11-16, with its windows and its rule that positions opened before a window may be kept); the tickets avoid those windows by construction. FOMC days as 4.5 (d). **Releases inside the resting window (the final read's M5).** 8284211 lists seven releases (E-034), three of which fall inside it: EIA crude oil inventories, EIA natural gas inventories, and USDA crop production. 10305426 forbids "trading your full Maximum Position Size directly into a scheduled major news event", and which events count is unstated (E-034). A 50-tick Combine ticket is sized at the 50-micro allowance, which is full size. So **a ticket sized at its account's full allowance is cancelled from five minutes before to five minutes after each EIA release** (11.2), dated by Stage 2's `config/im2_release_calendar.csv` (its `EIAC` and `EIAG` rows). Crop production has no vendored dated calendar, so it is listed as not modelled (12 item 8). Tickets below the full allowance rest through every release, as Stage 2's rule allows for 09:00 CT releases (D_protocol N-6) |
+| conduct, tier 1 (D-145) | no hedge (cancel-on-entry: never two positions in the firm); no simulator-fill exploitation (stops of at least 50 ticks, no stop move); no maximum size into news (above, 4.5 (d), and 11.2's release cancellation); no copying (each ticket on one account, D-157); nothing concealed (a resting order at a public level) |
 | conduct, tiers 2 and 3 | tier 2: the R = 1 cells meet "R at or below 1"; modelled off in the base case (D-289), on beside in stage D. Tier 3: priced at 0 % denial in the verdict, 10, 25 and 50 % beside; Terms of Use s.8 (outsized positions) priced among them (E-013 (1)) |
 | hours | US regular hours: tickets live from 08:30 CT to their cutoff (at latest 14:30); the walk ends at the bar ending 15:08 CT |
 | entry by hand | the user places the ticket between `t_pub` and `t_live`, or at 08:30:00 itself if the platform does not take an order that works only from 08:30; the fill window opens with the bar stamped 08:30 either way (E-008) |
@@ -260,7 +288,7 @@ gap's side (S3).
 
 | rule | offered at | at a resistance | at a support | fill |
 |---|---|---|---|---|
-| `break` | `pdc`, `rn100` | buy **stop** one tick above the level | sell **stop** one tick below | the first bar stamped at or after `t_live` trading at the stop's price; at that price plus one tick (`slip_ticks`, `vendor/stage2/config/atlas_a3.yaml`; D-95), or at the bar's open plus one tick when it opens beyond the stop |
+| `break` | `rn100` | buy **stop** one tick above the level | sell **stop** one tick below | the first bar stamped at or after `t_live` trading at the stop's price; at that price plus one tick (`slip_ticks`, `vendor/stage2/config/atlas_a3.yaml`; D-95), or at the bar's open plus one tick when it opens beyond the stop |
 | `fade` | `pd`, `on`, `pdc`, `rn100` | sell **limit** at the level | buy **limit** at the level | only when a bar stamped at or after `t_live` trades **through** the level by at least one tick; at the limit price, never better |
 
 ### 5.3 Per ticket
@@ -335,7 +363,7 @@ The rest is stated, not removed.
 - **Resolution, as distinct from the lift (N5).** Unresolved shares (K2, the eligibility of 8.5, C3) are read with
   **each trade's own fill-bar rule** (`fill_bar="declared"` for that trade alone; feature-rules 3: "for one trade's own
   outcome only"). So a pair zeroed for the lift whose rule trade stays open still counts when it reaches the flatten.
-- **Break and fade at `pdc` and `rn100` are near-exact negatives** under symmetric booking: the same trigger, the same
+- **Break and fade at `rn100` are near-exact negatives** under symmetric booking: the same trigger, the same
   pair with the labels swapped, differing only on gap fills and when the price at `t_live` stands exactly at the level
   (verified on synthetic days, the red team's `negation.py`). Under the `rule_fill` rungs both are handicapped and are
   no longer negatives.
@@ -345,11 +373,17 @@ The rest is stated, not removed.
 A seeded coin twin -- one fair side per fill, in date order of the fills, cell by cell in table order, seed
 **20261931** -- is computed beside. It decides nothing.
 
-### 5.8 The placebo (decisive for `break` at `pdc` and `rn100`; beside for every `fade`)
+### 5.8 The placebo (decisive for `break` at `rn100`; beside for every `fade`)
 
 The placebo measures the statistic at prices with no visible meaning, to separate the level's effect from what a
-comparable crossing carries (D_protocol 1.3 item 4). Every input comes from the past (F2). At `pdc` the match includes
-the overnight move's sign (P1).
+comparable crossing carries (D_protocol 1.3 item 4). Every input comes from the past (F2).
+- **At `rn100`** the placebo's distances are exchangeable with the level's: both are arithmetic modulo 100 points,
+  which no feature of the path determines.
+- **At `pdc`** the placebo matches the overnight move's sign (P1) but not its size, which is the real level's distance
+  (the final read's G1).
+- **At `pd` and `on`** it matches neither the window broken (F1) nor the overnight path.
+
+So outside `rn100` the placebo-differenced lift is a reading only, and carries no level claim (9.7).
 
 - **`A_D`:** the mean, over the 20 most recent trading days before day D with a full regular session (not an early
   close, not a data-defect day, 4.5), of the regular session's range -- the high of its bars stamped 08:30-14:59 less
@@ -385,15 +419,15 @@ the overnight move's sign (P1).
   A target day with an empty pool (in the store's first weeks) carries no placebo, and is counted.
 - **Coincidences.** A placebo price that happens to lie near a real level on E is kept. That moves the placebo toward
   the level's own lift, which is conservative for a pass.
-- **Placebo cells.** There are 18 (one per cell). They are controls, not hypotheses, and their counts and K5 shares are
-  read in stage A. At `on` and `pd` the placebo is not matched on the window broken (the first read's F1), so there it
-  is a reading only.
+- **Placebo cells.** There are 15 (one per cell). They are controls, not hypotheses, and their counts and K5 shares are
+  read in stage A. Only the `rn100` placebo decides anything (C1'); elsewhere it is a reading.
 
 ### 5.9 Cells and hypotheses
 
-- **Cells:** (4 `fade` kinds + 2 `break` kinds) x 3 stops = **18 cells**.
-- **Hypotheses:** each cell is read at R = 1, 1.5 and 3, so **54 signed hypotheses**, over 36 (kind, stop, R)
-  questions. At `pdc` and `rn100` both signs are asked; at `on` and `pd` only the fade sign.
+- **Cells:** (4 `fade` kinds + 1 `break` kind) x 3 stops = **15 cells**.
+- **Hypotheses:** each cell is read at R = 1, 1.5 and 3, so **45 signed hypotheses** (36 `fade`-signed and 9
+  `break`-signed), over 36 (kind, stop, R) questions. At `rn100` both signs are asked; at `pd`, `on` and `pdc` only the
+  fade sign.
 - **How they are counted:** every cell is counted whether killed or read; stage B's maximum covers the dependence
   between break and fade (E-003 (d)).
 
@@ -407,7 +441,7 @@ the overnight move's sign (P1).
 | development window | the days read | fixed | 2020-01-02 to 2026-07-16 | CHARTER; `config/windows.yaml` |
 | choice and judged blocks | where the pick is chosen, where it is judged | fixed | 2020-01-02 to 2023-12-29; 2024-01-02 to 2026-07-16 | CHARTER section 3 |
 | level kinds | which prices | searched | `pd`, `on`, `pdc`, `rn100` | F-01's, less `or30` (E-007 (b)) |
-| side rules | break or fade | searched | `fade` at all four kinds; `break` at `pdc` and `rn100` | F-01, less `break` at range extremes (6.2) |
+| side rules | break or fade | searched | `fade` at all four kinds; `break` at `rn100` | F-01, less `break` at the range extremes and the prior close (6.2) |
 | stops | the stop's distance from the fill | searched | 50, 100, 150 ticks (12.5, 25, 37.5 points) | P-14's two rungs and P-16's stop; 6.3 |
 | R | target over stop | searched | 1, 1.5, 3 | the table's main asks (handoff 2.5; `u_value_map.csv` `records_leaf`); 6.2 |
 | `t_pub`, `t_live` | publish and live times | fixed | 08:25 and 08:30 CT | D-266; the US open |
@@ -428,7 +462,7 @@ the overnight move's sign (P1).
 | calendar voids | days with no ticket | fixed | 4.5's lists, from `config/calendar_early_closes.csv` and Stage 2's FOMC list | D-11; F6; N6; E-029 |
 | `rn100` spacing | the round number | fixed | 100 points, in the futures' own price | F-01; D-11 |
 | placebo | the control for `break` | fixed | 5 replicates; past-only sources 21 to 252 trading days back; the target day's own sides; distances scaled by `A` (20 full sessions) at `pd`, `on`, `pdc`, unscaled at `rn100` | D_protocol 1.3 item 4; F2; P1; N3; the drafter's 21, 252, 20 and 5 |
-| stage B bootstrap | the family-wise gate on the choice block | fixed | stationary, mean block 21 sessions, circular, 2,000 replicates, centred, studentised, seed 20261930 | D-14; D-550's form |
+| stage B bootstrap | the family-wise gate on the choice block | fixed | stationary, mean block 21 sessions, circular, 2,000 replicates, centred, normalised by the sample's se (not studentised replicate by replicate, N4), seed 20261930 | D-14; D-550's form |
 | stage C level and statistic | the pass line | fixed | one-sided 0.05 / (k (k + 1)); `cons` for C1 and C2, `two_sample_bound` (`cons`, treated-cluster df) for C1' | E-008; E-035 |
 | stage B's gate | the choice block's selection device | fixed, not calibrated | the stationary bootstrap's max-T at family-wise 0.05 (section 8) | decides no level (8) |
 | value bar | the least a pass must be worth | fixed | $500 a year at C2's bound | `u_value_map.csv` `bar`; E-008 |
@@ -452,6 +486,15 @@ the overnight move's sign (P1).
   - *Why not keeping the cells but reading a pass as a lead.* That would spend this family's one judgement, and perhaps
     a confirmation purchase, on D-592's lead.
   - *What stays.* `fade` at `on` and `pd` stays.
+- **`break` at `pdc`** (3 cells, 1 kind x 3 stops; the final read's G1, option (a), the lead's ruling).
+  - *Why it cannot be identified here.* The real ticket's distance from `P_ref` is the overnight move's size |g|, and a
+    ticket's fill probability falls with its distance. So the level's fills sit on days of smaller overnight moves than
+    any placebo's.
+  - *What that does.* An overnight effect whose strength depends on the move's size -- small moves revert, large ones
+    continue -- gives L and D both positive with no level effect (the final read's synthetic check). The sign-only
+    T-14 (e) cannot see it.
+  - *Why no placebo can fix it.* Matching the distance would put the placebo on the level itself.
+  - *What stays.* `fade` at `pdc` stays, judged on its trades, with no level claim (9.7).
 - **`or30` and every other opening range:** inside Stage 2's closed branch (D-281 (3)); the safe default (E-007 (b)).
 - **Frozen session-VWAP bands, prior swing points:** each a search of its own, so a later family.
 - **R = 2 and 2.5:** a small minority of the table's recorded trading leaf-days in every phase of both bases
@@ -528,7 +571,7 @@ far prices travelled, never which way. No lift is computed.
 
 1. **K0, the build's synthetic tests, before anything is read** (17.5, 17.6), each consequence recorded in the
    `build` section:
-   - T-14 (c) and (e) kill `break` at a (kind, stop), or withdraw a fade's level claim there, as 17.6 declares;
+   - T-14 (c) and (e) kill `break` at an `rn100` stop, or withdraw the fade's level claim there, as 17.6 declares;
    - T-13 (b) sets each (side rule, stop, R)'s bookings, and kills a (cell, R) at the ladder's end (5.5).
 2. **The cutoff rule and K2, resolution (D-8; N5).** A (cell, R)'s cutoff is the latest of 14:30, 14:00, 13:30, ...,
    10:00 CT such that, over its fills before it, the pooled unresolved share at **its own R** is at most 5 %, **overall
@@ -561,12 +604,17 @@ far prices travelled, never which way. No lift is computed.
    - the minimum detectable lift at the family's level with 80 % power, from Q-16's power tables for `cons`
      (`docs/research/calibration_2026-11-15.md`, section 4: Table 4a on the real coin nulls and Table 4b on the real
      persist1 nulls, both thinned to N trades).
-     - It is read at the family's k, and at the largest tabulated N at or below the cell's estimated judged fills
-       (conservative).
+     - **The column.** It is read at the family's k where tabulated (11 or 15), and otherwise at the **k = 15 column**,
+       which is conservative for k = 12 to 14 (M4).
+     - **The row.** It is read at the largest tabulated N at or below the cell's estimated judged fills. Below the
+       smallest tabulated N (200) it is written "**above the 200-trade entry**", with no figure.
      - It is the larger of the two tables' entries.
      - It is in win probability; the net R figure is beside where the table gives it.
+     - **Its null, stated beside each figure.** The tables' real nulls are P-16's 150-tick pairs, at win1 and net3. The
+       cells are at R = 1, 1.5 and 3 and at 50, 100 and 150 ticks, so each figure is labelled with the null's R and
+       stop.
    - for `break`, the same for D, from Table 11 (section 6.2: C1' with placebo fills five times the level's), the larger
-     of its "shared" and "indep" sides rows;
+     of its "shared" and "indep" sides rows, under the same column and row rules;
    - the tables as Q-55's clean rerun of the calibration writes them (E-035 (4)). No figure of Q-16 is cited before that
      rerun, or typed here;
    - the value bar in points at the cell's capped uses (10), and the ratio of the two.
@@ -587,7 +635,8 @@ For every surviving (cell, R), on the choice block:
    circular, mean block 21 sessions, **2,000 replicates, seed 20261930**.
    - Each replicate is one draw of session indices, shared by every statistic and by the placebo fills.
    - A replicate's lift is the resampled sessions' summed w over their summed fills (D likewise).
-   - The standard error is the replicates' sd. t = L / se, and a centred replicate is t\*_b = (L\*_b - L) / se.
+   - The standard error is the replicates' sd. t = L / se, and a centred replicate is t\*_b = (L\*_b - L) / se, each
+     replicate normalised by the sample's se rather than its own (not a studentised bootstrap, N4).
 3. **The decisive statistic** T(c, R): for `fade`, t_L; for `break`, the smaller of t_L and t_D (and the same for each
    replicate). The first read's synthetic check (`iut.py`) found this inside 0.05 for a break cell with D at zero,
    provided break and fade at a kind survive stage A together. They share their pairs and pooled gates. A T-13 (b)
@@ -628,19 +677,28 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
 
 1. **C1, direction.** The pick's lift under its C1 booking (5.5) on the judged block has a one-sided lower bound at
    **0.05 / (k (k + 1))** (0.05 / 132 at k = 11) **above zero**, by **`cons`** (E-035 (1)).
-   - **The call:** `extended.lift_bound.bound(SHIPPED, x, session, n_sessions, level=...)`, with `SHIPPED = "cons"`,
-     the module as merged in Q-16's commits 2f5ffd0 and 3a7a3f5 (master bb3d913).
+   - **The call:** `extended.lift_bound.bound(SHIPPED, x, session, n_sessions, level=...)`, with `SHIPPED = "cons"`.
+     The module is the one merged in Q-16's commits 2f5ffd0 and 3a7a3f5 (master bb3d913), whose git blob is
+     **`984f3467a4a05aa790d3ea43e94ac7761f0725b2`** (N1). The pinning row records it, and the run asserts
+     `git rev-parse HEAD:extended/lift_bound.py` equals it before stage C, refusing otherwise.
    - **The estimate:** the per-fill mean of the pair terms x = w (5.6), every fill of the pick in the judged block,
      ambiguous pairs as zero.
-   - **The clustering:** the fills are summed per session of the judged block's calendar, every trading session
-     counted with or without a fill (`session_sums`).
+   - **The calendar (N2):** every trading day the bar store holds from 2024-01-02 to 2026-07-16, void for this family or
+     not, in date order. Its count is n_sessions, written in the result file. The fills are summed per session of that
+     calendar, every session counted with or without a fill (`session_sums`). Blocks are cut by `block_index` (session
+     j in block floor(j G / n), G = n // b), so the block edges follow that count.
    - **The bound:** the trade-weighted session-cluster t (CR1) on 21-, 42- and 63-session blocks of that calendar,
-     each with df = blocks - 1. C1 holds only if **all three** bounds are above zero; `cons`'s bound is their minimum.
+     each with df = the non-empty blocks - 1. C1 holds only if **all three** bounds are above zero; `cons`'s bound is
+     their minimum.
    - **No draws:** `cons` draws nothing, so no seed (15).
    - **The null class (E-035 (6); the calibration note, section 7.4 item 1).** A ticket's side is set each day at
      `t_pub` from that day's levels, and there is no multi-session regime filter. So the family's sides persist at most
      one session, inside the class Q-16 calibrated against (sides persisting up to a quarter).
-2. **C1', the level beyond a matched crossing (`break` picks at `pdc` and `rn100`; D-2, D-592, P1).**
+   - **The residual (R1, a reading).** What sizes the test is the dependence of the pair terms w, not the rule's daily
+     reset. A momentum or reversal regime gives w a mean that persists as long as the regime. Q-16's real nulls (P-16's
+     long-minus-short pairs, flipped by blocks of up to 63 sessions) do not model that, and `cons` was lax on the stress
+     regimes. This is stated beside the verdict, with the readings of 9.6 that bound it.
+2. **C1', the level beyond a matched crossing (`break` picks, at `rn100` only; D-2, D-592, P1, G1).**
    - **The line.** The placebo-differenced lift D on the judged block has its lower bound at the same level above zero,
      by `cons` in its two-sample form (E-035 (2)): `extended.lift_bound.two_sample_bound(x_level, s_level, x_placebo,
      s_placebo, n_sessions, level=...)`.
@@ -659,19 +717,20 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
      sample that occupies fewer, with df = Gt - 1 (`DIFF_DF_RULE = "treated"`). Q-16 found the first form, which counted
      every block, lax for persistent selections; it is kept on record (the note's section 6.1).
    - **Why it costs nothing.** It is an intersection with C1 at the same level, so there is no extra spend.
-   - **What it identifies** (corrected, P1).
+   - **What it identifies** (corrected, G1).
      - At `rn100` the placebo matches the real tickets by construction: the same day, one ticket above and one below,
-       distances from the same arithmetic distribution.
-     - At `pdc` it matches them on the level's side, which carries the sign of the target day's overnight move.
-     - Neither level is a range extreme.
+       with distances exchangeable with the level's (arithmetic modulo 100 points, which no feature of the path sets).
+     - `rn100` is not a range extreme.
+     - The prior close, where the placebo cannot match the overnight move's size, has no `break` cell (6.2).
      - What D still cannot separate is any effect specific to crossing a price the market traded at earlier. That is
-       what T-14 (c) (look-back) and T-14 (e) (overnight sign) bound, with a kill (17.6).
+       what T-14 (c) (look-back) bounds, with T-14 (e) (overnight sign) as a check of the construction, each with a kill
+       (17.6).
    - **What a C1-only pass means.** A break pick passing C1 but not C1' is recorded as a lead for unread data -- D-592's
      follow effect or S3's overnight-move effect seen again -- not a finding.
    - **What Q-16 calibrated, and what it did not.** It calibrated C1' as a two-sample statistic on real fills, with
      placebo fills five times the level's (the note's Tables 10 and 10b, section 6.2). It did not calibrate the
-     placebo's construction -- its source days and its scaling (section 7.4 item 10) -- which is this family's T-14 (c)
-     and (e) (17.6).
+     placebo's construction -- its source days and its scaling (section 7.4 item 10) -- which is this family's T-14 (b),
+     (c) and (e) (17.6).
 3. **C2, value (F4, T2, V1).** The valued lift (section 10, on its capped uses) at the lower bound -- at the same
    level, by `cons` -- of the pick's lift **under its C2 booking** (rung 1, or rung 2 where 5.5 moves it) is at least
    **$500 a year**. Q-16 did not calibrate the value-map price at the bound (the note's section 7.4 item 10); it is a
@@ -697,15 +756,20 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
    - K4's adverse selection;
    - the share of fills in the first five minutes after 08:30;
    - the placebo-differenced lift for a `fade` pick;
-   - C2 at ρ squared and at ρ = 1 for a 50-tick pick (10).
+   - C2 at ρ squared and at ρ = 1 for a 50-tick pick (10);
+   - **λ on first fills (N3):** the lift, and C2, on each day's first fill of the kind only -- the fill stage D's
+     one-cancels-other spends;
+   - **the regime readings (R1),** from stage B's own choice-block read, with nothing new spent: the pick's lift by
+     quarter of the choice block, and the lag-1 correlation of its 21-session and of its 63-session block lifts.
 7. **What a `fade` pass means (F10).** A fade pick passing C1 to C4 is **a reversal after these crossings**, carried on
    its trades as E-008 judges designs.
-   - **The level claim** is made only if the placebo-differenced lift beside it also clears C1's level, and only where
-     17.6 has not withdrawn the claim.
-   - **At `pdc`**, the side-matched placebo removes S3's overnight-move effect from that claim (P1): a gap-follow drift
-     would otherwise give the fade a level lift where none exists.
-   - **At `on` and `pd`** the placebo is not matched on the window broken. There, the known follow effect works against
-     a fade pass, and only an unrecorded long-window reversal effect could produce one.
+   - **A level claim is made only at `rn100`**, and only if the placebo-differenced lift beside it also clears C1's
+     level and 17.6 has not withdrawn the claim.
+   - **At `pdc` no level claim is made (G1).** The side-matched placebo removes the overnight move's sign but not its
+     size, and a size-dependent overnight effect -- small moves continue, large ones revert -- would give the fade a
+     level lift where none exists. The placebo-differenced lift is reported beside as a reading.
+   - **At `on` and `pd` no level claim is made either.** The placebo matches neither the window broken nor the overnight
+     path (the same confound as G1). The known follow effect works against a fade pass there.
 
 ## 10. The valued lift (F3, F8, V1, V2)
 
@@ -814,6 +878,16 @@ The base's own trades, walk, coin, cuts and table are unchanged. The pick's tick
   one-cancels-other: the first fill cancels the other for the day.
 - **Size.** The engine's own sizing at the pick's stop (6.3): `_plain_size`, the allowance, the Combine's room cap, the
   45-tick floor. The engine's need-aware and consistency-cap exits act on Combine tickets as on the base's trades.
+- **Releases inside the resting window (the final read's M5).** A resting ticket whose size is its account's **full
+  allowance** -- for instance a 50-tick Combine ticket on a $2,000 leaf, capped at 50 micros -- is handled this way:
+  - it is **cancelled five minutes before** each EIA crude oil or natural gas inventories release on its day
+    (`vendor/stage2/config/im2_release_calendar.csv`, `EIAC` and `EIAG` rows, their `time_ct`);
+  - it is **re-placed five minutes after** the release, void if already through, and never after the cutoff;
+  - a ticket that filled before the window walks on (13613539's own rule for positions opened before a window, E-034).
+
+  Tickets below the full allowance rest through. The screen (stages A to C) counts every fill; the share of the pick's
+  fills inside these windows is reported beside. USDA crop production is not modelled (12 item 8). The base's own
+  trades keep E-034's decision.
 
 ### 11.3 Conduct
 
@@ -828,7 +902,9 @@ reads ("every R at the 0.05 bound the design's gate read", `scripts/user_journey
 - **The tickets.**
   - Which trades: the pick's own rule-side trades at every R of the base's carried menu, walked as in 5.4 (each by its
     own fill-bar rule for its outcome).
-  - Which block: each block separately, by Student-t on 21-session block means.
+  - Which block: each block separately, by Student-t on 21-session block means -- U1's form, so the tickets are shifted
+    as R\* is read. Q-16 found that form (`t21e`) lax at the family levels, and it is untested at 0.05, so a lax shift
+    makes floor (i) easier to pass; stated, not changed (N7).
   - Which era rule: **the lower of the two blocks' bounds**, R by R (D-271 (1)'s rule, without its test).
 - **The base.** Its trades are shifted at the 0.05 bound exactly as U1's verdict arm shifts them -- not at its
   registered 0.05/N development line, which only the identity reproduces (11.5).
@@ -916,8 +992,13 @@ no scorecard, and the closing row says so.
    says so.
 7. **The evenness trade-off curve** -- how much "ahead" each step of evenness costs -- beside, with this design's point
    and its base's, in the form E-015's menu reading fixes.
-8. **Not modelled, and said so wherever this scorecard appears:** a user who stops when their own money runs out, the
-   user's time, taxes.
+8. **Not modelled, and said so wherever this scorecard appears:**
+   - a user who stops when their own money runs out;
+   - the user's time;
+   - taxes;
+   - E-034's unstated rules: which releases count as "scheduled major news", and whether holding through one counts;
+   - USDA crop production inside the tickets' resting window (8284211), which no vendored calendar dates (11.2);
+   - the base's full-size trades held through an unnamed release (E-034's decision).
 
 The replay draws nothing.
 
@@ -926,19 +1007,19 @@ The replay draws nothing.
 - **CARRIED** (C1 to C4, C1' for a break pick, and stage D's floors all hold). The pick is a development finding on a
   late-development block. It takes a registration id (D-621 (9)'s house form), a model card, its registered development
   test, the auditor, and then **one confirmation** (section 14), which carries the decision (D-189).
-  - **A break pass** is a direction at the prior close or at round numbers, beyond what a crossing matched on its side
-    and its distance carries.
+  - **A break pass** is a direction at round numbers, beyond what a crossing matched on its side and an exchangeable
+    distance carries.
   - **A fade pass** is a reversal after these crossings (9.7).
 - **CLOSED** at stage A, B, C (C1, C1', C2, C3 or C4) or D (a floor). The reason goes in a decision row.
-  - A close at B or C is recorded as **"no lift above the MDL (planning section) at this family's level"**, never as
-    "no lift at levels" (D-4).
+  - A close at B or C is recorded as **"no lift detectable at this power"**, with the planning section's MDL (or
+    "above the 200-trade entry") at this family's level -- never as "no lift at levels" (D-4, M4).
   - A close at C carries stage D's scorecards beside it, and makes the judged block's start days prior exposure for
     later families.
   - The failure protocol applies where a check failed rather than a kill line.
   - The closure binds this specification (D-277's boundary): a later family on these levels names this closure, states
     what changed and why it is a different hypothesis (D_protocol 1.5 (c)), and is judged on data this family did not
     read.
-- **`break` at `on` and `pd`** was not tested here (6.2). It belongs in its own declaration, on unread data.
+- **`break` at `on`, `pd` and `pdc`** was not tested here (6.2). It belongs in its own declaration, on unread data.
 
 ## 14. The confirmation (M1, D-6), declared before any development read
 
@@ -967,14 +1048,24 @@ The replay draws nothing.
 - **How much data.** At least six months (D-604), and at least the number of months at which `cons`, one-sided at 0.05
   on a calendar of that many months, has 80 % power for a lift equal to the pick's judged lower bound at the family
   level.
-  - **The fills assumed:** the lower of the pick's two blocks' rates per session x 21 sessions a month.
+  - **The fills assumed:** the lower of the pick's two blocks' rates per session x 21 sessions a month, by the thinning
+    below.
   - **Why the length matters for `cons`.** On a short window its 63-session member has few blocks -- two on six months
     -- and its power falls fast (the note's section 7.4 item 2), so the length is read from `cons`'s own power at that
     length, not from Table 4.
-  - **How the power is computed:** in Q-16's form. The pick's judged pair terms, taken from stage C's result file with
-    no new read of bars, have their signs flipped by session, with the lift added, and are placed on a calendar of the
-    candidate length; the share of replications in which `cons` carries, `lift_bound.many_levels`, over 2,000
-    replications; seed **20261937**, `default_rng([20261937, m])` for m months.
+  - **How the power is computed (fixed now, M6).** It uses the pick's judged-block session sums (S_j, N_j) from stage
+    C's result file, with no new read of bars. For each candidate length of m months, 2,000 replications, each:
+    - draws 21 m sessions with replacement from the judged calendar's sessions;
+    - thins each drawn session's fills, every fill kept with probability (the lower of the two blocks' rates per
+      session) / (the judged rate);
+    - flips each session's sign by a fair coin;
+    - adds the lift -- the pick's judged lower bound at the family level -- to every kept fill;
+    - asks whether `cons` carries at one-sided 0.05 (`lift_bound.many_levels`).
+
+    The power is the share that carry. Seed **20261937**: `default_rng([20261937, m])` for the session draws, the
+    thinning and the signs, in that order. The same simulation at zero lift is reported beside, as a size reading.
+  - **What it can move.** It runs after stage C, but it moves only the window's length, and so the purchase -- never the
+    confirmation's level, which is fixed at 0.05.
   - **When.** It is computed when the pick is carried and written in the carrying row, before any confirmation data
     exists. If the length is more than the operator will buy, no confirmation is registered, and the pick stays a
     development finding.
@@ -991,7 +1082,7 @@ The replay draws nothing.
 | 20261935 | stage D's campaign seed: the gate floor and every beside arm, 500 paths |
 | 20261936 | unused: `pcons` simulates its fixed-b table with `extended/p_bound`'s own seed (reserved for the scorecard; never reassigned) |
 | 20261937 | the confirmation's length rule (14): `default_rng([20261937, m])`, the sign flips of its power simulation at m months |
-| 20261938 | the build's walker tests: `default_rng([20261938, j])` -- j = 0 the shift test, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c) |
+| 20261938 | the build's walker tests: `default_rng([20261938, j])` -- j = 0 the shift test, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c), 4 T-13 (a)'s extension (today's T-13 keeps its own 20261118) |
 | 20261939 | the build's planted-effect tests, T-14: `default_rng([20261939, j])` -- j = 0 (a), 1 (b), 2 (c), 3 (e) gap follow, 4 (e) gap reversal |
 
 **The check (T-12; N9).** A word-bounded search of the whole working tree (`grep -rIow --exclude-dir=.git -E
@@ -1000,11 +1091,14 @@ The replay draws nothing.
 - The third read's search on 2026-11-16 found it also in `DECISIONS.md`, the two earlier reviews,
   `prereg/DRAFT_F-B_multifeature.md` and `prereg/DRAFT_F-P_payout_policy.md`. The last two reserve the range for F-02:
   they are references, not uses.
+- The final read's search (2026-11-16) found it also in `prereg/DRAFT_F-O_opening_timing.md` and
+  `prereg/DRAFT_F-R_resolution.md` (references reserving the range), and 20261930 as the exclusive bound of
+  `extended/user_beside.py`'s `SEED_BLOCK = tuple(range(20261920, 20261930))` -- code, but not a use (N6).
 - Without word bounds, the one other match is digits inside a floating-point value in
   `vendor/stage2/results/a3_brk30_cb20_gate_paths.csv`.
 
 The build's T-12 must tell a reference from a use: a use is a seed passed to a generator in code, or declared as a
-family's own in a `prereg/F-*.md` other than this one.
+family's own in a `prereg/F-*.md` other than this one. An exclusive `range` bound is not a use.
 
 **Inherited, and used only as their owners registered them:**
 - the bases' seeds -- P-16's coin by date and minute 20261102, P-14's identity seed 20261131 and P-16's gate seed
@@ -1028,12 +1122,12 @@ family's own in a `prereg/F-*.md` other than this one.
    data** (D-189). A program ledger across both repositories (R-1) is not built; when it is, this family is listed in
    it.
 4. **Counted:**
-   - 18 cells, each counted whether killed or read;
-   - 54 signed hypotheses, over 36 (kind, stop, R) questions;
-   - 18 placebo cells, as controls;
+   - 15 cells, each counted whether killed or read;
+   - 45 signed hypotheses, over 36 (kind, stop, R) questions;
+   - 15 placebo cells, as controls;
    - one campaign cell if stage D runs;
    - the year-by-year readings re-read the pick, no new cell;
-   - the 6 `break` cells at `on` and `pd`, dropped before any read, are not counted.
+   - the 9 `break` cells at `on`, `pd` and `pdc`, dropped before any read, are not counted.
 
    A later D-189 N counts these, plus section 2's Stage 2 reads of the mechanism.
 5. **D_protocol 1.5's holes:**
@@ -1076,10 +1170,17 @@ row records the diagnosis. That is not a kill.
    - two levels a day;
    - break and fade exact negatives under symmetric booking, except on gaps and at the void boundary.
 5. **T-13, the mirror's zero, per side rule, per stop (50, 100, 150 ticks) and per R, never pooled.**
-   - **(a) Today's form, extended** (slow, as today's `tests/test_walker_t13.py`): a tick-continuous walk whose
-     one-minute ranges reach the stop on a declared share of bars (at least the audit's Appendix B middle row), under
-     the family's preset. `pair` with symmetric booking covers zero; `declared` with `rule_fill` stays the strict
-     expected failure (E-010 (3)).
+   - **(a) Today's form, extended** (slow; seed `[20261938, 4]`; today's `tests/test_walker_t13.py` is unchanged).
+     - *The walk, per stop S:* one tick a step, (S / 2)^2 steps a minute, so the one-minute sd is S / 2 ticks: 625,
+       2,500 and 5,625 steps a minute at 50, 100 and 150 ticks. The 100-tick walk is today's (Appendix B's middle
+       row), and the others are its rescaling.
+     - *The tickets:* every five minutes from 08:30 to 13:25 CT; offsets uniform on S / 2 to 3 S / 2 ticks; cancelled at
+       14:00; the family's preset; 9,000 days per stop (today's count; the walk's rescaling keeps its fill counts).
+     - *The cells:* 2 side rules x 3 stops x 3 R = 18.
+     - *The pass:* each cell's interval, clustered by day, is the mean +/- Z se with **Z = 2.991** (two-sided,
+       Bonferroni over the 18 cells at a family-wise 95 %). `pair` with symmetric booking covers zero in every cell,
+       with half-width under 0.0025 and at least 20 % of fill bars spanning the stop, else the test is refused, as
+       today's is. `declared` with `rule_fill` stays the strict expected failure (E-010 (3)).
    - **(b) Spread and jumps** (slow; F4, T2; runs in the build before stage A; seed `[20261938, 2]`).
      - *The walk:*
        - bars stamped 08:30-15:09;
@@ -1091,7 +1192,9 @@ row records the diagnosis. That is not a kill.
        60) above or below (a fair coin) the close of the bar before live; `break` as a stop and `fade` as a limit; the
        family's preset; 9,000 days per (side rule, stop).
      - *What it reads:* each booking's -- symmetric, rungs 1, 2 and 4 -- mean lift under this null per (side rule, stop,
-       R), with its two-sided 95 % interval clustered by day, written to the `build` section.
+       R), with its two-sided 95 % interval clustered by day, written to the `build` section. No multiplicity
+       correction here, by design: a per-cell 95 % interval acts on a bias more readily, which is the conservative
+       direction for a switch.
      - *What it decides:* 5.5's switches and kill, per (side rule, stop, R).
    - **(c) The precise form** (heavy, under the run lock; synthetic, CPU-bound, modest memory; seed `[20261938, 3]`):
      (a) held to a quarter of the smallest `extra_win_prob_points` in `u_value_map.csv`, section `bar`, at `target=500`.
@@ -1116,15 +1219,20 @@ row records the diagnosis. That is not a kill.
        breakout replaces the drift; a minute with both directions plants none. 40,000 days.
      - **(e) an overnight-sign effect (P1):** in the regular session every step goes up with probability
        0.5 (1 + κ sign(g)), g = `P_ref` less the prior close. κ = +0.002 is the gap-follow arm and -0.002 the
-       gap-reversal arm; g = 0 plants nothing. 40,000 days per arm.
-   - **What each checks:**
-     - **(a)** L and D recover the plant with its sign, and stage C's bound covers it at its level.
-     - **(b)** D covers zero, the two-sided 95 % interval clustered by day.
+       gap-reversal arm; g = 0 plants nothing. 40,000 days per arm. With `break` at `pdc` dropped (G1), it checks
+       `rn100`'s construction only.
+   - **What each checks** -- at `rn100`'s `break` cells only, the one kind whose placebo decides; per stop, at R = 1:
+     - **(a)** L's one-sided lower bound by `cons`, and D's by `two_sample_bound`, at the family's level on the
+       synthetic calendar, are both above zero, in every one of the 3 cells.
+     - **(b)** D's two-sided interval, clustered by day, covers zero in every one of the 3 cells, at **Z = 2.394**
+       (Bonferroni over 3 cells, family-wise 95 %).
      - **(d)** a level read from the 08:25 bar is caught by test 3.
-     - **(c) and (e)**, at `pdc` and `rn100`, per (kind, stop), at R = 1:
-       - **precision:** D's two-sided 95 % interval, clustered by day, has a half-width of at most 1.0 point of win
-         probability;
-       - **visibility:** in (c), and in (e)'s gap-reversal arm at `pdc`, the break lift L's lower bound is above zero;
+     - **(c) and (e)** -- 9 kill checks: (c), and (e)'s two arms, x 3 stops:
+       - **the interval:** two-sided, clustered by day, at **Z = 2.773** (Bonferroni over the 9 checks). So under a
+         correct placebo the chance that some cell is killed by chance is at most 5 % (N5);
+       - **precision:** D's interval at that Z has a half-width of at most 1.0 point of win probability;
+       - **visibility:** in (c), the break lift L's lower bound at that Z is above zero. (e) needs none at `rn100`: an
+         overnight-sign drift moves the ticket above and the ticket below in opposite directions;
        - **if D's interval lies wholly above zero:** `break` at that (kind, stop) is **killed** (K0) -- the placebo
          would let a non-level effect pass C1' (N2);
        - **if it lies wholly below zero:** break is unaffected (conservative), but the placebo-differenced lift is
@@ -1132,10 +1240,21 @@ row records the diagnosis. That is not a kill.
        - **if the precision or the visibility fails:** the test is **refused** for that (kind, stop), not failed. Its
          break cells are withheld from stage A, recorded as "refused, not killed" and counted, and no fade level claim
          is made there.
-   - **Failures of (a), (b) or (d)** stop the build.
-7. **T-3, choice-stage invariance** (slow). Stage A's and B's outputs are byte-identical when every bar from 2024-01-02
-   on is replaced by a seeded synthetic walk (`[20261938, 1]`). The outputs compared: cutoffs, kills, planning, the
-   valuation's inputs (the reachable count included), the critical value and the pick.
+   - **Failures of (a), (b) or (d)** stop the build. The seeds: `[20261939, 0]` (a), `[20261939, 1]` (b),
+     `[20261939, 2]` (c), `[20261939, 3]` and `[20261939, 4]` (e)'s arms.
+7. **T-3, choice-stage invariance** (slow). Stage A's and B's outputs must be byte-identical when **every judged row
+   of every file stages A and B open** is replaced on temporary copies, never the store:
+   - every bar from 2024-01-02 on, by a seeded synthetic walk (`[20261938, 1]`);
+   - and, for the reachable count, the rows dated from 2024-01-02 of each walk and event file its engine call opens
+     (for P-14, Stage 2's `data/atlas/A3/walks.parquet` and A1's `events.parquet` and `days.parquet`; for P-16, the
+     inputs of its cell builder), poisoned (M2).
+
+   The outputs compared: cutoffs, kills, planning, the valuation's inputs (the reachable count included), the critical
+   value and the pick.
+
+   Beside T-3, the reachable count's adapter reads only through the reader's choice-block window
+   (`reader.read_walks(..., end="2023-12-29")`) and asserts that every row it consumes is dated at or before
+   2023-12-29. Before stage A, the build records whether E-032 (2)'s fallback applies.
 8. **T-15, stage D's routing** (slow).
    - With no tickets, the base's registered paths and U1's start rows (11.5).
    - Toy days for:
@@ -1177,7 +1296,7 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
 | purpose | what it reads, and why |
 |---|---|
 | `stage_C_judgement` | the pick's judged-block fills, its placebo and its walks: C1 to C4 and every stage-C reading beside, the pick's year-by-year readings included (9.6) |
-| `stage_D_gate_floor` | the stage-D campaign over the development window, through the engine (`reader.authorise_engine_read`): floor (i), the base alone and the arms beside (11.5) |
+| `stage_D_gate_floor` | the stage-D campaign over the development window: the engine's reads (`reader.authorise_engine_read`), and the tickets' walks at every R of the base's menu through `reader.read_bars` (N8); floor (i), the base alone and the arms beside (11.5). Each ledger line's `what` says which |
 | `stage_D_scorecard` | the real-order replay over start days of the three designs (section 12) |
 
 **Not on this line:**
@@ -1211,15 +1330,20 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
     C, then D. Each stage's file is written before the next reads anything.
   - A kill stops the sequence.
   - A run aborted or restarted is recorded by the lead with its log, and only the first complete run is read.
-- **Waits.** No stage runs until Q-55's clean rerun of Q-16's calibration is on record (E-035 (4)); no judged-block
-  read until this file is pinned (the reader refuses a draft). Q-05 holds (E-010) and Q-16 is merged (E-035).
+- **Waits.** The pin itself waits for Q-55's clean rerun reproducing `cons` holding (status; M3); no judged-block read
+  until this file is pinned (the reader refuses a draft). Q-05 holds (E-010) and Q-16 is merged (E-035). Before stage
+  C, the run asserts `extended/lift_bound.py`'s blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and before stage D
+  `extended/p_bound.py`'s blob `f5b29710e243f97a2795e57f6458512fea99199b` (N1).
 
 ## 19. Open before the pin
 
 **The lead's:**
 
-1. **The final red-team read** of this version, with Q-16's statistics named (Q-53, E-032).
-2. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) before any stage runs: planning reads its power tables.
+1. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) must reproduce `cons` and the treated two-sample `cons`
+   holding at the family's k before the pin; if it does not, this draft is withdrawn before any read (status; M3).
+2. **The pinning row** names `extended/lift_bound.py`'s blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2` and
+   `extended/p_bound.py`'s `f5b29710e243f97a2795e57f6458512fea99199b` (N1), the pinned file `prereg/F-NN_<slug>.md` and
+   its diff from this reviewed text (N9).
 3. **The readings beside.** Q-17's adapter is needed for section 12 item 4, and E-015's approved limits for 12 item 6.
 4. **Optional (V2):** a per-rung `dv` from D-667's solver would replace ρ.
 
@@ -1228,7 +1352,9 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
 - the reverse walk-forward struck (E-031 (2), E-032 (1));
 - the reachable count read on the choice block's days only, or not used and replaced by the records cap, with no new
   purpose (E-032 (2));
-- the charter's record of the allowance-capped reading (E-032 (3)).
+- the charter's record of the allowance-capped reading (E-032 (3));
+- `break` at `pdc` dropped, with no fade level claim at `pdc` (the final read's G1, option (a), the lead's ruling);
+- the final red-team read (Q-53) answered here.
 
 **The operator's**, each with its safe default applied, none blocking:
 
