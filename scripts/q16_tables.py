@@ -13,6 +13,8 @@ difference on the judged block.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -126,10 +128,64 @@ def p_power_table(pp: pd.DataFrame, nulls, methods) -> str:
     return "\n".join(rows)
 
 
+#: Q-55's result files (`scripts/q55_calibration.py`) and how they split back into the calibration's part CSVs
+RESULT_FILES = ("calibration_lift", "calibration_p", "calibration_two_sample", "calibration_power", "bm63c_table")
+
+
+def _verified(path: Path) -> pd.DataFrame:
+    """A result CSV after its manifest's sha256 check (the vendored writer's manifest; no vendored import here)."""
+    man = json.loads(Path(f"{path}.manifest.json").read_text(encoding="utf-8"))
+    got = hashlib.sha256(path.read_bytes()).hexdigest()
+    if got != man["sha256"]:
+        raise SystemExit(f"REFUSED: {path} does not match its manifest's sha256 ({got[:12]} against "
+                         f"{man['sha256'][:12]})")
+    return pd.read_csv(path, low_memory=False)
+
+
+def split_results(results: Path, into: Path) -> list[Path]:
+    """Write the part CSVs the tables read (lift/, p/, select/, select_all/) from the five result files."""
+    r = {n: _verified(Path(results) / f"{n}.csv") for n in RESULT_FILES}
+    drop = lambda df: df.dropna(axis=1, how="all")                      # noqa: E731
+    parts = {"lift": {"lift_size.csv": r["calibration_lift"].query("section == 'size'"),
+                      "lift_boot.csv": r["calibration_lift"].query("section == 'boot'"),
+                      "lift_power.csv": r["calibration_power"].query("part == 'lift'")},
+             "p": {"p_size.csv": r["calibration_p"], "p_power.csv": r["calibration_power"].query("part == 'p'"),
+                   "p_bm63c_critical.csv": r["bm63c_table"]}}
+    for rule, sub in (("treated", "select"), ("all", "select_all")):
+        two = r["calibration_two_sample"]
+        pw = r["calibration_power"]
+        if (two["df_rule"] == rule).any():
+            parts[sub] = {"diff_size.csv": two[two["df_rule"] == rule],
+                          "diff_power.csv": pw[(pw["part"] == "two_sample") & (pw["df_rule"] == rule)]}
+    out = []
+    for sub, files in parts.items():
+        dd = Path(into) / sub
+        dd.mkdir(parents=True, exist_ok=True)
+        for f, df in files.items():
+            drop(df).to_csv(dd / f, index=False)
+        out.append(dd)
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", required=True, type=Path)
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--dir", type=Path, help="a calibration output folder (scripts/q16_calibrate.py --out)")
+    g.add_argument("--results", type=Path, help="a folder holding Q-55's five result files")
     a = ap.parse_args(argv)
+    if a.results is not None:
+        import tempfile
+        with tempfile.TemporaryDirectory(prefix="q16_tables_") as tmp:
+            texts = []
+            import contextlib
+            import io
+            for dd in split_results(a.results, Path(tmp)):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    main(["--dir", str(dd)])
+                txt = (dd / "tables.md").read_text(encoding="utf-8")
+                texts.append(txt.replace("Table ", "Table F") if dd.name == "select_all" else txt)
+        print("\n\n".join(texts))
+        return 0
     d = Path(a.dir)
     out = []
     if (d / "lift_size.csv").is_file():
