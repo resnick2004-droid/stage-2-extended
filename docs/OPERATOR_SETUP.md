@@ -10,14 +10,14 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 | 3 | **Topstep support questions** -- closing a funded account at request to free its seat; seat timing (Stage 2 item 5) | an unverified rule (`xfa_closure_at_request`) no design may use until answered | no design closes funded accounts at request | open |
 | 4 | **Lucid's two unpriced fees** (funded monthly, payout) | a Lucid design cannot be priced in full | Lucid stays a reading beside, never a candidate | open |
 | 5 | **A private GitHub remote for this repository** | backup; push after every commit | -- | done by the session (E-004): `resnick2004-droid/stage-2-extended`, private |
-| 6 | **May this repository live outside OneDrive?** (asked once) | OneDrive locks files under a running job and has broken in-repo worktrees before; the worktrees and clean runs already live outside it, in `%LOCALAPPDATA%` | it stays at `Desktop\Stage 2 - Extended`; GitHub is the backup | open -- answer yes or no; on yes the session moves it to `%USERPROFILE%\research\stage2-extended` and leaves a note in the old folder |
+| 6 | **May this repository live outside OneDrive?** (asked once) | OneDrive locks files under a running job and has broken in-repo worktrees before; the worktrees and clean runs already live outside it, in `%LOCALAPPDATA%` | it stays at `Desktop\Stage 2 - Extended`; GitHub is the backup | **answered 2026-11-15** -- the operator: "Pushing the updates to github is best". The repository stays where it is; every commit and every worker branch is pushed to the private remote (the post-commit hook) |
 | 7 | **More history, free: QuantConnect's NQ and ES minute data from 2009** | six and a half years of NQ give low power for rare effects (bootstrap Part 6); QuantConnect's history would add about eleven years | NQ 2020-2026 only | open -- see below |
 | 8 | **More history, a purchase: Databento NQ 1-minute bars 2010-01-01 to 2019-12-31** | the same reason, on the operator's own licensed store, read locally | NQ 2020-2026 only | open -- a purchase; not authorised |
 | 9 | **Memory for heavy runs** | a campaign or a full identity needs about 3 GB; on 2026-11-15 the machine had about 1.7 GB available, the rest held by other applications | light work runs; a heavy run waits until the memory is there (the session checks before it starts) | open -- see below |
 
 ## Item 6 -- the repository outside OneDrive
 
-Answer **yes** or **no** in any session. Nothing else to do.
+Answered 2026-11-15: it stays; GitHub is the backup. Worktrees and clean runs stay in `%LOCALAPPDATA%`.
 
 ## Item 7 -- QuantConnect (free)
 
