@@ -44,7 +44,7 @@ P16_GATE_SEED = 20261206
 GATE_COLS = ("pf_growth_on_base_p50", "pf_required_p90", "pf_growth_on_base_p10", "pf_net_p50", "median_log_growth",
              "mean_payouts_per_path", "mean_combine_purchases", "mean_accounts_funded", "share_accounts_ever_paid",
              "median_days_to_first_payout", "ruin_probability", "mean_max_drawdown",
-             "realised_to_intended_capped_risk", "e", "lb", "paths")
+             "realised_to_intended_capped_risk", "mean_r_used", "paths")
 P14_GATE_FILE = "a3_brk30_cb20_gate.csv"
 P16_GATE_FILE = "rc_s150_all_gate.csv"
 P16_PATHS_FILE = "rc_s150_all_gate_paths.csv"
@@ -257,11 +257,15 @@ def registered_gate(design: str) -> dict[str, dict[str, float]]:
 
 
 def gate_problems(mine: dict[str, dict[str, float]], ref: dict[str, dict[str, float]], tol: float = 1e-6) -> list[str]:
+    """Every `GATE_COLS` column of the registered rows against this run's, both shifts, to `tol` relative (absolute
+    below 1); a column missing from either side is a difference."""
     out = []
-    for s, row in ref.items():
-        for c, v in row.items():
-            m = mine.get(s, {}).get(c)
-            if m is None or not ((np.isnan(m) and np.isnan(v)) or abs(m - v) <= tol * max(1.0, abs(v))):
+    for s in ("point", "lower_bound"):
+        for c in GATE_COLS:
+            v, m = ref.get(s, {}).get(c), mine.get(s, {}).get(c)
+            if v is None or m is None:
+                out.append(f"{s} {c}: missing ({'registered' if v is None else 'this run'})")
+            elif not ((np.isnan(m) and np.isnan(v)) or abs(m - v) <= tol * max(1.0, abs(v))):
                 out.append(f"{s} {c}: {m} against the registered {v}")
     return out
 
