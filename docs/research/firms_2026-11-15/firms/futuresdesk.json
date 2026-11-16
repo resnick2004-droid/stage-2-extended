@@ -1,0 +1,55 @@
+{
+  "firm": "The Futures Desk (TS TFD Buyer, LLC; Topstep affiliate)",
+  "slug": "futuresdesk",
+  "official_domains": ["thefuturesdesk.com"],
+  "date_read": "2026-11-15",
+  "unreadable": [
+    {"url": "https://thefuturesdesk.com/knowledge-base", "what": "JavaScript-rendered (static HTML shows only 'Loading knowledge base...'); not read further. WebFetch not tried: the verdict is already fixed by the homepage account cap, and the site's Terms forbid crawling (see note in screen.automation)."}
+  ],
+  "plans_seen": [
+    {"name": "Assessment Desk / Intern Desk (custom 'loadout'; account sizes and prices not on the static pages)", "drawdown": "'Static or EOD' (stage not specified)", "consistency_eval": "UNVERIFIED", "consistency_funded": "none",
+     "quote": {"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "No consistency or minimum days between payouts (Mon-Fri)"}}
+  ],
+  "plan_captured": null,
+  "screen": {
+    "drawdown_eval": {"value": "static or EOD (stage not specified)", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "Static or EOD"}],
+      "looked_at": null, "note": "Homepage comparison table only; which mode applies to the assessment vs funded is in the unreadable knowledge base."},
+    "drawdown_funded": {"value": "UNVERIFIED per stage (homepage: 'Static or EOD')", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thefuturesdesk.com/, https://thefuturesdesk.com/terms-conditions (knowledge base unreadable)", "note": "Funded accounts are live brokerage accounts after a short sim-brokerage period."},
+    "consistency_eval": {"value": "not stated", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://thefuturesdesk.com/, https://thefuturesdesk.com/terms-conditions", "note": null},
+    "consistency_funded": {"value": "none", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "Once you are funded with us, we have no payout caps, no consistency, no minimum days — what a modern proprietary trading company should have."}],
+      "looked_at": null, "note": null},
+    "max_funded_accounts": {"value": "2 accounts per trader", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "You can have a max of 2 accounts per trader."}],
+      "looked_at": null, "note": "Not stated whether the 2 include assessments."},
+    "copy_trading": {"value": "own-account copying not addressed; coordinated same/opposite strategies across accounts to pool or hedge risk prohibited", "status": "UNVERIFIED",
+      "quotes": [{"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "Coordinated Trading - Coordinating with others, including between unconnected accounts and third parties, to perform the same trading strategy, opposite strategy, or other activities intended to pool or hedge risk across multiple accounts."}],
+      "looked_at": "home, terms-conditions", "note": null},
+    "opposite_positions": {"value": "prohibited", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "This includes engaging in short-term or high-frequency trading or simultaneously entering opposite positions."}],
+      "looked_at": null, "note": "Part of 'Market Manipulation', including between connected accounts."},
+    "news": {"value": "not stated", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "home, terms-conditions", "note": null},
+    "automation": {"value": "homepage: 'Microscalping + Algos Allowed'; Terms prohibit automated tools that manipulate or give an unfair advantage", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "Microscalping + Algos Allowed"},
+                 {"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "Automated Trading - Using any software, artificial intelligence, ultra-high-speed, or mass data entry tools that could manipulate, abuse, or provide an unfair advantage while using the Site or Services."},
+                 {"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "Using manual or automated software, devices, or processes to \"crawl\" or \"spider\" any web pages within the Sites or Services."}],
+      "looked_at": null, "note": "The third quote is the site's ban on crawling (applies to visitors too); only 3 pages were fetched, then reading stopped."},
+    "sizing_gambling": {"value": "position sizes far from usual patterns, and excessive contracts per day, are prohibited conduct", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "You agree to consistently apply market standard risk management rules while using the Sites and Services, and understand that opening significantly larger or smaller position sizes compared to your usual trading patterns does not meet these standards."},
+                 {"file": "raw/futuresdesk/terms.txt", "url": "https://thefuturesdesk.com/terms-conditions", "article_id": null, "page_date": "Effective date: Apr 1, 2026", "text": "Excessive Trading - Trading an excessive or unrealistic number of contracts within a single day."}],
+      "looked_at": null, "note": "Also: flat by 3:10 PM CT unless Swing Trading is enabled; VPN/VPS use forbidden."},
+    "verdict": "FAIL",
+    "verdict_reason": "At most 2 accounts per trader (homepage FAQ): not 'several' funded accounts."
+  },
+  "terms": {},
+  "other_notes": {
+    "funded_is_live": {"value": "funded = live brokerage account after a short sim-brokerage period", "status": "verified",
+      "quotes": [{"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "After that, yes, all traders move to one of our fully regulated live brokerage accounts where all capital is real."},
+                 {"file": "raw/futuresdesk/home.txt", "url": "https://thefuturesdesk.com/", "article_id": null, "page_date": null, "text": "an affiliate of TS TFD Buyer, LLC"}],
+      "looked_at": null, "note": "The Futures Desk is a Topstep affiliate (Topstep Brokerage LLC is named as an affiliate of TS TFD Buyer, LLC)."}
+  }
+}

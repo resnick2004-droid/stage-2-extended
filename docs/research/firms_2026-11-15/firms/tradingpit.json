@@ -1,0 +1,264 @@
+{
+  "firm": "The Trading Pit",
+  "slug": "tradingpit",
+  "official_domains": ["thetradingpit.com", "support.thetradingpit.com"],
+  "date_read": "2026-11-15",
+  "unreadable": [],
+  "comparability": "Yes: Futures Prime is a one-phase $50K evaluation on CME Group futures (ES, NQ and micros) leading to a simulated funded 'Earning Account' that pays rewards.",
+  "comparability_quotes": [
+    {"file": "raw/tradingpit/a-prime-platforms.txt", "url": "https://support.thetradingpit.com/en/articles/836080-futures-prime-platforms-conditions", "article_id": "836080", "page_date": "Updated over a week ago", "text": "Equity indices (ES, NQ, YM, RTY and their micros)."},
+    {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "Once you pass, you receive a funded demo Earning Account where you can request rewards on the profit you generate."}
+  ],
+  "access_note": "GTC clause 4.5.2 lists 'automated retrieval or extraction of data (scraping, crawling, or similar methods) without our express written permission' among prohibited uses; the pages were fetched one at a time by curl before this was read.",
+  "plans_seen": [
+    {"name": "Futures Prime 50K (one-phase challenge)", "drawdown": "EOD trailing $2,000 on closed balance, locks at starting balance (challenge and earning)", "consistency_eval": "40% (raises target; never fails)", "consistency_funded": "none",
+     "quote": {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Applies to the Challenge only — never to a Futures Earning Account — and it never fails your account."}},
+    {"name": "Futures Instant 50K (no challenge)", "drawdown": "EOD trailing $2,000, fixed at starting balance; dynamic daily pause from $1,200", "consistency_eval": "n/a", "consistency_funded": "20% (best day <= 20% of total profit before payout)",
+     "quote": {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "You can have maximum 2 Futures Instant accounts."}}
+  ],
+  "plan_captured": "Futures Prime 50K",
+  "screen": {
+    "drawdown_eval": {"value": "eod_trailing; $2,000; locks at starting balance $50,000", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Your Max Drawdown (see the table) trails your end-of-day balance — based on closed P&L, not intraday peaks — upward, until it reaches your starting balance, then locks."}
+      ]},
+    "drawdown_funded": {"value": "eod_trailing; same $2,000 rule in the Earning phase", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach"}
+      ]},
+    "consistency_eval": {"value": "40% of profit target per day; overshoot raises target to best day / 0.40 (accounts created on/after 14 July 2026)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Created on or after 14 July 2026 — the target is recalculated so your highest day equals 40% of it (Highest Day ÷ 0.40 = new target)."}
+      ]},
+    "consistency_funded": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Applies to the Challenge only — never to a Futures Earning Account — and it never fails your account."}
+      ],
+      "note": "But the 'account rolling' signs include 'One trade or one day produces more than 40% of the net profit', and GTC A.2.4 makes 'consistency of the trading strategy' part of Compliant Trading Data for rewards."},
+    "max_funded_accounts": {"value": "5 active Earning accounts; no limit on challenge purchases", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "In the Earning Phase you can hold a maximum of 5 active Earning accounts; if you pass a Challenge while already at the cap, the upgrade is queued until one of your Earning accounts closes."}
+      ],
+      "note": "Per-household not stated. CAVEAT: the Device/IP policy says 'accessing multiple accounts from the same IP address or network is not allowed' (read in context as several people's accounts, since one trader may hold 5)."},
+    "copy_trading": {"value": "allowed from own accounts only, up to 5 challenges or 5 earning accounts", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "You may copy trades, manually or automatically, across up to 5 of your own Challenges or 5 of your own Earning accounts."}
+      ]},
+    "opposite_positions": {"value": "prohibited within an account, across own accounts, and in correlated instruments across accounts", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "This includes opposing positions in a single account, a BUY on one account and a SELL on another, and offsetting positions opened in correlated instruments across accounts."}
+      ]},
+    "news": {"value": "CONFLICT: help centre says allowed on Futures Prime; GTC Schedule B prohibits opening or closing positions within 2 minutes before/after a high-impact release", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Allowed on Futures Prime in both the Challenge and Earning Phase."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "News Bracketing: Placing or opening orders in anticipation of the release of high-impact economic data or events; in particular, opening or closing positions within two (2) minutes before or after such a release is prohibited;"}
+      ],
+      "note": "Safe default: no entry or exit (including a resting stop/target filling) within 2 minutes of a high-impact release. The GTC (6.6) say the most up-to-date list is in the Help Center, which says news trading is allowed; the futures page also lists 'News trading Allowed' for Instant."},
+    "automation": {"value": "not prohibited as such; EAs with prohibited functions, HFT, and automated tools used to manipulate or evade monitoring are prohibited; only Replikanto Compliance Edition allowed as copier on NinjaTrader", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "AI and Automated Tools: Use of artificial intelligence, automated trading systems, ultra-high-speed tools, or mass data entry to manipulate the Trading Platform, circumvent our monitoring systems, or gain an unfair trading advantage in the generation of Trading Data; and"},
+        {"file": "raw/tradingpit/a-prime-platforms.txt", "url": "https://support.thetradingpit.com/en/articles/836080-futures-prime-platforms-conditions", "article_id": "836080", "page_date": "Updated over a week ago", "text": "Yes, but only Replikanto FlowBots – Compliance Edition is permitted."}
+      ],
+      "note": "Hand entry raises no issue."},
+    "sizing_gambling": {"value": "gambling policy (overleveraging, overexposure, one-sided bets, hyperactivity); impermissible risk allocation; account rolling; lot-size manipulation; micro-scalping flag (> 50% of profit from trades held <= 15 s)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, 6.5.1.1", "page_date": "V5.08.26", "text": "6.5.1.1 using a disproportionate portion of the account balance or equity to open positions (impermissible risk allocation);"},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Automated monitoring flags accounts where, for example, over 50% of profits come from trades held 15 seconds or less, or where ultra-fast entries and exits are combined with disproportionate sizing."}
+      ]},
+    "verdict": "PASS",
+    "verdict_reason": "Futures Prime 50K: EOD trailing drawdown on the Earning account and no Earning-phase consistency rule; 5 Earning accounts; hand-entered one-position bracket trades are allowed (stops recommended), subject to the GTC's 2-minute news-bracketing ban.",
+    "note": "Two design-relevant frictions: (1) GTC news-bracketing ban conflicts with the help centre's 'news allowed'; (2) Earning-phase contract scaling starts at 2 standard / 20 micros on 50K per the futures page, versus the 5/50 limit in the rules article."
+  },
+  "terms": {
+    "eval_profit_target": {"value": 3000, "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "| Account size | Profit Target | Max Drawdown | Daily Pause | Max Contracts (STD / Micro)"},
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50"}
+      ]},
+    "eval_drawdown_amount": {"value": 2000, "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50"}
+      ]},
+    "eval_drawdown_type": {"value": "eod_trailing (closed P&L end-of-day balance)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Your Max Drawdown (see the table) trails your end-of-day balance — based on closed P&L, not intraday peaks — upward, until it reaches your starting balance, then locks."},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "If your balance falls to the drawdown level, the account is breached."}
+      ]},
+    "eval_drawdown_lock": {"value": "locks at starting balance ($50,000)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Your maximum drawdown will trail based on your End-Of-Day (EOD) balance until it reaches your starting balance, after which it will remain fixed at the starting balance amount."}
+      ]},
+    "eval_daily_loss_limit": {"value": "Daily Pause $1,000 (soft: positions closed, paused until next day)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "On Challenge Phase only. If your equity drops below the Daily Drawdown limit, open positions will be closed, and your account will be paused until the next trading day (16:05 CT)."},
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50"}
+      ]},
+    "eval_consistency_rule": {"value": "40% of profit target per day; overshoot raises target (best day / 0.40); never fails the account", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Your highest trading day is capped at 40% of your Profit Target; going over simply raises the target."}
+      ]},
+    "eval_min_days": {"value": 3, "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "For the Challenge to register as passed you must place a trade on at least 3 unique trading days."}
+      ]},
+    "eval_position_limit": {"value": "5 standard / 50 micro (fewer as balance falls)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "$50K → 5 standard / 50 micro"},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "There is no minimum, and the lower your current balance, the fewer contracts you’re allowed to trade."}
+      ]},
+    "eval_fee": {"value": "$99 one-time (Black Friday code BF40 40% off until Nov 30)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Account Balance: $50,000 Price $99 One Time Fee"},
+        {"file": "raw/tradingpit/home.txt", "url": "https://www.thetradingpit.com/", "article_id": null, "page_date": null, "text": "Valid on all Instant Accounts and Prime Challenges of $10K and up. Use code BF40."}
+      ],
+      "note": "Level 1 CME data free; Level 2 CME $16/month optional. Commissions $0.50 per standard/mini contract, $0.20 per micro."},
+    "eval_reset_fee": {"value": 79, "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Reset $79 You can purchase a Reset anytime and as many times as you like, receiving a new account with the remaining challenge days."}
+      ],
+      "note": "A reset keeps the remaining challenge days; 'Extend' ($99) adds the initial 30 days. Reset breached accounts may face an activation fee (see activation_fee)."},
+    "activation_fee": {"value": "$0 for new accounts created on/after 26/03/2026 (existing and reset-breached accounts may pay one; futures page shows $129 struck to $0)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "Activation fee: new accounts created on or after 26/03/2026 have no activation fee ($0). Existing accounts and reset breached accounts may be subject to an activation fee before progressing to the Earning Phase."},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Activation Fee $129 $0"}
+      ],
+      "note": "The costs article says reset breached accounts 'are subject to' an activation fee (firmer than 'may be'); amount for a reset account presumably $129, not stated explicitly."},
+    "eval_count_limit": {"value": "no limit on purchases", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "There is no limit on how many Futures accounts you can purchase."}
+      ],
+      "note": "Copying the same strategy across more than 5 accounts 'can lead to upgrades being denied'."},
+    "eval_time_limit": {"value": "30 days (extendable for $99)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "Challenge duration: 30 days across all account sizes."},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Extend $99 Add the initial number of Challenge days to your account for more time to reach the profit target."}
+      ]},
+    "funded_type": {"value": "simulated (demo) Earning Account with buying-power scaling; live transition not described for Prime", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "All trading takes place on demo accounts using simulated funds."},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "In our Futures Prime Program, we will scale your Earning Account's buying power based on your end-of-day profit. Scale-ups will be calculated and adjusted daily at 16:00 CT."}
+      ]},
+    "funded_drawdown_amount": {"value": 2000, "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach"},
+        {"file": "raw/tradingpit/a-prime-how.txt", "url": "https://support.thetradingpit.com/en/articles/836068-futures-prime-how-it-works", "article_id": "836068", "page_date": "October 6, 2026", "text": "| $50,000 | $3,000 | $2,000 | $1,000 | 5 / 50"}
+      ],
+      "note": "Whether the Earning account starts with a fresh trail from $48,000 is implied, not stated."},
+    "funded_drawdown_type": {"value": "eod_trailing", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| Max Drawdown (Trailing EOD) | Challenge & Earning | Hard — Breach"}
+      ]},
+    "funded_drawdown_lock": {"value": "locks at starting balance", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Your maximum drawdown will trail based on your End-Of-Day (EOD) balance until it reaches your starting balance, after which it will remain fixed at the starting balance amount."}
+      ]},
+    "payout_balance_consequence": {"value": "floor not stated to move at payout (it locks at the starting balance once reached); next reward needs balance above the last post-payout balance", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "Your balance must exceed your last post-payout balance (by at least $0.01) to request the next reward."}
+      ],
+      "note": "What a payout does to the drawdown level is not stated; the 50%-of-buffer cap keeps half the profit as cushion."},
+    "funded_daily_loss_limit": {"value": "none since 14 July 2026 (Daily Pause removed from Earning accounts) - CONFLICT with the same article's summary table", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Applies during the Challenge phase only. It was removed from Futures Prime Earning accounts on 14 July 2026."},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| Daily Pause (Daily Loss Limit) | Challenge & Earning | Auto-Close For The Day"}
+      ],
+      "note": "The futures product page agrees with 'Challenge Phase only'. Safe default for modelling: test both (no DLL, and a $1,000 soft pause)."},
+    "funded_consistency_rule": {"value": "none", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| 40% Consistency (Raises The Target) * | Challenge only | Soft — Adjusts Target"}
+      ]},
+    "funded_position_limit": {"value": "scaling by EOD profit (50K): 0-$2,500 profit 2 std / 20 micro; above $2,500 3 / 30; above $5,000 4 / 40 (futures page) - CONFLICT with rules article's 5 / 50 for 'Challenge & Earning'", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "| $50,000 ACCOUNT | $100,000 ACCOUNT | $150,000 ACCOUNT | 0-$2,500 Profit | 2 Standard / 20 Micros"},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "| If Profit Above $2,500 | 3 Standard / 30 Micros"},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "| If Profit Above $5,000 | 4 Standard / 40 Micros"},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "| Max Contracts Per Account Size | Challenge & Earning | Position Limit"}
+      ],
+      "note": "Read: the product page's scaling table is specific to the Earning account; the rules page gives the ceiling. Safe default: 2 NQ / 20 MNQ at the start of the Earning phase."},
+    "funded_monthly_fee": {"value": "none (only the one-time product fee; optional market-data add-ons are monthly)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-costs.txt", "url": "https://support.thetradingpit.com/en/articles/835066-costs-fees-extras", "article_id": "835066", "page_date": "October 2, 2026", "text": "The only expense on your part is the one-time initial purchase of one of our Challenges."}
+      ]},
+    "payout_min": {"value": "UNVERIFIED (Prime: only 'positive net profit of at least $0.01' after the first reward; Instant has a $500 minimum)", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards ; https://www.thetradingpit.com/futures ; https://www.thetradingpit.com/general-terms-and-conditions (Schedule A.6 refers to minimum amounts 'published on our Website')"},
+    "payout_cap": {"value": "per request: up to 50% of the current profit buffer, capped at $2,500 (50K); lifetime not stated", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "You can request up to 50% of your current profit buffer, capped by account size:"},
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "| $50,000 | $2,500"}
+      ]},
+    "payout_frequency_gate": {"value": "5 profitable days of >= $150 (not necessarily consecutive) per reward; at most every 7 days; later rewards need net profit > $0 since the last payout", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "Second and later rewards: generate a positive net profit of at least $0.01 since your last payout, and complete 5 new profitable trading days, each with at least $150 profit."},
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "You can request a reward every 7 days."},
+        {"file": "raw/tradingpit/futures.txt", "url": "https://www.thetradingpit.com/futures", "article_id": null, "page_date": null, "text": "To request a reward, you must complete 5 profitable trading days with at least $150 profit per day, which do not need to be consecutive. You can request a reward every 7 days."}
+      ],
+      "note": "Changed 27 July 2026: daily threshold lowered from $200 to $150."},
+    "payout_split": {"value": "up to 80% (discretionary: reward rate may be set below the maximum)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "On Futures Prime, you can receive a reward of up to 80% of the notional profit you generate in the Earning Phase."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, A.3", "page_date": "V5.08.26", "text": "The Reward rate may be set below the maximum Reward rate"}
+      ]},
+    "payout_processing_days": {"value": "no later than 30 calendar days after TTP's determination; reviews generally within 14 days", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, A.7", "page_date": "V5.08.26", "text": "payment shall be made by bank transfer or via approved payment service providers to the account registered in the Client Area, no later than thirty (30) Calendar Days after that determination."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, A.8", "page_date": "V5.08.26", "text": "We generally complete reviews within fourteen (14) Calendar Days; if a review exceeds thirty (30) Calendar Days, we will inform you of its status and expected duration."}
+      ]},
+    "payout_fee": {"value": "international transfer costs and FX losses borne by trader; fee schedule in the general rewards info (not read)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, A.7", "page_date": "V5.08.26", "text": "Costs for international transfers and exchange rate losses shall be borne by you."},
+        {"file": "raw/tradingpit/a-prime-rewards.txt", "url": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards", "article_id": "836079", "page_date": "Updated over 2 weeks ago", "text": "Withdrawal methods, currencies and reward fees follow The Trading Pit’s general reward policy — rewards are paid by bank wire or cryptocurrency."}
+      ]},
+    "payout_count_limit": {"value": "UNVERIFIED (none stated)", "status": "UNVERIFIED", "quotes": [],
+      "looked_at": "https://support.thetradingpit.com/en/articles/836079-futures-prime-rewards ; https://support.thetradingpit.com/en/articles/836071-futures-prime-rules ; https://www.thetradingpit.com/futures ; https://www.thetradingpit.com/general-terms-and-conditions"},
+    "max_accounts": {"value": "5 active Earning accounts; unlimited challenge purchases; one Client Account per user", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "In the Earning Phase you can hold a maximum of 5 active Earning accounts; if you pass a Challenge while already at the cap, the upgrade is queued until one of your Earning accounts closes."},
+        {"file": "raw/tradingpit/a-device-ip.txt", "url": "https://support.thetradingpit.com/en/articles/835070-trading-device-ip-network-policy", "article_id": "835070", "page_date": "October 2, 2026", "text": "One Account Per IP / Network — accessing multiple accounts from the same IP address or network is not allowed."}
+      ],
+      "note": "The IP rule, read literally, would forbid one trader working 5 Earning accounts from one home network; in context (shared/coordinated access) it targets several people. A question to put to the firm's support in writing before relying on 5 accounts from one IP - not resolvable from the pages."},
+    "inactivity_rule": {"value": "breach after 21 consecutive days with no trade (countdown from purchase)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "If 21 consecutive days pass without placing a single trade, the account is considered inactive and breached."}
+      ]},
+    "copy_trading_terms": {"value": "own accounts only, up to 5 challenges or 5 earning accounts, manual or automatic; copier failures are the trader's risk; >5 accounts on the same strategy can block upgrades", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "You may only copy from your own accounts. Copying from other traders or sources is prohibited. Copying between Futures Challenges and Futures Earning accounts is allowed."},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Running the same strategy across more than 5 accounts can lead to upgrades being denied."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "Copy Trading / Trade Coordination: Coordinated trading, or copying the trades of other traders or accounts;"}
+      ],
+      "note": "The GTC wording 'copying the trades of other ... accounts' reads broader than the help centre's own-account allowance; GTC 6.6 points to the Help Center as the up-to-date list."},
+    "cross_account_hedging": {"value": "prohibited (same instrument or correlated instruments, within or across accounts; also coordinated external hedging with other firms)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "A BUY and a SELL held at the same time is prohibited."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, 6.8.1", "page_date": "V5.08.26", "text": "in particular coordinated external hedging, copy trading, or arbitrage strategies carried out across accounts held with TTP, with Affiliated Companies, or with third-party proprietary trading firms or brokers"}
+      ]},
+    "news_trading_terms": {"value": "CONFLICT: allowed (help centre, Prime rules) vs. no opening/closing within 2 minutes of a high-impact release (GTC Schedule B 'News Bracketing'); pattern of trading only around news may be reviewed", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "If our Risk Team identifies a consistent pattern of trading exclusively around news events in a way that resembles gambling behavior, excessive risk-taking, or an attempt to exploit extreme market volatility rather than sustainable trading performance, the Risk Team reserves the right to review the account and take appropriate measures in accordance with our Terms & Conditions."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "News Bracketing: Placing or opening orders in anticipation of the release of high-impact economic data or events; in particular, opening or closing positions within two (2) minutes before or after such a release is prohibited;"}
+      ]},
+    "automation_terms": {"value": "Schedule B practices banned whether manual or automated; EAs with prohibited functions and manipulative automated tools banned; HFT banned; no blanket ban on automation found", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "Except where stated otherwise, the practices below are prohibited regardless of whether they are carried out manually or by automated means."},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Not allowed on any account: executing multiple trades per second, dozens of trades within a minute, rapid-fire entries and exits, or any attempt to exploit speed, latency or feed delays."}
+      ]},
+    "sizing_or_gambling_terms": {"value": "gambling policy (overleveraging, overexposure, one-sided bets, hyperactivity); impermissible risk allocation; lot-size manipulation; account rolling (>40% of net profit from one trade/day is a warning sign)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-gambling.txt", "url": "https://support.thetradingpit.com/en/articles/835071-gambling-policy", "article_id": "835071", "page_date": "October 2, 2026", "text": "One-Sided Bets — avoid trading predominantly in one direction without proper market analysis."},
+        {"file": "raw/tradingpit/terms.txt", "url": "https://www.thetradingpit.com/general-terms-and-conditions", "article_id": "GTC V5.08.26, Schedule B", "page_date": "V5.08.26", "text": "Lot Size Manipulation: Using significantly smaller lot sizes after a large trade with the aim of formally meeting minimum trading-day requirements;"},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "One trade or one day produces more than 40% of the net profit."}
+      ]},
+    "other_conduct_bearing": {"value": "no overnight/weekend positions (force-closed 14:55 CT); micro-scalping flag (> 50% of profit from trades <= 15 s); personal device only, one account per IP/network; Replikanto only in Compliance Edition; temporary micro commodity limits", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Any position still open 5 minutes before the market close (14:55 CT) is force-closed by our Risk Team."},
+        {"file": "raw/tradingpit/a-device-ip.txt", "url": "https://support.thetradingpit.com/en/articles/835070-trading-device-ip-network-policy", "article_id": "835070", "page_date": "October 2, 2026", "text": "Personal Device Only — all trading must be carried out from a personal device used exclusively by the account holder."},
+        {"file": "raw/tradingpit/a-prime-rules.txt", "url": "https://support.thetradingpit.com/en/articles/836071-futures-prime-rules", "article_id": "836071", "page_date": "Updated over a week ago", "text": "Not mandatory on every trade, but strongly recommended."}
+      ],
+      "note": "Stops/targets: 'not mandatory ... strongly recommended' - bracket orders are welcome."},
+    "permitted_products": {"value": "CME equity index futures ES, NQ, YM, RTY and micros (plus FX, energy, metals, ags, rates, micro crypto, Eurex)", "status": "verified",
+      "quotes": [
+        {"file": "raw/tradingpit/a-prime-platforms.txt", "url": "https://support.thetradingpit.com/en/articles/836080-futures-prime-platforms-conditions", "article_id": "836080", "page_date": "Updated over a week ago", "text": "Equity indices (ES, NQ, YM, RTY and their micros)."},
+        {"file": "raw/tradingpit/a-prime-platforms.txt", "url": "https://support.thetradingpit.com/en/articles/836080-futures-prime-platforms-conditions", "article_id": "836080", "page_date": "Updated over a week ago", "text": "Standard and mini contracts: $0.50 per contract."}
+      ]}
+  }
+}
