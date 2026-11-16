@@ -42,7 +42,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | worktree | branch | task | state |
 |---|---|---|---|
 | wt-verify | wt/wt-verify | Q-16 the calibrated statistic (`docs/briefs/Q-16_2026-11-15.md`) | running |
-| wt-levels | wt/wt-levels | Q-50 F-02's fourth draft | running |
+| wt-levels | wt/wt-levels | F-02: strike the reverse walk-forward purpose (E-032 (1)); then waits for Q-16 | running |
 | wt-user | wt/wt-user | -- (Q-40 done, E-029) | idle |
 | wt-features | wt/wt-features | -- (Q-22/Q-18 built, E-026; their runs are the lead's, under the lock) | idle |
 | wt-lit | wt/wt-lit | -- (Q-38 drafted, pin deferred, E-028) | idle |
