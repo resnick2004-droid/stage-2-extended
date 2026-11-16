@@ -70,7 +70,9 @@ note_ledger_appends`, Q-97; the writer applies it to every write inside a clean 
 `lift_bound.py` other than the validated blob; any seed of E-052's block named elsewhere -- in code, data, a result or
 a declaration, on any branch or in the working tree (a document's mention, or a declaration's line that cites this run
 by Q-82, Q-83 or E-052, is printed, not refused) -- in which case the run stops and no other seeds are picked; a work
-folder inside the tree; a calendar of other than 657 sessions.
+folder inside the tree; a calendar of other than 657 sessions. After Q-83 (Q-82b, E-093) the block is spent by this
+run: its own result files (`results/q82_*`, each manifest naming this script as the writer) are printed, not refused,
+and a second run is refused anyway by the results that exist.
 """
 from __future__ import annotations
 
@@ -224,10 +226,36 @@ def _is_use(path: str, lines: list[str]) -> bool:
     return False
 
 
+#: this run's own result files (Q-82b, E-093): after Q-83 the block is spent by its one declared run, and its results
+#: record their seeds -- they may name the block, but only where the result's manifest names this script as its writer
+OWN_RESULT = re.compile(r"results/(q82_[A-Za-z0-9_]+)\.csv(?:\.manifest\.json)?")
+
+
+def _own_result(git, repo: Path, where: str, path: str) -> bool:
+    """Whether `path` is one of this run's result files (a CSV or its manifest) whose manifest, in the same tree,
+    names `SCRIPT` as its writer and the CSV as its result file."""
+    m = OWN_RESULT.fullmatch(path)
+    if not m:
+        return False
+    man = f"results/{m.group(1)}.csv.manifest.json"
+    if where == "working tree":
+        p = repo / man
+        text = p.read_text(encoding="utf-8", errors="replace") if p.is_file() else None
+    else:
+        r = git("show", f"{where}:{man}")
+        text = r.stdout if r.returncode == 0 else None
+    try:
+        rec = json.loads(text) if text else None
+    except ValueError:
+        return False
+    return isinstance(rec, dict) and rec.get("script") == SCRIPT and rec.get("result_file") == f"{m.group(1)}.csv"
+
+
 def seed_block_problems(repo: Path | str = ROOT) -> tuple[list[str], list[str]]:
     """(problems, notes): every file naming a seed of E-052's block (word-bounded) on any branch, remote or tag, or in
     the working tree (tracked or untracked, not ignored), outside this item's files. A use is a problem; a document's
-    mention, or a declaration's line citing this run, a note."""
+    mention, a declaration's line citing this run, or one of this run's own result files (`results/q82_*`, its
+    manifest naming this script -- the block spent by its one run, Q-82b), a note."""
     repo = Path(repo)
 
     def git(*a: str) -> subprocess.CompletedProcess:
@@ -258,6 +286,9 @@ def seed_block_problems(repo: Path | str = ROOT) -> tuple[list[str], list[str]]:
     for (where, path), lines in hits.items():
         path = path.replace("\\", "/")
         if path in SEED_ALLOW or path.startswith(SEED_ALLOW_PREFIXES):
+            continue
+        if _own_result(git, repo, where, path):
+            notes.add(f"{path} ({where}): this run's result, its manifest naming {SCRIPT}")
             continue
         (problems if _is_use(path, lines) else notes).add(f"{path} ({where})")
     return sorted(problems), sorted(notes)
