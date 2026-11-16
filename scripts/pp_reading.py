@@ -13,8 +13,10 @@ its reads authorised under the declaration's three purposes, after its identitie
   RD-02's own identity `pp_identity`, Q-80, Q-93, Q-101 and the two-worker check `t10w2`), a row of `DECISIONS.md`
   records it holding, by position -- the row beginning `| E-NNN | YYYY-MM-DD | identity-holds: <id> @ <sha> -- <text> |`,
   no backticks, `<sha>` the 40-hex commit it held at -- at a commit that is this run's HEAD or an ancestor of it, with
-  none of the files that identity covers (the code it certifies, `WAITS`) changed since (`held`). A string of that shape
-  anywhere else in a row is never a token. The rows met are named in every manifest (r4). `--workers` above 2 is
+  none of the files that identity covers (the code it certifies, `WAITS`) changed since -- read by the one parser,
+  `extended/identity_tokens.py` (Q-110): `IT.problems` must find no breach of the rule before any wait is read, and each
+  wait is `IT.held`, its reason given by `IT.held_report` where it is not met. A string of that shape anywhere else in
+  a row is never a token. The rows met are named in every manifest (r4). `--workers` above 2 is
   refused, and 2 only once `t10w2` is met (r5);
 * unless Q-44's per-start file is on the tree and verifies (8.1 item 6), and the inputs' preflight holds (Q-44's file
   read as text with its columns and rows; each design's registered gate row, one a shift);
@@ -40,7 +42,6 @@ every cell "described, not carried".
 from __future__ import annotations
 
 import argparse
-import re
 import subprocess
 import sys
 import time
@@ -61,15 +62,10 @@ SCRIPT = "scripts/pp_reading.py"
 VENDOR = ROOT / "vendor" / "stage2"
 RESULTS = ("pp_reading", "pp_gate", "pp_menu")
 MAX_WORKERS = 2
-#: D1 (E-104): a row recording that an identity holds, by position -- its id, its date, then the text column beginning
-#: with the prefix, the identity's id (a queue id or a lowercase label), " @ ", the 40-hex commit it held at, " -- "
-#: and the row's own words
-TOKEN_PREFIX = "identity-holds:"
-TOKEN_ROW = re.compile(r"^\| (E-\d+) \| (\d{4}-\d{2}-\d{2}) \| " + re.escape(TOKEN_PREFIX)
-                       + r" (Q-\d+[a-z]?|[a-z][a-z0-9_]*) @ ([0-9a-f]{40}) -- \S")
 VENDOR_PINS = ("vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
 #: section 14's waits: each waited identity, what it certifies, and the files it covers -- the code it certifies, so a
-#: wait is met only at a commit with none of them changed since (D1)
+#: wait is met only at a commit with none of them changed since (D1; every path real at HEAD, `IT.held` refuses one
+#: that is not)
 WAITS: dict[str, tuple[str, tuple[str, ...]]] = {
     "pp_identity": ("RD-02's own identity (8.1 items 1 to 3, item 4 on its paths and starts, item 6 at ref): the "
                     "reference policy through the whole adapter and RealInputs, the reading's step 1",
@@ -94,60 +90,39 @@ def _git(repo: Path | str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
 
 
-def tokens(text: str) -> list[dict[str, str]]:
-    """Every positional identity token of `text` (DECISIONS.md): {row, date, id, sha}, in the file's order."""
-    out = []
-    for line in text.splitlines():
-        m = TOKEN_ROW.match(line)
-        if m:
-            out.append({"row": m.group(1), "date": m.group(2), "id": m.group(3), "sha": m.group(4)})
-    return out
+def wait_rows(text: str, repo: Path | str, head: str, waits: dict | None = None) -> dict[str, Any]:
+    """{waited identity: the newest row's token meeting its wait at `head` (`IT.held`), or None} (`waits`: `WAITS`, or a
+    test's)."""
+    from extended import identity_tokens as IT
 
-
-def held(text: str, ident: str, repo: Path | str, head: str, covered: Sequence[str]) -> list[str]:
-    """D1, in the shared parser's form (Q-110's `extended/identity_tokens.held` replaces this when it reaches master):
-    the ids of the rows of `text` whose positional token records `ident` holding at a commit that is `head` or an
-    ancestor of it in `repo`, with none of the `covered` paths changed between that commit and `head`. Empty when the
-    wait is not met; an unknown commit is not met."""
-    if not covered:
-        raise ValueError(f"{ident}: a wait covers at least one file")
-    out = []
-    for t in tokens(text):
-        if t["id"] != ident:
-            continue
-        if _git(repo, "merge-base", "--is-ancestor", t["sha"], head).returncode != 0:
-            continue
-        if _git(repo, "diff", "--quiet", t["sha"], head, "--", *covered).returncode != 0:
-            continue
-        out.append(t["row"])
-    return out
-
-
-def wait_rows(text: str, repo: Path | str, head: str, waits: dict | None = None) -> dict[str, list[str]]:
-    """{waited identity: the rows meeting its wait at `head`} (`waits`: `WAITS`, or a test's)."""
-    return {k: held(text, k, repo, head, cov) for k, (_, cov) in (WAITS if waits is None else waits).items()}
+    return {k: IT.held(text, k, repo, head, list(cov)) for k, (_, cov) in (WAITS if waits is None else waits).items()}
 
 
 def wait_problems(text: str, workers: int, repo: Path | str, head: str, waits: dict | None = None) -> list[str]:
-    """Section 14's waits (D1, r5): each met at `head`, every covered file present there; one or two workers, two only
-    once `t10w2` is met (`waits`: `WAITS`, or a test's)."""
+    """Section 14's waits (D1, r5), through Q-110's parser (`extended/identity_tokens.py`): DECISIONS.md breaches none
+    of the tokens' rules (`IT.problems`) -- checked before any wait is read, and a breach refuses; then each wait met at
+    `head` (`IT.held_report`, its reason given where it is not; a covered path not at `head` refuses); one or two workers,
+    two only once `t10w2` is met (`waits`: `WAITS`, or a test's)."""
+    from extended import identity_tokens as IT
+
     waits = WAITS if waits is None else waits
+    breaches = IT.problems(text)
+    if breaches:
+        return [f"DECISIONS.md breaches the identity-holds rule, so no wait is read: {b}" for b in breaches]
     out = []
-    for k, (_, cov) in waits.items():
-        absent = [f for f in cov if _git(repo, "cat-file", "-e", f"{head}:{f}").returncode != 0]
-        if absent:
-            out.append(f"the wait for {k}: its covered files {absent} are not in {head[:12]}")
-    got = wait_rows(text, repo, head, waits)
-    for k, (what, _) in waits.items():
-        if got.get(k):
+    met: dict[str, Any] = {}
+    for k, (what, cov) in waits.items():
+        try:
+            tok, why = IT.held_report(text, k, repo, head, list(cov))
+        except ValueError as exc:
+            out.append(f"the wait for {k}: {exc}")
             continue
-        stale = [t["row"] for t in tokens(text) if t["id"] == k]
-        out.append(f"the wait for {k} ({what}) is not met at {head[:12]}" +
-                   (f": rows {stale} record it at a commit that is not this run's or its ancestor, or since which its "
-                    "covered files changed" if stale else ": no row records it holding"))
+        met[k] = tok
+        if tok is None:
+            out.append(f"the wait for {k} ({what}) is not met at {head[:12]}: " + "; ".join(why))
     if int(workers) < 1 or int(workers) > MAX_WORKERS:
         out.append(f"--workers {workers}: one or {MAX_WORKERS} only (the machine's rule)")
-    if int(workers) > 1 and not got.get("t10w2"):
+    if int(workers) > 1 and met.get("t10w2") is None:
         out.append(f"--workers {workers}: two workers need T-10 held at two workers (the wait for t10w2, r5)")
     return out
 
@@ -212,8 +187,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"REFUSED (RD-02, section 14): the reading runs only from a clean checkout -- {prob}")
             print("EXIT 3", flush=True)
             return 3
-        probs = wait_problems(text, a.workers, ROOT, head)
-        waits = wait_rows(text, ROOT, head)
+        probs = wait_problems(text, a.workers, ROOT, head)      # IT.problems first, then every wait (D1)
+        waits = wait_rows(text, ROOT, head) if not probs else {}
         limits, limit_rows_used, lp = RUN.limit_rows(text)        # D5: from the operator's approving rows only
         probs += lp
         q44 = ROOT / "results" / "user_beside_starts.csv"
@@ -252,9 +227,10 @@ def main(argv: list[str] | None = None) -> int:
     params = {
         "reading": "RD-02 (reading PP): described, not carried", "pinning_row": RUN.PIN_ROW,
         "declaration": RUN.DECLARATION, "declaration_sha256_lf": RUN.sha256_lf(ROOT / RUN.DECLARATION),
-        "waits": ({k: {"what": what, "covered": list(cov), "rows": waits.get(k, []),
-                       "commits": [t["sha"] for t in tokens(text) if t["row"] in waits.get(k, []) and t["id"] == k]}
+        "waits": ({k: {"what": what, "covered": list(cov),
+                       "row": waits[k].row if waits.get(k) else None, "commit": waits[k].sha if waits.get(k) else None}
                    for k, (what, cov) in WAITS.items()} if not a.synthetic else "the synthetic run waits for nothing"),
+        "token_parser": "extended/identity_tokens.py (Q-110, E-104)",
         "head": head,
         "runs": [list(r) for r in runs], "run_count": len(runs),
         "run_counts": {"policy_runs": sum(1 for r in runs if r[2] == "declared"),

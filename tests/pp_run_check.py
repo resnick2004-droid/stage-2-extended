@@ -12,11 +12,13 @@ one section a process (the vendored engine on this process's `sys.path`):
   the gate file's parts.
 * `refusals` -- a planted identity failure and a planted ladder failure each refuse and write nothing; the real mode
   outside a clean run refuses before anything; a protected results folder is refused; there is no `--limit` option.
-* `waits` -- D1 (E-104), r4, r5: a positional token (`identity-holds: <id> @ <sha> -- <text>`, the row's own
-  statement) meets its wait only at a commit that is HEAD or its ancestor with its covered files unchanged, on a
-  throwaway git repository; the same shape quoted, in backticks, bold, in a later column, without a full commit, or as
-  the third read's C.1 row describing the tokens, never does; this tree's DECISIONS.md meets no wait today; every covered
-  file is tracked; the workers' rule and the rows named.
+* `waits` -- D1 (E-104), r4, r5, through Q-110's parser (`extended/identity_tokens.py`): a positional token
+  (`identity-holds: <id> @ <sha> -- <text>`, the row's own statement) meets its wait only at a commit that is HEAD or
+  its ancestor with its covered files unchanged, on a throwaway git repository; the same shape quoted, in backticks,
+  bold, in a later column, without a commit, in a row that never says it held, or as the third read's C.1 row
+  describing the tokens, never does; a breach of the rule (`IT.problems`) refuses before any wait is read; this
+  tree's DECISIONS.md breaches nothing and meets no wait today; every covered path is tracked; the workers' rule
+  and the rows named.
 * `limits` -- D5 (E-104): E-015's limits read only from the operator's approving rows (`e015-limits: ...`, positional);
   a row only mentioning E-015, a quoted one or one in a later column gives none; a malformed one refuses; a crossing is
   shown with its limit and by how much.
@@ -283,60 +285,77 @@ def _token_row(rid: str, ident: str, sha: str, words: str = "the identity's HOLD
 
 
 def section_waits() -> None:
-    """D1 (E-104): the waits by position, tied to the commit and its covered files; r4, r5."""
+    """D1 (E-104): the waits by position, tied to the commit and its covered files, through Q-110's parser
+    (`extended/identity_tokens.py`); r4, r5."""
     import pp_reading as S
+
+    from extended import identity_tokens as IT
 
     d, sh = _repo(TMP / "repo")
     cov = ["cov.py"]
-    held = S.held
-    # the positional token at a commit that is HEAD or its ancestor, the covered file unchanged since: held
-    check(held(_token_row("E-901", "pp_identity", sh["b"]), "pp_identity", d, sh["b"], cov) == ["E-901"],
+
+    def row_of(text: str, ident: str, head: str) -> str | None:
+        t = IT.held(text, ident, d, head, cov)
+        return None if t is None else t.row
+
+    # the positional token at a commit that is HEAD or its ancestor (full or short sha), the covered file unchanged
+    check(row_of(_token_row("E-901", "pp_identity", sh["b"]), "pp_identity", sh["b"]) == "E-901",
           "D1: a token at HEAD itself is not held")
-    check(held(_token_row("E-901", "pp_identity", sh["a"]), "pp_identity", d, sh["b"], cov) == ["E-901"],
+    check(row_of(_token_row("E-901", "pp_identity", sh["a"]), "pp_identity", sh["b"]) == "E-901",
           "D1: a token at an ancestor with its covered file unchanged is not held")
-    # ... and not held when: the covered file changed since; the commit not an ancestor; an unknown commit; another id
-    check(held(_token_row("E-901", "pp_identity", sh["a"]), "pp_identity", d, sh["c"], cov) == [],
+    check(row_of(_token_row("E-901", "pp_identity", sh["b"][:12]), "pp_identity", sh["b"]) == "E-901",
+          "D1: a token at HEAD's short sha is not held")
+    check(row_of(_token_row("E-901", "Q-80", sh["b"]), "Q-80", sh["b"]) == "E-901", "D1: a queue id's token")
+    # ... and not held when: the covered file changed since; not an ancestor; an unknown commit; another identity's
+    check(row_of(_token_row("E-901", "pp_identity", sh["a"]), "pp_identity", sh["c"]) is None,
           "D1: a token whose covered file changed since its commit is held")
-    check(held(_token_row("E-901", "pp_identity", sh["x"]), "pp_identity", d, sh["b"], cov) == [],
+    check(row_of(_token_row("E-901", "pp_identity", sh["x"]), "pp_identity", sh["b"]) is None,
           "D1: a token at a commit that is not HEAD's ancestor is held")
-    check(held(_token_row("E-901", "pp_identity", "0" * 40), "pp_identity", d, sh["b"], cov) == [],
+    check(row_of(_token_row("E-901", "pp_identity", "0" * 40), "pp_identity", sh["b"]) is None,
           "D1: a token at an unknown commit is held")
-    check(held(_token_row("E-901", "t10w2", sh["b"]), "pp_identity", d, sh["b"], cov) == [],
+    check(row_of(_token_row("E-901", "t10w2", sh["b"]), "pp_identity", sh["b"]) is None,
           "D1: another identity's token met this wait")
-    check(held(_token_row("E-901", "Q-80", sh["b"]), "Q-80", d, sh["b"], cov) == ["E-901"], "D1: a queue id's token")
     # the shape anywhere but the row's own statement is never a token (the third read's C.1 among them)
     good = _token_row("E-901", "pp_identity", sh["b"])
     bad_rows = {
         "C.1: a row describing the tokens": f"| E-103 | 2026-11-16 | **The tokens for the two waits without a Q-id: "
                                             f"{TOK} pp_identity @ {sh['b']} -- and {TOK} t10w2 @ {sh['b']} -- nothing "
-                                            "was run.** | basis |",
+                                            "was run, nothing held.** | basis |",
         "in backticks": good.replace(f"{TOK} pp_identity @ {sh['b']} --", f"`{TOK} pp_identity @ {sh['b']}` --"),
         "in quotation marks": good.replace(f"{TOK} pp_identity", f"\"{TOK} pp_identity").replace(" -- the", "\" -- the"),
         "bold": good.replace(f"| {TOK}", f"| **{TOK}"),
-        "in a later column": f"| E-901 | 2026-11-17 | the row's words | {TOK} pp_identity @ {sh['b']} -- x |",
+        "in a later column": f"| E-901 | 2026-11-17 | the row's words | {TOK} pp_identity @ {sh['b']} -- held |",
         "no commit": f"| E-901 | 2026-11-17 | {TOK} pp_identity -- held |",
-        "a short commit": f"| E-901 | 2026-11-17 | {TOK} pp_identity @ {sh['b'][:12]} -- held |",
         "an upper-case label": _token_row("E-901", "PP_identity", sh["b"]),
         "no words after": f"| E-901 | 2026-11-17 | {TOK} pp_identity @ {sh['b']} |",
         "no date column": f"| E-901 | {TOK} pp_identity @ {sh['b']} -- held |",
         "a near id": _token_row("E-901", "pp_identity2", sh["b"]),
+        "a row that never says it held": _token_row("E-901", "pp_identity", sh["b"], words="written, not yet run"),
     }
     for what, row in bad_rows.items():
-        check(held(row, "pp_identity", d, sh["b"], cov) == [] and held(row, "t10w2", d, sh["b"], cov) == [],
+        check(row_of(row, "pp_identity", sh["b"]) is None and row_of(row, "t10w2", sh["b"]) is None,
               f"D1: a row with the shape {what} met a wait: {row}")
-    # the waits on this tree's DECISIONS.md: none met today (no row records a holding identity in the form yet)
+    # a breach of the rule anywhere in DECISIONS.md refuses before any wait is read (IT.problems first)
+    toy = {k: (f"the toy {k}", ("cov.py",)) for k in ("pp_identity", "Q-80", "t10w2")}
+    rows = "\n".join(_token_row(f"E-9{i:02d}", k, sh["b"]) for i, k in enumerate(toy))
+    for what, extra in (("C.1's row", bad_rows["C.1: a row describing the tokens"]), ("a bold token", bad_rows["bold"]),
+                        ("a row that never says it held", bad_rows["a row that never says it held"])):
+        p = S.wait_problems(rows + "\n" + extra, 1, d, sh["b"], toy)
+        check(p and all("breaches the identity-holds rule" in q for q in p),
+              f"D1: with {what} in DECISIONS.md the waits were read: {p}")
+    # the waits on this tree's DECISIONS.md: no breach, and none met today (no row records a holding identity yet)
     text = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
+    check(IT.problems(text) == [], f"this tree's DECISIONS.md breaches the rule: {IT.problems(text)[:3]}")
     head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     probs = S.wait_problems(text, 1, REPO, head)
-    check(sum("is not met" in p for p in probs) == len(S.WAITS), f"not every wait is refused on this tree: {probs}")
-    for k, (_, covered) in S.WAITS.items():                   # each covered file tracked, so a wait can never be vacuous
+    check(sum("is not met" in p for p in probs) == len(S.WAITS) and not any("is not in" in p for p in probs),
+          f"not every wait is refused for want of a token on this tree (or a covered path is absent): {probs}")
+    for k, (_, covered) in S.WAITS.items():                   # each covered path tracked, so a wait can never be vacuous
         for f in covered:
             r = subprocess.run(["git", "-C", str(REPO), "ls-files", "--error-unmatch", f], capture_output=True)
             check(r.returncode == 0, f"the wait for {k} covers {f}, which is not a tracked file")
     # the whole rule on the throwaway repository with toy waits: every wait met, the workers' rule (r5), the rows named
-    # (r4), a stale token reported, a covered file absent at HEAD refused
-    toy = {k: (f"the toy {k}", ("cov.py",)) for k in ("pp_identity", "Q-80", "t10w2")}
-    rows = "\n".join(_token_row(f"E-9{i:02d}", k, sh["b"]) for i, k in enumerate(toy))
+    # (r4), a stale token's reason given, a covered path absent at HEAD refused
     p = S.wait_problems(rows, 1, d, sh["b"], toy)
     check(p == [], f"the waits met were refused: {p}")
     check(S.wait_problems(rows, 2, d, sh["b"], toy) == [], "two workers with t10w2 met were refused")
@@ -345,13 +364,18 @@ def section_waits() -> None:
     p = S.wait_problems(no_t10, 2, d, sh["b"], toy)
     check(any("two workers need" in q for q in p) and any("t10w2" in q and "is not met" in q for q in p),
           f"two workers without t10w2 were not refused: {p}")
-    check(any("is not met" in q and "rows" in q for q in S.wait_problems(rows, 1, d, sh["c"], toy)),
-          "a stale token (its covered file changed since its commit) is not reported as stale")
+    stale = "\n".join(_token_row(f"E-9{i:02d}", k, sh["a"]) for i, k in enumerate(toy))
+    p = S.wait_problems(stale, 1, d, sh["c"], toy)
+    check(len(p) == 3 and all("is not met" in q and "changed since" in q for q in p),
+          f"a stale token's reason (its covered file changed since its commit) is not given: {p}")
     gone = {"pp_identity": ("the toy", ("cov.py", "gone.py"))}
-    check(any("are not in" in q for q in S.wait_problems(rows, 1, d, sh["b"], gone)), "an absent covered file passed")
+    check(any("is not in" in q for q in S.wait_problems(rows, 1, d, sh["b"], gone)), "an absent covered path passed")
     got = S.wait_rows(rows, d, sh["b"], toy)
-    check(got == {"pp_identity": ["E-900"], "Q-80": ["E-901"], "t10w2": ["E-902"]}, f"the rows named: {got}")
-    out["waits"] = {"waits": list(S.WAITS), "covered": {k: len(v[1]) for k, v in S.WAITS.items()}}
+    check({k: (t.row if t else None) for k, t in got.items()} == {"pp_identity": "E-900", "Q-80": "E-901",
+                                                                 "t10w2": "E-902"}, f"the rows named: {got}")
+    newer = rows + "\n" + _token_row("E-950", "pp_identity", sh["a"])
+    check(S.wait_rows(newer, d, sh["b"], toy)["pp_identity"].row == "E-950", "the newest holding row is not the one named")
+    out["waits"] = {"waits": {k: list(v[1]) for k, v in S.WAITS.items()}}
 
 
 def section_limits() -> None:
