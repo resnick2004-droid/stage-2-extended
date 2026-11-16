@@ -93,3 +93,7 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-088: RD-02's build done (synthetic; two-worker checks not run under the memory guard); a red-team read of the build before its merge; its runner Q-105b running. |
 | 2026-11-16 | lead | E-089: RD-01's build done (synthetic; ten build choices to be tested); a red-team read before its merge; its runner Q-104b running. |
 | 2026-11-16 | lead | E-090: RD-02's build review -- fix first (a gate test that never exercised the rule; five minors), all adopted; Q-105c running. |
+| 2026-11-16 | lead | **E-091: Q-83 collected -- the one-sample `cons` FAILS its fresh-seed validation; the two two-sample forms hold.** F-02 cannot pin on it (withdrawn before any read, no k spent, once the audit confirms); family O's pin waits for the audit; the diagnosis comes first. |
+| 2026-11-16 | lead | E-092: RD-01's build review -- fix first (the tier-1 booking, Fast Pass's held reading, Quick Pay's won-at-R on shifted arms; five minors), all adopted; Q-104c running. |
+| 2026-11-16 | lead | **E-093..E-095: Q-83 audited -- the one-sample `cons` fails on one persistent thinned null (the selection-on-draws effect); F-02 withdrawn unread; family O pinned as F-03 (k = 12, s3 dropped).** The one-sample re-calibration Q-108 next; the queue reordered by memory. |
+| 2026-11-16 | lead | E-096: RD-02's runner built and its build's review fixed; the red team re-reads the diff before the merge. |

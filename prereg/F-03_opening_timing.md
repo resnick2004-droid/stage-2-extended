@@ -1,4 +1,4 @@
-# F-XX: a side-free timing filter for the funded account's 3R opening (family O)
+# F-03: a side-free timing filter for the funded account's 3R opening (family O)
 
 **Status: declared before anything of it is built or read.** It is pinned by the sha256 of its LF text in its decision
 row. Nothing declared is edited: a change is a new family under a new row. No bar, walk, trade or result value has been
@@ -50,7 +50,7 @@ A, on the choice block, in history's order (5.5).
 | field | value |
 |---|---|
 | family | O: a side-free timing filter for a newly funded account's 3R opening -- the opening keeps P-16's coin side and waits, at most W sessions, for a state that predicts persistent moves |
-| id | F-XX (`prereg/F-NN_opening_timing.md` at the pin) |
+| id | F-03 (`prereg/F-NN_opening_timing.md` at the pin) |
 | program family number k | **written in the pinning row only: the next free at the pin, k >= 12** -- F-01 spent 10 (E-007 (a)); F-02 holds 11 (E-045 (4)); family B's draft is ahead of this one; family R's draft is held unpinned (E-028 (2)); described readings take none (E-023 (1)) |
 | level | one-sided **0.05 / (k (k + 1))** at the pinning row's k: 0.05 / 156 at k = 12, 0.05 / 182 at k = 13, 0.05 / 210 at k = 14, 0.05 / 240 at k = 15 |
 | the pass-line code | `extended/lift_bound.py` blob `984f3467a4a05aa790d3ea43e94ac7761f0725b2`, `extended/p_bound.py` blob `f5b29710e243f97a2795e57f6458512fea99199b` (E-052) |
