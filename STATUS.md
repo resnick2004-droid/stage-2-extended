@@ -43,7 +43,9 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | Q-24 the red team on F-02's draft | running |
 | wt-user | wt/wt-user | Q-17 the readings beside the user scorecard, then Q-20 (`docs/briefs/Q-17_2026-11-15.md`) | running |
 | wt-features | wt/wt-features | -- (Q-11 done, E-016) | idle |
-| wt-firms | wt/wt-firms | -- (Q-19 done, E-012) | idle |
+| wt-firms | wt/wt-firms | Q-26 the short-ranked firms' terms | running |
+| wt-payout | wt/wt-payout | Q-25 a payout-policy family's draft | running |
+| wt-report | wt/wt-report | Q-27 the dispersion report | running |
 | wt-scout | wt/wt-scout | Q-23 the red team on family B's draft | running |
 
 ## Running now

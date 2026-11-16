@@ -41,6 +41,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-22 | P-15's U1 start rows reproduced (the identity's 25-point coin, for the 25-point scorecard; as E-010's for P-14 and P-16) | wt-verify | queued | Q-16 | heavy | 0 | E-016 |
 | Q-23 | The red team on family B's draft (`prereg/DRAFT_F-B_multifeature.md`), then the gatekeeper once Q-16 is merged | wt-scout | running | Q-11 | light | 0 | E-016 |
 | Q-24 | The red team on F-02's draft (`prereg/DRAFT_F-02_resting_levels.md`), then the gatekeeper once Q-16 is merged | wt-levels | running | Q-21 | light | 0 | E-017 |
+| Q-25 | **A payout-policy family drafted** (how much to withdraw and when in a user's first months; same trades as P-14, so a paired comparison): `prereg/DRAFT_F-P_payout_policy.md`; its pass line for a same-trades lever proposed and marked the operator's | wt-payout | running (`docs/briefs/Q-25_2026-11-15.md`) | E-015 | light | 0 | -- |
+| Q-26 | The short-ranked firms' terms recorded on their own pages (rules-verifier), for a solver-only contract-fit read (family C) | wt-firms | running (`docs/briefs/Q-26_2026-11-15.md`) | Q-12 | light | 0 | E-009 |
+| Q-27 | **The dispersion report**: `scripts/build_report.py` -- the journey table, a fan chart of cumulative net, the break-even curve, payout sizes and gaps, the evenness trade-off, the denial ladder; every number traced | wt-report | running (`docs/briefs/Q-27_2026-11-15.md`) | E-015 | light | 0 | -- |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
