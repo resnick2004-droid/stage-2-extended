@@ -7,7 +7,8 @@ What is asserted:
   in the map, and no seed literal of the block appears in the script outside its seed map;
 - **the block is unused elsewhere**: the run's own check refuses a file that names a seed of the block outside the
   item's files (code, data, results or a declaration, on any branch), not a document's mention; and it holds on this
-  repository as it stands;
+  repository as it stands; after the run (Q-82b, E-093) its own results (`results/q82_*`, the manifest naming the
+  script) may name the block, and a stray use in code, tests or another result file is still refused;
 - **the criterion** (fixed in E-052): per statistic, HOLDS only if at every k in 11..15 no real or realistic null's 95 %
   interval (recomputed from the counts) lies wholly above nominal; FAILS on one such null; NOT CHECKED when a null is
   missing; the count-persistent rows and the members never move it;
@@ -196,6 +197,59 @@ def test_the_seed_block_check(q82, tmp_path):
     (t / "uses.py").write_text("rng = default_rng(20262014)\n", encoding="utf-8")   # uncommitted, untracked
     probs, _ = q82.seed_block_problems(t)
     assert any(p.startswith("uses.py") or "uses.py" in p for p in probs)
+
+
+def _result(d: Path, name: str, script: str, result_file: str | None = None) -> None:
+    """A result file and its manifest as the writer leaves them, its seed recorded."""
+    (d / "results").mkdir(exist_ok=True)
+    (d / "results" / f"{name}.csv").write_text("null,seed\nx,20262011\n", encoding="utf-8")
+    (d / "results" / f"{name}.csv.manifest.json").write_text(json.dumps(
+        {"result_file": result_file or f"{name}.csv", "script": script, "seed": 20262011,
+         "parameters": {"seeds": {"lift_real": 20262011}}}, indent=2), encoding="utf-8")
+
+
+def test_after_the_run_its_results_may_name_the_block_and_nothing_else_may(q82, tmp_path):
+    """Q-82b (E-093): once Q-83 has run, its results (`results/q82_*`, the manifest naming the script) and the audits'
+    and reviews' documents name the block; a stray use in code or tests, or any other result file, is still refused --
+    in the working tree or on a branch."""
+    t = tmp_path / "repo"
+    t.mkdir()
+    _git(t, "init", "-q", "-b", "master")
+    _git(t, "config", "user.email", "t@example.invalid")
+    _git(t, "config", "user.name", "t")
+    _result(t, "q82_validation_one_sample", "scripts/q82_validation.py")
+    for sub in ("audits", "reviews"):
+        (t / "docs" / sub).mkdir(parents=True)
+        (t / "docs" / sub / "Q-83.md").write_text("Q-83 drew seeds 20262011-20262017\n", encoding="utf-8")
+    _git(t, "add", "-A")
+    _git(t, "commit", "-q", "-m", "the run's results and their audit")
+    probs, notes = q82.seed_block_problems(t)
+    assert probs == [], probs
+    assert any("q82_validation_one_sample.csv (" in n for n in notes)
+    assert any("q82_validation_one_sample.csv.manifest.json" in n for n in notes)
+    # a stray code use and a test that draws from the block: refused, though the run's results stay allowed
+    (t / "extended").mkdir()
+    (t / "extended" / "stray.py").write_text("rng = default_rng([20262013, 1])\n", encoding="utf-8")
+    (t / "tests").mkdir()
+    (t / "tests" / "test_other.py").write_text("SEED = 20262019\n", encoding="utf-8")
+    probs, _ = q82.seed_block_problems(t)
+    assert any("extended/stray.py" in p for p in probs) and any("tests/test_other.py" in p for p in probs)
+    assert not any("q82_validation_one_sample" in p for p in probs)
+    for f in ("extended/stray.py", "tests/test_other.py"):
+        (t / f).unlink()
+    # another result naming the block, a q82_ name written by another script, a q82_ file with no manifest: refused
+    _git(t, "checkout", "-q", "-b", "side")
+    _result(t, "f02_stage_a", "scripts/f02.py")
+    _result(t, "q82_impostor", "scripts/other.py")
+    _result(t, "q82_mislabelled", "scripts/q82_validation.py", result_file="something_else.csv")
+    (t / "results" / "q82_orphan.csv").write_text("seed\n20262012\n", encoding="utf-8")
+    _git(t, "add", "-A")
+    _git(t, "commit", "-q", "-m", "second uses")
+    _git(t, "checkout", "-q", "master")
+    probs, _ = q82.seed_block_problems(t)
+    for bad in ("f02_stage_a.csv", "q82_impostor.csv", "q82_mislabelled.csv", "q82_orphan.csv"):
+        assert any(bad in p and "side" in p for p in probs), (bad, probs)
+    assert not any("q82_validation_one_sample" in p for p in probs)
 
 
 def test_the_seed_block_is_unused_in_this_repository(q82):
