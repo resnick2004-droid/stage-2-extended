@@ -1,0 +1,53 @@
+# config/rules_extended.yaml -- this repository's own record of firm rules verified or re-verified here.
+#
+# Stage 2's verified ledger (vendor/stage2/config/rules.yaml and vendor/stage2/RULES_LEDGER.md) is vendored read-only
+# (E-002) and is never written. A rule read on a firm's official pages in this repository -- a Stage 2 rule re-read,
+# or a rule Stage 2 never had (another firm's contract) -- is recorded HERE, one entry per rule, and in its
+# human-readable table docs/RULES_CURRENCY.md. The rules-verifier agent (`/verify-rule <rule>`) writes both files
+# together, never one alone, and ends its report with the proposed decision row; only the lead appends that row to
+# DECISIONS.md (the single-writer rule, E-005). No rule is loaded by any code of this repository until its row is in.
+#
+# Fields of each entry (keyed by `key`, unique across firms -- prefix another firm's keys with its slug):
+#   key           the rule's key; for a Stage 2 rule, the same key as in vendor/stage2/config/rules.yaml
+#   firm          the firm (topstep, or another firm's slug)
+#   value         the canonical value the code would load (a number, a string, a list), never null when verified
+#   units         usd / contracts / days / share / text ...
+#   status        verified   -- read on the firm's official page on `date_read`; equals `stage2_value` where there is one
+#                 changed    -- read on the official page on `date_read` and DIFFERS from `stage2_value`: the vendored
+#                               engine still carries Stage 2's value, so anything resting on this rule is flagged until
+#                               the lead's decision row says what changes
+#                 unverified -- the official page was unreachable, silent or ambiguous; what was read is in `quote`
+#   article_id    the help-centre article id (or the page's path where the firm has no ids)
+#   url           the official URL read (Topstep: help.topstep.com or topstep.com; another firm: its own domains only)
+#   date_read     YYYY-MM-DD
+#   verified_by   rules-verifier (this repository), with the session or worktree
+#   quote         the sentence or table cell that states the rule, VERBATIM (a block scalar); for `unverified`, what
+#                 the page said and what it did not
+#   stage2_key    where it re-reads a Stage 2 rule: the key in vendor/stage2/config/rules.yaml (else null)
+#   stage2_value  that rule's value in the vendored ledger (else null)
+#   note          optional: the page date, how many fetches, anything a later verifier needs
+#
+# Example shape (not an entry):
+#   - key: combine_profit_target
+#     firm: topstep
+#     value: 3000.0
+#     units: usd
+#     status: verified
+#     article_id: "<id>"
+#     url: https://help.topstep.com/en/articles/<id>-<slug>
+#     date_read: YYYY-MM-DD
+#     verified_by: rules-verifier (stage2-extended)
+#     quote: >
+#       <the official text, verbatim>
+#     stage2_key: combine_profit_target
+#     stage2_value: 3000.0
+
+meta:
+  stage2_ledger: vendor/stage2/config/rules.yaml      # read-only; never written
+  table: docs/RULES_CURRENCY.md
+  official_domains:                                    # the rules-verifier accepts no other host for a firm
+    topstep:
+      - help.topstep.com
+      - topstep.com
+
+rules: []

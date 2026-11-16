@@ -7,4 +7,9 @@ requires-python = ">=3.12"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-markers = ["slow: runs Stage 2's engine (about a minute)"]
+markers = [
+    "slow: runs Stage 2's engine (about a minute)",
+    "heavy: reads the full bars or runs a campaign; one at a time under run.lock",
+]
+# Two tiers. The fast tier -- `-m "not slow and not heavy"` -- is what scripts/pre-commit and the .py-edit hook
+# (scripts/hooks/run_tests.py) run; the whole suite runs in /validate and before any reading is believed.

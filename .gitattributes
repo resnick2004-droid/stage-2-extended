@@ -10,3 +10,6 @@ vendor/** -text
 results/*.csv -text
 
 *.sh text eol=lf
+# The git hooks run under git's sh: a CRLF checkout (core.autocrlf=true) would break them once installed.
+scripts/pre-commit text eol=lf
+scripts/post-commit text eol=lf

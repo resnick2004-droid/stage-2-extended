@@ -1,0 +1,28 @@
+#!/bin/sh
+# Stage 2 Extended's git post-commit hook (E-004: "push after every commit"). Install with
+# `python scripts/install_hooks.py`, which copies this into the hooks directory of `git rev-parse --git-common-dir`, so
+# the main tree and every worktree share it.
+#
+# Pushes the branch just committed to the private remote `origin`, in the background, so every commit leaves this
+# machine -- `master` from the lead, `wt/<name>` from a worker's worktree. It never blocks or fails a commit: the push
+# runs detached and its outcome is appended to <git-common-dir>/push.log (one log for every worktree); a push that fails
+# (offline, a rejected credential) is retried by the next commit's push, which carries every commit since. Skipped when
+# GIT_PUSH_ON_COMMIT=0, when there is no `origin`, or on a detached HEAD (a clean-run checkout, a rebase or a bisect in
+# progress).
+
+[ "${GIT_PUSH_ON_COMMIT:-1}" = "0" ] && exit 0
+git remote get-url origin >/dev/null 2>&1 || exit 0
+branch=$(git symbolic-ref -q --short HEAD) || exit 0
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=$(git rev-parse --git-common-dir)
+log="$common/push.log"
+head=$(git rev-parse --short HEAD)
+
+(
+    if git push -q origin "$branch" >>"$log" 2>&1; then
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) pushed $branch at $head" >>"$log"
+    else
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PUSH FAILED $branch at $head (the next commit retries)" >>"$log"
+    fi
+) </dev/null >/dev/null 2>&1 &
+
+exit 0

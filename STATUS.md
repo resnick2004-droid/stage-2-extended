@@ -47,4 +47,5 @@ All five created at e4f399a with the bars and atlas linked as junctions (`python
 
 Windows 11, 16 GB, the repository on OneDrive. At 2026-11-15 ~21:00 local the machine had about 1.7 GB available and
 its commit charge near its limit, held by the operator's other applications. Light work runs; **a heavy run (a
-campaign or a full identity, up to about 3 GB) waits for memory** (`docs/OPERATOR_SETUP.md` item 8).
+campaign or a full identity, up to about 3 GB) waits for memory** (`docs/OPERATOR_SETUP.md` item 9;
+`python scripts/run_lock.py take` refuses a job the machine cannot hold).

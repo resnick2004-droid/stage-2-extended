@@ -1,0 +1,81 @@
+#!/bin/sh
+# Stage 2 Extended's git pre-commit hook. Install with `python scripts/install_hooks.py`, which copies this into the
+# hooks directory of `git rev-parse --git-common-dir`, so the main tree and every worktree share it.
+#
+# Runs (1) the vendored snapshot's integrity -- `python scripts/vendor_stage2.py --verify`: every file of vendor/stage2
+# against vendor/MANIFEST_stage2.sha256 and, where the bars and atlas are present (a copy here, junctions in a
+# worktree), the data against vendor/DATA_MANIFEST_stage2.sha256 (E-002) -- and (2) the suite's FAST tier
+# (-m "not slow and not heavy"). A commit that breaks either is refused: a broken foundation committed is a broken
+# foundation someone later trusts. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
+# /validate, never here.
+#
+# Bypass with `git commit --no-verify` only when you know why; say so in the commit message.
+
+set -e
+
+# Run under git's own sh, found from git itself (`git var GIT_SHELL_PATH`), never from PATH. On Windows `bash` on PATH
+# can be WSL's, which cannot see this checkout the way git does. git already runs hooks with its own sh; this also
+# covers the hook being started by hand with some other shell. The marker stops the re-exec from repeating.
+if [ -z "$PRECOMMIT_UNDER_GIT_SH" ]; then
+    GIT_SH=$(git var GIT_SHELL_PATH 2>/dev/null) || GIT_SH=
+    if [ -n "$GIT_SH" ] && [ -x "$GIT_SH" ]; then
+        PRECOMMIT_UNDER_GIT_SH=1
+        export PRECOMMIT_UNDER_GIT_SH
+        exec "$GIT_SH" "$0" "$@"
+    fi
+fi
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# git exports GIT_INDEX_FILE (and, depending on the invocation, GIT_DIR / GIT_WORK_TREE / GIT_PREFIX) to its hooks.
+# Inherited by the suite, they would point every nested `git` -- a test that builds a temporary repository, the
+# provenance code, `git ls-files` in tests/test_vendor_integrity.py -- at this commit's index (Stage 2 saw a fixture's
+# `git add` stage its file into the real index). The checks must see the environment a shell gives them.
+unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX
+
+# Pick a Python that actually runs. `command -v python3` is not enough on Windows: the App Execution Alias stubs for
+# python3.exe and python.exe exist on PATH and resolve, but running them prints "Python was not found" and exits
+# non-zero. So each candidate is *executed* rather than merely located.
+pick_python() {
+    for candidate in "$PYTHON" python3 python py; do
+        [ -n "$candidate" ] || continue
+        if "$candidate" -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PYTHON=$(pick_python) || {
+    echo "pre-commit: no working python interpreter found (tried \$PYTHON, python3, python, py)." >&2
+    echo "pre-commit: set PYTHON to a working interpreter, or commit with --no-verify and say why." >&2
+    exit 1
+}
+
+# Keep .pyc files out of the read-only vendored tree (E-002).
+export PYTHONDONTWRITEBYTECODE=1
+
+# The fast tier: every test not marked slow or heavy in pyproject.toml (the same selection scripts/hooks/run_tests.py
+# runs after a .py edit). `-o addopts=` clears the project's own `-q`; inherited, the two compound into -qq and the
+# pass count is suppressed.
+FAST_TIER="not slow and not heavy"
+
+echo "pre-commit: vendor integrity + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON, tree = $REPO_ROOT"
+
+echo "--- vendor integrity (scripts/vendor_stage2.py --verify) ---"
+# The check must stop the hook on failure on every branch. `set -e` does not fire inside an `a && b` list or on the
+# left of `||`, so the failure is caught explicitly: vendor_stage2.py --verify prints FAILED and exits 3 on any changed,
+# missing or extra file (or a data mismatch), 0 when everything matches.
+vendor_failed() {
+    echo "pre-commit: vendor integrity FAILED -- vendor/stage2 or its data differ from their manifests (E-002)." >&2
+    echo "pre-commit: restore the snapshot (never re-pin it) and find what wrote to it." >&2
+    exit 1
+}
+"$PYTHON" scripts/vendor_stage2.py --verify || vendor_failed
+
+echo "--- tests, fast tier ---"
+"$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+
+echo "pre-commit: OK (fast tier; the identity, the heavy tier and the vendored stage-one suite run in /validate)"
