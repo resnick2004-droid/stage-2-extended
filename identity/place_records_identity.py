@@ -20,12 +20,15 @@ P-14's no-closure table (a vendored result file). Two fixtures:
 
 The checks, each printed `holds:` or `FAILS:`:
 
-1. **sources pinned** -- the vendored `simulate_lockstep_campaign`, `_run_paths` and `_path_chunk` hash to the pins;
+1. **sources pinned** -- the vendored `_run_paths` and `_path_chunk` hash to the runner's pins;
 2. **wrong pin refused**;
-3. **signature mirrors the vendored campaign** -- the recorded campaign takes every vendored argument, defaults
-   included, plus `path_reducer`;
+3. **re-composed: the vendored bodies plus marked lines** -- `extended.gate.run_gate` (markers Q-47, Q-71, Q-70),
+   `extended.campaign.simulate_lockstep_campaign` (Q-71, Q-70) and this adapter's `_run_paths` and `_path_chunk`
+   (Q-70), each with its marked lines removed, parse to the vendored function statement for statement; and the proof
+   is not vacuous: with the Q-70 lines kept, each differs;
 4. **simple: recording on equals off** -- the gate's rows (exactly), every path's record (`portfolio_stage`'s
-   composed-hook sink, every key) and the gate flag;
+   composed-hook sink, every key), the gate flag, and what the paths handed to the gate's hook are and carry (plain
+   `LockstepPath`s, no ledger or day rows);
 5. **simple: records consistent and every field present** -- no per-path problem (`PlaceRecorder.problems`), the
    trade and account columns exactly `place_fields`', each path's recorded trades the sink's `trades`;
 6. **simple: every place reached** -- (b) to (e) each hold a trade (the comparison is not vacuous);
@@ -42,7 +45,16 @@ The checks, each printed `holds:` or `FAILS:`:
 14. **two workers equal one** -- the P-14 table's records and rows at two path workers equal one worker's (NOT
     CHECKED, said loudly, when the memory guard allows one worker -- E-033's rule);
 15. **refusals** -- a recorder that is not one, an unknown arm or column, offer ids that do not number a block's
-    trades, a trade table whose entry times are not the blocks', a reducer that is not one.
+    trades, a trade table whose entry times are not the blocks', a reducer that is not one (the campaign's);
+16. **seams at Topstep's values: recording on equals off** -- Q-71's seams given at Topstep's values (the pass-through
+    funded and evaluation classes, the ledger's lag, the household rule off) on both fixtures: recording on equals
+    recording off (rows, every path's record, the flag, the paths' shape), and the records equal those of the same
+    campaign without the seams;
+17. **the worker path, pickled in-process, equals one worker** -- the campaign's chunked worker path (this adapter's
+    `_path_chunk` reached through `functools.partial`, the reducer, `RecordedPath`) driven by a pool that runs each
+    task in this process after a pickle round trip of the task and of its result -- what crosses to a real worker --
+    on the simple fixture's gate draws: the paths and records equal one worker's. It runs on any machine; check 14 is
+    the real two-process run.
 
 **`--paths N` (heavy, the run lock).** The registered gate call (as `identity/gate_identity.py` makes it, through
 `extended.gate.run_gate`) twice: recording off, and recording on (both arms at 0 %, the offers the trade table's rows,
@@ -65,7 +77,6 @@ Exit 0 when every part run holds; 3 when one fails or is refused. Nothing is wri
 from __future__ import annotations
 
 import argparse
-import inspect
 import re
 import sys
 import time
@@ -89,6 +100,7 @@ import pandas as pd  # noqa: E402
 import gate_identity as GI  # noqa: E402  (identity/gate_identity.py: Q-47's synthetic fixture and comparisons)
 import stage2_identity as SI  # noqa: E402  (identity/stage2_identity.py: P-16's seed and paths file, peak memory)
 
+from extended import campaign as XC  # noqa: E402
 from extended import gate as XG  # noqa: E402
 from extended import place_fields as PF  # noqa: E402
 from extended import place_records as PR  # noqa: E402
@@ -127,7 +139,8 @@ def shape_hook(hook: Any, shapes: list) -> Any:
     """The gate's path hook, noting first what every path handed to it carries: (shift, level, its ledger rows, day
     rows, campaign-day rows) -- an unrecorded gate's paths carry none."""
     def h(shift, p, paths):
-        shapes.extend((shift, float(p), len(x.trades), len(x.account_days), len(x.campaign_days)) for x in paths)
+        shapes.extend((shift, float(p), type(x).__name__, len(x.trades), len(x.account_days), len(x.campaign_days))
+                      for x in paths)
         return hook(shift, p, paths)
     return h
 
@@ -135,8 +148,8 @@ def shape_hook(hook: Any, shapes: list) -> Any:
 def shape_problems(off: list, on: list, what: str) -> list[str]:
     if off != on:
         return [f"{what}: the paths handed to the gate's hook differ in what they carry (recorded rows not dropped)"]
-    if any(x[2] or x[3] or x[4] for x in on):
-        return [f"{what}: a path handed to the gate's hook still carries recorded rows"]
+    if any(x[2] != "LockstepPath" or x[3] or x[4] or x[5] for x in on):
+        return [f"{what}: a path handed to the gate's hook is not the unrecorded campaign's plain path"]
     return []
 
 
@@ -274,6 +287,63 @@ def offer_problems(rec_t: pd.DataFrame, t: pd.DataFrame, days: list[str], what: 
     return out
 
 
+class InlinePool:
+    """A pool that runs each submitted task here, after a pickle round trip of the call and of its result -- what a
+    path worker receives and sends back -- so the worker path is exercised without a second process."""
+
+    def submit(self, fn: Any, *args: Any) -> Any:
+        import pickle
+        from concurrent.futures import Future
+
+        fn2, args2 = pickle.loads(pickle.dumps((fn, args)))
+        f: Future = Future()
+        f.set_result(pickle.loads(pickle.dumps(fn2(*args2))))
+        return f
+
+
+def inline_worker_problems(blocks: list, kw: dict[str, Any]) -> list[str]:
+    """Check 17: the gate's campaign for the simple fixture's bound arm at 0 %, one worker against the chunked worker
+    path through `InlinePool`, both recorded."""
+    from propedge.campaign import gate as vg
+    from propedge.campaign.lockstep import ConductModel
+    from propedge.outcomes.settlement import default_trade_log_settlement
+
+    blk = vg.shifted_blocks(blocks, kw["lb"] - kw["e"])
+    out = []
+    got = {}
+    for name, extra in (("one worker", {}), ("worker path", {"workers": 2, "pool": InlinePool()})):
+        draws = vg._GateDraws(blk, protocol=kw["protocol"], mode="rotation", sizing=None,
+                              settlement=default_trade_log_settlement(list(blocks)), markets=None,
+                              routing="longest_waiting", cross_account=False, flip=None, hold_to_own_exit=False,
+                              one_at_a_time=None)
+        rec = PR.PlaceRecorder(shifts=("lower_bound",), levels=(0.0,))
+        red = rec.reducer("lower_bound", 0.0, blk, kw["rules"])
+        summary, paths = XC.simulate_lockstep_campaign(
+            kw["protocol"], edge=0.0, seed=kw["seed"], rules=kw["rules"], initial_bankroll=kw["bankroll"],
+            horizon_days=kw["horizon_days"], n_paths=kw["n_paths"], payout_method="aeropay",
+            max_concurrent_accounts=kw["accounts"], max_concurrent_combines=int(kw["combines"]),
+            max_total_accounts=kw["total_accounts"], require_verified_cap=False,
+            conduct=ConductModel(rtp=False, enforcement_p=0.0), draw_factories_for_path=draws,
+            purchase_budget=kw["purchase_budget"], path_reducer=red, **extra)
+        plain = rec.collect("lower_bound", 0.0, paths, n_paths=kw["n_paths"], horizon_days=kw["horizon_days"],
+                            seed=kw["seed"])
+        got[name] = (summary, plain, rec)
+        if rec.problems():
+            out.append(f"{name}: {rec.problems()[:2]}")
+    (s1, p1, r1), (s2, p2, r2) = got["one worker"], got["worker path"]
+    for d in (GI.deep_difference(s1, s2, "summary"), GI.deep_difference(p1, p2, "paths")):
+        if d:
+            out.append(f"the worker path differs from one worker: {d}")
+    try:
+        pd.testing.assert_frame_equal(r1.trades(), r2.trades(), check_exact=True)
+        pd.testing.assert_frame_equal(r1.accounts(), r2.accounts(), check_exact=True)
+    except AssertionError as exc:
+        out.append(f"the worker path's records differ -- {str(exc).splitlines()[0]}")
+    if not len(r1.trades()):
+        out.append("nothing was recorded: the comparison would be vacuous")
+    return out
+
+
 def synthetic_problems() -> dict[str, list[str]]:
     """Each check's problems (an empty list where it holds), in the docstring's order."""
     from propedge.campaign import gate as vg
@@ -281,20 +351,27 @@ def synthetic_problems() -> dict[str, list[str]]:
     from propedge.campaign.lockstep import path_pool
 
     out: dict[str, list[str]] = {}
-    got = PR.vendored_campaign_sha256()
-    out["sources pinned"] = [f"{k} hashes to {got[k]}, the pin is {v}" for k, v in PR.VENDORED_CAMPAIGN_SHA256.items()
+    got = PR.vendored_runner_sha256()
+    out["sources pinned"] = [f"{k} hashes to {got[k]}, the pin is {v}" for k, v in PR.VENDORED_RUNNER_SHA256.items()
                              if got.get(k) != v]
     try:
-        PR.check_vendored_campaign_source({k: "0" * 64 for k in PR.VENDORED_CAMPAIGN_SHA256})
+        PR.check_vendored_runner_source({k: "0" * 64 for k in PR.VENDORED_RUNNER_SHA256})
         out["wrong pin refused"] = ["a wrong pin was not refused"]
     except RuntimeError:
         out["wrong pin refused"] = []
-    sa = inspect.signature(L.simulate_lockstep_campaign).parameters
-    sb = inspect.signature(PR.simulate_lockstep_campaign_recorded).parameters
-    p = [f"{k}: {sa[k]} against {sb.get(k)}" for k in sa if k not in sb or str(sa[k]) != str(sb[k])]
-    if [k for k in sb if k not in sa] != ["path_reducer"]:
-        p.append(f"the recorded campaign adds {[k for k in sb if k not in sa]}, not only path_reducer")
-    out["signature mirrors the vendored campaign"] = p
+    p = ([f"gate: {x}" for x in XG.gate_recomposition_problems()]
+         + [f"campaign: {x}" for x in XC.campaign_recomposition_problems()]
+         + [f"runner: {x}" for x in PR.runner_recomposition_problems()])
+    vacuous = {"the gate": XC.recomposition_problems(XG.run_gate, vg.run_gate, ("Q-47", "Q-71")),
+               "the campaign": XC.recomposition_problems(XC.simulate_lockstep_campaign, L.simulate_lockstep_campaign,
+                                                         ("Q-71",)),
+               "_run_paths": XC.recomposition_problems(PR._run_paths, L._run_paths, ()),
+               "_path_chunk": XC.recomposition_problems(PR._path_chunk, L._path_chunk, ())}
+    p += [f"the proof is vacuous for {k}: with its Q-70 lines kept it still passed as the vendored function"
+          for k, v in vacuous.items() if not v]
+    if "Q-70" not in XG.GATE_MARKERS or "Q-70" not in XC.MARKERS:
+        p.append("the gate's or the campaign's proof does not strip Q-70")
+    out["re-composed: the vendored bodies plus marked lines"] = p
 
     # ---- simple: Q-47's fixture, both arms and every level recorded
     blocks, kw = GI.syn_blocks(), GI.syn_kwargs()
@@ -314,6 +391,7 @@ def synthetic_problems() -> dict[str, list[str]]:
     out["simple: recording on equals off"] = p
     out["simple: records consistent and every field present"] = record_problems(rec, s1, "simple")
     out["simple: every place reached"] = places_reached(rec, "simple")
+    simple_trades = rec.trades()
 
     # ---- the P-14 table on walked synthetic trades, the bound arm at 0 % recorded
     P = p14_table_inputs()
@@ -426,10 +504,48 @@ def synthetic_problems() -> dict[str, list[str]]:
     bad_t.iloc[0, bad_t.columns.get_loc("entry_t")] += 1.0
     refused(lambda: PR.block_offer_ids(bad_t, P["days"], b14), ValueError,
             "a table whose entry times are not the blocks'")
-    refused(lambda: PR.simulate_lockstep_campaign_recorded(kw14["protocol"], edge=0.0, seed=1, initial_bankroll=1.0,
-                                                           path_reducer=object()),
+    refused(lambda: XC.simulate_lockstep_campaign(kw14["protocol"], edge=0.0, seed=1, initial_bankroll=1.0,
+                                                  path_reducer=object()),
             TypeError, "a reducer that is not one")
     out["refusals"] = p
+
+    # ---- 16: Q-71's seams at Topstep's values, recording on against off, and the records against the seam-free ones
+    seams = dict(funded_account_cls=XG.PassThroughFundedAccount, combine_account_cls=XG.PassThroughCombineAccount,
+                 payout_lag_days=XG.topstep_payout_lag_days(), household_closure=False)
+    p = []
+    h0, s0 = GI._hook()
+    sh0 = []
+    rows0, ok0 = XG.run_gate(blocks, path_hook=shape_hook(h0, sh0), **seams, **kw)
+    h1, s1 = GI._hook()
+    sh1 = []
+    rs = PR.PlaceRecorder(dates=[f"d{h:03d}" for h in range(len(blocks))])
+    rows1, ok1 = XG.run_gate(blocks, path_hook=shape_hook(h1, sh1), recorder=rs, **seams, **kw)
+    p += (_rows_equal(rows0, rows1, "simple, seams") + GI.sink_problems(s0, s1, "simple, seams")
+          + shape_problems(sh0, sh1, "simple, seams") + record_problems(rs, s1, "simple, seams"))
+    if ok0 != ok1:
+        p.append(f"simple, seams: the gate flag {ok1} against {ok0}")
+    try:
+        pd.testing.assert_frame_equal(simple_trades, rs.trades(), check_exact=True)
+    except AssertionError as exc:
+        p.append(f"simple, seams: the records differ from the seam-free ones -- {str(exc).splitlines()[0]}")
+    h0, s0 = _p14_hook(P["fcfg"], "q70_syn")
+    sh0 = []
+    rows0, ok0 = XG.run_gate(b14, path_hook=shape_hook(h0, sh0), **seams, **kw14)
+    h1, s1 = _p14_hook(P["fcfg"], "q70_syn")
+    sh1 = []
+    r14 = PR.PlaceRecorder(shifts=("lower_bound",), levels=(0.0,), dates=P["days"], offer_ids=ids)
+    rows1, ok1 = XG.run_gate(b14, path_hook=shape_hook(h1, sh1), recorder=r14, **seams, **kw14)
+    p += (_rows_equal(rows0, rows1, "P-14 table, seams") + GI.sink_problems(s0, s1, "P-14 table, seams")
+          + shape_problems(sh0, sh1, "P-14 table, seams") + record_problems(r14, s1, "P-14 table, seams"))
+    if ok0 != ok1:
+        p.append(f"P-14 table, seams: the gate flag {ok1} against {ok0}")
+    try:
+        pd.testing.assert_frame_equal(t14, r14.trades(), check_exact=True)
+        pd.testing.assert_frame_equal(rec.accounts(), r14.accounts(), check_exact=True)
+    except AssertionError as exc:
+        p.append(f"P-14 table, seams: the records differ from the seam-free ones -- {str(exc).splitlines()[0]}")
+    out["seams at Topstep's values: recording on equals off"] = p
+    out["the worker path, pickled in-process, equals one worker"] = inline_worker_problems(blocks, kw)
     return out
 
 

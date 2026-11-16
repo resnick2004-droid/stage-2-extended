@@ -5,8 +5,10 @@ process (the vendored tree goes on its `sys.path`).
 
 * fast, in this process (engine-free): the field list is documented -- every field names its meaning, its engine
   source and the draft lines that need it, every draft source is used, and both drafts name the adapter;
-* fast (`--synthetic`): on synthetic campaigns through the vendored engine -- the gate with recording on equals the
-  gate with it off (rows exactly, every path's record exactly, the gate flag), on simple synthetic blocks and on P-14's
+* fast (`--synthetic`): on synthetic campaigns through the vendored engine -- the gate, the campaign and the path
+  runner are each the vendored function plus lines marked Q-47 / Q-71 / Q-70 (the AST proofs, not vacuous); the gate
+  with recording on equals the gate with it off (rows exactly, every path's record exactly, the gate flag, the paths'
+  shape), also with Q-71's seams at Topstep's values, on simple synthetic blocks and on P-14's
   own table, sizing, strict rule and budget over trades walked on `extended.synthetic_bars`; every field present; the
   records consistent with the paths (each path's rows its trade count, its places the vendored `records_counts`', its
   balances chained, its offers and dates the blocks', R the table's); two path workers equal one; the refusals;
@@ -30,13 +32,14 @@ DATA = ROOT / "vendor" / "stage2" / "data"
 SCRIPT = ROOT / "identity" / "place_records_identity.py"
 
 SYNTHETIC_CHECKS = (
-    "sources pinned", "wrong pin refused", "signature mirrors the vendored campaign",
+    "sources pinned", "wrong pin refused", "re-composed: the vendored bodies plus marked lines",
     "simple: recording on equals off", "simple: records consistent and every field present",
     "simple: every place reached", "P-14 table: recording on equals off",
     "P-14 table: records consistent and every field present", "P-14 table: every place reached",
     "P-14 table: offers, dates and sides are the blocks'", "P-14 table: R is the table's",
     "P-14 table: trades a year by place", "kept columns equal the full record's", "two workers equal one",
-    "refusals",
+    "refusals", "seams at Topstep's values: recording on equals off",
+    "the worker path, pickled in-process, equals one worker",
 )
 
 

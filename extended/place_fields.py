@@ -14,40 +14,41 @@ every Combine trade; (c) `c_funded_opening` a funded account's first trade; (d) 
 and including the session of its first payout request; (e) `e_paid` its trades after that session -- classified exactly
 as the vendored `u_value_map.records_counts` classifies them (checked path by path against it).
 
-**The draft sources** (`SOURCES`): the drafts are being redrafted; the citations are by section and phrase, the redraft
-in brackets where it moved. A field needed by neither draft but asked by Q-70's brief ("its place (path, account, the
-account's state, session, time) and what the engine booked") cites `brief`.
+**The draft sources** (`SOURCES`): the drafts are still drafts; the citations are by section and phrase, so a
+renumbered item can still be found. A field needed by neither draft but asked by Q-70's brief ("its place (path,
+account, the account's state, session, time) and what the engine booked") cites `brief`.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-#: the draft lines a field is needed by, by key (family B: prereg/DRAFT_F-B_multifeature.md, its redraft in
-#: wt-scout; family O: prereg/DRAFT_F-O_opening_timing.md, its redraft in wt-lit)
+#: the draft lines a field is needed by, by key (family B: prereg/DRAFT_F-B_multifeature.md; family O:
+#: prereg/DRAFT_F-O_opening_timing.md; both as merged on master at 68f3762, both still drafts)
 SOURCES: dict[str, str] = {
-    "B-C2": "family B section 13, C2: the gate campaigns of design (i) and design (ii) 'record, for every simulated "
-            "trade j: the offer i(j), the table's R R_j, and the place p(j)' at 'the bound arm'; 'S_j, N_j per judged "
-            "session over the paths' trades on it'; the bound 'multiplied by that routing's trades a year'",
-    "B-20": "family B section 20 item 9 [item 10 in the redraft]: re-running P-16's registered gate campaign as U2 did "
-            "(100 paths, the bound arm, its seed) 'records trades by place whose counts reproduce u_value_map.csv's "
-            "trades_per_year_records for p16, and P-14's for p14'; 'records design (ii)'s routing as it does design "
-            "(i)'s'",
+    "B-C2": "family B section 13, C2: the gate campaigns of design (i) and design (ii) 'each record, for every "
+            "simulated trade j: the offer i(j), the table's R R_j, and the place p(j)' at 'the bound arm'; 'S_j, N_j "
+            "per judged session over the paths' trades on it'; the bound 'multiplied by that routing's trades a year'",
+    "B-20": "family B section 20 item 10 (item 9 in its fourth version): re-running P-16's registered gate campaign as "
+            "U2 did (100 paths, the bound arm, its seed) 'records trades by place whose counts reproduce "
+            "u_value_map.csv's trades_per_year_records for p16, and P-14's for p14'; 'records design (ii)'s routing "
+            "as it does design (i)'s'",
     "B-11": "family B section 11 (stage B's ranking): the places (b) to (e) by the R they ask, and cap(p, R) from "
             "u_value_map.csv's records_leaf (the table's leaf by phase)",
     "O-18": "family O section 18.1 item 4: 'every simulated trade's offer, R and place, and for each opening its wait "
-            "and whether it was a fallback'; its identity against trades_per_year_records for p16 [the redraft adds: "
-            "on the U1 replay too, 'the openings it records equal the replay ledger's']",
-    "O-5.5": "family O section 5.5 (stage A, A2): every funded opening's '(date, mark), hour, day kind, whether it "
-             "is at 08:30-09:00, whether on a report day [at the report-day 07:35:00 entry], the sessions from "
-             "activation, "
-             "and whether the offer is in each cell's state'; 'each opening's wait and whether it was a fallback'",
+            "and whether it was a fallback'; its identity against trades_per_year_records for p16; and 'on the U1 "
+            "replay as well as the gate' -- 'the openings it records equal the replay ledger's' (the replay is not "
+            "wired here: Q-70's open item)",
+    "O-5.5": "family O section 5.5 and A2 (stage A, on the U1 replay in history's order): every funded opening's "
+             "'(date, mark), hour, day kind, whether it is at 08:30-09:00, whether at the report-day 07:35:00 entry, "
+             "the sessions from activation, and whether the offer is in each cell's state'; 'each opening's wait and "
+             "whether it was a fallback'",
     "O-7.4": "family O section 7.4: each funded opening j is one use -- 'its offer i(j)', its value 'and its session'; "
              "u_d the design's openings a year; V_other over 'the designs' trades at places (b), (d) and (e), each at "
              "its own R'",
     "O-5.4": "family O section 5.4 / T-5: a waiting account's 'first W live sessions are those with "
              "FundedAccount.days 0 to W - 1 at routing' (its wait and fallback are counted in those sessions)",
-    "O-A1": "family O A1 item 6 [redraft]: 'every in-wait opening's (date, mark), read by the place-recording adapter, "
-            "is in the placebo's set'",
+    "O-A1": "family O A1 item 6: 'every in-wait opening's (date, mark), read by the place-recording adapter, is in the "
+            "placebo's set'",
     "brief": "Q-70's brief: 'its place (path, account, the account's state, session, time) and what the engine booked'",
 }
 

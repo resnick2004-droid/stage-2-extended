@@ -32,6 +32,20 @@ required, here with each component's critical value the larger of its nominal on
   holds the level; at half the judged amplitude, or with the third draft's recentring of the statistic, it does not;
 * **C2's dollar-weighted form**: per-offer values weighted by the value map's four place values (fixed weights, the
   review's persistent sides and drift): B2 holds `cons`'s level where its nominal value over-rejects.
+
+**Added for the fifth draft** (the fourth review), seeds `[20261968, 64..67, 80..85, 90..95]`:
+
+* `cons_bound_with_critical`, the reference for the build's named wrapper (n4-3): `lift_bound.bound("cons")` exactly
+  at nominal critical values, a lower bound when B2 raises them;
+* **C1-f's amplitude (M4-1):** with a choice-block amplitude near zero and a judged one above it, the fourth draft's
+  rule (B2 at three times the choice block's amplitude) over-rejects, and the fifth's -- the larger also of B2 at the
+  twin's largest absolute judged calendar-year lift, read after the judgement -- holds the level;
+* **the symmetric slow component (m4-4):** a model whose own lift follows an independent slow regime defeats B2
+  with the twin's component only, not B2 with both;
+* **C2's routing (M4-2):** the model's own routing selects on its same-day outcomes and biases the routed mean under
+  the null (the fourth review's check H), the coin-sided routing does not -- why C2's line takes the lesser;
+* **the confirmation (m4-3):** `t21w` at 126 sessions and one-sided 0.05, at the larger of 1.3 times nominal and B2
+  over the development window, holds the level pooled and within 1.5 times it for every side series.
 """
 from __future__ import annotations
 
@@ -203,3 +217,179 @@ def test_c2_weighted_form_holds_under_b2():
     rates = [c2_case(0, **REVIEW), c2_case(1, **REVIEW), c2_case(2, **SLOWER)]
     assert rates[2][0] >= 1.3 * ALPHA                       # the slower case: cons's nominal values over-reject
     assert all(b2 <= 1.25 * ALPHA for _, b2 in rates), rates
+
+
+# --------------------------------------------------------------- the fifth draft: M4-1, m4-4, M4-2, m4-3, n4-3
+
+COMPONENTS = (21, 42, 63)
+
+
+def cons_bound_with_critical(x, session, n_sessions, level, critical=None):
+    """The reference for the build's wrapper (the fourth review's n4-3): `cons` (`lift_bound.SHIPPED`) on one sample,
+    each component's critical value the larger of its nominal t and `critical[b]` (B2's), the bound their minimum.
+    Returns (lower bound, rejects). With `critical=None` it is `lift_bound.bound("cons", ...)` exactly."""
+    S, N = LB.session_sums(x, session, n_sessions)
+    lows = []
+    for b in COMPONENTS:
+        est, se, df = (float(v) for v in LB.t_stats(S, N, block=b, weight="trades"))
+        crit = float(stats.t.ppf(1 - level, df))
+        if critical is not None:
+            crit = max(crit, float(critical[b]))
+        lows.append(est - crit * se)
+    low = min(lows)
+    return low, bool(low > 0)
+
+
+def test_the_critical_value_wrapper():
+    rng = np.random.default_rng([SEED, 64])
+    n = 300
+    session = np.repeat(np.arange(n), 5)
+    x = 0.05 + rng.standard_normal(session.size)
+    ref = LB.bound("cons", x, session, n, level=0.01)
+    low, rej = cons_bound_with_critical(x, session, n, 0.01)
+    assert np.isclose(low, ref.lower, rtol=0, atol=1e-12) and rej == ref.rejects
+    higher = {b: 10.0 for b in COMPONENTS}
+    low2, _ = cons_bound_with_critical(x, session, n, 0.01, higher)
+    assert low2 < low                                            # a critical value above nominal lowers the bound
+
+
+def component_t(x):
+    """(t, df) of `cons`'s three components on per-session values x (R, n), one value a session."""
+    S = x.T
+    N = np.ones_like(S)
+    out = {}
+    for b in COMPONENTS:
+        est, se, df = LB.t_stats(S, N, block=b, weight="trades")
+        out[b] = (est / se, int(df[0]))
+    return out
+
+
+def follow_null_quantiles(rng, grid, n_rep, *, symmetric=False):
+    """B2's (1 - ALPHA) quantile of each component at each follow amplitude g of `grid`: the null C1-f values with the
+    twin's slow component centred at its expectation and, if `symmetric`, the model's own independent one too."""
+    q = {}
+    for g in grid:
+        gt = g * (1.0 + markov(rng, 1 / 250, n_rep, FOLLOW_N))
+        slow = -2 * FOLLOW_Q_DIS * (gt - g)
+        if symmetric:
+            ht = g * (1.0 + markov(rng, 1 / 250, n_rep, FOLLOW_N))
+            slow = slow + 2 * FOLLOW_Q_DIS * (ht - g)
+        x = slow + FOLLOW_SIG * rng.standard_normal((n_rep, FOLLOW_N))
+        q[g] = {b: float(np.quantile(t, 1 - ALPHA)) for b, (t, _) in component_t(x).items()}
+    return q
+
+
+def _rate(t_by_b, crit_rows):
+    """`cons`'s rejection rate: each replicate's components against its own critical values (rows of crit_rows)."""
+    rej = np.ones(len(crit_rows), dtype=bool)
+    for k, b in enumerate(COMPONENTS):
+        rej &= t_by_b[b][0] > crit_rows[:, k]
+    return float(rej.mean())
+
+
+def test_c1f_amplitude_rule_with_the_judged_block_term():
+    """M4-1: a choice block whose follow amplitude is near zero, a judged block where it is not (the twin's lift a
+    slow two-state process, the model's constant, equal on average: C1-f's boundary null). B2 with the symmetric slow
+    component throughout. Three rules for C1-f's critical value:
+
+    * the fourth draft's -- B2 at three times the choice block's amplitude -- over-rejects;
+    * the review's remedy alone -- also B2 at the twin's largest absolute judged calendar-year lift -- still
+      over-rejects, in the replicates where the twin's lift sat low through all the judged years;
+    * the fifth draft's -- that term taken over the twin's **and the model's own** judged yearly lifts, both read after
+      the judgement, both able only to raise the critical value -- holds the level."""
+    rng = np.random.default_rng([SEED, 65])
+    g_judged, a_choice = 0.03, 0.002
+    g_pre = 3 * a_choice
+    grid = np.round(np.arange(0.004, 0.0801, 0.004), 4)
+    q = follow_null_quantiles(rng, np.r_[g_pre, grid], R, symmetric=True)
+    gt = g_judged * (1.0 + markov(rng, 1 / 250, R, FOLLOW_N))
+    truth = -2 * FOLLOW_Q_DIS * (gt - g_judged) + FOLLOW_SIG * rng.standard_normal((R, FOLLOW_N))
+    twin_obs = gt + FOLLOW_SIG * rng.standard_normal((R, FOLLOW_N))
+    model_obs = g_judged + FOLLOW_SIG * rng.standard_normal((R, FOLLOW_N))
+    years = (slice(0, 252), slice(252, 504), slice(504, FOLLOW_N))
+
+    def yearly_max(obs):
+        return np.max(np.abs(np.stack([obs[:, y].mean(1) for y in years], 1)), 1)
+
+    t_by_b = component_t(truth)
+    nominal = np.array([stats.t.ppf(1 - ALPHA, t_by_b[b][1]) for b in COMPONENTS])
+    pre = np.maximum(nominal, [q[g_pre][b] for b in COMPONENTS])
+
+    def rows(d_term):
+        idx = np.minimum(np.searchsorted(grid, np.maximum(g_pre, d_term) - 1e-12), len(grid) - 1)   # rounded up
+        return np.maximum(pre, np.array([[q[grid[i]][b] for b in COMPONENTS] for i in idx]))
+
+    assert _rate(t_by_b, np.tile(pre, (R, 1))) >= 2 * ALPHA                          # the fourth draft's rule
+    assert _rate(t_by_b, rows(yearly_max(twin_obs))) >= 2 * ALPHA                    # the twin's term alone
+    assert _rate(t_by_b, rows(np.maximum(yearly_max(twin_obs), yearly_max(model_obs)))) <= 1.25 * ALPHA
+
+
+def test_c1f_symmetric_slow_component():
+    """m4-4: the model's own lift follows an independent slow regime of the twin's amplitude. B2 with both slow
+    components holds the level; with the twin's only it rejects more (at this amplitude; at larger ones the difference
+    vanishes -- the scratch check m45_sym.py)."""
+    rng = np.random.default_rng([SEED, 66])
+    g = 0.03
+    gt = g * (1.0 + markov(rng, 1 / 250, R, FOLLOW_N))
+    ht = g * (1.0 + markov(rng, 1 / 250, R, FOLLOW_N))
+    truth = 2 * FOLLOW_Q_DIS * ((ht - g) - (gt - g)) + FOLLOW_SIG * rng.standard_normal((R, FOLLOW_N))
+    t_by_b = component_t(truth)
+    nominal = np.array([stats.t.ppf(1 - ALPHA, t_by_b[b][1]) for b in COMPONENTS])
+    rate = {}
+    for symmetric in (False, True):
+        qq = follow_null_quantiles(rng, [g], R, symmetric=symmetric)[g]
+        rate[symmetric] = _rate(t_by_b, np.tile(np.maximum(nominal, [qq[b] for b in COMPONENTS]), (R, 1)))
+    assert rate[True] <= 1.25 * ALPHA, rate
+    assert rate[False] > rate[True], rate
+
+
+def routed_means(rng, n_rep, rho, stop, *, coin=False):
+    """M4-2 (the fourth review's check H): 609 sessions of 24 offers, pair values with intra-session correlation rho,
+    uninformative sides constant within a session; a router takes offers in order and ends a session's trading once
+    the cumulative of the routed side's outcome reaches -stop. The model's design routes on its own s d; the coin's
+    design (coin=True) on a fair coin's s' d. Returns per replicate the routed mean of the model's s d and the mean
+    over all offers."""
+    n, m = FOLLOW_N, 24
+    d = 0.3 * (np.sqrt(rho) * rng.standard_normal((n_rep, n, 1)) + np.sqrt(1 - rho) * rng.standard_normal((n_rep, n, m)))
+    s = np.where(rng.random((n_rep, n, 1)) < 0.5, 1.0, -1.0)
+    sd = s * d
+    driver = (np.where(rng.random((n_rep, n, m)) < 0.5, 1.0, -1.0) * d) if coin else sd
+    cum = np.cumsum(driver, axis=2)
+    hit = cum <= -stop
+    first = np.where(hit.any(2), hit.argmax(2), m - 1)
+    mask = np.arange(m)[None, None, :] <= first[..., None]
+    return (sd * mask).sum((1, 2)) / mask.sum((1, 2)), sd.mean((1, 2))
+
+
+def test_c2_routing_selection_is_why_the_line_takes_the_lesser():
+    rng = np.random.default_rng([SEED, 67])
+    own, every = routed_means(rng, 200, 0.2, 0.6)
+    coin, _ = routed_means(rng, 200, 0.2, 0.6, coin=True)
+    assert own.mean() > 0.03                       # the model's own routing selects on its own same-day outcomes
+    assert abs(coin.mean()) < 0.01 and abs(every.mean()) < 0.01
+
+
+def confirmation_case(j, a, q_d, q_s, *, n_sessions=126, level=0.05, n_rep=2000, dev=1630, floor=1.3):
+    """m4-3: the confirmation's form -- `t21w` on a short window at one-sided 0.05, its critical value the larger of
+    `floor` x nominal and B2's, B2 resampling the development window (2020-2026, every year read by then) with `a*`
+    its largest absolute calendar-year mean. Returns the true conditional rejection rate for one side series."""
+    rng = np.random.default_rng([SEED, 80 + j])
+    offers = np.where(rng.random((n_sessions, M)) < np.where(markov(rng, q_s, 1, n_sessions)[0] > 0, P_IN, 1 - P_IN)[:, None],
+                      1, -1)
+    A = offers.mean(1)
+    noise = lambda: S_EPS / np.sqrt(M) * rng.standard_normal((n_rep, n_sessions))   # noqa: E731
+    truth = A * (a * markov(rng, q_d, n_rep, n_sessions) + S_ETA * rng.standard_normal((n_rep, n_sessions))) + noise()
+    devd = (a * markov(rng, q_d, 1, dev) + S_ETA * rng.standard_normal((1, dev)))[0]
+    a_star = np.max(np.abs(devd[: (dev // 252) * 252].reshape(-1, 252).mean(1)))
+    dd = devd[stationary_idx(rng, n_rep, n_sessions, dev, STRESS_BLOCK)]
+    dd = dd - dd.mean(1, keepdims=True) + a_star * markov(rng, STRESS_Q, n_rep, n_sessions)
+    t_true, nb = tstat(truth, 21)
+    t_b2, _ = tstat(A * dd + noise(), 21)
+    crit = max(floor * stats.t.ppf(1 - level, nb - 1), float(np.quantile(t_b2, 1 - level)))
+    return float(np.mean(t_true > crit))
+
+
+def test_the_confirmation_form_at_its_length_and_level():
+    rates = [confirmation_case(j, **REVIEW) for j in range(6)] + [confirmation_case(10 + j, **SLOWER) for j in range(6)]
+    assert np.mean(rates) <= 1.25 * 0.05
+    assert max(rates) <= 1.5 * 0.05

@@ -1,10 +1,10 @@
 """Q-70: the place-recording adapter -- a design's gate campaign re-run through `extended/gate.py` while recording, for
 every simulated trade and every funded account, the offer it took, its R, its place and what the engine booked (the
 fields and the draft lines that need each: `extended/place_fields.py`). Generic engine infrastructure, as Q-47's
-`extended/gate.py` is: no family, feature or model is built here.
+`extended/gate.py` and Q-71's `extended/campaign.py` are: no family, feature or model is built here.
 
     from extended import use_vendored_stage2; use_vendored_stage2()
-    from extended import place_records as PR
+    from extended import gate as XG, place_records as PR
     rec = PR.PlaceRecorder(shifts=("lower_bound",), dates=days, offer_ids=PR.block_offer_ids(t, days, blocks, "id"))
     rows, passed = XG.run_gate(blocks, ..., recorder=rec)       # every argument of the gate, plus the recorder
     rec.trades(), rec.accounts(), rec.openings(), rec.per_year("lower_bound", 0.0), rec.problems()
@@ -13,23 +13,26 @@ fields and the draft lines that need each: `extended/place_fields.py`). Generic 
 daily account recorder (`simulate_lockstep_path(record_trades=True, record_days=True)`, D-130, D-146); both only append
 rows and change no account's evolution (U2, D-649, re-ran P-14, P-15 and P-16 with them on and reproduced the
 registered paths). A campaign returns every path at once, so with them on, 500 paths would hold every ledger in memory.
-Here each path's ledger and day rows are read into compact columns **as the path finishes** and dropped: the path handed
-back is the one the same call returns with recording off (its `trades`, `account_days` and `campaign_days` as the caller
-asked -- empty in the gate), so the gate's rows, its hooks and every `PATH_COLS` column are those of the unrecorded run.
+Here each path's ledger and day rows are read into compact columns **where the path ran** (in this process or in its
+path worker) and dropped: the path comes back as a `RecordedPath` -- the unrecorded call's path, its `trades`,
+`account_days` and `campaign_days` as the caller asked (empty in the gate), with the record beside it -- and the gate
+hands its hooks and rows the plain path (`PlaceRecorder.collect`). So the gate's rows, its hooks and every `PATH_COLS`
+column are those of the unrecorded run.
 
-**The re-composed campaign** (`simulate_lockstep_campaign_recorded`) is the vendored
-`propedge.campaign.lockstep.simulate_lockstep_campaign`'s body with three changes, marked "Q-70":
+**The seams, all marked Q-70 and inside the re-composition proofs:**
 
-1. the keyword `path_reducer` -- a callable `(path_index, path_seed, LockstepPath) -> (LockstepPath, record)`, made by
-   `PlaceRecorder` (module level, so it pickles to a path worker);
-2. every path runs with the ledger and the daily recorder on, the reducer told what the caller asked for;
-3. the paths run through `_run_paths_recorded` -- the vendored `_run_paths` and `_path_chunk` with each path reduced
-   where it ran (in this process, or in its worker) -- and the records come back in path order beside the paths.
-
-Every helper is the vendored one, imported: `_one_path`, `path_seeds`, `path_pool`, `check_parallel_inputs`, the
-worker environment, the checks of the entry options and `summarise_paths`. **The guard, refusing:** every call checks
-that the three vendored functions' source texts hash to `VENDORED_CAMPAIGN_SHA256` (a newer snapshot is a new decision
-row; this module is then re-composed and re-checked under it).
+1. `extended.gate.run_gate(recorder=...)`: for each (shift, level) the recorder records, the campaign gets the keyword
+   `path_reducer` (`gate.recorder_arguments`), and its paths go through `gate.recorded_paths` before the gate reads
+   them; `gate.gate_recomposition_problems` strips Q-47, Q-71 and Q-70;
+2. `extended.campaign.simulate_lockstep_campaign(path_reducer=...)`: one statement chooses the paths' runner
+   (`campaign.path_runner`) -- the vendored `_run_paths` without a reducer, this module's `_run_paths` with one;
+   `campaign.campaign_recomposition_problems` strips Q-71 and Q-70;
+3. this module's `_run_paths` and `_path_chunk`: the vendored functions' text (`vendor/stage2/propedge/campaign/
+   lockstep.py`), with lines marked Q-70 that turn both recorders on and run each path through the reducer
+   (`PathReducer.one_path`: the vendored `_one_path`, then the record); `runner_recomposition_problems` proves each
+   is the vendored function plus its marked lines, statement for statement. **The guard, refusing:** every recorded
+   run checks that the two vendored functions' source texts hash to `VENDORED_RUNNER_SHA256` (a newer snapshot is a
+   new decision row; this module is then re-composed and re-checked under it).
 
 **The place rule** is D-668 (2)'s, as `propedge.research.u_value_map.records_counts` applies it to U2's records: a
 Combine's trades are (b); a funded account's first trade (by session, then slot) is (c); its others are (e) on a session
@@ -50,10 +53,11 @@ waiting account declines are not trades and are not recorded (family O's own gat
 from __future__ import annotations
 
 import copy
+import functools
 import hashlib
 import inspect
 from collections import Counter
-from dataclasses import replace
+from dataclasses import dataclass, field, fields, replace
 from typing import Any, Callable, Sequence
 
 from extended import use_vendored_stage2
@@ -63,39 +67,27 @@ use_vendored_stage2()
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from propedge.campaign import lockstep as _L  # noqa: E402
-from propedge.campaign.lockstep import (  # noqa: E402
-    ConductModel,
-    FocusedTraderModel,
+from propedge.campaign import lockstep as _vl  # noqa: E402
+from propedge.campaign.lockstep import (  # noqa: E402  -- every name the vendored runner's body uses (vendored)
     LockstepPath,
+    Protocol,
     _one_path,
     _WorkerEnvironment,
     check_parallel_inputs,
-    check_pause_after_funded,
-    check_purchase_budget,
-    check_seat_ramp,
-    check_wallet_stop,
     path_pool,
-    path_seeds,
-)
-from propedge.campaign.protocols import Protocol  # noqa: E402
-from propedge.campaign.reinvest import ACTIVATION_ON_ACTIVATION, CampaignSummary, summarise_paths  # noqa: E402
-from propedge.contract.payout_timing import (  # noqa: E402
-    DEFAULT_PAYOUT_TIMING,
-    PAYOUT_TIMING_NOTES,
-    check_payout_timing,
 )
 from propedge.research import u_value_map as _UV  # noqa: E402
 
 from extended import place_fields as PF  # noqa: E402
 
-#: sha256 of the vendored functions' source texts (LF) from which the recorded campaign was composed (Stage 2 f1b42e2,
-#: vendored under E-002)
-VENDORED_CAMPAIGN_SHA256 = {
-    "simulate_lockstep_campaign": "0bb321f521e99dfcf560ea128de7cf9df2bf621c1878482cb9860e08f8285f90",
+#: sha256 of the vendored path runner's source texts (LF), from which `_run_paths` and `_path_chunk` below were composed
+#: (Stage 2 f1b42e2, vendored under E-002; `propedge/campaign/lockstep.py`)
+VENDORED_RUNNER_SHA256 = {
     "_run_paths": "2845d418ae962d3adf52814558ba0c9da7cd105845399eb2d709b8a4e0c5b378",
     "_path_chunk": "bec2e5139447eb9f500694e6f92f190823b3f8021d1368627c9b0f8602ca7d56",
 }
+#: the comment marker on every added line of this module's re-composed functions (and of the gate's and campaign's)
+MARKER = "Q-70"
 #: the gate's two arms
 SHIFTS = ("point", "lower_bound")
 #: D-668 (2)'s places, the vendored names (`u_value_map.PLACES`): (a) is their sum
@@ -107,24 +99,35 @@ _BAND = 500.0
 TOL = 1e-6
 
 
-def vendored_campaign_sha256() -> dict[str, str]:
-    """The sha256 of each vendored function's source text, line endings normalised to LF."""
-    out = {}
-    for name in VENDORED_CAMPAIGN_SHA256:
-        src = inspect.getsource(getattr(_L, name)).replace("\r\n", "\n")
-        out[name] = hashlib.sha256(src.encode("utf-8")).hexdigest()
-    return out
+def _source_sha256(fn: Callable) -> str:
+    return hashlib.sha256(inspect.getsource(fn).replace("\r\n", "\n").encode("utf-8")).hexdigest()
 
 
-def check_vendored_campaign_source(expected: dict[str, str] | None = None) -> None:
-    """Refuse (`RuntimeError`) unless the vendored campaign functions are the ones this module was composed from."""
-    want = VENDORED_CAMPAIGN_SHA256 if expected is None else dict(expected)
-    got = vendored_campaign_sha256()
+def vendored_runner_sha256() -> dict[str, str]:
+    """The sha256 of each vendored runner function's source text, line endings normalised to LF."""
+    return {name: _source_sha256(getattr(_vl, name)) for name in VENDORED_RUNNER_SHA256}
+
+
+def check_vendored_runner_source(expected: dict[str, str] | None = None) -> None:
+    """Refuse (`RuntimeError`) unless the vendored `_run_paths` and `_path_chunk` are the ones this module's runner was
+    composed from."""
+    want = VENDORED_RUNNER_SHA256 if expected is None else dict(expected)
+    got = vendored_runner_sha256()
     bad = sorted(k for k in want if got.get(k) != want[k])
     if bad:
         raise RuntimeError(f"REFUSED (Q-70): the vendored lockstep {bad} source hashes to "
                            f"{[got.get(k) for k in bad]}, not the {[want[k] for k in bad]} this adapter was composed "
                            "from; re-compose extended/place_records.py under the new snapshot's row")
+
+
+def runner_recomposition_problems() -> list[str]:
+    """This module's `_run_paths` and `_path_chunk` against the vendored ones, statement for statement, with every line
+    marked Q-70 removed (`extended.campaign.recomposition_problems`); empty when the only differences are the marked
+    lines."""
+    from extended import campaign as XC
+
+    return ([f"_run_paths: {x}" for x in XC.recomposition_problems(_run_paths, _vl._run_paths, (MARKER,))]
+            + [f"_path_chunk: {x}" for x in XC.recomposition_problems(_path_chunk, _vl._path_chunk, (MARKER,))])
 
 
 # ------------------------------------------------------------------------------------------------ the blocks' offers
@@ -188,8 +191,8 @@ def block_offer_ids(t: pd.DataFrame, days: Sequence[Any], blocks: Sequence[Any],
                     ) -> list[np.ndarray]:
     """Each block's offer ids in its trade order, for a trade table laid on its blocks as
     `score_fv3_grid.gate_blocks` lays it -- one block a day of `days`, a day's trades in stable `entry_t` order.
-    `column` names the id (None: the table's index). Refuses (`ValueError`) unless the blocks number each day's trades and carry
-    the same entry times, so an id can never be attached to another trade."""
+    `column` names the id (None: the table's index). Refuses (`ValueError`) unless the blocks number each day's
+    trades and carry the same entry times, so an id can never be attached to another trade."""
     by = ({str(d): g.sort_values("entry_t", kind="stable") for d, g in t.groupby(t["date"].astype(str))}
           if len(t) else {})
     if len(days) != len(blocks):
@@ -380,6 +383,19 @@ def record_path(x: LockstepPath, *, path: int, path_seed: int, shift: str, enfor
             "counts": Counter({p: int(ref.get(p, 0)) for p in SINGLE_PLACES}), "problems": problems[:20]}
 
 
+@dataclass(frozen=True)
+class RecordedPath(LockstepPath):
+    """A path as the recorded runner hands it back: the unrecorded call's path, and beside it its place record (what
+    `record_path` read from its ledger and day rows before they were dropped)."""
+
+    place_record: dict = field(default_factory=dict)
+
+
+def plain_path(x: LockstepPath) -> LockstepPath:
+    """The vendored `LockstepPath` of a path, its record (if any) left behind."""
+    return LockstepPath(**{f.name: getattr(x, f.name) for f in fields(LockstepPath)})
+
+
 class PathReducer:
     """One campaign's (shift, level) reducer, a path at a time (module level, so it pickles to a path worker): reads
     the path's record (`record_path`), keeps the columns asked for, and hands back the path as the caller asked for it
@@ -403,6 +419,10 @@ class PathReducer:
         r.keep_trades, r.keep_days = bool(keep_trades), bool(keep_days)
         return r
 
+    def runner(self, *, keep_trades: bool, keep_days: bool) -> Callable:
+        """The campaign's path runner with this reducer: this module's `_run_paths`, told what the caller keeps."""
+        return functools.partial(_run_paths, reducer=self.told(keep_trades=keep_trades, keep_days=keep_days))
+
     def __call__(self, path_index: int, path_seed: int, x: LockstepPath) -> tuple[LockstepPath, dict[str, Any]]:
         rec = record_path(x, path=int(path_index), path_seed=int(path_seed), shift=self.shift,
                           enforcement_p=self.enforcement_p, meta=self.meta, combine_floor0=self.combine_floor0,
@@ -417,29 +437,45 @@ class PathReducer:
             kw["campaign_days"] = ()
         return (replace(x, **kw) if kw else x), rec
 
+    def one_path(self, protocol: Any, path_index: int, path_seed: int, path_kwargs: dict[str, Any],
+                 draw_factories_for_path: Any, flip_for_path: Any, wallet_for_path: Any) -> RecordedPath:
+        """One path as the vendored `_one_path` runs it (the recorders on in `path_kwargs`), read and reduced here."""
+        x = _one_path(protocol, path_index, path_seed, path_kwargs, draw_factories_for_path, flip_for_path,
+                      wallet_for_path)
+        kept, rec = self(path_index, path_seed, x)
+        return RecordedPath(**{f.name: getattr(kept, f.name) for f in fields(LockstepPath)}, place_record=rec)
 
-# ------------------------------------------------------------------------------------------------ the campaign
+
+# ------------------------------------------------------------------------------------------------ the path runner
 
 
-def _recorded_chunk(task: tuple) -> tuple[list[LockstepPath], list[dict[str, Any]], Any]:
-    """A worker's share (the vendored `_path_chunk`, each path reduced where it ran): its paths in order, their records,
-    and the draw factory's `export_state()` after them (None without one)."""
-    protocol, path_kwargs, factories, flip_for_path, items, reducer = task
-    out, recs = [], []
-    for i, s in items:
-        x, rec = reducer(i, s, _one_path(protocol, i, s, path_kwargs, factories, flip_for_path, None))
-        out.append(x)
-        recs.append(rec)
+def _path_chunk(task: tuple,
+                reducer: Any,                                                   # Q-70
+                ) -> tuple[list[LockstepPath], Any]:
+    """The vendored `_path_chunk`, each path run through the reducer (Q-70): a worker's share, its paths in order, and
+    the draw factory's `export_state()` after them (None without one)."""
+    _one_path = reducer.one_path                                                # Q-70: each path read where it ran
+    protocol, path_kwargs, factories, flip_for_path, items = task
+    out = [_one_path(protocol, i, s, path_kwargs, factories, flip_for_path, None) for i, s in items]
     export = getattr(factories, "export_state", None)
-    return out, recs, (export() if callable(export) else None)
+    return out, (export() if callable(export) else None)
 
 
-def _run_paths_recorded(protocol: Any, path_kwargs: dict[str, Any], seeds: Sequence[int],
-                        draw_factories_for_path: Callable[[int], tuple] | None,
-                        flip_for_path: Callable[[int], tuple] | None, wallet_for_path: Callable[[int], Any] | None,
-                        *, reducer: PathReducer, workers: int = 1, pool: Any = None,
-                        memory_per_worker_gb: float | None = None) -> tuple[list[LockstepPath], list[dict[str, Any]]]:
-    """The vendored `_run_paths`, each path reduced where it ran (Q-70): the paths and their records in path order."""
+_recorded_path_chunk = _path_chunk
+
+
+def _run_paths(protocol: Protocol, path_kwargs: dict[str, Any], seeds: Sequence[int],
+               draw_factories_for_path: Callable[[int], tuple] | None, flip_for_path: Callable[[int], tuple] | None,
+               wallet_for_path: Callable[[int], Any] | None, *, workers: int = 1, pool: Any = None,
+               memory_per_worker_gb: float | None = None,
+               reducer: Any,                                                    # Q-70
+               ) -> list[LockstepPath]:
+    """The vendored `_run_paths` (Q-70: with the ledger and the day recorder on, and every path read by the reducer
+    where it ran -- here, or in its worker): the paths in path order, each a `RecordedPath`."""
+    check_vendored_runner_source()                                              # Q-70: refused unless pinned
+    path_kwargs = dict(path_kwargs, record_trades=True, record_days=True)       # Q-70: both recorders on
+    _one_path = reducer.one_path                                                # Q-70: each path read where it ran
+    _path_chunk = functools.partial(_recorded_path_chunk, reducer=reducer)     # Q-70: and in a worker
     items = list(enumerate(seeds))
     if int(workers) > 1 or pool is not None:         # refused whatever the memory guard then allows
         check_parallel_inputs(protocol, path_kwargs, draw_factories_for_path, flip_for_path,
@@ -453,225 +489,29 @@ def _run_paths_recorded(protocol: Any, path_kwargs: dict[str, Any], seeds: Seque
     if (pool is None and own is None) or len(items) <= 1:
         if own is not None:
             own.shutdown()
-        paths, recs = [], []
-        for i, s in items:
-            x, rec = reducer(i, s, _one_path(protocol, i, s, path_kwargs, draw_factories_for_path, flip_for_path,
-                                             wallet_for_path))
-            paths.append(x)
-            recs.append(rec)
-        return paths, recs
+        return [_one_path(protocol, i, s, path_kwargs, draw_factories_for_path, flip_for_path, wallet_for_path)
+                for i, s in items]
     k = min(len(items), 4 * n)                        # a few chunks a worker, so a slow chunk does not idle the rest
     bounds = [round(j * len(items) / k) for j in range(k + 1)]
-    tasks = [(protocol, path_kwargs, draw_factories_for_path, flip_for_path, items[bounds[j]:bounds[j + 1]], reducer)
+    tasks = [(protocol, path_kwargs, draw_factories_for_path, flip_for_path, items[bounds[j]:bounds[j + 1]])
              for j in range(k)]
     try:
         with _WorkerEnvironment():                    # workers start during the submissions, with one BLAS thread
-            futures = [(pool or own).submit(_recorded_chunk, task) for task in tasks]
+            futures = [(pool or own).submit(_path_chunk, task) for task in tasks]
         done = [f.result() for f in futures]
     finally:
         if own is not None:
             own.shutdown()
     results: list[LockstepPath] = []
-    records: list[dict[str, Any]] = []
     absorb = getattr(draw_factories_for_path, "import_state", None)
-    for chunk, recs, state in done:
+    for chunk, state in done:
         results.extend(chunk)
-        records.extend(recs)
         if state is not None and callable(absorb):
             absorb(state)
-    return results, records
-
-
-def simulate_lockstep_campaign_recorded(
-    protocol: Protocol,
-    *,
-    edge: float,
-    seed: int,
-    initial_bankroll: float,
-    rules: Any | None = None,
-    horizon_days: int = 504,
-    n_paths: int = 500,
-    subscription: float | None = None,
-    billing_days: int | None = None,
-    activation: float | None = None,
-    payout_lag_days: int | None = None,
-    payout_method: str = "aeropay",
-    activation_timing: str = ACTIVATION_ON_ACTIVATION,
-    max_concurrent_accounts: int | None = None,
-    max_concurrent_combines: int = 1,
-    reinvest: bool = True,
-    max_attempts: int | None = None,
-    stop_buying_when_queued: bool = True,
-    combine_max_days: int = 2000,
-    funded_horizon_days: int = 504,
-    draw_factories_for_path: Callable[[int], tuple] | None = None,
-    record_trades: bool = False,
-    require_verified_cap: bool = True,
-    ledger: Any | None = None,
-    conduct: ConductModel | None = None,
-    record_days: bool = False,
-    near_miss_frac: float = 0.2,
-    reset_failed_combines: bool = False,
-    reset_fee: float | None = None,
-    risk_policy: Any = None,
-    max_total_accounts: int | None = None,
-    payout_timing: str = DEFAULT_PAYOUT_TIMING,
-    wallet_for_path: Callable[[int], Any] | None = None,
-    flip_for_path: Callable[[int], tuple] | None = None,
-    funded_account_cls: type | None = None,
-    household_closure: bool | None = None,
-    focused_trader: FocusedTraderModel | None = None,
-    purchase_budget: tuple[int, int] | None = None,
-    workers: int = 1,
-    pool: Any = None,
-    memory_per_worker_gb: float | None = None,
-    wallet_stop: float | None = None,
-    pause_after_funded: int | None = None,
-    seat_ramp: int | None = None,
-    path_reducer: PathReducer | None = None,
-) -> tuple[CampaignSummary, list[LockstepPath], list[dict[str, Any]]]:
-    """The vendored `simulate_lockstep_campaign` (its docstring holds every argument's meaning), every path recorded
-    and reduced by `path_reducer` as it finishes (Q-70). Returns (summary, paths, records): the summary and paths those
-    of the vendored call with the caller's `record_trades` and `record_days`, the records one a path in path order."""
-    check_vendored_campaign_source()
-    if not isinstance(path_reducer, PathReducer):
-        raise TypeError(f"path_reducer must be a PathReducer, got {type(path_reducer).__name__}")
-    reducer = path_reducer.told(keep_trades=record_trades, keep_days=record_days)                       # Q-70
-
-    # ---- from here to the end, the vendored body; the changes are marked "Q-70"
-    from propedge.contract.adapter import Rules
-
-    check_payout_timing(payout_timing)
-    rules = rules or Rules()
-    subscription = float(rules.subscription if subscription is None else subscription)
-    billing_days = int(rules.billing_days if billing_days is None else billing_days)
-    activation = float(rules.activation if activation is None else activation)
-
-    need_ledger = (max_concurrent_accounts is None and require_verified_cap) or (
-        payout_lag_days is None
-    )
-    if need_ledger and ledger is None:
-        from propedge.contract.rules import load_rules
-
-        ledger = load_rules()
-    if max_concurrent_accounts is None:
-        if require_verified_cap:
-            max_concurrent_accounts = int(ledger.value("max_active_funded_accounts"))
-        else:
-            max_concurrent_accounts = protocol.max_concurrent_accounts
-    if payout_lag_days is None:
-        from propedge.campaign.payout_method import payout_method_terms
-
-        terms = payout_method_terms(payout_method, ledger=ledger)
-        payout_lag_days = terms.lag_days
-        lag_source = f"ledger {terms.lag_key} (article {terms.article_id})"
-    else:
-        lag_source = "explicit argument"
-
-    path_kwargs = dict(
-        edge=edge, rules=rules,
-        initial_bankroll=initial_bankroll, horizon_days=horizon_days,
-        max_concurrent_accounts=max_concurrent_accounts,
-        subscription=subscription, billing_days=billing_days, activation=activation,
-        payout_lag_days=int(payout_lag_days),
-        max_concurrent_combines=max_concurrent_combines, reinvest=reinvest,
-        max_attempts=max_attempts, stop_buying_when_queued=stop_buying_when_queued,
-        activation_timing=activation_timing, combine_max_days=combine_max_days,
-        funded_horizon_days=funded_horizon_days,
-        record_trades=True, conduct=conduct,                                    # Q-70: the ledger on (the reducer
-        record_days=True, near_miss_frac=near_miss_frac,                        # Q-70: keeps what the caller asked)
-        reset_failed_combines=reset_failed_combines, reset_fee=reset_fee,
-        risk_policy=risk_policy, max_total_accounts=max_total_accounts,
-        payout_timing=payout_timing,
-        funded_account_cls=funded_account_cls,                                  # R7
-        household_closure=household_closure,                                    # R7 (multi-firm D-30)
-    )
-    if focused_trader is not None:                        # D-495 (4): passed only when given
-        path_kwargs["focused_trader"] = focused_trader
-    if purchase_budget is not None:                       # D-501: passed only when given
-        budget = check_purchase_budget(purchase_budget)
-        path_kwargs["purchase_budget"] = budget
-    entry: dict[str, Any] = {}                            # D-630: each passed only when given
-    if wallet_stop is not None:
-        entry["wallet_stop"] = check_wallet_stop(wallet_stop)
-    if pause_after_funded is not None:
-        entry["pause_after_funded"] = check_pause_after_funded(pause_after_funded)
-    if seat_ramp is not None:
-        entry["seat_ramp"] = check_seat_ramp(seat_ramp, max_total_accounts)
-    path_kwargs.update(entry)
-    seeds = path_seeds(seed, n_paths)
-    results, records = _run_paths_recorded(                                                             # Q-70
-        protocol, path_kwargs, seeds, draw_factories_for_path, flip_for_path, wallet_for_path, reducer=reducer,
-        workers=workers, pool=pool, memory_per_worker_gb=memory_per_worker_gb)
-
-    provenance_extra: dict[str, Any] = {}
-    if funded_account_cls is not None:                    # R7: named only when given, so Topstep's provenance is as before
-        provenance_extra["funded_account_cls"] = f"{funded_account_cls.__module__}.{funded_account_cls.__qualname__}"
-        if hasattr(funded_account_cls, "HOUSEHOLD_CLOSES_AT_LIVE"):      # R7 (multi-firm D-30): the reading taken
-            provenance_extra["household_closure"] = bool(
-                funded_account_cls.HOUSEHOLD_CLOSES_AT_LIVE if household_closure is None else household_closure)
-    if focused_trader is not None:                        # D-495 (4): named only when given
-        provenance_extra["focused_trader"] = {"decision": "D-495", **focused_trader.as_dict()}
-    if purchase_budget is not None:                       # D-501: named only when given
-        provenance_extra["purchase_budget"] = {"decision": "D-501", "k": budget[0], "window_days": budget[1]}
-    for name, value in entry.items():                     # D-630: named only when given
-        provenance_extra[name] = {"decision": "D-630", "value": value}
-    summary = summarise_paths(
-        [r.path for r in results],
-        protocol=protocol, edge=edge, seed=seed, initial_bankroll=initial_bankroll,
-        horizon_days=horizon_days, n_paths=n_paths, payout_lag_days=int(payout_lag_days),
-        payout_schedule="exact (lockstep, trade-level)",
-        max_concurrent_accounts=int(max_concurrent_accounts),
-        payout_method=payout_method, activation_timing=activation_timing,
-        provenance={
-            "simulation": "propedge.campaign.lockstep.simulate_lockstep_campaign",
-            "subscription": subscription,
-            "billing_days": billing_days,
-            "activation": activation,
-            "activation_timing": activation_timing,
-            "payout_method": payout_method,
-            "payout_lag_source": lag_source,
-            "reinvest": reinvest,
-            "max_concurrent_combines": max_concurrent_combines,
-            "max_attempts": max_attempts,
-            "combine_max_days": combine_max_days,
-            "funded_horizon_days": funded_horizon_days,
-            "conduct": None if conduct is None else {"decision": "D-145", **conduct.as_dict()},
-            "payout_timing": payout_timing,
-            "payout_timing_note": PAYOUT_TIMING_NOTES[payout_timing],
-            "draws": (
-                "independent binary draws per account (validation limit)"
-                if draw_factories_for_path is None
-                else "caller-supplied draw factories"
-            ),
-            "note": (
-                "Every account is stepped through each calendar day by its own state machine "
-                "(Combine and funded rules as the vendored engine applies them). With "
-                "independent streams this reproduces reinvest.simulate_path exactly "
-                "(tests/test_lockstep.py)."
-            ),
-            **provenance_extra,
-        },
-    )
-    return summary, results, records                                                                   # Q-70
+    return results
 
 
 # ------------------------------------------------------------------------------------------------ the recorder
-
-
-class _RecordedCampaign:
-    """The campaign function the gate calls for one (shift, level) that is recorded: the vendored signature, returning
-    (summary, paths) as the vendored call does, the records handed to the recorder."""
-
-    def __init__(self, recorder: "PlaceRecorder", reducer: PathReducer):
-        self.recorder = recorder
-        self.reducer = reducer
-
-    def __call__(self, protocol: Any, **kw: Any) -> tuple[CampaignSummary, list[LockstepPath]]:
-        summary, paths, recs = simulate_lockstep_campaign_recorded(protocol, path_reducer=self.reducer, **kw)
-        self.recorder._collect(self.reducer.shift, self.reducer.enforcement_p, recs, n_paths=int(kw["n_paths"]),
-                               horizon_days=int(kw["horizon_days"]), seed=int(kw["seed"]))
-        return summary, paths
 
 
 class PlaceRecorder:
@@ -680,9 +520,9 @@ class PlaceRecorder:
 
     `shifts`: the arms recorded (default both); `levels`: the denial levels recorded (None: every level the gate runs);
     `dates`: one date a day block (the campaign's blocks, the gate's order); `offer_ids`: one id a trade, block by block
-    in each block's trade order (`block_offer_ids` builds them from a trade table); `columns`: the trade columns kept
-    (None: every one of `place_fields.TRADE_COLUMNS`; a subset saves memory on a 500-path run -- every check still runs
-    on the full record before the rest is dropped)."""
+    in each block's trade order (`block_offer_ids` builds them from a trade table); `columns`: the trade columns kept,
+    in the schema's order (None: every one of `place_fields.TRADE_COLUMNS`; a subset saves memory on a 500-path run --
+    every check still runs on the full record before the rest is dropped)."""
 
     def __init__(self, *, shifts: Sequence[str] = SHIFTS, levels: Sequence[float] | None = None,
                  dates: Sequence[Any] | None = None, offer_ids: Sequence[Sequence[Any]] | None = None,
@@ -706,23 +546,27 @@ class PlaceRecorder:
     def wants(self, shift: str, enforcement_p: float) -> bool:
         return str(shift) in self.shifts and (self.levels is None or float(enforcement_p) in self.levels)
 
-    def campaign(self, shift: str, enforcement_p: float, blk: Sequence[Any], rules: Any) -> _RecordedCampaign:
-        """The campaign function for one recorded (shift, level): called by the gate exactly as it calls the vendored
-        `simulate_lockstep_campaign`. The arm's own blocks give the offers' times and sides (`gate.shifted_blocks` moves
-        outcomes only, so both arms carry the same)."""
-        red = PathReducer(shift=shift, enforcement_p=enforcement_p,
-                          meta=BlockMeta(blk, dates=self.dates, offer_ids=self.offer_ids),
-                          combine_floor0=-float(rules.mll), funded_floor0=float(rules.xfa_mll_start),
-                          mll=float(rules.mll), columns=self.columns)
-        return _RecordedCampaign(self, red)
+    def reducer(self, shift: str, enforcement_p: float, blk: Sequence[Any], rules: Any) -> PathReducer:
+        """The campaign's `path_reducer` for one recorded (shift, level). The arm's own blocks give the offers' times
+        and sides (`gate.shifted_blocks` moves outcomes only, so both arms carry the same)."""
+        return PathReducer(shift=shift, enforcement_p=enforcement_p,
+                           meta=BlockMeta(blk, dates=self.dates, offer_ids=self.offer_ids),
+                           combine_floor0=-float(rules.mll), funded_floor0=float(rules.xfa_mll_start),
+                           mll=float(rules.mll), columns=self.columns)
 
-    def _collect(self, shift: str, enforcement_p: float, recs: list[dict[str, Any]], *, n_paths: int,
-                 horizon_days: int, seed: int) -> None:
+    def collect(self, shift: str, enforcement_p: float, paths: Sequence[LockstepPath], *, n_paths: int,
+                horizon_days: int, seed: int) -> list[LockstepPath]:
+        """Take one recorded campaign's records off its paths (each a `RecordedPath`, in path order) and hand back the
+        plain paths -- the unrecorded campaign's."""
         key = (str(shift), float(enforcement_p))
         if key in self._recs:
             raise RuntimeError(f"the recorder already holds {key}: one recorder a gate call")
-        self._recs[key] = list(recs)
+        not_rec = [i for i, x in enumerate(paths) if not isinstance(x, RecordedPath)]
+        if not_rec:
+            raise RuntimeError(f"paths {not_rec[:5]} of {key} came back unrecorded")
+        self._recs[key] = [x.place_record for x in paths]
         self._runs[key] = {"n_paths": int(n_paths), "horizon_days": int(horizon_days), "seed": int(seed)}
+        return [plain_path(x) for x in paths]
 
     # ---- the records
 
@@ -732,8 +576,8 @@ class PlaceRecorder:
     def run_of(self, shift: str, enforcement_p: float) -> dict[str, int]:
         return dict(self._runs[(str(shift), float(enforcement_p))])
 
-    def _frame(self, part: str, fields: Sequence[PF.Field], keys: Sequence[tuple[str, float]] | None) -> pd.DataFrame:
-        names = [f.name for f in fields]
+    def _frame(self, part: str, fields_: Sequence[PF.Field], keys: Sequence[tuple[str, float]] | None) -> pd.DataFrame:
+        names = [f.name for f in fields_]
         if part == "trades" and self.columns is not None:
             names = list(self.columns)
         chunks = []
@@ -797,6 +641,7 @@ def run_gate_recorded(blocks: Sequence[Any], *, recorder: PlaceRecorder | None =
     return rows, passed, rec
 
 
-__all__ = ["VENDORED_CAMPAIGN_SHA256", "SHIFTS", "PLACES", "SINGLE_PLACES", "SESSIONS_PER_YEAR",
-           "vendored_campaign_sha256", "check_vendored_campaign_source", "BlockMeta", "block_offer_ids",
-           "record_path", "PathReducer", "simulate_lockstep_campaign_recorded", "PlaceRecorder", "run_gate_recorded"]
+__all__ = ["VENDORED_RUNNER_SHA256", "MARKER", "SHIFTS", "PLACES", "SINGLE_PLACES", "SESSIONS_PER_YEAR",
+           "vendored_runner_sha256", "check_vendored_runner_source", "runner_recomposition_problems", "BlockMeta",
+           "block_offer_ids", "record_path", "RecordedPath", "plain_path", "PathReducer", "PlaceRecorder",
+           "run_gate_recorded"]

@@ -3,6 +3,8 @@
     from extended import use_vendored_stage2; use_vendored_stage2()
     from extended import gate as XG
     df, passed = XG.run_gate(blocks, ..., funded_account_cls=MyFundedAccount)   # every vendored argument, plus this one
+    df, passed = XG.run_gate(blocks, ..., payout_lag_days=2, household_closure=True,   # Q-71: and these three
+                             combine_account_cls=MyCombineAccount)
 
 **Why it exists.** The vendored engine already takes another funded-account class, path by path
 (`simulate_lockstep_path(funded_account_cls=...)`, `simulate_lockstep_campaign(funded_account_cls=...)`; R7). Its
@@ -27,19 +29,41 @@ Every helper the body calls is the vendored one, imported, never copied: `shifte
 sha256 `VENDORED_RUN_GATE_SHA256`. Every call checks it first and refuses (`RuntimeError`) if the vendored function has
 changed -- a newer Stage 2 snapshot is a new decision row, and this module is re-composed and re-checked under it.
 
+**Q-71 (the other-firms reading's A-8, `prereg/DRAFT_RD_firms.md` 4.6; E-038): the gate for another plan.** Three more
+keywords, each None by default, each checked before anything runs, each passed to the campaign only when given and
+named on every row only when given (so with all three absent the rows are the vendored gate's):
+
+4. `payout_lag_days` -- the sessions from a payout's request to its arrival, a whole number of at least 0. None takes
+   the vendored gate's own lag: the campaign's `payout_method="aeropay"` read from Stage 2's verified ledger
+   (`topstep_payout_lag_days()`). A plan's lag is given with that plan's own `rules` (its payout fee): Stage 2 D-24's
+   rule that a lag is never paired with another method's fee is the caller's to keep (A-1's);
+5. `household_closure` -- a funded class's household rule (Stage 2 R7, multi-firm D-30): True closes every other live
+   account at the first close an account raises it, and the path buys nothing more; False only counts the triggers;
+   None takes the class's own default (`HOUSEHOLD_CLOSES_AT_LIVE`). True is refused (`ValueError`) for a funded class
+   that declares no household rule -- Topstep's has none;
+6. `combine_account_cls` -- the evaluation account's class on every path of every arm, the vendored `CombineAccount`
+   or a subclass of it (Stage 2 D-619), checked as `funded_account_cls` is (a subclass; able to pickle when the paths
+   run in workers). The vendored campaign does not pass it to its paths, so the gate calls `extended.campaign`'s
+   re-composed campaign -- on every call, with or without it: that campaign with no class is the vendored one.
+
+Rows gain `payout_lag_days`, `household_closure` and `combine_account_cls` (the class's module and name), each only when
+given. `gate_recomposition_problems` checks that this `run_gate`, with every line marked Q-47, Q-71 or Q-70 removed,
+parses to the vendored `run_gate` statement for statement.
+
 **The identities** (`identity/gate_identity.py`):
 
-- synthetic, in the fast tier: the adapter equals the vendored gate, with no class and with `PassThroughFundedAccount`;
+- synthetic, in the fast tier: the adapter equals the vendored gate, with no class, with `PassThroughFundedAccount`,
+  and with every seam given at Topstep's values; each Q-71 keyword has its documented effect on toy campaigns;
 - slow: P-14's and P-16's registered gate paths at 4 paths, under the run lock;
 - heavy, the lead's: all 500 paths of each.
 
 **Q-70's addition, the place recorder** (`extended/place_records.py`): the keyword `recorder` (default None), an
-`extended.place_records.PlaceRecorder`. For each (shift, level) it records, the campaign is called through the
-recorder's campaign function -- the vendored `simulate_lockstep_campaign` re-composed so that each path's ledger and day
-rows are read into the recorder as the path finishes and dropped -- with the same arguments, the call's text unchanged;
-every other (shift, level), and every call with None, calls the vendored function exactly. The paths it hands back are
-those of the unrecorded call, so the rows, the hooks and the gate flag are unchanged and the row carries no new column
-(`identity/place_records_identity.py`).
+`extended.place_records.PlaceRecorder`. For each (shift, level) it records, the campaign (`extended.campaign`'s) gets
+one more keyword, `path_reducer`, which runs every path with the engine's ledger and day recorder on and reads each
+path into compact columns where it ran, dropping the rows; after the call the records go to the recorder and the paths
+handed on are the unrecorded campaign's (`recorded_paths`). Every other (shift, level), and every call with None, calls
+the campaign exactly as without a recorder: the rows, the hooks and the gate flag are unchanged and the row carries no
+new column (`identity/place_records_identity.py`). Its lines in `run_gate` are marked Q-70.
 """
 from __future__ import annotations
 
@@ -66,8 +90,13 @@ from propedge.campaign.gate import (  # noqa: E402
     mean_r,
     shifted_blocks,
 )
-from propedge.campaign.lockstep import FundedAccount  # noqa: E402
+from propedge.campaign.lockstep import CombineAccount, FundedAccount  # noqa: E402
 from propedge.outcomes.distribution import DayBlock  # noqa: E402
+
+from extended import campaign as _xc  # noqa: E402  (Q-71: the campaign re-composed to pass combine_account_cls)
+
+#: the comment markers on every added line of `run_gate` (Q-47's class, Q-71's seams, Q-70's recorder)
+GATE_MARKERS = ("Q-47", "Q-71", "Q-70")
 
 #: sha256 of the vendored `propedge.campaign.gate.run_gate`'s source text (LF), from which `run_gate` below was composed
 #: (Stage 2 f1b42e2, vendored under E-002)
@@ -114,6 +143,131 @@ def class_name(funded_account_cls: type) -> str:
     return f"{funded_account_cls.__module__}.{funded_account_cls.__qualname__}"
 
 
+# ------------------------------------------------------------------------------------------------ Q-71 (A-8)
+
+
+class PassThroughCombineAccount(CombineAccount):
+    """Topstep's evaluation account, unchanged: a subclass that overrides nothing, given through the Q-71 seam to show
+    that passing an evaluation class changes nothing."""
+
+
+def check_combine_account_cls(combine_account_cls: type | None, workers: int) -> None:
+    """Refuse a class that is not the vendored `CombineAccount` or a subclass of it (`TypeError`), and, when the paths
+    run in workers, one that cannot pickle (a class defined inside a function cannot reach a worker)."""
+    if combine_account_cls is None:
+        return
+    if not (isinstance(combine_account_cls, type) and issubclass(combine_account_cls, CombineAccount)):
+        raise TypeError(f"combine_account_cls must be the vendored CombineAccount or a subclass of it, got "
+                        f"{combine_account_cls!r}")
+    if int(workers) > 1:
+        try:
+            pickle.loads(pickle.dumps(combine_account_cls))
+        except Exception as exc:          # noqa: BLE001 -- any failure means it cannot reach a path worker
+            raise TypeError(f"combine_account_cls {combine_account_cls!r} cannot reach a path worker (it does not "
+                            f"pickle: {exc}); define it at a module's top level") from exc
+
+
+def check_payout_lag_days(payout_lag_days: Any) -> int | None:
+    """None, or the lag as a whole number of sessions of at least 0. Refused: a bool, a float or anything else that is
+    not an integer (`TypeError`) -- the vendored campaign would truncate 2.5 to 2 silently -- and a negative lag
+    (`ValueError`)."""
+    if payout_lag_days is None:
+        return None
+    if isinstance(payout_lag_days, (bool, np.bool_)) or not isinstance(payout_lag_days, (int, np.integer)):
+        raise TypeError(f"payout_lag_days must be a whole number of sessions, got {payout_lag_days!r}")
+    if int(payout_lag_days) < 0:
+        raise ValueError(f"payout_lag_days must be at least 0, got {payout_lag_days!r}")
+    return int(payout_lag_days)
+
+
+def check_household_closure(household_closure: Any, funded_account_cls: type | None) -> bool | None:
+    """None, or the household rule's reading as a bool (`TypeError` for anything else). True is refused
+    (`ValueError`, as the vendored path refuses it) unless the funded class -- the vendored `FundedAccount` when none is
+    given -- declares a household rule (`HOUSEHOLD_CLOSES_AT_LIVE`)."""
+    if household_closure is None:
+        return None
+    if not isinstance(household_closure, (bool, np.bool_)):
+        raise TypeError(f"household_closure must be None, True or False, got {household_closure!r}")
+    cls = FundedAccount if funded_account_cls is None else funded_account_cls
+    if bool(household_closure) and not hasattr(cls, "HOUSEHOLD_CLOSES_AT_LIVE"):
+        raise ValueError(f"{cls.__qualname__} has no household rule: household_closure=True applies only to a funded "
+                         "class that declares one (HOUSEHOLD_CLOSES_AT_LIVE)")
+    return bool(household_closure)
+
+
+def seam_arguments(payout_lag_days: Any, household_closure: Any, combine_account_cls: type | None,
+                   funded_account_cls: type | None, workers: int) -> dict[str, Any]:
+    """Q-71's three keywords, checked, as the campaign's keywords: each present only when given, in the order
+    `payout_lag_days`, `household_closure`, `combine_account_cls`. Empty when none is given."""
+    lag = check_payout_lag_days(payout_lag_days)
+    household = check_household_closure(household_closure, funded_account_cls)
+    check_combine_account_cls(combine_account_cls, int(workers))
+    out: dict[str, Any] = {}
+    if lag is not None:
+        out["payout_lag_days"] = lag
+    if household is not None:
+        out["household_closure"] = household
+    if combine_account_cls is not None:
+        out["combine_account_cls"] = combine_account_cls
+    return out
+
+
+def seam_columns(seam_kw: dict[str, Any]) -> dict[str, Any]:
+    """The row columns that name Q-71's keywords given: the lag (sessions), the household reading (bool), the
+    evaluation class (its module and name)."""
+    return {k: (class_name(v) if k == "combine_account_cls" else v) for k, v in seam_kw.items()}
+
+
+def topstep_payout_lag_days(ledger: Any | None = None) -> int:
+    """The lag the gate takes when `payout_lag_days` is None: its campaign's `payout_method="aeropay"`, read from Stage
+    2's verified ledger (`ledger`, or the vendored `config/rules.yaml` when None) by the vendored
+    `payout_method_terms`."""
+    from propedge.campaign.payout_method import payout_method_terms
+
+    return int(payout_method_terms("aeropay", ledger=ledger).lag_days)
+
+
+def gate_recomposition_problems() -> list[str]:
+    """This module's `run_gate` against the vendored one, statement for statement, with every line marked Q-47, Q-71
+    or Q-70 removed (`extended.campaign.recomposition_problems`); empty when the only differences are the marked
+    lines."""
+    return _xc.recomposition_problems(run_gate, _vg.run_gate, GATE_MARKERS)
+
+
+# ------------------------------------------------------------------------------------------------ Q-70 (the recorder)
+
+
+def check_recorder(recorder: Any) -> None:
+    """None, or an `extended.place_records.PlaceRecorder` (`TypeError` for anything else); with one, the vendored path
+    runner it re-composes is checked against its pins first."""
+    if recorder is None:
+        return
+    from extended.place_records import PlaceRecorder, check_vendored_runner_source
+
+    if not isinstance(recorder, PlaceRecorder):
+        raise TypeError(f"recorder must be an extended.place_records.PlaceRecorder, got {type(recorder).__name__}")
+    check_vendored_runner_source()
+
+
+def recorder_arguments(recorder: Any, shift: str, enforcement_p: float, blk: Sequence[DayBlock], rules: Any
+                       ) -> dict[str, Any]:
+    """The campaign's keyword for one (shift, level): `path_reducer` when the recorder records it, else nothing (so
+    the campaign is called exactly as without a recorder)."""
+    if recorder is None or not recorder.wants(shift, float(enforcement_p)):
+        return {}
+    return {"path_reducer": recorder.reducer(shift, float(enforcement_p), blk, rules)}
+
+
+def recorded_paths(recorder: Any, rec_kw: dict[str, Any], paths: list, *, shift: str, enforcement_p: float,
+                   n_paths: int, horizon_days: int, seed: int) -> list:
+    """The campaign's paths as the gate reads them: unchanged when nothing was recorded; else each path's record taken
+    into the recorder and the path handed on as the unrecorded campaign's (`PlaceRecorder.collect`)."""
+    if not rec_kw:
+        return paths
+    return recorder.collect(shift, float(enforcement_p), paths, n_paths=int(n_paths), horizon_days=int(horizon_days),
+                            seed=int(seed))
+
+
 def run_gate(
     blocks: Sequence[DayBlock],
     *,
@@ -154,33 +308,37 @@ def run_gate(
     pause_after_funded: int | None = None,
     seat_ramp: int | None = None,
     mean_block: float | None = None,
-    funded_account_cls: type | None = None,
-    recorder: Any = None,
+    funded_account_cls: type | None = None,                                     # Q-47
+    payout_lag_days: int | None = None,                                         # Q-71
+    household_closure: bool | None = None,                                      # Q-71
+    combine_account_cls: type | None = None,                                    # Q-71
+    recorder: Any = None,                                                       # Q-70
 ) -> tuple[pd.DataFrame, bool]:
     """The vendored `propedge.campaign.gate.run_gate` (its docstring holds every argument's meaning), plus
-    `funded_account_cls`: the funded account's class on every path of every arm -- the vendored `FundedAccount` or a
-    subclass of it -- passed to `simulate_lockstep_campaign` only when given, and named on every row
-    (`funded_account_cls`) only when given. None runs the vendored engine call exactly.
+    `funded_account_cls` (Q-47): the funded account's class on every path of every arm -- the vendored `FundedAccount`
+    or a subclass of it -- passed to the campaign only when given, and named on every row (`funded_account_cls`) only
+    when given; and Q-71's `payout_lag_days`, `household_closure` and `combine_account_cls` (the module docstring, items
+    4-6), each passed and named only when given. With none of the four given the engine call is the vendored one --
+    through `extended.campaign`'s re-composed campaign, which with no evaluation class is the vendored campaign.
 
     `recorder` (Q-70): an `extended.place_records.PlaceRecorder`; the (shift, level) campaigns it asks for are recorded
     into it (its `trades()`, `accounts()`, `per_year()`, `problems()` afterwards), every row and path unchanged."""
-    check_vendored_source()
-    check_funded_account_cls(funded_account_cls, int(workers))
-    cls_kw: dict[str, Any] = {} if funded_account_cls is None else {"funded_account_cls": funded_account_cls}
-    if recorder is not None:                             # Q-70
-        from extended.place_records import PlaceRecorder, check_vendored_campaign_source
+    check_vendored_source()                                                     # Q-47
+    _xc.check_vendored_source()                                                 # Q-71
+    check_funded_account_cls(funded_account_cls, int(workers))                  # Q-47
+    cls_kw: dict[str, Any] = {} if funded_account_cls is None else {"funded_account_cls": funded_account_cls}  # Q-47
+    seam_kw = seam_arguments(payout_lag_days, household_closure, combine_account_cls,  # Q-71
+                             funded_account_cls, int(workers))                  # Q-71
+    check_recorder(recorder)                                                    # Q-70
 
-        if not isinstance(recorder, PlaceRecorder):
-            raise TypeError(f"recorder must be an extended.place_records.PlaceRecorder, got {type(recorder).__name__}")
-        check_vendored_campaign_source()
-
-    # ---- from here to the end, the vendored body; the three additions are marked "Q-47", the recorder's seam "Q-70"
+    # ---- from here to the end, the vendored body; the additions are marked Q-47, Q-71 and Q-70
     from propedge.contract.payout_timing import DEFAULT_PAYOUT_TIMING, check_payout_timing
     from propedge.outcomes.settlement import default_trade_log_settlement
 
     payout_timing = check_payout_timing(DEFAULT_PAYOUT_TIMING if payout_timing is None else payout_timing)
     settlement = settlement or default_trade_log_settlement(list(blocks))
     from propedge.campaign.lockstep import ConductModel, simulate_lockstep_campaign
+    simulate_lockstep_campaign = _xc.simulate_lockstep_campaign  # noqa: F811  # Q-71: the re-composed campaign
     from propedge.campaign.shared_days import check_layout, flat_routing_available
 
     n_markets = check_layout(mode, list(blocks), flat_routing=flat_routing_available(list(blocks)), markets=markets)
@@ -251,10 +409,8 @@ def run_gate(
                                    hold_to_own_exit=hold_to_own_exit, one_at_a_time=one_at_a_time,
                                    routing_rule=routing_rule, **block_kw)
 
-                campaign = simulate_lockstep_campaign                                                   # Q-70
-                if recorder is not None and recorder.wants(shift, float(p)):                            # Q-70
-                    campaign = recorder.campaign(shift, float(p), blk, rules)                           # Q-70
-                summary, paths = campaign(                                                              # Q-70
+                rec_kw = recorder_arguments(recorder, shift, float(p), blk, rules)                     # Q-70
+                summary, paths = simulate_lockstep_campaign(
                     protocol, edge=0.0, seed=seed, rules=rules, initial_bankroll=bankroll, horizon_days=horizon_days,
                     n_paths=n_paths, payout_method="aeropay", max_concurrent_accounts=accounts,
                     max_concurrent_combines=int(combines), max_total_accounts=total_accounts,
@@ -263,7 +419,11 @@ def run_gate(
                     workers=n_workers, pool=pool,                                                       # R11
                     **ftp_kw,                                                                           # D-495 (4)
                     **cls_kw,                                                                           # Q-47
+                    **seam_kw,                                                                          # Q-71
+                    **rec_kw,                                                                           # Q-70
                 )
+                paths = recorded_paths(recorder, rec_kw, paths, shift=shift, enforcement_p=float(p),     # Q-70
+                                       n_paths=n_paths, horizon_days=horizon_days, seed=seed)          # Q-70
                 every = draws.tallies()                  # each path's router counts, in path order (R11)
                 tallies = [x for x in every if x is not None]
                 routed = sum(x[0] for x in tallies)
@@ -317,8 +477,10 @@ def run_gate(
                     "is_gate_row": shift == "lower_bound" and float(p) == GATE_ENFORCEMENT_P,
                 }
                 if funded_account_cls is not None:       # Q-47: named only when given, as the engine's provenance does
-                    row["funded_account_cls"] = class_name(funded_account_cls)
-                if focused_trader is not None:           # D-495 (4): beside a verdict, never the gate (D-234)
+                    row["funded_account_cls"] = class_name(funded_account_cls)                         # Q-47
+                if seam_kw:                              # Q-71: each named only when given
+                    row.update(seam_columns(seam_kw))                                                   # Q-71
+                if focused_trader is not None:          # D-495 (4): beside a verdict, never the gate (D-234)
                     row.update(ftp_columns(focused_trader, paths))
                     row["is_gate_row"] = False
                 if purchase_budget is not None:          # D-501
@@ -346,4 +508,7 @@ def run_gate(
 
 
 __all__ = ["VENDORED_RUN_GATE_SHA256", "vendored_run_gate_sha256", "check_vendored_source", "PassThroughFundedAccount",
-           "check_funded_account_cls", "class_name", "run_gate"]
+           "check_funded_account_cls", "class_name", "PassThroughCombineAccount", "check_combine_account_cls",
+           "check_payout_lag_days", "check_household_closure", "seam_arguments", "seam_columns",
+           "topstep_payout_lag_days", "gate_recomposition_problems", "GATE_MARKERS", "check_recorder",
+           "recorder_arguments", "recorded_paths", "run_gate"]
