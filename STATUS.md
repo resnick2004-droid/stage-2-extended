@@ -25,7 +25,7 @@ the user scorecard beside against P-14; the verdict keeps 0 % denial with the pl
 
 **Answered 2026-11-15 (E-013):** Terms of Use s.8 is priced as a risk (tier 3, the denial ladder beside); the breakeven move is allowed as made (its modelling fixed in Q-20).
 
-**Open:** none yet; **coming** after Q-31's red team: the pass line for a lever that adds no trades (F-P's PL-1 / PL-2 / PL-3, E-018).
+**Open:** none yet; **coming** after Q-31 and Q-33: one pass line for levers that keep the coin's side or add no trades (F-P's payout policy, the scout's filters; E-018, E-021).
 
 **The gate (E-008):** families may be declared (next k = 11) and built; no judged-block read until the U1 identity holds
 (Q-05) and the calibrated statistic exists (Q-16). Safe defaults stand (E-007): F-01 withdrawn; `or30` out; the
@@ -43,7 +43,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | Q-30 F-02 redrafted per its red team | running |
 | wt-user | wt/wt-user | Q-17 the readings beside the user scorecard, then Q-20 (`docs/briefs/Q-17_2026-11-15.md`) | running |
 | wt-features | wt/wt-features | Q-22 P-15's identity, then Q-18 P-14's stress checks (heavy, under the lock) | running |
-| wt-lit | wt/wt-lit | Q-28 the literature scout | running |
+| wt-lit | wt/wt-lit | Q-38 family R's draft (resolution forecasts) | running |
 | wt-firms | wt/wt-firms | Q-34 strike the material from firms whose terms forbid automated retrieval | running |
 | wt-payout | wt/wt-payout | Q-31 the red team on F-P's draft | running |
 | wt-report | wt/wt-report | Q-27 the dispersion report | running |
