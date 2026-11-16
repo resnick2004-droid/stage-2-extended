@@ -8,10 +8,14 @@ level computed, no outcome of any order computed. The versions: fc7747b (the fir
 counts as the third), this one; the pinning row names the commit and sha256 it pins. It becomes a declaration only
 after the red team reads this version, the prereg-gatekeeper approves it (assigning F-XX and k), and the lead pins it.
 
-**It cannot be pinned before:**
-- Q-16 is merged: the pass line is Q-16's calibrated statistic, still pending. The marks **[Q-16]** are filled in a
-  revised draft, with the merged statistic's name, module and commit.
-- A final red-team read once Q-16's statistic is named (Q-53, E-032).
+**It cannot be pinned before** its final red-team read (Q-53, E-032).
+
+Q-16 is merged (E-035), and its statistics stand where the draft's marks stood (Q-57). The pass line is `cons`
+(`extended/lift_bound.SHIPPED`); C1' is its two-sample form; the scorecard's P comparison is `extended/p_bound`'s
+`pcons`.
+
+**No stage runs before** Q-55 reruns Q-16's calibration from a clean checkout (E-035 (4)). Stage A's planning reads
+that rerun's power tables, and no figure of Q-16 is cited before it.
 
 The early-close calendar this file reads is pinned (E-029).
 
@@ -32,7 +36,7 @@ exploratory and reported apart.
 | confirmation tests already on NQ | three (P-05, P-06, P-10; `vendor/stage2/config/windows.yaml`) |
 | cells (`k_cells`) | `fade` at 4 kinds + `break` at 2 kinds (`pdc`, `rn100`), x 3 stops = (4 + 2) x 3 = **18**, each counted whether killed or read |
 | hypotheses | 18 cells x 3 R = **54** signed hypotheses over 36 (kind, stop, R) questions (section 5.9) |
-| the pass statistic | the lift over the coin twin on the same fills, by Q-16's calibrated test **[Q-16]** |
+| the pass statistic | the lift over the coin twin on the same fills, by `cons` (`extended/lift_bound.SHIPPED`, E-035): the trade-weighted session-cluster t on 21-, 42- and 63-session blocks, all three required |
 | the value bar | $500 a year at that bound (`vendor/stage2/results/u_value_map.csv`, section `bar`, `target=500`) |
 | seeds | 20261930 to 20261939, each assigned in section 15 |
 | model card | none: no fitted model; the grid is the family |
@@ -99,6 +103,7 @@ exploratory and reported apart.
 | E-031 (2), E-032 (1) | the reverse walk-forward would make the judged block a block that chooses | struck from the reads line and the readings; the pick's year-by-year readings beside instead | 9.6, 15, 18.1 |
 | E-032 (2) | how the reachable count is read | through `extended/reader.py` on choice-block days only; if that cannot be done, C2 falls back to the records cap, with no new purpose | 10, 7.8 |
 | E-029 | the calendar | `config/calendar_early_closes.csv`, pinned | 4.5 |
+| E-035 (Q-57) | the `[Q-16]` marks | C1 and C2 by `cons`; C1' by `two_sample_bound` (treated-cluster df, count-centred residual sums); the year-by-year readings and the confirmation by `cons`; the P comparison by `pcons`; planning from Q-16's power tables as Q-55 reruns them; stage B's bootstrap stated as an uncalibrated selection device; the sides' persistence stated | header, 7.9, 8, 9, 12, 14, 15 |
 
 ## 1. Hypothesis
 
@@ -424,7 +429,8 @@ the overnight move's sign (P1).
 | `rn100` spacing | the round number | fixed | 100 points, in the futures' own price | F-01; D-11 |
 | placebo | the control for `break` | fixed | 5 replicates; past-only sources 21 to 252 trading days back; the target day's own sides; distances scaled by `A` (20 full sessions) at `pd`, `on`, `pdc`, unscaled at `rn100` | D_protocol 1.3 item 4; F2; P1; N3; the drafter's 21, 252, 20 and 5 |
 | stage B bootstrap | the family-wise gate on the choice block | fixed | stationary, mean block 21 sessions, circular, 2,000 replicates, centred, studentised, seed 20261930 | D-14; D-550's form |
-| stage C level and statistic | the pass line | fixed | one-sided 0.05 / (k (k + 1)), Q-16's statistic [Q-16] | E-008 |
+| stage C level and statistic | the pass line | fixed | one-sided 0.05 / (k (k + 1)); `cons` for C1 and C2, `two_sample_bound` (`cons`, treated-cluster df) for C1' | E-008; E-035 |
+| stage B's gate | the choice block's selection device | fixed, not calibrated | the stationary bootstrap's max-T at family-wise 0.05 (section 8) | decides no level (8) |
 | value bar | the least a pass must be worth | fixed | $500 a year at C2's bound | `u_value_map.csv` `bar`; E-008 |
 | valuation | where a lift is priced | fixed rule | section 10: `p14` for 50 and 100 ticks, `p16` for 150; caps at the records count and the reachable uses (or the records cap alone, E-032 (2)); one priority order shared with stage D's routing | `u_value_map.csv`; V1 |
 | the 50-tick scaling ρ | the value of a smaller bet | fixed rule | ρ (section 10), an approximation of unknown sign; ρ squared and 1 beside | V2 |
@@ -552,9 +558,17 @@ far prices travelled, never which way. No lift is computed.
 9. **Planning (D-4), from counts only, written before stage B reads anything.** For every surviving (cell, R):
    - its choice-block fills;
    - its judged-block fills, **estimated** as the choice-block rate per session times the judged block's sessions;
-   - the minimum detectable lift at the family's level with 80 % power, from Q-16's power curve [Q-16], with the
-     worst-case-sd Student-t formula beside (D_protocol Appendix C);
-   - for `break`, the same for D;
+   - the minimum detectable lift at the family's level with 80 % power, from Q-16's power tables for `cons`
+     (`docs/research/calibration_2026-11-15.md`, section 4: Table 4a on the real coin nulls and Table 4b on the real
+     persist1 nulls, both thinned to N trades).
+     - It is read at the family's k, and at the largest tabulated N at or below the cell's estimated judged fills
+       (conservative).
+     - It is the larger of the two tables' entries.
+     - It is in win probability; the net R figure is beside where the table gives it.
+   - for `break`, the same for D, from Table 11 (section 6.2: C1' with placebo fills five times the level's), the larger
+     of its "shared" and "indep" sides rows;
+   - the tables as Q-55's clean rerun of the calibration writes them (E-035 (4)). No figure of Q-16 is cited before that
+     rerun, or typed here;
    - the value bar in points at the cell's capped uses (10), and the ratio of the two.
 
    Every figure goes to the `planning` section; none is typed anywhere. R-16 is not adopted, and is not applied.
@@ -593,21 +607,57 @@ For every surviving (cell, R), on the choice block:
 
 Stage B is a gate, not a claim (D_protocol N-1): it spends nothing of the program's budget.
 
+**Stage B's bootstrap is not calibrated, and is kept as the choice block's selection device only.** Q-16 calibrated
+the pass line's statistics, not stage B's stationary bootstrap or its max-T gate. Q-16 found a studentised block
+bootstrap on 21-session blocks as lax as `t21w`, or more, on dense persistent nulls (the note's section 7.1, Table 3),
+so q may be too small. That decides no level:
+- **The program's error rate.** It rests on C1 at the family's level, by `cons`, on a judged block that played no part
+  in the choice. A pick chosen through a lax gate is still judged by a calibrated test.
+- **What a lax q costs.** At most the one judgement, spent on a pick chosen with less evidence than q implies. A
+  conservative q costs closes at B.
+
+Calibrating it would take Q-16's form applied to this family's own choice-block pairs: the pair terms' signs flipped
+by blocks of sessions (persistence 1 to 63 sessions), the max-T's family-wise rejection rate read at 0.05 over enough
+replications to bound it, and q replaced by a calibrated table if it fails. That reads the choice block's outcomes, so
+it could run only inside stage B. It is not done.
+
 ## 9. Stage C: judge the pick on the judged block (the pass line, E-008)
 
 The pick alone, with its cutoff and every rule as fixed in stages A and B, on fills from 2024-01-02 to 2026-07-16.
 **C1 to C4 must all hold; any failure closes the family.**
 
 1. **C1, direction.** The pick's lift under its C1 booking (5.5) on the judged block has a one-sided lower bound at
-   **0.05 / (k (k + 1))** (0.05 / 132 at k = 11) **above zero**, by Q-16's calibrated statistic **[Q-16: its name,
-   module and commit]**. It is applied to the mean over all the pick's judged fills, with sessions clustered as Q-16
-   calibrated it.
+   **0.05 / (k (k + 1))** (0.05 / 132 at k = 11) **above zero**, by **`cons`** (E-035 (1)).
+   - **The call:** `extended.lift_bound.bound(SHIPPED, x, session, n_sessions, level=...)`, with `SHIPPED = "cons"`,
+     the module as merged in Q-16's commits 2f5ffd0 and 3a7a3f5 (master bb3d913).
+   - **The estimate:** the per-fill mean of the pair terms x = w (5.6), every fill of the pick in the judged block,
+     ambiguous pairs as zero.
+   - **The clustering:** the fills are summed per session of the judged block's calendar, every trading session
+     counted with or without a fill (`session_sums`).
+   - **The bound:** the trade-weighted session-cluster t (CR1) on 21-, 42- and 63-session blocks of that calendar,
+     each with df = blocks - 1. C1 holds only if **all three** bounds are above zero; `cons`'s bound is their minimum.
+   - **No draws:** `cons` draws nothing, so no seed (15).
+   - **The null class (E-035 (6); the calibration note, section 7.4 item 1).** A ticket's side is set each day at
+     `t_pub` from that day's levels, and there is no multi-session regime filter. So the family's sides persist at most
+     one session, inside the class Q-16 calibrated against (sides persisting up to a quarter).
 2. **C1', the level beyond a matched crossing (`break` picks at `pdc` and `rn100`; D-2, D-592, P1).**
    - **The line.** The placebo-differenced lift D on the judged block has its lower bound at the same level above zero,
-     by the same statistic.
-   - **How it is computed.** The statistic is applied to the per-session sums z_s = (sum of w over level fills on s) /
-     n_level - (sum of w over placebo fills on s) / n_placebo, where **n_level and n_placebo are the judged block's fill
-     totals**. So the z_s sum to D, the difference of the two means over fills.
+     by `cons` in its two-sample form (E-035 (2)): `extended.lift_bound.two_sample_bound(x_level, s_level, x_placebo,
+     s_placebo, n_sessions, level=...)`.
+     - Sample 1 is the pick's level fills; sample 2 is the placebo fills of the five replicates.
+     - Each sample is summed per session of the same judged calendar.
+     - All three block lengths are required.
+   - **The estimate.** D = sum(S1) / n_level - sum(S2) / n_placebo -- the difference of the two per-fill means -- where
+     **n_level and n_placebo are the judged block's fill totals** (F2).
+   - **The variance (corrected, the calibration note section 1.3).** It is cluster-robust on the same session blocks,
+     from the **count-centred residual block sums**,
+     u_g = (BS1_g - D1 BN1_g) / n_level - (BS2_g - D2 BN2_g) / n_placebo.
+     - BS and BN are a block's sums of w and its fill counts; D1 and D2 are the two per-fill means.
+     - The previous version's raw per-session sums z_s gave the right D but the wrong variance, because they carry each
+       session's fill count.
+   - **The block count.** CR1's factor and the df use the **treated-cluster** count, Gt = the blocks occupied by the
+     sample that occupies fewer, with df = Gt - 1 (`DIFF_DF_RULE = "treated"`). Q-16 found the first form, which counted
+     every block, lax for persistent selections; it is kept on record (the note's section 6.1).
    - **Why it costs nothing.** It is an intersection with C1 at the same level, so there is no extra spend.
    - **What it identifies** (corrected, P1).
      - At `rn100` the placebo matches the real tickets by construction: the same day, one ticket above and one below,
@@ -618,11 +668,14 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
        what T-14 (c) (look-back) and T-14 (e) (overnight sign) bound, with a kill (17.6).
    - **What a C1-only pass means.** A break pick passing C1 but not C1' is recorded as a lead for unread data -- D-592's
      follow effect or S3's overnight-move effect seen again -- not a finding.
-   - **If Q-16 does not cover this form.** If Q-16's calibration does not cover the two-sample form, the pin waits for
-     one that does, or a revised draft drops `break` before the pin.
+   - **What Q-16 calibrated, and what it did not.** It calibrated C1' as a two-sample statistic on real fills, with
+     placebo fills five times the level's (the note's Tables 10 and 10b, section 6.2). It did not calibrate the
+     placebo's construction -- its source days and its scaling (section 7.4 item 10) -- which is this family's T-14 (c)
+     and (e) (17.6).
 3. **C2, value (F4, T2, V1).** The valued lift (section 10, on its capped uses) at the lower bound -- at the same
-   level, by the same statistic -- of the pick's lift **under its C2 booking** (rung 1, or rung 2 where 5.5 moves it) is
-   at least **$500 a year**.
+   level, by `cons` -- of the pick's lift **under its C2 booking** (rung 1, or rung 2 where 5.5 moves it) is at least
+   **$500 a year**. Q-16 did not calibrate the value-map price at the bound (the note's section 7.4 item 10); it is a
+   conjunctive gate on a calibrated bound, not a claim.
 4. **C3, resolution (a floor, E-008; N5).** On the judged block, the pick's rule-side trades at its R, each walked by
    its own fill-bar rule, leave at most 5 % unresolved, overall and in every calendar year (2024, 2025, and 2026 to
    07-16). A calendar year with fewer than 63 sessions in a window is pooled with the adjacent year (D-604).
@@ -631,8 +684,9 @@ The pick alone, with its cutoff and every rule as fixed in stages A and B, on fi
 6. **Beside, deciding nothing:**
    - **the pick's year-by-year readings** (E-031 (2), in place of the dropped reverse walk-forward): for each calendar
      year of each block, the pick's lift, its net R lift, its fills, its unresolved share, its K5 share and, for a break
-     pick, D, each with Q-16's statistic's interval at one-sided 0.05 where the year's fills allow [Q-16]; its draws, if
-     any, `default_rng([20261934, year])`;
+     pick, D. Each lift has its `cons` bound at one-sided 0.05 on that year's own calendar of sessions (`bound`, or
+     `two_sample_bound` for D). On a one-year calendar `cons`'s 63-session member has about four blocks, so these
+     readings have much less power than C1 (the note's section 7.4 item 2) and decide nothing. No draws;
    - the seeded coin twin (20261931);
    - the net R lift;
    - drift: the lifts on long-rule and short-rule fills, and their mean, the side-balanced lift;
@@ -850,8 +904,13 @@ no scorecard, and the closing row says so.
    - the effective sample size;
    - the minimum detectable difference, before the read.
 5. **The paired differences** -- base plus tickets less the base, and base plus tickets less R\* -- by Q-16's
-   calibrated P comparison **[Q-16]**, one-sided at 0.05; reported, never a line. Its draws, if any, use seed
-   **20261936**. D-621 (3)'s percentile bound is not computed (E-007 (1)).
+   calibrated P comparison, `extended/p_bound`'s `pcons` (E-035 (3)), one-sided at 0.05; reported, never a line.
+   - `pcons` carries only where `bm63`, `obm126` and `ft63` all carry, its limit their minimum. It holds its level and
+     has almost no power on this judged block.
+   - `bm63c` is reported beside once its critical-value table comes from a clean run and is pinned (E-035 (3)).
+   - `pcons`'s fixed-b critical values are simulated with the module's own seed (Q-16's 20261919), so the family's
+     20261936 is unused.
+   - D-621 (3)'s percentile bound is not computed (E-007 (1)).
 6. **Limits:** E-015's limits, **once approved by the operator**, as **menu flags only**. A design crossing one is shown
    with which limit and by how much; a limit never fails a design. Until approved, the menu is read without flags, and
    says so.
@@ -894,8 +953,8 @@ The replay draws nothing.
     confirm this pick.
 - **What it tests: the pick's trades, not P.**
   - **The line.** The pick's lift over its coin twin on the window's fills (every rule, booking and cutoff as fixed in
-    stages A and B), one-sided at the registered **0.05**, by Q-16's statistic [Q-16], with the bound at 0.05/N beside
-    (D-189's form). Its draws, if any, use seed **20261937**.
+    stages A and B), one-sided at the registered **0.05**, by `cons` on the window's own calendar of sessions, with the
+    bound at 0.05/N beside (D-189's form). D for a break pick is read by `two_sample_bound`.
   - **A break pick** is also confirmed by its placebo-differenced lift, built exactly as 5.8 builds it -- on the target
     day's own sides, distances scaled or not by kind, sources past-only (development days included) -- with generators
     `default_rng([20261932, j, k, 2])`.
@@ -905,12 +964,20 @@ The replay draws nothing.
   - **K5:** at most 5 % on the window.
 - **What it cannot test: P.** A six-month window holds one 63-start block, on which no interval on P exists (red team
   M1). The scorecard on the window is descriptive, without an interval, and never a line.
-- **How much data.** At least six months (D-604), and at least the number of months at which the pick's expected fills
-  reach the count at which Q-16's statistic, one-sided at 0.05, has 80 % power for a lift equal to the pick's judged
-  lower bound at the family level. The expected fills are the lower of its two blocks' rates per session x 21 sessions
-  a month. The count is computed when the pick is carried and written in the carrying row, before any confirmation data
-  exists. If it is more than the operator will buy, no confirmation is registered, and the pick stays a development
-  finding.
+- **How much data.** At least six months (D-604), and at least the number of months at which `cons`, one-sided at 0.05
+  on a calendar of that many months, has 80 % power for a lift equal to the pick's judged lower bound at the family
+  level.
+  - **The fills assumed:** the lower of the pick's two blocks' rates per session x 21 sessions a month.
+  - **Why the length matters for `cons`.** On a short window its 63-session member has few blocks -- two on six months
+    -- and its power falls fast (the note's section 7.4 item 2), so the length is read from `cons`'s own power at that
+    length, not from Table 4.
+  - **How the power is computed:** in Q-16's form. The pick's judged pair terms, taken from stage C's result file with
+    no new read of bars, have their signs flipped by session, with the lift added, and are placed on a calendar of the
+    candidate length; the share of replications in which `cons` carries, `lift_bound.many_levels`, over 2,000
+    replications; seed **20261937**, `default_rng([20261937, m])` for m months.
+  - **When.** It is computed when the pick is carried and written in the carrying row, before any confirmation data
+    exists. If the length is more than the operator will buy, no confirmation is registered, and the pick stays a
+    development finding.
 
 ## 15. Seeds, fixed now and checked
 
@@ -919,11 +986,11 @@ The replay draws nothing.
 | 20261930 | stage B's stationary bootstrap (choice block) |
 | 20261931 | the seeded coin twin beside (5.7) |
 | 20261932 | the placebo's source draws: `numpy.random.default_rng([20261932, j, k, b])`, j the replicate (0..4), k the kind (0..3), b the block (0 choice, 1 judged, 2 confirmation) |
-| 20261933 | stage C: the draws of Q-16's statistic, if it draws any (else unused, and the result file says so) |
-| 20261934 | the pick's year-by-year readings beside (9.6): `default_rng([20261934, year])`, the draws of Q-16's statistic for each year's interval, if it draws any (reassigned before any use from the dropped reverse walk-forward) |
+| 20261933 | unused: `cons` draws nothing (reserved for stage C; never reassigned) |
+| 20261934 | unused: `cons` draws nothing, so the year-by-year readings (9.6) need no seed (reserved; never reassigned) |
 | 20261935 | stage D's campaign seed: the gate floor and every beside arm, 500 paths |
-| 20261936 | the scorecard's calibrated P comparison (Q-16), if it draws |
-| 20261937 | the confirmation's statistic, if it draws |
+| 20261936 | unused: `pcons` simulates its fixed-b table with `extended/p_bound`'s own seed (reserved for the scorecard; never reassigned) |
+| 20261937 | the confirmation's length rule (14): `default_rng([20261937, m])`, the sign flips of its power simulation at m months |
 | 20261938 | the build's walker tests: `default_rng([20261938, j])` -- j = 0 the shift test, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c) |
 | 20261939 | the build's planted-effect tests, T-14: `default_rng([20261939, j])` -- j = 0 (a), 1 (b), 2 (c), 3 (e) gap follow, 4 (e) gap reversal |
 
@@ -1144,16 +1211,15 @@ No purpose here contains a choosing or fitting word: choosing reads only the cho
     C, then D. Each stage's file is written before the next reads anything.
   - A kill stops the sequence.
   - A run aborted or restarted is recorded by the lead with its log, and only the first complete run is read.
-- **Waits.** No judged-block read until Q-05 holds (done, E-010), Q-16 is merged (E-008), and this file is pinned (the
-  reader refuses a draft).
+- **Waits.** No stage runs until Q-55's clean rerun of Q-16's calibration is on record (E-035 (4)); no judged-block
+  read until this file is pinned (the reader refuses a draft). Q-05 holds (E-010) and Q-16 is merged (E-035).
 
 ## 19. Open before the pin
 
 **The lead's:**
 
-1. **Q-16.** Its choice fills the [Q-16] marks (7.9, 9.1-9.3, 12 item 5, 14), and settles whether its calibration
-   covers the two-sample form of C1'.
-2. **The final red-team read** once Q-16's statistic is named (Q-53, E-032).
+1. **The final red-team read** of this version, with Q-16's statistics named (Q-53, E-032).
+2. **Q-55's clean rerun** of Q-16's calibration (E-035 (4)) before any stage runs: planning reads its power tables.
 3. **The readings beside.** Q-17's adapter is needed for section 12 item 4, and E-015's approved limits for 12 item 6.
 4. **Optional (V2):** a per-rung `dv` from D-667's solver would replace ρ.
 
