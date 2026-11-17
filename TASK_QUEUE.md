@@ -175,7 +175,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-115 | The contract levers' rules on official pages (Back2Funded, the Reset Bank, the No Activation Fee 50K prices, the hold's expiry, the evaluation's cancellation) | wt-firms | done: committed on wt/wt-firms (E-135); merge after the RD readings | E-134 | light | 0 | E-134 |
 | Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | pinned as RD-03 (E-152); its build next, after Q-115's merge | Q-115 | light | 0 | E-134 |
 | Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | done: merged (E-136) | E-135 | light | 0 | E-135 |
-| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7, after the calibration (E-140) | E-135 | heavy | 0 | E-135 |
+| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | A0 HOLDS (E-153); run 1 queued after the validation | E-135 | heavy | 0 | E-135 |
 | Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | done: merged (E-140) | E-136 | light | 0 | E-136 |
 | Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | done: merged (E-143) | E-140 | light | 0 | E-140 |
 | Q-116r | The red team reads RD-03's draft | wt-scout (read-only) | done: pin after the listed changes (E-146); Q-116b | Q-116 | light | 0 | E-145 |
@@ -183,6 +183,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-116b | RD-03's second text on its read (M1 the lead's ruling: stage 0 decides nothing; M2-M4; minors) | wt-payout | done: the second text (E-147) | Q-116r | light | 0 | E-146 |
 | Q-108g | Q-108's validation run (`scripts/q108_validate.py`) from E-149's commit under the lock; adopted only if it holds | lead | queued: after A0 (E-149) | E-149 | heavy | 0 | E-149 |
 | Q-116c | RD-03's third text (V1, V2, v1-v5), the lead's diff check, then the gatekeeper and the pin | wt-payout | done; the fourth text pinned (E-152) | Q-116r2 | light | 0 | E-148 |
+| Q-119 | RD-03's build from its pin (adapters A-1..A-6, T-1..T-15, the two identity scripts, stage 0's evaluator, the runner) | wt-payout | running (E-153) | E-152 | light | 0 | E-153 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
