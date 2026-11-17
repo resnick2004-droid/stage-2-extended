@@ -184,6 +184,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108g | Q-108's validation run (`scripts/q108_validate.py`) from E-149's commit under the lock; adopted only if it holds | lead | queued: after A0 (E-149) | E-149 | heavy | 0 | E-149 |
 | Q-116c | RD-03's third text (V1, V2, v1-v5), the lead's diff check, then the gatekeeper and the pin | wt-payout | done; the fourth text pinned (E-152) | Q-116r2 | light | 0 | E-148 |
 | Q-119 | RD-03's build from its pin (adapters A-1..A-6, T-1..T-15, the two identity scripts, stage 0's evaluator, the runner) | wt-payout | running (E-153) | E-152 | light | 0 | E-153 |
+| Q-120 | Research: volatility drift over the years -- what Stage 2 did, which measures are exposed, a plan to measure and correct it | wt-scout (read-only) | running (E-155) | E-155 | light | 0 | E-155 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

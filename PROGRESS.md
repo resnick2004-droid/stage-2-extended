@@ -150,3 +150,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-152: RD-03 (the contract levers) pinned after three red-team reads and the gatekeeper. |
 | 2026-11-17 | lead | E-153: F-03's A0 holds; its run 1 queued after the validation; RD-03's build started. |
 | 2026-11-17 | lead | E-154: F-03's run 1 queued after the validation, every wait met. |
+| 2026-11-17 | lead | E-155: the operator's volatility-drift question -- the pass line largely immune, the scorecard exposed; a scout drafts how to measure and correct it. |
