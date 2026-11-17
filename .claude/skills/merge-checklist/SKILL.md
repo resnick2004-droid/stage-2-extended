@@ -56,6 +56,7 @@ cd $W && python scripts/vendor_stage2.py --verify
 - [ ] randomness takes explicit seeds fixed in the declaration or the brief
 - [ ] nothing reads NQ from 2026-07-17
 - [ ] anything chosen after an outcome is labelled exploratory
+- [ ] no result file reveals a licensed price (`tests/test_results_no_price_levels.py`; the pre-commit hook runs it on the commit's index)
 
 ## 5. Results that matter (a reading, after `/collect`)
 
