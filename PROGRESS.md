@@ -180,3 +180,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-183: RD-03's build complete (stage 0 stopped); merge waits for the RD readings, as sequenced. |
 | 2026-11-17 | lead | E-184: the one-sample plan's last read found the band check gameable; a balance limit closes it; a fifth text. |
 | 2026-11-17 | lead | E-185: the licence guard merged: no committed result file may reveal a bar price. |
+| 2026-11-17 | lead | E-186: the one-sample plan's light read found the regime-filter test gameable; a sixth text closes it. |
