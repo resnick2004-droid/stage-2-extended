@@ -177,3 +177,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-180: no committed file leaks licensed prices; a guard against it building. |
 | 2026-11-17 | lead | E-181: F-03's reader fixed and merged; run 1 re-queued. |
 | 2026-11-17 | lead | E-182: the second one-sample plan re-read; the strict floor kept on a corrected basis (the line's size guarantee); a fourth text. |
+| 2026-11-17 | lead | E-183: RD-03's build complete (stage 0 stopped); merge waits for the RD readings, as sequenced. |
