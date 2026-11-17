@@ -36,7 +36,10 @@ is refused unless the state flags agree over the window (then the lookup cannot 
 counts every offer it declines -- one the vendored draw would have taken, out of state, while waiting -- with the
 account, the historical day, the trade index and the account's wait session. On the replay they ride out of each
 start's long replay beside Q-94's records: `FamilyRecorder` is Q-94's `ReplayRecorder` whose reducer, right after the
-recorded long replay ran, attaches that path's declined offers to the start's record (`declined`).
+recorded long replay ran, attaches that path's declined offers to the start's record (`declined`). On the gate
+(index mode) `GateRecorder` is Q-70's `PlaceRecorder` whose path reducer does the same for each gate path, and
+`gate_wait_problems` holds a recorded campaign to the wait: every in-wait opening in the set, every declined offer out
+of it, inside the wait and before its account's opening (the build read's m3, before floor (iii)).
 
 **Pickling.** The class carries its spec; a class made here reduces to `(waiting_class, (spec,))` by `copyreg`, so it
 reaches a worker with its task and is rebuilt there (cached by the spec's digest). Q-76's forfeiture composes over it
@@ -48,6 +51,7 @@ import copyreg
 import hashlib
 import pickle
 import weakref
+from dataclasses import replace
 from typing import Any, Mapping, Sequence
 
 from extended import use_vendored_stage2
@@ -59,6 +63,7 @@ import pandas as pd  # noqa: E402
 
 from propedge.campaign.lockstep import FundedAccount  # noqa: E402
 
+from extended import place_records as PR  # noqa: E402
 from extended import replay_records as RR  # noqa: E402
 
 W_DECLARED = 5
@@ -338,6 +343,92 @@ class FamilyRecorder(RR.ReplayRecorder):
         return pd.DataFrame(rows, columns=["start_day", "account", "historical_day", "trade_index", "wait_session"])
 
 
+# ------------------------------------------------------------------------------------------------ the gate's recorder
+
+
+class GateReducer(PR.PathReducer):
+    """Q-70's gate path reducer (`place_records.PathReducer`), plus the path's declined offers: right after the path
+    ran (here or in its path worker), the wrapper's own count of that path (`take_latest_declined`) is attached to its
+    place record (`declined`: (account, historical day, trade index, wait session) each); an attribution problem joins
+    the record's problems."""
+
+    @classmethod
+    def from_base(cls, base: PR.PathReducer) -> "GateReducer":
+        obj = cls.__new__(cls)
+        obj.__dict__.update(base.__dict__)
+        return obj
+
+    def one_path(self, protocol: Any, path_index: int, path_seed: int, path_kwargs: dict[str, Any],
+                 draw_factories_for_path: Any, flip_for_path: Any, wallet_for_path: Any) -> Any:
+        x = super().one_path(protocol, path_index, path_seed, path_kwargs, draw_factories_for_path, flip_for_path,
+                             wallet_for_path)
+        declined, problems = take_latest_declined(len(x.funded))
+        rec = dict(x.place_record)
+        rec["declined"] = [tuple(int(v) for v in d) for d in declined]
+        rec["problems"] = list(rec.get("problems", [])) + [f"{self.shift} p={self.enforcement_p:g} path {path_index}: "
+                                                           f"{p}" for p in problems]
+        return replace(x, place_record=rec)
+
+
+class GateRecorder(PR.PlaceRecorder):
+    """Q-70's `PlaceRecorder` for a gate call with the waiting class (index mode): its reducer the family's
+    (`GateReducer`), so each recorded path carries the wrapper's declined offers beside its trades and accounts."""
+
+    def reducer(self, shift: str, enforcement_p: float, blk: Sequence[Any], rules: Any) -> GateReducer:
+        return GateReducer.from_base(super().reducer(shift, enforcement_p, blk, rules))
+
+    def declined(self, shift: str | None = None, enforcement_p: float | None = None) -> pd.DataFrame:
+        """Every declined offer of the recorded campaigns: shift, level, path, account, historical day (the gate's
+        block), trade index, wait session -- the gating wrapper's own count."""
+        rows = [(k[0], k[1], i, *d) for k in self._keys(shift, enforcement_p)
+                for i, r in enumerate(self._recs.get(k, [])) for d in r.get("declined", [])]
+        return pd.DataFrame(rows, columns=["shift", "enforcement_p", "path", "account", "historical_day", "trade_index",
+                                           "wait_session"])
+
+
+def gate_wait_problems(rec: GateRecorder, in_state: Sequence[np.ndarray], *, shift: str, enforcement_p: float = 0.0,
+                       W: int = W_DECLARED) -> tuple[list[str], dict[str, int]]:
+    """5.4's wait on a recorded gate campaign in index mode (the read's m3; A1 item 5's form on the gate): every in-wait
+    opening (`opening_session < W`) is in the set, every fallback opening at or after session W, every declined offer
+    out of the set, declined inside the wait and no later than its account's opening; refused when the campaign shows
+    no in-wait opening or no decline (the identity must bite). `in_state[h]`: the flags of the gate's block h in its
+    trade order. (problems, counts)."""
+    out: list[str] = []
+    acc = rec.accounts(shift, enforcement_p)
+    ops = rec.openings(shift, enforcement_p)
+    dec = rec.declined(shift, enforcement_p)
+    flag = lambda h, j: bool(in_state[int(h)][int(j)])                                      # noqa: E731
+    if len(ops) and (ops["account_session"].astype(int).to_numpy()
+                     != ops.merge(acc[["path", "account", "opening_session"]], on=["path", "account"], how="left",
+                                  validate="many_to_one")["opening_session"].astype(int).to_numpy()).any():
+        out.append("an opening's trade row disagrees with its account row (the wait)")
+    iw = ops[ops["account_session"].astype(int) < int(W)]
+    fb = ops[ops["account_session"].astype(int) >= int(W)]
+    bad = [(int(p), int(a)) for p, a, h, j in zip(iw["path"], iw["account"], iw["historical_day"], iw["trade_index"])
+           if not flag(h, j)]
+    if bad:
+        out.append(f"{len(bad)} in-wait openings are out of the set (first path, account {bad[0]})")
+    inset = [(int(p), int(a)) for p, a, h, j in zip(dec["path"], dec["account"], dec["historical_day"],
+                                                     dec["trade_index"]) if flag(h, j)]
+    if inset:
+        out.append(f"{len(inset)} declined offers are in the set (first path, account {inset[0]})")
+    if len(dec) and (dec["wait_session"].astype(int) >= int(W)).any():
+        out.append("an offer was declined after the account's wait was over")
+    opened = {(int(p), int(a)): int(s) for p, a, s in zip(acc["path"], acc["account"], acc["opening_session"])
+              if int(s) >= 0}
+    late = [(int(p), int(a)) for p, a, s in zip(dec["path"], dec["account"], dec["wait_session"])
+            if (int(p), int(a)) in opened and int(s) > opened[(int(p), int(a))]]
+    if late:
+        out.append(f"{len(late)} offers were declined after their account's opening (first {late[0]})")
+    counts = {"openings": int(len(ops)), "in_wait": int(len(iw)), "fallback": int(len(fb)), "declined": int(len(dec)),
+              "paths": int(acc["path"].nunique()) if len(acc) else 0}
+    if not counts["in_wait"] or not counts["declined"]:
+        out.append(f"{counts['declined']} declines and {counts['in_wait']} in-wait openings on the gate -- the identity "
+                   "must see both")
+    out += [p for p in rec.problems()]
+    return out, counts
+
+
 # ------------------------------------------------------------------------------------------------ the joins
 
 
@@ -415,5 +506,5 @@ def lookup_problems(spec: WaitSpec, job: dict, starts: Sequence[int]) -> list[st
 
 
 __all__ = ["lookup_problems", "W_DECLARED", "AmbiguousOffer", "GateOpen", "block_fingerprint", "WaitSpec", "take_latest_declined",
-           "GateWrapper", "waiting_class", "spec_of", "FamilyReducer", "FamilyRecorder", "openings", "censored",
-           "wait_problems"]
+           "GateWrapper", "waiting_class", "spec_of", "FamilyReducer", "FamilyRecorder", "GateReducer", "GateRecorder",
+           "gate_wait_problems", "openings", "censored", "wait_problems"]

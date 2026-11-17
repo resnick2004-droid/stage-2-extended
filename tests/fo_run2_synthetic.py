@@ -67,6 +67,24 @@ if jdf is not None:
     out["journey_designs"] = sorted(str(x) for x in jjf["design"].dropna().unique())
     out["journey_responses"] = sorted(str(x) for x in jjf.get("response", pd.Series(dtype=str)).dropna().unique())
     out["paired_against"] = sorted(str(x) for x in jjf.loc[jjf["section"] == "paired", "against"].unique())
+    out["journey_blocks"] = sorted(str(x) for x in jjf.get("block", pd.Series(dtype=str)).dropna().unique())
+    pr = jjf[jjf["section"] == "paired"]
+    out["paired_stats"] = sorted(str(x) for x in pr["stat"].dropna().unique())
+    out["paired_blocks"] = sorted(str(x) for x in pr["block"].dropna().unique())
+    out["bm63c_note"] = bool(pr.loc[pr["stat"] == "bm63c_0.05", "note"].astype(str).str.contains("not pinned").all())
+    w = jjf[jjf["section"] == "wait"]
+    out["wait_measures"] = sorted(str(x) for x in w["measure"].dropna().unique())
+    out["wait_designs"] = sorted(str(x) for x in w["design"].dropna().unique())
+    out["wait_against"] = int((w["stat"] == "minus_p16").sum())
+    ev = jjf[jjf["section"] == "evenness_curve"]
+    out["evenness_blocks"] = sorted(str(x) for x in ev["block"].dropna().unique())
+    out["luck_rows"] = int((jjf["section"] == "design_vs_luck").sum())
+    fr = jjf[jjf["section"] == "frontier"]
+    out["frontier_blocks"] = sorted(str(x) for x in fr["block"].dropna().unique())
+    ch = jjf[jjf.get("block", pd.Series(dtype=str)) == "choice"]
+    out["choice_sections"] = sorted(str(x) for x in ch["section"].dropna().unique())
+    bs2 = jdf[jdf["section"] == "beside"]
+    out["beside_0735"] = int((bs2["reading"] == "report_day_0735_openings").sum())
     out["params"] = sorted(par)
     out["written"] = ctx.write_stage_c(jdf, jjf, par)
 print(json.dumps(out, default=str))

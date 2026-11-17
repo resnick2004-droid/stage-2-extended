@@ -66,6 +66,9 @@ TWIN_DRAWS = (0, 1)
 LINE_C1, LINE_C1_CLOSE, LINE_C2 = 0, 1, 2
 B2_REPLICATES = 1_000_000
 B2_MEAN_BLOCK = 63
+#: 11 item 2's two stationary bootstraps: normal days and report days (sorted, the order the draws are made in); a
+#: session of any other kind (FOMC, early close, no bar) is left empty -- it carries no offer of the population
+B2_KINDS = ("b", "n")
 SLOW_SWITCH = 1.0 / 63.0
 MEMBERS = (21, 42, 63)
 #: K0 (A11)
@@ -363,18 +366,26 @@ class B2Inputs:
 
 
 def b2_replicate_sums(inp: B2Inputs, a_star: float, rng: np.random.Generator) -> tuple[np.ndarray, ...]:
-    """One replicate's (S1, N1, S2, N2): the realised judged population as the null (11 item 2) -- each judged session
-    filled from a choice session of its own day kind by a stationary bootstrap (mean block 63), plus a* x rho_t,
+    """One replicate's (S1, N1, S2, N2): the realised judged population as the null (11 item 2) -- each judged normal
+    or report day filled from a choice session of its own kind by a stationary bootstrap (mean block 63; the declared two
+    bootstraps, `B2_KINDS`; a session of any other kind left empty), plus a* x rho_t,
     re-centred within the judged strata, weighted by the real judged samples."""
     nj, M = inp.judged_exists.shape
-    pi = np.empty(nj, dtype=np.int64)
-    for kind in np.unique(inp.judged_kind):
-        jrows = np.flatnonzero(inp.judged_kind == kind)
-        src = np.flatnonzero(inp.choice_kind == kind)
+    pi = np.zeros(nj, dtype=np.int64)
+    filled = np.zeros(nj, dtype=bool)
+    jk = np.asarray(inp.judged_kind).astype(str)
+    ck = np.asarray(inp.choice_kind).astype(str)
+    for kind in B2_KINDS:                                    # the declared two, in sorted order (V3)
+        jrows = np.flatnonzero(jk == kind)
+        if not len(jrows):
+            continue
+        src = np.flatnonzero(ck == kind)
         if len(src) == 0:
             raise ValueError(f"B2: no choice session of day kind {kind!r}")
         pi[jrows] = src[stationary_indices(rng, len(src), len(jrows), B2_MEAN_BLOCK)]
+        filled[jrows] = True
     V = inp.choice_values[pi] + float(a_star) * slow_sign(rng, nj)[:, None]
+    V[~filled] = np.nan                                      # a session of another kind is left empty
     ok = inp.judged_exists & np.isfinite(V)
     for g in np.unique(inp.judged_group):
         rows = inp.judged_group == g

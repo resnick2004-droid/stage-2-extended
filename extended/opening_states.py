@@ -377,13 +377,21 @@ class Forecast:
 
 def walk_forward(R: Regressors, days: Sequence[date], marks: Sequence[int], *, test_years: Sequence[int] = TEST_YEARS,
                  gap: int = FOLD_GAP, choice_last: str = CHOICE_LAST, final: bool = True,
-                 frozen: Mapping[str, Sequence[float]] | None = None) -> Forecast:
+                 frozen: Mapping[str, Sequence[float]] | None = None,
+                 frozen_folds: Mapping[int, Mapping[str, Sequence[float]]] | None = None) -> Forecast:
     """6.5's walk-forward inside the choice block: each test year fitted on the choice block's sessions before it less
     the last `gap` (a year with no session in the frame is skipped); the final fit on every choice-block session (or,
-    with `frozen`, the pinned final coefficients instead -- the judge's entry point fits nothing, T-9)."""
+    with `frozen`, the pinned final coefficients instead -- the judge's entry point fits nothing, T-9). `frozen_folds`
+    ({test year: coefficients}, only beside `frozen` and with no test year to fit): the pinned fold fits instead, so the
+    choice block's u3 is read out of fold without a fit (13's choice-block beside)."""
     ds = np.array([d.isoformat() for d in days])
     choice = (ds >= CHOICE_FIRST) & (ds <= choice_last)
     folds, rows_used = {}, {}
+    if frozen_folds is not None:
+        if frozen is None or tuple(test_years):
+            raise ValueError("REFUSED (F-03, T-9): pinned fold fits are read only beside the pinned final fit, with no "
+                             "test year to fit")
+        folds = {int(Y): {b: [float(x) for x in v] for b, v in cf.items()} for Y, cf in frozen_folds.items()}
     for Y in test_years:
         in_y = np.array([d.year == int(Y) for d in days])
         if not in_y.any():
@@ -435,6 +443,44 @@ def forecast_shares(R: Regressors, days: Sequence[date], marks: Sequence[int], f
     return out
 
 
+# ------------------------------------------------------------------------------------------------ the grid, a year at a time
+
+
+def concat_grids(grids: Sequence[F.Grid]) -> F.Grid:
+    """Consecutive spans' grids as one (days strictly increasing across them; refused otherwise): the arrays stacked
+    in order, so each day's row is its own span's."""
+    gs = [g for g in grids if len(g.days)]
+    if not gs:
+        raise ValueError("no grid to join")
+    days = [d for g in gs for d in g.days]
+    if any(b <= a for a, b in zip(days, days[1:])):
+        raise ValueError("the grids' days are not strictly increasing across them")
+    return F.Grid(days, np.concatenate([g.contract for g in gs]),
+                  *(np.concatenate([getattr(g, k) for g in gs], axis=0) for k in ("O", "H", "L", "C", "V")))
+
+
+def grid_by_year(read: Any, start: str, end: str, walked: Iterable[str]) -> F.Grid:
+    """The walked sessions' grid from `start` to `end`, the bars read one calendar year at a time (`read(first, last)`:
+    the bars of trading days `first` to `last`, as `extended.reader.read_bars` returns them) and gridded year by year,
+    each year's bars dropped before the next is read (the build read's memory note). A trading day lies in exactly one
+    year's read and `features.grid` lays each day out on its own, so this is the one-shot grid
+    (`features.grid(bars[walked])`) bit for bit; a year without a walked session is skipped."""
+    w = {str(d) for d in walked}
+    a, b = date.fromisoformat(str(start)[:10]), date.fromisoformat(str(end)[:10])
+    out = []
+    for y in range(a.year, b.year + 1):
+        s, e = max(a, date(y, 1, 1)), min(b, date(y, 12, 31))
+        bars = read(s.isoformat(), e.isoformat())
+        sub = bars[bars["day"].astype(str).isin(w)].reset_index(drop=True)
+        del bars
+        if len(sub):
+            out.append(F.grid(sub))
+        del sub
+    if not out:
+        raise ValueError(f"no walked session's bars from {start} to {end}")
+    return out[0] if len(out) == 1 else concat_grids(out)
+
+
 # ------------------------------------------------------------------------------------------------ the states
 
 
@@ -477,13 +523,16 @@ class States:
 def compute(bars: pd.DataFrame | F.Grid, marks: Sequence[int] = POPULATION_MARKS, *,
             test_years: Sequence[int] = TEST_YEARS, choice_last: str = CHOICE_LAST,
             frozen: Mapping[str, Sequence[float]] | None = None, final: bool = True,
-            keep_quantities: bool = False) -> States:
+            keep_quantities: bool = False,
+            frozen_folds: Mapping[int, Mapping[str, Sequence[float]]] | None = None) -> States:
     """s1, s2 and u3 at every (walked session, mark) of `bars` (or its grid). u3 by 6.5's walk-forward (`frozen`: the
-    pinned final coefficients, for the judged block -- nothing is fitted then but the folds, which read the choice
-    block only)."""
+    pinned final coefficients, for the judged block -- nothing is fitted then; `frozen_folds`: the pinned fold fits
+    beside them, for the choice block's u3 out of fold, 13)."""
     if frozen is not None and tuple(test_years):
         raise ValueError("REFUSED (F-03, T-9): with the frozen forecast nothing is fitted -- pass test_years=() and "
                          "predict any fold from its pinned coefficients")
+    if frozen_folds is not None and frozen is None:
+        raise ValueError("REFUSED (F-03, T-9): pinned fold fits are read only beside the pinned final fit")
     g = bars if isinstance(bars, F.Grid) else F.grid(bars)
     q = quantities(g, marks)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -493,7 +542,8 @@ def compute(bars: pd.DataFrame | F.Grid, marks: Sequence[int] = POPULATION_MARKS
     T = np.where(np.isfinite(T), T, np.nan)
     shares = {"s1": rolling_share(U), "s2": rolling_share(T)}
     R = regressors(q)
-    fc = walk_forward(R, q.days, q.marks, test_years=test_years, choice_last=choice_last, frozen=frozen, final=final)
+    fc = walk_forward(R, q.days, q.marks, test_years=test_years, choice_last=choice_last, frozen=frozen, final=final,
+                      frozen_folds=frozen_folds)
     shares["u3"] = forecast_shares(R, q.days, q.marks, fc)
     return States(q.days, q.marks, shares, fc, q if keep_quantities else None, forecast_values(R, q.days, q.marks, fc),
                   R.y)

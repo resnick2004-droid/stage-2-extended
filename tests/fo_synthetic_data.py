@@ -143,4 +143,7 @@ def syn_ctx_class(FO):
         def p14_ahead(self, arm):
             return None
 
+        def p14_ahead_choice(self, arm, dates):
+            return None
+
     return SynCtx

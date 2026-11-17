@@ -210,6 +210,13 @@ def session_list_problems(results_dir: Path) -> tuple[list[str], list[str]]:
     return [], cal
 
 
+def _data_manifest_sha256() -> str | None:
+    from extended import ROOT as _ROOT
+
+    p = _ROOT / "vendor" / "DATA_MANIFEST_stage2.sha256"
+    return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
+
+
 @dataclass
 class PreRun:
     rows: dict[str, list[str]]
@@ -223,7 +230,9 @@ class PreRun:
                 "declaration_sha256": DECLARATION_SHA256, "pin_row": PIN_ROW, "k": K, "level": LEVEL,
                 "pinned_blobs": dict(PINNED_BLOBS), "judged_sessions": len(self.judged_sessions),
                 "judged_sessions_sha256": hashlib.sha256("\n".join(self.judged_sessions).encode()).hexdigest()
-                if self.judged_sessions else None, **CELL_COUNTS}
+                if self.judged_sessions else None, **CELL_COUNTS,
+                # n8 (the second build read): every manifest names the admitted commits and the data manifest's hash
+                "identity_commits": dict(self.commits), "data_manifest_sha256": _data_manifest_sha256()}
 
 
 def pre_run(repo: Path, *, results_dir: Path | None = None, level: float = LEVEL, need_clean: bool = True,

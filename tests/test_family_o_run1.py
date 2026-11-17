@@ -51,3 +51,13 @@ def test_run1s_manifest_parameters_name_what_the_text_asks(got):
             "population_sha256", "calendars", "seeds", "judged_sessions_sha256", "pick", "killed", "screen",
             "forecast_folds", "identity_commits", "data_manifest_sha256", "identity_covered"}
     assert need <= set(got["param_keys"])
+
+
+def test_v2_a10_flagging_runs_its_consequence_inside_run1_once_per_class(got):
+    v = got["v2"]
+    assert v["code"] == 0 and v["calls"] == ["window"]                    # s1 and s2 share `window`: one run (n9)
+    assert v["consequence_rows"] >= 4                                      # both shares, both levels
+    assert v["verdict_cells"] == ["s1", "s2"] and v["pick_row"]           # stage B reads on after it
+    for c, closed in v["verdict_closed"].items():
+        assert (v["killed"].get(c) == "A10's consequence") == closed
+        assert (c in v["choice_cells"]) == (not closed)

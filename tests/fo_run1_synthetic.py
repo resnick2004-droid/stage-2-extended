@@ -118,6 +118,40 @@ if df is not None:
     out["choice_finite"] = bool(np.isfinite(pd.to_numeric(ch.loc[ch["kind"] == "cell", "V_B_lower"])).all())
     out["q_B"] = float(pd.to_numeric(ch.loc[ch["kind"] == "q_B", "value"]).iloc[0])
     out["written"] = ctx.write(df, params)
+
+
+# V2 (the second build read): A10 forced to flag the deciding class `window` (s1's and s2's), so its consequence runs
+# inside run 1 -- once for the class (n9), its rows and verdict rows written, any closure counted, stage B continuing
+
+
+class FlagCtx(SynCtx):
+    consequence_calls: list = []
+
+    def a10(self, L, y, selections):
+        t = super().a10(L, y, selections)
+        t["lax"] = t["lax"] | (t["class"] == "window")
+        return t
+
+    def a10_consequence(self, L, model, a_b, z):
+        FlagCtx.consequence_calls.append(model)
+        return super().a10_consequence(L, model, a_b, z)
+
+
+fctx = FlagCtx(sizes=FO.Sizes(starts=6, k0=200, a10=20, stage_b=50, a3_cuts=10, a10_inner=200), smoke=True)
+t1 = time.time()
+code2, df2, params2 = FO.run1(fctx, pre, 1)
+v2 = {"code": code2, "calls": list(FlagCtx.consequence_calls), "seconds": round(time.time() - t1, 1)}
+if df2 is not None:
+    lc = df2[df2["section"] == "level_control"]
+    v2["consequence_rows"] = int((lc.get("check") == "A10_consequence").sum())
+    vr = lc[lc.get("check") == "A10_consequence_verdict"]
+    v2["verdict_cells"] = sorted(str(x) for x in vr["cell"])
+    v2["verdict_closed"] = {str(c): bool(x) for c, x in zip(vr["cell"], vr["closed"])}
+    v2["killed"] = params2.get("killed")
+    ch2 = df2[df2["section"] == "choice"]
+    v2["pick_row"] = bool((ch2["kind"] == "pick").any())
+    v2["choice_cells"] = sorted(str(x) for x in ch2.loc[ch2["kind"] == "cell", "cell"])
+out["v2"] = v2
 print(json.dumps(out, default=str))
 if "--debug" in sys.argv and df is not None:
     print(df[df["section"] == "supply"].dropna(axis=1, how="all").to_string())

@@ -164,6 +164,13 @@ class Ctx:
 
         return PB.judged(PB.load_starts(configs=("p14",), arms=(arm,))[("p14", arm)])
 
+    def p14_ahead_choice(self, arm: str, dates: list[str]):
+        """P-14's registered ahead series on the choice block's purged starts (13's choice-block beside)."""
+        from extended import opening_journey as J
+        from extended import p_bound as PB
+
+        return J.p14_choice(PB.load_starts(configs=("p14",), arms=(arm,))[("p14", arm)], dates)
+
     def ladder_seed_base(self) -> int:
         """The denial ladder's base for this file's designs: one integer from the scorecard's ladder key (section
         16; `user_beside.run_starts`' `seed_base` takes an integer)."""
@@ -220,6 +227,18 @@ class Ctx:
 
     def mean_dv(self) -> float:
         return mean_dv_c()
+
+    def a10(self, L, y, selections: int):
+        """A10's first check (a seam: the synthetic run 1 forces a flag through it, V2)."""
+        from extended import opening_stats as ST
+
+        return ST.a10(L, y, selections=selections)
+
+    def a10_consequence(self, L, model: str, a_b: float, z: "Sizes"):
+        """A10's consequence for one deciding class (computed once per class, n9)."""
+        from extended import opening_stats as ST
+
+        return ST.a10_consequence(L, "c", model, a_b, selections=z.a10, inner=z.a10_inner)
 
     def write(self, df, params: dict[str, Any]) -> str | None:
         from extended import opening_run as R
@@ -677,15 +696,18 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
         if not all(v["skill"] for v in sk.values()):
             killed["u3"] = "A4"
             keep.pop("u3")
-    a10 = ST.a10(L, y, selections=z.a10)
+    a10 = ctx.a10(L, y, z.a10)
     out += R.rows("level_control", [{"check": "A10", **r} for r in a10.to_dict("records")])
     a_b, b_rows = ctx.follow_lifts()
     out += R.rows("level_control", [{"check": "A10_consequence_b", **r_} for r_ in b_rows])
+    by_class: dict[str, Any] = {}                       # n9: once per deciding class (s1 and s2 share `window`)
     for c in list(keep):
         if not a10[(a10["class"] == DECIDING_CLASS[c]) & a10["lax"]].shape[0]:
             continue
-        res = ST.a10_consequence(L, "c", DECIDING_CLASS[c], a_b, selections=z.a10, inner=z.a10_inner)
-        out += R.rows("level_control", [{"cell": c, **r_} for r_ in res.rows]
+        if DECIDING_CLASS[c] not in by_class:
+            by_class[DECIDING_CLASS[c]] = ctx.a10_consequence(L, DECIDING_CLASS[c], a_b, z)
+        res = by_class[DECIDING_CLASS[c]]
+        out += R.rows("level_control", [{"cell": c, "class": DECIDING_CLASS[c], **r_} for r_ in res.rows]
                       + [{"cell": c, "check": "A10_consequence_verdict", "closed": res.closed, "b2_runs": res.b2_runs,
                           "verdict": ("closed, counted" if res.closed else
                                       "`cons` lax on c in this class; the larger-of rule held on the pseudo-judged "
@@ -921,16 +943,27 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     out += R.rows("beside", [{"reading": "follow_lift", **r_} for r_ in b_rows])
 
     # ---- 4. stage_C_campaign: the paired U1 replays, K0 on their counts, B2 for C2, V_line; the floors
-    ctx.authorise("stage_C_campaign")
     days_all = sorted(cal)
-    jobs = ctx.jobs(spj.trades, days_all, P)
+    jobs = ctx.jobs(spj.trades, days_all, P)          # from the judged trades read under stage_C_judgement
     job = jobs[ARM]
     ids = offer_ids_of(spj.trades, days_all, job["blocks"])
     starts = list(range(len(job["blocks"])))
     if z.starts is not None:
         starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
-    offers = popj.assign(offer=[OP.offer_id(d, s) for d, s in zip(popj["date"], popj["slot"])]).set_index("offer")
     spec = OW.WaitSpec.for_blocks(c, job["blocks"], flags_by_block(ids, grid_flags(Lj, sel)))
+    look = []                                         # n3: the offer lookup on both arms' jobs, before the read is spent
+    for arm in SCORECARD_ARMS:
+        ja = jobs[arm]
+        sa = OW.WaitSpec.for_blocks(f"{c}_{arm}_lookup", ja["blocks"],
+                                    flags_by_block(offer_ids_of(spj.trades, days_all, ja["blocks"]), grid_flags(Lj, sel)))
+        sts = list(range(len(ja["blocks"])))
+        if z.starts is not None:
+            sts = sts[:: max(1, len(sts) // int(z.starts))][: int(z.starts)]
+        look += [f"{arm}: {p_}" for p_ in OW.lookup_problems(sa, ja, sts)]
+    if look:
+        return _refuse("the offer lookup fails before stage_C_campaign: " + "; ".join(look[:3])), None, None, {}
+    ctx.authorise("stage_C_campaign")
+    offers = popj.assign(offer=[OP.offer_id(d, s) for d, s in zip(popj["date"], popj["slot"])]).set_index("offer")
     design = OW.waiting_class(spec)
     twin_cls = []
     for d in ST.TWIN_DRAWS:
@@ -940,14 +973,16 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     _, rec_d = replay(f"fo_{c}", job, starts, workers, design, ids)
     rec_t = [replay(f"fo_{c}_twin{d}", job, starts, workers, k, ids)[1] for d, k in enumerate(twin_cls)]
     _, rec_p = replay("p16", job, starts, workers, None, ids)
+    pos = {d_: i for i, d_ in enumerate(cal)}
+    # n6: K0 on the judged C2 counts from the openings alone, before any value column is joined
+    u1c = np.bincount([pos[d_] for d_ in OW.openings(rec_d, f"fo_{c}", ARM, "off")["date"]], minlength=n)
+    u2c = sum(np.bincount([pos[d_] for d_ in OW.openings(r_, f"fo_{c}_twin{d}", ARM, "off")["date"]], minlength=n)
+              for d, r_ in enumerate(rec_t))
+    k0c2 = ST.k0_family(u1c, u2c, "pair", n, R.LEVEL, ci, ST.K0_FORMS["c2_judged"], z.k0)
+    out += R.rows("level", [{"line": "K0", "form": "c2_judged", **k0c2.as_dict()}])
     od = OW.openings(rec_d, f"fo_{c}", ARM, "off", offers)
     ot = [OW.openings(r_, f"fo_{c}_twin{d}", ARM, "off", offers) for d, r_ in enumerate(rec_t)]
     op16 = OW.openings(rec_p, "p16", ARM, "off", offers)
-    pos = {d_: i for i, d_ in enumerate(cal)}
-    u1c = np.bincount([pos[d_] for d_ in od["date"]], minlength=n)
-    u2c = sum(np.bincount([pos[d_] for d_ in o_["date"]], minlength=n) for o_ in ot)
-    k0c2 = ST.k0_family(u1c, u2c, "pair", n, R.LEVEL, ci, ST.K0_FORMS["c2_judged"], z.k0)
-    out += R.rows("level", [{"line": "K0", "form": "c2_judged", **k0c2.as_dict()}])
     yv = {OP.offer_id(Lj.sessions[i], Lj.marks[k]): float(y_all[i, k]) for i, k in zip(*np.nonzero(Lj.exists))}
     mpos = {m_: k for k, m_ in enumerate(Lj.marks)}
 
@@ -1043,6 +1078,13 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     iw = ST.openings_a_start_year(int(od["in_wait"].sum()), sess)
     bes.append({"reading": "uniform_lift_valuation", "value": SC.uniform_valuation(c1.bound, iw, mdv),
                 "in_wait_per_start_year": iw})
+    rlj = run_lengths(sel.any(axis=1))                                             # n12: the judged run lengths' class
+    bes.append({"reading": "judged_implied_class", "implied_class": ST.implied_class(
+        rlj["mean_run"], float(sel.any(axis=1).mean())), "deciding_class": DECIDING_CLASS[c], **rlj})
+    for nm_, o_ in (("design", od), *((f"twin{d}", x) for d, x in enumerate(ot)), ("p16", op16)):    # n12: 07:35
+        k735 = ((o_["day_kind"].astype(str) == "b") & (o_["slot"].astype(int) == F.slot(7, 35))) if len(o_) else None
+        bes.append({"reading": "report_day_0735_openings", "design": nm_, "openings": int(len(o_)),
+                    "count": int(k735.sum()) if k735 is not None else 0})
     bes.append({"reading": "p16_openings_in_state_share",
                 "value": float(op16[f"in_{c}"].mean()) if len(op16) else float("nan")})
     if c == "u3":
@@ -1060,7 +1102,9 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     bes += [{"reading": "break_even_denial", "value": fg["break_even_denial"]},
             {"reading": "placement_on_growth_at_bound", "value": g_on["growth_at_bound"]},
             {"reading": "zero_edge_twin_growth", "value": g_ze["growth_at_point"],
-             "signal_lift_over_zero_edge_twin": fg["growth_at_point"] - g_ze["growth_at_point"]},
+             "signal_lift_over_zero_edge_twin": fg["growth_at_point"] - g_ze["growth_at_point"],
+             "note": "Stage 2's own zero_edge_blocks with P-16's registered e over both blocks: on the judged block's "
+                     "trades the twin's mean is near zero, not exactly zero (the second read's note C)"},
             {"reading": "same_day_multi_breach_share", "design": fg["share_paths_with_same_day_multi_breach"],
              "p16": g_p["share_paths_with_same_day_multi_breach"]},
             {"reading": "s_program_guard", "value": fg["growth_at_bound"] - g_p["growth_at_bound"]},
@@ -1079,6 +1123,9 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
 
     # ---- 5. stage_C_scorecard (13)
     ctx.authorise("stage_C_scorecard")
+    from extended import opening_journey as J
+
+    bm_tab = J.bm63c_table()                           # None: not pinned (E-085) -- the note in its place
     tw0_flags = grid_flags(Lj, ST.clustered_twin(Lj, sel, ci, ST.BLOCK_JUDGED, 0)[0])
     designs = {"design": grid_flags(Lj, sel), "twin": tw0_flags, "p16": None}
     cards: dict[str, dict[str, float]] = {}
@@ -1102,25 +1149,35 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
                 if resp == "off":
                     tables[(name, arm)] = t
                     if arm == ARM:
-                        cards[name] = _card(rows_)
+                        cards[name] = _card(rows_, "judged")
     for arm in SCORECARD_ARMS:
-        for name, other in (("design", "p16"), ("design", "twin"), ("twin", "p16")):
-            jr += [{"section": "paired", "arm": arm, **r_} for r_ in
-                   SC.paired_rows(name, tables[(name, arm)], tables[(other, arm)], other)]
-        p14 = ctx.p14_ahead(arm)
-        if p14 is not None:
-            for name in designs:
-                jr += [{"section": "paired", "arm": arm, **r_} for r_ in
-                       SC.paired_rows(name, tables[(name, arm)], None, "p14", b_ahead=p14)]
-    jr += [{"section": "frontier", "design": k, "on_frontier": v, **cards.get(k, {})}
-           for k, v in SC.frontier({k: {m_: cards[k].get(m_, np.nan) for m_ in SC.FRONTIER_MEASURES}
-                                    for k in cards}).items()]
+        jr += paired_block_rows("judged", arm, {k: tables[(k, arm)] for k in designs}, ctx.p14_ahead(arm), bm_tab)
+        jr += J.luck_rows({k: tables[(k, arm)] for k in designs}, "judged", arm)
+    jr += [{"section": "frontier", "block": "judged", "design": k, "on_frontier": v, **cards.get(k, {})}
+           for k, v in SC.frontier({k: {m_: cards[k].get(m_, np.nan) for m_ in SC.FRONTIER_MEASURES} for k in cards},
+                                   higher=J.FRONTIER_HIGHER).items()]                       # n4: S1 lower is better
+    # the wait as a user feels it (13), on the campaign stage's replays (the verdict arm, no response; twin draw 0)
+    wpool = {}
+    for name, r_, lab in (("design", rec_d, f"fo_{c}"), ("twin", rec_t[0], f"fo_{c}_twin0"), ("p16", rec_p, "p16")):
+        rows_w, wpool[name] = wait_of(name, "judged", r_, lab, spj.trades)
+        jr += rows_w
+    jr += J.against(wpool, "judged")
+    # the choice-block beside (13): 2021-2023's starts, u3 out of fold, Stage 2's purge by horizon per measure
+    cb_rows, cb_bad = choice_beside(ctx, z, c, ci, run1_params, spc, A1c, P, workers, bm_tab)
+    if cb_bad:
+        return _refuse("the choice-block beside: " + "; ".join(cb_bad[:3])), None, None, {}
+    jr += cb_rows
+    jr += J.evenness_curve_rows(jr, list(designs))                                          # E-015 (4)
     jr += [{"section": "note", "measure": "not_modelled", "note": SC.NOT_MODELLED},
            {"section": "note", "measure": "focused_trader", "note": SC.FTP_NOTE},
            {"section": "note", "measure": "menu", "note": "E-015's limits as flags only, once the operator approves "
                                                          "them; none approved: no menu"},
-           {"section": "note", "measure": "d621_3", "note": "Stage 2 D-621 (3)'s rule against P-14 beside, its line "
-                                                           "(i) not holding its level (E-007 (1)); not computed here"}]
+           {"section": "note", "measure": "bm63c",
+            "note": J.BM63C_NOTE if bm_tab is None else "bm63c read on its pinned table (paired, stat bm63c_0.05)"},
+           {"section": "note", "measure": "d621_3",
+            "note": "Stage 2 D-621 (3)'s rule against P-14 beside, deciding nothing: its line (i) is read in `paired` "
+                    "(stat d621_i_0.05) and does NOT hold its level (E-007 (1); E-035 (3)); its lines (ii)-(iv) -- "
+                    "the guarded measures, the gate, the coin -- are each reported on their own, never AND-ed"}]
     jdf = R.frame(out, R.SECTIONS[10:])
     jjf = pd.DataFrame(jr)
     params = {**pre.parameters(), "run": 2, "pick": c, "verdict": verdict, "run1_sha256": run1_params.get("_sha256"),
@@ -1179,13 +1236,149 @@ def _index_class(c: str, trades, days, Lj, sel):
     return make
 
 
-def _card(rows) -> dict[str, float]:
+def _card(rows, block: str = "judged") -> dict[str, float]:
     out = {}
     for r_ in rows:
-        if (r_.get("section") == "scorecard" and r_.get("block") == "judged" and r_.get("stat") == "value"
+        if (r_.get("section") == "scorecard" and r_.get("block") == block and r_.get("stat") == "value"
                 and r_["measure"] in ("P", "S1", "S3a", "S5a")):
             out[r_["measure"]] = float(r_["value"])
     return out
+
+
+def wait_of(name: str, block: str, rec, label: str, trades):
+    """13's wait as felt for one design from its recorded replay (the verdict arm, no response)."""
+    from extended import opening_journey as J
+    from extended import opening_wait as OW
+
+    ops = OW.openings(rec, label, ARM, "off")
+    t = rec.trades(label, ARM, "off")
+    return J.wait_rows(name, block, ops, t[t["kind"] == "funded"], rec.accounts(label, ARM, "off"),
+                       J.slot_minutes(ops, trades))
+
+
+def paired_block_rows(block: str, arm: str, tabs: dict, p14, bm_tab) -> list[dict[str, Any]]:
+    """13's paired readings on one block and arm: the design against P-16 and the twin design, the twin design against
+    P-16, each design against P-14's registered series; `bm63c` beside each P difference (its note while unpinned);
+    Stage 2 D-621 (3)'s line (i) against P-14, labelled as not holding its level."""
+    import numpy as np
+
+    from extended import opening_journey as J
+    from extended import opening_stagec as SC
+    from extended import p_bound as PB
+
+    out = []
+    for name, other in (("design", "p16"), ("design", "twin"), ("twin", "p16")):
+        out += [{"section": "paired", "block": block, "arm": arm, **r_}
+                for r_ in SC.paired_rows(name, tabs[name], tabs[other], other)]
+        D = PB.paired(SC.ahead(tabs[name]), SC.ahead(tabs[other]))
+        out += [{"section": "paired", "block": block, "arm": arm, **r_} for r_ in J.bm63c_rows(name, other, D, bm_tab)]
+    if p14 is not None:
+        for name in tabs:
+            out += [{"section": "paired", "block": block, "arm": arm, **r_}
+                    for r_ in SC.paired_rows(name, tabs[name], None, "p14", b_ahead=p14)]
+            D = PB.paired(SC.ahead(tabs[name]), p14)
+            out += [{"section": "paired", "block": block, "arm": arm, **r_}
+                    for r_ in J.bm63c_rows(name, "p14", D, bm_tab)]
+            if len(D) >= 2 * 63:
+                hit = bool(np.asarray(PB.rejects("d621", D[:, None], level=0.05)).ravel()[0])
+                out.append({"section": "paired", "block": block, "arm": arm, "design": name, "against": "p14",
+                            "measure": "P_difference", "stat": "d621_i_0.05", "value": float(hit), "n": int(len(D)),
+                            "note": "Stage 2 D-621 (3)(i) as coded: does NOT hold its level (E-007 (1)); beside, "
+                                    "deciding nothing"})
+    return out
+
+
+def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, workers: int, bm_tab
+                  ) -> tuple[list[dict[str, Any]], list[str]]:
+    """13's choice-block beside: the pick's states on the choice block from run 1's pinned fits (u3 out of fold by
+    the pinned folds; nothing fitted), held to run 1's states hash (refusing); its design, its twin design (draw 0 on
+    the choice block: run 1's) and P-16 replayed on 2021-2023's starts of the choice job (history ending 2023-12-29)
+    under the responses, read on Stage 2's purge (`opening_journey.choice_rows`); the paired readings with P-14's
+    purged series, the wait as felt, the uncertainty and design against luck, the frontier."""
+    import numpy as np
+
+    from extended import opening_journey as J
+    from extended import opening_population as OP
+    from extended import opening_stagec as SC
+    from extended import opening_states as OS
+    from extended import opening_stats as ST
+    from extended import opening_wait as OW
+    from extended import reader
+    from extended import user_beside as B
+
+    bad: list[str] = []
+    folds = {}
+    for Y, v in (run1_params.get("forecast_folds") or {}).items():
+        cf = OS.coefficients_from_json(v["json"])
+        if OS.coefficients_sha256(cf) != v["sha256"]:
+            bad.append(f"run 1's fold {Y} does not hash to its recorded sha256")
+        folds[int(Y)] = cf
+    walked = set(spc.days.loc[spc.days["day_kind"].isin(OP.WALKED_KINDS), "date"])
+    g = ctx.grid(str(reader.CHOICE_START), str(reader.CHOICE_END), walked)
+    st = OS.compute(g, frozen=OS.coefficients_from_json(run1_params["forecast_json"]), frozen_folds=folds,
+                    test_years=())
+    del g
+    pop = spc.population.merge(st.frame(), on=["date", "slot"], how="left", validate="many_to_one")
+    for x in OS.BUILT:
+        pop[f"in_{x}"] = pop[f"in_{x}"].astype("boolean").fillna(False).astype(bool) & pop["population"].astype(bool)
+    if OS.states_sha256(pop) != run1_params.get("states_sha256"):
+        bad.append("the choice block's states recomputed from the pinned fits are not run 1's (states_sha256)")
+    if bad:
+        return [], bad
+    kinds = dict(zip(A1c["date"], A1c["day_kind"]))
+    cal = sorted(d for d in A1c["date"] if d >= STAGE_AB_FIRST)
+    L = ST.layout(pop[pop["date"] >= STAGE_AB_FIRST].reset_index(drop=True), cal, kinds=kinds, values=(),
+                  flags=[f"in_{x}" for x in OS.BUILT])
+    sel = L.flags[f"in_{c}"]
+    tw0 = ST.clustered_twin(L, sel, ci, ST.BLOCK_CHOICE, 0)[0]
+    designs = {"design": grid_flags(L, sel), "twin": grid_flags(L, tw0), "p16": None}
+    days = sorted(A1c["date"])
+    jobs = ctx.jobs(spc.trades, days, P)
+    rows: list[dict[str, Any]] = []
+    cards: dict[str, dict[str, float]] = {}
+    wpool: dict[str, dict[str, float]] = {}
+    for arm in SCORECARD_ARMS:
+        jb = jobs[arm]
+        ids = offer_ids_of(spc.trades, days, jb["blocks"])
+        starts = [i for i, d in enumerate(jb["dates"]) if str(d) >= STAGE_AB_FIRST]
+        if z.starts is not None:
+            starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
+        tabs = {}
+        for name, k in designs.items():
+            cls = (OW.waiting_class(OW.WaitSpec.for_blocks(f"{c}_{name}_{arm}_choice", jb["blocks"],
+                                                           flags_by_block(ids, k))) if k is not None else None)
+            if cls is not None:
+                bad += [f"{arm} {name}: {p_}" for p_ in OW.lookup_problems(OW.spec_of(cls), jb, starts)]
+            for resp in z.responses:
+                kw = {"funded_account_cls": cls} if cls is not None else {}
+                if resp.startswith("denial") or resp.startswith("forfeit"):
+                    kw["seed_base"] = ctx.ladder_seed_base()
+                if arm == ARM and resp == "off":
+                    outs, rec = replay(f"fo_{name}_choice", jb, starts, workers, cls, ids)
+                    rw, wpool[name] = wait_of(name, "choice", rec, f"fo_{name}_choice", spc.trades)
+                    rows += rw
+                    del rec
+                else:
+                    outs = B.run_starts(f"fo_{name}_choice", arm, B.BY_NAME[resp], jb, starts, int(workers), **kw)
+                rws, tp = J.choice_rows(name, arm, B.BY_NAME[resp], outs)
+                bad += J.choice_problems(rws, f"{name} {arm} {resp}")
+                rows += rws
+                if resp == "off":
+                    tabs[name] = tp
+                    if arm == ARM:
+                        cards[name] = _card(rws, "choice")
+        rows += paired_block_rows("choice", arm, tabs, ctx.p14_ahead_choice(arm, [str(d) for d in jb["dates"]]),
+                                  bm_tab)
+        rows += J.luck_rows(tabs, "choice", arm)
+    rows += J.against(wpool, "choice")
+    rows += [{"section": "frontier", "block": "choice", "design": k, "on_frontier": v, **cards.get(k, {})}
+             for k, v in SC.frontier({k: {m_: cards[k].get(m_, np.nan) for m_ in SC.FRONTIER_MEASURES} for k in cards},
+                                     higher=J.FRONTIER_HIGHER).items()]
+    rows.append({"section": "note", "block": "choice", "measure": "choice_block_beside",
+                 "note": "2021-2023's starts, a choice-block read (u3 out of fold, the pinned fold fits), each start's "
+                         "history ending 2023-12-29, purged by horizon per measure by Stage 2's u_select.block "
+                         "('early'); beside, never a line"})
+    return rows, bad
 
 
 def v_other_rows(rec_d, rec_t, c: str, popj, Lj) -> list[dict[str, Any]]:
@@ -1319,10 +1512,24 @@ def t3(a: argparse.Namespace, pre) -> int:
     from extended import use_vendored_stage2
 
     use_vendored_stage2()
+    from extended import VENDOR_STAGE2
+    from extended import opening_t3 as T3
+
     f = Path(a.t3)
-    par = (json.loads(Path(str(f) + ".manifest.json").read_text(encoding="utf-8")).get("parameters") or {})
+    man = json.loads(Path(str(f) + ".manifest.json").read_text(encoding="utf-8"))
+    par = man.get("parameters") or {}
+    head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    if str(man.get("git_commit", "")) != head:
+        log(f"T-3 REFUSED: the compared file's manifest commit {man.get('git_commit')} is not HEAD {head} (V1)")
+        return 2
     ctx = T3Ctx(smoke=True)
-    code, df, params = run1(ctx, pre, int(a.workers))
+    with T3.JudgedReplacement(roots=[VENDOR_STAGE2 / "data"]) as jr:        # V1: below every loader
+        code, df, params = run1(ctx, pre, int(a.workers))
+    log(f"T-3: the replacement entered {jr.entered} times; {jr.rows_replaced} judged-block rows replaced")
+    bad = jr.verdict()
+    if bad:
+        log("T-3 FAILS: " + "; ".join(bad))
+        return 3
     if code != 0:
         log("T-3 FAILS: run 1 did not complete under the replacement")
         return 3
@@ -1332,7 +1539,8 @@ def t3(a: argparse.Namespace, pre) -> int:
     pd.read_csv(io.StringIO(df.to_csv(index=False)), low_memory=False).pipe(
         lambda d: d[d["section"] != "identity"]).to_csv(b_, index=False)
     same = a_.getvalue() == b_.getvalue() and params.get("forecast_sha256") == par.get("forecast_sha256")
-    log(f"T-3 {'HOLDS' if same else 'FAILS'}: {ctx.replaced} judged-block bars replaced in run 1's reads")
+    log(f"T-3 {'HOLDS' if same else 'FAILS'}: the wrapper entered {jr.entered} times, no judged-block row reached; "
+        f"sections {'identical' if same else 'differ'}")
     return 0 if same else 3
 
 

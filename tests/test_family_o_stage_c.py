@@ -122,6 +122,19 @@ def test_run2_end_to_end_on_synthetic_inputs():
     assert {"identity_rows", "identity_covered", "selection_sha256", "population_sha256", "purposes",
             "seed_roles", "verdict"} <= set(got["params"])
     assert got["written"] == []
+    # section 13's parts (Q-109c): the choice-block beside, the wait as felt, uncertainty and design against luck, the
+    # evenness curve, bm63c's place, D-621 (3)'s line (i) noted, the frontier on both blocks
+    assert {"wait", "uncertainty", "design_vs_luck", "evenness_curve"} <= set(got["journey_sections"])
+    assert {"choice", "judged"} <= set(got["journey_blocks"]) and got["paired_blocks"] == ["choice", "judged"]
+    assert {"scorecard", "extra", "path", "response", "paired", "wait", "uncertainty", "design_vs_luck",
+            "frontier"} <= set(got["choice_sections"])
+    assert "bm63c_0.05" in got["paired_stats"] and got["bm63c_note"]
+    assert {"slot_minutes", "trades_per_live_account_day", "share_account_sessions_without_trade",
+            "sessions_to_opening", "opening_hour"} <= set(got["wait_measures"])
+    assert got["wait_designs"] == ["design", "p16", "twin"] and got["wait_against"] > 0
+    assert got["evenness_blocks"] == ["choice", "judged"] and got["luck_rows"] > 0
+    assert got["frontier_blocks"] == ["choice", "judged"] and got["beside_0735"] == 4
+    assert {"identity_commits", "data_manifest_sha256"} <= set(got["params"])
 
 
 @pytest.mark.slow
