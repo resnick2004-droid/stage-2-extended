@@ -4,8 +4,9 @@
 #
 # Runs (1) the vendored snapshot's integrity -- `python scripts/vendor_stage2.py --verify`: every file of vendor/stage2
 # against vendor/MANIFEST_stage2.sha256 and, where the bars and atlas are present (a copy here, junctions in a
-# worktree), the data against vendor/DATA_MANIFEST_stage2.sha256 (E-002) -- and (2) the suite's FAST tier
-# (-m "not slow and not heavy"). A commit that breaks either is refused: a broken foundation committed is a broken
+# worktree), the data against vendor/DATA_MANIFEST_stage2.sha256 (E-002) --, (2) the licence check on the commit's own
+# index -- `python scripts/check_price_levels.py --index`: no tracked or staged CSV outside vendor/ holds or reveals an
+# NQ price level (Q-131) -- and (3) the suite's FAST tier (-m "not slow and not heavy"). A commit that breaks either is refused: a broken foundation committed is a broken
 # foundation someone later trusts. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
 # /validate, never here.
 #
@@ -27,6 +28,10 @@ fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
 cd "$REPO_ROOT"
+
+# The index this commit records. `git commit -a` or `git commit <paths>` stages into a temporary index named by
+# GIT_INDEX_FILE, so the licence check below reads that one; it is kept here before the environment is cleared.
+COMMIT_INDEX="${GIT_INDEX_FILE:-}"
 
 # git exports GIT_INDEX_FILE (and, depending on the invocation, GIT_DIR / GIT_WORK_TREE / GIT_PREFIX) to its hooks.
 # Inherited by the suite, they would point every nested `git` -- a test that builds a temporary repository, the
@@ -62,7 +67,7 @@ export PYTHONDONTWRITEBYTECODE=1
 # pass count is suppressed.
 FAST_TIER="not slow and not heavy"
 
-echo "pre-commit: vendor integrity + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON, tree = $REPO_ROOT"
+echo "pre-commit: vendor integrity + the licence check + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON, tree = $REPO_ROOT"
 
 echo "--- vendor integrity (scripts/vendor_stage2.py --verify) ---"
 # The check must stop the hook on failure on every branch. `set -e` does not fire inside an `a && b` list or on the
@@ -74,6 +79,24 @@ vendor_failed() {
     exit 1
 }
 "$PYTHON" scripts/vendor_stage2.py --verify || vendor_failed
+
+echo "--- result files: no licensed price level (scripts/check_price_levels.py --index) ---"
+# Every tracked or staged .csv/.tsv outside vendor/, as this commit's index holds it: a level column, a column of levels
+# on the 0.25 grid, a pair a/b or 100 a/b that recovers one (Q-121's x_pts beside x_pct), intraday timestamps beside a
+# price-class column. Exit 1 on a refusal or a stale allow-list entry (config/price_level_allowlist.csv); it prints
+# file and column names and shares, never a value.
+price_level_failed() {
+    echo "pre-commit: the licence check REFUSED the commit -- a staged CSV may hold or reveal an NQ price level (E-002)." >&2
+    echo "pre-commit: unstage the file (git restore --staged <file>); never commit it to see what happens." >&2
+    exit 1
+}
+# The hook is shared by every worktree (install_hooks.py): a tree made before the check existed has no script to run,
+# and is refused rather than let through unchecked -- merge master into it first.
+if [ ! -f scripts/check_price_levels.py ]; then
+    echo "pre-commit: scripts/check_price_levels.py is missing from this tree; merge master (Q-131) and commit again." >&2
+    exit 1
+fi
+"$PYTHON" scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed
 
 echo "--- tests, fast tier ---"
 "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
