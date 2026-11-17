@@ -1,0 +1,57 @@
+"""Q-105b, Q-105d, Q-105e: RD-02's reading runner (`scripts/pp_reading.py`, `extended/pp_run.py`, `extended/pp_run_synthetic.py`;
+the pinned text's section 14) on synthetic inputs only -- no bar, no atlas, no result file of a design read -- held to
+the red team's second read (`docs/reviews/BUILD_RD-02_v2_2026-11-16.md`):
+
+* `e2e` -- the pipeline end to end on two synthetic designs into a temporary folder: the three result files with their
+  manifests, the identity rows in 14 step 2's order across both designs (R2), every section, every declared output
+  (`pp_run.DECLARED_OUTPUTS`, R5), the menu's labels and notes, the gates' file;
+* `refusals` -- a planted failure writes nothing; the real mode refuses outside a clean run; a protected folder is
+  refused;
+* `waits` -- the waits by position, tied to a commit and its covered files (the third read's D1, E-104), the rows
+  named (r4), two workers only after T-10 at two (r5);
+* `limits` -- E-015's limits from the operator's approving rows only (D5);
+* `authorise` -- every purpose checked before any is ledgered (n1);
+* `labels` -- the paired readings' intervals, MDDs and labels from the honesty table, and the menu's count;
+* `t3` -- T-3 on the runner's composed reading through `start_frame` from session-level toy records (R1);
+* `order` -- the second design's `ref` failing replays no new run (R2);
+* `q44` -- Q-44's file read as text, the round trip on empty and numeric-looking fields (R4);
+* `oracles` -- 8.2's oracles on the gates' funded records and on the replays (r1); the twin's gross on one arm (D3);
+* `holiday` -- each request dated on its own session (r2); every holiday's eve, the no-session ones included (D4).
+
+Each runs in its own process (`tests/pp_run_check.py`). The build's seed rule (T-9) holds for these files too: none
+writes a seed of RD-02's block (the runner reads its seeds from the pinned file; the tests use the build seed's one
+home in code).
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+FILES = ("extended/pp_run.py", "extended/pp_inputs.py", "extended/pp_run_synthetic.py", "scripts/pp_reading.py",
+         "tests/pp_run_check.py", "tests/test_pp_run.py", "tests/pp_gate_direct.py")
+SECTIONS = ("e2e", "refusals", "waits", "limits", "authorise", "labels", "t3", "order", "q44", "oracles", "holiday")
+
+
+@pytest.mark.parametrize("section", SECTIONS)
+def test_runner_section_holds(section, tmp_path):
+    env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1",
+               PYTHONDONTWRITEBYTECODE="1")
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "pp_run_check.py"), str(ROOT), section, str(tmp_path)],
+                       cwd=ROOT, capture_output=True, text=True, timeout=900, env=env)
+    lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
+    assert r.returncode == 0 and lines, f"{section} did not run:\n{r.stdout[-2000:]}\n{r.stderr[-3000:]}"
+    out = json.loads(lines[-1])
+    assert out["n_problems"] == 0, "\n".join(out["problems"])
+
+
+def test_the_runner_writes_no_seed_of_the_block():
+    pat = re.compile(rb"\b2026194[0-9]\b")
+    for rel in FILES:
+        assert not pat.search((ROOT / rel).read_bytes()), f"{rel} writes a seed of RD-02's block"
