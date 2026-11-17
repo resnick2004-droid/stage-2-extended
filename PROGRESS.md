@@ -167,3 +167,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-170: Q-127 stopped rightly (RD-04's pinned text forbids it); pre-read drafts get their pin-time text committed before RD-04's read instead. |
 | 2026-11-17 | lead | E-171: the second one-sample plan drafted (scope D first, sized calibration); red team reading; a seed-overlap fix dispatched. |
 | 2026-11-17 | lead | E-172: RD-03's stage 0 stopped (two Stage 2 rung files absent from the snapshot); the extension queued with the sequenced merge. |
+| 2026-11-17 | lead | E-173: the second one-sample plan red-teamed; its floor held no stricter than the validation it guards; a second text drafting. |
