@@ -175,3 +175,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-178: the seed-overlap fix merged, with a guard against additive seed offsets. |
 | 2026-11-17 | lead | E-179: Q-121's file audited clean but it reveals bar prices, so it stays local and git-ignored; a licence scan of committed results dispatched. |
 | 2026-11-17 | lead | E-180: no committed file leaks licensed prices; a guard against it building. |
+| 2026-11-17 | lead | E-181: F-03's reader fixed and merged; run 1 re-queued. |
+| 2026-11-17 | lead | E-182: the second one-sample plan re-read; the strict floor kept on a corrected basis (the line's size guarantee); a fourth text. |
