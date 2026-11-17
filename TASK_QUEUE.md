@@ -173,11 +173,13 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-18b | P-14's stress checks completed per the audit (A2, D-583's missing readings, ruin beside, assumptions labelled) | wt-features | merged (E-135); its check and run queued last | E-125 | light (build) / heavy (run) | 0 | E-132 |
 | Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | done: merged (E-134) | E-125 | light | 0 | E-132 |
 | Q-115 | The contract levers' rules on official pages (Back2Funded, the Reset Bank, the No Activation Fee 50K prices, the hold's expiry, the evaluation's cancellation) | wt-firms | done: committed on wt/wt-firms (E-135); merge after the RD readings | E-134 | light | 0 | E-134 |
-| Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | running: the draft (wt-payout, E-144) | Q-115 | light | 0 | E-134 |
+| Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | drafted (E-145); the red team Q-116r, then the gatekeeper and the pin | Q-115 | light | 0 | E-134 |
 | Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | done: merged (E-136) | E-135 | light | 0 | E-135 |
 | Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7, after the calibration (E-140) | E-135 | heavy | 0 | E-135 |
 | Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | done: merged (E-140) | E-136 | light | 0 | E-136 |
 | Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | done: merged (E-143) | E-140 | light | 0 | E-140 |
+| Q-116r | The red team reads RD-03's draft | wt-scout (read-only) | running (E-145) | Q-116 | light | 0 | E-145 |
+| Q-118 | A guard: heavy-marked tests skip while another job holds the run lock | wt-infra | running (E-145) | E-145 | light | 0 | E-145 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
