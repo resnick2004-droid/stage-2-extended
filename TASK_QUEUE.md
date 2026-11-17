@@ -162,7 +162,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-111 | One shared declaration of the shared identities' covered paths (`extended/identity_cover.py`), its import rule tested from the scripts' source | wt-infra | running (E-113) | E-108 | light | 0 | E-113 |
 | Q-108r3 | The red team reads Q-108's third text (the diff 383a3e9..c905c9c); pin as is, or the last changes | wt-scout (read-only) | done: pin as is (E-115) | Q-108c | light | 0 | E-114 |
 | Q-108d | Q-108's build from the pinned plan (E-115): the module, the calibration and validation scripts, the guard; synthetic tests only; then the red team, then the two heavy runs | wt-verify | running (E-115) | E-115 | light (build) / heavy (runs) | 0 | E-115 |
-| Q-107d | The red team's last diff read of RD-01's runner (22951ee..260bc91: the single pass, the shared break-even search, the covers, the measured cost) | wt-firms (read-only) | running (E-117) | Q-104e | light | 0 | E-117 |
+| Q-107d | The red team's last diff read of RD-01's runner (22951ee..260bc91: the single pass, the shared break-even search, the covers, the measured cost) | wt-firms (read-only) | done: merge after the listed changes (E-118); Q-104f | Q-104e | light | 0 | E-117 |
+| Q-104f | RD-01's runner: the last read's V1-V5 and notes; the base, shared covers and import model from Q-111 once merged | wt-firms | running (E-118) | Q-107d | light | 0 | E-118 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
