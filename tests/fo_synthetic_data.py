@@ -9,8 +9,9 @@ stage A's span), and a "judged block" of the first half of 2024 -- the runners' 
 
 **The context** (`SynCtx`, the runner's `Ctx` with its reads replaced): the day tables, spans and grids from the
 fixture; P-16's configuration, plan and money side from the vendored tree, but no registered outcome -- the per-R
-shift a synthetic constant, the capacity a constant, `mean_dv` a constant, a*'s (b) zero, no P-14 rows; every judged
-"read" recorded in order (`authorised`) and nothing ledgered. `judged_seed` makes the judged block's bars another
+shift a synthetic constant, the capacity a constant, `mean_dv` read by the runner's own reader from a synthetic value
+map in the vendored long schema (Q-117f), a*'s (b) zero, no P-14 rows; every judged "read" recorded in order
+(`authorised`) and nothing ledgered. `judged_seed` makes the judged block's bars another
 synthetic walk (T-3).
 """
 from __future__ import annotations
@@ -108,7 +109,15 @@ def syn_ctx_class(FO):
             return []
 
         def mean_dv(self):
-            return 1000.0
+            """7.4's mean_dv(c) through the runner's own reader (`mean_dv_c`) on a synthetic value map in the vendored
+            long schema (`tests/fo_value_map_fixture.py`, Q-117f), its target row at 1000.0."""
+            import tempfile
+
+            import fo_value_map_fixture as VM
+
+            with tempfile.TemporaryDirectory(prefix="fo_vm_") as d:
+                VM.write(FO.ROOT, d, VM.rows(1000.0))
+                return FO.mean_dv_c(results_dir=d)
 
         # ---- run 2's judged "reads": recorded, nothing ledgered
         def authorise(self, purpose):

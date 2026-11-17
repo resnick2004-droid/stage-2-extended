@@ -342,24 +342,57 @@ def a1_restricted_replay_problems(job: dict, starts: list[int], workers: int) ->
                                                      f"p16 {ARM} (choice block)", all_starts=False)]
 
 
-def mean_dv_c() -> float:
-    """`u_value_map.csv`, section `place_values`, base `p16`, place `c_funded_opening`, measure `mean_dv` (7.4)."""
-    import pandas as pd
+VALUE_MAP = "u_value_map.csv"
+#: 7.4's mean_dv(c) in Stage 2's value map, which is **long** (`section, base, phase, state, measure, value, n, unit,
+#: note`): the place is in `state`, the measure's name in `measure`, its number in `value` (Q-117f)
+VALUE_MAP_KEYS = (("section", "place_values"), ("base", "p16"), ("state", "c_funded_opening"), ("measure", "mean_dv"))
+VALUE_MAP_VALUE = "value"
 
-    from propedge import RESULTS_DIR
+
+def value_map_rows(d):
+    """The value map's rows at `VALUE_MAP_KEYS` (every key compared as text); refused (`SystemExit`) naming the missing
+    columns when the frame lacks a key or the value column."""
+    missing = [c for c in (*(k for k, _ in VALUE_MAP_KEYS), VALUE_MAP_VALUE) if c not in d.columns]
+    if missing:
+        raise SystemExit(f"REFUSED (F-03): {VALUE_MAP} lacks the columns {missing} of its long schema (it has "
+                         f"{list(d.columns)})")
+    m = None
+    for k, v in VALUE_MAP_KEYS:
+        hit = d[k].astype(str) == v
+        m = hit if m is None else m & hit
+    return d[m]
+
+
+def mean_dv_c(results_dir: Path | str | None = None) -> float:
+    """mean_dv(c), F-03's 7.4 as pinned: "mean_dv(c) = `u_value_map.csv`, section `place_values`, base `p16`, place
+    `c_funded_opening`, measure `mean_dv` (a win over a loss)".
+
+    Read from Stage 2's registered value map (`results_dir`, default the vendored `propedge.RESULTS_DIR`), its manifest
+    verified first. The file is long (Q-117f; run 1 at 97e16a3 crashed here with `KeyError: 'place'` reading it as
+    wide): the row is selected by `section == "place_values"`, `base == "p16"`, `state == "c_funded_opening"` (the
+    place) and `measure == "mean_dv"`, and its number is the row's `value`. Exactly one row and a finite value, or
+    refused (`SystemExit`); a refusal never prints the value."""
+    import math
+
+    import pandas as pd
 
     from extended.results import verify_result
 
-    p = Path(RESULTS_DIR) / "u_value_map.csv"
+    if results_dir is None:
+        from propedge import RESULTS_DIR as results_dir
+    p = Path(results_dir).resolve() / VALUE_MAP              # absolute: `verify_result` reads a relative path elsewhere
     ok, msg = verify_result(p)
     if not ok:
-        raise SystemExit(f"REFUSED (F-03): u_value_map.csv: {msg}")
-    d = pd.read_csv(p, float_precision="round_trip", low_memory=False)
-    d = d[(d["section"] == "place_values") & (d["base"].astype(str) == "p16")
-          & (d["place"].astype(str) == "c_funded_opening")]
-    if "mean_dv" not in d.columns or len(d) != 1:
-        raise SystemExit(f"REFUSED (F-03): u_value_map.csv holds {len(d)} p16 place (c) rows with mean_dv")
-    return float(d["mean_dv"].iloc[0])
+        raise SystemExit(f"REFUSED (F-03): {VALUE_MAP}: {msg}")
+    d = value_map_rows(pd.read_csv(p, float_precision="round_trip", low_memory=False))
+    if len(d) != 1:
+        raise SystemExit(f"REFUSED (F-03): {VALUE_MAP} holds {len(d)} rows at {dict(VALUE_MAP_KEYS)} (exactly one is "
+                         "read)")
+    v = pd.to_numeric(d[VALUE_MAP_VALUE], errors="coerce").iloc[0]
+    if not (pd.notna(v) and math.isfinite(float(v))):
+        raise SystemExit(f"REFUSED (F-03): {VALUE_MAP}'s {VALUE_MAP_VALUE} at {dict(VALUE_MAP_KEYS)} is not a finite "
+                         "number")
+    return float(v)
 
 
 # ------------------------------------------------------------------------------------------------ helpers

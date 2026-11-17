@@ -36,6 +36,14 @@ def test_run1_runs_every_stage_and_writes_only_its_sections(got):
     assert got["written"] is None                                   # a smoke writes nothing
 
 
+def test_run1s_write_itself_succeeds_on_the_frame_and_parameters(got):
+    """Q-117f: `Ctx.write` (not a smoke) on run 1's frame and parameters, into a temporary folder: the file and its
+    manifest are written, the manifest verifies, every row is there."""
+    w = got["write_tmp"]
+    assert w["name"] == f"{R.RESULT}.csv" and w["manifest"] and w["verified"]
+    assert w["rows"] == got["rows"]
+
+
 def test_run1s_identities_hold_and_every_cell_reaches_stage_b(got):
     assert len(got["identity_holds"]) == 4 and all(got["identity_holds"])     # A3's three checks and A1
     assert got["killed"] == {}
