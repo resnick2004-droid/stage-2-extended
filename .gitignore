@@ -32,3 +32,7 @@ desktop.ini
 
 # The heavy-run lock (E-005): live state, never committed
 run.lock
+
+# Licensed-price derivatives (E-179): result files from which a bar price can be recovered stay local, never committed
+results/q121_vol_descriptive_a1.csv
+results/q121_vol_descriptive_a1.csv.manifest.json
