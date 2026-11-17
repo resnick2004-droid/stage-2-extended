@@ -17,6 +17,8 @@ session's file would stamp it `-dirty`. So a run gets its own tree:
    `S2X_CLEAN_RUN=<name>` -- the only condition under which `extended.results.write_result` writes into `results/`
    and `extended.reader` lets a family read the judged block -- and the run id `S2X_RUN_ID=<name>@<UTC time>`, new
    for every run (a reused checkout included), by which the reader's once-rule tells runs apart (Q-32).
+   Under the lock it also sets `S2X_LOCK_HOLDER=<name>` (the lock's job), by which the root `conftest.py` lets this
+   command, and no other process, run tests marked `heavy` while the lock is held (Q-118).
    Its output goes to `<name>.log` beside the checkout (never inside it: an untracked log would stamp it `-dirty`),
    ending with an `EXIT <code>` line.
 4. **The lock** (E-005, E-006): with `--hours H --mem-gb G` (and `--task`), `run.lock` is taken through
@@ -61,6 +63,7 @@ import run_lock as RL  # noqa: E402
 import worktrees as W  # noqa: E402  (this tree's root is W.ROOT; its stores are W.STORES)
 
 from extended import CLEAN_RUN_ENV, RUN_ID_ENV, RUNS_DIR  # noqa: E402
+from extended.lock_guard import LOCK_HOLDER_ENV  # noqa: E402  (the heavy-test guard's holder mark, Q-118)
 from extended.reader import LEDGER_REL, LedgerError, missing_lines, read_ledger  # noqa: E402  (no engine, no path)
 
 RUNS = RUNS_DIR
@@ -130,6 +133,8 @@ def run(wt: Path, cmd: list[str], lock_job: str | None = None) -> int:
     run_id = f"{wt.name}@{datetime.now(timezone.utc):%Y%m%dT%H%M%S.%fZ}"
     env = {**os.environ, **BLAS, "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1", CLEAN_RUN_ENV: wt.name,
            RUN_ID_ENV: run_id}
+    if lock_job is not None:
+        env[LOCK_HOLDER_ENV] = lock_job               # the lock's holder: its heavy tests may run (Q-118)
     log = wt.parent / f"{wt.name}.log"
     print(f"running in {wt}: {' '.join(cmd)}  (log: {log}; run id {run_id})", flush=True)
     with log.open("w", encoding="utf-8") as f:

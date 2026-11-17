@@ -142,3 +142,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-142: status questions never pause the workflow (the operator); the heavy queue's part 7 (A0 first after the calibration). |
 | 2026-11-17 | lead | E-143: F-03's build complete; A0 queued after the calibration, run 1 after A0. |
 | 2026-11-17 | lead | E-144: RD-03's draft started (Back2Funded, the evaluation inventory, house-money purchasing). |
+| 2026-11-17 | lead | E-145: RD-03 drafted, to the red team; a heavy test run outside the lock (no harm) and a guard against it. |
+| 2026-11-17 | lead | E-146: RD-03's read -- stage 0 decides nothing, every lever cell runs; the second text drafted. |
