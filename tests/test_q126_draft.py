@@ -216,56 +216,66 @@ def check_sizing(body: str, name: str) -> None:
 
 
 def check_floor(body: str, name: str) -> None:
-    """The allowance (the lead's ruling on M2) and everything stated about it, in 3.2 and 4.3."""
+    """The floor at zero tolerance (E-176) and everything stated about it in 3.2 and 4.3, with E-173's reversed
+    allowance and the c = 0..3 comparison held as the declared reading beside."""
     A = arith()
     n = A.n_val()
     N = A.CAL_SUBSETS_PER_SIZE * len(A.SIZES)
-    c = A.allowance(N, n)
-    assert c == A.ALLOWANCE, "the declared allowance is not the ruling's least c"
+    assert A.ALLOWANCE == 0, "the declared floor is zero tolerance (E-176)"
+    c3 = A.allowance(N, n)
+    assert c3 == A.E173_ALLOWANCE == 3, "E-173's least allowance, the reading beside"
     r95, rV = A.guard_rate(n), A.punished_rate(n)
-    b, b0 = A.rule_bounds(N, n, c), A.rule_bounds(N, n, 0)
-    s32 = flat(section(body, "### 3.2"))
+    b0, b3 = A.rule_bounds(N, n, 0), A.rule_bounds(N, n, c3)
+    assert abs(b0["nested"] - n / (N + n)) < 1e-12, "the closed form at c = 0"
     beside = A.bound_by_subsets(n=n)
-    for s in (f"r_95 = 1 - {A.GUARD_PASS}^(1/{n}) = {r95:.4e}",
-              f"**The floor admits a candidate with at most c = {c} bad subsets among the {N:,}**",
-              f"refuses a candidate at r_95 with probability at most {A.MAX_REFUSAL:.2f}",
-              f"At c = {c} it refuses one with {1 - A.floor_admits(r95, N, c):.4f}; at c = {c - 1} it would refuse with "
-              f"{1 - A.floor_admits(r95, N, c - 1):.4f}",
-              f"At r_V the floor now refuses with probability {1 - A.floor_admits(rV, N, c):.4f}, where the first text's "
-              f"zero-tolerance floor refused with {A.detection(N, rV):.4f}",
-              f"After {c} bad subsets of {N:,} the 95 % upper limit on the rate is {A.cp_upper(c, N):.4e}, at which the "
-              f"validation's exact part passes with {(1 - A.cp_upper(c, N)) ** n:.4f}",
-              f"bound that size's rate at {A.cp_upper(0, A.CAL_SUBSETS_PER_SIZE):.4e}, and {c} bad of "
-              f"{A.CAL_SUBSETS_PER_SIZE} at {A.cp_upper(c, A.CAL_SUBSETS_PER_SIZE):.4e}",
-              f"{b['one']:.4f} for one candidate", f"{b['nested']:.4f} for a branch nested in m",
-              f"**{b['primary']:.4f} for the primary**", f"{b['nested']:.4f} when the scope-Q branch is the primary",
-              f"**{b['second']:.4f} for the second statistic**", f"{b['all']:.4f} over the whole rule",
-              f"these were {b0['one']:.4f}, {b0['nested']:.4f}, {b0['primary']:.4f}, {b0['second']:.4f} and "
-              f"{b0['all']:.4f}, bought by refusing a candidate at r_95 with probability "
-              f"{1 - A.floor_admits(r95, N, 0):.4f}",
+    s32 = flat(section(body, "### 3.2"))
+    for s in ("A candidate is refused if **any** of the 3,300 subsets is bad (c = 0).",
+              f"At r_V the floor sees a bad subset, and refuses, with probability {A.detection(N, rV):.4f}",
+              f"by 3/{N:,} = {3 / N:.4e}, at which the validation's exact part passes with probability "
+              f"{(1 - 3 / N) ** n:.4f}",
+              f"bound that size's rate at {A.cp_upper(0, A.CAL_SUBSETS_PER_SIZE):.4e}",
+              f"{b0['one']:.4f} for one candidate", f"{b0['nested']:.4f} for a branch nested in m",
+              f"**{b0['primary']:.4f} for the primary**", f"{b0['nested']:.4f} when the scope-Q branch is the primary",
+              f"**{b0['second']:.4f} for the second statistic**", f"{b0['all']:.4f} over the whole rule",
+              f"which is {c3} -- so that",
+              f"r_95 = 1 - {A.GUARD_PASS}^(1/{n}) = {r95:.4e}",
+              f"refuses a candidate there with {1 - A.floor_admits(r95, N, 0):.4f}; E-173's c = {c3} would refuse it "
+              f"with {1 - A.floor_admits(r95, N, c3):.4f} (c = {c3 - 1} with {1 - A.floor_admits(r95, N, c3 - 1):.4f})",
+              f"rises to {b3['all']:.4f} over the rule ({b3['primary']:.4f} for the primary), against {b0['all']:.4f} "
+              f"at c = 0",
               f"towards {1 - A.GUARD_PASS:.2f}",
               f"{beside[1][2]:.4f} at {beside[1][0]:,} subsets, {beside[2][2]:.4f} at {beside[2][0]:,} and "
               f"{beside[3][2]:.4f} at {beside[3][0]:,}"):
         assert s in s32, f"3.2 lacks {s!r}"
+    steps = A.step_costs(ROOT)
+    lo, hi = min(z for *_, z in steps), max(z for *_, z in steps)
+    assert f"about {lo:.2f} to {hi:.2f} more minimum detectable lift" in s32
     s43 = section(body, "### 4.3")
     rates = [(r, "") for r in A.FLOOR_RATES[:4]] + [(r95, " (r_95)"), (rV, " (r_V)")] + \
             [(r, "") for r in A.FLOOR_RATES[4:]]
     for r, lab in rates:
-        row = (f"| {r:.4e}{lab} | {A.floor_admits(r, N, c):.4f} | {A.floor_admits(r, N, 0):.4f} | "
+        row = (f"| {r:.4e}{lab} | {A.floor_admits(r, N, 0):.4f} | {A.floor_admits(r, N, c3):.4f} | "
                f"{(1 - r) ** n:.4f} |")
         assert row in s43, f"4.3 lacks the floor row {row!r}"
+    for c in A.COMPARED:
+        b = A.rule_bounds(N, n, c)
+        lab = {0: " (declared)", c3: " (E-173, reversed)"}.get(c, "")
+        row = (f"| {c}{lab} | {1 - A.floor_admits(r95, N, c):.4f} | {1 - A.floor_admits(rV, N, c):.4f} | "
+               f"{b['one']:.4f} | {b['nested']:.4f} | {b['primary']:.4f} | {b['second']:.4f} | {b['all']:.4f} |")
+        assert row in s43, f"4.3 lacks the comparison row {row!r}"
     f43 = flat(s43)
-    assert f"it refuses at most {1 - A.floor_admits(r95, N, c):.4f} there" in f43
-    assert f"98.9 % of the time, with probability {1 - A.floor_admits(1e-4, N, 0):.4f}" in f43
+    assert (f"98.9 % of the time, with probability {1 - A.floor_admits(1e-4, N, 0):.4f}, and one at r_95 with "
+            f"{1 - A.floor_admits(r95, N, 0):.4f}") in f43
     assert round(100 * (1 - 1e-4) ** n, 1) == 98.9
-    steps = A.step_costs(ROOT)
+    assert f"keeping the rule's chance of losing the line at {b0['all']:.4f}" in f43
     txt = (f"{steps[0][2]:.3f} from `{steps[0][0]}` to `{steps[0][1]}`, "
            + ", ".join(f"{z:.3f} to `{y}`" for _, y, z in steps[1:-1]) + f" and {steps[-1][2]:.3f} to `{steps[-1][1]}`")
     assert txt in f43, f"4.3 lacks the grid steps {txt!r}"
-    assert f"{b['one']:.4f} at c = {c} ({b0['one']:.4f} at c = 0)" in f43
-    assert f"**{b['nested']:.4f} at c = {c}, and n/(N + n) = {b0['nested']:.4f} at c = 0" in f43
-    assert abs(b0["nested"] - n / (N + n)) < 1e-12, "the closed form at c = 0"
+    assert f"{b0['one']:.4f} at c = 0, the declared floor ({b3['one']:.4f} at E-173's c = {c3})" in f43
+    assert (f"**at the declared c = 0 it is n/(N + n) = {b0['nested']:.4f}, whatever the rates and however fine the "
+            f"grid** ({b3['nested']:.4f} at E-173's c = {c3})") in f43
     assert f"catch a bad-subset rate of 1e-03 with probability {1 - (1 - 1e-3) ** n:.4f}" in f43
+    assert "**no subset of the 3,300 is bad**" in flat(section(body, "### 4.2"))
 
 
 def check_probe(body: str, name: str) -> None:
@@ -437,7 +447,9 @@ def test_the_checks_can_fail():
     with pytest.raises(AssertionError):
         check_appendix_b(body.replace("(after the look, B-9)", "(after the look)"), p.name)
     with pytest.raises(AssertionError):
-        check_floor(body.replace("at most c = 3 bad subsets", "at most c = 2 bad subsets"), p.name)
+        check_floor(body.replace("is bad (c = 0).", "is bad (c = 1)."), p.name)
+    with pytest.raises(AssertionError):
+        check_floor(body.replace("| 2 | 0.1840 | 0.5818 |", "| 2 | 0.1840 | 0.6000 |"), p.name)
     with pytest.raises(AssertionError):
         check_probe(body.replace("| 0.8 | 1.431e-03 | 0.7321 |", "| 0.8 | 1.431e-03 | 0.7000 |"), p.name)
     if arith().logs_present():

@@ -1,10 +1,11 @@
 # Q-126: the one-sample pass line's second calibration -- the plan, declared before anything is built or run
 
-**Status: a draft, second text (Q-126b).** It answers the red team's read of the first text (ec6905a;
-`docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173). Section 10 maps every finding to its
-change. It goes to the red team's re-read of this diff, then is pinned by its LF sha256 under a decision row
-(`tests/test_declarations_fixed.py`'s calibration-plan test reads `docs/calibration/<name>.md` pins). The lead may
-rename it at the pin (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
+**Status: a draft, third text (Q-126c).** It answers the red team's read of the first text (ec6905a;
+`docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173), as corrected by the lead after the
+second text computed one ruling's cost (E-176: the sizing floor returns to zero tolerance). Section 10 maps every
+finding to its change. It goes to the red team's re-read of this diff, then is pinned by its LF sha256 under a
+decision row (`tests/test_declarations_fixed.py`'s calibration-plan test reads `docs/calibration/<name>.md` pins). The
+lead may rename it at the pin (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
 
 **Every choice in this plan that differs from Q-108's pinned plan was made after Q-108's look** -- after its
 calibration (E-127, E-149, E-150), its failed validation (E-159, E-160), the diagnosis (Q-125, E-161) and, for the
@@ -190,32 +191,40 @@ persistent model).
 - **At every block length.** Every subset, core and sizing, is enumerated exactly at L = 42, 55 and 63 and on both
   alternating models, at both values. So each statement below holds at each block length as well as pooled.
 
-**The floor's allowance (after the look, B-21; the lead's ruling on the red team's M2, E-173).** The floor may not be
-stricter than the validation it guards.
-- Let r_95 be the pooled bad-subset rate at which the validation's exact part passes a candidate with probability 0.95:
-  r_95 = 1 - 0.95^(1/115) = 4.4593e-04.
-- **The floor admits a candidate with at most c = 3 bad subsets among the 3,300**, c the least count whose floor
-  refuses a candidate at r_95 with probability at most 0.10. At c = 3 it refuses one with 0.0621; at c = 2 it would
-  refuse with 0.1840 (`q126_arith.py`).
-- **What the allowance costs in assurance.** At r_V the floor now refuses with probability 0.3577, where the first
-  text's zero-tolerance floor refused with 0.9514. After 3 bad subsets of 3,300 the 95 % upper limit on the rate is
-  2.3479e-03, at which the validation's exact part passes with 0.7631.
-- **Per size** (the red team's m5): zero bad subsets of one size's 660 bound that size's rate at 4.5287e-03, and 3 bad
-  of 660 at 1.1706e-02. The pooled figures are the validation's yardstick, which draws every size; they are not a
-  single design's, which has one size. Both real failures fell at 5,000 trades.
+**The floor: zero tolerance (after the look, B-21; the lead's ruling E-176, reversing E-173's allowance).** A
+candidate is refused if **any** of the 3,300 subsets is bad (c = 0).
+- At r_V the floor sees a bad subset, and refuses, with probability 0.9514. Zero bad subsets bound the pooled rate, at
+  95 %, by 3/3,300 = 9.0909e-04, at which the validation's exact part passes with probability 0.9007.
+- **Per size** (the red team's m5): zero bad subsets of one size's 660 bound that size's rate at 4.5287e-03. The pooled
+  figures are the validation's yardstick, which draws every size; they are not a single design's, which has one size.
+  Both real failures fell at 5,000 trades.
 
 **What the floor guarantees, whatever the rates** (section 4.3 derives it): the chance that a statistic the rule
 chooses holds this calibration and then fails the validation's exact part is at most
-- 0.0644 for one candidate;
-- 0.1281 for a branch nested in m;
-- **0.1925 for the primary** (scope D's nested grid and C6; 0.1281 when the scope-Q branch is the primary);
-- **0.1281 for the second statistic** (2.5);
-- 0.3206 over the whole rule.
+- 0.0126 for one candidate;
+- 0.0337 for a branch nested in m;
+- **0.0463 for the primary** (scope D's nested grid and C6; 0.0337 when the scope-Q branch is the primary);
+- **0.0337 for the second statistic** (2.5);
+- 0.0800 over the whole rule.
 
-At the first text's zero tolerance these were 0.0126, 0.0337, 0.0463, 0.0337 and 0.0800, bought by refusing a
-candidate at r_95 with probability 0.7705 (section 4.3's table). **The ruling trades that assurance for power.** More
-subsets would not restore it: under the ruled allowance the nested bound falls only towards 0.05, the validation's own
-failure chance at r_95 -- 0.0985 at 6,600 subsets, 0.0831 at 13,200 and 0.0712 at 26,400 (beside, not taken).
+**Why zero tolerance, though the floor is stricter than the validation (the lead's ruling, E-176).** The second text
+declared E-173's allowance -- at most c bad subsets, c the least count refusing a candidate at r_95 with at most 0.10,
+which is 3 -- so that the floor would be no stricter than the validation. Its computed cost reversed it:
+- r_95 = 1 - 0.95^(1/115) = 4.4593e-04 is the pooled rate at which the validation's exact part passes a candidate with
+  probability 0.95. The zero-tolerance floor refuses a candidate there with 0.7705; E-173's c = 3 would refuse it
+  with 0.0621 (c = 2 with 0.1840).
+- **A floor refusal costs one grid step**: the choice moves to the next margin, about 0.09 to 0.16 more minimum
+  detectable lift (4.3).
+- **A validation failure costs the line**: no one-sample line at all, for every design in that statistic's rows of
+  2.5, and no re-choice.
+- At c = 3 the chance of that loss rises to 0.3206 over the rule (0.1925 for the primary), against 0.0800 at c = 0
+  (section 4.3's comparison).
+- **Judged end to end, the strict floor fails fewer profitable models**, which is what the operator's rule asks. So
+  "never stricter than the validation" governs the probe (condition 4), which guards one candidate's Monte Carlo
+  tail, and not the sizing floor, which protects the line's survival.
+- A larger calibration would not have rescued the allowance: under E-173's rule the nested bound falls only towards
+  0.05, the validation's own failure chance at r_95 -- 0.0985 at 6,600 subsets, 0.0831 at 13,200 and 0.0712 at 26,400
+  (beside, not taken).
 
 **Q-108's own design, for comparison.** With 115 calibration subsets against 115 validation subsets and zero tolerance,
 the one-candidate and nested bounds are 0.2500 and 0.5000, and r_V was seen with probability 0.1000. That is the
@@ -399,8 +408,8 @@ test's hand-checked expressions. The build adds its files to T-0's declared uses
 1. **The floors, over the sized set:**
    - no core Monte Carlo null has its point rate above nominal at any k in 13..20 (Q-108's);
    - no exact null on the fixed streams has its exact size above nominal at any k (Q-108's);
-   - **at most 3 of the 3,300 subsets are bad** (3.2's allowance; after the look, B-6, B-21). On the alternating models
-     a subset is bad if any configuration rejects.
+   - **no subset of the 3,300 is bad** (3.2's zero tolerance; after the look, B-6, B-21). On the alternating models a
+     subset is bad if any configuration rejects.
 2. **P_MC >= 0.9** over the core's 1,123 Monte Carlo nulls, computed as Q-108's 4.2 (exactly, from the counts).
 3. **The worst exact ratio over the core's 1,170 exact nulls is at most 1/4** (Q-108's condition 3 on Q-108's set; B-8).
    It is not applied to the sizing nulls: there it would be a stricter condition than Q-108 declared, chosen after the
@@ -480,24 +489,35 @@ design, and the operator's standing rule is answered by stating it: the line is 
 each core null as standing for its validation counterpart, so it cannot see the subset lottery (Q-108's 4.2); the
 probe (3.2) is what looks for it on the Monte Carlo side.
 
-**The power of this plan's own floor (the red team's M2; B-21).** The floor is a tightening, so its refusals are shown
-beside what the validation would do at the same rate. "Admits" is the floor's chance of passing a candidate at that
-pooled bad-subset rate (`q126_arith.py`):
+**The power of this plan's own floor (the red team's M2; B-21), a declared reading beside.** The floor is a
+tightening, so its refusals are shown beside what the validation would do at the same rate, and beside E-173's
+allowance that E-176 reversed. "Admits" is the floor's chance of passing a candidate at that pooled bad-subset rate
+(`q126_arith.py`):
 
-| pooled bad-subset rate | the floor admits (c = 3, declared) | the first text's floor admitted (c = 0) | the validation's exact part passes |
+| pooled bad-subset rate | the floor admits (c = 0, declared) | E-173's allowance admitted (c = 3, reversed) | the validation's exact part passes |
 |---|---|---|---|
-| 1.0000e-05 | 1.0000 | 0.9675 | 0.9989 |
-| 3.0000e-05 | 1.0000 | 0.9057 | 0.9966 |
-| 1.0000e-04 | 0.9996 | 0.7189 | 0.9886 |
-| 3.0000e-04 | 0.9816 | 0.3715 | 0.9661 |
-| 4.4593e-04 (r_95) | 0.9379 | 0.2295 | 0.9500 |
-| 9.1576e-04 (r_V) | 0.6423 | 0.0486 | 0.9000 |
-| 1.0000e-03 | 0.5803 | 0.0368 | 0.8913 |
-| 2.0000e-03 | 0.1049 | 0.0014 | 0.7944 |
+| 1.0000e-05 | 0.9675 | 1.0000 | 0.9989 |
+| 3.0000e-05 | 0.9057 | 1.0000 | 0.9966 |
+| 1.0000e-04 | 0.7189 | 0.9996 | 0.9886 |
+| 3.0000e-04 | 0.3715 | 0.9816 | 0.9661 |
+| 4.4593e-04 (r_95) | 0.2295 | 0.9379 | 0.9500 |
+| 9.1576e-04 (r_V) | 0.0486 | 0.6423 | 0.9000 |
+| 1.0000e-03 | 0.0368 | 0.5803 | 0.8913 |
+| 2.0000e-03 | 0.0014 | 0.1049 | 0.7944 |
 
-- **The declared floor is not stricter than the validation** at the rates the validation passes with 0.95 or more: it
-  refuses at most 0.0621 there, by the ruling's construction. The first text's floor refused a candidate at a rate of
-  1e-04, which the validation passes 98.9 % of the time, with probability 0.2811.
+**The allowances compared** (`q126_arith.py`): each allowance c's chance of refusing a candidate at r_95 and at r_V,
+and its bounds on the chance that a chosen statistic holds the calibration and then fails the validation's exact part:
+
+| c | refuses at r_95 | refuses at r_V | one candidate | a nested branch | the primary | the second statistic | the whole rule |
+|---|---|---|---|---|---|---|---|
+| 0 (declared) | 0.7705 | 0.9514 | 0.0126 | 0.0337 | 0.0463 | 0.0337 | 0.0800 |
+| 1 | 0.4326 | 0.8043 | 0.0285 | 0.0662 | 0.0947 | 0.0662 | 0.1609 |
+| 2 | 0.1840 | 0.5818 | 0.0460 | 0.0977 | 0.1437 | 0.0977 | 0.2414 |
+| 3 (E-173, reversed) | 0.0621 | 0.3577 | 0.0644 | 0.1281 | 0.1925 | 0.1281 | 0.3206 |
+
+- **The declared floor is stricter than the validation, on purpose** (E-176; 3.2). It refuses a candidate at a rate of
+  1e-04, which the validation passes 98.9 % of the time, with probability 0.2811, and one at r_95 with 0.7705. That is
+  the price of keeping the rule's chance of losing the line at 0.0800.
 - **What a refusal costs.** In the nested grid a refusal moves the choice one step up. One step costs, in minimum
   detectable lift (section 5's P ratios, interpolated at the two new margins): 0.114 from `cons` to `cons_m1.125`,
   0.102 to `cons_m1.25`, 0.094 to `cons_m1.375`, 0.086 to `cons_m1.5`, 0.159 to `cons_m1.75` and 0.138 to `cons_m2`.
@@ -523,14 +543,14 @@ At every row the probe refuses no more often than the validation fails a statist
 at every size, c for the floor's allowance and G(r) = P(Bin(N, r) <= c), the floor's chance of admitting a candidate at
 rate r. P_m is the chance that candidate m is eligible at the calibration.
 - For one candidate, the calibration admits with at most G(r) and the validation's exact part fails with
-  1 - (1 - r)^n, so their product is at most the supremum over r of G(r) (1 - (1 - r)^n): 0.0644 at c = 3 (0.0126 at
-  c = 0).
+  1 - (1 - r)^n, so their product is at most the supremum over r of G(r) (1 - (1 - r)^n): 0.0126 at c = 0, the
+  declared floor (0.0644 at E-173's c = 3).
 - For the nested rows 1 to 7, eligibility is upward closed in m, and the choice is the smallest eligible m. The
   validation's exact part fails for m with 1 - (1 - r_m)^n, and P_m <= G(r_m), so it fails with at most
   h(P_m) = 1 - (1 - G^-1(P_m))^n, decreasing in P_m. The chance that the choice fails the validation's exact part is a
   sum of increments of P_m times h(P_m), at most the integral of h over (0, 1). Substituting p = G(r), that integral is
-  1 - E[(1 - R)^n] with R ~ Beta(c + 1, N - c), which is 1 - prod over i < n of (N - c + i)/(N + 1 + i): **0.1281 at
-  c = 3, and n/(N + n) = 0.0337 at c = 0, whatever the rates and however fine the grid.**
+  1 - E[(1 - R)^n] with R ~ Beta(c + 1, N - c), which is 1 - prod over i < n of (N - c + i)/(N + 1 + i): **at the
+  declared c = 0 it is n/(N + n) = 0.0337, whatever the rates and however fine the grid** (0.1281 at E-173's c = 3).
 - C6 adds at most the one-candidate bound to the primary. The scope-Q branch is a nested family of its own: the second
   statistic's bound, or the primary's when scope D chose none.
 - **The bound covers the exact part only.** The Monte Carlo part is guarded by P_MC on the core and by the probe on the
@@ -655,12 +675,12 @@ the in-rule fixed and subset nulls; the admission reads sides only, so it is the
 - the exact null index order (4.1) against hand-built cases;
 - the probe: its ranking on planted exact sizes (the 23 largest per size, ties to the smaller j, the core excluded);
   its seeds and model indices; condition 4 refusing a planted count at the failure count and admitting one below it;
-- the floor's allowance: 3 bad subsets admitted, 4 refused, on planted tables;
+- the floor's zero tolerance: one bad subset among the 3,300 refuses, on planted tables;
 - the drift generator equal to Appendix A's `draw` on the same generator, call for call;
 - the rejecting-cells file: its rows sum, with their weights, to the null's exact count at k = 13; written only above
   a quarter of nominal; its k_max nested;
 - the choice rule on planted size tables: the primary in scope D; the scope-Q branch as the second statistic when scope
-  D chooses and as the primary when it does not; condition 1 over the sizing nulls with the allowance; condition 3 over
+  D chooses and as the primary when it does not; condition 1 over the sizing nulls at zero tolerance; condition 3 over
   the core only; condition 4; the cost lines;
 - the criterion: Q-108's validation code's verdicts reproduced on planted tables, for each of two statistics;
 - the seed map, the guard and the provenance assertion (4.1): the folded NAME + constant case, a bounded loop
@@ -784,7 +804,7 @@ crash is rerun only as 6.2 says.
 | dropping `win1`, flip63 or any side model | Q-108's 7 item 4 |
 | enlarging the validation | it would enlarge the exposure the calibration must match; the validation stays Q-108's class (B-14) |
 | reading P-16's per-quarter drift directly | an outcome read (Q-125, section 6 item 1); the drift nulls carry a drift as a declared construction instead. The cells files carry its signs only, coarsely, and are read only after the verdict (4.5) |
-| a larger calibration to restore the first text's bounds | under the ruled allowance the nested bound falls only towards 0.05 (3.2) |
+| an allowance of bad subsets in the floor (E-173's c = 3) | declared in the second text, reversed by E-176 after its computed cost: it raises the rule's chance of losing the line from 0.0800 to 0.3206, and no larger calibration brings its nested bound below 0.05 (3.2, 4.3) |
 
 ---
 
@@ -793,14 +813,14 @@ crash is rerun only as 6.2 says.
 | finding | change (and where it now stands) |
 |---|---|
 | M1 (the Monte Carlo lottery in scope D) | the lead took (a) and (b) together: the 23 largest-exact-size sizing subsets at each size carry the four persistent Monte Carlo models (920 probed nulls), and condition 4 refuses a candidate if any reaches its failure count; its power shown beside the validation's (3.2, 4.2, 4.3; B-22, B-23, B-24, B-29); section 1 and the residual in 8 restated |
-| M2 (the sized floor's power) | the floor's allowance c = 3, the least that refuses a candidate at r_95 with at most 0.10 (the lead's ruling); its admission table beside the validation's pass; the grid-step MDL costs; the bounds recomputed at c = 3 (3.2, 4.2, 4.3; B-21) |
+| M2 (the sized floor's power) | **answered by the power table, the ruling reversed.** The floor's admission table beside the validation's pass, the comparison of c = 0 to 3 with their refusals at r_95 and r_V and their bounds, and the grid-step MDL costs are a declared reading (4.3). The second text declared E-173's allowance c = 3; E-176 reversed it after its computed cost, so the floor is zero tolerance again: a refusal costs one grid step, a validation failure the whole line, whose chance rises from 0.0800 to 0.3206 at c = 3 (3.2, 4.2, 4.3; B-21) |
 | M3 (coverage) | the impossibility restricted to about 55 sessions and more and long dwells; the 42-session and dwell-50 band served by the scope-Q branch's choice, validated beside as a second statistic and adopted for that band only; the statistic a family uses fixed by its declared persistence (2.5, 4.2, 4.3, 5, 7; B-25, B-30) |
 | M4 (Q-108's retired seeds through imported defaults) | the provenance assertion before any draw, with its build test, naming `null_plan` and `expected_counts` (4.1, 6.1; B-28) |
 | m1 | the two parts positively associated; the product a lower bound (4.3) |
 | m2 | the run's declared parts under one lock, and the crash rule (6.2, 6.3; B-27) |
 | m3 | every cost figure printed by the script from the logs and held by T-0 when they are present (6.2) |
 | m4 | L = 42 added to the drift nulls; their scope-D emptiness at L = 55 and 63, and the replica's, stated (1, 3.3; B-26) |
-| m5 | the per-size bounds 3/660 and with the allowance (3.2) |
+| m5 | the per-size bound 3/660 (3.2) |
 | m6 | the cells files' signs reconciled with section 9 (4.5, 9) |
 | n1 | the exact part's assurance stated as the calibration's (4.3, 8) |
 | n2 | DIRECTIVE's `NEEDS_OPERATOR` cited beside the lead's decision (7) |
@@ -858,7 +878,7 @@ real subset's, with every candidate in both scopes.
 | 18 | the options of section 9 not taken | 9 | E-161; Q-125, section 4 |
 | 19 | no third plan without the lead's decision; `NEEDS_OPERATOR` on the board | 7 | the failure protocol's two corrective cycles; DIRECTIVE Part 5 step 3 |
 | 20 | the drift sizes are the replica's invented ones | 3.3 | Q-125, section 3.2 |
-| 21 | the floor's allowance: at most 3 bad subsets of 3,300, the least c refusing at r_95 with at most 0.10 | 3.2, 4.2, 4.3 | the red team's M2; the lead's ruling (E-173): the floor not stricter than the validation |
+| 21 | the floor at zero tolerance, stricter than the validation on purpose; E-173's allowance c = 3 kept beside as a reading, with the c = 0 to 3 comparison | 3.2, 4.2, 4.3 | the red team's M2; E-173's allowance declared in the second text and reversed by the lead after its computed cost (E-176): a refusal costs a grid step, a validation failure the line |
 | 22 | the Monte Carlo probe of the sizing tail, and condition 4 on it | 3.2, 4.2, 4.3 | the red team's M1 (a) and (b); the lead's ruling (E-173) |
 | 23 | the probe's ranking: `cons` in scope Q, summed over both values and the flips at 42, 55 and 63, at k = 13 | 3.2 | the red team's M1 (a): a ranking free of the candidates in the rule |
 | 24 | the probe's seed takes the calibration block's spare role | 4.1 | a new role needs a seed of the block; the block had one spare |
@@ -866,5 +886,5 @@ real subset's, with every candidate in both scopes.
 | 26 | L = 42 added to the drift nulls | 3.3 | the red team's m4 |
 | 27 | the run's declared parts under one lock, and the crash rule | 6.2 | the red team's m2 |
 | 28 | the seed-provenance assertion | 2.4, 4.1 | the red team's M4; the lead's ruling (E-173) |
-| 29 | the probed nulls judged by condition 4 only, not in P_MC or the point-rate floor | 3.2 | the lead's ruling on the floor (E-173), carried by analogy to the probe: a guard no stricter than the validation |
+| 29 | the probed nulls judged by condition 4 only, not in P_MC or the point-rate floor | 3.2 | the lead's ruling that "never stricter than the validation" governs the probe (E-173 as kept by E-176) |
 | 30 | each statistic judged on its own verdict; neither extended to the other's rows | 4.3, 7 | E-094 (3) (a) applies the criterion per statistic; no switch after a read |

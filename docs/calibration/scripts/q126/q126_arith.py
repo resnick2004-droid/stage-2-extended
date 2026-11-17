@@ -89,13 +89,17 @@ def minimax_nested(a: float) -> float:
 
 # ------------------------------------------------------------------------------------------- the floor's allowance (M2)
 
-#: the lead's ruling on the red team's M2 (E-173): the floor may not be stricter than the validation it guards. At the
-#: bad-subset rate where the validation's exact part passes a candidate with probability GUARD_PASS, the floor -- at
-#: most c bad subsets of the 3,300 -- refuses it with probability at most MAX_REFUSAL; c is the least such count
+#: the declared allowance (the plan's 3.2): zero tolerance, no bad subset among the 3,300 (the lead's E-176, which
+#: reverses E-173's allowance after its computed cost)
+ALLOWANCE = 0
+#: beside, a reading: E-173's reversed ruling -- at the bad-subset rate where the validation's exact part passes a
+#: candidate with probability GUARD_PASS, the floor (at most c bad subsets) refuses it with at most MAX_REFUSAL; c the
+#: least such count. `allowance()` computes it; it must equal E173_ALLOWANCE
 GUARD_PASS = 0.95
 MAX_REFUSAL = 0.10
-#: the declared allowance (the plan's 3.2); `allowance()` must return it
-ALLOWANCE = 3
+E173_ALLOWANCE = 3
+#: the allowances compared in the plan's 4.3 reading
+COMPARED = (0, 1, 2, 3)
 #: the rates at which the floor's power is tabulated (the plan's 4.3), beside r_95 and r_V
 FLOOR_RATES = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 2e-3)
 
@@ -113,7 +117,7 @@ def floor_admits(r: float, N: int | None = None, c: int | None = None) -> float:
 
 
 def allowance(N: int | None = None, n: int | None = None) -> int:
-    """The least c whose floor refuses a candidate at r_95 with probability at most MAX_REFUSAL."""
+    """E-173's c (beside): the least c whose floor refuses a candidate at r_95 with probability at most MAX_REFUSAL."""
     r = guard_rate(n)
     c = 0
     while 1.0 - floor_admits(r, N, c) > MAX_REFUSAL:
@@ -470,12 +474,17 @@ def main() -> None:
     for m in mean.index:
         print(f"   {m}: mean {mean[m]:.3f}; over sizes {lo.get(m, float('nan')):.3f} to {hi.get(m, float('nan')):.3f}")
 
-    print("== 3.2 / 4.3 the floor's allowance (E-173's ruling on M2)")
+    print(f"== 3.2 / 4.3 the floor: declared c = {ALLOWANCE} (E-176); E-173's allowance beside")
     N = CAL_SUBSETS_PER_SIZE * len(SIZES)
     r95 = guard_rate(n)
     c = allowance(N, n)
-    print(f"r_95 = 1 - {GUARD_PASS}^(1/{n}) = {r95:.4e}; the least allowance c = {c} (declared {ALLOWANCE}); the floor "
-          f"refuses at r_95 with {1 - floor_admits(r95, N, c):.4f} (at c - 1: {1 - floor_admits(r95, N, c - 1):.4f})")
+    print(f"r_95 = 1 - {GUARD_PASS}^(1/{n}) = {r95:.4e}; E-173's least allowance c = {c} (recorded {E173_ALLOWANCE}); "
+          f"it refuses at r_95 with {1 - floor_admits(r95, N, c):.4f} (at c - 1: {1 - floor_admits(r95, N, c - 1):.4f})")
+    print("   c | refuses at r_95 | refuses at r_V | one | nested | primary | second | rule")
+    for cc in COMPARED:
+        bb = rule_bounds(N, n, cc)
+        print(f"   {cc} | {1 - floor_admits(r95, N, cc):.4f} | {1 - floor_admits(rV, N, cc):.4f} | {bb['one']:.4f} | "
+              f"{bb['nested']:.4f} | {bb['primary']:.4f} | {bb['second']:.4f} | {bb['all']:.4f}")
     print(f"at c = {c}: r_V refused with {1 - floor_admits(rV, N, c):.4f}; the 95 % upper limit after {c} bad of {N}: "
           f"{cp_upper(c, N):.4e}, at which the validation's exact part passes with {(1 - cp_upper(c, N)) ** n:.4f}")
     print(f"   per size: 0 bad of {CAL_SUBSETS_PER_SIZE} bound that size at {cp_upper(0, CAL_SUBSETS_PER_SIZE):.4e}; "
