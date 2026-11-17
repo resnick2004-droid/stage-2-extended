@@ -16,11 +16,13 @@ result file opened; fast tier):
   choosing or fitting purpose by the reader's own test, not `identity` or `registered_design`;
 - **every cell counted, the counts consistent** -- section 6.2's grid read row by row (2 references, 8 new cells), and
   the counts the header, section 6.4 and section 13.2 state recomputed from it;
-- **Q-121's names are Q-121's** -- the file, the columns and the functions the text names exist in Q-121's merged code
-  (`extended/vol_descriptive.py`, `scripts/vol_descriptive.py`);
-- **the identity's cover declared under Q-111's rule**; **Appendix C present**, 34 rows numbered and filled;
-- **the leak-clause test's declaration** -- section 9.3 names `tests/test_rd04_leak_clause.py`, its token and its
-  phrase, and that file exists and checks the same token and phrase;
+- **Q-121's names and interface are Q-121's** -- the file, the columns and the functions the text names exist in
+  Q-121's merged code (`extended/vol_descriptive.py`, `scripts/vol_descriptive.py`); `authorised` is a keyword-only
+  parameter of the five functions 3.2 names; the module's four constants are the text's purpose, kind, declaration and
+  last day (the re-read's m4);
+- **the identity's cover declared under Q-111's rule**; **Appendix C present**, 39 rows numbered and filled;
+- **the leak-clause test's declaration** -- section 9.3 names `tests/test_rd04_leak_clause.py`, its token, its phrase,
+  its pre-read form and its ledger anchor, and that file exists and checks the same;
 - **the seed block appears nowhere else** (m5, RD-03's `DECLARED_USES` form) -- section 11's table lists this
   reading's block of ten once each, three in use and seven reserved; none appears, word-bounded, in another declaration
   under `prereg/`, in the vendored snapshot (the licensed data excepted), in a review's or audit's scratch
@@ -31,6 +33,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import inspect
 import re
 import shutil
 from pathlib import Path
@@ -60,7 +63,8 @@ DECLARED_USES = ("tests/test_rd04_draft.py",)
 
 PURPOSES = {"volatility_descriptive"}
 CELLS = ("k1", "yr_act", "yr_sc", "tr_act", "tr_sc")
-APPENDIX_C_ROWS = 34
+APPENDIX_C_ROWS = 39
+AUTHORISED_FUNCTIONS = ("check_span", "check_days", "describe", "summarise", "output_problems")
 
 GRID_ROW = re.compile(r"^\|\s*`([a-z0-9_]+)`\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|\s*$", re.MULTILINE)
 SEED_ROW = re.compile(r"^\|\s*(\d{8})\s*\|\s*([^|]+?)\s*\|", re.MULTILINE)
@@ -181,8 +185,18 @@ def check_q121_names(body: str) -> None:
     unknown = sorted(n for n in named if n not in known and not callable(getattr(V, n, None)))
     assert named and not unknown, f"13.1 names what Q-121's module does not have: {unknown}"
     assert "k_trail" not in V.COLUMNS and "k_year" not in V.COLUMNS
-    for fn in ("check_days", "describe", "output_problems"):
-        assert callable(getattr(V, fn)) and f"`{fn}`" in flat(section(body, "### 3.2")), fn
+    s32 = flat(section(body, "### 3.2"))
+    for fn in AUTHORISED_FUNCTIONS:                            # the merged interface (Q-121b, 4b72ef2; m4)
+        assert f"`{fn}`" in s32, fn
+        par = inspect.signature(getattr(V, fn)).parameters.get("authorised")
+        assert par is not None and par.kind is inspect.Parameter.KEYWORD_ONLY and par.default is None, \
+            f"{fn} does not take the keyword-only authorised=None that 3.2 declares"
+    assert "**Five** functions take a keyword-only" in s32
+    assert (V.AUTHORISED_PURPOSE, V.AUTHORISED_KIND, V.AUTHORISED_DECLARATION, V.AUTHORISED_LAST_DAY) == \
+        ("volatility_descriptive", "described_reading", PINNED_REL, reader.JUDGED_END), \
+        "Q-121's authorised constants are not the text's: re-draft before the pin (14 item 2)"
+    for const in ("AUTHORISED_PURPOSE", "AUTHORISED_KIND", "AUTHORISED_DECLARATION", "AUTHORISED_LAST_DAY"):
+        assert f"`{const}`" in s32, const
 
 
 def check_covers(body: str) -> None:
@@ -222,6 +236,10 @@ def check_leak_clause_declared(body: str) -> None:
     assert mod.TOKEN in s93 and mod.TOKEN == "`RD-04 read: step 2`"
     assert f'"{mod.PHRASE}"' in s93 and mod.PHRASE == "written after RD-04 was read"
     assert mod.RD04 == PINNED_REL
+    assert mod.PRE_PHRASE == "written before RD-04 was read, unchanged since" and mod.PRE_PHRASE in s93
+    assert mod.LEDGER == reader.LEDGER_REL and f"`{mod.LEDGER}`" in s93 and mod.PURPOSE in PURPOSES
+    assert "**in or after the step-2 row**" in s93 and "absent from `DECISIONS.md` at the read's commit" in s93
+    assert "**Once the read exists, the test fails unless a step-2 row exists.**" in s93
     assert "`tests/test_rd04_leak_clause.py`" in flat(section(body, "### 12.2"))
 
 
@@ -345,3 +363,20 @@ def test_the_seed_scan_finds_a_seed_where_it_is():
     assert _occurrences_of(SEED_BLOCK, [declaration()])[SEED_BLOCK[-1]]
     rd01 = PREREG / "RD-01_firm_contracts.md"
     assert _occurrences_of((20261990,), [rd01])[20261990]
+
+
+@pytest.mark.parametrize("const", ["AUTHORISED_PURPOSE", "AUTHORISED_DECLARATION", "AUTHORISED_KIND",
+                                   "AUTHORISED_LAST_DAY"])
+def test_the_interface_check_catches_a_changed_constant(monkeypatch, const):
+    """Not vacuous (the re-read's m4 mutation): a module constant other than the text's fails T-0."""
+    monkeypatch.setattr(V, const, "something else")
+    with pytest.raises(AssertionError, match="re-draft before the pin"):
+        check_q121_names(read(declaration()))
+
+
+def test_the_interface_check_catches_a_lost_keyword(monkeypatch):
+    def summarise(sessions, walks, sets=None):                 # a summarise without `authorised`
+        return None
+    monkeypatch.setattr(V, "summarise", summarise)
+    with pytest.raises(AssertionError, match="keyword-only authorised"):
+        check_q121_names(read(declaration()))

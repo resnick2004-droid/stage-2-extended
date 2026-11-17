@@ -12,7 +12,10 @@ changes; the pinning row names the commit and the sha256 it pins. **The second t
 team's read of the first (Q-123r, `docs/reviews/DRAFT_RD-04_2026-11-17.md`; the first text at 7b98230, LF sha256
 `a2eedbbb19bab3fca0ce1bf4cf298bd3c1a32e95f8d2a89b170c644579cbb3eb`), every finding as the lead adopted it; section 0.3
 maps each finding to its change, and Appendix C lists every choice the drafter made where the note, the brief, the
-review or the rules left the text open. It goes to the red team's re-read, then the gatekeeper, before any pin.
+review or the rules left the text open. **The third text** (Q-123c, E-167) answers the red team's re-read of the
+second (Q-123r2, `docs/reviews/DRAFT_RD-04_v2_2026-11-17.md`; the second text at bd0ab26, LF sha256
+`d7144bcd8ff731da44cc544a4e0fa428a6b8455ea2c1235be0e8b98f7cd96eb6`), as the lead ruled on it; section 0.4 maps each
+finding to its change. It goes to the gatekeeper before any pin.
 
 **What E-023 (1) makes of it, as E-157 (c) classes it.** E-157 (c) decided this reading a described reading under
 E-023 (1). Neither part is a design, a lever or a filter:
@@ -32,7 +35,8 @@ So this file is a **described reading**:
 
 **When this text was written (2026-11-17), nothing of it had been built, no bar had been read for it, and no replay or
 gate had been run for it. No figure of the gate files' `period` or `drift` rows, or of any outcome, had been read.
-Q-121's choice-block file had not been made: Q-121 was built and merged, and its one run was queued (E-163).** So
+Q-121's choice-block file had not been made.** Q-121 was built and merged (E-163). E-164 held its run until its module
+took an optional authorisation; Q-121b merged that at 4b72ef2, and the run was re-queued there (E-166). So
 every convention this text fixes on Q-121's rows was fixed before any of their values existed: the population, the
 statistic, the year, the reference years and the blank-trailing rule (4.2). The pinning row states whether Q-121's file
 had been made by the pin, and whether anyone had opened it. Anything chosen after a reading is exploratory and reported
@@ -111,6 +115,24 @@ structure stay as they were (pitfall 5, section 4.5).
 | n6 | RD-04's `vd_` prefix overlapping Q-121's `tests/vd_synthetic.py` | RD-04's files renamed to `rd04_` | throughout; 12.1; Appendix C 29 |
 | n2, n7 | -- | recorded as the review found them: the pinning row a standing `registered_design` licence (as E-024 and E-026), RD-04's own use confined by M3; (a0)'s "not read before step 2" a record, not a lock | -- |
 
+### 0.4 What changed from the second text (Q-123r2's findings, as E-167 ruled on them)
+
+| finding | the second text | this text | where |
+|---|---|---|---|
+| **M1** | T-15 scoped pins strictly after the step-2 row, anchored on that row alone; three routes failed open (a pin inside the row; a pin between the run and the row; a mistyped row, which disabled the test silently) | scope **in or after** the step-2 row, **and** every pin in a row absent from `DECISIONS.md` at the read's commit; once the read ledger holds RD-04's `volatility_descriptive` line, the test fails unless a step-2 row exists; a synthetic case for each route, each shown to pass silently under the second text's test | 9.3; T-15; Appendix C 35 |
+| m1 | the interface as three functions, `band_mark` "the judged years among them", Q-121b owed, the run "queued (E-163)" | the merged interface: the keyword on five functions, `summarise` passed it, the module's checks and its 2026-07-16 cap, `band_mark` choice-block-only in both modes; Q-121b met at 4b72ef2 and the run re-queued there (E-166); the drop of `band_mark` kept as a second lock, its reason corrected | header; 3.2; 13.3; 14 item 2; Appendix C 26 |
+| m2 | the pairing traced through the gate's `counters` argument | struck; the pairing a fact by the vendored `SharedDayTable`, with an oracle holding each cell's block dates and order to `k1`'s | 5 item 4; 8.3; 12.1 A-3; Appendix C 30 |
+| m3 | Q-121's file "made at a commit whose module carries the keyword" | (a2) refuses unless its imported module hashes to the one at the commit in Q-121's manifest | 3.2; 13.1; 13.3; T-10; Appendix C 33 |
+| m4 | T-0 checked the functions exist | T-0 asserts the keyword-only `authorised` on the five functions and the four constants | 12.2 T-0; 14 item 2 |
+| m5 | a pre-read draft pinned after the read had no true sentence | the lead's ruling: the pinning row may carry `` `written before RD-04 was read, unchanged since <commit>: <path>` ``, checked against git by T-15 | 9.3 item 1; T-15; Appendix C 36, 37 |
+| n1 | -- | the order `authorise`, `read_bars`, the module; no `Authorisation` built by hand (a T-10 scan); `ledgered` read as "will be ledgered" | 3.2; 5 item 6; 12.1 A-4; T-10 |
+| n4 | A-4 and Appendix C 29 named `tests/vd_synthetic.py` | renamed `tests/q121_synthetic.py` (E-166) | 12.1 A-4; Appendix C 29 |
+| n5 | -- | 4.6's failure scope decided at build time; a mid-run failure is 13.2's | 4.6 |
+| n7 | the twin oracle "over the cell's trades" | over the trades with a finite `r_R`, as `edge_stats` takes them, on the blocks | 8.3; Appendix C 38 |
+| n10 | 8.2 left every `block` row uncompared | `band_mark`'s block row compared too | 8.2; Appendix C 39 |
+| n11, n12 | -- | recorded as readings: the pooled `band` rows' residual leak, accepted; T-15's phrase check lexical | 9.3 |
+| n2, n3, n6, n8, n9 | -- | as the re-read found them (sound, or covered by m1 and m2) | -- |
+
 ## 1. What this reading is, and what it is not
 
 **Its job.**
@@ -181,6 +203,11 @@ whole); `extended/reader.py`'s `Authorisation`, `authorise`, `_family`, `_regist
 and `tests/test_declarations_fixed.py` (for T-0's form and the leak-clause test). **Q-121's file did not exist and was
 not opened; no result file was opened.** The seed search of section 11, again.
 
+**The third text's drafter read, in addition:** the red team's re-read (whole); E-164 to E-166 (E-166 from the lead's
+working copy); Q-121b as merged at 4b72ef2 (`extended/vol_descriptive.py`'s interface, `summarise` and
+`output_problems`); `extended/reader.py`'s ledger record (`_record`); `extended/gate.py`'s `counters` lines; the
+read ledger's field names (one line opened for its format, not a figure). **No result file was opened.**
+
 **What is already known of the direction (disclosed).** NQ's movement in points rose from 2009-2019 to 2020-2025
 (D-239); a wider fixed stop resolved late and not early (D-554); P-16's money is supply (D-582); 2020 and 2021 were the
 weakest years for growth (D-605, in words). Nothing is known of (c)'s quantities: no replay at a reduced amplitude has
@@ -202,24 +229,53 @@ and nothing else of either file is read.
 ### 3.2 (a2): the bars-only descriptive on the whole window
 
 **The code is Q-121's**, imported, never copied or edited: `extended/vol_descriptive.py` (Q-121's build, E-157, E-163;
-merged at a83db31), with **its optional reader authorisation**, which Q-121b adds on `wt/wt-verify`, run on every
-development session from 2020-01-02 to 2026-07-16.
+with **its optional reader authorisation, Q-121b, merged at 4b72ef2**, E-166), run on every development session from
+2020-01-02 to 2026-07-16.
 
-**The authorisation, declared in Q-121b's terms.** `check_days`, `describe` and `output_problems` take an optional
-keyword `authorised` (an `extended.reader.Authorisation`, default none):
+**The authorisation, as merged (Q-121b at 4b72ef2; the re-read's m1).** **Five** functions take a keyword-only
+`authorised` (an `extended.reader.Authorisation`, default none): `check_span`, `check_days`, `describe`, `summarise`
+and `output_problems`. The module's constants are `AUTHORISED_PURPOSE` `"volatility_descriptive"`, `AUTHORISED_KIND`
+`"described_reading"`, `AUTHORISED_DECLARATION` `"prereg/RD-04_volatility_drift.md"` and `AUTHORISED_LAST_DAY` the
+reader's `JUDGED_END` (2026-07-16). T-0 holds the four constants and the five keywords.
 
-- **absent**, the last day is `CHOICE_END` (2023-12-29), exactly as at a83db31: Q-121's refusal and its tests
-  (`test_refuses_the_judged_block`, `test_child_script_refuses_2024`) stand unchanged;
-- **present**, the module accepts days to `authorised.end` only if `authorised.judged` is true, `authorised.kind` is
-  `"described_reading"`, `authorised.purpose` is `"volatility_descriptive"` and `authorised.declaration` is
-  `"prereg/RD-04_volatility_drift.md"`, and refuses otherwise (a choice-block authorisation included);
-- Q-121's script exposes no such argument and its command line is unchanged. The reader stays the real lock; the
+- **Absent**, the last day is `CHOICE_END` (2023-12-29), as at a83db31. Q-121's refusal and its tests stand, and its
+  toy file is byte-identical to the frozen a0cb1ce module's (E-166). **`summarise` without `authorised` refuses every
+  judged day**, so (a2) passes the authorisation to `summarise` as well as to the others.
+- **Present**, `check_authorisation` runs before any input is touched. The module refuses unless every one of these
+  holds:
+  - the authorisation is a real `Authorisation`;
+  - `judged` is true, with `"judged"` among its blocks;
+  - its `kind`, `purpose` and `declaration` are the three constants;
+  - `ledgered` is true;
+  - its `declaration_sha256` has 64 characters;
+  - its span starts on or after 2020-01-02 and does not reach 2026-07-17.
+
+  Days then run from the authorisation's start to its end, capped at 2026-07-16. For a reader-made authorisation that
+  is exactly the reader's span.
+- **`band_mark` is built from choice-block sessions only, in both modes.** `output_problems` refuses a `band_mark` row
+  reaching 2024, and under an authorisation it does not require the `band_mark` section.
+- Q-121's script exposes no such argument, and its command line is unchanged. The reader stays the real lock; the
   module's check is a second one.
 
-(a2)'s script (`scripts/rd04_descriptive.py`) passes the `Authorisation` the reader returns for its one judged read
-(`extended.reader.authorise` with the arguments of the `read_bars` call that follows it, in the same process). It never
-calls `check_span`, which keeps Q-121's span refusal for Q-121's script alone. If Q-121b is not on master when (a2) is
-built, (a2) waits (13.3); it never copies Q-121's functions and never edits them.
+**How (a2) uses it (the re-read's n1).** (a2)'s script (`scripts/rd04_descriptive.py`) calls, in this order:
+1. `extended.reader.authorise`, with the arguments of the `read_bars` call that follows;
+2. `read_bars`;
+3. `describe`, `summarise` and `output_problems`, each with that `Authorisation`.
+
+It calls `check_span` with the authorisation or not at all. An authorisation whose `read_bars` raised is never used.
+
+**No `Authorisation` is ever built by hand** in RD-04's files. The dataclass is frozen, but it could be constructed
+with every field right, so "only the reader's authorisation opens the module" holds by this rule. T-10 scans the
+`rd04_` files for a direct `Authorisation(` construction. The module's `ledgered` check means "will be ledgered": the
+ledger line itself is written inside `read_bars`.
+
+(a2) never copies Q-121's functions and never edits them.
+
+**The module (a2) imports is the one that made Q-121's file (the re-read's m3).** Before any authorisation, (a2)
+refuses unless its imported `extended/vol_descriptive.py` has the same LF sha256 as that file at the commit named in
+Q-121's result manifest (`results/q121_vol_descriptive_a1.csv.manifest.json`, its `git_commit`, read with `git show`).
+8.2's identity exercises only the absent mode; this check ties the authorised mode to the same bytes. T-10 holds the
+refusal.
 
 **Per session** (Q-121's definitions, its docstring's, unchanged):
 
@@ -238,11 +294,15 @@ each the **inverted empirical CDF** (`value_quantiles` and `quantiles`: the smal
 the sample at or below it, no interpolation) -- with the counts. 2026 is a part year (to 2026-07-16), labelled.
 
 **What (a2) writes of it (M5): the sections `session`, `range` and `band` (pooled over every mark of a set), whole
-window, never `band_mark`.** `summarise` returns `band_mark` rows by mark and calendar year, the judged years among
-them. (a2) runs `output_problems(frame, authorised=...)` on the frame as `summarise` returns it. It then drops every
-`band_mark` row before anything of it is printed, written or compared, and adds its own sections after that. The by-mark
-rows of the choice block are Q-121's file, and 8.2's identity covers them; the judged block's by-mark rows are never
-written. Every row is Q-121's `COLUMNS`, unchanged: (a2) adds no column to Q-121's sections.
+window, never `band_mark`.** The merged module already writes no `band_mark` row from 2024-01-02: under the
+authorisation, `summarise`'s `band_mark` rows are the choice block's alone. (a2):
+1. runs `output_problems(frame, authorised=...)` on the frame as `summarise` returns it;
+2. compares the frame's `band_mark` rows in memory (8.2);
+3. drops them before anything is printed or written;
+4. adds its own sections after that.
+
+**The drop is a second lock.** The module already writes none from 2024-01-02, and the drop keeps Q-121's choice-block
+rows in Q-121's file alone. Every row is in Q-121's `COLUMNS`, unchanged: (a2) adds no column to Q-121's sections.
 
 **Q-121's two identities over the whole window.** The days identity (`kind_problems`) and the walk identity
 (`walk_problems`) of `scripts/vol_descriptive.py` are imported by the file's path, never copied, and its `main` is never
@@ -436,6 +496,9 @@ the e used only to centre the twin, the bound never used.
   and recorded in the build's hand-back and in the run's manifest as "not built: <the piece>". It never stops `k1` or
   `yr_act`, and nothing replaces it. **If the piece serves `k1` or `yr_act`** (the map, the year factor, the
   re-composed builders at actual costs, the frozen inputs), **the build stops and reports**, and (c) does not run.
+  **This scope is decided at build time, before step 1** (the re-read's n5), in the build's hand-back and its red-team
+  read. A failure while a step runs on real bars is 13.2's (the step stops), never 4.6's: a beside cell that fails
+  mid-run is not "not built".
 - Downstream, the rescaled trades go through this repository's adapters unchanged: the gate through
   `extended/gate.py` (Q-47, held by Q-80, E-049) and the replay through `extended.user_beside.run_starts` (Q-17), with
   Q-94's recorder (`extended/replay_records.py`).
@@ -451,13 +514,16 @@ the e used only to centre the twin, the bound never used.
    And the gate's 500 paths over 504 sessions at each design's registered seed.
 3. **The arms.** `verdict` (every R shifted by 4.4's frozen `lb - e`) the headline; `point` beside.
 4. **Pairing.** Each new cell and its design's `k1` reference on the same start days and the same arm; in the gate, on
-   the same seed and so the same resampled day indices (the rescaled day set has the same days). **That claim is made
-   a fact where it can be (n3):** each gate path's drawn day indices are recorded for `k1` and for each cell through
-   the gate's `counters` argument (Q-105's wrap of the draws, an `extended.payout_policy.GateCounters` as
-   `extended/gate.py` admits it, no edit), and are
-   required equal (8.3). If the wrapped draws do not expose the day indices without an edit of a covered file, the
-   oracle is not built. Every gate row then carries "pairing asserted from the frozen offers and capacity, not
-   traced", and the build's hand-back says so.
+   the same seed and so the same resampled day indices (the rescaled day set has the same days). **The vendored code
+   makes that a fact (the re-read's m2).** The gate's `_GateDraws` (`propedge/campaign/gate.py`) builds
+   `SharedDayDraws({0: blocks}, seed=s)` for each path seed s. Its table is `SharedDayTable(n_history,
+   seed=child_seed(s, 0, 0))` with `n_history = len(blocks)` (`propedge/campaign/shared_days.py`), and it draws from
+   its own generator. **A path's day indices are therefore a function of its seed and the number of day blocks
+   alone**, never of trade content. The gate's 504-session horizon lies inside the days the table draws at
+   construction. So the pairing holds if each cell's day blocks carry the same dates, in the same order, as its
+   design's `k1` blocks under both arms (`shifted_blocks` keeps the length). That is the oracle of 8.3. (The second
+   text's route through the gate's `counters` argument is struck: that channel records RD-02's account counters, not
+   day indices, and refuses the registered accounts.)
 5. **The blocks, per measure** (RD-03 section 5 item 4, carried): **all starts** with h sessions left
    (`u_select.block(records, None, h)`), the headline; **the early block** (`u_select.block(records, "early", h)`); **the
    late block** (`u_select.block(records, "late", h)`, from 2024-01-02); by start year, means only, not purged,
@@ -473,8 +539,9 @@ the e used only to centre the twin, the bound never used.
      `extended.reader.read_bars`, and A1's `days` table (`date`, `day_kind`) through `extended.reader.read_walks` for
      Q-121's days identity (3.2, M4). Each is ledgered; both are made from a clean checkout of a committed commit, once
      (a further run only with `repeat=` under a row naming this file). It is not a choosing or fitting purpose (the
-     reader's `CHOICE_WORDS`, `extended/reader.py:125`). The `Authorisation` the reader returns for it is the one
-     Q-121's module accepts (3.2); no other authorisation opens that module past 2023-12-29.
+     reader's `CHOICE_WORDS`, `extended/reader.py:125`). The `Authorisation` the reader returns for it, in the order
+     of 3.2, is the one passed to Q-121's module. None is built by hand (T-10's scan), so no other opens that module
+     past 2023-12-29.
    - **(c) is not on that line.** Its engine reads are authorised by `extended.reader.authorise_engine_read` under the
      purpose `registered_design` (E-037), `design=["P-14", "P-16"]`, the declaration **the pinning row**, which names
      both designs (`extended.reader.names_design`), from `scripts/rd04_replay.py`, inside a clean run, ledgered. The
@@ -649,9 +716,11 @@ reproduces Q-121's file `results/q121_vol_descriptive_a1.csv` -- every row of it
 `band`, `band_mark`), every column of Q-121's `COLUMNS`, as text at the file's precision. This comparison is made in
 memory; the `identity` section records only its counts. Then comes the whole-window run, with the reader's
 authorisation. Its rows of the choice block must equal the choice-block run's again, refusing: the `session` rows dated
-to 2023-12-29, the `range` and `band` rows of the years 2020 to 2023 and of their quarters, and the `band_mark` rows of
-those years, compared in memory before they are dropped (3.2). That shows the trailing means do not look ahead. The
-`block` rows differ by definition, since they span different windows, and are not compared. **A failure of the first
+to 2023-12-29, the `range` and `band` rows of the years 2020 to 2023 and of their quarters, and **every** `band_mark` row,
+its `block` row included (the re-read's n10: under the authorisation `band_mark` spans choice-block sessions only, with
+Q-121's labels). These are compared in memory before they are dropped (3.2), and show the trailing means do not look
+ahead. The `block` rows of `range` and `band` differ by definition, since they span different windows, and are not
+compared. **A failure of the first
 comparison stops (a2) before any judged-block bar is read; a failure of the second, or of Q-121's days or walk identity
 over the whole window (3.2), stops (a2) before anything is summarised, printed or written. Either stops (c)**, whose
 factors come from (a2)'s rows.
@@ -673,12 +742,15 @@ factors come from (a2)'s rows.
   `factor` section's `k_year` (under `yr`) or `k_trail` (under `tr`) for the same `date`, the walker's day as
   `atlas_local.day_arrays` keys it. A session with no `factor` row is refused. This catches a trading-day against
   calendar-day key error, which the range oracle above cannot see, since it reads the k actually used.
-- **The twin's mean is zero (M2):** on every new cell and every offered R, the mean over the cell's trades of the R its
-  zero-edge twin's blocks carry is zero to 1e-12, its e computed on exactly those trades.
+- **The twin's mean is zero (M2):** on every new cell and every offered R, the mean of the R its zero-edge twin's
+  blocks carry is zero to 1e-12. The mean is taken over **the trades with a finite `r_R`**, as
+  `confirm_fv3.edge_stats` takes them for e (the re-read's n7), and on the blocks, not on the engine's realised R. The
+  engine's fee re-pricing at size moves the realised mean off zero, as it does for the registered twin.
 - **The gate's zero-edge twin:** the mean gross payouts per funded account do not exceed $2,000 beyond its Monte Carlo
   interval; the pass rate per evaluation does not exceed 2/5 beyond its interval (propsim D-02).
-- **The gate's pairing (n3):** each path's drawn day indices equal between `k1` and every new cell of its design, where
-  5 item 4 records them; else the label of 5 item 4.
+- **The gate's pairing (n3, m2):** every new cell's day blocks carry the same dates, in the same order, as its
+  design's `k1` blocks, under both arms. Their count is then equal, so by the vendored `SharedDayTable` (5 item 4)
+  every path draws the same day indices.
 - Every payout request at most min(50 % of the balance, $2,000) and at least $125, paid at 90 % less the method's fee
   (`payout_max_frac_of_balance`, `xfa_std_cap`, `payout_min`, `profit_split`, Stage 2's verified ledger).
 - **No write under `vendor/stage2/data`** during the run: the data folder's file list, sizes and modification times
@@ -786,7 +858,10 @@ pinned; built in `extended/pp_reading.py`, imported, never copied), with this re
 row of the judged block (3.2, M5): `band_mark` -- the side-free open share and first-exit times at every P-16 mark and
 P-14 slot, by year -- is the quantity Stage 2's `mark_resolution` admits marks by, and D-212's per-year resolution line
 is a floor a family must clear on the judged block (CHARTER section 2). Its judged years would foretell that floor, so
-they are never written. The pooled `band` rows remain, and the clause below governs them.
+they are never written. The pooled `band` rows remain, and the clause below governs them. **A residual leak, accepted
+and recorded (the re-read's n11):** the judged years' `band` rows, pooled over all 266 P-16 marks or all 22 P-14 slots
+at the fixed bands, are close to an every-mark design's resolution by year. They are not reopened; items 2 and 3 govern
+them, read by the red team and the auditor.
 
 **The clause is the lead's program rule (M5).** A described reading's text cannot bind another declaration; only a
 decision row can. So **the pinning row adopts items 1 to 3 as the lead's program rule**, binding every later
@@ -798,7 +873,13 @@ before any later declaration is pinned. Under the rule:
 
 1. **Every later declaration** -- a family file, a described reading, a calibration plan, or any registration's text
    -- **states in its header that it was written after RD-04 was read**, naming the rows that recorded RD-04's steps
-   (at least the step-2 row).
+   (at least the step-2 row). **A text written before the read and unchanged since (the lead's ruling on the re-read's
+   m5)** need not be re-drafted. Instead, the row that first pins it carries the literal form
+   `` `written before RD-04 was read, unchanged since <commit>: <path>` ``, which the test checks against git: the
+   file at `<commit>`, under its path or its draft name, has the pinned LF sha256, and `<commit>` is older than (an
+   ancestor of, and not) the read's commit and the step-2 row's commit. The form sits in the pinning row, not in the
+   file, because a file cannot name a commit at which it was already byte-identical to itself with that name inside
+   it.
 2. **None cites a figure of RD-04's result files** (`results/rd04_descriptive.csv`, `results/rd04_replay.csv`,
    `results/rd04_replay_gate.csv`, `results/rd04_replay_beside.csv`) **as the reason for any parameter**: its value, its class, its range or its grid. A
    parameter whose reason is such a figure was chosen after a look at the judged block: exploratory, reported apart, in
@@ -815,23 +896,41 @@ before any later declaration is pinned. Under the rule:
    as this text's section 2 lists what its drafter read.
 
 **The leak-clause test, declared now and built with T-0, before the pin: `tests/test_rd04_leak_clause.py`** (fast
-tier). On `DECISIONS.md` as it stands:
+tier). It fails closed (the re-read's M1). On `DECISIONS.md` and the read ledger as they stand:
 
-- **the step-2 row** is the first decision row, in the log's order, whose third cell begins with the token
-  `` `RD-04 read: step 2` ``. Until such a row exists the test binds nothing on the real log; its synthetic cases
-  still run;
-- **every declaration first pinned in a row after it** is in scope: a `` `prereg/F-..md` `` or `` `prereg/RD-..md` ``
-  pin as `tests/test_declarations_fixed.py` reads them, or a `` `docs/calibration/...md` `` pin, its path's first pin in
-  that later row. RD-04's own file is excepted, and a file first pinned earlier and cited again later is exempt;
-- **each such file's header**, the text before its first line beginning `## `, whitespace collapsed, must hold the
-  words "written after RD-04 was read" and the step-2 row's id. A file without them fails the suite, and so the
-  pre-commit hook;
-- **it is not vacuous:** on a synthetic log and synthetic files it refuses a later-pinned file without the line, admits
-  one with it, exempts a file pinned before the step-2 row and re-cited after it, and binds nothing when no row
-  carries the token.
+- **two anchors.**
+  - *The step-2 row* is the first decision row, in the log's order, whose third cell begins with the token
+    `` `RD-04 read: step 2` ``.
+  - *The read* is the first line of `results/read_ledger.jsonl` whose `declaration.ref` is
+    `prereg/RD-04_volatility_drift.md` and whose purpose is `volatility_descriptive`. The ledger is append-only, and
+    that line is written before the bars are read, so it exists from step 2's first run on.
+  - **Once the read exists, the test fails unless a step-2 row exists.** A missing or mistyped row can never switch
+    the rule off.
+  - With neither anchor present, the test binds nothing on the real log; its synthetic cases still run.
+- **in scope**, RD-04's own file excepted: every declaration -- a `` `prereg/F-..md` `` or `` `prereg/RD-..md` `` pin as
+  `tests/test_declarations_fixed.py` reads them, or a `` `docs/calibration/...md` `` pin -- whose path is **first**
+  pinned in either of two places:
+  - (a) **in or after the step-2 row**, the row itself included;
+  - (b) **in a row absent from `DECISIONS.md` at the read's commit**: the ledger line's `who.commit`, the run's own
+    commit, which precedes the read, read with `git show`. A `DECISIONS.md` that cannot be read there fails the test.
 
-The test enforces item 1 mechanically from the step-2 row. Items 2 and 3 are the red team's and the auditor's reads
-(item 4): no test can tell a reason from a figure.
+  A file first pinned earlier and cited again later is exempt.
+- **each such file** must satisfy one of two forms, or it fails the suite, and so the pre-commit hook:
+  - its header -- the text before its first line beginning `## `, whitespace collapsed -- holds the words "written
+    after RD-04 was read" and the step-2 row's id;
+  - or the row that first pins it carries item 1's pre-read form, and that form holds against git.
+- **it is not vacuous.** Synthetic logs and files exercise each rule. The cases include the re-read's three
+  fail-open routes, and each of those three was shown to pass silently under the second text's test:
+  - a pin inside the step-2 row;
+  - a pin after the run but before the step-2 row, on a synthetic git history;
+  - a ledger read with a mistyped step-2 row.
+
+  The pre-read form is admitted for an unchanged earlier draft, and refused in three cases: a text changed since, a
+  commit not older than the read, and a commit that does not exist.
+
+The test enforces item 1 mechanically. **Its phrase check is lexical (the re-read's n12):** a header saying "not
+written after RD-04 was read" passes. That, and items 2 and 3, are the red team's and the auditor's reads (item 4): no
+test can tell a reason from a figure.
 
 **The binding.** The judged block's bars are recorded as read for volatility description (`volatility_descriptive`),
 and P-14's and P-16's whole window as read for a calm-regime replay. A later reading of these measures names this one,
@@ -921,14 +1020,14 @@ other declaration).
 |---|---|---|
 | A-1 | the map and the factors (`extended/rd04_rescale.py`) | 4.1's map as a wrapper of an `arrays` callable, with a factor per session, **applied at every k, 1 included** (no short-circuit, m6), each session's actual prices checked on the 0.25 grid before mapping, and each applied k checked against the `factor` section's row for its `date`; 4.2's L_ref, L_y, k_y and k_d from a `session` table by Q-121's `value_quantiles`, L_ref passed in as a constant; no bar read of its own |
 | A-2 | the builders re-composed (`extended/rd04_replay.py`) | P-14's and P-16's trade builders copied verbatim in Q-71's pattern (a hash guard on each vendored source; the statement-for-statement proof), with marked additions only: the wrapped arrays (A-1); the frozen offers, rungs, marks and shift passed in (4.4); the scaled tick costs (4.3: the two tick terms times k, `fee` and `fee_micro_eq` never touched); no cache write; the vendored walk, cutoff, coin and bounds functions imported, never copied |
-| A-3 | the cells, the gates and the replays (`extended/rd04_replay.py`) | each cell's campaign from its trades with the frozen shift and capacity, the gate's `e`, `lb`, `e_by_rr` and `lb_by_rr` `k1`'s, the zero-edge twin centred on the cell's own e (4.4, M2), through `extended/gate.py` (its `counters` argument recording each path's day indices where it can, n3) and `extended.user_beside.run_starts` with Q-94's recorder, unchanged; nothing in a shared covered file edited |
-| A-4 | the reading (`extended/rd04_reading.py`, `scripts/rd04_descriptive.py`, `scripts/rd04_replay.py`, `identity/rd04_identity.py`) | sections 3, 8 and 9 in section 13's order; (a2) through Q-121's module with the reader's `Authorisation` (3.2) and Q-121's two identities imported from its script; 9.2 by RD-02's functions (`extended/pp_reading.py`, imported); (c)'s three refusals and its once rule (5 item 6); the waits by `extended/identity_tokens.py` and `extended/identity_cover.py`. Not to be confused with Q-121's own `tests/vd_synthetic.py` (n6): this reading's files carry the prefix `rd04_` |
+| A-3 | the cells, the gates and the replays (`extended/rd04_replay.py`) | each cell's campaign from its trades with the frozen shift and capacity, the gate's `e`, `lb`, `e_by_rr` and `lb_by_rr` `k1`'s, the zero-edge twin centred on the cell's own e (4.4, M2), through `extended/gate.py` (each cell's day blocks held to `k1`'s dates and order, 5 item 4, 8.3) and `extended.user_beside.run_starts` with Q-94's recorder, unchanged; nothing in a shared covered file edited |
+| A-4 | the reading (`extended/rd04_reading.py`, `scripts/rd04_descriptive.py`, `scripts/rd04_replay.py`, `identity/rd04_identity.py`) | sections 3, 8 and 9 in section 13's order; (a2) through Q-121's module with the reader's `Authorisation` (3.2) and Q-121's two identities imported from its script; 9.2 by RD-02's functions (`extended/pp_reading.py`, imported); (c)'s three refusals and its once rule (5 item 6); the waits by `extended/identity_tokens.py` and `extended/identity_cover.py`. this reading's files carry the prefix `rd04_` (n6; Q-121's synthetic helper is now `tests/q121_synthetic.py`, E-166); no `Authorisation` built by hand; (a2)'s module-sha refusal (3.2) |
 
 ### 12.2 Tests (fast tier unless marked; written before the code they test)
 
 | test | what it asserts |
 |---|---|
-| T-0 (before the pin; **built with the second text**) | `tests/test_rd04_draft.py`, in RD-03's form: exactly one RD-04 declaration under either name, every check passing on a copy under the pinned name; the pin-time form (the title, the `id` and `confirmation_tests_on_this_market` rows, a status that is not a draft's); **the hash pin-readiness** -- the text copied under the pinned name into a temporary tree whose `DECISIONS.md` pins its LF sha256 is admitted by the reader's declaration check (`extended.reader._family`) for `volatility_descriptive`, refused for a purpose not on its line and refused once one byte changes; **one `Judged-block reads:` line**, its one purpose `volatility_descriptive`, not choosing, not `identity` or `registered_design`; **the seed block** -- section 11's table lists the ten once each, three in use and seven reserved, and no other declaration, vendored file, review or audit holds one, nor any code or test outside `DECLARED_USES` (m5); the counts of 6.4 recomputed from 6.2's grid; **Q-121's names** -- the file, columns, sections and functions the text gives Q-121 exist in its merged code; the identity's cover declared under Q-111's rule; Appendix C's rows numbered and filled; **the leak-clause test's declaration** -- 9.3 names `tests/test_rd04_leak_clause.py`, its token and its phrase, and that file exists and checks the same token and phrase |
+| T-0 (before the pin; **built with the second text**, extended with the third) | `tests/test_rd04_draft.py`, in RD-03's form: exactly one RD-04 declaration under either name, every check passing on a copy under the pinned name; the pin-time form (the title, the `id` and `confirmation_tests_on_this_market` rows, a status that is not a draft's); **the hash pin-readiness** -- the text copied under the pinned name into a temporary tree whose `DECISIONS.md` pins its LF sha256 is admitted by the reader's declaration check (`extended.reader._family`) for `volatility_descriptive`, refused for a purpose not on its line and refused once one byte changes; **one `Judged-block reads:` line**, its one purpose `volatility_descriptive`, not choosing, not `identity` or `registered_design`; **the seed block** -- section 11's table lists the ten once each, three in use and seven reserved, and no other declaration, vendored file, review or audit holds one, nor any code or test outside `DECLARED_USES` (m5); the counts of 6.4 recomputed from 6.2's grid; **Q-121's names and interface** -- the file, columns, sections and functions the text gives Q-121 exist in its merged code, `authorised` is a keyword-only parameter of `check_span`, `check_days`, `describe`, `summarise` and `output_problems`, and the module's `AUTHORISED_PURPOSE`, `AUTHORISED_KIND`, `AUTHORISED_DECLARATION` and `AUTHORISED_LAST_DAY` are `volatility_descriptive`, `described_reading`, `prereg/RD-04_volatility_drift.md` and the reader's `JUDGED_END` (the re-read's m4, so 14 item 2's trigger is mechanical); the identity's cover declared under Q-111's rule; Appendix C's rows numbered and filled; **the leak-clause test's declaration** -- 9.3 names `tests/test_rd04_leak_clause.py`, its token, its phrase, its pre-read form and its ledger anchor, and that file exists and checks the same |
 | T-1 | A-1's map on synthetic bars (seed 20262311): every price on the grid; the bar order kept; the anchor at the first open; |p' - O_d| at most |p - O_d|; the range within one tick of k times the range; missing bars kept; at k = 1 bit for bit; **the map called on every session at k = 1, by a call count** (m6); an off-grid actual price refused before mapping; a factor outside (0, 1] refused |
 | T-2 | A-1's factors: L_y and L_ref Q-121's inverted-CDF medians of `trail20_range_pts` over the walked sessions with a finite value, by the trading day's year, and not numpy's interpolating median (an even-count toy where the two differ); k_y = min(1, L_ref / L_y); **with L_ref held fixed and passed in** (m1), L_d and k_d unchanged when any session from d on is changed (skill feature-rules); a session with a blank trailing value unscaled and counted |
 | T-3 | the frozen inputs: on a toy where the rescaled walk would admit fewer marks or another rung, the cell's offers are still the reference's; the shift and the capacity the reference's; P-14's rung map read from its pinned file only |
@@ -938,12 +1037,12 @@ other declaration).
 | T-7 | 8.3's oracles on toys, each shown to fire on a hand-broken case: the off-grid price, the map, the frozen inputs, the factors, the session's own factor (a calendar-day key), the twin's mean (a twin centred on `k1`'s e), the payout rules, the pairing |
 | T-8 (`slow`, `heavy`) | 8.1 items 1 to 6 at 4 paths and 4 starts per design and arm, through `identity/rd04_identity.py` |
 | T-9 | section 11's seeds appear nowhere in the build's commit outside the uses section 11 declares |
-| T-10 | (a2)'s order and its reads: the whole-window read is not authorised before the early-block identity holds; the identity fires on a nudged cell of a toy Q-121 file; the early rows re-checked after the whole-window run; Q-121's module refuses a judged day without `authorised` and with an `Authorisation` of another purpose, kind or declaration or a choice-block one, and accepts RD-04's; **no `band_mark` row in the written file and none printed** (M5); Q-121's `COLUMNS` unchanged in its sections; `k_trail` and `k_year` only in `factor`; the days identity's A1 read made under `volatility_descriptive` |
+| T-10 | (a2)'s order and its reads: the whole-window read is not authorised before the early-block identity holds; the identity fires on a nudged cell of a toy Q-121 file; the early rows re-checked after the whole-window run; Q-121's module refuses a judged day without `authorised` and with an `Authorisation` of another purpose, kind or declaration or a choice-block one, and accepts RD-04's; **no `band_mark` row in the written file and none printed** (M5); Q-121's `COLUMNS` unchanged in its sections; `k_trail` and `k_year` only in `factor`; the days identity's A1 read made under `volatility_descriptive`; **`summarise` called with the authorisation**; **refused when the imported `extended/vol_descriptive.py` does not hash to its blob at the commit in Q-121's manifest** (m3); **no `Authorisation(` constructed directly in any `rd04_` file**, by a scan (n1) |
 | T-11 | `identity/rd04_identity.py` runs the reference only: the factor 1 and the cost reading `act` constants; no argument naming a factor, a cost reading or a cell; any flipped refuses before the first session |
 | T-12 | (c)'s refusals on a toy tree and ledger (M3): refused without `S2X_CLEAN_RUN` or `S2X_RUN_ID`; refused when the returned `Authorisation.ledgered` is false; refused when `prereg/RD-04_volatility_drift.md` does not hash to the pinning row's pin, or the row carries none; then the once rule: a second run of the same part under the same row refused, the other part allowed; allowed with `--repeat` naming a row that names this file, once; a row not naming this file refused |
 | T-13 | the labels of 9.1 item 8 on every (c) row, and 9.1 item 5's step-shape label on every paired row whose share differing is below one (n4); D-212 failures flagged and never filtered; no P printed without its guard row; the count of intervals and the tenth expected by chance printed |
 | T-14 | A-3 with the factor 1 and `act`: every gate row, replay and recorder row equals the path without A-1 and A-2, bit for bit, on toy campaigns |
-| T-15 (before the pin; **built with the second text**) | `tests/test_rd04_leak_clause.py`, the leak-clause test of 9.3: on the real log, every declaration first pinned after the row carrying `` `RD-04 read: step 2` `` holds "written after RD-04 was read" and that row's id in its header; on synthetic logs, it refuses, admits, exempts and binds nothing as 9.3 says |
+| T-15 (before the pin; **built with the second text, rebuilt with the third**) | `tests/test_rd04_leak_clause.py`, the leak-clause test of 9.3, failing closed: once the read ledger holds RD-04's `volatility_descriptive` line, a step-2 row must exist; every declaration first pinned in or after the step-2 row, or in a row absent from `DECISIONS.md` at the read's commit, holds "written after RD-04 was read" and the step-2 row's id in its header, or its pinning row's pre-read form holds against git; on synthetic logs and synthetic git histories it refuses, admits, exempts and binds nothing as 9.3 says, the re-read's three fail-open routes among them |
 
 ## 13. Outputs and the run
 
@@ -984,7 +1083,7 @@ Each written with its sidecar manifest through `extended.results.write_result`:
 
 **Each manifest carries:** `prereg_id` `RD-04` and its pinning row; the rows under which `rd04_identity`, Q-05, Q-80, Q-93
 with Q-100 and Q-101 held, each with its sha and the run's head (none for step 2); Q-121's file, its sha256, its row and
-the LF sha256 of the `extended/vol_descriptive.py` (a2) imported; any beside cell not built (4.6), with its piece;
+the LF sha256 of the `extended/vol_descriptive.py` (a2) imported, **checked equal to that file's at the commit in Q-121's manifest before any authorisation** (3.2, m3); any beside cell not built (4.6), with its piece;
 the cell and run counts (6.4, as run); each cell's trades' content hash (`rc_dev_test.trades_hash`'s form) and its
 walk's row count; every seed, the inherited ones named; every parameter of section 7 with its class; the commit and blob ids of every adapter run; the sha256 of `vendor/DATA_MANIFEST_stage2.sha256`, checked
 before the first read; `exploratory=False` (nothing is chosen after a look), every row labelled "described, not
@@ -1033,11 +1132,10 @@ failure in step 2 stops (a2) and (c); a failure in step 4 stops the beside readi
 ### 13.3 Waits, all before step 1 unless stated
 
 - the pinning row, naming P-14 and P-16 (it admits (c)'s `registered_design` reads);
-- **Q-121b on master** (before (a2) is built): Q-121's module with the optional `authorised` keyword of 3.2, its
-  absent case unchanged and its tests (the refusal of any other authorisation among them) passing;
+- **Q-121b on master: met** at 4b72ef2 (E-166), the interface of 3.2;
 - **Q-121's file on master** (`results/q121_vol_descriptive_a1.csv`) from its own clean run, with its row (before step
-  2), **made at a commit whose `extended/vol_descriptive.py` already carries Q-121b's keyword**, so that the file is
-  made by the code (a2) imports; its manifest's commit names it;
+  2). Its run is queued at 4b72ef2 (E-166). The wait is met only when the file exists **and** the
+  `extended/vol_descriptive.py` (a2) imports hashes to that file at its manifest's `git_commit` (3.2, m3);
 - **the leak-clause test** (`tests/test_rd04_leak_clause.py`, T-15) on master (before the pin);
 - every shared identity of 8.1 held at a commit whose covers are unchanged at the run's commit (the build edits no
   shared covered file, 4.6);
@@ -1049,14 +1147,13 @@ failure in step 2 stops (a2) and (c); a failure in step 4 stops the beside readi
 
 **The lead's:**
 
-1. **The red team's re-read of this text, then the gatekeeper's**; and **T-0** (`tests/test_rd04_draft.py`) and
+1. **The gatekeeper's read of this text** (the red team's re-read done, Q-123r2); and **T-0** (`tests/test_rd04_draft.py`) and
    **T-15** (`tests/test_rd04_leak_clause.py`), both built with this text, which must pass on the text pinned.
-2. **Q-121's names, written; Q-121b's keyword, owed.** This text writes Q-121's real names as merged at a83db31 (the
+2. **Q-121's names and Q-121b's interface: closed, met at 4b72ef2 (E-166).** This text writes the real names (the
    file `results/q121_vol_descriptive_a1.csv`, the sections, `trail20_range_pts`, `walked`, `value_quantiles`,
-   `COLUMNS`, `kind_problems`, `walk_problems`). Q-121's refusal sits in `check_days`, which `describe` calls, so (a2)
-   imports the module through the optional `authorised` keyword of 3.2, which Q-121b adds on `wt/wt-verify` before
-   Q-121 runs (13.3). If Q-121b's merged keyword differs from 3.2's -- in its name, or in the four conditions it checks
-   -- this text is re-drafted before the pin; nothing here is read as covering another interface.
+   `COLUMNS`, `kind_problems`, `walk_problems`) and the merged interface (3.2: the keyword on five functions, the
+   module's four constants). T-0 holds them mechanically. If either changes on master before the pin, T-0 fails and
+   this text is re-drafted; nothing here is read as covering another interface.
 3. **The pinning row names P-14 and P-16**, so it can serve as (c)'s `registered_design` declaration (5 item 6); or the
    lead names another row here before the pin.
 4. **The leak clause as the lead's program rule** (9.3): the pinning row adopts items 1 to 3, binding every later
@@ -1082,7 +1179,8 @@ manifest, and recorded in its own decision row -- never in this file.)*
 ## Appendix C -- the drafter's choices, each with its reason
 
 Every choice made where the note, the brief, the red team's note or the rules left the text open. Rows 4, 6, 8, 9,
-11, 13 and 21 are the second text's revisions of the first's; rows 25 to 34 are the second text's own.
+11, 13 and 21 are the second text's revisions of the first's; rows 25 to 34 are the second text's own; rows 26, 29, 30
+and 33 are corrected by the third, and rows 35 to 39 are the third's own.
 
 | # | choice | where | reason |
 |---|---|---|---|
@@ -1111,12 +1209,17 @@ Every choice made where the note, the brief, the red team's note or the rules le
 | 23 | `k1` replayed inside step 3 and held to U1's rows, the pairs read against that replay | 8.1; 9.1 | the paired readings need U1's records in this repository's form; the comparison keeps them U1's |
 | 24 | step 4 rebuilds the cells' trades and holds them to step 3's hashes, writing no intermediate file | 13.2 | a result is written only through `write_result` from a clean run; an untracked cache of rescaled trades would be neither |
 | 25 | a piece of a beside cell that cannot be built stops that cell alone; a piece of `k1` or `yr_act` stops (c) | 4.6; 10 | M1's remedy 3: a declared failure scope, so a beside arm's plumbing never halts the headline, and nothing replaces what is not built |
-| 26 | (a2) runs `output_problems` on `summarise`'s frame, compares its choice-block `band_mark` rows in memory, then drops every `band_mark` row before anything is printed, written or compared further | 3.2; 8.2 | M5's remedy 1 without asking Q-121b for a second keyword: Q-121's `output_problems` requires its four sections, and the in-memory comparison keeps 8.2's identity whole |
+| 26 | (a2) runs `output_problems` on `summarise`'s frame, compares its `band_mark` rows in memory, then drops every `band_mark` row before anything is printed or written | 3.2; 8.2 | a second lock (the re-read's m1): the merged module already writes no `band_mark` row from 2024-01-02; the drop keeps Q-121's choice-block rows in Q-121's file alone, and the in-memory comparison keeps 8.2's identity whole |
 | 27 | Q-121's days and walk identities re-run over the whole window, imported from Q-121's script by its path, `main` never called; A1's `days` read under `volatility_descriptive` in the same run | 3.2; 5 item 6 | M4's remedy 8, the red team's recommendation: the day kinds feed the walked set and so the factors |
 | 28 | the leak-clause test: the token `` `RD-04 read: step 2` `` in the lead's step-2 row; in scope every `prereg/F-`, `prereg/RD-` or `docs/calibration/` file first pinned in a later row; the header the text before the first `## ` line, whitespace collapsed | 9.3; T-15 | M5's remedy 3 made mechanical: a token the lead writes is unambiguous where a date is not (several rows share a date); a file's first pin decides, so a re-cited old pin is never caught; a calibration plan is a declaration too |
-| 29 | this reading's files carry the prefix `rd04_` (`extended/rd04_*.py`, `scripts/rd04_*.py`, `identity/rd04_identity.py`, `results/rd04_*.csv`) | 12.1; 13.1 | n6: Q-121's `tests/vd_synthetic.py` is merged and imported by its tests, so the unbuilt names are the ones to change; `rd04_` matches T-0's and T-15's files |
-| 30 | the gate's pairing traced through `extended/gate.py`'s `counters` argument where it exposes the day indices, else labelled "not traced" | 5 item 4; 8.3 | n3: a fact where it can be made one without a covered file's edit (4.6); the gate's rows decide nothing, so a label is the honest scope |
+| 29 | this reading's files carry the prefix `rd04_` (`extended/rd04_*.py`, `scripts/rd04_*.py`, `identity/rd04_identity.py`, `results/rd04_*.csv`) | 12.1; 13.1 | n6: RD-04's names were unbuilt, so they were the ones to change (Q-121b has since renamed Q-121's helper `tests/q121_synthetic.py`, E-166); `rd04_` matches T-0's and T-15's files |
+| 30 | the gate's pairing made a fact by the vendored `SharedDayTable` (a path's day indices a function of its seed and the number of day blocks alone) and an oracle holding each cell's block dates and order to `k1`'s | 5 item 4; 8.3 | the re-read's m2: the second text's `counters` route does not exist (that channel records RD-02's account counters and refuses the registered accounts); the code settles n3 |
 | 31 | the step-shape label on every paired row whose share of starts differing is below one | 9.1 item 5 | n4 asks for a label "where `share_differing` is low"; any identical start makes the series step-shaped, and a threshold would be a choice with no basis |
 | 32 | T-0's hash pin-readiness through the reader's declaration check (`_family`) on a temporary tree, not the whole `authorise` | 12.2 | `authorise` also needs a clean run's checkout and a ledger, which a fast test cannot be; `_family` is the part that reads the pin, the hash and the purpose line |
-| 33 | Q-121's file made at a commit whose module already carries Q-121b's keyword | 13.3 | M4's remedy 3: the file (a2) is held to is made by the code (a2) imports |
+| 33 | (a2) refuses unless its imported module hashes to the one at the commit in Q-121's manifest | 3.2; 13.3 | M4's remedy 3 made exact (the re-read's m3): "carries the keyword" was met by any later commit; the sha equality ties both modes to the bytes that made Q-121's file |
 | 34 | the reference years classed as the lead's choice, the operator's description of the early years as calm its reason | 7 | m7: E-155 names no years; the lead names 2020-2021 inside the choice block |
+| 35 | T-15's scope: first pins in or after the step-2 row, and in rows absent from `DECISIONS.md` at the read's commit; a ledger read without a step-2 row fails | 9.3; T-15 | the re-read's M1, remedies 1 to 3, all adopted as the lead ruled; the optional third closes the run-to-row window entirely, and failing on a missing row closes the silent-off route |
+| 36 | the pre-read form carried by the pinning row, as a literal token naming the commit and the path, not by the file's header | 9.3 item 1; T-15 | the lead's ruling on m5 made checkable: a file cannot name a commit at which it was already byte-identical to itself with that name inside it; the draft name is accepted because a pin renames the file and changes nothing else |
+| 37 | the pre-read commit must be older than both the read's commit and the step-2 row's commit (with neither committed, in HEAD's history) | 9.3 item 1; T-15 | the lead's "older than the step-2 row's commit", plus the read's commit when the ledger holds it: older than the read is what "written before RD-04 was read" means, and it implies the lead's condition |
+| 38 | the twin oracle over the trades with a finite `r_R`, on the blocks | 8.3 | the re-read's n7: that is `edge_stats`' population for e, so the tolerance is achievable; the engine's realised R carries the fee re-pricing |
+| 39 | 8.2 compares every `band_mark` row, its `block` row included | 8.2 | the re-read's n10: under the authorisation `band_mark` spans the choice block only, so its block row is comparable at no cost |
