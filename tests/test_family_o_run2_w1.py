@@ -27,3 +27,11 @@ def test_w1_the_verdict_is_written_before_the_scorecard_and_its_checks_come_firs
     assert got["authorised"] == ["stage_C_states", "stage_C_judgement", "stage_C_campaign"]   # scorecard never ledgered
     assert got["judged_sections"] == ["beside", "campaign", "floor", "judged", "level"] and got["verdict_row"] == 1
     assert not got["journey_written"]
+    # Y1: a W2 mismatch planted after C1 and both K0 forms writes the judged file partial and stops before 13
+    y = got["y1"]
+    assert y["code"] == 3 and y["written"]
+    assert y["authorised"] == ["stage_C_states", "stage_C_judgement", "stage_C_campaign"]
+    assert {"K0", "C1", "C1_close", "C3", "C2", "verdict"} <= set(y["lines"])
+    assert y["k0_forms"] == ["c1_judged", "c2_judged"]
+    assert y["partial"] == [True] and y["verdict"] == [y["status"]] and y["status"] in ("CLOSED", "not formed")
+    assert y["status"] == y["status_by_rule"]

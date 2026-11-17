@@ -76,4 +76,33 @@ if f.is_file():
     out["judged_sections"] = sorted(d["section"].unique())
     out["verdict_row"] = int(((d["section"] == "level") & (d["line"] == "verdict")).sum())
 out["journey_written"] = (WORK / f"{R.JOURNEY}.csv").is_file()
+
+
+# (c) Y1: a W2 mismatch planted after C1 and both K0 forms -- the partial judged file, its status, no scorecard
+class W2Mismatch(Syn):
+    def w2_state(self, in_set):
+        return {}                                  # every in-wait opening is then out of the planted state
+
+
+W3 = WORK / "y1"
+W3.mkdir()
+cc = W2Mismatch(sizes=sizes, smoke=False, results_dir=W3)
+cc.fx = fx
+code_c, *_ = FO.run2(cc, pre, 1, df1, {**par1, "_sha256": "0" * 64})
+y = {"code": code_c, "authorised": list(cc.authorised), "status": getattr(cc, "partial_status", None)}
+fy = W3 / f"{FO.RESULT_JUDGED}.csv"
+y["written"] = fy.is_file() and Path(str(fy) + ".manifest.json").is_file()
+if fy.is_file():
+    import pandas as pd
+
+    d = pd.read_csv(fy, low_memory=False)
+    lv = d[d["section"] == "level"]
+    y["lines"] = sorted(str(x) for x in lv["line"].dropna().unique())
+    y["k0_forms"] = sorted(str(x) for x in lv.loc[lv["line"] == "K0", "form"])
+    v = lv[lv["line"] == "verdict"]
+    y["verdict"] = [str(x) for x in v["verdict"]]
+    y["partial"] = [bool(x) for x in v["partial"]]
+    rows = d.to_dict("records")
+    y["status_by_rule"] = FO.partial_status(rows)[0]
+out["y1"] = y
 print(json.dumps(out, default=str))
