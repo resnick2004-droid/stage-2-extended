@@ -106,6 +106,10 @@ class Ctx:
     authorised: list = field(default_factory=list)
     check_reuse: bool = False                 # a test seam: recompute each reused scorecard replay and compare
 
+    def w2_state(self, in_set: dict) -> dict:
+        """W2's state set by offer id (a test seam: the planted-mismatch test returns another set)."""
+        return in_set
+
     # ---- run 2's judged reads, each under its purpose (19.1), authorised just before its stage
     def authorise(self, purpose: str) -> None:
         from extended import VENDOR_STAGE2, opening_run as R, reader
@@ -365,6 +369,10 @@ def offer_ids_of(trades, days, blocks):
     from extended import opening_population as OP
     from extended import place_records as PR
 
+    missing = [h for h, b in enumerate(blocks) if len(b) and getattr(b, "entry_t", None) is None]
+    if missing:                       # Y4: block_offer_ids anchors each trade by entry_t, so every block must carry it
+        raise ValueError(f"{len(missing)} blocks carry no entry_t (first block {missing[0]}): the offer ids cannot be "
+                         "anchored")
     t = trades.copy()
     t["fo_offer"] = [OP.offer_id(d, int(s)) for d, s in zip(t["date"].astype(str), t["decision_slot_minutes"])]
     return PR.block_offer_ids(t, days, blocks, "fo_offer")
@@ -891,6 +899,57 @@ def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_pa
 
 
 def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> tuple[int, Any, Any, dict[str, Any]]:
+    """Run 2 (`_run2`), with Y1 (the fourth build read): a refusal or a failure after stage C's first line (K0 on the
+    judged C1 counts) and before its verdict writes the judged file with every line and K0 already computed and a
+    verdict row marked partial -- `CLOSED` where a computed line has failed or K0 has made `cons` lax (a fail of any
+    line closes the family; a lax K0 means no pass is claimed), `not formed` otherwise -- and stops before the
+    scorecard."""
+    ctx.stage_c_rows, ctx.stage_c_started = None, False
+    try:
+        res = _run2(ctx, pre, workers, run1_df, run1_params)
+    except BaseException as exc:
+        _partial_judged(ctx, pre, f"{type(exc).__name__}: {exc}")
+        raise
+    if res[0] != 0:
+        _partial_judged(ctx, pre, "a refusal (the log names it)")
+    return res
+
+
+def partial_status(rows) -> tuple[str, list[str]]:
+    """Y1: what the computed lines and K0 already decide -- `CLOSED` (with the lines that decide it) or `not formed`."""
+    why = []
+    for r_ in rows:
+        if r_.get("section") != "level":
+            continue
+        ln = r_.get("line")
+        if ln == "K0" and bool(r_.get("lax")):
+            why.append(f"K0 {r_.get('form')} lax: no pass is claimed")
+        elif ln in ("C1", "C1_close", "C3") and r_.get("passes") is not None and not bool(r_.get("passes")):
+            why.append(f"{ln} fails")
+        elif ln == "C2" and r_.get("passes_bar") is not None and not bool(r_.get("passes_bar")):
+            why.append("C2 fails its bar")
+    return ("CLOSED" if why else "not formed"), why
+
+
+def _partial_judged(ctx: Ctx, pre, why: str) -> None:
+    """Y1: write the partial judged file once, when stage C has begun and its file is not yet written."""
+    from extended import opening_run as R
+
+    rows = getattr(ctx, "stage_c_rows", None)
+    if not getattr(ctx, "stage_c_started", False) or rows is None or getattr(ctx, "judged_path", None):
+        return
+    status, decided = partial_status(rows)
+    jdf = R.frame(list(rows) + [{"section": "level", "line": "verdict", "verdict": status, "partial": True,
+                                 "decided_by": decided, "stopped": why}], R.SECTIONS[10:])
+    ctx.partial_status = status
+    ctx.partial_frame = jdf
+    ctx.judged_path = ctx.write_judged(jdf, {**pre.parameters(), "run": 2, "partial": True, "status": status,
+                                             "decided_by": decided, "stopped": why, "purposes": list(ctx.authorised)})
+    log(f"run 2 stopped inside stage C ({why}); the judged file written partial, status {status}"
+        + (f": {ctx.judged_path}" if ctx.judged_path else ""))
+
+
+def _run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> tuple[int, Any, Any, dict[str, Any]]:
     """Stage C (section 12) and the scorecard (13) on the judged block, in the declared order -- each judged read
     authorised just before its stage (`Ctx.authorise`): `stage_C_states`, K0 on the judged C1 counts,
     `stage_C_judgement`, `stage_C_campaign` (K0 on the judged C2 counts before any value is attached), the floors,
@@ -965,6 +1024,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     k0c1 = ST.k0_family(sel0.sum(axis=1), L0.population.sum(axis=1), "nested", n, R.LEVEL, ci, ST.K0_FORMS["c1_judged"],
                         z.k0)
     out += R.rows("level", [{"line": "K0", "form": "c1_judged", **k0c1.as_dict()}])
+    ctx.stage_c_rows, ctx.stage_c_started = out, True                 # Y1: stage C's first line is computed
 
     # ---- 3. stage_C_judgement: the population's walks, L, the halves, (d), B2, C1, C1-close, C3
     ctx.authorise("stage_C_judgement")
@@ -1092,11 +1152,13 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
                                       "offer", "date"))
     grows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
                         cls=gate_cls, recorder=f3_rec)
-    in_set = grid_flags(Lj, sel)
+    in_set = ctx.w2_state(grid_flags(Lj, sel))
     w2, w2_counts = [], {}
     for sh in sorted({k[0] for k in f3_rec.recorded()}):
         pr_, w2_counts[sh] = OW.gate_state_problems(f3_rec, sh, in_set)
         w2 += [f"{sh}: {x}" for x in pr_]
+        if not (w2_counts[sh].get("in_wait", 0) and w2_counts[sh].get("declined", 0)):     # Y2: the identity bites
+            w2.append(f"{sh}: {w2_counts[sh]} -- floor (iii)'s gate must show an in-wait opening and a decline")
     if w2 or not w2_counts:
         return _refuse("W2: floor (iii)'s gate does not wait for the pick's state by offer id: "
                        + ("; ".join(w2[:3]) or "nothing recorded")), None, None, {}
@@ -1561,7 +1623,10 @@ def v_other_rows(rec_d, rec_t, c: str, popj, Lj, sess=None, mdv=None) -> list[di
         if sess is not None and mdv is not None:          # n12: in dollars, 7.4's form at the design's own uses there
             u_ = ST.openings_a_start_year(int(len(va)), sess)
             row.update({"u_place_per_start_year": u_, "V_dollars": ST.v_line(u_, mdv, D_) if np.isfinite(D_)
-                        else float("nan")})
+                        else float("nan"),
+                        "V_dollars_priced_as": "place (c)'s value (mean_dv(c)) and 3R's conversion 1/(1+3), at the "
+                                               "design's own trades at this place -- not each trade's own place and R "
+                                               "(Y3: labelled, not re-priced)"})
         out.append(row)
     return out
 
