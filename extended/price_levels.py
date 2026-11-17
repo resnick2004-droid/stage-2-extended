@@ -33,7 +33,7 @@ header and the first `SAMPLE_ROWS` data rows of a file are read, so the check st
   `name`, `level` or `pair` and not allow-listed, or one named for a distance in points or ticks (`DISTANCE_TOKENS`) --
   a distance at each intraday time can rebuild a path. Reported as `ts|column`.
 
-**The allow-list** (`config/price_level_allowlist.csv`, columns `file,rule,column,reason`): a finding is accepted only
+**The allow-list** (`tests/price_level_allowlist.csv`, columns `file,rule,column,reason`): a finding is accepted only
 when an entry names its file and rule exactly and its column exactly or by an `fnmatch` pattern (`*/p`: any pair over
 the column `p`), with a reason classing the columns by their meaning (a count, a dollar figure, a significance level,
 a clock time, a ratio that is 1/level by construction), seeded from Q-130's judged false positives. An entry that
@@ -62,7 +62,7 @@ from typing import Iterable, Iterator, Mapping, Sequence
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-ALLOWLIST_REL = "config/price_level_allowlist.csv"
+ALLOWLIST_REL = "tests/price_level_allowlist.csv"
 
 #: the NQ level band (index points) and its tick; Q-130's scan used the same band
 BAND = (5000.0, 30000.0)

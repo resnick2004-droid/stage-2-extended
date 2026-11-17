@@ -5,7 +5,7 @@
     python scripts/check_price_levels.py --worktree            # the working tree's copy instead
 
 Scans every tracked or staged `.csv`/`.tsv` outside `vendor/` with `extended.price_levels` against
-`config/price_level_allowlist.csv`. Exit 0 when nothing is refused and no allow-list entry is stale; 1 otherwise,
+`tests/price_level_allowlist.csv`. Exit 0 when nothing is refused and no allow-list entry is stale; 1 otherwise,
 listing each finding as `file: rule column (share)` -- names and shares only, never a cell's value; 2 on a usage or
 read error. The same check runs in the fast tier as `tests/test_results_no_price_levels.py`.
 """

@@ -83,7 +83,7 @@ vendor_failed() {
 echo "--- result files: no licensed price level (scripts/check_price_levels.py --index) ---"
 # Every tracked or staged .csv/.tsv outside vendor/, as this commit's index holds it: a level column, a column of levels
 # on the 0.25 grid, a pair a/b or 100 a/b that recovers one (Q-121's x_pts beside x_pct), intraday timestamps beside a
-# price-class column. Exit 1 on a refusal or a stale allow-list entry (config/price_level_allowlist.csv); it prints
+# price-class column. Exit 1 on a refusal or a stale allow-list entry (tests/price_level_allowlist.csv); it prints
 # file and column names and shares, never a value.
 price_level_failed() {
     echo "pre-commit: the licence check REFUSED the commit -- a staged CSV may hold or reveal an NQ price level (E-002)." >&2

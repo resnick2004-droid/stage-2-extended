@@ -270,7 +270,7 @@ def test_a_staged_leak_is_refused_from_the_index_and_by_the_hook_script(repo):
     assert _git(repo, "add", "results/q999_leak.csv", pl.ALLOWLIST_REL).returncode == 0
     for source in ("index", "worktree"):
         rep = pl.check_tree(repo, source=source)
-        assert rep.files == [pl.ALLOWLIST_REL, "results/q999_leak.csv"]
+        assert rep.files == sorted([pl.ALLOWLIST_REL, "results/q999_leak.csv"])
         assert ("results/q999_leak.csv", "pair", "100*x_pts/x_pct") in {(f.file, f.rule, f.column)
                                                                         for f in rep.refused}
     # the hook's own command, on the same index; its output names columns and never a value
@@ -301,7 +301,7 @@ def test_vendor_files_and_untracked_files_are_not_scanned(repo):
     _write(repo / "docs" / "y.csv", header, rows)
     assert _git(repo, "add", "vendor", "docs", pl.ALLOWLIST_REL).returncode == 0
     rep = pl.check_tree(repo, source="index")
-    assert rep.files == [pl.ALLOWLIST_REL, "docs/y.csv"]          # a CSV outside results/ and vendor/ is scanned
+    assert rep.files == sorted([pl.ALLOWLIST_REL, "docs/y.csv"])        # a CSV outside results/ and vendor/ is scanned
     assert {f.file for f in rep.refused} == {"docs/y.csv"}
 
 
@@ -381,6 +381,38 @@ def test_the_pre_commit_hook_runs_the_check_on_the_commits_index():
     assert "|| price_level_failed" in text
     assert "[ ! -f scripts/check_price_levels.py ]" in text, "a tree without the script is refused, not let through"
     assert b"\r\n" not in (ROOT / "scripts" / "pre-commit").read_bytes()
+
+
+#: every file of the guard (Q-131): none may lie in an identity's cover, or adding or editing it voids that identity
+GUARD_FILES = ("extended/price_levels.py", "scripts/check_price_levels.py", "scripts/pre-commit",
+               "tests/test_results_no_price_levels.py", pl.ALLOWLIST_REL)
+
+_COVERS = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from extended import identity_cover as IC
+from extended import opening_run as R
+out = {ident: list(IC.cover(ident)) for ident in IC.COVER}
+out[R.A0_ID] = list(R.cover(R.A0_ID))
+print(json.dumps(out))
+"""
+
+
+def test_the_guards_files_lie_in_no_identity_cover():
+    """`config/` is in every cover's BASE (E-104, E-117): the allow-list lives under tests/ so the guard voids no shared
+    identity and not F-03's A0 (the lead, before Q-131's merge). Computed in a child process: A0's cover imports the
+    opening runner."""
+    import json
+    out = subprocess.run([sys.executable, "-c", _COVERS, str(ROOT)], cwd=ROOT, capture_output=True, text=True,
+                         timeout=300, env={**_clean_env(), "PYTHONDONTWRITEBYTECODE": "1"})
+    assert out.returncode == 0, out.stderr[-2000:]
+    covers = json.loads(out.stdout.strip().splitlines()[-1])
+    assert "f03_a0" in covers and len(covers) >= 2
+    assert all(p.is_file() for p in (ROOT / g for g in GUARD_FILES))
+    hits = [f"{g} in {ident}'s cover (by {h})" for ident, paths in covers.items() for h in paths for g in GUARD_FILES
+            if g == h or g.startswith(h.rstrip("/") + "/")]
+    assert not hits, hits
+    assert not pl.ALLOWLIST_REL.startswith("config/") and pl.ALLOWLIST_REL != "extended/__init__.py"
 
 
 def test_the_merge_checklist_names_the_check():
