@@ -1,4 +1,4 @@
-"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, fourth text): its arithmetic -- no bar, no market
+"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, fifth text): its arithmetic -- no bar, no market
 outcome, no random number. Every figure the plan states is printed here, from three kinds of input only:
 
 - the plan's declared constants: the validation's exposure (23 subsets at each of five sizes, two values, five exact
@@ -20,6 +20,7 @@ import argparse
 import math
 import os
 import re
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -207,14 +208,23 @@ def flat_none(r: float, N: int | None = None) -> float:
     return 1.0 - (1.0 - r) ** N
 
 
-# ------------------------------------------------------------------------------------------- the band check (M-D)
+# ------------------------------------------------------------------------------------------- the band check (M-D, F-1..F-3)
 
-#: the bands of the plan's 2.5, as (lowest, highest) declared persistence in sessions; None: open
-BANDS = {"below 42": (None, 41), "42 to 50": (42, 50), "51 to 62": (51, 62)}
-#: the check's two tails (each), at the band's ends, under a Markov side of that mean dwell
-BAND_TAIL = 0.025
-#: the regime length (two quarters) whose sides every band excludes by arithmetic
+#: the bands of the plan's 2.5, as (lowest, highest) declared persistence in sessions
+BANDS = {"below 42": (1, 41), "42 to 50": (42, 50), "51 to 62": (51, 62)}
+#: scope D's admission (4.4) covers declared persistence below a quarter: its balance limit is taken over 1..63
+ADMISSION_RANGE = (1, 63)
+#: the balance limit's quantile: b is the largest, over every flip and Markov model whose length lies in the band, of
+#: the BALANCE_Q quantile of |mean side| on the span's n sessions, every session non-tie (the dense case)
+BALANCE_Q = 0.975
+#: the runs interval's tail at each end, for a declared switching side (Markov models at the band's ends)
+RUNS_TAIL = 0.0125
+#: the in-band refusal allowed for any of the band's own models, of either kind (the lead's rule, E-184)
+MAX_IN_BAND_REFUSAL = 0.05
+#: the regime length (two quarters) whose sides the runs floor excludes, kept only where it costs no in-band refusal
 EXCLUDED_REGIME = 126
+#: Markov dwells beyond the class's longest (80), whose pass rates the residual states
+BEYOND_DWELLS = (80, 100, 125, 150, 200)
 
 
 def max_runs(n: int, L: int) -> int:
@@ -222,19 +232,183 @@ def max_runs(n: int, L: int) -> int:
     return (int(n) - 1) // int(L) + 2
 
 
-def band_interval(n: int, band: str) -> tuple[int, int | None]:
-    """The runs R of 4.4's non-tie series a band admits on n sessions: from the larger of 1 + the BAND_TAIL quantile
-    of Bin(n - 1, 1/hi) and one more than the most runs of a side constant over EXCLUDED_REGIME sessions, to 1 + the
-    1 - BAND_TAIL quantile of Bin(n - 1, 1/lo) (no upper limit for the open band)."""
-    lo, hi = BANDS[band]
-    lower = max(1 + int(stats.binom.ppf(BAND_TAIL, n - 1, 1.0 / hi)), max_runs(n, EXCLUDED_REGIME) + 1)
-    upper = None if lo is None else 1 + int(stats.binom.ppf(1.0 - BAND_TAIL, n - 1, 1.0 / lo))
-    return lower, upper
-
-
 def dwell_runs(D: float, n: int = 657) -> float:
     """The expected runs of a Markov side of mean dwell D on n sessions: 1 + (n - 1)/D."""
     return 1.0 + (n - 1) / D
+
+
+def flip_counts(n: int, L: int) -> list[list[int]]:
+    """Each phase's block sizes of the L-session flip on n sessions (`lift_one_sample.flip_blocks`)."""
+    return [np.bincount((np.arange(n) + p) // L).tolist() for p in range(L)]
+
+
+def flip_mean_runs(n: int, L: int) -> float:
+    """The flip's expected runs, its block signs independent and fair: 1 + (B - 1)/2, averaged over phases."""
+    return float(np.mean([1.0 + (len(w) - 1) / 2.0 for w in flip_counts(n, L)]))
+
+
+@lru_cache(maxsize=None)
+def flip_balance(n: int, L: int) -> tuple[np.ndarray, np.ndarray]:
+    """The exact distribution of |mean side| for the L-session flip on n sessions, every session non-tie, phase uniform:
+    (values, cdf). The sum of independent fair signs times the block sizes, by convolution."""
+    acc: dict[int, float] = {}
+    for w in flip_counts(n, L):
+        W = int(sum(w))
+        d = np.zeros(2 * W + 1)
+        d[W] = 1.0
+        for x in w:
+            d = 0.5 * (np.roll(d, int(x)) + np.roll(d, -int(x)))
+        for k in np.flatnonzero(d > 0):
+            v = abs(int(k) - W)
+            acc[v] = acc.get(v, 0.0) + float(d[k]) / L
+    vals = np.array(sorted(acc), dtype=float)
+    return vals / n, np.cumsum([acc[int(v)] for v in vals])
+
+
+@lru_cache(maxsize=None)
+def markov_balance(n: int, D: float) -> tuple[np.ndarray, np.ndarray]:
+    """The exact distribution of |mean side| for a Markov side of mean dwell D on n sessions (a fair first side, a
+    reversal at each boundary with 1/D), by recursion over the count of long sessions: (values, cdf)."""
+    q = 1.0 / D
+    lo_, sh = np.zeros(n + 1), np.zeros(n + 1)
+    lo_[1], sh[0] = 0.5, 0.5
+    for _ in range(n - 1):
+        nl = np.zeros(n + 1)
+        nl[1:] = (1 - q) * lo_[:-1] + q * sh[:-1]
+        sh = (1 - q) * sh + q * lo_
+        lo_ = nl
+    pk = lo_ + sh
+    m = np.abs(2 * np.arange(n + 1) - n)
+    acc: dict[int, float] = {}
+    for k in range(n + 1):
+        acc[int(m[k])] = acc.get(int(m[k]), 0.0) + float(pk[k])
+    vals = np.array(sorted(acc), dtype=float)
+    return vals / n, np.cumsum([acc[int(v)] for v in vals])
+
+
+def quantile(dist, a: float = BALANCE_Q) -> float:
+    vals, cdf = dist
+    return float(vals[min(int(np.searchsorted(cdf, a - 1e-12)), len(vals) - 1)])
+
+
+def exceeds(dist, b: float) -> float:
+    """P(|mean side| > b)."""
+    vals, cdf = dist
+    i = int(np.searchsorted(vals, b + 1e-12)) - 1
+    return max(0.0, float(1.0 - (cdf[i] if i >= 0 else 0.0)))
+
+
+def balance_limit(n: int, lo: int, hi: int) -> float:
+    """b: the largest BALANCE_Q quantile of |mean side| over every flip and Markov model of length lo..hi on n."""
+    return max(max(quantile(flip_balance(n, L)), quantile(markov_balance(n, float(L)))) for L in range(lo, hi + 1))
+
+
+def band_b(n: int, band: str) -> float:
+    return balance_limit(n, *BANDS[band])
+
+
+def admission_b(n: int) -> float:
+    return balance_limit(n, *ADMISSION_RANGE)
+
+
+def markov_runs_out(n: int, D: float, lo_r: int, hi_r: int | None) -> float:
+    """P(R outside [lo_r, hi_r]) for a Markov side of dwell D on n sessions: R - 1 ~ Bin(n - 1, 1/D)."""
+    below = float(stats.binom.cdf(lo_r - 2, n - 1, 1.0 / D))
+    above = 0.0 if hi_r is None else float(stats.binom.sf(hi_r - 1, n - 1, 1.0 / D))
+    return below + above
+
+
+def runs_interval(n: int, band: str) -> tuple[int, int | None, str]:
+    """A declared switching side's runs interval on n sessions, and whether the two-quarters floor is kept: from
+    1 + the RUNS_TAIL quantile of Bin(n - 1, 1/hi), raised to one more than the most runs of a side constant over
+    EXCLUDED_REGIME sessions only where no Markov model of the band then exceeds MAX_IN_BAND_REFUSAL (with the
+    balance limit's share); to 1 + the 1 - RUNS_TAIL quantile of Bin(n - 1, 1/lo) (none for the band below 42)."""
+    lo, hi = BANDS[band]
+    lower = 1 + int(stats.binom.ppf(RUNS_TAIL, n - 1, 1.0 / hi))
+    upper = None if band == "below 42" else 1 + int(stats.binom.ppf(1.0 - RUNS_TAIL, n - 1, 1.0 / lo))
+    floor = max_runs(n, EXCLUDED_REGIME) + 1
+    if floor <= lower:
+        return lower, upper, "not binding"
+    b = band_b(n, band)
+    worst = max(markov_runs_out(n, float(D), floor, upper) + exceeds(markov_balance(n, float(D)), b)
+                for D in range(lo, hi + 1))
+    if worst <= MAX_IN_BAND_REFUSAL:
+        return floor, upper, "kept"
+    return lower, upper, "dropped"
+
+
+def band_interval(n: int, band: str) -> tuple[int, int | None]:
+    lo_r, hi_r, _ = runs_interval(n, band)
+    return lo_r, hi_r
+
+
+def in_band_refusals(n: int, band: str) -> dict[str, float]:
+    """The largest in-band refusal over the band's own models: regime filters (flips at every length in the band;
+    refused only by the balance limit, their decision points matching by construction) and switching sides (Markov at
+    every dwell in the band; a bound: the runs interval's miss plus the balance limit's)."""
+    lo, hi = BANDS[band]
+    b = band_b(n, band)
+    lo_r, hi_r = band_interval(n, band)
+    fl = {L: exceeds(flip_balance(n, L), b) for L in range(lo, hi + 1)}
+    mk = {D: markov_runs_out(n, float(D), lo_r, hi_r) + exceeds(markov_balance(n, float(D)), b)
+          for D in range(lo, hi + 1)}
+    out = {"regime": max(fl.values()), "regime_at": max(fl, key=fl.get),
+           "switching": max(mk.values()), "switching_at": max(mk, key=mk.get)}
+    for L in (lo, hi):
+        out[f"flip{L}"] = fl[L]
+        out[f"markov{L}"] = mk[L]
+    return out
+
+
+def residual_regimes(n: int, band: str) -> tuple[int, int] | None:
+    """For a declared switching side: the regime lengths, from 64 sessions, a side constant over regimes of which can
+    still reach the band's runs floor -- (64, the longest such) or None."""
+    lo_r, _ = band_interval(n, band)
+    longest = max((L for L in range(64, 2 * n) if max_runs(n, L) >= lo_r), default=None)
+    return None if longest is None else (64, longest)
+
+
+def beyond_pass(n: int, band: str, D: float) -> float:
+    """At most this share of Markov sides of dwell D passes the band's switching-side check: its runs interval alone
+    (the balance limit can only refuse more)."""
+    lo_r, hi_r = band_interval(n, band)
+    return 1.0 - markov_runs_out(n, float(D), lo_r, hi_r)
+
+
+def dominated_side(n: int = 657, shorts: int = 8) -> tuple[int, float]:
+    """The red team's F-1 side: long on every session but `shorts` evenly spaced one-session shorts: (R, |mean side|)."""
+    return 2 * shorts + 1, (n - 2 * shorts) / n
+
+
+def edge_reversal_side(regime: int = 219, regimes: int = 3) -> tuple[int, float]:
+    """The red team's F-3 side: regimes of alternating sign, each with one one-session reversal at its second session:
+    (R, |mean side|)."""
+    s = []
+    for k in range(regimes):
+        sign = 1 if k % 2 == 0 else -1
+        block = [sign] * regime
+        block[1] = -sign
+        s += block
+    m = np.array(s)
+    R = 1 + int((m[1:] != m[:-1]).sum())
+    return R, abs(float(m.mean()))
+
+
+def alternating_balance(n: int, L: int) -> np.ndarray:
+    """|mean side| of each of the alternating model's 2L configurations on n sessions."""
+    j = np.arange(n)
+    return np.array([abs(np.where(((j + p) // L) % 2 == 0, 1.0, -1.0).mean()) for p in range(L)] * 2)
+
+
+def admission_cost(n: int = 657) -> dict[str, float]:
+    """The share of each class side model's sides that the added balance limit (b over 1..63) refuses on n sessions,
+    every session non-tie: an upper bound on the share it removes from those 4.4 already admits."""
+    b = admission_b(n)
+    out = {f"flip{L}": exceeds(flip_balance(n, L), b) for L in (1, 5, 21, 42, 55, 63)}
+    out.update({f"markov{D}": exceeds(markov_balance(n, float(D)), b) for D in (30, 50, 80)})
+    for L in (45, 55):
+        out[f"alt{L}"] = float((alternating_balance(n, L) > b + 1e-12).mean())
+    return out
 
 
 # ------------------------------------------------------------------------------------------- the Monte Carlo probe (M1)
@@ -615,13 +789,29 @@ def main() -> None:
     for r in FLAT_RATES:
         print(f"   flat rate {r:.0e}: the floor empties the branch with {flat_none(r):.4f}; the validation passes "
               f"{(1 - r) ** n:.4f}")
-    print("== 2.5 the band check (the re-read's M-D)")
+    print("== 2.5 the band check (M-D; the last read's F-1 to F-3)")
     for nn in (657, 1006):
-        print(f"   n = {nn}: " + "; ".join(f"{b}: {band_interval(nn, b)}" for b in BANDS)
-              + f"; a side constant over {EXCLUDED_REGIME} sessions has at most {max_runs(nn, EXCLUDED_REGIME)} runs")
-    print(f"   Markov dwell 50 on 657 sessions: about {dwell_runs(50):.1f} runs; flip42's sign units at 657: "
-          f"{sorted(set((656 + p) // 42 - p // 42 + 1 for p in range(42)))}; flip55's: "
-          f"{sorted(set((656 + p) // 55 - p // 55 + 1 for p in range(55)))}")
+        for bd in BANDS:
+            lo_r, hi_r, fl = runs_interval(nn, bd)
+            ib = in_band_refusals(nn, bd)
+            print(f"   n = {nn}, {bd}: b = {band_b(nn, bd):.4f}; switching-side runs [{lo_r}, {hi_r}], two-quarters floor {fl}; "
+                  f"worst in-band refusal: regime {ib['regime']:.4f} (L = "
+                  f"{ib['regime_at']}), switching {ib['switching']:.4f} (D = {ib['switching_at']}); edges "
+                  + ", ".join(f"{k} {v:.4f}" for k, v in ib.items() if k[:4] in ("flip", "mark"))
+                  + f"; residual regimes {residual_regimes(nn, bd)}")
+        print(f"   n = {nn}: admission b = {admission_b(nn):.4f}")
+    print("   Markov beyond the class (at most this share passes):")
+    for D in BEYOND_DWELLS:
+        print(f"      dwell {D}: 42 to 50 at 657 {beyond_pass(657, '42 to 50', D):.3f}; 51 to 62 at 657 "
+              f"{beyond_pass(657, '51 to 62', D):.3f}; 51 to 62 at 1006 {beyond_pass(1006, '51 to 62', D):.3f}")
+    R_, M_ = dominated_side()
+    print(f"   the dominated side (8 one-session shorts on 657): R = {R_}, |mean side| = {M_:.4f}")
+    R2, M2 = edge_reversal_side()
+    print(f"   the edge-reversal side (three regimes of 219, one reversal each): R = {R2}, |mean side| = {M2:.4f}")
+    print(f"   runs: Markov dwell 50 about {dwell_runs(50):.1f}; flip-42 {flip_mean_runs(657, 42):.1f}; flip-55 "
+          f"{flip_mean_runs(657, 55):.1f}; blocks at 42 {sorted(set(len(w) for w in flip_counts(657, 42)))}, at 55 "
+          f"{sorted(set(len(w) for w in flip_counts(657, 55)))}")
+    print("   the admission's balance limit removes, at 657:", {k: round(v, 4) for k, v in admission_cost().items()})
     print("== 4.2 / 4.3 the Monte Carlo probe (M1)")
     m = probe_nulls()
     print(f"probed nulls: {PROBE_PER_SIZE} x {len(SIZES)} x {len(PROBE_MODELS)} x {len(VALUES)} = {m}")

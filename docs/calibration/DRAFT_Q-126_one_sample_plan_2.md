@@ -1,12 +1,14 @@
 # Q-126: the one-sample pass line's second calibration -- the plan, declared before anything is built or run
 
-**Status: a draft, fourth text (Q-126d).** It answers the red team's read of the first text (ec6905a;
-`docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173, as corrected by E-176), and the red
-team's re-read of the diff to the third text (4b31805; `docs/reviews/DRAFT_Q-126_v3_2026-11-17.md`) and the lead's
-rulings on that (E-182, which keeps zero tolerance on a corrected basis). Section 10 maps every finding to its
-change. It goes to the red team's re-read of this diff, then is pinned by its LF sha256 under a
-decision row (`tests/test_declarations_fixed.py`'s calibration-plan test reads `docs/calibration/<name>.md` pins). The
-lead may rename it at the pin (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
+**Status: a draft, fifth text (Q-126e).** It answers the red team's read of the first text (ec6905a;
+`docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173, as corrected by E-176); the re-read of
+the diff to the third text (4b31805; `docs/reviews/DRAFT_Q-126_v3_2026-11-17.md`) and the rulings on it (E-182, which
+keeps zero tolerance on a corrected basis); and the last read, of the fourth text (0772de0;
+`docs/reviews/DRAFT_Q-126_v4_2026-11-17.md`), and the rulings on it (E-184: the band check rebuilt, a balance limit
+added to it and to 4.4's admission). Section 10 maps every finding to its change. It goes to the red team's re-read
+of this diff, then is pinned by its LF sha256 under a decision row (`tests/test_declarations_fixed.py`'s
+calibration-plan test reads `docs/calibration/<name>.md` pins). The lead may rename it at the pin
+(`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
 
 **Every choice in this plan that differs from Q-108's pinned plan was made after Q-108's look** -- after its
 calibration (E-127, E-149, E-150), its failed validation (E-159, E-160), the diagnosis (Q-125, E-161) and, for the
@@ -141,11 +143,13 @@ adopted statistic, if any, its C1 may use, **and the band check below holds the 
 | 51 to 62 sessions | the primary, in scope D (4.4 admits almost none: section 5's table) | the primary, in scope Q |
 | 63 sessions or more | no one-sample line | no one-sample line |
 
-- **Why 42 to 50** (corrected; the red team's m1). The band's lower edge is the flips at 42 sessions, of which scope D
-  admits 0.030 (section 5's table) and which carry 16 or 17 sign units on the judged block. Its upper edge is the Markov
-  sides of mean dwell 50: scope D admits 0.606 of them, so about two in five are excluded, and such a side has about
-  14.1 runs on the judged block, between the flips at 55 (12 or 13 sign units) and at 42. The band's upper edge rests
-  on the calibrated class -- the Markov-50 nulls -- and not on a sign-unit count. It is the lead's domain (E-173).
+- **Why 42 to 50** (corrected twice; the red team's m1 and F-2). The band's lower edge is the flips at 42 sessions,
+  of which scope D admits 0.030 (section 5's table); they touch 16 or 17 blocks on the judged block. Its upper edge is
+  the Markov sides of mean dwell 50: scope D admits 0.606 of them, so about two in five are excluded. **Compared in one
+  unit, runs:** a Markov-50 side has about 14.1 runs on the judged block, while a flip at 42 has about 8.8 and a flip
+  at 55 about 7.0, because a flip's independent block signs repeat (blocks: 16 or 17 at 42, 12 or 13 at 55). The
+  band's edges rest on the calibrated class -- the flip-42 and Markov-50 nulls -- not on a count of units. It is the
+  lead's domain (E-173).
 - **A family's k is unchanged** (the red team's n3). A family uses exactly one statistic, fixed before its pin by its
   band, so its family number and its level are those of its own row; the second statistic adds no test to any family.
 - **No switch after a read.** A family in the first or third row whose cell scope D does not admit at stage C is "not
@@ -153,32 +157,70 @@ adopted statistic, if any, its C1 may use, **and the band check below holds the 
   fall to the second statistic: that would choose a statistic after reading the judged sides.
 - **A statistic that FAILS** leaves its rows with no one-sample line. The other statistic is not extended to them.
 
-**The band check (after the look, B-31; the red team's M-D, E-182).** A family's sides are checked against its declared
-band from its sides only, never from an outcome:
-- **The measure** is R, the number of runs of 4.4's non-tie side series (each traded session's net side, ties and
-  empty sessions dropped), on the span read.
-- **The band's interval** on n sessions (`q126_arith.py`'s `band_interval`):
-  - its lower limit is the larger of 1 plus the 2.5 % quantile of Bin(n - 1, 1/hi) -- the runs of a Markov side of
-    mean dwell hi, the band's upper end -- and one more than the most runs a side constant over 126 sessions (two
-    quarters) can have;
-  - its upper limit is 1 plus the 97.5 % quantile of Bin(n - 1, 1/lo), lo the band's lower end; the band "below 42" has
-    none.
-  - On the judged block's 657 sessions: below 42, R >= 10; 42 to 50, 8 <= R <= 25; 51 to 62, 8 <= R <= 21. On a
-    1,006-session choice block: R >= 16; 13 to 35; 10 to 30. A family reading another span takes its own n.
+**The band check (after the look, B-31, B-32, B-33; the red team's M-D, F-1, F-2; E-182, E-184).** A family's sides
+are checked against its declared band from its sides only, never from an outcome. Each of the two kinds a family
+declares (a regime filter or a switching side, as above) is checked by its own model, and both by a balance limit:
+- **The balance limit, for every kind (F-1).** The mean side -- |sum of m_j| over the number of non-tie sessions of
+  4.4's series, on the span read -- is at most b. **The rule:** b is the largest, over every flip and every Markov
+  side whose length (a flip's block, a Markov side's mean dwell) lies in the band, of the 97.5 % quantile of |mean side|
+  on the span's n sessions, every session non-tie. The flips are exact (independent fair block signs, phase uniform,
+  by convolution) and the Markov sides exact (by recursion over the count of long sessions), so no seed is drawn.
+  On the judged block's 657 sessions b is 0.5434 below 42, 0.5982 for 42 to 50 and 0.6651 for 51 to 62; on a
+  1,006-session choice block 0.4473, 0.5030 and 0.5467 (`q126_arith.py`'s `band_b`). It refuses the red team's
+  dominated side -- long on every session but 8 evenly spaced one-session shorts, so 17 runs and a mean side of
+  0.9756 -- in every band, and every side long or short on most of the span.
+- **A regime filter** (a declared regime length L, its regimes' decision points written in its pinned text): every
+  change of the non-tie series falls on a declared decision point (a change between two non-tie sessions has a
+  decision point between them), and the number of regimes the span touches is one that a regime length in the band
+  can give at some phase. R is not used: a filter whose independent regime signs repeat has half as many runs as
+  regimes. A regime filter in its band therefore passes the decision-point test by construction, and is refused only
+  by the balance limit.
+- **A switching side** (a declared mean dwell D): R, the runs of 4.4's non-tie series, lies in the band's runs
+  interval on n sessions (`band_interval`):
+  - its lower limit is 1 plus the 1.25 % quantile of Bin(n - 1, 1/hi), hi the band's upper end;
+  - it is raised to one more than the most runs of a side constant over 126 sessions (two quarters) **only where that
+    floor binds and keeps every Markov side of the band within the refusal rule below**;
+  - its upper limit is 1 plus the 98.75 % quantile of Bin(n - 1, 1/lo), lo the band's lower end (none below 42).
+  - On the judged block: below 42, R >= 9; 42 to 50, 8 <= R <= 26 (the floor kept); 51 to 62, 5 <= R <= 22 (the floor
+    dropped: it would refuse the band's Markov-62 sides too often). On a 1,006-session choice block: R >= 15; 12 to 36;
+    10 to 31 (the floor kept). A family reading another span takes its own n.
+- **The refusal rule (E-184).** No model of the band's own -- a flip at any length in the band, read as a regime filter,
+  or a Markov side at any dwell in the band -- is refused with more than 0.05. `q126_arith.py` prints the largest
+  in-band refusal of each kind (a bound for the switching sides: the runs interval's miss plus the balance limit's):
+  - on the judged block: regime filters 0.0247, 0.0234 and 0.0216 in the three bands; switching sides 0.0318, 0.0462
+    and 0.0287;
+  - on a 1,006-session choice block: regime filters 0.0249, 0.0240 and 0.0233; switching sides 0.0293, 0.0293 and
+    0.0409;
+  - at the bands' edges on the judged block: the flips at 42 and 50, 0.0186 and 0.0234; at 51 and 62, 0.0177 and
+    0.0209; the Markov sides at 42 and 50, 0.0261 and 0.0462; at 51 and 62, 0.0235 and 0.0287.
 - **Where it runs:**
   - on the choice block, at stage A, before the family's pin, on the span stage A reads;
   - on the judged block, inside stage C, before any outcome is read -- the same read and purpose as 4.4's judged check.
-- **A mismatch is "not claimed"**, never a switch of band or statistic.
-- **What it excludes and what it does not.** A side constant over two quarters or more has at most 7 runs on the judged
-  block, so it fails every band. A Markov side inside its band fails the check with at most about 5 % (2.5 % in each
-  tail at the band's ends). Sides constant over regimes of 64 to 125 sessions cannot be told by R from the class's
-  flips at 63 and Markov sides of dwell 80; those are the calibrated class's longest, and that is the check's residual.
-  The bands' intervals overlap, so a family whose sides fit two bands still declares one; it does so before its pin,
-  from sides only.
+- **A mismatch.** **On the judged block a mismatch is "not claimed"**, never a switch of band, kind or statistic. On the
+  choice block, before its pin, a family that misses its declared band may re-declare its band or kind, from its sides
+  only; the re-declaration and the choice-block figures are recorded in its pinning row (the red team's m-3, E-184).
+  "Not claimed" binds from the pin.
+- **The residual: what the check does not exclude (F-3).** Each figure is printed by `q126_arith.py`:
+  - **Fixed regimes, for a declared switching side.** A side constant over long regimes can still reach the band's runs
+    floor when its regimes are at most: on the judged block 93 sessions below 42, 109 for 42 to 50 and 218 for 51 to
+    62; on a 1,006-session choice block 77, 100 and 125. So regimes from 64 sessions up to those lengths cannot be told
+    by R from the class (64 to 109 on the judged block and 64 to 125 on the choice block where the two-quarters floor
+    is kept). A declared regime filter cannot hide them: its decision points fix its regime length.
+  - **Markov sides beyond the class's longest dwell, 80.** At most this share of them passes, by the runs interval
+    alone: on the judged block, for 42 to 50, 0.712 at dwell 80, 0.483 at 100, 0.274 at 125, 0.152 at 150 and 0.049 at
+    200; for 51 to 62, 0.964, 0.893, 0.769, 0.637 and 0.415; on the choice block, for 51 to 62, 0.880, 0.674, 0.413,
+    0.232 and 0.069.
+  - **Dominated sides are now closed** by the balance limit.
+  - **Long regimes with short reversals at their edges** -- for example three regimes of 219 sessions, one one-session
+    reversal each, so 9 runs and a balanced mean side -- pass a switching side's check in 42 to 50 on the judged
+    block. A regime filter's decision points exclude them.
+  - **The second column (the red team's n-4, a reading).** When the scope-Q branch is the primary, every band uses the
+    same statistic, so the check reduces to its loosest band's limits. In the first column the band check binds only
+    the second statistic's row; 4.4's admission dominates the other two.
+  - The bands' intervals overlap, so a family whose sides fit two bands still declares one; it does so before its pin,
+    from sides only.
 
 ---
-
-## 3. The nulls---
 
 ## 3. The nulls
 
@@ -224,7 +266,8 @@ persistent model).
 **The floor: zero tolerance (after the look, B-21; the lead's rulings E-176, reversing E-173's allowance, and
 E-182).** A candidate is refused if **any** of the 3,300 subsets is bad (c = 0).
 - At r_V the floor sees a bad subset, and refuses, with probability 0.9514. Zero bad subsets bound the pooled rate, at
-  95 %, by 3/3,300 = 9.0909e-04, at which the validation's exact part passes with probability 0.9007.
+  95 %, by about 3/3,300 = 9.0909e-04 (the rule of three's approximation of the exact 9.0739e-04 below; the red
+  team's m-2), at which the validation's exact part passes with probability 0.9007.
 - **Per size** (the red team's m5): zero bad subsets of one size's 660 bound that size's rate at 4.5287e-03. The pooled
   figures are the validation's yardstick, which draws every size; they are not a single design's, which has one size.
   Both real failures fell at 5,000 trades.
@@ -243,7 +286,10 @@ These are suprema over every configuration of rates, not chances.
 E-182, correcting E-176's basis).**
 - **It certifies far more than the validation can.** After zero bad subsets the 95 % upper limit on the pooled
   bad-subset rate is 9.0739e-04 from the calibration's 3,300 subsets, and 2.5713e-02 from the validation's 115. The
-  validation alone could adopt a statistic with a rare over-rejecting corner that it never draws.
+  validation alone could adopt a statistic with a rare over-rejecting corner that it never draws. (A reading, the red
+  team's n-3: both limits are per candidate, before the choice -- after it, the guarantee is the nested bounds above --
+  and both are for subsets of P-16's judged offers at the five sizes; a family's own trades are covered only as far
+  as the class represents them.)
 - **Such a statistic would pass families falsely.** A one-sample line whose size fails on a rare configuration of
   trades rejects, for the family that has that configuration, at more than its level. That is worse than having no
   line, where families decide by the two-sample forms (section 7).
@@ -640,15 +686,33 @@ rate r. P_m is the chance that candidate m is eligible at the calibration.
   bad-subset rate of 1e-03 with probability 0.1087; the calibration's 3,300 subsets carry the exact part's assurance
   (3.2's two upper limits).
 
-### 4.4 Scope D: the admission and the procedure (Q-108's 4.4, unchanged)
+### 4.4 Scope D: the admission and the procedure (Q-108's 4.4, with one condition added)
 
 The admission's three conditions (the family's E-035 (6) declaration of side persistence below a quarter; the runs
 check on the choice block; the same check on the judged block inside stage C, before any outcome), the check itself
 (the non-tie series, R runs, E = (sum of run lengths)^2 / (sum of squared run lengths), R >= 13 on the judged block and
 floor((n_c - 1)/63) + 3 on the span stage A reads, E >= 4, a single side never admitted), its calibration as a
 procedure in every replication and every exact cell, and what happens at stage C are Q-108's 4.4, word for word in
-substance. The built forms are `lift_one_sample.admission`, `runs_and_effective` and `exact_flip`'s scope D, imported.
-Section 2.5 decides which families use scope D at all.
+substance. Section 2.5 decides which families use scope D at all.
+
+**Added: the balance limit (after the look, B-32; the red team's F-1, E-184), before any run.** The admission also
+requires the mean side of the non-tie series to be at most b_D on the span read, b_D being 2.5's rule over every flip
+and Markov side of length 1 to 63 sessions (scope D's domain is persistence below a quarter): 0.6651 on the judged
+block and 0.5467 on a 1,006-session choice block (`q126_arith.py`'s `admission_b`).
+- **Why.** E >= 4 keeps out a dominated side only when its reversals cluster. Spread evenly, they cut the dominant run
+  into many medium runs of one sign, and E grows with R: the red team's side, long on all but 8 sessions, has R = 17 and
+  E = 9.02 and was admitted. It is the quarter-persistent, long-leaning kind scope D exists to exclude, and no class
+  null resembles it.
+- **Its coverage cost on the class** (the share of each side model's sides that the limit refuses on the judged
+  block, every session non-tie; an upper bound on the share it removes from those already admitted; labelled after the
+  look, B-32): flips at 1 and 5, 0.0000; at 21, 0.0001; at 42, 0.0051; at 55, 0.0119; at 63, 0.0219; Markov at
+  dwell 30, 0.0007; at 50, 0.0098; at 80, 0.0435; the alternating models, 0.0000. On a sparse subset the non-tie series
+  is shorter and |mean side| more variable, so the share refused there is larger; the calibration measures the
+  procedure as declared, the limit included.
+- **It changes the procedure calibrated,** so it is declared before the calibration run and never added after. The
+  built forms are `lift_one_sample.admission`, `runs_and_effective` and `exact_flip`'s scope D, imported, with the
+  balance limit applied beside them in the new module (6.1): per exact cell, the mean side is the sum over flip blocks
+  of the block's sign times its traded sessions, over the traded sessions.
 
 ### 4.5 The rejecting cells (after the look, B-10)
 
@@ -724,7 +788,8 @@ the in-rule fixed and subset nulls; the admission reads sides only, so it is the
 - sides dominated by one run (E >= 4), long-only and short-only designs;
 - sparse designs, with fewer than about 25 to 30 non-tie traded sessions on the judged block, and designs balanced in
   most sessions;
-- any family that does not make the E-035 (6) declaration.
+- any family that does not make the E-035 (6) declaration;
+- sides whose mean side exceeds b_D, the balance limit added to 4.4 (its share of each class model is in 4.4).
 
 **Which of these exclusions no statistic could recover (corrected; the red team's M3, E-173).**
 - **Persistence of about 55 sessions or more, and long Markov dwells** (80 sessions: about eight switches on the judged
@@ -769,8 +834,11 @@ the in-rule fixed and subset nulls; the admission reads sides only, so it is the
   refused, an unbounded loop printed; every imported Q-108 construction called without a seed map refused; **the full
   entropy of every null** checked against 4.1's indices, the core's exact nulls included (n4); the manifest's seed map
   compared with 4.1's table parsed from the pinned plan, its sha256 checked (n5);
-- the band check (2.5): its intervals against `band_interval` at 657 and 1,006 sessions; a side constant over 126
-  sessions refused in every band; a mismatch "not claimed";
+- the band check (2.5): the balance limit and the runs intervals against `band_b` and `band_interval` at 657 and
+  1,006 sessions; the regime filter's decision-point test on planted schedules; the red team's dominated side refused;
+  a judged-block mismatch "not claimed";
+- the admission's balance limit (4.4): `admission_b` at 657 and the span's n; the exact cells' mean side against a
+  direct count on hand-built cases; the procedure's counts with and without it on a planted dominated side;
 - every test Q-108's build listed (its 6.1) that the reused functions carry, re-run.
 
 **Reads,** exactly as Q-108's 6.1: P-16's pairs through `scripts/q16_p16_pairs.py`, the calendar through
@@ -801,8 +869,10 @@ run.
   provenance assertion, a count refused -- is never rerun; it is diagnosed under the failure protocol.
 - **Three further rules (the red team's m2).**
   - **A crash from a code defect** needs a new commit, and the choice refuses parts of another commit, so every part
-    reruns at the fixed commit. Each part that had finished must then reproduce its earlier output **byte for byte**,
-    or the run stops. The fix's diff is confined to the defect, and the auditor reads it.
+    reruns at the fixed commit. Each part that had finished must then reproduce its earlier output byte for byte:
+    **each data file it wrote has the same sha256 as before**, and its manifests differ only in their commit, time and
+    host fields, which the auditor lists (the red team's m-1). Otherwise the run stops. The fix's diff is confined to
+    the defect, and the auditor reads it.
   - **All or none.** Every part writes all its output or none: a partial work folder is deleted and counts as no
     output. The choice writes all its result files or none; a partial write to `results/` is a failed run, diagnosed.
   - **The environment.** The choice also refuses a part whose recorded package versions (in its manifest) differ from
@@ -884,8 +954,9 @@ crash is rerun only as 6.2 says.
 - **The drift sizes are invented** (Q-125, section 3.2); they are not estimates of any market's.
 - **The residual risk** is the Monte Carlo lottery outside the probed tail: the probe ranks subsets by their exact
   sizes, and a subset bad only on the Monte Carlo side, with an unremarkable exact size, is not probed. C6's tail is
-  probed by proxy only, its ranking statistic not dominating it (the red team's n1). The band check's residual is in
-  2.5.
+  probed by proxy only, its ranking statistic not dominating it (the red team's n1). The band check's residual --
+  fixed regimes a switching side's runs cannot separate, Markov sides beyond dwell 80, long regimes with edge
+  reversals -- is in 2.5; dominated sides are closed by the balance limit, in 2.5 and 4.4.
 
 ---
 
@@ -933,7 +1004,7 @@ crash is rerun only as 6.2 says.
 | finding | change (and where it now stands) |
 |---|---|
 | M-A (T-0 after Q-128) | T-0 reads the look-ahead file at ec6905a by `git show`; 4.1's citation and its sentence on T-0 say so; T-0 re-run on the branch with master merged (4.1) |
-| M-B (the probe is stricter than the validation) | the "no stricter" sentences struck; condition 4 kept on the floor's basis; its refusal at the validation's 0.95 tail rate stated and held by T-0 in place of the assertion that could not fail (3.2, 4.3; B-29) |
+| M-B (the probe is stricter than the validation) | the "no stricter" sentences struck; condition 4 kept on the floor's basis; its refusal at the tail rate where the validation passes a candidate 19 times in 20 stated and held by T-0 in place of the assertion that could not fail (3.2, 4.3; B-29) |
 | M-C (E-176's basis) | zero tolerance kept on E-182's basis, the floor as the line's main guarantee of size, with both upper limits; E-176's two claims withdrawn; "bound" where a figure is a worst case; the floor's chance of emptying a branch a declared reading, on the red team's profiles and a flat rate; the two-sample experiment not run (3.2, 4.2, 4.3, 9; B-21) |
 | M-D (the declared persistence unchecked) | the outcome-free band check on R, on the choice block before the pin and on the judged block in stage C, a mismatch "not claimed"; a family's k unchanged (2.5, 6.1; B-31) |
 | m1 | 2.5's basis corrected: the dwell-50 admitted share and run count, section 5's table cited (2.5) |
@@ -944,6 +1015,21 @@ crash is rerun only as 6.2 says.
 | n2 | the pooling's c = 0 scope stated (3.2) |
 | n3 | a family's k unchanged, in 2.5 |
 | n4, n5 | the build's requirements: the full entropy checked, the seed map against the pinned file (4.1, 6.1) |
+
+### 10.3 The last read (of the fourth text, 0772de0; `docs/reviews/DRAFT_Q-126_v4_2026-11-17.md`; E-184)
+
+| finding | change (and where it now stands) |
+|---|---|
+| F-1 (R counts switches, not persistence) | a balance limit on the mean side, by a declared quantile rule over the band's class models, in the band check and, before any run, in 4.4's admission; its coverage cost on the class stated; the red team's experiment not run (2.5, 4.4, 5, 6.1; B-32) |
+| F-2 (the band check's intervals) | each declared kind checked by its own model: a regime filter by its decision points and the balance limit, a switching side by the Markov runs interval and the balance limit; the in-band refusal of the band's own models printed and held, at most the rule's; the unit comparison corrected; the unsupported figure replaced (2.5; B-33) |
+| F-3 (the residual) | restated from printed figures: fixed regimes per band and span, Markov sides beyond dwell 80, dominated sides closed, edge reversals (2.5, 8) |
+| m-1 | "byte for byte" is each data file's sha256 (6.2) |
+| m-2 | the rule of three's figure labelled as its approximation (3.2) |
+| m-3 | a choice-block mismatch may be re-declared before the pin, recorded in the pinning row (2.5) |
+| m-4 | the stray heading removed |
+| n-1 | T-0 names the search's commit in full |
+| n-2 | T-0's check that sections 9 and 10 cite widened to scientific notation, short decimals and percentages |
+| n-3, n-4 | readings, in 3.2 and 2.5 |
 
 ---
 
@@ -1005,4 +1091,6 @@ real subset's, with every candidate in both scopes.
 | 28 | the seed-provenance assertion | 2.4, 4.1 | the red team's M4; the lead's ruling (E-173) |
 | 29 | the probed nulls judged by condition 4 only, not in P_MC or the point-rate floor; the probe strict on the floor's basis | 3.2, 4.3 | P_MC models the core nulls' validation counterparts and the probe is a tail search; E-182 (the red team's M-B) |
 | 30 | each statistic judged on its own verdict; neither extended to the other's rows | 4.3, 7 | E-094 (3) (a) applies the criterion per statistic; no switch after a read |
-| 31 | the band check: R of the non-tie side series inside the declared band's interval (central 95 % Markov runs at the band's ends, and no side constant over two quarters), on the choice block before the pin and on the judged block in stage C, a mismatch "not claimed" | 2.5, 6.1 | the red team's M-D; E-182 |
+| 31 | the band check, from sides only, on the choice block before the pin and on the judged block in stage C; a judged mismatch "not claimed"; a choice-block mismatch re-declared before the pin, recorded | 2.5, 6.1 | the red team's M-D and m-3; E-182, E-184 |
+| 32 | the balance limit (the mean side at most b, the largest 97.5 % quantile over the band's flip and Markov models), in the band check and in 4.4's admission | 2.5, 4.4, 5 | the red team's F-1; E-184, adopted by design, the red team's experiment not run |
+| 33 | each declared kind checked by its own model (a regime filter by its decision points, a switching side by the Markov runs interval with 1.25 % tails and the two-quarters floor only where it keeps the rule); no in-band model refused with more than 0.05 | 2.5 | the red team's F-2; E-184 |

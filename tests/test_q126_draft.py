@@ -44,7 +44,7 @@ Q125_NOTE = ROOT / "docs" / "research" / "Q-125_validation_failure_2026-11-17.md
 LOOKAHEAD = "tests/test_features_lookahead.py"
 #: the search's commit (the first text): the look-ahead file's derived range is read there, before Q-128 (E-178)
 #: replaced it by SeedSequence children (the red team's M-A)
-LOOKAHEAD_COMMIT = "ec6905a"
+LOOKAHEAD_COMMIT = "ec6905a5023266765964e3295c9df99f594b6c3b"
 PIN_TEST = ROOT / "tests" / "test_declarations_fixed.py"
 
 CAL_BLOCK = tuple(range(20263010, 20263019 + 1))
@@ -187,7 +187,7 @@ def check_appendix_b(body: str, name: str) -> None:
     app = section(body, "## Appendix B")
     rows = B_ROW.findall(app)
     nums = [int(r[0]) for r in rows]
-    assert nums == list(range(1, 32)), f"Appendix B must number 31 choices 1..31: {nums}"
+    assert nums == list(range(1, 34)), f"Appendix B must number 33 choices 1..33: {nums}"
     for n, choice, where, why in rows:
         assert choice.strip() and where.strip() and why.strip(), f"B-{n} lacks its text, its place or its basis"
     before = body[:body.index("## Appendix B")]
@@ -238,8 +238,8 @@ def check_floor(body: str, name: str) -> None:
     s32 = flat(section(body, "### 3.2"))
     for s in ("A candidate is refused if **any** of the 3,300 subsets is bad (c = 0).",
               f"At r_V the floor sees a bad subset, and refuses, with probability {A.detection(N, rV):.4f}",
-              f"by 3/{N:,} = {3 / N:.4e}, at which the validation's exact part passes with probability "
-              f"{(1 - 3 / N) ** n:.4f}",
+              f"by about 3/{N:,} = {3 / N:.4e} (the rule of three's approximation of the exact {cal0:.4e}",
+              f"at which the validation's exact part passes with probability {(1 - 3 / N) ** n:.4f}",
               f"bound that size's rate at {A.cp_upper(0, A.CAL_SUBSETS_PER_SIZE):.4e}",
               f"{b0['one']:.4f} for one candidate", f"{b0['nested']:.4f} for a branch nested in m",
               f"**{b0['primary']:.4f} for the primary**", f"{b0['nested']:.4f} when the scope-Q branch is the primary",
@@ -303,38 +303,101 @@ def check_floor(body: str, name: str) -> None:
 
 
 def check_band(body: str, name: str) -> None:
-    """2.5's band check: its intervals at 657 and 1,006 sessions, its exclusion arithmetic and 2.5's corrected basis."""
+    """2.5's band check (E-182, E-184): the balance limit per band and span, the switching side's runs intervals and the
+    floor's status, the refusal rule held for every in-band model, the residual, and 2.5's corrected basis."""
     A = arith()
     s25 = flat(section(body, "### 2.5"))
-    i657 = {b: A.band_interval(657, b) for b in A.BANDS}
-    i1006 = {b: A.band_interval(1006, b) for b in A.BANDS}
-    assert i657["below 42"][1] is None and i1006["below 42"][1] is None
-    txt657 = (f"On the judged block's 657 sessions: below 42, R >= {i657['below 42'][0]}; 42 to 50, "
-              f"{i657['42 to 50'][0]} <= R <= {i657['42 to 50'][1]}; 51 to 62, {i657['51 to 62'][0]} <= R <= "
-              f"{i657['51 to 62'][1]}")
-    txt1006 = (f"On a 1,006-session choice block: R >= {i1006['below 42'][0]}; {i1006['42 to 50'][0]} to "
-               f"{i1006['42 to 50'][1]}; {i1006['51 to 62'][0]} to {i1006['51 to 62'][1]}")
-    assert txt657 in s25 and txt1006 in s25, "2.5 lacks the band intervals"
-    mr = A.max_runs(657, A.EXCLUDED_REGIME)
-    assert all(lo > mr for lo, _ in i657.values()), "a side constant over two quarters passes a band"
-    assert f"has at most {mr} runs on the judged block, so it fails every band" in s25
-    assert f"{100 * A.BAND_TAIL:g} % in each tail" in s25 and f"the {100 * A.BAND_TAIL:g} % quantile" in s25
+    bands = list(A.BANDS)
+    b657 = [A.band_b(657, b) for b in bands]
+    b1006 = [A.band_b(1006, b) for b in bands]
+    assert (f"b is {b657[0]:.4f} below 42, {b657[1]:.4f} for 42 to 50 and {b657[2]:.4f} for 51 to 62; on a 1,006-session "
+            f"choice block {b1006[0]:.4f}, {b1006[1]:.4f} and {b1006[2]:.4f}") in s25, "2.5 lacks the balance limits"
+    assert f"the {100 * A.BALANCE_Q:g} % quantile of |mean side|" in s25
+    R_, M_ = A.dominated_side()
+    assert f"so {R_} runs and a mean side of {M_:.4f}" in s25 and M_ > max(b657), "the dominated side is not refused"
+    i = {n: {b: A.runs_interval(n, b) for b in bands} for n in (657, 1006)}
+    j = i[657]
+    assert (f"On the judged block: below 42, R >= {j['below 42'][0]}; 42 to 50, {j['42 to 50'][0]} <= R <= "
+            f"{j['42 to 50'][1]} (the floor {j['42 to 50'][2]}); 51 to 62, {j['51 to 62'][0]} <= R <= {j['51 to 62'][1]} "
+            f"(the floor {j['51 to 62'][2]}:") in s25, "2.5 lacks the judged runs intervals"
+    c = i[1006]
+    assert (f"On a 1,006-session choice block: R >= {c['below 42'][0]}; {c['42 to 50'][0]} to {c['42 to 50'][1]}; "
+            f"{c['51 to 62'][0]} to {c['51 to 62'][1]} (the floor {c['51 to 62'][2]})") in s25
+    assert j["below 42"][2] == "not binding" and c["42 to 50"][2] == "not binding"
+    assert f"1 plus the {100 * A.RUNS_TAIL:g} % quantile" in s25 and f"the {100 * (1 - A.RUNS_TAIL):g} % quantile" in s25
+    ib = {n: {b: A.in_band_refusals(n, b) for b in bands} for n in (657, 1006)}
+    for n in (657, 1006):
+        for b in bands:
+            assert ib[n][b]["regime"] <= A.MAX_IN_BAND_REFUSAL and ib[n][b]["switching"] <= A.MAX_IN_BAND_REFUSAL, \
+                f"the refusal rule fails at n = {n}, {b}"
+    assert f"is refused with more than {A.MAX_IN_BAND_REFUSAL:.2f}" in s25
+    for n, lab in ((657, "on the judged block"), (1006, "on a 1,006-session choice block")):
+        r = [ib[n][b]["regime"] for b in bands]
+        s = [ib[n][b]["switching"] for b in bands]
+        assert (f"{lab}: regime filters {r[0]:.4f}, {r[1]:.4f} and {r[2]:.4f} in the three bands; switching sides "
+                if n == 657 else f"{lab}: regime filters {r[0]:.4f}, {r[1]:.4f} and {r[2]:.4f}; switching sides ") \
+            + f"{s[0]:.4f}, {s[1]:.4f}" in s25, f"2.5 lacks the worst in-band refusals at {n}"
+        assert f"{s[1]:.4f} and {s[2]:.4f}" in s25
+    e = ib[657]
+    assert (f"the flips at 42 and 50, {e['42 to 50']['flip42']:.4f} and {e['42 to 50']['flip50']:.4f}; at 51 and 62, "
+            f"{e['51 to 62']['flip51']:.4f} and {e['51 to 62']['flip62']:.4f}; the Markov sides at 42 and 50, "
+            f"{e['42 to 50']['markov42']:.4f} and {e['42 to 50']['markov50']:.4f}; at 51 and 62, "
+            f"{e['51 to 62']['markov51']:.4f} and {e['51 to 62']['markov62']:.4f}") in s25, "2.5 lacks the edge refusals"
+    rr = {n: [A.residual_regimes(n, b)[1] for b in bands] for n in (657, 1006)}
+    assert (f"on the judged block {rr[657][0]} sessions below 42, {rr[657][1]} for 42 to 50 and {rr[657][2]} for 51 to "
+            f"62; on a 1,006-session choice block {rr[1006][0]}, {rr[1006][1]} and {rr[1006][2]}") in s25
+    assert f"(64 to {rr[657][1]} on the judged block and 64 to {rr[1006][2]} on the choice block" in s25
+    by = {(n, b): [A.beyond_pass(n, b, D) for D in A.BEYOND_DWELLS] for n, b in
+          ((657, "42 to 50"), (657, "51 to 62"), (1006, "51 to 62"))}
+    v = by[(657, "42 to 50")]
+    assert (f"for 42 to 50, {v[0]:.3f} at dwell 80, {v[1]:.3f} at 100, {v[2]:.3f} at 125, {v[3]:.3f} at 150 and "
+            f"{v[4]:.3f} at 200") in s25
+    for key in ((657, "51 to 62"), (1006, "51 to 62")):
+        v = by[key]
+        assert f"{v[0]:.3f}, {v[1]:.3f}, {v[2]:.3f}, {v[3]:.3f} and {v[4]:.3f}" in s25, f"2.5 lacks {key}'s pass rates"
+    R2, M2 = A.edge_reversal_side()
+    lo, hi = A.band_interval(657, "42 to 50")
+    assert lo <= R2 <= hi and M2 <= b657[1], "the edge-reversal side should pass the switching check (the residual)"
+    assert f"so {R2} runs and a balanced mean side" in s25
+    assert f"has about {A.dwell_runs(50):.1f} runs on the judged block, while a flip at 42 has about " \
+           f"{A.flip_mean_runs(657, 42):.1f} and a flip at 55 about {A.flip_mean_runs(657, 55):.1f}" in s25
+    assert "(blocks: 16 or 17 at 42, 12 or 13 at 55)" in s25
     mean, _, _ = cover()
     assert f"scope D admits {mean['flip42']:.3f}" in s25 and f"scope D admits {mean['markov50']:.3f}" in s25
     assert round(5 * (1 - mean["markov50"])) == 2 and "about two in five are excluded" in s25
-    assert f"about {A.dwell_runs(50):.1f} runs on the judged block" in s25
-    assert "16 or 17 sign units" in s25 and "(12 or 13 sign units)" in s25
-    assert "section 5's table" in s25 and "3.2's table" not in s25
+    assert "section 5's table" in s25 and "3.2's table" not in s25 and "at most about 5 %" not in s25
     assert "**A family's k is unchanged**" in s25
-    assert "**A mismatch is \"not claimed\"**" in s25
+    assert "**On the judged block a mismatch is \"not claimed\"**" in s25
+    assert "may re-declare its band or kind, from its sides only" in s25
+
+
+def check_admission(body: str, name: str) -> None:
+    """4.4's added balance limit: b_D at 657 and 1,006, and its coverage cost on the class (E-184)."""
+    A = arith()
+    s44 = flat(section(body, "### 4.4"))
+    assert A.ADMISSION_RANGE == (1, 63)
+    assert (f"{A.admission_b(657):.4f} on the judged block and {A.admission_b(1006):.4f} on a 1,006-session choice "
+            f"block") in s44
+    R_, M_ = A.dominated_side()
+    assert M_ > A.admission_b(657) and f"has R = {R_}" in s44
+    cc = A.admission_cost(657)
+    assert all(round(cc[k], 4) == 0.0 for k in ("flip1", "flip5", "alt45", "alt55"))
+    txt = (f"flips at 1 and 5, {cc['flip1']:.4f}; at 21, {cc['flip21']:.4f}; at 42, {cc['flip42']:.4f}; at 55, "
+           f"{cc['flip55']:.4f}; at 63, {cc['flip63']:.4f}; Markov at dwell 30, {cc['markov30']:.4f}; at 50, "
+           f"{cc['markov50']:.4f}; at 80, {cc['markov80']:.4f}; the alternating models, {cc['alt45']:.4f}")
+    assert txt in s44, f"4.4 lacks the coverage cost {txt!r}"
+    assert "(Q-108's 4.4, with one condition added)" in body
 
 
 def check_cites_only(body: str, name: str) -> None:
-    """Sections 9 and 10 cite figures; they carry none of their own (the red team's m3)."""
+    """Sections 9 and 10 cite figures; they carry none of their own (the red team's m3 and n-2): no 0.x figure, no
+    figure with two or more decimals, no scientific notation, no percentage and no hours."""
+    pats = (r"\b0\.\d+", r"\b\d+\.\d{2,}\b", r"\d(?:\.\d+)?e-\d", r"\d ?%", r"\b\d+(?:\.\d+)? ?h\b")
     for head in ("## 9.", "## 10."):
         s = section(body, head)
-        hits = re.findall(r"\b\d\.\d{3,}\b", s)
+        hits = [h for pat in pats for h in re.findall(pat, s)]
         assert not hits, f"{head} carries figures {hits}: cite the section that holds them"
+    assert body.count("## 3. The nulls") == 1, "a duplicated heading"
 
 
 def check_probe(body: str, name: str) -> None:
@@ -474,7 +537,7 @@ def check_coverage(body: str, name: str) -> None:
 
 
 CHECKS = (check_pin_form, check_seed_tables, check_no_foreign_seed, check_grid, check_appendix_b, check_sizing,
-          check_floor, check_band, check_cites_only, check_probe, check_counts, check_criterion_power, check_power_costs,
+          check_floor, check_band, check_admission, check_cites_only, check_probe, check_counts, check_criterion_power, check_power_costs,
           check_coverage, check_costs)
 
 
@@ -530,7 +593,16 @@ def test_the_checks_can_fail():
     with pytest.raises(AssertionError):
         check_probe(body.replace("= 0.758**", "= 0.700**"), p.name)
     with pytest.raises(AssertionError):
-        check_band(body.replace("8 <= R <= 25", "8 <= R <= 30"), p.name)
+        check_band(body.replace("8 <= R <= 26", "8 <= R <= 30"), p.name)
+    with pytest.raises(AssertionError):
+        check_band(body.replace("0.5982 for 42 to 50", "0.6500 for 42 to 50"), p.name)
+    with pytest.raises(AssertionError):
+        check_band(body.replace("switching sides 0.0318, 0.0462", "switching sides 0.0318, 0.0300"), p.name)
+    with pytest.raises(AssertionError):
+        check_admission(body.replace("at 63, 0.0219", "at 63, 0.0100"), p.name)
+    with pytest.raises(AssertionError):
+        check_cites_only(body.replace("## 10. The red team's findings", "## 10. The red team's findings 9.07e-04"),
+                         p.name)
     with pytest.raises(AssertionError):
         check_cites_only(body.replace("## 9. What this plan does not do", "## 9. What this plan does not do 0.3206"),
                          p.name)
@@ -601,7 +673,8 @@ def test_the_lookahead_range_ends_below_the_calibration_block():
     gap = CAL_BLOCK[0] - last
     body = flat(read(plan()))
     assert f"last value is {gap} below the calibration block's first seed" in body
-    assert f"At the search's commit ({LOOKAHEAD_COMMIT})" in body and f"commit, {LOOKAHEAD_COMMIT}, read by `git show`" \
+    short = LOOKAHEAD_COMMIT[:7]
+    assert f"At the search's commit ({short})" in body and f"commit, {short}, read by `git show`" \
         in body
 
 
