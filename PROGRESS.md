@@ -139,3 +139,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-137 to E-139: Q-93, Q-89 and RD-02's two-worker check hold; every shared identity now holds at the merged code. |
 | 2026-11-17 | lead | E-140: F-03's code final for A0 and run 1; A0 queued after the calibration; three minors before run 2. |
 | 2026-11-17 | lead | E-141: a second state-dependent test fixed; the held records commit. |
+| 2026-11-17 | lead | E-142: status questions never pause the workflow (the operator); the heavy queue's part 7 (A0 first after the calibration). |
