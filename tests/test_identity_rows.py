@@ -179,29 +179,64 @@ def test_waited_must_name_files_and_an_id():
         IR.Waited("q 7", "x", ("a.py",))
 
 
-# ------------------------------------------------------------------------------------------------ E-113's covered paths
+# ------------------------------------------------------------------------------------------------ the covers (Q-111)
 
 
-def test_the_import_closure_follows_every_repository_import(tmp_path):
-    (tmp_path / "extended").mkdir()
-    (tmp_path / "identity").mkdir()
-    (tmp_path / "extended" / "__init__.py").write_text("", encoding="utf-8")
-    (tmp_path / "extended" / "a.py").write_text("from extended import b\n", encoding="utf-8")
-    (tmp_path / "extended" / "b.py").write_text("def f():\n    from extended.c import x\n", encoding="utf-8")
-    (tmp_path / "extended" / "c.py").write_text("x = 1\nimport numpy\n", encoding="utf-8")
-    (tmp_path / "extended" / "unused.py").write_text("", encoding="utf-8")
-    (tmp_path / "identity" / "helper.py").write_text("from extended import a\n", encoding="utf-8")
-    (tmp_path / "identity" / "ident.py").write_text("import helper\nimport user_journey\nfrom extended import "
-                                                    "use_vendored_stage2\n", encoding="utf-8")
-    got = IR.import_closure("identity/ident.py", tmp_path)
-    assert got == ("extended/__init__.py", "extended/a.py", "extended/b.py", "extended/c.py", "identity/helper.py")
+def test_the_shared_waits_are_identity_covers_declaration_exactly():
+    from extended import identity_cover as IC
+
+    for ident in ("Q-80", "Q-93"):
+        assert IR.cover(ident) == IC.cover(ident)
 
 
-def test_the_firms_identitys_closure_on_this_tree():
-    got = IR.import_closure("identity/firms_identity.py", ROOT)
-    for f in ("extended/firm_reading.py", "extended/firms.py", "extended/firm_accounts.py", "extended/user_beside.py",
-              "extended/replay_records.py", "extended/place_records.py", "extended/calendar_fomc_minutes.py",
-              "identity/gate_identity.py", "identity/stage2_identity.py", "identity/user_beside_identity.py",
-              "extended/gate.py", "extended/campaign.py"):
-        assert f in got, f
-    assert not any(p.startswith("vendor/") for p in got) and "identity/firms_identity.py" not in got
+def test_rd01s_own_cover_is_base_and_its_scripts_closure_by_the_shared_model():
+    from extended import identity_cover as IC
+
+    c = IR.cover("Q-104")
+    assert c[:len(IC.BASE)] == IC.BASE and "config/" in c
+    assert set(c) == set(IC.BASE) | set(IC.imports(IR.RD01_SCRIPT).files)
+    assert IR.RD01_SCRIPT in c and "extended/firm_reading.py" in c and "identity/stage2_identity.py" in c
+    assert IC.uncovered(IR.RD01_SCRIPT, c) == [] and IR.cover_problems() == []
+    assert not hasattr(IR, "import_closure")                  # retired: the shared model is the one model
+    with pytest.raises(ValueError):
+        IR.cover("Q-7")
+
+
+def _copy_covered(dst: Path, paths) -> None:
+    import shutil
+
+    for p in paths:
+        src = ROOT / p.rstrip("/")
+        if p.endswith("/"):
+            for f in subprocess.run(["git", "ls-files", p.rstrip("/")], cwd=ROOT, capture_output=True,
+                                    text=True).stdout.splitlines():
+                (dst / f).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / f, dst / f)
+        else:
+            (dst / p).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, dst / p)
+
+
+def test_a_change_under_config_fails_every_wait(tmp_path):
+    waits = IR.waited()
+    assert [w.task for w in waits] == ["Q-104", "Q-80", "Q-93"] and all("config/" in w.files for w in waits)
+    r = tmp_path / "repo"
+    r.mkdir()
+    _git(r, "init", "-q")
+    _copy_covered(r, sorted({p for w in waits for p in w.files}))
+    (r / "README.md").write_text("not covered\n", encoding="utf-8")
+    (r / "DECISIONS.md").write_text("| id | date | what | basis |\n|---|---|---|---|\n", encoding="utf-8")
+    _git(r, "add", ".")
+    _git(r, "commit", "-q", "-m", "c0")
+    c0 = _git(r, "rev-parse", "HEAD")
+    for i, w in enumerate(waits, 1):
+        _row(r, _holding(f"E-00{i}", w.task, c0[:9]))
+    (r / "README.md").write_text("changed, not covered\n", encoding="utf-8")
+    _git(r, "commit", "-qam", "an uncovered change")
+    probs, found = IR.waited_problems(r, waits)
+    assert probs == [] and sorted(found) == ["Q-104", "Q-80", "Q-93"]
+    y = r / "config" / "rules_extended.yaml"
+    y.write_text(y.read_text(encoding="utf-8") + "# a later edit\n", encoding="utf-8")
+    _git(r, "commit", "-qam", "a change under config/")
+    probs, found = IR.waited_problems(r, waits)
+    assert found == {} and len(probs) == 3 and all("config/rules_extended.yaml" in p for p in probs)

@@ -18,8 +18,10 @@ row naming the declaration (the reader's once-rule).
 reading waits on is held -- by the shared parser, `extended.identity_tokens.held` (Q-110) through
 `extended.identity_rows`: a row whose third cell begins with the positional holding (identity-holds: <id> in
 documents) at a sha that is the commit being run or an ancestor of it, none of that identity's covered paths changed
-since (`waited()`, each by `cover`: RD-01's identity stage `identity/firms_identity.py` as Q-104, Q-80's 500-path gate identities, Q-93's
-U1-adapter identity, each with the package root, both vendored manifests and the code it ran -- m1, n7); the
+since (`waited()`, each by `cover`: Q-80's 500-path gate identities and Q-93's U1-adapter identity exactly as
+`extended.identity_cover` declares them, RD-01's identity stage `identity/firms_identity.py` as Q-104 by the same rule
+-- the package root, `config/` whole, both vendored manifests, its script and its imports' closure by the shared
+model, held to it by `identity_cover.uncovered`: V2, V4); the
 declaration's text is the one its pinning row pins; no E-015 limit row exists that this runner would not apply; and
 all three purposes pass `reader.authorise`, which reads and writes nothing, before the first is ledgered (m7). Each
 check is printed by `--plan`. Otherwise exit 3.
@@ -179,29 +181,10 @@ CODE = ("scripts/rd01_reading.py", "extended/__init__.py", "extended/firm_readin
         "extended/calendar_early_closes.py", "identity/user_beside_identity.py", "config/rules_extended.yaml",
         "config/calendar_fomc_minutes.csv", "config/calendar_early_closes.csv", "prereg/RD-01_firm_contracts.md",
         "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
-#: E-113's base: what every identity ran besides its own script and imports -- the package root that chooses the
-#: vendored tree, and the vendored code's and data's manifests
-BASE = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
-#: each waited identity's own script (its covered paths are this, the base and every repository module it imports)
-IDENTITY_SCRIPTS = {"Q-104": "identity/firms_identity.py", "Q-80": "identity/gate_identity.py",
-                    "Q-93": "identity/user_beside_identity.py"}
-WHAT = {"Q-104": "RD-01's identity stage, identity/firms_identity.py (9.1 items 1-5, every start, 500 paths)",
-        "Q-80": "Q-71's 500-path gate identities (A-8; P-14, P-16)",
-        "Q-93": "Q-76's heavy identity with Q-100's (A-9: U1's start rows at the defaults and through the keywords)"}
-
-
-def cover(ident: str) -> tuple[str, ...]:
-    """The one function every wait's covered paths come from (E-113): the base, the identity's own script, and every
-    repository module that script imports, directly or not (`identity_rows.import_closure`). For the shared identities
-    (Q-80, Q-93) Q-111's `extended.identity_cover.cover` replaces it by its import; RD-01's own (Q-104) stays this
-    declaration, under the same rule."""
-    script = IDENTITY_SCRIPTS[ident]
-    return tuple(dict.fromkeys(BASE + (script,) + IR.import_closure(script, ROOT)))
-
-
-def waited() -> tuple[IR.Waited, ...]:
-    """The identities the reading waits on (9.1, 15's waits), each with `cover`'s paths."""
-    return tuple(IR.Waited(i, WHAT[i], cover(i)) for i in ("Q-104", "Q-80", "Q-93"))
+#: the waits and their covers (9.1, 15's waits; E-113, E-117, Q-111): the shared identities by
+#: `extended.identity_cover.cover`, RD-01's own by the same rule (`identity_rows.cover`, `identity_rows.waited`)
+cover = IR.cover
+waited = IR.waited
 
 
 def _commit() -> str:
@@ -212,7 +195,14 @@ def _commit() -> str:
 def code_blobs() -> dict[str, str]:
     """{path: git blob id} of each file the reading runs, hashed from the file on disk (`git hash-object`)."""
     out = {}
+    paths: list[str] = []
     for rel in dict.fromkeys(CODE + tuple(f for w in waited() for f in w.files)):
+        if rel.endswith("/"):                             # a covered folder: every tracked file under it
+            ls = subprocess.run(["git", "ls-files", rel.rstrip("/")], cwd=ROOT, capture_output=True, text=True)
+            paths += [x for x in ls.stdout.splitlines() if x.strip()]
+        else:
+            paths.append(rel)
+    for rel in dict.fromkeys(paths):
         r = subprocess.run(["git", "hash-object", str(ROOT / rel)], cwd=ROOT, capture_output=True, text=True)
         out[rel] = r.stdout.strip() if r.returncode == 0 else "missing"
     return out
@@ -222,8 +212,10 @@ def code_blobs() -> dict[str, str]:
 
 
 def identity_problems(repo: Path = ROOT, decisions_text: str | None = None) -> tuple[list[str], dict[str, Any]]:
-    """R3: every waited identity's row (`extended.identity_rows`), or why not."""
-    return IR.waited_problems(repo, waited(), decisions_text=decisions_text)
+    """R3: every waited identity's row (`extended.identity_rows`), or why not; and V4: RD-01's own cover meets the
+    shared rule (`identity_cover.uncovered`), refusing otherwise."""
+    probs, found = IR.waited_problems(repo, waited(), decisions_text=decisions_text)
+    return IR.cover_problems() + probs, found
 
 
 E015_ROW = re.compile(r"^\|\s*(E-\d+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*e015-limits:")

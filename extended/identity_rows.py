@@ -14,6 +14,13 @@ Its grammar, its breaches and its matching are `identity_tokens`' alone; nothing
   every row's reason;
 - the admitted row, its full sha and HEAD -- never the token string -- go in the run's manifests.
 
+**RD-01's waits and their covers** (`waited`, `cover`; E-113, E-117, Q-111). The shared identities (Q-80, Q-93) cover
+exactly `extended.identity_cover.cover(id)` -- never less; RD-01's own identity stage (Q-104) is declared here by the
+same rule: `identity_cover.BASE` (the package root, the folder `config/` whole, both vendored manifests), its script
+`identity/firms_identity.py`, and every repository file the shared import model (`identity_cover.imports`) finds it
+reaching -- held to that rule by `identity_cover.uncovered` (`cover_problems`, refusing; an import the model cannot
+resolve refuses too). A change under `config/` therefore fails every wait.
+
 `covered` lists only real paths at HEAD (a folder covers everything under it); `held` refuses any other, and so does
 the wait. `holding_cell` builds a holding's third cell for tests and for the lead, so no document types one.
 
@@ -27,6 +34,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+from extended import ROOT
+from extended import identity_cover as IC
 from extended import identity_tokens as IT
 
 SHA = re.compile(r"[0-9a-f]{7,40}")
@@ -53,59 +62,6 @@ def holding_cell(ident: str, sha: str, text: str) -> str:
     if not IT.ID.fullmatch(str(ident)) or not SHA.fullmatch(str(sha)) or not str(text).strip():
         raise ValueError("a holding names an id, a 7- to 40-hex sha and its text")
     return f"{IT.STEM}: {ident} @ {sha} -- {text}"
-
-
-def import_closure(script: str, repo: Path | str) -> tuple[str, ...]:
-    """E-113's rule for what an identity covers beyond its base: every repository module `script` imports, directly
-    or not -- each `import` and `from ... import` anywhere in a file (a function's own included), resolved to this
-    repository's files: `extended` and its modules (`from extended import x` names `extended/x.py` where it is a
-    module), and a bare name to a file of the importing file's own folder (an identity script's `identity/`, as it puts
-    that folder on its path). Vendored and third-party names resolve to nothing here (the vendored code is the
-    manifest's). The script itself is not in the answer; repository-relative paths, sorted."""
-    import ast
-
-    repo = Path(repo)
-
-    def resolve(mod: str, names: list[str], here: Path) -> list[Path]:
-        parts = mod.split(".") if mod else []
-        out: list[Path] = []
-        if parts and parts[0] == "extended":
-            pkg = repo.joinpath(*parts)
-            for cand in (pkg.with_suffix(".py"), pkg / "__init__.py"):
-                if cand.is_file():
-                    out.append(cand)
-            out.append(repo / "extended" / "__init__.py")
-            if pkg.is_dir():
-                out += [pkg / f"{n}.py" for n in names if (pkg / f"{n}.py").is_file()]
-        elif len(parts) == 1 and (here / f"{parts[0]}.py").is_file():
-            out.append(here / f"{parts[0]}.py")
-        return out
-
-    seen: set[Path] = set()
-    todo = [repo / script]
-    while todo:
-        f = todo.pop()
-        tree = ast.parse(f.read_text(encoding="utf-8"), filename=str(f))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                hits = [x for a in node.names for x in resolve(a.name, [], f.parent)]
-            elif isinstance(node, ast.ImportFrom):
-                if node.level:
-                    base = f.parent
-                    for _ in range(node.level - 1):
-                        base = base.parent
-                    mod = ".".join(base.relative_to(repo).parts + ((node.module,) if node.module else ()))
-                else:
-                    mod = node.module or ""
-                hits = resolve(mod, [a.name for a in node.names], f.parent)
-            else:
-                continue
-            for h in hits:
-                h = h.resolve()
-                if h not in seen and h != (repo / script).resolve():
-                    seen.add(h)
-                    todo.append(h)
-    return tuple(sorted(x.relative_to(repo.resolve()).as_posix() for x in seen))
 
 
 def _full(repo: Path, rev: str) -> str | None:
@@ -146,4 +102,33 @@ def waited_problems(repo: Path | str, waited: Sequence[Waited], *, decisions_tex
     return problems, found
 
 
-__all__ = ["Waited", "holding_cell", "import_closure", "waited_problems"]
+#: RD-01's own identity stage
+RD01_SCRIPT = "identity/firms_identity.py"
+#: the identities RD-01 waits on, in order, with what each is
+WHAT = {"Q-104": "RD-01's identity stage, identity/firms_identity.py (9.1 items 1-5, every start, 500 paths)",
+        "Q-80": "Q-71's 500-path gate identities (A-8; P-14, P-16)",
+        "Q-93": "Q-76's heavy identity with Q-100's (A-9: U1's start rows at the defaults and through the keywords)"}
+
+
+def cover(ident: str) -> tuple[str, ...]:
+    """The covered paths of a wait: a shared identity's by Q-111's declaration exactly; RD-01's own (Q-104) by the
+    same rule, `BASE` and its script's closure under the shared import model."""
+    if ident in IC.COVER:
+        return IC.cover(ident)
+    if ident == "Q-104":
+        return tuple(dict.fromkeys(IC.BASE + IC.imports(RD01_SCRIPT, ROOT).files))
+    raise ValueError(f"{ident!r} is no identity RD-01 waits on ({', '.join(WHAT)})")
+
+
+def cover_problems() -> list[str]:
+    """V4: why RD-01's own cover falls short of the rule (`identity_cover.uncovered`: a path missing, or an import the
+    model cannot resolve -- a dynamic import among them); [] when it meets it."""
+    return [f"Q-104's cover: {q}" for q in IC.uncovered(RD01_SCRIPT, cover("Q-104"), ROOT)]
+
+
+def waited() -> tuple[Waited, ...]:
+    """The identities RD-01 waits on (9.1, 15's waits), each with `cover`'s paths."""
+    return tuple(Waited(i, WHAT[i], cover(i)) for i in WHAT)
+
+
+__all__ = ["Waited", "holding_cell", "waited_problems", "RD01_SCRIPT", "WHAT", "cover", "cover_problems", "waited"]
