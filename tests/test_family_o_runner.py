@@ -225,12 +225,25 @@ def _script(*args: str, timeout: int = 600) -> subprocess.CompletedProcess:
                           text=True, timeout=timeout, cwd=str(ROOT), env=ENV)
 
 
+def _script_bare_log(*args: str, timeout: int = 600) -> subprocess.CompletedProcess:
+    """The runner's `main`, its waits read from this tree's log with every token row removed (Q-109g, as Q-113)."""
+    return subprocess.run([sys.executable, str(ROOT / "tests" / "fo_cli_bare_log.py"), str(ROOT), *args],
+                          capture_output=True, text=True, timeout=timeout, cwd=str(ROOT), env=ENV)
+
+
 def test_the_runner_refuses_without_the_waited_identities_and_reads_nothing():
-    r = _script("--run", "1", "--check-guards")
+    """State-independent (Q-109g): on the log as it stood before any token row, the command line refuses naming every
+    waited identity, in the runner's order, as the runner prints it; nothing is authorised, read or ledgered."""
+    led = ROOT / "results" / "read_ledger.jsonl"
+    before = led.read_bytes() if led.is_file() else b""
+    r = _script_bare_log("--run", "1", "--check-guards")
     assert r.returncode == 2, r.stdout + r.stderr
-    assert "REFUSED (F-03)" in r.stdout and "Q-89 is not on record as holding" in r.stdout
+    assert "REFUSED (F-03)" in r.stdout and "guards HOLD" not in r.stdout
+    said = [r.stdout.find(f"{k} is not on record as holding at HEAD") for k in R.waits(ROOT)]
+    assert all(i >= 0 for i in said) and said == sorted(said), r.stdout
     assert r.stdout.strip().endswith("EXIT 2")
     assert "AUTHORISED" not in r.stdout
+    assert (led.read_bytes() if led.is_file() else b"") == before
 
 
 def test_the_runner_refuses_more_than_two_workers():
@@ -244,8 +257,12 @@ from pathlib import Path
 root = Path(sys.argv[1])
 sys.path.insert(0, str(root))
 from extended import opening_run as R
+from extended import identity_tokens as IT
 import subprocess
-text = (root / "DECISIONS.md").read_text(encoding="utf-8")
+# the log as it stood before any token row (Q-109g), so the synthetic rows below are the only tokens, whatever is recorded
+text = "".join(line + "\n" for line in (root / "DECISIONS.md").read_text(encoding="utf-8").splitlines()
+               if not IT.parse(line))
+assert IT.parse(text) == []
 head = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
 lead = "identity-holds:"
 tok = "\n".join(f"| E-{900 + i} | 2026-11-17 | {lead} {q} @ {head} -- held | b |" for i, q in enumerate(R.WAITS))
