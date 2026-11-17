@@ -57,6 +57,7 @@ class ToyInputs(PI.Inputs):
         self.n_days, self._n_paths, self.start = int(n_days), int(n_paths), str(start)
         self.seed = toy_seed() if seed is None else int(seed)
         self._jobs: dict[str, Any] = {}
+        self._base: dict[str, Any] = {}
 
     def n_paths(self) -> int:
         return self._n_paths
@@ -101,6 +102,16 @@ class ToyInputs(PI.Inputs):
             out[arm] = {"engine": "single", "blocks": blocks, "dates": days, "args": args}
         self._jobs[design] = out
         return out
+
+    def base_gate_rows(self, design: str) -> dict[str, dict[str, Any]]:
+        """The toy's own `ref` gate rows at 0 % (the stand-in for a registered row), one a shift."""
+        from extended import gate as XG
+
+        if design not in self._base:
+            kw = dict(self.gate_call(design, "ref", False)["kw"])
+            df, _ = XG.run_gate(kw.pop("blocks"), **kw)
+            self._base[design] = {str(r["shift"]): r for r in df.to_dict("records")}
+        return self._base[design]
 
     def identity_problems(self, design: str, arm: str, outs: Sequence[dict]) -> list[str]:
         return []

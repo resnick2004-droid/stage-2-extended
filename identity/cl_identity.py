@@ -24,8 +24,8 @@ comparison, before any input is built, any start runs or any path -- refuses unl
 
 **The read.** Stage 2's engine reads the bars and the atlas itself, so `main` authorises them first
 (`extended.reader.authorise_engine_read`, purpose `identity`, declaration `--row`, the lead's row registering this
-identity). **Its cover** (9.1, Q-111's rule): `BASE`, this script and its import closure (`extended/cl_reading.py`'s
-`OWN_WAITS`, held by T-0 and the build's tests).
+identity). **Its cover** (9.1, Q-111's rule): `BASE`, this script and its import closure, computed by
+`scripts/cl_reading.py`'s `own_cover("cl_identity")` through `extended.identity_cover.imports`.
 """
 from __future__ import annotations
 

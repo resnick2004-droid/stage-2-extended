@@ -177,6 +177,7 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--results-dir", default=None, help="with --synthetic: where the files go")
     ap.add_argument("--days", type=int, default=160, help="with --synthetic: the toy's sessions")
     ap.add_argument("--paths", type=int, default=3, help="with --synthetic: the toy gates' paths")
+    ap.add_argument("--stage0-stopped", action="store_true", help="step 3: stage 0 stopped (its row --stage0-row)")
     return ap
 
 
@@ -204,6 +205,10 @@ def main(argv: list[str] | None = None) -> int:
 
         inputs, designs, seed, reps = TI.ToyInputs(n_days=a.days, n_paths=a.paths), TI.DESIGNS, None, 20
         target = Path(a.results_dir)
+        exists = [n for n in RESULTS[a.step] if (target / f"{n}_synthetic.csv").exists()]
+        if exists:
+            print(f"REFUSED (RD-03, m7): {exists} already exist in {target}")
+            return 3
         seed = CL.declared_seed(CL.HONESTY_ROLE, ROOT, strict=False)
         authorise_gate = None
     else:
@@ -236,6 +241,11 @@ def main(argv: list[str] | None = None) -> int:
             print("REFUSED (RD-03, section 15's waits): " + "; ".join(probs))
             print("EXIT 3", flush=True)
             return 3
+        exists = [n for n in RESULTS[a.step] if (ROOT / "results" / f"{n}.csv").exists()]
+        if exists:
+            print(f"REFUSED (RD-03, m7): {exists} already exist; a result is never overwritten -- nothing ledgered")
+            print("EXIT 3", flush=True)
+            return 3
         try:
             CL.adapter_provenance(ROOT, strict=True)
             authorise_check(STEP_PURPOSES[a.step], files=files, repeat=a.repeat, what=what)
@@ -253,14 +263,21 @@ def main(argv: list[str] | None = None) -> int:
         prov = CL.adapter_provenance(ROOT, strict=not a.synthetic)
         if a.step == 3:
             out = CL.run_scorecard(inputs, designs=designs, workers=a.workers, honesty_seed=seed,
-                                   approved_limits=limits, authorise_gate=authorise_gate, **kw)
+                                   approved_limits=limits, authorise_gate=authorise_gate,
+                                   solver_view=solver_view(a, target), **kw)
             frames = {"cl_reading": out["reading"], "cl_gate": out["gate"], "cl_menu": out["menu"]}
         else:
             stage = "ladder" if a.step == 4 else "ftp"
-            out = CL.run_beside(inputs, stage, designs=designs, workers=a.workers, honesty_seed=seed, **kw)
+            gate_file = (target / "cl_gate_synthetic.csv") if a.synthetic else ROOT / "results" / "cl_gate.csv"
+            ok, msg = XR.verify_result(gate_file) if gate_file.is_file() else (False, "absent")
+            if not ok:
+                raise CL.Refused(f"step 3's gate file {gate_file.name} (M3): {msg}")
+            gg = CL.gate_guard_from_file(XR.read_result(gate_file))
+            out = CL.run_beside(inputs, stage, designs=designs, workers=a.workers, honesty_seed=seed, gate_guard=gg,
+                                **kw)
             frames = {RESULTS[a.step][0]: out["reading"]}
             if a.step == 5:
-                frames["cl_menu_beside"] = beside_menu(out["reading"], target)
+                frames["cl_menu_beside"] = out["menu"]
     except CL.Refused as exc:
         print(f"REFUSED (RD-03): {exc} -- nothing written", flush=True)
         print("EXIT 3", flush=True)
@@ -282,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
         "readings_4_3": {r.name: {"value": r.value, "cites": r.cites, "label": r.label}
                          for r in __import__("extended.levers_readings", fromlist=["READINGS"]).READINGS},
         "record": {"dates_read": LT.record_dates(), "sources": {k: LT.record_source(k) for k in LT.RECORD_KEYS}},
-        "adapter": prov, "calendars": dict(CL.CALENDARS),
+        "adapter": prov, "calendars_checked": out.get("calendars_checked", "not read in this step"),
         "data_manifest_sha256": sha256_of(ROOT / "vendor" / "DATA_MANIFEST_stage2.sha256"),
         "limits": ({"rows": limit_rows_used, "limits": limits} if limits else
                    "none approved before the run's commit: no e015-limits row in DECISIONS.md"),
@@ -306,26 +323,19 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def beside_menu(reading: Any, target: Path | None) -> Any:
-    """The menu's beside sections (10.1 item 8): per cell and response, P and the guard row (its gate entry the cell's
-    0 % gate, labelled), the share placed under each model; the counted reading labelled; the house-money and `naf`
-    rows naming the gap."""
-    import pandas as pd
-
+def solver_view(a: Any, target: Path | None) -> Any:
+    """M7: stage 0's view for the menu -- `cl_fit.csv`'s `solver_view` section, verified (in the synthetic run, a file
+    in the results folder if one is there); "stage 0 stopped (row ...)" when it stopped; None when not given."""
     from extended import cl_reading as CL
-    from extended import levers_readings as LR
 
-    rows = []
-    card = reading[(reading["part"] == "card") & (reading["measure"] == "card_P") & (reading["stat"] == "value")
-                   & (reading["block"] == "all")]
-    for r in card.itertuples():
-        rows.append({"design": r.design, "arm": r.arm, "cell": r.cell, "response": r.response, "variant": r.mode,
-                     "P_level": r.value, "guard": "beside, in cl_reading_ftp.csv's guard rows (the gate at 0 %)",
-                     "label": LR.label("reactivation_counted_conservative") if r.mode == CL.CONSERVATIVE else ""})
-    for cell in (*CL.HOUSE_CELLS, *CL.NAF_CELLS):
-        rows.append({"cell": cell, "label": f"{LR.LABEL_FTP_NOT_READ}: " + LR.FTP_GAP_REASON[
-            "naf" if cell == "naf" else "house"]})
-    return pd.DataFrame(rows)
+    if a.stage0_stopped:
+        return f"stage 0 stopped (row {a.stage0_row}): no solver's view"
+    path = (target / "cl_fit_synthetic.csv") if a.synthetic else ROOT / "results" / "cl_fit.csv"
+    if not path.is_file():
+        if a.synthetic:
+            return None
+        raise CL.Refused("results/cl_fit.csv is not on the tree (step 2's output, or --stage0-stopped)")
+    return CL.solver_view_frame(path)
 
 
 if __name__ == "__main__":

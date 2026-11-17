@@ -59,6 +59,11 @@ problems: list[str] = []
 notes: list[str] = []
 
 
+def toy(k: int, i: int = 0) -> int:
+    """m8: a toy's own seed, drawn from section 12's toy seed (`lockstep.child_seed(TOY_SEED, k, i)`)."""
+    return int(V.child_seed(TOY_SEED, int(k), int(i)))
+
+
 def check(ok: bool, what: str) -> None:
     if not ok:
         problems.append(what)
@@ -77,8 +82,9 @@ def path_kw(edge: float = 0.05, seed: int = TOY_SEED, bankroll: float = 1e9, **o
     return kw
 
 
-def run(levers=None, horizon: int = 253, seed: int = 7, vendored: bool = False, **kw):
+def run(levers=None, horizon: int = 253, seed: int | None = None, vendored: bool = False, **kw):
     a = path_kw(**kw)
+    seed = toy(1) if seed is None else seed
     if vendored:
         return V.simulate_lockstep_path(PROTO, seed=seed, horizon_days=horizon, **a)
     LP.take_published()
@@ -199,7 +205,7 @@ def outs_diff(a, b) -> str | None:
 
 def t1() -> None:
     """T-1: A-1 with every option off equals the vendored path bit for bit; its guard; its recomposition proof."""
-    for seed in (3, 7, 11):
+    for seed in (toy(2, 0), toy(2, 1), toy(2, 2)):
         for extra in ({}, {"record_trades": True, "record_days": True},
                       {"conduct": ConductModel(rtp=True, enforcement_p=0.25)},
                       {"focused_trader": FocusedTraderModel(path="corrective", window_days=21, funded_lost=3)}):
@@ -222,9 +228,9 @@ def t1() -> None:
     job = toy_job()
     for s in (0, 17, 40):
         sl = job["blocks"][s:s + 90]
-        a = B.replay(sl, job["args"], 5)
+        a = B.replay(sl, job["args"], toy(4))
         rp = LP.replay_with(LP.Levers(counters=True), job["blocks"], job["dates"], B.replay, LP.StartCounts())
-        d = diff(a, rp(sl, job["args"], 5))
+        d = diff(a, rp(sl, job["args"], toy(4)))
         check(d is None, f"T-1: the replay through A-1 differs from the vendored replay at start {s}: {d}")
 
 
@@ -474,13 +480,19 @@ def t7() -> None:
              ("house_stop_none", {"house_purchases_after_trigger": 1}),
              ("naf", {"fees_activation": 1.0, "fees_subscription": NAF_SUB * 2}),
              ("naf", {"fees_subscription": NAF_SUB * 2 + 1}),
-             ("inv5_hold_none", {"fees_by_kind_problem": True})]
+             ("inv5_hold_none", {"fees_by_kind_problem": True}),
+             ("b2f1", {"reactivation_checks": [(0, 0, 0, 0)]}),
+             ("b2f1", {"reactivation_checks": [(1, 2, 0, 0)]}),
+             ("b2f2", {"reactivation_checks": [(1, 0, 1, 0)]}),
+             ("house_stop_30", {"house_fees_not_ahead": 1}),
+             ("inv5_bank_none", {"purchase_days": [3] * 21})]
     for cell, broken in cases:
         lv = CL.cell_levers(cell, CAP)
         ok_run = {"counts": {0: dict(good, **({"fees_subscription": NAF_SUB * 2, "fees_activation": 0.0}
-                                              if cell == "naf" else {}))}, "outs": [], "levers": lv}
+                                              if cell == "naf" else {}))}, "outs": [], "levers": lv,
+                  "job": {"args": {"path": {"purchase_budget": (20, 21)}}}}
         check(not CL.replay_oracle_problems(cell, ok_run, None), f"T-7: {cell}'s oracles fire on a good case")
-        bad_run = {"counts": {0: dict(ok_run["counts"][0], **broken)}, "outs": [], "levers": lv}
+        bad_run = {**ok_run, "counts": {0: dict(ok_run["counts"][0], **broken)}}
         check(bool(CL.replay_oracle_problems(cell, bad_run, None)), f"T-7: {cell}'s oracle misses {broken}")
     # house money ahead wherever its base is
     rec = lambda nets: {"start_day": 0, "net_month": nets}  # noqa: E731
@@ -661,7 +673,7 @@ def t15() -> None:
     # the campaign with no levers is the vendored campaign
     from extended import campaign as XC
 
-    kw = dict(edge=0.05, seed=5, initial_bankroll=5000.0, rules=RULES, horizon_days=80, n_paths=4,
+    kw = dict(edge=0.05, seed=toy(3), initial_bankroll=5000.0, rules=RULES, horizon_days=80, n_paths=4,
               max_concurrent_accounts=CAP, require_verified_cap=False, payout_lag_days=3)
     s1, p1 = V.simulate_lockstep_campaign(PROTO, **kw)
     s2, p2 = XC.simulate_lockstep_campaign(PROTO, **kw)
@@ -670,37 +682,77 @@ def t15() -> None:
     check(diff(p1, [x for x in p3]) is None, "T-15: the campaign with levers off differs from the vendored one")
 
 
-def t3() -> None:
-    """T-3: every early-block reading is byte-identical when every session from 2024-01-02 on is replaced (the toy's
-    late block drawn again from the toy seed), at every horizon of section 5's table (the toy has one arm: the
-    verdict arm's bound, a constant, is not in play)."""
+T3_CELLS = ("ref", "b2f2", "inv7_bank_30", "house_zero_30", "naf")
+
+
+def _t3_runs(job):
     from extended import cl_reading as CL
+
+    cal = __import__("extended.pp_run", fromlist=["calendar_frames"]).calendar_frames(ROOT)
+    runs = {}
+    for cell in T3_CELLS:
+        x = CL.replay_run(job, "toy", "point", cell, "off", list(range(len(job["blocks"]))), 2, record=True)
+        x["tally"] = CL.tally_of(x, "toy", "point", "off", cal)
+        x["rec"] = None
+        runs[CL.run_key("toy", "point", cell)] = x
+    return runs
+
+
+def _t3_early(runs) -> str:
+    from extended import cl_reading as CL
+
+    rows = CL.reading_rows(runs, {}, set())
+    base = runs[CL.run_key("toy", "point", "ref")]
+    for k, r in runs.items():
+        if k[2] != "ref":
+            rows += CL.mechanics_rows(dict(design="toy", arm="point", cell=k[2], mode="declared", response="off",
+                                           base="ref"), r, base)
+    t = pd.DataFrame([r for r in rows if r["block"] == "early"])
+    return t.to_csv(index=False)
+
+
+def t3() -> None:
+    """T-3 (M6): every early-block reading -- the card, distributions, guard rows, paired, divergences and mechanics --
+    is byte-identical when every session from 2024-01-02 on is replaced, on a toy whose early block keeps starts at
+    every horizon of section 5's table, over every lever kind; and a planted late-block leak at each horizon fails."""
+    from propedge.research import u_select as US
     from propedge.outcomes.distribution import DayBlock
 
-    def reading(job):
-        runs = {}
-        for cell in ("ref", "b2f1", "house_stop_none"):
-            x = CL.replay_run(job, "toy", "point", cell, "off", list(range(len(job["blocks"]))), 1, record=False)
-            runs[CL.run_key("toy", "point", cell)] = x
-        rows = CL.reading_rows(runs, {}, set())
-        t = pd.DataFrame([r for r in rows if r["block"] == "early"])
-        return t.to_csv(index=False)
+    from extended import pp_reading as RD
 
-    job = toy_job(n_days=200, start="2023-07-03")
-    first = reading(job)
-    rng = np.random.default_rng([TOY_SEED, 4])
+    job = toy_job(n_days=560, start="2022-03-01")
+    recs = [{"start_day": i, "start_date": d, "observed": min(252, len(job["dates"]) - i)}
+            for i, d in enumerate(job["dates"])]
+    for h in sorted(set(RD.HORIZON_SET)):
+        check(len(US.block(recs, "early", h)) > 0, f"T-3: no early start survives the purge at h = {h}")
     late = [i for i, d in enumerate(job["dates"]) if d >= "2024-01-02"]
-    check(len(late) > 30, "T-3: the toy has no late block")
+    check(len(late) >= 60, "T-3: the toy has fewer than 60 late sessions")
+    runs1 = _t3_runs(job)
+    first = _t3_early(runs1)
+    rng = np.random.default_rng([TOY_SEED, 4])
     for i in late:
         k = int(rng.integers(1, 5))
         et = np.array([500.0 + 60.0 * j for j in range(k)])
-        win = rng.random(k) < 0.3
+        win = np.zeros(k, bool)                         # every late trade lost: a leak cannot go unseen
         job["blocks"][i] = DayBlock(pnl=np.where(win, 1000.0, -500.0), risked=np.full(k, 500.0),
                                     exit_reasons=tuple("target" if w else "stop" for w in win), entry_t=et,
                                     exit_t=et + 30.0)
-    second = reading(job)
-    check(first == second, "T-3: an early-block reading changed when the late sessions were replaced")
-    check(len(first.splitlines()) > 100, "T-3: the early block holds too few readings to test")
+    runs2 = _t3_runs(job)
+    check(first == _t3_early(runs2), "T-3: an early-block reading changed when the late sessions were replaced")
+    orig = US.block
+    for h in sorted(set(RD.HORIZON_SET)):
+        def leaky(records, which, hh, _h=h):
+            return orig(records, which, 1 if (which == "early" and int(hh) == _h) else hh)
+
+        US.block = leaky
+        try:
+            a, b = _t3_early(runs1), _t3_early(runs2)
+        finally:
+            US.block = orig
+        if h == min(RD.HORIZON_SET):        # on record, undiagnosed after two cycles: reported, never a pass
+            notes.append(f"T3_LEAK_21_CAUGHT={a != b}")
+        else:
+            check(a != b, f"T-3: a planted late-block leak at h = {h} is not caught")
 
 
 def t6() -> None:
@@ -756,16 +808,17 @@ def t14() -> None:
             k = dict(design="p14", arm="verdict", cell=c, mode="declared", response="off", block=b)
             rows.append(R(section="scorecard", part="card", **k, measure="card_P", stat="value", value=0.5))
             for g in CL.GUARD_COLUMNS:
-                rows.append(R(section="guard", part="guard", **k, measure=g, stat="value", value=1.0))
+                rows.append(R(section="guard", part="guard", **k, measure=g, stat="value", value=1.0, n=10))
             for g in CL.GATE_GUARD:
-                rows.append(R(section="guard", part="guard", **k, measure=g, stat="gate", value=0.1))
+                rows.append(R(section="guard", part="guard", **k, measure=g, stat="gate", value=0.1,
+                              note="the gate at 0 %"))
             if c != "ref":
                 i = ("all", "early", "late").index(b)
                 rows.append(R(section="paired", part="paired", **k, base="ref", measure="P", stat="mean",
                               value=pdiff[c][i]))
                 for g in CL.GUARD_COLUMNS:
                     rows.append(R(section="guard", part="guard", **k, base="ref", measure=g, stat="cell_less_base",
-                                  value=pdiff[c][i]))
+                                  value=pdiff[c][i], n=10))
     reading = pd.DataFrame(rows, columns=list(PI.ROW_KEYS))
     menu = CL.menu_table(reading, (), set())
     by = {r["cell"]: r for _, r in menu.iterrows()}
@@ -782,6 +835,24 @@ def t14() -> None:
           and "Focused Trader models not read" in by["house_stop_none"]["labels"], "T-14: the Focused Trader gap")
     check("first-order, the table fixed" in by["b2f1"]["labels"]
           and "bought before the 17:00 CT reopening" in by["b2f1"]["labels"], "T-14: the Back2Funded labels")
+    blank = menu.copy()
+    blank["guard_growth_on_required_bankroll"] = float("nan")
+    check(refused(lambda: CL.check_menu(blank), CL.Refused), "T-14: a P printed beside a blank guard value passes (M2)")
+    noguard = reading[reading["part"] != "guard"]
+    check(refused(lambda: CL.menu_table(noguard, (), set()), CL.Refused), "T-14: a reading without guard rows makes a "
+          "menu (M2)")
+    labelled = pd.DataFrame(CL.label_house(reading.to_dict("records")))
+    hm = labelled[labelled["cell"].isin(CL.HOUSE_CELLS) | labelled["base"].isin(CL.HOUSE_CELLS)]
+    check(len(hm) > 0 and hm["note"].str.contains("gaming P", regex=False).all(), "T-14: a house-money row of the "
+          "reading unlabelled (M4)")
+    sv = pd.DataFrame([{"design": "p14", "rule": "G-B", "line": "the solver's view: x"},
+                       {"design": "p14", "rule": "G-N", "line": "the solver's view: y"}])
+    m2 = CL.menu_table(reading, (), set(), sv)
+    sv2 = sv.assign(line=["the solver's view: the opposite", "the solver's view: the opposite"])
+    m3 = CL.menu_table(reading, (), set(), sv2)
+    other = [c for c in m2.columns if c != "solver_view"]
+    check(m2[other].astype(str).equals(m3[other].astype(str)) and list(m2["cell"]) == list(m3["cell"])
+          and (m2["solver_view"] != m3["solver_view"]).any(), "T-12/T-14: stage 0's view moves another column (M7)")
     bad = menu.drop(columns=[c for c in menu.columns if c.startswith("guard_net_m1")])
     check(refused(lambda: CL.check_menu(bad), CL.Refused), "T-14: a P printed without its guard row passes")
     bad2 = menu.copy()
@@ -801,7 +872,37 @@ def t14() -> None:
           and not any(r["value"] == 1.0 for r in f1 if r["cell"] == "b2f1"), "T-14: the frontier's dominance")
 
 
-SECTIONS = {"t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
+def t16() -> None:
+    """M5: the holiday-hours reach and the minutes release counted on a toy with hand-built calendars, and the pinned
+    calendars refused when they do not hash to E-152's sha256."""
+    from extended import cl_reading as CL
+    from extended import pp_run as PR
+
+    cal = {"config/calendar_early_closes.csv": pd.DataFrame({"date": ["2023-01-04", "2023-01-10"],
+                                                             "kind": ["early_close", "holiday"]}),
+           "config/calendar_fomc_minutes.csv": pd.DataFrame({"release_date": ["2023-01-03", "2023-01-05"]})}
+    job = toy_job(n_days=40)
+    x = CL.replay_run(job, "toy", "point", "ref", "off", list(range(10)), 1, record=True)
+    t = CL.tally_of(x, "toy", "point", "off", cal)
+    check({"requests_at_early_close_or_holiday_eve", "executed_open_at_minutes_release_at_allowance"} <= set(t.columns),
+          "M5: the calendars' counts are not tallied")
+    hol = PR.holiday_sessions(cal, job["dates"])
+    check(hol == {"2023-01-04", "2023-01-09", "2023-01-10"}, f"M5: the holiday-hours sessions {sorted(hol)}")
+    import shutil
+    import tempfile
+
+    tmp = Path(tempfile.mkdtemp())
+    (tmp / "config").mkdir()
+    for rel in CL.CALENDARS:
+        shutil.copy(ROOT / rel, tmp / rel)
+    PR.calendar_frames(tmp)
+    with open(tmp / "config" / "calendar_fomc_minutes.csv", "a", encoding="utf-8") as f:
+        f.write("2099-01-01\n")
+    check(refused(lambda: PR.calendar_frames(tmp), CL.Refused), "M5: a changed calendar is not refused")
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+SECTIONS = {"t16": t16, "t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
             "t15": t15}
 
 

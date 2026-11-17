@@ -130,7 +130,7 @@ LEVER_KEYS = ("reactivations", "reactivations_first", "reactivations_second", "r
               "reactivations_refused_seat", "reactivations_lapsed", "reactivations_counted_in_ftp",
               "passes_expired", "passes_queued", "house_triggered", "house_purchase_days_withheld",
               "house_rebills_withheld", "house_activations_withheld", "house_closes_not_ahead",
-              "house_purchases_after_trigger")
+              "house_purchases_after_trigger", "house_fees_not_ahead")
 #: the engine's own counts read through the channel (any cell, `ref` included)
 ENGINE_KEYS = ("fees_subscription", "fees_activation", "activations_refused_cash", "purchase_days_refused_cash",
                "max_accounts_live", "sessions_five_funded_evals_running", "same_day_bought_and_breached",
@@ -139,7 +139,7 @@ ENGINE_KEYS = ("fees_subscription", "fees_activation", "activations_refused_cash
 #: the lists the channel carries (per path)
 LIST_KEYS = ("reactivation_days", "reactivation_ordinals", "reactivation_loss_days", "reactivated_fates",
              "queue_waits", "queue_waits_units", "house_trigger_day", "house_cash_waits", "cash_closes",
-             "reactivation_wait_sessions")
+             "reactivation_wait_sessions", "reactivation_checks", "purchase_days", "acts", "fee_days")
 
 
 class LeverRefused(ValueError):
@@ -290,6 +290,7 @@ class LeverState:
         self.cash_wait: dict[int, int] = {}     # a pass's index -> the evenings its activation was withheld
         self.seen_combines = 0
         self.ftp_counted = 0
+        self.acts = np.zeros((int(horizon_days), 3), dtype=np.int16)    # m4: running, live funded, queue, per close
 
     @staticmethod
     def begin(levers: Any, *, initial_bankroll: float, horizon_days: int, reset_failed_combines: bool,
@@ -408,8 +409,12 @@ class LeverState:
                 self.refused["cash"].add(int(a.index))
                 keep.append((a, closed_on, root))
                 continue
+            self.c["reactivation_checks"].append(
+                (int(self._eligible(a)), int(day) - int(closed_on), int(ftp_placed is not None),
+                 int(int(a.index) in self.refused["cash"])))
             cash -= fee
             total_fees += fee
+            self.fee_paid(cash, day)
             j = int(accounts_funded)
             if present:
                 out = [x for x in out if x is not a]
@@ -449,9 +454,16 @@ class LeverState:
             kept.append(c)
         queue[:] = kept
 
-    def activated(self, c: Any, day: int) -> None:
+    def fee_paid(self, cash: float, day: int) -> None:
+        """m3: every fee paid after house money's trigger is read at the act -- net cash after it above zero."""
+        if self.house_on and self.triggered is not None and self._net(cash) <= EPS:
+            self.c["house_fees_not_ahead"] += 1
+
+    def activated(self, c: Any, day: int, cash: float | None = None) -> None:
         """A pass activated tonight: its wait (calendar days on the replay, sessions in the gate) if it waited."""
         self.c["activations"] += 1
+        if cash is not None:
+            self.fee_paid(cash, day)
         if int(c.resolved_on) < int(day):
             w = self.elapsed(int(c.resolved_on), day)
             self.c["queue_waits"].append(w)
@@ -478,7 +490,11 @@ class LeverState:
         self.c["peak_queue"] = max(int(self.c["peak_queue"]), len(queue))
         for c in queue:                                   # the longest any pass has waited at a close (U-1's pair)
             self.c["max_queue_wait"] = max(int(self.c["max_queue_wait"]), self.elapsed(int(c.resolved_on), day))
-        self.c["evaluations_bought"] += sum(1 for c in running if int(c.purchase_day) == int(day))
+        bought = sum(1 for c in running if int(c.purchase_day) == int(day))
+        self.c["evaluations_bought"] += bought
+        self.c["purchase_days"].extend([int(day)] * bought)
+        if int(day) < len(self.acts):
+            self.acts[int(day)] = (len(running), len(live_f), len(queue))
         if self.house_on and self.triggered is not None:
             self.c["house_purchases_after_trigger"] += sum(1 for c in running if int(c.purchase_day) == int(day))
         self.c["max_accounts_live"] = max(int(self.c["max_accounts_live"]), len(running) + len(live_f) + len(queue))
@@ -526,10 +542,13 @@ class LeverState:
                           "ended_on": -1 if a.ended_on is None else int(a.ended_on)})
         c["reactivated_fates"] = fates
         c["fees_total_engine"] = float(total_fees)
-        c["cash_closes"] = [float(v) for v in cash_series]
+        c["cash_closes"] = np.asarray(cash_series, dtype=float).copy()
+        c["acts"] = self.acts
+        c["fee_days"] = np.stack([np.asarray(fee_sub, float), np.asarray(fee_act, float)], axis=1)
         c["fees_by_kind_problem"] = abs(c["fees_subscription"] + c["fees_activation"] + float(c["reactivation_fees"])
                                         - float(total_fees)) > 1e-6
         _PUBLISHED[0] = {k: (list(v) if isinstance(v, list) else v) for k, v in c.items()}
+        # the refusals of 9.3, each printed: the limit, the cash, the placement, and the seat a delayed one may lack
 
 
 #: the vendored sources are checked once a process, at the first path (A-1's guard)
@@ -925,6 +944,8 @@ def simulate_lockstep_path(
                 total_fees += subscription
                 fee_sub[day] += subscription
                 c.subs_paid += 1
+                if lv is not None:  # Q-119
+                    lv.fee_paid(cash, day)  # Q-119
             if alive:
                 keep.append(c)
             else:
@@ -1412,7 +1433,7 @@ def simulate_lockstep_path(
                 fee_act[day] += activation
             queue.pop(0)
             if lv is not None:  # Q-119
-                lv.activated(c, day)  # Q-119
+                lv.activated(c, day, cash)  # Q-119
             j = accounts_funded
             # RTP (13620045): the path is decided by the Combine, not the activation day. A Combine bought (or reset)
             # under RTP is a Consistency Trading Combine and its pass is activated on the Consistency path; "Any
@@ -1484,6 +1505,8 @@ def simulate_lockstep_path(
             spendable -= subscription
             total_fees += subscription
             fee_sub[day] += subscription
+            if lv is not None:  # Q-119
+                lv.fee_paid(cash, day)  # Q-119
             running.append(
                 combine_cls(
                     index=k, purchase_day=day, draw=combine_draw_factory(k, day),

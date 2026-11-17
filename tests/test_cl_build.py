@@ -17,6 +17,7 @@ inputs only:
 from __future__ import annotations
 
 import ast
+import functools
 import io
 import json
 import os
@@ -40,7 +41,8 @@ RULE_LITERALS = {599, 95, 49, 149, 30}
 CONTEXT_LITERALS = {2: re.compile(r"reactivat", re.I), 5: re.compile(r"\bcap\b|max_active|five", re.I)}
 
 
-def _run(section: str, timeout: int = 900) -> dict:
+@functools.lru_cache(maxsize=None)
+def _run(section: str, timeout: int = 1800) -> dict:
     r = subprocess.run([sys.executable, str(SYN), str(ROOT), section], cwd=ROOT, capture_output=True, text=True,
                        timeout=timeout, env=ENV)
     lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
@@ -51,10 +53,18 @@ def _run(section: str, timeout: int = 900) -> dict:
     return out
 
 
-@pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14", "t15"])
+@pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14", "t15", "t16"])
 def test_section_holds(section):
     out = _run(section)
     assert out["n_problems"] == 0, "\n".join(out["problems"])
+
+
+@pytest.mark.xfail(strict=True, reason="Q-119 corrective cycle 2 of 2: T-3's planted leak at h = 21 is not caught "
+                                       "(undiagnosed; the only 21-session reading is S3a's card entry) -- on record "
+                                       "for the lead; strict, so the mark must go when it is caught")
+def test_t3_a_planted_leak_at_21_sessions_is_caught():
+    out = _run("t3")
+    assert "T3_LEAK_21_CAUGHT=True" in out["notes"]
 
 
 # ------------------------------------------------------------------------------------------------ T-9
@@ -193,3 +203,16 @@ def test_t8_the_identity_at_four_paths_and_starts():
     r = subprocess.run([sys.executable, str(ROOT / "identity" / "cl_identity.py"), "--paths", "4", "--u1-starts", "4",
                         "--row", row], cwd=ROOT, capture_output=True, text=True, timeout=7200, env=ENV)
     assert "EXIT 0" in r.stdout, r.stdout[-3000:] + r.stderr[-3000:]
+
+
+# ------------------------------------------------------------------------------------------------ m1
+
+
+def test_the_pipeline_runs_steps_3_to_5_on_toys(tmp_path):
+    """m1: steps 3, 4 and 5 `--synthetic` end to end (`tests/cl_run_check.py`), asserting M1 to M4 on the files."""
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "cl_run_check.py"), str(ROOT), str(tmp_path)], cwd=ROOT,
+                       capture_output=True, text=True, timeout=3600, env=ENV)
+    lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
+    assert r.returncode == 0 and lines, r.stdout[-3000:] + r.stderr[-3000:]
+    out = json.loads(lines[-1])
+    assert not out["problems"], "\n".join(out["problems"])

@@ -188,18 +188,36 @@ def seat_limit_problems(path_args: Mapping[str, Any], gate_kw: Mapping[str, Any]
 
 class CLInputs(PI.RealInputs):
     """RD-02's real inputs at its reference (`extended/pp_inputs.py`, certified by `identity/pp_identity.py`): U1's jobs,
-    U1's file, Q-44's per-start file read as text, the registered gate calls and rows. RD-03 adds only `cell_gate`,
-    the registered call with a cell's keywords (A-3, A-4)."""
+    U1's file, Q-44's per-start file read as text, the registered gate calls and rows. RD-03 adds the Focused Trader
+    rows to the preflight (the red team's m6: checked before any purpose is spent)."""
+
+    def preflight(self, designs: Sequence[str]) -> list[str]:
+        from extended import user_beside as B
+
+        out = list(super().preflight(designs))
+        try:
+            f = self.q44()
+        except Exception as exc:                          # noqa: BLE001 -- a refusal before any read
+            return out + [f"Q-44's per-start file: {exc}"]
+        for d in designs:
+            for r in B.RESPONSES:
+                if r.kind == "ftp" and not ((f["design"] == d) & (f["arm"] == "verdict") & (f["response"] == r.name)).any():
+                    out.append(f"Q-44's per-start file has no {d} verdict {r.name} rows (step 5's 9.1 item 6)")
+        return out
 
 
 def cell_gate(inputs: Any, design: str, cell: str, twin: bool, *, count_reactivations: bool = False,
               counters: bool = True) -> dict[str, Any]:
     """The base's registered gate call (`inputs.gate_call(design, "ref", twin)`) with a cell's keywords: its `Levers`
     (A-3), and for the inventory its seat keywords (`combines` C, `total_accounts` None, `stop_buying_when_queued`
-    from its banking), for `naf` its prices (A-4)."""
+    from its banking), for `naf` its prices (A-4). Refused when the call lacks its seat limits (the red team's m2)."""
     g = inputs.gate_call(design, "ref", twin)
     kw = dict(g["kw"])
-    lev = cell_levers(cell, int(kw.get("combines", 1)), counters=counters, count_reactivations=count_reactivations)
+    probs = seat_limit_problems({"max_concurrent_accounts": LT.funded_cap(), "max_concurrent_combines": LT.funded_cap(),
+                                 "max_total_accounts": LT.funded_cap()}, kw)
+    if probs:
+        raise Refused(f"T-4: {design}'s gate: the build stops and reports -- " + "; ".join(probs))
+    lev = cell_levers(cell, int(kw["combines"]), counters=counters, count_reactivations=count_reactivations)
     if lev.max_concurrent_combines is not None:
         kw["combines"] = int(lev.max_concurrent_combines)
     if lev.lift_joint_cap:
@@ -249,7 +267,8 @@ def bind_day(cell: str, c: Mapping[str, Any], rec: Mapping[str, Any]) -> int | N
     money's trigger, Back2Funded's first eligible loss, a C = 5 inventory cell's first pass; a start where it never
     binds returns the replay's length (equal throughout)."""
     s = spec(cell)
-    n = len(c.get("cash_closes") or ()) or 10 ** 9
+    cc = c.get("cash_closes")
+    n = len(cc) if cc is not None and len(cc) else 10 ** 9
     if s.lever == "L-H":
         t = int(c.get("house_trigger_day", -1))
         return n if t < 0 else t
@@ -263,8 +282,9 @@ def bind_day(cell: str, c: Mapping[str, Any], rec: Mapping[str, Any]) -> int | N
 
 
 def before_binding_problems(cell: str, run: Mapping[str, Any], base: Mapping[str, Any]) -> list[str]:
-    """9.1 item 7, refusing: on every start, the cell's closes before its lever can bind equal its base's, close for
-    close (the counters' channel carries each start's cash closes)."""
+    """9.1 item 7, refusing: on every start, before the cell's lever can bind, every act equals its base's, close for
+    close -- the cash, the evaluations running, the live funded accounts, the queue's length and the fees by kind (the
+    counters' channel carries each start's closes and acts; the red team's m4)."""
     out = []
     bo = {int(x["rec"]["start_day"]): x for x in base["outs"]}
     for x in run["outs"]:
@@ -276,25 +296,29 @@ def before_binding_problems(cell: str, run: Mapping[str, Any], base: Mapping[str
         k = bind_day(cell, c, x["rec"])
         if k is None:
             continue
-        a1, b1 = np.asarray(c["cash_closes"], float), np.asarray(b["cash_closes"], float)
-        k = min(int(k), len(a1), len(b1))
-        if not np.array_equal(a1[:k], b1[:k]):
-            i = int(np.flatnonzero(a1[:k] != b1[:k])[0])
-            out.append(f"{cell} start {s}: close {i} differs from its base's before the lever binds (day {k})")
+        for name in ("cash_closes", "acts", "fee_days"):
+            a1, b1 = np.asarray(c[name]), np.asarray(b[name])
+            kk = min(int(k), len(a1), len(b1))
+            if not np.array_equal(a1[:kk], b1[:kk]):
+                i = int(np.flatnonzero((a1[:kk] != b1[:kk]).reshape(kk, -1).any(axis=1))[0])
+                out.append(f"{cell} start {s}: {name} at close {i} differs from its base's before the lever binds "
+                           f"(day {k})")
+                break
     return out
 
 
 def expiry_pair_problems(cell_none: str, run_none: Mapping[str, Any], run_30: Mapping[str, Any], window: int
                          ) -> list[str]:
     """9.1 item 7's last clause: an inventory or house-money cell's two expiry readings are equal on every start where
-    no pass waits more than the window (calendar days) under `exp_none` -- read at every close, so a pass still waiting
-    when the replay ends counts (`max_queue_wait`), not only the activated ones."""
+    no pass waits more than the window (calendar days) under `exp_none` -- read at every close and at each activation,
+    so a pass still waiting when the replay ends counts (`max_queue_wait`) -- act for act (m4)."""
     out = []
     for s, c in run_none["counts"].items():
         if int(c.get("max_queue_wait", 0)) > window:
             continue
         d = run_30["counts"].get(s)
-        if d is None or not np.array_equal(np.asarray(c["cash_closes"]), np.asarray(d["cash_closes"])):
+        if d is None or any(not np.array_equal(np.asarray(c[k]), np.asarray(d[k]))
+                            for k in ("cash_closes", "acts", "fee_days")):
             out.append(f"{cell_none}: start {s}: exp_30 differs though no pass waited past the window")
     return out
 
@@ -309,10 +333,13 @@ def identity_rows(d: str, arm: str, cell: str, item: str, probs: Sequence[str], 
 
 
 def replay_oracle_problems(cell: str, run: Mapping[str, Any], base: Mapping[str, Any] | None) -> list[str]:
-    """9.2 on a cell's replays, from the counters' channel and the start records."""
+    """9.2 on a cell's replays, from the counters' channel and the start records, each at run time (the red team's m3):
+    every reactivation of an eligible account, bought on its breach's evening (or later only after a refusal for cash),
+    never under a placement; the purchase budget; house money's fee floor at every act."""
     s = spec(cell)
     lev = run["levers"]
     cap = LT.funded_cap()
+    budget = (run.get("job") or {}).get("args", {}).get("path", {}).get("purchase_budget")
     out = []
     for st, c in run["counts"].items():
         tag = f"{cell} start {st}"
@@ -322,25 +349,32 @@ def replay_oracle_problems(cell: str, run: Mapping[str, Any], base: Mapping[str,
             out.append(f"{tag}: the fees by kind do not sum to the engine's total")
         if int(c.get("max_funded_live", 0)) > cap:
             out.append(f"{tag}: more than {cap} funded accounts active")
+        if budget is not None and rolling_max(c.get("purchase_days") or (), int(budget[1])) > int(budget[0]):
+            out.append(f"{tag}: the purchase budget exceeded")
         if s.lever == "L-B":
             ords = list(c.get("reactivation_ordinals") or ())
             if ords and max(ords) > int(lev.reactivations):
                 out.append(f"{tag}: an XFA reactivated beyond its limit")
             if abs(float(c["reactivation_fees"]) - float(lev.reactivation_fee) * int(c["reactivations"])) > 1e-6:
                 out.append(f"{tag}: a reactivation not at its price")
-            waits = list(c.get("reactivation_wait_sessions") or ())
-            if any(int(w) < 1 for w in waits):
+            for elig, wait, placed, cash_refused in (c.get("reactivation_checks") or ()):
+                if not elig:
+                    out.append(f"{tag}: a reactivation of an account not eligible (U-7)")
+                if int(wait) != 0 and not cash_refused:
+                    out.append(f"{tag}: a reactivation not bought on its breach's evening")
+                if placed:
+                    out.append(f"{tag}: a reactivation under a Focused Trader placement (U-5)")
+            if any(int(w) < 1 for w in (c.get("reactivation_wait_sessions") or ())):
                 out.append(f"{tag}: a reactivated account traded the session of its loss")
         if s.lever == "L-I" and int(c.get("max_running", 0)) > int(lev.max_concurrent_combines):
             out.append(f"{tag}: more than C evaluations running")
         if s.expiry != "none":
             waits = list(c.get("queue_waits") or ())
-            if waits and max(waits) > int(lev.expiry_days if lev.day_ordinals is None else lev.expiry_days):
-                if max(waits) > int(lev.expiry_days):
-                    out.append(f"{tag}: a pass activated past the expiry")
+            if waits and max(waits) > int(lev.expiry_days):
+                out.append(f"{tag}: a pass activated past the expiry")
         if s.lever == "L-H":
-            if int(c.get("house_closes_not_ahead", 0)):
-                out.append(f"{tag}: a close after the trigger not ahead")
+            if int(c.get("house_closes_not_ahead", 0)) or int(c.get("house_fees_not_ahead", 0)):
+                out.append(f"{tag}: a fee or a close after the trigger not ahead")
             if s.house == "stop" and int(c.get("house_purchases_after_trigger", 0)):
                 out.append(f"{tag}: house_stop bought an evaluation after the trigger")
         if s.naf:
@@ -390,6 +424,8 @@ class CLGateTally:
 
 
 def gate_oracle_rows(key: dict[str, Any], twin: bool, tally: CLGateTally) -> list[dict[str, Any]]:
+    """9.2 on one gate. "Beyond its Monte Carlo interval" is read as three standard errors -- a build choice (RD-02's
+    reading of the same oracle), not a declared tolerance."""
     rows = PR.gate_oracle_rows(key, twin, tally.req)
     if tally.budget_over:
         raise Refused(f"9.2: {key}: the purchase budget exceeded on {tally.budget_over} paths")
@@ -401,7 +437,8 @@ def gate_oracle_rows(key: dict[str, Any], twin: bool, tally: CLGateTally) -> lis
             if q > 0.4 + 3.0 * se:
                 raise Refused(f"9.2: {key} twin: the pass rate per evaluation {q:.4f} exceeds 2/5 + 3 se")
             rows.append(_row(section="oracle", part="gate", **key, measure="zero-edge twin pass rate per evaluation",
-                             stat="value", value=q, n=n, note=f"bound 2/5 + 3 x {se:.4f} (propsim D-02)"))
+                             stat="value", value=q, n=n, note=f"bound 2/5 + 3 x {se:.4f} (propsim D-02); three "
+                                                              "standard errors: a build choice, RD-02's reading"))
     return rows
 
 
@@ -422,6 +459,18 @@ def rolling_max(days: Sequence[int], window: int) -> int:
             j += 1
         best = max(best, i - j + 1)
     return best
+
+
+def _rk(k: Mapping[str, Any], **kw: Any) -> dict[str, Any]:
+    """A row from a key and its own fields, the row's own `n` and `h` taking precedence over the key's."""
+    return _row(**{**k, **kw})
+
+
+def _ftp_thresholds() -> str:
+    from extended import user_beside as B
+
+    return "; ".join(f"{p} {'purchases' if m == 'combine_purchases' else 'lost'} >= {t} in {B.FTP_WINDOW}"
+                     for p, m, t in B.FTP_BINDING) + " (user_beside.FTP_BINDING: D-497's grid, D-512 (4))"
 
 
 def mechanics_rows(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -449,62 +498,74 @@ def mechanics_rows(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[st
         k = dict(section="mechanics", part="mechanics", **key, block=bname, n=len(cs), h=252)
         if not cs:
             continue
-        yr = 252.0 / max(1.0, float(np.mean([len(c["cash_closes"]) - 1 for c in cs])))
+        for name, src in (("requests_at_early_close_or_holiday_eve", "tally"),
+                          ("executed_open_at_minutes_release_at_allowance", "tally")):
+            for who, r in (("cell", run), ("base", base)):
+                t = r.get("tally")
+                if t is None or name not in t.columns:
+                    raise Refused(f"9.3: {cell}: the {who}'s {name} is not counted (the calendars' counts)")
+                v = t.set_index("start_day").reindex(days)[name].to_numpy(float)
+                out.append(_rk(k, measure=name, stat=who, value=float(np.nansum(v)),
+                                note="E-029's calendar (holiday-hours reach)" if "holiday" in name else
+                                "E-050's calendar: a count, never a ruling"))
+        yr = 252.0 / 252.0
         for name in ("evaluations_bought", "activations", "reactivations"):
-            out.append(_row(**k, measure=f"{name}_per_year", stat="cell", value=float(np.mean([c.get(name, 0)
-                                                                                                for c in cs])) * yr))
-            out.append(_row(**k, measure=f"{name}_per_year", stat="base", value=float(np.mean([c.get(name, 0)
-                                                                                                for c in bs])) * yr))
+            for who, cc in (("cell", cs), ("base", bs)):
+                out.append(_rk(k, measure=f"{name}_per_year", stat=who,
+                                value=float(np.mean([c.get(name, 0) for c in cc])) * yr if cc else NAN))
         for name in ("max_accounts_live", "max_trades_one_session"):
-            out.append(_row(**k, measure=name, stat="max", value=float(max(c.get(name, 0) for c in cs))))
+            out.append(_rk(k, measure=name, stat="max", value=float(max(c.get(name, 0) for c in cs))))
         for name in ("purchase_days_refused_cash", "activations_refused_cash", "reactivations_refused_cash",
                      "same_day_bought_and_breached"):
-            out.append(_row(**k, measure=name, stat="count", value=float(sum(c.get(name, 0) for c in cs)),
+            out.append(_rk(k, measure=name, stat="count", value=float(sum(c.get(name, 0) for c in cs)),
                             note="must be zero (D-549)" if name.startswith("same_day") else
                             "the replay's bankroll premise: printed with its rows when nonzero"))
         if s.lever == "L-B":
             for name in ("eligible_losses", "eligible_losses_first_life", "eligible_losses_later_life",
                          "reactivations", "reactivations_first", "reactivations_second", "reactivations_refused_limit",
-                         "reactivations_refused_cash", "reactivations_refused_placement", "reactivations_lapsed"):
-                out.append(_row(**k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs]))))
+                         "reactivations_refused_cash", "reactivations_refused_placement", "reactivations_refused_seat",
+                         "reactivations_lapsed"):
+                out.append(_rk(k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs])),
+                                note="a delayed reactivation refused for want of a free seat on a later evening (the "
+                                     "build's reading: never a sixth account)" if name.endswith("seat") else ""))
             waits = [w for c in cs for w in (c.get("reactivation_wait_sessions") or ())]
-            out.append(_row(**k, measure="sessions_loss_to_first_trade", stat="median", value=_q(waits, 0.5),
+            out.append(_rk(k, measure="sessions_loss_to_first_trade", stat="median", value=_q(waits, 0.5),
                             n=len(waits)))
             fates = [f for c in cs for f in (c.get("reactivated_fates") or ())]
             for name in ("won_opening", "paid", "lost_before_payout"):
-                out.append(_row(**k, measure=f"reactivated_{name}", stat="share",
+                out.append(_rk(k, measure=f"reactivated_{name}", stat="share",
                                 value=float(np.mean([bool(f[name]) for f in fates])) if fates else NAN, n=len(fates)))
-            out.append(_row(**k, measure=f"max_reactivations_in_{B.FTP_WINDOW}_sessions", stat="max",
+            out.append(_rk(k, measure=f"max_reactivations_in_{B.FTP_WINDOW}_sessions", stat="max",
                             value=float(max(rolling_max(c.get("reactivation_days") or (), B.FTP_WINDOW) for c in cs)),
-                            note="beside the Focused Trader models' thresholds (3, 5, 10 lost; 10, 20 purchases)"))
+                            note="beside the Focused Trader models' thresholds: " + _ftp_thresholds()))
         if s.lever in ("L-I", "L-H"):
             waits = [w for c in cs for w in (c.get("queue_waits") or ())]
             for stat, q in (("median", 0.5), ("p90", 0.9), ("max", 1.0)):
-                out.append(_row(**k, measure="queue_wait_calendar_days", stat=stat, value=_q(waits, q), n=len(waits)))
+                out.append(_rk(k, measure="queue_wait_calendar_days", stat=stat, value=_q(waits, q), n=len(waits)))
             for name in ("sessions_five_funded_evals_running", "passes_queued", "passes_expired"):
-                out.append(_row(**k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs]))))
-            out.append(_row(**k, measure="evaluations_bought_beyond_base", stat="per_start",
+                out.append(_rk(k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs]))))
+            out.append(_rk(k, measure="evaluations_bought_beyond_base", stat="per_start",
                             value=float(np.mean([c.get("evaluations_bought", 0) for c in cs])
                                         - np.mean([c.get("evaluations_bought", 0) for c in bs]))))
         if s.lever == "L-H":
             trig = [int(c.get("house_trigger_day", -1)) for c in cs]
             for h in TRIGGER_SESSIONS:
-                out.append(_row(**k, measure=f"share_reaching_trigger_by_{h}", stat="share",
+                out.append(_rk(k, measure=f"share_reaching_trigger_by_{h}", stat="share",
                                 value=float(np.mean([0 <= t <= h for t in trig]))))
             hit = [t for t in trig if t >= 0]
             for stat, q in (("median", 0.5), ("p10", 0.1), ("p90", 0.9)):
-                out.append(_row(**k, measure="trigger_session", stat=stat, value=_q(hit, q), n=len(hit)))
+                out.append(_rk(k, measure="trigger_session", stat=stat, value=_q(hit, q), n=len(hit)))
             for name in ("house_purchase_days_withheld", "house_rebills_withheld", "house_activations_withheld"):
-                out.append(_row(**k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs]))))
+                out.append(_rk(k, measure=name, stat="per_start", value=float(np.mean([c.get(name, 0) for c in cs]))))
             cw = [w for c in cs for w in (c.get("house_cash_waits") or ())]
-            out.append(_row(**k, measure="passes_waited_for_cash_evenings", stat="median", value=_q(cw, 0.5), n=len(cw)))
+            out.append(_rk(k, measure="passes_waited_for_cash_evenings", stat="median", value=_q(cw, 0.5), n=len(cw)))
             fb = [x["daily"].get("fell_back") for x in base["outs"] if int(x["rec"]["start_day"]) in set(days)]
-            out.append(_row(**k, measure="base_starts_falling_back_below_zero", stat="share",
+            out.append(_rk(k, measure="base_starts_falling_back_below_zero", stat="share",
                             value=float(np.nanmean([float(v) for v in fb if v is not None])) if fb else NAN,
                             note="the cell keeps them ahead by construction (2.3)"))
         if s.lever == "L-N":
             for name in ("fees_subscription", "fees_activation"):
-                out.append(_row(**k, measure=name, stat="cell_less_base",
+                out.append(_rk(k, measure=name, stat="cell_less_base",
                                 value=float(np.mean([c.get(name, 0) for c in cs]) - np.mean([c.get(name, 0)
                                                                                               for c in bs]))))
     return out
@@ -544,6 +605,7 @@ def guard_values(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None =
 
         v = f(vals(a, days, col)) - (f(vals(b, days, col)) if b is not None else 0.0)
         out[f"net_m{m}_{stat}"] = v
+        NS[f"net_m{m}_{stat}"] = len(days)
     for m in GUARD_CVAR:
         days = PR.block_days(recs, which, RD.month_horizon(m))
         if b is not None:
@@ -553,7 +615,12 @@ def guard_values(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None =
         if b is not None:
             v -= float(M.cvar(vals(b, days, col), 0.10))
         out[f"cvar10_m{m}"] = v
+        NS[f"cvar10_m{m}"] = len(days)
     return out
+
+
+#: guard_values' last call: each entry's starts (a guard entry with none is undefined, and says why)
+NS: dict[str, int] = {}
 
 
 def guard_rows(t: pd.DataFrame, key: dict[str, Any], base: pd.DataFrame | None = None, gate: Mapping[str, float]
@@ -562,11 +629,15 @@ def guard_rows(t: pd.DataFrame, key: dict[str, Any], base: pd.DataFrame | None =
     for bname, which in BLOCKS:
         g = guard_values(t, which, base)
         for k, v in g.items():
+            n = int(NS.get(k, 0))
             out.append(_row(section="guard", part="guard", **key, block=bname, measure=k,
-                            stat="cell_less_base" if base is not None else "value", value=float(v), note=label))
+                            stat="cell_less_base" if base is not None else "value", value=float(v), n=n,
+                            note="" if n else "no start with the measure's horizon left on this block"))
         for k, v in (gate or {}).items():
+            if k.startswith("_"):
+                continue
             out.append(_row(section="guard", part="guard", **key, block=bname, measure=k, stat="gate", value=float(v),
-                            note="the gate at 0 %" + (f"; {label}" if label else "")))
+                            note=label or "the gate at 0 %"))
     return out
 
 
@@ -616,10 +687,10 @@ def s6_rows(frames: Mapping[str, pd.DataFrame], key: dict[str, Any], lever: str)
             k = dict(section="scorecard", part="s6", **key, cell=",".join(cells), block=bname, measure=m.name,
                      h=RD.horizon(m.hkey), n=int(len(X)))
             if len(X) < 2 or not tot > 0:
-                out.append(_row(**k, stat="start_share", value=NAN, note="no variance or too few starts"))
+                out.append(_rk(k, stat="start_share", value=NAN, note="no variance or too few starts"))
                 continue
             g = X.mean()
-            out.append(_row(**k, stat="start_share", value=len(cells) * float(((X.mean(axis=1) - g) ** 2).sum()) / tot,
+            out.append(_rk(k, stat="start_share", value=len(cells) * float(((X.mean(axis=1) - g) ** 2).sum()) / tot,
                             note=f"the start day's share across {lever}'s cells and the base"))
     return out
 
@@ -659,11 +730,14 @@ def diverge_rows(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[str,
                  "payouts": [len(x["rec"]["pay_days"]) for x in r["outs"]],
                  "payout_cash": [float(sum(x["rec"]["pay_cash"])) for x in r["outs"]]}[name]
             return [float(a) for a in v]
+        if name == "funded_lost":
+            t = r.get("tally")
+            return [] if t is None or name not in t.columns else [float(v) for v in t[name].to_numpy(float)]
         return [float(c.get(name, 0) or 0) for c in r["counts"].values()]
 
-    for name in ("passes", "funded_activated", "payouts", "payout_cash", "evaluations_bought", "activations",
-                 "reactivations", "house_rebills_withheld", "passes_queued", "passes_expired", "fees_subscription",
-                 "fees_activation", "reactivation_fees"):
+    for name in ("passes", "funded_activated", "funded_lost", "payouts", "payout_cash", "evaluations_bought",
+                 "activations", "reactivations", "house_rebills_withheld", "passes_queued", "passes_expired",
+                 "fees_subscription", "fees_activation", "reactivation_fees"):
         x, y = tot(run, name), tot(base, name)
         for stat, v in (("cell_mean", np.mean(x) if x else NAN), ("base_mean", np.mean(y) if y else NAN)):
             out.append(_row(section="diverge", part="diverge", **key, block="all", measure=name, stat=stat,
@@ -699,10 +773,22 @@ def comparisons(cells: Sequence[str]) -> list[tuple[str, str]]:
     return [(a, b) for a, b in out if a in have and b in have]
 
 
+def label_house(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """M4: "gaming P (E-134 (2))" on every row that holds a house-money cell -- as the cell, as the base, or in a list
+    of cells -- in every file (card, distribution, paired, guard, mechanics, ...)."""
+    for r in rows:
+        names = {str(r.get("cell") or ""), str(r.get("base") or "")}
+        names |= set(str(r.get("cell") or "").replace("->", ",").split(","))
+        if names & set(HOUSE_CELLS) and LR.LABEL_GAMING_P not in str(r.get("note") or ""):
+            r["note"] = "; ".join(x for x in (str(r.get("note") or ""), LR.LABEL_GAMING_P) if x)
+    return rows
+
+
 def reading_rows(runs: Mapping[tuple, Mapping[str, Any]], honesty: dict, no_effect: set,
                  gate_guard: Mapping[tuple, Mapping[str, float]] | None = None) -> list[dict[str, Any]]:
-    """10.1 on the kept runs: each run's card, distributions and guard row; each pair's paired readings, card, guard row
-    and divergences; across each base's cells the frontiers, S6's form and the evenness trade-off."""
+    """10.1 on the kept runs: each run's card, distributions and guard row (its gate entry the cell's 0 % gate, `ref`'s
+    its registered row, under every response); each pair's paired readings, card, guard row and divergences; across
+    each base's cells the frontiers, S6's form and the evenness trade-off. Every house-money row labelled (M4)."""
     rows: list[dict[str, Any]] = []
     frames = {k: PR.start_frame(k[0], k[1], k[3], r["outs"]) for k, r in runs.items()}
     cards = {k: {b: PR.card_of([x["rec"] for x in runs[k]["outs"]], w) for b, w in BLOCKS} for k in runs}
@@ -714,7 +800,8 @@ def reading_rows(runs: Mapping[tuple, Mapping[str, Any]], honesty: dict, no_effe
         key = dict(design=d, arm=arm, cell=cell, mode=var or "declared", response=rname)
         rows += PR.card_rows(cards[k], key)
         rows += PR.distribution_rows(t, key)
-        rows += guard_rows(t, key, None, gg.get((d, cell)), LR.LABEL_GAMING_P if cell in HOUSE_CELLS else "")
+        g = gg.get((d, cell))
+        rows += guard_rows(t, key, None, g, (g or {}).get("_label", ""))
     groups = sorted({(k[0], k[1], k[3], k[4]) for k in runs})
     for d, arm, rname, var in groups:
         cells = [k[2] for k in runs if (k[0], k[1], k[3], k[4]) == (d, arm, rname, var)]
@@ -728,7 +815,7 @@ def reading_rows(runs: Mapping[tuple, Mapping[str, Any]], honesty: dict, no_effe
             key = dict(design=d, arm=arm, cell=c, mode=var or "declared", response=rname, base=b)
             rows += PR.paired_rows(frames[ck], frames[bk], key, honesty)
             rows += PR.paired_card_rows([x["rec"] for x in runs[ck]["outs"]], [x["rec"] for x in runs[bk]["outs"]], key)
-            rows += guard_rows(frames[ck], key, frames[bk], None, LR.LABEL_GAMING_P if c in HOUSE_CELLS else "")
+            rows += guard_rows(frames[ck], key, frames[bk], None, "")
             rows += diverge_rows(key, runs[ck], runs[bk])
         cd = {k[2]: cards[k] for k in runs if (k[0], k[1], k[3], k[4]) == (d, arm, rname, var)}
         fr = {k[2]: frames[k] for k in runs if (k[0], k[1], k[3], k[4]) == (d, arm, rname, var)}
@@ -736,7 +823,7 @@ def reading_rows(runs: Mapping[tuple, Mapping[str, Any]], honesty: dict, no_effe
         rows += frontier_rows(cd, key, with_house=False) + frontier_rows(cd, key, with_house=True)
         for lever in ("L-B", "L-I", "L-H", "L-N"):
             rows += s6_rows(fr, key, lever) + evenness_rows(fr, cd, key, lever)
-    return rows
+    return label_house(rows)
 
 
 # ------------------------------------------------------------------------------------------------ the menu
@@ -751,43 +838,67 @@ def _first(df: pd.DataFrame, **eq: Any) -> float:
 
 
 GUARD_COLUMNS = tuple(f"net_m{m}_{s}" for m, s in GUARD_NETS) + tuple(f"cvar10_m{m}" for m in GUARD_CVAR)
-GATE_GUARD = ("growth_on_required_bankroll", "ruin_probability")
+GATE_GUARD = ("growth_on_required_bankroll", "required_bankroll_p90", "ruin_probability")
 
 
 def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any]], no_effect: set,
-               solver_view: pd.DataFrame | None = None, ftp_gap: bool = True) -> pd.DataFrame:
-    """10.1 item 12: each cell (headline response `off`, both arms) against `ref` -- its P and paired difference with
-    the guard row beside in the same row, the flags (mechanical), the labels, E-015's limits, stage 0's view beside for
-    the Back2Funded and `naf` rows (printed, never ordering or flagging a row); the order is the grid's, never P's."""
+               solver_view: pd.DataFrame | str | None = None, ftp_gap: bool = True) -> pd.DataFrame:
+    """10.1 item 12 (and 8's beside menus): each (design, arm, cell, response, variant) of the reading against `ref`
+    under the same response -- its P and paired difference with the guard row beside in the same row, D-34's purchases a
+    year beside growth, Back2Funded's reactivations per 21 sessions, the funded accounts lost; the flags (mechanical),
+    the labels, E-015's limits; stage 0's view beside the Back2Funded and `naf` rows (printed, never ordering or
+    flagging a row: a string or a frame, read nowhere else); the order is the grid's, never P's."""
     rows = []
     paired = reading[(reading["part"] == "paired") & (reading["base"] == "ref")]
     guard = reading[reading["part"] == "guard"]
-    card = reading[(reading["part"] == "card") & (reading["stat"] == "value") & (reading["section"] == "scorecard")]
+    mech = reading[reading["part"] == "mechanics"]
+    div = reading[reading["part"] == "diverge"]
+    card = reading[(reading["part"] == "card") & (reading["stat"] == "value") & (reading["base"].fillna("") == "")]
     n_int = int((reading[reading["part"] == "paired"]["stat"] == "ci90_low").sum())
     seen = list(dict.fromkeys(str(x) for x in card["design"]))
     designs = [d for d in DESIGNS if d in seen] + [d for d in seen if d not in DESIGNS]
-    combos = [(d, a, c) for d in designs for a in ARMS for c in ("ref", *NEW_CELLS)
-              if ((card["design"] == d) & (card["arm"] == a) & (card["cell"] == c) & (card["response"] == "off")).any()
-              or run_key(d, a, c) in no_effect]
-    for d, arm, cell in combos:
+    resp = list(dict.fromkeys(str(x) for x in card["response"]))
+    modes = list(dict.fromkeys(str(x) for x in card["mode"]))
+    combos = [(d, a, c, r, m) for d in designs for r in resp for m in modes for a in ARMS for c in ("ref", *NEW_CELLS)
+              if ((card["design"] == d) & (card["arm"] == a) & (card["cell"] == c) & (card["response"] == r)
+                  & (card["mode"] == m)).any() or (d, a, c, r, "" if m == "declared" else m) in no_effect]
+
+    def sub(df: pd.DataFrame, d: str, a: str, c: str, r: str, m: str) -> pd.DataFrame:
+        return df[(df["design"] == d) & (df["arm"] == a) & (df["cell"] == c) & (df["response"] == r)
+                  & (df["mode"] == m)]
+
+    for d, arm, cell, rname, mode in combos:
         s = spec(cell)
-        row: dict[str, Any] = {"design": d, "arm": arm, "cell": cell, "lever": s.lever, "response": "off",
-                               "base": "" if cell == "ref" else "ref"}
-        lv = card[(card["design"] == d) & (card["arm"] == arm) & (card["cell"] == cell) & (card["response"] == "off")]
-        gl = guard[(guard["design"] == d) & (guard["arm"] == arm) & (guard["cell"] == cell)
-                   & (guard["response"] == "off") & (guard["base"] == "") & (guard["block"] == "all")]
+        row: dict[str, Any] = {"design": d, "arm": arm, "cell": cell, "lever": s.lever, "response": rname,
+                               "variant": mode, "base": "" if cell == "ref" else "ref"}
+        lv = sub(card, d, arm, cell, rname, mode)
+        gl = sub(guard, d, arm, cell, rname, mode)
+        gl = gl[(gl["base"].fillna("") == "") & (gl["block"] == "all")]
         row["P_level"] = _first(lv, block="all", measure="card_P")
+        why = []
         for g in GUARD_COLUMNS:
             row[f"guard_{g}"] = _first(gl[gl["stat"] == "value"], measure=g)
+            gv = gl[(gl["stat"] == "value") & (gl["measure"] == g)]
+            if len(gv) and int(gv["n"].iloc[0]) == 0:
+                why.append(g)
+        row["guard_reason"] = (f"{', '.join(why)}: no start with the measure's horizon left" if why else "")
         for g in GATE_GUARD:
             row[f"guard_{g}"] = _first(gl[gl["stat"] == "gate"], measure=g)
+        gn = gl[gl["stat"] == "gate"]["note"]
+        row["guard_gate_label"] = str(gn.iloc[0]) if len(gn) else ""
+        mm = sub(mech, d, arm, cell, rname, mode)
+        row["evaluations_bought_per_year"] = _first(mm, block="all", measure="evaluations_bought_per_year", stat="cell")
+        row["reactivations_per_year"] = _first(mm, block="all", measure="reactivations_per_year", stat="cell")
+        row["max_reactivations_in_21_sessions"] = _first(mm, block="all", measure="max_reactivations_in_21_sessions",
+                                                          stat="max")
+        dv = sub(div, d, arm, cell, rname, mode)
+        row["funded_lost_mean"] = _first(dv, measure="funded_lost", stat="cell_mean")
         labels = [LR.LABEL_DESCRIBED, LR.LABEL_FIRST_ORDER]
         flags: list[str] = []
         if cell != "ref":
-            pp = paired[(paired["design"] == d) & (paired["arm"] == arm) & (paired["cell"] == cell)
-                        & (paired["response"] == "off")]
-            pg = guard[(guard["design"] == d) & (guard["arm"] == arm) & (guard["cell"] == cell)
-                       & (guard["response"] == "off") & (guard["base"] == "ref")]
+            pp = sub(paired, d, arm, cell, rname, mode)
+            pg = sub(guard, d, arm, cell, rname, mode)
+            pg = pg[pg["base"] == "ref"]
             row.update({"P_mean_difference": _first(pp, block="all", measure="P", stat="mean"),
                         "P_ci90_low": _first(pp, block="all", measure="P", stat="ci90_low"),
                         "P_ci90_high": _first(pp, block="all", measure="P", stat="ci90_high"),
@@ -806,24 +917,29 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
             if flipped:
                 flags.append(LR.LABEL_NOT_STABLE)
             row["flipped_measures"] = "; ".join(flipped)
-            if run_key(d, arm, cell) in no_effect:
+            if (d, arm, cell, rname, "" if mode == "declared" else mode) in no_effect:
                 labels.append(LR.LABEL_NO_EFFECT)
         if s.lever == "L-H":
             flags.append(LR.LABEL_GAMING_P)
         if s.lever == "L-B":
             labels += list(LR.B2F_LABELS)
+            if rname.startswith("ftp_"):
+                labels.append("a reactivation is bought before the evening's placement is read (2.1; the engine's "
+                              "placement binds from tomorrow): under a Corrective model the account just bought may be "
+                              "closed at once")
+                labels.append(LR.label("reactivation_counted_conservative") if mode == CONSERVATIVE else
+                              LR.label("reactivation_counted_as_purchase"))
         if s.lever in ("L-H", "L-N") and ftp_gap:
             flags.append(LR.LABEL_FTP_NOT_READ)
-            labels.append(f"{LR.LABEL_FTP_NOT_READ}: " + LR.FTP_GAP_REASON["naf" if s.naf else "house"])
+            labels.append(f"{LR.LABEL_FTP_NOT_READ}: " + (
+                "not read (section 4's gap)" if s.naf else LR.FTP_GAP_REASON["house"]))
         if s.expiry != "none":
             labels.append("U-1: the hold's expiry unstated; both readings run")
         row["flags"] = "; ".join(flags)
         row["labels"] = "; ".join(labels)
         row["ordered_on_P"] = False
-        if solver_view is not None and s.lever in ("L-B", "L-N") and len(solver_view):
-            sv = solver_view[(solver_view["design"] == d) & (solver_view["rule"] == ("G-B" if s.lever == "L-B" else
-                                                                                      "G-N"))]
-            row["solver_view"] = "; ".join(str(x) for x in sv["line"]) if len(sv) else ""
+        if s.lever in ("L-B", "L-N"):
+            row["solver_view"] = solver_view_text(solver_view, d, "G-B" if s.lever == "L-B" else "G-N")
             row["solver_view_label"] = LR.LABEL_SOLVER_VIEW + ": deciding nothing, beside the replay's readings"
         crossed = []
         for lim in approved_limits:
@@ -835,14 +951,14 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
         row["limits_crossed"] = "; ".join(crossed)
         rows.append(row)
     menu = pd.DataFrame(rows)
-    # the expiry flag: a cell's two readings on opposite sides of its base, on P or any guarded measure (U-1)
     if len(menu):
         menu["depends_on_expiry"] = False
         for i, r in menu.iterrows():
             if spec(r["cell"]).expiry != "30":
                 continue
-            other = menu[(menu["design"] == r["design"]) & (menu["arm"] == r["arm"])
-                         & (menu["cell"] == r["cell"][:-3] + "_none")]
+            other = menu[(menu["design"] == r["design"]) & (menu["arm"] == r["arm"]) & (menu["response"] ==
+                                                                                         r["response"])
+                         & (menu["variant"] == r["variant"]) & (menu["cell"] == r["cell"][:-3] + "_none")]
             if not len(other):
                 continue
             o = other.iloc[0]
@@ -864,15 +980,45 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
     return menu
 
 
+def solver_view_text(solver_view: pd.DataFrame | str | None, design: str, rule: str) -> str:
+    """M7: stage 0's line for a base and rule, read from `cl_fit.csv`'s `solver_view` section; a string (stage 0
+    stopped, its row named) is printed as given; None: stage 0 not read into this menu (said so)."""
+    if solver_view is None:
+        return "stage 0's view not given to this menu"
+    if isinstance(solver_view, str):
+        return solver_view
+    sv = solver_view[(solver_view["design"].astype(str) == design) & (solver_view["rule"].astype(str) == rule)]
+    return "; ".join(str(x) for x in sv["line"]) if len(sv) else f"no {rule} line for {design} in stage 0's view"
+
+
+def solver_view_frame(path: Path) -> pd.DataFrame:
+    """M7: `cl_fit.csv`'s `solver_view` section, the file verified through its manifest."""
+    from extended import results as XR
+
+    ok, msg = XR.verify_result(path)
+    if not ok:
+        raise Refused(f"{path.name}: {msg}")
+    f = XR.read_result(path)
+    return f[f["section"].astype(str) == "solver_view"].reset_index(drop=True)
+
+
 def check_menu(menu: pd.DataFrame) -> None:
-    """T-14, refusing: no P without its guard row beside it; every house-money row labelled "gaming P (E-134 (2))"
-    and never ordered on P; every house-money and `naf` row naming the Focused Trader gap."""
+    """T-14, refusing (M2): no finite P or P difference beside a missing or non-finite guard entry -- every net of the
+    guard row and the gate's entries -- unless the row names its reason (`guard_reason`); every house-money row
+    labelled "gaming P (E-134 (2))" and never ordered on P; every house-money and `naf` row naming the Focused Trader
+    gap."""
     if not len(menu):
         return
+    need = [f"guard_{g}" for g in (*GUARD_COLUMNS, *GATE_GUARD)]
     for _, r in menu.iterrows():
         has_p = np.isfinite(_f(r.get("P_level"))) or np.isfinite(_f(r.get("P_mean_difference")))
-        if has_p and not all(f"guard_{g}" in r.index for g in (*GUARD_COLUMNS, *GATE_GUARD)):
-            raise Refused(f"the menu prints {r['design']} {r['cell']}'s P without its guard row (E-134 (2))")
+        if has_p:
+            excused = str(r.get("guard_reason") or "")
+            missing = [c for c in need if (c not in r.index or not np.isfinite(_f(r.get(c))))
+                       and c[len("guard_"):] not in excused.split(":")[0].split(", ")]
+            if missing:
+                raise Refused(f"the menu prints {r['design']} {r['cell']} ({r.get('response', 'off')})'s P beside "
+                              f"missing guard entries {missing[:4]} (E-134 (2))")
         s = spec(str(r["cell"]))
         if s.lever == "L-H" and (LR.LABEL_GAMING_P not in str(r.get("flags", "")) or bool(r.get("ordered_on_P"))):
             raise Refused(f"{r['cell']}: a house-money row not labelled {LR.LABEL_GAMING_P!r} or ordered on P")
@@ -924,19 +1070,44 @@ def _no_effect(runs: Mapping[tuple, Mapping[str, Any]]) -> set:
     return out
 
 
+def keep_compact(runs: Mapping[tuple, Mapping[str, Any]]) -> None:
+    """m9: after 9.1 item 7's checks, each start's closes and acts are kept only for `ref` and the `_none` cells (the
+    expiry pair's other half reads them); every other run keeps its counts without them."""
+    for k, r in runs.items():
+        cell = k[2]
+        if cell == "ref" or cell.endswith("_none"):
+            continue
+        for c in r["counts"].values():
+            for name in ("cash_closes", "acts", "fee_days"):
+                c.pop(name, None)
+
+
+def tally_of(x: Mapping[str, Any], d: str, arm: str, rname: str, cal: Mapping[str, pd.DataFrame]) -> pd.DataFrame:
+    """M5: each start's tallies -- RD-02's `start_tallies` (the requests at an early close or a holiday's eve, E-029's
+    calendar, E-104 D4's rule) and, with the recorder, `recorder_tallies` (the trades open at the 13:00 CT minutes
+    release executed at the full allowance, E-050's calendar; the funded accounts lost)."""
+    job = x["job"]
+    lag = int(job["args"]["path"]["payout_lag_days"])
+    t = PR.start_tallies(x["outs"], job["dates"], lag, PR.holiday_sessions(cal, job["dates"]))
+    rt = PR.recorder_tallies(x["rec"], d, arm, rname, cal) if x.get("rec") is not None else None
+    return PR.merge_tallies(t, rt)
+
+
 def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int | None = None, workers: int = 1,
                   gate: bool = True, honesty_reps: int = RD.HONESTY_SERIES, honesty_seed: int | None = None,
-                  approved_limits: Sequence[Mapping[str, Any]] = (), solver_view: pd.DataFrame | None = None,
+                  approved_limits: Sequence[Mapping[str, Any]] = (), solver_view: pd.DataFrame | str | None = None,
                   cells: Sequence[str] = STEP3_ORDER, root: Path = ROOT, authorise_gate: Callable[[], Any] | None = None,
                   log: Callable[[str], None] = print) -> dict[str, Any]:
     """Section 15 step 3, in its order: (a) `ref` on each base at `off`, both arms, the recorder on (9.1 items 2's
-    repeat and 4, and T-4's seat limits); (b) each new cell in step 3's order, both arms, the recorder on, checked under
-    9.1 items 5 and 7 before anything of it is read; (c) the gates in the same order (`authorise_gate`, the runner's
-    authorisation of `levers_gate_beside`, called just before the first); (d) the oracles and the mechanics, then the
-    reading and the menu without its beside sections. Raises `Refused` at the first failed check."""
+    repeat and 4, and T-4's seat limits on the replay and the gate); (b) each new cell in step 3's order, both arms,
+    the recorder on, checked under 9.1 items 5 and 7 before anything of it is read; (c) the gates in the same order
+    (`authorise_gate`, the runner's authorisation of `levers_gate_beside`, called just before the first); (d) the
+    oracles and the mechanics, then the reading and the menu without its beside sections. The two calendars are read,
+    each refused unless it hashes to its pin, before the first replay (M5). Raises `Refused` at the first failed check."""
     import user_journey as UJ
 
     seed = declared_seed(HONESTY_ROLE, root) if honesty_seed is None else int(honesty_seed)
+    cal = PR.calendar_frames(root)                       # M5: each refused unless it hashes to E-152's sha256
     jobs = {d: inputs.jobs(d) for d in designs}
     runs: dict[tuple, dict[str, Any]] = {}
     rows: list[dict[str, Any]] = []
@@ -958,6 +1129,8 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
             rows += identity_rows(d, arm, "ref", "9.1 items 2's repeat and 4", probs, len(x["outs"]))
             if probs:
                 raise Refused(f"{d} {arm} ref: " + "; ".join(probs[:6]))
+            x["tally"] = tally_of(x, d, arm, "off", cal)
+            x["rec"] = None
             runs[run_key(d, arm, "ref")] = x
             log(f"identity HOLDS: {d} {arm} ref (9.1 items 2's repeat and 4), {len(x['outs'])} starts")
     # (b) the new cells
@@ -978,9 +1151,12 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
                 rows += identity_rows(d, arm, cell, "9.1 items 5 and 7", probs, len(x["outs"]))
                 if probs:
                     raise Refused(f"{d} {arm} {cell}: " + "; ".join(probs[:6]))
-                x["rec"] = None                          # the records checked; the counts and outputs kept
+                x["tally"] = tally_of(x, d, arm, "off", cal)
+                x["rec"] = None                          # the records checked and tallied; the counts kept
                 runs[run_key(d, arm, cell)] = x
             log(f"checked: {d} {cell} (9.1 items 5 and 7)")
+    keep_compact(runs)
+    ref_guard = ref_gate_guard(inputs, designs)
     # (c) the gates
     gates: dict[tuple[str, str, bool], dict[str, Any]] = {}
     if gate:
@@ -1012,6 +1188,8 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
         rows += gate_oracle_rows(dict(design=d, cell=cell, mode="declared", block="twin" if twin else "gate"), twin,
                                  gx["tally"])
     no_effect = _no_effect(runs)
+    for d in designs:
+        rows += PR.stream_rows(d, jobs[d]["verdict"], cal)
     for k, r in runs.items():
         d, arm, cell, rname, var = k
         if cell == "ref":
@@ -1023,7 +1201,7 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
             continue
         rows += mechanics_rows(key, r, runs[run_key(d, arm, "ref")])
     log("oracles and mechanics: done")
-    gate_frame, gate_guard = gate_table(gates, inputs)
+    gate_frame, gate_guard = gate_table(gates, inputs, ref_guard)
     honesty: dict = {}
     rows += reading_rows(runs, honesty, no_effect, gate_guard)
     hon = PR.honesty_table(list(honesty), seed, honesty_reps)
@@ -1031,18 +1209,47 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
     rows += [_row(section="coverage", h=int(r.h), n=int(r.n_w), measure=r.shape, stat=st, value=float(getattr(r, st)),
                   note=f"shape {r.shape_index}; {honesty_reps} series; seed key [declared, 1, {r.shape_index}, {r.h}, "
                        f"{r.n_w}]") for r in hon.itertuples() for st in ("coverage", "miss_above", "miss_below")]
-    reading = pd.DataFrame(rows, columns=list(PI.ROW_KEYS))
+    reading = pd.DataFrame(label_house(rows), columns=list(PI.ROW_KEYS))
     menu = menu_table(reading, approved_limits, no_effect, solver_view)
     return {"reading": reading, "gate": gate_frame, "menu": menu, "honesty_seed": seed, "no_effect": sorted(no_effect),
-            "runs": sorted(runs), "counts": {k: len(r["outs"]) for k, r in runs.items()}}
+            "runs": sorted(runs), "counts": {k: len(r["outs"]) for k, r in runs.items()},
+            "calendars_checked": dict(CALENDARS)}
 
 
-def gate_table(gates: Mapping[tuple, Mapping[str, Any]], inputs: Any) -> tuple[pd.DataFrame, dict]:
-    """The gates' file (10.1 item 9): each new cell's rows, its pairing with the base's registered paths, and the
-    levers' counts; and each cell's guard entries from its gate at 0 % (growth on the required bankroll, the ruin
-    probability), keyed (design, cell)."""
+GATE_COLUMNS = (("growth_on_required_bankroll", "pf_growth_on_base_p50"), ("required_bankroll_p90", "pf_required_p90"),
+                ("ruin_probability", "ruin_probability"))
+
+
+def gate_entry(row: Mapping[str, Any], what: str) -> dict[str, float]:
+    """A gate row's guard entries (M1), refused if a column is missing or not finite."""
+    out: dict[str, float] = {}
+    for name, col in GATE_COLUMNS:
+        v = _f(row.get(col))
+        if not math.isfinite(v):
+            raise Refused(f"{what}: the gate row has no finite {col} for the guard row's {name}")
+        out[name] = v
+    return out
+
+
+def ref_gate_guard(inputs: Any, designs: Sequence[str]) -> dict[tuple[str, str], dict[str, Any]]:
+    """M2: `ref`'s guard entries from its registered gate row (0 %, the placement off, the bound shift) -- 9.1's
+    identity, no gate rerun."""
+    out = {}
+    for d in designs:
+        rows = inputs.base_gate_rows(d)
+        if "lower_bound" not in rows:
+            raise Refused(f"{d}: no registered gate row at the bound for ref's guard row")
+        out[(d, "ref")] = {**gate_entry(rows["lower_bound"], f"{d} ref"), "_label": "the registered gate (9.1's identity)"}
+    return out
+
+
+def gate_table(gates: Mapping[tuple, Mapping[str, Any]], inputs: Any, ref_guard: Mapping[tuple, Mapping[str, Any]]
+               ) -> tuple[pd.DataFrame, dict]:
+    """The gates' file (10.1 item 9): each new cell's rows, its pairing with the base's registered paths (weakened, not
+    biased, after a cell's first reactivation shifts the funded indices' streams), the levers' counts, and the guard
+    entries (part `guard`, every cell and `ref`) that steps 4 and 5 read; and those entries keyed (design, cell)."""
     frames = []
-    guard: dict[tuple[str, str], dict[str, float]] = {}
+    guard: dict[tuple[str, str], dict[str, Any]] = {k: dict(v) for k, v in ref_guard.items()}
     for (d, cell, twin), gx in gates.items():
         df = gx["df"].copy()
         df.insert(0, "design", d)
@@ -1055,15 +1262,33 @@ def gate_table(gates: Mapping[tuple, Mapping[str, Any]], inputs: Any) -> tuple[p
                                          "shift": shift, "enforcement_p": p, **{k: float(v) for k, v in c.items()}}]))
         pair = inputs.gate_pairing_rows(d, cell, twin, gx["g"])
         if pair:
-            frames.append(pd.DataFrame(pair).assign(twin=bool(twin), part="pairing"))
+            frames.append(pd.DataFrame(pair).assign(twin=bool(twin), part="pairing",
+                                                    pairing_note="paired with the registered paths; the pairing "
+                                                                 "weakens after a reactivation shifts the funded "
+                                                                 "indices' streams (not biased)"))
         if not twin:
             b = df[(df["shift"] == "lower_bound") & np.isclose(df["enforcement_p"].astype(float), 0.0)]
-            if len(b):
-                r = b.iloc[0]
-                guard[(d, cell)] = {"growth_on_required_bankroll": _f(r.get("median_log_growth")),
-                                    "ruin_probability": _f(r.get("ruin_probability"))}
-    out = pd.concat(frames, ignore_index=True, sort=False) if frames else pd.DataFrame({"note": ["no gate run"]})
+            if len(b) != 1:
+                raise Refused(f"{d} {cell}: {len(b)} gate rows at the bound at 0 %, not one")
+            guard[(d, cell)] = {**gate_entry(b.iloc[0].to_dict(), f"{d} {cell}"), "_label": "the gate at 0 %"}
+    frames.append(pd.DataFrame([{"design": d, "cell": c, "part": "guard", "label": v["_label"],
+                                 **{k: x for k, x in v.items() if not k.startswith("_")}}
+                                for (d, c), v in guard.items()]))
+    out = pd.concat(frames, ignore_index=True, sort=False)
     return out, guard
+
+
+def gate_guard_from_file(df: pd.DataFrame) -> dict[tuple[str, str], dict[str, Any]]:
+    """M3: steps 4 and 5 read each cell's guard entries from step 3's gate file (its part `guard`)."""
+    g = df[df["part"].astype(str) == "guard"]
+    out = {}
+    for r in g.to_dict("records"):
+        out[(str(r["design"]), str(r["cell"]))] = {**gate_entry({c: r.get(n) for n, c in GATE_COLUMNS},
+                                                                f"{r['design']} {r['cell']}"),
+                                                   "_label": f"{r['label']} (step 3's gate file)"}
+    if not out:
+        raise Refused("step 3's gate file holds no guard entries")
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ steps 4 and 5
@@ -1082,20 +1307,26 @@ def beside_runs(stage: str) -> list[tuple[str, str, str]]:
     raise KeyError(stage)
 
 
-def run_beside(inputs: Any, stage: str, *, designs: Sequence[str] = DESIGNS, starts: int | None = None,
-               workers: int = 1, honesty_reps: int = RD.HONESTY_SERIES, honesty_seed: int | None = None,
+def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[str, Any]],
+               designs: Sequence[str] = DESIGNS, starts: int | None = None, workers: int = 1,
+               honesty_reps: int = RD.HONESTY_SERIES, honesty_seed: int | None = None,
                cells: Sequence[str] | None = None, root: Path = ROOT, log: Callable[[str], None] = print
                ) -> dict[str, Any]:
     """Section 15 step 4 (`ladder`: the denial ladder and the placement on) or step 5 (`ftp`: the ten Focused Trader
     models, then the Back2Funded cells' counted reading): `ref`'s checks against Q-44 first (9.1 item 6), then every
-    cell in step 3's order, verdict arm; each read with the full guard row, its gate entry the cell's 0 % gate (from step
-    3's gate file, labelled), against `ref` under the same response. Raises `Refused` at the first failed check."""
+    cell in step 3's order, verdict arm; each read with the full guard row, its gate entry the cell's 0 % gate from step
+    3's gate file (`gate_guard`, M3; refused for a cell it lacks), against `ref` under the same response; the beside
+    menu by `menu_table`, refusing a P without its guard. Raises `Refused` at the first failed check."""
     from extended import user_beside as B
     import user_journey as UJ
 
     seed = declared_seed(HONESTY_ROLE, root) if honesty_seed is None else int(honesty_seed)
     jobs = {d: inputs.jobs(d)["verdict"] for d in designs}
     responses = list(LADDER) if stage == "ladder" else [r.name for r in B.RESPONSES if r.kind == "ftp"]
+    todo = [t for t in beside_runs(stage) if cells is None or t[0] in cells]
+    lack = sorted({(d, c) for d in designs for c in ("ref", *{t[0] for t in todo}) if (d, c) not in gate_guard})
+    if lack:
+        raise Refused(f"step 3's gate file lacks the guard entries of {lack[:4]} (M3)")
     runs: dict[tuple, dict[str, Any]] = {}
     rows: list[dict[str, Any]] = []
     for d in designs:
@@ -1111,7 +1342,6 @@ def run_beside(inputs: Any, stage: str, *, designs: Sequence[str] = DESIGNS, sta
                 raise Refused(f"{d} ref {rname}: " + "; ".join(probs[:6]))
             runs[run_key(d, "verdict", "ref", rname)] = x
         log(f"identity HOLDS: {d} ref beside under {stage} (9.1 item 6)")
-    todo = [t for t in beside_runs(stage) if cells is None or t[0] in cells]
     for d in designs:
         chosen = UJ.start_choice(len(jobs[d]["blocks"]), starts)
         for cell, rname, var in todo:
@@ -1122,25 +1352,51 @@ def run_beside(inputs: Any, stage: str, *, designs: Sequence[str] = DESIGNS, sta
                 raise Refused("9.2 beside: " + "; ".join(probs[:6]))
             runs[run_key(d, "verdict", cell, rname, var)] = x
         log(f"beside: {d} {stage} done")
+    keep_compact(runs)
     no_effect = _no_effect(runs)
+    for k, r in runs.items():
+        d, arm, cell, rname, var = k
+        if cell != "ref" and k not in no_effect:
+            rows += mechanics_rows_beside(dict(design=d, arm=arm, cell=cell, mode=var or "declared", response=rname,
+                                               base="ref"), r, runs[run_key(d, arm, "ref", rname)])
     honesty: dict = {}
-    rows += reading_rows(runs, honesty, no_effect, None)
+    rows += reading_rows(runs, honesty, no_effect, gate_guard)
     hon = PR.honesty_table(list(honesty), seed, honesty_reps)
     PR.label_rows([r for r in rows if r["part"] == "paired"], hon)
     for r in rows:
         if r["section"] != "identity":
             r["section"] = "ladder" if (stage == "ladder" and r["response"] != "rtp") else (
                 "rtp" if stage == "ladder" else "ftp")
-            if r["part"] == "guard":
-                r["note"] = "; ".join(x for x in (r["note"], "the gate at 0 %: no gate is run under a beside response")
-                                      if x)
-        if stage == "ftp" and r.get("mode") == CONSERVATIVE:
-            r["note"] = "; ".join(x for x in (r["note"], LR.label("reactivation_counted_conservative")) if x)
-        elif stage == "ftp" and spec(str(r.get("cell") or "ref")).lever == "L-B" if r.get("cell") in NEW_CELLS else \
-                False:
-            r["note"] = "; ".join(x for x in (r["note"], LR.label("reactivation_counted_as_purchase")) if x)
-    reading = pd.DataFrame(rows, columns=list(PI.ROW_KEYS))
-    return {"reading": reading, "honesty_seed": seed, "no_effect": sorted(no_effect), "runs": sorted(runs)}
+    reading = pd.DataFrame(label_house(rows), columns=list(PI.ROW_KEYS))
+    menu = menu_table(reading, (), no_effect, None, ftp_gap=True)
+    return {"reading": reading, "menu": menu, "honesty_seed": seed, "no_effect": sorted(no_effect),
+            "runs": sorted(runs)}
+
+
+def _ftp_window() -> int:
+    from extended import user_beside as B
+
+    return int(B.FTP_WINDOW)
+
+
+def mechanics_rows_beside(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """10.1 item 8's per-model counts beside: purchases and reactivations a year (D-34's caveat, m5), the share of
+    starts placed by the Focused Trader model and when, and the accounts it closed."""
+    out = []
+    cs = list(run["counts"].values())
+    bs = list(base["counts"].values())
+    k = dict(section="mechanics", part="mechanics", **key, block="all", n=len(cs), h=252)
+    for name in ("evaluations_bought", "reactivations"):
+        out.append(_rk(k, measure=f"{name}_per_year", stat="cell", value=float(np.mean([c.get(name, 0)
+                                                                                            for c in cs])) if cs else NAN))
+    out.append(_rk(k, measure="max_reactivations_in_21_sessions", stat="max",
+                    value=float(max([rolling_max(c.get("reactivation_days") or (), _ftp_window()) for c in cs] or [0]))))
+    placed = [float(x["response"].get("ftp_placed_day", NAN)) for x in run["outs"]]
+    out.append(_rk(k, measure="share_starts_placed", stat="share",
+                    value=float(np.mean([math.isfinite(v) for v in placed])) if placed else NAN))
+    out.append(_rk(k, measure="placement_session", stat="median", value=_q([v for v in placed if math.isfinite(v)],
+                                                                              0.5)))
+    return out
 
 
 def adapter_provenance(root: Path = ROOT, strict: bool = True) -> dict[str, Any]:
@@ -1165,4 +1421,6 @@ __all__ = ["DECLARATION", "PREREG_ID", "PIN_ROW", "PURPOSES", "STAGE_PURPOSE", "
            "replay_oracle_problems", "CLGateTally", "gate_oracle_rows", "mechanics_rows", "guard_values", "guard_rows",
            "frontier_rows", "s6_rows", "evenness_rows", "diverge_rows", "comparisons", "reading_rows", "menu_table",
            "check_menu", "declared_seed", "run_scorecard", "gate_table", "beside_runs", "run_beside",
-           "adapter_provenance", "GUARD_COLUMNS", "GATE_GUARD"]
+           "adapter_provenance", "GUARD_COLUMNS", "GATE_GUARD", "GATE_COLUMNS", "gate_entry", "ref_gate_guard",
+           "gate_guard_from_file", "label_house", "solver_view_text", "solver_view_frame", "keep_compact", "tally_of",
+           "mechanics_rows_beside"]
