@@ -24,7 +24,8 @@ In this process (`extended.vol_descriptive` imports no engine):
 * `test_the_module_reads_nothing_and_imports_no_engine` -- the module's source names no reader call and no `propedge`
   import outside the one vendored `day_arrays` door.
 
-In a child process (`tests/vd_synthetic.py`; the vendored tree on its path), on `extended/synthetic_bars.py` toys:
+In a child process (`tests/q121_synthetic.py`, named `vd_synthetic.py` before Q-121b: RD-04 reserves `vd_`; the
+vendored tree on its path), on `extended/synthetic_bars.py` toys:
 
 * `test_child_fv3_identity_and_day_kinds` -- the script's walk identity holds against `fv3_rung_walk` on 100 synthetic
   sessions (a roll and a DST change inside) and refuses a single tampered code; the day kinds equal `atlas_walk._kind`
@@ -39,7 +40,7 @@ In a child process (`tests/vd_synthetic.py`; the vendored tree on its path), on 
   never called; `results/` outside a clean run exits 2 before any read; a failed identity exits 4, nothing written.
 
 Seeds (named by role, outside the 2026xxxx range): `SEED_PATHS` 4213 (the hand-built days' random walks),
-`SEED_VALUES` 4214 (the trailing test's replacements); the child's in `tests/vd_synthetic.py`.
+`SEED_VALUES` 4214 (the trailing test's replacements); the child's in `tests/q121_synthetic.py`.
 """
 from __future__ import annotations
 
@@ -314,7 +315,7 @@ def test_the_module_reads_nothing_and_imports_no_engine():
 def _child(check: str) -> dict:
     env = {**os.environ, "OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
     env.pop("S2X_CLEAN_RUN", None)
-    r = subprocess.run([sys.executable, str(ROOT / "tests" / "vd_synthetic.py"), check], capture_output=True,
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "q121_synthetic.py"), check], capture_output=True,
                        text=True, timeout=600, env=env)
     assert r.returncode == 0, r.stdout[-4000:] + r.stderr[-4000:]
     return json.loads(r.stdout.strip().splitlines()[-1])
