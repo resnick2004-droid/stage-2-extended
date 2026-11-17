@@ -344,28 +344,6 @@ def replay(design: str, job: dict, starts: list[int], workers: int, cls=None, id
     return outs, rec
 
 
-def lookup_problems(spec, job: dict, starts: list[int]) -> list[str]:
-    """m3: the wrapper's offer lookup on real data, before any replay -- every start's window (and each exact-length
-    window U1 reads) is found at its own start."""
-    from propedge.research import user_journey as U
-
-    n = len(job["blocks"])
-    fps = spec.fingerprints
-    bad = []
-    for s_ in starts:
-        for L_ in {min(U.HORIZON, n - s_), *[h for h in U.EXACT if h < min(U.HORIZON, n - s_)]}:
-            try:
-                got = spec.window_offset(list(fps[s_:s_ + L_]))
-            except (KeyError, ValueError) as exc:
-                bad.append(f"the lookup: start {s_} ({L_} sessions): {exc}")
-                continue
-            if got != s_:
-                bad.append(f"the lookup: start {s_}'s window ({L_} sessions) is found at {got}")
-        if len(bad) > 3:
-            break
-    return bad
-
-
 def run1_more_readings(L, sp, base_rec, offers, cells: dict) -> list[dict[str, Any]]:
     """m5: run 1's readings that cannot be recovered after it -- the in-state offers by hour and day kind, their share
     per stratum (A5); the kind shares of the in-state offers against their strata and the halves by year (10 item 5);
@@ -574,7 +552,7 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
         starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
     probs: list[str] = []
     never_spec = OW.WaitSpec.for_blocks("never", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]])
-    probs += lookup_problems(never_spec, job, starts)                                      # m3: the lookup, every start
+    probs += OW.lookup_problems(never_spec, job, starts)                                      # m3: the lookup, every start
     never = OW.waiting_class(never_spec)
     _, rn = replay("fo_never", job, starts, workers, never, ids)
     on = OW.openings(rn, "fo_never", ARM, "off")

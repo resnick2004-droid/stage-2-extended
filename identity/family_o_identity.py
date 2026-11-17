@@ -222,11 +222,8 @@ def item4(starts: int | None, workers: int) -> list[str]:
     jobs, _, probs = I.build(Path(RESULTS_DIR), "p16")
     job = jobs["verdict"]
     chosen = UJ.start_choice(len(job["blocks"]), starts)
-    sys.path.insert(0, str(ROOT / "scripts"))
-    import fo_opening as FO
-
     spec = OW.WaitSpec.for_blocks("a0_lookup", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]])
-    probs += FO.lookup_problems(spec, job, chosen)                    # m3: the offer lookup on every window
+    probs += OW.lookup_problems(spec, job, chosen)                    # m3: the offer lookup on every window
     cls = OW.waiting_class(OW.WaitSpec.for_blocks("w0_off", job["blocks"],
                                                   [np.zeros(len(b), bool) for b in job["blocks"]], W=0))
     for name in RESPONSES_W0:

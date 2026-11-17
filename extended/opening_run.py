@@ -61,62 +61,30 @@ WAITED = ("Q-89", "Q-93", "Q-101", "Q-80")
 #: constant is changed in a code commit before run 1 (said in the build's hand-back)
 A0_ID = "f03_a0"
 A0_QUEUE_ID = A0_ID
-#: each waited identity's script; its covered paths are `cover(ident)` (E-113's rule; Q-111's `identity_cover` will
-#: replace the shared ones)
+#: each waited identity's script: the shared ones' covers are Q-111's (`extended.identity_cover.cover`, never less);
+#: A0's is declared here by the same rule -- `identity_cover.BASE` (with `config/`), its script and that script's
+#: closure by `identity_cover.imports` -- and checked by `identity_cover.uncovered`
 SCRIPTS: dict[str, str] = {"Q-89": "identity/place_records_identity.py", "Q-93": "identity/user_beside_identity.py",
                            "Q-101": "identity/replay_records_identity.py", "Q-80": "identity/gate_identity.py",
                            A0_ID: "identity/family_o_identity.py"}
-COVER_BASE = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
-
-
-def _module_file(root: Path, name: str, here: Path) -> Path | None:
-    """A repository module's file for an import name (`extended.x`, `x` beside the importer, a script), or None."""
-    parts = name.split(".")
-    for base in (root, here.parent, root / "identity", root / "scripts"):
-        f = base.joinpath(*parts).with_suffix(".py")
-        if f.is_file() and "vendor" not in f.relative_to(root).parts:
-            return f
-        d = base.joinpath(*parts) / "__init__.py"
-        if d.is_file() and "vendor" not in d.relative_to(root).parts:
-            return d
-    return None
-
-
-def imports_of(root: Path, rel: str) -> set[str]:
-    """Every repository module `rel` imports, directly or not (any import statement, top-level or inside a function),
-    as repository-relative paths; vendored modules are covered by the vendored manifest."""
-    import ast
-
-    root = Path(root)
-    seen: set[str] = set()
-    todo = [root / rel]
-    while todo:
-        f = todo.pop()
-        r = f.relative_to(root).as_posix()
-        if r in seen:
-            continue
-        seen.add(r)
-        tree = ast.parse(f.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            names: list[str] = []
-            if isinstance(node, ast.Import):
-                names = [a.name for a in node.names]
-            elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
-                names = [node.module] + [f"{node.module}.{a.name}" for a in node.names]
-            for n in names:
-                m = _module_file(root, n, f)
-                if m is not None and m.relative_to(root).as_posix() not in seen:
-                    todo.append(m)
-    return seen
 
 
 def cover(ident: str, root: Path | None = None) -> tuple[str, ...]:
-    """A waited identity's covered paths (E-113): the base (`extended/__init__.py`, both vendored manifests), the
-    identity's own script, and every repository module that script imports, directly or not."""
+    """A waited identity's covered paths: a shared identity's from `identity_cover.cover(ident)`; A0's
+    (`A0_ID`) as `identity_cover.BASE`, `identity/family_o_identity.py` and its closure, refused when
+    `identity_cover.uncovered` finds it short."""
     from extended import ROOT as _ROOT
+    from extended import identity_cover as IC
 
+    if ident != A0_ID:
+        return tuple(IC.cover(ident))
     r = Path(root) if root is not None else _ROOT
-    return tuple(sorted(set(COVER_BASE) | imports_of(r, SCRIPTS[ident])))
+    script = SCRIPTS[A0_ID]
+    out = tuple(dict.fromkeys([*IC.BASE, script, *IC.imports(script, r).files]))
+    short = IC.uncovered(script, out, r)
+    if short:
+        raise ValueError(f"REFUSED (F-03): A0's cover is short of E-113's rule: {short[:3]}")
+    return out
 
 
 WAITS: dict[str, tuple[str, ...]] = {ident: () for ident in SCRIPTS}       # filled by `waits()`
@@ -338,7 +306,7 @@ def choice_pick(choice: pd.DataFrame) -> dict[str, Any]:
 
 
 __all__ = ["FAMILY", "DECLARATION", "DECLARATION_SHA256", "PIN_ROW", "K", "LEVEL", "PURPOSES", "PINNED_BLOBS", "WAITED",
-           "A0_ID", "A0_QUEUE_ID", "WAITS", "SCRIPTS", "COVER_BASE", "imports_of", "cover", "waits", "CELL_COUNTS", "RESULT", "JOURNEY", "SECTIONS", "RUN1_SECTIONS",
+           "A0_ID", "A0_QUEUE_ID", "WAITS", "SCRIPTS", "cover", "waits", "CELL_COUNTS", "RESULT", "JOURNEY", "SECTIONS", "RUN1_SECTIONS",
            "RunRefused", "blob_id", "head_blob", "blob_problems", "waited_problems", "declaration_problems",
            "level_problems", "session_list_problems", "PreRun", "pre_run", "pinned_run1_problems", "file_sha256",
            "rows", "frame", "choice_pick"]

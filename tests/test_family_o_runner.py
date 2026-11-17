@@ -119,16 +119,36 @@ def test_the_waits_read_the_one_parser_and_count_only_at_head_or_an_ancestor(his
 
 
 def test_every_wait_covers_the_base_its_script_and_every_module_it_imports():
+    from extended import identity_cover as IC
+
     w = R.waits()
     assert set(w) == {*R.WAITED, R.A0_ID}
+    for ident in R.WAITED:                                          # the shared covers are Q-111's, never less
+        assert set(IC.cover(ident)) <= set(w[ident])
     for ident, covered in w.items():
-        assert set(R.COVER_BASE) <= set(covered) and R.SCRIPTS[ident] in covered, ident
-        assert all((ROOT / c).is_file() for c in covered), ident
-        assert not any(c.startswith("vendor/stage2/") for c in covered)
+        assert "config/" in covered and R.SCRIPTS[ident] in covered, ident
+        assert IC.uncovered(R.SCRIPTS[ident], covered) == [], ident
     assert {"extended/opening_population.py", "extended/opening_wait.py", "extended/user_beside.py",
             "identity/user_beside_identity.py", "identity/stage2_identity.py"} <= set(w[R.A0_ID])
-    assert {"extended/walker.py", "extended/features.py", "identity/gate_identity.py"} <= set(w["Q-89"])
-    assert "extended/user_measures.py" in w["Q-93"] and "identity/user_beside_identity.py" in w["Q-101"]
+
+
+def test_a_change_under_config_fails_every_wait(history):
+    """E-117: the folder `config/` is in every cover, so any change under it after a token re-requires every wait."""
+    repo, c3 = history["repo"], history["c3"]
+    (repo / "config").mkdir(exist_ok=True)
+    (repo / "config" / "x.yaml").write_text("a: 1\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "c4 config")
+    c4 = _git(repo, "rev-parse", "HEAD")
+    (repo / "config" / "x.yaml").write_text("a: 2\n")
+    _git(repo, "commit", "-q", "-am", "c5 config changed")
+    for ident in (*R.WAITED, R.A0_ID):
+        text = token_row("E-7", ident, c4)
+        bad, rows = R.waited_problems(text, {ident: ("a.py", "config/")}, repo, "main")
+        assert rows == {ident: []} and bad and "config/x.yaml" in bad[0], ident
+        ok, rows = R.waited_problems(token_row("E-8", ident, _git(repo, "rev-parse", "HEAD")),
+                                     {ident: ("a.py", "config/")}, repo, "main")
+        assert ok == [] and rows == {ident: ["E-8"]}
 
 
 def test_this_branch_waits_for_its_identities():

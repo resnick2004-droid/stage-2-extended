@@ -391,6 +391,29 @@ def wait_problems(opens: pd.DataFrame, declined: pd.DataFrame, in_set: Mapping[s
     return out
 
 
-__all__ = ["W_DECLARED", "AmbiguousOffer", "GateOpen", "block_fingerprint", "WaitSpec", "take_latest_declined",
+def lookup_problems(spec: WaitSpec, job: dict, starts: Sequence[int]) -> list[str]:
+    """m3: the wrapper's offer lookup on real data, before any replay -- every start's window (and each exact-length
+    window U1 reads) is found at its own start."""
+    from propedge.research import user_journey as U
+
+    n = len(job["blocks"])
+    fps = spec.fingerprints
+    bad = []
+    for s_ in starts:
+        for L_ in {min(U.HORIZON, n - s_), *[h for h in U.EXACT if h < min(U.HORIZON, n - s_)]}:
+            try:
+                got = spec.window_offset(list(fps[s_:s_ + L_]))
+            except (KeyError, ValueError) as exc:
+                bad.append(f"the lookup: start {s_} ({L_} sessions): {exc}")
+                continue
+            if got != s_:
+                bad.append(f"the lookup: start {s_}'s window ({L_} sessions) is found at {got}")
+        if len(bad) > 3:
+            break
+    return bad
+
+
+
+__all__ = ["lookup_problems", "W_DECLARED", "AmbiguousOffer", "GateOpen", "block_fingerprint", "WaitSpec", "take_latest_declined",
            "GateWrapper", "waiting_class", "spec_of", "FamilyReducer", "FamilyRecorder", "openings", "censored",
            "wait_problems"]
