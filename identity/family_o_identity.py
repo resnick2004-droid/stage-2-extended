@@ -120,6 +120,10 @@ def item1(row: str) -> tuple[list[str], dict]:
                 i = int(np.flatnonzero(mine != theirs)[0])
                 bad.append(f"R {k}: the labels' coin side is not the trade's r_{k} (first {key[i]}: {mine[i]!r} "
                            f"against {theirs[i]!r})")
+    kinds = dict(zip(A1["date"].astype(str), A1["day_kind"].astype(str)))
+    for s_ in spans:                                                    # n7
+        bad += [f"item 1 (n7, the bars-only population): {p}" for p in bars_population_problems(row, s_, kinds)]
+        gc_collect()
     import a3_brk30 as B
     import atlas_a3 as A
 
@@ -207,6 +211,44 @@ def u1_problems(make_cls, starts: int | None, workers: int, what: str) -> list[s
     return probs
 
 
+#: n10 (the second build read): A0 item 4 reads this many starts of P-16's verdict arm (`user_journey.start_choice`,
+#: spread over the arm), a count the lead records in A0's row; the text asks Q-17's adapter identity re-run with the
+#: family's class, which no count fixes -- every start would make item 4 A0's largest part
+ITEM4_STARTS = 21
+
+
+def bars_population_problems(row: str, span, kinds: dict) -> list[str]:
+    """n7: the span's population as run 2 reads it from the bars alone (`opening_stagec.population_offers`) equals the
+    walked population -- read here under the identity purpose, a year of bars at a time, so a disagreement refuses in
+    A0, before any judged read is spent."""
+    import numpy as np
+    import pandas as pd
+
+    from extended import features as F
+    from extended import opening_population as OP
+    from extended import opening_stagec as SC
+    from extended import reader
+
+    walked = sorted(span.days.loc[span.days["day_kind"].isin(OP.WALKED_KINDS), "date"].astype(str))
+    if not walked:
+        return []
+    admitted = OP.admitted_marks()
+    pofs = []
+    for y in sorted({d[:4] for d in walked}):
+        wy = [d for d in walked if d[:4] == y]
+        b = reader.read_bars(wy[0], wy[-1], purpose="identity", declaration=row, what=f"{row}: A0 n7, bars {y}")
+        b = b[b["day"].astype(str).isin(set(wy))].reset_index(drop=True)
+        if not len(b):
+            continue
+        g = F.grid(b)
+        del b
+        arr = {d.isoformat(): tuple(np.r_[np.nan, X[i][:1330]] for X in (g.O, g.H, g.L, g.C)) for i, d in enumerate(g.days)}
+        pofs.append(SC.population_offers(wy, kinds, admitted, arr))
+        del g, arr
+    pof = pd.concat(pofs, ignore_index=True) if pofs else pd.DataFrame(columns=["date", "slot", "population"])
+    return SC.population_problems(pof, span.population)
+
+
 def item4(starts: int | None, workers: int) -> list[str]:
     """Q-17's adapter's outputs with the family's class, the wait switched off, equal the vendored class's (every
     response the class can run, the forfeiture's three among them), at `starts` starts of P-16's verdict arm."""
@@ -269,7 +311,7 @@ def main(argv: list[str] | None = None) -> int:
     bad += u1_problems(lambda job: OW.waiting_class(OW.WaitSpec.for_blocks(
         "a0_w0", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]], W=0)), a.starts, a.workers,
         "item 3 U1")
-    bad += item4(a.starts, a.workers)                       # every start of the verdict arm unless --starts (m8)
+    bad += item4(a.starts if a.starts is not None else ITEM4_STARTS, a.workers)   # n10: a labelled count
     log("item 4: Q-51 HOLDS is cited (E-044 (3)), not re-run")
     if bad:
         log("A0 FAILS: " + "; ".join(bad[:10]))

@@ -8,8 +8,8 @@ on toy inputs (fast), and run 2 end to end, T-3 and T-12 (slow and heavy, each i
 * `tests/fo_t3_synthetic.py` (slow, about three minutes): T-3 on two generated synthetic bar stores read through the
   reader -- run 1's sections other than `identity`, its states, population and forecast hashes byte-identical when every
   judged-block bar is another seeded walk.
-* T-12 (heavy, the lead's, under the lock): A0 at 4 paths and 4 starts on the real data, run only when `FO_A0_ROW`
-  names A0's identity row.
+* T-12 (heavy, the lead's, under the lock): A0 at 4 paths and 4 starts on the real data and run 1's A1 (items 4-7)
+  at 4 starts (n11), run only when `FO_A0_ROW` names A0's identity row.
 """
 from __future__ import annotations
 
@@ -118,7 +118,7 @@ def test_run2_end_to_end_on_synthetic_inputs():
             "V_other", "uniform_lift_valuation", "break_even_denial", "placement_on_growth_at_bound",
             "zero_edge_twin_growth", "s_program_guard", "e_bound_d47", "K0_judged"} <= set(got["beside"])
     assert set(got["journey_sections"]) >= {"scorecard", "extra", "path", "response", "paired", "frontier", "note"}
-    assert got["journey_designs"] == ["design", "p16", "twin"] and got["paired_against"] == ["p16", "twin"]
+    assert {"design", "p16", "twin"} <= set(got["journey_designs"]) and got["paired_against"] == ["p16", "twin"]
     assert {"identity_rows", "identity_covered", "selection_sha256", "population_sha256", "purposes",
             "seed_roles", "verdict"} <= set(got["params"])
     assert got["written"] == []
@@ -134,6 +134,7 @@ def test_run2_end_to_end_on_synthetic_inputs():
     assert got["wait_designs"] == ["design", "p16", "twin"] and got["wait_against"] > 0
     assert got["evenness_blocks"] == ["choice", "judged"] and got["luck_rows"] > 0
     assert got["frontier_blocks"] == ["choice", "judged"] and got["beside_0735"] == 4
+    assert got["floor_iv_v"] == [True, True]                                    # n5: derived from the gate's call
     assert {"identity_commits", "data_manifest_sha256"} <= set(got["params"])
 
 
@@ -156,3 +157,7 @@ def test_t12_a0_at_four_paths_and_four_starts():
                         "--starts", "4", "--workers", "1"], capture_output=True, text=True, timeout=6 * 3600, env=ENV,
                        cwd=str(ROOT))
     assert r.returncode == 0 and r.stdout.strip().endswith("EXIT 0"), r.stdout[-3000:] + r.stderr[-3000:]
+    # n11: T-12 is also A1 items 4 to 6 at 4 starts -- run 1's A1 alone on the real choice block, nothing written
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "fo_opening.py"), "--run", "1", "--a1-only", "--starts",
+                        "4", "--workers", "1"], capture_output=True, text=True, timeout=6 * 3600, env=ENV, cwd=str(ROOT))
+    assert r.returncode == 0 and "A1 (items 4-7) at 4 starts: HOLDS" in r.stdout, r.stdout[-3000:] + r.stderr[-3000:]

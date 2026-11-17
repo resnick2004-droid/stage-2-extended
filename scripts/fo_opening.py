@@ -65,6 +65,7 @@ STAGE_AB_FIRST = "2021-01-04"
 ARM = "verdict"
 DECIDING_CLASS = {"s1": "window", "s2": "window", "u3": "block5"}      # 6.6's one deciding class a cell
 A3_CUTS = 200
+A3_REPORT_DAYS = 2                     # n1: at least this many report-day sessions among A3's cuts
 #: the record columns run 1 keeps (every check runs on the full record where the start ran)
 RECORD_COLUMNS = ("place", "account", "day", "rel_day", "account_session", "historical_day", "trade_index", "date",
                   "offer", "entry_t", "rr", "source", "realised_risk", "intended_capped_risk", "kind")
@@ -89,6 +90,7 @@ class Sizes:
     a10_inner: int = 20_000
     b2: int = 1_000_000
     gate_paths: int = 500
+    a1_only: bool = False                     # T-12 (n11): stop after A1's items 4-7, nothing written
     responses: tuple[str, ...] = ("off", "denial_10", "denial_25", "denial_50", "forfeit_10", "forfeit_25",
                                   "forfeit_50", "rtp", "rtp_w3")
 
@@ -481,13 +483,18 @@ def a3_cuts(g, st, n: int, report_sessions: set[int] | None = None) -> list[tupl
     k = max(0, n // (len(first) + 1) + 1 - len(special))
     days = special + [int(x) for x in rng.choice(pool, size=min(len(pool), k), replace=False)]
     kinds = report_sessions or set()
+    # n1 (the second build read): at least two report-day sessions, drawn by the same generator after the rest
+    have = [d for d in days if d in kinds]
+    more = [i for i in pool if i in kinds and i not in set(days)]
+    if len(have) < A3_REPORT_DAYS and more:
+        days += [int(x) for x in rng.choice(more, size=min(len(more), A3_REPORT_DAYS - len(have)), replace=False)]
     cuts = []
     for d in days:
         marks = list(first) + [int(rng.choice(OS.POPULATION_MARKS))]
         if d in kinds:
             marks.append(OS.REPORT_DAY_FIRST_MARK)
         cuts += [(int(d), int(m)) for m in marks]
-    return cuts[: max(n, len(special) * len(first))]
+    return cuts                                             # never truncated: at least `n` (n1)
 
 
 # ------------------------------------------------------------------------------------------------ run 1
@@ -615,6 +622,8 @@ def run1(ctx: Ctx, pre, workers: int) -> tuple[int, Any, dict[str, Any]]:
     if probs:
         log("REFUSED (F-03): A1 fails -- " + "; ".join(probs[:6]))
         return 3, None, {}
+    if z.a1_only:                                          # T-12's part (n11): A1 held, nothing further read
+        return 0, R.frame(out, R.RUN1_SECTIONS), {}
     _, base_rec = replay("p16", job, starts, workers, None, ids)
     base_ops = OW.openings(base_rec, "p16", ARM, "off", offers)
     out += R.rows("openings", opening_counts(base_ops, "p16", "-"))
@@ -827,6 +836,20 @@ def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_pa
     blk = kw.pop("blocks")
     extra = {"funded_account_cls": cls(blk)} if cls is not None else {}
     rows, _ = XG.run_gate(blk, workers=int(workers), **extra, **kw)
+    # n5: floors (iv) and (v) read from the call's own configuration (never hard-coded)
+    from propedge.contract.adapter import rules_from_ledger
+
+    r = kw.get("rules")
+    try:
+        verified = r is not None and r == rules_from_ledger(payout_fee=r.payout_fee)
+    except Exception:                                      # an unverified rule refuses in the ledger's builder
+        verified = False
+    rows = rows.assign(fo_rules_from_verified_ledger=bool(verified),
+                       fo_strict_one_position=kw.get("one_at_a_time") == C.STRICT_GAP,
+                       fo_no_flip=kw.get("flip") is None,
+                       fo_cross_account_rule_on=bool(kw.get("cross_account")),       # the firm's rule (D-339): no
+                                                                                     # opposite sides across accounts
+                       fo_rtp=bool(rtp))
     return rows, blk
 
 
@@ -1019,8 +1042,13 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     grows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
                         cls=gate_cls)
     fg = SC.floor_gate(grows)
+    conduct = {k: bool(grows[k].all()) for k in ("fo_rules_from_verified_ledger", "fo_strict_one_position", "fo_no_flip",
+                                                 "fo_cross_account_rule_on") if k in grows}
     floors = {"i_in_state_unresolved": f1["holds"], "i_taken_flattened": f1b["holds"], "ii_realised_risk": fg["floor_ii"],
-              "iii_long_run_gate": fg["floor_iii"], "iv_rules_verified": True, "v_conduct_tier_1": True}
+              "iii_long_run_gate": fg["floor_iii"],
+              "iv_rules_verified": bool(conduct.get("fo_rules_from_verified_ledger", False)),
+              "v_conduct_tier_1": bool(conduct.get("fo_strict_one_position", False) and conduct.get("fo_no_flip", False)
+                                       and conduct.get("fo_cross_account_rule_on", False))}
     out += R.rows("floor", [{"floor": "i", "part": "in_state_unresolved_3r", **f1["shares"], "holds": f1["holds"]},
                             {"floor": "i", "part": "taken_flattened", **f1b["shares"], "trades": f1b.get("trades"),
                              "holds": f1b["holds"]},
@@ -1032,8 +1060,12 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
                              "holds": fg["floor_iii"],
                              "note": "on the gate's independent days the design waits less than traded in history's "
                                      "order (the second read's n2-8)"},
-                            {"floor": "iv", "part": "every firm rule verified (Stage 2's ledger)", "holds": True},
-                            {"floor": "v", "part": "conduct tier 1 (section 3)", "holds": True}])
+                            {"floor": "iv", "part": "the gate's rules are Stage 2's verified ledger's, as loaded",
+                             "holds": floors["iv_rules_verified"]},
+                            {"floor": "v", "part": "conduct tier 1 (section 3): the strict one-position rule on, no "
+                                                   "flip stream, the firm's cross-account rule on (no opposite "
+                                                   "sides across accounts, D-339)", **conduct,
+                             "holds": floors["v_conduct_tier_1"]}])
 
     # ---- the beside readings (12), deciding nothing
     bes: list[dict[str, Any]] = []
@@ -1570,6 +1602,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--check-guards", action="store_true", help="the refusing guards only; reads and writes nothing")
     ap.add_argument("--check-read", action="store_true", help="run 2: the four purposes pre-checked; reads nothing")
     ap.add_argument("--t3", default=None, help="run 1: T-3 against run 1's result file (heavy, under the lock)")
+    ap.add_argument("--a1-only", action="store_true", help="run 1: A1's items 4-7 only, at --starts starts, nothing "
+                                                            "written (T-12's part, n11; heavy, under the lock)")
+    ap.add_argument("--starts", type=int, default=None, help="with --a1-only: the starts A1 reads (T-12: 4)")
     a = ap.parse_args(argv)
     if not 1 <= int(a.workers) <= 2:
         log("REFUSED (F-03): at most two workers (CLAUDE.md)")
@@ -1577,7 +1612,9 @@ def main(argv: list[str] | None = None) -> int:
     from extended import opening_run as R
 
     try:
-        pre = R.pre_run(ROOT, need_clean=not (a.check_guards or a.check_read))
+        a1 = a.run == 1 and a.a1_only                       # T-12 runs before A0: every wait but A0's, no write
+        pre = R.pre_run(ROOT, need_clean=not (a.check_guards or a.check_read or a1),
+                        waits={k: v for k, v in R.waits().items() if k != R.A0_ID} if a1 else None)
     except R.RunRefused as exc:
         log(str(exc))
         return 2
@@ -1600,6 +1637,11 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     if a.t3:
         return t3(a, pre)
+    if a.a1_only:
+        ctx = Ctx(sizes=Sizes(starts=a.starts, a1_only=True), smoke=True)
+        code, df, _ = run1(ctx, pre, int(a.workers))
+        log(f"A1 (items 4-7) at {a.starts or 'every'} starts: {'HOLDS' if code == 0 else 'FAILS'}")
+        return code
     ctx = Ctx()
     code, df, params = run1(ctx, pre, int(a.workers))
     if code != 0:

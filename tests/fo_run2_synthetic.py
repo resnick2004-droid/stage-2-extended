@@ -84,6 +84,8 @@ if jdf is not None:
     ch = jjf[jjf.get("block", pd.Series(dtype=str)) == "choice"]
     out["choice_sections"] = sorted(str(x) for x in ch["section"].dropna().unique())
     bs2 = jdf[jdf["section"] == "beside"]
+    out["floor_iv_v"] = [bool(fl.loc[fl["floor"] == k, "holds"].iloc[0]) for k in ("iv", "v")]
+    out["floor_v_row"] = fl[fl["floor"] == "v"].dropna(axis=1).to_dict("records")
     out["beside_0735"] = int((bs2["reading"] == "report_day_0735_openings").sum())
     out["params"] = sorted(par)
     out["written"] = ctx.write_stage_c(jdf, jjf, par)

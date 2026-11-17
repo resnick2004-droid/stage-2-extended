@@ -754,14 +754,17 @@ A9_MIN_OFFSET = 63
 
 
 def within_kind_index(L: Layout, base: np.ndarray, offset: int) -> np.ndarray:
-    """Each session of `base` moved `offset` places along its own day kind's sequence of sessions (circular)."""
+    """Each session of `base` moved along its own day kind's sequence of sessions (circular) by that kind's share of
+    `offset` calendar sessions, `round(offset x len_k / n)` (the second build read's n2: every source about `offset`
+    calendar sessions away, never wrapped near itself by a short kind's modulus)."""
     out = np.empty(len(base), dtype=np.int64)
     for kind in np.unique(L.kind):
         seq = np.flatnonzero(L.kind == kind)
         pos = {int(x): i for i, x in enumerate(seq)}
+        ok = int(round(int(offset) * len(seq) / float(L.n)))
         for t, s_ in enumerate(base):
             if L.kind[s_] == kind:
-                out[t] = seq[(pos[int(s_)] + int(offset)) % len(seq)]
+                out[t] = seq[(pos[int(s_)] + ok) % len(seq)]
     return out
 
 

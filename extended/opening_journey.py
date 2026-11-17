@@ -318,7 +318,7 @@ def evenness_curve_rows(rows: Sequence[Mapping[str, Any]], designs: Sequence[str
         elif r.get("section") == "path" and r.get("stat") == "p50":
             med[(*k, r.get("measure"))] = float(r["value"])
     out = []
-    for block, arm in sorted({(k[0], k[1]) for k in card}):
+    for block, arm in sorted({(k[0], k[1]) for k in card if k[0] in ("judged", "choice")}):    # the two blocks read
         for m, higher in EVENNESS:
             pts = [(d, med.get((block, arm, d, m), NAN), card.get((block, arm, d), NAN)) for d in designs]
             pts = [p for p in pts if np.isfinite(p[1]) and np.isfinite(p[2])]
