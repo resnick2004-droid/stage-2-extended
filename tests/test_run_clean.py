@@ -462,3 +462,21 @@ def test_short_memory_means_the_command_does_not_run(repo, tmp_path, monkeypatch
 def test_hours_and_mem_go_together(repo):
     with pytest.raises(SystemExit):
         RC.main(["--name", "l4", "--hours", "1", "--", *code("pass")])
+
+
+def test_a_locked_run_marks_its_command_as_the_holder_and_a_light_run_does_not(repo, monkeypatch):
+    """Q-118: the command run under the lock gets `S2X_LOCK_HOLDER=<job>` (the heavy-test guard lets it, and only it,
+    run heavy tests); a run without the lock adds no such variable."""
+    monkeypatch.delenv("S2X_LOCK_HOLDER", raising=False)
+    body = "import os; print('HOLDER', os.environ.get('S2X_LOCK_HOLDER', 'none'))"
+
+    def holder(name: str) -> str:
+        line = [x for x in (RC.RUNS / f"{name}.log").read_text(encoding="utf-8").splitlines()
+                if x.startswith("HOLDER")]
+        return line[0].split()[1]
+
+    assert RC.main(["--name", "h1", "--hours", "0.5", "--mem-gb", "1", "--task", "Q-118", "--", *code(body)]) == 0
+    assert holder("h1") == "h1"
+    assert not RL.LOCK.exists()
+    assert RC.main(["--name", "h2", "--", *code(body)]) == 0
+    assert holder("h2") == "none"
