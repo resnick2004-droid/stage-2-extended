@@ -371,6 +371,41 @@ def check_band(body: str, name: str) -> None:
     assert "may re-declare its band or kind, from its sides only" in s25
 
 
+def check_regime(body: str, name: str) -> None:
+    """2.5's regime-filter test (E-186, the red team's V-1): its runs floors, the three gamed sides refused for the right
+    reason, an honest filter passed, the edge-reversal side refused by the spacing, the restated residual, the second
+    column's printed limits and V-2's reading."""
+    A = arith()
+    s25 = flat(section(body, "### 2.5"))
+    fl = A.regime_floors()
+    lo42, hi42 = A.regime_blocks(657, "42 to 50")
+    lo51, hi51 = A.regime_blocks(657, "51 to 62")
+    assert (lo42, hi42, lo51, hi51) == (14, 17, 11, 14)
+    assert {fl[B][0] for B in range(14, 17)} == {3} and fl[17][0] == 4
+    assert {fl[B][0] for B in range(11, 14)} == {2} and fl[14][0] == 3
+    worst = max(fl, key=lambda B: fl[B][1])
+    assert (f"a filter in 42 to 50 touches {lo42} to {hi42} regimes and its floor is {fl[14][0]} changes "
+            f"({fl[17][0]} at 17); one in 51 to 62 touches {lo51} to {hi51}, floor {fl[11][0]} ({fl[14][0]} at 14). "
+            f"The floor misses a class filter with at most {fl[worst][1]:.4f} (at B = {worst})") in s25
+    assert f"the {100 * A.REGIME_TAIL:g} % quantile of Bin(B - 1, 1/2)" in s25
+    want = {"one switch, unused points": ["runs floor"], "three fixed regimes": ["runs floor"],
+            "two halves with a burst": ["spacing"], "an honest 44-session filter": []}
+    for k, (sd, pts) in A.gamed_sides().items():
+        ok, why = A.regime_filter_check(sd, pts, "42 to 50")
+        assert why == want[k] and ok == (not want[k]), f"{k}: {ok}, {why}"
+    assert A.edge_reversal_filter_check() == (False, ["spacing"])
+    assert "**The three gamed sides the red team constructed are refused**" in s25
+    assert (f"changes at 4 or fewer with {A.class_tail(16, 4):.4f}" in s25
+            and f"changes at 2 or fewer with {A.class_tail(12, 2):.4f}" in s25)
+    f657, b657 = A.second_column_floors(657)
+    f1006, b1006 = A.second_column_floors(1006)
+    assert (f"a declared switching side needs only R >= {f657} on the judged block ({f1006} on a 1,006-session choice "
+            f"block) and a mean side at most {b657:.4f} ({b1006:.4f}), whatever band it declares") in s25
+    assert "n is the span's session count, never the non-tie count" in s25
+    for gone in ("cannot hide them", "decision points exclude them"):
+        assert gone not in flat(body), f"the plan still says {gone!r}"
+
+
 def check_admission(body: str, name: str) -> None:
     """4.4's added balance limit: b_D at 657 and 1,006, and its coverage cost on the class (E-184)."""
     A = arith()
@@ -387,6 +422,8 @@ def check_admission(body: str, name: str) -> None:
            f"{cc['markov50']:.4f}; at 80, {cc['markov80']:.4f}; the alternating models, {cc['alt45']:.4f}")
     assert txt in s44, f"4.4 lacks the coverage cost {txt!r}"
     assert "(Q-108's 4.4, with one condition added)" in body
+    assert ("**In the dense case, the share of all sides that the admission admits and the limit then removes is at "
+            "most this**") in s44
 
 
 def check_cites_only(body: str, name: str) -> None:
@@ -537,7 +574,7 @@ def check_coverage(body: str, name: str) -> None:
 
 
 CHECKS = (check_pin_form, check_seed_tables, check_no_foreign_seed, check_grid, check_appendix_b, check_sizing,
-          check_floor, check_band, check_admission, check_cites_only, check_probe, check_counts, check_criterion_power, check_power_costs,
+          check_floor, check_band, check_regime, check_admission, check_cites_only, check_probe, check_counts, check_criterion_power, check_power_costs,
           check_coverage, check_costs)
 
 
@@ -600,6 +637,10 @@ def test_the_checks_can_fail():
         check_band(body.replace("switching sides 0.0318, 0.0462", "switching sides 0.0318, 0.0300"), p.name)
     with pytest.raises(AssertionError):
         check_admission(body.replace("at 63, 0.0219", "at 63, 0.0100"), p.name)
+    with pytest.raises(AssertionError):
+        check_regime(body.replace("floor 2 (3 at 14)", "floor 1 (3 at 14)"), p.name)
+    with pytest.raises(AssertionError):
+        check_regime(body.replace("needs only R >= 5 on the judged", "needs only R >= 8 on the judged"), p.name)
     with pytest.raises(AssertionError):
         check_cites_only(body.replace("## 10. The red team's findings", "## 10. The red team's findings 9.07e-04"),
                          p.name)

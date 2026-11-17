@@ -1,4 +1,4 @@
-"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, fifth text): its arithmetic -- no bar, no market
+"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, sixth text): its arithmetic -- no bar, no market
 outcome, no random number. Every figure the plan states is printed here, from three kinds of input only:
 
 - the plan's declared constants: the validation's exposure (23 subsets at each of five sizes, two values, five exact
@@ -342,14 +342,38 @@ def band_interval(n: int, band: str) -> tuple[int, int | None]:
     return lo_r, hi_r
 
 
+#: the regime filter's one-sided runs floor (the red team's V-1, E-186): the changes at declared decision points are at
+#: least this quantile of Bin(B - 1, 1/2), B the regimes the span touches
+REGIME_TAIL = 0.0125
+
+
+def regime_floor(B: int) -> int:
+    """The least number of sign changes a declared regime filter touching B regimes must show."""
+    return int(stats.binom.ppf(REGIME_TAIL, int(B) - 1, 0.5)) if B > 1 else 0
+
+
+def regime_miss(B: int) -> float:
+    """P(fewer changes than the floor) under independent fair regime signs: the floor's refusal of a class regime
+    filter."""
+    f = regime_floor(B)
+    return float(stats.binom.cdf(f - 1, int(B) - 1, 0.5)) if f > 0 else 0.0
+
+
+def regime_refusal(n: int, L: int, b: float) -> float:
+    """A bound on the in-band refusal of the L-session flip read as a declared regime filter: the runs floor's miss,
+    averaged over phases, plus the balance limit's refusal (its spacing passes by construction)."""
+    miss = float(np.mean([regime_miss(len(w)) for w in flip_counts(n, L)]))
+    return miss + exceeds(flip_balance(n, L), b)
+
+
 def in_band_refusals(n: int, band: str) -> dict[str, float]:
-    """The largest in-band refusal over the band's own models: regime filters (flips at every length in the band;
-    refused only by the balance limit, their decision points matching by construction) and switching sides (Markov at
-    every dwell in the band; a bound: the runs interval's miss plus the balance limit's)."""
+    """The largest in-band refusal over the band's own models, each a bound: regime filters (flips at every length in
+    the band: the runs floor's miss plus the balance limit's) and switching sides (Markov at every dwell in the band:
+    the runs interval's miss plus the balance limit's)."""
     lo, hi = BANDS[band]
     b = band_b(n, band)
     lo_r, hi_r = band_interval(n, band)
-    fl = {L: exceeds(flip_balance(n, L), b) for L in range(lo, hi + 1)}
+    fl = {L: regime_refusal(n, L, b) for L in range(lo, hi + 1)}
     mk = {D: markov_runs_out(n, float(D), lo_r, hi_r) + exceeds(markov_balance(n, float(D)), b)
           for D in range(lo, hi + 1)}
     out = {"regime": max(fl.values()), "regime_at": max(fl, key=fl.get),
@@ -358,6 +382,85 @@ def in_band_refusals(n: int, band: str) -> dict[str, float]:
         out[f"flip{L}"] = fl[L]
         out[f"markov{L}"] = mk[L]
     return out
+
+
+def regime_filter_check(sides, points, band: str, n: int | None = None) -> tuple[bool, list[str]]:
+    """2.5's regime-filter test on a dense side series (one side per session, +1 or -1) and the declared decision points
+    (the sessions at which a regime begins, inside the span): (passes, reasons for refusal).
+    (a) spacing: every interior regime's length lies in the band; (b) every change of side falls on a decision point;
+    (c) the changes are at least the runs floor for the B regimes touched; (d) the balance limit."""
+    s = np.asarray(sides, dtype=int)
+    n = len(s) if n is None else int(n)
+    lo, hi = BANDS[band]
+    pts = sorted(int(x) for x in points if 0 < int(x) < n)
+    why = []
+    gaps = np.diff(pts)
+    if len(gaps) and not np.all((gaps >= lo) & (gaps <= hi)):
+        why.append("spacing")
+    changes = [j for j in range(1, n) if s[j] != s[j - 1]]
+    if any(j not in set(pts) for j in changes):
+        why.append("a change off the decision points")
+    B = len(pts) + 1
+    if len(changes) < regime_floor(B):
+        why.append("runs floor")
+    if abs(float(s.mean())) > band_b(n, band) + 1e-12:
+        why.append("balance")
+    return (not why), why
+
+
+def gamed_sides(n: int = 657) -> dict[str, tuple[np.ndarray, list[int]]]:
+    """The red team's three gamed sides (V-1), each with the decision points it would declare in 42 to 50, and an honest
+    regime filter beside: {name: (sides, points)}."""
+    one = np.r_[np.ones(328, int), -np.ones(n - 328, int)]
+    one_pts = list(range(20, n, 44))                      # 44 apart, one of them at the switch (328)
+    three = np.r_[np.ones(219, int), -np.ones(219, int), np.ones(n - 438, int)]
+    steps = [44, 44, 44, 44, 43] * 3
+    three_pts = list(np.cumsum(steps)[:-1])                # 44 or 43 apart, two of them at 219 and 438
+    burst = np.r_[np.ones(320, int), np.array([(-1) ** k for k in range(1, 14)]), -np.ones(n - 333, int)]
+    burst_pts = list(range(44, 320, 44)) + list(range(320, 334)) + list(range(377, n, 44))
+    honest = np.array([1 if ((j + 20) // 44) % 2 == 0 else -1 for j in range(n)])
+    honest_pts = list(range(24, n, 44))
+    return {"one switch, unused points": (one, one_pts), "three fixed regimes": (three, three_pts),
+            "two halves with a burst": (burst, burst_pts), "an honest 44-session filter": (honest, honest_pts)}
+
+
+def edge_reversal_filter_check() -> tuple[bool, list[str]]:
+    """The edge-reversal side read as a declared 42-to-50 regime filter: its 8 changes declared as decision points, with
+    others 44 apart filling the span; its reversals put two changes one session apart."""
+    n = 657
+    s = []
+    for k in range(3):
+        sign = 1 if k % 2 == 0 else -1
+        block = [sign] * 219
+        block[1] = -sign
+        s += block
+    s = np.array(s)
+    changes = [j for j in range(1, n) if s[j] != s[j - 1]]
+    pts = sorted(set(changes) | set(range(44, n, 44)))
+    return regime_filter_check(s, pts, "42 to 50", n)
+
+
+def regime_floors(Bs=range(11, 18)) -> dict[int, tuple[int, float]]:
+    """{B: (the runs floor, its miss)}."""
+    return {B: (regime_floor(B), regime_miss(B)) for B in Bs}
+
+
+def regime_blocks(n: int, band: str) -> tuple[int, int]:
+    """The fewest and most regimes a filter of a length in the band touches on n sessions."""
+    lo, hi = BANDS[band]
+    Bs = [len(w) for L in range(lo, hi + 1) for w in flip_counts(n, L)]
+    return min(Bs), max(Bs)
+
+
+def class_tail(B: int, k: int) -> float:
+    """P(at most k sign changes) for a class regime filter touching B regimes."""
+    return float(stats.binom.cdf(k, B - 1, 0.5))
+
+
+def second_column_floors(n: int) -> tuple[int, float]:
+    """When the scope-Q branch is the primary every band uses one statistic, so the check binds at its loosest band: the
+    switching side's lowest runs floor and the largest balance limit."""
+    return min(band_interval(n, b)[0] for b in BANDS), max(band_b(n, b) for b in BANDS)
 
 
 def residual_regimes(n: int, band: str) -> tuple[int, int] | None:
@@ -806,6 +909,17 @@ def main() -> None:
               f"{beyond_pass(657, '51 to 62', D):.3f}; 51 to 62 at 1006 {beyond_pass(1006, '51 to 62', D):.3f}")
     R_, M_ = dominated_side()
     print(f"   the dominated side (8 one-session shorts on 657): R = {R_}, |mean side| = {M_:.4f}")
+    print("   the regime filter's runs floor by B (floor, miss):", {B: (f, round(m, 4)) for B, (f, m) in regime_floors().items()})
+    for nn in (657, 1006):
+        print(f"   n = {nn}: regimes touched by band", {b: regime_blocks(nn, b) for b in BANDS})
+    for name, (sd, pts) in gamed_sides().items():
+        print(f"   {name}: {regime_filter_check(sd, pts, '42 to 50')}")
+    print(f"   the edge-reversal side as a regime filter: {edge_reversal_filter_check()}")
+    print(f"   the class's tail: P(at most 4 changes | B = 16) = {class_tail(16, 4):.4f}; P(at most 2 | B = 12) = "
+          f"{class_tail(12, 2):.4f}")
+    for nn in (657, 1006):
+        f2, b2 = second_column_floors(nn)
+        print(f"   second column at {nn}: switching R >= {f2}; balance at most {b2:.4f}")
     R2, M2 = edge_reversal_side()
     print(f"   the edge-reversal side (three regimes of 219, one reversal each): R = {R2}, |mean side| = {M2:.4f}")
     print(f"   runs: Markov dwell 50 about {dwell_runs(50):.1f}; flip-42 {flip_mean_runs(657, 42):.1f}; flip-55 "

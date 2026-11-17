@@ -1,11 +1,13 @@
 # Q-126: the one-sample pass line's second calibration -- the plan, declared before anything is built or run
 
-**Status: a draft, fifth text (Q-126e).** It answers the red team's read of the first text (ec6905a;
+**Status: a draft, sixth text (Q-126f).** It answers the red team's read of the first text (ec6905a;
 `docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173, as corrected by E-176); the re-read of
 the diff to the third text (4b31805; `docs/reviews/DRAFT_Q-126_v3_2026-11-17.md`) and the rulings on it (E-182, which
 keeps zero tolerance on a corrected basis); and the last read, of the fourth text (0772de0;
 `docs/reviews/DRAFT_Q-126_v4_2026-11-17.md`), and the rulings on it (E-184: the band check rebuilt, a balance limit
-added to it and to 4.4's admission). Section 10 maps every finding to its change. It goes to the red team's re-read
+added to it and to 4.4's admission); and the light read of the fifth text (20e03c4;
+`docs/reviews/DRAFT_Q-126_v5_2026-11-17.md`) and the rulings on it (E-186: the regime-filter test given a spacing rule
+and a runs floor). Section 10 maps every finding to its change. It goes to the red team's re-read
 of this diff, then is pinned by its LF sha256 under a decision row (`tests/test_declarations_fixed.py`'s
 calibration-plan test reads `docs/calibration/<name>.md` pins). The lead may rename it at the pin
 (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
@@ -169,12 +171,24 @@ declares (a regime filter or a switching side, as above) is checked by its own m
   1,006-session choice block 0.4473, 0.5030 and 0.5467 (`q126_arith.py`'s `band_b`). It refuses the red team's
   dominated side -- long on every session but 8 evenly spaced one-session shorts, so 17 runs and a mean side of
   0.9756 -- in every band, and every side long or short on most of the span.
-- **A regime filter** (a declared regime length L, its regimes' decision points written in its pinned text): every
-  change of the non-tie series falls on a declared decision point (a change between two non-tie sessions has a
-  decision point between them), and the number of regimes the span touches is one that a regime length in the band
-  can give at some phase. R is not used: a filter whose independent regime signs repeat has half as many runs as
-  regimes. A regime filter in its band therefore passes the decision-point test by construction, and is refused only
-  by the balance limit.
+- **A regime filter** (a declared regime length L, its regimes' decision points written in its pinned text; after
+  the look, B-33, the red team's V-1, E-186). Four conditions:
+  - **(a) spacing:** every interior regime -- between two consecutive declared decision points -- has a length in the
+    band; only the span's first and last partial regimes are exempt;
+  - **(b)** every change of the non-tie series falls on a declared decision point (a change between two non-tie
+    sessions has a decision point between them);
+  - **(c) the runs floor, one-sided:** the number of declared decision points at which the non-tie series changes sign
+    is at least the 1.25 % quantile of Bin(B - 1, 1/2), B the number of regimes the span touches -- under independent
+    fair regime signs that count is exactly this binomial (`q126_arith.py`'s `regime_floor`). On the judged block a
+    filter in 42 to 50 touches 14 to 17 regimes and its floor is 3 changes (4 at 17); one in 51 to 62 touches 11 to 14,
+    floor 2 (3 at 14). The floor misses a class filter with at most 0.0112 (at B = 14);
+  - **(d)** the balance limit.
+
+  R itself is not used: a filter whose independent regime signs repeat has half as many runs as regimes. **The three
+  gamed sides the red team constructed are refused** (`regime_filter_check`, held by T-0): a side that switches once in
+  657 sessions with 15 decision points 44 apart, one at the switch (the runs floor); three fixed regimes of 219 with
+  points 43 or 44 apart, two at the switches (the runs floor); two halves with a burst of daily switches at 13 crowded
+  points (the spacing). An honest 44-session filter with alternating regime signs passes.
 - **A switching side** (a declared mean dwell D): R, the runs of 4.4's non-tie series, lies in the band's runs
   interval on n sessions (`band_interval`):
   - its lower limit is 1 plus the 1.25 % quantile of Bin(n - 1, 1/hi), hi the band's upper end;
@@ -186,13 +200,21 @@ declares (a regime filter or a switching side, as above) is checked by its own m
     10 to 31 (the floor kept). A family reading another span takes its own n.
 - **The refusal rule (E-184).** No model of the band's own -- a flip at any length in the band, read as a regime filter,
   or a Markov side at any dwell in the band -- is refused with more than 0.05. `q126_arith.py` prints the largest
-  in-band refusal of each kind (a bound for the switching sides: the runs interval's miss plus the balance limit's):
-  - on the judged block: regime filters 0.0247, 0.0234 and 0.0216 in the three bands; switching sides 0.0318, 0.0462
+  in-band refusal of each kind, each a bound (for regime filters the runs floor's miss plus the balance limit's; for
+  switching sides the runs interval's miss plus the balance limit's):
+  - on the judged block: regime filters 0.0338, 0.0341 and 0.0288 in the three bands; switching sides 0.0318, 0.0462
     and 0.0287;
-  - on a 1,006-session choice block: regime filters 0.0249, 0.0240 and 0.0233; switching sides 0.0293, 0.0293 and
+  - on a 1,006-session choice block: regime filters 0.0319, 0.0288 and 0.0318; switching sides 0.0293, 0.0293 and
     0.0409;
-  - at the bands' edges on the judged block: the flips at 42 and 50, 0.0186 and 0.0234; at 51 and 62, 0.0177 and
-    0.0209; the Markov sides at 42 and 50, 0.0261 and 0.0462; at 51 and 62, 0.0235 and 0.0287.
+  - at the bands' edges on the judged block: the flips at 42 and 50, 0.0266 and 0.0341; at 51 and 62, 0.0278 and
+    0.0288; the Markov sides at 42 and 50, 0.0261 and 0.0462; at 51 and 62, 0.0235 and 0.0287.
+- **What n is, and the dense case (a reading; the red team's V-2, E-186).** n is the span's session count, never the
+  non-tie count. The refusal rule and every refusal printed here are for the dense case, every session traded. A family
+  trading on part of the span is refused more -- thinning cancels nearby switches and makes the mean side more
+  variable -- which costs power, never size (refusing more never raises a false pass). The red team's illustration
+  (simulated, its own seed; `docs/reviews/DRAFT_Q-126_v5_2026-11-17.md`, V-2): in 42 to 50 on the judged block a
+  Markov-50 side was refused about 0.04 dense, 0.05 at half the sessions traded, 0.06 at three in ten and 0.10 at
+  fifteen in a hundred. A family states its traded share beside its band.
 - **Where it runs:**
   - on the choice block, at stage A, before the family's pin, on the span stage A reads;
   - on the judged block, inside stage C, before any outcome is read -- the same read and purpose as 4.4's judged check.
@@ -205,7 +227,7 @@ declares (a regime filter or a switching side, as above) is checked by its own m
     floor when its regimes are at most: on the judged block 93 sessions below 42, 109 for 42 to 50 and 218 for 51 to
     62; on a 1,006-session choice block 77, 100 and 125. So regimes from 64 sessions up to those lengths cannot be told
     by R from the class (64 to 109 on the judged block and 64 to 125 on the choice block where the two-quarters floor
-    is kept). A declared regime filter cannot hide them: its decision points fix its regime length.
+    is kept).
   - **Markov sides beyond the class's longest dwell, 80.** At most this share of them passes, by the runs interval
     alone: on the judged block, for 42 to 50, 0.712 at dwell 80, 0.483 at 100, 0.274 at 125, 0.152 at 150 and 0.049 at
     200; for 51 to 62, 0.964, 0.893, 0.769, 0.637 and 0.415; on the choice block, for 51 to 62, 0.880, 0.674, 0.413,
@@ -213,10 +235,19 @@ declares (a regime filter or a switching side, as above) is checked by its own m
   - **Dominated sides are now closed** by the balance limit.
   - **Long regimes with short reversals at their edges** -- for example three regimes of 219 sessions, one one-session
     reversal each, so 9 runs and a balanced mean side -- pass a switching side's check in 42 to 50 on the judged
-    block. A regime filter's decision points exclude them.
-  - **The second column (the red team's n-4, a reading).** When the scope-Q branch is the primary, every band uses the
-    same statistic, so the check reduces to its loosest band's limits. In the first column the band check binds only
-    the second statistic's row; 4.4's admission dominates the other two.
+    block. Read as a regime filter, the same side is refused by the spacing rule: each reversal puts two changes one
+    session apart (`q126_arith.py`).
+  - **Regime filters that change at only a few of their points, above the floor** (the red team's V-1). They are the
+    class's own tail, which the validation covers. A 126-session alternation declared as a 42-session filter touches
+    16 regimes and changes at 5 points, above the floor of 3; a class filter changes at 4 or fewer with 0.0592. Three
+    fixed regimes of about 220 sessions pass as a 55-session filter, the floor being 2 changes for 11 to 13 regimes;
+    a class filter at 12 regimes changes at 2 or fewer with 0.0327.
+  - **The second column (the red team's n-4 and V-5).** When the scope-Q branch is the primary, every band uses the
+    same statistic, so the check binds at its loosest band: a declared switching side needs only R >= 5 on the judged
+    block (10 on a 1,006-session choice block) and a mean side at most 0.6651 (0.5467), whatever band it declares; a
+    regime filter needs its own band's spacing and runs floor and the same balance limit. The residual's fixed regimes
+    up to 218 sessions on the judged block therefore apply to every switching-side family there. In the first column
+    the band check binds only the second statistic's row; 4.4's admission dominates the other two.
   - The bands' intervals overlap, so a family whose sides fit two bands still declares one; it does so before its pin,
     from sides only.
 
@@ -704,8 +735,11 @@ block and 0.5467 on a 1,006-session choice block (`q126_arith.py`'s `admission_b
   E = 9.02 and was admitted. It is the quarter-persistent, long-leaning kind scope D exists to exclude, and no class
   null resembles it.
 - **Its coverage cost on the class** (the share of each side model's sides that the limit refuses on the judged
-  block, every session non-tie; an upper bound on the share it removes from those already admitted; labelled after the
-  look, B-32): flips at 1 and 5, 0.0000; at 21, 0.0001; at 42, 0.0051; at 55, 0.0119; at 63, 0.0219; Markov at
+  block, every session non-tie; labelled after the look, B-32). **In the dense case, the share of all sides that the
+  admission admits and the limit then removes is at most this** (the red team's V-3, E-186); on the class the share
+  among the admitted is smaller still -- the red team's illustration (simulated): Markov-50 about 0.003 among its
+  admitted sides, Markov-30 under 0.001, flip-21 none -- because admission favours many-run, balanced sides. The
+  shares: flips at 1 and 5, 0.0000; at 21, 0.0001; at 42, 0.0051; at 55, 0.0119; at 63, 0.0219; Markov at
   dwell 30, 0.0007; at 50, 0.0098; at 80, 0.0435; the alternating models, 0.0000. On a sparse subset the non-tie series
   is shorter and |mean side| more variable, so the share refused there is larger; the calibration measures the
   procedure as declared, the limit included.
@@ -835,8 +869,8 @@ the in-rule fixed and subset nulls; the admission reads sides only, so it is the
   entropy of every null** checked against 4.1's indices, the core's exact nulls included (n4); the manifest's seed map
   compared with 4.1's table parsed from the pinned plan, its sha256 checked (n5);
 - the band check (2.5): the balance limit and the runs intervals against `band_b` and `band_interval` at 657 and
-  1,006 sessions; the regime filter's decision-point test on planted schedules; the red team's dominated side refused;
-  a judged-block mismatch "not claimed";
+  1,006 sessions; the regime filter's four conditions against `regime_filter_check`, the red team's three gamed sides
+  refused and an honest filter passed; the red team's dominated side refused; a judged-block mismatch "not claimed";
 - the admission's balance limit (4.4): `admission_b` at 657 and the span's n; the exact cells' mean side against a
   direct count on hand-built cases; the procedure's counts with and without it on a planted dominated side;
 - every test Q-108's build listed (its 6.1) that the reused functions carry, re-run.
@@ -956,7 +990,11 @@ crash is rerun only as 6.2 says.
   sizes, and a subset bad only on the Monte Carlo side, with an unremarkable exact size, is not probed. C6's tail is
   probed by proxy only, its ranking statistic not dominating it (the red team's n1). The band check's residual --
   fixed regimes a switching side's runs cannot separate, Markov sides beyond dwell 80, long regimes with edge
-  reversals -- is in 2.5; dominated sides are closed by the balance limit, in 2.5 and 4.4.
+  reversals -- is in 2.5; dominated sides are closed by the balance limit, in 2.5 and 4.4. **The balance limit is a
+  marginal envelope, not a joint one** (the red team's V-4, a stated residual): a side just under the limit with many
+  runs -- long on about 83 % of sessions, its reversals evenly spread -- is admitted. Such sides are rare among the
+  class's admitted sides; the intermediate case rests on the procedure's calibration, the red team's experiment not
+  run (E-184, E-186).
 
 ---
 
@@ -1031,6 +1069,16 @@ crash is rerun only as 6.2 says.
 | n-2 | T-0's check that sections 9 and 10 cite widened to scientific notation, short decimals and percentages |
 | n-3, n-4 | readings, in 3.2 and 2.5 |
 
+### 10.4 The light read (of the fifth text, 20e03c4; `docs/reviews/DRAFT_Q-126_v5_2026-11-17.md`; E-186)
+
+| finding | change (and where it now stands) |
+|---|---|
+| V-1 (the regime-filter test gamed by unused or crowded points) | a spacing rule and a one-sided runs floor added; the in-band refusal printed and held; the residual's two regime-filter sentences struck and the residual restated; the three gamed sides refused, held by T-0 (2.5, 6.1; B-33) |
+| V-2 | a reading: n is the span's session count; the refusals are for the dense case, sparse trading costing power, not size (2.5) |
+| V-3 | 4.4's coverage cost reworded as a share of all sides in the dense case, the admitted share beside (4.4) |
+| V-4 | a stated residual in 8, no experiment |
+| V-5 | the second column's effective limits printed in 2.5 |
+
 ---
 
 ## Appendix A: the drift nulls' generator (Q-125's Appendix A `draw`, verbatim)
@@ -1093,4 +1141,4 @@ real subset's, with every candidate in both scopes.
 | 30 | each statistic judged on its own verdict; neither extended to the other's rows | 4.3, 7 | E-094 (3) (a) applies the criterion per statistic; no switch after a read |
 | 31 | the band check, from sides only, on the choice block before the pin and on the judged block in stage C; a judged mismatch "not claimed"; a choice-block mismatch re-declared before the pin, recorded | 2.5, 6.1 | the red team's M-D and m-3; E-182, E-184 |
 | 32 | the balance limit (the mean side at most b, the largest 97.5 % quantile over the band's flip and Markov models), in the band check and in 4.4's admission | 2.5, 4.4, 5 | the red team's F-1; E-184, adopted by design, the red team's experiment not run |
-| 33 | each declared kind checked by its own model (a regime filter by its decision points, a switching side by the Markov runs interval with 1.25 % tails and the two-quarters floor only where it keeps the rule); no in-band model refused with more than 0.05 | 2.5 | the red team's F-2; E-184 |
+| 33 | each declared kind checked by its own model (a regime filter by its decision points, their spacing in the band and a one-sided runs floor; a switching side by the Markov runs interval with 1.25 % tails and the two-quarters floor only where it keeps the rule); no in-band model refused with more than 0.05 | 2.5 | the red team's F-2 and V-1; E-184, E-186 |
