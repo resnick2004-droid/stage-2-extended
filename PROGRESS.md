@@ -147,3 +147,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-147: the heavy-test lock guard merged; RD-03's second text to its re-read. |
 | 2026-11-17 | lead | E-148, E-149: RD-03's re-read (two text fixes); the calibration chose a candidate statistic -- the validation run decides. |
 | 2026-11-17 | lead | E-150: the calibration's audit clean; the validation decides; RD-03's fourth text for two fixes the gatekeeper found. |
+| 2026-11-17 | lead | E-152: RD-03 (the contract levers) pinned after three red-team reads and the gatekeeper. |
