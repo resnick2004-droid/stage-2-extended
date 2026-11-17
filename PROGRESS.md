@@ -123,3 +123,13 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-120: F-03's build has everything owed before run 1; the red team re-reads it; a fresh builder finishes the rest. |
 | 2026-11-16 | lead | E-121: RD-02's build and reading runner merged after four red-team reads; its identities run in the block at the merged commit. |
 | 2026-11-16 | lead | E-122: RD-01's runner merged; F-03's re-read -- three fixes before run 1, with the builder; the operator's question on exact reproduction answered. |
+| 2026-11-16 | lead | E-123: the identity block registered, queued after Q-18 at the merged code. |
+| 2026-11-17 | lead | E-124: Q-18, P-14's stress checks, collected (every identity held); to the auditor. |
+| 2026-11-17 | lead | E-125: Q-18's audit clean with caveats -- P-14's contract money survives every declared stress; its trades alone lose. |
+| 2026-11-17 | lead | E-126: the re-calibration built (nothing run); the red team reads the build before the calibration run. |
+| 2026-11-17 | lead | E-127: the re-calibration build merged on its read; its calibration run queued after the shared identities. |
+| 2026-11-17 | lead | E-128: Q-80, the gate identity, holds at the merged code (the first of the identity block). |
+| 2026-11-17 | lead | E-129, E-130: Q-89's first leg and Q-101 hold; the first token row tripped state-dependent tests (fix Q-113); F-03's third read: merge as is. |
+| 2026-11-17 | lead | E-131: the identity-wait tests made independent of the log's state; the held records commit. |
+| 2026-11-17 | lead | E-132: three light items started on idle worktrees (P-14's stress caveats, the next levers, component contention). |
+| 2026-11-17 | lead | E-133: dispatch only work that makes results better or more trustworthy (the operator); Q-103 parked, Q-18b and Q-114 kept. |

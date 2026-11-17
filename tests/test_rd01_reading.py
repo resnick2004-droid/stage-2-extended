@@ -53,9 +53,14 @@ def test_r4_every_manifest_field_section_15_lists():
     assert r["menu_manifest_step"] is True                                     # the menu: a step on the written files
 
 
-def test_r3_the_runner_waits_on_three_identity_rows_and_none_is_recorded_here():
-    held, tasks, admitted = found()["guard_refuses"]
-    assert held is True and tasks == ["Q-104", "Q-80", "Q-93"] and admitted == {}
+def test_r3_the_runner_waits_on_three_identity_rows_and_refuses_without_their_tokens():
+    held, tasks, admitted, why = found()["guard_refuses"]            # this tree's log, its token rows removed
+    assert held is True and tasks == ["Q-104", "Q-80", "Q-93"] and admitted == {} and why is True
+
+
+def test_r3_a_holding_row_at_head_meets_its_wait_and_no_other():
+    tasks, why, admitted = found()["guard_one_held"]                 # the same, and one row for Q-80 at HEAD
+    assert tasks == ["Q-104", "Q-93"] and why is True and admitted == {"Q-80": ["E-999", True, True]}
 
 
 def test_r1_coverage_by_keyword_on_and_every_shape():
@@ -167,10 +172,16 @@ def _cli(*args: str) -> subprocess.CompletedProcess:
                           text=True, timeout=300, env=ENV, cwd=str(ROOT))
 
 
+def _cli_bare_log(*args: str) -> subprocess.CompletedProcess:
+    """The runner's `main`, its waits read from this tree's log with every token row removed (Q-113)."""
+    return subprocess.run([sys.executable, str(ROOT / "tests" / "rd01_cli_bare_log.py"), str(ROOT), *args],
+                          capture_output=True, text=True, timeout=300, env=ENV, cwd=str(ROOT))
+
+
 def test_the_runner_refuses_before_any_read_without_the_identity_rows():
     led = ROOT / "results" / "read_ledger.jsonl"
     before = led.read_bytes() if led.is_file() else b""
-    p = _cli()
+    p = _cli_bare_log()                                  # the log as it stood before any token (Q-113)
     assert p.returncode == 3 and "REFUSED (RD-01 9.1, 15)" in p.stdout
     for task in ("Q-104", "Q-80", "Q-93"):
         assert f"no row carries a token for {task}" in p.stdout

@@ -4,7 +4,8 @@ for each wait, a row begins its third cell with the holding token -- written her
 identity-holds: <id>, every real one built by `identity_rows.holding_cell` -- naming exactly that id and the sha it held
 at, the sha the commit being run or an ancestor of it, none of the identity's covered paths changed since. On throwaway
 git repositories; and on this tree's own decision log, where E-089 (which records the identity script as written, not
-run) must not pass."""
+run) must not pass, and -- its token rows removed, so the tests hold whatever identities the log records (Q-113) --
+every wait is refused, or met for the one id a synthetic row holds at HEAD."""
 from __future__ import annotations
 
 import subprocess
@@ -161,15 +162,43 @@ def test_a_covered_path_missing_at_head_refuses():
     assert found == {} and "refused by the shared parser" in probs[0]
 
 
-def test_this_trees_log_admits_no_waited_identity_and_never_e089():
+def _without_tokens(text: str) -> str:
+    """The log with every positional token row removed (`IT.parse` finds a token on the line): the log as it stood
+    before any identity was recorded holding, whatever rows the lead has added since (Q-113)."""
+    return "".join(line + "\n" for line in text.splitlines() if not IT.parse(line))
+
+
+def test_this_trees_log_breaches_nothing_and_e089_never_admits():
+    """On the real log, only what holds whatever rows it gains: no breach, the placeholders seen, E-089 (the identity
+    script as written, not run) never a token and never admitting."""
     text = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
     assert IT.problems(text) == []
-    assert all(t.ident not in ("Q-104", "Q-80", "Q-93") for t in IT.parse(text))
+    assert any(o.kind == "placeholder" for o in IT.occurrences(text))
     e089 = next(line for line in text.splitlines() if line.startswith("| E-089 |"))
     assert "firms_identity" in e089 and IT.parse(e089) == []
     probs, _ = IR.waited_problems(ROOT, (IR.Waited("Q-104", "RD-01's identity stage", ("extended/firms.py",)),),
                                   decisions_text=e089)
     assert probs and "no row carries a token for Q-104" in probs[0]
+
+
+def test_with_no_token_on_this_tree_every_wait_is_refused_with_its_reason():
+    text = _without_tokens((ROOT / "DECISIONS.md").read_text(encoding="utf-8"))
+    assert IT.parse(text) == [] and IT.problems(text) == []
+    waits = IR.waited()
+    probs, found = IR.waited_problems(ROOT, waits, decisions_text=text)
+    assert found == {} and len(probs) == len(waits) == 3
+    for w, p in zip(waits, probs):
+        assert p.startswith(f"{w.task} (") and f"no row carries a token for {w.task}" in p, p
+
+
+def test_a_holding_row_at_this_trees_head_meets_its_wait_and_no_other():
+    head = _git(ROOT, "rev-parse", "HEAD")
+    text = _without_tokens((ROOT / "DECISIONS.md").read_text(encoding="utf-8")) + _holding("E-999", "Q-80", head) + "\n"
+    assert IT.problems(text) == []
+    probs, found = IR.waited_problems(ROOT, IR.waited(), decisions_text=text)
+    assert sorted(found) == ["Q-80"] and found["Q-80"]["row"] == "E-999" and found["Q-80"]["sha"] == head
+    assert [p.split(" ")[0] for p in probs] == ["Q-104", "Q-93"]
+    assert all(f"no row carries a token for {t}" in p for t, p in zip(("Q-104", "Q-93"), probs))
 
 
 def test_waited_must_name_files_and_an_id():
