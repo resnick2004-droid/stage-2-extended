@@ -135,3 +135,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-133: dispatch only work that makes results better or more trustworthy (the operator); Q-103 parked, Q-18b and Q-114 kept. |
 | 2026-11-17 | lead | E-134: the next-levers note merged -- Back2Funded and an evaluation inventory first; a guard against levers that game P; their rules being verified. |
 | 2026-11-17 | lead | E-135: F-03's build merged; its identity A0 registered and queued; Q-18b merged; the contract-lever rules verified (merge deferred). |
+| 2026-11-17 | lead | E-136: F-03's W1 and W2 merged; Y1-Y4 before run 2; A0 waits for F-03's final code. |

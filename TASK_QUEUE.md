@@ -174,8 +174,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | done: merged (E-134) | E-125 | light | 0 | E-132 |
 | Q-115 | The contract levers' rules on official pages (Back2Funded, the Reset Bank, the No Activation Fee 50K prices, the hold's expiry, the evaluation's cancellation) | wt-firms | done: committed on wt/wt-firms (E-135); merge after the RD readings | E-134 | light | 0 | E-134 |
 | Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | queued (after Q-115) | Q-115 | light | 0 | E-134 |
-| Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | running (E-135) | E-135 | light | 0 | E-135 |
-| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7 (E-135) | E-135 | heavy | 0 | E-135 |
+| Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | done: merged (E-136) | E-135 | light | 0 | E-135 |
+| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: after Q-109f merges, at that commit (E-136) | E-135 | heavy | 0 | E-135 |
+| Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | running (E-136) | E-136 | light | 0 | E-136 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
