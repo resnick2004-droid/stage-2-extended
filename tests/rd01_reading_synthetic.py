@@ -15,6 +15,7 @@ import argparse
 import dataclasses
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -660,9 +661,23 @@ out["u1_blocks"] = sorted({r["block"] for r in u1t})
 la = R.luck_across({"a": u1t, "b": R.u1_reported_rows(ts_t)})
 out["u1_luck_runs"] = sorted({r["run"] for r in la})
 
-# the guards, on this tree: no decision row yet records the waited identities, so the run refuses
-probs, found = RDR.identity_problems()
-out["guard_refuses"] = [bool(probs), sorted(p.split(" ")[0] for p in probs), found]
+# the guards, on this tree's log with every token row removed (Q-113: the log gains token rows as identities hold):
+# no row records a waited identity, so the run refuses; and a synthetic holding row for Q-80 at HEAD meets that wait
+# alone
+from extended import identity_rows as IRW  # noqa: E402
+from extended import identity_tokens as ITK  # noqa: E402
+
+_log = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
+_bare = "".join(line + "\n" for line in _log.splitlines() if not ITK.parse(line))
+probs, found = RDR.identity_problems(REPO, decisions_text=_bare)
+out["guard_refuses"] = [bool(probs), sorted(p.split(" ")[0] for p in probs), found,
+                        all(f"no row carries a token for {p.split(' ')[0]}" in p for p in probs)]
+_head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+_one = _bare + f"| E-999 | 2026-11-17 | {IRW.holding_cell('Q-80', _head, 'the toy identity holds')} | a basis |\n"
+probs, found = RDR.identity_problems(REPO, decisions_text=_one)
+out["guard_one_held"] = [sorted(p.split(" ")[0] for p in probs),
+                         all(f"no row carries a token for {p.split(' ')[0]}" in p for p in probs),
+                         {k: [v["row"], v["sha"] == _head, v["head"] == _head] for k, v in found.items()}]
 pin, pbad = RDR.pin_row()
 out["pin"] = [pin["row"] if pin else None, pbad]
 entries, ebad = RDR.record_entries()
