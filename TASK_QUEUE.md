@@ -105,11 +105,11 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | done: built and merged (E-062); the run is Q-98 | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | done: merged (E-071); the gatekeeper's read Q-87b | Q-75 | light | 0 | E-054 |
 | Q-88 | The red team's first read of the firms reading's second draft | wt-firms | done: must be redrafted, remedies adopted (E-058); Q-91 | Q-54 | light | 0 | E-054 |
-| Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | first leg held (E-129); the value-map leg in the queue | Q-70 | heavy | 0 | E-055 |
+| Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | done: HOLDS in both legs (E-138) | Q-70 | heavy | 0 | E-055 |
 | Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | cancelled: family R closed before its pin, every cell dropped by its own rule (E-086) | Q-78 | light | 0 | E-057 |
 | Q-91 | The firms reading's third draft: Q-88's five MATERIAL and twelve minors | wt-firms | done: merged (E-064); its re-read Q-88b | Q-88 | light | 0 | E-058 |
 | Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | done: merged (E-070); its red team Q-102 | Q-42 | light | 0 | E-059 |
-| Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | queued: the identity block, heavy queue part 5 (E-123) | Q-76 | heavy | 0 | E-059 |
+| Q-93 | Q-76's heavy identity: U1's start rows, P-14 and P-16, every start, default and pass-through class -- the heavy chain's third leg | lead | done: HOLDS at the merged code (E-137) | Q-76 | heavy | 0 | E-059 |
 | Q-94 | Place recording on the U1 replay (family O 18.1 item 4, A2), declared and off by default; its heavy identity owed | wt-features | done: merged (E-068); its identity Q-101 | Q-70, Q-76 | light | 0 | E-060 |
 | Q-95 | The red team's sixth read of family B (after the slow-marker commit) | wt-user | parked: family B's C1 rests on the failed one-sample statistic (E-094); after Q-108 (E-101) | Q-81 | light | 0 | E-060 |
 | Q-96 | The fast tier's time budget: profile; move slow cases to the slow tier where a fast smoke case keeps the regression covered; nothing deleted | wt-infra | done: merged (E-079) | -- | light | 0 | E-061 |
@@ -175,8 +175,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-115 | The contract levers' rules on official pages (Back2Funded, the Reset Bank, the No Activation Fee 50K prices, the hold's expiry, the evaluation's cancellation) | wt-firms | done: committed on wt/wt-firms (E-135); merge after the RD readings | E-134 | light | 0 | E-134 |
 | Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | queued (after Q-115) | Q-115 | light | 0 | E-134 |
 | Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | done: merged (E-136) | E-135 | light | 0 | E-135 |
-| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: after Q-109f merges, at that commit (E-136) | E-135 | heavy | 0 | E-135 |
-| Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | running (E-136) | E-136 | light | 0 | E-136 |
+| Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7, after the calibration (E-140) | E-135 | heavy | 0 | E-135 |
+| Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | done: merged (E-140) | E-136 | light | 0 | E-136 |
+| Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | queued: a fresh builder (E-140) | E-140 | light | 0 | E-140 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

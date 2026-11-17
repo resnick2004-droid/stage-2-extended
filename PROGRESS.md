@@ -136,3 +136,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-134: the next-levers note merged -- Back2Funded and an evaluation inventory first; a guard against levers that game P; their rules being verified. |
 | 2026-11-17 | lead | E-135: F-03's build merged; its identity A0 registered and queued; Q-18b merged; the contract-lever rules verified (merge deferred). |
 | 2026-11-17 | lead | E-136: F-03's W1 and W2 merged; Y1-Y4 before run 2; A0 waits for F-03's final code. |
+| 2026-11-17 | lead | E-137 to E-139: Q-93, Q-89 and RD-02's two-worker check hold; every shared identity now holds at the merged code. |
+| 2026-11-17 | lead | E-140: F-03's code final for A0 and run 1; A0 queued after the calibration; three minors before run 2. |
+| 2026-11-17 | lead | E-141: a second state-dependent test fixed; the held records commit. |
