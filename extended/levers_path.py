@@ -135,7 +135,7 @@ LEVER_KEYS = ("reactivations", "reactivations_first", "reactivations_second", "r
 ENGINE_KEYS = ("fees_subscription", "fees_activation", "activations_refused_cash", "purchase_days_refused_cash",
                "max_accounts_live", "sessions_five_funded_evals_running", "same_day_bought_and_breached",
                "max_trades_one_session", "max_funded_live", "max_running",
-               "evaluations_bought", "activations", "peak_queue")
+               "evaluations_bought", "activations", "peak_queue", "max_queue_wait")
 #: the lists the channel carries (per path)
 LIST_KEYS = ("reactivation_days", "reactivation_ordinals", "reactivation_loss_days", "reactivated_fates",
              "queue_waits", "queue_waits_units", "house_trigger_day", "house_cash_waits", "cash_closes",
@@ -453,7 +453,9 @@ class LeverState:
         """A pass activated tonight: its wait (calendar days on the replay, sessions in the gate) if it waited."""
         self.c["activations"] += 1
         if int(c.resolved_on) < int(day):
-            self.c["queue_waits"].append(self.elapsed(int(c.resolved_on), day))
+            w = self.elapsed(int(c.resolved_on), day)
+            self.c["queue_waits"].append(w)
+            self.c["max_queue_wait"] = max(int(self.c["max_queue_wait"]), w)   # the evening it leaves the queue
         if int(c.index) in self.cash_wait:
             self.c["house_cash_waits"].append(int(self.cash_wait.pop(int(c.index))))
 
@@ -474,6 +476,8 @@ class LeverState:
         self.c["max_funded_live"] = max(int(self.c["max_funded_live"]), len(live_f))
         self.c["max_running"] = max(int(self.c["max_running"]), len(running))
         self.c["peak_queue"] = max(int(self.c["peak_queue"]), len(queue))
+        for c in queue:                                   # the longest any pass has waited at a close (U-1's pair)
+            self.c["max_queue_wait"] = max(int(self.c["max_queue_wait"]), self.elapsed(int(c.resolved_on), day))
         self.c["evaluations_bought"] += sum(1 for c in running if int(c.purchase_day) == int(day))
         if self.house_on and self.triggered is not None:
             self.c["house_purchases_after_trigger"] += sum(1 for c in running if int(c.purchase_day) == int(day))
@@ -492,7 +496,8 @@ class LeverState:
                 self.c["same_day_bought_and_breached"] += 1
         self.seen_combines = len(finished_combines)
         for a in funded:
-            if int(a.index) in self.reactivated and a.ended_on is not None and int(a.ended_on) == int(a.activation_day):
+            if (int(a.index) in self.reactivated and a.ended_on is not None and int(a.ended_on) == int(a.activation_day)
+                    and bool(a.closed) and not bool(getattr(a, "abandoned", False))):   # a breach, not a closure
                 self.c["same_day_bought_and_breached"] += 1
 
     def publish(self, *, all_funded: list, fee_sub: Any, fee_act: Any, trades_by_day: Any, total_fees: float,
