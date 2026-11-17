@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-146; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-147; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
@@ -55,7 +55,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-payout | wt/wt-payout | -- (RD-03 drafted, E-145; the red team reads it) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
 | wt-scout | wt/wt-scout | -- (Q-114 merged, E-134) | idle |
-| wt-infra | wt/wt-infra | Q-118 the heavy-test lock guard | running |
+| wt-infra | wt/wt-infra | -- (Q-118 merged, E-147) | idle |
 
 ## Running now
 
