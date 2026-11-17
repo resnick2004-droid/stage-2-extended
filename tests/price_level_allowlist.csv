@@ -1,0 +1,37 @@
+# The allow-list of extended/price_levels.py (Q-131): findings judged by meaning, not by the number, never a price.
+# One entry per file, rule and column (or fnmatch pattern over the reported column: "a", "a/b", "100*a/b", "ts|col").
+# Seeded from Q-130's scan (docs/research/Q-130_licence_scan_2026-11-17.md, sections Method 4 and Clean), which read
+# every column's class by its name and manifest. An entry that matches no finding fails tests/test_results_no_price_levels.py
+# (stale). A new entry is a classing: say what the columns are, never what they hold.
+file,rule,column,reason
+config/calendar_early_closes.csv,name,close_ct,"the early close's clock time in Central time (E-029): a time, not a price; Q-130 borderline, no price"
+results/q108_cal_power.csv,level,reps_used,"replications used: a count (Q-130 Clean: counts)"
+results/q108_val_power.csv,level,reps_used,"replications used: a count (Q-130 Clean: counts)"
+results/calibration_power.csv,pair,k/level,"k (the family's count of designs) over a significance level"
+results/calibration_two_sample.csv,pair,100*k/share,"k (a count) over share (a declared parameter in (0, 1))"
+results/q108_cal_size.csv,pair,*ratio_*/rate_*,"ratio_x is rate_x over its significance level by construction, so ratio/rate is 1/level (Q-130 Method 4); across x the rejection rates tie"
+results/q108_cal_size.csv,pair,*count_*/ratio_*,"rejection counts over ratios of rates to levels: counts and statistics"
+results/q108_cal_size.csv,pair,*size/admitted_share,"size (a sample count) over a share"
+results/q108_cal_size.csv,pair,*size/count_*,"size (a sample count) over a rejection count"
+results/q108_val_size.csv,pair,*ratio_*/rate_*,"ratio_x is rate_x over its significance level by construction, so ratio/rate is 1/level (Q-130 Method 4); across x the rejection rates tie"
+results/q108_val_size.csv,pair,*count_*/ratio_*,"rejection counts over ratios of rates to levels: counts and statistics"
+results/q108_val_size.csv,pair,*count_*/count_*,"rejection counts over rejection counts"
+results/q108_val_size.csv,pair,*rate_*/rate_*,"rejection rates over rejection rates"
+results/q108_val_size.csv,pair,*size/count_*,"size (a sample count) over a rejection count"
+results/q108_choice.csv,pair,100*exact_nulls/*,"exact_nulls (a count of nulls) over row indices and worst-k indices"
+results/q108_choice.csv,pair,100*mc_nulls/*,"mc_nulls (a count of nulls) over worst-k indices"
+results/q82_count_persistent.csv,pair,100*scalar_checked/L,"scalar_checked (a count) over L (a declared block length)"
+results/q82_criterion.csv,pair,100*expected_nulls/nulls_above,"counts of nulls over counts of nulls"
+results/p14_validation.csv,pair,*/p,"p is a probability or quantile level in (0, 1); the numerators are dollars (pf_required_*), counts and days (Q-130 Clean)"
+results/p14_validation.csv,pair,*/realisation*,"a realisation's index or count; the numerators are counts, days and payouts per path"
+results/p14_validation.csv,pair,*/share_realisations_growth_above_zero,"a share of realisations; the numerators are counts and sessions"
+results/p14_validation.csv,pair,*/*v1_share_below_start,"a share of paths (or a difference of shares); the numerators are sessions"
+results/p14_validation.csv,pair,*/level,"a significance or coverage level; the numerators are counts of paths, days and replicates"
+results/p14_validation.csv,pair,*/nominal,"a nominal coverage level; the numerator a count of replicates"
+results/p14_validation.csv,pair,*/ratio_to_nominal,"an exceedance ratio to the nominal rate; the numerator a count"
+results/p14_validation.csv,pair,*/step,"a declared grid step; the numerators are counts of paths and days"
+results/p14_validation.csv,pair,*/*_slip_ticks,"slippage in ticks (a small distance, not a level); the numerators are counts of paths, days and payouts"
+results/p14_validation.csv,pair,*/added_ticks_*,"added slippage in ticks (a small distance, not a level); the numerators are counts of paths and days"
+results/p14_validation.csv,pair,*/*_range,"ranges of counts and sessions across realisations; the numerators are dollars and counts"
+results/p14_validation.csv,pair,*/registered_pf_growth_on_base_p50,"dollars of growth; the numerator payouts per path (a count)"
+results/p14_validation.csv,pair,*/registered_v1_payout_drought_p90,"sessions of payout drought; the numerators are dollars"
