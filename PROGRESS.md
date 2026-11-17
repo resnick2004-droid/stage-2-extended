@@ -160,3 +160,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-163: the early-block volatility descriptive merged; its run queued after F-03's run 1. |
 | 2026-11-17 | lead | E-164: RD-04 red-teamed (pin after changes); Q-121's run held for an authorised mode; RD-03's fixes re-read; F-03 waiting on memory. |
 | 2026-11-17 | lead | E-165: RD-03's fixes re-read; T-3's 21-session miss a blind test, not a leak; a third cycle authorised. |
+| 2026-11-17 | lead | E-166: Q-121's authorised mode merged; its run re-queued after F-03's run 1. |
