@@ -16,7 +16,10 @@ maps each finding to its change, and Appendix C lists the drafter's choices, eac
 (Q-116c, E-148) answers the red team's re-read of the second (Q-116r2,
 `docs/reviews/DRAFT_RD-03_contract_levers_v2_2026-11-17.md`; the second text at 4f5c0aa, LF sha256
 `1dc9365e1b3b2a008a0af851aa6c932e580a55bad77d33b79f4d7ce05a84d603`): section 0.2 maps each of its findings to the hunk
-it changed. It goes to the lead's diff check against 4f5c0aa, then the gatekeeper, before any pin.
+it changed. **The fourth text** (Q-116e, E-150) makes the gatekeeper's two text fixes to the third (dbffaba): section
+11's oracle bullet and section 15's failure paragraph scoped as 6.2, 6.4 and 15 step 1 already are, and the pin-time
+form of section 16 item 1 and Appendix C's opening. It goes to the lead's diff check against dbffaba, then the
+gatekeeper, before any pin.
 
 **What E-023 (1) makes of it, as E-134 (1) rules it.** Each lever here changes which offered trades are routed, bought
 or kept -- what is bought when a funded account ends, how many evaluations run beside the funded accounts, when a user
@@ -1018,7 +1021,8 @@ series:
 - **No outcome passes or fails.** What follows from each, fixed now:
   - `cl_identity` or a shared identity fails (9.1): the reading stops; `cl_fit_identity` fails (6.4): stage 0 alone
     stops, and the reading's cells run without its view; the failure protocol applies either way;
-  - an oracle is breached (9.2, 6.2): an engine error; the reading stops;
+  - an oracle is breached: an engine error either way -- a breach of 9.2's oracles (the replays and the gates) stops
+    the reading; a breach of 6.2's stage-0 oracles stops stage 0 alone, and the reading's cells run without its view;
   - stage 0's two rules come out either way (6.3): printed beside as the solver's view, deciding nothing; no cell
     waits on them;
   - a cell identical to its base: "no effect on these trades";
@@ -1178,8 +1182,10 @@ reading of any page: the loader names it as never loaded and a test holds that (
      inventory and Back2Funded cell in step 3's order, then the Back2Funded cells' counted reading (U-6); then the menu's
      beside sections.
 
-  **On any failure, nothing of a new cell is computed, written or printed**: the run stops at the failed check, and
-  its log and the check's own lines are all it leaves.
+  **On any failure, nothing more of the failed step's own run is computed, written or printed**: that step's run
+  stops at the failed check, and its log and the check's own lines are all it leaves. A failure in step 3, 4 or 5 is a
+  failure of the reading: nothing of a new cell is read. A failure in step 2 (stage 0, its identity or its oracles)
+  stops step 2 alone, and steps 3 to 5 run without its view (6.2, 6.4, step 1).
   - **weight: heavy.** Thirty-two replays on two arms over every start, 360 replays beside on the verdict arm with 28
     reference checks, thirty gates of 500 paths, and stage 0's four policy evaluations and eight solves. Measured on synthetic
     campaigns of the window's length before step 3 (E-117's form) and stated in the lead's row with its memory; E-010's
@@ -1202,9 +1208,10 @@ reading of any page: the loader names it as never loaded and a test holds that (
 
 **The lead's:**
 
-1. **The gatekeeper's read of this second text** before the pin (the red team read the first, Q-116r; E-146 adopted
-   its findings), or the lead's diff check against 153f453 if the gatekeeper's form allows it; and **T-0** (`tests/test_rd03_draft.py`),
-   which this text's brief did not let its drafter write (a declaration only, no code): owed before the pin.
+1. **The gatekeeper's read of this fourth text and the lead's diff check against dbffaba** before the pin (the red
+   team read the first and second texts, Q-116r and Q-116r2; E-146 and E-148 adopted their findings; the gatekeeper
+   refused the third over two text fixes, E-150); and **T-0** (`tests/test_rd03_draft.py`, committed at f15cf26),
+   which must pass on the text pinned.
 2. **Q-115's merge and the order of the pin.** This text cites keys on `wt/wt-firms` at deb45ad. If the pin comes
    before the merge, T-0 reads those keys from deb45ad's blob; either way the merge comes before the run (4.1, 15).
 3. **The name at the pin:** `prereg/RD-03_contract_levers.md`; the DRAFT file renamed in the same commit, nothing else
@@ -1300,7 +1307,7 @@ be merged before the run; `tou_s8_relative_position_size` on master); `stage2` i
 
 ## Appendix C -- the drafter's choices, each with its reason
 
-Every choice made where the scout's note, the brief or the rules left the text open, as this second text holds it. The
+Every choice made where the scout's note, the brief or the rules left the text open, as this text holds it. The
 first text's hand-back listed them; the red team judged the text's own list (its section "The draft's choices"); E-146
 asked for them here.
 
