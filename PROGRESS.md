@@ -132,3 +132,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-129, E-130: Q-89's first leg and Q-101 hold; the first token row tripped state-dependent tests (fix Q-113); F-03's third read: merge as is. |
 | 2026-11-17 | lead | E-131: the identity-wait tests made independent of the log's state; the held records commit. |
 | 2026-11-17 | lead | E-132: three light items started on idle worktrees (P-14's stress caveats, the next levers, component contention). |
+| 2026-11-17 | lead | E-133: dispatch only work that makes results better or more trustworthy (the operator); Q-103 parked, Q-18b and Q-114 kept. |
