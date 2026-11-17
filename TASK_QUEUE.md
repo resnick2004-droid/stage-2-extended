@@ -161,12 +161,14 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-105f | RD-02's runner: the fourth read's L1 (own waits now; shared waits through Q-111's cover once merged) and L2 | wt-payout | done: merged with RD-02's build (E-121) | Q-106d | light | 0 | E-113 |
 | Q-111 | One shared declaration of the shared identities' covered paths (`extended/identity_cover.py`), its import rule tested from the scripts' source | wt-infra | done: merged (E-119) | E-108 | light | 0 | E-113 |
 | Q-108r3 | The red team reads Q-108's third text (the diff 383a3e9..c905c9c); pin as is, or the last changes | wt-scout (read-only) | done: pin as is (E-115) | Q-108c | light | 0 | E-114 |
-| Q-108d | Q-108's build from the pinned plan (E-115): the module, the calibration and validation scripts, the guard; synthetic tests only; then the red team, then the two heavy runs | wt-verify | running (E-115) | E-115 | light (build) / heavy (runs) | 0 | E-115 |
+| Q-108d | Q-108's build from the pinned plan (E-115): the module, the calibration and validation scripts, the guard; synthetic tests only; then the red team, then the two heavy runs | wt-verify | done: merged (E-127) | E-115 | light (build) / heavy (runs) | 0 | E-115 |
 | Q-107d | The red team's last diff read of RD-01's runner (22951ee..260bc91: the single pass, the shared break-even search, the covers, the measured cost) | wt-firms (read-only) | done: merge after the listed changes (E-118); Q-104f | Q-104e | light | 0 | E-117 |
 | Q-104f | RD-01's runner: the last read's V1-V5 and notes; the base, shared covers and import model from Q-111 once merged | wt-firms | done: merged with RD-01's build (E-122) | Q-107d | light | 0 | E-118 |
 | Q-109r2 | The red team re-reads F-03's build (4da975e..a959204) | wt-lit (read-only) | done: merge after V1-V3 (E-122); in Q-109c | Q-109b | light | 0 | E-120 |
 | Q-109c | F-03's build finished: the index-mode placebo gate test, section 13's missing parts, the year-gridded bar read (a fresh builder) | wt-lit | running: the unbuilt items, then the re-read's V1-V3 and minors (E-122) | Q-109b | light | 0 | E-120 |
 | Q-112 | The identity block (E-123): Q-80, Q-89 (both legs), Q-101, Q-93 with Q-100, t10w2, RD-01's own identity; then RD-02's own after Q-44 | lead | queued: the heavy queue part 5 (E-123) | E-122 | heavy | 0 | E-123 |
+| Q-108e | The red team reads Q-108's build (fidelity to the pinned plan; the builder's readings; cost) before the calibration run | wt-scout (read-only) | done: run as is with five readings (E-127) | Q-108d | light | 0 | E-126 |
+| Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | queued: the heavy queue part 6 (E-127) | Q-108e | heavy | 0 | E-127 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

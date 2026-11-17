@@ -126,3 +126,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-123: the identity block registered, queued after Q-18 at the merged code. |
 | 2026-11-17 | lead | E-124: Q-18, P-14's stress checks, collected (every identity held); to the auditor. |
 | 2026-11-17 | lead | E-125: Q-18's audit clean with caveats -- P-14's contract money survives every declared stress; its trades alone lose. |
+| 2026-11-17 | lead | E-126: the re-calibration built (nothing run); the red team reads the build before the calibration run. |
+| 2026-11-17 | lead | E-127: the re-calibration build merged on its read; its calibration run queued after the shared identities. |
