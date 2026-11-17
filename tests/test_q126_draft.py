@@ -12,10 +12,12 @@ What it checks:
   in no other file of the working tree or of any branch, remote or tag outside the declared uses (a document's mention
   outside `prereg/` and `docs/calibration/` is allowed, as Q-108's guard allows it); the lookahead test's derived range
   ends below the calibration block, by the margin the plan states;
-- **the form** -- the grid and the scope-Q branch as the arithmetic declares them; Appendix B numbered 1..20, every row
+- **the form** -- the grid and the scope-Q branch as the arithmetic declares them; Appendix B numbered 1..30, every row
   cited in the body and every citation a row;
-- **the figures** -- the sizing (section 3.2), the null counts (3.2, 3.5), the criterion's power (4.3), the power costs
-  and the coverage (5), each recomputed by the arithmetic script from its constants and Q-108's result files.
+- **the figures** -- the sizing and the floor's allowance (section 3.2), the probe (3.2, 4.3), the null counts (3.2,
+  3.5), the criterion's and the floor's power (4.3), the power costs, the grid steps and the coverage (4.3, 5), each
+  recomputed by the arithmetic script from its constants and Q-108's result files; and the cost (6.2), from Q-108's
+  two run logs when they are present (skipped, saying so, when they are not).
 """
 from __future__ import annotations
 
@@ -146,7 +148,10 @@ def check_seed_tables(body: str, name: str) -> None:
     for block in (CAL_BLOCK, VAL_BLOCK):
         roles = [r.strip() for s, r in rows if int(s) in block]
         assert all(roles) and len(set(roles)) == len(roles), "every seed named by a distinct role"
-        assert roles[-1].startswith("spare, drawn by nothing")
+    cal_roles = [r for s, r in rows if int(s) in CAL_BLOCK]
+    val_roles = [r for s, r in rows if int(s) in VAL_BLOCK]
+    assert cal_roles[-1].startswith("the probe's Monte Carlo side draws"), "the calibration block's last role: the probe"
+    assert val_roles[-1].startswith("spare, drawn by nothing")
     assert f"**Calibration block, {CAL_BLOCK[0]}-{CAL_BLOCK[-1]}:**" in body
     assert f"**Validation block, {VAL_BLOCK[0]}-{VAL_BLOCK[-1]}:**" in body
 
@@ -178,7 +183,7 @@ def check_appendix_b(body: str, name: str) -> None:
     app = section(body, "## Appendix B")
     rows = B_ROW.findall(app)
     nums = [int(r[0]) for r in rows]
-    assert nums == list(range(1, 21)), f"Appendix B must number 20 choices 1..20: {nums}"
+    assert nums == list(range(1, 31)), f"Appendix B must number 30 choices 1..30: {nums}"
     for n, choice, where, why in rows:
         assert choice.strip() and where.strip() and why.strip(), f"B-{n} lacks its text, its place or its basis"
     before = body[:body.index("## Appendix B")]
@@ -196,27 +201,108 @@ def check_sizing(body: str, name: str) -> None:
     assert N >= Nmin, "the declared subsets do not meet the plan's own rule"
     assert A.CAL_SUBSETS_PER_SIZE - 20 < math.ceil(Nmin / len(A.SIZES)) <= A.CAL_SUBSETS_PER_SIZE, \
         "the declared count is the rule's minimum rounded up to a multiple of 20"
-    a = n / N
     must = [
         f"**{n} subsets**", f"**{n * len(A.VALUES) * len(A.EXACT_MODELS):,} exact subset nulls**",
         f"r_V = 1 - {A.VAL_PASS}^(1/{n}) = {A.punished_rate():.4e}",
         f"**at least {Nmin:,} subsets pooled, {math.ceil(Nmin / len(A.SIZES))} a size.**",
         f"**Declared: {A.CAL_SUBSETS_PER_SIZE} subsets at each size, {N:,} in all**",
         f"j = 0 to {A.CAL_SUBSETS_PER_SIZE - 1}",
-        f"probability {A.detection(N, A.punished_rate()):.4f}",
-        f"3/{N:,} = {3 / N:.4e}", f"passes with probability {(1 - 3 / N) ** n:.4f}",
-        f"at most {A.minimax_one(a):.4f} for one candidate", f"at most {A.minimax_nested(a):.4f} for a branch",
-        f"at most {2 * A.minimax_nested(a) + A.minimax_one(a):.4f} over the whole rule",
-        f"are {A.minimax_one(1.0):.4f} for one candidate and {A.minimax_nested(1.0):.4f} for a nested branch",
+        f"are {A.minimax_one(1.0):.4f} and {A.minimax_nested(1.0):.4f}",
         f"r_V was seen with probability {A.detection(n, A.punished_rate()):.4f}",
         f"Each size has {A.CAL_SUBSETS_PER_SIZE} calibration subsets against {A.VAL_SUBSETS_PER_SIZE} validation",
     ]
     for s in must:
         assert s in s32, f"3.2 lacks {s!r}"
-    s43 = flat(section(body, "### 4.3"))
-    assert f"a = {a:.5f}" in s43
-    h, null, k = A.q108_val_mc_headroom(ROOT)
-    assert f"no nearer than {h:.3f} of a failure count on any Monte Carlo null (`{null}`, k = {k}" in s32
+
+
+def check_floor(body: str, name: str) -> None:
+    """The allowance (the lead's ruling on M2) and everything stated about it, in 3.2 and 4.3."""
+    A = arith()
+    n = A.n_val()
+    N = A.CAL_SUBSETS_PER_SIZE * len(A.SIZES)
+    c = A.allowance(N, n)
+    assert c == A.ALLOWANCE, "the declared allowance is not the ruling's least c"
+    r95, rV = A.guard_rate(n), A.punished_rate(n)
+    b, b0 = A.rule_bounds(N, n, c), A.rule_bounds(N, n, 0)
+    s32 = flat(section(body, "### 3.2"))
+    beside = A.bound_by_subsets(n=n)
+    for s in (f"r_95 = 1 - {A.GUARD_PASS}^(1/{n}) = {r95:.4e}",
+              f"**The floor admits a candidate with at most c = {c} bad subsets among the {N:,}**",
+              f"refuses a candidate at r_95 with probability at most {A.MAX_REFUSAL:.2f}",
+              f"At c = {c} it refuses one with {1 - A.floor_admits(r95, N, c):.4f}; at c = {c - 1} it would refuse with "
+              f"{1 - A.floor_admits(r95, N, c - 1):.4f}",
+              f"At r_V the floor now refuses with probability {1 - A.floor_admits(rV, N, c):.4f}, where the first text's "
+              f"zero-tolerance floor refused with {A.detection(N, rV):.4f}",
+              f"After {c} bad subsets of {N:,} the 95 % upper limit on the rate is {A.cp_upper(c, N):.4e}, at which the "
+              f"validation's exact part passes with {(1 - A.cp_upper(c, N)) ** n:.4f}",
+              f"bound that size's rate at {A.cp_upper(0, A.CAL_SUBSETS_PER_SIZE):.4e}, and {c} bad of "
+              f"{A.CAL_SUBSETS_PER_SIZE} at {A.cp_upper(c, A.CAL_SUBSETS_PER_SIZE):.4e}",
+              f"{b['one']:.4f} for one candidate", f"{b['nested']:.4f} for a branch nested in m",
+              f"**{b['primary']:.4f} for the primary**", f"{b['nested']:.4f} when the scope-Q branch is the primary",
+              f"**{b['second']:.4f} for the second statistic**", f"{b['all']:.4f} over the whole rule",
+              f"these were {b0['one']:.4f}, {b0['nested']:.4f}, {b0['primary']:.4f}, {b0['second']:.4f} and "
+              f"{b0['all']:.4f}, bought by refusing a candidate at r_95 with probability "
+              f"{1 - A.floor_admits(r95, N, 0):.4f}",
+              f"towards {1 - A.GUARD_PASS:.2f}",
+              f"{beside[1][2]:.4f} at {beside[1][0]:,} subsets, {beside[2][2]:.4f} at {beside[2][0]:,} and "
+              f"{beside[3][2]:.4f} at {beside[3][0]:,}"):
+        assert s in s32, f"3.2 lacks {s!r}"
+    s43 = section(body, "### 4.3")
+    rates = [(r, "") for r in A.FLOOR_RATES[:4]] + [(r95, " (r_95)"), (rV, " (r_V)")] + \
+            [(r, "") for r in A.FLOOR_RATES[4:]]
+    for r, lab in rates:
+        row = (f"| {r:.4e}{lab} | {A.floor_admits(r, N, c):.4f} | {A.floor_admits(r, N, 0):.4f} | "
+               f"{(1 - r) ** n:.4f} |")
+        assert row in s43, f"4.3 lacks the floor row {row!r}"
+    f43 = flat(s43)
+    assert f"it refuses at most {1 - A.floor_admits(r95, N, c):.4f} there" in f43
+    assert f"98.9 % of the time, with probability {1 - A.floor_admits(1e-4, N, 0):.4f}" in f43
+    assert round(100 * (1 - 1e-4) ** n, 1) == 98.9
+    steps = A.step_costs(ROOT)
+    txt = (f"{steps[0][2]:.3f} from `{steps[0][0]}` to `{steps[0][1]}`, "
+           + ", ".join(f"{z:.3f} to `{y}`" for _, y, z in steps[1:-1]) + f" and {steps[-1][2]:.3f} to `{steps[-1][1]}`")
+    assert txt in f43, f"4.3 lacks the grid steps {txt!r}"
+    assert f"{b['one']:.4f} at c = {c} ({b0['one']:.4f} at c = 0)" in f43
+    assert f"**{b['nested']:.4f} at c = {c}, and n/(N + n) = {b0['nested']:.4f} at c = 0" in f43
+    assert abs(b0["nested"] - n / (N + n)) < 1e-12, "the closed form at c = 0"
+    assert f"catch a bad-subset rate of 1e-03 with probability {1 - (1 - 1e-3) ** n:.4f}" in f43
+
+
+def check_probe(body: str, name: str) -> None:
+    A = arith()
+    m = A.probe_nulls()
+    s32 = flat(section(body, "### 3.2"))
+    assert (f"{A.PROBE_PER_SIZE} x {len(A.SIZES)} x {len(A.PROBE_MODELS)} x {len(A.VALUES)} = **{m} probed nulls**"
+            in s32)
+    assert f"the {A.PROBE_PER_SIZE} sizing subsets with the largest exact size" in s32
+    s43 = section(body, "### 4.3")
+    for rho in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
+        row = f"| {rho} | {A.null_fail(rho):.3e} | {A.probe_refusal(rho):.4f} | {A.mc_pass(rho):.4f} |"
+        assert row in s43, f"4.3 lacks the probe row {row!r}"
+        assert A.probe_refusal(rho) <= 1 - A.mc_pass(rho) + 1e-12, "the probe is stricter than the validation"
+    s42 = flat(section(body, "### 4.2"))
+    assert "4. **No probed null reaches its failure count**" in s42 or "**No probed null reaches its failure count**" \
+        in s42
+
+
+def check_costs(body: str, name: str) -> None:
+    """Section 6.2's cost lines, from Q-108's two run logs; a no-op when the logs are absent (the test below says so)."""
+    A = arith()
+    if not A.logs_present():
+        return
+    cs, vs = A.log_stats(A.CAL_LOG), A.log_stats(A.VAL_LOG)
+    c = A.cost(cs, vs)
+    s62 = flat(section(body, "### 6.2"))
+    for s in (f"**the core:** {c['core'][0]:.1f} to {c['core'][1]:.1f} hours",
+              f"({vs['exit_s']} s and {cs['exit_s']} s)",
+              f"at {A.per_subset_value(vs):.2f} to {A.per_subset_value(cs):.2f} s a subset-value: "
+              f"**{c['sizing'][0]:.1f} to {c['sizing'][1]:.1f} hours**",
+              f"{A.probe_nulls()} Monte Carlo nulls at {vs['mc_mean']:.2f} to {cs['mc_mean']:.2f} s each: "
+              f"{c['probe'][0]:.1f} to {c['probe'][1]:.1f} hours",
+              f"the five exact models: {c['drift'][0]:.1f} to {c['drift'][1]:.1f} hours",
+              f"**in all: {c['total'][0]:.1f} to {c['total'][1]:.1f} hours.**",
+              f"at or below {cs['ws_max_mb']} MB", f"peaked at {cs['pairs_peak_mb']} MB"):
+        assert s in s62, f"6.2 lacks {s!r}"
 
 
 def check_counts(body: str, name: str) -> None:
@@ -226,19 +312,25 @@ def check_counts(body: str, name: str) -> None:
     extra = (A.CAL_SUBSETS_PER_SIZE - A.VAL_SUBSETS_PER_SIZE) * len(A.SIZES)
     sizing = extra * len(A.VALUES) * len(A.EXACT_MODELS)
     exact = core_exact + sizing
-    rule = exact + core_mc
+    probe = A.probe_nulls()
+    rule13 = exact + core_mc
+    rule = rule13 + probe
     N = A.CAL_SUBSETS_PER_SIZE * len(A.SIZES)
-    drift = 8 * 150 * 4
+    drift = A.DRIFT_SCENARIOS * A.DRIFT_POPULATIONS * len(A.DRIFT_MODELS)
     s32, s35 = flat(section(body, "### 3.2")), flat(section(body, "### 3.5"))
     for s in (f"{extra:,} sizing subsets x 2 values x 5 exact models = **{sizing:,} sizing nulls**",
-              f"{exact:,} exact nulls (20 on the fixed streams)", f"**{rule:,} in the rule**",
+              f"{exact:,} exact nulls (20 on the fixed streams) and {core_mc:,} Monte Carlo, **{rule13:,} in conditions "
+              f"1 to 3**", f"the {probe} probed nulls in condition 4: **{rule:,} in the rule**",
               f"{N * len(A.VALUES) * len(A.EXACT_MODELS):,} on subsets, {N * len(A.VALUES):,} of them at L = 42"):
         assert s in s32, f"3.2 lacks {s!r}"
-    for s in (f"| {core:,} |", f"| {sizing:,} |", f"| **{rule:,}** | {exact:,} exact, {core_mc:,} Monte Carlo |",
+    for s in (f"| {core:,} |", f"| {sizing:,} |", f"| {probe} |",
+              f"| **{rule:,}** | {exact:,} exact, {core_mc + probe:,} Monte Carlo |",
               f"| **{core:,}** |", f"| {drift:,} |"):
         assert s in s35, f"3.5 lacks {s!r}"
     assert f"{drift:,} nulls beside" in flat(section(body, "### 3.3"))
-    assert "drift" in body and f"0 to {exact - 1:,} at the calibration, 0 to {core_exact - 1:,}" in flat(body)
+    assert f"0 to {exact - 1:,} at the calibration, 0 to {core_exact - 1:,}" in flat(body)
+    assert f"**Size:** {rule:,} nulls in the rule -- {exact:,} exact and {core_mc + probe:,} Monte Carlo" in \
+        flat(section(body, "### 6.2"))
 
 
 def check_criterion_power(body: str, name: str) -> None:
@@ -247,9 +339,9 @@ def check_criterion_power(body: str, name: str) -> None:
     fails = ", ".join(str(A.FAIL[k]) for k in A.KS[:-1]) + f" and {A.FAIL[A.KS[-1]]}"
     assert f"fewer rejections than {fails} at k = 13..20" in s43
     n = A.n_val()
-    N = A.CAL_SUBSETS_PER_SIZE * len(A.SIZES)
-    for label, r in (("1e-04", 1e-4), (f"{3 / N:.4e}", 3 / N), ("1e-03", 1e-3), ("0.01", 0.01)):
-        assert re.search(rf"a (pooled bad-subset )?rate (of |at the sizing's certified bound, ){re.escape(label)} \| "
+    r95 = A.guard_rate(n)
+    for label, r in (("1e-04", 1e-4), (f"r_95, {r95:.4e}", r95), ("1e-03", 1e-3), ("0.01", 0.01)):
+        assert re.search(rf"a (pooled bad-subset )?rate of {re.escape(label)} \| "
                          rf"{(1 - r) ** n:.4f} \|", s43), f"4.3 lacks the exact-part row at {label}"
     for rho, txt in ((0.5, "every one of the 1,123 nulls at 0.5 of nominal"), (0.6, "every null at 0.6 of nominal"),
                      (0.7, "every null at 0.7 of nominal"), (0.8, "every null at 0.8 of nominal"),
@@ -289,16 +381,30 @@ def check_coverage(body: str, name: str) -> None:
     for m in ("flip1", "flip5", "coin"):
         assert (mean[m], lo[m], hi[m]) == (1.0, 1.0, 1.0), m
     assert "| flips at 1 and 5, the coin | 1.000 | 1.000 to 1.000 |" in s5
+    words = {2: "two", 9: "nine"}
+    assert round(5 * (1 - mean["markov50"])) == 2 and round(10 * (1 - mean["markov80"])) == 9
+    assert (f"about {words[2]} in five at a mean dwell of 50 sessions, and {words[9]} in ten at 80"
+            in flat(s5))
+    A = arith()
+    assert f"had a worst flip-42 ratio of {A.worst_flip42('cons_m1.5', 'Q', ROOT):.3f}" in flat(s5)
 
 
 CHECKS = (check_pin_form, check_seed_tables, check_no_foreign_seed, check_grid, check_appendix_b, check_sizing,
-          check_counts, check_criterion_power, check_power_costs, check_coverage)
+          check_floor, check_probe, check_counts, check_criterion_power, check_power_costs, check_coverage, check_costs)
 
 
 @pytest.mark.parametrize("check", CHECKS, ids=[c.__name__ for c in CHECKS])
 def test_the_plan(check):
     p = plan()
     check(read(p), p.name)
+
+
+def test_the_cost_figures_against_the_logs():
+    """Section 6.2 against Q-108's two run logs: skipped, saying so, where the logs are not on this machine."""
+    if not arith().logs_present():
+        pytest.skip("Q-108's run logs are not present: the cost figures of 6.2 are not checked here")
+    p = plan()
+    check_costs(read(p), p.name)
 
 
 def test_every_check_holds_under_the_pinned_name_and_two_copies_are_refused(tmp_path):
@@ -330,6 +436,13 @@ def test_the_checks_can_fail():
         check_power_costs(body.replace("| `cons_m2` | 2.0 | 1.567 |", "| `cons_m2` | 2.0 | 1.500 |"), p.name)
     with pytest.raises(AssertionError):
         check_appendix_b(body.replace("(after the look, B-9)", "(after the look)"), p.name)
+    with pytest.raises(AssertionError):
+        check_floor(body.replace("at most c = 3 bad subsets", "at most c = 2 bad subsets"), p.name)
+    with pytest.raises(AssertionError):
+        check_probe(body.replace("| 0.8 | 1.431e-03 | 0.7321 |", "| 0.8 | 1.431e-03 | 0.7000 |"), p.name)
+    if arith().logs_present():
+        with pytest.raises(AssertionError):
+            check_costs(body.replace("**in all: 15.4 to", "**in all: 12.0 to"), p.name)
 
 
 # ------------------------------------------------------------------------------------------------- the seeds in files

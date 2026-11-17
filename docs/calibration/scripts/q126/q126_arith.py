@@ -1,12 +1,14 @@
-"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`): its arithmetic -- no bar, no market outcome, no
-random number. Every figure the plan states is printed here, from three kinds of input only:
+"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, second text): its arithmetic -- no bar, no market
+outcome, no random number. Every figure the plan states is printed here, from three kinds of input only:
 
 - the plan's declared constants: the validation's exposure (23 subsets at each of five sizes, two values, five exact
   side models), the sizing rule's two probabilities, the family levels 0.05/(k(k+1)) at k = 13..20, 200,000
   replications, the 1,123 Monte Carlo nulls of Q-108's class;
 - columns of Q-108's result files, read as a calibration (they are not market outcomes): `results/q108_choice.csv`
   (`P`, `p_mc`), `results/q108_cal_size.csv` (`admitted_share`) and `results/q108_val_size.csv` (`count_k*`);
-- optionally, the per-null timing lines of Q-108's two run logs (`... of <den>; <t> s, ws <MB> MB`), for the cost.
+- Q-108's two run logs (`%LOCALAPPDATA%/stage2-extended-runs/q108-calibrate.log` and `q108-validate.log` by default):
+  their per-null timing lines (`... of <den>; <t> s, ws <MB> MB`), their `EXIT 0 (<s> s)` lines and the pairs step's
+  peak working set, for the cost (section 6.2). Without the logs the cost lines are not printed.
 
     python docs/calibration/scripts/q126/q126_arith.py [--repo ROOT] [--cal-log PATH] [--val-log PATH]
 
@@ -16,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import re
 from pathlib import Path
 
@@ -82,6 +85,98 @@ def minimax_nested(a: float) -> float:
     eligibility is implied), the choice -- the smallest eligible margin -- fails the validation's exact part with
     probability at most the integral of 1 - p^a over p in (0, 1), which is a / (1 + a), whatever the rates."""
     return a / (1.0 + a)
+
+
+# ------------------------------------------------------------------------------------------- the floor's allowance (M2)
+
+#: the lead's ruling on the red team's M2 (E-173): the floor may not be stricter than the validation it guards. At the
+#: bad-subset rate where the validation's exact part passes a candidate with probability GUARD_PASS, the floor -- at
+#: most c bad subsets of the 3,300 -- refuses it with probability at most MAX_REFUSAL; c is the least such count
+GUARD_PASS = 0.95
+MAX_REFUSAL = 0.10
+#: the declared allowance (the plan's 3.2); `allowance()` must return it
+ALLOWANCE = 3
+#: the rates at which the floor's power is tabulated (the plan's 4.3), beside r_95 and r_V
+FLOOR_RATES = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 2e-3)
+
+
+def guard_rate(n: int | None = None) -> float:
+    """r_95: the pooled bad-subset rate at which the validation's n subsets all hold with probability GUARD_PASS."""
+    return punished_rate(n, GUARD_PASS)
+
+
+def floor_admits(r: float, N: int | None = None, c: int | None = None) -> float:
+    """P(at most c bad subsets among N | rate r): the floor's chance of admitting a candidate."""
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES) if N is None else N
+    c = ALLOWANCE if c is None else c
+    return float(stats.binom.cdf(c, N, r))
+
+
+def allowance(N: int | None = None, n: int | None = None) -> int:
+    """The least c whose floor refuses a candidate at r_95 with probability at most MAX_REFUSAL."""
+    r = guard_rate(n)
+    c = 0
+    while 1.0 - floor_admits(r, N, c) > MAX_REFUSAL:
+        c += 1
+    return c
+
+
+def bound_nested_c(N: int, n: int, c: int) -> float:
+    """The nested branch's bound with an allowance c: the choice fails the validation's exact part with probability at
+    most the integral over p in (0, 1) of 1 - (1 - G^-1(p))^n, G(r) = P(Bin(N, r) <= c). Substituting p = G(r), it is
+    1 - E[(1 - R)^n] with R ~ Beta(c + 1, N - c): 1 - prod_{i < n} (N - c + i) / (N + 1 + i). At c = 0 it is
+    n / (N + n) = a / (1 + a)."""
+    return 1.0 - math.exp(sum(math.log((N - c + i) / (N + 1 + i)) for i in range(n)))
+
+
+def bound_one_c(N: int, n: int, c: int) -> float:
+    """One candidate's bound with an allowance c: sup over r of P(Bin(N, r) <= c) (1 - (1 - r)^n), on a fine log grid
+    of r (the maximum is interior and smooth)."""
+    r = np.exp(np.linspace(math.log(1e-7), math.log(0.2), 400_001))
+    return float((stats.binom.cdf(c, N, r) * (1.0 - (1.0 - r) ** n)).max())
+
+
+def cp_upper(x: int, m: int, conf: float = 0.95) -> float:
+    """The one-sided Clopper-Pearson upper limit on a rate after x bad among m."""
+    return float(stats.beta.ppf(conf, x + 1, m - x))
+
+
+def rule_bounds(N: int | None = None, n: int | None = None, c: int | None = None) -> dict[str, float]:
+    """The bounds on the chance that a statistic the rule chooses holds the calibration and fails the validation's
+    exact part: the primary (scope D's nested grid plus C6; or, when scope D has none, the scope-Q branch alone) and
+    the second statistic (the scope-Q branch's choice, validated beside when scope D chooses; M3)."""
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES) if N is None else N
+    n = n_val() if n is None else n
+    c = ALLOWANCE if c is None else c
+    nest, one = bound_nested_c(N, n, c), bound_one_c(N, n, c)
+    return {"nested": nest, "one": one, "primary": nest + one, "second": nest, "all": 2 * nest + one}
+
+
+def bound_by_subsets(Ns=(3300, 6600, 13200, 26400), n: int | None = None) -> list[tuple[int, int, float]]:
+    """Beside, not taken: (N, the ruled allowance at N, the nested bound) for larger calibrations. Under the ruling the
+    floor admits a candidate at r_95, which the validation's exact part fails with 1 - GUARD_PASS, so the bound tends
+    to 1 - GUARD_PASS from above as N grows and never falls below it."""
+    n = n_val() if n is None else n
+    return [(N, allowance(N, n), bound_nested_c(N, n, allowance(N, n))) for N in Ns]
+
+
+# ------------------------------------------------------------------------------------------- the Monte Carlo probe (M1)
+
+#: at each size, the sizing subsets with the largest exact size (the plan's 3.2) carry the four persistent Monte Carlo
+#: models at both values
+PROBE_PER_SIZE = 23
+PROBE_MODELS = ("flip21", "markov30", "markov50", "markov80")
+
+
+def probe_nulls() -> int:
+    return PROBE_PER_SIZE * len(SIZES) * len(PROBE_MODELS) * len(VALUES)
+
+
+def probe_refusal(rho: float, m: int | None = None) -> float:
+    """The probe's chance of refusing a candidate with m probed nulls at rho times nominal at every k: each null is
+    refused exactly as the validation fails a null (E-052's failure counts)."""
+    m = probe_nulls() if m is None else m
+    return 1.0 - (1.0 - null_fail(rho)) ** m
 
 
 # ------------------------------------------------------------------------------------------- the criterion's power
@@ -185,6 +280,28 @@ def interpolated(repo: Path = ROOT) -> dict[str, float]:
     return out
 
 
+def worst_flip42(cand: str, scope: str, repo: Path = ROOT) -> float:
+    """`q108_choice.csv`'s `worst_ratio_flip42` for one candidate and scope (the plan's section 5, M3)."""
+    import pandas as pd
+    d = pd.read_csv(repo / "results" / "q108_choice.csv")
+    d = d[(d["row"] == "candidate") & (d["candidate"] == cand) & (d["scope"] == scope)]
+    return float(d["worst_ratio_flip42"].iloc[0])
+
+
+def grid_p(repo: Path = ROOT) -> dict[str, float]:
+    """Each grid margin's P / P(cons_m1.25): the file's value, or the linear interpolation where Q-108 did not run it."""
+    pc, ip = power_costs(repo), interpolated(repo)
+    return {name_of(m): (pc[name_of(m)][1] if pc[name_of(m)][0] == "file" else ip[name_of(m)]) for m in GRID}
+
+
+def step_costs(repo: Path = ROOT) -> list[tuple[str, str, float]]:
+    """The MDL cost of one grid step: P(next) / P(this) - 1, from `grid_p` (an estimate where a margin is
+    interpolated)."""
+    g = grid_p(repo)
+    names = [name_of(m) for m in GRID]
+    return [(a, b, g[b] / g[a] - 1.0) for a, b in zip(names, names[1:])]
+
+
 def coverage(repo: Path = ROOT):
     """Scope D's admitted share under each side model: the mean of `admitted_share` over the in-rule fixed-data and
     subset nulls of `cons_m1.25` in scope D (the admission reads sides only, so every candidate's is the same), and
@@ -217,22 +334,78 @@ def q108_val_mc_headroom(repo: Path = ROOT) -> tuple[float, str, int]:
 
 # ------------------------------------------------------------------------------------------- the cost
 
-LINE = re.compile(r"\]   (?:fixed|sub):\S*:(flip42|flip55|flip63|alt45|alt55): .*; ([0-9.]+) s, ws ([0-9]+) MB")
+#: the plan's 3.3: the drift populations, each enumerated at every exact model
+DRIFT_SCENARIOS = 8
+DRIFT_POPULATIONS = 150
+DRIFT_MODELS = EXACT_MODELS
+RUNS = Path(os.environ.get("LOCALAPPDATA", "")) / "stage2-extended-runs"
+CAL_LOG = RUNS / "q108-calibrate.log"
+VAL_LOG = RUNS / "q108-validate.log"
+
+EXACT_LINE = re.compile(r"\]   (?:fixed|sub):\S*:(flip42|flip55|flip63|alt45|alt55): .*; ([0-9.]+) s, ws ([0-9]+) MB")
+MC_LINE = re.compile(r"\]   sub:\S*:(flip21|markov30|markov50|markov80): .*; ([0-9.]+) s, ws ([0-9]+) MB")
+EXIT_LINE = re.compile(r"\] EXIT 0 \(([0-9]+) s\)")
+PAIRS_PEAK = re.compile(r"peak working set ([0-9]+) MB")
 
 
-def log_timings(path: Path) -> dict[str, float]:
-    """The median seconds of one exact enumeration per model, from a Q-108 run log's per-null lines."""
-    by: dict[str, list[float]] = {}
+def log_stats(path: Path) -> dict:
+    """From a Q-108 run log: per exact model the median and mean seconds of one enumeration; the mean seconds of one
+    persistent Monte Carlo subset null; the run's EXIT seconds; the largest per-null working set and the pairs step's
+    peak (MB)."""
+    ex: dict[str, list[float]] = {}
+    mc: list[float] = []
+    ws: list[int] = []
+    out = {"exit_s": None, "pairs_peak_mb": None}
     for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
-        m = LINE.search(line)
+        m = EXACT_LINE.search(line)
         if m:
-            by.setdefault(m.group(1), []).append(float(m.group(2)))
-    return {k: float(np.median(v)) for k, v in by.items()}
+            ex.setdefault(m.group(1), []).append(float(m.group(2)))
+            ws.append(int(m.group(3)))
+            continue
+        m = MC_LINE.search(line)
+        if m:
+            mc.append(float(m.group(2)))
+            ws.append(int(m.group(3)))
+            continue
+        m = EXIT_LINE.search(line)
+        if m:
+            out["exit_s"] = int(m.group(1))
+        m = PAIRS_PEAK.search(line)
+        if m:
+            out["pairs_peak_mb"] = int(m.group(1))
+    out["median"] = {k: float(np.median(v)) for k, v in ex.items()}
+    out["mean"] = {k: float(np.mean(v)) for k, v in ex.items()}
+    out["mc_mean"] = float(np.mean(mc)) if mc else None
+    out["ws_max_mb"] = max(ws) if ws else None
+    return out
+
+
+def logs_present() -> bool:
+    return CAL_LOG.is_file() and VAL_LOG.is_file()
 
 
 def sizing_hours(per_subset_value_s: float, extra_subsets: int | None = None) -> float:
     extra = (CAL_SUBSETS_PER_SIZE - VAL_SUBSETS_PER_SIZE) * len(SIZES) if extra_subsets is None else extra_subsets
     return extra * len(VALUES) * per_subset_value_s / 3600.0
+
+
+def per_subset_value(st: dict) -> float:
+    """The mean seconds of one subset-value's five exact enumerations."""
+    return sum(st["mean"][m] for m in EXACT_MODELS)
+
+
+def cost(cal: dict, val: dict) -> dict[str, tuple[float, float]]:
+    """(low, high) hours of each part of the calibration run: low from the validation log (two candidates), high from
+    the calibration log (ten); means throughout; the core from the two runs' EXIT seconds."""
+    out = {
+        "core": (val["exit_s"] / 3600.0, cal["exit_s"] / 3600.0),
+        "sizing": (sizing_hours(per_subset_value(val)), sizing_hours(per_subset_value(cal))),
+        "probe": (probe_nulls() * val["mc_mean"] / 3600.0, probe_nulls() * cal["mc_mean"] / 3600.0),
+        "drift": (DRIFT_SCENARIOS * DRIFT_POPULATIONS * per_subset_value(val) / 3600.0,
+                  DRIFT_SCENARIOS * DRIFT_POPULATIONS * per_subset_value(cal) / 3600.0),
+    }
+    out["total"] = (sum(v[0] for v in out.values()), sum(v[1] for v in out.values()))
+    return out
 
 
 # ------------------------------------------------------------------------------------------- print
@@ -290,18 +463,59 @@ def main() -> None:
         extra = f"; linear interpolation {ip[c]:.3f}" if c in ip else ""
         print(f"   {c}: {how} {lo:.3f}" + (f" to {hi:.3f}" if hi != lo else "") + extra)
 
+    print(f"   Q-108's worst flip-42 ratio, cons_m1.5 in scope Q: {worst_flip42('cons_m1.5', 'Q', a.repo):.3f}")
+
     print("== 7 scope D's coverage (q108_cal_size.csv admitted_share, cons_m1.25 D, in-rule fixed and subset nulls)")
     mean, lo, hi = coverage(a.repo)
     for m in mean.index:
         print(f"   {m}: mean {mean[m]:.3f}; over sizes {lo.get(m, float('nan')):.3f} to {hi.get(m, float('nan')):.3f}")
 
+    print("== 3.2 / 4.3 the floor's allowance (E-173's ruling on M2)")
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES)
+    r95 = guard_rate(n)
+    c = allowance(N, n)
+    print(f"r_95 = 1 - {GUARD_PASS}^(1/{n}) = {r95:.4e}; the least allowance c = {c} (declared {ALLOWANCE}); the floor "
+          f"refuses at r_95 with {1 - floor_admits(r95, N, c):.4f} (at c - 1: {1 - floor_admits(r95, N, c - 1):.4f})")
+    print(f"at c = {c}: r_V refused with {1 - floor_admits(rV, N, c):.4f}; the 95 % upper limit after {c} bad of {N}: "
+          f"{cp_upper(c, N):.4e}, at which the validation's exact part passes with {(1 - cp_upper(c, N)) ** n:.4f}")
+    print(f"   per size: 0 bad of {CAL_SUBSETS_PER_SIZE} bound that size at {cp_upper(0, CAL_SUBSETS_PER_SIZE):.4e}; "
+          f"{c} bad of {CAL_SUBSETS_PER_SIZE} at {cp_upper(c, CAL_SUBSETS_PER_SIZE):.4e}")
+    b = rule_bounds(N, n, c)
+    print(f"bounds at c = {c}: one candidate {b['one']:.4f}; a nested branch {b['nested']:.4f}; the primary "
+          f"{b['primary']:.4f}; the second statistic {b['second']:.4f}; the whole rule {b['all']:.4f}")
+    b0 = rule_bounds(N, n, 0)
+    print(f"   (at c = 0: {b0['one']:.4f}, {b0['nested']:.4f}, {b0['primary']:.4f}, {b0['second']:.4f}, {b0['all']:.4f})")
+    for NN, cc, bb in bound_by_subsets(n=n):
+        print(f"   beside, not taken: {NN} subsets, allowance {cc}, nested bound {bb:.4f} (its limit {1 - GUARD_PASS:.2f})")
+    for r in (*FLOOR_RATES[:4], r95, rV, *FLOOR_RATES[4:]):
+        print(f"   rate {r:.4e}: floor admits (c = {c}) {floor_admits(r, N, c):.4f}; (c = 0) {floor_admits(r, N, 0):.4f}; "
+              f"the validation's exact part passes {(1 - r) ** n:.4f}")
+    print("   grid steps:", [(x, y, round(z, 3)) for x, y, z in step_costs(a.repo)])
+    print(f"   the first text's floor (c = 0) refused at 1e-04 with {1 - floor_admits(1e-4, N, 0):.4f} and at r_95 with "
+          f"{1 - floor_admits(r95, N, 0):.4f}; the validation's {n} subsets catch a rate of 1e-03 with "
+          f"{1 - (1 - 1e-3) ** n:.4f}")
+
+    print("== 4.2 / 4.3 the Monte Carlo probe (M1)")
+    m = probe_nulls()
+    print(f"probed nulls: {PROBE_PER_SIZE} x {len(SIZES)} x {len(PROBE_MODELS)} x {len(VALUES)} = {m}")
+    for rho in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
+        print(f"   rho {rho}: one probed null refused {null_fail(rho):.3e}; all {m} at rho {probe_refusal(rho):.4f}; "
+              f"the validation's {MC_NULLS} all at rho pass {mc_pass(rho):.4f}")
+
     print("== 6.2 the cost")
-    for name, p in (("calibration", a.cal_log), ("validation", a.val_log)):
-        if p is not None and Path(p).is_file():
-            t = log_timings(Path(p))
-            tot = sum(t.get(m, 0.0) for m in EXACT_MODELS)
-            print(f"   Q-108's {name} log, median s an enumeration: {t}; a subset-value {tot:.1f} s; the sized part "
-                  f"{sizing_hours(tot):.1f} h")
+    cal_p = a.cal_log or CAL_LOG
+    val_p = a.val_log or VAL_LOG
+    if Path(cal_p).is_file() and Path(val_p).is_file():
+        cs, vs = log_stats(Path(cal_p)), log_stats(Path(val_p))
+        for name, st in (("calibration", cs), ("validation", vs)):
+            print(f"   Q-108's {name} log: median s an enumeration {st['median']}; mean {st['mean']}; a subset-value "
+                  f"(means) {per_subset_value(st):.2f} s; a persistent MC subset null {st['mc_mean']:.2f} s; EXIT "
+                  f"{st['exit_s']} s; per-null working set at most {st['ws_max_mb']} MB; pairs step peak "
+                  f"{st['pairs_peak_mb']} MB")
+        for part, (lo, hi) in cost(cs, vs).items():
+            print(f"   {part}: {lo:.1f} to {hi:.1f} h")
+    else:
+        print("   the logs are not present: no cost line")
 
 
 if __name__ == "__main__":

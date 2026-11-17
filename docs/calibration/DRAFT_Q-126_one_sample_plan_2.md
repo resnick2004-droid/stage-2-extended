@@ -1,13 +1,16 @@
 # Q-126: the one-sample pass line's second calibration -- the plan, declared before anything is built or run
 
-**Status: a draft, first text (Q-126, E-161).** It goes to the red team, then is pinned by its LF sha256 under a
-decision row (`tests/test_declarations_fixed.py`'s calibration-plan test reads `docs/calibration/<name>.md` pins). The
-lead may rename it at the pin (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
+**Status: a draft, second text (Q-126b).** It answers the red team's read of the first text (ec6905a;
+`docs/reviews/DRAFT_Q-126_2026-11-17.md`) and the lead's rulings on it (E-173). Section 10 maps every finding to its
+change. It goes to the red team's re-read of this diff, then is pinned by its LF sha256 under a decision row
+(`tests/test_declarations_fixed.py`'s calibration-plan test reads `docs/calibration/<name>.md` pins). The lead may
+rename it at the pin (`Q-126_one_sample_plan_2.md`); `tests/test_q126_draft.py` finds it under either name.
 
 **Every choice in this plan that differs from Q-108's pinned plan was made after Q-108's look** -- after its
-calibration (E-127, E-149, E-150), its failed validation (E-159, E-160) and the diagnosis (Q-125, E-161). Each such
-choice is marked **(after the look, B-n)** where it is made, and Appendix B lists them all with their basis. What is
-not marked is carried from Q-108's pinned plan (`docs/calibration/Q-108_one_sample_plan.md`, sha256
+calibration (E-127, E-149, E-150), its failed validation (E-159, E-160), the diagnosis (Q-125, E-161) and, for the
+second text, the red team's read of the first. Each such choice is marked **(after the look, B-n)** where it is made,
+and Appendix B lists them all with their basis. What is not marked is carried from Q-108's pinned plan
+(`docs/calibration/Q-108_one_sample_plan.md`, sha256
 `c8e7424b46ff0c60ecb5b3ea875ac3b77e70f090a52f0cc0d999d7e416486d7e`, E-115), cited by its section numbers. That text is
 pinned, so a citation of it cannot drift.
 
@@ -15,9 +18,11 @@ Nothing in this plan has been built or run, and it holds no result:
 - **The arithmetic** is printed by `docs/calibration/scripts/q126/q126_arith.py`, which draws no random number. Its
   inputs are this plan's declared constants and three of Q-108's result files, read as a calibration (they are not
   market outcomes): `results/q108_choice.csv` (`P`, `p_mc`), `results/q108_cal_size.csv` (`admitted_share`) and
-  `results/q108_val_size.csv` (`count_k*`). Its cost lines read Q-108's two run logs' per-null timing lines.
+  `results/q108_val_size.csv` (`count_k*`). Its cost lines read Q-108's two run logs: their per-null timing lines,
+  their `EXIT 0` lines and the pairs step's peak working set.
 - **Every figure below** is either a declared constant, a line that script prints, or a citation of a named section of
-  Q-108's plan, Q-125's note or the audits. `tests/test_q126_draft.py` holds the figures to the script.
+  Q-108's plan, Q-125's note or the audits. `tests/test_q126_draft.py` holds the figures to the script; it holds the
+  cost figures when the two logs are present and says it skipped them when they are not.
 - **No bar and no market outcome was read.** No seed of another block is written here: Q-108's blocks and the replica's
   seed are named by role only.
 
@@ -31,7 +36,7 @@ Nothing in this plan has been built or run, and it holds no result:
 - **The calibration could not see it** (Q-125, section 2): 115 subsets a model cannot certify a bad-subset rate as
   small as a zero-tolerance validation over 115 fresh subsets punishes.
 - This plan answers both: it tries the scope that removes the mechanism's domain first, and it sizes the calibration
-  to the validation's exposure.
+  to the validation's exposure, on the exact side and, by a targeted probe, on the Monte Carlo side.
 
 ---
 
@@ -45,10 +50,14 @@ Nothing in this plan has been built or run, and it holds no result:
   (Q-125, section 2.2).
 - **A margin moves the threshold, not the tail.** No finite m removes the mechanism in scope Q (Q-125, H-d; the
   replica's item 3). A per-trade drift makes large subsets systematically even (the replica's item 2).
-- **Scope D removes the domain.** A side constant over 63-session blocks has at most 12 runs on the judged block, so
-  R >= 13 never admits one (Q-108's 4.4). The replica's scope-D counts were zero in every scenario (its item 7).
-- **What is left in scope D** is the admitted part of the flips at 42 and 55, the alternating models and the Markov
-  models. Whether a statistic holds there is what the calibration and the validation show.
+- **Scope D removes the domain of the exact flips at 55 and 63 sessions.** A side constant over 63-session blocks has
+  at most 12 runs on the judged block, so R >= 13 never admits one (Q-108's 4.4). The replica's scope-D zeros were at
+  L = 63 only, where the admission's arithmetic excludes every cell: they carry no information about what scope D
+  leaves (the red team's m4).
+- **What is left in scope D** is the admitted part of the flips at 42 sessions, the alternating models and the Markov
+  models. **The mechanism acts there too, on the Monte Carlo side** (the red team's M1): on Q-108's validation the worst
+  Monte Carlo null of `cons` and of `cons_m1.25` in scope D was the failing subset `sub:5000:05` under the admitted
+  Markov-50 paths. Section 3.2's probe sizes that side as well.
 
 ---
 
@@ -63,7 +72,9 @@ which F-03 pins.
 
 ### 2.2 The candidates and the order they are tried in
 
-**Scope D first, then a scope-Q branch (after the look, B-1).** Q-108 tried scope Q first; this plan reverses it.
+**Scope D first, then a scope-Q branch (after the look, B-1).** Q-108 tried scope Q first; this plan reverses it. When
+scope D chooses, the scope-Q branch's own choice is validated beside it as a **second statistic** for one declared
+domain (2.5; after the look, B-25).
 
 | row | name | margin m | members | scope D | scope Q branch |
 |---|---|---|---|---|---|
@@ -83,12 +94,12 @@ which F-03 pins.
     less"). Their definition is the others' with that m.
 - **The scope-Q branch (after the look, B-4)** holds only m >= 1.5. Q-125's H-b shows that `cons_m1.5` would have held
   on the failing null at every k, by a bound drawn from the file. That is no proof of safety elsewhere, so the branch
-  is tried only under the sized calibration (3.2) and only if scope D has no eligible candidate.
+  is chosen only under the sized calibration (3.2).
 - **C6 in scope D only (B-5).** Its margin is 1.25, below the branch's 1.5.
 - **Nesting.** Rows 1 to 7 are nested in m: on every sample a larger margin's rejections are a subset of a smaller's,
   at every level and in either scope (the critical value only grows with m, and scope D adds the same admission). So
-  their exact sizes, their Monte Carlo counts and their eligibility are monotone in m on shared draws. Section 4.3 uses
-  this. Row 8 is not nested with rows 1 to 7.
+  their exact sizes, their Monte Carlo counts, their bad-subset counts and their eligibility are monotone in m on shared
+  draws. Section 4.3 uses this. Row 8 is not nested with rows 1 to 7.
 - **Every candidate is computed in both scopes on the same draws (B-15).** A (candidate, scope) pair outside the table's
   "yes" cells is reported beside and decides nothing.
 - **Ties** go to fewer members, then to the earlier row.
@@ -112,7 +123,29 @@ labelled.
   `extended/lift_one_sample.py` and changes none of its definitions. Its own blob is pinned only by an adoption row.
 - `lift_one_sample.py` stays as built (E-126), so Q-108's result files keep their code.
 - The runners are `scripts/q126_calibrate.py` and `scripts/q126_validate.py`. They may import Q-108's runners'
-  functions (the pairs step, the null constructions, the criterion) and must not edit them.
+  functions (the pairs step, the null constructions, the criterion) and must not edit them. **They pass every seed
+  explicitly and assert where each draw's seed came from** (4.1's provenance assertion; B-28).
+
+### 2.5 Which statistic a family uses: fixed by its declared persistence, never by an outcome (after the look, B-25)
+
+A family states its side persistence before its pin (E-035 (6)): the length, in sessions, over which its design's side
+is held -- a regime filter's regime length, or the mean dwell of a switching side. That statement alone decides which
+adopted statistic, if any, its C1 may use:
+
+| the family's declared side persistence | when scope D chose the primary | when the scope-Q branch is the primary (scope D chose none) |
+|---|---|---|
+| below 42 sessions | the primary, in scope D (its cells admitted by 4.4) | the primary, in scope Q |
+| 42 to 50 sessions | **the second statistic**, in scope Q, if it HOLDS its own validation | the primary, in scope Q |
+| 51 to 62 sessions | the primary, in scope D (4.4 admits almost none: 3.2's table) | the primary, in scope Q |
+| 63 sessions or more | no one-sample line | no one-sample line |
+
+- **Why 42 to 50.** It is the band the calibrated class brackets with the flips at 42 and the Markov sides of dwell 50,
+  which scope D mostly does not admit (section 5's coverage table) and which carry 16 or more sign units, so a
+  one-sample statistic can serve them (section 5; the red team's M3). It is the lead's domain (E-173).
+- **No switch after a read.** A family in the first or third row whose cell scope D does not admit at stage C is "not
+  claimed", unless its pinned text declared a two-sample line for that cell before any read (Q-108's 4.4). It does not
+  fall to the second statistic: that would choose a statistic after reading the judged sides.
+- **A statistic that FAILS** leaves its rows with no one-sample line. The other statistic is not extended to them.
 
 ---
 
@@ -136,7 +169,7 @@ count-persistent, 30 `flat`). Replications: 200,000 a Monte Carlo null in the ru
 
 In this plan these are **the core**: subsets j = 0 to 22 at each size, on this plan's seeds.
 
-### 3.2 The sizing subsets: the exact-subset calibration sized to the validation's exposure (after the look, B-6)
+### 3.2 The sizing subsets and the probe: the calibration sized to the validation's exposure (after the look, B-6)
 
 **The validation's exposure** (it is the validation's own class, 3.1, so it is fixed now): 23 fresh subsets at each
 of five sizes, **115 subsets**, each at two values and five exact models, **1,150 exact subset nulls**.
@@ -147,42 +180,70 @@ is exactly what fails E-052's criterion on the validation. Badness is counted pe
 models, because one subset's nulls share its trades (Q-108's 3.2; Q-125 found the failing subset the worst under every
 persistent model).
 
-**The rule (the rule of three's form).**
+**How many subsets (the rule of three's form).**
 - The validation punishes a pooled bad-subset rate r_V at which its 115 subsets all hold with probability 0.9:
   r_V = 1 - 0.9^(1/115) = 9.1576e-04 (`q126_arith.py`).
-- **The calibration must see a subset at that rate with probability at least 0.95.** That needs N subsets with
+- A calibration that sees a subset at that rate with probability at least 0.95 needs N subsets with
   1 - (1 - r_V)^N >= 0.95: **at least 3,270 subsets pooled, 654 a size.**
 - **Declared: 660 subsets at each size, 3,300 in all**, j = 0 to 659. The first 23 at each size are the core (3.1);
   j = 23 to 659 are the sizing subsets.
 - **At every block length.** Every subset, core and sizing, is enumerated exactly at L = 42, 55 and 63 and on both
-  alternating models, at both values. So the guarantee holds at each block length separately as well as pooled.
+  alternating models, at both values. So each statement below holds at each block length as well as pooled.
 
-**What the rule guarantees** (`q126_arith.py`):
-- At 3,300 subsets, r_V is seen with probability 0.9514.
-- Zero bad subsets among 3,300 bound the pooled rate, at 95 %, by 3/3,300 = 9.0909e-04. At that rate the validation's
-  exact part passes with probability 0.9007.
-- **Whatever the rates, the chance that the chosen candidate holds this calibration and then fails the validation's
-  exact part** is at most 0.0126 for one candidate, at most 0.0337 for a branch nested in m (section 4.3 derives it),
-  and at most 0.0800 over the whole rule (scope D's nested grid, C6, and the scope-Q branch).
-- **Q-108's own design, for comparison.** With 115 calibration subsets against 115 validation subsets, the same bounds
-  are 0.2500 for one candidate and 0.5000 for a nested branch, and r_V was seen with probability 0.1000. That is the
-  diagnosis's "roughly two orders of magnitude" (Q-125, section 2.2), stated as a bound.
-- **Pooling over sizes is exact here.** Each size has 660 calibration subsets against 23 validation subsets, the same
-  ratio, so the calibration's chance of holding and the validation's are powers of the same per-size product
-  (section 4.3).
+**The floor's allowance (after the look, B-21; the lead's ruling on the red team's M2, E-173).** The floor may not be
+stricter than the validation it guards.
+- Let r_95 be the pooled bad-subset rate at which the validation's exact part passes a candidate with probability 0.95:
+  r_95 = 1 - 0.95^(1/115) = 4.4593e-04.
+- **The floor admits a candidate with at most c = 3 bad subsets among the 3,300**, c the least count whose floor
+  refuses a candidate at r_95 with probability at most 0.10. At c = 3 it refuses one with 0.0621; at c = 2 it would
+  refuse with 0.1840 (`q126_arith.py`).
+- **What the allowance costs in assurance.** At r_V the floor now refuses with probability 0.3577, where the first
+  text's zero-tolerance floor refused with 0.9514. After 3 bad subsets of 3,300 the 95 % upper limit on the rate is
+  2.3479e-03, at which the validation's exact part passes with 0.7631.
+- **Per size** (the red team's m5): zero bad subsets of one size's 660 bound that size's rate at 4.5287e-03, and 3 bad
+  of 660 at 1.1706e-02. The pooled figures are the validation's yardstick, which draws every size; they are not a
+  single design's, which has one size. Both real failures fell at 5,000 trades.
 
-**What the sizing subsets carry (B-7).** The five exact models at both values only. They carry no Monte Carlo model:
-- at 200,000 replications a Monte Carlo null costs seconds, and 3,185 more subsets times four persistent Monte Carlo
-  models would add days;
-- the Monte Carlo nulls of fresh subsets keep the core's guard, P_MC (Q-108's 4.2), and its blind spot: P_MC treats a
-  calibration subset as standing for a different validation subset (Q-108's 4.2, stated there);
-- in Q-108's validation, `cons_m1.25` in scope Q came no nearer than 0.286 of a failure count on any Monte Carlo null
-  (`sub:5000:05:win1:markov80`, k = 14; `q126_arith.py` from `q108_val_size.csv`). **This is the plan's residual risk,
-  and it is stated, not sized.**
+**What the floor guarantees, whatever the rates** (section 4.3 derives it): the chance that a statistic the rule
+chooses holds this calibration and then fails the validation's exact part is at most
+- 0.0644 for one candidate;
+- 0.1281 for a branch nested in m;
+- **0.1925 for the primary** (scope D's nested grid and C6; 0.1281 when the scope-Q branch is the primary);
+- **0.1281 for the second statistic** (2.5);
+- 0.3206 over the whole rule.
+
+At the first text's zero tolerance these were 0.0126, 0.0337, 0.0463, 0.0337 and 0.0800, bought by refusing a
+candidate at r_95 with probability 0.7705 (section 4.3's table). **The ruling trades that assurance for power.** More
+subsets would not restore it: under the ruled allowance the nested bound falls only towards 0.05, the validation's own
+failure chance at r_95 -- 0.0985 at 6,600 subsets, 0.0831 at 13,200 and 0.0712 at 26,400 (beside, not taken).
+
+**Q-108's own design, for comparison.** With 115 calibration subsets against 115 validation subsets and zero tolerance,
+the one-candidate and nested bounds are 0.2500 and 0.5000, and r_V was seen with probability 0.1000. That is the
+diagnosis's "roughly two orders of magnitude" (Q-125, section 2.2), stated as a bound.
+
+**Pooling over sizes is exact here.** Each size has 660 calibration subsets against 23 validation subsets, the same
+ratio, so the calibration's chance of holding and the validation's are functions of the same per-size rates (4.3).
+
+**What the sizing subsets carry (B-7).** The five exact models at both values. Beyond that, only the probe below.
+
+**The Monte Carlo probe (after the look, B-22; the lead's ruling on the red team's M1, E-173).** Section 1's mechanism
+acts on the Monte Carlo side through the same subsets, so the tail of the sizing subsets is probed there:
+- **Which subsets (B-23).** At each size, the 23 sizing subsets with the largest exact size, ranked without reference to
+  any candidate in the rule: by `cons` (row 1) in scope Q, the sum over both values and the flips at 42, 55 and 63 of
+  its exact size divided by the level at k = 13; ties to the smaller j. `cons` rejects every cell any margin rejects,
+  and Q-125 found the failing subset the worst under every persistent model.
+- **What they carry.** The four persistent Monte Carlo models -- flips at 21 and Markov with dwell 30, 50 and 80 -- at
+  both values and 200,000 replications: 23 x 5 x 4 x 2 = **920 probed nulls**, in Q-108's 3.1 constructions.
+- **The condition (condition 4 of 4.2).** A candidate is ineligible in a scope if any probed null's rejections reach
+  E-052's failure count at any k in 13..20 -- the count at which the validation would fail that null.
+- **Not in P_MC or the point-rate floor (B-29).** Those model the validation's counterpart of each core null. The probe
+  is a worst-case search of the tail, so it is judged by the validation's own per-null test and nothing stricter.
+- **The seeds** are the calibration block's last role (4.1).
 
 **The count.** 3,185 sizing subsets x 2 values x 5 exact models = **31,850 sizing nulls**, all exact, all in the rule.
-With the core: 33,020 exact nulls (20 on the fixed streams), 1,123 Monte Carlo, **34,143 in the rule**. Exact
-enumerations: 33,000 on subsets, 6,600 of them at L = 42.
+With the core: 33,020 exact nulls (20 on the fixed streams) and 1,123 Monte Carlo, **34,143 in conditions 1 to 3**,
+and the 920 probed nulls in condition 4: **35,063 in the rule**. Exact enumerations: 33,000 on subsets, 6,600 of them
+at L = 42.
 
 ### 3.3 The drift nulls, beside (after the look, B-9)
 
@@ -208,13 +269,15 @@ are reported beside, in both runs, so that the size of each candidate under a de
 - **The drift sizes are the replica's, invented, not estimates of P-16's** (Q-125, section 3.2; B-20).
   Scenarios A and F are the no-drift controls.
 - **150 populations a scenario**, as the replica: 1,200 populations.
-- **Exact at L = 55 and 63 and on both alternating models** (4 models a population: 4,800 nulls beside). L = 42 is left
-  out of the beside set for cost; its sizes there are not reported.
+- **Exact at every exact model: L = 42, 55 and 63 and both alternating models** (5 models a population: 6,000 nulls
+  beside; after the look, B-26, the red team's m4). **In scope D their sizes at L = 55 and 63 are zero by the
+  admission's arithmetic** and carry no information; the informative scope-D readings are L = 42 and the alternating
+  models.
 - Every candidate in both scopes, on the same enumeration.
 
-**What a drift reading means.** Nothing in the choice or the verdict. If the chosen statistic is adopted, its adoption
-row reports beside it, per scenario, the share of populations above nominal at any k, so a family declaring on the
-line sees how it behaves under a drift of those sizes.
+**What a drift reading means.** Nothing in the choice or the verdict. If a statistic is adopted, its adoption row
+reports beside it, per scenario and per exact model, the share of populations above nominal at any k, so a family
+declaring on the line sees how it behaves under a drift of those sizes.
 
 ### 3.4 Which size decides (Q-108's 3.4, unchanged)
 
@@ -226,12 +289,13 @@ The per-subset size. Every subset is a null of its own in the rule and in the cr
 |---|---|---|---|
 | the core (Q-108's class, 3.1) | 2,293 | 1,170 exact, 1,123 Monte Carlo | the rule and the criterion |
 | the sizing subsets (3.2) | 31,850 | exact | the rule (calibration only) |
-| **in the calibration's rule** | **34,143** | 33,020 exact, 1,123 Monte Carlo | |
-| **in the validation's criterion** | **2,293** | Q-108's class on the validation seeds | |
+| the probe (3.2) | 920 | Monte Carlo | the rule's condition 4 (calibration only) |
+| **in the calibration's rule** | **35,063** | 33,020 exact, 2,043 Monte Carlo | |
+| **in the validation's criterion, per statistic** | **2,293** | Q-108's class on the validation seeds | |
 | beside: count-persistent and `flat` | 84 | Monte Carlo | both runs |
-| beside: the drift nulls (3.3) | 4,800 | exact | both runs |
+| beside: the drift nulls (3.3) | 6,000 | exact | both runs |
 
-The validation does not draw the sizing subsets (B-14). Its exposure is Q-108's, so the sizing is finite.
+The validation does not draw the sizing subsets or the probe (B-14). Its exposure is Q-108's, so the sizing is finite.
 
 ---
 
@@ -242,7 +306,7 @@ The validation does not draw the sizing subsets (B-14). Its exposure is Q-108's,
 **Q-108's two blocks are retired.** Its calibration block was drawn by its calibration, its validation block by its
 validation. Neither is drawn again, and this plan does not write their numbers.
 
-**How these blocks were found** (2026-11-17, before this text was committed):
+**How these blocks were found** (2026-11-17, before the first text was committed):
 - A word-bounded literal search for every seed of both blocks found none:
   - `git grep -w` in every worktree's working copy, tracked and untracked (the main tree and the ten worktrees);
   - `git grep -w` on every branch, remote and tag (23 refs);
@@ -260,6 +324,7 @@ validation. Neither is drawn again, and this plan does not write their numbers.
     last seed for every G >= 2, and G = 1 is no block count;
   - RD-01's `R.F.LADDER_SEED + i` and Stage 2's `fh.SEED + 1`, `fh.SEED + 2`, `sc.SEED + 1` are far below;
   - the vendored runtime-argument offsets (`seed + 1 + i` and the like) and Stage 1's `a.seed + ...` are not run here.
+- The red team repeated the search on the first text's commit and found the blocks only in the plan and T-0.
 - `tests/test_q126_draft.py` repeats the literal search on every run and checks the lookahead range's end from that
   test's own text.
 
@@ -276,7 +341,7 @@ validation. Neither is drawn again, and this plan does not write their numbers.
 | 20263016 | the `flat` form beside: its fresh subsets and flips |
 | 20263017 | the exact nulls' seeded sample of cells for the scalar re-decision: `default_rng([s, exact null index])` |
 | 20263018 | the drift populations beside: population r of scenario c by `default_rng([s, c, r])` |
-| 20263019 | spare, drawn by nothing |
+| 20263019 | the probe's Monte Carlo side draws (3.2): `default_rng([s, z_index, j, value_index, model_index])`, j the probed subset's own index (B-24) |
 
 **Validation block, 20263020-20263029:**
 
@@ -294,85 +359,108 @@ validation. Neither is drawn again, and this plan does not write their numbers.
 | 20263029 | spare, drawn by nothing |
 
 **The indices (every order fixed).** As Q-108's 4.1, with these changes:
-- `j` runs 0 to 659 at the calibration (0 to 22 at the validation). The Monte Carlo models and the flips at 1 and 5 and
-  the coin use j = 0 to 22 and j = 0 to 4 as in Q-108.
+- `j` runs 0 to 659 at the calibration (0 to 22 at the validation). The core's Monte Carlo models and the flips at 1
+  and 5 and the coin use j = 0 to 22 and j = 0 to 4 as in Q-108.
+- `model_index` is Q-108's (section 3.1's order) for the probe as well: 2 for the flips at 21, 9, 10 and 11 for
+  Markov 30, 50 and 80.
 - **The exact null index** is the position when the exact nulls are listed by data (`offered`, `taken`, then the
   subsets by `z_index` and then `j`), then value, then exact model (flips at 42, 55 and 63, alternating 45 and 55),
   outermost first: 0 to 33,019 at the calibration, 0 to 1,169 at the validation.
 - **The drift nulls**: scenario c in 3.3's order (0 to 7), population r = 0 to 149.
 - C8's reference table is not drawn: no candidate needs it.
 
+**The seed-provenance assertion (after the look, B-28; the red team's M4, E-173).** Q-108's runners default to Q-108's
+retired seed maps: `scripts/q108_calibrate.py`'s `null_plan(seeds=None)` and `expected_counts(seeds=None)` fall back
+to its calibration map, and `scripts/q108_validate.py` holds its validation map. A q126 runner that called them without
+its own map would redraw Q-108's subsets -- at the validation, the very draws on which `cons_m1.25` in scope D is known
+to hold. So each q126 runner, **before any draw**:
+- asserts that every generator entropy in its plan of nulls -- `entropy`, `subset_entropy`, `sample_entropy`, the
+  probe's and the drift's -- begins with a seed of its own block, under the role this section gives it;
+- asserts that the seed map it writes into every manifest equals this section's table for its run;
+- refuses to start otherwise. The build carries a test that calls each imported Q-108 construction without a seed map
+  and checks that the assertion refuses it.
+
 **The scalar re-decision (Q-108's 2.1 and 4.1; B-11).**
 - On the core's 1,170 exact nulls, as Q-108: per candidate and scope, the first 100 cells in cell order rejecting at
   k = 13 (in scope D, rejecting and admitted), plus the same 20 uniform cells for every candidate.
 - **On the sizing nulls,** the first 5 rejecting cells per candidate and scope, and no uniform cells, so the
-  re-decision does not dominate the run.
+  re-decision does not dominate the run. The red team judged the uniform cells to catch almost no under-count (its n3).
 - Every sampled cell is re-decided by the scalar form at every k in 13..20. A mismatch stops the run (E-115 (R1)).
 
 **The runners' guard** is Q-108's (literal and AST-folded, refusing a seed of either block outside the allow-list,
 printing an unbounded loop for a hand check, never refusing on an assumed reach), pointed at these two blocks. Its
 allow-list names this plan, `docs/calibration/scripts/q126/`, the new module, the two runners and their tests,
 `tests/test_q126_draft.py`, `DECISIONS.md` and the lead's records, this plan's own result files, and the lookahead
-test's hand-checked expressions.
+test's hand-checked expressions. The build adds its files to T-0's declared uses as it writes them (the red team's n4).
 
 ### 4.2 The choice (calibration seeds only; coded in the calibration script and applied by it, never by hand)
 
 **A candidate is eligible in a scope when all of these hold on its calibration results in that scope:**
-1. **The floors, now over the sized set:**
-   - no Monte Carlo null in the rule has its point rate above nominal at any k in 13..20 (Q-108's);
-   - **no exact null in the rule -- the core's 1,170 and the sizing subsets' 31,850 -- has its exact size above nominal
-     at any k** (on the alternating models: no configuration rejects). On the subsets this is "zero bad subsets among
-     3,300", the sizing rule's condition (3.2; after the look, B-6).
-2. **P_MC >= 0.9** over the 1,123 Monte Carlo nulls, computed as Q-108's 4.2 (exactly, from the counts).
+1. **The floors, over the sized set:**
+   - no core Monte Carlo null has its point rate above nominal at any k in 13..20 (Q-108's);
+   - no exact null on the fixed streams has its exact size above nominal at any k (Q-108's);
+   - **at most 3 of the 3,300 subsets are bad** (3.2's allowance; after the look, B-6, B-21). On the alternating models
+     a subset is bad if any configuration rejects.
+2. **P_MC >= 0.9** over the core's 1,123 Monte Carlo nulls, computed as Q-108's 4.2 (exactly, from the counts).
 3. **The worst exact ratio over the core's 1,170 exact nulls is at most 1/4** (Q-108's condition 3 on Q-108's set; B-8).
    It is not applied to the sizing nulls: there it would be a stricter condition than Q-108 declared, chosen after the
    look, with a power cost of its own, while condition 1 already carries the sized guard.
+4. **No probed null reaches its failure count** (3.2's probe: 920 nulls, E-052's failure counts; after the look,
+   B-22).
 
 **The nesting assertion (Q-108's 4.2)** stands: every candidate's Monte Carlo counts and exact sizes are non-increasing
-in k, or the run stops with no choice. **Added (B-17):** on shared draws, rows 1 to 7's counts and sizes are
-non-increasing in m at every k and in each scope (2.2). A violation stops the run, to be diagnosed under the
+in k, or the run stops with no choice. **Added (B-17):** on shared draws, rows 1 to 7's counts, sizes and bad-subset
+counts are non-increasing in m at every k and in each scope (2.2). A violation stops the run, to be diagnosed under the
 failure protocol.
 
 **The order.**
-1. **Scope D:** among rows 1 to 8 in scope D (the procedure of 4.4), the eligible candidate with the smallest P
-   (section 5). Ties: fewer members, then the earlier row.
-2. **The scope-Q branch, only if scope D has none:** among rows 5 to 7 in scope Q, the eligible candidate with the
-   smallest P.
-3. **Otherwise none.**
+1. **The primary in scope D:** among rows 1 to 8 in scope D (the procedure of 4.4), the eligible candidate with the
+   smallest P (section 5). Ties: fewer members, then the earlier row.
+2. **The scope-Q branch:** among rows 5 to 7 in scope Q, the eligible candidate with the smallest P, by the same rule.
+   - If scope D chose, it is **the second statistic** (2.5), validated beside the primary.
+   - If scope D chose none, it is **the primary**, and there is no second statistic.
+3. **If neither scope has an eligible candidate: NONE.**
+
+The scope-Q branch's choice is made by the same rule within scope Q in either case, so the second statistic adds no
+choice of its own (E-173).
 
 **What the script prints and writes.**
-- It prints `CHOSEN <name> (scope D)`, `CHOSEN <name> (scope Q)` or `NONE`.
+- It prints `CHOSEN <name> (scope D)` with `SECOND <name> (scope Q)` or `SECOND NONE`; or `CHOSEN <name> (scope Q)`; or
+  `NONE`.
 - `q126_choice.csv`: for each candidate in both scopes, each condition, P_MC, the worst exact ratio (overall, per exact
-  model and on the core alone, with its null and k), the count of bad subsets (pooled and per size and model), P, and
-  whether the pair is in the rule or beside.
+  model and on the core alone, with its null and k), the bad-subset count (pooled and per size and model), the probe's
+  worst count as a share of its failure count (with its null and k), P, and whether the pair is in the rule or beside.
 - **The cost of the rule, shown beside the choice (E-051):** the most powerful candidate refused by condition 1's sized
-  part alone, if there is one, with its P and its bad-subset count; and the same for condition 3.
+  part alone, by condition 3 alone and by condition 4 alone, if there is one, each with its P and the count that
+  refused it.
+- **The probe's ranking**: per size, the 23 probed subsets' j and ranking score.
 
 ### 4.3 The validation criterion (E-052's, unchanged; Q-108's 4.3 word for word in substance)
 
 - The validation runner reads the choice from `q126_choice.csv`, its manifest verified. Nothing is re-chosen.
-- **The chosen statistic** (in scope D, the chosen procedure) **HOLDS** if, at every k in 13..20, on every one of the
-  2,293 validation nulls -- the fresh subsets, the fixed-data streams and the fresh synthetic draws, all on the
-  validation seeds:
+- **Each chosen statistic** -- the primary, and the second statistic when there is one -- is judged on its own.
+  **It HOLDS** if, at every k in 13..20, on every one of the 2,293 validation nulls -- the fresh subsets, the fixed-data
+  streams and the fresh synthetic draws, all on the validation seeds:
   - a Monte Carlo null's 95 % Clopper-Pearson interval does not lie wholly above nominal. At 200,000 replications that
     means fewer rejections than 71, 63, 56, 50, 45, 41, 38 and 35 at k = 13..20;
   - an exact null's exact size is at or below nominal. On the alternating models: no configuration rejects.
 - It **FAILS** if any null breaks either condition. It is **NOT CHECKED** -- never a pass -- if any null is missing.
-- **One failure anywhere means no line and no re-choice** (section 7).
+- **One failure anywhere means no line for that statistic's rows of 2.5 and no re-choice** (section 7; B-30). The two
+  statistics share the validation's draws, so their verdicts are positively associated; each verdict stands on its own.
 - **Reported beside, never in the verdict:** `cons` in scope Q on the same draws (Q-108's C0 beside); the
   count-persistent nulls; the `flat` form; the drift nulls; the power on the validation toys.
 
 **The power of the criterion itself (the operator's rule that a strict line must show power, not only size; B-16).** A
 "correct" statistic here is one whose size is at or below nominal on every validation null. The criterion is kept
 unchanged. What it costs such a statistic, and a nearly correct one whose exact part carries a small bad-subset rate,
-is (`q126_arith.py`; the exact part and the Monte Carlo part pass independently, so a statistic's chance is the
-product of its two rows):
+is (`q126_arith.py`). The two parts share the core subsets, so their passes are positively associated (the red team's
+m1): the product of a statistic's two rows is a lower bound on its chance of passing both.
 
 | the statistic's profile | the chance that part passes |
 |---|---|
 | exact part: every subset at or below nominal | 1 (an exact size has no noise) |
 | exact part: a pooled bad-subset rate of 1e-04 | 0.9886 |
-| exact part: a rate at the sizing's certified bound, 9.0909e-04 | 0.9007 |
+| exact part: a rate of r_95, 4.4593e-04 | 0.9500 |
 | exact part: a rate of 1e-03 | 0.8913 |
 | exact part: a rate of 0.01 | 0.3148 |
 | Monte Carlo part: every one of the 1,123 nulls at 0.5 of nominal | 0.9999 |
@@ -388,20 +476,67 @@ that sits at about 0.6 of nominal or below on every Monte Carlo null passes that
 design, and the operator's standing rule is answered by stating it: the line is strict, and its power is the rows above.
 
 **The criterion's power on the candidates that matter**, by Q-108's own calibration: P_MC was 1.000000 for
-`cons_m1.25` in both scopes, for `cons_m1.5` in scope Q and for C6 in scope D (`q108_choice.csv` `p_mc`). So the
-Monte Carlo part is not where a margin candidate fails; **the exact part is**, and section 3.2 sizes it.
+`cons_m1.25` in both scopes, for `cons_m1.5` in scope Q and for C6 in scope D (`q108_choice.csv` `p_mc`). P_MC treats
+each core null as standing for its validation counterpart, so it cannot see the subset lottery (Q-108's 4.2); the
+probe (3.2) is what looks for it on the Monte Carlo side.
 
-**The bound used in 3.2, derived.** Write a = n/N for n validation subsets and N calibration subsets at the same ratio
-at every size, and P_m for the chance that candidate m is eligible at the calibration.
-- For one candidate, the calibration holds with (1 - r)^N and the validation's exact part fails with 1 - (1 - r)^n, so
-  their product is x^(1/a) (1 - x) with x = (1 - r)^n. Its largest value over x is at x = 1/(1 + a).
+**The power of this plan's own floor (the red team's M2; B-21).** The floor is a tightening, so its refusals are shown
+beside what the validation would do at the same rate. "Admits" is the floor's chance of passing a candidate at that
+pooled bad-subset rate (`q126_arith.py`):
+
+| pooled bad-subset rate | the floor admits (c = 3, declared) | the first text's floor admitted (c = 0) | the validation's exact part passes |
+|---|---|---|---|
+| 1.0000e-05 | 1.0000 | 0.9675 | 0.9989 |
+| 3.0000e-05 | 1.0000 | 0.9057 | 0.9966 |
+| 1.0000e-04 | 0.9996 | 0.7189 | 0.9886 |
+| 3.0000e-04 | 0.9816 | 0.3715 | 0.9661 |
+| 4.4593e-04 (r_95) | 0.9379 | 0.2295 | 0.9500 |
+| 9.1576e-04 (r_V) | 0.6423 | 0.0486 | 0.9000 |
+| 1.0000e-03 | 0.5803 | 0.0368 | 0.8913 |
+| 2.0000e-03 | 0.1049 | 0.0014 | 0.7944 |
+
+- **The declared floor is not stricter than the validation** at the rates the validation passes with 0.95 or more: it
+  refuses at most 0.0621 there, by the ruling's construction. The first text's floor refused a candidate at a rate of
+  1e-04, which the validation passes 98.9 % of the time, with probability 0.2811.
+- **What a refusal costs.** In the nested grid a refusal moves the choice one step up. One step costs, in minimum
+  detectable lift (section 5's P ratios, interpolated at the two new margins): 0.114 from `cons` to `cons_m1.125`,
+  0.102 to `cons_m1.25`, 0.094 to `cons_m1.375`, 0.086 to `cons_m1.5`, 0.159 to `cons_m1.75` and 0.138 to `cons_m2`.
+  A design whose true lift lies inside a step is a profitable model the stricter statistic fails.
+
+**The power of the probe (condition 4; the red team's M1).** Each probed null is refused exactly when the validation
+would fail it, so per null the probe is as strict as the validation and no stricter. Over many nulls it refuses as
+follows (`q126_arith.py`); beside it, the validation's chance of passing its 1,123 Monte Carlo nulls at the same ratio:
+
+| every probed null at this share of nominal | one probed null refused | all 920 probed nulls: the probe refuses | the validation's 1,123 Monte Carlo nulls pass |
+|---|---|---|---|
+| 0.5 | 5.801e-08 | 0.0001 | 0.9999 |
+| 0.6 | 4.038e-06 | 0.0037 | 0.9955 |
+| 0.7 | 1.077e-04 | 0.0944 | 0.8860 |
+| 0.8 | 1.431e-03 | 0.7321 | 0.2003 |
+| 0.9 | 1.104e-02 | 1.0000 | 0.0000 |
+| 1.0 | 5.362e-02 | 1.0000 | 0.0000 |
+
+At every row the probe refuses no more often than the validation fails a statistic with that profile on its own
+1,123 nulls, so the probe is not stricter than the validation it guards.
+
+**The bound used in 3.2, derived.** Write n for the validation's subsets and N for the calibration's, at the same ratio
+at every size, c for the floor's allowance and G(r) = P(Bin(N, r) <= c), the floor's chance of admitting a candidate at
+rate r. P_m is the chance that candidate m is eligible at the calibration.
+- For one candidate, the calibration admits with at most G(r) and the validation's exact part fails with
+  1 - (1 - r)^n, so their product is at most the supremum over r of G(r) (1 - (1 - r)^n): 0.0644 at c = 3 (0.0126 at
+  c = 0).
 - For the nested rows 1 to 7, eligibility is upward closed in m, and the choice is the smallest eligible m. The
-  validation's exact part fails for m with 1 - (1 - r_m)^n <= 1 - P_m^a, decreasing in P_m. So the chance that the
-  choice fails the validation's exact part is a sum of increments of P_m times 1 - P_m^a, at most the integral of
-  1 - p^a over (0, 1): **a/(1 + a), whatever the rates and however fine the grid.**
-- C6 adds at most the one-candidate bound, and the scope-Q branch, reached only when scope D has none, at most another
-  nested bound.
-- With 23 validation subsets against 660 calibration subsets at each size, a = 0.03485.
+  validation's exact part fails for m with 1 - (1 - r_m)^n, and P_m <= G(r_m), so it fails with at most
+  h(P_m) = 1 - (1 - G^-1(P_m))^n, decreasing in P_m. The chance that the choice fails the validation's exact part is a
+  sum of increments of P_m times h(P_m), at most the integral of h over (0, 1). Substituting p = G(r), that integral is
+  1 - E[(1 - R)^n] with R ~ Beta(c + 1, N - c), which is 1 - prod over i < n of (N - c + i)/(N + 1 + i): **0.1281 at
+  c = 3, and n/(N + n) = 0.0337 at c = 0, whatever the rates and however fine the grid.**
+- C6 adds at most the one-candidate bound to the primary. The scope-Q branch is a nested family of its own: the second
+  statistic's bound, or the primary's when scope D chose none.
+- **The bound covers the exact part only.** The Monte Carlo part is guarded by P_MC on the core and by the probe on the
+  tail.
+- **The validation is not the line's certificate on the exact part** (the red team's n1). Its 115 subsets catch a
+  bad-subset rate of 1e-03 with probability 0.1087; the calibration's 3,300 subsets carry the exact part's assurance.
 
 ### 4.4 Scope D: the admission and the procedure (Q-108's 4.4, unchanged)
 
@@ -411,6 +546,7 @@ check on the choice block; the same check on the judged block inside stage C, be
 floor((n_c - 1)/63) + 3 on the span stage A reads, E >= 4, a single side never admitted), its calibration as a
 procedure in every replication and every exact cell, and what happens at stage C are Q-108's 4.4, word for word in
 substance. The built forms are `lift_one_sample.admission`, `runs_and_effective` and `exact_flip`'s scope D, imported.
+Section 2.5 decides which families use scope D at all.
 
 ### 4.5 The rejecting cells (after the look, B-10)
 
@@ -420,13 +556,16 @@ substance. The built forms are `lift_one_sample.admission`, `runs_and_effective`
 - **The columns:** the null; the candidate; the scope; the global cell index; the phase p; the pattern q (on an
   alternating model, the phase and "long" or "short" first); the blocks B; the cell's weight 2^(Bmax - B); whether the
   cell is admitted (scope D); and the largest k in 13..20 at which it rejects.
-- **In the validation:** the same, for the chosen candidate in its scope.
+- **In the validation:** the same, for each chosen statistic in its scope.
 - **Files:** `q126_cal_cells.csv` and `q126_val_cells.csv`, written through `extended.results` like every result.
 - **Why** (Q-125, section 6 item 3): the next diagnosis then reads which patterns reject -- aligned or near-aligned, by
   phase -- from a file, instead of re-running anything.
-- **What the cells carry (a disclosure).** A subset's rejecting patterns are a function of its pair differences, which
-  are P-16's judged outcomes. They carry, implicitly, the signs of that subset's flip-block sums. P-16's judged pairs
-  have been read before, as a source of null dependence (Q-108's 8); no family's outcome is in them.
+- **What the cells carry (a disclosure; the red team's m6).** A subset's rejecting patterns are a function of its pair
+  differences, which are P-16's judged outcomes. At L = 63 the aligned pattern at a phase is exactly the signs of that
+  subset's flip-block sums, so **the file carries a coarse form -- signs only -- of the per-block sums that section 9
+  declines to read directly.** It is written under the runs' `registered_design` read of P-16's pairs (Q-108's 6.1),
+  and **nothing reads it before the validation's verdict** is recorded. P-16's judged pairs have been read before, as a
+  source of null dependence (Q-108's 8); no family's outcome is in them.
 
 ---
 
@@ -453,7 +592,7 @@ own P, on its own draws.
 
 - **How to read it.** A ratio of 1.188 means a design needs about 19 % more lift than under `cons_m1.25` to be detected
   as often. A design whose true lift lies between the two candidates' MDLs is a profitable model that the stricter one
-  fails (the operator's rule).
+  fails (the operator's rule). Section 4.3 gives the cost of one grid step.
 - **The bracket is exact as a bound.** A margin's MDL is m crit se - est, increasing in m on every replication, so P is
   increasing in m. Q-108 did not run 1.125 or 1.375; the interpolations are estimates, not file values.
 - **Scope D costs no power on an admitted cell.** P is the same in both scopes for every candidate (`q108_choice.csv`),
@@ -485,9 +624,17 @@ the in-rule fixed and subset nulls; the admission reads sides only, so it is the
   most sessions;
 - any family that does not make the E-035 (6) declaration.
 
-Such cells use a two-sample line declared in their pinned text, or are not claimed. **For a quarter-persistent side no
-one-sample statistic can do better** (Q-125's option 1): an exact null on 11 or 12 sign units cannot certify a level
-below 2^-11, so the exclusion is not power another statistic could recover.
+**Which of these exclusions no statistic could recover (corrected; the red team's M3, E-173).**
+- **Persistence of about 55 sessions or more, and long Markov dwells** (80 sessions: about eight switches on the judged
+  block): a flip null at 55 or 63 sessions has 11 to 13 sign units, so an exact null there cannot certify a level much
+  below 2^-11 (Q-125's option 1). That exclusion is no power another statistic could recover.
+- **42-session persistence and dwells near 50 sessions are recoverable.** A 42-session flip has 16 or 17 sign units, and
+  A(42) is 0.04 to 0.09 of the levels (Q-108's section 1). On Q-108's calibration `cons_m1.5` in scope Q had a worst
+  flip-42 ratio of 0.016 (`q108_choice.csv`). Under the first text's order, a scope-D choice left the scope-Q branch
+  unvalidated, so such a family got no one-sample line at all, though one was within reach at about 19 % more MDL.
+- **What an excluded family gets now** (2.5; B-25). A family declaring 42 to 50 sessions uses the second statistic if it
+  HOLDS its validation, and otherwise has no one-sample line: the two-sample forms its pinned text declared before any
+  read, or "not claimed". A family declaring 63 sessions or more has no one-sample line from either statistic.
 
 **Reported for every candidate**, as Q-108's 5: MDL50 and MDL80 at k = 13, 15 and 20 on each toy, for `win1` and
 `net3`, on Q-16's `cluster` at 1,000 trades, and P relative to `cons_m1.25`.
@@ -506,14 +653,18 @@ below 2^-11, so the exclusion is not power another statistic could recover.
 - the nesting in m (2.2) on planted samples, and the assertion refusing a planted violation;
 - the sizing subsets' index order (j = 0 to 659, the core j < 23 identical to a core-only draw);
 - the exact null index order (4.1) against hand-built cases;
+- the probe: its ranking on planted exact sizes (the 23 largest per size, ties to the smaller j, the core excluded);
+  its seeds and model indices; condition 4 refusing a planted count at the failure count and admitting one below it;
+- the floor's allowance: 3 bad subsets admitted, 4 refused, on planted tables;
 - the drift generator equal to Appendix A's `draw` on the same generator, call for call;
 - the rejecting-cells file: its rows sum, with their weights, to the null's exact count at k = 13; written only above
   a quarter of nominal; its k_max nested;
-- the choice rule on planted size tables: scope D before the branch; the branch only m >= 1.5; condition 1 over the
-  sizing nulls; condition 3 over the core only; the cost lines;
-- the criterion: Q-108's validation code's verdicts reproduced on planted tables;
-- the seed map and the guard pointed at these blocks: the folded NAME + constant case, a bounded loop refused, an
-  unbounded loop printed;
+- the choice rule on planted size tables: the primary in scope D; the scope-Q branch as the second statistic when scope
+  D chooses and as the primary when it does not; condition 1 over the sizing nulls with the allowance; condition 3 over
+  the core only; condition 4; the cost lines;
+- the criterion: Q-108's validation code's verdicts reproduced on planted tables, for each of two statistics;
+- the seed map, the guard and the provenance assertion (4.1): the folded NAME + constant case, a bounded loop
+  refused, an unbounded loop printed; every imported Q-108 construction called without a seed map refused;
 - every test Q-108's build listed (its 6.1) that the reused functions carry, re-run.
 
 **Reads,** exactly as Q-108's 6.1: P-16's pairs through `scripts/q16_p16_pairs.py`, the calendar through
@@ -525,21 +676,34 @@ run.
 
 - **When:** one heavy run from a clean checkout of the commit carrying the pinned plan and the merged build, under
   `run.lock`, watched to its exit.
-- **Size:** 34,143 nulls in the rule -- 33,020 exact, 1,123 Monte Carlo at 200,000 replications -- and 84 + 4,800
+- **Size:** 35,063 nulls in the rule -- 33,020 exact and 2,043 Monte Carlo at 200,000 replications -- and 84 + 6,000
   beside. The eight candidates on shared draws, in both scopes.
-- **Time, as estimates; the lock's hours are set from the build's measurement:**
-  - **the core:** at most Q-108's calibration run, 16,435 s (its log's `EXIT 0` line), which computed ten candidates
-    including C8's quadratic form; this plan has eight and no C8;
-  - **the sizing subsets:** 3,185 subsets x 2 values. Q-108's logs put one subset-value's five exact enumerations at a
-    median 4.3 s with two candidates (the validation log) and 10.2 s with ten (the calibration log). So **7.6 to 18.0
-    hours** (`q126_arith.py`). L = 42 is most of it: its median enumeration is 3.8 s and 8.5 s in the two logs;
-  - this agrees with the note's per-enumeration timing at L = 63, 0.2 to 0.4 s a subset (Q-125, section 4), against
-    the logs' L = 63 medians of 0.2 s and 0.6 s;
-  - **the drift beside:** 1,200 populations at L = 55, 63 and the alternating models, about 0.5 to 1.7 s each by the
-    same logs: 10 to 34 minutes;
-  - **in all:** about 12 to 23 hours. The build may split the run into parts, as Q-108's steps, each under the same
-    lock; a failed part is diagnosed, never rerun to pass.
-- **Memory:** Q-108's compute steps stayed near 0.2 GB of working set and its pairs step at about 0.4 GB (the
+- **The parts (after the look, B-27; the red team's m2),** in this order, all under the one lock and from the same
+  clean commit:
+  1. the pairs step and the core (Q-108's class);
+  2. to 6. the sizing subsets, one part per size z (each a deterministic function of (z, j) and the seeds);
+  7. the probe (it needs parts 2 to 6's rankings);
+  8. the drift beside;
+  9. the choice.
+
+  Each part writes its output with its own manifest (the commit, the seed map, the part) into the run's work folder.
+  The choice reads every part's manifest and refuses a missing part, a different commit or a different seed map; it
+  alone writes the result files, through `extended.results`.
+- **A crash and a failed check are different things.** A part that exits non-zero with no failed check and no output
+  -- a machine crash, a sleep, an update -- may be run again from scratch: its output is fixed by the commit and the
+  seeds, so a second run cannot be a search. **A failed check** -- the nesting assertion, a scalar mismatch, the
+  provenance assertion, a count refused -- is never rerun; it is diagnosed under the failure protocol.
+- **Time, as estimates; the lock's hours are set from the build's measurement.** Each figure is printed by
+  `q126_arith.py` from Q-108's two logs, the low end from the validation log (two candidates) and the high end from
+  the calibration log (ten candidates), means throughout:
+  - **the core:** 3.6 to 4.6 hours, the two Q-108 runs' `EXIT 0` lines (12975 s and 16435 s);
+  - **the sizing subsets:** 3,185 subsets x 2 values at 4.62 to 10.29 s a subset-value: **8.2 to 18.2 hours**. L = 42
+    is most of it;
+  - **the probe:** 920 Monte Carlo nulls at 8.26 to 9.40 s each: 2.1 to 2.4 hours;
+  - **the drift beside:** 1,200 populations at the five exact models: 1.5 to 3.4 hours;
+  - **in all: 15.4 to 28.6 hours.**
+  - The note's per-enumeration timing at L = 63, 0.2 to 0.4 s a subset (Q-125, section 4), agrees with the logs.
+- **Memory:** Q-108's per-null working set stayed at or below 223 MB and its pairs step peaked at 399 MB (the
   calibration log); `--mem-gb 1.5`, as Q-108.
 - **Writes:** `q126_cal_size.csv` (every null x candidate x scope x level, and each construction's spread across its
   subsets, per size and pooled); `q126_cal_power.csv`; `q126_cal_cells.csv`; `q126_choice.csv`.
@@ -547,16 +711,18 @@ run.
 ### 6.3 The validation run
 
 - **When:** after a decision row records the choice from `q126_choice.csv`, with no hand choice. One heavy run.
-- **Size:** the 2,293 nulls of Q-108's class on the validation seeds, 84 + 4,800 beside, the chosen statistic or
+- **Size:** the 2,293 nulls of Q-108's class on the validation seeds, 84 + 6,000 beside, each chosen statistic or
   procedure, and `cons` in scope Q beside.
-- **Time:** about Q-108's validation run, 12,975 s (its log's `EXIT 0` line), plus the drift beside.
+- **Time:** about Q-108's validation run (its log's `EXIT 0` line, above), plus the drift beside. The same parts and
+  crash rule as 6.2, without the sizing parts and the probe.
 - **Memory:** as 6.2.
 - **Writes:** `q126_val_size.csv`, `q126_val_power.csv`, `q126_val_cells.csv` and `q126_val_criterion.csv`. The
-  criterion prints `HOLDS | FAILS | NOT CHECKED`.
+  criterion prints `HOLDS | FAILS | NOT CHECKED` for each chosen statistic.
 
 ### 6.4 Both runs
 
-Each is watched to its exit. A failed run is kept and diagnosed by the failure protocol. Nothing is rerun to pass.
+Each is watched to its exit. A failed run is kept and diagnosed by the failure protocol. Nothing is rerun to pass; a
+crash is rerun only as 6.2 says.
 
 ---
 
@@ -565,17 +731,19 @@ Each is watched to its exit. A failed run is kept and diagnosed by the failure p
 1. **NONE at the choice.** The trades-first one-sample line stays unavailable. The validation block is retired, never
    drawn. Families use the two-sample forms with K0 (Q-108's 7 item 3); family B and the resting-levels re-draft stay
    parked on their C1.
-2. **The chosen statistic FAILS its validation.** As item 1. Nothing is re-chosen, nothing is rerun, and no
-   construction is dropped.
+2. **A chosen statistic FAILS its validation.** Its rows of 2.5 have no one-sample line. Nothing is re-chosen, nothing
+   is rerun, and no construction is dropped. The other statistic, if it HOLDS, is adopted for its own rows only
+   (B-30). If the primary fails, the line is unavailable for every row but the second statistic's.
 3. **No third plan without the lead's decision (B-19).** This is the second plan on one line after a failure (Q-108
-   answered Q-83's, E-094; this answers Q-108's). Under the failure protocol's two corrective cycles, a third is the
-   lead's decision and goes to the board.
-4. **The chosen statistic HOLDS.**
-   - A row adopts it as the one-sample line, in `extended/lift_one_sample2.py`, its blob pinned by that row.
-   - Families may declare C1 on it within its scope; their K0 checks run on it (Q-108's 7 item 5).
-   - **In scope D** the line exists only for cells admitted by 4.4. A cell not admitted is "not claimed", unless its
+   answered Q-83's, E-094; this answers Q-108's). Under the failure protocol's two corrective cycles a third is the
+   lead's decision, and DIRECTIVE Part 5 step 3 marks the item `NEEDS_OPERATOR` on the board (the red team's n2).
+4. **A chosen statistic HOLDS.**
+   - A row adopts it as a one-sample line, in `extended/lift_one_sample2.py`, its blob pinned by that row, with its
+     rows of 2.5.
+   - Families may declare C1 on it within those rows; their K0 checks run on it (Q-108's 7 item 5).
+   - **The primary in scope D** exists only for cells admitted by 4.4. A cell not admitted is "not claimed", unless its
      pinned text declared a two-sample line for it before any read.
-   - **From the scope-Q branch** the line needs no admission, but persistence past a quarter is still in neither scope
+   - **The scope-Q statistic**, primary or second, needs no admission, but persistence past a quarter is in no row
      (Q-108's 7 item 6).
    - The adoption row reports the drift nulls beside (3.3).
 5. **The calibrated range is k = 13..20.** A family numbered beyond 20 needs it extended under its own row.
@@ -585,20 +753,22 @@ Each is watched to its exit. A failed run is kept and diagnosed by the failure p
 ## 8. Disclosures
 
 - **Everything new here was chosen after Q-108's look** (Appendix B). That is why the choice is made on new calibration
-  seeds and validated on other new seeds, by rules written here before either run.
+  seeds and validated on other new seeds, by rules written here before either run. **The exact part's assurance is the
+  calibration's 3,300 subsets, not the validation's 115** (4.3; the red team's n1).
 - **What is known in advance about scope D (B-1).** On Q-108's validation draws, beside and deciding nothing,
   `cons_m1.25` in scope D had no failing null (E-160 lists it as exposed and not taken; Q-125's option 1). That
-  knowledge motivated trying scope D first. Those draws are never reused, and this plan's draws are new, so the
-  knowledge cannot select on them. But the choice of scope is not blind, and is labelled.
+  knowledge motivated trying scope D first. Those draws are never reused (4.1's provenance assertion), and this plan's
+  draws are new, so the knowledge cannot select on them. But the choice of scope is not blind, and is labelled.
 - **The fixed-data streams are fresh for no one** (Q-108's n1). Their exact nulls are deterministic: for a candidate
   Q-108 ran, its fixed-stream exact sizes here equal those in `q108_cal_size.csv`. The fresh tests are the subsets and
   the synthetic draws.
 - **One population** (Q-108's n2). Every subset in both runs comes from P-16's judged offers. The drift nulls are the
   only populations from elsewhere, and they are beside.
 - **P-16's judged pairs have been read before** as a source of null dependence (Q-108's 8); no family's outcome is read
-  by either run. The cells files (4.5) carry information derived from them.
+  by either run. The cells files (4.5) carry signs derived from them.
 - **The drift sizes are invented** (Q-125, section 3.2); they are not estimates of any market's.
-- **The residual risk** is the Monte Carlo subset lottery, which the sizing does not cover (3.2).
+- **The residual risk** is the Monte Carlo lottery outside the probed tail: the probe ranks subsets by their exact
+  sizes, and a subset bad only on the Monte Carlo side, with an unremarkable exact size, is not probed.
 
 ---
 
@@ -613,7 +783,30 @@ Each is watched to its exit. A failed run is kept and diagnosed by the failure p
 | the averaged (`flat`) size deciding | a weakening after the look (Q-108's 3.4; E-105 (1)) |
 | dropping `win1`, flip63 or any side model | Q-108's 7 item 4 |
 | enlarging the validation | it would enlarge the exposure the calibration must match; the validation stays Q-108's class (B-14) |
-| reading P-16's per-quarter drift | an outcome read (Q-125, section 6 item 1); the drift nulls carry a drift as a declared construction instead |
+| reading P-16's per-quarter drift directly | an outcome read (Q-125, section 6 item 1); the drift nulls carry a drift as a declared construction instead. The cells files carry its signs only, coarsely, and are read only after the verdict (4.5) |
+| a larger calibration to restore the first text's bounds | under the ruled allowance the nested bound falls only towards 0.05 (3.2) |
+
+---
+
+## 10. The red team's findings and what changed (the read of ec6905a; `docs/reviews/DRAFT_Q-126_2026-11-17.md`; E-173)
+
+| finding | change (and where it now stands) |
+|---|---|
+| M1 (the Monte Carlo lottery in scope D) | the lead took (a) and (b) together: the 23 largest-exact-size sizing subsets at each size carry the four persistent Monte Carlo models (920 probed nulls), and condition 4 refuses a candidate if any reaches its failure count; its power shown beside the validation's (3.2, 4.2, 4.3; B-22, B-23, B-24, B-29); section 1 and the residual in 8 restated |
+| M2 (the sized floor's power) | the floor's allowance c = 3, the least that refuses a candidate at r_95 with at most 0.10 (the lead's ruling); its admission table beside the validation's pass; the grid-step MDL costs; the bounds recomputed at c = 3 (3.2, 4.2, 4.3; B-21) |
+| M3 (coverage) | the impossibility restricted to about 55 sessions and more and long dwells; the 42-session and dwell-50 band served by the scope-Q branch's choice, validated beside as a second statistic and adopted for that band only; the statistic a family uses fixed by its declared persistence (2.5, 4.2, 4.3, 5, 7; B-25, B-30) |
+| M4 (Q-108's retired seeds through imported defaults) | the provenance assertion before any draw, with its build test, naming `null_plan` and `expected_counts` (4.1, 6.1; B-28) |
+| m1 | the two parts positively associated; the product a lower bound (4.3) |
+| m2 | the run's declared parts under one lock, and the crash rule (6.2, 6.3; B-27) |
+| m3 | every cost figure printed by the script from the logs and held by T-0 when they are present (6.2) |
+| m4 | L = 42 added to the drift nulls; their scope-D emptiness at L = 55 and 63, and the replica's, stated (1, 3.3; B-26) |
+| m5 | the per-size bounds 3/660 and with the allowance (3.2) |
+| m6 | the cells files' signs reconciled with section 9 (4.5, 9) |
+| n1 | the exact part's assurance stated as the calibration's (4.3, 8) |
+| n2 | DIRECTIVE's `NEEDS_OPERATOR` cited beside the lead's decision (7) |
+| n3 | a reading; cited at the scalar re-decision (4.1) |
+| n4 | a reading; the build extends T-0's declared uses (4.1) |
+| n5 | a reading for the adoption row, not this plan |
 
 ---
 
@@ -651,11 +844,11 @@ real subset's, with every candidate in both scopes.
 | 4 | the scope-Q branch only at m >= 1.5 | 2.2 | Q-125's H-b; E-161 |
 | 5 | C6 in scope D only | 2.2 | its margin is below the branch's |
 | 6 | the sizing rule (rule of three, 0.9 and 0.95) and 660 subsets a size, all in condition 1 | 3.2, 4.2 | Q-125, section 2.2 and option 2; E-161 |
-| 7 | the sizing subsets carry the exact models only; the Monte Carlo lottery left as a stated risk | 3.2 | cost; Q-108's validation's Monte Carlo headroom |
+| 7 | the sizing subsets carry the exact models, and the probe only | 3.2 | cost; the probe (B-22) covers the Monte Carlo tail |
 | 8 | condition 3 kept on the core only, not the sizing nulls | 4.2 | a stricter, unpriced condition would be a choice after the look; condition 1 carries the sizing |
-| 9 | the drift nulls beside: Appendix A's eight scenarios, 150 populations, L = 55, 63 and alternating | 3.3 | the brief; Q-125's replica; cost |
+| 9 | the drift nulls beside: Appendix A's eight scenarios, 150 populations | 3.3 | the brief; Q-125's replica; E-161 ruled them beside |
 | 10 | the rejecting-cells files above a quarter of nominal | 4.5 | the brief; Q-125, section 6 item 3 |
-| 11 | the scalar re-decision on the sizing nulls cut to 5 cells, no uniform cells | 4.1 | cost |
+| 11 | the scalar re-decision on the sizing nulls cut to 5 cells, no uniform cells | 4.1 | cost; the red team's n3 |
 | 12 | new seed blocks; Q-108's retired | 4.1 | Q-108's 7 item 4; E-159 |
 | 13 | a new module for the grid; `lift_one_sample.py` untouched | 2.4 | keeps Q-108's result files on their code |
 | 14 | the validation's exposure kept at Q-108's class | 3.5, 9 | E-052's criterion unchanged; a finite sizing |
@@ -663,5 +856,15 @@ real subset's, with every candidate in both scopes.
 | 16 | the criterion's power stated, the criterion unchanged | 4.3 | the brief; the operator's rule on strict lines |
 | 17 | the nesting in m asserted | 4.2 | it carries the bound of 4.3 |
 | 18 | the options of section 9 not taken | 9 | E-161; Q-125, section 4 |
-| 19 | no third plan without the lead's decision | 7 | the failure protocol's two corrective cycles |
+| 19 | no third plan without the lead's decision; `NEEDS_OPERATOR` on the board | 7 | the failure protocol's two corrective cycles; DIRECTIVE Part 5 step 3 |
 | 20 | the drift sizes are the replica's invented ones | 3.3 | Q-125, section 3.2 |
+| 21 | the floor's allowance: at most 3 bad subsets of 3,300, the least c refusing at r_95 with at most 0.10 | 3.2, 4.2, 4.3 | the red team's M2; the lead's ruling (E-173): the floor not stricter than the validation |
+| 22 | the Monte Carlo probe of the sizing tail, and condition 4 on it | 3.2, 4.2, 4.3 | the red team's M1 (a) and (b); the lead's ruling (E-173) |
+| 23 | the probe's ranking: `cons` in scope Q, summed over both values and the flips at 42, 55 and 63, at k = 13 | 3.2 | the red team's M1 (a): a ranking free of the candidates in the rule |
+| 24 | the probe's seed takes the calibration block's spare role | 4.1 | a new role needs a seed of the block; the block had one spare |
+| 25 | the second statistic and the persistence rows of 2.5 | 2.2, 2.5, 4.2, 5 | the red team's M3; the lead's ruling (E-173) |
+| 26 | L = 42 added to the drift nulls | 3.3 | the red team's m4 |
+| 27 | the run's declared parts under one lock, and the crash rule | 6.2 | the red team's m2 |
+| 28 | the seed-provenance assertion | 2.4, 4.1 | the red team's M4; the lead's ruling (E-173) |
+| 29 | the probed nulls judged by condition 4 only, not in P_MC or the point-rate floor | 3.2 | the lead's ruling on the floor (E-173), carried by analogy to the probe: a guard no stricter than the validation |
+| 30 | each statistic judged on its own verdict; neither extended to the other's rows | 4.3, 7 | E-094 (3) (a) applies the criterion per statistic; no switch after a read |
