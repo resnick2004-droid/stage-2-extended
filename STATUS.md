@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-133; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-134; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
@@ -51,10 +51,10 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-user | wt/wt-user | -- (Q-103 parked, E-133) | idle |
 | wt-features | wt/wt-features | Q-18b P-14's stress checks completed | running |
 | wt-lit | wt/wt-lit | Q-109c F-03's build finished, with the re-read's V1-V3 | running |
-| wt-firms | wt/wt-firms | -- (RD-01's runner merged, E-122; its identity in the block) | idle |
+| wt-firms | wt/wt-firms | Q-115 contract-lever rules (rules-verifier) | running |
 | wt-payout | wt/wt-payout | -- (RD-02's runner merged, E-121; its identities in the block) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
-| wt-scout | wt/wt-scout | Q-114 research: next levers (read-only) | running |
+| wt-scout | wt/wt-scout | -- (Q-114 merged, E-134) | idle |
 | wt-infra | wt/wt-infra | -- (Q-113 merged, E-131) | idle |
 
 ## Running now
