@@ -293,6 +293,7 @@ def _repo_paths(d: Path, paths: list[str], edits: dict[str, str]) -> tuple[Path,
 
     git("init", "-q", "-b", "main")
     for p in paths:
+        p = f"{p}placeholder.txt" if p.endswith("/") else p      # a folder: one file under it
         (d / p).parent.mkdir(parents=True, exist_ok=True)
         (d / p).write_text(f"# {p}\n", encoding="utf-8")
     git("add", "-A")
@@ -410,28 +411,55 @@ def section_waits() -> None:
                                                                  "t10w2": "E-902"}, f"the rows named: {got}")
     newer = rows + "\n" + _token_row("E-950", "pp_identity", sh["a"])
     check(S.wait_rows(newer, d, sh["b"], toy)["pp_identity"].row == "E-950", "the newest holding row is not the one named")
-    # L1 (the fourth read): every wait covers its own instrument and BASE, and editing the instrument after the token
-    # voids the wait -- on a throwaway repository holding every declared path (stand-in contents), one branch an edit
-    check(S.shared_cover("Q-80") == S.WAITS["Q-80"][1], "L1: the shared waits do not come through shared_cover")
+    # L1 and Q-111 (E-117, E-119): BASE from identity_cover, the shared covers its own, each own cover its instrument's
+    # closure; editing an instrument, or anything under config/, after the token voids the wait -- on a throwaway
+    # repository holding every declared path (stand-in contents, a folder as one file under it), one branch an edit
+    from extended import identity_cover as IC
+
+    check(tuple(S.BASE) == tuple(IC.BASE) and "config/" in S.BASE, f"Q-111: BASE is not identity_cover's: {S.BASE}")
+    for k in S.SHARED_WAITS:
+        check(S.shared_cover(k) == tuple(IC.cover(k)) and S.WAITS[k][1] == tuple(IC.cover(k)),
+              f"Q-111: the shared wait {k} is not identity_cover.cover({k!r})")
+        check(IC.uncovered(S.WAIT_SCRIPTS[k], list(S.WAITS[k][1])) == [], f"Q-111: {k}'s cover falls short of its rule")
     try:
         S.shared_cover("pp_identity")
         check(False, "L1: shared_cover answered for a wait that is not shared")
     except KeyError:
         pass
+    for k, (_, covered) in S.OWN_WAITS.items():                    # each own cover is BASE and its closure, exactly
+        c = IC.imports(S.WAIT_SCRIPTS[k], REPO, S.OWN_SEARCH[k])
+        check(set(covered) == set(IC.BASE) | set(c.files) and len(set(covered)) == len(covered),
+              f"Q-111: {k}'s cover is not BASE and its instrument's closure: lacks "
+              f"{sorted(set(IC.BASE) | set(c.files) - set(covered))}, extra {sorted(set(covered) - set(IC.BASE) - set(c.files))}")
+        check(len(c.unresolved) == len(S.REVIEWED_UNRESOLVED[k]),
+              f"Q-111: {k}'s instrument has unresolved imports beyond the reviewed ones: {c.unresolved}")
+    check(S.own_problems(REPO) == [], f"Q-111: an own cover falls short: {S.own_problems(REPO)}")
+    keep = S.OWN_WAITS["pp_identity"]
+    S.OWN_WAITS["pp_identity"] = (keep[0], tuple(f for f in keep[1] if f != "extended/reader.py"))
+    try:
+        check(any("extended/reader.py" in q for q in S.own_problems(REPO)),
+              "Q-111: an own cover lacking a closure file passed own_problems")
+    finally:
+        S.OWN_WAITS["pp_identity"] = keep
     for k, (_, covered) in S.WAITS.items():
         check(S.WAIT_SCRIPTS[k] in covered and all(b in covered for b in S.BASE),
               f"L1: the wait for {k} does not cover its own script {S.WAIT_SCRIPTS[k]} and BASE {S.BASE}")
     check(set(S.WAIT_SCRIPTS) == set(S.WAITS), "L1: a wait without its declared instrument")
     d2, base2, edits = _repo_paths(TMP / "repo_l1", sorted({f for _, cov in S.WAITS.values() for f in cov}),
-                                   {k: S.WAIT_SCRIPTS[k] for k in S.WAITS} | {"control": "unrelated.py"})
+                                   {k: S.WAIT_SCRIPTS[k] for k in S.WAITS}
+                                   | {"config_edit": "config/placeholder.txt", "config_add": "config/a_new_rule.yaml",
+                                      "control": "unrelated.py"})
     for k, (_, covered) in S.WAITS.items():
         row = _token_row("E-960", k, base2)
         t0 = IT.held(row, k, d2, base2, list(covered))
-        t1 = IT.held(row, k, d2, edits[k], list(covered))
-        tc = IT.held(row, k, d2, edits["control"], list(covered))
         check(t0 is not None and t0.row == "E-960", f"L1: the wait for {k} is not met at its own commit")
-        check(t1 is None, f"L1: editing {S.WAIT_SCRIPTS[k]} after the token left the wait for {k} met")
-        check(tc is not None, f"L1: an edit to an uncovered file voided the wait for {k} (the control)")
+        check(IT.held(row, k, d2, edits[k], list(covered)) is None,
+              f"L1: editing {S.WAIT_SCRIPTS[k]} after the token left the wait for {k} met")
+        for what in ("config_edit", "config_add"):
+            check(IT.held(row, k, d2, edits[what], list(covered)) is None,
+                  f"E-117: {what.replace('_', ' ')} under config/ after the token left the wait for {k} met")
+        check(IT.held(row, k, d2, edits["control"], list(covered)) is not None,
+              f"L1: an edit to an uncovered file voided the wait for {k} (the control)")
     out["waits"] = {"waits": {k: list(v[1]) for k, v in S.WAITS.items()}}
 
 

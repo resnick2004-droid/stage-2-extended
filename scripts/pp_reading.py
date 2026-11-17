@@ -59,61 +59,83 @@ from extended import reader, use_vendored_stage2  # noqa: E402
 
 use_vendored_stage2()
 
+from extended import identity_cover as _IC  # noqa: E402  (Q-111: the shared covers, BASE, the rule)
+
 SCRIPT = "scripts/pp_reading.py"
 VENDOR = ROOT / "vendor" / "stage2"
 RESULTS = ("pp_reading", "pp_gate", "pp_menu")
 MAX_WORKERS = 2
-#: what every identity rests on, whatever it certifies: the package root (it chooses the vendored tree and the thread
-#: count for every identity) and the two vendored manifests (the engine's code and the data, by proxy)
-BASE = ("extended/__init__.py", "vendor/MANIFEST_stage2.sha256", "vendor/DATA_MANIFEST_stage2.sha256")
-#: each wait's own instrument: the script, or the test, that *is* the identity (the fourth read's L1); editing it after
-#: its token voids the wait
+#: what every identity rests on (`extended/identity_cover.BASE`, Q-111, E-117): the package root, the folder `config/`
+#: whole (a change under it re-requires every identity), and the vendored snapshot's two manifests
+BASE: tuple[str, ...] = tuple(_IC.BASE)
+#: each wait's own instrument: the script, or the test, that *is* the identity (the fourth read's L1)
 WAIT_SCRIPTS = {"pp_identity": "identity/pp_identity.py", "Q-80": "identity/gate_identity.py",
                 "Q-93": "identity/user_beside_identity.py", "Q-101": "identity/replay_records_identity.py",
                 "t10w2": "tests/pp_synthetic.py"}
-#: RD-02's own waits, declared here: what each certifies, and the code it covers (its instrument, BASE included)
+#: RD-02's own waits, by Q-111's rule: `BASE`, the instrument, and every repository file its imports reach
+#: (`identity_cover.imports`; held to it by `tests/pp_run_check.py` and checked again before any read, `own_problems`)
 OWN_WAITS: dict[str, tuple[str, tuple[str, ...]]] = {
     "pp_identity": ("RD-02's own identity (8.1 items 1 to 3, item 4 on its paths and starts, item 6 at ref): the "
                     "reference policy through the whole adapter and RealInputs, the reading's step 1",
-                    ("identity/pp_identity.py", "extended/pp_inputs.py", "extended/payout_policy.py",
-                     "extended/user_beside.py", "extended/gate.py", "extended/campaign.py", "extended/user_readings.py",
-                     "extended/user_measures.py", "extended/results.py", "identity/user_beside_identity.py",
-                     "identity/stage2_identity.py", *BASE)),
+                    (*BASE, "identity/pp_identity.py",
+                     "identity/stage2_identity.py", "identity/user_beside_identity.py",
+                     "extended/campaign.py", "extended/gate.py", "extended/openings.py", "extended/payout_policy.py",
+                     "extended/place_fields.py", "extended/place_records.py", "extended/pp_inputs.py",
+                     "extended/reader.py", "extended/replay_records.py", "extended/results.py",
+                     "extended/user_beside.py", "extended/user_measures.py", "extended/user_readings.py")),
     "t10w2": ("T-10 at two workers: the counters' channel on the replay and the table-bearing gate (13.1 item 1)",
-              ("tests/pp_synthetic.py", "identity/gate_identity.py", "extended/payout_policy.py",
-               "extended/user_beside.py", "extended/gate.py", "extended/campaign.py", *BASE)),
+              (*BASE, "tests/pp_synthetic.py",
+               "tests/pp_gate_direct.py", "identity/gate_identity.py", "identity/stage2_identity.py",
+               "extended/campaign.py", "extended/gate.py", "extended/openings.py", "extended/payout_policy.py",
+               "extended/place_fields.py", "extended/place_records.py", "extended/pp_reading.py", "extended/reader.py",
+               "extended/replay_records.py", "extended/user_beside.py", "extended/user_measures.py",
+               "extended/user_readings.py")),
 }
-#: the shared waits: the identities other runners wait on too (RD-01's among them), their covered paths from one
-#: declaration for every runner -- `extended/identity_cover.cover` (Q-111) once it is on master; until then this list
-#: (the fourth read's remedy: each identity's own script and the identity/ modules it imports, BASE included)
+#: an own instrument that is a test runs as a script from `tests/`, so its folder is on the path: its imports are
+#: looked up there too (`tests/pp_gate_direct.py`)
+OWN_SEARCH: dict[str, tuple[str, ...]] = {"pp_identity": tuple(_IC.SEARCH), "t10w2": (*_IC.SEARCH, "tests")}
+#: the imports `identity_cover.imports` cannot resolve in an own instrument, each reviewed: `tests/pp_synthetic.py`'s
+#: `section_absent` runs, by `exec`, the text of `extended/user_beside.py` before Q-105 from `git show`, refused
+#: unless it hashes to the sha256 written in the script itself -- so covering the script covers what it runs
+REVIEWED_UNRESOLVED: dict[str, tuple[str, ...]] = {
+    "pp_identity": (),
+    "t10w2": ('tests/pp_synthetic.py:* code loaded by path or run from text (exec(compile(src, m.__file__, "exec"), '
+              "m.__dict__))",),
+}
+#: the shared waits: the identities other runners wait on too, their covers from the one declaration (Q-111)
 SHARED_WAITS: dict[str, str] = {
     "Q-80": "the gate through its re-composed campaign, 500 paths, every arm (E-049)",
     "Q-93": "U1's start rows through run_starts with a declared class, every start (E-059 (1))",
     "Q-101": "U1's start rows with the replay recorder on, every start (E-068)",
 }
-_SHARED_COVER: dict[str, tuple[str, ...]] = {
-    "Q-80": ("identity/gate_identity.py", "identity/stage2_identity.py", "extended/gate.py", "extended/campaign.py",
-             *BASE),
-    "Q-93": ("identity/user_beside_identity.py", "identity/stage2_identity.py", "extended/user_beside.py",
-             "extended/user_measures.py", *BASE),
-    "Q-101": ("identity/replay_records_identity.py", "identity/user_beside_identity.py", "identity/stage2_identity.py",
-              "extended/replay_records.py", "extended/place_records.py", "extended/place_fields.py",
-              "extended/openings.py", "extended/user_beside.py", "extended/user_measures.py", *BASE),
-}
 
 
 def shared_cover(ident: str) -> tuple[str, ...]:
-    """The covered paths of a shared wait, by its id -- the one place `extended/identity_cover.cover(ident)` (Q-111)
-    replaces when it reaches master."""
-    if ident not in _SHARED_COVER:
-        raise KeyError(f"{ident} is not one of the shared waits {sorted(_SHARED_COVER)}")
-    return tuple(_SHARED_COVER[ident])
+    """The covered paths of a shared wait: `extended/identity_cover.cover(ident)` (Q-111), never less."""
+    if ident not in SHARED_WAITS:
+        raise KeyError(f"{ident} is not one of the shared waits {sorted(SHARED_WAITS)}")
+    return tuple(_IC.cover(ident))
+
+
+def own_problems(root: Path | str = ROOT) -> list[str]:
+    """Each own wait's cover against Q-111's rule at `root`'s code (`identity_cover.uncovered`): what it lacks, and any
+    import the model cannot resolve beyond the reviewed ones. [] when every own cover meets the rule."""
+    import fnmatch
+
+    out = []
+    for k, (_, cov) in OWN_WAITS.items():
+        for why in _IC.uncovered(WAIT_SCRIPTS[k], list(cov), root, OWN_SEARCH[k]):
+            body = why[len("unresolved: "):] if why.startswith("unresolved: ") else None
+            if body is not None and any(fnmatch.fnmatchcase(body, pat) for pat in REVIEWED_UNRESOLVED[k]):
+                continue
+            out.append(f"the wait for {k}: its cover falls short of its instrument's closure: {why}")
+    return out
 
 
 def wait_table() -> dict[str, tuple[str, tuple[str, ...]]]:
-    """Section 14's waits: each waited identity, what it certifies, and the files it covers -- the code it certifies,
-    its own instrument and BASE, so a wait is met only at a commit with none of them changed since (D1, L1; every path
-    real at HEAD: `IT.held` refuses one that is not)."""
+    """Section 14's waits: each waited identity, what it certifies, and the files it covers -- `BASE`, its own
+    instrument and every repository file the instrument imports (D1, L1, Q-111's rule), so a wait is met only at a
+    commit with none of them changed since (every path real at HEAD: `IT.held` refuses one that is not)."""
     out = dict(OWN_WAITS)
     out.update({k: (what, shared_cover(k)) for k, what in SHARED_WAITS.items()})
     order = ("pp_identity", "Q-80", "Q-93", "Q-101", "t10w2")
@@ -146,7 +168,7 @@ def wait_problems(text: str, workers: int, repo: Path | str, head: str, waits: d
     breaches = IT.problems(text)
     if breaches:
         return [f"DECISIONS.md breaches the identity-holds rule, so no wait is read: {b}" for b in breaches]
-    out = []
+    out = own_problems(repo) if waits is WAITS else []   # every own cover meets Q-111's rule at this code
     met: dict[str, Any] = {}
     for k, (what, cov) in waits.items():
         try:
@@ -269,6 +291,8 @@ def main(argv: list[str] | None = None) -> int:
                        "row": waits[k].row if waits.get(k) else None, "commit": waits[k].sha if waits.get(k) else None}
                    for k, (what, cov) in WAITS.items()} if not a.synthetic else "the synthetic run waits for nothing"),
         "token_parser": "extended/identity_tokens.py (Q-110, E-104)",
+        "cover_rule": "extended/identity_cover.py (Q-111, E-117): BASE, the instrument, its imports' closure; the shared "
+                      "waits identity_cover.cover(ident)",
         "head": head,
         "runs": [list(r) for r in runs], "run_count": len(runs),
         "run_counts": {"policy_runs": sum(1 for r in runs if r[2] == "declared"),
