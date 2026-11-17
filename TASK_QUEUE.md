@@ -177,7 +177,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-109e | F-03 before run 2: W1 (the verdict file written before the scorecard is authorised) and W2 (floor (iii)'s mapping recorded and refused on mismatch) | wt-lit | done: merged (E-136) | E-135 | light | 0 | E-135 |
 | Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7, after the calibration (E-140) | E-135 | heavy | 0 | E-135 |
 | Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | done: merged (E-140) | E-136 | light | 0 | E-136 |
-| Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | queued: a fresh builder (E-140) | E-140 | light | 0 | E-140 |
+| Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | done: merged (E-143) | E-140 | light | 0 | E-140 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-142; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-143; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
@@ -50,7 +50,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
 | wt-user | wt/wt-user | -- (Q-103 parked, E-133) | idle |
 | wt-features | wt/wt-features | -- (Q-18b merged, E-135) | idle |
-| wt-lit | wt/wt-lit | Q-109f F-03's Y1-Y4 (before run 2) | running |
+| wt-lit | wt/wt-lit | -- (F-03's build complete, E-143; A0 and run 1 queued) | idle |
 | wt-firms | wt/wt-firms | -- (Q-115 committed, merge deferred, E-135) | idle |
 | wt-payout | wt/wt-payout | -- (RD-02's runner merged, E-121; its identities in the block) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
