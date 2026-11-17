@@ -171,7 +171,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | queued: the heavy queue part 6 (E-127) | Q-108e | heavy | 0 | E-127 |
 | Q-113 | The identity-token tests made state-independent (RD-01's, RD-02's, the identity rows'), after the first token row | wt-infra | done: merged (E-131) | E-128 | light | 0 | E-129 |
 | Q-18b | P-14's stress checks completed per the audit (A2, D-583's missing readings, ruin beside, assumptions labelled) | wt-features | running (E-132) | E-125 | light (build) / heavy (run) | 0 | E-132 |
-| Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | running (E-132) | E-125 | light | 0 | E-132 |
+| Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | done: merged (E-134) | E-125 | light | 0 | E-132 |
+| Q-115 | The contract levers' rules on official pages (Back2Funded, the Reset Bank, the No Activation Fee 50K prices, the hold's expiry, the evaluation's cancellation) | wt-firms | running (E-134); merge after the RD readings use the identities | E-134 | light | 0 | E-134 |
+| Q-116 | Draft RD-03: contract-use levers on the registered trades (described, E-023 (1)), a solver-only fit read first; the red team before the pin | wt-payout | queued (after Q-115) | Q-115 | light | 0 | E-134 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
