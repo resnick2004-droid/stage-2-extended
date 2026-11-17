@@ -14,8 +14,10 @@ What is asserted:
   on any branch or in the working tree; a document's mention printed; a declaration's refused; this run's own results
   printed, an impostor's refused; NAME + constants folded and refused when it lands in a block; a bounded `range` or
   `enumerate` over a literal refused when it reaches a block and passed when not; an unbounded loop index printed,
-  never refused; an imported name not folded; and on this repository nothing refused, the three cut loops printed and
-  each matched to the hand-check record, which also holds the imported offsets the plan and E-115 list, each checked;
+  never refused; an imported name not folded; and on this repository nothing refused, the cut loops still on a ref
+  printed (three at most) and each matched to the hand-check record -- whose expressions are those of the calibration
+  run's own commit, the working tree's file holding none since Q-128 made its walks children of their seed (E-171) --
+  which also holds the imported offsets the plan and E-115 list, each checked;
 - **the failure counts** (71, 63, 56, 50, 45, 41, 38, 35) and **P_MC's dynamic program**, against the plan's
   arithmetic script and against a nested-binomial simulation;
 - **the choice rule on planted tables**: the most powerful eligible candidate in scope Q; ties to fewer members, then
@@ -337,14 +339,22 @@ def test_the_guard_on_this_repository_and_the_hand_check_record(C):
     probs, notes = C.seed_block_problems(ROOT)
     assert probs == [], probs
     printed = [n for n in notes if n.startswith("derived seed") and "`" in n]
-    assert len(printed) == 3 and all("hand-checked" in n for n in printed), printed
+    # Q-128 (E-171): the walks are SeedSequence children now; an older blob on another ref may still print, never more
+    # than the three recorded, each hand-checked
+    assert len(printed) <= 3 and all("hand-checked" in n for n in printed), printed
     far = [n for n in notes if n.startswith("derived seed") and "more unbounded expression" in n]
     assert len(far) <= 1                                                  # the rest lie over PRINT_REACH away
     want = {("tests/test_features_lookahead.py", e) for e in ("SEED_REPLACE + i", "SEED_REPLACE + 200 + i",
                                                               "SEED_REPLACE + 1000 + i")}
     assert {(h["file"], h["expr"]) for h in C.HAND_CHECKED} == want
-    for f, e in want:                                                    # each recorded expression is in its file
-        assert any(x.expr == e for x in C.fold_file((ROOT / f).read_text(encoding="utf-8"), f)), e
+    # each recorded expression is in its file as the calibration ran it (the commit its result's manifest names); the
+    # working tree's file has none of them since Q-128 (E-171)
+    ran = json.loads((ROOT / "results" / "q108_cal_size.csv.manifest.json").read_text(encoding="utf-8"))["git_commit"]
+    for f, e in want:
+        r = subprocess.run(["git", "show", f"{ran}:{f}"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        assert r.returncode == 0, r.stderr
+        assert any(x.expr == e for x in C.fold_file(r.stdout, f)), e
+        assert not any(x.expr == e for x in C.fold_file((ROOT / f).read_text(encoding="utf-8"), f)), e
     # the imported offsets of the plan's 4.1 and E-115, each where the record says and each checked
     rec = {h["expr"]: h for h in C.HAND_CHECKED_IMPORTED}
     for e in ("R.F.LADDER_SEED + i", "fh.SEED + 1, fh.SEED + 2", "sc.SEED + 1", "pe.SEED + 100_000 * i + 1_000 * j",
