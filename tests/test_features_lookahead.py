@@ -11,7 +11,10 @@ The cuts: the alert marks of the session's first minutes and later (08:30, 08:31
 and the trading day's own open (17:00 CT the evening before) on the roll day (2021-03-12, NQH1 -> NQM1 +60 points),
 the first day after the DST change (2021-03-15) and an ordinary day (2021-03-24), plus 16 alert marks drawn with a
 fixed seed across the series. Seeds fixed for this file: 20261130 (the series), 20261131 (the random cuts),
-20261132 + i (the replacement walks).
+20261132 (the replacement walks). Every further draw is a **child** of its named seed,
+`numpy.random.SeedSequence(SEED, spawn_key=(stream, i))` (Q-128, E-171): stream 0..4 of `SEED_REPLACE` are the five
+tests' replacement walks (i the cut's index), stream 1 of `SEED_CUTS` the slow test's choice of days -- so no draw is
+an offset of a named seed, and none depends on a number another block declares.
 """
 from __future__ import annotations
 
@@ -25,9 +28,17 @@ from extended import features as F
 from extended import synthetic_bars as sb
 
 SEED_SERIES, SEED_CUTS, SEED_REPLACE = 20261130, 20261131, 20261132
+#: the child streams of SEED_REPLACE, one a test (spawn_key=(stream, i)); of SEED_CUTS, the slow test's days
+REPLACE_CUTS, REPLACE_NORMALISERS, REPLACE_EXHAUSTIVE, REPLACE_LEAK, REPLACE_ZSCORE = range(5)
+CUTS_EXHAUSTIVE_DAYS = 1
 COLS = list(F.NAMES) + [n for n, _ in F.NORMALISERS]
 FIXED_DAYS = ("2021-03-12", "2021-03-15", "2021-03-24")
 FIXED_TIMES = ((17, 0), (8, 30), (8, 31), (8, 35), (9, 0), (9, 5), (12, 0), (15, 0))
+
+
+def child(seed: int, *key: int) -> np.random.SeedSequence:
+    """The child of a named seed at `key` (a SeedSequence spawn key): its own stream, an offset of nothing."""
+    return np.random.SeedSequence(seed, spawn_key=tuple(int(k) for k in key))
 
 
 @pytest.fixture(scope="module")
@@ -79,7 +90,7 @@ def test_cuts_cover_the_cases(base):
 def test_replacing_the_future_changes_nothing_up_to_the_cut(bars, base, cal):
     bad, bit = [], 0
     for i, cut in enumerate(cuts(base)):
-        changed = sb.replace_from(bars, cut, seed=SEED_REPLACE + i)
+        changed = sb.replace_from(bars, cut, seed=child(SEED_REPLACE, REPLACE_CUTS, i))
         after = F.compute(changed, calendars=cal, normalisers=True)
         bad += [(cut,) + v for v in violations(base, after, cut, COLS)]
         later = base["alert_ts"] > cut
@@ -106,7 +117,8 @@ def test_normalisers_use_the_past_only(bars, base, cal):
     is everything before it; the day's own features change."""
     for i, d in enumerate(("2021-02-22", "2021-03-12", "2021-03-15", "2021-03-24")):
         cut = sb.ts_of(d, 17, 0)
-        after = F.compute(sb.replace_from(bars, cut, seed=SEED_REPLACE + 100 + i), calendars=cal, normalisers=True)
+        changed = sb.replace_from(bars, cut, seed=child(SEED_REPLACE, REPLACE_NORMALISERS, i))
+        after = F.compute(changed, calendars=cal, normalisers=True)
         assert not violations(base, after, cut, COLS)
         today_a = base[base["day"] == d]
         today_b = after[after["day"] == d]
@@ -119,8 +131,9 @@ def test_normalisers_use_the_past_only(bars, base, cal):
 def test_every_alert_of_ten_days_is_a_cut(bars, base, cal):
     """The exhaustive form (the slow tier, about a minute): every one of the 79 alert marks of ten days is a cut, the
     future replaced -- the day before the roll (2021-03-11), the roll day (2021-03-12, also the last CST day), the
-    first CDT day (2021-03-15), the frame's first day with its full history, and six more drawn with seed 20261131."""
-    rng = np.random.default_rng(SEED_CUTS + 1)
+    first CDT day (2021-03-15), the frame's first day with its full history, and six more drawn by a child of
+    SEED_CUTS."""
+    rng = np.random.default_rng(child(SEED_CUTS, CUTS_EXHAUSTIVE_DAYS))
     days = sorted(base["day"].unique())
     pick = {"2021-03-11", "2021-03-12", "2021-03-15", days[F.HISTORY_DAYS]}
     others = [d for d in days[F.HISTORY_DAYS:] if d not in pick]
@@ -129,8 +142,8 @@ def test_every_alert_of_ten_days_is_a_cut(bars, base, cal):
     assert rows["day"].nunique() == 10 and len(rows) == 790
     bad = []
     for i, cut in enumerate(rows["alert_ts"].to_numpy()):
-        after = F.compute(sb.replace_from(bars, int(cut), seed=SEED_REPLACE + 1000 + i), calendars=cal,
-                          normalisers=True)
+        changed = sb.replace_from(bars, int(cut), seed=child(SEED_REPLACE, REPLACE_EXHAUSTIVE, i))
+        after = F.compute(changed, calendars=cal, normalisers=True)
         bad += [(int(cut),) + v for v in violations(base, after, int(cut), COLS)]
     assert not bad, bad[:20]
 
@@ -150,7 +163,7 @@ def test_harness_catches_a_one_minute_look_ahead(bars, cal):
     base = _leaky(bars, cal)
     caught = 0
     for i, cut in enumerate(sb.ts_of(d, 9, 0) for d in FIXED_DAYS):
-        after = _leaky(sb.replace_from(bars, cut, seed=SEED_REPLACE + 200 + i), cal)
+        after = _leaky(sb.replace_from(bars, cut, seed=child(SEED_REPLACE, REPLACE_LEAK, i)), cal)
         v = violations(base, after, cut, ["leak"])
         caught += bool(v) and all(x[2] == "leak" and x[1] == "09:00" for x in v)
         assert not violations(base, after, cut, COLS)
@@ -165,6 +178,6 @@ def test_harness_catches_a_full_sample_normaliser(bars, cal):
         return X
     base = zscored(bars)
     cut = sb.ts_of("2021-03-24", 12, 0)
-    after = zscored(sb.replace_from(bars, cut, seed=SEED_REPLACE + 300))
+    after = zscored(sb.replace_from(bars, cut, seed=child(SEED_REPLACE, REPLACE_ZSCORE, 0)))
     assert violations(base, after, cut, ["ret_5_z"])
     assert not violations(base, after, cut, list(F.NAMES))
