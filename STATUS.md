@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-131; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-132; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
@@ -48,13 +48,13 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 |---|---|---|---|
 | wt-verify | wt/wt-verify | -- (Q-108's build merged, E-127; its calibration queued) | idle |
 | wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
-| wt-user | wt/wt-user | -- (Q-95 parked after Q-108, E-101) | idle |
-| wt-features | wt/wt-features | -- (Q-100 merged, E-084) | idle |
+| wt-user | wt/wt-user | Q-103 where components would contend | running |
+| wt-features | wt/wt-features | Q-18b P-14's stress checks completed | running |
 | wt-lit | wt/wt-lit | Q-109c F-03's build finished, with the re-read's V1-V3 | running |
 | wt-firms | wt/wt-firms | -- (RD-01's runner merged, E-122; its identity in the block) | idle |
 | wt-payout | wt/wt-payout | -- (RD-02's runner merged, E-121; its identities in the block) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |
-| wt-scout | wt/wt-scout | -- (Q-108e read, E-127) | idle |
+| wt-scout | wt/wt-scout | Q-114 research: next levers (read-only) | running |
 | wt-infra | wt/wt-infra | -- (Q-113 merged, E-131) | idle |
 
 ## Running now

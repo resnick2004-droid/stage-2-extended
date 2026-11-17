@@ -124,7 +124,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-102 | The red team's read of reading PP's third draft | wt-payout | done: a small redraft, remedies adopted (E-074); Q-92b | Q-92 | light | 0 | E-070 |
 | Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | done: REFUSE, seven text items (E-073); Q-87c | Q-87 | light | 0 | E-071 |
 | Q-91c | A gatekeeper's pin check of the firms reading (a verdict and the pinning row) | lead | done: REFUSE, narrow (E-075); Q-91d | Q-91b | light | 0 | E-072 |
-| Q-103 | Where components would meet (a supply count, no outcome): on P-16's and P-14's choice-block U1 replays, how often a new funded account's opening, an 08:30 resting ticket's reachable account and a 09:05-15:05 mark would contend for the same position or account | wt-user | queued (after Q-35's run) | Q-35, Q-94 | heavy | 0 | E-072 |
+| Q-103 | Where components would meet (a supply count, no outcome): on P-16's and P-14's choice-block U1 replays, how often a new funded account's opening, an 08:30 resting ticket's reachable account and a 09:05-15:05 mark would contend for the same position or account | wt-user | running (wt-user, rescoped after F-02's withdrawal, E-132) | Q-35, Q-94 | heavy | 0 | E-072 |
 | Q-87c | Family O's fourth text: the gatekeeper's seven items | wt-lit | done: merged (E-076); the gatekeeper's read Q-87d | Q-87b | light | 0 | E-073 |
 | Q-92b | Reading PP's small redraft (Q-102's M1 and seven minors); the review committed first | wt-payout | done: merged (E-081); the pin check Q-92c | Q-102 | light | 0 | E-074 |
 | Q-91d | The firms reading's pin-form edit (the gatekeeper's six items) | wt-firms | done: merged (E-078); the gatekeeper's read Q-91e | Q-91c | light | 0 | E-075 |
@@ -170,6 +170,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108e | The red team reads Q-108's build (fidelity to the pinned plan; the builder's readings; cost) before the calibration run | wt-scout (read-only) | done: run as is with five readings (E-127) | Q-108d | light | 0 | E-126 |
 | Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | queued: the heavy queue part 6 (E-127) | Q-108e | heavy | 0 | E-127 |
 | Q-113 | The identity-token tests made state-independent (RD-01's, RD-02's, the identity rows'), after the first token row | wt-infra | done: merged (E-131) | E-128 | light | 0 | E-129 |
+| Q-18b | P-14's stress checks completed per the audit (A2, D-583's missing readings, ruin beside, assumptions labelled) | wt-features | running (E-132) | E-125 | light (build) / heavy (run) | 0 | E-132 |
+| Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | running (E-132) | E-125 | light | 0 | E-132 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
