@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-169; RD-03's cycle 3 back, stage 0 building; RD-04 pinned; RD-04's third text drafting; Q-121's authorised mode merged, its run re-queued; RD-03's third cycle authorised; RD-04 red-teamed; heavy runs waiting on memory; the volatility descriptive built, its run queued; the failure diagnosed, a second plan queued; the validation's audit clean, the FAILS stands; Q-108's validation FAILS, no one-sample line; RD-03's build back for fixes; Q-121, Q-123 running; volatility-drift note merged, Q-121..Q-123; RD-03 build partial, red team reading; RD-03 pinned E-152; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-172; RD-03's stage 0 stopped at its probe; the second one-sample plan drafted, red team reading; the pre-read route fixed within RD-04's 9.3; RD-03's cycle 3 back, stage 0 building; RD-04 pinned; RD-04's third text drafting; Q-121's authorised mode merged, its run re-queued; RD-03's third cycle authorised; RD-04 red-teamed; heavy runs waiting on memory; the volatility descriptive built, its run queued; the failure diagnosed, a second plan queued; the validation's audit clean, the FAILS stands; Q-108's validation FAILS, no one-sample line; RD-03's build back for fixes; Q-121, Q-123 running; volatility-drift note merged, Q-121..Q-123; RD-03 build partial, red team reading; RD-03 pinned E-152; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
