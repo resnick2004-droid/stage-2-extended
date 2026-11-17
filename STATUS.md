@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-16 (E-119; F-03 pinned E-095; Q-108's plan pinned E-115).
+**Updated:** 2026-11-16 (E-120; F-03 pinned E-095; Q-108's plan pinned E-115).
 
 ## Phase
 
@@ -50,7 +50,7 @@ signal-service purpose dropped; report-day entries after 07:35:00 CT.
 | wt-levels | wt/wt-levels | -- (F-02 approved, E-065; the pin after Q-55 and Q-83) | idle |
 | wt-user | wt/wt-user | -- (Q-95 parked after Q-108, E-101) | idle |
 | wt-features | wt/wt-features | -- (Q-100 merged, E-084) | idle |
-| wt-lit | wt/wt-lit | Q-109b F-03's build: the read's before-run-1 items, then run 2 | running |
+| wt-lit | wt/wt-lit | Q-109c F-03's build finished (fresh builder); Q-109r2 the re-read | running |
 | wt-firms | wt/wt-firms | Q-104f RD-01's runner: the last read's changes | running |
 | wt-payout | wt/wt-payout | -- (Q-105f done, E-116; the cover swap after Q-111, then merge) | idle |
 | wt-report | wt/wt-report | -- (Q-86 merged, E-062; its run Q-98 queued) | idle |

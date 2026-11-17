@@ -154,7 +154,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108b | Q-108's plan revised on its red-team read and the lead's rulings (E-105), then re-read and pinned | wt-verify | done: the second text (E-109); the re-read Q-108r2, then the pin | Q-108r | light | 0 | E-105 |
 | Q-104e | RD-01's runner: the third read's M1, m1-m7, the notes, the single-pass cost route, measured cost; D1 on Q-110's parser once merged | wt-firms | done: the third read answered, cost measured (E-117); merge after Q-107d | Q-107c | light | 0 | E-106 |
 | Q-109r | The red team reads F-03's build (4da975e): look-ahead, the waiting class, the statistics, the guards, A0, what is owed before run 1 (A10's consequence first), cost | wt-lit (read-only) | done: merge after the listed changes (E-112); in Q-109b | Q-109 | light | 0 | E-107 |
-| Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | running: before-run-1 items first, then run 2 and the scorecard (E-112) | Q-109 | light | 0 | E-107 |
+| Q-109b | F-03's build continued: A0's label under E-104's grammar, run 2's composition, the scorecard, T-3, T-12's wrapper (A10's consequence after Q-109r) | wt-lit | done: the before-run-1 items (E-120); the re-read Q-109r2; the rest Q-109c | Q-109 | light | 0 | E-107 |
 | Q-108r2 | The red team re-reads Q-108's second text (the diff 4d927bb..490b663), before the pin | wt-scout (read-only) | done: pin after the listed changes (E-110); Q-108c | Q-108b | light | 0 | E-109 |
 | Q-108c | Q-108's third text (the re-read's MATERIAL 1-3 and minors; E-110's ruling on 4), then one more read and the pin | wt-verify | done: the third text (E-114); Q-108r3, then the pin | Q-108r2 | light | 0 | E-110 |
 | Q-106d | The red team's last diff read of RD-02's runner (D1-D5; the waits' covered paths) | wt-payout (read-only) | done: merge after L1, L2 (E-113); Q-105f | Q-105e | light | 0 | E-111 |
@@ -164,6 +164,8 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-108d | Q-108's build from the pinned plan (E-115): the module, the calibration and validation scripts, the guard; synthetic tests only; then the red team, then the two heavy runs | wt-verify | running (E-115) | E-115 | light (build) / heavy (runs) | 0 | E-115 |
 | Q-107d | The red team's last diff read of RD-01's runner (22951ee..260bc91: the single pass, the shared break-even search, the covers, the measured cost) | wt-firms (read-only) | done: merge after the listed changes (E-118); Q-104f | Q-104e | light | 0 | E-117 |
 | Q-104f | RD-01's runner: the last read's V1-V5 and notes; the base, shared covers and import model from Q-111 once merged | wt-firms | running (E-118) | Q-107d | light | 0 | E-118 |
+| Q-109r2 | The red team re-reads F-03's build (4da975e..a959204) | wt-lit (read-only) | running (E-120) | Q-109b | light | 0 | E-120 |
+| Q-109c | F-03's build finished: the index-mode placebo gate test, section 13's missing parts, the year-gridded bar read (a fresh builder) | wt-lit | running (E-120) | Q-109b | light | 0 | E-120 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
