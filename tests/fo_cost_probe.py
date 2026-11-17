@@ -43,7 +43,11 @@ class _PMC(ctypes.Structure):
 def working_set() -> int:
     c = _PMC()
     c.cb = ctypes.sizeof(_PMC)
-    ctypes.windll.psapi.GetProcessMemoryInfo(ctypes.windll.kernel32.GetCurrentProcess(), ctypes.byref(c), c.cb)
+    k32 = ctypes.windll.kernel32
+    k32.GetCurrentProcess.restype = ctypes.c_void_p                  # a 64-bit pseudo-handle, never truncated
+    k32.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong]
+    if not k32.K32GetProcessMemoryInfo(k32.GetCurrentProcess(), ctypes.byref(c), c.cb):
+        raise OSError("GetProcessMemoryInfo failed")
     return int(c.WorkingSetSize)
 
 
@@ -102,10 +106,17 @@ def unit_store():
     out = {}
     for name, (a, b, s) in {"choice": (date(2020, 1, 2), date(2023, 12, 29), 0),
                             "judged": (date(2024, 1, 2), date(2026, 7, 16), 1)}.items():
-        bars = sb.generate(sb.Spec(a, b, seed=[*KEY, s], vol_scale=10.0, holidays=frozenset(),
-                                   early_closes=frozenset(), base_price=13000.0 if s == 0 else 17000.0))
-        g = F.grid(bars)
-        del bars
+        from extended import opening_states as OS
+
+        parts = []
+        for y in range(a.year, b.year + 1):                  # a year at a time: the generator's peak stays small
+            bars = sb.generate(sb.Spec(max(a, date(y, 1, 1)), min(b, date(y, 12, 31)), seed=[*KEY, s, y],
+                                       vol_scale=10.0, holidays=frozenset(), early_closes=frozenset(),
+                                       base_price=13000.0 + 1000.0 * (y - 2020)))
+            parts.append(F.grid(bars))
+            del bars
+        g = OS.concat_grids(parts)
+        del parts
         dump(f"grid_{name}", g)
         out[name] = {"sessions": len(g.days)}
         dump(f"kinds_{name}", kinds_of(g.days))
@@ -224,6 +235,35 @@ def unit_a10():
     return m, {"rows": int(len(t))}
 
 
+def unit_a9():
+    from extended import opening_run as R
+    from extended import opening_stats as ST
+
+    L, _ = layout_choice()
+    y = ST.centred(L, "c", L.population)
+    with Meter() as m:
+        r = ST.a9_mdl(L, y, L.flags["in_s1"], 657, R.LEVEL)
+    return m, {"windows": r["windows"]}
+
+
+def unit_states_frozen():
+    from extended import features as F
+    from extended import opening_population as OP
+    from extended import opening_states as OS
+
+    gc, kc = load("grid_choice"), load("kinds_choice")
+    gj, kj = load("grid_judged"), load("kinds_judged")
+    s = load("states_choice")
+    wc = [i for i, d in enumerate(gc.days) if kc[d.isoformat()] in OP.WALKED_KINDS][-300:]
+    wj = [i for i, d in enumerate(gj.days) if kj[d.isoformat()] in OP.WALKED_KINDS]
+    g = OS.concat_grids([F.Grid([x.days[i] for i in w], x.contract[w], x.O[w], x.H[w], x.L[w], x.C[w], x.V[w])
+                         for x, w in ((gc, wc), (gj, wj))])
+    del gc, gj
+    with Meter() as m:
+        st = OS.compute(g, frozen=s["forecast"].final, test_years=())
+    return m, {"sessions": len(st.days)}
+
+
 def unit_stage_b():
     from extended import opening_stats as ST
 
@@ -300,7 +340,7 @@ if __name__ == "__main__":
         fn = {"span_choice": lambda: unit_span("choice"), "span_judged": lambda: unit_span("judged"),
               "states": unit_states, "replay_choice": lambda: unit_replay("choice"),
               "replay_judged": lambda: unit_replay("judged"), "k0": unit_k0, "a10": unit_a10,
-              "stage_b": unit_stage_b, "gate": unit_gate, "b2": unit_b2, "a10_b2": unit_a10_b2}[UNIT]
+              "stage_b": unit_stage_b, "a9": unit_a9, "states_frozen": unit_states_frozen, "gate": unit_gate, "b2": unit_b2, "a10_b2": unit_a10_b2}[UNIT]
         m, info = fn()
     rec = {"unit": UNIT, "count": COUNT, **info, "wall_seconds": round(time.time() - t0, 1)}
     if m is not None:

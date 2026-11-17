@@ -265,7 +265,7 @@ def item4(starts: int | None, workers: int) -> list[str]:
     job = jobs["verdict"]
     chosen = UJ.start_choice(len(job["blocks"]), starts)
     spec = OW.WaitSpec.for_blocks("a0_lookup", job["blocks"], [np.zeros(len(b), bool) for b in job["blocks"]])
-    probs += OW.lookup_problems(spec, job, chosen)                    # m3: the offer lookup on every window
+    probs += OW.lookup_problems(spec, job, list(range(len(job["blocks"]))))   # m3, x2: every start (no replay needed)
     cls = OW.waiting_class(OW.WaitSpec.for_blocks("w0_off", job["blocks"],
                                                   [np.zeros(len(b), bool) for b in job["blocks"]], W=0))
     for name in RESPONSES_W0:

@@ -53,4 +53,12 @@ r3 = {r["stat"]: r["value"] for r in rows if r["section"] == "design_vs_luck" an
 want = UD.variance_split({d: J.measure_values(x, "choice", "net_month_3", 63, "value") for d, x in tables.items()})
 out["luck_same"] = all(abs(r3[k] - want[k]) <= 1e-12 for k in want if k != "n")
 out["luck_shares_sum"] = r3["design_share"] + r3["start_day_share"]
+from extended import user_measures as M  # noqa: E402
+
+ne = {r["measure"]: r for r in rows if r["section"] == "uncertainty" and r["design"] == "design"
+      and r["stat"] == "n_eff_bartlett"}
+out["n_eff_lags"] = {k: v["lag"] for k, v in ne.items()}
+out["n_eff_same"] = all(abs(v["value"] - M.n_eff_bartlett(J.measure_values(tables["design"], "choice", k, v["lag"],
+                                                                           "value"), v["lag"])) <= 1e-12
+                        for k, v in ne.items() if np.isfinite(v["value"]))
 print(json.dumps(out))

@@ -130,3 +130,4 @@ def test_against_the_vendored_definitions():
     assert got["purge_drops_more_than_the_end"] == 1          # Stage 2's purge drops one start more than the job's end
     assert got["frontier_same"]
     assert got["luck_same"] and got["luck_shares_sum"] == pytest.approx(1.0)
+    assert got["n_eff_lags"] == {f"net_month_{m}": 21 * m for m in (1, 2, 3, 6, 12)} and got["n_eff_same"]   # x1

@@ -23,7 +23,8 @@ funded trade over the live sessions) -- pooled and as a distribution over starts
 
 **Every measure's uncertainty and design against luck** (13; E-015 (1); `user_drivers.csv` section `design_vs_luck`):
 for each measure of `LUCK_MEASURES`, on each block's eligible starts, each design's distribution (p10, p50, p90),
-its effective number of independent starts (Bartlett at lag 63 in start order, `user_measures.n_eff_bartlett`) and the
+its effective number of independent starts (Bartlett at the measure's own horizon as its lag, in start order, as RD-01 and
+RD-02 read it, `user_measures.n_eff_bartlett`) and the
 mean's standard error from it; across the three designs the vendored `user_drivers.variance_split` (the start day's
 share of the variance and the design's). Time-to-event measures are read censored at their window (an unreached start
 at the window plus one), the money spent among the starts reaching the event, the deepest fall among the starts broken
@@ -283,13 +284,13 @@ def luck_rows(tables: Mapping[str, pd.DataFrame], block: str, arm: str,
         vals = {d: measure_values(t, block, col, h, how) for d, t in tables.items()}
         for d, x in vals.items():
             v = x[np.isfinite(x)]
-            ne = M.n_eff_bartlett(v, N_EFF_LAG)
+            ne = M.n_eff_bartlett(v, int(h))                  # x1: the lag at the measure's own horizon
             sd = float(np.std(v, ddof=1)) if len(v) > 1 else NAN
             base = {"section": "uncertainty", "block": block, "arm": arm, "design": d, "measure": col,
                     "horizon": int(h), "read": how}
             q = M.quantiles(v)
             out += [{**base, "stat": f"p{p}", "value": q[f"p{p}"], "n": q["n"]} for p in M.PERCENTILES]
-            out += [{**base, "stat": "n_eff_bartlett_63", "value": ne, "n": len(v)},
+            out += [{**base, "stat": "n_eff_bartlett", "lag": int(h), "value": ne, "n": len(v)},
                     {**base, "stat": "sd", "value": sd, "n": len(v)},
                     {**base, "stat": "se_mean", "value": sd / np.sqrt(ne) if (np.isfinite(ne) and ne > 0) else NAN,
                      "n": len(v)}]

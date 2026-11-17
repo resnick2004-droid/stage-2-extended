@@ -36,8 +36,11 @@ def peak_working_set() -> tuple[int, int]:
                     ("PagefileUsage", ctypes.c_size_t), ("PeakPagefileUsage", ctypes.c_size_t)]
     c = PMC()
     c.cb = ctypes.sizeof(PMC)
-    h = ctypes.windll.kernel32.GetCurrentProcess()
-    ctypes.windll.psapi.GetProcessMemoryInfo(h, ctypes.byref(c), c.cb)
+    k32 = ctypes.windll.kernel32
+    k32.GetCurrentProcess.restype = ctypes.c_void_p                  # a 64-bit pseudo-handle, never truncated
+    k32.K32GetProcessMemoryInfo.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong]
+    if not k32.K32GetProcessMemoryInfo(k32.GetCurrentProcess(), ctypes.byref(c), c.cb):
+        raise OSError("GetProcessMemoryInfo failed")
     return int(c.WorkingSetSize), int(c.PeakWorkingSetSize)
 
 

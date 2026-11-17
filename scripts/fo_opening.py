@@ -279,7 +279,19 @@ def u1_job(trades, days: list[str], P: dict[str, Any]) -> dict[str, dict[str, An
 
     I = {"L": {"fcfg": P["fcfg"], "tv": P["tv"], "cfg": P["cfg"]}, "plan": P["plan"]}
     camp = D.rc_campaign(I, trades, list(days), P["e_by"], P["lb_by"], int(P["cap"]), P16.SPEC)
-    return UJ._single_jobs(camp, P["plan"], Cb.BUDGET)
+    jobs = UJ._single_jobs(camp, P["plan"], Cb.BUDGET)
+    conduct = {"one_at_a_time": camp.kw.get("one_at_a_time"), "flip": camp.kw.get("flip"),
+               "cross_account": bool(camp.kw.get("cross_account", False))}
+    return {k: {**v, "fo_conduct": dict(conduct)} for k, v in jobs.items()}       # x3: floor (v)'s settings carried
+
+
+def job_conduct_ok(job: dict) -> bool:
+    """x3: floor (v)'s settings on a replay job -- the strict one-position rule on, no flip stream, the firm's
+    cross-account rule on (the gate call's own, n5)."""
+    import a3_brk30_cb20 as Cb
+
+    c = job.get("fo_conduct") or {}
+    return bool(c.get("one_at_a_time") == Cb.STRICT_GAP and c.get("flip") is None and c.get("cross_account"))
 
 
 def a1_restricted_replay_problems(job: dict, starts: list[int], workers: int) -> list[str]:
@@ -1056,7 +1068,8 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
               "iii_long_run_gate": fg["floor_iii"],
               "iv_rules_verified": bool(conduct.get("fo_rules_from_verified_ledger", False)),
               "v_conduct_tier_1": bool(conduct.get("fo_strict_one_position", False) and conduct.get("fo_no_flip", False)
-                                       and conduct.get("fo_cross_account_rule_on", False))}
+                                       and conduct.get("fo_cross_account_rule_on", False)
+                                       and all(job_conduct_ok(jobs[a_]) for a_ in SCORECARD_ARMS))}   # x3
     out += R.rows("floor", [{"floor": "i", "part": "in_state_unresolved_3r", **f1["shares"], "holds": f1["holds"]},
                             {"floor": "i", "part": "taken_flattened", **f1b["shares"], "trades": f1b.get("trades"),
                              "holds": f1b["holds"]},
