@@ -9,7 +9,11 @@ on wt/wt-payout, master merged at 3223b50), from the scout's note `docs/research
 (Q-114, merged under E-134; its section 5 is this reading's outline) and Q-115's rules record (the rules-verifier,
 official pages read 2026-11-16; committed on wt/wt-firms at deb45ad, E-135). At the pin the file is renamed
 `prereg/RD-03_contract_levers.md` and nothing else changes; the pinning row names the commit and the sha256 it pins.
-The red team reads this text before any pin.
+**The second text** (Q-116b, E-146) answers the red team's read of the first (Q-116r,
+`docs/reviews/DRAFT_RD-03_contract_levers_2026-11-17.md`; the first text at 153f453, LF sha256
+`de551b3c829c85d8be47464045212322829affbd0cdeb5ce1befb0fd7b48f15b`), every finding as the lead adopted it; section 0.1
+maps each finding to its change, and Appendix C lists the drafter's choices, each with its reason. It goes to the
+gatekeeper before any pin.
 
 **What E-023 (1) makes of it, as E-134 (1) rules it.** Each lever here changes which offered trades are routed, bought
 or kept -- what is bought when a funded account ends, how many evaluations run beside the funded accounts, when a user
@@ -34,12 +38,12 @@ lever had been computed or read.** Anything chosen after a reading is explorator
 | kind | a **described reading** (E-023 (1), E-134 (1)): never carried; the operator chooses from its menu |
 | program family number | **none**; the next numbered family's k is unchanged by this file |
 | level, pass line, pick | **none** |
-| stage 0 | a solver-only fit read in Stage 2 D-666's form, of Back2Funded and of the pricing path, with its go-on rules fixed here (section 6): no campaign, no replay, no bar read |
+| stage 0 | a solver-only fit read in Stage 2 D-666's form, of Back2Funded and of the pricing path, printed beside their rows as "the solver's view" and **deciding nothing** (section 6; E-146): no campaign, no replay, no bar read |
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16, read only inside Stage 2's engine by P-14's and P-16's registered builders (this reading's own code reads no bar; the engine's reads are authorised through `extended/reader.py`, section 5 item 6) |
 | the unit | one start day, replayed as U1 replays it (`vendor/stage2/docs/USER_MILESTONES.md`); each cell paired with its base on the same start |
 | blocks | all starts (the menu's headline); the early block, purged per measure by `u_select.block(records, "early", h)`; the late block from 2024-01-02 (section 5) |
-| cells | 2 references (identities) and at most 26 new cells, each at 0 % denial with the placement off, both arms: 4 Back2Funded and 2 pricing-path cells, each run only if stage 0's rule lets its lever go on; 16 inventory cells; 4 house-money cells (section 7) |
-| beside | the denial ladder and the placement on for every new cell; the ten binding Focused Trader models for every inventory cell and every Back2Funded cell; the long-run gate for every new cell (section 13) |
+| cells | 2 references (identities) and **30 new cells, every one run**, each at 0 % denial with the placement off, both arms: 4 Back2Funded, 16 inventory, 8 house-money, 2 pricing-path (section 7) |
+| beside | the denial ladder and the placement on for every new cell; the ten binding Focused Trader models for every inventory and Back2Funded cell, and for the Back2Funded cells a second time with each reactivation counted as a purchase; the long-run gate for every new cell; the Focused Trader models not read for the house-money and pricing-path cells, the gap named (section 13) |
 | judged-block reads | four purposes, on the line of section 5 item 6; the identities from `identity/*.py` under their own row (9.1); stage 0 reads no bar |
 | seeds | from 20262240 to 20262249: two in use, eight reserved; the denial ladder's start seeds and the gates' seeds inherited (section 12) |
 | confirmation | none: nothing is carried (section 11) |
@@ -65,6 +69,29 @@ diverged:
 
 For P, a start's difference is nonzero only where a month's "ahead" flips, so it is lumpy. A lever that binds only
 after a funded account is lost, or only once five accounts are funded, is sparse in the first months.
+
+### 0.1 What changed from the first text (Q-116r's findings, as E-146 adopted them)
+
+| finding | the first text | this text | where |
+|---|---|---|---|
+| **M1** (the lead's ruling) | stage 0's rules G-B and G-N stopped a lever's cells before any replay | **stage 0 decides nothing**: its rules weigh the table's long-run cash per account-day, not P, and a strict rule must not fail a lever that may help the user (E-051; the operator); both rules printed beside each Back2Funded and `naf` row as "the solver's view"; every cell runs; the counts restated | header; 2.1; 2.4; 6; 7.2; 10.1 item 10; 11; 13; 15; T-12 |
+| **M2** | stage 0's inputs from D-666's tables re-solved at each base's bound edges, called "the table's own model" | the inputs read from **the registered policy's forward pass** at each base's own bound edge, at that policy's own cycle rate, with the read's two checks on the inputs; D-666's re-solve kept as the per-R machinery's identity and printed beside, labelled as a table no cell trades | 6.1 to 6.4 |
+| **M3** | house money read at `exp_none` alone, with a count | **each house-money rule under both hold-expiry readings**, flagged (E-135): 8 cells | 2.3; 4.3 U-1; 7.2; 9.1 item 7; 9.2; 9.3; 13; T-5 |
+| **M4** | 9.1 item 3 ran never-binding settings inside the identity script T-11 bars from any setting but off | **item 3 deleted**; its equalities are T-2's, T-4's, T-5's and T-13's on toys and 9.1 item 7's on the real replays | 9.1 |
+| m1 | the Focused Trader models not read for the house-money and `naf` cells, the gap unnamed | not run there; the gap and its reason named on every such row and on the menu | 4.5; 10.1 items 8, 12 |
+| m2 | reactivations never counted as purchases | a second Focused Trader reading on the Back2Funded cells with each reactivation counted, both labelled | 2.1; 4.3 U-6; 10.1 item 8; 13; A-1 |
+| m3 | the reactivation bought the evening the seat frees under the engine's convention | bought on the evening of the breach close, trading the next session, as `back2funded_seat_count` and `back2funded_trading_from` allow | 2.1; 4.3 U-3; 8; 9.2; T-2 |
+| m4 | 4.5: Back2Funded "is not account stacking ..., which no registered design does" | corrected against Stage 2 D-495 (2)-(3) | 4.5 |
+| m5 | the beside rows' guard unnamed | the full guard row on every beside row; its gate entry the cell's 0 % gate, labelled | 10.1 item 8 |
+| m6 | the frontier across every cell | printed without the house-money cells, and with them in a version labelled "gaming P" | 10.1 item 1; T-14 |
+| m7 | four assertions missing or misworded | resets off and activation at activation asserted; Stage 2's sentinel `hold_expiry_days` never loaded; T-9 reworded | 14.2; T-4; T-9; T-15 |
+| m8 | the two identities' covers undeclared | declared under Q-111's rule | 9.1 |
+| n1 | -- | recorded: the first text's stage-0 outcome was fixed by rows of a vendored file no one has computed it from | 3; 6.5 |
+| n2 | -- | a reactivation debits the cash and the engine's total fees together; its fee kind is one a consumer must add | 2.1; A-1 |
+| n4 | -- | U-7 recorded as one conservative reading | 4.3 U-7; 8 |
+| n5 | -- | a failed evaluation rebills until cancelled; every design assumes the cancel at the failure | 4.4 G-9 |
+| n6 | -- | every price before sales tax, one basis throughout | 4.2 |
+| the lead | the choices only in the hand-back | Appendix C: every choice the drafter made, with its reason | Appendix C |
 
 ## 1. What this reading is, and what it is not
 
@@ -125,10 +152,11 @@ whose mean is negative on P-14 (E-125, `results/p14_validation.csv` section `b1`
 - **eligible:** a funded account of the user's that ends by an MLL breach in the engine's sense with no payout
   requested on it in its current life (since its activation or its last reactivation), its XFA's reactivations so far
   below the cell's limit, and -- in the readings beside -- no Focused Trader placement in force (4.3 U-5);
-- **when:** on the evening its seat frees under the base's own seat convention (the protocol's `seat_frees`; the
-  engine's next-session default unless the protocol sets it), first among that evening's acts -- before the hold
-  queue's activations and before the evaluation purchases -- so the reactivated account takes the seat the lost account
-  held, and that seat is not refilled by an evaluation that evening; it trades from the next session (4.3 U-3);
+- **when:** on the evening of the close at which the account breached -- the closed XFA stops counting toward the
+  five at its closure and the reactivated one counts from its payment (`back2funded_seat_count`) -- first among that
+  evening's acts, before the hold queue's activations and the evaluation purchases, so the reactivated account takes
+  the lost account's seat whatever the base's own seat convention (`seat_frees`) does for other endings, and that seat
+  is not refilled by an evaluation; it trades from the next session (`back2funded_trading_from`; 4.3 U-3);
 - **if the cash cannot pay:** offered again each later evening while within 30 calendar days of the closure (the
   replay's session dates; 21 sessions in the gate, whose days carry no date, Stage 2's translation of 30 calendar
   days), then lapsed and counted. U1's replay is not expected to bind on cash (the premise RD-01's A-10 checks); the
@@ -137,14 +165,18 @@ whose mean is negative on P-14 (E-125, `results/p14_validation.csv` section `b1`
   stay readable, 10.1 item 8), with the floor at `xfa_mll_start`, balance $0, no winning days, unpaid, at the entry tier
   of `funded_scaling_plan` (4.3 U-4), on its XFA's own payout path and payout timing; routed as any funded account;
 - **counted:** among the funded accounts (at most five at once, `max_active_funded_accounts`) and in the joint cap; its
-  $599 a fee of its own kind (`reactivation`) in every total fee; its loss a funded account lost (the Focused Trader
+  $599 in every total fee (below); its loss a funded account lost (the Focused Trader
   models' loss measure and the tier-3 pattern's breach count); **not** an evaluation purchase -- neither in the
   purchase budget (Stage 2 D-501's restraint counts Combine purchases and resets) nor in the Focused Trader models'
   purchase measure (which counts the same) -- a declared reading (4.3 U-6), with the reactivations per 21 sessions
-  printed beside every row (9.3).
+  printed beside every row (9.3), and **beside it the conservative reading**: the Focused Trader models run a second
+  time on the Back2Funded cells with each reactivation counted in their purchase measure (10.1 item 8);
+- **the cash:** the $599 is debited from the campaign's cash and added to the engine's total fees together, so U1's own
+  check of fees against the cash holds and P sees it; it is also recorded as a fee of its own kind (`reactivation`),
+  which any consumer that sums the engine's fee kinds must add (the red team's n2).
 
-The cells: at most once, at most twice (the verified maximum), against never (the base). **Run only if stage 0's rule
-G-B lets Back2Funded go on (section 6).**
+The cells: at most once, at most twice (the verified maximum), against never (the base). **Both run** (E-146);
+stage 0's reading of the lever is printed beside them as "the solver's view", deciding nothing (section 6).
 
 ### 2.2 L-I: the evaluation inventory (the scout's rank 2)
 
@@ -200,17 +232,19 @@ so net cash is above zero at every later close. A start ahead at a month end und
 oracle (9.2).
 
 Both run on each base's own seats, budget and payout rule, with Back2Funded off. A pass waiting for cash relies on the
-hold not expiring; such passes are counted, and any that waits more than 30 calendar days is printed as **"rests on the
-no-expiry reading"** (9.3).
+hold's expiry, which no page states (`hold_expiry_days`), so **each house-money rule runs under both of U-1's
+readings**, `exp_none` and `exp_30` -- four cells on each base, eight in all -- and its rows carry U-1's flag (E-135; the red team's M3: the only
+number on record, 30 days to pay the activation with fewer than five active XFAs, names exactly this below-the-cap
+case). Absorption is unaffected: a pass lost under `exp_30` pays no fee.
 
-### 2.4 L-N: the pricing path (the scout's rank 4) -- stage 0 first, replayed only if it goes on
+### 2.4 L-N: the pricing path (the scout's rank 4) -- read at the fit and replayed
 
 Topstep sells two evaluation paths at 50K, chosen at purchase and never changed: Standard ($49 a month, $149
 activation, $49 reset) and No Activation Fee ($95 a month, $0 activation, $95 reset) (`subscription_fee`,
 `activation_fee`, `subscription_fee_naf_50k`, `activation_fee_naf_50k`, `reset_fee_naf_50k`). Stage 2 called the path
-"a protocol dimension, not a constant" (D-25) and parked it (D-276); it was never run. **Stage 0 reads it first (rule
-G-N, section 6).** If it goes on, the cell `naf` replays each base with the No Activation Fee prices and nothing else
-changed -- the registered (Standard-solved) table, labelled first-order (4.4 G-1); no reset is bought, so its reset
+"a protocol dimension, not a constant" (D-25) and parked it (D-276); it was never run. **Stage 0 reads it at the fit (rule
+G-N, section 6), beside and deciding nothing; the cell `naf` replays each base** with the No Activation Fee prices and
+nothing else changed -- the registered (Standard-solved) table, labelled first-order (4.4 G-1); no reset is bought, so its reset
 price is moot.
 
 ### 2.5 Not here, and why
@@ -269,7 +303,7 @@ price is moot.
 | Stage 2 D-630, D-637 (wallet stop); D-620 (1)(a) (quit rules Q1, Q2) | stops on the losing side; quit rules as assumptions | start days | closed (wallet stop); assumptions, not measurements (quit rules) | no row reads a stop on the winning side; house money is the first |
 | Stage 2 U2 (D-652; `results/u_xfa_day_budget.csv`) | what happens to a funded account after its opening | 100 gate paths a design | about three quarters lose the opening and live crippled, few paid (D-652 (1)-(4)) | the accounts Back2Funded acts on; the file was not opened by the drafter |
 | Stage 2 D-664 | crippled accounts resolved at once | start days | closed: "every ended account is a fresh evaluation bought" | the cost Back2Funded would replace |
-| Stage 2 U4 (D-666, D-667; `vendor/stage2/results/u_size_fit.csv`) | the account-size fit read: each size's contract solved under each base's table, at each base's bound edge and at zero | no campaign; registered bounds | account size closed at the fit | **stage 0's inputs at $50K, Standard, are rows of this file** (sections `reading` and `rent`, size `50k`): an attempt's P(pass), fees, a fresh funded account's payouts and days, and lambda\*. **The drafter has not opened the file**; the scout's note did not either (its 3.1, 4). Stage 0 reproduces those rows first (6.4) and computes from them a rule fixed here, before any of it is read |
+| Stage 2 U4 (D-666, D-667; `vendor/stage2/results/u_size_fit.csv`) | the account-size fit read: each size's contract solved under each base's table, at each base's bound edge and at zero | no campaign; registered bounds | account size closed at the fit | **the first text's stage-0 inputs were rows of this file** (sections `reading` and `rent`, size `50k`): an attempt's P(pass), fees, a fresh funded account's payouts and days, and lambda\*. **Neither the drafter nor the red team has opened it**; the scout's note did not either (its 3.1, 4). In this text stage 0 decides nothing, its headline inputs come from the registered policy's forward pass (on no file), and the file's rows serve only as the per-R machinery's identity (6.4) and the beside readings (6.1 (c)); see 6.5 |
 | Stage 2 D-25, D-276 | the No Activation Fee path | -- | "a protocol dimension", parked, never run | none read |
 | Stage 2 D-146, D-549 | the engine's reset; the operator's rule against buying and blowing an account the same day | -- | the reset off in every design; the D-549 rule held by the engine's timing | resets excluded (2.5); D-549's rule checked (9.3) |
 | Stage 2 D-495, D-497 (Stage 2's `results/ftp_sweep.csv`, not vendored; P-14's gate, section `ftp` as `vendor/stage2/scripts/a3_brk30_cb20.py` describes it) | the Focused Trader Program as swept models on the gate | gate paths | thresholds unpublished; read beside, never the gate | the ten binding models carried, beside (10.1 item 8) |
@@ -358,7 +392,9 @@ loader that refuses an entry not `verified` (14.2); an `unstated` key is never l
 | `responsible_trading_program` | stage2 | verified (2026-10-30) | the placement | `rtp` beside |
 | `tou_s8_relative_position_size` | record (master) | verified (2026-11-15) | Terms of Use s.8 | tier 3, priced by the ladder (E-013 (1)) |
 
-Appendix R lists every key with its record; T-0 holds the table to its sources.
+**Every price is before sales tax** ("Prices exclude sales tax", `back2funded_reactivation_fee_50k`'s record): the
+reactivation's, the evaluation's and the activation's alike, one basis throughout (the red team's n6). Appendix R
+lists every key with its record; T-0 holds the table to its sources.
 
 ### 4.3 Unstated or unverified terms, each read by a rule fixed now
 
@@ -370,17 +406,21 @@ Appendix R lists every key with its record; T-0 holds the table to its sources.
   sentence that names a number). In the gate 30 calendar days are 21 sessions (`billing_days` against
   `billing_period_calendar_days`, Stage 2's translation), the gate rows labelled. Where a cell's two readings lie on
   opposite sides of its base on P, or on any guarded measure, the menu flags it **"depends on the hold's expiry"**.
-  House-money cells, which hold a pass only for want of cash, are read at `exp_none` alone, with the count of 2.3.
+  House-money cells, which hold a pass only for want of cash -- below the cap, the case the search summary's sentence
+  names -- run at both readings too (2.3), flagged the same way.
 - **U-2. What cancelling an evaluation does to the account** (`combine_cancellation_account_effect`, unstated). House
   money cancels only at the last close before a rebill -- an evaluation it would not trade again -- so under either
   reading (closes at once; trades to the end of the paid period) it loses nothing it has paid for. Modelled as the
   engine's abandonment at the start of the billing day, before that day trades (Stage 2 D-08's form).
-- **U-3. When a reactivated account trades** (`back2funded_trading_from` verified; when the closed XFA stops counting,
-  `xfa_seat_frees_at`, unverified; buying a reactivation while five others are active, not addressed). The
-  reactivation is bought on the evening the lost account's seat frees under the base's own convention and trades from
-  the next session: the engine's convention for every activation, pessimistic by up to a session (a user who buys
-  between the end-of-day closure and the 17:00 CT reopening could trade a session sooner). A reactivation never makes a
-  sixth active funded account: it is bought into the freed seat, so the at-five case never arises.
+- **U-3. When a reactivated account trades** (`back2funded_trading_from` and `back2funded_seat_count` verified;
+  `xfa_seat_frees_at`, which is about the general seat, unverified; buying a reactivation while five others are active,
+  not addressed). The reactivation is bought on the evening of the breach close and trades from the next session: the
+  closed XFA stops counting at its closure and the reactivated one counts from its payment, so the two verified keys
+  allow it (the red team's m3), and the engine's next-session convention for other seats does not delay it. This
+  assumes the purchase is made after the end-of-day closure and before the 17:00 CT reopening; bought later, the
+  account trades a session later (12060405's example), and every Back2Funded row is labelled **"bought before the
+  17:00 CT reopening"**. A reactivation never makes a sixth active funded account: it takes the lost account's seat,
+  so the at-five case never arises.
 - **U-4. The reactivated account's scaling tier** (unstated; "same as a brand new XFA" and "Everything resets to zero:
   balance", `back2funded_account_restart`): the entry tier of `funded_scaling_plan`, a reading, labelled on every
   Back2Funded row.
@@ -390,15 +430,19 @@ Appendix R lists every key with its record; T-0 holds the table to its sources.
   closed by the Corrective placement is never eligible.
 - **U-6. Whether a reactivation counts as a purchase** in the self-imposed budget and in the Focused Trader models'
   purchase measure: no (both count "Combine purchases and resets", Stage 2 D-497, D-501); its loss does count among
-  funded accounts lost. Declared, labelled on every Back2Funded row, and the reactivations per 21 sessions printed
-  beside, so the reader can add them.
+  funded accounts lost. Declared, labelled "not counted: the optimistic reading" on every Back2Funded row, the
+  reactivations per 21 sessions printed beside. **Beside it, the conservative reading** (the red team's m2): the
+  Back2Funded cells' ten Focused Trader models run a second time with each reactivation counted in the purchase
+  measure (the Corrective Path names "Excessive recycling of Trading Combines or XFAs"), labelled "reactivations counted
+  as purchases: the conservative reading"; the purchase budget still counts evaluations only, as registered.
 - **U-7. "Closed due to a rule violation before taking a Payout."** An MLL breach is the designs' case (8284204: "Your
   account is permanently closed."). A payout **requested** is taken (`payout_after_request_survives_mll_breach`: a
   request before a breach is still paid), so an account with a request in its current life is not eligible. Not
   eligible either: an account closed by the funded horizon (the gate's 504 sessions), by a tier-3 denial (the ladder,
   beside: a discretionary review, not a rule violation, and a payout was requested), by a household or forfeiture
   closure, or by a Focused Trader placement. "In good standing with no compliance concerns" is read as true at 0 %
-  denial.
+  denial. **This is one conservative reading of "before taking a Payout"** (the red team's n4): the other -- a request
+  not yet paid at the breach not counted as taken -- would raise Back2Funded's supply slightly, and is not run.
 - **U-8. A rule no page states is not invented:** no limit on evaluations bought a day (`account_start_rate_limit`,
   none stated); no limit on passes held at once; no cap on reactivations in a window beyond two per XFA.
 
@@ -414,22 +458,29 @@ Appendix R lists every key with its record; T-0 holds the table to its sources.
 | G-6 | the Live Funded Account move; payouts unavailable in holiday hours; Topstep's unstated news rules (E-034) | as in every registered row; the holiday-hours reach and the FOMC-minutes count printed (9.3) |
 | G-7 | resets and the Reset Bank (2.5) | excluded; an adapter owed first |
 | G-8 | rule changes over 2020-2026 | today's terms on every start, as Stage 2 replays Topstep's current rules |
+| G-9 | a failed evaluation keeps rebilling until the user cancels it (`combine_cancellation`; 8284121: an active Combine "Rebills every 30 days" until cancelled); the engine, as every registered design, ends its billing at the failure -- the user assumed to cancel at once (the red team's n5) | common to the base and every cell; stated, not modelled |
 
 ### 4.5 Conduct
 
 - **Tier 1, untouched.** No lever hedges across accounts or firms, copies one trade across accounts, exploits a
   simulator's fills, sizes into major news or conceals a pattern: every account trades its own routed trades, one
   position at a time across the firm (Stage 2 D-429), as registered. Back2Funded is a product sold for this use and
-  nothing about it is hidden; it is not account stacking in 10305426's sense (aggressive play into the MLL to fish for
-  a win), which no registered design does -- but the exposure it raises is that pattern's, so it is priced (tier 3).
+  nothing about it is hidden. **The designs' money already comes through the pattern Topstep names as account
+  stacking** (10305426: "Repeatedly trading aggressively, hitting the Maximum Loss Limit (MLL) in one account, then
+  switching to another account and repeating"; Stage 2 D-495 (2)-(3): FV3-C's and family A3's leaders draw nearly all
+  their payouts through it, and P-14 is an A3 design), priced at tier 3 (D-145); **Back2Funded repeats it on the same
+  XFA and so raises that exposure**, which the ladder's stacking test (two breaches in 21 sessions) and the Focused
+  Trader models price beside (the red team's m4).
 - **Tier 2.** The Responsible Trading Program's placement off in the headline (Stage 2 D-289), on beside (`rtp`).
 - **Tier 3, priced, never a ban (Stage 2 D-145).** The verdict stays at 0 % denial with the placement off (E-008 (2)).
   The payout-denial ladder (10, 25, 50 %), carrying Terms of Use s.8 (E-013 (1)), is beside every cell. **The ten
   binding Focused Trader models are beside every inventory cell and every Back2Funded cell**: Topstep's pages name
   "Excessive Resets and Trading Combine purchases", "Activating and losing many Express Funded Accounts in a short
   period of time" and "Excessive recycling of Trading Combines or XFAs" (Stage 2 D-495 (2)) -- exactly what those two
-  levers lean on. House money lowers that exposure and the pricing path leaves it unchanged; neither is read under the
-  models.
+  levers lean on. **Not read under the models: the house-money and `naf` cells** -- house money equals its base
+  before its trigger and withholds purchases after it, and `naf` buys exactly its base's evaluations on the same paths,
+  only the fees differing -- a gap named on every such row and on the menu, "Focused Trader models not read" with this
+  reason (the red team's m1; 100 replays not run).
 - **Stage 2 D-549's operating rule** (never buy or reset an evaluation and blow it the same trading day) is held by the
   engine's evening purchases and next-session trading, and extended to reactivations (they trade from the next
   session); checked on every cell (9.3), a nonzero count an engine error.
@@ -485,30 +536,39 @@ Appendix R lists every key with its record; T-0 holds the table to its sources.
    atlas** -- only the registered files of 6.1 -- so it needs no purpose; if the build finds that any part of it reads
    a bar, it stops and reports, and stage 0 needs a new declaration.
 
-## 6. Stage 0: the solver-only fit read (Stage 2 D-666's form)
+## 6. Stage 0: the solver-only fit read (Stage 2 D-666's form) -- beside, deciding nothing
 
-**Why first.** Two levers have a price that the table's own model can weigh against the evaluation route before
-anything is replayed: Back2Funded ($599 for a fresh funded account) and the pricing path ($95 a month and no activation
-against $49 and $149). A solver-only read can close either at the fit, as D-666 closed account size (D-667). Its go-on
-rules are fixed here. **They are built to stop a lever only where the table's own model says it cannot pay on either
-base, not where it is close** -- a close case goes on to the replay, which is the reading (a conservative stop rule
-must show power, not only caution).
+**What it is for, and what it is not (the lead's ruling, E-146, on the red team's M1).** Two levers have a price that
+the state table's own model can weigh against the evaluation route without a replay: Back2Funded ($599 for a fresh
+funded account) and the pricing path ($95 a month and no activation against $49 and $149). Stage 0 computes that
+weighing and **prints it beside each Back2Funded and `naf` row, labelled "the solver's view". It decides nothing: no
+cell waits on its outcome, and every cell of section 7 runs.** Its rules measure the table's long-run cash per
+account-day -- G-B is the exact one-step policy-improvement test for adding reactivation to the no-closure model, the
+red team found -- not P, the share of starts ahead at months 1 to 3; a synthetic journey in the red team's read shows
+G-B stopping a reactivation that raises P, and its toy of G-N shows G-N and P disagreeing. A stop on the wrong measure
+would fail a lever that may help the user, which E-051 and the operator's instruction (a strict rule must show power,
+not only caution) do not allow.
 
-### 6.1 What is solved (fixed now)
+### 6.1 What is computed (fixed now)
 
 For each base (P-14 on its 12.5- and 25-point rungs; P-16 on its 37.5-point stop) and each edge set (`bound`: each R
 at the base's registered one-sided 0.05 bound, the gate's `lb_by_rr`; `zero`), at $50K only:
 
-- **(a) the Standard path, exactly D-666's solve:** Stage 2's `propedge.research.u_size_fit` pieces and the steps of
-  `scripts/u_size_fit.py`, imported (vendored; nothing copied; composed as below), at size `50k` -- the no-closure table's solver
-  (`state_policy`, through `FundedByR` and `CombineByR`) on the base's own rungs and offers, the rent's fixed point
-  lambda\* and the tie-broken table at it, and `attempt_readings` from its forward summaries;
-- **(b) the No Activation Fee path, the table fixed:** (a)'s forward summaries re-priced exactly -- the engine-billed
+- **(a) the registered policy, evaluated (the red team's M2, its first remedy, taken because it is cheap):** the table
+  every cell trades, `state_dp_e-0.050_lamstar_noclose`, is re-solved at FV3-C's single edge as 6.4 item 1 holds it
+  equal to the file; its policy arrays are then propagated forward -- `forward` on Stage 2's `FundedByR` and
+  `CombineByR` built at the base's per-R edges, the policy held to the registered one in every state -- giving that
+  policy's own forward summaries at those edges and **its own cycle rate**, the rent at which its fresh evaluation is
+  worth zero: `lambda_pi = (p W - F_acc) / (D + p T)`, with D the evaluation's mean days per attempt and F_acc the
+  table-accrual fees per attempt (6.2). A policy evaluation, not a solve: a few forward passes per base and edge set;
+- **(b) the No Activation Fee path, the same policy:** (a)'s summaries re-priced exactly -- the engine-billed
   subscriptions per attempt at $95 instead of $49 (`subscription_fee_naf_50k`), the activation at $0
-  (`activation_fee_naf_50k`), the payouts unchanged -- because a `naf` cell would trade the registered table;
-- **(c) beside, never deciding:** the No Activation Fee path re-solved in D-666's form (`rules_for_method('aeropay')`
-  with the two No Activation Fee prices and `reset_fee_naf_50k` as overrides), its lambda\* and readings -- a table not
-  on file, which no cell trades, labelled so.
+  (`activation_fee_naf_50k`), the payouts unchanged -- as the `naf` cells trade the registered table;
+- **(c) beside, labelled "D-666's re-solved bound-edge table, not the table the cells trade":** D-666's own solve at
+  each base's per-R bound edges (its lambda\* and the tie-broken table at it), at Standard prices and at No Activation
+  Fee prices (`rules_for_method('aeropay')` with the two No Activation Fee prices and `reset_fee_naf_50k` as
+  overrides), its readings and the same two rules printed for comparison only. The Standard solve is also 6.4 item 2's
+  identity of the per-R machinery (a) relies on.
 
 Inputs, registered files, each checked against its manifest: `vendor/stage2/config/state_policy_v12.yaml`; the bases'
 registered gate files' `edge`, `rung` and `resolution` rows (`vendor/stage2/results/a3_brk30_cb20_gate.csv`,
@@ -524,52 +584,64 @@ D-559's `results/rc150_table_screen.csv` and `rc150_table_screen_policies.json` 
 and composes the runner's steps without those two files: P-16's rung is built from its gate's rows as the runner
 builds it, and checked instead against `u_size_fit.csv`'s own `rungs` rows for `p16` (6.4); D-559's one-rung table
 identity is not run (its file is absent), and the table on file's identity (6.4 item 1) stands for the solver. If the
-pieces cannot be composed without the two files, the build stops and reports; stage 0 does not fall back.
+pieces cannot be composed without the two files, or the registered policy's arrays cannot be held in the per-R classes'
+forward pass without editing the vendored code, the build stops and reports; stage 0 does not fall back.
 
-### 6.2 The readings, per base and edge set
+### 6.2 The readings, per base and edge set, and the read's two checks
 
 From (a): an attempt's P(pass) `p`; the engine-billed subscriptions per attempt `S` (dollars, so `S / 49` of them); the
-fees per attempt `F = S + 149 p`; a fresh funded account's expected net payouts `W` (`payouts_per_funded`) and its
-expected days `T` (`funded_mean_days`); lambda\* (dollars per slot-day, the rent the table maximises, Stage 2 D-329);
-the sessions per pass (`combine_mean_days / p`); payouts per fee dollar. From (b): the same with `F_N = (95 / 49) S`.
-From (c): its lambda\* and readings. The zero-edge, fee-free oracles first (P(pass) at most 2/5 and stage one's
-supremum 0.327131; a fresh funded account's expected gross payouts at most $2,000): **a value outside is an engine
-error, never a finding**, and stage 0 stops.
+fees per attempt `F = S + 149 p` and on the table's own accrual `F_acc`; the evaluation's mean days per attempt `D`; a
+fresh funded account's expected net payouts `W` and expected days `T`; the policy's own rate `lambda_pi`; the sessions
+per pass (`D / p`); payouts per fee dollar. From (b): the same with `F_N = (95 / 49) S`. From (c): its lambda\* and the
+same readings. The zero-edge, fee-free oracles first (P(pass) at most 2/5 and stage one's supremum 0.327131; a fresh
+funded account's expected gross payouts at most $2,000): **a value outside is an engine error, never a finding**, and
+stage 0 stops (stage 0 alone; no cell depends on it).
 
-### 6.3 The go-on rules (fixed now; computed in code; at the bound edge)
+**The read's two checks on the inputs (the red team's M2), refusing, at each base and edge set:** (i) `W - lambda_pi x
+T` equals the funded table's fresh value under the registered policy at the rent `lambda_pi`, to 1e-6; (ii) the
+evaluation's fresh value under that policy at `lambda_pi` is zero, to 1e-6 -- and for (c), the same two at its lambda\*,
+to the fixed point's tolerance. Both hold by construction; a failure shows the inputs mismatched, and stage 0 writes
+nothing but the failure's lines.
+
+### 6.3 The solver's view: two rules, printed beside, deciding nothing
 
 - **G-B, Back2Funded.** A reactivated account is a fresh funded account (`back2funded_account_restart`). It holds its
   seat for `T` days on average and pays `W`; for those days the seat earns no rent from the evaluation route, which
-  pays lambda\* per slot-day under the table's own model. So **Back2Funded goes on if, on at least one base,
-  `W - lambda* x T > 599`** (`back2funded_reactivation_fee_50k`): under the table's own model a reactivation pays back
-  its price beyond what the seat would have earned meanwhile. **Otherwise it stops: its four cells are not run.**
-  Beside, never deciding: `W - 599`; the scout's fee comparison, the route's fees per pass `F / p` against $599; the
-  sessions per pass.
-- **G-N, the pricing path.** **The No Activation Fee path goes on if, on at least one base, its payouts per fee dollar
-  with the table fixed exceed the Standard path's** -- `p W / F_N > p W / F`, that is `F_N < F` (the measure D-657 ties
-  to P, and D-666's). **Otherwise it stops: its two cells are not run.** Beside, never deciding: (c)'s lambda\* and
-  payouts per fee dollar against (a)'s.
+  pays `lambda_pi` per slot-day under the registered policy's own model. Printed per base, beside every Back2Funded
+  row: the two sides, `W - lambda_pi x T` and $599 (`back2funded_reactivation_fee_50k`), and the line **"the solver's
+  view: under the registered table's model at this base's bound edge, a reactivation does [not] pay back its price
+  beyond what the seat would have earned on the evaluation route meanwhile -- a long-run cash measure, not P"**.
+  Beside it: `W - 599`; the scout's fee comparison, the route's fees per pass `F / p` against $599; the sessions per
+  pass; and (c)'s same rule, labelled.
+- **G-N, the pricing path.** Printed per base, beside every `naf` row: the payouts per fee dollar of the No Activation
+  Fee path with the registered policy, `p W / F_N`, against the Standard path's, `p W / F` (the measure Stage 2 D-657
+  ties to P across designs, and D-666's), and the line **"the solver's view: the No Activation Fee path's mean fee per
+  attempt is [lower / not lower] than Standard's under the registered table's model -- a fee measure, not P"**. Beside
+  it: (c)'s lambda\* and payouts per fee dollar at both prices, labelled.
 
-Equality stops a lever. Each rule is read on the bound edge only; the zero edge is read for its oracles and printed.
-Stage 0 writes each rule's two sides, the base that decides it and the verdict line, computed by its code
-(`results/cl_fit.csv`, section `rule`); **the lead's row records which levers go on before the reading's run is
-committed** (15).
+Neither line is a stop, a flag or an order: no menu row is moved by them, and the menu prints them beside, never above,
+the replay's readings. Stage 0 writes the two sides of each and its line, computed by its code (`results/cl_fit.csv`,
+sections `checks` and `solver_view`).
 
 ### 6.4 Stage 0's identity, refusing
 
 Run first, as part of `identity/cl_fit_identity.py` (the runner's label `cl_fit_identity`), from a clean checkout,
 under the purpose `identity` and its own row: (1) the $50K solve at FV3-C's single edge reproduces
 `state_dp_e-0.050_lamstar_noclose` (the whole exported tree but its description; its rent to 1e-9), as D-667 (2)
-held; (2) each base's rungs, offers and edges equal the `50k` rows of `vendor/stage2/results/u_size_fit.csv`,
-sections `rungs` and `edge`, and at each base and edge set (a)'s readings and lambda\* reproduce its `50k` rows,
-sections `reading` and `rent`, to 1e-9; (3) the zero-edge oracles hold. **Any
+held -- the policy (a) then evaluates; (2) the per-R machinery: each base's rungs, offers and edges equal the `50k` rows
+of `vendor/stage2/results/u_size_fit.csv`, sections `rungs` and `edge`, and at each base and edge set (c)'s Standard
+solve reproduces its `50k` rows, sections `reading` and `rent`, to 1e-9; (3) the zero-edge oracles hold. **Any
 failure: nothing of stage 0 is computed further or written but the failure's lines**; the failure protocol applies.
+A failure stops stage 0's view; it does not stop the reading's cells, which wait only on their own identities (9.1).
 
-### 6.5 What a stop means
+### 6.5 What was fixed before this text (the red team's n1)
 
-A lever stopped at the fit is recorded as **closed at the fit by stage 0's rule** in the lead's row, with the file. Its
-cells are not run and not counted as run (13). It is not re-read under this declaration: a later reading of it is a new
-declaration citing this one and saying what changed.
+In the first text, (a) was D-666's re-solve, whose readings are rows of `vendor/stage2/results/u_size_fit.csv`
+(sections `reading` and `rent`, size `50k`), written and read by Stage 2 (D-667). So that text's stage-0 outcome -- its
+two stops -- was already fixed by a vendored file, computable by anyone who opened it. **No one has computed either rule
+from it**: the drafter and the red team both left it unopened, and the pinning row records that. In this text stage 0
+decides nothing, its headline inputs come from the registered policy's forward pass, which is on no file, and the
+file's rows serve only (c) and 6.4's identity.
 
 ## 7. The cells and the runs
 
@@ -580,32 +652,36 @@ reproduce U1's start rows (9.1), and every new cell pairs against its base's `re
 
 ### 7.2 The grid
 
-| cell | lever | settings | on P-14 | on P-16 | condition |
-|---|---|---|---|---|---|
-| `ref` | -- | as registered | reference (identity) | reference (identity) | -- |
-| `b2f1` | L-B | at most one reactivation per XFA | new | new | stage 0's G-B |
-| `b2f2` | L-B | at most two (the verified maximum) | new | new | stage 0's G-B |
-| `inv5_bank_none` | L-I | C = 5, banking on, `exp_none` | new | new | -- |
-| `inv5_bank_30` | L-I | C = 5, banking on, `exp_30` | new | new | -- |
-| `inv5_hold_none` | L-I | C = 5, banking off, `exp_none` | new | new | -- |
-| `inv5_hold_30` | L-I | C = 5, banking off, `exp_30` | new | new | -- |
-| `inv7_bank_none` | L-I | C = 7, banking on, `exp_none` | new | new | -- |
-| `inv7_bank_30` | L-I | C = 7, banking on, `exp_30` | new | new | -- |
-| `inv7_hold_none` | L-I | C = 7, banking off, `exp_none` | new | new | -- |
-| `inv7_hold_30` | L-I | C = 7, banking off, `exp_30` | new | new | -- |
-| `house_stop` | L-H | stop buying evaluations at the first ahead | new, **gaming P** | new, **gaming P** | -- |
-| `house_zero` | L-H | no fee that crosses zero | new, **gaming P** | new, **gaming P** | -- |
-| `naf` | L-N | the No Activation Fee prices | new | new | stage 0's G-N |
+| cell | lever | settings | on P-14 | on P-16 |
+|---|---|---|---|---|
+| `ref` | -- | as registered | reference (identity) | reference (identity) |
+| `b2f1` | L-B | at most one reactivation per XFA | new | new |
+| `b2f2` | L-B | at most two (the verified maximum) | new | new |
+| `inv5_bank_none` | L-I | C = 5, banking on, `exp_none` | new | new |
+| `inv5_bank_30` | L-I | C = 5, banking on, `exp_30` | new | new |
+| `inv5_hold_none` | L-I | C = 5, banking off, `exp_none` | new | new |
+| `inv5_hold_30` | L-I | C = 5, banking off, `exp_30` | new | new |
+| `inv7_bank_none` | L-I | C = 7, banking on, `exp_none` | new | new |
+| `inv7_bank_30` | L-I | C = 7, banking on, `exp_30` | new | new |
+| `inv7_hold_none` | L-I | C = 7, banking off, `exp_none` | new | new |
+| `inv7_hold_30` | L-I | C = 7, banking off, `exp_30` | new | new |
+| `house_stop_none` | L-H | stop buying evaluations at the first ahead, `exp_none` | new, **gaming P** | new, **gaming P** |
+| `house_stop_30` | L-H | stop buying evaluations at the first ahead, `exp_30` | new, **gaming P** | new, **gaming P** |
+| `house_zero_none` | L-H | no fee that crosses zero, `exp_none` | new, **gaming P** | new, **gaming P** |
+| `house_zero_30` | L-H | no fee that crosses zero, `exp_30` | new, **gaming P** | new, **gaming P** |
+| `naf` | L-N | the No Activation Fee prices | new | new |
 
-Every inventory cell has the funded cap 5 and no joint cap. Each cell runs both arms, every start, the long replay and
-U1's exact-length runs, at 0 % denial with the placement off.
+Every inventory cell has the funded cap 5 and no joint cap. **Every cell runs** (E-146): stage 0's view is printed
+beside the Back2Funded and `naf` rows and decides none of them. Each cell runs both arms, every start, the long replay
+and U1's exact-length runs, at 0 % denial with the placement off.
 
 ### 7.3 Each lever's own comparisons (beside the pair with its base)
 
 - L-B: `b2f1` against `ref`; `b2f2` against `b2f1` (the second reactivation alone).
 - L-I: each against `ref`; within L-I, C = 7 against C = 5, banking on against off and `exp_30` against `exp_none`, each
   at the other two settings fixed.
-- L-H: each against `ref`; `house_zero` against `house_stop`.
+- L-H: each against `ref`; `house_zero` against `house_stop` at each expiry reading; `exp_30` against `exp_none` for
+  each rule.
 - L-N: `naf` against `ref`.
 
 These are further paired readings on the same starts, read in 10.1 items 4 and 5 like every pair; none is a pick.
@@ -622,24 +698,25 @@ These are further paired readings on the same starts, read in 10.1 items 4 and 5
 | payout rule | when and how much is requested | fixed | P-14's (RD-02's `ref`) | 2.6 |
 | seats, budget, routing | accounts and purchases | fixed, except L-I | each base's own: 5 / 5 / 5; 20 in 21 sessions; the strict one-position rule | D-34; D-501; D-429 |
 | **reactivations per XFA** | L-B | **described** | 0 (base), 1, 2 | `back2funded_max_reactivations` |
-| reactivation timing | when it is bought and trades | fixed (a reading) | the evening its seat frees, first; trades from the next session | U-3 |
+| reactivation timing | when it is bought and trades | fixed (a reading) | the evening of the breach close, first, before the 17:00 CT reopening; trades from the next session | U-3 |
 | reactivation price | L-B | fixed | $599 | `back2funded_reactivation_fee_50k` |
-| reactivation counting | budget and Focused Trader purchase measure | fixed (a reading) | not counted; its loss counted | U-6 |
+| reactivation counting | budget and Focused Trader purchase measure | fixed (a reading), with a second reading beside | not counted (the headline and the optimistic reading); counted in the Focused Trader purchase measure in a second reading beside (the conservative one); its loss counted in both | U-6 |
+| a requested, unpaid payout at a breach | Back2Funded's eligibility | fixed (one conservative reading) | taken: the account is not eligible | U-7 |
 | reactivated tier | the scaling tier | fixed (a reading) | the entry tier | U-4 |
 | **evaluation cap C** | L-I | **described** | 5, 7 | D-34's bound; the scout's note section 5 |
 | funded cap | L-I | fixed | 5 | `max_active_funded_accounts` |
 | joint cap | L-I | fixed | none in L-I (the base's 5 elsewhere) | `combine_count_limit` |
 | **banking** | L-I | **described** | on, off | D-08 |
-| **the hold's expiry** | L-I | **both readings** | `exp_none`, `exp_30` (30 calendar days; 21 sessions in the gate) | U-1 |
+| **the hold's expiry** | L-I and L-H | **both readings** | `exp_none`, `exp_30` (30 calendar days; 21 sessions in the gate) | U-1 |
 | **house-money rule** | L-H | **described** | `house_stop`, `house_zero` | 2.3 |
 | the trigger | L-H | fixed | the first close with net cash above zero, after arrivals, before the evening's fees | 2.3 |
 | cancellation | L-H | fixed (a reading) | abandonment at the billing day, before it trades | U-2 |
-| **pricing path** | L-N | **described**, if stage 0 lets it go on | Standard (base), No Activation Fee | 2.4; G-N |
-| stage 0's rules | what stops a lever | fixed | G-B, G-N (6.3) | 6 |
+| **pricing path** | L-N | **described** | Standard (base), No Activation Fee | 2.4 |
+| stage 0's rules | the solver's view, beside | fixed; deciding nothing | G-B, G-N on the registered policy's evaluation (6.1 (a), 6.3) | 6; E-146 |
 | resets | buying a reset | fixed | none | 2.5 |
 | arms | outcome shift | fixed | `verdict` the headline, `point` beside | CHARTER section 2 |
 | denial, placement | firm discretion | fixed | 0 % and the placement off in the headline; the ladder and `rtp` beside | E-008; D-234; D-289 |
-| Focused Trader models | beside L-I and L-B | fixed | Q-17's ten (`extended.user_beside.FTP_BINDING`) | D-497; E-007 (e) |
+| Focused Trader models | beside L-I and L-B; not L-H or L-N (the gap named) | fixed | Q-17's ten (`extended.user_beside.FTP_BINDING`); on L-B twice (U-6) | D-497; E-007 (e); 4.5 |
 | horizons, blocks | replay length; starts read | fixed | U1's; 5's table; all, early, late | D-620; D-621 (4)(b) |
 | the interval | uncertainty | fixed | 10.2 | E-058 (5); RD-02 9.2 |
 | the readings beside: arm and exact runs | where E-007 (e)'s readings are read | fixed | the verdict arm; exact-length runs on every 21st start index (`EXACT_EVERY`), their differing count printed | Q-17; E-024 |
@@ -679,11 +756,21 @@ refuses otherwise (T-11). It must reproduce, through this reading's path (14.1 A
    `vendor/stage2/results/user_journey.csv` section `start`, configs `p14` and `p16`, both arms, every start, every
    column as E-010 compared them (money and the ratio to 1e-6; counts, days, dates and text exactly), with U1's own
    checks of every run's payouts and fees against the engine's totals;
-3. **the same with each option given at a value that cannot bind** -- Back2Funded at a limit of 0; the hold's expiry
-   longer than the horizon; the house-money trigger unreachable; the No Activation Fee prices replaced by Standard's --
-   at 4 starts and 4 paths per base and arm, equal to items 1 and 2 bit for bit.
+3. *(Deleted in the second text, the red team's M4: it ran never-binding settings inside the script T-11 bars from any
+   setting but off. The equalities it sought are T-2's, T-4's, T-5's and T-13's on toy campaigns, and 9.1 item 7's on
+   the real replays.)*
 
 **Stage 0's identity** is 6.4's (`identity/cl_fit_identity.py`), held in its own row before stage 0 runs.
+
+**The two identities' covers (the red team's m8), declared under Q-111's rule** (`extended/identity_cover.py`, E-119).
+Each is `BASE` -- `extended/__init__.py`, the folder `config/` whole (E-117) and both vendored manifests,
+`vendor/MANIFEST_stage2.sha256` and `vendor/DATA_MANIFEST_stage2.sha256` -- plus its own script
+(`identity/cl_identity.py`; `identity/cl_fit_identity.py`) and every repository file the script imports, directly or
+transitively, as `identity_cover.imports(script)` computes it (among them A-1 to A-6's modules, Q-17's adapter
+`extended/user_beside.py`, `extended/gate.py`, `extended/campaign.py` and the replay recorder). The reading's waits on
+its own two tokens use those covers, never less; T-0 holds each equal to `BASE` plus its script's computed closure,
+as `tests/test_identity_cover.py` holds the shared ones. A change to any covered file after a token re-requires that
+identity.
 
 **Inside the reading's own run, on its own replays (no further read):**
 
@@ -698,8 +785,8 @@ refuses otherwise (T-11). It must reproduce, through this reading's path (14.1 A
    are the same (section 12).
 7. **Each lever before it binds:** a house-money cell equals its base on every act before its trigger, on every start;
    a Back2Funded cell equals its base before its first eligible loss; a C = 5 inventory cell equals its base before its
-   first pass; the two expiry readings of an inventory cell are equal on every start where no pass waits 30 calendar
-   days. Refusing.
+   first pass; the two expiry readings of an inventory or house-money cell are equal on every start where no pass waits
+   30 calendar days. Refusing.
 
 **The order, and what a failure leaves.** `ref` first in every step of section 15 (items 2's repeat and 4 in step 3;
 item 6 at the start of steps 4 and 5); then each new cell in section 15's order, checked under items 5 and 7 before
@@ -714,13 +801,14 @@ nudge) show that the comparisons are not vacuous.
   counted as an account -- do not exceed $2,000 beyond its Monte Carlo interval; the pass rate per evaluation does not
   exceed 2/5 beyond its interval (propsim D-02).
 - **Back2Funded:** every reactivation is of an eligible account (4.3 U-7), within its XFA's limit, at $599, bought on
-  the evening its seat frees and trading from the next session, never making a sixth active funded account, never under
+  the evening of its breach close and trading from the next session, debited from the cash and the total fees together, never making a sixth active funded account, never under
   a Focused Trader placement.
 - **The inventory:** never more than five funded accounts active or C evaluations running; the budget never exceeded;
   under `exp_30` no pass activated more than 30 calendar days after its pass (21 sessions in the gate).
 - **House money:** after the trigger no fee leaves net cash at or below zero; under `house_stop` no evaluation bought
   after it; **on every start and at every month end, the cell's start is ahead wherever its base's is** (the
-  construction of 2.3).
+  construction of 2.3); under `exp_30` no house-money pass activated more than 30 calendar days after its pass (21
+  sessions in the gate).
 - **The pricing path:** every evaluation fee is $95 a cycle and every activation $0 in `naf`.
 - Every request is at most min(50 % of the balance, $2,000) and at least $125, paid at 90 % less the method's fee.
 
@@ -750,7 +838,7 @@ each names its source (the path's counters, 14.1; the engine's records; Q-94's r
   the base's; the purchases the budget refused;
 - **L-H:** the share of starts that reach the trigger by sessions 21, 63, 126 and 252, and the trigger's session
   (median, p10, p90); the purchases withheld, the evaluations abandoned at a rebill, the passes that waited for cash and
-  how long, and **how many waited more than 30 calendar days ("rests on the no-expiry reading")**; the starts whose base
+  how long, and under `exp_30` those lost; the starts whose base
   later falls back below zero, which the cell keeps ahead by construction;
 - **L-N:** the fees by kind against the base's.
 
@@ -765,7 +853,8 @@ Every cell and its base, both arms (the verdict arm the headline), every block o
 verdict arm. The replay at 0 % draws nothing.
 
 1. **The scorecard.** P, S1 to S5c, S2, S3d, S6 and Q, as `USER_MILESTONES.md` defines them; the frontier on P, S1,
-   S3a and S5a across each base's cells. S3c is comparable across a base's cells, which share one trade stream (E-008's
+   S3a and S5a across each base's cells, printed without the house-money cells and, beside it, with them, that version
+   labelled "gaming P (E-134 (2))" (the red team's m6). S3c is comparable across a base's cells, which share one trade stream (E-008's
    condition).
 2. **The guard row (E-134 (2)), printed with every P.** In the same row as each P and each paired difference in P: the
    mean net at months 1, 2 and 3; the month-6 and month-12 net (mean, p10, p50, p90); CVaR10 (the mean of the lowest
@@ -800,16 +889,24 @@ verdict arm. The replay at 0 % draws nothing.
      path and its daily loss limit (`back2funded_account_restart`: "the same ... Payout rules");
    - **the ten binding Focused Trader models** (`ftp_*`), **every inventory cell and every Back2Funded cell**, on the
      vendored funded class (the path re-composed, the class not subclassed, so the engine admits them); Back2Funded
-     barred under a placement (U-5); a reactivation not counted in the purchase measure (U-6) and its loss counted;
-     printed per model: P, the guard row, the share of starts placed and when, purchases refused, accounts closed;
-   - P by month, mean net, CVaR10, P under a bankroll limit, the effective sample size and the MDD.
+     barred under a placement (U-5); a reactivation not counted in the purchase measure and its loss counted; **on the
+     Back2Funded cells a second time with each reactivation counted in the purchase measure** (U-6), the two labelled
+     "not counted: the optimistic reading" and "counted: the conservative reading"; printed per model: P, the guard
+     row, the share of starts placed and when, purchases refused, accounts closed; **not read for the house-money and
+     `naf` cells**, "Focused Trader models not read" and its reason on their rows (4.5);
+   - **on every beside row, the full guard row (item 2)** -- the mean net at months 1 to 3, the month-6 and month-12 net,
+     CVaR10 at months 3, 6 and 12 -- with P by month, P under a bankroll limit, the effective sample size and the MDD.
+     The guard row's gate entry on a beside row is the cell's 0 % gate (item 9), labelled "the gate at 0 %", since no
+     gate is run under a beside response (the red team's m5).
 9. **The long-run gate beside, every new cell:** at its base's registered seed (P-14's 20261131, P-16's 20261206), 500
    paths, point and bound, with its zero-edge twin, paired with the base's registered gate paths, through
    `extended/gate.py` with A-3; rows: growth on the required bankroll, the required bankroll, the ruin probability,
    payouts a month, days to the first payout, purchases a year. It shows the trade-off between a user's first months
    and two-year growth. **Nothing is a floor: nothing is carried.** In the gate Back2Funded's window and the 30-day
    expiry run on 21 sessions (no dates), each row labelled.
-10. **Stage 0's readings beside** each Back2Funded and `naf` row (6.2): the table's own view of the lever.
+10. **Stage 0's readings beside** each Back2Funded and `naf` row (6.2, 6.3), labelled **"the solver's view"**: the
+    registered table's long-run cash and fee measures at each base's bound edge, deciding nothing, never ordering or
+    flagging a row; (c)'s re-solved readings beside them, labelled as a table no cell trades.
 11. **The evenness trade-off.** Each lever's cells as points of "ahead" against each evenness measure, in E-015's menu
     form -- house money's labelled.
 12. **The menu.**
@@ -818,7 +915,8 @@ verdict arm. The replay at 0 % draws nothing.
     - **The flags, mechanical, never lines:** **"not stable across blocks"** (a mean paired difference in P, or in any
       guarded measure, of opposite signs on the early and late blocks); **"depends on the hold's expiry"** (U-1);
       **"gaming P (E-134 (2))"** on every house-money row; **"first-order, the table fixed"** on every row (G-1); the
-      readings of U-3, U-4 and U-6 on every Back2Funded row; **"closed at the fit"** for a lever stage 0 stopped.
+      readings of U-3 ("bought before the 17:00 CT reopening"), U-4 and U-6 on every Back2Funded row; **"Focused Trader
+      models not read"** on every house-money and `naf` row (4.5).
     - **E-015's limits** flag the menu only if approved before the reading's run commit, by a row of the `e015-limits:`
       form (E-104); a limit approved later is applied only in a re-reading labelled exploratory (its own row,
       `exploratory=True`). With none approved by then, the menu says so.
@@ -865,9 +963,10 @@ series:
 - **No outcome passes or fails.** What follows from each, fixed now:
   - an identity fails (9.1, 6.4): the reading (or stage 0) stops; the failure protocol applies;
   - an oracle is breached (9.2, 6.2): an engine error; the reading stops;
-  - stage 0 stops a lever (6.3): its cells are not run; the menu records it closed at the fit (6.5);
+  - stage 0's two rules come out either way (6.3): printed beside as the solver's view, deciding nothing; no cell
+    waits on them;
   - a cell identical to its base: "no effect on these trades";
-  - a cell's two expiry readings straddle its base: flagged; the operator's browser read or Topstep's written answer
+  - a cell's two expiry readings (an inventory or house-money cell) straddle its base: flagged; the operator's browser read or Topstep's written answer
     would settle it (16); **no run is repeated to settle it**;
   - house money shows a higher P: expected by construction, never a gain; what is read is its guard row.
 - **The operator's choice** is recorded in its own row, citing this reading's files (E-015: limits first, then the best
@@ -917,19 +1016,20 @@ them.
 
 1. **No program family number and no level** (E-023 (1)). The next numbered family's k is what it would be without this
    file.
-2. **Stage 0:** per base and edge set, (a) one solve and (b) its exact re-pricing, (c) one re-solve beside: **4 solves
-   and 4 re-solves beside** (2 bases x 2 edge sets each), plus the identity's solve of the table on file (6.4). No
-   replay, no cell.
-3. **The cells at 0 % with the placement off, both arms:** 2 references (counted as identities) + 16 inventory + 4
-   house money = **22 replays always**; + 4 Back2Funded if G-B goes on; + 2 `naf` if G-N goes on: **22, 24, 26 or 28
-   replays; 20, 22, 24 or 26 new cells.** The lead's row records the count run.
+2. **Stage 0:** per base and edge set, (a) one policy evaluation (a few forward passes) with the read's two checks and
+   (b) its exact re-pricing; (c) one solve at Standard prices and one at No Activation Fee prices, beside: **4 policy
+   evaluations and 8 solves** (2 bases x 2 edge sets), plus the identity's solve of the table on file (6.4). No replay,
+   no cell, no decision.
+3. **The cells at 0 % with the placement off, both arms, every one run:** 2 references (counted as identities) + 4
+   Back2Funded + 16 inventory + 8 house money + 2 `naf` = **32 replays; 30 new cells.**
 4. **Beside, labelled, verdict arm:**
-   - the denial ladder and the placement on: 4 x (the new cells run) = **80 to 104 replays**, plus `ref`'s 8 checks
-     against Q-44 (9.1 item 6);
-   - the ten Focused Trader models: 10 x (16 inventory + 4 Back2Funded if run) = **160 or 200 replays**, plus `ref`'s
-     20 checks against Q-44;
-   - the gates: one per new cell, **20 to 26 gates** (500 paths, point and bound, zero-edge twin); the references'
-     gates are 9.1's identities.
+   - the denial ladder and the placement on: 4 x 30 = **120 replays**, plus `ref`'s 8 checks against Q-44 (9.1 item 6);
+   - the ten Focused Trader models: 10 x (16 inventory + 4 Back2Funded) = **200 replays**, and the Back2Funded cells'
+     counted reading, 10 x 4 = **40 replays**, plus `ref`'s 20 checks against Q-44; not read for the 8 house-money and
+     2 `naf` cells (100 replays not run, the gap named, 4.5);
+   - in all **360 replays beside and 28 reference checks**;
+   - the gates: one per new cell, **30 gates** (500 paths, point and bound, zero-edge twin); the references' gates are
+     9.1's identities.
 5. **The honesty series:** synthetic, no read.
 6. **Every block read** is recorded as read for contract-use levers (11).
 7. **Nothing is selected by the program.** The operator's menu choice is a choice among described readings, recorded
@@ -945,11 +1045,11 @@ fall back.**
 
 | id | adapter | what it adds |
 |---|---|---|
-| A-1 | the path, re-composed (`extended/levers_path.py`) | `lockstep.simulate_lockstep_path`'s text copied verbatim, in Q-71's pattern (`extended/campaign.py`): a guard refusing unless the vendored function's LF source hashes to its pin; a proof that the function with its marked lines removed parses to the vendored one statement for statement; and **marked additions only**, each off by default: (a) the reactivation step of 2.1 in the end-of-day seat step, with the Focused Trader bar (U-5); (b) the hold's expiry (U-1) in the hold queue; (c) the house-money fee rule (2.3) at every fee -- the evening purchases, the activations and the start-of-day billing; (d) a counters channel carrying the counts of 9.3 out of every path, off by default, every output equal with it off and on. Every helper imported from the vendored module; the vendored `FundedAccount` and `CombineAccount` used unchanged |
+| A-1 | the path, re-composed (`extended/levers_path.py`) | `lockstep.simulate_lockstep_path`'s text copied verbatim, in Q-71's pattern (`extended/campaign.py`): a guard refusing unless the vendored function's LF source hashes to its pin; a proof that the function with its marked lines removed parses to the vendored one statement for statement; and **marked additions only**, each off by default: (a) the reactivation step of 2.1 in the end-of-day seat step, with the Focused Trader bar (U-5); (b) the hold's expiry (U-1) in the hold queue; (c) the house-money fee rule (2.3) at every fee -- the evening purchases, the activations and the start-of-day billing; (d) a counters channel carrying the counts of 9.3 out of every path, off by default, every output equal with it off and on; (e) the Focused Trader purchase measure's counting of reactivations, a marked option for U-6's conservative reading. A reactivation debits the cash and the engine's `total_fees` together (n2). Every helper imported from the vendored module; the vendored `FundedAccount` and `CombineAccount` used unchanged |
 | A-2 | the replay through A-1 (`extended/user_beside.py`, generic keywords in Q-100's form) | `run_starts(..., levers=L)` sends the adapter's own `replay` to A-1 with the options `L`, and puts the seat keywords (`max_concurrent_combines`, `max_total_accounts`, `stop_buying_when_queued`) and the path's `subscription` and `activation` (A-4) on every replay's path; absent, every task, replay and output is the adapter's before it bit for bit; with it, the Focused Trader models stay admitted (the class is the vendored one); with the recorder (Q-94) and the counters (A-1 (d)) composed |
 | A-3 | the gate through A-1 (`extended/gate.py`, `extended/campaign.py`) | `run_gate(..., levers=L, stop_buying_when_queued=...)`: the re-composed campaign's path runner (Q-70's `path_runner` pattern) calls A-1 with `L`; the seat and price keywords passed through; absent, the gate as before, held by Q-80's identity |
 | A-4 | the No Activation Fee prices | the path's `subscription` and `activation` set from `subscription_fee_naf_50k` and `activation_fee_naf_50k` by the loader of 14.2, in the replay and the gate; nothing else changed |
-| A-5 | stage 0 (`extended/levers_fit.py`, `scripts/cl_fit.py`, `identity/cl_fit_identity.py`) | Stage 2's `u_size_fit` pieces at `50k`, imported; (b)'s re-pricing; (c)'s re-solve with the No Activation Fee overrides; the rules of 6.3 in code; `results/cl_fit.csv` |
+| A-5 | stage 0 (`extended/levers_fit.py`, `scripts/cl_fit.py`, `identity/cl_fit_identity.py`) | Stage 2's `u_size_fit` and `state_policy` pieces at `50k`, imported; (a)'s evaluation of the registered policy at each base's per-R edges and its own rate, with the read's two checks; (b)'s re-pricing; (c)'s solves at both prices; the solver's-view lines of 6.3, connected to no cell; `results/cl_fit.csv` |
 | A-6 | the reading (`extended/cl_reading.py`, `scripts/cl_reading.py`, `identity/cl_identity.py`) | the cells of section 7 in section 15's order; 9.1's checks; 9.3's mechanics; 10.1's readings by RD-02's functions (`extended/pp_reading.py`, imported); the menu and its flags; the waits by `extended/identity_tokens.py` and `extended/identity_cover.py` |
 
 ### 14.2 The rules in code
@@ -958,33 +1058,36 @@ Every value of section 4.2 is read by a loader that refuses an entry not `verifi
 loader; `config/rules_extended.yaml` as RD-01's loader reads it), parsing a value stated in text fail-loud. A test fails
 on any literal of a rule value -- 599, 2 as the reactivation limit, 30 as a window or expiry, 95, 49, 149, 5 as a cap --
 in the adapters outside comments; the readings of 4.3 come from one table of named constants, each citing its line of
-4.3.
+4.3. **Stage 2's `hold_expiry_days` is `verified` with the design sentinel `not_required_under_d34`**, which is not a
+reading of any page: the loader names it as never loaded and a test holds that (the red team's m7 (b)); the record's
+`hold_expiry_days` is `unstated` and never loaded either.
 
 ### 14.3 Tests (fast tier unless marked; written before the code they test)
 
 | test | what it asserts |
 |---|---|
-| T-0 (before the pin) | `tests/test_rd03_draft.py`: the pin-time form (the `id` and `confirmation_tests_on_this_market` rows; no draft-form status; both calendars cited by their LF sha256); one `Judged-block reads:` line, its four purposes parsed by `extended.reader.declared_purposes`, none choosing, none `identity` or `registered_design`; section 12 holds 20262240..20262249 once each and they appear in no other file of the repository (vendored snapshot, reviews and audits included); Appendix R cites every key with its record's status, read from the merged record (or, before the merge, from deb45ad's blob); no level in 10.2; the cell counts of section 13 equal section 7's grid; the reader end to end on this text pinned in a temporary tree |
+| T-0 (before the pin) | `tests/test_rd03_draft.py`: the pin-time form (the `id` and `confirmation_tests_on_this_market` rows; no draft-form status; both calendars cited by their LF sha256); one `Judged-block reads:` line, its four purposes parsed by `extended.reader.declared_purposes`, none choosing, none `identity` or `registered_design`; section 12 holds 20262240..20262249 once each and they appear in no other file of the repository (vendored snapshot, reviews and audits included); Appendix R cites every key with its record's status, read from the merged record (or, before the merge, from deb45ad's blob); no level in 10.2; the cell counts of section 13 equal section 7's grid; the two identities' covers equal `BASE` plus their scripts' import closure (9.1); Appendix C present; the reader end to end on this text pinned in a temporary tree |
 | T-1 | A-1 with every option off equals the vendored path bit for bit on toy campaigns (seed 20262241), every reduction and recorder row; its guard refuses a changed vendored source; its recomposition proof |
-| T-2 | L-B on toy campaigns: eligibility (a breach before any request; none after a request, a horizon closure, a denial's closure, a household or Focused Trader closure); the limit per XFA at 1 and 2 across lives; the price from the record; bought the evening the seat frees, before the queue and the purchases, trading from the next session; never a sixth funded account; lapse after 30 calendar days (21 sessions in the gate) when the cash cannot pay; barred under a placement; the account restarted (balance $0, floor -$2,000, no winning days, the entry tier, its path); counted as funded and lost, not as a purchase |
+| T-2 | L-B on toy campaigns: eligibility (a breach before any request; none after a request, a horizon closure, a denial's closure, a household or Focused Trader closure); the limit per XFA at 1 and 2 across lives; the price from the record; bought on the evening of the breach close whatever the base's seat convention, before the queue and the purchases, trading from the next session; the cash and the total fees debited together; the counted reading's purchase measure counting each reactivation; never a sixth funded account; lapse after 30 calendar days (21 sessions in the gate) when the cash cannot pay; barred under a placement; the account restarted (balance $0, floor -$2,000, no winning days, the entry tier, its path); counted as funded and lost, not as a purchase |
 | T-3 | every early-block reading at horizon h is byte-identical when every session from 2024-01-02 on is replaced (seed 20262241), for every h of section 5's table, with the verdict arm's bound held at its registered constant |
-| T-4 | L-I: each base's three seat limits, read from its replay's and gate's own arguments, are five each (else the build stops and reports); the seat keywords and banking reach the path in the replay and the gate; at C = 5 a cell equals its base until its first pass; a queue forms only at five funded; banking on buys while passes wait, off does not; `exp_30` removes a pass at the first close past 30 calendar days (21 sessions in the gate), unpaid and unseated, counted; an expiry beyond the horizon equals `exp_none` |
-| T-5 | L-H: the trigger at the first close with net cash above zero, after arrivals and before the evening's fees; equal to the base before it; after it no fee leaves net cash at or below zero; `house_stop` buys nothing after it; an evaluation is abandoned at its billing day and not rebilled; a pass waits for cash; the trigger unreachable equals the base; the start ahead at every close after the trigger |
+| T-4 | L-I: each base's three seat limits, read from its replay's and gate's own arguments, are five each (else the build stops and reports); on every cell's replay and gate `reset_failed_combines` is False and `activation_timing` the default, on activation; Stage 2's sentinel `hold_expiry_days` is never loaded (the red team's m7 (a)-(c)); the seat keywords and banking reach the path in the replay and the gate; at C = 5 a cell equals its base until its first pass; a queue forms only at five funded; banking on buys while passes wait, off does not; `exp_30` removes a pass at the first close past 30 calendar days (21 sessions in the gate), unpaid and unseated, counted; an expiry beyond the horizon equals `exp_none` |
+| T-5 | L-H: the trigger at the first close with net cash above zero, after arrivals and before the evening's fees; equal to the base before it; after it no fee leaves net cash at or below zero; `house_stop` buys nothing after it; an evaluation is abandoned at its billing day and not rebilled; a pass waits for cash, and under `exp_30` is lost unpaid at 30 calendar days (21 sessions in the gate); the rule reaches every branch of the purchase step; the trigger unreachable equals the base; the start ahead at every close after the trigger |
 | T-6 | 10.2 on RD-02's functions with this seed: the kept windows, the interval from 4 kept windows with a spread, the sign count, the zero-series rule, the MDD's formula, and the honesty series' keys `[20262240, 0, ...]` drawn only by the test |
 | T-7 | 9.2's oracles on toy campaigns, each shown to fire on a hand-broken case |
 | T-8 (`slow`) | 9.1 items 1 to 3 at 4 paths and 4 starts per base and arm, through `identity/cl_identity.py`; 6.4 at a short horizon through `identity/cl_fit_identity.py` |
-| T-9 | section 12's seeds appear nowhere else in the build's commit; 14.2's literal check |
+| T-9 | section 12's seeds appear nowhere in the build's commit outside the uses section 12 declares (the red team's m7 (d)); 14.2's literal check |
 | T-10 | A-1 (d)'s counters channel: with it on every replay output, gate row and path record equals it off, at one worker and at two; the counters equal the path's own on toy campaigns; in `ref` every one is zero |
 | T-11 | `identity/cl_identity.py` and `identity/cl_fit_identity.py` run the reference only: every option a constant at its off value; no argument naming a lever, a cell, a price or an option; with any option flipped the guard refuses before the first start, path or solve |
-| T-12 | stage 0's rules on a toy contract with hand-computed forward summaries: G-B's and G-N's two sides, equality stopping, the verdict over two bases; a nudged row of the identity file refused |
+| T-12 | stage 0 on a toy contract with hand-computed forward summaries: the registered policy's evaluation and its rate `lambda_pi`; the read's two checks, each shown to fire on a mismatched input; G-B's and G-N's two sides and their solver's-view lines; no code path from them to any cell, flag or order; a nudged row of the identity file refused |
 | T-13 | A-4: in `naf` every evaluation fee is $95 a cycle and every activation $0, in the replay and the gate; nothing else changes; with Standard's prices given it equals the base |
 | T-14 | the menu: no P printed without its guard row (E-134 (2)); every house-money row labelled "gaming P (E-134 (2))" and never ordered on P; the flags of 10.1 item 12 mechanical on synthetic menus |
-| T-15 | A-2 and A-3 absent: every task, replay, output and gate row as before, bit for bit, on all of Q-17's responses; given, the Focused Trader models admitted with the vendored class |
+| T-15 | A-2 and A-3 absent: every task, replay, output and gate row as before, bit for bit, on all of Q-17's responses; given, the Focused Trader models admitted with the vendored class; `reset_failed_combines` False on every cell |
 
 ## 15. Outputs and the run
 
 - **Files:**
-  - `results/cl_fit.csv` -- stage 0: sections `identity`, `oracle`, `reading`, `rent`, `naf_resolve` (beside), `rule`;
+  - `results/cl_fit.csv` -- stage 0: sections `identity`, `oracle`, `reading`, `rent`, `checks`, `resolve_beside`,
+    `solver_view`;
   - `results/cl_reading.csv` -- sections `identity`, `oracle`, `mechanics`, `scorecard`, `guard`, `paired`, `diverge`,
     `coverage`, `ladder`, `rtp`, `ftp`;
   - `results/cl_gate.csv` -- the gate rows;
@@ -992,7 +1095,7 @@ in the adapters outside comments; the readings of 4.3 come from one table of nam
 
   Each is written with its sidecar manifest through `extended.results.write_result`, carrying: `prereg_id` `RD-03` and
   its pinning row; the rows under which `cl_identity`, `cl_fit_identity`, Q-05, Q-80, Q-93 and Q-101 held, each with
-  its sha and the run's head; the stage 0 row that recorded which levers go on; the cell and run counts (section 13, as
+  its sha and the run's head; the row that recorded stage 0's run; the cell and run counts (section 13, as
   run); every seed, the inherited ones named; every parameter and every reading of 4.3 with its label; the record
   entries with their dates read and the commit Q-115 merged at; the commit and blob ids of every adapter run; the
   sha256 of `vendor/DATA_MANIFEST_stage2.sha256` and the LF sha256 of the two calendars, each checked before its first
@@ -1003,23 +1106,25 @@ in the adapters outside comments; the readings of 4.3 come from one table of nam
   records the one before:**
   1. **the identities:** `identity/cl_fit_identity.py` and `identity/cl_identity.py`, under the purpose `identity` and
      their own row (the reader admits `identity` only from `identity/*.py`). Any failure stops the reading;
-  2. **stage 0** (`scripts/cl_fit.py`, one worker): its identity first (6.4), then `results/cl_fit.csv`; the lead's row
-     records which levers go on (6.3);
+  2. **stage 0** (`scripts/cl_fit.py`, one worker): its identity first (6.4), then `results/cl_fit.csv`; it decides
+     nothing, and step 3 runs every cell whatever it shows (6.3);
   3. **the scorecard and the gates** (`scripts/cl_reading.py`, purposes `levers_scorecard` then `levers_gate_beside`),
      in this order: (a) `ref` on P-14 then P-16 at `off`, both arms, the recorder on (9.1 items 2's repeat and 4); (b)
-     each new cell, P-14 then P-16, in the order house money, the inventory (C = 5 before C = 7; banking on before off;
-     `exp_none` before `exp_30`), Back2Funded if it goes on (`b2f1` before `b2f2`), `naf` if it goes on -- each at `off`,
+     each new cell, P-14 then P-16, in the order house money (`house_stop` before `house_zero`; `exp_none` before
+     `exp_30`), the inventory (C = 5 before C = 7; banking on before off; `exp_none` before `exp_30`), Back2Funded (`b2f1`
+     before `b2f2`), `naf` -- each at `off`,
      both arms, the recorder on, checked under 9.1 items 5 and 7 before anything of it is read; (c) the gates, in the
      same order; (d) the oracles and the mechanics, then the reading and the menu without its beside sections;
   4. **the ladder and the placement** (purpose `levers_ladder_beside`): `ref`'s checks against Q-44 (9.1 item 6) first,
      then every new cell in step 3's order;
   5. **the Focused Trader models** (purpose `levers_ftp_beside`): `ref`'s checks against Q-44 first, then every
-     inventory and Back2Funded cell in step 3's order; then the menu's beside sections.
+     inventory and Back2Funded cell in step 3's order, then the Back2Funded cells' counted reading (U-6); then the menu's
+     beside sections.
 
   **On any failure, nothing of a new cell is computed, written or printed**: the run stops at the failed check, and
   its log and the check's own lines are all it leaves.
-  - **weight: heavy.** Twenty to twenty-eight replays on two arms over every start, up to some three hundred replays
-    beside on the verdict arm, up to twenty-six gates of 500 paths, and stage 0's solves. Measured on synthetic
+  - **weight: heavy.** Thirty-two replays on two arms over every start, 360 replays beside on the verdict arm with 28
+    reference checks, thirty gates of 500 paths, and stage 0's four policy evaluations and eight solves. Measured on synthetic
     campaigns of the window's length before step 3 (E-117's form) and stated in the lead's row with its memory; E-010's
     U1 identity for two configurations peaked near 1.4 GB, so two workers at most (the two-worker check of A-1 (d), T-10,
     held under its own row first).
@@ -1040,7 +1145,8 @@ in the adapters outside comments; the readings of 4.3 come from one table of nam
 
 **The lead's:**
 
-1. **The red team's read of this text**, then the gatekeeper's, before the pin; and **T-0** (`tests/test_rd03_draft.py`),
+1. **The gatekeeper's read of this second text** before the pin (the red team read the first, Q-116r; E-146 adopted
+   its findings), or the lead's diff check against 153f453 if the gatekeeper's form allows it; and **T-0** (`tests/test_rd03_draft.py`),
    which this text's brief did not let its drafter write (a declaration only, no code): owed before the pin.
 2. **Q-115's merge and the order of the pin.** This text cites keys on `wt/wt-firms` at deb45ad. If the pin comes
    before the merge, T-0 reads those keys from deb45ad's blob; either way the merge comes before the run (4.1, 15).
@@ -1132,3 +1238,39 @@ be merged before the run; `tou_s8_relative_position_size` on master); `stage2` i
 | `cross_account_opposite_positions` | stage2 | verified | tier 1 |
 | `trading_hours` | stage2 | verified | the designs' 15:10 CT flatten |
 | `reset_limit_per_account_per_calendar_day` | stage2 | verified | moot (no resets) |
+
+---
+
+## Appendix C -- the drafter's choices, each with its reason
+
+Every choice made where the scout's note, the brief or the rules left the text open, as this second text holds it. The
+first text's hand-back listed them; the red team judged the text's own list (its section "The draft's choices"); E-146
+asked for them here.
+
+| # | choice | where | reason |
+|---|---|---|---|
+| 1 | stage 0's Back2Funded rule weighs `W - lambda x T` against $599, not the route's fees per pass against $599 (the scout's arithmetic, printed beside) | 6.3 | "the fresh funded account's value net of the evaluation route" (the note, section 5) read under the table's own model: the seat earns the evaluation route's rent while the reactivated account holds it; the red team found it the exact one-step policy-improvement test |
+| 2 | stage 0 decides nothing; both rules printed beside as "the solver's view" | 6 | the lead's ruling (E-146) on M1: the rules measure long-run cash, not P, and a strict rule must not fail a lever that may help the user (E-051) |
+| 3 | stage 0's inputs from the registered policy's forward pass at each base's bound edge, at that policy's own rate; D-666's re-solve beside | 6.1 | M2: every cell trades the registered table, so its model is the relevant one; the evaluation is a few forward passes, cheap |
+| 4 | the pricing path's rule on payouts per fee dollar with the table fixed | 6.3 | the `naf` cells trade the registered table; payouts per fee dollar is the measure D-657 ties to P across designs and D-666 used |
+| 5 | the pricing path replayed (2 cells), not only read at the fit | 2.4; 7.2 | the cells are an exact re-pricing of the base's paths, nearly free, and the fit is no test of P (M1) |
+| 6 | a reactivation bought on the evening of the breach close, first among that evening's acts, trading the next session | 2.1; U-3 | m3: `back2funded_seat_count` and `back2funded_trading_from` allow it; the lever's value is speed; labelled "bought before the 17:00 CT reopening" |
+| 7 | a requested, unpaid payout counts as taken: no reactivation after it | U-7 | `payout_after_request_survives_mll_breach` pays such a request; one conservative reading (n4), the other not run |
+| 8 | accounts closed by the horizon, a denial, a household or forfeiture closure or a Focused Trader placement are not eligible; good standing true at 0 % | U-5; U-7 | none is the designs' "rule violation" (an MLL breach); the Focused Trader Plan bars Back2Funded on its page |
+| 9 | a reactivation not counted as a purchase in the budget or the Focused Trader purchase measure, with a counted reading beside on the models | U-6 | both count "Combine purchases and resets" (D-497, D-501); the Corrective Path names recycling XFAs, so the conservative reading is run too (m2) |
+| 10 | the reactivated account at the entry scaling tier | U-4 | "same as a brand new XFA" with the balance reset to $0, and the tier follows the balance (`scaling_tier_after_payout`) |
+| 11 | the inventory's evaluation cap C in {5, 7} | 2.2 | 5 keeps D-34's bound for evaluations alone and the base's day 0 (disclosed: D-651 (2) found early evaluations cost P); 7 is the scout's "one or two values above"; seat counts, no value from data |
+| 12 | banking on and off | 2.2 | off is D-08's engine rule; on is the lever's point |
+| 13 | the hold's expiry read both ways, `exp_30` as 30 calendar days from the pass whether or not at the cap (21 sessions in the gate), neither the base | U-1 | `hold_expiry_days` is unstated; the only number on record is the search summary's 30 days; E-135 asks for both readings |
+| 14 | house money under both expiry readings | 2.3 | M3: its passes wait for cash below the cap, the case the 30-day sentence names |
+| 15 | the house-money trigger at the first close with net cash above zero, after arrivals, before the evening's fees | 2.3 | CHARTER's "ahead"; no free parameter; makes "ahead" absorbing exactly (E-134 (2)) |
+| 16 | house money cancels an evaluation only at the last close before its rebill (the engine's abandonment at the billing day) | U-2 | under either reading of `combine_cancellation_account_effect` nothing paid for is lost |
+| 17 | the purchase budget held at each base's 20 in 21; "budget off" dropped | 2.2; 2.5 | the budget is the bases' registered restraint; its removal was Stage 2's family 1 (D-634); lifting it would mix two levers |
+| 18 | the levers not crossed; Back2Funded not under No Activation Fee | 2.5 | each lever read alone against its base; `back2funded_fee_by_pricing_path` is unstated |
+| 19 | resets and the DLL excluded | 2.5 | the engine's reset keeps the billing dates against `reset_rebill_push` (E-135); the DLL is a different account from the table's (D-320 (2)) |
+| 20 | the Focused Trader models beside the inventory and Back2Funded cells, not the house-money and `naf` cells (the gap named) | 4.5; 10.1 item 8 | the two levers that lean on the pattern the models count; house money withholds purchases and `naf` buys exactly the base's evaluations; m1 accepted naming the gap |
+| 21 | Back2Funded built into a copy of the vendored path, not a funded-account subclass | A-1 | keeps the vendored `FundedAccount`, so the engine admits the Focused Trader models (E-059 (2)) |
+| 22 | stage 0 composes the vendored size-fit module's pieces, not its runner | 6.1 | the runner needs two D-559 files the snapshot lacks |
+| 23 | the uncertainty method RD-02's 9.2, unchanged, with this reading's own honesty seed | 10.2 | the program's corrected method (E-058 (5)), built and tested; a new seed so no seed changes meaning |
+| 24 | the frontier printed without the house-money cells, and with them labelled | 10.1 item 1 | m6: they cannot fall below their base on P by construction |
+| 25 | the beside readings' guard row carries the cell's 0 % gate, labelled | 10.1 item 8 | m5: no gate is run under a beside response |
