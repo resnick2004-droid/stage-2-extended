@@ -1,0 +1,320 @@
+sha csv c1d1954f6d96f5fabef03f568d212f658d42944ea44974267b2cf0d6db030821 manifest c1d1954f6d96f5fabef03f568d212f658d42944ea44974267b2cf0d6db030821 True
+registered sha True
+rows 279 manifest rows 279 cols equal True
+dates in csv []
+registered rows 1 1 1
+REGISTERED verdict arm: {'pf_growth_on_base_p50': np.float64(1.3787357464160537), 'pf_required_p90': np.float64(3503.6357158914216), 'pf_required_p50': np.float64(1924.0), 'pf_required_p99': np.float64(5311.943956780434), 'mean_max_drawdown': np.float64(3339.325204654962), 'mean_combine_purchases': np.float64(428.438), 'mean_r_used': np.float64(-0.1252118470783444), 'median_payouts_per_path': np.float64(77.0), 'ruin_probability': np.float64(0.0), 'median_days_to_first_payout': np.float64(17.0), 'share_accounts_ever_paid': np.float64(0.3597762564701953)}
+REGISTERED point arm: {'pf_growth_on_base_p50': np.float64(1.5854949538331946), 'pf_required_p90': np.float64(3052.0), 'pf_required_p50': np.float64(1923.0), 'pf_required_p99': np.float64(4579.819689993113), 'mean_max_drawdown': np.float64(2819.3863799995183), 'mean_combine_purchases': np.float64(404.61), 'mean_r_used': np.float64(-0.023689438162466), 'median_payouts_per_path': np.float64(88.0), 'ruin_probability': np.float64(0.0), 'median_days_to_first_payout': np.float64(17.0)}
+REGISTERED 0.05 bound: {'pf_growth_on_base_p50': np.float64(1.455949398418428), 'pf_required_p90': np.float64(3449.312190078199), 'pf_required_p50': np.float64(1923.0), 'pf_required_p99': np.float64(5224.777169285416), 'mean_max_drawdown': np.float64(3176.126884058803), 'mean_combine_purchases': np.float64(419.794)}
+
+IDENTITY rows
+  declaration True the readings Stage 2 D-663 put in RESEARCH_PROTOCOL step 7, read on P-14 under TASK_QUEUE Q-18 (E-007 (f)); seeds 20261950, 20261951, 20261952 fixed i
+  identity True the vendored V1 build is Stage 2 D-663's (v1_validation.declaration_problems: the row's sha256, every constant's words)
+  identity True the vendored slippage arms are Stage 2 D-583's (p16_slip_stress.declaration_problems)
+  identity True P-14's constants: campaign seed 20261131, budget (20, 21), strict rule 5 minutes (a3_brk30_cb20; rc_screen.inputs checks the same)
+  identity True the no-closure table's fresh decisions are v12's (a3_brk30_cb20.fresh_problems; P-13's stop distribution, not vendored, not read)
+  identity True P-14's trades and bounds are results/a3_brk30_cb20_gate.csv's: the verdict row's trades, days, busiest day, capacity, N = 370 (and the manifest's) and
+  identity True D-583's base ticks are the walk's (p16_slip_stress.base_problems: fv3_rung_walk.EXIT_TICKS by atlas_a3.KIND_CODE, the config's entry slip)
+  identity True P14 (P-14 (A3-BRK30-CB20, Stage 2 D-509/D-513): the registered development gate, the bound at 0.05/370): at 500 paths and seed 20261131, mean_block of
+  identity True P14 (P-14 (A3-BRK30-CB20, Stage 2 D-509/D-513): the registered development gate, the bound at 0.05/370): at 500 paths and seed 20261131, every R at it
+a1: rows 10 consistency problems 0
+                   arm                     scheme  mean_block control  pf_growth_on_base_p50  registered_pf_growth_on_base_p50  diff_pf_growth_on_base_p50  growth_se  pf_required_p90  diff_pf_required_p90  required_p90_se growth_above_zero
+9   verdict (0.05/370)   independent (registered)         NaN     NaN               1.378736                          1.378736                    0.000000   0.019226      3503.635716              0.000000       126.995784              True
+10               point   independent (registered)         NaN     NaN               1.585495                          1.585495                    0.000000   0.021668      3052.000000              0.000000       122.916246              True
+11  verdict (0.05/370)   stationary, mean block 1         1.0    True               1.340316                          1.378736                   -0.038420   0.017118      3741.836670            238.200954       115.260757              True
+12               point   stationary, mean block 1         1.0    True               1.560437                          1.585495                   -0.025057   0.013760      3252.200000            200.200000        75.733434              True
+13  verdict (0.05/370)   stationary, mean block 5         5.0   False               1.382039                          1.378736                    0.003304   0.015499      3600.473584             96.837868       102.296215              True
+14               point   stationary, mean block 5         5.0   False               1.575856                          1.585495                   -0.009639   0.016690      3106.930100             54.930100       101.355301              True
+15  verdict (0.05/370)  stationary, mean block 21        21.0   False               1.375808                          1.378736                   -0.002928   0.012824      3500.089425             -3.546291        68.395224              True
+16               point  stationary, mean block 21        21.0   False               1.568732                          1.585495                   -0.016763   0.027385      3118.241500             66.241500       161.664308              True
+17  verdict (0.05/370)  stationary, mean block 63        63.0   False               1.360790                          1.378736                   -0.017946   0.016623      3656.475301            152.839585       113.290019              True
+18               point  stationary, mean block 63        63.0   False               1.553984                          1.585495                   -0.031511   0.016140      3201.000000            149.000000        97.532787              True
+  verdict (0.05/370)   independent (registered)         growth diff/SE +0.00  req90 diff/SE +0.00  rel growth 1.000 rel req90 1.000
+  point                independent (registered)         growth diff/SE +0.00  req90 diff/SE +0.00  rel growth 1.000 rel req90 1.000
+  verdict (0.05/370)   stationary, mean block 1         growth diff/SE -2.24  req90 diff/SE +2.07  rel growth 0.972 rel req90 1.068
+  point                stationary, mean block 1         growth diff/SE -1.82  req90 diff/SE +2.64  rel growth 0.984 rel req90 1.066
+  verdict (0.05/370)   stationary, mean block 5         growth diff/SE +0.21  req90 diff/SE +0.95  rel growth 1.002 rel req90 1.028
+  point                stationary, mean block 5         growth diff/SE -0.58  req90 diff/SE +0.54  rel growth 0.994 rel req90 1.018
+  verdict (0.05/370)   stationary, mean block 21        growth diff/SE -0.23  req90 diff/SE -0.05  rel growth 0.998 rel req90 0.999
+  point                stationary, mean block 21        growth diff/SE -0.61  req90 diff/SE +0.41  rel growth 0.989 rel req90 1.022
+  verdict (0.05/370)   stationary, mean block 63        growth diff/SE -1.08  req90 diff/SE +1.35  rel growth 0.987 rel req90 1.044
+  point                stationary, mean block 63        growth diff/SE -1.95  req90 diff/SE +1.53  rel growth 0.980 rel req90 1.049
+                   arm                     scheme  v1_share_below_start  mean_max_drawdown  v1_payout_drought_p90  v1_payouts_per_path_p50  mean_combine_purchases  pf_required_p50  pf_required_p99  mean_r_used  paths  horizon_days    v1_net_p10    v1_net_p50  median_days_to_first_payout
+9   verdict (0.05/370)   independent (registered)                   0.0        3339.325205                   55.0                     76.0                 428.438      1924.000000      5311.943957    -0.125212  500.0         504.0  35056.187782  51713.479714                         17.0
+10               point   independent (registered)                   0.0        2819.386380                   46.1                     87.0                 404.610      1923.000000      4579.819690    -0.023689  500.0         504.0  47449.574634  69680.405500                         17.0
+11  verdict (0.05/370)   stationary, mean block 1                   0.0        3449.052468                   57.0                     76.0                 428.898      1960.973106      6502.838126    -0.125212  500.0         504.0  32042.747372  50867.661323                         18.0
+12               point   stationary, mean block 1                   0.0        2860.984924                   48.0                     87.0                 406.026      1923.000000      4843.143980    -0.023689  500.0         504.0  48891.732191  70462.893461                         17.0
+13  verdict (0.05/370)   stationary, mean block 5                   0.0        3338.067153                   53.0                     78.0                 425.754      1923.000000      5297.327030    -0.125212  500.0         504.0  35518.485371  53518.944881                         17.0
+14               point   stationary, mean block 5                   0.0        2861.609408                   46.0                     87.0                 402.704      1876.000000      4357.138130    -0.023689  500.0         504.0  52493.021244  69520.782699                         17.0
+15  verdict (0.05/370)  stationary, mean block 21                   0.0        3406.979417                   55.0                     77.0                 428.506      1923.000000      6206.363499    -0.125212  500.0         504.0  33654.666630  51339.085801                         17.0
+16               point  stationary, mean block 21                   0.0        2902.456969                   48.0                     87.0                 406.698      1922.000000      4594.504340    -0.023689  500.0         504.0  50179.744328  68742.713203                         17.0
+17  verdict (0.05/370)  stationary, mean block 63                   0.0        3549.699445                   59.1                     76.0                 430.586      2019.000000      6308.390184    -0.125212  500.0         504.0  34925.467924  51937.761394                         17.0
+18               point  stationary, mean block 63                   0.0        2891.992690                   48.0                     87.0                 407.878      1923.000000      5471.213870    -0.023689  500.0         504.0  50707.400745  68423.065762                         17.0
+  a1 registered row vs file: {'pf_growth_on_base_p50': (1.3787357464160537, np.float64(1.3787357464160537)), 'pf_required_p90': (3503.6357158914216, np.float64(3503.6357158914216)), 'mean_r_used': (-0.1252118470783444, np.float64(-0.1252118470783444)), 'mean_max_drawdown': (3339.325204654962, np.float64(3339.325204654962)), 'mean_combine_purchases': (428.438, np.float64(428.438))}
+  a1 registered row vs file: {'pf_growth_on_base_p50': (1.5854949538331946, np.float64(1.5854949538331946)), 'pf_required_p90': (3052.0, np.float64(3052.0)), 'mean_r_used': (-0.023689438162466, np.float64(-0.023689438162466)), 'mean_max_drawdown': (2819.3863799995183, np.float64(2819.3863799995183)), 'mean_combine_purchases': (404.61, np.float64(404.61))}
+
+B2
+                       scheme  mean_block  step  shift_r  bound_fresh_funded_r  pf_growth_on_base_p50 growth_above_zero  pf_required_p90  mean_r_used
+19                independent         NaN   0.0     0.00              -0.10433               1.378736              True      3503.635716    -0.125212
+20                independent         NaN   1.0    -0.02              -0.12433               1.295655              True      3689.019372    -0.145212
+21                independent         NaN   2.0    -0.04              -0.14433               1.052337              True      4240.401029    -0.165212
+22                independent         NaN   3.0    -0.06              -0.16433               0.889263              True      5214.083375    -0.185212
+23                independent         NaN   4.0    -0.08              -0.18433               0.819120              True      5412.838493    -0.205212
+24                independent         NaN   5.0    -0.10              -0.20433               0.708840              True      5792.195955    -0.225212
+25                independent         NaN   6.0    -0.12              -0.22433               0.564636              True      7114.621090    -0.245212
+26                independent         NaN   7.0    -0.14              -0.24433               0.247371              True      9354.970407    -0.265212
+27                independent         NaN   8.0    -0.16              -0.26433               0.135770              True     10778.906302    -0.285212
+29  stationary, mean block 21        21.0   0.0     0.00              -0.10433               1.375808              True      3500.089425    -0.125212
+30  stationary, mean block 21        21.0   1.0    -0.02              -0.12433               1.274750              True      3809.079008    -0.145212
+31  stationary, mean block 21        21.0   2.0    -0.04              -0.14433               1.033466              True      4407.289835    -0.165212
+32  stationary, mean block 21        21.0   3.0    -0.06              -0.16433               0.928841              True      4796.656646    -0.185212
+33  stationary, mean block 21        21.0   4.0    -0.08              -0.18433               0.808623              True      5433.793533    -0.205212
+34  stationary, mean block 21        21.0   5.0    -0.10              -0.20433               0.665359              True      6148.816688    -0.225212
+35  stationary, mean block 21        21.0   6.0    -0.12              -0.22433               0.584976              True      6420.119194    -0.245212
+36  stationary, mean block 21        21.0   7.0    -0.14              -0.24433               0.272562              True      8856.180027    -0.265212
+37  stationary, mean block 21        21.0   8.0    -0.16              -0.26433               0.141303              True     10406.395481    -0.285212
+                       scheme  mean_block  registered_bound_fresh_funded_r  break_even_e_fresh_funded_r bracketed  break_even_shift  margin  margin_at_least  steps_run  first_step_at_or_below_zero
+28                independent         NaN                         -0.10433                          NaN     False               NaN     NaN             0.16        9.0                          NaN
+38  stationary, mean block 21        21.0                         -0.10433                          NaN     False               NaN     NaN             0.16        9.0                          NaN
+  independent: shifts as declared True; steps [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+   bound column = registered + shift: True
+   first non-positive index None; steps run 9, expected 9
+   my margin_at_least 0.1600; bracketed False
+   growth monotone non-increasing: True growth at last step 0.1357698870176266 first 1.3787357464160537
+  stationary, mean block 21: shifts as declared True; steps [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+   bound column = registered + shift: True
+   first non-positive index None; steps run 9, expected 9
+   my margin_at_least 0.1600; bracketed False
+   growth monotone non-increasing: True growth at last step 0.1413026976741511 first 1.3758075046718956
+  B2 indep step0 growth 1.3787357464160537 registered 1.3787357464160537
+  B2 stat step0 growth 1.3758075046718956 A1 block21 bound 1.3758075046718956
+  registered fresh-funded bound in registered edge rows:
+      rr         e        lb  lb_at_ledger_n   lb_gate  lb_gate_at_ledger_n        n
+55  0.25 -0.035838 -0.040582       -0.046090 -0.042416            -0.050402  45191.0
+56  0.50 -0.033633 -0.039496       -0.046315 -0.042472            -0.051750  45191.0
+57  0.75 -0.028439 -0.034837       -0.042932 -0.040144            -0.053035  45191.0
+58  1.00 -0.023689 -0.031174       -0.040909 -0.038361            -0.053918  45191.0
+59  1.25 -0.022272 -0.030920       -0.042128 -0.041427            -0.059767  45191.0
+60  1.50 -0.022208 -0.033009       -0.046674 -0.045952            -0.067414  45191.0
+61  1.75 -0.025478 -0.038716       -0.054918 -0.049851            -0.074181  42512.0
+62  2.00 -0.023349 -0.038946       -0.057340 -0.051627            -0.078691  39909.0
+63  2.25 -0.018953 -0.036460       -0.056547 -0.053219            -0.081561  39909.0
+64  2.50 -0.017192 -0.036490       -0.058361 -0.056300            -0.087290  39909.0
+65  2.75 -0.004914 -0.028568       -0.055517 -0.055689            -0.093941  34644.0
+66  3.00 -0.002807 -0.028463       -0.057824 -0.063789            -0.104330  34644.0
+
+A0
+  day_r: n 1691, band 0.0476633175424081 (1.96/sqrt(n) = 0.047663), lags outside band [8], acf1 -0.0220
+    LB5: Q reported 2.9458, mine from acf 2.9458; p reported 0.7083, mine 0.7083
+    LB10: Q reported 12.5843, mine from acf 12.5843; p reported 0.2478, mine 0.2478
+    LB21: Q reported 23.0607, mine from acf 23.0607; p reported 0.3408, mine 0.3408
+    PW b_sb 1.529952269039497, auto_block 2.0, ceil 2
+    rr 1.5, days 1691.0
+  abs_day_r: n 1691, band 0.0476633175424081 (1.96/sqrt(n) = 0.047663), lags outside band [], acf1 0.0153
+    LB5: Q reported 3.8395, mine from acf 3.8395; p reported 0.5727, mine 0.5727
+    LB10: Q reported 5.9354, mine from acf 5.9354; p reported 0.8207, mine 0.8207
+    LB21: Q reported 17.2333, mine from acf 17.2333; p reported 0.6969, mine 0.6969
+    PW b_sb 1.144404920710557, auto_block 2.0, ceil 2
+    rr 1.5, days 1691.0
+  sign: n 1691, band 0.0476633175424081 (1.96/sqrt(n) = 0.047663), lags outside band [], acf1 0.0036
+    LB5: Q reported 4.3910, mine from acf 4.3910; p reported 0.4946, mine 0.4946
+    LB10: Q reported 6.7027, mine from acf 6.7027; p reported 0.7532, mine 0.7532
+    LB21: Q reported 15.9836, mine from acf 15.9836; p reported 0.7706, mine 0.7706
+    PW b_sb nan, auto_block nan, ceil None
+    runs: n 1576.0 zeros 115.0 +737.0 -839.0 runs 779.0; expected 785.6992385786803 mine 785.6992; z -0.3390309882383914 mine -0.3390; p 0.7345863859150943 mine 0.7346
+    rr 1.5, days 1691.0
+
+B1
+  blocks [np.float64(1.0), np.float64(2.0), np.float64(5.0), np.float64(21.0)] rules <ArrowStringArray>
+['pooled', 'era_rule']
+Length: 2, dtype: str levels <ArrowStringArray>
+['0.05', '0.05/370']
+Length: 2, dtype: str rr [np.float64(0.25), np.float64(0.5), np.float64(0.75), np.float64(1.0), np.float64(1.25), np.float64(1.5), np.float64(1.75), np.float64(2.0), np.float64(2.25), np.float64(2.5), np.float64(2.75), np.float64(3.0)]
+  replicates+undefined [200000.]
+  B1 arithmetic problems 0
+  truth == registered e: True
+  auto block flag [2.]
+rr                                0.25      0.50      0.75      1.00      1.25      1.50      1.75      2.00      2.25      2.50      2.75      3.00
+rule     level    mean_block                                                                                                                        
+era_rule 0.05     1.0         0.002345  0.001715  0.001830  0.001950  0.001625  0.001215  0.001670  0.001640  0.001150  0.001025  0.000730  0.000320
+                  2.0         0.002360  0.001970  0.001875  0.001845  0.001440  0.001270  0.001655  0.001655  0.001070  0.000920  0.000720  0.000335
+                  5.0         0.002315  0.001590  0.002150  0.001865  0.001270  0.001150  0.001490  0.001395  0.000850  0.000775  0.000680  0.000280
+                  21.0        0.002530  0.001340  0.002495  0.001945  0.001095  0.000955  0.001275  0.001205  0.000715  0.000510  0.000360  0.000165
+         0.05/370 1.0         0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000
+                  2.0         0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000
+                  5.0         0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000
+                  21.0        0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000  0.000000
+pooled   0.05     1.0         0.049125  0.050930  0.051240  0.051350  0.050450  0.051465  0.049820  0.051455  0.051640  0.051700  0.051175  0.050510
+                  2.0         0.046990  0.049030  0.050135  0.050820  0.050155  0.050415  0.048890  0.049880  0.050480  0.050360  0.049785  0.049630
+                  5.0         0.047445  0.045105  0.049655  0.049995  0.047705  0.046915  0.045485  0.045555  0.044920  0.044225  0.044665  0.045795
+                  21.0        0.050855  0.051435  0.058315  0.054785  0.050095  0.051570  0.048190  0.050650  0.049175  0.045605  0.048930  0.055270
+         0.05/370 1.0         0.000155  0.000120  0.000140  0.000110  0.000130  0.000120  0.000110  0.000110  0.000115  0.000105  0.000130  0.000125
+                  2.0         0.000130  0.000125  0.000140  0.000130  0.000085  0.000120  0.000125  0.000110  0.000135  0.000165  0.000165  0.000175
+                  5.0         0.000160  0.000145  0.000185  0.000150  0.000140  0.000135  0.000155  0.000125  0.000140  0.000110  0.000130  0.000125
+                  21.0        0.000230  0.000160  0.000340  0.000175  0.000170  0.000170  0.000175  0.000190  0.000230  0.000165  0.000270  0.000390
+rr                             0.25   0.50   0.75   1.00   1.25   1.50   1.75   2.00   2.25   2.50   2.75   3.00
+rule     level    mean_block                                                                                    
+era_rule 0.05     1.0         0.047  0.034  0.037  0.039  0.032  0.024  0.033  0.033  0.023  0.020  0.015  0.006
+                  2.0         0.047  0.039  0.038  0.037  0.029  0.025  0.033  0.033  0.021  0.018  0.014  0.007
+                  5.0         0.046  0.032  0.043  0.037  0.025  0.023  0.030  0.028  0.017  0.015  0.014  0.006
+                  21.0        0.051  0.027  0.050  0.039  0.022  0.019  0.026  0.024  0.014  0.010  0.007  0.003
+         0.05/370 1.0         0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000
+                  2.0         0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000
+                  5.0         0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000
+                  21.0        0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000  0.000
+pooled   0.05     1.0         0.982  1.019  1.025  1.027  1.009  1.029  0.996  1.029  1.033  1.034  1.024  1.010
+                  2.0         0.940  0.981  1.003  1.016  1.003  1.008  0.978  0.998  1.010  1.007  0.996  0.993
+                  5.0         0.949  0.902  0.993  1.000  0.954  0.938  0.910  0.911  0.898  0.884  0.893  0.916
+                  21.0        1.017  1.029  1.166  1.096  1.002  1.031  0.964  1.013  0.984  0.912  0.979  1.105
+         0.05/370 1.0         1.147  0.888  1.036  0.814  0.962  0.888  0.814  0.814  0.851  0.777  0.962  0.925
+                  2.0         0.962  0.925  1.036  0.962  0.629  0.888  0.925  0.814  0.999  1.221  1.221  1.295
+                  5.0         1.184  1.073  1.369  1.110  1.036  0.999  1.147  0.925  1.036  0.814  0.962  0.925
+                  21.0        1.702  1.184  2.516  1.295  1.258  1.258  1.295  1.406  1.702  1.221  1.998  2.886
+                   exceed_total nominal_inside  max_ratio  min_ratio
+rule     level                                                      
+era_rule 0.05           12946.0            0.0     0.0506     0.0033
+         0.05/370           0.0            0.0     0.0000     0.0000
+pooled   0.05          475954.0       0.416667     1.1663     0.8845
+         0.05/370        1488.0       0.895833     2.8860     0.6290
+         rule     level  mean_block   rr            leg   exceed  replicates  share_exceed  share_lo  share_hi  ratio_to_nominal nominal_inside_interval     truth  mean_bound  truth_lower_era  share_exceed_lower_era
+47     pooled      0.05         1.0  1.5  fresh_combine  10293.0    200000.0      0.051465  0.050501  0.052442            1.0293                   False -0.022208   -0.033325              NaN                     NaN
+53     pooled      0.05         1.0  3.0   fresh_funded  10102.0    200000.0      0.050510  0.049554  0.051479            1.0102                    True -0.002807   -0.025654              NaN                     NaN
+59     pooled  0.05/370         1.0  1.5  fresh_combine     24.0    200000.0      0.000120  0.000077  0.000179            0.8880                    True -0.022208   -0.047783              NaN                     NaN
+65     pooled  0.05/370         1.0  3.0   fresh_funded     25.0    200000.0      0.000125  0.000081  0.000185            0.9250                    True -0.002807   -0.055441              NaN                     NaN
+71   era_rule      0.05         1.0  1.5  fresh_combine    243.0    200000.0      0.001215  0.001067  0.001378            0.0243                   False -0.022208   -0.047577        -0.030629                0.026005
+77   era_rule      0.05         1.0  3.0   fresh_funded     64.0    200000.0      0.000320  0.000246  0.000409            0.0064                   False -0.002807   -0.064515        -0.031941                0.042680
+83   era_rule  0.05/370         1.0  1.5  fresh_combine      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.022208   -0.070254        -0.030629                0.000005
+89   era_rule  0.05/370         1.0  3.0   fresh_funded      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.002807   -0.110076        -0.031941                0.000005
+95     pooled      0.05         5.0  1.5  fresh_combine   9383.0    200000.0      0.046915  0.045992  0.047851            0.9383                   False -0.022208   -0.033376              NaN                     NaN
+101    pooled      0.05         5.0  3.0   fresh_funded   9159.0    200000.0      0.045795  0.044883  0.046720            0.9159                   False -0.002807   -0.025856              NaN                     NaN
+107    pooled  0.05/370         5.0  1.5  fresh_combine     27.0    200000.0      0.000135  0.000089  0.000196            0.9990                    True -0.022208   -0.047627              NaN                     NaN
+113    pooled  0.05/370         5.0  3.0   fresh_funded     25.0    200000.0      0.000125  0.000081  0.000185            0.9250                    True -0.002807   -0.054887              NaN                     NaN
+119  era_rule      0.05         5.0  1.5  fresh_combine    230.0    200000.0      0.001150  0.001006  0.001309            0.0230                   False -0.022208   -0.047590        -0.030629                0.025540
+125  era_rule      0.05         5.0  3.0   fresh_funded     56.0    200000.0      0.000280  0.000212  0.000364            0.0056                   False -0.002807   -0.064833        -0.031941                0.042000
+131  era_rule  0.05/370         5.0  1.5  fresh_combine      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.022208   -0.070288        -0.030629                0.000005
+137  era_rule  0.05/370         5.0  3.0   fresh_funded      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.002807   -0.110302        -0.031941                0.000030
+143    pooled      0.05        21.0  1.5  fresh_combine  10314.0    200000.0      0.051570  0.050605  0.052548            1.0314                   False -0.022208   -0.033011              NaN                     NaN
+149    pooled      0.05        21.0  3.0   fresh_funded  11054.0    200000.0      0.055270  0.054272  0.056280            1.1054                   False -0.002807   -0.025812              NaN                     NaN
+155    pooled  0.05/370        21.0  1.5  fresh_combine     34.0    200000.0      0.000170  0.000118  0.000238            1.2580                    True -0.022208   -0.046899              NaN                     NaN
+161    pooled  0.05/370        21.0  3.0   fresh_funded     78.0    200000.0      0.000390  0.000308  0.000487            2.8860                   False -0.002807   -0.054218              NaN                     NaN
+167  era_rule      0.05        21.0  1.5  fresh_combine    191.0    200000.0      0.000955  0.000824  0.001100            0.0191                   False -0.022208   -0.047209        -0.030629                0.024305
+173  era_rule      0.05        21.0  3.0   fresh_funded     33.0    200000.0      0.000165  0.000114  0.000232            0.0033                   False -0.002807   -0.064890        -0.031941                0.040680
+179  era_rule  0.05/370        21.0  1.5  fresh_combine      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.022208   -0.069413        -0.030629                0.000000
+185  era_rule  0.05/370        21.0  3.0   fresh_funded      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.002807   -0.108693        -0.031941                0.000010
+191    pooled      0.05         2.0  1.5  fresh_combine  10083.0    200000.0      0.050415  0.049460  0.051383            1.0083                    True -0.022208   -0.033327              NaN                     NaN
+197    pooled      0.05         2.0  3.0   fresh_funded   9926.0    200000.0      0.049630  0.048682  0.050591            0.9926                    True -0.002807   -0.025527              NaN                     NaN
+203    pooled  0.05/370         2.0  1.5  fresh_combine     24.0    200000.0      0.000120  0.000077  0.000179            0.8880                    True -0.022208   -0.047694              NaN                     NaN
+209    pooled  0.05/370         2.0  3.0   fresh_funded     35.0    200000.0      0.000175  0.000122  0.000243            1.2950                    True -0.002807   -0.054997              NaN                     NaN
+215  era_rule      0.05         2.0  1.5  fresh_combine    254.0    200000.0      0.001270  0.001119  0.001436            0.0254                   False -0.022208   -0.047595        -0.030629                0.025795
+221  era_rule      0.05         2.0  3.0   fresh_funded     67.0    200000.0      0.000335  0.000260  0.000425            0.0067                   False -0.002807   -0.064590        -0.031941                0.043820
+227  era_rule  0.05/370         2.0  1.5  fresh_combine      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.022208   -0.070357        -0.030629                0.000000
+233  era_rule  0.05/370         2.0  3.0   fresh_funded      0.0    200000.0      0.000000  0.000000  0.000018            0.0000                   False -0.002807   -0.110417        -0.031941                0.000030
+
+C1
+c1: rows 18 consistency problems 0
+                    arm     scheme  realisation  realisation_seed  trades_offered  trades_left  sessions_missed  pf_growth_on_base_p50  diff_pf_growth_on_base_p50  pf_required_p90 growth_above_zero
+234  verdict (0.05/370)     drop10          0.0      3.500866e+08         45191.0      40615.0              0.0               1.412717                    0.033981      3350.000000              True
+235               point     drop10          0.0      3.500866e+08         45191.0      40615.0              0.0               1.576592                   -0.008903      3160.206100              True
+236  verdict (0.05/370)     drop10          1.0      1.949019e+09         45191.0      40671.0              0.0               1.377433                   -0.001303      3649.848206              True
+237               point     drop10          1.0      1.949019e+09         45191.0      40671.0              0.0               1.601236                    0.015741      3055.462400              True
+238  verdict (0.05/370)     drop10          2.0      1.528769e+09         45191.0      40706.0              0.0               1.359244                   -0.019491      3633.020771              True
+239               point     drop10          2.0      1.528769e+09         45191.0      40706.0              0.0               1.553494                   -0.032001      3221.011200              True
+242  verdict (0.05/370)     drop25          0.0      1.766431e+09         45191.0      33836.0              0.0               1.443758                    0.065022      3267.532854              True
+243               point     drop25          0.0      1.766431e+09         45191.0      33836.0              0.0               1.647115                    0.061620      2911.726900              True
+244  verdict (0.05/370)     drop25          1.0      1.832521e+08         45191.0      33873.0              0.0               1.299415                   -0.079320      3797.000000              True
+245               point     drop25          1.0      1.832521e+08         45191.0      33873.0              0.0               1.523701                   -0.061794      3201.000000              True
+246  verdict (0.05/370)     drop25          2.0      1.575150e+09         45191.0      34012.0              0.0               1.430899                    0.052164      3456.700000              True
+247               point     drop25          2.0      1.575150e+09         45191.0      34012.0              0.0               1.619695                    0.034201      3009.700000              True
+250  verdict (0.05/370)  session10          0.0      8.810175e+08         45191.0      40464.0            173.0               1.373557                   -0.005179      3437.122460              True
+251               point  session10          0.0      8.810175e+08         45191.0      40464.0            173.0               1.573397                   -0.012098      3007.900000              True
+252  verdict (0.05/370)  session10          1.0      1.037162e+09         45191.0      40865.0            163.0               1.363456                   -0.015280      3409.720173              True
+253               point  session10          1.0      1.037162e+09         45191.0      40865.0            163.0               1.537672                   -0.047823      3158.700000              True
+254  verdict (0.05/370)  session10          2.0      1.573440e+09         45191.0      40977.0            158.0               1.319774                   -0.058962      3653.507432              True
+255               point  session10          2.0      1.573440e+09         45191.0      40977.0            158.0               1.516322                   -0.069172      3207.975400              True
+  drop10: share trades left [0.8987409  0.89998008 0.90075458], sessions missed [0.] of 1691 = [0.]
+  drop25: share trades left [0.74873315 0.7495519  0.75262774], sessions missed [0.] of 1691 = [0.]
+  session10: share trades left [0.89539953 0.90427297 0.90675134], sessions missed [173. 163. 158.] of 1691 = [0.10230633 0.09639267 0.09343584]
+  c1_summary problems 0
+                    arm     scheme  realisations  share_realisations_growth_above_zero  pf_growth_on_base_p50_mean  pf_growth_on_base_p50_min  pf_growth_on_base_p50_max  pf_required_p90_mean
+240  verdict (0.05/370)     drop10           3.0                                   1.0                    1.383131                   1.359244                   1.412717           3544.289659
+241               point     drop10           3.0                                   1.0                    1.577107                   1.553494                   1.601236           3145.559900
+248  verdict (0.05/370)     drop25           3.0                                   1.0                    1.391358                   1.299415                   1.443758           3507.077618
+249               point     drop25           3.0                                   1.0                    1.596837                   1.523701                   1.647115           3040.808967
+256  verdict (0.05/370)  session10           3.0                                   1.0                    1.352262                   1.319774                   1.373557           3500.116689
+257               point  session10           3.0                                   1.0                    1.542464                   1.516322                   1.573397           3124.858467
+  verdict (0.05/370)   drop10     growth min/registered 0.986  mean/reg 1.003  req90 mean/reg 1.012
+  point                drop10     growth min/registered 0.980  mean/reg 0.995  req90 mean/reg 1.031
+  verdict (0.05/370)   drop25     growth min/registered 0.942  mean/reg 1.009  req90 mean/reg 1.001
+  point                drop25     growth min/registered 0.961  mean/reg 1.007  req90 mean/reg 0.996
+  verdict (0.05/370)   session10  growth min/registered 0.957  mean/reg 0.981  req90 mean/reg 0.999
+  point                session10  growth min/registered 0.956  mean/reg 0.973  req90 mean/reg 1.024
+  realisation seeds distinct: 9 of 9
+
+SLIP
+slip: rows 18 consistency problems 0
+                    arm    scheme family level  entry_slip_ticks  stop_slip_ticks  flatten_slip_ticks  target_slip_ticks  added_ticks_s  added_ticks_t  added_ticks_f  added_ticks_b  e_fresh_funded_r  bound_fresh_funded_r  e_fresh_combine_r  bound_fresh_combine_r era_flagged
+258  verdict (0.05/370)      base   base     1               1.0              1.0                 2.0                0.0            0.0            0.0            0.0            0.0         -0.002807             -0.104330          -0.022208              -0.067414         NaN
+259               point      base   base     1               1.0              1.0                 2.0                0.0            0.0            0.0            0.0            0.0         -0.002807             -0.104330          -0.022208              -0.067414         NaN
+260  verdict (0.05/370)   A_stop2      A     2               1.0              2.0                 3.0                0.0            1.0            0.0            1.0            1.0         -0.010554             -0.112395          -0.028796              -0.074249        True
+261               point   A_stop2      A     2               1.0              2.0                 3.0                0.0            1.0            0.0            1.0            1.0         -0.010554             -0.112395          -0.028796              -0.074249        True
+262  verdict (0.05/370)   A_stop3      A     3               1.0              3.0                 4.0                0.0            2.0            0.0            2.0            2.0         -0.018302             -0.120460          -0.035385              -0.081084        True
+263               point   A_stop3      A     3               1.0              3.0                 4.0                0.0            2.0            0.0            2.0            2.0         -0.018302             -0.120460          -0.035385              -0.081084        True
+264  verdict (0.05/370)   A_stop5      A     5               1.0              5.0                 6.0                0.0            4.0            0.0            4.0            4.0         -0.033796             -0.136592          -0.048562              -0.094755        True
+265               point   A_stop5      A     5               1.0              5.0                 6.0                0.0            4.0            0.0            4.0            4.0         -0.033796             -0.136592          -0.048562              -0.094755        True
+266  verdict (0.05/370)   A_stop8      A     8               1.0              8.0                 9.0                0.0            7.0            0.0            7.0            7.0         -0.057037             -0.160792          -0.068327              -0.115265        True
+267               point   A_stop8      A     8               1.0              8.0                 9.0                0.0            7.0            0.0            7.0            7.0         -0.057037             -0.160792          -0.068327              -0.115265        True
+268  verdict (0.05/370)  A_stop12      A    12               1.0             12.0                13.0                0.0           11.0            0.0           11.0           11.0         -0.088025             -0.193064          -0.094681              -0.142619        True
+269               point  A_stop12      A    12               1.0             12.0                13.0                0.0           11.0            0.0           11.0           11.0         -0.088025             -0.193064          -0.094681              -0.142619        True
+270  verdict (0.05/370)   B_slip2      B     2               2.0              2.0                 3.0                0.0            2.0            1.0            2.0            2.0         -0.020554             -0.122395          -0.039388              -0.084869        True
+271               point   B_slip2      B     2               2.0              2.0                 3.0                0.0            2.0            1.0            2.0            2.0         -0.020554             -0.122395          -0.039388              -0.084869        True
+272  verdict (0.05/370)   B_slip3      B     3               3.0              3.0                 4.0                0.0            4.0            2.0            4.0            4.0         -0.038302             -0.140460          -0.056568              -0.102324        True
+273               point   B_slip3      B     3               3.0              3.0                 4.0                0.0            4.0            2.0            4.0            4.0         -0.038302             -0.140460          -0.056568              -0.102324        True
+274  verdict (0.05/370)   B_slip5      B     5               5.0              5.0                 6.0                0.0            8.0            4.0            8.0            8.0         -0.073796             -0.176592          -0.090929              -0.137237        True
+275               point   B_slip5      B     5               5.0              5.0                 6.0                0.0            8.0            4.0            8.0            8.0         -0.073796             -0.176592          -0.090929              -0.137237        True
+                    arm    scheme  pf_growth_on_base_p50  diff_pf_growth_on_base_p50  pf_required_p90 growth_above_zero  mean_r_used  v1_share_below_start  mean_max_drawdown
+258  verdict (0.05/370)      base               1.378736                    0.000000      3503.635716              True    -0.125212                 0.000        3339.325205
+259               point      base               1.585495                    0.000000      3052.000000              True    -0.023689                 0.000        2819.386380
+260  verdict (0.05/370)   A_stop2               1.361559                   -0.017176      3499.000000              True    -0.131003                 0.000        3418.545721
+261               point   A_stop2               1.577027                   -0.008468      3062.700000              True    -0.029163                 0.000        2871.450144
+262  verdict (0.05/370)   A_stop3               1.337104                   -0.041632      3567.221452              True    -0.136795                 0.000        3609.650221
+263               point   A_stop3               1.545761                   -0.039734      3201.000000              True    -0.034636                 0.000        2839.900408
+264  verdict (0.05/370)   A_stop5               1.274741                   -0.103995      3746.200000              True    -0.148379                 0.000        3645.885363
+265               point   A_stop5               1.502868                   -0.082626      3350.000000              True    -0.045582                 0.000        2979.776202
+266  verdict (0.05/370)   A_stop8               1.159198                   -0.219537      4150.068471              True    -0.165757                 0.002        4041.983450
+267               point   A_stop8               1.438730                   -0.146765      3499.000000              True    -0.062002                 0.000        3185.367287
+268  verdict (0.05/370)  A_stop12               1.015964                   -0.362771      4711.606672              True    -0.188933                 0.004        4410.872759
+269               point  A_stop12               1.359281                   -0.226214      3501.600000              True    -0.083895                 0.000        3514.794894
+270  verdict (0.05/370)   B_slip2               1.322051                   -0.056685      3499.200000              True    -0.141595                 0.002        3594.609729
+271               point   B_slip2               1.544443                   -0.041052      3201.000000              True    -0.039754                 0.000        2924.035873
+272  verdict (0.05/370)   B_slip3               1.257210                   -0.121526      3744.400000              True    -0.157978                 0.000        3730.504887
+273               point   B_slip3               1.465059                   -0.120436      3421.888300              True    -0.055819                 0.000        3086.247504
+274  verdict (0.05/370)   B_slip5               0.870756                   -0.507980      5189.076682              True    -0.190746                 0.012        4648.966485
+275               point   B_slip5               1.359642                   -0.225853      3499.200000              True    -0.087949                 0.000        3451.330169
+  base: ticks as D-583 True
+  A_stop2: ticks as D-583 True
+  A_stop3: ticks as D-583 True
+  A_stop5: ticks as D-583 True
+  A_stop8: ticks as D-583 True
+  A_stop12: ticks as D-583 True
+  B_slip2: ticks as D-583 True
+  B_slip3: ticks as D-583 True
+  B_slip5: ticks as D-583 True
+                    arm family        levels                                      arms_read lowest_level_growth_at_bound_at_or_below_zero
+276  verdict (0.05/370)      A  1 2 3 5 8 12  base A_stop2 A_stop3 A_stop5 A_stop8 A_stop12                                          none
+277  verdict (0.05/370)      B       1 2 3 5                   base B_slip2 B_slip3 B_slip5                                          none
+  my lowest level family A: none; levels ['1', '12', '2', '3', '5', '8']
+  my lowest level family B: none; levels ['1', '2', '3', '5']
+  base arm == registered: verdict (0.05/370) True -0.0028073732825309 -0.1043297821984095
+  base arm == registered: point True -0.0028073732825309 -0.1043297821984095
+
+HEADLINES
+  verdict (0.05/370): min growth over a1/c1/slip/b2 rows 0.1357698870176266 ; rows with growth<=0: 0 of 41
+     a1: n 5 min growth 1.34032 max req90 3741.84  max share_below_start 0
+     c1: n 9 min growth 1.29942 max req90 3797  max share_below_start 0
+     slip: n 9 min growth 0.870756 max req90 5189.08  max share_below_start 0.012
+     b2_curve: n 18 min growth 0.13577 max req90 10778.9  max share_below_start 0.348
+  point: min growth over a1/c1/slip/b2 rows 1.359280896128916 ; rows with growth<=0: 0 of 23
+     a1: n 5 min growth 1.55398 max req90 3252.2  max share_below_start 0
+     c1: n 9 min growth 1.51632 max req90 3221.01  max share_below_start 0
+     slip: n 9 min growth 1.35928 max req90 3501.6  max share_below_start 0
+["V1's A2 (the real-order replay against each scheme's resampled paths) and B3 (a family's familywise false pass) are not in Q-18's brief; not run"]
