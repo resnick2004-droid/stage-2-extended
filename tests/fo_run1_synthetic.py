@@ -8,10 +8,11 @@ result value of any design is read.
 resolve) on 2020-06-01 .. 2020-12-31 and the first quarter of 2021, 2022 and 2023 (each year of stage A's span), a day table
 with report days (`b`, the first Friday of each month) and one FOMC day (`f`); every mark 17:00 .. 09:00 admitted; the
 walk by this repository's walker; P-16's configuration, plan and money side from the vendored tree (no registered
-outcome: the per-R shift is a synthetic constant, the capacity the busiest day, `mean_dv` a constant); the judged
-session list 657 synthetic dates (the coin's grid only). The replays are Q-17's adapter's on the synthetic job (both
-arms built, the verdict arm run) at six starts; K0 at 200 replications, A10 at 20 selections a class and share, stage B
-at 50 draws, A3 at 10 cuts -- a smoke's sizes, so nothing is written (the frame is checked here).
+outcome: the per-R shift is a synthetic constant, the capacity the busiest day, `mean_dv` read by the runner's reader
+from a synthetic value map in the vendored long schema, Q-117f); the judged session list 657 synthetic dates (the
+coin's grid only). The replays are Q-17's adapter's on the synthetic job (both arms built, the verdict arm run) at six
+starts; K0 at 200 replications, A10 at 20 selections a class and share, stage B at 50 draws, A3 at 10 cuts -- a
+smoke's sizes, so nothing is written (the frame is checked here).
 """
 from __future__ import annotations
 
@@ -91,7 +92,15 @@ class SynCtx(FO.Ctx):
         return []
 
     def mean_dv(self):
-        return 1000.0
+        """7.4's mean_dv(c) through the runner's own reader (`mean_dv_c`) on a synthetic value map in the vendored
+        long schema (`tests/fo_value_map_fixture.py`, Q-117f), its target row at 1000.0."""
+        import tempfile
+
+        import fo_value_map_fixture as VM
+
+        with tempfile.TemporaryDirectory(prefix="fo_vm_") as d:
+            VM.write(FO.ROOT, d, VM.rows(1000.0))
+            return FO.mean_dv_c(results_dir=d)
 
 
 pre = R.PreRun({q: ["E-999"] for q in R.WAITS}, JUDGED)
@@ -118,6 +127,18 @@ if df is not None:
     out["choice_finite"] = bool(np.isfinite(pd.to_numeric(ch.loc[ch["kind"] == "cell", "V_B_lower"])).all())
     out["q_B"] = float(pd.to_numeric(ch.loc[ch["kind"] == "q_B", "value"]).iloc[0])
     out["written"] = ctx.write(df, params)
+    # Q-117f: run 1's own write (`Ctx.write` -> `write_result`, the real frame and parameters, not a smoke) into a
+    # temporary folder -- the step after stage B that no synthetic run reached, so a failure there is caught here and
+    # not after a full walk
+    import tempfile
+
+    from extended.results import verify_result
+
+    with tempfile.TemporaryDirectory(prefix="fo_run1_w_") as _w:
+        _p = FO.Ctx(results_dir=Path(_w)).write(df, params)
+        out["write_tmp"] = {"name": Path(_p).name, "verified": bool(verify_result(Path(_p).resolve())[0]),
+                            "rows": int(len(pd.read_csv(_p, low_memory=False))),
+                            "manifest": Path(str(_p) + ".manifest.json").is_file()}
 
 
 # V2 (the second build read): A10 forced to flag the deciding class `window` (s1's and s2's), so its consequence runs

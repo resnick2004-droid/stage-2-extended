@@ -172,3 +172,9 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-175: F-03's run 1 crashed on a file-format defect after its walk; nothing spent; fix building; the rest of the heavy queue restarted. |
 | 2026-11-17 | lead | E-176: the second one-sample plan's computed cost showed the lead's floor ruling was the wrong trade; reversed; a third text. |
 | 2026-11-17 | lead | E-177: the early-block volatility descriptive run and collected, both identities held; audit dispatched. |
+| 2026-11-17 | lead | E-178: the seed-overlap fix merged, with a guard against additive seed offsets. |
+| 2026-11-17 | lead | E-179: Q-121's file audited clean but it reveals bar prices, so it stays local and git-ignored; a licence scan of committed results dispatched. |
+| 2026-11-17 | lead | E-180: no committed file leaks licensed prices; a guard against it building. |
+| 2026-11-17 | lead | E-181: F-03's reader fixed and merged; run 1 re-queued. |
+| 2026-11-17 | lead | E-182: the second one-sample plan re-read; the strict floor kept on a corrected basis (the line's size guarantee); a fourth text. |
+| 2026-11-17 | lead | E-183: RD-03's build complete (stage 0 stopped); merge waits for the RD readings, as sequenced. |
