@@ -3051,3 +3051,496 @@ rules:
       designs as MNQ at $1.22 a round turn all-in (Topstep 8284213; vendor/stage2/config/fills.yaml). TradeDay's
       all-in MNQ round turn is $1.90, $0.68 a micro round turn above it, so the draft's G-5 understates TradeDay's
       commission and the FP and QP rows are optimistic in this term, by $0.68 for each micro traded per round turn.
+
+  # ==== Q-115 (2026-11-16): the contract-use levers' rules -- Back2Funded, the Reset Bank, the No Activation Fee 50K
+  # prices, the held pass's expiry, the evaluation's cancellation (E-134; the scout's note
+  # docs/research/next_levers_contract_money_2026-11-17.md on wt/wt-scout, sections 3.1-3.5 and 4) =================
+  # Hosts: help.topstep.com and www.topstep.com only. Every read was a WebFetch GET of one named page, or of the same
+  # article's markdown copy (<id>-<slug>.md) that the help centre's own index https://help.topstep.com/llms.txt links
+  # (read once, to find the articles). No login, form, chat, dashboard or checkout, nothing sent, no purchase.
+  # Retrieval within E-012's reading of ToU s.28 (named pages one at a time). Each rule page was fetched at least twice
+  # with differently worded prompts; the second fetch was usually a check of the first fetch's quotes word for word
+  # ("does this sentence appear exactly?"). `quote` holds text returned verbatim in a first fetch and confirmed exact
+  # in a second, unless the note says otherwise. One web search (site:help.topstep.com) was used to find pages; its
+  # summary is not evidence (it gave a "30 days ... to pay your Activation Fee" sentence that no official page read
+  # today states; see hold_expiry_days). Pages read: 12060405 (Back2Funded), 8284204 (MLL), 14289835 (pricing),
+  # 10490293 (DLL), 8284128 (Reset), 8284121 (subscriptions), 8284117 (refunds), 8284217 (activation), 8284215 (XFA
+  # parameters), 8284197 (Combine parameters), 10657969 (LFA parameters), www.topstep.com/faq. 8284198 and 8284216
+  # (ids in the search results) returned HTTP 404 on help.topstep.com. The machine clock read 2026-11-16; the scout's
+  # note is dated 2026-11-17 by the lead's record date.
+
+  # ---- Back2Funded (12060405; 8284204; 14289835; 10490293) --------------------------------------------------------
+  - key: back2funded_reactivation_fee_50k
+    firm: topstep
+    value: 599.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, "Back2Funded: Rules, Guidelines, and How It Works" (page date "September 29, 2026"), price table, columns Account Size | Reactivation Fee:
+      "$50K XFA" | "$599"
+      "Prices exclude sales tax."
+      "Each purchase is separate, final, and non-refundable."
+      14289835, "Topstep Pricing and Payment Questions", Express Funded Account Reactivation section: "$50K XFA — $599"
+    stage2_key: "none (quoted in reset_fee's 2026-09-22 note: 'reactivates a LOST funded account at $599/$699/$829 by size')"
+    stage2_value: "599 (a note, not a key)"
+    note: >
+      NEW KEY. Same figure as the sentence in Stage 2's reset_fee note (2026-09-22) and activation_fee_100k's note
+      (2026-11-14); 12060405's page date is unchanged since Stage 2's 2026-10-30 read (September 29, 2026). FETCHES:
+      12060405 three times (the article, its slug URL as a check of quotes, its .md copy, which summarised); the
+      table cells and the two sentences came back in two. 14289835 twice (its .md copy confirmed "$50K XFA — $599" as
+      a bullet, not a table). The price is before sales tax ("Pay the Reactivation fee (including sales tax)", read
+      once). REFUND: 8284117 (two fetches): "No refunds on Back2Funded purchases, including accidental
+      reactivations." Neither page gives the price by pricing path: see back2funded_fee_by_pricing_path.
+
+  - key: back2funded_reactivation_fee_100k
+    firm: topstep
+    value: 699.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405 price table: "$100K XFA" | "$699"; "Prices exclude sales tax."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "699 (a note, not a key)"
+    note: >
+      NEW KEY. The row came back in two fetches of 12060405; 14289835's fetch gave the same figure in a summary (once).
+
+  - key: back2funded_reactivation_fee_150k
+    firm: topstep
+    value: 829.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405 price table: "$150K XFA" | "$829"; "Prices exclude sales tax."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "829 (a note, not a key)"
+    note: >
+      NEW KEY. The row came back in two fetches of 12060405; 14289835's fetch gave the same figure in a summary (once).
+
+  - key: back2funded_fee_by_pricing_path
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read gives a different Back2Funded price for an XFA earned on the Standard path and one earned on the No Activation Fee path, or says the price is the same on both.
+      12060405 gives one table by account size only ("$50K XFA" | "$599"; "$100K XFA" | "$699"; "$150K XFA" | "$829") and, asked directly in two fetches, does not mention the No Activation Fee path.
+      14289835 lists the reactivation prices by size in a section of their own ("$50K XFA — $599"), outside its Standard Path / No Activation Fee Path tables.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. The only price modifier stated is the DLL discount
+      (back2funded_dll_discount). A reading would treat the single table as applying to every XFA; that is a reading
+      the lead may declare, not a sentence on the page. FETCHES: 12060405 twice on this point, 14289835 twice.
+
+  - key: back2funded_dll_discount
+    firm: topstep
+    value: "50 USD off the Reactivation Fee when a Daily Loss Limit is selected at checkout (50K: DLL $1,000); the DLL then stays with the account for its full lifetime"
+    units: text
+    status: verified
+    article_id: "12060405; 14289835; 10490293"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Select a Daily Loss Limit (DLL) at checkout when Reactivating your Express Funded Account, and receive a $50 discount."
+      12060405 (one fetch, the second in paraphrase): "50K (DLL: $1,000)", "100K (DLL: $2,000)", "150K (DLL: $3,000)", each with "$50 off"; "The DLL stays with the account for its full lifetime"
+      14289835: "There's now a Responsible Trading Discount when you add a DLL at purchase" / "for No Activation Fee Trading Combines, Express Funded Account Activations, and Back2Funded Reactivations." / "$50 off" Reactivation Fees / "Discount is applied at checkout." / "Discount recurs monthly."
+      10490293, "Daily Loss Limit in the Trading Combine and Express Funded Account" (page date "June 30, 2026"): "There's now a Responsible Trading Discount when you add a DLL at purchase for No Activation Fee Trading Combines and Back2Funded Reactivations." / "$50 off Reactivation Fees"
+    stage2_key: "none (quoted in subscription_fee's 2026-11-14 note)"
+    stage2_value: "'$50 off' Reactivation Fees (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's subscription_fee note (2026-11-14). So a 50K reactivation bought with the DLL is
+      $549 before tax by these sentences (this record's arithmetic). THE CONFLICT STAGE 2 RECORDED STANDS TODAY:
+      14289835 lists "Express Funded Account Activations" among the discounted products; 10490293 (asked directly,
+      two fetches) does not, and does not say whether the discount recurs; neither page states an amount for an
+      activation (14289835's .md copy, asked: "Absent"). The activation discount is therefore not recorded. FOR A
+      DESIGN: the discount comes with a DLL that "stays with the account for its full lifetime" -- at 50K the $1,000
+      daily limit that Stage 2 D-320 (2) found "cuts the table's $2,000 bold plays" -- so a DLL reactivation is a
+      different funded account from the one the table was solved for, not the same account $50 cheaper. FETCHES:
+      12060405 three; 14289835 two; 10490293 two (the article id alone and its slug URL).
+
+  - key: back2funded_max_reactivations
+    firm: topstep
+    value: 2
+    units: reactivations per Express Funded Account
+    status: verified
+    article_id: "12060405; 8284215"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Back2Funded gives you up to 2 Reactivations per account"; FAQ: "Up to 2 Reactivations per Express Funded Account."
+      8284215, "Express Funded Account™ Parameters" ("Updated over 2 weeks ago"): "Back2Funded lets you reactivate up to 2 times at the same size and Payout policy."
+    stage2_key: "none (reset_fee's 2026-09-22 note 'max 2 per XFA'; account_start_rate_limit's 2026-11-14 note)"
+    stage2_value: "2 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's notes. The FAQ sentence and 8284215's sentence came back exactly in two fetches
+      each; "up to 2 Reactivations per account" in one (the .md copy gave it in paraphrase: "up to 2 times per XFA,
+      and each reactivation is bought separately"). The page does not say whether a reactivated account that is lost
+      again is eligible again within the two; on its words the count is per XFA, so a third loss ends it.
+
+  - key: back2funded_eligibility
+    firm: topstep
+    value: "an XFA earned through the Trading Combine, closed due to a rule violation before taking a Payout, on TopstepX in the new Topstep Dashboard, the trader in good standing; not after any Payout; not for traders on the Focused Trader Plan"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, eligibility list:
+      "The XFA was earned through Topstep's Trading Combine®"
+      "The XFA was closed due to a rule violation before taking a Payout"
+      "The XFA is on TopstepX™ in the new Topstep Dashboard"
+      "Trader is in good standing with no compliance concerns"
+      "Once a Payout is taken from an XFA, it is no longer eligible for Back2Funded."
+      "Traders on the Focused Trader Plan (FTP) cannot use Back2Funded."
+    stage2_key: "none (xfa_closure_at_request's 2026-10-25 note quotes the second line)"
+    stage2_value: "'closed due to a rule violation before taking a Payout' (a note, not a key)"
+    note: >
+      NEW KEY. The second and fifth lines were confirmed exact in a second fetch (the page bolds "before" and puts a
+      warning symbol before the fifth); the others came back verbatim once and in paraphrase in the .md fetch. Read
+      once, in paraphrase only (the .md copy's FAQ): XFA Standard, XFA Consistency and Shoulder Tap XFAs are
+      eligible; Live Funded Accounts, Pro Accounts and XFAs associated with them are not. "Rule violation" is not
+      defined on the page; an MLL breach is the designs' case (8284204: "Your account is permanently closed.").
+      Inactivity closure (8284215: "XFAs with no trading activity for more than 30 days may be closed.") is not
+      named either way. The Focused Trader Program's Slowdown Path also bars "B2F Reactivations" (Stage 2
+      focused_trader_program; not re-read today).
+
+  - key: back2funded_window_days
+    firm: topstep
+    value: 30
+    units: calendar days from account closure; no action within them and the offer expires
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "You have 30 calendar days from account closure to decide"
+      "If you take no action within 30 days — the offer expires and is automatically declined"
+      "On May 29th, 2026, the Reactivation window increased from 7 days to 30 days!"
+      14289835: "Reactivation window:" "30 calendar days from account closure."
+    stage2_key: "none (reset_fee's 2026-09-22 note '30-calendar-day decision window')"
+    stage2_value: "30 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's note. The first two lines were confirmed exact in a second fetch (the page bolds
+      "30 calendar days"). The stale topstep.com page Stage 2 recorded ("seven calendar days", express-funded-account-
+      rules, June 26, 2025) was not re-read. Read once in paraphrase: after the window "You would then need to return
+      to the Trading Combine to earn a new XFA".
+
+  - key: back2funded_trading_from
+    firm: topstep
+    value: "the start of the next trading session after the purchase, not immediately"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Your account becomes available at the start of the next trading session after your purchase — not immediately."
+      "Your account is ready to trade at the start of the next trading session"
+    stage2_key: "none (xfa_seat_frees_at's 2026-10-25 note, 'one read')"
+    stage2_value: "the same sentence (a note, not a key)"
+    note: >
+      NEW KEY. The first sentence was confirmed exact in a second fetch; the second came back once. Read once in
+      paraphrase (the .md copy): a purchase at 10 PM CT Tuesday makes the account available Wednesday at 5 PM CT. So
+      a purchase made after the 17:00 CT open trades from the following 17:00 CT open; the engine's next-session
+      convention matches this on its daily index.
+
+  - key: back2funded_seat_count
+    firm: topstep
+    value: "an eligible (closed) XFA does not count toward the 5-account limit during the 30-day window, until the Reactivation fee is paid"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, under the Reactivation Window: "Back2Funded-eligible XFAs do not count toward your 5-account limit until the Reactivation fee is paid"
+      FAQ "What happens if I have 5 active XFAs and one becomes eligible for Back2Funded?": "The eligible XFA does not count toward your 5-account limit during the 30-day window."
+    stage2_key: "none (xfa_seat_frees_at's notes quote both sentences; that key is unverified_human_input_required)"
+    stage2_value: "the same sentences (a note, not a key)"
+    note: >
+      NEW KEY. Both sentences confirmed exact in a second fetch (the page bolds "not"). WHAT THE PAGE DOES NOT SAY
+      (asked): in words, that the reactivated account takes a seat once paid -- "until the Reactivation fee is paid"
+      is the only wording; whether a reactivation can be bought while five other XFAs are active; and from what
+      moment the closed XFA stops counting (Stage 2's xfa_seat_frees_at stays unverified on that). A design that
+      reactivates should count the reactivated account as one of the five from the payment, which is what "until"
+      says, and declare the at-cap case as its own reading.
+
+  - key: back2funded_account_restart
+    firm: topstep
+    value: "the same account size and Payout rules; balance $0, P&L, trade history and winning days reset; the MLL resets to the size's starting value (50K: -$2,000), trails upward and locks at $0, as a brand new XFA"
+    units: text
+    status: verified
+    article_id: "12060405; 8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Keep the same account size and Payout rules — no Trading Combine® required."; FAQ: "You keep the same Payout rules as your original XFA."; "Everything resets to zero: balance, P&L, trade history, and winning days."
+      8284204, "What is the Maximum Loss Limit?" (page date "September 18, 2026"), under "What happens to my MLL when I use Back2Funded?": table Account Size | Starting MLL: "$50K XFA" | "-$2,000"; "The MLL trails upward as your balance grows and locks at $0 once reached, same as a brand new XFA."
+      8284204: "For a 50K XFA, your MLL starts at -$2,000 and trails upward." / "Once your balance reaches $2,000, the MLL locks at $0 permanently."
+    stage2_key: xfa_mll_start
+    stage2_value: -2000.0
+    note: >
+      RE-READ 8284204, UNCHANGED against xfa_mll_start (-2000.0, page date September 18, 2026, the same). 12060405
+      itself does not mention the Maximum Loss Limit (asked; absent): the MLL comes from 8284204's Back2Funded
+      section. Read once (8284204's .md copy): "When you Reactivate using Back2Funded, your account restarts
+      completely. Balance resets to $0, and all stats reset to zero." The scaling plan after a reactivation is not
+      named on either page; "same as a brand new XFA" and "Everything resets to zero: balance" put it at the entry
+      tier by funded_scaling_plan (Stage 2), a reading, not a sentence. FETCHES: 12060405 three; 8284204 two (the
+      article and its .md copy), the 50K row and the sentence after the table in both.
+
+  # ---- The Reset Bank and the rebill date (8284128; 8284121) --------------------------------------------------------
+  - key: reset_credit_per_rebill
+    firm: topstep
+    value: 1
+    units: Reset Credits per monthly Rebill
+    status: verified
+    article_id: "8284128; 8284121"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128, "What is a Reset?" (page date "September 25, 2026"): "Every monthly Rebill adds 1 Reset Credit to your Reset Bank."
+      "Tied to a specific account size AND type (Standard, No Activation Fee, or DLL)"; "Can't transfer between types or sizes"; "Can't use credits to buy a new Trading Combine — only on an existing active subscription"
+      8284121, "Trading Combine Subscriptions" ("Updated this week"): "You'll get a Reset Credit when your Rebill processes."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "'Every monthly Rebill adds 1 Reset Credit to your Reset Bank' (a note, not a key)"
+    note: >
+      NEW KEY, the same sentence as Stage 2's note. FETCHES: 8284128 twice (the article and its .md copy; the first
+      sentence exact in both, and "Tied to a specific account size AND type ..." and "Can't transfer between types or
+      sizes" returned by both; "Can't use credits to buy a new Trading Combine ..." verbatim in the first only, the
+      .md check not asked of it); 8284121 three times. Read once: "Works exactly like a purchased Reset — including the
+      30-day Rebill push."; "Can't combine (two 50K credits can't Reset a 100K)"; "Oldest matching credit will be
+      used first". A credit is earned only when a Rebill processes, so the first month's purchase earns none on these
+      words, and a Combine that passes before its Rebill earns none. Resets per day: "Limit: 2 Resets per account each
+      day." (once; Stage 2's reset_limit_per_account_per_calendar_day reads 10370307 the same). 8284117 (refunds, two
+      fetches): "If you've already used the Reset credit from that Rebill, we cannot process a refund."
+
+  - key: reset_credit_expiry
+    firm: topstep
+    value: "credits issued on or after 2025-12-11 expire 1 year after they are added; credits issued before 2025-12-11 do not expire; credits stay on the profile if the subscription is cancelled, for a future Combine of the same size and type"
+    units: text
+    status: verified
+    article_id: "8284128; 8284121"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128: "Credits issued on or after 12/11/2025 — expire 1 year after added"; "Credits issued before 12/11/2025 — no expiration"
+      8284128: "Reset Credits stay on your profile, even if you cancel the associated subscription."
+      8284121, FAQ "What happens to my Reset Credits if I cancel?": "Reset Credits stay on your profile." / "Available for any future Trading Combine (of the same size/type)." / "However, once a subscription is canceled, you can't Reset that specific account anymore."
+    stage2_key: "none (reset_fee's 2026-09-22 note: 'credits expiring 1 year after they are added')"
+    stage2_value: "1 year after added (a note, not a key)"
+    note: >
+      NEW KEY. REFINES Stage 2's note, which gave the one-year expiry without the 12/11/2025 cut-off; for any credit a
+      campaign started now would earn, the two readings agree (one year). Both 8284128 lines confirmed exact in its
+      .md copy; the cancel sentence in both fetches. The 8284121 FAQ lines came back once verbatim (the other fetches
+      gave the last line verbatim and the first two in paraphrase). The date format 12/11/2025 is the page's; read as
+      December 11, 2025 (US order), which the page does not spell out. A WRINKLE THE PAGES LEAVE: 8284128 says a
+      credit cannot buy "a new Trading Combine — only on an existing active subscription", while 8284121 says it is
+      "Available for any future Trading Combine (of the same size/type)"; read together, a kept credit can Reset a
+      later Combine of the same size and type once that Combine is active, not pay for it.
+
+  - key: reset_rebill_push
+    firm: topstep
+    value: "a Reset, purchased or from a credit, pushes the Rebill date out 30 days from the date of purchase"
+    units: text
+    status: verified
+    article_id: "8284128"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128, under "Resets and Your Rebill Date": "Resetting your account pushes your Rebill date out 30 days from the date of purchase."
+      FAQ: "Yes. Applying a Reset pushes your Rebill date out 30 days from the purchase date."
+      Under "Reset Credits": "Works exactly like a purchased Reset — including the 30-day Rebill push."
+    stage2_key: "none (not in rules.yaml; E-007's audit N3, docs/audits/phase0/E_rules_currency.md line 37)"
+    stage2_value: null
+    note: >
+      NEW KEY. FLAG -- A CONFLICT WITH THE VENDORED ENGINE, not with the ledger: Stage 2's reset (D-146,
+      vendor/stage2/propedge/campaign/lockstep.py lines 377-379) keeps "The subscription and its billing dates ...
+      unchanged", so a reset bought 20 days into a cycle is followed in the engine by a rebill 10 days later, where
+      on this page the next rebill comes 30 days after the reset. The engine overcharges a resetting campaign (the
+      conservative direction); every registered design runs with resets off (reset_failed_combines False, D-146), so
+      no registered result rests on it. A reset reading (the scout's rank 5) needs an adapter in extended/ for the
+      billing date. FETCHES: two (the article and its .md copy); the first sentence came back in both and was
+      confirmed exact; the FAQ and credit sentences came back once each. 8284121 (two fetches) adds, for a Combine
+      at the MLL: "Your account becomes ineligible for funding until it's reset." / "The subscription does not cancel —
+      it keeps rebilling, and you can still trade for practice."
+
+  # ---- The No Activation Fee path at 50K (14289835; 8284217) --------------------------------------------------------
+  - key: subscription_fee_naf_50k
+    firm: topstep
+    value: 95.0
+    units: usd per month (30 calendar days)
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835, "Topstep Pricing and Payment Questions", table Account Size | Standard Path | No Activation Fee Path: "50K | $49/month | $95/month"
+      "Paths cannot be changed after purchase."
+    stage2_key: "none (quoted in subscription_fee's 2026-11-14 note)"
+    stage2_value: "$95/month (a note, not a key)"
+    note: >
+      NEW KEY, the same cell as Stage 2's subscription_fee note (2026-11-14); the Standard path's $49 (Stage 2's
+      subscription_fee, verified) reads the same. FETCHES: two (the article, which summarised: "No Activation Fee Path
+      is $95, $149, and $229", and its .md copy, which confirmed the row and the paths sentence exact). WITH A DLL:
+      14289835 gives "$10 off" a 50K No Activation Fee Combine, "Discount recurs monthly." (both exact in the .md
+      check); 10490293 gives "$10 off" → 50K and says nothing on recurrence. So $85 a month with the DLL by 14289835's
+      sentences (this record's arithmetic), the DLL then "fixed and carried into your XFA" (Stage 2's note; not
+      re-read today). PAGE DATE: Stage 2 read "Updated over a month ago" on 2026-11-14; the first fetch today
+      reported "Updated today", the .md copy shows no date. The cells quoted are unchanged; whether anything else
+      on the page changed was not checked.
+
+  - key: reset_fee_naf_50k
+    firm: topstep
+    value: 95.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835, Reset table Account Size | Standard Path | No Activation Fee Path: "50K | $49 | $95"
+    stage2_key: "none (quoted in reset_fee's 2026-11-14 note)"
+    stage2_value: "$95 (a note, not a key)"
+    note: >
+      NEW KEY, the same cell as Stage 2's reset_fee note. FETCHES: two (the article's summary "Same prices as the
+      Trading Combine for each path and size"; the .md copy confirmed the row exact). 8284128 states no price and
+      links to 14289835. A Reset Credit is tied to its type ("Standard, No Activation Fee, or DLL"; reset_credit_per_rebill).
+
+  - key: activation_fee_naf_50k
+    firm: topstep
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "14289835; 8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835: "No Activation Fee Path — $0."; "$149 Activation Fee charged once per Express Funded Account (XFA) earned." (the Standard path)
+      8284217, "Express Funded Account™ Activation" (page date "September 24, 2026"), fee table: "Standard Path" | "$149 one-time activation fee per XFA"; "No Activation Fee Path" | "No activation fee"
+    stage2_key: "none (quoted in activation_fee's 2026-11-14 note)"
+    stage2_value: "$0 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's activation_fee note; the Standard path's $149 (activation_fee, verified) reads
+      the same. FETCHES: 14289835 two (both lines exact in the .md check); 8284217 two (the table cells exact in
+      both). 8284217 states no activation fee by size and no DLL discount on activation (asked, two fetches; absent).
+
+  # ---- The held pass and the evaluation's cancellation (8284215; 8284217; 8284121; 8284197; 10657969; 8284117) ------
+  - key: hold_expiry_days
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "8284215; 8284217; 8284121; 8284197; 10657969"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read states a deadline, number of days, expiry, lapse or forfeiture for a passed Trading Combine waiting on hold for an XFA seat, or for activating a passed Combine at all.
+      8284215 ("Updated over 2 weeks ago"): "Yes, up to 5 active at a time." / "If you pass a Trading Combine® while at the limit, the new XFA goes on hold until one closes." / "XFAs can't be put on hold."
+      8284121: "the passed Trading Combine remains in "Passed" status until you activate your Express Funded Account" / "ensuring you won't lose the account while waiting to activate."
+      8284217 (page date "September 24, 2026"): "If you already have 5 active XFAs or a Live Funded Account®, the button will be greyed out." / "You'll need to close an account before activating a new one."
+    stage2_key: hold_expiry_days
+    stage2_value: not_required_under_d34
+    note: >
+      UNSTATED, a successful reading, and NOT A CONFLICT: Stage 2's value is a design sentinel ("THIS IS A DESIGN
+      FACT, NOT A RULE READING ... no official page states whether a held pass expires", 2026-09-22), and it says
+      the question "becomes live again the moment D-34 is relaxed" -- which the scout's rank-2 lever does. Today's
+      pages are as silent as Stage 2's were. ASKED DIRECTLY: 8284215's .md copy has no sentence with "expire",
+      "deadline", "forfeit", "lapse" or "pending" ("XFAs can't be put on hold." is about pausing an XFA, not a held
+      pass); 8284217's .md copy has no sentence with "days", "expire", "deadline", "hold", "forfeit" or "lapse"; 8284121
+      (two fetches): no deadline ("No time limit" refers to passing, not activating); 8284197 ("September 24, 2026"):
+      none -- "When a 50K, 100K, or 150K Trading Combine® ... passes, the account closes and the subscription is
+      canceled."; 10657969 (once): none -- "a passed Trading Combine cannot be activated into an Express Funded
+      Account while your Live Funded Account is active." / "That option becomes available again if the Live Funded
+      Account is lost."; www.topstep.com/faq (once): none. A WEB SEARCH SUMMARY (not evidence) said "With fewer than
+      five active XFAs, you get 30 days from passing your Trading Combine to pay your Activation Fee"; no official
+      page read today says so, the two help-centre ids its results named (8284198, 8284216) return HTTP 404, and its
+      other hits were intercom.help mirrors and a third-party blog, not read. It may be an old version of a page.
+      Because a 30-day activation deadline would end a held pass that waits longer, a declaration that banks passes
+      must carry a declared reading of this gap (no expiry, the engine's; and a 30-day expiry beside it) and say
+      which is the base, until the operator's browser or Topstep's written answer settles it.
+
+  - key: combine_cancellation
+    firm: topstep
+    value: "by the Billing page ('X' next to the subscription, confirm); final: no undo, no resubscribe, no Reset on that subscription afterwards; an active Combine keeps rebilling every 30 days until it is cancelled (or passes); Reset Credits stay on the profile for a future Combine of the same size and type; a refund only within 28 days of the charge with no trading activity, and a refund cancels the subscription and closes the Combine at once"
+    units: text
+    status: verified
+    article_id: "8284121; 8284117"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284121 ("Updated this week"), FAQ "How do I cancel?": "Billing page → click "X" next to the subscription → confirm." / "Once canceled, it cannot be undone." / "No resubscribe option." / "You also can't purchase a Reset on that subscription after it's canceled."
+      FAQ "Can I reactivate a canceled subscription?": "No. Once canceled, it's gone. Start a new Trading Combine to keep trading."
+      The Basics: "It Rebills every 30 days from your original sign-up date."
+      FAQ "What happens to my subscription after I pass?": "Other active Trading Combines keep Rebilling until you manually cancel them." / "Payments already processed for the current billing cycle are not refunded or prorated."
+      8284117, "Topstep® Refund Policies" ("Updated over 2 weeks ago"): "Contact us within 28 days of the charge." / "Accounts must have no trading activity." / "Processing a refund will result in the immediate cancellation of your subscription, closure of the associated Trading Combine, and removal of the associated Reset credit."
+    stage2_key: "none (quoted in xfa_closure_at_request's 2026-10-25 note)"
+    stage2_value: "the same FAQ sentences, read 2026-10-25 (a note, not a key)"
+    note: >
+      NEW KEY, the same FAQ wording as Stage 2's note. Every 8284121 line was confirmed exact in the .md check (the
+      page bolds parts of the Billing line); "Active until you pass ... or until you cancel." and "It will Rebill
+      monthly until you pass or cancel." came back verbatim in one fetch only (the .md copy's list of sentences), so
+      they rest on one fetch each and are kept out of `quote` ("Other active Trading Combines keep Rebilling until
+      you manually cancel them.", exact in two, carries the value instead); 8284117's .md copy words the same as "a monthly subscription that Rebills
+      approximately every 30 days until you pass or cancel" (once). The 8284117 lines came back in both fetches (the page bolds "28 days"
+      and "no trading activity"). "Payments already processed for the current billing cycle are not refunded or
+      prorated." sits under the pass FAQ, not the cancel FAQ; no sentence applies it to a cancellation in words. Asked
+      directly, no sentence says in words that cancelling stops future Rebills ("until you pass or cancel" is the
+      nearest), and none says what cancelling does to the account itself: see combine_cancellation_account_effect.
+      Stage 2 quoted the Terms of Use s.3 (September 21, 2026 version): "You are not entitled to a refund of the fee,
+      for example, if you cancel your Account." -- not re-read today.
+
+  - key: combine_cancellation_account_effect
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "8284121; 8284117"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read says whether a Trading Combine cancelled without a refund closes at once or stays tradable until the end of the billing period already paid.
+      8284121, the nearest: "No. Once canceled, it's gone. Start a new Trading Combine to keep trading." and, for a pass only, "The subscription tied to the passed Trading Combine will auto-cancel, and the account will close."
+      8284117 states an immediate closure only for a refund: "Processing a refund will result in the immediate cancellation of your subscription, closure of the associated Trading Combine, and removal of the associated Reset credit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading; Stage 2 recorded the same silence in xfa_closure_at_request's note ("whether the
+      Combine closes at once or at the end of its billing period is not stated"). Asked directly of 8284121 (two
+      fetches) and 8284117 (once). "Once canceled, it's gone" reads most naturally as the subscription gone, with the
+      account closing with it -- that is a reading, not a sentence. FOR A DESIGN: a stop rule that cancels before a
+      rebill (the scout's rank 3) loses nothing it has not paid for under either reading if it cancels only a Combine
+      it would not trade again; a rule that cancels and keeps trading the paid days needs the second reading, which
+      no page gives, so it should assume the account closes at once.
