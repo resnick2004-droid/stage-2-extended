@@ -183,6 +183,23 @@ class Ctx:
 
         return int(np.random.SeedSequence([ST.SEED_SCORECARD, 1]).generate_state(1)[0])
 
+    judged_path: str | None = None
+
+    def write_judged(self, jdf, params: dict[str, Any]) -> str | None:
+        """W1: stage C's file (sections `level` to `beside`) and its manifest, written before `stage_C_scorecard` is
+        authorised, so a scorecard refusal or failure never discards the verdict."""
+        from extended import opening_run as R
+        from extended import opening_stats as ST
+        from extended.results import write_result
+
+        if self.smoke:
+            return None
+        csv, _ = write_result(jdf, RESULT_JUDGED, script=SCRIPT, seed=ST.SEED_B2, parameters=params, exploratory=True,
+                              prereg_id=R.FAMILY, variant_count=4, results_dir=self.results_dir,
+                              description="F-03 run 2 (stage C: the lines, the judged readings, the campaign, the "
+                                          "floors, beside); EXPLORATORY until a carried design is registered.")
+        return str(csv)
+
     def write_stage_c(self, jdf, jjf, params: dict[str, Any]) -> list[str]:
         from extended import opening_run as R
         from extended import opening_stats as ST
@@ -191,9 +208,10 @@ class Ctx:
         if self.smoke:
             return []
         out = []
-        for df, name, what in ((jdf, RESULT_JUDGED, "stage C: the lines, the judged readings, the campaign, the "
-                                                   "floors, beside"),
-                               (jjf, R.JOURNEY, "the journey scorecard (section 13), beside, never the pass line")):
+        todo = [] if self.judged_path else [(jdf, RESULT_JUDGED, "stage C: the lines, the judged readings, the "
+                                                                 "campaign, the floors, beside")]
+        for df, name, what in todo + [(jjf, R.JOURNEY, "the journey scorecard (section 13), beside, never the "
+                                                       "pass line")]:
             csv, _ = write_result(df, name, script=SCRIPT, seed=ST.SEED_B2, parameters=params, exploratory=True,
                                   prereg_id=R.FAMILY, variant_count=4, results_dir=self.results_dir,
                                   description=f"F-03 run 2 ({what}); EXPLORATORY until a carried design is registered.")
@@ -848,7 +866,11 @@ def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_pa
                        rtp=bool(rtp), one_at_a_time=C.STRICT_GAP, purchase_budget=C.BUDGET)
     blk = kw.pop("blocks")
     extra = {"funded_account_cls": cls(blk)} if cls is not None else {}
-    if recorder is not None:
+    if recorder is not None:                              # W2: the gate's offers named by id, its blocks dated
+        if recorder.offer_ids is None:
+            recorder.offer_ids = offer_ids_of(trades, list(days), blk)
+        if recorder.dates is None:
+            recorder.dates = list(days)
         extra["recorder"] = recorder
     rows, _ = XG.run_gate(blk, workers=int(workers), **extra, **kw)
     # n5: floors (iv) and (v) read from the call's own configuration (never hard-coded)
@@ -900,6 +922,14 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     A1c = ctx.a1_days(str(reader.CHOICE_START), str(reader.CHOICE_END))
     cal = list(pre.judged_sessions)
     n = len(cal)
+
+    # ---- 0. W1: the choice-block beside's refusing checks, before any judged purpose is authorised -- they read
+    # only choice-block data and run 1's file (the fold hashes, the states reproduced from the pinned fits, the lookups)
+    spc = ctx.span(str(reader.CHOICE_START), str(reader.CHOICE_END), sorted(set(A1c["date"]) | set(cal)))
+    cb_bad, cb_prep = choice_precheck(ctx, z, c, ci, run1_params, spc, A1c, P)
+    if cb_bad:
+        return _refuse("the choice-block beside's checks, before any judged read: " + "; ".join(cb_bad[:3])), None, \
+            None, {}
 
     # ---- 1. stage_C_states: the judged bars, the pick's states, the strata counts, the run lengths
     ctx.authorise("stage_C_states")
@@ -953,7 +983,6 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     y_close = ST.centred(Lj, "c_close", Lj.population)
     y_all = ST.centred(Lj, "c")
     # the choice span's centred values on the judged grid's marks (B2's source, both conventions, the labels for C2)
-    spc = ctx.span(str(reader.CHOICE_START), str(reader.CHOICE_END), all_dates)
     cpop = spc.population[spc.population["date"] >= STAGE_AB_FIRST]
     ccal = sorted(d for d in A1c["date"] if d >= STAGE_AB_FIRST)
     Lc = ST.layout(cpop, ccal, kinds=kinds_all, values=("c", "c_close"))
@@ -1059,8 +1088,19 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
         Lj.year[:, None], sel.shape)[Lj.population], pool)
     f1b = SC.floor_taken_flattened(rec_d.trades(f"fo_{c}", ARM, "off"), offers, pool)
     gate_cls = _index_class(c, spj.trades, days_all, Lj, sel)
+    f3_rec = OW.GateRecorder(columns=("path", "place", "account", "account_session", "historical_day", "trade_index",
+                                      "offer", "date"))
     grows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
-                        cls=gate_cls)
+                        cls=gate_cls, recorder=f3_rec)
+    in_set = grid_flags(Lj, sel)
+    w2, w2_counts = [], {}
+    for sh in sorted({k[0] for k in f3_rec.recorded()}):
+        pr_, w2_counts[sh] = OW.gate_state_problems(f3_rec, sh, in_set)
+        w2 += [f"{sh}: {x}" for x in pr_]
+    if w2 or not w2_counts:
+        return _refuse("W2: floor (iii)'s gate does not wait for the pick's state by offer id: "
+                       + ("; ".join(w2[:3]) or "nothing recorded")), None, None, {}
+    del f3_rec
     fg = SC.floor_gate(grows)
     conduct = {k: bool(grows[k].all()) for k in ("fo_rules_from_verified_ledger", "fo_strict_one_position", "fo_no_flip",
                                                  "fo_cross_account_rule_on") if k in grows}
@@ -1176,6 +1216,16 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     passes = bool(claimed and c1.passes and c1c.passes and c2_pass and c3 and all(floors.values()))
     verdict = ("not claimed: the judged counts make cons lax" if not claimed else "CARRIED" if passes else "CLOSED")
     out += R.rows("level", [{"line": "verdict", "cell": c, "verdict": verdict, **floors}])
+    jdf = R.frame(out, R.SECTIONS[10:])
+    params = {**pre.parameters(), "run": 2, "pick": c, "verdict": verdict, "run1_sha256": run1_params.get("_sha256"),
+              "forecast_sha256": run1_params["forecast_sha256"], "selection_sha256": sel_sha,
+              "population_sha256": OP.frame_sha256(popj), "purposes": list(ctx.authorised), "sizes": vars(z),
+              "seed_roles": {"twins": "SEED_TWIN", "B2": "SEED_B2", "K0": "SEED_K0", "gate": "SEED_GATE",
+                             "scorecard": "SEED_SCORECARD"}, "workers": int(workers),
+              "floor_iii_wait_by_offer_id": w2_counts}
+    ctx.judged_path = ctx.write_judged(jdf, {**params, "seconds": round(time.time() - t_all, 1)})   # W1: before 13
+    if ctx.judged_path:
+        log(f"written: {ctx.judged_path}")
 
     # ---- 5. stage_C_scorecard (13)
     ctx.authorise("stage_C_scorecard")
@@ -1227,7 +1277,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
         jr += rows_w
     jr += J.against(wpool, "judged")
     # the choice-block beside (13): 2021-2023's starts, u3 out of fold, Stage 2's purge by horizon per measure
-    cb_rows, cb_bad = choice_beside(ctx, z, c, ci, run1_params, spc, A1c, P, workers, bm_tab)
+    cb_rows, cb_bad = choice_beside(ctx, z, c, cb_prep, spc, workers, bm_tab)
     if cb_bad:
         return _refuse("the choice-block beside: " + "; ".join(cb_bad[:3])), None, None, {}
     jr += cb_rows
@@ -1242,14 +1292,9 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
             "note": "Stage 2 D-621 (3)'s rule against P-14 beside, deciding nothing: its line (i) is read in `paired` "
                     "(stat d621_i_0.05) and does NOT hold its level (E-007 (1); E-035 (3)); its lines (ii)-(iv) -- "
                     "the guarded measures, the gate, the coin -- are each reported on their own, never AND-ed"}]
-    jdf = R.frame(out, R.SECTIONS[10:])
     jjf = pd.DataFrame(jr)
-    params = {**pre.parameters(), "run": 2, "pick": c, "verdict": verdict, "run1_sha256": run1_params.get("_sha256"),
-              "forecast_sha256": run1_params["forecast_sha256"], "selection_sha256": sel_sha,
-              "population_sha256": OP.frame_sha256(popj), "purposes": list(ctx.authorised), "sizes": vars(z),
-              "seed_roles": {"twins": "SEED_TWIN", "B2": "SEED_B2", "K0": "SEED_K0", "gate": "SEED_GATE",
-                             "scorecard": "SEED_SCORECARD"}, "workers": int(workers),
-              "seconds": round(time.time() - t_all, 1), "scorecard_reuse_checked": reuse_checks}
+    params = {**params, "purposes": list(ctx.authorised), "seconds": round(time.time() - t_all, 1),
+              "scorecard_reuse_checked": reuse_checks}
     return 0, jdf, jjf, params
 
 
@@ -1371,23 +1416,16 @@ def paired_block_rows(block: str, arm: str, tabs: dict, p14, bm_tab) -> list[dic
     return out
 
 
-def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, workers: int, bm_tab
-                  ) -> tuple[list[dict[str, Any]], list[str]]:
-    """13's choice-block beside: the pick's states on the choice block from run 1's pinned fits (u3 out of fold by
-    the pinned folds; nothing fitted), held to run 1's states hash (refusing); its design, its twin design (draw 0 on
-    the choice block: run 1's) and P-16 replayed on 2021-2023's starts of the choice job (history ending 2023-12-29)
-    under the responses, read on Stage 2's purge (`opening_journey.choice_rows`); the paired readings with P-14's
-    purged series, the wait as felt, the uncertainty and design against luck, the frontier."""
-    import numpy as np
-
-    from extended import opening_journey as J
+def choice_precheck(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P) -> tuple[list[str], dict[str, Any]]:
+    """13's choice-block beside, its refusing checks (W1: run before `stage_C_states` is authorised; they read only
+    choice-block data and run 1's file): each pinned fold's JSON hashes to its sha256; the pick's states on the choice
+    block, recomputed from the pinned fits (u3 out of fold, nothing fitted), are run 1's (`states_sha256`); the offer
+    lookup holds on every start of both arms' choice jobs. (problems, what the beside then replays)."""
     from extended import opening_population as OP
-    from extended import opening_stagec as SC
     from extended import opening_states as OS
     from extended import opening_stats as ST
     from extended import opening_wait as OW
     from extended import reader
-    from extended import user_beside as B
 
     bad: list[str] = []
     folds = {}
@@ -1396,6 +1434,8 @@ def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, worke
         if OS.coefficients_sha256(cf) != v["sha256"]:
             bad.append(f"run 1's fold {Y} does not hash to its recorded sha256")
         folds[int(Y)] = cf
+    if bad:
+        return bad, {}
     walked = set(spc.days.loc[spc.days["day_kind"].isin(OP.WALKED_KINDS), "date"])
     g = ctx.grid(str(reader.CHOICE_START), str(reader.CHOICE_END), walked)
     st = OS.compute(g, frozen=OS.coefficients_from_json(run1_params["forecast_json"]), frozen_folds=folds,
@@ -1405,9 +1445,7 @@ def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, worke
     for x in OS.BUILT:
         pop[f"in_{x}"] = pop[f"in_{x}"].astype("boolean").fillna(False).astype(bool) & pop["population"].astype(bool)
     if OS.states_sha256(pop) != run1_params.get("states_sha256"):
-        bad.append("the choice block's states recomputed from the pinned fits are not run 1's (states_sha256)")
-    if bad:
-        return [], bad
+        return ["the choice block's states recomputed from the pinned fits are not run 1's (states_sha256)"], {}
     kinds = dict(zip(A1c["date"], A1c["day_kind"]))
     cal = sorted(d for d in A1c["date"] if d >= STAGE_AB_FIRST)
     L = ST.layout(pop[pop["date"] >= STAGE_AB_FIRST].reset_index(drop=True), cal, kinds=kinds, values=(),
@@ -1417,21 +1455,45 @@ def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, worke
     designs = {"design": grid_flags(L, sel), "twin": grid_flags(L, tw0), "p16": None}
     days = sorted(A1c["date"])
     jobs = ctx.jobs(spc.trades, days, P)
-    rows: list[dict[str, Any]] = []
-    cards: dict[str, dict[str, float]] = {}
-    wpool: dict[str, dict[str, float]] = {}
+    arms: dict[str, dict[str, Any]] = {}
     for arm in SCORECARD_ARMS:
         jb = jobs[arm]
         ids = offer_ids_of(spc.trades, days, jb["blocks"])
         starts = [i for i, d in enumerate(jb["dates"]) if str(d) >= STAGE_AB_FIRST]
         if z.starts is not None:
             starts = starts[:: max(1, len(starts) // int(z.starts))][: int(z.starts)]
-        tabs = {}
+        classes = {}
         for name, k in designs.items():
             cls = (OW.waiting_class(OW.WaitSpec.for_blocks(f"{c}_{name}_{arm}_choice", jb["blocks"],
                                                            flags_by_block(ids, k))) if k is not None else None)
             if cls is not None:
                 bad += [f"{arm} {name}: {p_}" for p_ in OW.lookup_problems(OW.spec_of(cls), jb, starts)]
+            classes[name] = cls
+        arms[arm] = {"job": jb, "ids": ids, "starts": starts, "classes": classes}
+    return bad, {"arms": arms}
+
+
+def choice_beside(ctx, z, c: str, prep: dict, spc, workers: int, bm_tab) -> tuple[list[dict[str, Any]], list[str]]:
+    """13's choice-block beside, after stage C's file is written (W1): the pick's design, its twin design (draw 0 on
+    the choice block: run 1's) and P-16 replayed on 2021-2023's starts of the choice job (history ending 2023-12-29)
+    under the responses, read on Stage 2's purge (`opening_journey.choice_rows`, whose P check refuses only the
+    scorecard); the paired readings with P-14's purged series, the wait as felt, the uncertainty and design against
+    luck, the frontier. `prep` is `choice_precheck`'s."""
+    import numpy as np
+
+    from extended import opening_journey as J
+    from extended import opening_stagec as SC
+    from extended import user_beside as B
+
+    bad: list[str] = []
+    rows: list[dict[str, Any]] = []
+    cards: dict[str, dict[str, float]] = {}
+    wpool: dict[str, dict[str, float]] = {}
+    for arm in SCORECARD_ARMS:
+        a = prep["arms"][arm]
+        jb, ids, starts = a["job"], a["ids"], a["starts"]
+        tabs = {}
+        for name, cls in a["classes"].items():
             for resp in z.responses:
                 kw = {"funded_account_cls": cls} if cls is not None else {}
                 if resp.startswith("denial") or resp.startswith("forfeit"):

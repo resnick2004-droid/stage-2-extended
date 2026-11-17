@@ -119,6 +119,25 @@ shifted = [np.resize(shifted[h], len(b)) if len(b) else np.zeros(0, bool) for h,
 probs_s, _ = OW.gate_wait_problems(rec, shifted, shift="lower_bound", enforcement_p=0.0, W=W)
 out["misaligned_caught"] = bool(probs_s)
 
+# W2 (the third build read): the recorded campaign held to the state by offer id (floor (iii)'s check), and a
+# planted mismatch -- the state set taken one block later -- refused
+from extended import opening_population as OP  # noqa: E402
+from extended import place_records as PR  # noqa: E402
+
+t_ = P["t"].copy()
+t_["fo_offer"] = [OP.offer_id(d, int(e)) for d, e in zip(t_["date"].astype(str), t_["entry_t"])]
+ids = PR.block_offer_ids(t_, P["days"], blocks, "fo_offer")
+rec_o = OW.GateRecorder(dates=P["days"], offer_ids=ids)
+gate(cls, rec_o)
+in_set = {str(x): bool(f) for h in range(len(blocks)) for x, f in zip(ids[h], placebo[h])}
+w2 = {sh: OW.gate_state_problems(rec_o, sh, in_set) for sh in ("point", "lower_bound")}
+out["w2_problems"] = {sh: v[0] for sh, v in w2.items()}
+out["w2_counts"] = {sh: v[1] for sh, v in w2.items()}
+moved = {str(x): bool(f) for h in range(len(blocks)) for x, f in zip(ids[h], np.resize(placebo[(h + 1) % len(blocks)],
+                                                                                        len(ids[h])))}
+out["w2_planted_caught"] = all(bool(OW.gate_state_problems(rec_o, sh, moved)[0]) for sh in ("point", "lower_bound"))
+out["w2_no_ids_refused"] = bool(OW.gate_state_problems(rec, "point", in_set)[0])
+
 # a spec whose flags do not fit the gate's blocks
 try:
     OW.WaitSpec.for_index("short", placebo[:-1], W=W, blocks=blocks)

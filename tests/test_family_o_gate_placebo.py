@@ -61,3 +61,9 @@ def test_the_check_sees_a_misaligned_lookup(got):
 
 def test_a_spec_that_does_not_fit_the_gates_blocks_is_refused(got):
     assert got["misfit_refused"]
+
+
+def test_w2_floor_iiis_check_holds_the_gate_to_the_state_by_offer_id_and_refuses_a_planted_mismatch(got):
+    assert got["w2_problems"] == {"point": [], "lower_bound": []}
+    assert all(c["in_wait"] > 0 and c["declined"] > 0 for c in got["w2_counts"].values())
+    assert got["w2_planted_caught"] and got["w2_no_ids_refused"]
