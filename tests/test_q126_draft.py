@@ -10,11 +10,12 @@ What it checks:
   distinct; the plan writes no other eight-digit number (so no seed of another block: Q-108's two blocks, read from its
   pinned plan, and the replica's, read from Q-125's note, are checked by name too); the blocks appear, word-bounded,
   in no other file of the working tree or of any branch, remote or tag outside the declared uses (a document's mention
-  outside `prereg/` and `docs/calibration/` is allowed, as Q-108's guard allows it); the lookahead test's derived range
-  ends below the calibration block, by the margin the plan states;
-- **the form** -- the grid and the scope-Q branch as the arithmetic declares them; Appendix B numbered 1..30, every row
-  cited in the body and every citation a row;
-- **the figures** -- the sizing and the floor's allowance (section 3.2), the probe (3.2, 4.3), the null counts (3.2,
+  outside `prereg/` and `docs/calibration/` is allowed, as Q-108's guard allows it); the look-ahead test's derived range,
+  read at the search's commit ec6905a (before Q-128 replaced it), ends below the calibration block, by the margin the
+  plan states;
+- **the form** -- the grid and the scope-Q branch as the arithmetic declares them; Appendix B numbered 1..31, every row
+  cited in the body and every citation a row; sections 9 and 10 carry no figure of their own (they cite);
+- **the figures** -- the band check (2.5), the sizing and the floor (section 3.2), the probe (3.2, 4.3), the null counts (3.2,
   3.5), the criterion's and the floor's power (4.3), the power costs, the grid steps and the coverage (4.3, 5), each
   recomputed by the arithmetic script from its constants and Q-108's result files; and the cost (6.2), from Q-108's
   two run logs when they are present (skipped, saying so, when they are not).
@@ -40,7 +41,10 @@ PINNED_NAME = "Q-126_one_sample_plan_2.md"
 ARITH = CALDIR / "scripts" / "q126" / "q126_arith.py"
 Q108_PLAN = CALDIR / "Q-108_one_sample_plan.md"
 Q125_NOTE = ROOT / "docs" / "research" / "Q-125_validation_failure_2026-11-17.md"
-LOOKAHEAD = ROOT / "tests" / "test_features_lookahead.py"
+LOOKAHEAD = "tests/test_features_lookahead.py"
+#: the search's commit (the first text): the look-ahead file's derived range is read there, before Q-128 (E-178)
+#: replaced it by SeedSequence children (the red team's M-A)
+LOOKAHEAD_COMMIT = "ec6905a"
 PIN_TEST = ROOT / "tests" / "test_declarations_fixed.py"
 
 CAL_BLOCK = tuple(range(20263010, 20263019 + 1))
@@ -183,7 +187,7 @@ def check_appendix_b(body: str, name: str) -> None:
     app = section(body, "## Appendix B")
     rows = B_ROW.findall(app)
     nums = [int(r[0]) for r in rows]
-    assert nums == list(range(1, 31)), f"Appendix B must number 30 choices 1..30: {nums}"
+    assert nums == list(range(1, 32)), f"Appendix B must number 31 choices 1..31: {nums}"
     for n, choice, where, why in rows:
         assert choice.strip() and where.strip() and why.strip(), f"B-{n} lacks its text, its place or its basis"
     before = body[:body.index("## Appendix B")]
@@ -216,18 +220,21 @@ def check_sizing(body: str, name: str) -> None:
 
 
 def check_floor(body: str, name: str) -> None:
-    """The floor at zero tolerance (E-176) and everything stated about it in 3.2 and 4.3, with E-173's reversed
-    allowance and the c = 0..3 comparison held as the declared reading beside."""
+    """The floor at zero tolerance on E-182's basis and everything stated about it in 3.2 and 4.3: its bounds, its two
+    certificates, its chance of emptying a branch, and E-173's reversed allowance with the c = 0..3 comparison as the
+    declared reading beside."""
     A = arith()
     n = A.n_val()
     N = A.CAL_SUBSETS_PER_SIZE * len(A.SIZES)
-    assert A.ALLOWANCE == 0, "the declared floor is zero tolerance (E-176)"
+    assert A.ALLOWANCE == 0, "the declared floor is zero tolerance (E-176, E-182)"
     c3 = A.allowance(N, n)
     assert c3 == A.E173_ALLOWANCE == 3, "E-173's least allowance, the reading beside"
     r95, rV = A.guard_rate(n), A.punished_rate(n)
     b0, b3 = A.rule_bounds(N, n, 0), A.rule_bounds(N, n, c3)
     assert abs(b0["nested"] - n / (N + n)) < 1e-12, "the closed form at c = 0"
     beside = A.bound_by_subsets(n=n)
+    cal0, val0 = A.certificates(N, n)
+    assert cal0 < val0 / 20, "the floor certifies far more tightly than the validation"
     s32 = flat(section(body, "### 3.2"))
     for s in ("A candidate is refused if **any** of the 3,300 subsets is bad (c = 0).",
               f"At r_V the floor sees a bad subset, and refuses, with probability {A.detection(N, rV):.4f}",
@@ -237,19 +244,24 @@ def check_floor(body: str, name: str) -> None:
               f"{b0['one']:.4f} for one candidate", f"{b0['nested']:.4f} for a branch nested in m",
               f"**{b0['primary']:.4f} for the primary**", f"{b0['nested']:.4f} when the scope-Q branch is the primary",
               f"**{b0['second']:.4f} for the second statistic**", f"{b0['all']:.4f} over the whole rule",
-              f"which is {c3} -- so that",
-              f"r_95 = 1 - {A.GUARD_PASS}^(1/{n}) = {r95:.4e}",
-              f"refuses a candidate there with {1 - A.floor_admits(r95, N, 0):.4f}; E-173's c = {c3} would refuse it "
-              f"with {1 - A.floor_admits(r95, N, c3):.4f} (c = {c3 - 1} with {1 - A.floor_admits(r95, N, c3 - 1):.4f})",
-              f"rises to {b3['all']:.4f} over the rule ({b3['primary']:.4f} for the primary), against {b0['all']:.4f} "
-              f"at c = 0",
+              "These are suprema over every configuration of rates, not chances.",
+              "the floor is the line's main guarantee of size over rare configurations",
+              f"is {cal0:.4e} from the calibration's {N:,} subsets, and {val0:.4e} from the validation's {n}",
+              f"r_95 = 1 - {A.GUARD_PASS}^(1/{n}) = {r95:.4e} at which the validation's exact part passes it with "
+              f"probability {A.GUARD_PASS} -- with {1 - A.floor_admits(r95, N, 0):.4f}",
+              "**Withdrawn** (E-182)",
+              f"with 1 - (1 - r)^{N}: {A.flat_none(1e-4):.4f} at r = 1e-04 and {A.flat_none(3e-4):.4f} at 3e-04, where "
+              f"the validation would pass with {(1 - 1e-4) ** n:.4f} and {(1 - 3e-4) ** n:.4f}",
+              f"which is {c3}) was declared",
+              f"It would refuse at r_95 with {1 - A.floor_admits(r95, N, c3):.4f} (c = {c3 - 1} with "
+              f"{1 - A.floor_admits(r95, N, c3 - 1):.4f}), but it raises the rule's bound to {b3['all']:.4f} "
+              f"({b3['primary']:.4f} for the primary)",
               f"towards {1 - A.GUARD_PASS:.2f}",
               f"{beside[1][2]:.4f} at {beside[1][0]:,} subsets, {beside[2][2]:.4f} at {beside[2][0]:,} and "
               f"{beside[3][2]:.4f} at {beside[3][0]:,}"):
         assert s in s32, f"3.2 lacks {s!r}"
-    steps = A.step_costs(ROOT)
-    lo, hi = min(z for *_, z in steps), max(z for *_, z in steps)
-    assert f"about {lo:.2f} to {hi:.2f} more minimum detectable lift" in s32
+    for gone in ("costs one grid step**", "the strict floor fails fewer profitable models**", "chance of that loss"):
+        assert gone not in s32, f"3.2 still argues {gone!r}"
     s43 = section(body, "### 4.3")
     rates = [(r, "") for r in A.FLOOR_RATES[:4]] + [(r95, " (r_95)"), (rV, " (r_V)")] + \
             [(r, "") for r in A.FLOOR_RATES[4:]]
@@ -263,11 +275,22 @@ def check_floor(body: str, name: str) -> None:
         row = (f"| {c}{lab} | {1 - A.floor_admits(r95, N, c):.4f} | {1 - A.floor_admits(rV, N, c):.4f} | "
                f"{b['one']:.4f} | {b['nested']:.4f} | {b['primary']:.4f} | {b['second']:.4f} | {b['all']:.4f} |")
         assert row in s43, f"4.3 lacks the comparison row {row!r}"
+    for key, label in (("A", "A: 3e-4, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6"), ("B", "B: 1e-3, 3e-4, 1e-4, then as A"),
+                       ("C", "C: 3e-4 at every margin")):
+        r0, r3 = A.profile_reading(A.PROFILES[key], 0), A.profile_reading(A.PROFILES[key], c3)
+        row0 = f"| {label} | 0 | {r0['val_fail']:.4f} | {r0['none']:.4f} | {r0['mean_p']:.3f} |"
+        row3 = f"| | {c3} | {r3['val_fail']:.4f} | {r3['none']:.4f} | {r3['mean_p']:.3f} |"
+        assert row0 in s43 and row3 in s43, f"4.3 lacks profile {key}'s rows"
+    assert A.PROFILES["B"][3:] == A.PROFILES["A"][3:], "profile B is A after its third margin"
+    for r in A.FLAT_RATES:
+        row = f"| {r:.0e} | {A.flat_none(r):.4f} | {(1 - r) ** n:.4f} |"
+        assert row in s43, f"4.3 lacks the flat-rate row {row!r}"
     f43 = flat(s43)
     assert (f"98.9 % of the time, with probability {1 - A.floor_admits(1e-4, N, 0):.4f}, and one at r_95 with "
             f"{1 - A.floor_admits(r95, N, 0):.4f}") in f43
     assert round(100 * (1 - 1e-4) ** n, 1) == 98.9
-    assert f"keeping the rule's chance of losing the line at {b0['all']:.4f}" in f43
+    assert f"the price of certifying the rate to {cal0:.4e} and of a bound of {b0['all']:.4f}" in f43
+    steps = A.step_costs(ROOT)
     txt = (f"{steps[0][2]:.3f} from `{steps[0][0]}` to `{steps[0][1]}`, "
            + ", ".join(f"{z:.3f} to `{y}`" for _, y, z in steps[1:-1]) + f" and {steps[-1][2]:.3f} to `{steps[-1][1]}`")
     assert txt in f43, f"4.3 lacks the grid steps {txt!r}"
@@ -276,6 +299,42 @@ def check_floor(body: str, name: str) -> None:
             f"grid** ({b3['nested']:.4f} at E-173's c = {c3})") in f43
     assert f"catch a bad-subset rate of 1e-03 with probability {1 - (1 - 1e-3) ** n:.4f}" in f43
     assert "**no subset of the 3,300 is bad**" in flat(section(body, "### 4.2"))
+    assert "**whether the floor alone emptied a branch**" in flat(section(body, "### 4.2"))
+
+
+def check_band(body: str, name: str) -> None:
+    """2.5's band check: its intervals at 657 and 1,006 sessions, its exclusion arithmetic and 2.5's corrected basis."""
+    A = arith()
+    s25 = flat(section(body, "### 2.5"))
+    i657 = {b: A.band_interval(657, b) for b in A.BANDS}
+    i1006 = {b: A.band_interval(1006, b) for b in A.BANDS}
+    assert i657["below 42"][1] is None and i1006["below 42"][1] is None
+    txt657 = (f"On the judged block's 657 sessions: below 42, R >= {i657['below 42'][0]}; 42 to 50, "
+              f"{i657['42 to 50'][0]} <= R <= {i657['42 to 50'][1]}; 51 to 62, {i657['51 to 62'][0]} <= R <= "
+              f"{i657['51 to 62'][1]}")
+    txt1006 = (f"On a 1,006-session choice block: R >= {i1006['below 42'][0]}; {i1006['42 to 50'][0]} to "
+               f"{i1006['42 to 50'][1]}; {i1006['51 to 62'][0]} to {i1006['51 to 62'][1]}")
+    assert txt657 in s25 and txt1006 in s25, "2.5 lacks the band intervals"
+    mr = A.max_runs(657, A.EXCLUDED_REGIME)
+    assert all(lo > mr for lo, _ in i657.values()), "a side constant over two quarters passes a band"
+    assert f"has at most {mr} runs on the judged block, so it fails every band" in s25
+    assert f"{100 * A.BAND_TAIL:g} % in each tail" in s25 and f"the {100 * A.BAND_TAIL:g} % quantile" in s25
+    mean, _, _ = cover()
+    assert f"scope D admits {mean['flip42']:.3f}" in s25 and f"scope D admits {mean['markov50']:.3f}" in s25
+    assert round(5 * (1 - mean["markov50"])) == 2 and "about two in five are excluded" in s25
+    assert f"about {A.dwell_runs(50):.1f} runs on the judged block" in s25
+    assert "16 or 17 sign units" in s25 and "(12 or 13 sign units)" in s25
+    assert "section 5's table" in s25 and "3.2's table" not in s25
+    assert "**A family's k is unchanged**" in s25
+    assert "**A mismatch is \"not claimed\"**" in s25
+
+
+def check_cites_only(body: str, name: str) -> None:
+    """Sections 9 and 10 cite figures; they carry none of their own (the red team's m3)."""
+    for head in ("## 9.", "## 10."):
+        s = section(body, head)
+        hits = re.findall(r"\b\d\.\d{3,}\b", s)
+        assert not hits, f"{head} carries figures {hits}: cite the section that holds them"
 
 
 def check_probe(body: str, name: str) -> None:
@@ -289,7 +348,16 @@ def check_probe(body: str, name: str) -> None:
     for rho in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
         row = f"| {rho} | {A.null_fail(rho):.3e} | {A.probe_refusal(rho):.4f} | {A.mc_pass(rho):.4f} |"
         assert row in s43, f"4.3 lacks the probe row {row!r}"
-        assert A.probe_refusal(rho) <= 1 - A.mc_pass(rho) + 1e-12, "the probe is stricter than the validation"
+    sz = (A.CAL_SUBSETS_PER_SIZE - A.VAL_SUBSETS_PER_SIZE) * len(A.SIZES)
+    tail = f"1 - {A.GUARD_PASS}^({sz}/{A.n_val()}) = {A.probe_tail_refusal():.3f}"
+    assert f"**{tail}**" in flat(s43), "4.3 lacks the probe's refusal at the validation's 0.95 tail rate"
+    assert f"up to {tail}" in s32, "3.2 lacks the probe's refusal at the validation's 0.95 tail rate"
+    assert A.probe_tail_refusal() > 1 - A.GUARD_PASS, "the probe at the tail is stricter than the validation"
+    for gone in ("nothing stricter", "no stricter than the validation it guards", "as strict as the validation and no"):
+        assert gone not in flat(body), f"the plan still says {gone!r} of the probe"
+    names = {"flip21": "flips at 21", "markov30": "Markov with dwell 30, 50 and 80"}
+    assert A.PROBE_MODELS == ("flip21", "markov30", "markov50", "markov80")
+    assert f"-- {names['flip21']} and {names['markov30']} --" in s32, "3.2's probe models differ from PROBE_MODELS"
     s42 = flat(section(body, "### 4.2"))
     assert "4. **No probed null reaches its failure count**" in s42 or "**No probed null reaches its failure count**" \
         in s42
@@ -302,6 +370,8 @@ def check_costs(body: str, name: str) -> None:
         return
     cs, vs = A.log_stats(A.CAL_LOG), A.log_stats(A.VAL_LOG)
     c = A.cost(cs, vs)
+    sc = A.scaled_cost(cs, vs)
+    assert A.CANDIDATES_HERE == 8 and A.CANDIDATES_LOGS == (2, 10)
     s62 = flat(section(body, "### 6.2"))
     for s in (f"**the core:** {c['core'][0]:.1f} to {c['core'][1]:.1f} hours",
               f"({vs['exit_s']} s and {cs['exit_s']} s)",
@@ -310,7 +380,11 @@ def check_costs(body: str, name: str) -> None:
               f"{A.probe_nulls()} Monte Carlo nulls at {vs['mc_mean']:.2f} to {cs['mc_mean']:.2f} s each: "
               f"{c['probe'][0]:.1f} to {c['probe'][1]:.1f} hours",
               f"the five exact models: {c['drift'][0]:.1f} to {c['drift'][1]:.1f} hours",
-              f"**in all: {c['total'][0]:.1f} to {c['total'][1]:.1f} hours.**",
+              f"**in all: {c['total'][0]:.1f} to {c['total'][1]:.1f} hours; at eight candidates, about "
+              f"{sc['total']:.1f} hours.**",
+              f"at eight, {sc['core']:.1f} hours", f"at eight, {sc['sizing']:.1f} hours",
+              f"at eight, {sc['probe']:.1f} hours", f"at eight, {sc['drift']:.1f} hours",
+              "**The low end is a floor for two candidates, not an estimate for this plan's eight**",
               f"at or below {cs['ws_max_mb']} MB", f"peaked at {cs['pairs_peak_mb']} MB"):
         assert s in s62, f"6.2 lacks {s!r}"
 
@@ -400,7 +474,8 @@ def check_coverage(body: str, name: str) -> None:
 
 
 CHECKS = (check_pin_form, check_seed_tables, check_no_foreign_seed, check_grid, check_appendix_b, check_sizing,
-          check_floor, check_probe, check_counts, check_criterion_power, check_power_costs, check_coverage, check_costs)
+          check_floor, check_band, check_cites_only, check_probe, check_counts, check_criterion_power, check_power_costs,
+          check_coverage, check_costs)
 
 
 @pytest.mark.parametrize("check", CHECKS, ids=[c.__name__ for c in CHECKS])
@@ -452,6 +527,13 @@ def test_the_checks_can_fail():
         check_floor(body.replace("| 2 | 0.1840 | 0.5818 |", "| 2 | 0.1840 | 0.6000 |"), p.name)
     with pytest.raises(AssertionError):
         check_probe(body.replace("| 0.8 | 1.431e-03 | 0.7321 |", "| 0.8 | 1.431e-03 | 0.7000 |"), p.name)
+    with pytest.raises(AssertionError):
+        check_probe(body.replace("= 0.758**", "= 0.700**"), p.name)
+    with pytest.raises(AssertionError):
+        check_band(body.replace("8 <= R <= 25", "8 <= R <= 30"), p.name)
+    with pytest.raises(AssertionError):
+        check_cites_only(body.replace("## 9. What this plan does not do", "## 9. What this plan does not do 0.3206"),
+                         p.name)
     if arith().logs_present():
         with pytest.raises(AssertionError):
             check_costs(body.replace("**in all: 15.4 to", "**in all: 12.0 to"), p.name)
@@ -499,9 +581,11 @@ def test_the_scan_finds_a_seed_where_it_is():
 
 
 def test_the_lookahead_range_ends_below_the_calibration_block():
-    """`SEED_REPLACE + 1000 + i` over the 790 alert marks (that test's own text): its last value below the block, by
-    the margin section 4.1 states."""
-    text = LOOKAHEAD.read_text(encoding="utf-8")
+    """`SEED_REPLACE + 1000 + i` over the 790 alert marks, in that test's text at the search's commit (ec6905a; Q-128
+    has since replaced the range, E-178): its last value below the block, by the margin section 4.1 states."""
+    r = _git("show", f"{LOOKAHEAD_COMMIT}:{LOOKAHEAD}")
+    assert r.returncode == 0, f"the look-ahead file at {LOOKAHEAD_COMMIT} cannot be read: {r.stderr[:200]}"
+    text = r.stdout
     tree = ast.parse(text)
     replace = None
     for node in ast.walk(tree):
@@ -515,7 +599,10 @@ def test_the_lookahead_range_ends_below_the_calibration_block():
     last = replace + 1000 + marks - 1
     assert last < CAL_BLOCK[0]
     gap = CAL_BLOCK[0] - last
-    assert f"last value is {gap} below the calibration block's first seed" in flat(read(plan()))
+    body = flat(read(plan()))
+    assert f"last value is {gap} below the calibration block's first seed" in body
+    assert f"At the search's commit ({LOOKAHEAD_COMMIT})" in body and f"commit, {LOOKAHEAD_COMMIT}, read by `git show`" \
+        in body
 
 
 @pytest.mark.slow
@@ -529,4 +616,3 @@ def test_the_derived_guard_refuses_nothing():
     mod.SEED_ALLOW, mod.SEED_ALLOW_PREFIXES = frozenset(), ("\0",)
     problems, prints = mod.derived_problems(ROOT)
     assert not problems, problems
-    assert any("SEED_REPLACE + 1000 + i" in p for p in prints)

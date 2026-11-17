@@ -1,4 +1,4 @@
-"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, second text): its arithmetic -- no bar, no market
+"""Q-126's plan (`docs/calibration/DRAFT_Q-126_one_sample_plan_2.md`, fourth text): its arithmetic -- no bar, no market
 outcome, no random number. Every figure the plan states is printed here, from three kinds of input only:
 
 - the plan's declared constants: the validation's exposure (23 subsets at each of five sizes, two values, five exact
@@ -164,6 +164,79 @@ def bound_by_subsets(Ns=(3300, 6600, 13200, 26400), n: int | None = None) -> lis
     return [(N, allowance(N, n), bound_nested_c(N, n, allowance(N, n))) for N in Ns]
 
 
+# ------------------------------------------------------------------------------------------- the floor's readings (M-C)
+
+#: the red team's illustrative rate profiles over the seven margins 1.0 .. 2.0 (its re-read, M-C): readings, not
+#: estimates
+PROFILES = {
+    "A": (3e-4, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6),
+    "B": (1e-3, 3e-4, 1e-4, 3e-5, 1e-5, 3e-6, 1e-6),
+    "C": (3e-4,) * 7,
+}
+#: the flat-in-m rates of the reading (Q-125's H-d: no finite margin removes the mechanism in scope Q)
+FLAT_RATES = (1e-5, 3e-5, 1e-4, 3e-4, 1e-3)
+
+
+def certificates(N: int | None = None, n: int | None = None) -> tuple[float, float]:
+    """The 95 % upper limits on the pooled bad-subset rate after zero bad subsets: the calibration's N and the
+    validation's n (one-sided Clopper-Pearson)."""
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES) if N is None else N
+    n = n_val() if n is None else n
+    return cp_upper(0, N), cp_upper(0, n)
+
+
+def profile_reading(rates, c: int = 0, ratios=None, N: int | None = None, n: int | None = None) -> dict[str, float]:
+    """On a nested grid with these bad-subset rates (margins ascending), every other condition assumed to pass: the
+    chance the validation's exact part fails the choice, the chance the floor empties the branch (NONE), and the mean
+    P ratio of a choice that is made and holds. Bad sets nested, so P(choice = i) = G(r_i) - G(r_{i-1})."""
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES) if N is None else N
+    n = n_val() if n is None else n
+    r = np.asarray(rates, dtype=float)
+    G = stats.binom.cdf(c, N, r)
+    pch = np.diff(np.r_[0.0, G])
+    F = 1.0 - (1.0 - r) ** n
+    held = pch * (1.0 - F)
+    ratios = np.asarray(list(grid_p().values()) if ratios is None else ratios, dtype=float)
+    return {"val_fail": float((pch * F).sum()), "none": float(1.0 - G[-1]),
+            "mean_p": float((held * ratios).sum() / held.sum())}
+
+
+def flat_none(r: float, N: int | None = None) -> float:
+    """At a rate flat in m, the zero-tolerance floor empties the branch (every margin refused) with 1 - (1 - r)^N."""
+    N = CAL_SUBSETS_PER_SIZE * len(SIZES) if N is None else N
+    return 1.0 - (1.0 - r) ** N
+
+
+# ------------------------------------------------------------------------------------------- the band check (M-D)
+
+#: the bands of the plan's 2.5, as (lowest, highest) declared persistence in sessions; None: open
+BANDS = {"below 42": (None, 41), "42 to 50": (42, 50), "51 to 62": (51, 62)}
+#: the check's two tails (each), at the band's ends, under a Markov side of that mean dwell
+BAND_TAIL = 0.025
+#: the regime length (two quarters) whose sides every band excludes by arithmetic
+EXCLUDED_REGIME = 126
+
+
+def max_runs(n: int, L: int) -> int:
+    """The most runs a side constant over blocks of at least L sessions can have on n sessions (Q-108's 4.4)."""
+    return (int(n) - 1) // int(L) + 2
+
+
+def band_interval(n: int, band: str) -> tuple[int, int | None]:
+    """The runs R of 4.4's non-tie series a band admits on n sessions: from the larger of 1 + the BAND_TAIL quantile
+    of Bin(n - 1, 1/hi) and one more than the most runs of a side constant over EXCLUDED_REGIME sessions, to 1 + the
+    1 - BAND_TAIL quantile of Bin(n - 1, 1/lo) (no upper limit for the open band)."""
+    lo, hi = BANDS[band]
+    lower = max(1 + int(stats.binom.ppf(BAND_TAIL, n - 1, 1.0 / hi)), max_runs(n, EXCLUDED_REGIME) + 1)
+    upper = None if lo is None else 1 + int(stats.binom.ppf(1.0 - BAND_TAIL, n - 1, 1.0 / lo))
+    return lower, upper
+
+
+def dwell_runs(D: float, n: int = 657) -> float:
+    """The expected runs of a Markov side of mean dwell D on n sessions: 1 + (n - 1)/D."""
+    return 1.0 + (n - 1) / D
+
+
 # ------------------------------------------------------------------------------------------- the Monte Carlo probe (M1)
 
 #: at each size, the sizing subsets with the largest exact size (the plan's 3.2) carry the four persistent Monte Carlo
@@ -174,6 +247,14 @@ PROBE_MODELS = ("flip21", "markov30", "markov50", "markov80")
 
 def probe_nulls() -> int:
     return PROBE_PER_SIZE * len(SIZES) * len(PROBE_MODELS) * len(VALUES)
+
+
+def probe_tail_refusal() -> float:
+    """The probe's refusal of a candidate at the Monte Carlo tail rate the validation passes with GUARD_PASS, when the
+    ranking finds the whole tail and it fits in the probed subsets: 1 - GUARD_PASS^(sizing subsets / validation
+    subsets) (the red team's re-read, M-B)."""
+    sizing = (CAL_SUBSETS_PER_SIZE - VAL_SUBSETS_PER_SIZE) * len(SIZES)
+    return 1.0 - GUARD_PASS ** (sizing / n_val())
 
 
 def probe_refusal(rho: float, m: int | None = None) -> float:
@@ -398,6 +479,25 @@ def per_subset_value(st: dict) -> float:
     return sum(st["mean"][m] for m in EXACT_MODELS)
 
 
+#: the candidates this plan computes (2.2), and the Q-108 logs' (the validation two, the calibration ten)
+CANDIDATES_HERE = 8
+CANDIDATES_LOGS = (2, 10)
+
+
+def scaled(lo: float, hi: float, k: int = CANDIDATES_HERE) -> float:
+    """A cost linear in the candidate count, through the validation log's (2) and the calibration log's (10)."""
+    a, b = CANDIDATES_LOGS
+    return lo + (hi - lo) * (k - a) / (b - a)
+
+
+def scaled_cost(cal: dict, val: dict) -> dict[str, float]:
+    """The run's hours at this plan's eight candidates, each part's two log figures scaled linearly (an estimate)."""
+    c = cost(cal, val)
+    out = {k: scaled(*v) for k, v in c.items() if k != "total"}
+    out["total"] = sum(out.values())
+    return out
+
+
 def cost(cal: dict, val: dict) -> dict[str, tuple[float, float]]:
     """(low, high) hours of each part of the calibration run: low from the validation log (two candidates), high from
     the calibration log (ten); means throughout; the core from the two runs' EXIT seconds."""
@@ -504,9 +604,30 @@ def main() -> None:
           f"{1 - floor_admits(r95, N, 0):.4f}; the validation's {n} subsets catch a rate of 1e-03 with "
           f"{1 - (1 - 1e-3) ** n:.4f}")
 
+    print("== 3.2 / 4.3 the floor's readings (the re-read's M-C)")
+    cal0, val0 = certificates(N, n)
+    print(f"   95 % upper limit after zero bad: calibration's {N} subsets {cal0:.4e}; the validation's {n} {val0:.4e}")
+    for k, prof in PROFILES.items():
+        for cc in (0, E173_ALLOWANCE):
+            pr = profile_reading(prof, cc)
+            print(f"   profile {k}, c = {cc}: validation fails {pr['val_fail']:.4f}; NONE {pr['none']:.4f}; mean P of a "
+                  f"held choice {pr['mean_p']:.3f}")
+    for r in FLAT_RATES:
+        print(f"   flat rate {r:.0e}: the floor empties the branch with {flat_none(r):.4f}; the validation passes "
+              f"{(1 - r) ** n:.4f}")
+    print("== 2.5 the band check (the re-read's M-D)")
+    for nn in (657, 1006):
+        print(f"   n = {nn}: " + "; ".join(f"{b}: {band_interval(nn, b)}" for b in BANDS)
+              + f"; a side constant over {EXCLUDED_REGIME} sessions has at most {max_runs(nn, EXCLUDED_REGIME)} runs")
+    print(f"   Markov dwell 50 on 657 sessions: about {dwell_runs(50):.1f} runs; flip42's sign units at 657: "
+          f"{sorted(set((656 + p) // 42 - p // 42 + 1 for p in range(42)))}; flip55's: "
+          f"{sorted(set((656 + p) // 55 - p // 55 + 1 for p in range(55)))}")
     print("== 4.2 / 4.3 the Monte Carlo probe (M1)")
     m = probe_nulls()
     print(f"probed nulls: {PROBE_PER_SIZE} x {len(SIZES)} x {len(PROBE_MODELS)} x {len(VALUES)} = {m}")
+    sz = (CAL_SUBSETS_PER_SIZE - VAL_SUBSETS_PER_SIZE) * len(SIZES)
+    print(f"   at the tail rate the validation passes with {GUARD_PASS}, the probe refuses with up to "
+          f"1 - {GUARD_PASS}^({sz}/{n_val()}) = {probe_tail_refusal():.3f}")
     for rho in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
         print(f"   rho {rho}: one probed null refused {null_fail(rho):.3e}; all {m} at rho {probe_refusal(rho):.4f}; "
               f"the validation's {MC_NULLS} all at rho pass {mc_pass(rho):.4f}")
@@ -521,8 +642,9 @@ def main() -> None:
                   f"(means) {per_subset_value(st):.2f} s; a persistent MC subset null {st['mc_mean']:.2f} s; EXIT "
                   f"{st['exit_s']} s; per-null working set at most {st['ws_max_mb']} MB; pairs step peak "
                   f"{st['pairs_peak_mb']} MB")
+        sc = scaled_cost(cs, vs)
         for part, (lo, hi) in cost(cs, vs).items():
-            print(f"   {part}: {lo:.1f} to {hi:.1f} h")
+            print(f"   {part}: {lo:.1f} to {hi:.1f} h; at {CANDIDATES_HERE} candidates {sc[part]:.1f} h")
     else:
         print("   the logs are not present: no cost line")
 
