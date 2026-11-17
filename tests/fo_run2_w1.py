@@ -104,5 +104,48 @@ if fy.is_file():
     y["partial"] = [bool(x) for x in v["partial"]]
     rows = d.to_dict("records")
     y["status_by_rule"] = FO.partial_status(rows)[0]
+    fl = d[d["section"] == "floor"]
+    y["floor_i_parts"] = sorted(str(x) for x in fl.loc[fl["floor"].astype(str) == "i", "part"])   # Z1
 out["y1"] = y
+
+
+# (d) Z3: an exception planted in stage C (floor (iii)'s gate call, its first gate) -- the partial file is written,
+# floor (i)'s rows in it (Z1), and the exception still propagates
+class GateRaises(Syn):
+    def gate(self, trades, days, P, **kw):
+        raise Planted("a planted stage-C failure at floor (iii)'s gate")
+
+
+W4 = WORK / "z3"
+W4.mkdir()
+cd_ = GateRaises(sizes=sizes, smoke=False, results_dir=W4)
+cd_.fx = fx
+z = {}
+try:
+    FO.run2(cd_, pre, 1, df1, {**par1, "_sha256": "0" * 64})
+    z["raised"] = False
+except Planted:
+    z["raised"] = True
+z["authorised"] = list(cd_.authorised)
+z["status"] = getattr(cd_, "partial_status", None)
+fz = W4 / f"{FO.RESULT_JUDGED}.csv"
+z["written"] = fz.is_file() and Path(str(fz) + ".manifest.json").is_file()
+if fz.is_file():
+    import pandas as pd
+
+    d = pd.read_csv(fz, low_memory=False)
+    lv = d[d["section"] == "level"]
+    v = lv[lv["line"] == "verdict"]
+    z["verdict"] = [str(x) for x in v["verdict"]]
+    z["partial"] = [bool(x) for x in v["partial"]]
+    z["stopped"] = [str(x) for x in v["stopped"]]
+    z["lines"] = sorted(str(x) for x in lv["line"].dropna().unique())
+    fl = d[d["section"] == "floor"]
+    z["floors"] = sorted({str(x) for x in fl["floor"]})
+    z["floor_i_parts"] = sorted(str(x) for x in fl.loc[fl["floor"].astype(str) == "i", "part"])
+    z["status_by_rule"] = FO.partial_status(d.to_dict("records"))[0]
+    man = json.loads(Path(str(fz) + ".manifest.json").read_text(encoding="utf-8"))
+    z["manifest_partial"] = (man.get("parameters") or {}).get("partial")
+z["journey_written"] = (W4 / f"{R.JOURNEY}.csv").is_file()
+out["z3"] = z
 print(json.dumps(out, default=str))

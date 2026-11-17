@@ -901,9 +901,9 @@ def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_pa
 def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> tuple[int, Any, Any, dict[str, Any]]:
     """Run 2 (`_run2`), with Y1 (the fourth build read): a refusal or a failure after stage C's first line (K0 on the
     judged C1 counts) and before its verdict writes the judged file with every line and K0 already computed and a
-    verdict row marked partial -- `CLOSED` where a computed line has failed or K0 has made `cons` lax (a fail of any
-    line closes the family; a lax K0 means no pass is claimed), `not formed` otherwise -- and stops before the
-    scorecard."""
+    verdict row marked partial -- `CLOSED` where a computed line or floor has failed (a fail of any line closes the
+    family), the declared `LAX_VERDICT` where only K0 has made `cons` lax (no pass is claimed; Z2 of the fifth read),
+    `not formed` otherwise -- and stops before the scorecard."""
     ctx.stage_c_rows, ctx.stage_c_started = None, False
     try:
         res = _run2(ctx, pre, workers, run1_df, run1_params)
@@ -915,20 +915,35 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     return res
 
 
+#: section 12's verdict when a judged count form is lax: no pass is claimed whatever the lines read
+LAX_VERDICT = "not claimed: the judged counts make cons lax"
+
+
 def partial_status(rows) -> tuple[str, list[str]]:
-    """Y1: what the computed lines and K0 already decide -- `CLOSED` (with the lines that decide it) or `not formed`."""
-    why = []
+    """Y1: what the computed lines, floors and K0 already decide (with what decides it): `CLOSED` where a line or a
+    floor has failed (Z1: a floor is a line; a missing or NaN `holds` is not a fail), `LAX_VERDICT` where only K0 has
+    made `cons` lax (Z2), `not formed` otherwise."""
+    why, failed = [], False
     for r_ in rows:
-        if r_.get("section") != "level":
+        sec = r_.get("section")
+        if sec == "floor":
+            h = r_.get("holds")
+            if h is not None and not bool(h):
+                why.append(f"floor ({r_.get('floor')}) {r_.get('part')} fails")
+                failed = True
+            continue
+        if sec != "level":
             continue
         ln = r_.get("line")
         if ln == "K0" and bool(r_.get("lax")):
             why.append(f"K0 {r_.get('form')} lax: no pass is claimed")
         elif ln in ("C1", "C1_close", "C3") and r_.get("passes") is not None and not bool(r_.get("passes")):
             why.append(f"{ln} fails")
+            failed = True
         elif ln == "C2" and r_.get("passes_bar") is not None and not bool(r_.get("passes_bar")):
             why.append("C2 fails its bar")
-    return ("CLOSED" if why else "not formed"), why
+            failed = True
+    return ("CLOSED" if failed else LAX_VERDICT if why else "not formed"), why
 
 
 def _partial_judged(ctx: Ctx, pre, why: str) -> None:
@@ -1147,6 +1162,10 @@ def _run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> 
     f1 = SC.floor_resolution(kl[Lj.population], ks[Lj.population], sel[Lj.population], np.broadcast_to(
         Lj.year[:, None], sel.shape)[Lj.population], pool)
     f1b = SC.floor_taken_flattened(rec_d.trades(f"fo_{c}", ARM, "off"), offers, pool)
+    # Z1 (the fifth read): floor (i) is a line, in the partial file should floor (iii)'s gate or W2 stop the run
+    out += R.rows("floor", [{"floor": "i", "part": "in_state_unresolved_3r", **f1["shares"], "holds": f1["holds"]},
+                            {"floor": "i", "part": "taken_flattened", **f1b["shares"], "trades": f1b.get("trades"),
+                             "holds": f1b["holds"]}])
     gate_cls = _index_class(c, spj.trades, days_all, Lj, sel)
     f3_rec = OW.GateRecorder(columns=("path", "place", "account", "account_session", "historical_day", "trade_index",
                                       "offer", "date"))
@@ -1172,10 +1191,7 @@ def _run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> 
               "v_conduct_tier_1": bool(conduct.get("fo_strict_one_position", False) and conduct.get("fo_no_flip", False)
                                        and conduct.get("fo_cross_account_rule_on", False)
                                        and all(job_conduct_ok(jobs[a_]) for a_ in SCORECARD_ARMS))}   # x3
-    out += R.rows("floor", [{"floor": "i", "part": "in_state_unresolved_3r", **f1["shares"], "holds": f1["holds"]},
-                            {"floor": "i", "part": "taken_flattened", **f1b["shares"], "trades": f1b.get("trades"),
-                             "holds": f1b["holds"]},
-                            {"floor": "ii", "part": "realised_to_intended_capped_risk",
+    out += R.rows("floor", [{"floor": "ii", "part": "realised_to_intended_capped_risk",
                              "value": fg["realised_to_intended_capped_risk"], "threshold": SC.FLOOR_REALISED,
                              "holds": fg["floor_ii"]},
                             {"floor": "iii", "part": "growth_on_required_at_bound", "value": fg["growth_at_bound"],
@@ -1276,7 +1292,7 @@ def _run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> 
     # the verdict (12): every line and floor
     claimed = not (k0c1.lax or k0c2.lax)
     passes = bool(claimed and c1.passes and c1c.passes and c2_pass and c3 and all(floors.values()))
-    verdict = ("not claimed: the judged counts make cons lax" if not claimed else "CARRIED" if passes else "CLOSED")
+    verdict = (LAX_VERDICT if not claimed else "CARRIED" if passes else "CLOSED")
     out += R.rows("level", [{"line": "verdict", "cell": c, "verdict": verdict, **floors}])
     jdf = R.frame(out, R.SECTIONS[10:])
     params = {**pre.parameters(), "run": 2, "pick": c, "verdict": verdict, "run1_sha256": run1_params.get("_sha256"),
