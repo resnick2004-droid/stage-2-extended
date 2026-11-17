@@ -168,3 +168,7 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-171: the second one-sample plan drafted (scope D first, sized calibration); red team reading; a seed-overlap fix dispatched. |
 | 2026-11-17 | lead | E-172: RD-03's stage 0 stopped (two Stage 2 rung files absent from the snapshot); the extension queued with the sequenced merge. |
 | 2026-11-17 | lead | E-173: the second one-sample plan red-teamed; its floor held no stricter than the validation it guards; a second text drafting. |
+| 2026-11-17 | lead | E-174: F-03's run 1 started; RD-03's cycle 3 read (minors left, a fourth cycle); the merge checklist's limit raised. |
+| 2026-11-17 | lead | E-175: F-03's run 1 crashed on a file-format defect after its walk; nothing spent; fix building; the rest of the heavy queue restarted. |
+| 2026-11-17 | lead | E-176: the second one-sample plan's computed cost showed the lead's floor ruling was the wrong trade; reversed; a third text. |
+| 2026-11-17 | lead | E-177: the early-block volatility descriptive run and collected, both identities held; audit dispatched. |

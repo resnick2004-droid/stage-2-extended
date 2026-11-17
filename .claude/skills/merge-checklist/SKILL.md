@@ -37,7 +37,7 @@ git diff --name-only master...$B -- prereg/            # only a new draft the br
 ## 3. It works
 
 ```
-cd $W && timeout 1200 python -m pytest -q -o addopts= -m "not heavy"      # the suite, the identity at 4 paths included
+cd $W && timeout 5400 python -m pytest -q -o addopts= -m "not heavy"      # the suite, the identity at 4 paths included (about 49 min under load, E-174)
 cd $W && python scripts/vendor_stage2.py --verify
 ```
 
