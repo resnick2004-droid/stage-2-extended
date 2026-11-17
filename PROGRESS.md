@@ -157,3 +157,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-159: the one-sample statistic's validation failed on one exact null; no one-sample line; audit and diagnosis dispatched. |
 | 2026-11-17 | lead | E-160: the validation's audit clean, the FAILS stands; E-159's clustering sentence withdrawn. |
 | 2026-11-17 | lead | E-161: the validation failure diagnosed (the aligned-pattern lottery through one trade set); a second one-sample plan queued, scope D first. |
+| 2026-11-17 | lead | E-163: the early-block volatility descriptive merged; its run queued after F-03's run 1. |
