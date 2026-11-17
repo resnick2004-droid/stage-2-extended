@@ -87,6 +87,14 @@ Its identities: `tests/q94_synthetic.py` (with it on, every output equals it off
 with the pass-through class; the records against the replay ledger, Q-35's openings, the engine's `FundedAccount.days`)
 and `identity/replay_records_identity.py` (U1's start rows with recording on).
 
+**Q-105 (RD-02's counters' channel, `prereg/RD-02_payout_policy.md` 13.1 item 1): one more declared keyword, off by
+default.** `run_starts(..., counters=C)` with an `extended.payout_policy.ReplayCounters` and one of RD-02's funded
+classes declared: each start's long replay runs inside `extended.payout_policy`'s collection in the process that runs
+it (the exact-length runs are not counted), each task gains `True` as its twelfth item and returns (what it returned,
+its counts), the counts go to `C`, and the outputs are returned as without it. Absent (None), every task, replay and
+output is the adapter's before Q-105 (master's at 4c57ce6) bit for bit; with it on, every output equals it off, with a
+recorder too. Its checks: `tests/pp_synthetic.py` (sections `t10r` and `absent`, run by `tests/test_pp_build.py`).
+
 **Q-100 (the firms reading's A-9, `prereg/DRAFT_RD_firms.md` 4.6, 15, 16; its re-read's n2): two more declared keywords,
 off by default, generic.** `run_starts(..., household_closure=H, seed_base=S)` (and `response_args(...,
 household_closure=H)`). With both absent (None) every task, replay and output is the adapter's before Q-100 (master's at
@@ -565,6 +573,8 @@ def _task(task: tuple) -> Any:
     cls = task[8] if len(task) > 8 else None                                    # Q-76
     red = task[9] if len(task) > 9 else None                                    # Q-94: the replay's reducer
     seam = dict(task[10]) if len(task) > 10 else {}                             # Q-100: the keywords given
+    cnt = bool(task[11]) if len(task) > 11 else False                           # Q-105: the counters' channel
+    counts: list[tuple[int, list]] = []                                         # Q-105: one list a start
     hc = seam.get("household_closure")                                          # Q-100: None when absent
     base = DENIAL_SEED if seam.get("seed_base") is None else int(seam["seed_base"])
     named = {**seam_parameters(hc, seam.get("seed_base")), **class_parameters(cls)}   # Q-76, Q-100: empty when absent
@@ -582,12 +592,17 @@ def _task(task: tuple) -> Any:
     def seed_of(s: int) -> int:                                                 # Q-100: from the base given, or as before
         return start_seed(s, base)
 
-    def run(s: int, h: int, record: bool = False):
+    def run(s: int, h: int, record: bool = False, count: bool = False):
+        if count:                                                               # Q-105: this replay's accounts counted
+            from extended import payout_policy as PP                            # Q-105
+            PP.open_collection()                                                # Q-105
         if record:                                                              # Q-94: recorded, read, handed on plain
             lp, r = red.reduce(replay(blocks[s:s + h], a_rec, seed_of(s)), s, h, seed_of(s), dates[s])
             recs.append(r)
         else:
             lp = replay(blocks[s:s + h], a, seed_of(s))
+        if count:                                                               # Q-105: closed where it ran
+            counts.append((int(s), PP.close_collection()))                      # Q-105
         if resp.kind == "forfeit":
             return forfeit_view(lp, lag)
         return lp, None
@@ -601,7 +616,7 @@ def _task(task: tuple) -> Any:
     out = []
     for s in starts:
         L = min(U.HORIZON, n - s)
-        long_run, info = run(s, L, red is not None)                             # Q-94: the long run alone recorded
+        long_run, info = run(s, L, red is not None, cnt)                        # Q-94, Q-105: the long run alone
         if len(long_run.path.cash_series) != L + 1:
             raise RuntimeError(f"{design} {arm} {rname} start {s}: {len(long_run.path.cash_series)} closes, not {L + 1}")
         mine = long_record(s, dates[s], long_run, pay, totals)
@@ -620,7 +635,8 @@ def _task(task: tuple) -> Any:
                     "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
                     "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": seed_of(s),
                     **named})                                                   # Q-76, Q-100: named only when given
-    return out if red is None else (out, recs)                                  # Q-94: the records beside
+    ret = out if red is None else (out, recs)                                   # Q-94: the records beside
+    return (ret, counts) if cnt else ret                                        # Q-105: the counts beside
 
 
 def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
@@ -647,7 +663,7 @@ def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
                chunk: int = 20, exact_every: int | None = None,
                funded_account_cls: type | None = None, recorder: Any = None, household_closure: Any = None,
-               seed_base: Any = None) -> list[dict[str, Any]]:
+               seed_base: Any = None, counters: Any = None) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
     `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start).
@@ -666,7 +682,13 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     checked before any start runs (`check_household_closure` against the declared class, `check_seed_base`), the
     design's arguments with them (`response_args`: a path already carrying `household_closure` is refused); given, the
     tasks gain `seam_parameters(household_closure, seed_base)` as their eleventh item and every start's output names
-    them."""
+    them.
+
+    Q-105 (RD-02's counters' channel, its 13.1 item 1): `counters` (default None: every behaviour as before) is an
+    `extended.payout_policy.ReplayCounters`; the declared class must then be one of RD-02's (`PayoutPolicyFundedAccount`).
+    Each start's long replay runs inside the adapter's collection in the process that runs it; the tasks gain `True` as
+    their twelfth item and return (what they returned, the counts); the counts go to `counters` and the outputs are
+    returned as without it."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
@@ -679,6 +701,10 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     seam = seam_parameters(hc, sb)                                              # Q-100: empty when both are absent
     if seam:
         response_args(job["args"], resp, funded_account_cls, household_closure=hc)
+    if counters is not None:                                                    # Q-105: refused before any start
+        from extended import payout_policy as PP                                # Q-105
+        PP.check_counters(counters, PP.ReplayCounters)                          # Q-105
+        PP.check_counted_class(funded_account_cls)                              # Q-105
     red = None
     if recorder is not None:                                                    # Q-94: refused before any start
         from extended import replay_records as RR
@@ -693,7 +719,12 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
         tasks = [(*t, red) if len(t) == 9 else (*t, None, red) for t in tasks]
     if seam:                                                                    # Q-100: the eleventh, only when given
         tasks = [(*t, *([None] * (10 - len(t))), dict(seam)) for t in tasks]
+    if counters is not None:                                                    # Q-105: the twelfth, only when given
+        tasks = [(*t, *([None] * (10 - len(t))), *(() if len(t) > 10 else ({},)), True) for t in tasks]  # Q-105
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
+    if counters is not None:                                                    # Q-105: the counts, then as before
+        counters.collect(design, arm, resp.name, [c for _, part in res for c in part])     # Q-105
+        res = [r for r, _ in res]                                               # Q-105
     if red is None:
         return [x for part in res for x in part]
     out = [x for part, _ in res for x in part]                                  # Q-94: the outputs, as without it

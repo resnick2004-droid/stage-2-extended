@@ -120,3 +120,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-117: RD-01's runner complete, its cost measured and cut by the single pass; a last diff read before merge; identity covers include `config/`. |
 | 2026-11-16 | lead | E-118: RD-01's last read -- merge after its references are held to Stage 2's rows on the new route and the covers take `config/`. |
 | 2026-11-16 | lead | E-119: one shared list of what each shared identity covers merged, derived from the scripts' imports, `config/` included; the three runners move to it. |
+| 2026-11-16 | lead | E-120: F-03's build has everything owed before run 1; the red team re-reads it; a fresh builder finishes the rest. |
+| 2026-11-16 | lead | E-121: RD-02's build and reading runner merged after four red-team reads; its identities run in the block at the merged commit. |
+| 2026-11-16 | lead | E-122: RD-01's runner merged; F-03's re-read -- three fixes before run 1, with the builder; the operator's question on exact reproduction answered. |
