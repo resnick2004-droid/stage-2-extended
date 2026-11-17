@@ -21,7 +21,8 @@ What is asserted:
 - **the choice rule on planted tables**: the most powerful eligible candidate in scope Q; ties to fewer members, then
   the earlier row; C0 never in scope Q; each of the three conditions refusing (an MC point rate above nominal, an exact
   size above nominal, an alternating configuration rejecting, P_MC below 0.9, the worst exact ratio above a quarter --
-  with the refused-candidate report); scope D only when scope Q has none; NONE;
+  with the refused-candidate report), the quarter on a fixed-stream exact null too (E-115 (R2)); scope D only when
+  scope Q has none; NONE;
 - **the refusals**: outside a clean run (before any step), a result that exists, a seed map off the block, a changed
   pinned file, a calendar other than E-094's; a scalar disagreement and a count rising with k stop the run with no
   choice;
@@ -516,6 +517,21 @@ def test_each_condition_refuses(C):
     assert abs(t.loc[("cons_bm", "Q"), "p_mc"] - want) < 1e-12 and want < 0.9
     assert t.loc[("cons_bm", "Q"), "cond1_floors"] and not t.loc[("cons_bm", "Q"), "cond2_p_mc"]
     assert ch["line"] == "CHOSEN cons_im (scope Q)"
+
+
+def test_the_quarter_binds_on_the_fixed_stream_exact_nulls_too(C):
+    """E-115 (R2): condition 3 is over every exactly enumerated calibration null, the fixed-data streams' included,
+    though their sizes repeat at validation; its cost shows in the refused-candidate report."""
+    size = _planted(C)
+    fx = size[size["null"] == "ex:flip42"].copy()
+    fx["null"], fx["group"] = "fixed:offered:win1:flip42", "fixed"
+    size = pd.concat([size, fx], ignore_index=True)
+    _set(size, "cons_bm", "Q", "fixed:offered:win1:flip42", [270] * 8)       # 0.41 x nominal at k = 20
+    ch = _choose(C, size, BASE_P)
+    t = ch["table"].set_index(["candidate", "scope"])
+    assert t.loc[("cons_bm", "Q"), "refused_by_cond3_alone"]
+    assert t.loc[("cons_bm", "Q"), "worst_exact_null"] == "fixed:offered:win1:flip42"
+    assert ch["line"] == "CHOSEN cons_im (scope Q)" and ch["refused"]["Q"]["candidate"] == "cons_bm"
 
 
 def test_scope_d_only_when_scope_q_has_none_and_none_at_all(C):
