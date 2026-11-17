@@ -163,3 +163,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-166: Q-121's authorised mode merged; its run re-queued after F-03's run 1. |
 | 2026-11-17 | lead | E-167: RD-04's second text re-read (pin after changes); a third text drafting. |
 | 2026-11-17 | lead | E-168: RD-04 (volatility drift: the whole-window descriptive and a calm-regime replay) pinned after two red-team reads and the gatekeeper. |
+| 2026-11-17 | lead | E-169: RD-03's cycle 3 back (every fix proved); stage 0 building, its slow tests moved out of the fast tier first. |
