@@ -429,6 +429,31 @@ def gate_wait_problems(rec: GateRecorder, in_state: Sequence[np.ndarray], *, shi
     return out, counts
 
 
+def gate_state_problems(rec: GateRecorder, shift: str, in_set: Mapping[str, bool], enforcement_p: float = 0.0,
+                        W: int = W_DECLARED) -> tuple[list[str], dict[str, int]]:
+    """W2 (the third build read): floor (iii)'s recorded gate campaign held to the pick's state **by offer id** -- every
+    in-wait opening's offer (the record's `offer`, from the recorder's offer ids) is in `in_set` (offer id -> in
+    state), every declined offer's id (`offer_ids[h][j]`) out of it, and every opening's recorded date its offer id's
+    date. Independent of the flags the waiting class was built with. (problems, counts)."""
+    out: list[str] = []
+    if rec.offer_ids is None:
+        return ["the recorder holds no offer ids: the gate's offers cannot be named"], {}
+    ops = rec.openings(shift, enforcement_p)
+    iw = ops[ops["account_session"].astype(int) < int(W)]
+    bad = [str(o) for o in iw["offer"] if not bool(in_set.get(str(o), False))]
+    if bad:
+        out.append(f"{len(bad)} in-wait openings' offers are out of the pick's state (first {bad[0]})")
+    wrong = [str(o) for o, d in zip(ops["offer"], ops["date"]) if str(o).split("|")[0] != str(d)]
+    if wrong:
+        out.append(f"{len(wrong)} openings' recorded dates are not their offer ids' (first {wrong[0]})")
+    dec = rec.declined(shift, enforcement_p)
+    ids = [str(rec.offer_ids[int(h)][int(j)]) for h, j in zip(dec["historical_day"], dec["trade_index"])]
+    ins = [x for x in ids if bool(in_set.get(x, False))]
+    if ins:
+        out.append(f"{len(ins)} declined offers are in the pick's state (first {ins[0]})")
+    return out, {"openings": int(len(ops)), "in_wait": int(len(iw)), "declined": int(len(dec))}
+
+
 # ------------------------------------------------------------------------------------------------ the joins
 
 
@@ -507,4 +532,4 @@ def lookup_problems(spec: WaitSpec, job: dict, starts: Sequence[int]) -> list[st
 
 __all__ = ["lookup_problems", "W_DECLARED", "AmbiguousOffer", "GateOpen", "block_fingerprint", "WaitSpec", "take_latest_declined",
            "GateWrapper", "waiting_class", "spec_of", "FamilyReducer", "FamilyRecorder", "GateReducer", "GateRecorder",
-           "gate_wait_problems", "openings", "censored", "wait_problems"]
+           "gate_wait_problems", "gate_state_problems", "openings", "censored", "wait_problems"]
