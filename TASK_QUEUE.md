@@ -178,8 +178,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-117 | F-03's A0 (`identity/family_o_identity.py --row E-135 --workers 1`) under the lock, then run 1 once every waited identity holds | lead | queued: the heavy queue part 7, after the calibration (E-140) | E-135 | heavy | 0 | E-135 |
 | Q-109f | F-03 before run 2: Y1 (a partial judged file on a failure after stage C begins), Y2, Y3, Y4 | wt-lit | done: merged (E-140) | E-136 | light | 0 | E-136 |
 | Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | done: merged (E-143) | E-140 | light | 0 | E-140 |
-| Q-116r | The red team reads RD-03's draft | wt-scout (read-only) | running (E-145) | Q-116 | light | 0 | E-145 |
+| Q-116r | The red team reads RD-03's draft | wt-scout (read-only) | done: pin after the listed changes (E-146); Q-116b | Q-116 | light | 0 | E-145 |
 | Q-118 | A guard: heavy-marked tests skip while another job holds the run lock | wt-infra | running (E-145) | E-145 | light | 0 | E-145 |
+| Q-116b | RD-03's second text on its read (M1 the lead's ruling: stage 0 decides nothing; M2-M4; minors) | wt-payout | running (E-146) | Q-116r | light | 0 | E-146 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
