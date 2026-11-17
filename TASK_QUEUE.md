@@ -168,7 +168,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-109c | F-03's build finished: the index-mode placebo gate test, section 13's missing parts, the year-gridded bar read (a fresh builder) | wt-lit | done: merged (E-135) | Q-109b | light | 0 | E-120 |
 | Q-112 | The identity block (E-123): Q-80, Q-89 (both legs), Q-101, Q-93 with Q-100, t10w2, RD-01's own identity; then RD-02's own after Q-44 | lead | queued: the heavy queue part 5 (E-123) | E-122 | heavy | 0 | E-123 |
 | Q-108e | The red team reads Q-108's build (fidelity to the pinned plan; the builder's readings; cost) before the calibration run | wt-scout (read-only) | done: run as is with five readings (E-127) | Q-108d | light | 0 | E-126 |
-| Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | queued: the heavy queue part 6 (E-127) | Q-108e | heavy | 0 | E-127 |
+| Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | done: calibrated and collected (E-149); the choosing row written; the validation queued | Q-108e | heavy | 0 | E-127 |
 | Q-113 | The identity-token tests made state-independent (RD-01's, RD-02's, the identity rows'), after the first token row | wt-infra | done: merged (E-131) | E-128 | light | 0 | E-129 |
 | Q-18b | P-14's stress checks completed per the audit (A2, D-583's missing readings, ruin beside, assumptions labelled) | wt-features | merged (E-135); its check and run queued last | E-125 | light (build) / heavy (run) | 0 | E-132 |
 | Q-114 | Research: the next levers given contract-driven money (read-only, ranked) | wt-scout | done: merged (E-134) | E-125 | light | 0 | E-132 |
@@ -180,7 +180,9 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-109g | F-03 before run 2: Z1 (floor (i) in the partial file), Z2 (the K0-only verdict wording), Z3 (an exception's partial file, tested) | wt-lit | done: merged (E-143) | E-140 | light | 0 | E-140 |
 | Q-116r | The red team reads RD-03's draft | wt-scout (read-only) | done: pin after the listed changes (E-146); Q-116b | Q-116 | light | 0 | E-145 |
 | Q-118 | A guard: heavy-marked tests skip while another job holds the run lock | wt-infra | done: merged (E-147) | E-145 | light | 0 | E-145 |
-| Q-116b | RD-03's second text on its read (M1 the lead's ruling: stage 0 decides nothing; M2-M4; minors) | wt-payout | done: the second text (E-147); the re-read Q-116r2 | Q-116r | light | 0 | E-146 |
+| Q-116b | RD-03's second text on its read (M1 the lead's ruling: stage 0 decides nothing; M2-M4; minors) | wt-payout | done: the second text (E-147) | Q-116r | light | 0 | E-146 |
+| Q-108g | Q-108's validation run (`scripts/q108_validate.py`) from E-149's commit under the lock; adopted only if it holds | lead | queued: after A0 (E-149) | E-149 | heavy | 0 | E-149 |
+| Q-116c | RD-03's third text (V1, V2, v1-v5), the lead's diff check, then the gatekeeper and the pin | wt-payout | done: the third text; the gatekeeper refused over two text fixes (E-150); Q-116e | Q-116r2 | light | 0 | E-148 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 

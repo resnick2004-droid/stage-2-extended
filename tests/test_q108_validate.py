@@ -256,6 +256,8 @@ def test_refuses_until_the_choosing_row_exists(V, monkeypatch, capsys):
     from extended import results as XR
 
     monkeypatch.setattr(XR, "clean_run_problem", lambda: None)
+    # state-independent (E-151, as Q-113): the log as it would be with no choosing row, whatever the real log now records
+    monkeypatch.setattr(V, "choosing_row", lambda text: (None, None, None))
     assert V.main([]) == 3
     out = capsys.readouterr().out
     assert "REFUSED" in out and "no decision row records the choice" in out and "step" not in out

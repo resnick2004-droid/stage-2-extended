@@ -1,0 +1,258 @@
+{
+  "columns": [
+    "row",
+    "candidate",
+    "cid",
+    "scope",
+    "members",
+    "table_row",
+    "in_scope_set",
+    "mc_nulls",
+    "exact_nulls",
+    "mc_floor_ok",
+    "mc_worst_ratio",
+    "mc_worst_null",
+    "mc_worst_k",
+    "exact_floor_ok",
+    "p_mc",
+    "worst_exact_ratio",
+    "worst_exact_null",
+    "worst_exact_k",
+    "cond1_floors",
+    "cond2_p_mc",
+    "cond3_ratio",
+    "worst_ratio_flip42",
+    "worst_null_flip42",
+    "worst_k_flip42",
+    "worst_ratio_flip55",
+    "worst_null_flip55",
+    "worst_k_flip55",
+    "worst_ratio_flip63",
+    "worst_null_flip63",
+    "worst_k_flip63",
+    "worst_ratio_alt45",
+    "worst_null_alt45",
+    "worst_k_alt45",
+    "worst_ratio_alt55",
+    "worst_null_alt55",
+    "worst_k_alt55",
+    "eligible",
+    "refused_by_cond3_alone",
+    "P",
+    "P_rel_C0",
+    "mdl50_k13_geomean",
+    "mdl80_k13_geomean",
+    "mdl50_k15_geomean",
+    "mdl80_k15_geomean",
+    "mdl50_k20_geomean",
+    "mdl80_k20_geomean",
+    "chosen",
+    "decision"
+  ],
+  "description": "Q-108 (E-115): the plan's 4.2 applied by code -- CHOSEN cons_m1.25 (scope Q); computed from the size and power tables beside, no randomness of its own",
+  "exploratory": false,
+  "git_commit": "9c624d55e42d60dd0bd9668e50f0bdf29ab64040",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "argv": [],
+    "batch": 10000,
+    "batch_beside": 5000,
+    "blobs": {
+      "extended/count_nulls.py": "c4ceee8ffb243bb8dc07cb51be5397daae906c02",
+      "extended/lift_bound.py": "984f3467a4a05aa790d3ea43e94ac7761f0725b2",
+      "extended/lift_one_sample.py": "36df2c6f82a60b63213528d5907db082b23c9d6e",
+      "scripts/q108_calibrate.py": "30ce697f04010b802b93d0685386d8fdc17141ee",
+      "scripts/q16_calibrate.py": "677d6a738283a2c44d3ffa6b6650e131d99088f4",
+      "scripts/q16_p16_pairs.py": "1bdd21a3b654ea01b1e7a9d0d0bea142a6aa0db6",
+      "scripts/q82_validation.py": "9490fc57f855be5d61ee8d4ddb62c7b63e05a282"
+    },
+    "calendar_sha256": "d1e4524b15dc6a69c2f66865462a5fe30527c6a56b4c7cc7aaccc1436a30f3bd",
+    "calendar_source": {
+      "columns": [
+        "date"
+      ],
+      "declaration": "E-035",
+      "design": "P-16",
+      "file": "vendor/stage2/data/atlas/A1/days.parquet",
+      "purpose": "registered_design"
+    },
+    "candidates": [
+      "cons",
+      "cons_m1.25",
+      "cons_m1.5",
+      "cons_m1.75",
+      "cons_m2",
+      "cons_bm",
+      "cons_bm_m1.25",
+      "cons_im",
+      "sn",
+      "cons_sn"
+    ],
+    "choice": "CHOSEN cons_m1.25 (scope Q)",
+    "decision": "E-115",
+    "fail_counts": {
+      "13": 71,
+      "14": 63,
+      "15": 56,
+      "16": 50,
+      "17": 45,
+      "18": 41,
+      "19": 38,
+      "20": 35
+    },
+    "k_range": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "levels": [
+      0.0002747252747252747,
+      0.0002380952380952381,
+      0.00020833333333333335,
+      0.0001838235294117647,
+      0.00016339869281045753,
+      0.00014619883040935673,
+      0.00013157894736842105,
+      0.00011904761904761905,
+      0.001,
+      0.005,
+      0.01,
+      0.025
+    ],
+    "n_sessions": 657,
+    "p_mc_min": 0.9,
+    "pairs_identity": "HOLDS: (a) the cutoff's marks, (b) the screen's cell row, (c) TRADES_SHA256",
+    "pairs_sha256": "62e64491f2c51240569b4e9f58c072657135ae5d24237fc76bfaa8f6575f009d",
+    "parts": {
+      "cp": {
+        "nulls": 54,
+        "peak_working_set_mb": 482.2,
+        "scalar_checked": 148986,
+        "scalar_mismatched": 0,
+        "seconds": 1311.4
+      },
+      "fixed": {
+        "nulls": 48,
+        "peak_working_set_mb": 601.2,
+        "scalar_checked": 131800,
+        "scalar_mismatched": 0,
+        "seconds": 308.9
+      },
+      "flat": {
+        "nulls": 30,
+        "peak_working_set_mb": 483.1,
+        "scalar_checked": 32138,
+        "scalar_mismatched": 0,
+        "seconds": 1652.0
+      },
+      "sub0": {
+        "nulls": 444,
+        "peak_working_set_mb": 616.6,
+        "scalar_checked": 1282239,
+        "scalar_mismatched": 0,
+        "seconds": 2442.3
+      },
+      "sub1": {
+        "nulls": 444,
+        "peak_working_set_mb": 637.1,
+        "scalar_checked": 1334182,
+        "scalar_mismatched": 0,
+        "seconds": 2474.6
+      },
+      "sub2": {
+        "nulls": 444,
+        "peak_working_set_mb": 640.8,
+        "scalar_checked": 1280766,
+        "scalar_mismatched": 0,
+        "seconds": 2451.7
+      },
+      "sub3": {
+        "nulls": 444,
+        "peak_working_set_mb": 613.4,
+        "scalar_checked": 1317544,
+        "scalar_mismatched": 0,
+        "seconds": 2486.3
+      },
+      "sub4": {
+        "nulls": 444,
+        "peak_working_set_mb": 613.3,
+        "scalar_checked": 1256951,
+        "scalar_mismatched": 0,
+        "seconds": 2491.7
+      },
+      "syn": {
+        "nulls": 25,
+        "peak_working_set_mb": 768.4,
+        "scalar_checked": 43616,
+        "scalar_mismatched": 0,
+        "seconds": 650.8
+      }
+    },
+    "plan": "docs/calibration/Q-108_one_sample_plan.md",
+    "plan_sha256": "c8e7424b46ff0c60ecb5b3ea875ac3b77e70f090a52f0cc0d999d7e416486d7e",
+    "ratio_max": "1/4",
+    "reps": 200000,
+    "reps_beside": 100000,
+    "scalar_redecision": {
+      "checked": 6828222,
+      "mismatched": 0
+    },
+    "seed_block": [
+      20262110,
+      20262111,
+      20262112,
+      20262113,
+      20262114,
+      20262115,
+      20262116,
+      20262117,
+      20262118,
+      20262119
+    ],
+    "seed_check": "unused outside the allow-list; notes: derived seed, printed for a hand check: tests/test_features_lookahead.py:132: `SEED_REPLACE + 1000 + i` -- its loop index cannot be bounded above, but its least value lies beyond both blocks: it cannot land; hand-checked: i < 790 (the alerts of ten days); its least value is three above the validation block's last seed (the plan's 4.1 hand check: an enumerate index is never negative, so it lands in neither block); derived seed, printed for a hand check: tests/test_features_lookahead.py:153: `SEED_REPLACE + 200 + i` -- its loop index cannot be bounded; it would need a reach of 778 to land in a block; hand-checked: i runs over the fixed days (a handful); it would need to reach 778 to land in the calibration block (the plan's 4.1 hand check: the fixed days are a handful, far below the blocks); derived seed, printed for a hand check: tests/test_features_lookahead.py:82: `SEED_REPLACE + i` -- its loop index cannot be bounded; it would need a reach of 978 to land in a block; hand-checked: i runs over the cuts of a test's synthetic bars (tens); it would need to reach 978 to land in the calibration block (the plan's 4.1 hand check: the cuts are tens, far below the blocks); derived seed, printed for a hand check: 274 more unbounded expression(s) lie over 1,000,000 seeds from both blocks (not listed); the nearest, vendor/stage2/scripts/shadow_system_levels.py:164, at 20,258,510",
+    "seed_map": {
+      "beside_cp": 20262116,
+      "beside_flat": 20262117,
+      "exact_sample": 20262118,
+      "fixed_mc": 20262111,
+      "sn_table": 20262115,
+      "subset_mc": 20262113,
+      "subsets": 20262112,
+      "synthetic": 20262114,
+      "tests": 20262110
+    },
+    "seeds": {},
+    "spare_seeds": [
+      20262119
+    ],
+    "task": "Q-108",
+    "versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python": "3.12.10",
+      "scipy": "1.18.1"
+    }
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q108-calibrate",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q108-calibrate"
+    },
+    "read_ledger": "2 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "q108_choice.csv",
+  "rows": 21,
+  "script": "scripts/q108_calibrate.py",
+  "seed": null,
+  "sha256": "357e91e87568088ae614f4649e73bd08e020e8c815c759efb5be1db80654ff3e",
+  "timestamp": "2026-11-17T09:40:49+00:00",
+  "variant_count": null
+}
