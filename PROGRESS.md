@@ -154,3 +154,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-156: RD-03's build partial (stage 0 and costs owed); red team reading it; its merge waits for the RD readings, with Q-115's, so the identities are re-held once. |
 | 2026-11-17 | lead | E-157: the volatility-drift note merged; an early-block descriptive, regime-bucketed readings and a calm-regime replay draft queued (Q-121..Q-123). |
 | 2026-11-17 | lead | E-158: RD-03's build read by the red team (merge after fixes); fixes sent; the volatility descriptive and the replay draft dispatched. |
+| 2026-11-17 | lead | E-159: the one-sample statistic's validation failed on one exact null; no one-sample line; audit and diagnosis dispatched. |
+| 2026-11-17 | lead | E-160: the validation's audit clean, the FAILS stands; E-159's clustering sentence withdrawn. |
+| 2026-11-17 | lead | E-161: the validation failure diagnosed (the aligned-pattern lottery through one trade set); a second one-sample plan queued, scope D first. |

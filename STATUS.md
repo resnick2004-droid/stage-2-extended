@@ -2,7 +2,7 @@
 
 Only the lead edits this file (E-005). It holds states, not result numbers: every figure lives in a result file.
 
-**Updated:** 2026-11-17 (E-158; RD-03's build back for fixes; Q-121, Q-123 running; volatility-drift note merged, Q-121..Q-123; RD-03 build partial, red team reading; RD-03 pinned E-152; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
+**Updated:** 2026-11-17 (E-162; the failure diagnosed, a second plan queued; the validation's audit clean, the FAILS stands; Q-108's validation FAILS, no one-sample line; RD-03's build back for fixes; Q-121, Q-123 running; volatility-drift note merged, Q-121..Q-123; RD-03 build partial, red team reading; RD-03 pinned E-152; F-03's build merged E-135; F-03 pinned E-095; Q-108's plan pinned E-115; RD-01's and RD-02's runners merged E-121, E-122).
 
 ## Phase
 
