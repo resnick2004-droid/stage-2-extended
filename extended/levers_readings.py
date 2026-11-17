@@ -34,6 +34,8 @@ READINGS: tuple[Reading, ...] = (
     Reading("reactivated_tier", "entry", "U-4", "the reactivated account at the entry scaling tier"),
     Reading("b2f_barred_under_placement", True, "U-5",
             "no reactivation while a Slowdown or Corrective placement is in force"),
+    # U-6's two labels in 10.1 item 8's words, which govern; 4.3 U-6's "reactivations counted as purchases: the
+    # conservative reading" is the long form of the second (the red team's cycle-3 note 3)
     Reading("reactivation_counted_as_purchase", False, "U-6", "not counted: the optimistic reading"),
     Reading("reactivation_counted_conservative", True, "U-6", "counted: the conservative reading"),
     Reading("requested_payout_taken", True, "U-7",

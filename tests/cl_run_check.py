@@ -133,6 +133,22 @@ if not problems:
         other = [i for i in np.flatnonzero(~b2f.to_numpy()) if any(x in CL.U6_LABELS for x in notes.iloc[i])]
         if other:
             problems.append(f"cl_reading_ftp: {len(other)} rows naming no Back2Funded cell carry a U-6 label (R2)")
+    for n in ("cl_reading_ladder", "cl_reading_ftp"):                # cycle 4's m1: the beside rates a year
+        t = f.get(n)
+        if t is None:
+            continue
+        r = t[(t["part"] == "mechanics") & t["measure"].astype(str).str.endswith("_per_year")]
+        v = r["value"].astype(float)
+        labelled = r["note"].fillna("").astype(str).str.startswith(CL.NO_FULL_YEAR) & (r["n"].astype(float) == 0)
+        ok = (v.isna() & labelled).all() if int(DAYS) < 252 else (np.isfinite(v) & ~labelled).all()
+        if not len(r) or not ok:
+            problems.append(f"{n}: the beside rates a year are not NaN and labelled '{CL.NO_FULL_YEAR}' exactly where "
+                            f"--days {DAYS} is under 252 (m1)")
+    mb = f.get("cl_menu_beside")
+    if mb is not None and len(mb):
+        nan = ~np.isfinite(mb["evaluations_bought_per_year"].astype(float))
+        if (mb.loc[nan, "per_year_note"].fillna("").astype(str) == "").any():
+            problems.append("cl_menu_beside: a rate a year printed NaN without its reason (m1)")
     g, m = f.get("cl_gate"), f.get("cl_menu")                      # M1: the entry is D-312's column
     if g is not None and m is not None:
         rows = g[(g["part"] == "row") & (g["twin"].astype(str) == "False") & (g["shift"] == "lower_bound")]

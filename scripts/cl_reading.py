@@ -374,12 +374,18 @@ def solver_view(a: Any, target: Path | None, text: str, designs: Any) -> Any:
     """M7: stage 0's view for the menu -- `cl_fit.csv`'s `solver_view` section, verified (in the synthetic run, a file
     in the results folder if one is there); "stage 0 stopped (row ...)" when it stopped; None when not given. m-b: a
     G-B and a G-N line for every design, else refused; in the real run the file's manifest commit is the commit the
-    `--stage0-row` row names, else refused. Read before any purpose is ledgered."""
+    `--stage0-row` row names in its fixed place, else refused (m2). m3: `--stage0-stopped` is refused with stage 0's
+    file present, without `--stage0-row`, and (real run) unless that row contains `cl_fit` and "Stage 0 is stopped".
+    Read before any purpose is ledgered."""
     from extended import cl_reading as CL
 
-    if a.stage0_stopped:
-        return f"stage 0 stopped (row {a.stage0_row}): no solver's view"
     path = (target / "cl_fit_synthetic.csv") if a.synthetic else ROOT / "results" / "cl_fit.csv"
+    if a.stage0_stopped:                                  # m3: a stop recorded, and no stage-0 file beside it
+        probs = CL.stage0_stopped_problems(a.stage0_row, row_line(text, a.stage0_row), path.is_file(),
+                                           real=not a.synthetic)
+        if probs:
+            raise CL.Refused("; ".join(probs) + " (m3)")
+        return f"stage 0 stopped (row {a.stage0_row}): no solver's view"
     if not path.is_file():
         if a.synthetic:
             return None

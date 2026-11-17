@@ -476,6 +476,8 @@ def _ftp_thresholds() -> str:
 #: the mechanics' rates (D-34's "a year"): a start's long replay is U1's horizon, one start's year (the red team's
 #: cycle-1 note 1); the counts are read only on starts whose replay is that long (`year_problems`)
 PER_YEAR = "per 252 sessions (a start's year): the mean count over starts whose long replay is U1's horizon"
+#: a rate a year with no start whose replay is a year: undefined, and labelled so (cycle 4's m1)
+NO_FULL_YEAR = "no full-year start"
 
 
 def year_problems(recs: Sequence[Mapping[str, Any]], days: Sequence[int], cell: str) -> None:
@@ -806,7 +808,9 @@ def label_house(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
-#: U-6's two readings (10.1 item 8): a Back2Funded row carries exactly the one of its variant (the red team's R2)
+#: U-6's two readings (10.1 item 8): a Back2Funded row carries exactly the one of its variant (the red team's R2).
+#: 10.1 item 8's wording governs (the red team's cycle-3 note 3); 4.3 U-6's "reactivations counted as purchases: the
+#: conservative reading" is its long form
 U6_LABELS = (LR.label("reactivation_counted_as_purchase"), LR.label("reactivation_counted_conservative"))
 
 
@@ -939,6 +943,11 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
         row["guard_gate_label"] = str(gn.iloc[0]) if len(gn) else ""
         mm = sub(mech, d, arm, cell, rname, mode)
         row["evaluations_bought_per_year"] = _first(mm, block="all", measure="evaluations_bought_per_year", stat="cell")
+        pn = mm[(mm["block"] == "all") & (mm["measure"] == "evaluations_bought_per_year") & (mm["stat"] == "cell")]
+        row["per_year_note"] = ("" if np.isfinite(row["evaluations_bought_per_year"]) else
+                                str(pn["note"].iloc[0]) if len(pn) else
+                                "not read on this row: no mechanics row (ref, a cell with no effect, or no full-year "
+                                "start on the block)")
         row["reactivations_per_year"] = _first(mm, block="all", measure="reactivations_per_year", stat="cell")
         row["max_reactivations_in_21_sessions"] = _first(mm, block="all", measure="max_reactivations_in_21_sessions",
                                                           stat="max")
@@ -1058,22 +1067,70 @@ def solver_view_problems(solver_view: pd.DataFrame, designs: Sequence[str]) -> l
     return out
 
 
-HEX_TOKEN = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{7,40}(?![0-9a-fA-F])")
+#: cycle 4's m2: the stage-0 row names its commit in one fixed place -- the first backticked token of 7 to 40
+#: hexadecimal characters after the words "stage 0" (case-insensitive)
+STAGE0_WORDS = re.compile(r"stage 0", re.I)
+BACKTICKED_HEX = re.compile(r"`([0-9a-fA-F]{7,40})`")
+
+
+def stage0_commit(row_line: str | None) -> tuple[str | None, str | None]:
+    """The commit a stage-0 row names (m2): the first backticked 7-to-40-hex token after the words "stage 0", lower-
+    cased; (None, why) when the row has no such words or token, or the token is decimal digits only (not a commit
+    one can tell from a count)."""
+    if not row_line:
+        return None, "the stage-0 row is not in DECISIONS.md"
+    m = STAGE0_WORDS.search(row_line)
+    if not m:
+        return None, "the stage-0 row does not say 'stage 0', so it names no commit in the fixed place"
+    t = BACKTICKED_HEX.search(row_line, m.end())
+    if not t:
+        return None, "the stage-0 row names no backticked commit (7 to 40 hex characters) after 'stage 0'"
+    tok = t.group(1)
+    if tok.isdigit():
+        return None, (f"the stage-0 row's first backticked token after 'stage 0' ({tok}) is decimal only, not a commit "
+                      "(a commit whose short form is all digits is written with more of its characters)")
+    return tok.lower(), None
 
 
 def fit_commit_problem(row_line: str | None, git_commit: str | None) -> str | None:
-    """m-b: `cl_fit.csv`'s manifest commit held to the commit the `--stage0-row` row names -- the manifest's
-    `git_commit` clean (no `-dirty`, not unknown) and beginning with a hexadecimal token (7 to 40 characters) of the
-    row's own line. None when it holds; else why."""
-    if not row_line:
-        return "the stage-0 row is not in DECISIONS.md, so cl_fit.csv's commit cannot be held to it"
+    """m-b, m2: `cl_fit.csv`'s manifest commit held to the one commit the `--stage0-row` row names in its fixed place
+    (`stage0_commit`) -- the manifest's `git_commit` clean (no `-dirty`, not unknown) and beginning with that token.
+    Any other commit the row mentions does not count. None when it holds; else why."""
+    tok, why = stage0_commit(row_line)
+    if tok is None:
+        return f"{why}, so cl_fit.csv's commit cannot be held to it"
     c = str(git_commit or "").strip()
     if not c or c == "unknown" or c.endswith("-dirty"):
         return f"cl_fit.csv's manifest commit {c or 'none'!r} is not a clean commit"
-    tokens = HEX_TOKEN.findall(row_line)
-    if not any(c.lower().startswith(t.lower()) for t in tokens):
-        return f"cl_fit.csv's manifest commit {c[:12]} is not the commit its row names ({tokens[:3] or 'none'})"
+    if not c.lower().startswith(tok):
+        return f"cl_fit.csv's manifest commit {c[:12]} is not the commit its row names in its fixed place ({tok})"
     return None
+
+
+#: cycle 4's m3: the phrase a stage-0 row that records the stop carries (E-172's), and the token every stage-0 row names
+STAGE0_STOPPED_PHRASE = "stage 0 is stopped"
+STAGE0_TOKEN = "cl_fit"
+
+
+def stage0_stopped_problems(row: str | None, row_line: str | None, fit_present: bool, *, real: bool = True
+                            ) -> list[str]:
+    """m3: `--stage0-stopped` refused when stage 0's file is on the tree (a stop cannot sit beside a solver's view),
+    without `--stage0-row`, or -- in the real run -- when that row does not contain `cl_fit` and the phrase "Stage 0 is
+    stopped" (case-insensitive). The synthetic run, whose DECISIONS.md need not hold the row, checks the first two."""
+    out = []
+    if fit_present:
+        out.append("--stage0-stopped with stage 0's file (cl_fit.csv) on the tree: a stop beside a solver's view")
+    if not row:
+        out.append("--stage0-stopped needs --stage0-row, the lead's row recording the stop")
+    elif real:
+        if not row_line:
+            out.append(f"--stage0-stopped: no row {row} in DECISIONS.md")
+        else:
+            if STAGE0_TOKEN not in row_line:
+                out.append(f"--stage0-stopped: {row} does not contain {STAGE0_TOKEN!r}")
+            if STAGE0_STOPPED_PHRASE not in row_line.lower():
+                out.append(f"--stage0-stopped: {row} does not record the stop ({STAGE0_STOPPED_PHRASE!r})")
+    return out
 
 
 def solver_view_frame(path: Path, *, row_line: str | None = None, designs: Sequence[str] | None = None,
@@ -1542,14 +1599,14 @@ def mechanics_rows_beside(key: dict[str, Any], run: Mapping[str, Any], base: Map
     out = []
     cs = list(run["counts"].values())
     k = dict(section="mechanics", part="mechanics", **key, block="all", n=len(cs), h=252)
-    # the rates a year on the starts whose long replay is a year (as `mechanics_rows` reads them; before this cycle
-    # every start's count was averaged, a shorter replay's too)
-    recs = [x["rec"] for x in run["outs"]]
-    year = [int(r["start_day"]) for r in recs if int(r["observed"]) >= int(U.HORIZON)]
-    year_problems(recs, year, str(key["cell"]))
-    cy = [run["counts"][d] for d in year if d in run["counts"]]
+    # the rates a year on the starts whose long replay is a year (as `mechanics_rows` reads them; before cycle 3 every
+    # start's count was averaged, a shorter replay's too). With no such start the rate is undefined, and its row says
+    # so (cycle 4's m1: never a silent NaN). `observed` is `min(HORIZON, n - s)`, so the filter is the whole check.
+    cy = [run["counts"][int(x["rec"]["start_day"])] for x in run["outs"]
+          if int(x["rec"]["observed"]) >= int(U.HORIZON) and int(x["rec"]["start_day"]) in run["counts"]]
     for name in ("evaluations_bought", "reactivations"):
-        out.append(_rk(k, measure=f"{name}_per_year", stat="cell", n=len(cy), note=PER_YEAR,
+        out.append(_rk(k, measure=f"{name}_per_year", stat="cell", n=len(cy),
+                        note=PER_YEAR if cy else f"{NO_FULL_YEAR}: {PER_YEAR}",
                         value=float(np.mean([c.get(name, 0) for c in cy])) if cy else NAN))
     out.append(_rk(k, measure="max_reactivations_in_21_sessions", stat="max",
                     value=float(max([rolling_max(c.get("reactivation_days") or (), _ftp_window()) for c in cs] or [0]))))
@@ -1586,4 +1643,5 @@ __all__ = ["DECLARATION", "PREREG_ID", "PIN_ROW", "PURPOSES", "STAGE_PURPOSE", "
            "adapter_provenance", "GUARD_COLUMNS", "GATE_GUARD", "GATE_COLUMNS", "gate_entry", "ref_gate_guard",
            "gate_guard_from_file", "label_house", "solver_view_text", "solver_view_frame", "keep_compact", "tally_of",
            "mechanics_rows_beside", "guard_values_n", "PER_YEAR", "year_problems", "U6_LABELS", "u6_label", "label_u6",
-           "excused_names", "solver_view_problems", "fit_commit_problem", "REF_GATE_LABEL", "beside_starts"]
+           "excused_names", "solver_view_problems", "fit_commit_problem", "REF_GATE_LABEL", "beside_starts",
+           "NO_FULL_YEAR", "stage0_commit", "stage0_stopped_problems", "STAGE0_STOPPED_PHRASE", "STAGE0_TOKEN"]

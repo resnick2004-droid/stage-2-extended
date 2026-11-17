@@ -55,12 +55,12 @@ def _run(section: str, timeout: int = 1800) -> dict:
 
 #: E-169 item 0: T-3's section (about 17 minutes: three toy jobs of five cells) runs in /validate's slow tier, not the
 #: fast tier the commit hook runs
-SLOW_SECTIONS = {"t3"}
+SLOW_SECTIONS = {"t3", "t3b"}
 
 
 @pytest.mark.parametrize("section", [pytest.param(s, marks=pytest.mark.slow) if s in SLOW_SECTIONS else s
-                                     for s in ("t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14",
-                                               "t15", "t16", "t17")])
+                                     for s in ("t1", "t2", "t3", "t3trip", "t3b", "t4", "t5", "t6", "t7", "t10",
+                                               "t13", "t14", "t15", "t16", "t17")])
 def test_section_holds(section):
     out = _run(section)
     assert out["n_problems"] == 0, "\n".join(out["problems"])
@@ -91,6 +91,29 @@ def test_starts_is_the_synthetic_window_measurements_only(tmp_path):
                            env=ENV)
         assert r.returncode == 2 and "REFUSED (RD-03): --starts" in r.stdout, (args, r.stdout[-800:], r.stderr[-800:])
     assert not any(tmp_path.iterdir())
+
+
+def test_the_tripwire_reads_its_horizon():
+    """m4: the fast tripwire (section t3trip) checked its one horizon and caught the purge leak there under its plant."""
+    out = _run("t3trip")
+    assert any(n.startswith("T3TRIP_ROWS_PURGE_") for n in out["notes"]), out["notes"]
+    caught = [n for n in out["notes"] if n.startswith("T3TRIP_LEAK_") and "_CAUGHT_BY=" in n]
+    assert len(caught) == 1 and caught[0].split("=")[1] not in ("none", ""), out["notes"]
+
+
+def test_stage0_stopped_is_refused_beside_a_stage0_file_or_without_its_row(tmp_path):
+    """m3 through the runner (synthetic step 3, before anything runs): `--stage0-stopped` without `--stage0-row`, and
+    with a stage-0 file in the results folder, each refused (exit 3) with nothing written."""
+    script = ROOT / "scripts" / "cl_reading.py"
+    base = ["--step", "3", "--synthetic", "--results-dir", str(tmp_path), "--days", "20", "--stage0-stopped"]
+    r = subprocess.run([sys.executable, str(script), *base], cwd=ROOT, capture_output=True, text=True, timeout=600,
+                       env=ENV)
+    assert r.returncode == 3 and "needs --stage0-row" in r.stdout, (r.stdout[-800:], r.stderr[-800:])
+    (tmp_path / "cl_fit_synthetic.csv").write_text("section,design,rule,line", encoding="utf-8")
+    r = subprocess.run([sys.executable, str(script), *base, "--stage0-row", "E-172"], cwd=ROOT, capture_output=True,
+                       text=True, timeout=600, env=ENV)
+    assert r.returncode == 3 and "on the tree" in r.stdout, (r.stdout[-800:], r.stderr[-800:])
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["cl_fit_synthetic.csv"]
 
 
 def test_the_real_run_excuses_no_guard_entry():

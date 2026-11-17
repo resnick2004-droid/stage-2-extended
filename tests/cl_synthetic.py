@@ -685,12 +685,12 @@ def t15() -> None:
 T3_CELLS = ("ref", "b2f2", "inv7_bank_30", "house_zero_30", "naf")
 
 
-def _t3_runs(job):
+def _t3_runs(job, cells=T3_CELLS):
     from extended import cl_reading as CL
 
     cal = __import__("extended.pp_run", fromlist=["calendar_frames"]).calendar_frames(ROOT)
     runs = {}
-    for cell in T3_CELLS:
+    for cell in cells:
         x = CL.replay_run(job, "toy", "point", cell, "off", list(range(len(job["blocks"]))), 2, record=True)
         x["tally"] = CL.tally_of(x, "toy", "point", "off", cal)
         x["rec"] = None
@@ -811,25 +811,139 @@ def t3() -> None:
         planted[name] = _t3_runs(pj)
         check(first == _t3_early(planted[name]), f"T-3: an early-block reading changed when the late sessions were "
                                                  f"replaced ({name} plant)")
+    t3_leaks(runs0, planted, hs, _t3_read, "T3")
+
+
+def _rows_moved(a: str, b: str) -> int | str:
+    """The early rows that differ between two readings (lines of their CSV, and any difference in their number), or
+    "refused" when the second is a refusal."""
+    if b.startswith("REFUSED"):
+        return "refused"
+    xs, ys = a.splitlines(), b.splitlines()
+    return sum(1 for p, q in zip(xs, ys) if p != q) + abs(len(xs) - len(ys))
+
+
+def t3_leaks(runs0, planted, hs, read, tag: str, forms=(("purge", True), ("full", False))) -> None:
+    """T-3's power, for any reading `read` (runs -> its early rows as text, or a refusal): at each h and leak form,
+    each plant's moved-row count into the notes (`<tag>_ROWS_<FORM>_<h>`, cycle 4's note 1), and the catch checked --
+
+    * the purge form: a row moves under at least one plant, the reading not refused (a plant whose reading refuses
+      moves no row: cycle 4's note 2, so the code says what the docstring says);
+    * cycle 1's full form: a row moves under a plant, or the reading refuses under every late block."""
+    from propedge.research import u_select as US
+
     orig = US.block
     for h in hs:
-        for form, elig in (("purge", True), ("full", False)):
+        for form, elig in forms:
             US.block = t3_leak(orig, h, elig)
             try:
-                a = _t3_read(runs0)
-                got = {name: _t3_read(r) for name, r in planted.items()}
+                a = read(runs0)
+                got = {name: read(r) for name, r in planted.items()}
             finally:
                 US.block = orig
-            moved = [name for name, x in got.items() if x != a]
+            counts = {name: _rows_moved(a, x) for name, x in got.items()}
+            notes.append(f"{tag}_ROWS_{form.upper()}_{h}=" + ",".join(f"{n}:{c}" for n, c in counts.items()))
             refusal = a.startswith("REFUSED") and all(x.startswith("REFUSED") for x in got.values())
             if form == "purge":
-                notes.append(f"T3_LEAK_{h}_CAUGHT_BY={','.join(moved) or 'none'}")
+                moved = [name for name, x in got.items() if x != a and not x.startswith("REFUSED")]
+                notes.append(f"{tag}_LEAK_{h}_CAUGHT_BY={','.join(moved) or 'none'}")
                 check(bool(moved) and not a.startswith("REFUSED"),
-                      f"T-3: the purge leak at h = {h} moves no early row under either plant"
+                      f"{tag}: the purge leak at h = {h} moves no early row under either plant"
                       + (f" (the reading refused: {a[:160]})" if a.startswith("REFUSED") else ""))
             else:
-                notes.append(f"T3_LEAK_FULL_{h}_CAUGHT_BY={','.join(moved) or ('refused' if refusal else 'none')}")
-                check(bool(moved) or refusal, f"T-3: cycle 1's leak at h = {h} is neither seen nor refused")
+                moved = [name for name, x in got.items() if x != a]
+                notes.append(f"{tag}_LEAK_FULL_{h}_CAUGHT_BY={','.join(moved) or ('refused' if refusal else 'none')}")
+                check(bool(moved) or refusal, f"{tag}: cycle 1's leak at h = {h} is neither seen nor refused")
+
+
+#: cycle 4's m4, the fast tripwire: T-3 on `ref` alone with the losses plant, at the shortest horizon of section 5's
+#: table where the purge leak moves a row under that plant on `ref` -- 63 (measured on this toy before it was fixed: 0
+#: rows at 21, 50 at 63; the wins plant would be used had none moved under losses)
+T3_TRIP = ("losses", 63)
+
+
+def t3trip() -> None:
+    """m4, the fast tier's look-ahead tripwire (about two minutes): T-3's no-leak claim on `ref` alone under the losses
+    plant -- every early row byte-identical when every session from 2024-01-02 on is replaced -- and, so the tripwire
+    itself can fail, the purge leak at `T3_TRIP`'s horizon moving a row under that plant (the reach checked first).
+    T-3's full power (five cells, both plants, every h) stays in the slow tier."""
+    from propedge.research import u_select as US
+
+    name, h = T3_TRIP
+    job = toy_job(n_days=560, start="2022-03-01")
+    recs = [{"start_day": i, "start_date": d, "observed": min(252, len(job["dates"]) - i)}
+            for i, d in enumerate(job["dates"])]
+    check(len(t3_reach(recs, h, US.block)) > 0, f"T-3 tripwire: the plant cannot reach a reading at h = {h}")
+    runs0 = _t3_runs(job, ("ref",))
+    first = _t3_read(runs0)
+    check(not first.startswith("REFUSED") and len(first.splitlines()) > 1, "T-3 tripwire: no early reading of ref")
+    won, i = {n: (w, k) for n, w, k in T3_PLANTS}[name]
+    planted = {name: _t3_runs(_t3_plant(job, won, i), ("ref",))}
+    check(first == _t3_read(planted[name]), f"T-3 tripwire: ref's early reading changed when the late sessions were "
+                                            f"replaced ({name} plant)")
+    t3_leaks(runs0, planted, (h,), _t3_read, "T3TRIP", forms=(("purge", True),))
+
+
+#: cycle 4's m5: the beside readings T-3 covers -- `rtp` and one Focused Trader model on `ref`, and `b2f2` under that
+#: model in both U-6 variants (the counted one included); the power at 63 and 252
+T3B_HORIZONS = (63, 252)
+
+
+def _t3b_specs() -> list[tuple[str, str, str]]:
+    from extended import cl_reading as CL
+    from extended import user_beside as B
+
+    ftp0 = [r.name for r in B.RESPONSES if r.kind == "ftp"][0]
+    return [("ref", "rtp", ""), ("ref", ftp0, ""), ("b2f2", ftp0, ""), ("b2f2", ftp0, CL.CONSERVATIVE)]
+
+
+def _t3b_runs(job):
+    from extended import cl_reading as CL
+
+    runs = {}
+    for cell, rname, var in _t3b_specs():
+        x = CL.replay_run(job, "toy", "verdict", cell, rname, list(range(len(job["blocks"]))), 2, record=False,
+                          count_reactivations=(var == CL.CONSERVATIVE))
+        runs[CL.run_key("toy", "verdict", cell, rname, var)] = x
+    return runs
+
+
+def _t3b_read(runs) -> str:
+    """The beside reading's early rows (step 5's `reading_rows` and its U-6 labels, `label_u6`), or its refusal."""
+    from extended import cl_reading as CL
+
+    try:
+        rows = CL.label_u6(CL.reading_rows(runs, {}, set()))
+    except CL.Refused as exc:
+        return f"REFUSED: {exc}"
+    return pd.DataFrame([r for r in rows if r["block"] == "early"]).to_csv(index=False)
+
+
+def t3b() -> None:
+    """m5 (slow, about ten minutes): T-3 on the beside readings -- `rtp`, a Focused Trader model, and `b2f2`'s counted
+    variant beside its declared one -- every early row byte-identical under each of the two opposite plants, and the
+    purge leak caught at 63 and 252 (a row moves under one plant or the other; the reach checked at each)."""
+    from propedge.research import u_select as US
+
+    from extended import cl_reading as CL
+
+    job = toy_job(n_days=560, start="2022-03-01")
+    recs = [{"start_day": i, "start_date": d, "observed": min(252, len(job["dates"]) - i)}
+            for i, d in enumerate(job["dates"])]
+    for h in T3B_HORIZONS:
+        check(len(t3_reach(recs, h, US.block)) > 0, f"T-3 beside: the plant cannot reach a reading at h = {h}")
+    runs0 = _t3b_runs(job)
+    first = _t3b_read(runs0)
+    t = pd.read_csv(__import__("io").StringIO(first)) if not first.startswith("REFUSED") else pd.DataFrame()
+    covered = bool(len(t)) and {"rtp", _t3b_specs()[1][1]} <= set(t["response"].astype(str)) and bool(
+        (t["mode"].astype(str) == CL.CONSERVATIVE).any())
+    check(bool(covered), "T-3 beside: the early reading lacks rtp, the Focused Trader model or the counted variant")
+    planted = {}
+    for name, won, i in T3_PLANTS:
+        planted[name] = _t3b_runs(_t3_plant(job, won, i))
+        check(first == _t3b_read(planted[name]), f"T-3 beside: an early row changed when the late sessions were "
+                                                 f"replaced ({name} plant)")
+    t3_leaks(runs0, planted, T3B_HORIZONS, _t3b_read, "T3B", forms=(("purge", True),))
 
 
 def t6() -> None:
@@ -1120,16 +1234,35 @@ def t17() -> None:
 
     # m-b: the commit hold, on strings
     c40 = "0123456789abcdef0123456789abcdef01234567"
-    row = f"| E-900 | 2026-11-17 | stage 0 (cl_fit) from a clean checkout of {c40[:7]} |"
+    row = f"| E-900 | 2026-11-17 | stage 0 (cl_fit) from a clean checkout of `{c40[:12]}` |"
     check(CL.fit_commit_problem(row, c40) is None, "m-b: the row's own commit refused")
-    check(CL.fit_commit_problem(row.replace(c40[:7], c40), c40) is None, "m-b: the row's full commit refused")
+    check(CL.fit_commit_problem(row.replace(c40[:12], c40), c40) is None, "m-b: the row's full commit refused")
     check(CL.fit_commit_problem(row, c40 + "-dirty") is not None, "m-b: a dirty manifest commit accepted")
     check(CL.fit_commit_problem(row, "unknown") is not None, "m-b: an unknown manifest commit accepted")
     check(CL.fit_commit_problem(row, "f" * 40) is not None, "m-b: another commit accepted")
     check(CL.fit_commit_problem(None, c40) is not None, "m-b: no row accepted")
     sha = c40 + "0" * 24                                  # a sha256 beginning with the commit is not a commit
-    check(CL.fit_commit_problem(f"| E-901 | cl_fit, its file's sha256 {sha} |", c40) is not None,
+    check(CL.fit_commit_problem(f"| E-901 | stage 0 (cl_fit), its file's sha256 `{sha}` |", c40) is not None,
           "m-b: a sha256 read as the row's commit")
+    # m2: one token in a fixed place -- the first backticked 7-to-40-hex token after the words "stage 0"
+    other = "fedcba9876543210fedcba9876543210fedcba98"
+    two = f"| E-902 | stage 0 (cl_fit) ran at `{c40[:12]}`, from the brief at `{other[:12]}` |"
+    check(CL.fit_commit_problem(two, c40) is None, "m2: the row's first commit after 'stage 0' refused")
+    check(CL.fit_commit_problem(two, other) is not None, "m2: a two-commit row accepts its second commit")
+    before = f"| E-903 | the merge `{other[:7]}`; Stage 0 (cl_fit) at `{c40[:12]}` |"
+    check(CL.fit_commit_problem(before, c40) is None and CL.fit_commit_problem(before, other) is not None,
+          "m2: a commit before 'stage 0' counted, or the one after it refused")
+    dec = "| E-904 | stage 0 (cl_fit) at `1234567` paths, then `0123456789ab` |"
+    check(CL.fit_commit_problem(dec, "1234567" + "a" * 33) is not None and CL.fit_commit_problem(dec, c40) is not None,
+          "m2: a decimal-only token read as the commit (or the token after it)")
+    check(CL.stage0_commit(dec) == (None, CL.stage0_commit(dec)[1]) and "decimal" in CL.stage0_commit(dec)[1],
+          "m2: the decimal token's refusal does not say why")
+    check(CL.fit_commit_problem(f"| E-905 | stage 0 (cl_fit) at {c40[:12]} |", c40) is not None,
+          "m2: an unbackticked commit accepted")
+    check(CL.fit_commit_problem(f"| E-906 | cl_fit at `{c40[:12]}` |", c40) is not None,
+          "m2: a row without the words 'stage 0' accepted")
+    check(CL.fit_commit_problem(f"| E-907 | stage 0 (cl_fit) at `{other[:6]}` |", other) is not None,
+          "m2: a six-character token accepted")
     # m-b: the commit hold and the lines, on a written file (a temporary folder, never results/)
     tmp = Path(tempfile.mkdtemp())
     try:
@@ -1143,7 +1276,7 @@ def t17() -> None:
         man.write_text(_json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         f = CL.solver_view_frame(csv, row_line=row, designs=["p14"])
         check(len(f) == 2 and set(f["rule"]) == {"G-B", "G-N"}, "m-b: the view not read from a held file")
-        check(refused(lambda: CL.solver_view_frame(csv, row_line=row.replace(c40[:7], "fedcba9"), designs=["p14"]),
+        check(refused(lambda: CL.solver_view_frame(csv, row_line=row.replace(c40[:12], "fedcba987654"), designs=["p14"]),
                       CL.Refused), "m-b: a file at another commit than its row's is read")
         check(refused(lambda: CL.solver_view_frame(csv, row_line=None, designs=["p14"]), CL.Refused),
               "m-b: a file read with no stage-0 row")
@@ -1232,6 +1365,48 @@ def t17() -> None:
         check(inspect.signature(fn).parameters["excuse_guard"].default is False,
               f"m-a: {fn.__name__} excuses a guard entry by default")
 
+    # m3: --stage0-stopped's refusals (E-172 on master carries `cl_fit_identity` and "Stage 0 is stopped")
+    stop = ("| E-172 | 2026-11-17 | **Q-119s: RD-03's stage 0 stopped at its feasibility probe** ... `cl_fit_identity` "
+            "... **Stage 0 is stopped (E-146: it decides nothing); step 3 runs `--stage0-stopped`** |")
+    check(CL.stage0_stopped_problems("E-172", stop, False) == [], "m3: a row recording the stop refused")
+    check(len(CL.stage0_stopped_problems("E-172", stop, True)) == 1, "m3: a stop beside cl_fit.csv accepted")
+    check(len(CL.stage0_stopped_problems(None, None, False)) == 1, "m3: a stop without --stage0-row accepted")
+    check(len(CL.stage0_stopped_problems("E-172", None, False)) == 1, "m3: a stop row not in DECISIONS.md accepted")
+    check(len(CL.stage0_stopped_problems("E-172", stop.replace("cl_fit_identity", "the identity"), False)) == 1,
+          "m3: a stop row without cl_fit accepted")
+    check(len(CL.stage0_stopped_problems("E-172", stop.replace("Stage 0 is stopped", "Stage 0 ran"), False)) == 1,
+          "m3: a row that does not record the stop accepted")
+    check(CL.stage0_stopped_problems("E-172", stop.upper().replace("CL_FIT", "cl_fit"), False) == [],
+          "m3: the stop phrase read case-sensitively")
+    check(CL.stage0_stopped_problems("E-999", None, False, real=False) == []
+          and len(CL.stage0_stopped_problems(None, None, False, real=False)) == 1
+          and len(CL.stage0_stopped_problems("E-999", None, True, real=False)) == 1,
+          "m3: the synthetic run's two checks")
+    txt = "stage 0 stopped (row E-172): no solver's view"
+    combos = [(c, "off", "declared") for c in ("ref", "b2f1", "b2f2", "inv5_bank_none", "house_stop_none", "naf")]
+    sm = CL.menu_table(pd.DataFrame(_t14_rows(combos), columns=list(PI.ROW_KEYS)), (), set(), txt)
+    lev = sm["cell"].map(lambda c: CL.spec(c).lever)
+    check((sm.loc[lev.isin(["L-B", "L-N"]), "solver_view"] == txt).all() and lev.isin(["L-B", "L-N"]).sum() == 3
+          and sm.loc[~lev.isin(["L-B", "L-N"]), "solver_view"].isna().all(),
+          "m3: the stop's line not on exactly the Back2Funded and naf rows")
+
+    # m1: the beside rates a year on the full-year starts only, labelled when there is none
+    ftp0 = [r.name for r in B.RESPONSES if r.kind == "ftp"][0]
+    bk = dict(design="p14", arm="verdict", cell="b2f1", mode="declared", response=ftp0, base="ref")
+    cnt = {0: {"evaluations_bought": 10, "reactivations": 2, "reactivation_days": [5, 9]},
+           1: {"evaluations_bought": 3, "reactivations": 1, "reactivation_days": [4]}}
+    full_run = {"counts": cnt, "outs": [{"rec": {"start_day": 0, "observed": yr}, "response": {}},
+                                       {"rec": {"start_day": 1, "observed": yr - 200}, "response": {}}]}
+    by = {r["measure"]: r for r in CL.mechanics_rows_beside(bk, full_run, full_run)}
+    check(by["evaluations_bought_per_year"]["value"] == 10.0 and by["reactivations_per_year"]["value"] == 2.0
+          and by["evaluations_bought_per_year"]["n"] == 1 and by["evaluations_bought_per_year"]["note"] == CL.PER_YEAR,
+          "m1: the beside rate a year is not the full-year starts' mean (a short replay averaged in)")
+    short = {"counts": {1: cnt[1]}, "outs": [full_run["outs"][1]]}
+    by = {r["measure"]: r for r in CL.mechanics_rows_beside(bk, short, short)}
+    e = by["evaluations_bought_per_year"]
+    check(not np.isfinite(e["value"]) and e["n"] == 0 and str(e["note"]).startswith(CL.NO_FULL_YEAR),
+          "m1: a beside rate with no full-year start not labelled 'no full-year start'")
+
     # the window measurement: every n-th start; refused with the real inputs, and n below 1
     check(CL.beside_starts(70, None, 5) == list(range(0, 70, 5)) and CL.beside_starts(70, None, None) == list(range(70)),
           "--starts: not every n-th start")
@@ -1240,7 +1415,7 @@ def t17() -> None:
           "--starts: every n-th start accepted with the real inputs")
 
 
-SECTIONS = {"t16": t16, "t17": t17, "t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
+SECTIONS = {"t16": t16, "t17": t17, "t3trip": t3trip, "t3b": t3b, "t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
             "t15": t15}
 
 
