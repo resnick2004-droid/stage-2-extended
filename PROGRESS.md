@@ -141,3 +141,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-141: a second state-dependent test fixed; the held records commit. |
 | 2026-11-17 | lead | E-142: status questions never pause the workflow (the operator); the heavy queue's part 7 (A0 first after the calibration). |
 | 2026-11-17 | lead | E-143: F-03's build complete; A0 queued after the calibration, run 1 after A0. |
+| 2026-11-17 | lead | E-144: RD-03's draft started (Back2Funded, the evaluation inventory, house-money purchasing). |
