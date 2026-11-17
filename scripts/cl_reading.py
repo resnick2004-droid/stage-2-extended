@@ -7,6 +7,7 @@ of a named commit, under the run lock, after the lead's row records the step bef
     python scripts/run_clean.py ... -- python scripts/cl_reading.py --step 4 --after E-NNN
     python scripts/run_clean.py ... -- python scripts/cl_reading.py --step 5 --after E-NNN
     python scripts/cl_reading.py --step 3 --synthetic --results-dir <a temporary folder>   # the pipeline on toys
+    python scripts/cl_reading.py --step 4 --synthetic --results-dir <the same folder> --starts 5   # every 5th start
 
 (Step 1 is `identity/cl_fit_identity.py` and `identity/cl_identity.py`; step 2 is `scripts/cl_fit.py`.)
 
@@ -178,11 +179,44 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--days", type=int, default=160, help="with --synthetic: the toy's sessions")
     ap.add_argument("--paths", type=int, default=3, help="with --synthetic: the toy gates' paths")
     ap.add_argument("--stage0-stopped", action="store_true", help="step 3: stage 0 stopped (its row --stage0-row)")
+    ap.add_argument("--starts", type=int, default=None,
+                    help="with --synthetic, steps 4 and 5 only: every n-th start (section 15's window measurement: "
+                         "the per-start part of time and memory); refused anywhere else")
     return ap
+
+
+def starts_problem(a: Any) -> str | None:
+    """`--starts` is the synthetic window measurement's, in steps 4 and 5 only, and n is at least 1."""
+    if a.starts is None:
+        return None
+    if not a.synthetic:
+        return "--starts is the synthetic window measurement's only (--synthetic); the reading runs every start"
+    if a.step not in (4, 5):
+        return "--starts thins steps 4 and 5 only (step 3's cost is scaled by --paths)"
+    if int(a.starts) < 1:
+        return f"--starts {a.starts}: every n-th start, n at least 1"
+    return None
+
+
+def row_line(text: str, row: str | None) -> str | None:
+    """The line of DECISIONS.md that is row `row`, or None."""
+    import re
+
+    if not row:
+        return None
+    for line in text.splitlines():
+        if re.match(rf"^\|\s*{re.escape(row)}\s*\|", line):
+            return line
+    return None
 
 
 def main(argv: list[str] | None = None) -> int:
     a = parser().parse_args(argv)
+    why = starts_problem(a)
+    if why:
+        print(f"REFUSED (RD-03): {why}")
+        print("EXIT 2", flush=True)
+        return 2
     import stage2_identity as SI
 
     from extended import cl_reading as CL
@@ -211,6 +245,11 @@ def main(argv: list[str] | None = None) -> int:
             return 3
         seed = CL.declared_seed(CL.HONESTY_ROLE, ROOT, strict=False)
         authorise_gate = None
+        try:
+            view = solver_view(a, target, text, designs) if a.step == 3 else None
+        except CL.Refused as exc:
+            print(f"REFUSED (RD-03): {exc} -- nothing run")
+            return 3
     else:
         if a.results_dir:
             print("REFUSED (RD-03): --results-dir is the synthetic run's only")
@@ -235,6 +274,12 @@ def main(argv: list[str] | None = None) -> int:
         limits, limit_rows_used, lp, _ = PR.limit_rows(text)
         probs += lp
         inputs, designs, reps, target = CL.CLInputs(), CL.DESIGNS, None, None
+        view = None
+        if not probs and a.step == 3:                        # m-b: stage 0's view, its commit the row's, read first
+            try:
+                view = solver_view(a, target, text, designs)
+            except CL.Refused as exc:
+                probs.append(f"stage 0's view: {exc}")
         if not probs:
             probs += inputs.preflight(designs)
         if probs:
@@ -263,8 +308,8 @@ def main(argv: list[str] | None = None) -> int:
         prov = CL.adapter_provenance(ROOT, strict=not a.synthetic)
         if a.step == 3:
             out = CL.run_scorecard(inputs, designs=designs, workers=a.workers, honesty_seed=seed,
-                                   approved_limits=limits, authorise_gate=authorise_gate,
-                                   solver_view=solver_view(a, target), **kw)
+                                   approved_limits=limits, authorise_gate=authorise_gate, solver_view=view,
+                                   excuse_guard=bool(a.synthetic), **kw)
             frames = {"cl_reading": out["reading"], "cl_gate": out["gate"], "cl_menu": out["menu"]}
         else:
             stage = "ladder" if a.step == 4 else "ftp"
@@ -274,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
                 raise CL.Refused(f"step 3's gate file {gate_file.name} (M3): {msg}")
             gg = CL.gate_guard_from_file(XR.read_result(gate_file))
             out = CL.run_beside(inputs, stage, designs=designs, workers=a.workers, honesty_seed=seed, gate_guard=gg,
-                                **kw)
+                                excuse_guard=bool(a.synthetic), start_every=a.starts, **kw)
             frames = {RESULTS[a.step][0]: out["reading"]}
             if a.step == 5:
                 frames["cl_menu_beside"] = out["menu"]
@@ -304,6 +349,8 @@ def main(argv: list[str] | None = None) -> int:
         "limits": ({"rows": limit_rows_used, "limits": limits} if limits else
                    "none approved before the run's commit: no e015-limits row in DECISIONS.md"),
         "repeat": a.repeat, "workers": int(a.workers), "synthetic": bool(a.synthetic),
+        "start_every": a.starts if a.starts is not None else "every start",
+        "start_counts": {"/".join(k): int(v) for k, v in (out.get("counts") or {}).items()},
         "seconds": round(time.time() - t0, 1),
     }
     notes = {"status": "described, not carried (E-023 (1)): no level, no pass line, no pick; every cell labelled so"}
@@ -323,9 +370,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def solver_view(a: Any, target: Path | None) -> Any:
+def solver_view(a: Any, target: Path | None, text: str, designs: Any) -> Any:
     """M7: stage 0's view for the menu -- `cl_fit.csv`'s `solver_view` section, verified (in the synthetic run, a file
-    in the results folder if one is there); "stage 0 stopped (row ...)" when it stopped; None when not given."""
+    in the results folder if one is there); "stage 0 stopped (row ...)" when it stopped; None when not given. m-b: a
+    G-B and a G-N line for every design, else refused; in the real run the file's manifest commit is the commit the
+    `--stage0-row` row names, else refused. Read before any purpose is ledgered."""
     from extended import cl_reading as CL
 
     if a.stage0_stopped:
@@ -335,7 +384,8 @@ def solver_view(a: Any, target: Path | None) -> Any:
         if a.synthetic:
             return None
         raise CL.Refused("results/cl_fit.csv is not on the tree (step 2's output, or --stage0-stopped)")
-    return CL.solver_view_frame(path)
+    return CL.solver_view_frame(path, row_line=row_line(text, a.stage0_row), designs=list(designs),
+                                hold_commit=not a.synthetic)
 
 
 if __name__ == "__main__":

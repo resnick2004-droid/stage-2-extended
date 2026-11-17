@@ -53,18 +53,45 @@ def _run(section: str, timeout: int = 1800) -> dict:
     return out
 
 
-@pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14", "t15", "t16"])
+@pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14", "t15", "t16",
+                                     "t17"])
 def test_section_holds(section):
     out = _run(section)
     assert out["n_problems"] == 0, "\n".join(out["problems"])
 
 
-@pytest.mark.xfail(strict=True, reason="Q-119 corrective cycle 2 of 2: T-3's planted leak at h = 21 is not caught "
-                                       "(undiagnosed; the only 21-session reading is S3a's card entry) -- on record "
-                                       "for the lead; strict, so the mark must go when it is caught")
-def test_t3_a_planted_leak_at_21_sessions_is_caught():
+def test_t3_catches_the_planted_leak_at_every_horizon():
+    """R1 (cycle 3): T-3's planted leaks caught at every h of section 5's table, 21 included, each h reached by the
+    plant -- the purge leak by a moved row under one of the two plants, cycle 1's leak by a moved row or the reading's
+    refusal -- read off the section's own notes, so a T-3 that stopped checking a horizon fails here too."""
     out = _run("t3")
-    assert "T3_LEAK_21_CAUGHT=True" in out["notes"]
+    for h in (21, 63, 126, 189, 252):
+        assert any(n.startswith(f"T3_REACH_{h}=") and int(n.split("=")[1]) > 0 for n in out["notes"]), h
+        caught = [n for n in out["notes"] if n.startswith(f"T3_LEAK_{h}_CAUGHT_BY=")]
+        assert caught and caught[0].split("=")[1] not in ("none", "refused"), h
+        full = [n for n in out["notes"] if n.startswith(f"T3_LEAK_FULL_{h}_CAUGHT_BY=")]
+        assert full and full[0].split("=")[1] != "none", h
+
+
+def test_starts_is_the_synthetic_window_measurements_only(tmp_path):
+    """The window measurement's `--starts` (every n-th start): refused outside `--synthetic`, in step 3, and below 1
+    -- each before anything is read or run (exit 2)."""
+    script = ROOT / "scripts" / "cl_reading.py"
+    for args in (["--step", "4", "--starts", "5"], ["--step", "5", "--starts", "5", "--after", "E-001"],
+                 ["--step", "3", "--synthetic", "--results-dir", str(tmp_path), "--starts", "5"],
+                 ["--step", "4", "--synthetic", "--results-dir", str(tmp_path), "--starts", "0"]):
+        r = subprocess.run([sys.executable, str(script), *args], cwd=ROOT, capture_output=True, text=True, timeout=300,
+                           env=ENV)
+        assert r.returncode == 2 and "REFUSED (RD-03): --starts" in r.stdout, (args, r.stdout[-800:], r.stderr[-800:])
+    assert not any(tmp_path.iterdir())
+
+
+def test_the_real_run_excuses_no_guard_entry():
+    """m-a: the runner passes the guard excuse only to the synthetic run, and every function's default refuses it
+    (t17 holds the defaults by `inspect.signature`)."""
+    text = (ROOT / "scripts" / "cl_reading.py").read_text(encoding="utf-8")
+    assert text.count("excuse_guard=bool(a.synthetic)") == 2
+    assert "excuse_guard=True" not in text
 
 
 # ------------------------------------------------------------------------------------------------ T-9

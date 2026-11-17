@@ -711,48 +711,125 @@ def _t3_early(runs) -> str:
     return t.to_csv(index=False)
 
 
-def t3() -> None:
-    """T-3 (M6): every early-block reading -- the card, distributions, guard rows, paired, divergences and mechanics --
-    is byte-identical when every session from 2024-01-02 on is replaced, on a toy whose early block keeps starts at
-    every horizon of section 5's table, over every lever kind; and a planted late-block leak at each horizon fails."""
-    from propedge.research import u_select as US
+#: T-3's late block: the sessions it replaces (the judged block's first session on)
+T3_LATE_FROM = "2024-01-02"
+#: T-3's two plants, each with its own child of section 12's toy seed (`toy(5, i)`): every late trade lost (i = 0),
+#: every late trade won (i = 1) -- opposite, so a leak moves a reading under one of them whichever way it leans
+T3_PLANTS = (("losses", False, 0), ("wins", True, 1))
+
+
+def _t3_plant(job, won: bool, i: int):
+    """A copy of T-3's toy with every session from `T3_LATE_FROM` replaced: one to four trades a session (their count
+    drawn from `toy(5, i)`), every one won at the 2R target (`won`) or lost at the stop. The early sessions are the
+    same objects, untouched."""
     from propedge.outcomes.distribution import DayBlock
+
+    rng = np.random.default_rng(toy(5, i))
+    blocks = list(job["blocks"])
+    for s, d in enumerate(job["dates"]):
+        if d < T3_LATE_FROM:
+            continue
+        k = int(rng.integers(1, 5))
+        et = np.array([500.0 + 60.0 * j for j in range(k)])
+        blocks[s] = DayBlock(pnl=np.full(k, 1000.0 if won else -500.0), risked=np.full(k, 500.0),
+                             exit_reasons=("target" if won else "stop",) * k, entry_t=et, exit_t=et + 30.0)
+    return {**job, "blocks": blocks}
+
+
+def t3_leak(block, h: int, eligibility: bool):
+    """T-3's planted leak at horizon h, around the vendored `u_select.block`: the early block purged at 1 session
+    instead of h. `eligibility` (the purge leak): the block keeps its starts with h sessions observed, so only the
+    purge margin leaks. Without it (cycle 1's form, the red team's): the eligibility is lowered with the purge -- the
+    vendored block reads h for both -- so starts with fewer than h sessions observed come in too."""
+    def leaky(records, which, hh, _h=int(h)):
+        if which == "early" and int(hh) == _h:
+            got = block(records, which, 1)
+            return [r for r in got if int(r["observed"]) >= _h] if eligibility else got
+        return block(records, which, hh)
+
+    return leaky
+
+
+def t3_reach(recs, h: int, block) -> list[int]:
+    """R1's precondition at horizon h: the starts the purge leak at h (`t3_leak(..., eligibility=True)`) lets into the
+    early block whose h-session window -- sessions s to s + h - 1 -- reaches a replaced session. Empty: the plant
+    cannot touch a reading at h, and the test cannot fail there."""
+    first = min(int(r["start_day"]) for r in recs if str(r["start_date"]) >= T3_LATE_FROM)
+    right = {int(r["start_day"]) for r in block(recs, "early", h)}
+    return [int(r["start_day"]) for r in t3_leak(block, h, True)(recs, "early", h)
+            if int(r["start_day"]) not in right and int(r["start_day"]) + h - 1 >= first]
+
+
+def _t3_read(runs) -> str:
+    """The early reading, or the reading's refusal (a leak the reading itself refuses, e.g. note 1's year check on a
+    start without U1's horizon observed)."""
+    from extended import cl_reading as CL
+
+    try:
+        return _t3_early(runs)
+    except CL.Refused as exc:
+        return f"REFUSED: {exc}"
+
+
+def t3() -> None:
+    """T-3 (M6, R1): every early-block reading -- the card, distributions, guard rows, paired, the frontiers and
+    mechanics (the divergences are block `all` by design, 10.1 item 6) -- is byte-identical when every session from
+    2024-01-02 on is replaced, under each of two opposite plants (every late trade lost; every late trade won), on a
+    toy whose early block keeps starts at every horizon of section 5's table, over every lever kind; and a planted
+    late-block leak is caught at every h of the table, 21 included:
+
+    * the purge leak (the early block purged at 1 session instead of h, its starts still with h sessions observed):
+      at least one early row moves under one plant or the other -- a row, never a refusal;
+    * cycle 1's leak (the purge and the eligibility lowered together): a row moves under a plant, or the reading
+      refuses (at h = 252 note 1's year check refuses the starts without a year observed, whatever the late block).
+
+    At each h the purge leak must reach a reading (a leaked start's window touches a replaced session), or the test
+    fails."""
+    from propedge.research import u_select as US
 
     from extended import pp_reading as RD
 
     job = toy_job(n_days=560, start="2022-03-01")
     recs = [{"start_day": i, "start_date": d, "observed": min(252, len(job["dates"]) - i)}
             for i, d in enumerate(job["dates"])]
-    for h in sorted(set(RD.HORIZON_SET)):
+    hs = sorted(set(RD.HORIZON_SET))
+    for h in hs:
         check(len(US.block(recs, "early", h)) > 0, f"T-3: no early start survives the purge at h = {h}")
-    late = [i for i, d in enumerate(job["dates"]) if d >= "2024-01-02"]
+        reach = t3_reach(recs, h, US.block)
+        check(len(reach) > 0, f"T-3: the plant cannot reach a reading at h = {h} (no leaked start's window touches "
+                              "the replaced sessions)")
+        notes.append(f"T3_REACH_{h}={len(reach)}")
+    late = [i for i, d in enumerate(job["dates"]) if d >= T3_LATE_FROM]
     check(len(late) >= 60, "T-3: the toy has fewer than 60 late sessions")
-    runs1 = _t3_runs(job)
-    first = _t3_early(runs1)
-    rng = np.random.default_rng([TOY_SEED, 4])
-    for i in late:
-        k = int(rng.integers(1, 5))
-        et = np.array([500.0 + 60.0 * j for j in range(k)])
-        win = np.zeros(k, bool)                         # every late trade lost: a leak cannot go unseen
-        job["blocks"][i] = DayBlock(pnl=np.where(win, 1000.0, -500.0), risked=np.full(k, 500.0),
-                                    exit_reasons=tuple("target" if w else "stop" for w in win), entry_t=et,
-                                    exit_t=et + 30.0)
-    runs2 = _t3_runs(job)
-    check(first == _t3_early(runs2), "T-3: an early-block reading changed when the late sessions were replaced")
+    runs0 = _t3_runs(job)
+    first = _t3_early(runs0)
+    planted = {}
+    for name, won, i in T3_PLANTS:
+        pj = _t3_plant(job, won, i)
+        check(all(pj["blocks"][s] is job["blocks"][s] for s in range(len(job["dates"])) if s not in late)
+              and all(pj["blocks"][s] is not job["blocks"][s] for s in late), f"T-3: the {name} plant's reach")
+        planted[name] = _t3_runs(pj)
+        check(first == _t3_early(planted[name]), f"T-3: an early-block reading changed when the late sessions were "
+                                                 f"replaced ({name} plant)")
     orig = US.block
-    for h in sorted(set(RD.HORIZON_SET)):
-        def leaky(records, which, hh, _h=h):
-            return orig(records, which, 1 if (which == "early" and int(hh) == _h) else hh)
-
-        US.block = leaky
-        try:
-            a, b = _t3_early(runs1), _t3_early(runs2)
-        finally:
-            US.block = orig
-        if h == min(RD.HORIZON_SET):        # on record, undiagnosed after two cycles: reported, never a pass
-            notes.append(f"T3_LEAK_21_CAUGHT={a != b}")
-        else:
-            check(a != b, f"T-3: a planted late-block leak at h = {h} is not caught")
+    for h in hs:
+        for form, elig in (("purge", True), ("full", False)):
+            US.block = t3_leak(orig, h, elig)
+            try:
+                a = _t3_read(runs0)
+                got = {name: _t3_read(r) for name, r in planted.items()}
+            finally:
+                US.block = orig
+            moved = [name for name, x in got.items() if x != a]
+            refusal = a.startswith("REFUSED") and all(x.startswith("REFUSED") for x in got.values())
+            if form == "purge":
+                notes.append(f"T3_LEAK_{h}_CAUGHT_BY={','.join(moved) or 'none'}")
+                check(bool(moved) and not a.startswith("REFUSED"),
+                      f"T-3: the purge leak at h = {h} moves no early row under either plant"
+                      + (f" (the reading refused: {a[:160]})" if a.startswith("REFUSED") else ""))
+            else:
+                notes.append(f"T3_LEAK_FULL_{h}_CAUGHT_BY={','.join(moved) or ('refused' if refusal else 'none')}")
+                check(bool(moved) or refusal, f"T-3: cycle 1's leak at h = {h} is neither seen nor refused")
 
 
 def t6() -> None:
@@ -791,10 +868,130 @@ def _card(p: float, s1: float) -> dict:
             for b, _ in CL.BLOCKS}
 
 
+def _t14_rows(combos, pdiff: float = 0.01) -> list[dict]:
+    """A hand-built reading: for each (cell, response, mode), the card's P, the guard row (every net, the gate's
+    entries) and, against `ref` under the same response, the paired P and the guard's differences, on every block."""
+    from extended import cl_reading as CL
+
+    R = CL._row
+    rows = []
+    for c, resp, mode in combos:
+        for b in ("all", "early", "late"):
+            k = dict(design="p14", arm="verdict", cell=c, mode=mode, response=resp, block=b)
+            rows.append(R(section="scorecard", part="card", **k, measure="card_P", stat="value", value=0.5))
+            for g in CL.GUARD_COLUMNS:
+                rows.append(R(section="guard", part="guard", **k, measure=g, stat="value", value=1.0, n=10))
+            for g in CL.GATE_GUARD:
+                rows.append(R(section="guard", part="guard", **k, measure=g, stat="gate", value=0.1,
+                              note="the gate at 0 %"))
+            if c != "ref":
+                rows.append(R(section="paired", part="paired", **k, base="ref", measure="P", stat="mean", value=pdiff))
+                for g in CL.GUARD_COLUMNS:
+                    rows.append(R(section="guard", part="guard", **k, base="ref", measure=g, stat="cell_less_base",
+                                  value=pdiff, n=10))
+    return rows
+
+
+def _t14_u6(menu_off) -> None:
+    """R2: on a two-variant menu and reading (a Focused Trader response, Back2Funded's declared and counted variants),
+    each Back2Funded row carries exactly one of U-6's two labels, the one of its variant; the step-3 menu's
+    Back2Funded row (declared, `off`) carries the optimistic one once."""
+    from extended import cl_reading as CL
+    from extended import pp_inputs as PI
+    from extended import user_beside as B
+
+    opt, con = CL.U6_LABELS
+    check(opt == "not counted: the optimistic reading" and con == "counted: the conservative reading",
+          f"T-14 (R2): U-6's labels are not 10.1 item 8's words: {CL.U6_LABELS}")
+    for _, r in menu_off[menu_off["cell"].isin(CL.B2F_CELLS)].iterrows():
+        parts = str(r["labels"]).split("; ")
+        check(parts.count(opt) == 1 and parts.count(con) == 0, f"T-14 (R2): the step-3 menu's {r['cell']} row "
+                                                                f"carries U-6's labels {parts.count(opt)}/{parts.count(con)}")
+    ftp = [r.name for r in B.RESPONSES if r.kind == "ftp"][0]
+    combos = [("ref", ftp, "declared"), ("b2f1", ftp, "declared"), ("b2f2", ftp, "declared"),
+              ("b2f1", ftp, CL.CONSERVATIVE), ("b2f2", ftp, CL.CONSERVATIVE)]
+    rows = _t14_rows(combos)
+    # a row carrying the wrong label already, a list of cells, a comparison of the two Back2Funded cells, ref alone
+    rows.append(CL._row(section="ftp", part="s6", design="p14", arm="verdict", cell="ref,b2f1,b2f2", mode="declared",
+                        response=ftp, block="all", measure="P", stat="start_share", value=0.1, note=con))
+    rows.append(CL._row(section="ftp", part="paired", design="p14", arm="verdict", cell="b2f2", base="b2f1",
+                        mode=CL.CONSERVATIVE, response=ftp, block="all", measure="P", stat="mean", value=0.0,
+                        note=f"x; {opt}"))
+    labelled = CL.label_u6([dict(r) for r in rows])
+    for r in labelled:
+        parts = str(r.get("note") or "").split("; ")
+        names_b2f = any(x in CL.B2F_CELLS for x in (str(r["cell"]).split(",") + [str(r.get("base") or "")]))
+        if names_b2f:
+            want = con if r["mode"] == CL.CONSERVATIVE else opt
+            other = opt if want == con else con
+            if parts.count(want) != 1 or parts.count(other) != 0:
+                check(False, f"T-14 (R2): the reading's {r['cell']} ({r['mode']}) row carries U-6's labels "
+                             f"{parts.count(opt)}/{parts.count(con)}")
+                break
+        elif opt in parts or con in parts:
+            check(False, f"T-14 (R2): the reading's {r['cell']} row (no Back2Funded cell) carries a U-6 label")
+            break
+    check(any(r["note"] == f"x; {opt}".replace(opt, con) for r in labelled if r.get("base") == "b2f1"),
+          "T-14 (R2): a counted row's wrong label is not replaced by its own")
+    menu = CL.menu_table(pd.DataFrame(rows, columns=list(PI.ROW_KEYS)), (), set())
+    b2f = menu[menu["cell"].isin(CL.B2F_CELLS)]
+    check(len(b2f) == 4 and set(b2f["variant"]) == {"declared", CL.CONSERVATIVE}, "T-14 (R2): the two-variant menu")
+    for _, r in b2f.iterrows():
+        parts = str(r["labels"]).split("; ")
+        want = con if r["variant"] == CL.CONSERVATIVE else opt
+        other = opt if want == con else con
+        check(parts.count(want) == 1 and parts.count(other) == 0,
+              f"T-14 (R2): the beside menu's {r['cell']} {r['variant']} row carries U-6's labels "
+              f"{parts.count(opt)}/{parts.count(con)}")
+
+
+def _t14_excuse(menu) -> None:
+    """m-a: the guard excuse -- refused in the real run's default whatever it names; on toys only `GUARD_COLUMNS`'
+    names are excusable, never a gate entry nor an unknown name."""
+    from extended import cl_reading as CL
+
+    i = menu.index[menu["cell"] == "b2f1"][0]
+    toy_ok = menu.copy()
+    toy_ok.loc[i, "guard_net_m12_mean"] = float("nan")
+    toy_ok.loc[i, "guard_reason"] = "net_m12_mean: no start with the measure's horizon left"
+    check(not refused(lambda: CL.check_menu(toy_ok, excuse_guard=True), CL.Refused),
+          "T-14 (m-a): a toy's excuse of a net without its horizon is refused")
+    check(refused(lambda: CL.check_menu(toy_ok), CL.Refused), "T-14 (m-a): the real run's default excuses a net")
+    clean = menu.copy()
+    clean.loc[i, "guard_reason"] = "net_m12_mean: no start with the measure's horizon left"
+    check(refused(lambda: CL.check_menu(clean), CL.Refused),
+          "T-14 (m-a): the real run's default accepts a row with a reason (its entries finite)")
+    gate = menu.copy()
+    gate.loc[i, "guard_ruin_probability"] = float("nan")
+    gate.loc[i, "guard_reason"] = "ruin_probability: no start with the measure's horizon left"
+    check(refused(lambda: CL.check_menu(gate, excuse_guard=True), CL.Refused),
+          "T-14 (m-a): a gate entry excused on a toy")
+    odd = menu.copy()
+    odd.loc[i, "guard_reason"] = "net_m12_mean, anything: no start with the measure's horizon left"
+    check(refused(lambda: CL.check_menu(odd, excuse_guard=True), CL.Refused),
+          "T-14 (m-a): a name outside GUARD_COLUMNS excused on a toy")
+    check(CL.excused_names(float("nan")) == [] and CL.excused_names("a, b: why") == ["a", "b"],
+          "T-14 (m-a): the excused names' reading")
+
+
+def _t14_solver_view(reading, sv) -> None:
+    """m-b: a missing G-B or G-N line of stage 0's view is refused, never printed."""
+    from extended import cl_reading as CL
+
+    check(not CL.solver_view_problems(sv, ["p14"]), "T-14 (m-b): a full view has problems")
+    only_gb = sv[sv["rule"] == "G-B"].reset_index(drop=True)
+    check(bool(CL.solver_view_problems(only_gb, ["p14"])) and bool(CL.solver_view_problems(sv, ["p14", "p16"])),
+          "T-14 (m-b): a missing line is not a problem")
+    check(refused(lambda: CL.menu_table(reading, (), set(), only_gb), CL.Refused),
+          "T-14 (m-b): the menu prints a missing G-N line instead of refusing")
+    check(refused(lambda: CL.solver_view_text(only_gb, "p14", "G-N"), CL.Refused),
+          "T-14 (m-b): solver_view_text prints a missing line")
+
+
 def t14() -> None:
     """T-14: the menu -- no P without its guard row; every house-money row labelled "gaming P (E-134 (2))" and never
     ordered on P; the frontier without the house-money cells and the version with them labelled; the flags
-    mechanical."""
+    mechanical; U-6's label by variant (R2); the guard excuse (m-a); a missing solver's-view line refused (m-b)."""
     from extended import cl_reading as CL
     from extended import pp_inputs as PI
 
@@ -861,6 +1058,9 @@ def t14() -> None:
     bad3 = menu.copy()
     bad3.loc[bad3["cell"] == "naf", "labels"] = "described, not carried"
     check(refused(lambda: CL.check_menu(bad3), CL.Refused), "T-14: a naf row without the gap passes")
+    _t14_u6(menu)
+    _t14_excuse(menu)
+    _t14_solver_view(reading, sv)
     cards = {"ref": _card(0.5, 0.5), "b2f1": _card(0.55, 0.4), "house_stop_none": _card(0.9, 0.4)}
     key = dict(design="p14", arm="verdict", mode="declared", response="off")
     f0 = CL.frontier_rows(cards, key, with_house=False)
@@ -902,7 +1102,145 @@ def t16() -> None:
     shutil.rmtree(tmp, ignore_errors=True)
 
 
-SECTIONS = {"t16": t16, "t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
+def t17() -> None:
+    """Q-119 corrective cycle 3's refusals, each shown to fire: m-b (cl_fit.csv's manifest commit held to the stage-0
+    row's commit; a view without a design's lines refused at load), m-c (Q-44's Focused Trader rows in the preflight),
+    the gate file's guard rows held to its own gate rows (note 3), the rates a year read only on a year's replay
+    (note 1), `ref`'s gate label (note 2), the guard excuse off by default (m-a), and `--starts`' every n-th start,
+    refused with the real inputs."""
+    import inspect
+    import json as _json
+    import shutil
+    import tempfile
+
+    from extended import cl_reading as CL
+    from extended import pp_inputs as PI
+    from extended import results as XR
+    from extended import user_beside as B
+
+    # m-b: the commit hold, on strings
+    c40 = "0123456789abcdef0123456789abcdef01234567"
+    row = f"| E-900 | 2026-11-17 | stage 0 (cl_fit) from a clean checkout of {c40[:7]} |"
+    check(CL.fit_commit_problem(row, c40) is None, "m-b: the row's own commit refused")
+    check(CL.fit_commit_problem(row.replace(c40[:7], c40), c40) is None, "m-b: the row's full commit refused")
+    check(CL.fit_commit_problem(row, c40 + "-dirty") is not None, "m-b: a dirty manifest commit accepted")
+    check(CL.fit_commit_problem(row, "unknown") is not None, "m-b: an unknown manifest commit accepted")
+    check(CL.fit_commit_problem(row, "f" * 40) is not None, "m-b: another commit accepted")
+    check(CL.fit_commit_problem(None, c40) is not None, "m-b: no row accepted")
+    sha = c40 + "0" * 24                                  # a sha256 beginning with the commit is not a commit
+    check(CL.fit_commit_problem(f"| E-901 | cl_fit, its file's sha256 {sha} |", c40) is not None,
+          "m-b: a sha256 read as the row's commit")
+    # m-b: the commit hold and the lines, on a written file (a temporary folder, never results/)
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        sv = pd.DataFrame([{"section": "solver_view", "design": "p14", "rule": r, "line": f"the solver's view: {r}"}
+                           for r in ("G-B", "G-N")] + [{"section": "checks", "design": "p14", "rule": "", "line": ""}])
+        csv, man = XR.write_result(sv, "cl_fit_synthetic", script="tests/cl_synthetic.py", seed=None,
+                                   require_seed=False, parameters={"t17": "m-b"}, results_dir=tmp,
+                                   description="T-17's toy stage-0 file (no randomness)")
+        m = _json.loads(man.read_text(encoding="utf-8"))
+        m["git_commit"] = c40                             # the manifest as a clean run at c40 would write it
+        man.write_text(_json.dumps(m, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
+        f = CL.solver_view_frame(csv, row_line=row, designs=["p14"])
+        check(len(f) == 2 and set(f["rule"]) == {"G-B", "G-N"}, "m-b: the view not read from a held file")
+        check(refused(lambda: CL.solver_view_frame(csv, row_line=row.replace(c40[:7], "fedcba9"), designs=["p14"]),
+                      CL.Refused), "m-b: a file at another commit than its row's is read")
+        check(refused(lambda: CL.solver_view_frame(csv, row_line=None, designs=["p14"]), CL.Refused),
+              "m-b: a file read with no stage-0 row")
+        check(refused(lambda: CL.solver_view_frame(csv, row_line=row, designs=["p14", "p16"]), CL.Refused),
+              "m-b: a view without p16's lines is read")
+        check(not refused(lambda: CL.solver_view_frame(csv, designs=["p14"], hold_commit=False), CL.Refused),
+              "m-b: the synthetic read (no row) refused")
+        with open(csv, "a", encoding="utf-8") as fh:
+            fh.write("solver_view,p14,G-B,the solver's view: nudged\n")
+        check(refused(lambda: CL.solver_view_frame(csv, row_line=row, designs=["p14"]), CL.Refused),
+              "m-b: a changed cl_fit file is read")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    # m-c: Q-44's Focused Trader rows, checked before any purpose is spent
+    ftp = [r.name for r in B.RESPONSES if r.kind == "ftp"]
+    full = pd.DataFrame([{"design": d, "arm": "verdict", "response": r, "start_day": "0"} for d in CL.DESIGNS
+                         for r in ftp])
+
+    class Q44Stub(CL.CLInputs):
+        def __init__(self, frame):
+            super().__init__()
+            self._stub = frame
+
+        def q44(self):
+            return self._stub
+
+    saved = PI.RealInputs.preflight
+    PI.RealInputs.preflight = lambda self, designs: []
+    try:
+        check(Q44Stub(full).preflight(CL.DESIGNS) == [], "m-c: a full Q-44 file is refused")
+        gone = full[~((full["design"] == "p16") & (full["response"] == ftp[-1]))]
+        probs = Q44Stub(gone).preflight(CL.DESIGNS)
+        check(len(probs) == 1 and "p16" in probs[0] and ftp[-1] in probs[0],
+              f"m-c: Q-44's file without p16's {ftp[-1]} rows not named: {probs}")
+    finally:
+        PI.RealInputs.preflight = saved
+
+    # note 3: the gate file's guard rows held to its own gate rows (through a CSV, as steps 4 and 5 read it)
+    def gate_file(growth_guard: float, with_row: bool = True) -> pd.DataFrame:
+        rows = [{"design": "p14", "cell": "ref", "part": "guard", "label": CL.REF_GATE_LABEL,
+                 "growth_on_required_bankroll": 0.3, "required_bankroll_p90": 900.0, "ruin_probability": 0.01},
+                {"design": "p14", "cell": "b2f1", "part": "guard", "label": "the gate at 0 %",
+                 "growth_on_required_bankroll": growth_guard, "required_bankroll_p90": 950.0,
+                 "ruin_probability": 0.02}]
+        if with_row:
+            rows += [{"design": "p14", "cell": "b2f1", "part": "row", "twin": tw, "shift": sh, "enforcement_p": 0.0,
+                      "pf_growth_on_base_p50": 0.25 if not tw and sh == "lower_bound" else 9.0,
+                      "pf_required_p90": 950.0, "ruin_probability": 0.02}
+                     for tw in (False, True) for sh in ("point", "lower_bound")]
+        tmpf = Path(tempfile.mkdtemp())
+        try:
+            pd.DataFrame(rows).to_csv(tmpf / "g.csv", index=False)
+            return pd.read_csv(tmpf / "g.csv")
+        finally:
+            shutil.rmtree(tmpf, ignore_errors=True)
+
+    gg = CL.gate_guard_from_file(gate_file(0.25))
+    check(set(gg) == {("p14", "ref"), ("p14", "b2f1")} and gg[("p14", "b2f1")]["growth_on_required_bankroll"] == 0.25,
+          "note 3: the gate file's guard entries")
+    check(refused(lambda: CL.gate_guard_from_file(gate_file(0.26)), CL.Refused),
+          "note 3: a guard entry unlike its own gate row is read")
+    check(refused(lambda: CL.gate_guard_from_file(gate_file(0.25, with_row=False)), CL.Refused),
+          "note 3: a guard entry with no gate row beside it is read")
+    check("the gate at 0 %" in CL.REF_GATE_LABEL and "the gate at 0 %" in gg[("p14", "ref")]["_label"],
+          "note 2: ref's gate label lacks 'the gate at 0 %'")
+
+    class GateStub:
+        def base_gate_rows(self, d):
+            return {"lower_bound": {"pf_growth_on_base_p50": 0.3, "pf_required_p90": 900.0, "ruin_probability": 0.0}}
+
+    check("the gate at 0 %" in CL.ref_gate_guard(GateStub(), ["p14"])[("p14", "ref")]["_label"],
+          "note 2: ref_gate_guard's label")
+
+    # note 1: a rate a year only on starts whose replay is a year
+    from propedge.research import user_journey as U
+
+    yr = int(U.HORIZON)
+    recs = [{"start_day": 0, "observed": yr}, {"start_day": 1, "observed": yr - 1}]
+    check(not refused(lambda: CL.year_problems(recs, [0], "b2f1"), CL.Refused), "note 1: a year's start refused")
+    check(refused(lambda: CL.year_problems(recs, [0, 1], "b2f1"), CL.Refused), "note 1: a short start read as a year")
+    check("per 252 sessions" in CL.PER_YEAR, "note 1: the rate's label")
+
+    # m-a: the excuse off by default everywhere
+    for fn in (CL.run_scorecard, CL.run_beside, CL.menu_table, CL.check_menu):
+        check(inspect.signature(fn).parameters["excuse_guard"].default is False,
+              f"m-a: {fn.__name__} excuses a guard entry by default")
+
+    # the window measurement: every n-th start; refused with the real inputs, and n below 1
+    check(CL.beside_starts(70, None, 5) == list(range(0, 70, 5)) and CL.beside_starts(70, None, None) == list(range(70)),
+          "--starts: not every n-th start")
+    check(refused(lambda: CL.beside_starts(70, None, 0), CL.Refused), "--starts 0 accepted")
+    check(refused(lambda: CL.run_beside(CL.CLInputs(), "ladder", gate_guard={}, start_every=5), CL.Refused),
+          "--starts: every n-th start accepted with the real inputs")
+
+
+SECTIONS = {"t16": t16, "t17": t17, "t1": t1, "t2": t2, "t3": t3, "t4": t4, "t5": t5, "t6": t6, "t7": t7, "t10": t10, "t13": t13, "t14": t14,
             "t15": t15}
 
 

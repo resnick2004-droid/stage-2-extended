@@ -473,6 +473,23 @@ def _ftp_thresholds() -> str:
                      for p, m, t in B.FTP_BINDING) + " (user_beside.FTP_BINDING: D-497's grid, D-512 (4))"
 
 
+#: the mechanics' rates (D-34's "a year"): a start's long replay is U1's horizon, one start's year (the red team's
+#: cycle-1 note 1); the counts are read only on starts whose replay is that long (`year_problems`)
+PER_YEAR = "per 252 sessions (a start's year): the mean count over starts whose long replay is U1's horizon"
+
+
+def year_problems(recs: Sequence[Mapping[str, Any]], days: Sequence[int], cell: str) -> None:
+    """Refusing: every start a rate is read on has observed exactly U1's horizon (`user_journey.HORIZON`), so its long
+    replay -- `min(HORIZON, n - s)` sessions, the counts' run (`StartCounts` keeps it) -- is one start's year."""
+    from propedge.research import user_journey as U
+
+    by = {int(r["start_day"]): r for r in recs}
+    bad = [d for d in days if int(by[int(d)]["observed"]) != int(U.HORIZON)]
+    if bad:
+        raise Refused(f"9.3: {cell}: {len(bad)} starts read for a rate per year without U1's horizon observed "
+                      f"(first: start {bad[0]})")
+
+
 def mechanics_rows(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[str, Any]) -> list[dict[str, Any]]:
     """9.3 for one cell and its base, each block: where the lever binds, not whether it helps."""
     from extended import user_beside as B
@@ -508,11 +525,11 @@ def mechanics_rows(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[st
                 out.append(_rk(k, measure=name, stat=who, value=float(np.nansum(v)),
                                 note="E-029's calendar (holiday-hours reach)" if "holiday" in name else
                                 "E-050's calendar: a count, never a ruling"))
-        yr = 252.0 / 252.0
+        year_problems(recs, days, cell)
         for name in ("evaluations_bought", "activations", "reactivations"):
             for who, cc in (("cell", cs), ("base", bs)):
                 out.append(_rk(k, measure=f"{name}_per_year", stat=who,
-                                value=float(np.mean([c.get(name, 0) for c in cc])) * yr if cc else NAN))
+                                value=float(np.mean([c.get(name, 0) for c in cc])) if cc else NAN, note=PER_YEAR))
         for name in ("max_accounts_live", "max_trades_one_session"):
             out.append(_rk(k, measure=name, stat="max", value=float(max(c.get(name, 0) for c in cs))))
         for name in ("purchase_days_refused_cash", "activations_refused_cash", "reactivations_refused_cash",
@@ -583,7 +600,16 @@ def guard_values(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None =
     """10.1 item 2: the mean net at months 1-3, the month-6 and month-12 net (mean, p10, p50, p90) and CVaR10 at months
     3, 6 and 12 -- each on the block's starts with its month's horizon left (with a base: on the starts both hold, the
     cell's less the base's)."""
+    return guard_values_n(t, which, base)[0]
+
+
+def guard_values_n(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None = None
+                   ) -> tuple[dict[str, float], dict[str, int]]:
+    """`guard_values` and, beside each entry, the number of starts it reads (a guard entry with none is undefined and
+    says why). Both are returned, never kept between calls (the red team's cycle-1 note: the old module-level `NS`
+    was safe only while the reading ran on one thread)."""
     out: dict[str, float] = {}
+    ns: dict[str, int] = {}
     recs = PR.records_of(t)
     a = t.set_index("start_day")
     b = base.set_index("start_day") if base is not None else None
@@ -605,7 +631,7 @@ def guard_values(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None =
 
         v = f(vals(a, days, col)) - (f(vals(b, days, col)) if b is not None else 0.0)
         out[f"net_m{m}_{stat}"] = v
-        NS[f"net_m{m}_{stat}"] = len(days)
+        ns[f"net_m{m}_{stat}"] = len(days)
     for m in GUARD_CVAR:
         days = PR.block_days(recs, which, RD.month_horizon(m))
         if b is not None:
@@ -615,21 +641,17 @@ def guard_values(t: pd.DataFrame, which: str | None, base: pd.DataFrame | None =
         if b is not None:
             v -= float(M.cvar(vals(b, days, col), 0.10))
         out[f"cvar10_m{m}"] = v
-        NS[f"cvar10_m{m}"] = len(days)
-    return out
-
-
-#: guard_values' last call: each entry's starts (a guard entry with none is undefined, and says why)
-NS: dict[str, int] = {}
+        ns[f"cvar10_m{m}"] = len(days)
+    return out, ns
 
 
 def guard_rows(t: pd.DataFrame, key: dict[str, Any], base: pd.DataFrame | None = None, gate: Mapping[str, float]
                | None = None, label: str = "") -> list[dict[str, Any]]:
     out = []
     for bname, which in BLOCKS:
-        g = guard_values(t, which, base)
+        g, ns = guard_values_n(t, which, base)
         for k, v in g.items():
-            n = int(NS.get(k, 0))
+            n = int(ns.get(k, 0))
             out.append(_row(section="guard", part="guard", **key, block=bname, measure=k,
                             stat="cell_less_base" if base is not None else "value", value=float(v), n=n,
                             note="" if n else "no start with the measure's horizon left on this block"))
@@ -784,6 +806,34 @@ def label_house(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+#: U-6's two readings (10.1 item 8): a Back2Funded row carries exactly the one of its variant (the red team's R2)
+U6_LABELS = (LR.label("reactivation_counted_as_purchase"), LR.label("reactivation_counted_conservative"))
+
+
+def u6_label(mode: str) -> str:
+    """U-6's label of a row's variant: "counted: the conservative reading" for the counted variant, else (the
+    headline, `declared`) "not counted: the optimistic reading"."""
+    return U6_LABELS[1] if str(mode) == CONSERVATIVE else U6_LABELS[0]
+
+
+def _names_b2f(r: Mapping[str, Any]) -> bool:
+    names = {str(r.get("cell") or ""), str(r.get("base") or "")}
+    names |= set(str(r.get("cell") or "").replace("->", ",").split(","))
+    return bool(names & set(B2F_CELLS))
+
+
+def label_u6(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """R2: every row naming a Back2Funded cell -- as the cell, as the base, or in a list of cells -- carries its
+    variant's U-6 label and not the other's (step 5's reading file, `cl_reading_ftp.csv`)."""
+    for r in rows:
+        if not _names_b2f(r) and str(r.get("mode") or "") != CONSERVATIVE:
+            continue
+        want = u6_label(str(r.get("mode") or ""))
+        parts = [x for x in str(r.get("note") or "").split("; ") if x and x not in U6_LABELS]
+        r["note"] = "; ".join([*parts, want])
+    return rows
+
+
 def reading_rows(runs: Mapping[tuple, Mapping[str, Any]], honesty: dict, no_effect: set,
                  gate_guard: Mapping[tuple, Mapping[str, float]] | None = None) -> list[dict[str, Any]]:
     """10.1 on the kept runs: each run's card, distributions and guard row (its gate entry the cell's 0 % gate, `ref`'s
@@ -842,7 +892,8 @@ GATE_GUARD = ("growth_on_required_bankroll", "required_bankroll_p90", "ruin_prob
 
 
 def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any]], no_effect: set,
-               solver_view: pd.DataFrame | str | None = None, ftp_gap: bool = True) -> pd.DataFrame:
+               solver_view: pd.DataFrame | str | None = None, ftp_gap: bool = True, *, excuse_guard: bool = False
+               ) -> pd.DataFrame:
     """10.1 item 12 (and 8's beside menus): each (design, arm, cell, response, variant) of the reading against `ref`
     under the same response -- its P and paired difference with the guard row beside in the same row, D-34's purchases a
     year beside growth, Back2Funded's reactivations per 21 sessions, the funded accounts lost; the flags (mechanical),
@@ -922,13 +973,12 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
         if s.lever == "L-H":
             flags.append(LR.LABEL_GAMING_P)
         if s.lever == "L-B":
-            labels += list(LR.B2F_LABELS)
+            labels += [x for x in LR.B2F_LABELS if x not in U6_LABELS]
             if rname.startswith("ftp_"):
                 labels.append("a reactivation is bought before the evening's placement is read (2.1; the engine's "
                               "placement binds from tomorrow): under a Corrective model the account just bought may be "
                               "closed at once")
-                labels.append(LR.label("reactivation_counted_conservative") if mode == CONSERVATIVE else
-                              LR.label("reactivation_counted_as_purchase"))
+            labels.append(u6_label(mode))
         if s.lever in ("L-H", "L-N") and ftp_gap:
             flags.append(LR.LABEL_FTP_NOT_READ)
             labels.append(f"{LR.LABEL_FTP_NOT_READ}: " + (
@@ -976,7 +1026,7 @@ def menu_table(reading: pd.DataFrame, approved_limits: Sequence[Mapping[str, Any
     menu["note_not_modelled"] = ("a user who stops when their own money runs out (except as house money declares it); "
                                  "the user's time; taxes; payouts unavailable in holiday hours; the move to a Live "
                                  "Funded Account; Topstep's unstated news rules (E-034); the gaps of 4.4")
-    check_menu(menu)
+    check_menu(menu, excuse_guard=excuse_guard)
     return menu
 
 
@@ -988,34 +1038,98 @@ def solver_view_text(solver_view: pd.DataFrame | str | None, design: str, rule: 
     if isinstance(solver_view, str):
         return solver_view
     sv = solver_view[(solver_view["design"].astype(str) == design) & (solver_view["rule"].astype(str) == rule)]
-    return "; ".join(str(x) for x in sv["line"]) if len(sv) else f"no {rule} line for {design} in stage 0's view"
+    if not len(sv):                                       # m-b: refused, never printed as a line
+        raise Refused(f"stage 0's view has no {rule} line for {design} (cl_fit.csv's solver_view; m-b)")
+    return "; ".join(str(x) for x in sv["line"])
 
 
-def solver_view_frame(path: Path) -> pd.DataFrame:
-    """M7: `cl_fit.csv`'s `solver_view` section, the file verified through its manifest."""
+def solver_view_problems(solver_view: pd.DataFrame, designs: Sequence[str]) -> list[str]:
+    """m-b, before any of the engine's work: `cl_fit.csv`'s `solver_view` section holds a G-B and a G-N line for every
+    design read, each with its `design`, `rule` and `line` columns."""
+    miss = [c for c in ("design", "rule", "line") if c not in solver_view.columns]
+    if miss:
+        return [f"stage 0's view lacks the columns {miss}"]
+    out = []
+    for d in designs:
+        for rule in ("G-B", "G-N"):
+            sv = solver_view[(solver_view["design"].astype(str) == d) & (solver_view["rule"].astype(str) == rule)]
+            if not len(sv) or not sv["line"].astype(str).str.strip().ne("").all():
+                out.append(f"stage 0's view has no {rule} line for {d}")
+    return out
+
+
+HEX_TOKEN = re.compile(r"(?<![0-9a-fA-F])[0-9a-f]{7,40}(?![0-9a-fA-F])")
+
+
+def fit_commit_problem(row_line: str | None, git_commit: str | None) -> str | None:
+    """m-b: `cl_fit.csv`'s manifest commit held to the commit the `--stage0-row` row names -- the manifest's
+    `git_commit` clean (no `-dirty`, not unknown) and beginning with a hexadecimal token (7 to 40 characters) of the
+    row's own line. None when it holds; else why."""
+    if not row_line:
+        return "the stage-0 row is not in DECISIONS.md, so cl_fit.csv's commit cannot be held to it"
+    c = str(git_commit or "").strip()
+    if not c or c == "unknown" or c.endswith("-dirty"):
+        return f"cl_fit.csv's manifest commit {c or 'none'!r} is not a clean commit"
+    tokens = HEX_TOKEN.findall(row_line)
+    if not any(c.lower().startswith(t.lower()) for t in tokens):
+        return f"cl_fit.csv's manifest commit {c[:12]} is not the commit its row names ({tokens[:3] or 'none'})"
+    return None
+
+
+def solver_view_frame(path: Path, *, row_line: str | None = None, designs: Sequence[str] | None = None,
+                      hold_commit: bool = True) -> pd.DataFrame:
+    """M7: `cl_fit.csv`'s `solver_view` section, the file verified through its manifest; m-b: its manifest's commit
+    held to the commit the stage-0 row (`row_line`, its line of DECISIONS.md) names (`hold_commit`, the real run's),
+    and, given `designs`, a G-B and a G-N line for each -- else refused."""
     from extended import results as XR
 
     ok, msg = XR.verify_result(path)
     if not ok:
         raise Refused(f"{path.name}: {msg}")
+    if hold_commit:
+        why = fit_commit_problem(row_line, XR.read_manifest(path).git_commit)
+        if why:
+            raise Refused(f"{why} (m-b)")
     f = XR.read_result(path)
-    return f[f["section"].astype(str) == "solver_view"].reset_index(drop=True)
+    sv = f[f["section"].astype(str) == "solver_view"].reset_index(drop=True)
+    probs = solver_view_problems(sv, designs) if designs is not None else []
+    if probs:
+        raise Refused("; ".join(probs) + " (m-b)")
+    return sv
 
 
-def check_menu(menu: pd.DataFrame) -> None:
+def excused_names(reason: Any) -> list[str]:
+    """The guard entries a menu row's `guard_reason` names ("a, b: no start with the measure's horizon left")."""
+    text = "" if reason is None or (isinstance(reason, float) and not math.isfinite(reason)) else str(reason)
+    head = text.split(":", 1)[0].strip()
+    return [x.strip() for x in head.split(",") if x.strip()] if head else []
+
+
+def check_menu(menu: pd.DataFrame, *, excuse_guard: bool = False) -> None:
     """T-14, refusing (M2): no finite P or P difference beside a missing or non-finite guard entry -- every net of the
-    guard row and the gate's entries -- unless the row names its reason (`guard_reason`); every house-money row
-    labelled "gaming P (E-134 (2))" and never ordered on P; every house-money and `naf` row naming the Focused Trader
-    gap."""
+    guard row and the gate's entries; every house-money row labelled "gaming P (E-134 (2))" and never ordered on P;
+    every house-money and `naf` row naming the Focused Trader gap.
+
+    The guard excuse (m-a): a net or CVaR entry with no start that has its horizon left is undefined, and a row may
+    name it in `guard_reason` -- **only on toys** (`excuse_guard`, the synthetic run's: on the window every block holds
+    starts with 252 sessions left). Only `GUARD_COLUMNS`' names are excusable, never a gate entry; the real run (the
+    default) refuses any row with a reason at all."""
     if not len(menu):
         return
     need = [f"guard_{g}" for g in (*GUARD_COLUMNS, *GATE_GUARD)]
     for _, r in menu.iterrows():
+        named = excused_names(r.get("guard_reason"))
+        if named and not excuse_guard:
+            raise Refused(f"the menu excuses {r['design']} {r['cell']} ({r.get('response', 'off')})'s guard entries "
+                          f"{named[:4]}: no guard entry is excused in the real run (E-134 (2); m-a)")
+        bad = [x for x in named if x not in GUARD_COLUMNS]
+        if bad:
+            raise Refused(f"the menu excuses {r['design']} {r['cell']}'s {bad[:4]}: only the guard row's nets and CVaR "
+                          "may be excused, never a gate entry (m-a)")
         has_p = np.isfinite(_f(r.get("P_level"))) or np.isfinite(_f(r.get("P_mean_difference")))
         if has_p:
-            excused = str(r.get("guard_reason") or "")
             missing = [c for c in need if (c not in r.index or not np.isfinite(_f(r.get(c))))
-                       and c[len("guard_"):] not in excused.split(":")[0].split(", ")]
+                       and c[len("guard_"):] not in named]
             if missing:
                 raise Refused(f"the menu prints {r['design']} {r['cell']} ({r.get('response', 'off')})'s P beside "
                               f"missing guard entries {missing[:4]} (E-134 (2))")
@@ -1097,7 +1211,7 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
                   gate: bool = True, honesty_reps: int = RD.HONESTY_SERIES, honesty_seed: int | None = None,
                   approved_limits: Sequence[Mapping[str, Any]] = (), solver_view: pd.DataFrame | str | None = None,
                   cells: Sequence[str] = STEP3_ORDER, root: Path = ROOT, authorise_gate: Callable[[], Any] | None = None,
-                  log: Callable[[str], None] = print) -> dict[str, Any]:
+                  log: Callable[[str], None] = print, excuse_guard: bool = False) -> dict[str, Any]:
     """Section 15 step 3, in its order: (a) `ref` on each base at `off`, both arms, the recorder on (9.1 items 2's
     repeat and 4, and T-4's seat limits on the replay and the gate); (b) each new cell in step 3's order, both arms,
     the recorder on, checked under 9.1 items 5 and 7 before anything of it is read; (c) the gates in the same order
@@ -1210,7 +1324,7 @@ def run_scorecard(inputs: Any, *, designs: Sequence[str] = DESIGNS, starts: int 
                   note=f"shape {r.shape_index}; {honesty_reps} series; seed key [declared, 1, {r.shape_index}, {r.h}, "
                        f"{r.n_w}]") for r in hon.itertuples() for st in ("coverage", "miss_above", "miss_below")]
     reading = pd.DataFrame(label_house(rows), columns=list(PI.ROW_KEYS))
-    menu = menu_table(reading, approved_limits, no_effect, solver_view)
+    menu = menu_table(reading, approved_limits, no_effect, solver_view, excuse_guard=excuse_guard)
     return {"reading": reading, "gate": gate_frame, "menu": menu, "honesty_seed": seed, "no_effect": sorted(no_effect),
             "runs": sorted(runs), "counts": {k: len(r["outs"]) for k, r in runs.items()},
             "calendars_checked": dict(CALENDARS)}
@@ -1231,6 +1345,10 @@ def gate_entry(row: Mapping[str, Any], what: str) -> dict[str, float]:
     return out
 
 
+#: `ref`'s gate label (10.1 item 8 names "the gate at 0 %"; the registered row is at 0 %, the placement off)
+REF_GATE_LABEL = "the gate at 0 %: the registered gate row, the placement off (9.1's identity)"
+
+
 def ref_gate_guard(inputs: Any, designs: Sequence[str]) -> dict[tuple[str, str], dict[str, Any]]:
     """M2: `ref`'s guard entries from its registered gate row (0 %, the placement off, the bound shift) -- 9.1's
     identity, no gate rerun."""
@@ -1239,7 +1357,7 @@ def ref_gate_guard(inputs: Any, designs: Sequence[str]) -> dict[tuple[str, str],
         rows = inputs.base_gate_rows(d)
         if "lower_bound" not in rows:
             raise Refused(f"{d}: no registered gate row at the bound for ref's guard row")
-        out[(d, "ref")] = {**gate_entry(rows["lower_bound"], f"{d} ref"), "_label": "the registered gate (9.1's identity)"}
+        out[(d, "ref")] = {**gate_entry(rows["lower_bound"], f"{d} ref"), "_label": REF_GATE_LABEL}
     return out
 
 
@@ -1279,13 +1397,31 @@ def gate_table(gates: Mapping[tuple, Mapping[str, Any]], inputs: Any, ref_guard:
 
 
 def gate_guard_from_file(df: pd.DataFrame) -> dict[tuple[str, str], dict[str, Any]]:
-    """M3: steps 4 and 5 read each cell's guard entries from step 3's gate file (its part `guard`)."""
+    """M3: steps 4 and 5 read each cell's guard entries from step 3's gate file (its part `guard`). Refused unless
+    each new cell's entries equal the same file's own gate row -- part `row`, not the twin, at the bound, at 0 % --
+    column for column (`GATE_COLUMNS`, to 1e-12 relative; the red team's cycle-1 note 3). `ref`'s entries are its
+    registered row (no gate of `ref` is run), so they have no row in the file to be held to."""
     g = df[df["part"].astype(str) == "guard"]
+    rows = df[df["part"].astype(str) == "row"]
+    if len(rows) and not {"twin", "shift", "enforcement_p"} <= set(df.columns):
+        raise Refused("step 3's gate file: its gate rows lack twin, shift or enforcement_p")
+    if len(rows):
+        rows = rows[(rows["twin"].astype(str).str.lower() == "false") & (rows["shift"].astype(str) == "lower_bound")]
+        rows = rows[np.isclose(pd.to_numeric(rows["enforcement_p"], errors="coerce").to_numpy(float), 0.0)]
     out = {}
     for r in g.to_dict("records"):
-        out[(str(r["design"]), str(r["cell"]))] = {**gate_entry({c: r.get(n) for n, c in GATE_COLUMNS},
-                                                                f"{r['design']} {r['cell']}"),
-                                                   "_label": f"{r['label']} (step 3's gate file)"}
+        d, cell = str(r["design"]), str(r["cell"])
+        entry = gate_entry({c: r.get(n) for n, c in GATE_COLUMNS}, f"{d} {cell}")
+        if cell != "ref":
+            own = rows[(rows["design"].astype(str) == d) & (rows["cell"].astype(str) == cell)]
+            if len(own) != 1:
+                raise Refused(f"step 3's gate file: {d} {cell}'s guard entry has {len(own)} gate rows at the bound "
+                              "at 0 % beside it, not one")
+            mine = gate_entry(own.iloc[0].to_dict(), f"{d} {cell} (its gate row)")
+            off = [n for n, _ in GATE_COLUMNS if abs(entry[n] - mine[n]) > 1e-12 * max(1.0, abs(mine[n]))]
+            if off:
+                raise Refused(f"step 3's gate file: {d} {cell}'s guard entries {off} differ from its own gate row")
+        out[(d, cell)] = {**entry, "_label": f"{r['label']} (step 3's gate file)"}
     if not out:
         raise Refused("step 3's gate file holds no guard entries")
     return out
@@ -1307,11 +1443,24 @@ def beside_runs(stage: str) -> list[tuple[str, str, str]]:
     raise KeyError(stage)
 
 
+def beside_starts(n: int, starts: int | None, every: int | None) -> list[int]:
+    """The starts a beside step runs: U1's choice (`user_journey.start_choice`), and with `every` (the synthetic window
+    measurement's `--starts`) every `every`-th of them from the first."""
+    import user_journey as UJ
+
+    chosen = UJ.start_choice(int(n), starts)
+    if every is None:
+        return chosen
+    if int(every) < 1:
+        raise Refused(f"every n-th start: n is at least 1, got {every}")
+    return chosen[::int(every)]
+
+
 def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[str, Any]],
                designs: Sequence[str] = DESIGNS, starts: int | None = None, workers: int = 1,
                honesty_reps: int = RD.HONESTY_SERIES, honesty_seed: int | None = None,
-               cells: Sequence[str] | None = None, root: Path = ROOT, log: Callable[[str], None] = print
-               ) -> dict[str, Any]:
+               cells: Sequence[str] | None = None, root: Path = ROOT, log: Callable[[str], None] = print,
+               excuse_guard: bool = False, start_every: int | None = None) -> dict[str, Any]:
     """Section 15 step 4 (`ladder`: the denial ladder and the placement on) or step 5 (`ftp`: the ten Focused Trader
     models, then the Back2Funded cells' counted reading): `ref`'s checks against Q-44 first (9.1 item 6), then every
     cell in step 3's order, verdict arm; each read with the full guard row, its gate entry the cell's 0 % gate from step
@@ -1320,6 +1469,9 @@ def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[st
     from extended import user_beside as B
     import user_journey as UJ
 
+    if start_every is not None and isinstance(inputs, PI.RealInputs):
+        raise Refused("every n-th start is the synthetic window measurement's only (section 15's cost), never the "
+                      "reading's")
     seed = declared_seed(HONESTY_ROLE, root) if honesty_seed is None else int(honesty_seed)
     jobs = {d: inputs.jobs(d)["verdict"] for d in designs}
     responses = list(LADDER) if stage == "ladder" else [r.name for r in B.RESPONSES if r.kind == "ftp"]
@@ -1330,7 +1482,7 @@ def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[st
     runs: dict[tuple, dict[str, Any]] = {}
     rows: list[dict[str, Any]] = []
     for d in designs:
-        chosen = UJ.start_choice(len(jobs[d]["blocks"]), starts)
+        chosen = beside_starts(len(jobs[d]["blocks"]), starts, start_every)
         for rname in responses:
             x = replay_run(jobs[d], d, "verdict", "ref", rname, chosen, workers, record=False)
             probs = list(inputs.ladder_problems(d, rname, x["outs"]))
@@ -1343,7 +1495,7 @@ def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[st
             runs[run_key(d, "verdict", "ref", rname)] = x
         log(f"identity HOLDS: {d} ref beside under {stage} (9.1 item 6)")
     for d in designs:
-        chosen = UJ.start_choice(len(jobs[d]["blocks"]), starts)
+        chosen = beside_starts(len(jobs[d]["blocks"]), starts, start_every)
         for cell, rname, var in todo:
             x = replay_run(jobs[d], d, "verdict", cell, rname, chosen, workers, record=False,
                            count_reactivations=(var == CONSERVATIVE))
@@ -1367,10 +1519,13 @@ def run_beside(inputs: Any, stage: str, *, gate_guard: Mapping[tuple, Mapping[st
         if r["section"] != "identity":
             r["section"] = "ladder" if (stage == "ladder" and r["response"] != "rtp") else (
                 "rtp" if stage == "ladder" else "ftp")
+    if stage == "ftp":
+        label_u6(rows)                                   # R2: U-6's label on every Back2Funded row, by its variant
     reading = pd.DataFrame(label_house(rows), columns=list(PI.ROW_KEYS))
-    menu = menu_table(reading, (), no_effect, None, ftp_gap=True)
+    menu = menu_table(reading, (), no_effect, None, ftp_gap=True, excuse_guard=excuse_guard)
     return {"reading": reading, "menu": menu, "honesty_seed": seed, "no_effect": sorted(no_effect),
-            "runs": sorted(runs)}
+            "runs": sorted(runs), "counts": {k: len(r["outs"]) for k, r in runs.items()},
+            "start_every": start_every}
 
 
 def _ftp_window() -> int:
@@ -1382,13 +1537,20 @@ def _ftp_window() -> int:
 def mechanics_rows_beside(key: dict[str, Any], run: Mapping[str, Any], base: Mapping[str, Any]) -> list[dict[str, Any]]:
     """10.1 item 8's per-model counts beside: purchases and reactivations a year (D-34's caveat, m5), the share of
     starts placed by the Focused Trader model and when, and the accounts it closed."""
+    from propedge.research import user_journey as U
+
     out = []
     cs = list(run["counts"].values())
-    bs = list(base["counts"].values())
     k = dict(section="mechanics", part="mechanics", **key, block="all", n=len(cs), h=252)
+    # the rates a year on the starts whose long replay is a year (as `mechanics_rows` reads them; before this cycle
+    # every start's count was averaged, a shorter replay's too)
+    recs = [x["rec"] for x in run["outs"]]
+    year = [int(r["start_day"]) for r in recs if int(r["observed"]) >= int(U.HORIZON)]
+    year_problems(recs, year, str(key["cell"]))
+    cy = [run["counts"][d] for d in year if d in run["counts"]]
     for name in ("evaluations_bought", "reactivations"):
-        out.append(_rk(k, measure=f"{name}_per_year", stat="cell", value=float(np.mean([c.get(name, 0)
-                                                                                            for c in cs])) if cs else NAN))
+        out.append(_rk(k, measure=f"{name}_per_year", stat="cell", n=len(cy), note=PER_YEAR,
+                        value=float(np.mean([c.get(name, 0) for c in cy])) if cy else NAN))
     out.append(_rk(k, measure="max_reactivations_in_21_sessions", stat="max",
                     value=float(max([rolling_max(c.get("reactivation_days") or (), _ftp_window()) for c in cs] or [0]))))
     placed = [float(x["response"].get("ftp_placed_day", NAN)) for x in run["outs"]]
@@ -1423,4 +1585,5 @@ __all__ = ["DECLARATION", "PREREG_ID", "PIN_ROW", "PURPOSES", "STAGE_PURPOSE", "
            "check_menu", "declared_seed", "run_scorecard", "gate_table", "beside_runs", "run_beside",
            "adapter_provenance", "GUARD_COLUMNS", "GATE_GUARD", "GATE_COLUMNS", "gate_entry", "ref_gate_guard",
            "gate_guard_from_file", "label_house", "solver_view_text", "solver_view_frame", "keep_compact", "tally_of",
-           "mechanics_rows_beside"]
+           "mechanics_rows_beside", "guard_values_n", "PER_YEAR", "year_problems", "U6_LABELS", "u6_label", "label_u6",
+           "excused_names", "solver_view_problems", "fit_commit_problem", "REF_GATE_LABEL", "beside_starts"]
