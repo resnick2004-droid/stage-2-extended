@@ -123,3 +123,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-16 | lead | E-120: F-03's build has everything owed before run 1; the red team re-reads it; a fresh builder finishes the rest. |
 | 2026-11-16 | lead | E-121: RD-02's build and reading runner merged after four red-team reads; its identities run in the block at the merged commit. |
 | 2026-11-16 | lead | E-122: RD-01's runner merged; F-03's re-read -- three fixes before run 1, with the builder; the operator's question on exact reproduction answered. |
+| 2026-11-16 | lead | E-123: the identity block registered, queued after Q-18 at the merged code. |
+| 2026-11-17 | lead | E-124: Q-18, P-14's stress checks, collected (every identity held); to the auditor. |
