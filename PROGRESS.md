@@ -153,3 +153,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-155: the operator's volatility-drift question -- the pass line largely immune, the scorecard exposed; a scout drafts how to measure and correct it. |
 | 2026-11-17 | lead | E-156: RD-03's build partial (stage 0 and costs owed); red team reading it; its merge waits for the RD readings, with Q-115's, so the identities are re-held once. |
 | 2026-11-17 | lead | E-157: the volatility-drift note merged; an early-block descriptive, regime-bucketed readings and a calm-regime replay draft queued (Q-121..Q-123). |
+| 2026-11-17 | lead | E-158: RD-03's build read by the red team (merge after fixes); fixes sent; the volatility descriptive and the replay draft dispatched. |
