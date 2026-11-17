@@ -181,3 +181,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-184: the one-sample plan's last read found the band check gameable; a balance limit closes it; a fifth text. |
 | 2026-11-17 | lead | E-185: the licence guard merged: no committed result file may reveal a bar price. |
 | 2026-11-17 | lead | E-186: the one-sample plan's light read found the regime-filter test gameable; a sixth text closes it. |
+| 2026-11-17 | lead | E-187: the second one-sample calibration plan pinned after six texts and six red-team reads (the regime-filter kind barred); its build next. |
