@@ -42,7 +42,11 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
 1. Read the brief, the rows it names, `CLAUDE.md`, and the skills it names (always `feature-rules` for anything that
    touches bars, features or labels). If something in the brief contradicts a declaration or a rule, stop and say so:
    the declaration wins.
-2. Tests first; then the code; then the tests again, with a time limit (`timeout 900 python -m pytest -q ...`).
+2. Tests first; then the code; then the tests again, with a time limit. **The fast tier is always
+   `timeout 900 python -m pytest -q -m "not slow and not heavy" ...`** -- `-m "not slow"` does not exclude `heavy`. A test
+   marked `heavy` is skipped by the root `conftest.py` whenever `run.lock` is held by another job (Q-118); only the
+   command `scripts/run_clean.py` runs under the lock (`S2X_LOCK_HOLDER=<job>`) runs them then. A skip reading "run.lock
+   held by ..." is the guard working, not a pass.
 3. Light work runs freely. Heavy work takes the run lock (skill `run-lock`) after checking memory, is watched to its
    exit, and releases the lock whatever the outcome.
 4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; small commits; **never `--no-verify`,
