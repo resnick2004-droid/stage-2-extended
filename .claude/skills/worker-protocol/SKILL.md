@@ -43,7 +43,9 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
    touches bars, features or labels). If something in the brief contradicts a declaration or a rule, stop and say so:
    the declaration wins.
 2. Tests first; then the code; then the tests again, with a time limit. **The fast tier is always
-   `timeout 900 python -m pytest -q -m "not slow and not heavy" ...`** -- `-m "not slow"` does not exclude `heavy`. A test
+   `timeout 1800 python -m pytest -q -m "not slow and not heavy" ...`** (the tier takes about 21 minutes on this machine
+   under load, E-163; a test killed by the limit prints an `F` that is the limit, not a defect -- run that file alone
+   before reporting it) -- `-m "not slow"` does not exclude `heavy`. A test
    marked `heavy` is skipped by the root `conftest.py` whenever `run.lock` is held by another job (Q-118); only the
    command `scripts/run_clean.py` runs under the lock (`S2X_LOCK_HOLDER=<job>`) runs them then. A skip reading "run.lock
    held by ..." is the guard working, not a pass.

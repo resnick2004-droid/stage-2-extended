@@ -9,10 +9,34 @@ target-against-stop split, no win share, no trade of any design.
     frame = V.summarise(sessions, walks)                # the result file's rows, every section
     V.output_problems(frame)                            # [] when the frame is this reading's
 
+    a = extended.reader.authorise(..., purpose="volatility_descriptive", declaration="prereg/RD-04_volatility_drift.md")
+    V.describe(bars, fomc=fomc, bls=bls, authorised=a)  # RD-04's (a2) only: to a.end, never past 2026-07-16
+
 **The refusal (hard, in code).** Nothing from 2023-12-30 on is described: `check_span` refuses a span reaching past
 `LAST_DAY` (the choice block's last day, `extended.reader.CHOICE_END`) before anything is read, and `check_days`
 refuses a frame holding any later day before anything is computed (so 2024-01-02, the judged block's first day, is
-refused twice). The judged block's descriptive is (a2), a described reading of its own (Q-123), never this module.
+refused twice). The judged block's descriptive is (a2), a described reading of its own (Q-123, RD-04).
+
+**The one authorisation (Q-121b; the red team's M4 and M5 on RD-04's draft, `docs/reviews/DRAFT_RD-04_2026-11-17.md`).**
+`check_span`, `check_days`, `describe`, `summarise` and `output_problems` take an optional `authorised`, a reader
+`extended.reader.Authorisation`. **Absent**, every behaviour is the module's before Q-121b (a0cb1ce): the last day is
+`LAST_DAY`, the choice block's. **Present**, it is checked first (`check_authorisation`), before the call touches its
+input: it is accepted only as a judged-block read (`judged`, the judged block among its `blocks`, `ledgered`, a
+declaration sha256) of kind `described_reading` for the purpose `volatility_descriptive` (`AUTHORISED_PURPOSE`) under
+`prereg/RD-04_volatility_drift.md` (`AUTHORISED_DECLARATION`), spanning from the choice block's first day or later;
+anything else -- another purpose, kind or declaration, a choice-block authorisation, an object that only looks like one
+-- is refused (`AuthorisationRefused`). The days then run from the authorisation's start to its end, never past
+2026-07-16 (`AUTHORISED_LAST_DAY`, the development window's last). **A day from 2026-07-17 on is refused always**:
+absent as past `LAST_DAY`, present as the confirmation window (`ConfirmationWindowRefused`, also the reader's class),
+and an authorisation whose end reaches it is refused whatever days are asked for. The reader stays the lock; this is a
+second one. The script (`scripts/vol_descriptive.py`) passes none: its CLI is unchanged and it describes the choice
+block only.
+
+**`band_mark` stays a choice-block section (M5).** `summarise` writes `band_mark` from the walks of sessions dated at
+or before `CHOICE_END` only, with or without an authorisation (absent every session is, so nothing changes): under
+RD-04's no `band_mark` row covers a session from 2024-01-02, and on judged sessions alone none is written.
+`output_problems` refuses a `band_mark` row of any period other than the block or a year, a year after 2023 or a block
+ending after 2023-12-29, in either case.
 
 **The session** is the walker's day (`atlas_local.day_arrays`, imported from the vendored tree when bars are described):
 the charted contract's bars on the trading-day clock, index j the bar's END minute after 17:00 CT, 1 .. 1330 (the bar
@@ -87,13 +111,21 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
-from extended.reader import CHOICE_END, CHOICE_START, JUDGED_START   # the reader imports no engine
+from extended.reader import (CHOICE_END, CHOICE_START, CONFIRMATION_START, JUDGED_END,  # the reader imports no engine
+                             JUDGED_START, Authorisation)
+from extended.reader import ConfirmationWindowRefused as _ReaderConfirmationWindowRefused
 
 DECISION = "E-157"
 TASK = "Q-121"
 #: the last day described: the choice block's last; every later day is refused (2024-01-02 the judged block's first)
 LAST_DAY = CHOICE_END
 FIRST_DAY = CHOICE_START
+#: Q-121b (M4): the one judged-block read this module accepts -- RD-04's (a2), a described reading, for this purpose
+AUTHORISED_PURPOSE = "volatility_descriptive"
+AUTHORISED_KIND = "described_reading"
+AUTHORISED_DECLARATION = "prereg/RD-04_volatility_drift.md"
+#: under that authorisation the last day is at most the development window's last (the judged block's); never later
+AUTHORISED_LAST_DAY = JUDGED_END
 TICK = 0.25
 #: the bar ending 15:10 CT on the trading-day clock (collect_core.C_FLAT)
 SESSION_END = 22 * 60 + 10
@@ -134,6 +166,15 @@ class BeyondChoiceBlock(RuntimeError):
     """A span or a frame reaching past the choice block (2023-12-29): this reading never describes the judged block."""
 
 
+class AuthorisationRefused(BeyondChoiceBlock):
+    """Q-121b: an `authorised` that is not RD-04's judged `volatility_descriptive` read, or a day outside what it
+    authorises; raised before the call touches its input."""
+
+
+class ConfirmationWindowRefused(BeyondChoiceBlock, _ReaderConfirmationWindowRefused):
+    """Q-121b: a day from 2026-07-17 on, or an authorisation reaching it -- refused always."""
+
+
 # ------------------------------------------------------------------------------------------------------ the refusal
 
 
@@ -145,9 +186,85 @@ def _day(x: Any) -> date:
     return date.fromisoformat(str(x)[:10])
 
 
-def check_span(start: Any, end: Any) -> tuple[date, date]:
+def check_authorisation(authorised: Any) -> None:
+    """Nothing when `authorised` is None (the choice block only). Otherwise refused unless it is RD-04's judged read
+    (the module's docstring): `ConfirmationWindowRefused` when its span reaches 2026-07-17, `AuthorisationRefused` for
+    anything else that is not that read."""
+    if authorised is None:
+        return
+    if not isinstance(authorised, Authorisation):
+        raise AuthorisationRefused(f"REFUSED: Q-121b: authorised is a {type(authorised).__name__}, not an "
+                                   "extended.reader.Authorisation; nothing is read or computed")
+    try:
+        s, e = _day(authorised.start), _day(authorised.end)
+    except (TypeError, ValueError) as exc:
+        raise AuthorisationRefused(f"REFUSED: Q-121b: the authorisation's span is not two days ({exc})") from None
+    if max(s, e) >= CONFIRMATION_START:
+        raise ConfirmationWindowRefused(
+            f"REFUSED: Q-121b: the authorisation reaches {max(s, e)} -- NQ from {CONFIRMATION_START} is the declared "
+            "confirmation window, never described; nothing is read or computed")
+    why = []
+    if authorised.judged is not True or "judged" not in tuple(authorised.blocks or ()):
+        why.append("it is not a judged-block read")
+    if authorised.kind != AUTHORISED_KIND:
+        why.append(f"its kind is {authorised.kind!r}, not {AUTHORISED_KIND!r}")
+    if authorised.purpose != AUTHORISED_PURPOSE:
+        why.append(f"its purpose is {authorised.purpose!r}, not {AUTHORISED_PURPOSE!r}")
+    if authorised.declaration != AUTHORISED_DECLARATION:
+        why.append(f"its declaration is {authorised.declaration!r}, not {AUTHORISED_DECLARATION!r}")
+    if authorised.ledgered is not True:
+        why.append("it is not ledgered")
+    if not (isinstance(authorised.declaration_sha256, str) and len(authorised.declaration_sha256) == 64):
+        why.append("it carries no declaration sha256")
+    if s < FIRST_DAY or e < s:
+        why.append(f"its span {s} to {e} is not inside the development window")
+    if why:
+        raise AuthorisationRefused("REFUSED: Q-121b accepts one judged-block read only -- a described reading for "
+                                   f"{AUTHORISED_PURPOSE!r} under {AUTHORISED_DECLARATION} -- and this one is not it: "
+                                   + "; ".join(why) + "; nothing is read or computed")
+
+
+def last_day(authorised: Authorisation | None = None) -> date:
+    """The last day described: `LAST_DAY` absent; under RD-04's authorisation its end, at most `AUTHORISED_LAST_DAY`
+    (2026-07-16)."""
+    if authorised is None:
+        return LAST_DAY
+    check_authorisation(authorised)
+    return min(_day(authorised.end), AUTHORISED_LAST_DAY)
+
+
+def first_day(authorised: Authorisation | None = None) -> date:
+    """The first day described: `FIRST_DAY` absent; under RD-04's authorisation its start."""
+    if authorised is None:
+        return FIRST_DAY
+    check_authorisation(authorised)
+    return max(_day(authorised.start), FIRST_DAY)
+
+
+def _check_authorised_days(got: Sequence[date], authorised: Authorisation, what: str) -> None:
+    late = [d for d in got if d >= CONFIRMATION_START]
+    if late:
+        raise ConfirmationWindowRefused(f"REFUSED: Q-121b: {what} reaches {late[0]} -- NQ from {CONFIRMATION_START} is "
+                                        "the declared confirmation window, never described; nothing is computed")
+    lo, hi = first_day(authorised), last_day(authorised)
+    out = [d for d in got if d < lo or d > hi]
+    if out:
+        raise AuthorisationRefused(f"REFUSED: Q-121b: {what} holds {len(out)} day(s) outside the authorised {lo} to "
+                                   f"{hi} (first {out[0]}); nothing is computed")
+
+
+def check_span(start: Any, end: Any, *, authorised: Authorisation | None = None) -> tuple[date, date]:
     """`(start, end)` as days; refused (`BeyondChoiceBlock`) when either reaches past `LAST_DAY` -- checked first,
-    before any read -- and (`ValueError`) when it starts before the choice block or ends before it starts."""
+    before any read -- and (`ValueError`) when it starts before the choice block or ends before it starts. Under
+    `authorised` (checked first): refused when it reaches 2026-07-17 (`ConfirmationWindowRefused`) or leaves the
+    authorised span (`AuthorisationRefused`)."""
+    if authorised is not None:
+        check_authorisation(authorised)
+        s, e = _day(start), _day(end)
+        _check_authorised_days(sorted({s, e}), authorised, f"the span {s} to {e}")
+        if e < s:
+            raise ValueError(f"Q-121: {e} is before {s}")
+        return s, e
     s, e = _day(start), _day(end)
     if max(s, e) > LAST_DAY:
         raise BeyondChoiceBlock(
@@ -160,9 +277,15 @@ def check_span(start: Any, end: Any) -> tuple[date, date]:
     return s, e
 
 
-def check_days(days: Iterable[Any]) -> None:
+def check_days(days: Iterable[Any], *, authorised: Authorisation | None = None) -> None:
     """Every day of a frame at or before `LAST_DAY`; refused (`BeyondChoiceBlock`) otherwise, before anything is
-    computed."""
+    computed. Under `authorised` (checked before `days` is read): every day inside the authorised span, never from
+    2026-07-17 (`ConfirmationWindowRefused`)."""
+    if authorised is not None:
+        check_authorisation(authorised)
+        got = sorted({_day(d) for d in days})
+        _check_authorised_days(got, authorised, "the frame")
+        return
     late = sorted({_day(d) for d in days if _day(d) > LAST_DAY})
     if late:
         raise BeyondChoiceBlock(f"REFUSED: the frame holds {len(late)} day(s) after {LAST_DAY}, from {late[0]} -- "
@@ -351,12 +474,15 @@ def vendored_day_arrays() -> Callable[[pd.DataFrame], tuple]:
 def describe(bars: pd.DataFrame, *, fomc: Iterable[int], bls: Iterable[int], cut: int = BLS_CUT,
              day_arrays: Callable[[pd.DataFrame], tuple] | None = None,
              sets: Mapping[str, tuple[Sequence[int], int]] = SETS,
-             keep_arrays: bool = False) -> tuple[pd.DataFrame, dict[str, Any]]:
+             keep_arrays: bool = False,
+             authorised: Authorisation | None = None) -> tuple[pd.DataFrame, dict[str, Any]]:
     """(the session table, the walks) for every trading day in `bars` (the store's frame: `ts`, `day`, `open`, `high`,
     `low`, `close`), refused when a day is past `LAST_DAY`. The walks: {"dates": the walked sessions' dates, set: int16
     codes (walked sessions, marks, 2, bands, R)} with each session's bands `BANDS` (the fixed three, then the trailing
-    range's two, `NONE` when undefined). `keep_arrays` adds {"arrays": {date: (o, h, l, c)}} for the identities."""
-    check_days(bars["day"].astype(str).unique())
+    range's two, `NONE` when undefined). `keep_arrays` adds {"arrays": {date: (o, h, l, c)}} for the identities.
+    `authorised` (Q-121b): RD-04's judged read, checked before `bars` is touched; then days to its end."""
+    check_authorisation(authorised)
+    check_days(bars["day"].astype(str).unique(), authorised=authorised)
     arrays_of = day_arrays or vendored_day_arrays()
     fomc, bls = {int(x) for x in fomc}, {int(x) for x in bls}
     rows, arrays = [], {}
@@ -442,8 +568,13 @@ def _band_ticks_label(b: int) -> Any:
 
 
 def summarise(sessions: pd.DataFrame, walks: Mapping[str, Any],
-              sets: Mapping[str, tuple[Sequence[int], int]] = SETS) -> pd.DataFrame:
-    """The result file's rows (`COLUMNS`), sections `SECTIONS` in order."""
+              sets: Mapping[str, tuple[Sequence[int], int]] = SETS, *,
+              authorised: Authorisation | None = None) -> pd.DataFrame:
+    """The result file's rows (`COLUMNS`), sections `SECTIONS` in order. The session table's days are checked first
+    (`check_days`, under `authorised` if given). `band_mark` is written from the walks of sessions dated at or before
+    `CHOICE_END` only (M5): never a row for a session from 2024-01-02."""
+    check_authorisation(authorised)
+    check_days(sessions["date"].astype(str).tolist(), authorised=authorised)
     rows: list[dict[str, Any]] = []
     for r in sessions.itertuples(index=False):
         rows.append({"section": "session", "date": r.date, "day_kind": r.day_kind, "bars": int(r.bars),
@@ -469,8 +600,10 @@ def summarise(sessions: pd.DataFrame, walks: Mapping[str, Any],
                     rows.append({"section": "band", "period_kind": pk, "period": p, "set": name, "band": BANDS[b],
                                  "band_ticks": _band_ticks_label(b), "rr": RR_GRID[k],
                                  **_q_row(pooled, (b, k))})
-        for pk, p, m in periods(dates, ("block", "year")):
-            sub = np.moveaxis(E[m], 1, 2)                               # (sessions, 2, marks, B, K)
+        choice = np.array([_day(d) <= CHOICE_END for d in dates], dtype=bool)
+        Ec = E[choice]                                                  # M5: the choice block's sessions only
+        for pk, p, m in periods([d for d, k in zip(dates, choice) if k], ("block", "year")):
+            sub = np.moveaxis(Ec[m], 1, 2)                              # (sessions, 2, marks, B, K)
             by_mark = quantiles(sub.reshape(-1, len(marks), B, K))
             for i, mk in enumerate(marks):
                 for b in range(B):
@@ -485,6 +618,15 @@ def summarise(sessions: pd.DataFrame, walks: Mapping[str, Any],
     return out
 
 
+def _band_mark_late(bm: pd.DataFrame) -> pd.Series:
+    """Per `band_mark` row: whether its period is anything but the block or a year inside the choice block."""
+    pk, p = bm["period_kind"].astype(str), bm["period"].astype(str)
+    year_ok = p.str.fullmatch(r"\d{4}") & (p <= str(CHOICE_END.year))
+    ends = p.str.split("..", regex=False).str[-1]
+    block_ok = ends.str.fullmatch(r"\d{4}-\d{2}-\d{2}") & (ends <= CHOICE_END.isoformat())
+    return ~(((pk == "year") & year_ok) | ((pk == "block") & block_ok))
+
+
 def _q_row(q: Mapping[str, np.ndarray], idx: tuple[int, ...]) -> dict[str, Any]:
     out: dict[str, Any] = {"n": int(q["n"][idx]), "open_share": float(q["open_share"][idx])}
     for name, v in QUANTILES:
@@ -492,10 +634,13 @@ def _q_row(q: Mapping[str, np.ndarray], idx: tuple[int, ...]) -> dict[str, Any]:
     return out
 
 
-def output_problems(frame: pd.DataFrame) -> list[str]:
+def output_problems(frame: pd.DataFrame, *, authorised: Authorisation | None = None) -> list[str]:
     """Why a frame is not this reading's: columns not `COLUMNS` exactly, a forbidden word in a column, a section
     unknown or missing, a session past `LAST_DAY`, a share outside [0, 1], a count below zero, a quantile out of
-    order."""
+    order, a `band_mark` row reaching past the choice block (M5). Under `authorised` (checked first; refused by raising,
+    before `frame` is touched): a session outside the authorised span or from 2026-07-17, and `band_mark` not required
+    (none is written on judged sessions alone)."""
+    check_authorisation(authorised)
     bad = []
     if list(frame.columns) != list(COLUMNS):
         bad.append(f"columns are not COLUMNS: {list(frame.columns)}")
@@ -506,12 +651,24 @@ def output_problems(frame: pd.DataFrame) -> list[str]:
         have = set(frame["section"].astype(str))
         if have - set(SECTIONS):
             bad.append(f"unknown sections {sorted(have - set(SECTIONS))}")
-        if set(SECTIONS) - have:
-            bad.append(f"missing sections {sorted(set(SECTIONS) - have)}")
+        need = set(SECTIONS) if authorised is None else set(SECTIONS) - {"band_mark"}
+        if need - have:
+            bad.append(f"missing sections {sorted(need - have)}")
     if "date" in frame:
         d = frame["date"].dropna().astype(str)
-        if (d > LAST_DAY.isoformat()).any() or (d < FIRST_DAY.isoformat()).any():
-            bad.append("a session outside the choice block")
+        if authorised is None:
+            if (d > LAST_DAY.isoformat()).any() or (d < FIRST_DAY.isoformat()).any():
+                bad.append("a session outside the choice block")
+        else:
+            if (d >= CONFIRMATION_START.isoformat()).any():
+                bad.append(f"a session in the confirmation window (from {CONFIRMATION_START})")
+            if (d > last_day(authorised).isoformat()).any() or (d < first_day(authorised).isoformat()).any():
+                bad.append("a session outside the authorised span")
+    if {"section", "period_kind", "period"} <= set(frame.columns):
+        bm = frame[frame["section"].astype(str) == "band_mark"]
+        if len(bm) and _band_mark_late(bm).any():
+            bad.append(f"a band_mark row reaching past the choice block ({CHOICE_END}): band_mark is the choice "
+                       "block's section only (M5)")
     if "open_share" in frame:
         s = frame["open_share"].dropna()
         if ((s < 0) | (s > 1)).any():
@@ -528,6 +685,9 @@ def output_problems(frame: pd.DataFrame) -> list[str]:
 
 __all__ = ["DECISION", "TASK", "LAST_DAY", "FIRST_DAY", "TICK", "SESSION_END", "FLAT_ENTRY", "BLS_CUT", "TRAIL",
            "WALKED_KINDS", "FIXED_BANDS_TICKS", "RANGE_FRACTIONS", "RR_GRID", "BANDS", "P16_MARKS", "P14_SLOTS", "SETS",
-           "OPEN", "NONE", "COLUMNS", "SECTIONS", "BeyondChoiceBlock", "check_span", "check_days", "yymmdd", "last_bar",
+           "OPEN", "NONE", "COLUMNS", "SECTIONS", "BeyondChoiceBlock", "AuthorisationRefused",
+           "ConfirmationWindowRefused", "AUTHORISED_PURPOSE", "AUTHORISED_KIND", "AUTHORISED_DECLARATION",
+           "AUTHORISED_LAST_DAY",
+           "check_authorisation", "last_day", "first_day", "check_span", "check_days", "yymmdd", "last_bar",
            "day_kind", "session_measures", "trailing_means", "band_ticks", "target_ticks", "entries", "first_exits",
            "walk_session", "describe", "quantiles", "value_quantiles", "periods", "ct", "summarise", "output_problems"]

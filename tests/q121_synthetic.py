@@ -2,7 +2,7 @@
 (`extended/synthetic_bars.py`); Stage 2's calendars (published in advance) through A1's configuration. Never reads the
 bar store: the script's reader calls are stood in by recorders returning the toys.
 
-    python tests/vd_synthetic.py identity|shift|script|refuse
+    python tests/q121_synthetic.py identity|shift|script|refuse|unchanged
 
 Prints one JSON line last. Seeds (named by role, outside the 2026xxxx range): `SEED_TOY_BARS` 4221 (the toys' bars),
 `SEED_SHIFT` 4222 (`synthetic_bars.replace_from`'s arbitrary values).
@@ -242,7 +242,51 @@ def check_refuse() -> dict:
     return out
 
 
+def before_module():
+    """The module as it was before Q-121b (a0cb1ce's text, frozen at `tests/q121_module_a0cb1ce.py`)."""
+    spec = importlib.util.spec_from_file_location("q121_module_a0cb1ce", ROOT / "tests" / "q121_module_a0cb1ce.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def check_unchanged() -> dict:
+    """Q-121b: the script's toy run with the module as it is now and with the module as it was (a0cb1ce): the result
+    file's bytes, the manifest's parameters and the printed identity and row lines are the same."""
+    import hashlib
+
+    from extended import results as XR
+
+    old = before_module()
+    bars = toy("2021-01-04", "2021-06-30")
+    table = days_table(bars, a1_params())
+    out: dict = {}
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, mod in (("after", V), ("before", old)):
+                S.V = mod
+                d = Path(tmp) / name
+                d.mkdir()
+                rec = Recorder(bars, table)
+                rc_, s = run_main(rec, ["--start", "2021-01-04", "--end", "2021-06-30", "--results-dir", str(d)])
+                csv = d / f"{S.RESULT}.csv"
+                man = XR.read_manifest(csv) if csv.is_file() else None
+                out[name] = {"rc": rc_, "module": mod.__name__,
+                             "sha256": hashlib.sha256(csv.read_bytes()).hexdigest() if csv.is_file() else None,
+                             "bytes": csv.stat().st_size if csv.is_file() else 0,
+                             "parameters": man.parameters if man else None, "spans": rec.spans,
+                             "lines": [x.strip() for x in s.splitlines()
+                                       if "identity" in x or x.strip().startswith("rows:")]}
+    finally:
+        S.V = V
+    out["same_file"] = out["after"]["sha256"] is not None and out["after"]["sha256"] == out["before"]["sha256"]
+    out["same_parameters"] = out["after"]["parameters"] == out["before"]["parameters"]
+    out["same_lines"] = out["after"]["lines"] == out["before"]["lines"] and bool(out["after"]["lines"])
+    return out
+
+
 if __name__ == "__main__":
-    checks = {"identity": check_identity, "shift": check_shift, "script": check_script, "refuse": check_refuse}
+    checks = {"identity": check_identity, "shift": check_shift, "script": check_script, "refuse": check_refuse,
+              "unchanged": check_unchanged}
     res = checks[sys.argv[1]]()
     print(json.dumps(res, default=str))
