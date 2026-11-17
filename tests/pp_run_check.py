@@ -17,7 +17,8 @@ one section a process (the vendored engine on this process's `sys.path`):
   its ancestor with its covered files unchanged, on a throwaway git repository; the same shape quoted, in backticks,
   bold, in a later column, without a commit, in a row that never says it held, or as the third read's C.1 row
   describing the tokens, never does; a breach of the rule (`IT.problems`) refuses before any wait is read; this
-  tree's DECISIONS.md breaches nothing and meets no wait today; every covered path is tracked; the workers' rule
+  tree's DECISIONS.md breaches nothing, and with its token rows removed meets no wait, a synthetic row for Q-80 at
+  HEAD meeting that wait alone (Q-113); every covered path is tracked; the workers' rule
   and the rows named.
 * `limits` -- D5 (E-104), L2: E-015's limits read only from the operator's approving rows (`e015-limits: ...`,
   positional), a row negating the approval refused, the newest row per column in force and the rest recorded;
@@ -379,13 +380,25 @@ def section_waits() -> None:
         p = S.wait_problems(rows + "\n" + extra, 1, d, sh["b"], toy)
         check(p and all("breaches the identity-holds rule" in q for q in p),
               f"D1: with {what} in DECISIONS.md the waits were read: {p}")
-    # the waits on this tree's DECISIONS.md: no breach, and none met today (no row records a holding identity yet)
+    # the waits on this tree's DECISIONS.md: no breach, whatever rows it records (Q-113: the log gains token rows as
+    # identities hold, so the refusals are read on it with every token row removed, and one met on a synthetic row)
     text = (REPO / "DECISIONS.md").read_text(encoding="utf-8")
     check(IT.problems(text) == [], f"this tree's DECISIONS.md breaches the rule: {IT.problems(text)[:3]}")
+    bare = "".join(line + "\n" for line in text.splitlines() if not IT.parse(line))
+    check(IT.parse(bare) == [] and IT.problems(bare) == [], "the log without its token rows still has a token or a breach")
     head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    probs = S.wait_problems(text, 1, REPO, head)
-    check(sum("is not met" in p for p in probs) == len(S.WAITS) and not any("is not in" in p for p in probs),
-          f"not every wait is refused for want of a token on this tree (or a covered path is absent): {probs}")
+    probs = S.wait_problems(bare, 1, REPO, head)
+    check(sum("is not met" in p for p in probs) == len(S.WAITS) == len(probs)
+          and all(any(p.startswith(f"the wait for {k} (") for p in probs) for k in S.WAITS),
+          f"with no token, not every wait is refused for want of one (or a covered path is absent): {probs}")
+    one = bare + _token_row("E-999", "Q-80", head) + "\n"
+    got = S.wait_rows(one, REPO, head)
+    check({k: (t.row if t else None) for k, t in got.items()} == {k: ("E-999" if k == "Q-80" else None) for k in S.WAITS},
+          f"a holding row for Q-80 at HEAD did not meet that wait alone: {got}")
+    probs = S.wait_problems(one, 1, REPO, head)
+    check(sorted(p.split(" ")[3] for p in probs) == sorted(k for k in S.WAITS if k != "Q-80")
+          and all("is not met" in p for p in probs),
+          f"a holding row for Q-80 at HEAD: the other waits are not each refused, or Q-80's is: {probs}")
     for k, (_, covered) in S.WAITS.items():                   # each covered path tracked, so a wait can never be vacuous
         for f in covered:
             r = subprocess.run(["git", "-C", str(REPO), "ls-files", "--error-unmatch", f], capture_output=True)
