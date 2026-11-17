@@ -53,13 +53,20 @@ def _run(section: str, timeout: int = 1800) -> dict:
     return out
 
 
-@pytest.mark.parametrize("section", ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14", "t15", "t16",
-                                     "t17"])
+#: E-169 item 0: T-3's section (about 17 minutes: three toy jobs of five cells) runs in /validate's slow tier, not the
+#: fast tier the commit hook runs
+SLOW_SECTIONS = {"t3"}
+
+
+@pytest.mark.parametrize("section", [pytest.param(s, marks=pytest.mark.slow) if s in SLOW_SECTIONS else s
+                                     for s in ("t1", "t2", "t3", "t4", "t5", "t6", "t7", "t10", "t13", "t14",
+                                               "t15", "t16", "t17")])
 def test_section_holds(section):
     out = _run(section)
     assert out["n_problems"] == 0, "\n".join(out["problems"])
 
 
+@pytest.mark.slow
 def test_t3_catches_the_planted_leak_at_every_horizon():
     """R1 (cycle 3): T-3's planted leaks caught at every h of section 5's table, 21 included, each h reached by the
     plant -- the purge leak by a moved row under one of the two plants, cycle 1's leak by a moved row or the reading's
@@ -235,8 +242,10 @@ def test_t8_the_identity_at_four_paths_and_starts():
 # ------------------------------------------------------------------------------------------------ m1
 
 
+@pytest.mark.slow
 def test_the_pipeline_runs_steps_3_to_5_on_toys(tmp_path):
-    """m1: steps 3, 4 and 5 `--synthetic` end to end (`tests/cl_run_check.py`), asserting M1 to M4 on the files."""
+    """m1: steps 3, 4 and 5 `--synthetic` end to end (`tests/cl_run_check.py`), asserting M1 to M4 on the files. Slow
+    (E-169 item 0: about 11 minutes): /validate's slow tier, not the commit hook's fast tier."""
     r = subprocess.run([sys.executable, str(ROOT / "tests" / "cl_run_check.py"), str(ROOT), str(tmp_path)], cwd=ROOT,
                        capture_output=True, text=True, timeout=3600, env=ENV)
     lines = [ln for ln in r.stdout.splitlines() if ln.startswith("{")]
