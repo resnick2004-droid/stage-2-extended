@@ -128,3 +128,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-125: Q-18's audit clean with caveats -- P-14's contract money survives every declared stress; its trades alone lose. |
 | 2026-11-17 | lead | E-126: the re-calibration built (nothing run); the red team reads the build before the calibration run. |
 | 2026-11-17 | lead | E-127: the re-calibration build merged on its read; its calibration run queued after the shared identities. |
+| 2026-11-17 | lead | E-128: Q-80, the gate identity, holds at the merged code (the first of the identity block). |
+| 2026-11-17 | lead | E-129, E-130: Q-89's first leg and Q-101 hold; the first token row tripped state-dependent tests (fix Q-113); F-03's third read: merge as is. |
+| 2026-11-17 | lead | E-131: the identity-wait tests made independent of the log's state; the held records commit. |

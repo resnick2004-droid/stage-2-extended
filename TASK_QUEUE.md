@@ -96,7 +96,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-66b | The gatekeeper re-reads F-02's sixth text (c09730e) -- a verdict only | lead | done: APPROVE, contingent on Q-55 only (E-048) | Q-72 | light | 0 | E-047 |
 | Q-78 | Family R's second draft to the program's current rules | wt-levels | done: merged (E-057); its third draft Q-90 | Q-38 | light | 0 | E-048 |
 | Q-79 | `config/calendar_fomc_minutes.csv` built from Q-73's cited dates (builder, loader, tests), then pinned by the lead | wt-firms | done: merged and pinned (E-050) | Q-73 | light | 0 | E-048 |
-| Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | queued: the identity block, heavy queue part 5 (E-123) | Q-71 | heavy | 0 | E-049 |
+| Q-80 | Q-71's 500-path gate identities (P-14, P-16; `--cls all`) from a clean checkout under the lock -- the heavy chain's third leg | lead | done: HOLDS at the merged code (E-128) | Q-71 | heavy | 0 | E-049 |
 | Q-81 | Family B's sixth draft: C1-f's null the realised paired lift (the model's term dropped), the conjoint MDL, level and power at the family's level | wt-scout | done: merged through 12bc60e (E-062); Q-95 | Q-77 | light | 0 | E-051 |
 | Q-82 | The pass line's fresh-seed validation, built (seeds 20262010-20262019; criterion fixed in E-052) | wt-verify | done: merged (E-062); the run is Q-83 | Q-68 | light | 0 | E-052 |
 | Q-83 | Q-82's run from a clean checkout under the lock -- F-02's pin needs it | lead | done: audited (E-094) -- `bound` FAILS, the two-sample forms HOLD | Q-82, Q-55 | heavy | 0 | E-052 |
@@ -105,7 +105,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-86 | Money spent and return on spend per start day (`results/user_spend.csv`): fees and payouts at the first pass, first payout, break-even and month ends; identities first; a section on the journey page | wt-report | done: built and merged (E-062); the run is Q-98 | Q-69 | light | 0 | E-054 |
 | Q-87 | Family O's third draft: the second read's eleven minors as one edit (m2-3 per E-051; E-052's fill-intensity check; withdrawal on Q-55 or Q-83) | wt-lit | done: merged (E-071); the gatekeeper's read Q-87b | Q-75 | light | 0 | E-054 |
 | Q-88 | The red team's first read of the firms reading's second draft | wt-firms | done: must be redrafted, remedies adopted (E-058); Q-91 | Q-54 | light | 0 | E-054 |
-| Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | queued: the identity block, heavy queue part 5 (E-123) | Q-70 | heavy | 0 | E-055 |
+| Q-89 | Q-70's heavy identities: P-16 at 4 paths and the 100-path value map (P-16, P-14), `--row E-055` -- the heavy chain's third leg | lead | first leg held (E-129); the value-map leg in the queue | Q-70 | heavy | 0 | E-055 |
 | Q-90 | Family R's third draft: E-051's null (the realised lift; the pick's own term dropped; the 3 sourced or dropped; the conjoint MDL) | wt-levels | cancelled: family R closed before its pin, every cell dropped by its own rule (E-086) | Q-78 | light | 0 | E-057 |
 | Q-91 | The firms reading's third draft: Q-88's five MATERIAL and twelve minors | wt-firms | done: merged (E-064); its re-read Q-88b | Q-88 | light | 0 | E-058 |
 | Q-92 | F-P's third draft to the current standard (E-058 (5)'s interval; its reads line; the gate and the adapter's class) | wt-payout | done: merged (E-070); its red team Q-102 | Q-42 | light | 0 | E-059 |
@@ -120,7 +120,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-99 | A scout's note: composing an execution model from the program's components (structure only, no result) | wt-scout | done: read (E-072) | -- | light | 0 | E-064 |
 | Q-91b | The firms reading's one small edit (Q-88b's five minors); the addendum committed first | wt-firms | done: merged (E-072); the pin check Q-91c | Q-88b | light | 0 | E-067 |
 | Q-100 | The U1 adapter's `household_closure` and seed-base keywords (generic; U1's identity at the defaults; for the firms reading's A-9) | wt-user | done: merged (E-084); its identity with Q-93's in one queue step at 4f8b556 | Q-76 | light | 0 | E-067 |
-| Q-101 | Q-94's heavy identity: U1's start rows with recording on, P-16 and P-14, every start (`--row E-068`) -- the heavy queue | lead | queued: the identity block, heavy queue part 5 (E-123) | Q-94 | heavy | 0 | E-068 |
+| Q-101 | Q-94's heavy identity: U1's start rows with recording on, P-16 and P-14, every start (`--row E-068`) -- the heavy queue | lead | done: HOLDS at the merged code (E-130) | Q-94 | heavy | 0 | E-068 |
 | Q-102 | The red team's read of reading PP's third draft | wt-payout | done: a small redraft, remedies adopted (E-074); Q-92b | Q-92 | light | 0 | E-070 |
 | Q-87b | The gatekeeper reads family O's third draft (a verdict only) | lead | done: REFUSE, seven text items (E-073); Q-87c | Q-87 | light | 0 | E-071 |
 | Q-91c | A gatekeeper's pin check of the firms reading (a verdict and the pinning row) | lead | done: REFUSE, narrow (E-075); Q-91d | Q-91b | light | 0 | E-072 |
@@ -169,6 +169,7 @@ two allowed (DIRECTIVE Part 5 step 3); a third is `NEEDS_OPERATOR`.
 | Q-112 | The identity block (E-123): Q-80, Q-89 (both legs), Q-101, Q-93 with Q-100, t10w2, RD-01's own identity; then RD-02's own after Q-44 | lead | queued: the heavy queue part 5 (E-123) | E-122 | heavy | 0 | E-123 |
 | Q-108e | The red team reads Q-108's build (fidelity to the pinned plan; the builder's readings; cost) before the calibration run | wt-scout (read-only) | done: run as is with five readings (E-127) | Q-108d | light | 0 | E-126 |
 | Q-108f | Q-108's calibration run (`scripts/q108_calibrate.py`) from a clean checkout under the lock; then the choosing row (E-127 (3)), then the validation run | lead | queued: the heavy queue part 6 (E-127) | Q-108e | heavy | 0 | E-127 |
+| Q-113 | The identity-token tests made state-independent (RD-01's, RD-02's, the identity rows'), after the first token row | wt-infra | done: merged (E-131) | E-128 | light | 0 | E-129 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
 
