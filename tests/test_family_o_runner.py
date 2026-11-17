@@ -151,10 +151,20 @@ def test_a_change_under_config_fails_every_wait(history):
         assert ok == [] and rows == {ident: ["E-8"]}
 
 
-def test_this_branch_waits_for_its_identities():
-    """The infrastructure identities and A0 are not on record as holding at this build's commit: the runs refuse."""
-    bad, _ = R.waited_problems(DECISIONS, R.waits(), ROOT)
-    assert any(b.startswith(R.A0_ID) for b in bad)
+def test_the_waits_meet_only_what_a_holding_row_names():
+    """State-independent (E-129): on this tree's log with every positional token row removed, no wait is met and the
+    runs refuse; one synthetic holding row for one waited id at this repository's HEAD meets that wait only."""
+    from extended import identity_tokens as IT
+
+    stripped = "\n".join(line for line in DECISIONS.splitlines() if not IT.TOKEN.search(line))
+    waits = R.waits()
+    bad, rows = R.waited_problems(stripped, waits, ROOT)
+    assert all(rows[k] == [] for k in waits) and all(any(b.startswith(k) for b in bad) for k in waits)
+    head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    one = stripped + "\n" + token_row("E-999", "Q-80", head)
+    bad, rows = R.waited_problems(one, waits, ROOT)
+    assert rows["Q-80"] == ["E-999"] and not any(b.startswith("Q-80 ") for b in bad)
+    assert all(rows[k] == [] for k in waits if k != "Q-80")
 
 
 def test_t9_the_judge_reads_the_pick_and_forecast_by_their_pinned_hashes_and_cannot_fit():

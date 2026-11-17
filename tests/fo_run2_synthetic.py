@@ -49,6 +49,7 @@ df1.loc[m, "killed"] = False
 ctx = Syn(sizes=FO.Sizes(starts=4, k0=200, b2=100, gate_paths=4, responses=("off", "denial_25", "forfeit_25", "rtp")),
           smoke=True)
 ctx.fx = fx
+ctx.check_reuse = True
 code, jdf, jjf, par = FO.run2(ctx, pre, 1, df1, {**par1, "_sha256": "0" * 64})
 out.update({"code": code, "seconds": round(time.time() - t0, 1), "authorised": list(ctx.authorised)})
 if jdf is not None:
@@ -87,6 +88,11 @@ if jdf is not None:
     out["floor_iv_v"] = [bool(fl.loc[fl["floor"] == k, "holds"].iloc[0]) for k in ("iv", "v")]
     out["floor_v_row"] = fl[fl["floor"] == "v"].dropna(axis=1).to_dict("records")
     out["beside_0735"] = int((bs2["reading"] == "report_day_0735_openings").sum())
+    out["reuse"] = par.get("scorecard_reuse_checked")
+    vo = bs2[bs2["reading"] == "V_other"]
+    out["v_other_dollars"] = bool("V_dollars" in vo.columns and len(vo))
+    po = bs2[bs2["reading"] == "placement_on_openings_at_full_allowance"]
+    out["placement_on"] = po.dropna(axis=1).to_dict("records")
     out["params"] = sorted(par)
     out["written"] = ctx.write_stage_c(jdf, jjf, par)
 print(json.dumps(out, default=str))

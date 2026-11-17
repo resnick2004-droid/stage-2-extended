@@ -136,6 +136,11 @@ def test_run2_end_to_end_on_synthetic_inputs():
     assert got["frontier_blocks"] == ["choice", "judged"] and got["beside_0735"] == 4
     assert got["floor_iv_v"] == [True, True]                                    # n5: derived from the gate's call
     assert {"identity_commits", "data_manifest_sha256"} <= set(got["params"])
+    # E-129: the scorecard's verdict-arm, no-response replays reuse the campaign stage's, row for row identical
+    assert got["reuse"] == {"design": True, "twin": True, "p16": True}
+    # n12's last two: V_other in dollars; the placement-on share of openings at full allowance
+    assert got["v_other_dollars"] and len(got["placement_on"]) == 1
+    assert 0.0 <= got["placement_on"][0]["share_at_full_allowance"] <= 1.0
 
 
 @pytest.mark.slow

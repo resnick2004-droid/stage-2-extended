@@ -104,6 +104,7 @@ class Ctx:
     smoke: bool = False
     repeat: str | None = None
     authorised: list = field(default_factory=list)
+    check_reuse: bool = False                 # a test seam: recompute each reused scorecard replay and compare
 
     # ---- run 2's judged reads, each under its purpose (19.1), authorised just before its stage
     def authorise(self, purpose: str) -> None:
@@ -803,7 +804,7 @@ SHARE_HISTORY = 300                    # choice-block walked sessions read befor
 
 
 def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_paths: int, workers: int, cls=None,
-                  rtp: bool = False, zero_edge: bool = False, flags_of=None):
+                  rtp: bool = False, zero_edge: bool = False, flags_of=None, recorder=None):
     """A gate campaign on a span's trades as P-16's gate call is made (`identity/gate_identity.py`'s `p16_problems`):
     `score_fv3_grid.gate_blocks`, `atlas_a3.gate_kwargs` at P-16's registered shift and capacity, the strict rule and
     the budget, through `extended.gate.run_gate` -- with the waiting class in index mode (`cls(blocks)`), the placement
@@ -835,6 +836,8 @@ def gate_campaign(trades, days: list[str], P: dict[str, Any], *, seed: int, n_pa
                        rtp=bool(rtp), one_at_a_time=C.STRICT_GAP, purchase_budget=C.BUDGET)
     blk = kw.pop("blocks")
     extra = {"funded_account_cls": cls(blk)} if cls is not None else {}
+    if recorder is not None:
+        extra["recorder"] = recorder
     rows, _ = XG.run_gate(blk, workers=int(workers), **extra, **kw)
     # n5: floors (iv) and (v) read from the call's own configuration (never hard-coded)
     from propedge.contract.adapter import rules_from_ledger
@@ -993,9 +996,14 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
         tw, _ = ST.clustered_twin(Lj, sel, ci, ST.BLOCK_JUDGED, d)
         twin_cls.append(OW.waiting_class(OW.WaitSpec.for_blocks(f"{c}_twin{d}", job["blocks"],
                                                                 flags_by_block(ids, grid_flags(Lj, tw)))))
-    _, rec_d = replay(f"fo_{c}", job, starts, workers, design, ids)
-    rec_t = [replay(f"fo_{c}_twin{d}", job, starts, workers, k, ids)[1] for d, k in enumerate(twin_cls)]
-    _, rec_p = replay("p16", job, starts, workers, None, ids)
+    outs_d, rec_d = replay(f"fo_{c}", job, starts, workers, design, ids)
+    tw_ = [replay(f"fo_{c}_twin{d}", job, starts, workers, k, ids) for d, k in enumerate(twin_cls)]
+    rec_t = [x[1] for x in tw_]
+    outs_p, rec_p = replay("p16", job, starts, workers, None, ids)
+    #: the campaign stage's replays on the verdict arm with no response, by scorecard design (twin = draw 0) --
+    #: the scorecard reuses them (the lead's E-129 item 3; their starts are the scorecard's on that arm)
+    camp_outs = {"design": outs_d, "twin": tw_[0][0], "p16": outs_p}
+    del tw_
     pos = {d_: i for i, d_ in enumerate(cal)}
     # n6: K0 on the judged C2 counts from the openings alone, before any value column is joined
     u1c = np.bincount([pos[d_] for d_ in OW.openings(rec_d, f"fo_{c}", ARM, "off")["date"]], minlength=n)
@@ -1106,7 +1114,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
         if len(a_) and len(b_):
             bes.append({"reading": f"V_{part}", "value": ST.v_line(u_d, mdv, float(a_["offer"].map(yv).mean()
                                                                                      - b_["offer"].map(yv).mean()))})
-    bes += v_other_rows(rec_d, rec_t, c, popj, Lj)
+    bes += v_other_rows(rec_d, rec_t, c, popj, Lj, sess, mdv)
     iw = ST.openings_a_start_year(int(od["in_wait"].sum()), sess)
     bes.append({"reading": "uniform_lift_valuation", "value": SC.uniform_valuation(c1.bound, iw, mdv),
                 "in_wait_per_start_year": iw})
@@ -1125,7 +1133,9 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
         bes += [{"reading": "u3_judged_skill", "band": b_, **v} for b_, v in ST.a4_skill(st.y, st.y_hat, bands,
                                                                                          rows_).items()]
     # beside floor (iii): the placement on, the zero-edge twin, P-16's campaign at the same seed; e, its bound, D-47
+    on_rec = OW.GateRecorder(shifts=("lower_bound",), levels=(0.0,), columns=("place", "at_cap", "room_capped"))
     on_rows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
+                          recorder=on_rec,
                           cls=gate_cls, rtp=True)
     ze_rows, _ = ctx.gate(spj.trades, days_all, P, seed=ST.SEED_GATE, n_paths=z.gate_paths, workers=workers,
                           cls=gate_cls, zero_edge=True)
@@ -1133,6 +1143,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     g_on, g_ze, g_p = SC.floor_gate(on_rows), SC.floor_gate(ze_rows), SC.floor_gate(p16_rows)
     bes += [{"reading": "break_even_denial", "value": fg["break_even_denial"]},
             {"reading": "placement_on_growth_at_bound", "value": g_on["growth_at_bound"]},
+            {"reading": "placement_on_openings_at_full_allowance", **placement_on_shares(on_rec, on_rows)},
             {"reading": "zero_edge_twin_growth", "value": g_ze["growth_at_point"],
              "signal_lift_over_zero_edge_twin": fg["growth_at_point"] - g_ze["growth_at_point"],
              "note": "Stage 2's own zero_edge_blocks with P-16's registered e over both blocks: on the judged block's "
@@ -1162,6 +1173,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
     designs = {"design": grid_flags(Lj, sel), "twin": tw0_flags, "p16": None}
     cards: dict[str, dict[str, float]] = {}
     tables: dict[tuple[str, str], Any] = {}
+    reuse_checks: dict[str, bool] = {}
     for arm in SCORECARD_ARMS:
         jb = jobs[arm]
         ids_a = offer_ids_of(spj.trades, days_all, jb["blocks"])
@@ -1175,7 +1187,14 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
                       if k is not None else {})
                 if resp.startswith("denial") or resp.startswith("forfeit"):
                     kw["seed_base"] = ctx.ladder_seed_base()
-                outs = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
+                if arm == ARM and resp == "off" and st_ == starts:
+                    outs = camp_outs[name]                   # E-129 item 3: the campaign stage's replay, reused
+                    if ctx.check_reuse:                      # the test's proof: the fresh call, row for row
+                        fresh = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
+                        reuse_checks[name] = (UR.summary(name, arm, B.BY_NAME[resp], fresh)[0]
+                                              == UR.summary(name, arm, B.BY_NAME[resp], outs)[0])
+                else:
+                    outs = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
                 rows_, t = UR.summary(name, arm, B.BY_NAME[resp], outs)
                 jr += [dict(r_) for r_ in rows_]
                 if resp == "off":
@@ -1217,7 +1236,7 @@ def run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> t
               "population_sha256": OP.frame_sha256(popj), "purposes": list(ctx.authorised), "sizes": vars(z),
               "seed_roles": {"twins": "SEED_TWIN", "B2": "SEED_B2", "K0": "SEED_K0", "gate": "SEED_GATE",
                              "scorecard": "SEED_SCORECARD"}, "workers": int(workers),
-              "seconds": round(time.time() - t_all, 1)}
+              "seconds": round(time.time() - t_all, 1), "scorecard_reuse_checked": reuse_checks}
     return 0, jdf, jjf, params
 
 
@@ -1275,6 +1294,25 @@ def _card(rows, block: str = "judged") -> dict[str, float]:
                 and r_["measure"] in ("P", "S1", "S3a", "S5a")):
             out[r_["measure"]] = float(r_["value"])
     return out
+
+
+def placement_on_shares(rec, rows) -> dict[str, Any]:
+    """n12, beside floor (iii): on the placement-on campaign at the bound, the share of the design's funded openings
+    sized at full allowance (the tier's cap, the record's `at_cap`; beside, those cut to the room above the floor,
+    `room_capped`), and the gate row's days with several accounts at the MLL."""
+    from extended import opening_stagec as SC
+
+    o = rec.openings("lower_bound", 0.0)
+    r = SC.gate_row(rows, "lower_bound")
+    return {"openings": int(len(o)),
+            "share_at_full_allowance": float(o["at_cap"].astype(bool).mean()) if len(o) else float("nan"),
+            "share_room_capped": float(o["room_capped"].astype(bool).mean()) if len(o) else float("nan"),
+            "mean_same_day_multi_breach_days": float(r["mean_same_day_multi_breach_days"])
+            if "mean_same_day_multi_breach_days" in r.index else float("nan"),
+            "share_paths_with_same_day_multi_breach": float(r["share_paths_with_same_day_multi_breach"])
+            if "share_paths_with_same_day_multi_breach" in r.index else float("nan"),
+            "note": "full allowance read as the tier's cap (at_cap); days with several accounts at the MLL from the "
+                    "gate row; recorded through Q-70's recorder"}
 
 
 def wait_of(name: str, block: str, rec, label: str, trades):
@@ -1413,7 +1451,7 @@ def choice_beside(ctx, z, c: str, ci: int, run1_params: dict, spc, A1c, P, worke
     return rows, bad
 
 
-def v_other_rows(rec_d, rec_t, c: str, popj, Lj) -> list[dict[str, Any]]:
+def v_other_rows(rec_d, rec_t, c: str, popj, Lj, sess=None, mdv=None) -> list[dict[str, Any]]:
     """V_other (7.4, beside): the designs' trades at places (b), (d) and (e), each valued at its own R against its own
     stratum's mean at that R (the side-symmetric value), the design's mean less the twin designs' pooled mean."""
     import numpy as np
@@ -1442,8 +1480,14 @@ def v_other_rows(rec_d, rec_t, c: str, popj, Lj) -> list[dict[str, Any]]:
         key = lambda t: [f"{o}#{OP.rkey(r)}" for o, r in zip(t["offer"], pd.to_numeric(t["rr"]))]   # noqa: E731
         va = pd.Series(key(a)).map(val).dropna()
         vb = pd.Series(key(b)).map(val).dropna()
-        out.append({"reading": "V_other", "place": place, "D": float(va.mean() - vb.mean()) if len(va) and len(vb)
-                    else float("nan"), "trades_design": int(len(va)), "trades_twins": int(len(vb))})
+        D_ = float(va.mean() - vb.mean()) if len(va) and len(vb) else float("nan")
+        row = {"reading": "V_other", "place": place, "D": D_, "trades_design": int(len(va)),
+               "trades_twins": int(len(vb))}
+        if sess is not None and mdv is not None:          # n12: in dollars, 7.4's form at the design's own uses there
+            u_ = ST.openings_a_start_year(int(len(va)), sess)
+            row.update({"u_place_per_start_year": u_, "V_dollars": ST.v_line(u_, mdv, D_) if np.isfinite(D_)
+                        else float("nan")})
+        out.append(row)
     return out
 
 
