@@ -54,6 +54,7 @@ def test_q18s_seeds_are_used_nowhere_else():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_check_reproduces_p14_and_smokes_every_part():
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
         pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
