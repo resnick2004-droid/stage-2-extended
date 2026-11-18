@@ -2,12 +2,14 @@
 
     python scripts/install_hooks.py
 
-The pre-commit hook checks the vendored snapshot (`scripts/vendor_stage2.py --verify`) and runs the suite's fast tier;
-the post-commit hook pushes each commit to the private remote `origin` in the background (E-004).
+The pre-commit hook checks the vendored snapshot (`scripts/vendor_stage2.py --verify`) and runs the suite's fast tier,
+one at a time on the machine under the fast-tier lock (`scripts/fasttier_lock.py`, Q-155); the post-commit hook pushes each commit to the private remote `origin` in the background (E-004).
 
 **Where.** Into `<git rev-parse --git-common-dir>/hooks/` -- the main repository's `.git/hooks/` -- which every linked
 worktree (`%LOCALAPPDATA%\\stage2-extended-wt\\<name>`) and detached clean-run checkout shares, so one install covers
-them all. Run it from the main tree or from any worktree: the destination is the same. If `core.hooksPath` is set, git
+them all. Run it from the main tree or from any worktree: the destination is the same. The installed hook runs the
+committing tree's own `scripts/` (the lock's wrapper included), so a tree that has not merged the change it calls is
+refused with "merge master", never checked by less. If `core.hooksPath` is set, git
 reads hooks from there instead, and this script says so rather than installing where git will not look.
 
 Copies rather than symlinks, because symlinks into `.git/hooks` are unreliable on Windows without developer mode.
@@ -73,7 +75,8 @@ def main() -> int:
         print(f"installed {dst}")
 
     print("  before every commit (main tree or worktree): `scripts/vendor_stage2.py --verify` and the fast tier "
-          '(-m "not slow and not heavy"); the identity, the heavy tier and the vendored stage-one suite run in /validate')
+          '(-m "not slow and not heavy"), one tree at a time under the machine-wide fast-tier lock '
+          '(scripts/fasttier_lock.py: waits for a live holder and for 1.5 GB free, at most 3 h); the identity, the heavy tier and the vendored stage-one suite run in /validate')
     print(f"  after every commit on a branch: a background push to `origin` (log: {gd / 'push.log'})")
     print("bypass with `git commit --no-verify` only when you know why, and say so in the message")
     return 0

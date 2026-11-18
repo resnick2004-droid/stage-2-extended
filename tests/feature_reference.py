@@ -158,10 +158,12 @@ def reference(B: pd.DataFrame, day: str, alert_ts: int, cal) -> dict[str, float]
     f["vol_30"] = np.log((v30 + 1.0) / (m30 + 1.0))
     f["vol_day"] = np.log((vday + 1.0) / (mday + 1.0))
     f["vol_accel"] = np.log((v5 / 5.0 + 1.0) / (v60 / 60.0 + 1.0))
-    rv15, rv60 = _rv(today, t, 15), _rv(today, t, 60)
-    f["rv_ratio"] = rv15 / rv60
-    f["rv_tod"] = np.log(rv60 / mrv)
-    f["rv_atr"] = rv60 / A
+    # numpy semantics (0/0 NaN, x/0 inf), as the library's arrays: a flat early-evening hour has rv_60 = 0 (Q-144)
+    rv15, rv60 = np.float64(_rv(today, t, 15)), np.float64(_rv(today, t, 60))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        f["rv_ratio"] = rv15 / rv60
+        f["rv_tod"] = np.log(rv60 / np.float64(mrv))
+        f["rv_atr"] = rv60 / np.float64(A)
     f["atr_ratio"] = A5 / A
     f["range_prior"] = (p["rH"] - p["rL"]) / A if p else NAN
     f["atr_rel"] = A / c * 1e4

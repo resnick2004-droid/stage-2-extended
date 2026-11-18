@@ -1,0 +1,33 @@
+{
+  "columns": [
+    "phase",
+    "rung",
+    "n",
+    "share",
+    "stop_ticks_median",
+    "from",
+    "trades"
+  ],
+  "description": "The rungs' shares among FV3's gate trades from 2020-01-01, per phase and overall, with the median stop in ticks: the mixture the state table solves over.",
+  "exploratory": true,
+  "git_commit": "1dcff7ad90ea02da8e4f1e3a1f3e66b8bd2f0aaf",
+  "git_dirty": false,
+  "notes": {
+    "status": "a derived input to the allowance-aware state table (D-306); no outcome enters it"
+  },
+  "parameters": {
+    "decision": "D-306",
+    "rungs": "the ladder's (D-293): half / full / double by the room rule",
+    "source": "results/fv3_studio_gate_corrected_point_trades.csv",
+    "start": "2020-01-01"
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "fv3_rung_shares_2020.csv",
+  "rows": 9,
+  "script": "scripts/fv3_rung_shares.py",
+  "seed": null,
+  "sha256": "1083b9da328e74562715f80703d2ad60f62550d96920a3b3171a426f8df4e840",
+  "timestamp": "2026-10-06T17:08:00+00:00",
+  "variant_count": null
+}

@@ -39,8 +39,10 @@ import re
 import subprocess
 from pathlib import Path
 
+from extended import git_scan as GS
+
 ROOT = Path(__file__).resolve().parent.parent
-TOKEN = "`RD-04 read: step 2`"
+TOKEN ="`RD-04 read: step 2`"
 PHRASE = "written after RD-04 was read"
 PRE_PHRASE = "written before RD-04 was read, unchanged since"
 RD04 = "prereg/RD-04_volatility_drift.md"
@@ -61,8 +63,10 @@ _GIT_ENV = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_PREFIX", "GIT_OBJ
 
 
 def git(root: Path, *args: str) -> subprocess.CompletedProcess:
+    """Q-156: through `extended.git_scan` (the `log -S` among these calls): this file's own 60 s limit kept, the process
+    tree killed on it and an error raised, never a pass."""
     env = {k: v for k, v in os.environ.items() if k not in _GIT_ENV}
-    return subprocess.run(["git", *args], cwd=root, capture_output=True, timeout=60, env=env)
+    return GS.git(*args, cwd=root, timeout=60, env=env)
 
 
 def decision_rows(log: str) -> list[tuple[str, str]]:

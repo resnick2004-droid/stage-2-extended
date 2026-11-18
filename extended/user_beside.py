@@ -127,6 +127,13 @@ keyword (`household_closure`, `seed_base`, after `seed` and before Q-76's `funde
 `run_parameters(C, H, S)` are the entries a runner puts in its result's parameters (empty when absent). Its identities:
 `tests/q100_synthetic.py` and `identity/user_beside_identity.py --q100` (U1's start rows at the defaults and with
 `household_closure=False` and `seed_base=20261920` given).
+
+**Q-119 (RD-03's A-2, `prereg/RD-03_contract_levers.md` 14.1): the replay through the levers' path, off by default.**
+`run_starts(..., levers=L, lever_sink=S)` replays a cell of RD-03: the cell's seat keywords (`max_concurrent_combines`,
+`max_total_accounts`, `stop_buying_when_queued`) and prices (`subscription`, `activation`, A-4) on every replay's path,
+and every replay through `extended.levers_path`'s copy of the vendored path with the cell's options. Absent (None),
+every task, replay and output is the adapter's before Q-119 bit for bit (T-15); with it, the Focused Trader models stay
+admitted (the funded class is the vendored one) and the recorder (Q-94) composes. Lines marked Q-119.
 """
 from __future__ import annotations
 
@@ -574,6 +581,7 @@ def _task(task: tuple) -> Any:
     red = task[9] if len(task) > 9 else None                                    # Q-94: the replay's reducer
     seam = dict(task[10]) if len(task) > 10 else {}                             # Q-100: the keywords given
     cnt = bool(task[11]) if len(task) > 11 else False                           # Q-105: the counters' channel
+    lev = task[12] if len(task) > 12 else None                                  # Q-119: RD-03's levers (A-2)
     counts: list[tuple[int, list]] = []                                         # Q-105: one list a start
     hc = seam.get("household_closure")                                          # Q-100: None when absent
     base = DENIAL_SEED if seam.get("seed_base") is None else int(seam["seed_base"])
@@ -583,6 +591,13 @@ def _task(task: tuple) -> Any:
         a = response_args(args, resp) if cls is None else response_args(args, resp, cls)
     else:                                                                       # Q-100: the household reading given
         a = response_args(args, resp, cls, household_closure=hc)
+    lev_counts = None                                                           # Q-119: each start's long replay
+    if lev is not None:                                                         # Q-119: the cell's seat and price
+        from extended import levers_path as LP                                  # Q-119: keywords on the path (A-2)
+        a = LP.levers_args(a, lev)                                              # Q-119
+        lev_counts = LP.StartCounts()                                           # Q-119
+    replay = (globals()["replay"] if lev is None else                           # noqa: F811  # Q-119: A-1's path
+              LP.replay_with(lev, blocks, dates, globals()["replay"], lev_counts))  # Q-119
     a_rec = None if red is None else red.recording_args(a)                     # Q-94: both recorders on
     recs: list[dict[str, Any]] = []                                             # Q-94: one record a start
     sub = float(args["path"]["subscription"])
@@ -636,6 +651,8 @@ def _task(task: tuple) -> Any:
                     "daily": M.daily(rel), "response": response_record(long_run, resp, info), "seed": seed_of(s),
                     **named})                                                   # Q-76, Q-100: named only when given
     ret = out if red is None else (out, recs)                                   # Q-94: the records beside
+    if lev is not None and lev.counters:                                        # Q-119: the levers' counts beside
+        ret = (ret, lev_counts.items())                                         # Q-119
     return (ret, counts) if cnt else ret                                        # Q-105: the counts beside
 
 
@@ -663,7 +680,9 @@ def long_record(s: int, date: str, run: Any, pay, totals) -> dict[str, Any]:
 def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], starts: Sequence[int], workers: int,
                chunk: int = 20, exact_every: int | None = None,
                funded_account_cls: type | None = None, recorder: Any = None, household_closure: Any = None,
-               seed_base: Any = None, counters: Any = None) -> list[dict[str, Any]]:
+               seed_base: Any = None, counters: Any = None,
+               levers: Any = None, lever_sink: Any = None,                      # Q-119
+               ) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
     `exact_every`-th start index otherwise (default `EXACT_EVERY`; 1: every start).
@@ -688,7 +707,14 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
     `extended.payout_policy.ReplayCounters`; the declared class must then be one of RD-02's (`PayoutPolicyFundedAccount`).
     Each start's long replay runs inside the adapter's collection in the process that runs it; the tasks gain `True` as
     their twelfth item and return (what they returned, the counts); the counts go to `counters` and the outputs are
-    returned as without it."""
+    returned as without it.
+
+    Q-119 (RD-03's A-2, `prereg/RD-03_contract_levers.md` 14.1): `levers` (default None: every behaviour as before) is
+    an `extended.levers_path.Levers` -- a cell's options and its seat and price keywords; `lever_sink` (an
+    `extended.levers_path.LeverSink`) is given exactly when its counters are on. The tasks gain the levers as their
+    thirteenth item; in the task the cell's keywords go on the replay's path (`levers_path.levers_args`) and every replay
+    runs through RD-03's re-composed path (`levers_path.replay_with`), each start's session dates attached; with the
+    counters on, each start's long replay's counts go to the sink, the outputs returned as without them."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
@@ -705,6 +731,9 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
         from extended import payout_policy as PP                                # Q-105
         PP.check_counters(counters, PP.ReplayCounters)                          # Q-105
         PP.check_counted_class(funded_account_cls)                              # Q-105
+    if levers is not None or lever_sink is not None:                            # Q-119: refused before any start
+        from extended import levers_path as LP                                  # Q-119
+        LP.check_run_levers(levers, lever_sink, counters, funded_account_cls)   # Q-119
     red = None
     if recorder is not None:                                                    # Q-94: refused before any start
         from extended import replay_records as RR
@@ -721,7 +750,12 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
         tasks = [(*t, *([None] * (10 - len(t))), dict(seam)) for t in tasks]
     if counters is not None:                                                    # Q-105: the twelfth, only when given
         tasks = [(*t, *([None] * (10 - len(t))), *(() if len(t) > 10 else ({},)), True) for t in tasks]  # Q-105
+    if levers is not None:                                                      # Q-119: the thirteenth, when given
+        tasks = [(*t, *((None, None, {}, False)[len(t) - 8:]), levers) for t in tasks]  # Q-119
     res = CJ._pool_run(tasks, _task, int(workers), f"{design} {arm} {resp.name}")
+    if levers is not None and levers.counters:                                  # Q-119: the counts, then as before
+        lever_sink.collect(design, arm, resp.name, [c for _, part in res for c in part])  # Q-119
+        res = [r for r, _ in res]                                               # Q-119
     if counters is not None:                                                    # Q-105: the counts, then as before
         counters.collect(design, arm, resp.name, [c for _, part in res for c in part])     # Q-105
         res = [r for r, _ in res]                                               # Q-105

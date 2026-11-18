@@ -14,16 +14,22 @@ vendored read-only. The charter is [`CHARTER.md`](CHARTER.md); the decision log 
 > `docs/OPERATOR_SETUP.md` is the only channel for their manual tasks. A research question never goes to the operator:
 > keep a safe default, record it under a decision row, report status. The operator is not a quant: every parameter is
 > explained and classed fixed / searched / dropped. No automated or API order entry (it gets prop accounts banned).
+>
+> **The operator's standing rule (E-207):** "You can change anything at any point in our workflows that increases
+> quality and increases efficiency of a task without sacrificing that quality." A change that weakens a safeguard is
+> not covered; payments are never authorised.
 
 ## The objective (CHARTER section 2)
 
-**Judged on trades first (the operator, E-008):** a design passes only if its trades' lift over the coin twin on the
-same brackets is above zero on the judged block at its family's level 0.05 / (k (k+1)) **by a calibrated statistic**,
-and its value-map price at that bound clears the family's declared bar; the long-run gate, resolution, verified rules
-and conduct tier 1 stay floors. **The user scorecard is reported beside, never the pass line:** P (the mean share of
-start days ahead at months 1-3), the guarded measures and the frontier against **R\* = P-14**, with the denial ladder,
-the placement on and E-007 (e)'s other readings. The verdict keeps 0 % payout denial and the placement off. Families
-are numbered on from Stage 2's program U: F-01 (k = 10) was withdrawn, k spent (E-007); F-02 retired k = 11 unspent (E-094, E-095); F-03 spent k = 12 and closed at stage B (E-192); the next is k = 13.
+**Judged on the user's journey (the operator, E-207, E-210; amending E-008):** a user's best journey to making money --
+least bankroll, fastest, cheapest pass and payout, steady income, least ruin -- under zero edge (direction removed,
+each outcome redrawn at its bracket's driftless odds; the traded side rule pending the operator). A design passes only
+if it stays inside every operator limit with margin wider than its noise; beats each baseline (naive coin, P-14, P-15,
+P-16, same convention) on the composite pinned before the survey (fallback: P under the bankroll stop) by the
+calibrated coin-seed test at 0.05 / (k (k+1)) on the held-out years, read once -- bounding coin luck on that history,
+not a lucky history (the history null's rate beside); and holds the floors. Verdict: 0 % payout denial, placement off,
+Focused Trader Program off; measures: `docs/MEASURES.md`. One k per held-out test: k = 10 spent (F-01, E-007), 11
+unspent (F-02, E-094, E-095), 12 spent (F-03, E-192); next 13.
 
 ## Rules that have teeth
 

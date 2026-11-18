@@ -1,0 +1,650 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "design",
+    "rules",
+    "against",
+    "arm",
+    "shift",
+    "rr",
+    "block",
+    "measure",
+    "stat",
+    "value",
+    "n",
+    "h",
+    "n_w",
+    "note"
+  ],
+  "description": "EXPLORATORY (Q-132): P-14's, P-15's and P-16's trades re-walked with the breakeven move corrected -- the stop first on a bar touching the entry and trading through the target after the move, the move five minutes after the session open, each alone and both -- read beside the registered rows: the trades' exit kinds, the gate row (500 paths at the registered seeds), the user scorecard and E-007 (e)'s measures with mdd_P, each corrected rule set's paired interval against stage2 (RD-02 9.2), the assumptions; every start's rows in the start file. Beside, never deciding.",
+  "exploratory": true,
+  "git_commit": "b407fbb85c43ac43d46796f2aaa0d906ddaf62fd",
+  "git_dirty": false,
+  "notes": {
+    "assumptions": "Assumed: the fill profile 'assumed' (never measured); payouts lagged 3 session(s) after their request, spacing simulated by the engine (D-18), no assumed schedule, requests on the payout path (standard: 5 winning days >= $150 before each request); the no-closure state table state_dp_e-0.050_lamstar_noclose; the breakeven move at zero latency under stage2 and stop_first, five minutes after the open (D-266) under delay5 and both; every response off: 0 % payout denial (D-234), the placement off (D-289), no Focused Trader model.",
+    "selection": "none",
+    "status": "EXPLORATORY (Q-132; the Q-45 audit, E-189): beside the registered rows, never deciding; R* stays P-14 unless the operator rules otherwise",
+    "supersedes": "nothing: results/breakeven_fidelity.csv (E-188) stands; this is a second reading",
+    "variant_count_rule": "three corrections a design; Stage 2's walk is the identity, not a variant"
+  },
+  "parameters": {
+    "assumptions": {
+      "breakeven_move": {
+        "latency": "stage2 and stop_first: the move takes effect on the session's open bar itself (zero latency, Stage 2's modelling); delay5 and both: decided on the open bar's open and in force from the first present bar opening five minutes after it -- Stage 2 D-266's five minutes from alert to order, for a move made by hand (E-012 (2), E-013 (2))",
+        "rule_sets": {
+          "both": {
+            "breakeven_delay": 5,
+            "breakeven_tie": "stop"
+          },
+          "delay5": {
+            "breakeven_delay": 5,
+            "breakeven_tie": "target"
+          },
+          "stage2": {
+            "breakeven_delay": 0,
+            "breakeven_tie": "target"
+          },
+          "stop_first": {
+            "breakeven_delay": 0,
+            "breakeven_tie": "stop"
+          }
+        }
+      },
+      "fills": {
+        "meaning": "the fill model is ASSUMED, never measured (Stage 2 D-95): entries and exits as the walk books them, costs at the stop (atlas_a3.fee_by_stop), a limit target filled at its price",
+        "profile": "assumed",
+        "source": "vendor/stage2/config/fills.yaml meta.active_profile"
+      },
+      "payout": {
+        "by_design_arm": {
+          "p14|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p14|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p15|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p15|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p16|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p16|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          }
+        },
+        "lag": "each payout arrives payout_lag_days sessions after its request (user_journey.payout_arrivals; the lag from the verified ledger's payout method, customer_slices.engine_args)",
+        "paths": {
+          "standard": "5 winning days >= $150 before each request"
+        },
+        "spacing": "no assumed spacing: payouts are simulated on the campaign's clock by the engine (Stage 2 D-18: dated payouts simulated, not a PayoutSchedule), each requested when the protocol's payout path allows it (PAYOUT_PATHS), at payout_frac of the maximum and never below keep_balance"
+      },
+      "response": "every response off: 0 % payout denial (D-234), the placement off (D-289), no Focused Trader model",
+      "state_table": {
+        "by_design_arm": {
+          "p14|point": "state_dp_e-0.050_lamstar_noclose",
+          "p14|verdict": "state_dp_e-0.050_lamstar_noclose",
+          "p15|point": "state_dp_e-0.050_lamstar_noclose",
+          "p15|verdict": "state_dp_e-0.050_lamstar_noclose",
+          "p16|point": "state_dp_e-0.050_lamstar_noclose",
+          "p16|verdict": "state_dp_e-0.050_lamstar_noclose"
+        },
+        "meaning": "the no-closure state table (a3_brk30_cb20.noclose_plan, pinned by D-509's hashes), solved at Stage 2's walk and frozen under every rule set here"
+      }
+    },
+    "audit": "docs/audits/Q-45_breakeven_fidelity_2026-11-17.md (D1, C1, C2, C6, C7)",
+    "bounds": "recomputed from each rule set's trades by the design's own rule (atlas_a3.bounds)",
+    "corrections": {
+      "delay5": "the move decided on the session's open bar's open, in force from the first present bar opening five minutes after it (D-266); the original bracket governs until then",
+      "stop_first": "on a bar after the move that touches the entry and trades through the target, the stop first (Stage 2's walk books the target, fv3_rung_walk.py:184-185)"
+    },
+    "decisions": [
+      "E-012 (2)",
+      "E-013 (2)",
+      "E-024",
+      "E-188",
+      "E-189"
+    ],
+    "designs": [
+      "p14",
+      "p15",
+      "p16"
+    ],
+    "gate_cols": [
+      "pf_growth_on_base_p50",
+      "pf_required_p90",
+      "pf_growth_on_base_p10",
+      "pf_net_p50",
+      "median_log_growth",
+      "mean_payouts_per_path",
+      "mean_combine_purchases",
+      "mean_accounts_funded",
+      "share_accounts_ever_paid",
+      "median_days_to_first_payout",
+      "ruin_probability",
+      "mean_max_drawdown",
+      "realised_to_intended_capped_risk",
+      "mean_r_used",
+      "paths"
+    ],
+    "gate_paths": 500,
+    "gate_seeds": {
+      "p14": 20261131,
+      "p15": 20261204,
+      "p16": 20261206
+    },
+    "licence_guard": {
+      "results/breakeven_fidelity_2.csv": [],
+      "results/breakeven_fidelity_2_starts.csv": [
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_3 (share 0.66)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_4 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_5 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_6 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_7 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_8 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_9 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_10 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_11 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: level fees_month_12 (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/first_pass (share 0.64)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/first_pass (share 0.66)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/first_pass (share 0.69)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/first_pass (share 0.72)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/first_pass (share 0.73)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/first_pass (share 0.75)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/first_pass (share 0.99)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*spent_before_first_pass/first_pass (share 0.85)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/first_funded (share 0.64)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/first_funded (share 0.66)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/first_funded (share 0.69)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/first_funded (share 0.72)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/first_funded (share 0.73)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/first_funded (share 0.75)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/first_funded (share 0.99)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*spent_before_first_pass/first_funded (share 0.85)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/p_months_ahead (share 0.54)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/p_months_ahead (share 0.55)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/p_months_ahead (share 0.61)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/p_months_ahead (share 0.66)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/p_months_ahead (share 0.70)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/p_months_ahead (share 0.71)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/p_months_ahead (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/months_ahead (share 0.54)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/months_ahead (share 0.55)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/months_ahead (share 0.61)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/months_ahead (share 0.66)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/months_ahead (share 0.70)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/months_ahead (share 0.71)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/months_ahead (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_3/fell_back (share 0.69)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_4/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_5/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_6/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/fell_back (share 1.00)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_3/longest_months_without_payout (share 0.53)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_4/longest_months_without_payout (share 0.81)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_5/longest_months_without_payout (share 0.81)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_6/longest_months_without_payout (share 0.89)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_7/longest_months_without_payout (share 0.97)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_8/longest_months_without_payout (share 0.98)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_9/longest_months_without_payout (share 0.98)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_10/longest_months_without_payout (share 0.98)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_11/longest_months_without_payout (share 0.98)",
+        "results/breakeven_fidelity_2_starts.csv: pair fees_month_12/longest_months_without_payout (share 0.98)",
+        "results/breakeven_fidelity_2_starts.csv: pair 100*observed/longest_months_without_payout (share 1.00)"
+      ]
+    },
+    "mdd_P": {
+      "against": "p14",
+      "block": "judged",
+      "computed": [
+        {
+          "arm": "verdict",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            0,
+            0
+          ],
+          "rules": "stage2"
+        },
+        {
+          "arm": "point",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            0,
+            1
+          ],
+          "rules": "stage2"
+        },
+        {
+          "arm": "verdict",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            1,
+            0
+          ],
+          "rules": "stop_first"
+        },
+        {
+          "arm": "point",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            1,
+            1
+          ],
+          "rules": "stop_first"
+        },
+        {
+          "arm": "verdict",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            2,
+            0
+          ],
+          "rules": "delay5"
+        },
+        {
+          "arm": "point",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            2,
+            1
+          ],
+          "rules": "delay5"
+        },
+        {
+          "arm": "verdict",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            3,
+            0
+          ],
+          "rules": "both"
+        },
+        {
+          "arm": "point",
+          "design": "p15",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            1,
+            3,
+            1
+          ],
+          "rules": "both"
+        },
+        {
+          "arm": "verdict",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            0,
+            0
+          ],
+          "rules": "stage2"
+        },
+        {
+          "arm": "point",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            0,
+            1
+          ],
+          "rules": "stage2"
+        },
+        {
+          "arm": "verdict",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            1,
+            0
+          ],
+          "rules": "stop_first"
+        },
+        {
+          "arm": "point",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            1,
+            1
+          ],
+          "rules": "stop_first"
+        },
+        {
+          "arm": "verdict",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            2,
+            0
+          ],
+          "rules": "delay5"
+        },
+        {
+          "arm": "point",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            2,
+            1
+          ],
+          "rules": "delay5"
+        },
+        {
+          "arm": "verdict",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            3,
+            0
+          ],
+          "rules": "both"
+        },
+        {
+          "arm": "point",
+          "design": "p16",
+          "finite": true,
+          "n": 595,
+          "rng": [
+            20262261,
+            2,
+            3,
+            1
+          ],
+          "rules": "both"
+        }
+      ],
+      "flip_block": 63,
+      "k": 11,
+      "level": 0.0003787878787878788,
+      "power": 0.8,
+      "replications": 20000,
+      "seed": 20262261,
+      "statistic": "extended.p_bound.SHIPPED"
+    },
+    "not_compared": [],
+    "paired": {
+      "honesty": {
+        "seed": 20262260,
+        "series_per_setting": 20000,
+        "settings": [
+          [
+            63,
+            5
+          ],
+          [
+            63,
+            13
+          ]
+        ]
+      },
+      "method": "RD-02 9.2 (prereg/RD-02_payout_policy.md; extended.pp_reading): every other 63-start window, a two-sided 90% Student t from 4 kept windows, the sign count, n_eff, the MDD",
+      "unit": "a start's months ahead over three (u_select.months_ahead / 3), the corrected rule set less stage2, on the same starts"
+    },
+    "provenance_at_start": {
+      "branch": "HEAD",
+      "changed": 0,
+      "clean": true,
+      "commit": "b407fbb85c43ac43d46796f2aaa0d906ddaf62fd"
+    },
+    "references": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "rc_reentry_screen.csv": "dfd93c46deca5651e125ba63a8616b3b6f627beea87097593dbac27df4c37df1",
+      "rc_s100_all_gate.csv": "7e9a599a7cc931b6ebc5161e3f97e8a68cf34838b0f531d0c2cdcf4202b117ed",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "user_journey.csv": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "rule_sets": {
+      "both": {
+        "breakeven_delay": 5,
+        "breakeven_tie": "stop",
+        "name": "stage2_be_both"
+      },
+      "delay5": {
+        "breakeven_delay": 5,
+        "breakeven_tie": "target",
+        "name": "stage2_be_delay5"
+      },
+      "stage2": {
+        "breakeven_delay": 0,
+        "breakeven_tie": "target",
+        "name": "stage2_fv3"
+      },
+      "stop_first": {
+        "breakeven_delay": 0,
+        "breakeven_tie": "stop",
+        "name": "stage2_be_stop_first"
+      }
+    },
+    "seconds": 19868.1,
+    "seeds": {
+      "block": [
+        20262260,
+        20262269
+      ],
+      "inherited": {
+        "gates": {
+          "p14": 20261131,
+          "p15": 20261204,
+          "p16": 20261206
+        },
+        "p_bound_fixed_b": "extended.p_bound.SEED (Q-16's 20261919)",
+        "u1_start_seeds": "user_beside.start_seed (20261920), nothing drawn at 0 %"
+      },
+      "roles": {
+        "20262260": "RD-02 9.2 item 7's honesty series for this reading's paired intervals: numpy.random.default_rng([seed, 1, shape index, h, n_w]) (extended.pp_reading.honesty_rng)",
+        "20262261": "mdd_P's null replications: numpy.random.default_rng([seed, design index, rule-set index, arm index]), the designs, rule sets and arms in the runner's declared order",
+        "20262262": "the synthetic records and series of tests/test_breakeven_fidelity_2.py only; never a reading",
+        "20262263": "reserved, unused",
+        "20262264": "reserved, unused",
+        "20262265": "reserved, unused",
+        "20262266": "reserved, unused",
+        "20262267": "reserved, unused",
+        "20262268": "reserved, unused",
+        "20262269": "reserved, unused"
+      }
+    },
+    "start_file": {
+      "name": "breakeven_fidelity_2_starts.csv",
+      "rows": 40584,
+      "sha256": "9dcbc8a6d62e02ec0d94d406f61138d28e426e7ef64dc2e9d380342caba42f48"
+    },
+    "task": "Q-132",
+    "timing": {
+      "mdd_P": 49.8,
+      "p14|both|build": 58.6,
+      "p14|both|gate": 338.0,
+      "p14|both|point": 438.0,
+      "p14|both|verdict": 433.5,
+      "p14|delay5|build": 45.9,
+      "p14|delay5|gate": 383.9,
+      "p14|delay5|point": 596.0,
+      "p14|delay5|verdict": 580.3,
+      "p14|stage2|build": 41.6,
+      "p14|stage2|gate": 299.6,
+      "p14|stage2|point": 450.5,
+      "p14|stage2|verdict": 459.6,
+      "p14|stop_first|build": 55.5,
+      "p14|stop_first|gate": 290.7,
+      "p14|stop_first|point": 534.4,
+      "p14|stop_first|verdict": 421.9,
+      "p15|both|build": 73.3,
+      "p15|both|gate": 387.5,
+      "p15|both|point": 742.2,
+      "p15|both|verdict": 625.2,
+      "p15|delay5|build": 89.0,
+      "p15|delay5|gate": 572.1,
+      "p15|delay5|point": 625.9,
+      "p15|delay5|verdict": 679.3,
+      "p15|stage2|build": 67.5,
+      "p15|stage2|gate": 400.4,
+      "p15|stage2|point": 763.1,
+      "p15|stage2|verdict": 604.2,
+      "p15|stop_first|build": 89.2,
+      "p15|stop_first|gate": 563.3,
+      "p15|stop_first|point": 817.9,
+      "p15|stop_first|verdict": 866.9,
+      "p16|both|build": 60.3,
+      "p16|both|gate": 372.0,
+      "p16|both|point": 577.8,
+      "p16|both|verdict": 571.3,
+      "p16|delay5|build": 58.2,
+      "p16|delay5|gate": 369.1,
+      "p16|delay5|point": 597.0,
+      "p16|delay5|verdict": 585.2,
+      "p16|stage2|build": 60.1,
+      "p16|stage2|gate": 364.7,
+      "p16|stage2|point": 587.4,
+      "p16|stage2|verdict": 589.7,
+      "p16|stop_first|build": 62.4,
+      "p16|stop_first|gate": 382.1,
+      "p16|stop_first|point": 565.7,
+      "p16|stop_first|verdict": 582.1,
+      "paired_and_honesty": 33.9
+    },
+    "u1_path_seeds": "Q-17's: lockstep.child_seed(20261920, 0, start_day); nothing drawn at 0 %",
+    "u1_response": "off (0 % denial, the placement off, no Focused Trader model)",
+    "u1_starts": "every start",
+    "variant_id": "Q-132:breakeven_fidelity_2",
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\breakeven-fidelity-2",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "breakeven-fidelity-2"
+    },
+    "read_ledger": "1 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "breakeven_fidelity_2.csv",
+  "rows": 5702,
+  "script": "scripts/breakeven_fidelity_2.py",
+  "seed": 20261920,
+  "sha256": "7992cd5893f1510c68d168692ea2445a731492a2b8d2b650a466a2dd258f983f",
+  "timestamp": "2026-11-18T18:34:13+00:00",
+  "variant_count": 9
+}

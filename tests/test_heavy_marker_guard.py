@@ -94,6 +94,11 @@ LIGHT: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
     "scripts/rd01_reading.py": (
         (("--plan",), "prints the guards' findings and what would run; reads nothing"),
         (("--purpose",), "argparse refuses: the three purposes run as one (no --purpose option)"),),
+    "scripts/cl_reading.py": (
+        (("--synthetic",), "toy campaigns (extended/cl_toy_inputs.py) into a temporary --results-dir; no bar or walk "
+                           "read (Q-140, the RD-03 build review's B1)"),
+        (("--starts", "!--synthetic"), "refused by starts_problem before any import: --starts is the synthetic "
+                                       "window measurement's only"),),
     "scripts/breakeven_fidelity_2.py": (
         (("--starts", "4", "!--check"), "refused (Q-132) outside a clean run before any read"),
         (("--check", "--designs", "p13"), "refused (Q-132): an unknown design, before any read"),

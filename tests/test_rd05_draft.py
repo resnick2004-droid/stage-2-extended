@@ -18,6 +18,12 @@ and the covers of section 13.1 -- section 17.3's T-0 row):
   grid, and add up to section 16's totals;
 - **the calendars** -- the two pinned calendars' LF sha256 as section 12.4 cites them, recomputed from the files (N9);
 - **the sections present** -- 0 to 20 and Appendices M, R, A and C.
+
+**Added at the build (Q-138; section 17.3's T-0 row, "at the pin"):** every Appendix R key of the record (`labs.*`,
+`mffu.*` and the record's Topstep keys) is in `extended.modes_terms.RECORD_KEYS` and holds there the status the text
+states, against this commit's record; every Stage 2 key Appendix R cites is verified in Stage 2's ledger; section 5.2's
+corners recomputed from the record's statuses are Appendix M's (20 evaluation, 25 funded, 3 sharing their gross
+cells); the build's Appendix M is the text's, row for row; and the covers of section 13.1 meet Q-111's rule.
 """
 from __future__ import annotations
 
@@ -28,6 +34,7 @@ from pathlib import Path
 
 import pytest
 
+from extended import git_scan as GS
 from extended import reader
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,7 +50,7 @@ SEED_BLOCK = tuple(_PREFIX * 10 + i for i in range(10))
 SEEDS_IN_USE = SEED_BLOCK[:6]
 #: the repository files allowed to hold a seed of the block besides the declaration (section 15's uses); the build adds
 #: its own files here as it writes them, and T-13 holds them to section 15
-DECLARED_USES: tuple[str, ...] = ()
+DECLARED_USES: tuple[str, ...] = ("extended/modes_terms.py",)
 PURPOSES = frozenset({"modes_scorecard", "modes_ladder_beside", "modes_gate_beside"})
 GRID_CELLS = 4 * 6          # section 2.6: four ratios by six dollar risks
 COSTED_STOPS = 3            # section 9.1: 50, 100 and 150 ticks
@@ -93,8 +100,7 @@ def test_seed_table(text: str) -> None:
 
 def _git_hits(repo: Path) -> list[str]:
     """Tracked files holding a seed of the block, word-bounded (`git grep`), as 'path:line' strings."""
-    out = subprocess.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, capture_output=True, text=True,
-                         check=False)
+    out = GS.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, text=True)       # Q-156: limited
     assert out.returncode in (0, 1), out.stderr
     return [line for line in out.stdout.splitlines() if line]
 
@@ -219,3 +225,57 @@ def test_calendars_cited_by_their_lf_sha256(text: str) -> None:
         cited = re.search(rf"`{re.escape(rel)}`[^`]{{0,40}}LF\s+sha256\s+`([0-9a-f]{{64}})`", text)
         assert cited, f"{rel} is not cited with an LF sha256"
         assert cited.group(1) == digest, (rel, cited.group(1), digest)
+
+
+# ------------------------------------------------------------------------------------------------- at the build (Q-138)
+
+_KEY = re.compile(r"`((?:labs|mffu)\.[a-z0-9_.]+|subscription_fee_naf_50k|activation_fee_naf_50k|"
+                  r"tier1_news_events_restriction|tou_s8_relative_position_size)`")
+
+
+def _appendix_r(text: str) -> str:
+    return _section(text, "## Appendix R", "## Appendix A")
+
+
+def test_appendix_r_keys_against_the_record(text: str) -> None:
+    from extended import modes_terms as M
+
+    keys = set(_KEY.findall(_appendix_r(text)))
+    missing = sorted(k for k in keys if k not in M.RECORD_KEYS)
+    assert not missing, f"Appendix R keys the build does not map: {missing}"
+    wrong = {k: (M.status(k), M.RECORD_KEYS[k]) for k in keys if M.status(k) != M.RECORD_KEYS[k]}
+    assert not wrong, f"record statuses differ from the text (a change after the pin, 4.1): {wrong}"
+    for k in M.RECORD_KEYS:
+        M.status(k)                                       # every mapped key is in the record
+
+
+def test_appendix_r_stage2_keys_verified(text: str) -> None:
+    from extended import modes_terms as M
+
+    cited = set(re.findall(r"`([a-z][a-z0-9_]+)`", _appendix_r(text)))
+    for k in M.STAGE2_KEYS:
+        assert k in cited or k in ("billing_period_calendar_days",), k
+        M.s2(k)                                           # raises unless verified
+
+
+def test_corners_recomputed_from_the_record(text: str) -> None:
+    from extended import modes_terms as M
+
+    assert M.recomputed_corners() == {"evaluation": 20, "funded": 25, "shared": 3}
+    table = _section(text, "## Appendix M", "## Appendix R")
+    rows = re.findall(r"^\| (\d+) \| `([^`]+)` (evaluation|funded) \| ([a-z]+) \| ([^\n]*)\|$", table, re.MULTILINE)
+    assert len(rows) == len(M.MODE_CORNERS) == 45
+    for (i, mode, kind, corner, terms), m in zip(rows, M.MODE_CORNERS):
+        assert (int(i), mode, kind, corner) == (m.index, m.mode, m.kind, m.corner), (i, mode, m)
+        assert set(re.findall(r"U-\d+", terms)) == set(m.terms), (i, terms, m.terms)
+        assert ("gross shared" in terms) == m.shares_gross and ("close-only" in terms) == m.close_only, i
+    assert M.close_only_corners() == (15, 17) and M.shared_gross_corners() == (13, 23, 25)
+
+
+def test_covers_of_13_1() -> None:
+    from extended import modes_steps as S
+
+    assert S.cover_problems() == []
+    for s in (S.COIN_IDENTITY, S.MODES_IDENTITY):
+        cov = S.modes_cover(s)
+        assert s in cov and "config/" in cov and "extended/__init__.py" in cov

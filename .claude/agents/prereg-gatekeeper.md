@@ -72,7 +72,9 @@ D-47) is reported beside, never a line.
    every one run counted under the family's row. (b) The **program family number k**: families are numbered in
    declaration order on from Stage 2's program U (E-001: this repository's first is k = 10, F-01). k is 10 plus the
    number of families already pinned in `DECISIONS.md` (a withdrawn declaration still spends its k unless a decision
-   row releases it, E-005 (d)). (c) The level: one-sided 0.05 / (k (k + 1)) -- check the arithmetic (k = 10: 0.05 / 110).
+   row releases it, E-005 (d)). A family whose declaration assigns its k at its stage-B row (E-203 (S-9), E-204) is
+   not counted until that row exists; if another family pins between its stage-B run and that row, its stage B reruns
+   at the new level under a repeat row. (c) The level: one-sided 0.05 / (k (k + 1)) -- check the arithmetic (k = 10: 0.05 / 110).
    One cell per family reaches judgement (Stage 2 D-621 (5)); a family-wise test inside the choice block is allowed and
    spends nothing of the program's budget.
 

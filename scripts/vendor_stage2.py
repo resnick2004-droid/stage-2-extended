@@ -82,6 +82,12 @@ RESULTS = (
     # P-13's gate row and stop distribution, so Stage 2's own P-14-against-P-13 checks run (`a3_brk30_cb20`'s
     # `P13_RESULT` against its pinned sha256, and `P13_STOPS`' fresh decisions; E-026)
     "a3_brk30_gate.csv", "a3_brk30_stop_distribution.csv",
+    # --- added by `--extend Q-129` from the same commit (E-172; landed in the sequenced merge Q-140, E-156) ---
+    # v12's `rungs` block inputs, read by the solver RD-03's stage 0 re-runs (RD-03 sections 6.1 (a) and 6.4 item 1)
+    "fv3_rung_shares_2020.csv", "fv3_rung_availability_2021.csv",
+    # D-559's one-rung table and its policies, which the vendored `scripts/u_size_fit.py` runner also requires
+    # (RD-03 section 6.1; the runner's lines 102-103, 183-187, 313-316, 411-428)
+    "rc150_table_screen.csv", "rc150_table_screen_policies.json",
 )
 
 DATA_DIRS = ("data/bars", "data/atlas")

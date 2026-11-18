@@ -76,6 +76,13 @@ meta:
     tradeday:                                          # TradeDay
       - tradeday.com
       - tradeday.freshdesk.com                         # Freshdesk-hosted help centre
+    # Q-136 (2026-11-18 UTC), written before the firm's first read. help.myfundedfutures.com is known to be MFFU's own:
+    # https://myfundedfutures.com/plans/rapid-eod links "Read full FAQs" to
+    # help.myfundedfutures.com/en/articles/16158363-rapid-eod-50k-a-comprehensive-look and "FAQ" to
+    # help.myfundedfutures.com/en/ (read that day).
+    mffu:                                              # My Funded Futures (MyFunded Futures, LLC)
+      - myfundedfutures.com
+      - help.myfundedfutures.com                       # Intercom-hosted help centre on the firm's own domain
 
 rules:
 
@@ -3051,3 +3058,3435 @@ rules:
       designs as MNQ at $1.22 a round turn all-in (Topstep 8284213; vendor/stage2/config/fills.yaml). TradeDay's
       all-in MNQ round turn is $1.90, $0.68 a micro round turn above it, so the draft's G-5 understates TradeDay's
       commission and the FP and QP rows are optimistic in this term, by $0.68 for each micro traded per round turn.
+
+  # ==== Q-115 (2026-11-16): the contract-use levers' rules -- Back2Funded, the Reset Bank, the No Activation Fee 50K
+  # prices, the held pass's expiry, the evaluation's cancellation (E-134; the scout's note
+  # docs/research/next_levers_contract_money_2026-11-17.md on wt/wt-scout, sections 3.1-3.5 and 4) =================
+  # Hosts: help.topstep.com and www.topstep.com only. Every read was a WebFetch GET of one named page, or of the same
+  # article's markdown copy (<id>-<slug>.md) that the help centre's own index https://help.topstep.com/llms.txt links
+  # (read once, to find the articles). No login, form, chat, dashboard or checkout, nothing sent, no purchase.
+  # Retrieval within E-012's reading of ToU s.28 (named pages one at a time). Each rule page was fetched at least twice
+  # with differently worded prompts; the second fetch was usually a check of the first fetch's quotes word for word
+  # ("does this sentence appear exactly?"). `quote` holds text returned verbatim in a first fetch and confirmed exact
+  # in a second, unless the note says otherwise. One web search (site:help.topstep.com) was used to find pages; its
+  # summary is not evidence (it gave a "30 days ... to pay your Activation Fee" sentence that no official page read
+  # today states; see hold_expiry_days). Pages read: 12060405 (Back2Funded), 8284204 (MLL), 14289835 (pricing),
+  # 10490293 (DLL), 8284128 (Reset), 8284121 (subscriptions), 8284117 (refunds), 8284217 (activation), 8284215 (XFA
+  # parameters), 8284197 (Combine parameters), 10657969 (LFA parameters), www.topstep.com/faq. 8284198 and 8284216
+  # (ids in the search results) returned HTTP 404 on help.topstep.com. The machine clock read 2026-11-16; the scout's
+  # note is dated 2026-11-17 by the lead's record date.
+
+  # ---- Back2Funded (12060405; 8284204; 14289835; 10490293) --------------------------------------------------------
+  - key: back2funded_reactivation_fee_50k
+    firm: topstep
+    value: 599.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, "Back2Funded: Rules, Guidelines, and How It Works" (page date "September 29, 2026"), price table, columns Account Size | Reactivation Fee:
+      "$50K XFA" | "$599"
+      "Prices exclude sales tax."
+      "Each purchase is separate, final, and non-refundable."
+      14289835, "Topstep Pricing and Payment Questions", Express Funded Account Reactivation section: "$50K XFA — $599"
+    stage2_key: "none (quoted in reset_fee's 2026-09-22 note: 'reactivates a LOST funded account at $599/$699/$829 by size')"
+    stage2_value: "599 (a note, not a key)"
+    note: >
+      NEW KEY. Same figure as the sentence in Stage 2's reset_fee note (2026-09-22) and activation_fee_100k's note
+      (2026-11-14); 12060405's page date is unchanged since Stage 2's 2026-10-30 read (September 29, 2026). FETCHES:
+      12060405 three times (the article, its slug URL as a check of quotes, its .md copy, which summarised); the
+      table cells and the two sentences came back in two. 14289835 twice (its .md copy confirmed "$50K XFA — $599" as
+      a bullet, not a table). The price is before sales tax ("Pay the Reactivation fee (including sales tax)", read
+      once). REFUND: 8284117 (two fetches): "No refunds on Back2Funded purchases, including accidental
+      reactivations." Neither page gives the price by pricing path: see back2funded_fee_by_pricing_path.
+
+  - key: back2funded_reactivation_fee_100k
+    firm: topstep
+    value: 699.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405 price table: "$100K XFA" | "$699"; "Prices exclude sales tax."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "699 (a note, not a key)"
+    note: >
+      NEW KEY. The row came back in two fetches of 12060405; 14289835's fetch gave the same figure in a summary (once).
+
+  - key: back2funded_reactivation_fee_150k
+    firm: topstep
+    value: 829.0
+    units: usd
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405 price table: "$150K XFA" | "$829"; "Prices exclude sales tax."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "829 (a note, not a key)"
+    note: >
+      NEW KEY. The row came back in two fetches of 12060405; 14289835's fetch gave the same figure in a summary (once).
+
+  - key: back2funded_fee_by_pricing_path
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read gives a different Back2Funded price for an XFA earned on the Standard path and one earned on the No Activation Fee path, or says the price is the same on both.
+      12060405 gives one table by account size only ("$50K XFA" | "$599"; "$100K XFA" | "$699"; "$150K XFA" | "$829") and, asked directly in two fetches, does not mention the No Activation Fee path.
+      14289835 lists the reactivation prices by size in a section of their own ("$50K XFA — $599"), outside its Standard Path / No Activation Fee Path tables.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading. The only price modifier stated is the DLL discount
+      (back2funded_dll_discount). A reading would treat the single table as applying to every XFA; that is a reading
+      the lead may declare, not a sentence on the page. FETCHES: 12060405 twice on this point, 14289835 twice.
+
+  - key: back2funded_dll_discount
+    firm: topstep
+    value: "50 USD off the Reactivation Fee when a Daily Loss Limit is selected at checkout (50K: DLL $1,000); the DLL then stays with the account for its full lifetime"
+    units: text
+    status: verified
+    article_id: "12060405; 14289835; 10490293"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Select a Daily Loss Limit (DLL) at checkout when Reactivating your Express Funded Account, and receive a $50 discount."
+      12060405 (one fetch, the second in paraphrase): "50K (DLL: $1,000)", "100K (DLL: $2,000)", "150K (DLL: $3,000)", each with "$50 off"; "The DLL stays with the account for its full lifetime"
+      14289835: "There's now a Responsible Trading Discount when you add a DLL at purchase" / "for No Activation Fee Trading Combines, Express Funded Account Activations, and Back2Funded Reactivations." / "$50 off" Reactivation Fees / "Discount is applied at checkout." / "Discount recurs monthly."
+      10490293, "Daily Loss Limit in the Trading Combine and Express Funded Account" (page date "June 30, 2026"): "There's now a Responsible Trading Discount when you add a DLL at purchase for No Activation Fee Trading Combines and Back2Funded Reactivations." / "$50 off Reactivation Fees"
+    stage2_key: "none (quoted in subscription_fee's 2026-11-14 note)"
+    stage2_value: "'$50 off' Reactivation Fees (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's subscription_fee note (2026-11-14). So a 50K reactivation bought with the DLL is
+      $549 before tax by these sentences (this record's arithmetic). THE CONFLICT STAGE 2 RECORDED STANDS TODAY:
+      14289835 lists "Express Funded Account Activations" among the discounted products; 10490293 (asked directly,
+      two fetches) does not, and does not say whether the discount recurs; neither page states an amount for an
+      activation (14289835's .md copy, asked: "Absent"). The activation discount is therefore not recorded. FOR A
+      DESIGN: the discount comes with a DLL that "stays with the account for its full lifetime" -- at 50K the $1,000
+      daily limit that Stage 2 D-320 (2) found "cuts the table's $2,000 bold plays" -- so a DLL reactivation is a
+      different funded account from the one the table was solved for, not the same account $50 cheaper. FETCHES:
+      12060405 three; 14289835 two; 10490293 two (the article id alone and its slug URL).
+
+  - key: back2funded_max_reactivations
+    firm: topstep
+    value: 2
+    units: reactivations per Express Funded Account
+    status: verified
+    article_id: "12060405; 8284215"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Back2Funded gives you up to 2 Reactivations per account"; FAQ: "Up to 2 Reactivations per Express Funded Account."
+      8284215, "Express Funded Account™ Parameters" ("Updated over 2 weeks ago"): "Back2Funded lets you reactivate up to 2 times at the same size and Payout policy."
+    stage2_key: "none (reset_fee's 2026-09-22 note 'max 2 per XFA'; account_start_rate_limit's 2026-11-14 note)"
+    stage2_value: "2 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's notes. The FAQ sentence and 8284215's sentence came back exactly in two fetches
+      each; "up to 2 Reactivations per account" in one (the .md copy gave it in paraphrase: "up to 2 times per XFA,
+      and each reactivation is bought separately"). The page does not say whether a reactivated account that is lost
+      again is eligible again within the two; on its words the count is per XFA, so a third loss ends it.
+
+  - key: back2funded_eligibility
+    firm: topstep
+    value: "an XFA earned through the Trading Combine, closed due to a rule violation before taking a Payout, on TopstepX in the new Topstep Dashboard, the trader in good standing; not after any Payout; not for traders on the Focused Trader Plan"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, eligibility list:
+      "The XFA was earned through Topstep's Trading Combine®"
+      "The XFA was closed due to a rule violation before taking a Payout"
+      "The XFA is on TopstepX™ in the new Topstep Dashboard"
+      "Trader is in good standing with no compliance concerns"
+      "Once a Payout is taken from an XFA, it is no longer eligible for Back2Funded."
+      "Traders on the Focused Trader Plan (FTP) cannot use Back2Funded."
+    stage2_key: "none (xfa_closure_at_request's 2026-10-25 note quotes the second line)"
+    stage2_value: "'closed due to a rule violation before taking a Payout' (a note, not a key)"
+    note: >
+      NEW KEY. The second and fifth lines were confirmed exact in a second fetch (the page bolds "before" and puts a
+      warning symbol before the fifth); the others came back verbatim once and in paraphrase in the .md fetch. Read
+      once, in paraphrase only (the .md copy's FAQ): XFA Standard, XFA Consistency and Shoulder Tap XFAs are
+      eligible; Live Funded Accounts, Pro Accounts and XFAs associated with them are not. "Rule violation" is not
+      defined on the page; an MLL breach is the designs' case (8284204: "Your account is permanently closed.").
+      Inactivity closure (8284215: "XFAs with no trading activity for more than 30 days may be closed.") is not
+      named either way. The Focused Trader Program's Slowdown Path also bars "B2F Reactivations" (Stage 2
+      focused_trader_program; not re-read today).
+
+  - key: back2funded_window_days
+    firm: topstep
+    value: 30
+    units: calendar days from account closure; no action within them and the offer expires
+    status: verified
+    article_id: "12060405; 14289835"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "You have 30 calendar days from account closure to decide"
+      "If you take no action within 30 days — the offer expires and is automatically declined"
+      "On May 29th, 2026, the Reactivation window increased from 7 days to 30 days!"
+      14289835: "Reactivation window:" "30 calendar days from account closure."
+    stage2_key: "none (reset_fee's 2026-09-22 note '30-calendar-day decision window')"
+    stage2_value: "30 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's note. The first two lines were confirmed exact in a second fetch (the page bolds
+      "30 calendar days"). The stale topstep.com page Stage 2 recorded ("seven calendar days", express-funded-account-
+      rules, June 26, 2025) was not re-read. Read once in paraphrase: after the window "You would then need to return
+      to the Trading Combine to earn a new XFA".
+
+  - key: back2funded_trading_from
+    firm: topstep
+    value: "the start of the next trading session after the purchase, not immediately"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Your account becomes available at the start of the next trading session after your purchase — not immediately."
+      "Your account is ready to trade at the start of the next trading session"
+    stage2_key: "none (xfa_seat_frees_at's 2026-10-25 note, 'one read')"
+    stage2_value: "the same sentence (a note, not a key)"
+    note: >
+      NEW KEY. The first sentence was confirmed exact in a second fetch; the second came back once. Read once in
+      paraphrase (the .md copy): a purchase at 10 PM CT Tuesday makes the account available Wednesday at 5 PM CT. So
+      a purchase made after the 17:00 CT open trades from the following 17:00 CT open; the engine's next-session
+      convention matches this on its daily index.
+
+  - key: back2funded_seat_count
+    firm: topstep
+    value: "an eligible (closed) XFA does not count toward the 5-account limit during the 30-day window, until the Reactivation fee is paid"
+    units: text
+    status: verified
+    article_id: "12060405"
+    url: https://help.topstep.com/en/articles/12060405-back2funded-rules-guidelines-and-how-it-works
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405, under the Reactivation Window: "Back2Funded-eligible XFAs do not count toward your 5-account limit until the Reactivation fee is paid"
+      FAQ "What happens if I have 5 active XFAs and one becomes eligible for Back2Funded?": "The eligible XFA does not count toward your 5-account limit during the 30-day window."
+    stage2_key: "none (xfa_seat_frees_at's notes quote both sentences; that key is unverified_human_input_required)"
+    stage2_value: "the same sentences (a note, not a key)"
+    note: >
+      NEW KEY. Both sentences confirmed exact in a second fetch (the page bolds "not"). WHAT THE PAGE DOES NOT SAY
+      (asked): in words, that the reactivated account takes a seat once paid -- "until the Reactivation fee is paid"
+      is the only wording; whether a reactivation can be bought while five other XFAs are active; and from what
+      moment the closed XFA stops counting (Stage 2's xfa_seat_frees_at stays unverified on that). A design that
+      reactivates should count the reactivated account as one of the five from the payment, which is what "until"
+      says, and declare the at-cap case as its own reading.
+
+  - key: back2funded_account_restart
+    firm: topstep
+    value: "the same account size and Payout rules; balance $0, P&L, trade history and winning days reset; the MLL resets to the size's starting value (50K: -$2,000), trails upward and locks at $0, as a brand new XFA"
+    units: text
+    status: verified
+    article_id: "12060405; 8284204"
+    url: https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      12060405: "Keep the same account size and Payout rules — no Trading Combine® required."; FAQ: "You keep the same Payout rules as your original XFA."; "Everything resets to zero: balance, P&L, trade history, and winning days."
+      8284204, "What is the Maximum Loss Limit?" (page date "September 18, 2026"), under "What happens to my MLL when I use Back2Funded?": table Account Size | Starting MLL: "$50K XFA" | "-$2,000"; "The MLL trails upward as your balance grows and locks at $0 once reached, same as a brand new XFA."
+      8284204: "For a 50K XFA, your MLL starts at -$2,000 and trails upward." / "Once your balance reaches $2,000, the MLL locks at $0 permanently."
+    stage2_key: xfa_mll_start
+    stage2_value: -2000.0
+    note: >
+      RE-READ 8284204, UNCHANGED against xfa_mll_start (-2000.0, page date September 18, 2026, the same). 12060405
+      itself does not mention the Maximum Loss Limit (asked; absent): the MLL comes from 8284204's Back2Funded
+      section. Read once (8284204's .md copy): "When you Reactivate using Back2Funded, your account restarts
+      completely. Balance resets to $0, and all stats reset to zero." The scaling plan after a reactivation is not
+      named on either page; "same as a brand new XFA" and "Everything resets to zero: balance" put it at the entry
+      tier by funded_scaling_plan (Stage 2), a reading, not a sentence. FETCHES: 12060405 three; 8284204 two (the
+      article and its .md copy), the 50K row and the sentence after the table in both.
+
+  # ---- The Reset Bank and the rebill date (8284128; 8284121) --------------------------------------------------------
+  - key: reset_credit_per_rebill
+    firm: topstep
+    value: 1
+    units: Reset Credits per monthly Rebill
+    status: verified
+    article_id: "8284128; 8284121"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128, "What is a Reset?" (page date "September 25, 2026"): "Every monthly Rebill adds 1 Reset Credit to your Reset Bank."
+      "Tied to a specific account size AND type (Standard, No Activation Fee, or DLL)"; "Can't transfer between types or sizes"; "Can't use credits to buy a new Trading Combine — only on an existing active subscription"
+      8284121, "Trading Combine Subscriptions" ("Updated this week"): "You'll get a Reset Credit when your Rebill processes."
+    stage2_key: "none (reset_fee's 2026-09-22 note)"
+    stage2_value: "'Every monthly Rebill adds 1 Reset Credit to your Reset Bank' (a note, not a key)"
+    note: >
+      NEW KEY, the same sentence as Stage 2's note. FETCHES: 8284128 twice (the article and its .md copy; the first
+      sentence exact in both, and "Tied to a specific account size AND type ..." and "Can't transfer between types or
+      sizes" returned by both; "Can't use credits to buy a new Trading Combine ..." verbatim in the first only, the
+      .md check not asked of it); 8284121 three times. Read once: "Works exactly like a purchased Reset — including the
+      30-day Rebill push."; "Can't combine (two 50K credits can't Reset a 100K)"; "Oldest matching credit will be
+      used first". A credit is earned only when a Rebill processes, so the first month's purchase earns none on these
+      words, and a Combine that passes before its Rebill earns none. Resets per day: "Limit: 2 Resets per account each
+      day." (once; Stage 2's reset_limit_per_account_per_calendar_day reads 10370307 the same). 8284117 (refunds, two
+      fetches): "If you've already used the Reset credit from that Rebill, we cannot process a refund."
+
+  - key: reset_credit_expiry
+    firm: topstep
+    value: "credits issued on or after 2025-12-11 expire 1 year after they are added; credits issued before 2025-12-11 do not expire; credits stay on the profile if the subscription is cancelled, for a future Combine of the same size and type"
+    units: text
+    status: verified
+    article_id: "8284128; 8284121"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128: "Credits issued on or after 12/11/2025 — expire 1 year after added"; "Credits issued before 12/11/2025 — no expiration"
+      8284128: "Reset Credits stay on your profile, even if you cancel the associated subscription."
+      8284121, FAQ "What happens to my Reset Credits if I cancel?": "Reset Credits stay on your profile." / "Available for any future Trading Combine (of the same size/type)." / "However, once a subscription is canceled, you can't Reset that specific account anymore."
+    stage2_key: "none (reset_fee's 2026-09-22 note: 'credits expiring 1 year after they are added')"
+    stage2_value: "1 year after added (a note, not a key)"
+    note: >
+      NEW KEY. REFINES Stage 2's note, which gave the one-year expiry without the 12/11/2025 cut-off; for any credit a
+      campaign started now would earn, the two readings agree (one year). Both 8284128 lines confirmed exact in its
+      .md copy; the cancel sentence in both fetches. The 8284121 FAQ lines came back once verbatim (the other fetches
+      gave the last line verbatim and the first two in paraphrase). The date format 12/11/2025 is the page's; read as
+      December 11, 2025 (US order), which the page does not spell out. A WRINKLE THE PAGES LEAVE: 8284128 says a
+      credit cannot buy "a new Trading Combine — only on an existing active subscription", while 8284121 says it is
+      "Available for any future Trading Combine (of the same size/type)"; read together, a kept credit can Reset a
+      later Combine of the same size and type once that Combine is active, not pay for it.
+
+  - key: reset_rebill_push
+    firm: topstep
+    value: "a Reset, purchased or from a credit, pushes the Rebill date out 30 days from the date of purchase"
+    units: text
+    status: verified
+    article_id: "8284128"
+    url: https://help.topstep.com/en/articles/8284128-what-is-a-reset
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284128, under "Resets and Your Rebill Date": "Resetting your account pushes your Rebill date out 30 days from the date of purchase."
+      FAQ: "Yes. Applying a Reset pushes your Rebill date out 30 days from the purchase date."
+      Under "Reset Credits": "Works exactly like a purchased Reset — including the 30-day Rebill push."
+    stage2_key: "none (not in rules.yaml; E-007's audit N3, docs/audits/phase0/E_rules_currency.md line 37)"
+    stage2_value: null
+    note: >
+      NEW KEY. FLAG -- A CONFLICT WITH THE VENDORED ENGINE, not with the ledger: Stage 2's reset (D-146,
+      vendor/stage2/propedge/campaign/lockstep.py lines 377-379) keeps "The subscription and its billing dates ...
+      unchanged", so a reset bought 20 days into a cycle is followed in the engine by a rebill 10 days later, where
+      on this page the next rebill comes 30 days after the reset. The engine overcharges a resetting campaign (the
+      conservative direction); every registered design runs with resets off (reset_failed_combines False, D-146), so
+      no registered result rests on it. A reset reading (the scout's rank 5) needs an adapter in extended/ for the
+      billing date. FETCHES: two (the article and its .md copy); the first sentence came back in both and was
+      confirmed exact; the FAQ and credit sentences came back once each. 8284121 (two fetches) adds, for a Combine
+      at the MLL: "Your account becomes ineligible for funding until it's reset." / "The subscription does not cancel —
+      it keeps rebilling, and you can still trade for practice."
+
+  # ---- The No Activation Fee path at 50K (14289835; 8284217) --------------------------------------------------------
+  - key: subscription_fee_naf_50k
+    firm: topstep
+    value: 95.0
+    units: usd per month (30 calendar days)
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835, "Topstep Pricing and Payment Questions", table Account Size | Standard Path | No Activation Fee Path: "50K | $49/month | $95/month"
+      "Paths cannot be changed after purchase."
+    stage2_key: "none (quoted in subscription_fee's 2026-11-14 note)"
+    stage2_value: "$95/month (a note, not a key)"
+    note: >
+      NEW KEY, the same cell as Stage 2's subscription_fee note (2026-11-14); the Standard path's $49 (Stage 2's
+      subscription_fee, verified) reads the same. FETCHES: two (the article, which summarised: "No Activation Fee Path
+      is $95, $149, and $229", and its .md copy, which confirmed the row and the paths sentence exact). WITH A DLL:
+      14289835 gives "$10 off" a 50K No Activation Fee Combine, "Discount recurs monthly." (both exact in the .md
+      check); 10490293 gives "$10 off" → 50K and says nothing on recurrence. So $85 a month with the DLL by 14289835's
+      sentences (this record's arithmetic), the DLL then "fixed and carried into your XFA" (Stage 2's note; not
+      re-read today). PAGE DATE: Stage 2 read "Updated over a month ago" on 2026-11-14; the first fetch today
+      reported "Updated today", the .md copy shows no date. The cells quoted are unchanged; whether anything else
+      on the page changed was not checked.
+
+  - key: reset_fee_naf_50k
+    firm: topstep
+    value: 95.0
+    units: usd
+    status: verified
+    article_id: "14289835"
+    url: https://help.topstep.com/en/articles/14289835-topstep-pricing-and-payment-questions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835, Reset table Account Size | Standard Path | No Activation Fee Path: "50K | $49 | $95"
+    stage2_key: "none (quoted in reset_fee's 2026-11-14 note)"
+    stage2_value: "$95 (a note, not a key)"
+    note: >
+      NEW KEY, the same cell as Stage 2's reset_fee note. FETCHES: two (the article's summary "Same prices as the
+      Trading Combine for each path and size"; the .md copy confirmed the row exact). 8284128 states no price and
+      links to 14289835. A Reset Credit is tied to its type ("Standard, No Activation Fee, or DLL"; reset_credit_per_rebill).
+
+  - key: activation_fee_naf_50k
+    firm: topstep
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "14289835; 8284217"
+    url: https://help.topstep.com/en/articles/8284217-express-funded-account-activation
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      14289835: "No Activation Fee Path — $0."; "$149 Activation Fee charged once per Express Funded Account (XFA) earned." (the Standard path)
+      8284217, "Express Funded Account™ Activation" (page date "September 24, 2026"), fee table: "Standard Path" | "$149 one-time activation fee per XFA"; "No Activation Fee Path" | "No activation fee"
+    stage2_key: "none (quoted in activation_fee's 2026-11-14 note)"
+    stage2_value: "$0 (a note, not a key)"
+    note: >
+      NEW KEY, the same as Stage 2's activation_fee note; the Standard path's $149 (activation_fee, verified) reads
+      the same. FETCHES: 14289835 two (both lines exact in the .md check); 8284217 two (the table cells exact in
+      both). 8284217 states no activation fee by size and no DLL discount on activation (asked, two fetches; absent).
+
+  # ---- The held pass and the evaluation's cancellation (8284215; 8284217; 8284121; 8284197; 10657969; 8284117) ------
+  - key: hold_expiry_days
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "8284215; 8284217; 8284121; 8284197; 10657969"
+    url: https://help.topstep.com/en/articles/8284215-express-funded-account-parameters
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No official page read states a deadline, number of days, expiry, lapse or forfeiture for a passed Trading Combine waiting on hold for an XFA seat, or for activating a passed Combine at all.
+      8284215 ("Updated over 2 weeks ago"): "Yes, up to 5 active at a time." / "If you pass a Trading Combine® while at the limit, the new XFA goes on hold until one closes." / "XFAs can't be put on hold."
+      8284121: "the passed Trading Combine remains in "Passed" status until you activate your Express Funded Account" / "ensuring you won't lose the account while waiting to activate."
+      8284217 (page date "September 24, 2026"): "If you already have 5 active XFAs or a Live Funded Account®, the button will be greyed out." / "You'll need to close an account before activating a new one."
+    stage2_key: hold_expiry_days
+    stage2_value: not_required_under_d34
+    note: >
+      UNSTATED, a successful reading, and NOT A CONFLICT: Stage 2's value is a design sentinel ("THIS IS A DESIGN
+      FACT, NOT A RULE READING ... no official page states whether a held pass expires", 2026-09-22), and it says
+      the question "becomes live again the moment D-34 is relaxed" -- which the scout's rank-2 lever does. Today's
+      pages are as silent as Stage 2's were. ASKED DIRECTLY: 8284215's .md copy has no sentence with "expire",
+      "deadline", "forfeit", "lapse" or "pending" ("XFAs can't be put on hold." is about pausing an XFA, not a held
+      pass); 8284217's .md copy has no sentence with "days", "expire", "deadline", "hold", "forfeit" or "lapse"; 8284121
+      (two fetches): no deadline ("No time limit" refers to passing, not activating); 8284197 ("September 24, 2026"):
+      none -- "When a 50K, 100K, or 150K Trading Combine® ... passes, the account closes and the subscription is
+      canceled."; 10657969 (once): none -- "a passed Trading Combine cannot be activated into an Express Funded
+      Account while your Live Funded Account is active." / "That option becomes available again if the Live Funded
+      Account is lost."; www.topstep.com/faq (once): none. A WEB SEARCH SUMMARY (not evidence) said "With fewer than
+      five active XFAs, you get 30 days from passing your Trading Combine to pay your Activation Fee"; no official
+      page read today says so, the two help-centre ids its results named (8284198, 8284216) return HTTP 404, and its
+      other hits were intercom.help mirrors and a third-party blog, not read. It may be an old version of a page.
+      Because a 30-day activation deadline would end a held pass that waits longer, a declaration that banks passes
+      must carry a declared reading of this gap (no expiry, the engine's; and a 30-day expiry beside it) and say
+      which is the base, until the operator's browser or Topstep's written answer settles it.
+
+  - key: combine_cancellation
+    firm: topstep
+    value: "by the Billing page ('X' next to the subscription, confirm); final: no undo, no resubscribe, no Reset on that subscription afterwards; an active Combine keeps rebilling every 30 days until it is cancelled (or passes); Reset Credits stay on the profile for a future Combine of the same size and type; a refund only within 28 days of the charge with no trading activity, and a refund cancels the subscription and closes the Combine at once"
+    units: text
+    status: verified
+    article_id: "8284121; 8284117"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      8284121 ("Updated this week"), FAQ "How do I cancel?": "Billing page → click "X" next to the subscription → confirm." / "Once canceled, it cannot be undone." / "No resubscribe option." / "You also can't purchase a Reset on that subscription after it's canceled."
+      FAQ "Can I reactivate a canceled subscription?": "No. Once canceled, it's gone. Start a new Trading Combine to keep trading."
+      The Basics: "It Rebills every 30 days from your original sign-up date."
+      FAQ "What happens to my subscription after I pass?": "Other active Trading Combines keep Rebilling until you manually cancel them." / "Payments already processed for the current billing cycle are not refunded or prorated."
+      8284117, "Topstep® Refund Policies" ("Updated over 2 weeks ago"): "Contact us within 28 days of the charge." / "Accounts must have no trading activity." / "Processing a refund will result in the immediate cancellation of your subscription, closure of the associated Trading Combine, and removal of the associated Reset credit."
+    stage2_key: "none (quoted in xfa_closure_at_request's 2026-10-25 note)"
+    stage2_value: "the same FAQ sentences, read 2026-10-25 (a note, not a key)"
+    note: >
+      NEW KEY, the same FAQ wording as Stage 2's note. Every 8284121 line was confirmed exact in the .md check (the
+      page bolds parts of the Billing line); "Active until you pass ... or until you cancel." and "It will Rebill
+      monthly until you pass or cancel." came back verbatim in one fetch only (the .md copy's list of sentences), so
+      they rest on one fetch each and are kept out of `quote` ("Other active Trading Combines keep Rebilling until
+      you manually cancel them.", exact in two, carries the value instead); 8284117's .md copy words the same as "a monthly subscription that Rebills
+      approximately every 30 days until you pass or cancel" (once). The 8284117 lines came back in both fetches (the page bolds "28 days"
+      and "no trading activity"). "Payments already processed for the current billing cycle are not refunded or
+      prorated." sits under the pass FAQ, not the cancel FAQ; no sentence applies it to a cancellation in words. Asked
+      directly, no sentence says in words that cancelling stops future Rebills ("until you pass or cancel" is the
+      nearest), and none says what cancelling does to the account itself: see combine_cancellation_account_effect.
+      Stage 2 quoted the Terms of Use s.3 (September 21, 2026 version): "You are not entitled to a refund of the fee,
+      for example, if you cancel your Account." -- not re-read today.
+
+  - key: combine_cancellation_account_effect
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "8284121; 8284117"
+    url: https://help.topstep.com/en/articles/8284121-trading-combine-subscriptions
+    date_read: 2026-11-16
+    verified_by: rules-verifier (Q-115, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read says whether a Trading Combine cancelled without a refund closes at once or stays tradable until the end of the billing period already paid.
+      8284121, the nearest: "No. Once canceled, it's gone. Start a new Trading Combine to keep trading." and, for a pass only, "The subscription tied to the passed Trading Combine will auto-cancel, and the account will close."
+      8284117 states an immediate closure only for a refund: "Processing a refund will result in the immediate cancellation of your subscription, closure of the associated Trading Combine, and removal of the associated Reset credit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      UNSTATED, a successful reading; Stage 2 recorded the same silence in xfa_closure_at_request's note ("whether the
+      Combine closes at once or at the end of its billing period is not stated"). Asked directly of 8284121 (two
+      fetches) and 8284117 (once). "Once canceled, it's gone" reads most naturally as the subscription gone, with the
+      account closing with it -- that is a reading, not a sentence. FOR A DESIGN: a stop rule that cancels before a
+      rebill (the scout's rank 3) loses nothing it has not paid for under either reading if it cancels only a Combine
+      it would not trade again; a rule that cancels and keeps trading the paid days needs the second reading, which
+      no page gives, so it should assume the account closes at once.
+
+  # ==== Q-136 (2026-11-18 UTC; the machine's local date 2026-11-17): Topstep Labs $50K and My Funded Futures $50K ======
+  # (E-196, E-197). Before any rule page of a firm, its Terms were re-read for an automated-access clause (E-020, E-197):
+  #   Topstep: Terms of Use ("Last updated: November 4, 2026"), two fetches covering all 104,916 characters. The only
+  #     access clause is still s.28, "Using any manual or automated software, devices, or other processes to “crawl” or
+  #     “spider” any web pages contained in the Sites or Services;", read as a ban on traversal (E-012, E-020 (1)), so
+  #     named pages were read one at a time. help.topstep.com/robots.txt: "User-agent: *", Disallow /not-authorized,
+  #     /not-found, /[helpCenterIdentifier]/, "Crawl-delay: 1"; no page read is disallowed.
+  #   My Funded Futures: no clause (mffu.automated_retrieval_terms).
+  #   Lucid and Alpha Futures: not read at all (the lead's brief: their terms now forbid automated access).
+  # Every read was a WebFetch GET of one named page, one at a time, about one page a second or slower; no login, form,
+  # chat, checkout or purchase; nothing sent. Each rule page was fetched at least twice with differently worded
+  # prompts. `quote` holds text returned verbatim in at least one fetch and the same (verbatim or in substance) in the
+  # other; the note says where a line rests on one fetch. Where two official pages, or two passages of one page,
+  # disagree, the entry is `unverified`, quotes each, and chooses neither (the lead's brief).
+
+  # ---- Topstep Labs: #006 $50K Static Drawdown; #010 / #011 $50K Daily Payouts+ (EOD / Static) ---------------------
+  # Source: https://help.topstep.com/en/articles/15520357-topstep-labs ("Updated this week"), fetched six times (two for
+  # #006's tables, three for #010/#011's, one for every purchase-limit sentence on the page). The collapsed tables
+  # rendered to the fetch, so every cell below was read by this verifier; each agrees with the lead's browser capture
+  # (docs/research/firms/topstep_labs_50k_browser_2026-11-18.md in the main tree), which is a second source, not the
+  # reading. One #010/#011 fetch returned a summary only (it declined to copy the tables); the other two returned the
+  # cells verbatim. www.topstep.com/labs (no date shown) fetched twice, for the conflicts. Keys: labs.006_50k_static.*,
+  # labs.010_50k_dpp_eod.*, labs.011_50k_dpp_static.*, and labs.010_011_50k_dpp.* for terms both versions share. Stage 2's
+  # ledger has no Labs key (its one mention is rules.yaml:1463), so stage2_key is null throughout: these are other
+  # products, and no Stage 2 value is re-read or changed by them.
+  - key: labs.006_50k_static.eval_fee
+    firm: topstep
+    value: "149 USD, one-time; no subscription"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 $50K Static Drawdown Trading Combine (launch "October 2026"), Phase 1: Trading Combine: "Price" | "$149 one-time. No subscription."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.eval_reset
+    firm: topstep
+    value: "not available"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Resets" | "Not Available"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.eval_profit_target
+    firm: topstep
+    value: 4000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Buying Power" | "$50,000"; "Profit Target" | "$4,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.eval_mll
+    firm: topstep
+    value: "2000 USD, static (non-trailing)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Max Loss Limit" | "$2,000 (static, non-trailing 🔥)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches, with the page's emoji. Whether "static" means a floor fixed at $48,000 is not said in those
+      words; the $2,000 below the $50,000 start is the plain reading.
+
+  - key: labs.006_50k_static.eval_daily_loss_limit
+    firm: topstep
+    value: "1000 USD, mandatory"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Daily Loss Limit (DLL)" | "Mandatory $1,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The #006 table does not say whether hitting it is soft (the day ends) or fails the account;
+      topstep.com/labs labels the Daily Payouts+ DLL "Soft breach" and says nothing for #006.
+
+  - key: labs.006_50k_static.eval_position_limit
+    firm: topstep
+    value: "4 mini / 40 micro"
+    units: contracts
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Max Contracts" | "4 mini / 40 micro"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The standard 50K Combine's is 5 (Stage 2 combine_position_size_limit).
+
+  - key: labs.006_50k_static.eval_consistency
+    firm: topstep
+    value: 0.55
+    units: share
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Consistency Target" | "55%"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The table does not restate the mechanism; the standard Combine's 55 % rule (Stage 2
+      combine_consistency_max_day_frac, read on 8284208) is the same figure.
+
+  - key: labs.006_50k_static.eval_lifespan_days
+    firm: topstep
+    value: 90
+    units: days
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Lifespan" | "90 days"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The standard Combine has no time limit.
+
+  - key: labs.006_50k_static.eval_inactivity_days
+    firm: topstep
+    value: 30
+    units: days
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Inactivity" | "30 days"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The cell gives no consequence; the scout's verbatim FAQ line "If there are no trades placed
+      for 30 days, the account will close." was not returned to this verifier.
+
+  - key: labs.006_50k_static.purchase_limit
+    firm: topstep
+    value: null
+    units: text
+    status: unverified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT within 15520357 (a total per trader, or five a month):
+      #006 Phase 1 table: "Purchase Limit" | "5 per Trader"
+      #006 FAQ "Who is eligible to purchase this?": "You may purchase up to 5 each month!"
+      #006 FAQ "Can I purchase this in addition...": "Yes. You can buy up to five $50K Static Trading Combines no matter how many other Trading Combines you have."
+      The drops banner: "...are all now available for purchase any time." / "You can purchase up to 5 of each account per month!"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      "5 per Trader" and "You may purchase up to 5 each month!" came back in both #006 fetches and the purchase-limit
+      fetch; the banner and the "in addition" FAQ in the purchase-limit fetch only (the second #006 fetch gave the FAQ
+      as "You can buy up to five $50K Static Trading Combines each month!"). Not chosen between.
+
+  - key: labs.006_50k_static.activation_fee
+    firm: topstep
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 1: "Funded Activation Fee" | "Free"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.funded_payout_path
+    firm: topstep
+    value: "Standard (no consistency) or Consistency (40%)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: Express Funded Account (XFA): "Path" | "Choose Standard (no consistency) or Consistency (40%)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The page does not say whether the path is chosen at activation or at each request (the
+      Daily Payouts+ section says "at each Payout request"; nothing similar for #006).
+
+  - key: labs.006_50k_static.funded_payout_cap
+    firm: topstep
+    value: 8000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: "Payout Cap" | "$8,000 on either path"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. Whether the cap is per request or lifetime is not stated in the cell.
+
+  - key: labs.006_50k_static.funded_mll
+    firm: topstep
+    value: "2000 USD, static (non-trailing); after the first payout the MLL is set to $0"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: "Max Loss Limit" | "$2,000 (static, non-trailing 🔥). After first Payout, MLL sets to $0"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.funded_daily_loss_limit
+    firm: topstep
+    value: "1000 USD, mandatory"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: "Daily Loss Limit" | "Mandatory $1,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.funded_position_limit
+    firm: topstep
+    value: "4 mini / 40 micro; scaling plan '2/3/4' (balance thresholds not stated)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: "Max Contracts" | "4 mini / 40 micro"; "Scaling Plan" | "2/3/4. Learn more about how the Scaling Plan works."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches. The balances at which 2, 3 and 4 minis apply are not on 15520357 (the link goes to the
+      general scaling article, not read here). A design needing the ladder must read it or declare its own reading.
+
+  - key: labs.006_50k_static.funded_back2funded
+    firm: topstep
+    value: "not available"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 Phase 2: "Back2Funded" | "Not Available"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both #006 fetches.
+
+  - key: labs.006_50k_static.funded_payout_terms_other
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      The #006 section states no winning-day count, minimum payout, share of the balance or profit split for its XFA, and does not say that the standard XFA's terms apply. Its Phase 2 rows are only Path, Payout Cap, Max Loss Limit, Daily Loss Limit, Max Contracts, Scaling Plan and Back2Funded.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Asked directly in the second #006 fetch: "The page does not give any of these for this product's XFA. The
+      winning-days and 90/10 split terms appear only under drops #010 and #011". Reading the standard XFA's 5 x $150,
+      50 % and 90/10 into #006 would be a declared reading, not a rule.
+
+  - key: labs.006_50k_static.funded_seats
+    firm: topstep
+    value: "the standard active-XFA limit applies (the page gives no number for Labs)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      #006 FAQ "Can I purchase this in addition...": "Standard limits still apply to how many active Express Funded Accounts you can hold at one time."
+    stage2_key: max_active_funded_accounts
+    stage2_value: 5
+    note: >
+      One fetch (the purchase-limit fetch). Read with Stage 2's max_active_funded_accounts (5), not re-read here. The
+      page's Challenge section mentions "the 5 Express Funded Account (XFA) limit" (one fetch, summarised). Whether a
+      Labs XFA counts toward the 5 is implied by "Standard limits still apply", not stated.
+
+  - key: labs.50k_static.tier1_news_cap
+    firm: topstep
+    value: "during a Tier 1 window a '$50K Static' Trading Combine may open no minis and at most 2 micros (margin $40,000)"
+    units: text
+    status: verified
+    article_id: "13613539"
+    url: https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      13613539 ("Updated yesterday"), Trading Combines table, headings "Account" | "Margin" | "Max micros" | "Equity Minis" | "Effect during window":
+      "$50K Static | $40,000 | 2 | Blocked | Capped at 2 micros"
+      Beside it: "$50K Standard | $50,000 | 3 | Blocked | Capped at 3 micros"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches returned the row identically. NEW: this repository's tier1_news_events_restriction (2026-11-16)
+      lists the 50K Combine at 3 only. The label "$50K Static" names no Labs drop number, so whether it covers #011
+      (Daily Payouts+ Static) as well as #006 is not stated; no row names Daily Payouts+ (labs.010_011_50k_dpp.tier1_news_cap).
+      The page's general bullet "Opening transactions limited to 1, 3, 6, 9, and 15 contracts" (one fetch) has no 2,
+      a looseness, not a conflict with the row. Positions opened before a window "may keep them open and manage them
+      through the Tier 1 News Events window" (one fetch; the same as 2026-11-16's reading).
+
+  - key: labs.010_50k_dpp_eod.eval_fee
+    firm: topstep
+    value: null
+    units: usd
+    status: unverified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT between two official pages:
+      15520357, #010 / #011 $50K Daily Payouts+ (launch "November 2026"), Phase 1, EOD column: "Price" | "$119 one-time. No subscription." (Static column: "$149 one-time. No subscription.")
+      www.topstep.com/labs, under "$50K Daily Payouts+ Trading Combine": "Price: $149" / "One-time payment", then "Choose your drawdown", with no price on either drawdown option.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      15520357's cells came back verbatim in two fetches and in summary in the third ("$119 (EOD) or $149 (Static)");
+      topstep.com/labs in two fetches, the second saying the $149 "attaches ... to the product as a whole". The lead's
+      browser capture gives $119 | $149, as 15520357 does; this record does not choose. The checkout (behind login)
+      would settle it.
+
+  - key: labs.011_50k_dpp_static.eval_fee
+    firm: topstep
+    value: "149 USD, one-time; no subscription"
+    units: text
+    status: verified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      15520357, Daily Payouts+ Phase 1, Static column: "Price" | "$149 one-time. No subscription."
+      www.topstep.com/labs: "Price: $149" / "One-time payment"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The two pages agree for the Static version.
+
+  - key: labs.010_50k_dpp_eod.eval_profit_target
+    firm: topstep
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1: "Profit Target" | EOD "$3,000" | Static "$4,000"; "Starting Balance" "$50,000" both
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches and the summary. topstep.com/labs: "Lower profit target , Profit target: $3,000".
+
+  - key: labs.011_50k_dpp_static.eval_profit_target
+    firm: topstep
+    value: 4000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1: "Profit Target" | EOD "$3,000" | Static "$4,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As above. topstep.com/labs: "Higher max payout , Profit target: $4,000".
+
+  - key: labs.010_50k_dpp_eod.eval_mll
+    firm: topstep
+    value: "2000 USD, trailing the end-of-day balance"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1, EOD: "Maximum Loss Limit" | "$2,000, trails your end-of-day balance"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches. The cell does not state the evaluation lock; the standard Combine's (Stage 2
+      combine_mll_lock_at) is not carried over by this record.
+
+  - key: labs.011_50k_dpp_static.eval_mll
+    firm: topstep
+    value: "2000 USD, static (never moves)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1, Static: "Maximum Loss Limit" | "$2,000, static, never moves"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches.
+
+  - key: labs.010_011_50k_dpp.eval_daily_loss_limit
+    firm: topstep
+    value: "1000 USD, mandatory (both versions)"
+    units: text
+    status: verified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      15520357, Daily Payouts+ Phase 1: "Daily Loss Limit" | "Mandatory $1,000" (both columns)
+      www.topstep.com/labs: "Daily Loss Limit, Soft breach" with the value "$1,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      15520357 in the third fetch (the second gave the table without this row; the summary gave "$1,000 mandatory");
+      topstep.com/labs once. "Soft breach" is on the marketing page only; 15520357 does not say soft or hard.
+
+  - key: labs.010_011_50k_dpp.eval_position_limit
+    firm: topstep
+    value: "5 mini / 50 micro (both versions)"
+    units: contracts
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1: "Max Contracts" | "5 mini / 50 micro" (both columns)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary; topstep.com/labs: "Max Contracts" "5 mini / 50 micro".
+
+  - key: labs.010_011_50k_dpp.eval_consistency
+    firm: topstep
+    value: 0.55
+    units: share
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1: "Consistency Target" | "55%" (both columns)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary; topstep.com/labs: "Consistency Target, Combine only" "55%".
+
+  - key: labs.010_011_50k_dpp.purchase_limit
+    firm: topstep
+    value: null
+    units: text
+    status: unverified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT within 15520357 (five in total, never refreshed; or five a month):
+      Daily Payouts+ Phase 1: "Purchase Limit" | "5 total per Trader, across both versions"; below the table: "The Purchase Limit does not refresh when accounts close or fail."
+      The same section's FAQ "Is this a limited release...": "You can buy five $50K Static Trading Combines each month!"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The cell and the "does not refresh" sentence came back in two fetches; the FAQ line in one (the purchase-limit
+      fetch). The FAQ line may be copied from the Static drops' FAQ (the $100K and $150K Static FAQs read the same);
+      that is a guess, not a reading. topstep.com/labs states no purchase limit for Daily Payouts+. Not chosen between.
+
+  - key: labs.010_011_50k_dpp.activation_fee
+    firm: topstep
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 1: "Funded Activation Fee" | "Free (identity verification required)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.eval_lifespan_days
+    firm: topstep
+    value: 90
+    units: days
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+: "Lifespan" | "90 days"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.eval_inactivity_days
+    firm: topstep
+    value: 30
+    units: days
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+: "Inactivity" | "30 days"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary. No consequence in the cell.
+
+  - key: labs.010_50k_dpp_eod.funded_mll
+    firm: topstep
+    value: "2000 USD, end-of-day trailing"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA), EOD: "Maximum Loss Limit" | "$2,000, EOD"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary. The XFA lock is not in the cell (see
+      labs.010_011_50k_dpp.daily_path_mll_effect for the floor at a daily payout).
+
+  - key: labs.011_50k_dpp_static.funded_mll
+    firm: topstep
+    value: "2000 USD, static"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA), Static: "Maximum Loss Limit" | "$2,000 static"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.funded_daily_loss_limit
+    firm: topstep
+    value: 1000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Daily Loss Limit" | "$1,000" (both columns)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches. Soft or hard is not stated on 15520357.
+
+  - key: labs.010_011_50k_dpp.funded_consistency
+    firm: topstep
+    value: "none"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Consistency Target" | "None" (both columns)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.funded_position_limit
+    firm: topstep
+    value: "5 mini / 50 micro, on the standard $50K XFA scaling plan"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Max Contracts" | "5 mini / 50 micro. XFA matches the standard $50K XFA scaling plan."
+    stage2_key: funded_scaling_plan
+    stage2_value: "0:2,1500:3,2000:5"
+    note: >
+      Verbatim in one fetch, the same in the summary. The page refers to the standard plan rather than restating it;
+      Stage 2's funded_scaling_plan is that plan as Stage 2 read it (not re-read here).
+
+  - key: labs.010_011_50k_dpp.payout_split
+    firm: topstep
+    value: 0.9
+    units: share
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Profit Split" | "90/10"; payout-path table: "Profit Split" | Daily "90/10" | 5 Winning Days "90/10"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches.
+
+  - key: labs.010_011_50k_dpp.payout_path_choice
+    firm: topstep
+    value: "Daily or 5 Winning Days, picked at each payout request, not at activation"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Payout Paths" | "Daily or 5 Winning Days"
+      "You pick at each Payout request, not at activation."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The cell in one verbatim fetch, the sentence in another; both in the lead's capture.
+
+  - key: labs.010_011_50k_dpp.daily_path_gate
+    firm: topstep
+    value: "after the $2,000 profit buffer is cleared; $2,000 of profit stays in the account, only profit above it can be withdrawn; after the first payout, net positive since the last payout"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Payout-path table, Daily Payout column: "Eligibility" | "$2,000 profit buffer cleared"; "Buffer" | "$2,000 in profit stays in the account. Only profit above it can be withdrawn."
+      "After your first Payout, you must be net positive since your last Payout."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch; the summary fetch: "Requires a $2,000 profit buffer to be cleared. The buffer stays in the
+      account." The "net positive" sentence sits in the Daily Payout details; whether it also governs the 5 Winning
+      Days path is not said.
+
+  - key: labs.010_011_50k_dpp.daily_path_min
+    firm: topstep
+    value: null
+    units: usd
+    status: unverified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT between two official pages:
+      15520357, payout-path table, Daily Payout column: "Amount" | "$250 minimum, $1,500 maximum"
+      www.topstep.com/labs, under "Two Ways to Get Paid", after "Both payout paths are included in your Express Funded Account.": "A $125 minimum."
+    stage2_key: payout_min
+    stage2_value: 125.0
+    note: >
+      15520357's cell in one verbatim fetch and the summary ("Amounts range from $250 to $1,500"); topstep.com/labs in
+      two fetches. The marketing page's $125 is the standard XFA's minimum (Stage 2 payout_min) and may be meant for
+      the 5 Winning Days path; it does not say which path. Not chosen between.
+
+  - key: labs.010_011_50k_dpp.daily_path_max
+    firm: topstep
+    value: 1500.0
+    units: usd
+    status: verified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      15520357: Phase 2 "Daily Payout Max" | "$1,500" (both columns); payout-path table, Daily: "Max Per Payout" | "$1,500"
+      www.topstep.com/labs: "Daily Payouts" "Up to $1,500"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches of 15520357 and the summary; topstep.com/labs once.
+
+  - key: labs.010_011_50k_dpp.daily_path_timing
+    firm: topstep
+    value: "1 payout per trading day; profits are locked in at 4:00 PM CT; 5 p.m. CT is the request cutoff"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Payout-path table, Daily: "Frequency" | "1 per trading day" (5 Winning Days column: "--")
+      "Payouts come from profits made during the trading day, locked in at 4:00 PM CT."
+      "5 p.m. CT is the cutoff for a Payout request."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary ("Profits are locked in at 4:00 PM CT, and requests after 5:00 PM
+      CT apply to the next trading day" -- the summary's gloss; the page's words are the quoted sentence). Whether a
+      request may draw that same day's profit after 4:00 PM CT is implied, not stated. Payout processing time is not
+      stated in the section.
+
+  - key: labs.010_011_50k_dpp.daily_path_mll_effect
+    firm: topstep
+    value: "a daily payout sets the XFA's Maximum Loss Limit to $0, wherever it was before"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Taking a daily Payout on an XFA sets your Maximum Loss Limit to $0, no matter where it was before."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary. What a 5 Winning Days payout does to the floor is not stated in
+      the section.
+
+  - key: labs.010_011_50k_dpp.wd5_path_gate
+    firm: topstep
+    value: "5 winning days of $150 or more since the last payout; no buffer"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Payout-path table, 5 Winning Days column: "Eligibility" | "5 winning days of $150 or more since your last Payout"; "Buffer" | "None"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.wd5_path_amount
+    firm: topstep
+    value: 0.5
+    units: share
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Payout-path table, 5 Winning Days column: "Amount" | "Up to 50% of balance"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary. No minimum is given for this path on 15520357 (see daily_path_min
+      for topstep.com/labs' "$125 minimum").
+
+  - key: labs.010_50k_dpp_eod.wd5_path_cap
+    firm: topstep
+    value: 4000.0
+    units: usd
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Phase 2: "5 Winning Days Max Payout" | EOD "$4,000" | Static "$8,000"; payout-path table: "Max Per Payout" | 5 Winning Days "$4,000 (EOD) or $8,000 (Static)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches and the summary.
+
+  - key: labs.011_50k_dpp_static.wd5_path_cap
+    firm: topstep
+    value: 8000.0
+    units: usd
+    status: verified
+    article_id: "15520357; topstep.com/labs"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Phase 2: "5 Winning Days Max Payout" | EOD "$4,000" | Static "$8,000"
+      www.topstep.com/labs: "Up to $8,000" (the 5 Winning Days path)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two verbatim fetches of 15520357 and the summary; topstep.com/labs once.
+
+  - key: labs.010_011_50k_dpp.payout_resets_wd5_count
+    firm: topstep
+    value: "any payout (either path) resets the 5 Winning Days count"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Any Payout resets your 5 Winning Days count."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in both the verbatim fetch and the summary fetch.
+
+  - key: labs.010_011_50k_dpp.funded_back2funded
+    firm: topstep
+    value: "not available"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ Phase 2 (XFA): "Back2Funded" | "Not Available"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary.
+
+  - key: labs.010_011_50k_dpp.funded_seats
+    firm: topstep
+    value: "the standard active-XFA limit applies (the page gives no number for Labs)"
+    units: text
+    status: verified
+    article_id: "15520357"
+    url: https://help.topstep.com/en/articles/15520357-topstep-labs
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Daily Payouts+ FAQ "Is this a limited release...": "Standard limits still apply to how many active Express Funded Accounts you can have at once."
+    stage2_key: max_active_funded_accounts
+    stage2_value: 5
+    note: >
+      One fetch (the purchase-limit fetch); the scout's capture has the same sentence. As for #006: inclusion in the 5
+      is implied, not stated. topstep.com/labs: "NEW LIMITED RELEASE:"; no end date on either page.
+
+  - key: labs.010_011_50k_dpp.tier1_news_cap
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "13613539"
+    url: https://help.topstep.com/en/articles/13613539-risk-adjustments-high-risk-high-volatility
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      13613539's Tier 1 tables name no Daily Payouts+ account and the page does not mention them. Its only Labs-looking Combine row is "$50K Static | $40,000 | 2 | Blocked | Capped at 2 micros", which names no drop number.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Asked directly in the first 13613539 fetch. Whether #010's Combine falls under "$50K Standard" (3 micros) and
+      #011's under "$50K Static" (2) is a reading the page does not make.
+
+  # ---- My Funded Futures (MFFU): Rapid EOD 50K, Builder 50K, Pro 50K, Pro 50K One Day, Rapid 50K ---------------------
+  # Source list: Q-135d's note docs/research/firms/myfundedfutures_50k_2026-11-18.md (main tree); every term below was
+  # re-read here on myfundedfutures.com or help.myfundedfutures.com (H<id> = https://help.myfundedfutures.com/en/articles/<id>;
+  # P:<plan> = https://myfundedfutures.com/plans/<plan>). PRICES: the plan pages draw prices by script; their text shows
+  # promotional "Starting at" figures not tied in words to a size, and the "plan data" (priceCents, reset_price) the
+  # scout read from embedded script is not visible to this reader. A price is therefore verified only where a help
+  # article states it (Builder). Where Q-135d's section 11 lists a conflict (C-1, C-3, C-5..C-11; C-2 and C-4 are Live-
+  # only and not recorded), the entry is `unverified` with each reading quoted. Conflicts new to this reading are marked
+  # NEW. Nothing of MFFU is in Stage 2's ledger, so stage2_key is null throughout. Keys: mffu.<term> (firm-wide),
+  # mffu.rapideod50k.*, mffu.builder50k.*, mffu.pro50k.*, mffu.pro50k_oneday.*, mffu.rapid50k.*.
+
+  # -- firm-wide --
+  - key: mffu.automated_retrieval_terms
+    firm: mffu
+    value: "no clause forbids automated access, crawling, scraping, robots, bots, scripts or data mining; s.22.2 limits use, download and storage of Content to personal, non-commercial, non-public use; robots.txt allows the pages read"
+    units: text
+    status: verified
+    article_id: "terms (General Terms and Conditions)"
+    url: https://myfundedfutures.com/terms
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Read for the words automat, scrap, crawl, spider, robot, bot, script, data min, harvest, extract, machine: no hit on any except "automat" in s.2 ("granting access to the corresponding Account or Services without further automatic charges.") and s.12.5 ("Such processing may occur automatically, without further notice or consent, ..."), neither about access.
+      The nearest clauses: s.22.2 "republish, download, store, or transmit any of our Content"; s.22.6 "whether electronically, mechanically, by photocopy, recording, or otherwise"; s.23.1.4 "Attempting to reverse engineer, hack, or exploit any aspect of the Sites or Services."; s.23.1.5 "Circumventing security features, authentication, or monitoring mechanisms."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Read FIRST, before any MFFU rule page (two fetches; the page prints no version date, only "© 2023-2026").
+      robots.txt: help.myfundedfutures.com "User-agent: *", Disallow /not-authorized, /not-found,
+      /[helpCenterIdentifier]/, /*=, Crawl-delay 1 (read once); myfundedfutures.com's was not re-read (the scout read
+      it as "Disallow:" with nothing disallowed). s.22.2 (paraphrased in the second fetch) confines downloading and
+      storing Content to "personal, non-commercial, and non-public use": whether short quotes in a private research
+      record are within it is the lead's call (Q-135d section 0 raised it), not a retrieval bar.
+
+  - key: mffu.activation_fee
+    firm: mffu
+    value: 0.0
+    units: usd
+    status: verified
+    article_id: "12398151"
+    url: https://help.myfundedfutures.com/en/articles/12398151
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H12398151 "Does MyFundedFutures Charge Activation Fees?" (August 25, 2026): "all MFFU plans, regardless of account size, come with $0 activation fee."
+      H16158363 (Rapid EOD): "There are no activation fees on this plan."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H12398151 twice. P:rapid "| Activation Fee | $0 | $0 | $0 | $0 |" and P:pro "$0" (once each).
+
+  - key: mffu.billing_basis
+    firm: mffu
+    value: "one-time payment for new purchases (no renewals); legacy subscriptions renew every 30 days"
+    units: text
+    status: verified
+    article_id: "16596406; plans/rapid-eod; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/16596406
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16596406 "Understanding the Difference Between Account Resets and Renewals" (September 24, 2026): "Effective August 25, 2026, MyFundedFutures will transition to a one-time payment model for all new purchases."
+      Legacy: "A renewal happens automatically every 30 days unless you cancel your account before the next billing date."
+      P:rapid-eod: "One-time purchase, nothing to cancel."; P:pro: "One-time payment, no renewals."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The first H16596406 sentence in both fetches; the renewal sentence and the plan-page lines in one each. The
+      cut-over DATE conflicts (mffu.one_time_cutover_date); the basis for a purchase today is one-time on either date.
+
+  - key: mffu.one_time_cutover_date
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "terms s.6.1.2; 16596406"
+    url: https://myfundedfutures.com/terms
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-1):
+      Terms s.6.1.2: "If you purchased a subscription-based plan prior to August 20, 2026," / "your Account will continue on a recurring billing basis"
+      H16596406: "Effective August 25, 2026, MyFundedFutures will transition to a one-time payment model for all new purchases."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Moot for a new purchase; recorded because the brief asks for every conflict.
+
+  - key: mffu.reset_fee
+    firm: mffu
+    value: null
+    units: usd
+    status: unverified
+    article_id: "16596406; plans pages"
+    url: https://help.myfundedfutures.com/en/articles/16596406
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16596406 states no reset price (asked in both fetches): "An account reset is a manual action you take to restore your trading account to its original state" / "Resets will continue to work the same way for all accounts, regardless of purchase date."
+      P:rapid-eod: "Reset price: Not stated" (the reader's answer). P:rapid FAQ: "Funded accounts can't be reset, so you'll need to start a new evaluation."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Q-135d read reset_price = the list price from the site's embedded plan data, which this reader cannot see. A
+      machine field is not a statement; settling it needs the checkout page in the lead's browser (no purchase).
+
+  - key: mffu.eval_drawdown_lock
+    firm: mffu
+    value: "the evaluation's end-of-day trailing floor locks at the starting balance plus $100 (50K: $50,100)"
+    units: text
+    status: verified
+    article_id: "8348565"
+    url: https://help.myfundedfutures.com/en/articles/8348565
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8348565 "End of Day (EOD) Drawdown Explained" (August 24, 2026): "Also to be noted the Max EOD trailing locks in at $100 plus the initial starting balance."
+      Its example: "50k is 52k +$100 which is 52.1k 50K Accounts have 4% DD"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches, verbatim. THE EXAMPLE IS LOOSE: the second fetch read "52.1k" as a conflicting lock level. Read
+      with the rule sentence it is the balance ($50,000 + $2,000 + $100) at which the floor reaches $50,100 and stops;
+      a floor locked at $52,100 would sit above the start, which the rule sentence excludes. Recorded verified on the
+      rule sentence; the lead may downgrade it. H14290805 (Builder) says the same in words: "The MLL locks
+      permanently once it reaches $100 above the starting balance." Applies to every MFFU evaluation (the article
+      names no plan).
+
+  - key: mffu.eval_drawdown_open_equity
+    firm: mffu
+    value: "open-equity losses count: an open position that dips the balance below the minimum fails the evaluation"
+    units: text
+    status: verified
+    article_id: "8348565"
+    url: https://help.myfundedfutures.com/en/articles/8348565
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8348565: "open equity losses are taken into consideration when calculating whether or not the account failed on this rule." / "if an open position dips your account balance below the minimum account balance, your evaluation attempt will fail"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. NEW CONFLICT for Builder only: see mffu.builder50k.eval_drawdown_breach_basis.
+
+  - key: mffu.eval_consistency_breach
+    firm: mffu
+    value: "exceeding the evaluation consistency share does not breach the account; the trader trades more days until it is met"
+    units: text
+    status: verified
+    article_id: "11994562"
+    url: https://help.myfundedfutures.com/en/articles/11994562
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H11994562 "Consistency Rule at My FundedFutures" (September 25, 2026): "Important note: Exceeding the consistency targets does not breach the account." / "Traders who achieve more than the listed percentage amount of their total profit target in one day simply need to trade additional days until consistency is met."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches (verbatim in one, the same in the other).
+
+  - key: mffu.eval_consistency_base
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "11994562"
+    url: https://help.myfundedfutures.com/en/articles/11994562
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      NEW (one page, two bases): "This consistency rule means no single day's profit should exceed 30% or 50% of your total evaluation profits made."
+      Its example: "Total Profit Target on a 50k account: $3,000" / "Max Profit a Trader should achieve: $1,500" / "Calculation is: Total profit target / 2 = Max Daily Profit"
+      And: "...more than the listed percentage amount of their total profit target in one day simply need to trade additional days until consistency is met."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches; the second said "The article doesn't reconcile these two". Total profits (the engine's
+      max(target, best day / share)) and the fixed target give different pass days once the best day exceeds the
+      share of the target; whether losing days net against the base is not stated either. Not chosen between.
+
+  - key: mffu.max_eval_accounts
+    firm: mffu
+    value: 10
+    units: accounts
+    status: verified
+    article_id: "16498635"
+    url: https://help.myfundedfutures.com/en/articles/16498635
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16498635 "Moving from Evaluation to Sim-Funded Account" (September 4, 2026): "Traders may hold a maximum of 10 active Evaluation Accounts at any given time."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: mffu.max_funded_accounts
+    firm: mffu
+    value: "5 active Sim-Funded at $25K/$50K sizes only (Rapid 50K and Pro 50K within it); Rapid EOD 50K at most 3; Builder 50K at most 1; 3 in all if any $100K/$150K Sim-Funded is held"
+    units: text
+    status: verified
+    article_id: "16498635"
+    url: https://help.myfundedfutures.com/en/articles/16498635
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16498635: "Traders may maintain up to 5 active Sim-Funded Accounts when holding only $25K and/or $50K account sizes."
+      "Rapid EOD $50K: Maximum of 3 Sim-Funded Accounts" / "Builder $50K: Maximum of 1 Sim-Funded Accounts" / "These plan-specific limits apply even if the general $25K/$50K allowance would otherwise permit more accounts."
+      "If a trader holds any $100K or $150K Sim-Funded Account, the maximum number of active Sim-Funded Accounts is 3."
+      H16158363 (Rapid EOD): "Max # of Funded Accounts" | "Three (3)". P:rapid FAQ: "For $25K and $50K Rapid accounts, you can hold up to five active sim funded accounts at once."
+      H14290805 (Builder): "Only one Sim Funded account may be active per user at any time on the Builder Plan." / "In the event of a breach, the earliest a new Sim Funded account may be activated is the following trading day."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H16498635 both fetches; H16158363 and H14290805 in their verbatim fetches; P:rapid once. Pro has no plan-specific
+      limit (asked; the general 5 applies). FOR THE FIVE-SEAT DESIGNS: Rapid EOD 50K seats only 3 and Builder 1.
+
+  - key: mffu.hold_queue_behaviour
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "16498635; 13523548 (not re-read)"
+    url: https://help.myfundedfutures.com/en/articles/16498635
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16498635 does not say what happens to a passed evaluation while the Sim-Funded limit is full (asked directly). It says only: "you'll be notified of the results via email and have the ability to insta-upgrade to a sim-funded account via your dashboard."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Not a permission to bank passes. MFFU charges no activation fee, so no fee falls due at the upgrade; whether a
+      pass waits, expires or is forfeited when the seats are full is not stated. The evaluation's 7-day inactivity
+      rule (mffu.inactivity_rule) may close a passed evaluation that is left untraded -- a reading, not a sentence.
+
+  - key: mffu.inactivity_rule
+    firm: mffu
+    value: "no trade for 7 consecutive calendar days and the account could be closed, sim funded included; an inactivity breach on a Sim Funded account forfeits all profits; purchases from 2026-08-25"
+    units: text
+    status: verified
+    article_id: "16596524"
+    url: https://help.myfundedfutures.com/en/articles/16596524
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16596524 "Inactivity Rule - One-Time Payment Model" ("Updated over a week ago"): "If a trader does not place a trade for 7 consecutive calendar days, the account could be closed." / "This includes simulated funded accounts." / "An inactivity breach on a Sim Funded account results in the forfeiture of all profits." / "This update applies only to purchases made on or after August 25, 2026."
+      H16158363: "Inactivity Rule" | "7 Days". H14290805 (Builder): "If you do not place a trade within 7 consecutive calendar days on your sim funded account"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H16596524 both fetches. The page asks traders to "notify the customer support team if they will not be trading
+      for more than 7 days" and does not say that notice prevents closure.
+
+  - key: mffu.news_tier1_rule
+    firm: mffu
+    value: "Tier 1 (FOMC meetings, FOMC minutes, Employment Report, CPI): no positions or orders, limit orders included, from 2 minutes before to 2 minutes after the release; prohibited on Rapid Sim Funded and Pro Sim Funded; permitted on all evaluations and Builder plans"
+    units: text
+    status: verified
+    article_id: "8230009"
+    url: https://help.myfundedfutures.com/en/articles/8230009
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8230009 "News Trading Policy" (August 31, 2026), "Tier 1 Data: Special Considerations": "For All Traders: FOMC Meetings, FOMC Minutes, Employment Report, CPI"
+      "No positions or orders (including limit orders) can be open 2 minutes before and after the release."
+      "All positions must be flattened at least two minutes prior to the scheduled T1 News event. For example, if news is at 8:30, positions must be closed by 8:28:00 or earlier, and may only be reopened after 8:32:00"
+      Restricted Accounts: "Trading on T1 News events is prohibited for the following:" Rapid Sim Funded; Pro Sim Funded. Unrestricted Accounts: "Trading on T1 News events is permitted for the following:" All evaluations; Builder Plans.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches. The broader protocol line for every release is its own entry (mffu.news_all_releases_protocol).
+      Times are ET (08:30 ET = 07:30 CT); CHARTER s.4's 07:35 CT and FOMC-day exclusions leave FOMC minutes days as
+      the only exposure on Rapid and Pro sim funded (Q-135d).
+
+  - key: mffu.news_all_releases_protocol
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "8230009; 8444599"
+    url: https://help.myfundedfutures.com/en/articles/8230009
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-9), within H8230009: under "Standard Trading Protocols": "Ensuring no open positions or orders are active in the order book 2 minutes before and after any data release." / "These protocols apply to all news releases."
+      Against the same page's Tier 1 section: "Trading on T1 News events is permitted for the following:" All evaluations; Builder Plans.
+      H8444599: "Engaging in trades during tier 1 economic data releases is restricted."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both H8230009 fetches returned the protocol lines; the second read them as covering every release. On their
+      plain words they bar resting brackets around every data release on every account; the Tier 1 section confines
+      the hard rule to T1 on Rapid and Pro sim funded. Also on H8230009 (one fetch): "Utilizing strategies that exploit
+      immediate news bursts, such as straddles or strangles." / "Masking news trades as standard strategies." / "These
+      prohibitions are in effect for all news releases." Not chosen between.
+
+  - key: mffu.hedging_rule
+    firm: mffu
+    value: "prohibited: buy and sell positions on the same underlying at the same time (NQ and MNQ are one underlying)"
+    units: text
+    status: verified
+    article_id: "8444599"
+    url: https://help.myfundedfutures.com/en/articles/8444599
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8444599 "Fair Play and Prohibited Trading Practices" ("Updated over 2 weeks ago"): "MyFunded Futures prohibits hedging of any kind." / "Hedging is defined as a trader entering both buy and sell positions on the same underlying asset, at the same time." / "E-Mini NQ and Micro NQ have the same underlying asset which is NQ (Nasdaq)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  - key: mffu.copy_trading_own_accounts
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "10771500; terms s.23.1.3.3"
+    url: https://help.myfundedfutures.com/en/articles/10771500
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-10):
+      H10771500 "Copy Trading at MyFundedFutures" (August 24, 2026): "MyFunded Futures allows copy trading across all account types." / "Tradesyncer is our preferred trade copier partner and is fully compatible with all MFFU accounts."
+      Terms s.23.1.3.3 (prohibited): "use multiple accounts to hedge, mirror, copy, or coordinate trades in a manner that provides an unfair advantage" / "or manipulates simulated results;"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H10771500 twice (it does not mention one's own accounts in words); s.23.1.3.3 once verbatim, once paraphrased.
+      Q-135d cites T s.1.6 (the Terms prevail over incorporated documents), not re-read here. Moot for designs with
+      one position at a time across the firm (Stage 2 D-429), which do not copy.
+
+  - key: mffu.coordinated_trading_rule
+    firm: mffu
+    value: "prohibited: copying trades between traders; collaborating with others on identical or opposite strategies across unconnected accounts; sharing a device with another trader"
+    units: text
+    status: verified
+    article_id: "8444599"
+    url: https://help.myfundedfutures.com/en/articles/8444599
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8444599: "Traders are not permitted to copy trade one another by entering, exiting or cancelling trade positions." / "Collaborating with others to execute identical or opposite strategies across unconnected accounts is prohibited." / "Each individual trader may not use the same device (tablet, phone or computer) as used by another trader."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The first two in both fetches; the device sentence in one.
+
+  - key: mffu.automation_and_sim_fills
+    firm: mffu
+    value: "HFT not allowed; automated strategies allowed if they do not aim to exploit favourable sim fills; exploiting absent slippage and tight brackets for favourable fills, multiple limit orders at one price, and stale or unrealistic fills are prohibited"
+    units: text
+    status: verified
+    article_id: "8444599"
+    url: https://help.myfundedfutures.com/en/articles/8444599
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8444599: "High-frequency Trading is not allowed on our plans." / "so long as these automated tools do not aim to exploit the favorable fills offered in the Simulated Environment." / "Exploiting the absence of slippage and utilizing tight brackets to gain from favorable fills are not permitted." / "Simultaneously placing multiple limit orders at the same price to manipulate order fills is prohibited."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The first three in both fetches; the limit-order sentence in one. "Tight brackets" has no threshold (the
+      Topstep analogue: prohibited_strategy_auto_breakeven_sim_fills). Also once: "Profiting from isolated, stale or
+      unrealistic fills in low-liquidity contracts (including back-month contracts)" / "or during low-volume hours is
+      not allowed, regardless of how long the position is held."
+
+  - key: mffu.payout_fee
+    firm: mffu
+    value: unstated
+    units: usd
+    status: unstated
+    article_id: "13745661"
+    url: https://help.myfundedfutures.com/en/articles/13745661
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13745661 "Payout Policy Overview, Best and Fastest Prop-Firm Payouts" (August 25, 2026) names no fee on a payout and no per-method charge (asked in both fetches), and no payout method.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H11542406 (First Payout) and the Simulated Trader Agreement (behind login, Terms s.29) were not read.
+
+  - key: mffu.payout_processing_time
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "13745661; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13745661
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-8):
+      H13745661: "Most payouts are approved instantly." / "If a manual review is required, processing may take up to 6 to 12 business hours on weekdays."
+      P:rapid: "Most requests process in under a second." / "A subset routed for manual review may take up to 24 business hours."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13745661 twice (verbatim in one); P:rapid once. Q-135d also quotes H11542406 "All payouts are processed in 6-12
+      business hours excluding holidays." (not re-read). Either way, approval within the next session; the time to
+      cash is not stated.
+
+  # -- Rapid EOD 50K (H16158363 "Rapid EOD 50k – A Comprehensive Look", August 24, 2026; H18337038 "Rapid EOD with DLL - A Detailed Look", "Updated this week") --
+  - key: mffu.rapideod50k.eval_fee
+    firm: mffu
+    value: null
+    units: usd
+    status: unverified
+    article_id: "plans/rapid-eod; 16158363; 18337038"
+    url: https://myfundedfutures.com/plans/rapid-eod
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      P:rapid-eod's text shows no price for the 50K size: "One-time fee $97" and "Based on current promotions $162", tied to no size (the card's $1,000 drawdown is the 25K's). None of $275, $165, $200 or 27500 appears in the page text (asked directly).
+      H18337038 gives no figure: "The default is No DLL, at the updated price."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches of P:rapid-eod. Q-135d's $275 (DLL version $200) is from embedded plan data this reader cannot see.
+      Settle in the lead's browser at myfundedfutures.com/challenge?id=93 and ?id=251 (stop before payment).
+
+  - key: mffu.rapideod50k.eval_profit_target
+    firm: mffu
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table: "Profit Target" | "$3,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary fetch (as for every H16158363 cell below).
+
+  - key: mffu.rapideod50k.eval_drawdown
+    firm: mffu
+    value: "2000 USD, end-of-day trailing; open-equity losses breach it; locks at $50,100 (firm-wide entries)"
+    units: text
+    status: verified
+    article_id: "16158363; 8348565"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table: "Maximum Loss Limit (EOD)" | "$2,000"
+      P:rapid-eod: "Drawdown Type: EOD."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The lock and the open-equity breach: mffu.eval_drawdown_lock, mffu.eval_drawdown_open_equity.
+
+  - key: mffu.rapideod50k.eval_daily_loss_limit
+    firm: mffu
+    value: "none on the default version; the DLL version (chosen only at checkout) has a 1000 USD soft pause (trading stops for the session, not a hard breach), reset daily at 6:00 PM ET, in evaluation and sim funded"
+    units: text
+    status: verified
+    article_id: "16158363; 18337038"
+    url: https://help.myfundedfutures.com/en/articles/18337038
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363: "Daily Loss Limit" | "None"; "No, there is no daily loss limit in the evaluation or sim funded stages of the Rapid EOD Plan."
+      H18337038: "Daily Loss Limit (DLL Version)" | "$1,000 (Soft Pause)*" (evaluation) / "$1,000 (Soft Pause)" (sim funded); "Soft Pause means trading stops during the current session."; "The Daily Loss Limit resets daily at 6:00 PM ET."; "It applies in both the Evaluation and Sim Funded stages."; "No. You can only choose the version at checkout."; "The default is No DLL, at the updated price."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H18337038 both fetches (the footnote's second sentence came back as "It is not a hard breach." in one and
+      "Hitting the Daily Loss Limit is not a breach." in the other, so only the first sentence is quoted).
+
+  - key: mffu.rapideod50k.eval_consistency
+    firm: mffu
+    value: 0.30
+    units: share
+    status: verified
+    article_id: "16158363; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363: "Consistency" | "30% (Eval Only)"
+      H11994562: "The consistency rule at MyFundedFutures is 30% on our Rapid EOD plans"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both pages, both fetches. The base is unsettled (mffu.eval_consistency_base); a breach does not fail
+      (mffu.eval_consistency_breach).
+
+  - key: mffu.rapideod50k.eval_min_days
+    firm: mffu
+    value: 4
+    units: days
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table: "Minimum Trading Days" | "4 Days"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Whether a losing day counts as a trading day is not stated.
+
+  - key: mffu.rapideod50k.eval_position_limit
+    firm: mffu
+    value: "3 mini / 30 micro"
+    units: contracts
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table: "Max Contract" | "3 mini / 30 micro"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.eval_news
+    firm: mffu
+    value: "T1 news trading allowed in the evaluation"
+    units: text
+    status: verified
+    article_id: "16158363; 8230009"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table: "T1 News Trading" | "Yes"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As H8230009's unrestricted list ("All evaluations"); subject to mffu.news_all_releases_protocol.
+
+  - key: mffu.rapideod50k.funded_drawdown
+    firm: mffu
+    value: "starts at a $0 balance, 2000 USD below it; end-of-day trailing, never intraday"
+    units: text
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Sim Funded: "Initial Balance" | "$0"; "Maximum Drawdown (MLL)" | "$2,000"
+      "Your Max Loss trails upward each time your account closes at a new end-of-day high." / "It does not move intraday – only at the close of each trading session."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.funded_drawdown_lock
+    firm: mffu
+    value: "locks at $100 (start + $100); a balance below $100 breaches"
+    units: text
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Once your trailing Max Loss reaches $100, it locks there." / "If your balance goes below $100 → the account is breached."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      No page read says what a payout does to the floor; with the buffer cleared by end-of-day balance the floor has
+      already locked.
+
+  - key: mffu.rapideod50k.funded_daily_loss_limit
+    firm: mffu
+    value: "none on the default version; 1000 USD soft pause on the DLL version"
+    units: text
+    status: verified
+    article_id: "16158363; 18337038"
+    url: https://help.myfundedfutures.com/en/articles/18337038
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      As mffu.rapideod50k.eval_daily_loss_limit: H18337038 sim funded "Daily Loss Limit (DLL Version)" | "$1,000 (Soft Pause)"; "It applies in both the Evaluation and Sim Funded stages."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.funded_consistency
+    firm: mffu
+    value: "none"
+    units: text
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Consistency Requirement: None" / "you don't need to meet a consistency rule to get paid"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.funded_position_limit
+    firm: mffu
+    value: "3 mini / 30 micro"
+    units: contracts
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Sim Funded: "Max Contract" | "3 mini / 30 micro"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.funded_news
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "16158363; 18337038; 8230009"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT in wording (Q-135d C-11):
+      H16158363 sentence: "No T1 news trading is not allowed on this Sim Funded account." (a double negative)
+      H16158363 table: "T1 News Trading" | "No"; H18337038: "T1 news trading is not allowed on this Sim Funded account."
+      H8230009's restricted list names "Rapid Sim Funded" and does not name Rapid EOD separately.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Recorded unverified only because the brief says every listed conflict is. Every reading but the double negative
+      says NOT ALLOWED, and the lead may settle it so.
+
+  - key: mffu.rapideod50k.payout_gate
+    firm: mffu
+    value: "first payout: at least $2,100 of realised profit (the buffer), 24 hours after the first trade; each later payout: net profit since the last payout of at least $500; daily; no winning-day count stated"
+    units: text
+    status: verified
+    article_id: "16158363; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363: "Required Buffer: $2,100" / "You must first build at least $2,100 in realized profits in the account before requesting your first payout." / "Once the buffer clears, each payout after that unlocks once your net profit since your last payout reaches $500." / "Payout Frequency: Daily"
+      H13745661: "First payout eligible 24 hours after first trade (buffer & minimum profit required)" / "50k Rapid - $2,100 (Intraday and EOD)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H16158363 verbatim once and in summary once; H13745661 verbatim once and in summary once. P:rapid-eod (once):
+      "Net Profit Since Last Payout" $500 for 50K. Whether the buffer must stay in the account after the request, and
+      so how much may be requested, is mffu.rapideod50k.payout_request_amount.
+
+  - key: mffu.rapideod50k.payout_min
+    firm: mffu
+    value: 500.0
+    units: usd
+    status: verified
+    article_id: "16158363; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363: "Minimum Payout Request: $500"; H13745661: "Minimum withdrawal after buffer: $500"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapideod50k.payout_cap
+    firm: mffu
+    value: "no cap per payout cycle; no lifetime cap stated"
+    units: text
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "There is no cap on how much you can request per payout cycle."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Once verbatim; the summary fetch did not list a cap. Bound: a $10,000 single-day profit moves the account to
+      Live (H13134718, per Q-135d; not re-read here, Live terms not recorded). Q-136b (2026-11-18): H13134718 read;
+      the bound is now its own entry, mffu.rapideod50k.funded_single_day_profit_ceiling.
+
+  - key: mffu.rapideod50k.payout_request_amount
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "16158363; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read says how much of the balance a request may take, or that the $2,100 buffer must stay in the account after a request. The nearest: "Minimum withdrawal after buffer: $500" (H13745661) and "There is no cap on how much you can request per payout cycle." (H16158363).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Q-135d's "the whole profit above $2,100" rests on plan-data fields (within_buffer_split 0, requestable_pct 1),
+      not on words. A family needing it declares both ends.
+
+  - key: mffu.rapideod50k.payout_split
+    firm: mffu
+    value: 0.9
+    units: share
+    status: verified
+    article_id: "16158363"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Profit split: "90%" to the "trader"; "10%" to "MyFundedFutures"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches; P:rapid-eod "90/10" once.
+
+  # -- Builder 50K (H14290805 "Builder Plan 50k - A Comprehensive Guide", "Updated over a month ago"): Default $2,000 MLL; Add-On $1,500 MLL --
+  - key: mffu.builder50k.eval_fee
+    firm: mffu
+    value: "153 USD one-time (Default, $2,000 MLL); 125 USD (Add-On, $1,500 MLL)"
+    units: text
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Price" | "$153" | "$125" (columns "Builder - Default" | "Builder - Add-On")
+      "Discounted Price (30% OFF)" | "$107" | "$87"; "Discounted Price (40% OFF - 2 uses only)" | "$92" | "$75"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches gave $153 / $125. The two discount rows (one fetch) are promotions, not terms; the 30 % row is new
+      against Q-135d. One-time: mffu.billing_basis. Reset price: mffu.reset_fee.
+
+  - key: mffu.builder50k.eval_profit_target
+    firm: mffu
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Profit Target" | "$3,000" | "$3,000"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.eval_drawdown
+    firm: mffu
+    value: "2000 USD end-of-day trailing from a $48,000 minimum (Add-On: 1500, $48,500); locks once it reaches $100 above the starting balance"
+    units: text
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Max EOD Drawdown (MLL)" | "$2,000" | "$1,500"; "Starting Minimum Balance" | "$48,000" | "$48,500"
+      "The MLL locks permanently once it reaches $100 above the starting balance."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The table in the first fetch, the lock sentence in the second.
+
+  - key: mffu.builder50k.eval_drawdown_breach_basis
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "14290805; 8348565"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      NEW CONFLICT (not in Q-135d's list):
+      H14290805: "Open equity losses are counted when determining whether your account has breached the rule at the end of the trading day."
+      H8348565 (every evaluation): "if an open position dips your account balance below the minimum account balance, your evaluation attempt will fail"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H14290805's sentence came back once verbatim; H8348565's twice. Builder's reads as a check at the day's end;
+      H8348565's as an intraday breach. Builder also requires "All positions must be closed before the end of the
+      trading session." Not chosen between.
+
+  - key: mffu.builder50k.daily_loss_limit
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "14290805; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-5):
+      H14290805: "Daily Loss Limit" | "$1,000 - soft pause" | "$1,000 - soft pause"; "Yes. The Evaluation, Sim Funded and Live stage have a $1,000 soft pause DLL."
+      H13745661: "No daily loss limits on Builder, Rapid or Pro plans"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H14290805 both fetches; H13745661 once verbatim. The plan article is specific and newer-looking; the payout page
+      line reads like marketing. The lead may settle it; this record does not.
+
+  - key: mffu.builder50k.eval_consistency
+    firm: mffu
+    value: "none"
+    units: text
+    status: verified
+    article_id: "14290805; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H14290805: "Consistency Rule" | "None" | "None"
+      H11994562: "Our Builder plans have no consistency rules in the evaluation stage and can be passed in 1 day."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.eval_min_days
+    firm: mffu
+    value: 1
+    units: days
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Minimum Trading Days" | "1 Day" | "1 Day"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.position_limit
+    firm: mffu
+    value: "4 minis / 40 micros, evaluation and sim funded"
+    units: contracts
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table and Sim Funded Stage table: "Max Contracts" | "4 Minis / 40 Micros" | "4 Minis / 40 Micros"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The evaluation row in the first fetch; the first fetch's Sim Funded table omitted the row, so a third fetch
+      asked for it directly and returned the Sim Funded "Max Contracts" cell "4 Minis / 40 Micros" for both columns.
+
+  - key: mffu.builder50k.news
+    firm: mffu
+    value: "news trading unrestricted in evaluation and sim funded"
+    units: text
+    status: verified
+    article_id: "14290805; 8230009"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H14290805: "News Trading" | "Allowed" | "Allowed"; "News trading is fully unrestricted during the evaluation and sim funded stage."
+      H8230009: "Trading on T1 News events is permitted for the following:" ... Builder Plans
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Subject to mffu.news_all_releases_protocol (unverified).
+
+  - key: mffu.builder50k.funded_drawdown
+    firm: mffu
+    value: "starts at a $0 balance with the floor at -$2,000 (Add-On -$1,500); end-of-day trailing; locks at $100 above the start; after the first payout the MLL resets to $100"
+    units: text
+    status: verified
+    article_id: "14290805; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H14290805 Sim Funded: "Max EOD Drawdown (MLL)" | "$2,000" | "$1,500"; "Starting Minimum Balance" | "-$2,000" | "-$1,500"; "The MLL locks permanently once it reaches $100 above the starting balance."
+      H13745661: "After your first payout, the Max Loss Limit resets to $100"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13745661's sentence verbatim once, the same in the summary.
+
+  - key: mffu.builder50k.funded_seats
+    firm: mffu
+    value: 1
+    units: accounts
+    status: verified
+    article_id: "14290805; 16498635"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H14290805: "Only one Sim Funded account may be active per user at any time on the Builder Plan." / "In the event of a breach, the earliest a new Sim Funded account may be activated is the following trading day."
+      H16498635: "Builder $50K: Maximum of 1 Sim-Funded Accounts"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.payout_gate
+    firm: mffu
+    value: "first payout: at least $500 net profit above the buffer ($2,100; Add-On $1,600), so a balance of at least $2,600, and 48 hours after the first trade; later payouts: at least $500 net profit since the last approved payout; at least 2 trading days in the cycle"
+    units: text
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Buffer (Must Be Cleared to Request)" | "$2,100" | "$1,600"; "Minimum Qualifying Days / Cycle" | "2 Days" | "2 Days"
+      "For your first payout: you must have at least $500 in net profit above the buffer." / "your account balance must reach at least $2,600 before you can submit your first payout request."
+      "You may request a payout 48 hours after your first trade has been placed." / "For all subsequent payouts: you must have at least $500 in net profit since your last approved payout." / "You must have traded on at least 2 trading days in the current cycle."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The table in one fetch, the sentences in the other. H13745661's summary fetch gave Builder's first payout "as
+      early as 2 days" (a summary, not a conflict).
+
+  - key: mffu.builder50k.funded_consistency
+    firm: mffu
+    value: 0.50
+    units: share
+    status: verified
+    article_id: "14290805; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H14290805: "your single largest profit day cannot represent more than 50% of your total profits in the cycle." / "This is calculated at the time of your payout request, and the calculation resets fully after each approved payout." / "If it does, you will need to trade additional days to bring that ratio into compliance before requesting."
+      H11994562: "Builder plans have a 50% consistency rule in the simulated funded stage."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      A payout gate, not a breach. Whether the first cycle's base includes the buffer is not stated.
+
+  - key: mffu.builder50k.payout_min
+    firm: mffu
+    value: 500.0
+    units: usd
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Minimum Payout Amount" | "$500" | "$500"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.payout_cap
+    firm: mffu
+    value: 2000.0
+    units: usd
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Maximum Payout Per Cycle" | "$2,000" | "$2,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13745661's summary fetch: per-request maximum $2,000 at 50k.
+
+  - key: mffu.builder50k.payout_split
+    firm: mffu
+    value: 0.8
+    units: share
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Profit Split" | "80% Trader / 20% Firm"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.builder50k.max_sim_payouts
+    firm: mffu
+    value: 5
+    units: payouts
+    status: verified
+    article_id: "14290805"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Max Sim Payouts" | "5 Payouts" | "5 Payouts"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      What follows the fifth (the Live move) is mffu.builder50k.live_trigger.
+
+  - key: mffu.builder50k.live_trigger
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "14290805; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-7):
+      H14290805: "After your 5th approved sim payout, you are eligible for promotion to a live funded account."
+      H13745661 (Builder, conditions for a Live Account): "5 consecutive payouts" / "Reaching the total sim cap of $100k"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      "Eligible for promotion" is not "moved"; "5 consecutive" is not "5th approved". The $100k sim cap cannot be
+      reached at 50K inside five payouts of at most $2,000. Not chosen between.
+
+  # -- Pro 50K and Pro 50K One Day (H17573707 "Comprehensive Look into Redesigned Pro Plan", October 14, 2026) --
+  - key: mffu.pro50k.eval_fee
+    firm: mffu
+    value: null
+    units: usd
+    status: unverified
+    article_id: "plans/pro; 17573707"
+    url: https://myfundedfutures.com/plans/pro
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      P:pro: "Starting at $159" ... "Based on current promotions" followed by "$265"; neither is labelled with a size (the nearest label is the button "Start Pro Evaluation At $50K"). H17573707 states no price ("Competitive Pricing" with no amounts).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches of P:pro. $265 is probably the 50K list price (Q-135d's plan data: 265), but the page does not say
+      so in words. Settle at myfundedfutures.com/challenge?id=135 in the lead's browser.
+
+  - key: mffu.pro50k.eval_profit_target
+    firm: mffu
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation table (Pro 50k | Pro 100k | Pro 150k | Pro 50k - One Day): "Profit Target" | "$3,000" | "$6,000" | "$9,000" | "$4,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary (as for every H17573707 cell below).
+
+  - key: mffu.pro50k.eval_drawdown
+    firm: mffu
+    value: "2000 USD, end-of-day trailing (lock and open-equity breach: firm-wide entries)"
+    units: text
+    status: verified
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Maximum Loss Limit (EOD)" | "$2,000" | "$3,000" | "$4,500" | "$2,000"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.eval_daily_loss_limit
+    firm: mffu
+    value: "none"
+    units: text
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Daily Loss Limit (DLL)" | "None" | "None" | "None" | "None"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.eval_consistency
+    firm: mffu
+    value: 0.50
+    units: share
+    status: verified
+    article_id: "17573707; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707: "Consistency" | "50%" | "50%" | "50%" | "None"
+      H11994562: "and 50% for Rapid Intraday and Pro plans."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.eval_min_days
+    firm: mffu
+    value: 2
+    units: days
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Minimum Trading Days" | "2 Days" | "2 Days" | "2 Days" | "1 Day"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.eval_position_limit
+    firm: mffu
+    value: "3 mini / 30 micro"
+    units: contracts
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Scaling / Max Contacts" | "3 mini / 30 micro" | "6 mini / 60 micro" | "9 mimi / 90 micro" | "3 mini / 30 micro"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The page's own typos ("Contacts", "mimi") kept.
+
+  - key: mffu.pro50k.eval_news
+    firm: mffu
+    value: "T1 news trading allowed in the evaluation"
+    units: text
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation: "T1 News Trading" | "Yes" | "Yes" | "Yes" | "Yes"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.funded_drawdown
+    firm: mffu
+    value: "2000 USD, end-of-day trailing, not intraday"
+    units: text
+    status: verified
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707 Sim Funded: "Maximum Loss Limit (EOD)" | "$2,000" | "$3,000" | "$4,500"
+      P:pro FAQ: "The max-loss line trails your equity high at the end of each trading day — not intraday."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The FAQ line once. The starting balance is not printed in words for the sim account (the $50,100 floor implies
+      a $50,000 start).
+
+  - key: mffu.pro50k.funded_drawdown_lock
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      AMBIGUOUS (Q-135d section 12): H17573707: "After first payout, MLL moves to $50,100 and remains static."
+      P:pro: "the MLL locks permanently at your starting balance plus $100 and stops trailing entirely." (after the first approved payout)
+      Not stated: whether the floor keeps trailing above $50,100 before the first payout (and then "moves" down to it), or stops at $50,100 as on every other MFFU account.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The H17573707 sentence in both fetches; P:pro once. Q-135d quotes P:pro "Until that first payout, the MLL
+      continues to trail each time you set a new EOD equity high." (not returned to this reader). A family reads both
+      ends.
+
+  - key: mffu.pro50k.funded_daily_loss_limit
+    firm: mffu
+    value: "none"
+    units: text
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Sim Funded: "Daily Loss Limit (DLL)" | "None" | "None" | "None"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.funded_consistency
+    firm: mffu
+    value: "no numeric rule; a discretionary Consistent Trading Policy (mffu.pro50k.funded_conduct_policy)"
+    units: text
+    status: verified
+    article_id: "17573707; 8694840"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707 Sim Funded: "Consistency" | "None" | "None" | "None"
+      H8694840: "While there are no strict rules dictating behavior, traders should view their freedom as an opportunity" ...
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.funded_conduct_policy
+    firm: mffu
+    value: "Consistent Trading Policy (Pro sim funded): uniform position sizing, stops and targets; avoid maximum contract sizes; no flipping for activity; no number or threshold; restrictions, penalties or termination at MFFU's discretion"
+    units: text
+    status: verified
+    article_id: "8694840; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/8694840
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H8694840 "Balancing Freedom and Responsibility: Consistency for Sim-Funded Pro Accounts at MFFU" (August 24, 2026), headings: "Uniform Position Sizing, Stops, and Targets"; "Avoidance of Maximum Contract Sizes"; "No Flipping Contracts for Activity's Sake"
+      "While we offer flexibility in choosing contract sizes, resist the urge to employ maximum or oversized" ...
+      "In cases of inconsistencies in your trading behavior, we may impose account restrictions to prevent further deviations." / "Depending on the severity and recurrence of violations, traders may incur penalties that could impact their trading capital." / "For repeated or severe violations, MyFunded Futures retains the right to terminate the trader's account."
+      P:pro: "MFFU monitors sim funded accounts for trading behavior that falls outside professional norms."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H8694840 twice (headings in both; the sentences in the second). P:pro once. A READING, NOT A RULING: the state
+      table varies size by account state by design, against "Uniform Position Sizing"; a conduct exposure of tier 2 /
+      3 (Stage 2 D-145), priced by the denial ladder, like Topstep's ToU s.8.
+
+  - key: mffu.pro50k.funded_position_limit
+    firm: mffu
+    value: "3 mini / 3 micro (as printed; how a micro counts against the limit is not stated in words)"
+    units: text
+    status: verified
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707 Sim Funded: "Scaling / Max Contacts" | "3 mini / 3 micro" | "6 mini / 6 micro" | "9 mini / 9 micro"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches; P:pro (once) gives 3 minis / 3 micros in sim funded against 3 / 30 in evaluation. Q-135d's
+      reading that a micro counts as a mini (3 contracts of either kind) rests on a plan-data field
+      (micro_scaling_factor_in_funded 1); no sentence says it. A sizing that needs more than 3 MNQ on Pro funded
+      cannot rely on the cell.
+
+  - key: mffu.pro50k.funded_news
+    firm: mffu
+    value: "T1 news trading not allowed on Pro sim funded"
+    units: text
+    status: verified
+    article_id: "17573707; 8230009"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707: "T1 News Trading" | "Not Allowed"; H8230009 restricted list: Pro Sim Funded
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.payout_timing
+    firm: mffu
+    value: "first request 14 calendar days from the day of the first trade, then every 14 calendar days"
+    units: text
+    status: verified
+    article_id: "17573707; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707: "Qualification for Payouts" | "14 calendar days from day of first trade. Buffer must be cleared"
+      H13745661: "Request a payout every 14 calendar days from your first trade"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      P:pro (once): "Bi-Weekly"; "14 days from first trade + buffer cleared". The buffer half of the cell is
+      mffu.pro50k.payout_buffer.
+
+  - key: mffu.pro50k.payout_buffer
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-3):
+      H17573707 (October 14, 2026): "Payout Buffer Requirement" | "$2,100"; "Qualification for Payouts" | "14 calendar days from day of first trade. Buffer must be cleared"
+      H13745661 (August 25, 2026): "Withdrawal While in Buffer: You can withdraw up to 60% of your profits before fully clearing the buffer."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both pages in both fetches. The $2,100 figure is not in dispute; whether a request is possible before it is
+      cleared is. P:pro (once): "Up to $100,000 per cycle, subject to your live equity above the required buffer at
+      the time of request." Not chosen between.
+
+  - key: mffu.pro50k.payout_min
+    firm: mffu
+    value: 1000.0
+    units: usd
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Minimum Payout Request" | "$1,000" | "$1,000" | "$1,000"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.payout_cap
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      NEW CONFLICT (not in Q-135d's list): a lifetime cap per user, or a cap per payout cycle.
+      H17573707: "Maximum Payout (per user)" | "$100,000"
+      P:pro: "Payouts unlock 14 days from your first trade, with a $1,000 minimum and up to $100,000 in total Sim Funded payouts per user." / "The MFFU Pro plan caps at $100,000."
+      P:pro, the same page: "Up to $100,000 per payout cycle." / "Up to $100,000 per cycle, subject to your live equity above the required buffer at the time of request."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H17573707 both fetches; P:pro both fetches (the second listed every "$100,000" sentence). At 50K the two
+      readings differ only once cumulative payouts near $100,000. H17573707 also lists "Reaching the $100,000 payout
+      cap. Profits above $100,000 are forfeited." among the Live triggers (Q-135d; the summary fetch the same).
+
+  - key: mffu.pro50k.payout_split
+    firm: mffu
+    value: 0.8
+    units: share
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Profit Split" | "80/20" | "80/20" | "80/20"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.pro50k.live_review_triggers
+    firm: mffu
+    value: "a Live review after three consecutive payouts on the same Pro account, at the $100,000 cap (excess forfeited), on the risk team's invitation, or at $20,000 profit (review only); old Pro accounts keep old rules"
+    units: text
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Three (3) consecutive payouts on the same Pro account."
+      "Accounts on the old Pro products keep every old rule."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      ONE FETCH ONLY for these two lines verbatim (the summary fetch); the other three triggers came back in summary
+      ("Reaching the $100,000 payout cap, with profits above that forfeited"; "An invitation from the risk management
+      team"; "Reaching $20,000 in profit, which triggers only a review"). Discretionary: G-4's pattern. Live terms
+      are not recorded.
+
+  - key: mffu.pro50k_oneday.eval_terms
+    firm: mffu
+    value: "as Pro 50K except: profit target 4000 USD; no consistency rule; minimum 1 trading day (drawdown 2000 EOD, no DLL, 3 mini / 30 micro, T1 news allowed)"
+    units: text
+    status: verified
+    article_id: "17573707; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H17573707, column "Pro 50k - One Day": "Profit Target" "$4,000"; "Maximum Loss Limit (EOD)" "$2,000"; "Daily Loss Limit (DLL)" "None"; "Consistency" "None"; "Minimum Trading Days" "1 Day"; "Scaling / Max Contacts" "3 mini / 30 micro"; "T1 News Trading" "Yes"
+      H11994562: "(Pro Plan One day pass has no consistency rule)"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches of each page. One entry for the variant's evaluation, which differs from Pro 50K only in target,
+      consistency and days.
+
+  - key: mffu.pro50k_oneday.eval_fee
+    firm: mffu
+    value: null
+    units: usd
+    status: unverified
+    article_id: "plans/pro; 17573707"
+    url: https://myfundedfutures.com/plans/pro
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      P:pro does not mention the One Day add-on (no price, no terms, no "limited time"); H17573707 gives no price.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Q-135d's $379 is plan data (product 138); H12879226 ("For a limited time", legacy collection) was not re-read.
+      Whether the variant is still sold is therefore not settled by words; the lead's browser at challenge?id=138.
+
+  - key: mffu.pro50k_oneday.funded_terms
+    firm: mffu
+    value: "the same as Pro 50K's sim funded account"
+    units: text
+    status: verified
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Pro 50k One Day account follow the same rules as the Pro 50k."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Once verbatim; the summary fetch treated the two together. So every mffu.pro50k.funded_* and payout_* entry,
+      with its status, applies to One Day.
+
+  # -- Rapid 50K (intraday-trailing funded; H13134709 "Rapid Plan 50k - A Comprehensive Look", August 24, 2026) --
+  - key: mffu.rapid50k.eval_fee
+    firm: mffu
+    value: null
+    units: usd
+    status: unverified
+    article_id: "plans/rapid"
+    url: https://myfundedfutures.com/plans/rapid
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      P:rapid: "Starting at" "$125" "Based on current promotions" "$209"; the page does not say which size these belong to (the nearby button reads "Start Rapid Evaluation At $50K" and states no price).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Once (the fetch that read the lock sentences did not repeat prices). Q-135d's $209 is plan data (product 71).
+
+  - key: mffu.rapid50k.eval_profit_target
+    firm: mffu
+    value: 3000.0
+    units: usd
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation: "Profit Target" | "$3,000"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Verbatim in one fetch, the same in the summary (as for every H13134709 cell below).
+
+  - key: mffu.rapid50k.eval_drawdown
+    firm: mffu
+    value: "2000 USD, end-of-day trailing (lock and open-equity breach: firm-wide entries)"
+    units: text
+    status: verified
+    article_id: "13134709; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Maximum Loss Limit (EOD)" | "$2,000"
+      P:rapid rules table: "Drawdown Type | EOD | EOD | EOD | EOD" (the row with Profit Target and Max Loss (EOD))
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.daily_loss_limit
+    firm: mffu
+    value: "none, evaluation and sim funded"
+    units: text
+    status: verified
+    article_id: "13134709; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Daily Loss Limit" | "None"
+      P:rapid FAQ: "No. Rapid has no daily loss limit in either the evaluation or the funded stage."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.eval_consistency
+    firm: mffu
+    value: 0.50
+    units: share
+    status: verified
+    article_id: "13134709; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Consistency" | "50% (Eval Only)"; H11994562: "and 50% for Rapid Intraday and Pro plans."
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.eval_min_days
+    firm: mffu
+    value: 2
+    units: days
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Minimum Trading Days" | "2 Days"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.eval_position_limit
+    firm: mffu
+    value: "5 mini / 50 micro"
+    units: contracts
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation: "Max Contract" | "5 mini / 50 micro"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.eval_news
+    firm: mffu
+    value: "T1 news trading allowed in the evaluation"
+    units: text
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Evaluation: "T1 News Trading" | "Yes"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.funded_drawdown
+    firm: mffu
+    value: "starts at a $0 balance; 2000 USD below the equity high-water mark, trailing intraday on equity including unrealised gains"
+    units: text
+    status: verified
+    article_id: "13134709; 12802721"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Initial Balance" | "$0"; "Max Loss Distance: $2,000 from your equity high-water mark (HWM)"; "Drawdown Type: Intra-day trailing"; "Your Max Loss trails your account equity high-water mark during the day."
+      H12802721 "Intraday Drawdown Explained" (January 8, 2026): "At the funded stage, the trailing drawdown is calculated intraday based on your peak balance, which includes both realized and unrealized gains."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H12802721 twice (verbatim once; the second quoted "which includes both realized and unrealized gains"). It
+      names no plan; it sits in the "Intraday Drawdown Rapid Plans" collection. THE ENGINE CANNOT REPRESENT THIS
+      without each trade's favourable excursion (RD-01 G-1).
+
+  - key: mffu.rapid50k.funded_drawdown_lock
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "13134709; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      NEW CONFLICT (not in Q-135d's list): when the intraday floor locks.
+      H13134709: "Once your trailing Max Loss reaches $100, it locks there."
+      P:rapid FAQ "What is intraday trailing drawdown?": "On Rapid Sim Funded, once your balance is +$100 above your starting balance after your first payout, the floor locks" / "and stops trailing upward permanently."
+      P:rapid "STRAIGHT TALK": "After building your buffer above the starting balance +$100, the trailing threshold stops moving and becomes static"; "Reach (MLL + $100) in profit and the trailing stops permanently"; rules table "MLL Locks At | +$100 | +$100 | +$100 | +$100"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13134709 both fetches; P:rapid twice (the second returned every lock sentence with its heading). The level
+      (+$100) agrees; WHEN it locks does not (on reaching it, or only after the first payout). Not chosen between.
+
+  - key: mffu.rapid50k.funded_consistency
+    firm: mffu
+    value: "none"
+    units: text
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      "Consistency Rule: None in Sim Funded"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.funded_position_limit
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "13134709; 10244682"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      CONFLICT (Q-135d C-6):
+      H13134709: "Max Contracts: 5 minis / 50 micros"
+      H10244682 "Cross Instrument Policy" (August 24, 2026): "if you are trading a Rapid 50k sim funded plan, you start off with 2 contracts" ... "(2 minis OR 20 micros) due to the scaling plan."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13134709 both fetches; H10244682 both fetches. The example looks stale (Q-135d; plan data
+      scaling_rule_in_funded false), but this record does not choose. H10244682 also: "Orders that combine different
+      instruments (e.g., 2 minis and 20 micros) may technically execute" ... "but this is not permitted!"; no sentence
+      states 10 micros = 1 mini (asked).
+
+  - key: mffu.rapid50k.funded_news
+    firm: mffu
+    value: "T1 news trading not allowed on Rapid sim funded"
+    units: text
+    status: verified
+    article_id: "13134709; 8230009"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "No T1 news trading is allowed on this Sim Funded account."; H8230009 restricted list: Rapid Sim Funded
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.payout_gate
+    firm: mffu
+    value: "a $2,100 buffer of realised profit; first payout 24 hours after the first trade; daily (every 24 hours); a profit-since-last-payout requirement is not stated"
+    units: text
+    status: verified
+    article_id: "13134709; 13745661"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Required Buffer" | "$2,100"; "Payout Frequency" | "Daily - every 24 hours"; "Your first payout becomes available exactly 24 hours after your first trade on the Sim Funded account"
+      H13745661: "50k Rapid - $2,100 (Intraday and EOD)"
+      P:rapid FAQ: "Once funded, you need to build the required buffer ($2,100 on the $50K account) in realized profits" / "before your first payout request."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The summary fetch of H13134709: "'Since last payout' requirement: Not stated." Rapid EOD's $500-since-last rule
+      is not written for Rapid. Request amount: unstated, as Rapid EOD's (mffu.rapideod50k.payout_request_amount).
+
+  - key: mffu.rapid50k.payout_min
+    firm: mffu
+    value: 500.0
+    units: usd
+    status: verified
+    article_id: "13134709; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709: "Minimum Payout Request" | "$500"; P:rapid: "| Min Payout | $500 | $500 | $500 | $500 |"
+    stage2_key: null
+    stage2_value: null
+
+  - key: mffu.rapid50k.payout_cap
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134709 states no maximum per payout and no lifetime cap (asked in the summary fetch: "Maximum or cap: Not stated."). H13745661 states none for Rapid either (its summary fetch: "No maximum is stated.").
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Unlike Rapid EOD's "There is no cap on how much you can request per payout cycle.", no Rapid page read says
+      "no cap"; Q-135d's "none" rests on plan data (capped_withdrawals false).
+
+  - key: mffu.rapid50k.payout_split
+    firm: mffu
+    value: 0.9
+    units: share
+    status: verified
+    article_id: "13134709"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Profit split: "90%" to the trader, "10%" to MyFundedFutures
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches.
+
+  # ---- Q-136b (2026-11-18 UTC; the machine's local date 2026-11-17): RD-05's two missing terms, every $50K plan ------
+  # Read first: the Terms (myfundedfutures.com/terms), twice, for an automated-access clause -- none has appeared (no
+  # hit on automat-, scrap-, crawl-, spider-, robot-, bot-, script- or data min- about access; s.12.5's "Such processing
+  # may occur automatically, without further notice or consent" is about the firm's processing; no version date, only
+  # "© 2023-2026 MyFundedFutures."). Then named pages one at a time with WebFetch, each term from two differently
+  # worded fetches. Pages read for these terms: H9735811, H8528335, H8528337, H10082979, H8445591, H9006753, H10101257,
+  # H11802636, H8528339, H8528346, H11553890, H16158363, H18337038, H13134709, H13134718, H14290805, H17573707,
+  # P:rapid-eod, P:rapid, P:pro, P:builder; and the collection lists 5687009, 5786939, 5808821, 5808827, 14650040,
+  # 17350372. No platform vendor's own page was read (not MFFU's domains).
+
+  # -- Commissions and fees per round turn --
+  - key: mffu.commissions
+    firm: mffu
+    value: "per contract, round trip (column 'Total Cost Round Trip'): NQ 4.68 USD, MNQ 1.90 USD; the page names no account type or plan, and does not say what the figure includes or that it is charged in evaluation or sim funded P&L"
+    units: text
+    status: verified
+    article_id: "9735811"
+    url: https://help.myfundedfutures.com/en/articles/9735811-futures-instrument-list
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H9735811 "Futures Instrument List" (August 24, 2026), subtitle: "Includes Contract Specifications, Commissions, and Trading Fees"
+      CME table, columns "Instrument Name | Code | Trading Hours | Tick Size | Tick Value | Total Cost Round Trip":
+      "E-mini NASDAQ 100" | "NQ" | "Sunday - Friday 17:00 - 16:00 CT" "Daily Break: 16:00 - 17:00 CT" | "0.25" | "$5" | "$4.68"
+      "Micro E-mini Nasdaq-100" | "MNQ" | "Sunday - Friday 17:00 - 16:00 CT" "Daily Break: 16:00 - 17:00 CT" | "0.25" | "$0.50" | "$1.90"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches gave the same two rows and the subtitle. Asked in both: the page names no plan (Rapid, Rapid EOD,
+      Builder, Pro, Pro One Day) and none of evaluation, sim funded, platform, Tradovate, Rithmic, NinjaTrader or
+      per side; it does not say whether exchange, NFA, clearing or platform fees are inside the figure. It sits in
+      the "Welcome Aboard" collection's "Core Rules" group. H10101257 ("Understanding Live Funded Account", August
+      24, 2026) assigns "Round-Trip Commissions and Fees" to the LIVE account ("All costs will be deducted directly
+      from your Live Funded Account balance.") and says nothing of commissions on evaluation or sim funded accounts.
+      No MFFU page read states a platform pass-through: H8528335 (Overview of Supported Platforms, October 8, 2026),
+      H8528337, H10082979 (NinjaTrader), H8445591 (Tradovate) and H9006753 (TradingView) mention no commission, fee
+      or licence. Against the engine: Stage 2's MNQ round trip is $1.22 (Q-135d section 13, TS fills); MFFU's table
+      is $1.90 (NQ $4.68 against $3.78). Which accounts it applies to is each plan's `commissions` entry below.
+
+  - key: mffu.rapideod50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "16158363; 18337038; plans/rapid-eod; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H16158363's only fee lines: "There are no activation fees on this plan." / "Our Rapid EOD account does not have an activation fee."
+      P:rapid-eod: "Recurring Costs" | "None"; "One-time purchase, nothing to cancel." (no commission, round-trip, per-side or P&L-deduction wording; asked).
+      H18337038 (DLL version): no commission, round-trip or trading-fee wording (asked).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both versions (default and DLL). Recorded unverified, not unstated, because a figure exists without an account
+      named (the precedent: lucid.flex50k.funded_monthly_fee). A family that needs the cost declares its reading of
+      the gap, e.g. both ends: none, and mffu.commissions' $4.68 / $1.90 round trip on every evaluation and sim funded
+      fill. Live accounts pay commissions from the Live balance (H10101257); Live terms are not recorded.
+
+  - key: mffu.builder50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "14290805; plans/builder; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H14290805's only fee lines: "Activation Fee" | "$0"; "There are absolutely no activation fees on any of our plans."; "No. There are no activation fees on the Builder Plan."
+      P:builder: no commission, round-trip, per-side or P&L-deduction wording (asked); "Activation Fee | $0"; "Evaluation fees are non-refundable."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both Builder columns (Default and Add-On). As mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.pro50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H17573707: the only fee row is Sim Funded "Activation Fee" | "$0"; no commission, per-trade, round-trip, per-side or platform-fee wording (asked).
+      P:pro: no commission, round-trip, per-side or P&L-deduction wording (asked); "Activation Fee" "$0"; "Recurring Costs" "None"; "Evaluation fees are non-refundable."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.pro50k_oneday.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled, as Pro 50K: H17573707 states no commission for any Pro column, the "Pro 50k - One Day" column included; P:pro does not mention the One Day variant; H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90") names no account type or plan.
+      H17573707: "Pro 50k One Day account follow the same rules as the Pro 50k." (Q-136's reading, mffu.pro50k_oneday.funded_terms)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The second fetch of H17573707 noted the Sim Funded fee table has no One Day column. As
+      mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.rapid50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "13134709; plans/rapid; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H13134709's only fee line: "Our evaluation costs are among the lowest, and at MFFU, there are absolutely no activation fees for any of our plans."
+      P:rapid: no commission, round-trip, per-side or P&L-deduction wording (asked); its FAQ's "you can reset it for a specific fee" is a reset fee.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As mffu.rapideod50k.commissions: a family declares its reading.
+
+  # -- The single-day profit ceiling (a cap on one day's profit, or on how much one day counts), per plan and stage.
+  # The evaluation consistency shares (each plan's eval_consistency; the base unsettled, mffu.eval_consistency_base;
+  # never a breach, mffu.eval_consistency_breach) and Builder's per-cycle 50 % best-day share
+  # (mffu.builder50k.funded_consistency) are recorded already and are not repeated here.
+  - key: mffu.rapideod50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "16158363; 18337038; 11802636; 8528339; 11553890; plans/rapid-eod"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit, or forfeits or discounts a day's profit, beyond the 30 % consistency share: H16158363 "Consistency" | "30% (Eval Only)" (a pass gate, not a breach). Asked of H16158363, H18337038, H11802636 ("Rapid Plan EOD ($25K and $50K)": "30% (Eval Only)"), H8528339, H11553890 and P:rapid-eod: none.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The sim funded $10,000 rule (next entry) is written for the Sim Funded account only. Not a permission.
+
+  - key: mffu.rapideod50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: "10000 USD net profit in a single trading day (session) on the sim funded account moves it to Live automatically, and any profit above 10000 USD for that day is forfeited; one threshold for every size; both versions (default and DLL)"
+    units: text
+    status: verified
+    article_id: "13134718; 16158363; 18337038"
+    url: https://help.myfundedfutures.com/en/articles/13134718-understanding-rapid-live
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363 (August 24, 2026), section 3: "Live transition on Rapid EOD 50k follows the same rules as standard Rapid 50k." (and its FAQ: "Rapid EOD 50k follows the same rules as standard Rapid 50k.")
+      H13134718 "Understanding Rapid Live" (September 8, 2026): "$10,000 net profit achieved in a single trading day (automatic transition)" / "Automatic Live transition occurs when you generate $10,000 in net profit within a single trading session." / "any profit exceeding $10,000 for that trading day is forfeited"
+      H18337038 (DLL version): "Both versions follow the existing Rapid Live values for their account size."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13134718 twice: the three sentences in both (the second fetch: one threshold for all sizes, "The 50k account
+      is not listed with a different figure."); the other pathway, "Consistent payout performance reviewed and
+      approved by our Risk Management Team", with "final transition approval remains at the Risk Management Team's
+      sole discretion". H16158363 three times: the first fetch did not return section 3; the second and third quoted
+      the sentence verbatim (Q-135d's capture has it too). H18337038 once. Not stated: whether "net profit" is after
+      commissions (mffu.rapideod50k.commissions), where the trading day starts, or whether the forfeited excess is
+      lost from the sim balance, the payout, or both. What follows is the Live account (merged accounts, a Reserve,
+      sim trading suspended; Q-135d section 3b), whose terms are not recorded. Earlier this bound sat only in the
+      note of mffu.rapideod50k.payout_cap (Q-136, "not re-read here").
+
+  - key: mffu.builder50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "14290805; 11802636; 8528339; 11553890; plans/builder"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a ceiling on one evaluation day's profit. H14290805: "Consistency Rule" | "None" | "None"; asked for a maximum daily profit or daily profit cap: none. H11802636 "Builder Plans (all sizes)": "None". H8528339, H11553890 and P:builder: none.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Builder's evaluation can be passed in one day (mffu.builder50k.eval_min_days, eval_consistency). Not a
+      permission.
+
+  - key: mffu.builder50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "14290805; plans/builder"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No dollar ceiling on one sim funded day's profit and no single-day Live trigger on any page read. The only single-day term is the per-cycle share: H14290805 "your single largest profit day cannot represent more than 50% of your total profits in the cycle"; P:builder "your single best day can't account for more than half of that cycle's profits."
+      The only Live trigger named: H14290805 "After 5th approved sim payout"; P:builder "The fifth approved payout triggers promotion to a live account underwritten by Blue Row Capital."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H14290805 twice (the second: "Maximum daily profit cap or daily profit target cap: None. Single-day profit
+      triggering a move to Live or a review: None."); P:builder once. The 50 % share is mffu.builder50k.funded_consistency
+      (a payout gate); the $2,000 per-cycle maximum is mffu.builder50k.payout_cap. Not a permission.
+
+  - key: mffu.pro50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; 11802636; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit beyond the 50 % consistency share: H17573707 "Consistency" | "50%"; P:pro "There's a 50% consistency rule in evaluation only — no single day's profit can exceed 50% of your total eval profits." Asked of H17573707 (twice), H11802636 and P:pro: no maximum daily profit or daily profit cap.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The P:pro sentence once. Not a permission.
+
+  - key: mffu.pro50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read caps one sim funded day's profit or names a single-day Live trigger. H17573707's review triggers ("A trader is reviewed for a transition to a live account as a result of any of the below:"): "Three (3) consecutive payouts on the same Pro account." / "Reaching the $100,000 payout cap. Profits above $100,000 are forfeited." / "An invitation from the risk managements team. This invitation can happen at any time." / "Reaching $20,000 in profit. This triggers a review only. It does not guarantee a transition to a live account."
+      P:pro: "There's no rule that limits your best day to a fraction of your total profit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H17573707 twice (the second fetch: "None of these conditions refers to profit made in a single day or
+      session. The $20,000 condition sets no time period"); P:pro once. The $20,000 review names no period (a
+      cumulative reading is not stated either); the $100,000 cap is mffu.pro50k.payout_cap (unverified). Not a
+      permission.
+
+  - key: mffu.pro50k_oneday.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read caps one evaluation day's profit on the One Day variant: H17573707 column "Pro 50k - One Day": "Consistency" "None", "Minimum Trading Days" "1 Day", "Profit Target" "$4,000"; asked for a maximum daily profit or daily profit cap: none (both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H11994562 (Q-136): "(Pro Plan One day pass has no consistency rule)". P:pro does not mention the variant. Not a
+      permission.
+
+  - key: mffu.pro50k_oneday.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      As mffu.pro50k.funded_single_day_profit_ceiling: "Pro 50k One Day account follow the same rules as the Pro 50k."; no single-day cap or single-day Live trigger for either (H17573707, both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Not a permission.
+
+  - key: mffu.rapid50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "13134709; 11802636; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit beyond the 50 % consistency share: H13134709 "Consistency" | "50% (Eval Only)"; asked for a daily profit cap or maximum daily profit: none. H11802636 "Rapid Plan Intraday ($25K to $150K)": "50% (Eval Only)". P:rapid: none (its only "$10,000" is "On a $10,000 payout cycle, a standard 80/20 split takes $2,000.").
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Not a permission.
+
+  - key: mffu.rapid50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: "10000 USD net profit in a single trading day (session) on the sim funded account moves it to Live automatically, and any profit above 10000 USD for that day is forfeited; one threshold for every size"
+    units: text
+    status: verified
+    article_id: "13134718"
+    url: https://help.myfundedfutures.com/en/articles/13134718-understanding-rapid-live
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134718 "Understanding Rapid Live" (September 8, 2026): "Traders may be transitioned from Rapid Sim Funded to Live through two primary pathways:" / "$10,000 net profit achieved in a single trading day (automatic transition)" / "Automatic Live transition occurs when you generate $10,000 in net profit within a single trading session." / "any profit exceeding $10,000 for that trading day is forfeited"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches; the last three sentences in both, the "two primary pathways" sentence in the first. H13134709
+      (the Rapid 50k article) does not state the rule itself (asked: "$10,000 in a single day: none"); H13134718
+      sits in the "Rapid Plans - Path to Live" group and covers Rapid 25k to 150k in its table. The same open points
+      as mffu.rapideod50k.funded_single_day_profit_ceiling (net of what, the day's start, where the excess goes).
+      With Rapid's intraday equity trail (mffu.rapid50k.funded_drawdown), "net profit" may be realised or not:
+      not stated.

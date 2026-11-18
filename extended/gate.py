@@ -47,7 +47,13 @@ named on every row only when given (so with all three absent the rows are the ve
    re-composed campaign -- on every call, with or without it: that campaign with no class is the vendored one.
 
 Rows gain `payout_lag_days`, `household_closure` and `combine_account_cls` (the class's module and name), each only when
-given. `gate_recomposition_problems` checks that this `run_gate`, with every line marked Q-47, Q-71 or Q-70 removed,
+given.
+
+**Q-119 (RD-03's A-3, `prereg/RD-03_contract_levers.md` 14.1):** four more keywords, each None by default, each passed
+to the campaign and named on every row only when given: `levers` (an `extended.levers_path.Levers`: the paths run
+through RD-03's copy of the vendored path, `extended.campaign`'s Q-119 lines), `stop_buying_when_queued` (L-I's
+banking), `subscription` and `activation` (A-4's prices). With all four absent the gate is as before (Q-80's
+identity). `gate_recomposition_problems` checks that this `run_gate`, with every line marked Q-47, Q-71 or Q-70 removed,
 parses to the vendored `run_gate` statement for statement.
 
 **The identities** (`identity/gate_identity.py`):
@@ -96,8 +102,8 @@ from propedge.outcomes.distribution import DayBlock  # noqa: E402
 from extended import campaign as _xc  # noqa: E402  (Q-71: the campaign re-composed to pass combine_account_cls)
 
 #: the comment markers on every added line of `run_gate` (Q-47's class, Q-71's seams, Q-70's recorder, Q-105's
-#: counters' channel for RD-02)
-GATE_MARKERS = ("Q-47", "Q-71", "Q-70", "Q-105")
+#: counters' channel for RD-02, Q-119's levers for RD-03)
+GATE_MARKERS = ("Q-47", "Q-71", "Q-70", "Q-105", "Q-119")
 
 #: sha256 of the vendored `propedge.campaign.gate.run_gate`'s source text (LF), from which `run_gate` below was composed
 #: (Stage 2 f1b42e2, vendored under E-002)
@@ -283,6 +289,30 @@ def recorded_paths(recorder: Any, rec_kw: dict[str, Any], paths: list, *, shift:
                             seed=int(seed))
 
 
+# ------------------------------------------------------------------------------------------------ Q-119 (RD-03's A-3)
+
+
+def lever_arguments(levers: Any, stop_buying_when_queued: Any, subscription: Any, activation: Any,
+                    funded_account_cls: Any, recorder: Any, counters: Any) -> dict[str, Any]:
+    """Q-119: RD-03's keywords for the campaign, checked, each present only when given (`levers_path.
+    gate_lever_arguments`); with levers, refused (`ValueError`) beside a declared funded class, Q-70's recorder or
+    Q-105's counters -- not composed. Empty when none is given (the gate as before)."""
+    if levers is None and stop_buying_when_queued is None and subscription is None and activation is None:
+        return {}
+    from extended import levers_path as LP
+
+    if levers is not None and (funded_account_cls is not None or recorder is not None or counters is not None):
+        raise ValueError("RD-03's levers run Topstep's vendored classes without Q-70's recorder or Q-105's counters")
+    return LP.gate_lever_arguments(levers, stop_buying_when_queued, subscription, activation)
+
+
+def lever_columns(lev_kw: dict[str, Any]) -> dict[str, Any]:
+    """Q-119: the row columns naming RD-03's keywords given."""
+    from extended import levers_path as LP
+
+    return LP.gate_lever_columns(lev_kw)
+
+
 def run_gate(
     blocks: Sequence[DayBlock],
     *,
@@ -329,6 +359,10 @@ def run_gate(
     combine_account_cls: type | None = None,                                    # Q-71
     recorder: Any = None,                                                       # Q-70
     counters: Any = None,                                                       # Q-105
+    levers: Any = None,                                                         # Q-119
+    stop_buying_when_queued: bool | None = None,                                # Q-119
+    subscription: float | None = None,                                          # Q-119
+    activation: float | None = None,                                            # Q-119
 ) -> tuple[pd.DataFrame, bool]:
     """The vendored `propedge.campaign.gate.run_gate` (its docstring holds every argument's meaning), plus
     `funded_account_cls` (Q-47): the funded account's class on every path of every arm -- the vendored `FundedAccount`
@@ -347,6 +381,8 @@ def run_gate(
                              funded_account_cls, int(workers))                  # Q-71
     check_recorder(recorder)                                                    # Q-70
     check_gate_counters(counters, funded_account_cls, recorder)                 # Q-105
+    lev_kw = lever_arguments(levers, stop_buying_when_queued, subscription, activation,  # Q-119
+                             funded_account_cls, recorder, counters)            # Q-119
 
     # ---- from here to the end, the vendored body; the additions are marked Q-47, Q-71 and Q-70
     from propedge.contract.payout_timing import DEFAULT_PAYOUT_TIMING, check_payout_timing
@@ -439,6 +475,7 @@ def run_gate(
                     **cls_kw,                                                                           # Q-47
                     **seam_kw,                                                                          # Q-71
                     **rec_kw,                                                                           # Q-70
+                    **lev_kw,                                                                           # Q-119
                 )
                 if counters is not None:                 # Q-105: each path's counts, by its seed           # Q-105
                     counters.collect(shift, float(p), draws)                                            # Q-105
@@ -500,6 +537,8 @@ def run_gate(
                     row["funded_account_cls"] = class_name(funded_account_cls)                         # Q-47
                 if seam_kw:                              # Q-71: each named only when given
                     row.update(seam_columns(seam_kw))                                                   # Q-71
+                if lev_kw:                               # Q-119: each named only when given
+                    row.update(lever_columns(lev_kw))                                                   # Q-119
                 if focused_trader is not None:          # D-495 (4): beside a verdict, never the gate (D-234)
                     row.update(ftp_columns(focused_trader, paths))
                     row["is_gate_row"] = False
@@ -531,4 +570,4 @@ __all__ = ["VENDORED_RUN_GATE_SHA256", "vendored_run_gate_sha256", "check_vendor
            "check_funded_account_cls", "class_name", "PassThroughCombineAccount", "check_combine_account_cls",
            "check_payout_lag_days", "check_household_closure", "seam_arguments", "seam_columns",
            "topstep_payout_lag_days", "gate_recomposition_problems", "GATE_MARKERS", "check_recorder",
-           "recorder_arguments", "recorded_paths", "check_gate_counters", "run_gate"]
+           "recorder_arguments", "recorded_paths", "check_gate_counters", "lever_arguments", "lever_columns", "run_gate"]

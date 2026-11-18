@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from extended import git_scan as GS
 from extended import lift_bound as LB
 from extended import opening_run as R
 from extended import opening_states as OS
@@ -197,8 +198,8 @@ def test_t11_the_seeds_appear_only_in_the_familys_files_and_the_records_that_quo
     pat = "2026198[0-9]"
     hits = set()
     for extra in ([], ["--untracked"]):
-        r = subprocess.run(["git", "-C", str(ROOT), "grep", "-I", "-l", "-E", *extra, pat, "--", ".",
-                            ":(exclude)vendor"], capture_output=True, text=True)
+        r = GS.run(["git", "-C", str(ROOT), "grep", "-I", "-l", "-E", *extra, pat, "--", ".",      # Q-156: limited
+                    ":(exclude)vendor"], text=True)
         hits |= set(r.stdout.split())
     allowed = re.compile(r"^(prereg/F-03_opening_timing\.md|DECISIONS\.md|STATUS\.md|TASK_QUEUE\.md|PROGRESS\.md|"
                          r"docs/(reviews|briefs|audits)/.*|extended/opening_[a-z]+\.py|scripts/fo_opening\.py|"
