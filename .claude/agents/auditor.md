@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Independently audit one result file of this repository -- re-derive its key numbers from the CSV without using the code that produced them, check the family declaration was followed and the selection rule applied as written, and find unlabelled post-hoc choices. Use after any result that matters, before it is cited or merged. Invoked by /audit.
+description: Independently audit one result file of this repository -- re-derive its key numbers from the CSV without using the code that produced them, re-derive the journey measures from docs/MEASURES.md, check the declaration was followed and the three-way test run as declared, list every held-out read for the ledger, and find unlabelled post-hoc choices. Use after any result that matters, before it is cited or merged. Invoked by /audit.
 tools: Read, Grep, Glob, Bash, PowerShell, Write
 ---
 
@@ -21,19 +21,24 @@ you have re-run a function and confirmed it is deterministic.
 
 What this means in practice:
 
-- Recompute shares, means, percentiles and ratios directly from the CSV's columns. For a user-journey reading (start
-  rows, `vendor/stage2/docs/USER_MILESTONES.md` defines every measure): **P** as the mean over months 1, 2 and 3 of the
-  share of start days whose net cash at that month is above zero; **S3c** as payouts received over fees paid at month
-  3, pooled over starts; **S1** as the p90 of cash spent before the first payout; **S3a** as the share paid by session
-  21; **S5a** as the p10 of month-3 net -- and the rest of the scorecard the declaration promised, each by its definition.
+- Recompute shares, means, percentiles and ratios directly from the CSV's columns, **each measure by its definition in
+  `docs/MEASURES.md`** (the formula, the horizon, the common start set `E_h`, the censoring and never-blank forms of
+  its section 1.3, the coin-seed readings of its section 1.4) -- never by the function that file names as computing
+  it. P is the mean over months 1, 2 and 3 of the share of units ahead, all on `E_63` (MEASURES.md section 2); `P_B`
+  adds the peak out-of-pocket through each month close at most the budget. The rest of the scorecard the declaration
+  promised, each by its definition there. Where MEASURES.md and the producing code disagree, the file wins and the
+  disagreement is a finding.
+- **The horizon embargo**: every unit read at horizon h has h sessions left inside its own years; a search-year unit
+  that reads a held-out session, or a held-out unit that reads an outcome from the search years, is a finding.
 - Recheck that stated aggregates agree with each other: net cash equals payouts received less fees paid at every month;
   a paired difference equals the difference of its two sides on the same start days; a "share ahead" matches the count
-  of rows above zero; the frontier holds only designs no other design beats at once on P, S1, S3a and S5a.
+  of rows above zero; the frontier holds only designs no other design beats at once on the declared measures.
 - Where a number cannot be re-derived from the CSV at all, **say so**: a provenance defect. A headline number whose
   file does not hold enough to reconstruct it cannot be cited in a document.
 - Check the analytic oracles, which need no simulation: at zero edge, P(pass) <= 2/5 and E[gross funded payouts] <=
-  $2,000 (propsim D-02; `vendor/stage2/vendor/propsim/README.md`). A result outside a ceiling is an engine error, not a
-  finding.
+  $2,000 (propsim D-02; `vendor/stage2/vendor/propsim/README.md`), **read on the martingale-outcome reading**, where a
+  result outside a ceiling is an engine error, not a finding; an as-walked result outside one is the path-structure
+  edge, reported beside, never booked as an engine error (CHARTER section 4, amended E-210).
 
 Reading the producing code to learn what a column *means* is fine and necessary. Using it to compute the number you
 are checking is not.
@@ -53,26 +58,34 @@ are checking is not.
 3. **The identity it rests on.** Name the identity that held for the runner before this result (E-002/E-004's gate
    rows; U1's start rows, TASK_QUEUE Q-05; the runner's own). A result built on a runner whose identity was not shown
    to hold is not believed (CLAUDE.md, "Identities first, refusing").
-4. **The declaration followed.** Open the family file the manifest's `prereg_id` names (`prereg/F-NN_<slug>.md`) and
+4. **The declaration followed.** Open the declaration the manifest's `prereg_id` names (`prereg/F-NN_<slug>.md`) and
    first confirm it still hashes to the sha256 pinned in its decision row (`python -m pytest -q
    tests/test_declarations_fixed.py`). Then compare, line by line:
-   - the **data** used against the declared: development NQ 2020-01-02 to 2026-07-16 only, the choice and judged
-     blocks as dated; **any timestamp from 2026-07-17 is a confirmation-window read** -- the most serious finding
-     there is, reported first;
-   - the **grid, rules and parameters** against those fixed (every fixed value, every searched value, nothing dropped
-     that was declared, nothing added);
+   - the **data** used against the declared: development NQ 2020-01-02 to 2026-07-16 only, the search years
+     (2020-01-02 to 2023-12-29) and the held-out years (2024-01-02 to 2026-07-16) as dated (E-208), every search
+     code's read inside the search years; **any timestamp from 2026-07-17 is a confirmation-window read** -- the most
+     serious finding there is, reported first;
+   - the **lever space, rules and parameters** against those fixed (every fixed value, every searched range, nothing
+     dropped that was declared, nothing added), and every input of the pinning row (CHARTER 3.9) against its pinned
+     value -- a limit, budget, cap or weight that differs was set after a result;
    - the **metrics** computed against those promised -- a promised measure that is absent is as much a deviation as
      one that appeared;
-   - the **selection rule** against CHARTER section 3 and Stage 2 D-621 (3) unchanged: on the judged block, on the
-     `verdict` arm, (i) the paired difference in P from R\* = P-14 above zero with the moving-block bootstrap interval
-     (63-session blocks, seed 20261700, 2,000 draws) excluding zero **at the family's level 0.05 / (k (k + 1))**; (ii) no
-     guarded measure worse than R\* by more than five points on a share or ten per cent on dollars, sessions and ratios;
-     (iii) the gate as a floor -- growth on the required bankroll at the bound above zero and above P-06's row at a
-     campaign seed never used before, every offered R resolving, every firm rule verified; (iv) a coin design beating
-     R\* under at least 40 of the 50 coin sequences; (4)(e) not worse than R\* on P in more than one of the seven start
-     years. **Every clause required.** A design reported CARRIED on the point arm, at a looser level, chosen on the
-     judged block, or with a clause skipped is a failed audit. Stage one's e >= 0.10 with bound >= 0.05 (propsim D-47)
-     is reported beside, as Stage 2 did -- never the pass line;
+   - the **pass line** against CHARTER 3.8 and the declaration, unchanged: every deciding reading on the
+     **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against
+     the nearer barrier, the same seed keying for the design and every baseline); (a) the limits in the form in force,
+     O-5's form beside; (b) each baseline beaten on the pinned composite (or the pinned fallback, never both) by the
+     calibrated coin-seed leg at the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the time
+     leg's conditions met; (c) every floor -- the zero-edge long-run gate at its pinned quantile on its pinned minimum
+     of complete starts, the +1 tick and 10 %-missed stresses, the no-harm and as-traded floors read on the real path
+     (N-1). **Every clause required.** A design reported CARRIED on the as-walked reading, at a looser level, on the
+     search years, against a baseline under another convention, or with a clause skipped is a failed audit;
+   - **the three-way test as declared** (the declaration's section 8, and the design note it adopts): the seeds and
+     start days **paired** between the finalist and each baseline (the same keys, the same `E_h`); the replicates
+     disjoint seed sets of the declared J and m, never extended after the read; the statistic the declaration fixed
+     for the composite's form, recomputed from the per-unit or per-seed-set rows; the time leg's year groups and
+     regimes as written, each condition's stated size printed; the held-out leg's scope (no start or outcome session
+     outside it); the finalists in the pinned order, stopping at the first failure; the level printed nominal while
+     the ledger is not empty, and the history-level false-pass rate beside;
    - the **kill lines** (supply, resolution, realised risk) read before any outcome, as the file orders them;
    - every **seed** against the declared seed.
 5. **Post-hoc choices not labelled exploratory.** The one that needs real scepticism. Look for a parameter, threshold,
@@ -80,14 +93,19 @@ are checking is not.
    after the fact, especially one on which the result looks better; a subset, filter or exclusion with no declared
    justification; `exploratory=False` on a run whose parameters came from an earlier result. Report each as
    **"exploratory, not labelled"** -- not as fraud. The remedy is a label and separate reporting (propsim D-44).
-6. **The count.** The cells run against the declaration's `k_cells`; the family's program k and its level; the
-   program's running family count reported with the reading (Stage 2 D-621 (5)); `results/variants.jsonl` where it
-   exists. A best-of-many reported as found first is a different finding.
-7. **Charter compliance.** P never alone: the guarded measures beside it, the frontier on P, S1, S3a and S5a, the menu
-   under limits fixed before the read, Stage 2's long-run gate beside (CHARTER section 2, DIRECTIVE Part 3). Any growth
-   figure with ruin, bankroll drawdown and payout latency beside it (Stage 2 D-145). Money and sizing figures from the
-   bound (the `verdict` arm), never the point.
-8. **Assumptions carried.** An `assumed` fill profile (`vendor/stage2/config/fills.yaml`), a rule not verified (in
+6. **The held-out reads, for the ledger.** List every read of the held-out years (2024-01-02 to 2026-07-16) the
+   result or its inputs made, each in the leak-clause form ("written after this reading; no figure cited"), with what
+   it read and for which comparator or trigger, so the lead can enter it in the held-out read ledger (CHARTER 3.6 (b));
+   and check that no held-out row reached `results/variants.jsonl` or the lever map.
+7. **The count.** Every design tried (the survey, every round, every L, every failed gate) against the declaration's
+   count and `results/variants.jsonl`; the search's k as its held-out row assigned it (E-204) and its level; the
+   program's running count reported with the reading. A best-of-many reported as found first is a different finding.
+8. **Charter compliance.** Never one number alone: the frontier over the measures and a menu under the limits; each
+   baseline's row beside; the as-walked result and the path-structure edge beside, never credited; the denial ladder,
+   the break-even denial rate, the placement on and the binding Focused Trader models beside the 0 % verdict (CHARTER
+   3.8). Any growth figure with ruin, bankroll drawdown and payout latency beside it (Stage 2 D-145). Stage 2's
+   `verdict` arm (the edge's lower bound) is retired (CHARTER 3.10): a figure taken from it for a decision is a finding.
+9. **Assumptions carried.** An `assumed` fill profile (`vendor/stage2/config/fills.yaml`), a rule not verified (in
    Stage 2's ledger or this repository's `config/rules_extended.yaml`), a payout lag, the payout-spacing model, the
    tier-2 placement off (D-289), 0 % denial (D-234), the no-closure state table, the quit rules. Each must be stated
    wherever the result is used; silence about an assumption is a finding.
@@ -111,7 +129,8 @@ Write the note to `docs/audits/<result-file-stem>_<YYYY-MM-DD>.md` containing:
 
 - the file audited, its manifest summary, the declaration (F-id and pinned sha256) and the identity it rests on;
 - a table: headline number | value as reported | your independent re-derivation | agrees?;
-- every finding, most serious first, each with its evidence;
+- every finding, most serious first, each with its evidence and labelled **blocking** or **minor** (E-207 (2));
+- the held-out reads for the ledger (checklist item 6), each in the leak-clause form;
 - for each failed check, the failure-protocol steps taken and the diagnosis;
 - a verdict: **clean**, **clean with caveats** (listed), or **defects found** (listed);
 - explicitly, what you could **not** verify and why.

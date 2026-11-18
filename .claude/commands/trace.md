@@ -8,8 +8,9 @@ Run the trace check.
 1. Run it directly first: `python scripts/trace_check.py`. If the script does not exist yet (TASK_QUEUE Q-04 builds it),
    the verdict is **NOT CHECKED (the trace check is not built)** -- say so and go on to step 2 for the sweep by hand.
 2. Invoke the **results-tracer** agent for the full sweep -- untraced numbers in documents, stale numbers, manifest
-   problems, unlabelled exploratory citations, P reported without its guarded measures, frontier or gate floor, growth
-   figures without ruin, drawdown and latency beside them, and money figures from the point rather than the bound.
+   problems, unlabelled exploratory citations, a measure reported without the accompaniments CHARTER 3.8 lists (each
+   baseline, the frontier, the limits, the gate floor, the as-walked result beside and never credited), growth figures
+   without ruin, drawdown and latency beside them, and any held-out figure cited before its verdict row.
 3. Report the verdict as one of:
    - **PASS** -- every registered number recomputes and appears where it is cited;
    - **FAIL** -- with each finding and the document it is in;

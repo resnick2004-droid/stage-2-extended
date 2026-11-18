@@ -17,8 +17,9 @@ Audit this result: **$ARGUMENTS**
 5. Pass on its proposed decision row (one finished line) for the lead to number and append with `/decide`.
 
 The auditor re-derives the numbers from the CSV **without** the code that produced them. Do not shortcut this by
-re-running the producing script and comparing -- that confirms determinism, not correctness. It judges the result
-against this repository's charter: P with the guarded measures, Stage 2 D-621 (3)'s rule against R\* = P-14 at the
-family's level, and the long-run gate as a floor; stage one's e >= 0.10 is reported beside.
+re-running the producing script and comparing -- that confirms determinism, not correctness. It re-derives the journey
+measures from their definitions in `docs/MEASURES.md`, and judges the result against this repository's charter as
+E-210 put it in force: the martingale-outcome reading, the limits, each baseline beaten on the pinned composite by the
+three-way test run as declared, the floors (CHARTER 3.8); and it lists every held-out read for the ledger.
 
 The auditor does not fix anything. If it finds defects, the lead decides what to do and records it with `/decide`.

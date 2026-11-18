@@ -1,100 +1,113 @@
 ---
 name: prereg-discipline
-description: How a family is declared in this repository (prereg/F-xx files pinned by sha256 in a decision row), how a declared family is run and read, and the failure protocol for a check that fails. Use when writing a declaration, building or running a declared family, interpreting a result, or deciding whether something counts as exploratory.
+description: How a design search (or an RD reading) is declared in this repository (prereg/ files drafted on prereg/TEMPLATE_design_search.md, pinned by sha256 in a decision row), how a declared search is run and read under the journey objective (E-210), and the failure protocol for a check that fails. Use when writing a declaration, building or running a declared search, interpreting a result, or deciding whether something counts as exploratory.
 ---
 
 # Declaration discipline
 
 ## Why it is enforced rather than encouraged
 
-A screen or a campaign is a search over configurations. If the hypothesis can be adjusted after the result, the search
+A design search is a search over configurations. If the hypothesis can be adjusted after the result, the search
 always succeeds: given enough variants, something clears any threshold. The only defence is to write down what would
 count as success **before** looking, and then not move it.
 
 In this repository that is mechanical, not a matter of good intentions:
 
-- A **family** is declared in `prereg/F-NN_<slug>.md` and **pinned by the sha256 of its LF text in a decision row**
+- A **search** is declared in `prereg/F-NN_<slug>.md` and **pinned by the sha256 of its LF text in a decision row**
   (E-001 (b), E-003). `tests/test_declarations_fixed.py` re-hashes every pinned file on every run, the fast tier
   included, so a byte changed after the pin fails the suite and the pre-commit hook. **Nothing declared is edited: a
-  change is a new family** under a new row.
-- The **red-team** agent reviews a draft for look-ahead, leakage, selection after the fact, multiple-testing errors and
-  unlabelled choices, without being told the expected answer; then the **prereg-gatekeeper** approves or refuses it
-  and returns the pinning row. Only the lead appends it (the single-writer rule, E-005).
-- **The multiplicity budget continues Stage 2's program U** (E-001 (a)): families are numbered in declaration order
-  across both repositories, this repository's first is k = 10 (F-01), and family k is judged one-sided at
-  **0.05 / (k (k + 1))** -- so the program spends at most 5 % however long it runs. One cell per family reaches
-  judgement. Every cell run is counted under its family's row.
-- **Only a carried candidate takes a registration id** (Stage 2 D-621 (9)'s house form): a family is declared, not
-  registered; the design it carries is then registered, audited and confirmed once on data never read.
+  change is a new declaration** under a new row.
+- The **scout**'s challenger brief (Q-150) and the **red-team** read a draft -- look-ahead, leakage into the held-out
+  years, selection after the fact, peak-picking, seed reuse, unpaired comparisons, limits set after a result,
+  miscounted tests -- without being told the expected answer, each finding labelled blocking or minor (E-207 (2));
+  then the **prereg-gatekeeper** approves or refuses it and returns the pinning row. Only the lead appends it (the
+  single-writer rule, E-005).
+- **The multiplicity budget continues Stage 2's program U** (E-001 (a)): one k per **held-out test** (CHARTER 3.7),
+  numbered in declaration order across both repositories, judged at **0.05 / (k (k + 1))** -- so the program spends at
+  most 5 % however long it runs. F-01 (k = 10) was withdrawn with its k spent, F-02's k = 11 retired unspent, F-03 spent
+  k = 12; the next is k = 13. **A search's k is assigned at its held-out row** (E-204): if another declaration pins
+  between its held-out run and that row, the held-out run is repeated at the new level. The finalists are tested in a
+  fixed sequence at one k; the confirmation spends none. Every design tried is counted in `results/variants.jsonl`.
+- **Only a carried design takes a registration id**: a search is declared, not registered; the design it carries is
+  then registered, audited and confirmed once on data never read.
 
 Stage 2's harness gate (`propedge.backtest.harness`, which refuses an id not in Stage 2's `prereg/REGISTRY.md`) reads
-Stage 2's registry, not this repository's, and there is no `validate_prereg` for F-files: the pin, the red team and
-the gatekeeper's reading are the gate here.
+Stage 2's registry, not this repository's, and there is no validator for this repository's declarations: the pin, the
+challenger brief, the red team, the gatekeeper's reading and the template's test (`tests/test_design_search_template.py`)
+are the gate here.
 
 ## Writing one
 
-`/prereg <title>` drafts `prereg/F-XX_<slug>.md` from `vendor/stage2/prereg/TEMPLATE.md` and
-`vendor/stage2/prereg/FAMILY_TEMPLATE.md`, adapted; `prereg/F-01_resting_order_level_atlas.md` is the house example.
-Fill every section. The ones people get wrong:
+`/prereg <title>` copies **`prereg/TEMPLATE_design_search.md`** (E-210; the restart plan's Wave 2.1) to
+`prereg/DRAFT_F-XX_<slug>.md`. `prereg/TEMPLATE_family.md` is superseded for new work and kept for the record. Fill
+every section. The ones people get wrong:
 
-**The data and the windows, as dates, now.** Development is NQ 2020-01-02 to 2026-07-16 only. The choice block and
-the judged block are dates (the charter's: chosen on the starts of 2020-2023, judged on the starts from the first
-session of 2024), fixed before anything runs and never revisited -- extending one after a near miss, or sliding it to a
-friendlier regime, turns an out-of-sample reading into an in-sample one. **The confirmation window is declared before
-any development read**: NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`), not on disk, never read until a
-carried candidate is registered, and a purchase.
+**The years and the ledger, as dates, now.** Development is NQ 2020-01-02 to 2026-07-16 only. The **search years**
+(2020-01-02 to 2023-12-29) are the only years the search, its lever ranges, volatility units, regime thresholds,
+schedules, limits, budgets and weights may read; the **held-out years** (2024-01-02 to 2026-07-16, on
+`results/q82_judged_sessions.csv`) are read once, by the held-out test (E-208). Fixed before anything runs and never
+revisited -- extending one after a near miss turns an out-of-sample reading into an in-sample one. **The held-out read
+ledger** carries every past read of the held-out years for the search's comparators and triggers; while it is not
+empty the level is printed nominal. **The confirmation window is declared before any development read**: NQ from
+2026-07-17 (`vendor/stage2/config/windows.yaml`), not on disk, never read until a carried design is registered, and a
+purchase.
 
-**Every parameter classed fixed / searched / dropped, with its value.** The operator is not a quant: each parameter
-is named, explained in a phrase and classed. A parameter left "to be optimised" is not a detail to fill in later; it is
-a variant, and a declaration containing one is declaring a search. If a parameter genuinely must be chosen from data,
-choose it on the choice block by a rule the file fixes -- that is a rule, and it can be declared. No fitted values:
-grids are contract arithmetic and verified rule values (Stage 2 D-621 (4)(d)).
+**Every lever classed fixed / searched / dropped, with its value or range and its source.** The operator is not a
+quant: each lever is named, explained in a phrase and classed, from the lever table
+(`docs/plans/LEVER_TABLE_topstep50k.md`, loaded by `extended/lever_space.py`). A range comes from contract arithmetic,
+a verified rule or an RD map's search-year rows -- never from the held-out years. The survey size, the surrogate
+method, the number of rounds and the batch size are fixed numbers, never extended after a look.
 
-**The cells counted.** `k_cells` as a product and a number; the program family number k and its level written out
-(k = 10: 0.05 / 110).
+**Every input of CHARTER 3.9 in one row, before the survey.** The limits, the bankroll budgets, the dimensions with
+their normalisers and caps, the weights, the composite **or** the fallback (one, never both), the size that matters and
+the power target, the regimes and "most years", the finalist order and plateau rules, the gate's quantile and the
+minimum complete held-out starts, the no-harm margin, the L values. A value set after a result is a new declaration.
 
-**Seeds, now.** Every bootstrap, coin twin and campaign seed an integer in the file; a campaign seed one never used
-before (in Stage 2 or here). A seed chosen after seeing a result is a variant.
+**Seeds, now, by role.** Every seed an integer in the file with one role, found nowhere else (in Stage 2 or here); the
+held-out test's coin seeds disjoint from every search-year seed; keys of fixed length per draw kind. A seed chosen
+after seeing a result is a variant.
 
-**The selection rule (the operator, E-008, E-014, E-015).** A design is **judged on its trades first**: the lift over
-the coin twin on the same brackets, on the judged block, one-sided at the family's level 0.05/(k(k+1)) by **the
-calibrated statistic** (TASK_QUEUE Q-16), its value-map price at that bound at least the family's declared bar; the
-long-run gate (growth on the required bankroll at the bound, Stage 2 D-145), every offered R resolving, verified rules
-and conduct tier 1 as floors. **The user scorecard is beside, never the pass line**: P and the guarded measures
-against **R\* = P-14**, the frontier, E-007 (e)'s readings and CHARTER section 2's journey scorecard, each measure a
-distribution over start days, the operator's limits as menu flags only; the verdict at 0 % denial with the placement
-off, the rest beside. *For the record only -- Stage 2 D-621 (3), which no longer decides (its line (i) does not
-deliver its level, E-007):* a design CARRIED against **R\* = P-14** at the family's level -- the paired P difference's moving-block interval (63-session blocks, seed
-20261700, 2,000 draws) excluding zero; no guarded measure worse by more than five points on a share or ten per cent on
-dollars, sessions and ratios; **the long-run gate (growth on the required bankroll at the bound, Stage 2 D-145) as a
-floor**, above zero and above P-06's row at a fresh campaign seed, every R resolving, every rule verified; a coin
-design beating R\* under at least 40 of 50 coin sequences; not worse in more than one of the seven start years. Stage
-one's e >= 0.10 with bound >= 0.05 (propsim D-47) is reported beside, never a line. Kill lines on supply, resolution
-and realised risk come before any outcome.
+**The pass line (CHARTER 3.8, in force from E-210).** A finalist passes, in its place in the fixed sequence, on the
+**martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against the
+nearer barrier, the same seed keying for the design and every baseline), when (a) it stays inside every operator limit
+with a margin wider than its noise (O-5's alternative computed beside); (b) its composite (or the pinned fallback, P
+under the bankroll stop) is above **each** baseline's -- naive coin, P-14, P-15, P-16, each under the design's
+convention -- by the calibrated paired coin-seed leg on the held-out years at the full level, the time leg's conditions
+met; and (c) the floors hold: verified rules, conduct tier 1, CHARTER section 4, hand entry at least L minutes, the
+zero-edge long-run gate, the +1 tick and 10 %-missed stresses, and the no-harm and as-traded floors read on the real
+path. The verdict at 0 % payout denial, the placement off and the Focused Trader Program off; the level printed nominal
+while the ledger is not empty, the history-level false-pass rate beside. **The level bounds coin luck given the
+held-out history, not a favourable history.** The trades' lift over the coin twin, its value-map bar, R\* = P-14 and
+Stage 2 D-621 (3) are on record and no longer decide (CHARTER 3.10).
 
-Weakening the rule -- the point arm, a looser level, a dropped tolerance, the floor left out -- needs the operator (the
-objective changes only with them, DIRECTIVE Part 1); a declaration may not do it on its own.
+Weakening the line -- a looser level, a dropped floor, a limit loosened, the fallback tried after the composite, a
+judgement on the search years -- needs the operator (the objective changes only with them, DIRECTIVE Part 1); a
+declaration may not do it on its own. Gates on supply, resolution and realised risk come before any outcome.
 
-**And state what a fail means.** "The family closes", not "we investigate further". If nothing happens on a fail, the
-reading is not informative and is not worth running.
+**And state what a fail means.** "The search closes, its k spent", not "we investigate further". If nothing happens on
+a fail, the reading is not informative and is not worth running.
 
 ## Running one
 
 - **The identity first, refusing.** The runner reproduces Stage 2's files before any outcome of it is believed
-  (`identity/stage2_identity.py`; every new runner has its own). Until U1's start rows are reproduced (TASK_QUEUE Q-05),
-  no result of this repository is believed.
+  (`identity/stage2_identity.py`; every new runner has its own; each baseline's runner reproduces its registered trade
+  times and brackets path for path).
+- **In the declared order**: the pinning row, the calibration and the power gate, the pin, the survey and the rounds on
+  the search years only, the finalists' row, the held-out row, the held-out test once (the template's section 14).
 - **From a clean checkout of a named commit** (`python scripts/run_clean.py`: a detached checkout under
   `%LOCALAPPDATA%\stage2-extended-runs\`, the data junctions linked, `git status` empty before the command, the log
   beside it), **one heavy run at a time on the machine under `run.lock`** (skill `run-lock`), watched to its end.
-- **Written with its manifest** through `extended.results.write_result` (skill `result-provenance`) with `prereg_id` the
-  F-id, the cell count, every seed and parameter.
-- **Reported** with the program's running family count and the family's cells, P with its guarded measures, the
-  frontier and the gate floor beside.
+- **Written with its manifest** through `extended.results.write_result` (skill `result-provenance`) with `prereg_id`
+  the declaration's id, the design count, every seed and parameter; every design tried in `results/variants.jsonl`; no
+  held-out result where a later search can read it.
+- **Reported** with the program's running count, every measure of `docs/MEASURES.md` as a distribution over start days
+  and coin seeds, the frontier and a menu under the limits, each baseline beside, the as-walked result and the
+  path-structure edge beside, never credited.
 
 **Then record the outcome** -- pass or fail -- in a new decision row, proposed by whoever read it as one finished
-line `| E-NNN | ... |` and numbered and committed by the lead. **Not in the F-file**: the declaration is pinned, and its
-hash test would fail. A family with no recorded outcome is an unreported result, and the closing checklist will not
-pass while one exists.
+line `| E-NNN | ... |` and numbered and committed by the lead. **Not in the declaration**: it is pinned, and its hash
+test would fail. A search with no recorded outcome is an unreported result, and the closing checklist will not pass
+while one exists.
 
 ## The failure protocol
 
@@ -117,23 +130,23 @@ credible: a repository that reports no failures is not a repository that had non
 ## Exploratory work
 
 Anything chosen **after** seeing results is exploratory. Label it, report it separately, set `exploratory=True` in its
-result manifest, and record it in its own decision row (never in the pinned F-file).
+result manifest, and record it in its own decision row (never in the pinned declaration).
 
 This is not a demotion. Stage one's most interesting finding -- that payout policy is first-order (propsim D-45) -- was
 exploratory, chosen after the declared results (propsim D-44). Labelling it is what let the declared set stay
 trustworthy. What is forbidden is presenting a post-hoc choice as though it had been declared. The **auditor** looks for
-exactly this: a parameter in a result that appears nowhere in the declaration, a measure introduced after the fact, a
-subset or exclusion with no declared justification, or `exploratory=False` on a run whose parameters came from an
-earlier result.
+exactly this: a lever or input in a result that appears nowhere in the declaration, a measure introduced after the
+fact, a subset or exclusion with no declared justification, or `exploratory=False` on a run whose parameters came from
+an earlier result.
 
 ## Quick reference
 
 | situation | what to do |
 |---|---|
-| New family | `/prereg <title>`: draft, red-team, gatekeeper; the lead pins it by sha256 in its row |
+| New search | `/prereg <title>`: draft on the design-search template, challenger brief, red-team, gatekeeper; the lead pins it by sha256 in its row |
 | Gatekeeper refuses | Normal for a first draft. Fill the gaps; do not argue the rule down |
-| A declared file needs a change | It cannot change. A new family, citing the old, under a new row |
+| A declared file needs a change | It cannot change. A new declaration, citing the old, under a new row |
 | Check fails | Record it, run the failure protocol, do **not** rerun |
 | Idea arrived after seeing a result | Exploratory: label it, report it apart, `exploratory=True`, its own row |
-| Want to rerun a judged family | You may not. New question, new family citing the old |
-| A design is carried | It takes a registration id, its registered test, the auditor, one confirmation (a purchase) |
+| Want to read the held-out years again | You may not: one held-out test per market (CHARTER 3.6 (c)); a later reading there is a description only |
+| A design is carried | It takes a registration id, its playbook, the auditor, one confirmation against a criterion declared at registration (a purchase) |

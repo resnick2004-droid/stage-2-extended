@@ -1,12 +1,15 @@
 ---
 name: feature-rules
-description: The rules every feature, label and split obeys -- normalised features only, from bars closed at or before the alert; the bracket label of bootstrap 6.2; purged and embargoed splits; the coin twin as the test. Use when writing or reviewing any code that reads bars, computes a feature or a label, or splits data for a model.
+description: The rules every feature, trigger, label and split obeys -- normalised features only, from bars closed at or before the alert; the bracket label of bootstrap 6.2; purged and embargoed splits inside the search years; the zero-edge convention and the journey as the test (E-210). Use when writing or reviewing any code that reads bars, computes a feature, a trigger or a label, or splits data for a model or the surrogate.
 ---
 
-# Feature, label and split rules (bootstrap 6.2; E-006)
+# Feature, label and split rules (bootstrap 6.2; E-006; E-210)
 
 A model fooled by the future is the most common way a backtest lies, and it never fails loudly. These rules are
-checked by tests, not by care.
+checked by tests, not by care. Under the journey objective (E-210) a feature no longer has to predict direction: it
+sets **when** a component trades (timing, resolution speed, clustering) and feeds the lever space's volatility units.
+The rules bind every source that reads bars all the same -- a trigger that peeks at the future changes a design's
+supply and timing as surely as a side model's accuracy.
 
 ## 1. Time: what "closed at or before t" means here
 
@@ -21,6 +24,9 @@ checked by tests, not by care.
 - Calendars (BLS 08:30 releases `vendor/stage2/data/releases_bls_0830_*.csv`, FOMC days) may be used only as they were
   published in advance; their provenance files say when.
 - **Never** read NQ from 2026-07-17 (the confirmation window, `vendor/stage2/config/windows.yaml`).
+- **Never** let anything a search chooses or fits -- a normaliser's window, a threshold, a level list, a cap, a regime
+  cut -- read the held-out years (2024-01-02 to 2026-07-16, E-208). A causal look-back from a held-out start into the
+  search years is allowed (CHARTER 3.6 (d)); the reverse is never.
 
 ## 2. Features
 
@@ -49,11 +55,12 @@ For each candidate alert `t`:
   coins P-15, P-16)); **targets** at each declared R.
 - **Resolution** by 15:10 CT: win (target), loss (stop) or flatten (at 15:10, its actual P&L). No time stop.
 - **Ties:** a bar that could hit both stop and target is read **stop first**; on a resting order's fill bar a stop
-  touch counts and a target touch does not -- **for one trade's own outcome only.** In a comparison of a resting
-  entry with its mirror or coin twin that rule is biased with a predictable sign, because price reaches the fill from
-  the rule's side (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13): the family declares its fill-bar
-  settlement for pairs (the **pair rule** -- a pair whose fill bar touches either trade's stop or target contributes
-  zero lift, is counted and its share reported and capped) and books both sides symmetrically about the trigger.
+  touch counts and a target touch does not -- **for one trade's own outcome only.** Kept as a fill-realism rule: in a
+  comparison of a resting entry with its mirror (or its reflection) that rule is biased with a predictable sign,
+  because price reaches the fill from the rule's side (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13), so
+  a declaration that reads such a pair declares its fill-bar settlement (the **pair rule** -- a pair whose fill bar
+  touches either trade's stop or target is counted, its share reported and capped) and books both sides symmetrically
+  about the trigger. The as-walked and as-traded readings use this label; the deciding reading redraws it (section 5).
 - **Costs:** Stage 2's per-contract costs at the stop (`atlas_a3.fee_by_stop`; `vendor/stage2/config/fills.yaml`),
   the stop exit slipping a tick, a limit target none.
 - **Gates before any outcome is read:** signals per session (supply), the unresolved share at every R (at most 5 %
@@ -64,26 +71,34 @@ must reproduce them (or P-16's pinned trades hash) before it labels anything new
 
 ## 4. Splits for any fitted model
 
-- Walk-forward in **session blocks**: choose on the choice block (2020-01-02 to 2023-12-29), judge on the judged block
-  (2024-01-02 to 2026-07-16), as the family declares; folds inside the choice block only.
+- Walk-forward in **session blocks** inside the **search years** (2020-01-02 to 2023-12-29): every fit, the surrogate
+  of the lever map included, chooses there, with its folds there only; the **held-out years** (2024-01-02 to
+  2026-07-16) are read once, by the held-out test, never by a fit, a fold or a tuning step (E-208; CHARTER 3.6).
 - **Purge and embargo longer than the longest trade:** a label at `t` resolves by 15:10 CT the same session, and
   features may look back several sessions -- so purge every training sample whose label window overlaps a test fold
   and embargo at least one full session after each test fold (more if a feature's window is longer).
 - **Hyperparameters fixed in the declaration, or searched inside the declared walk-forward only**, and every searched
-  value is counted in the family's k. A search outside the declared folds is a new family.
+  value is counted in the variants ledger. A search outside the declared folds is a new declaration.
 - Fitted statistics (scalers, encoders, thresholds) are fitted in-fold and applied out of fold.
 
-## 5. The test of direction
+## 5. The test: zero edge and the journey (CHARTER 3.2, 3.8; E-210)
 
-Lift over the **coin twin** on the same brackets -- the same entries with a fair coin choosing the side, so supply,
-cost and schedule cancel and only direction is measured -- then valued by the value map
-(`vendor/stage2/results/u_value_map.csv`). Rules read off a model afterwards (SHAP and the like) are exploratory and
-need their own family.
+A trigger or a feature is judged by what it adds to a design's journey under zero edge, never by a lift over the coin
+twin (CHARTER 3.10). Its fills come from the real order; the path after each fill is reflected with probability one
+half (direction removed); and the deciding reading is the **martingale-outcome reading** -- each trade's outcome
+redrawn at its bracket's driftless first-exit odds against the nearer barrier (`adapter.BinaryDraw`'s law; the
+design-search template's section 5) -- over seeds paired with every baseline's. What a feature can still change, and
+what the search rewards, is supply, timing, resolution speed for a given shape, clustering and how differently a
+component is timed from the others. The as-walked result's gap from the martingale-outcome result is the design's
+path-structure edge, reported beside, never credited. Rules read off a model afterwards (SHAP and the like) are
+exploratory and need their own declaration.
 
 ## Checklist for a reviewer
 
-- [ ] every feature reads `timestamp <= t - 1 min` only; a shift-invariance test exists and passes
-- [ ] no normaliser, scaler, threshold or level uses data after `t` (or outside the training fold)
+- [ ] every feature and trigger reads `timestamp <= t - 1 min` only; a shift-invariance test exists and passes
+- [ ] no normaliser, scaler, threshold or level uses data after `t` (or outside the training fold), and none reads the
+      held-out years
 - [ ] entries at `t + L` or later (L declared: 5, or a counted 3 or 2); limits need a trade-through; stop first on two-barrier bars; flatten at 15:10 CT
-- [ ] splits purged and embargoed by at least a session; hyperparameters fixed or searched in-fold and counted
+- [ ] splits inside the search years, purged and embargoed by at least a session; hyperparameters fixed or searched
+      in-fold and counted
 - [ ] no read of NQ from 2026-07-17; nothing chosen after an outcome without the exploratory label
