@@ -50,6 +50,28 @@ the meeting of 17-18 March 2020, scheduled and then cancelled on 15 March 2020, 
 trading day before its cancellation), every statement already made for `days_since_fomc` and for the population's FOMC
 exclusion (`fomc_statements`, Stage 2's day set).
 
+**The overnight alerts** (Q-144, B-ON's draft; `compute_overnight`): the same features at alerts on the same clock
+before the regular session, any minute 17:00 .. 08:29 CT (slots 0..929; `ON_ALERT_MARKS` is the five-minute grid
+17:00 .. 08:25). The access pattern is unchanged -- bars stamped at slots <= s - 1 of the day and every bar of an earlier
+day -- and so is every formula; what the overnight clock adds is the start of the trading day inside a window:
+
+* a trailing window that would begin before 17:00 holds only the day's bars from 17:00 (the daily halt, 16:00-16:59 CT,
+  has no bar, so this is the window's own timestamp definition); a return or efficiency anchored at a close before the
+  day's first bar (`ret_w` before slot w + 1, `eff_30` before slot 31) is NaN, as a close "of the day" before its first
+  bar is NaN at any alert;
+* **at the 17:00 alert (slot 0) no bar of the day is readable**: every feature reading the day's bars is NaN there and
+  only the day-level ones (built from earlier days, all closed by 16:00 CT) and the calendar have values;
+* the levels frozen at 08:30 -- the overnight range (`d_onh`, `d_onl`, `range_on`) and `gap` -- do not exist before
+  08:30, and the regular session's own (`ret_rth`, `range_rth`, `pos_rth`, `d_vwap`, `or_width`, `or_pos`) have not
+  begun: these ten are NaN at every overnight alert (`OVERNIGHT_UNDEFINED`).
+
+The guard this needed: the per-alert reads `X[:, s - 1 - w]`, `X[:, s - 1]` and the slices `X[:, s - w:s]` index slots
+of the day, and at an RTH alert (s >= 930) the index is never negative. At an overnight alert it can be, and numpy would
+**wrap** it round to the same day's last slots -- bars after the alert. Every such read now goes through `_at` (NaN
+for a negative slot) or a slice clipped at 0, which changes nothing at s >= 930 (`tests/test_features_overnight.py`
+holds `compute` bit for bit to the library's blob before the extension). `OVERNIGHT_FROM` documents each defined
+feature's first overnight alert on a day with every bar; `describe_overnight()` prints it.
+
 The look-ahead proof is the tests, not this text: `tests/test_features_lookahead.py` replaces (and separately deletes)
 every bar stamped at or after a cut and asserts every feature and every normaliser at every alert up to the cut is
 unchanged, across sessions, the first minutes, a roll and a DST change; `tests/test_features.py` holds each formula to
@@ -87,6 +109,8 @@ RTH_OPEN = slot(8, 30)                           # 930: the first regular-sessio
 OR_END = slot(9, 0)                              # 960: the opening range is the bars stamped 08:30-08:59
 RTH_END = slot(15, 0)                            # 1320: the regular session's bars are stamped 08:30-14:59
 ALERT_MARKS: tuple[int, ...] = tuple(range(RTH_OPEN, RTH_END + 1, 5))      # 08:30, 08:35, ..., 15:00 CT (79)
+ON_FIRST, ON_LAST = slot(17, 0), RTH_OPEN - 1    # 0..929: an overnight alert is any minute 17:00 .. 08:29 CT
+ON_ALERT_MARKS: tuple[int, ...] = tuple(range(ON_FIRST, RTH_OPEN, 5))    # 17:00, 17:05, ..., 08:25 CT (186)
 
 ATR_DAYS, ATR_SHORT_DAYS = 14, 5
 TOD_DAYS, TOD_MIN_DAYS = 20, 10
@@ -248,6 +272,42 @@ def describe() -> str:
                     f"{esc(f.reads)} | "
                     f"{slot_label(f.available_from)} | {'yes' if f.cross_day else 'no'} | {f.warmup} | "
                     f"{'day' if f.daily else 'alert'} |")
+    return "\n".join(rows)
+
+
+#: the ten features with no value at any overnight alert: the levels frozen at 08:30 and the regular session's own
+OVERNIGHT_UNDEFINED: tuple[str, ...] = ("ret_rth", "range_rth", "pos_rth", "d_vwap", "or_width", "or_pos", "d_onh",
+                                        "d_onl", "range_on", "gap")
+#: each other feature's first overnight alert slot with a value, on a day with every bar and its history: 0 for the
+#: day-level ones and the calendar; 1 for whatever reads the close c (the 17:00 bar's, closed at 17:01); the anchored
+#: returns from w + 1; the realised volatilities once two 1-minute changes exist (3); `up_share_30` once one exists (2)
+OVERNIGHT_FROM: dict[str, int] = {
+    "ret_5": 6, "ret_15": 16, "ret_30": 31, "ret_60": 61, "ret_120": 121, "ret_day": 1,
+    "rng_15": 1, "rng_60": 1, "range_day": 1, "pos_day": 1, "pos_prior": 1, "d_pdh": 1, "d_pdl": 1, "d_pdc": 1,
+    "d_round": 1, "vol_5": 1, "vol_30": 1, "vol_day": 1, "vol_accel": 1, "rv_ratio": 3, "rv_tod": 3, "rv_atr": 3,
+    "atr_ratio": 0, "range_prior": 0, "atr_rel": 1, "ret_prior": 0, "ret_5d": 0, "ret_20d": 0, "ext_ma60": 1,
+    "up_share_30": 2, "eff_30": 31, "tod": 0, "dow": 0, "bls_day": 0, "bls_major": 0, "days_to_fomc": 0,
+    "days_since_fomc": 0,
+}
+
+
+def describe_overnight() -> str:
+    """Each feature's overnight reading as a markdown table: defined or not, its first overnight alert, and what a
+    window reaching back before 17:00 reads."""
+    rows = ["| feature | overnight | first overnight alert | a window before 17:00 |", "|---|---|---|---|"]
+    for f in REGISTRY:
+        if f.name in OVERNIGHT_UNDEFINED:
+            rows.append(f"| `{f.name}` | not defined (NaN) | -- | -- |")
+            continue
+        frm = OVERNIGHT_FROM[f.name]
+        if f.daily or f.group == "calendar":
+            note = "none: built from earlier days or the calendar"
+        elif f.name.startswith("ret_") and f.name not in ("ret_day", "ret_prior", "ret_5d", "ret_20d") \
+                or f.name == "eff_30":
+            note = "NaN: its anchor close lies before the day's first bar"
+        else:
+            note = "the day's bars from 17:00 only (the halt has none)"
+        rows.append(f"| `{f.name}` | as documented | {slot_label(frm)} | {note} |")
     return "\n".join(rows)
 
 
@@ -435,8 +495,17 @@ def _prior_median(X: np.ndarray, k: int = TOD_DAYS, min_count: int = TOD_MIN_DAY
     return med
 
 
+def _at(X: np.ndarray, j: int) -> np.ndarray:
+    """X[:, j] for a slot j of the day; NaN for a negative slot (before the day's first slot -- numpy would otherwise
+    wrap round to the day's last slots, after the alert)."""
+    return X[:, j] if j >= 0 else np.full(X.shape[0], np.nan)
+
+
 def _win_sum(cs: np.ndarray, s: int, w: int) -> np.ndarray:
-    """sum over slots s-w..s-1 from a prefix sum along slots (cs[:, i] = sum of slots 0..i)."""
+    """sum over slots s-w..s-1 from a prefix sum along slots (cs[:, i] = sum of slots 0..i); clipped at slot 0; NaN at
+    s = 0, where the window holds no slot of the day."""
+    if s < 1:
+        return np.full(cs.shape[0], np.nan)
     hi = cs[:, s - 1]
     return hi - cs[:, s - 1 - w] if s - 1 - w >= 0 else hi.copy()
 
@@ -452,6 +521,23 @@ def compute(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: C
     marks = np.asarray(list(marks), dtype=np.int64)
     if marks.size == 0 or marks.min() < RTH_OPEN or marks.max() > RTH_END:
         raise ValueError("alert marks must lie in 08:30..15:00 CT (slots 930..1320)")
+    return _compute(bars, marks, calendars, normalisers)
+
+
+def compute_overnight(bars: pd.DataFrame, marks: Iterable[int] = ON_ALERT_MARKS, calendars: Calendars | None = None,
+                      *, normalisers: bool = False) -> pd.DataFrame:
+    """Every feature of `REGISTRY` at every (trading day, overnight alert) of `bars` -- any minute 17:00 .. 08:29 CT
+    (slots 0..929) -- in `compute`'s columns and formulas, with the overnight reading of the module docstring: the
+    ten `OVERNIGHT_UNDEFINED` NaN, windows clipped at the day's 17:00 open, nothing of the day at the 17:00 alert."""
+    marks = np.asarray(list(marks), dtype=np.int64)
+    if marks.size == 0 or marks.min() < ON_FIRST or marks.max() > ON_LAST:
+        raise ValueError("overnight alert marks must lie in 17:00..08:29 CT (slots 0..929)")
+    return _compute(bars, marks, calendars, normalisers)
+
+
+def _compute(bars: pd.DataFrame, marks: np.ndarray, calendars: Calendars | None, normalisers: bool) -> pd.DataFrame:
+    """The computation behind `compute` and `compute_overnight`, at any slots 0..1320 (the callers check the range).
+    Every per-alert read of a slot is `_at` or a slice clipped at 0, identical to a plain index at s >= 930."""
     cal = calendars if calendars is not None else load_calendars()
     g = grid(bars)
     n, K = len(g.days), len(marks)
@@ -511,9 +597,9 @@ def compute(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: C
         V5, V30, Vd, RV60 = (np.full((n, K), np.nan) for _ in range(4))
         for k, s in enumerate(marks):
             s = int(s)
-            c = Cff[:, s - 1]
+            c = _at(Cff, s - 1)
             for w in (5, 15, 30, 60, 120):
-                F[f"ret_{w}"][:, k] = (c - Cff[:, s - 1 - w]) / A
+                F[f"ret_{w}"][:, k] = (c - _at(Cff, s - 1 - w)) / A
             if s > RTH_OPEN:
                 ok_r = (f_rth >= 0) & (f_rth <= s - 1)
                 F["ret_rth"][:, k] = np.where(ok_r, (c - O_rth) / A, np.nan)
@@ -525,25 +611,28 @@ def compute(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: C
             ok_d = (f_day >= 0) & (f_day <= s - 1)
             F["ret_day"][:, k] = np.where(ok_d, (c - O_day) / A, np.nan)
             for w in (15, 60):
-                hw, lw = np.fmax.reduce(H[:, s - w:s], axis=1), np.fmin.reduce(L[:, s - w:s], axis=1)
-                F[f"rng_{w}"][:, k] = (hw - lw) / A
-            hd, ld = Hcum[:, s - 1], Lcum[:, s - 1]
+                if s >= 1:
+                    lo_w = max(0, s - w)
+                    hw, lw = np.fmax.reduce(H[:, lo_w:s], axis=1), np.fmin.reduce(L[:, lo_w:s], axis=1)
+                    F[f"rng_{w}"][:, k] = (hw - lw) / A
+            hd, ld = _at(Hcum, s - 1), _at(Lcum, s - 1)
             F["range_day"][:, k] = (hd - ld) / A
             F["pos_day"][:, k] = (c - ld) / (hd - ld)
             F["pos_prior"][:, k] = cross * (c - pL) / (pH - pL)
             F["d_pdh"][:, k] = cross * (c - pH) / A
             F["d_pdl"][:, k] = cross * (c - pL) / A
             F["d_pdc"][:, k] = cross * (c - pC) / A
-            F["d_onh"][:, k] = (c - H_on) / A
-            F["d_onl"][:, k] = (c - L_on) / A
-            F["range_on"][:, k] = (H_on - L_on) / A
-            F["gap"][:, k] = cross * (C_on - pC) / A
+            if s >= RTH_OPEN:                                         # frozen at 08:30: no value before it
+                F["d_onh"][:, k] = (c - H_on) / A
+                F["d_onl"][:, k] = (c - L_on) / A
+                F["range_on"][:, k] = (H_on - L_on) / A
+                F["gap"][:, k] = cross * (C_on - pC) / A
             F["d_round"][:, k] = (c - ROUND_STEP * np.round(c / ROUND_STEP)) / A
             if s >= OR_END:
                 F["or_width"][:, k] = (H_or - L_or) / A
                 F["or_pos"][:, k] = (c - L_or) / (H_or - L_or)
             v5, v30, v60 = _win_sum(cs_v, s, 5), _win_sum(cs_v, s, 30), _win_sum(cs_v, s, 60)
-            V5[:, k], V30[:, k], Vd[:, k] = v5, v30, cs_v[:, s - 1]
+            V5[:, k], V30[:, k], Vd[:, k] = v5, v30, _at(cs_v, s - 1)
             F["vol_accel"][:, k] = np.log((v5 / 5.0 + 1.0) / (v60 / 60.0 + 1.0))
             n15, n60 = _win_sum(cs_dn, s, 15), _win_sum(cs_dn, s, 60)
             rv15 = np.where(n15 >= 2, np.sqrt(_win_sum(cs_d2, s, 15) / n15), np.nan)
@@ -562,7 +651,7 @@ def compute(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: C
             n30 = _win_sum(cs_dn, s, 30)
             F["up_share_30"][:, k] = np.where(n30 > 0, _win_sum(cs_up, s, 30) / n30, np.nan)
             path = _win_sum(cs_abs, s, 30)
-            F["eff_30"][:, k] = np.where(path > 0, np.abs(c - Cff[:, s - 31]) / path, np.nan)
+            F["eff_30"][:, k] = np.where(path > 0, np.abs(c - _at(Cff, s - 31)) / path, np.nan)
             F["tod"][:, k] = (s - RTH_OPEN) / 60.0
 
         m5, m30, mday, mrv = _prior_median(V5), _prior_median(V30), _prior_median(Vd), _prior_median(RV60)
@@ -605,10 +694,12 @@ HISTORY_DAYS = 22
 
 
 def compute_chunked(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, calendars: Calendars | None = None, *,
-                    normalisers: bool = False, chunk_days: int = 250) -> pd.DataFrame:
-    """`compute` in chunks of `chunk_days` trading days, each computed with the `HISTORY_DAYS` days before it and only
-    its own rows kept -- the same result bit for bit (`tests/test_features_perf.py`), at a fraction of the memory on
-    the full development window. The frame's first `HISTORY_DAYS` days have the same warm-up NaNs as in `compute`."""
+                    normalisers: bool = False, chunk_days: int = 250, overnight: bool = False) -> pd.DataFrame:
+    """`compute` (or, with `overnight=True`, `compute_overnight`) in chunks of `chunk_days` trading days, each computed
+    with the `HISTORY_DAYS` days before it and only its own rows kept -- the same result bit for bit
+    (`tests/test_features_perf.py`, `tests/test_features_overnight.py`), at a fraction of the memory on the full
+    development window. The frame's first `HISTORY_DAYS` days have the same warm-up NaNs as in one shot."""
+    fn = compute_overnight if overnight else compute
     ts = bars["ts"].to_numpy(np.int64)
     shifted = (pd.to_datetime(ts, unit="s", utc=True).tz_convert(CHICAGO).tz_localize(None) + pd.Timedelta(hours=7))
     dkey = shifted.normalize().to_numpy().astype("datetime64[D]")
@@ -618,12 +709,13 @@ def compute_chunked(bars: pd.DataFrame, marks: Iterable[int] = ALERT_MARKS, cale
         hi = min(lo + chunk_days, len(days))
         first = days[max(0, lo - HISTORY_DAYS)]
         sel = (dkey >= first) & (dkey <= days[hi - 1])
-        X = compute(bars.loc[sel], marks, calendars, normalisers=normalisers)
+        X = fn(bars.loc[sel], marks, calendars, normalisers=normalisers)
         keep = X["day"].to_numpy() >= np.datetime_as_string(days[lo], unit="D")
         parts.append(X.loc[keep])
     return pd.concat(parts, ignore_index=True)
 
 
 __all__ = ["ALERT_MARKS", "BY_NAME", "Calendars", "Feature", "HISTORY_DAYS", "META", "NAMES", "NORMALISERS",
-           "REGISTRY", "RTH_OPEN", "OR_END", "RTH_END", "compute", "compute_chunked", "describe", "grid",
-           "load_calendars", "slot", "slot_label"]
+           "ON_ALERT_MARKS", "ON_FIRST", "ON_LAST", "OVERNIGHT_FROM", "OVERNIGHT_UNDEFINED", "REGISTRY", "RTH_OPEN",
+           "OR_END", "RTH_END", "compute", "compute_chunked", "compute_overnight", "describe", "describe_overnight",
+           "grid", "load_calendars", "slot", "slot_label"]
