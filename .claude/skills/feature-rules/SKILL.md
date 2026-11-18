@@ -56,13 +56,18 @@ For each candidate alert `t`:
 - **Resolution** by 15:10 CT: win (target), loss (stop) or flatten (at 15:10, its actual P&L). No time stop.
 - **Ties:** a bar that could hit both stop and target is read **stop first**; on a resting order's fill bar a stop
   touch counts and a target touch does not -- **for one trade's own outcome only.** Kept as a fill-realism rule: in a
-  comparison of a resting entry with its mirror (or its reflection) that rule is biased with a predictable sign,
-  because price reaches the fill from the rule's side (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13), so
-  a declaration that reads such a pair declares its fill-bar settlement (the **pair rule** -- a pair whose fill bar
-  touches either trade's stop or target is counted, its share reported and capped) and books both sides symmetrically
-  about the trigger. The as-walked and as-traded readings use this label; the deciding reading redraws it (section 5).
+  comparison of a resting entry with its mirror (or its reflection) that rule is biased with a predictable sign:
+  price reaches the fill from the side of the trade's target, so stop first on the fill bar throws away the real
+  trade's target touches and stops out the reflected trade, whose stop now lies on the pre-fill side -- it favours the
+  real resting side by construction (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13). So **wherever a
+  reading compares a resting entry with its reflection or mirror** -- the **no-harm floor** (the real resting side
+  against the reflected one, search years) and the **as-traded floor** (held-out years), both deciding and read on the
+  real path (CHARTER 3.8), and the path-structure gap -- the **pair rule** settles the fill bar: a pair whose fill bar
+  touches either trade's stop or target **contributes zero lift** (both legs settled alike), is counted, and its share
+  reported and capped; both sides are booked symmetrically about the trigger. The as-walked and as-traded readings
+  use this label; the deciding reading redraws it (section 5).
 - **Costs:** Stage 2's per-contract costs at the stop (`atlas_a3.fee_by_stop`; `vendor/stage2/config/fills.yaml`),
-  the stop exit slipping a tick, a limit target none.
+  the stop exit at `stop_slippage_ticks`, a limit target at `target_slippage_ticks` (the profile in use).
 - **Gates before any outcome is read:** signals per session (supply), the unresolved share at every R (at most 5 %
   overall, Stage 2 D-212), realised risk matching intended (Stage 2 D-308).
 
@@ -86,8 +91,9 @@ must reproduce them (or P-16's pinned trades hash) before it labels anything new
 A trigger or a feature is judged by what it adds to a design's journey under zero edge, never by a lift over the coin
 twin (CHARTER 3.10). Its fills come from the real order; the path after each fill is reflected with probability one
 half (direction removed); and the deciding reading is the **martingale-outcome reading** -- each trade's outcome
-redrawn at its bracket's driftless first-exit odds against the nearer barrier (`adapter.BinaryDraw`'s law; the
-design-search template's section 5) -- over seeds paired with every baseline's. What a feature can still change, and
+redrawn at its bracket's driftless first-exit odds against the nearer barrier net of the stop-side exit cost --
+the loss barrier L = min(l, c - x_stop) -- c the room to the nearer of the floor and the daily loss limit after the entry cost, x_stop the stop-side exit cost (commission plus `stop_slippage_ticks`) -- rounded inward to the tick lattice for a fractional cushion, p = L / (L + g), L <= 0 not taken (the design-search template's section 5; `adapter.BinaryDraw` is its cost-free case) -- over seeds
+paired with every baseline's. What a feature can still change, and
 what the search rewards, is supply, timing, resolution speed for a given shape, clustering and how differently a
 component is timed from the others. The as-walked result's gap from the martingale-outcome result is the design's
 path-structure edge, reported beside, never credited. Rules read off a model afterwards (SHAP and the like) are

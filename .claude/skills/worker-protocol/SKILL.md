@@ -58,8 +58,9 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
      itself waits for memory; a commit started on a short machine competes with the heavy run. If memory is short,
      wait and check again -- never skip the hook.
    - **The commit-message file sits in your own worktree** (E-210's process fix): write it to
-     `<your worktree>\.commit_msg_<Q-id>.txt`, commit with `git commit -F .commit_msg_<Q-id>.txt` after staging your
-     files by name (never `git add -A` or `git add .`, which would stage the message file), then delete it. Never the
+     `<your worktree>\.commit_msg_<Q-id>.txt` (git-ignored, `.commit_msg_*`), commit with
+     `git commit -F .commit_msg_<Q-id>.txt` after staging your files by name (never `git add -A` or `git add .`), then
+     delete it. Never the
      shared scratchpad or a temp folder another session can write: a message there was overwritten by another worker
      while the hook's fast tier ran, and a commit went in under the wrong label (E-210).
    The post-commit hook pushes the branch to the private remote.
@@ -72,6 +73,12 @@ Run it before the hand-back, and put each line's answer in the hand-back (sectio
 review notes under `docs/reviews/`: the findings reviewers raised most often, most frequent first, each with a note that
 shows it. A line that does not apply is answered "n/a" with the reason.
 
+0. **The never lines.** No read of NQ from 2026-07-17; nothing under `vendor/` changed; the licence guard holds (no
+   committed result from which a bar price can be recovered, `tests/test_results_no_price_levels.py`); no result file
+   and no record file (`DECISIONS.md`, `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md`) written on the branch -- results
+   come only from a clean run; every journey measure is the function `docs/MEASURES.md` names; the redraw's oracle is
+   the cost-aware one (the loss barrier min(l, c - x_stop), net = -(costs), no exit past the floor), not a cost-free
+   zero-gross check alone.
 1. **Seeds.** Every seed an integer with one role, written before the run; searched as a literal and as arithmetic
    over every worktree, every ref and the vendored snapshot; no seed shared between roles, declarations, or the search
    years and the held-out test; keys of fixed length per kind (numpy's trailing-zero trap).

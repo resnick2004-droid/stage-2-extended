@@ -36,3 +36,6 @@ run.lock
 # Licensed-price derivatives (E-179): result files from which a bar price can be recovered stay local, never committed
 results/q121_vol_descriptive_a1.csv
 results/q121_vol_descriptive_a1.csv.manifest.json
+
+# A worker's commit-message file, written in its own worktree (E-210; skill worker-protocol): never staged
+.commit_msg_*

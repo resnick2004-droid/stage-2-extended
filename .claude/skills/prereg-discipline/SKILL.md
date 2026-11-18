@@ -58,7 +58,7 @@ quant: each lever is named, explained in a phrase and classed, from the lever ta
 a verified rule or an RD map's search-year rows -- never from the held-out years. The survey size, the surrogate
 method, the number of rounds and the batch size are fixed numbers, never extended after a look.
 
-**Every input of CHARTER 3.9 in one row, before the survey.** The limits, the bankroll budgets, the dimensions with
+**Every input of CHARTER 3.9 written in the file before its pin, so before the survey.** The limits, the bankroll budgets, the dimensions with
 their normalisers and caps, the weights, the composite **or** the fallback (one, never both), the size that matters and
 the power target, the regimes and "most years", the finalist order and plateau rules, the gate's quantile and the
 minimum complete held-out starts, the no-harm margin, the L values. A value set after a result is a new declaration.
@@ -92,8 +92,11 @@ a fail, the reading is not informative and is not worth running.
 - **The identity first, refusing.** The runner reproduces Stage 2's files before any outcome of it is believed
   (`identity/stage2_identity.py`; every new runner has its own; each baseline's runner reproduces its registered trade
   times and brackets path for path).
-- **In the declared order**: the pinning row, the calibration and the power gate, the pin, the survey and the rounds on
-  the search years only, the finalists' row, the held-out row, the held-out test once (the template's section 14).
+- **In the declared order** (the template's section 14): the reads of the draft; the pin of the whole renamed file by
+  one hash (section 7 never alone; O-1 and O-6 ruled); the calibration and the power gate on the inputs that file
+  fixed, their outputs pinned in E-115's form; the go row; the survey and the rounds on the search years only; the
+  finalists' row; the held-out row; the held-out test once, its `heldout_*` reads only after those two rows and once
+  per market (Q-158 the reader's guard to come).
 - **From a clean checkout of a named commit** (`python scripts/run_clean.py`: a detached checkout under
   `%LOCALAPPDATA%\stage2-extended-runs\`, the data junctions linked, `git status` empty before the command, the log
   beside it), **one heavy run at a time on the machine under `run.lock`** (skill `run-lock`), watched to its end.

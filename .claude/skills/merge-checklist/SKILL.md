@@ -75,9 +75,13 @@ cd $W && python scripts/vendor_stage2.py --verify
       (the lever loader, the sampler, the surrogate, the round proposer, H4) can open a session from 2024-01-02 on --
       its runner refuses one, with a test that the refusal fires; the horizon embargo asserted (no start reads past its
       own years); nothing written to `results/variants.jsonl` or the lever map from a held-out read
-- [ ] the redraw, where the branch builds or touches it: zero gross expectation at every cushion by an exact-fraction
-      test, the nearer barrier raced (`adapter.BinaryDraw`'s law), a redrawn loss with the run's stop-fill convention
-      (m-3), overlapping positions refused until defined (m-2)
+- [ ] the redraw, where the branch builds or touches it: the race against the nearer barrier net of the stop-side
+      exit cost -- the loss barrier L = min(l, c - x_stop), rounded inward to the tick lattice for a fractional
+      cushion, so the engine's clip never binds (`adapter.BinaryDraw` is only its cost-free case); an exact-fraction
+      test over fractional cushions and unequal exit costs showing gross zero, net = -(costs) and no exit past the
+      floor; R-10's stopped walk with the same inward barriers and every terminal state mapped; a redrawn loss with the
+      run's stop-fill convention (m-3); overlapping positions refused until defined (m-2); the pair rule's settlement
+      where a resting entry meets its reflection
 
 ## 5. Results that matter (a reading, after `/collect`)
 

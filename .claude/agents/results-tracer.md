@@ -56,8 +56,8 @@ pattern: a label, a function that recomputes the number from the CSV, the docume
    figure with ruin probability, bankroll drawdown and payout latency beside it (Stage 2 D-145). Deciding figures are
    on the martingale-outcome reading; Stage 2's `verdict` arm is retired (CHARTER 3.10). A held-out figure cited
    before its verdict row is a finding. A missing accompaniment is a charter violation, not a formatting nit.
-8. **The count.** Any reported reading carries its family's cell count and the program's running family count (Stage 2
-   D-621 (5)), and `results/variants.jsonl` where it exists.
+8. **The count.** Any reported reading carries every design tried (its search's count in `results/variants.jsonl`) and
+   the program's k (one per held-out test, CHARTER 3.7; k = 13 next).
 
 ## Output
 

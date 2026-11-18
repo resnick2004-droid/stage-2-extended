@@ -72,7 +72,9 @@ are checking is not.
      one that appeared;
    - the **pass line** against CHARTER 3.8 and the declaration, unchanged: every deciding reading on the
      **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against
-     the nearer barrier, the same seed keying for the design and every baseline); (a) the limits in the form in force,
+     the nearer barrier net of the stop-side exit cost, so the engine's clip never binds -- recheck from the trade rows
+     that no redrawn loss plus its cost passes the floor and that net equals minus the costs in expectation -- the
+     same seed keying for the design and every baseline); (a) the limits in the form in force,
      O-5's form beside; (b) each baseline beaten on the pinned composite (or the pinned fallback, never both) by the
      calibrated coin-seed leg at the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the time
      leg's conditions met; (c) every floor -- the zero-edge long-run gate at its pinned quantile on its pinned minimum
@@ -96,7 +98,15 @@ are checking is not.
 6. **The held-out reads, for the ledger.** List every read of the held-out years (2024-01-02 to 2026-07-16) the
    result or its inputs made, each in the leak-clause form ("written after this reading; no figure cited"), with what
    it read and for which comparator or trigger, so the lead can enter it in the held-out read ledger (CHARTER 3.6 (b));
-   and check that no held-out row reached `results/variants.jsonl` or the lever map.
+   and check, in `results/read_ledger.jsonl`:
+   - every `heldout_*` line's time is after the commits of the search's finalists' row and its held-out row (both
+     citing the declaration's one hash);
+   - **single use per market** (3.6 (c)): no `heldout_*` line on the same market's bars by another declaration;
+   - no `registered_design` judged read, and no RD read of the held-out years, between the search's pin and its
+     verdict row unless a decision row names it;
+   - H4's held-out outputs stayed **sealed** (hash recorded, file unopened) until the held-out test (3.6 (e)), and the
+     **reverse reading** was not run before it (3.6 (g));
+   - no held-out row reached `results/variants.jsonl` or the lever map.
 7. **The count.** Every design tried (the survey, every round, every L, every failed gate) against the declaration's
    count and `results/variants.jsonl`; the search's k as its held-out row assigned it (E-204) and its level; the
    program's running count reported with the reading. A best-of-many reported as found first is a different finding.
@@ -105,9 +115,14 @@ are checking is not.
    the break-even denial rate, the placement on and the binding Focused Trader models beside the 0 % verdict (CHARTER
    3.8). Any growth figure with ruin, bankroll drawdown and payout latency beside it (Stage 2 D-145). Stage 2's
    `verdict` arm (the edge's lower bound) is retired (CHARTER 3.10): a figure taken from it for a decision is a finding.
-9. **Assumptions carried.** An `assumed` fill profile (`vendor/stage2/config/fills.yaml`), a rule not verified (in
+9. **The verdict's settings.** 0 % payout denial, the Responsible Trading Program's placement off and the **Focused
+   Trader Program off** in the verdict; the long-run gate's **denial rung** is D-145's tier-3 probability, not the
+   verdict's 0 % (the 0 % reading beside), read at the pinned quantile over coin seeds and history-block resamples as
+   O-6 ruled.
+10. **Assumptions carried.** An `assumed` fill profile (`vendor/stage2/config/fills.yaml`), a rule not verified (in
    Stage 2's ledger or this repository's `config/rules_extended.yaml`), a payout lag, the payout-spacing model, the
-   tier-2 placement off (D-289), 0 % denial (D-234), the no-closure state table, the quit rules. Each must be stated
+   tier-2 placement off (D-289), 0 % denial (D-234), the Focused Trader Program off, the no-closure state table, the
+   quit rules. Each must be stated
    wherever the result is used; silence about an assumption is a finding.
 
 ## The failure protocol -- apply it to any check that fails

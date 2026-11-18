@@ -30,7 +30,11 @@ leans on it is a finding.
    search-year start whose observation window straddles into the held-out years (the horizon embargo, MEASURES.md
    1.1); a held-out result written where a later search can read it (the lever map, `results/variants.jsonl`); a
    held-out read missing from the declaration's **held-out read ledger**; a second held-out test on the same market's
-   bars (single use, CHARTER 3.6 (c)).
+   bars, including a re-declared search reading them again (single use per market, CHARTER 3.6 (c)); a `heldout_*`
+   read before the finalists' row and the held-out row; an RD or a new `registered_design` read of the held-out years
+   before the market's verdict; H4's held-out outputs not **sealed** (hash recorded, file unopened) until the held-out
+   test (3.6 (e)); the **reverse reading** (choose on the held-out years, judge on the search years) run before the
+   held-out test (3.6 (g)).
 3. **Selection after the fact.** Any choice that could have been made after seeing an outcome: a lever's range, a
    stop, a target, a session, a component, a filter, a subset, a date, a seed, a measure, a dimension, a cap, a weight.
    Ask of each: fixed by contract arithmetic, a verified rule or an outside source before any read (fixed), chosen
@@ -52,16 +56,25 @@ leans on it is a finding.
    row before the survey (CHARTER 3.9); a value moved after a search-year result without re-declaring the search; a
    limit so strict that a design equal to the best baseline fails it (E-015's condition, the power gate's limit
    clause); the fallback tried after the composite.
-8. **The zero-edge convention.** Does the redraw race the **nearer barrier** (the stop or the cushion, `BinaryDraw`'s
-   law)? Is the gross expectation zero at every cushion, for time-limited trades too (R-10)? Are trades open at once
-   on one instrument redrawn jointly from one driftless path, or is an overlapping design run at all before that is
-   defined (m-2)? Does a redrawn loss carry the run's stop-fill convention (m-3)? Are the no-harm and as-traded floors
-   read on the real path (N-1)? Is an as-walked result credited?
+8. **The zero-edge convention.** Does the redraw race the **nearer barrier net of the stop-side exit cost** -- the
+   loss barrier L = min(l, c - x_stop), x_stop the commission plus `stop_slippage_ticks`, rounded inward for a
+   fractional cushion -- so the engine's clip never binds? (Racing the full cushion and then booking the stop's cost
+   lets the clip credit costs back to near-floor trades: an edge a search will find. `BinaryDraw` is only the
+   cost-free case.) Is the gross expectation zero and the net exactly minus the costs at every cushion, for
+   time-limited trades too (R-10, every terminal state mapped to a law, the walk's barriers on its lattice inward)? Are
+   trades open at once on one underlying redrawn jointly from one driftless path, or is an overlapping design run at
+   all before that is defined (m-2)? Does a redrawn loss carry the run's stop-fill convention (m-3)? Are the no-harm
+   and as-traded floors read on the real path (N-1), with the pair rule's settlement (a pair touching either leg's
+   stop or target on the fill bar contributes zero lift)? Is an as-walked result credited?
 9. **Multiple testing and calibration.** Is every design tried counted (survey, rounds, every L, every failed gate)?
    Is the level 0.05 / (k (k + 1)) applied to the test that decides, with k assigned at the held-out row (E-204)? Can a
    check fail -- does a calibration's null differ from the alternative, does an oracle read something other than the
    output it checks? Is the deciding bound valid for the replicate structure (no t deciding)? Is the history null's
-   false-pass rate printed? Does the power gate show power at the size that matters before the pin?
+   false-pass rate printed? Does the power gate show power at the size that matters before the go row, on inputs the
+   pinned file fixed? Is **each** baseline beaten, an **intersection-union** test with every comparison at the full
+   level, not the best baseline only (3.8 (b))? Is the long-run gate read at its pinned quantile over coin seeds and
+   history-block resamples (O-6 ruled), on its **complete-start minimum**, with D-145's **tier-3 denial** applied
+   (3.8 (c))? Are the verdict's settings 0 % payout denial, the placement off and the **Focused Trader Program off**?
 10. **Fill and execution realism.** At least L minutes from alert to order (L declared: 5, or a counted 3 or 2); stop
     and limit fills on 1-minute bars (a limit only on a trade-through by a tick; stop first on a bar that touches both;
     the fill bar itself); costs and slippage; the 15:10 CT flatten; news windows (no entry or fill inside, a position

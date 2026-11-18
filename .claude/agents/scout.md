@@ -59,10 +59,16 @@ the pinned composite, never at a trade's edge. Work through, at least:
 
 For the brief you may read the declaration, the pinning row, and **result files of the search years already written
 with their manifests**, citing each number by file and column; you compute no new statistic from the bars and never
-open a held-out result (CHARTER 3.6). A check that needs a computation is specified as a task (what, on which data, its
-cost) for a worker. Write the brief to `docs/research/CHALLENGE_<target-stem>_<YYYY-MM-DD>.md`, each point labelled
-**blocking** (it could make the verdict wrong) or **minor** (E-207 (2)); the lead answers every blocking point before
-the pin or the read.
+open a held-out result (CHARTER 3.6). **A file holding any row dated from 2024-01-02 on is not opened at all**, even
+for its search-year rows -- whole-window files exist (RD-03's whole-window readings, `results/breakeven_fidelity_2*.csv`);
+check a file's dates from its manifest's parameters before opening it, and if they do not say, do not open it. A check
+that needs a computation is specified as a task (what, on which data, its cost) for a worker. Write the brief to
+`docs/research/CHALLENGE_<target-stem>_<YYYY-MM-DD>.md`, each point labelled **blocking** (it could make the verdict
+wrong) or **minor** (E-207 (2)); the lead answers every blocking point before the pin or the read.
+
+**What an answer may be.** Before the pin, an answer is a change to the draft (then re-read). At the finalists' stage an
+answer is text on record, or the search closes, or it is re-declared as a new search; the lead
+**never edits the finalist list or its order**, which come from the pinned rule, and never changes a pinned input in answer to a point.
 
 ## Output
 

@@ -59,10 +59,24 @@ result of this search's own cells.
    `docs/MEASURES.md` section 7 and the lever table's section 6 for more. The horizon embargo stated with the longest
    horizon. O-1 ruled, or the draft says it does not pin until it is. The `Judged-block reads:` line (template 14)
    names only the held-out test's purposes, none with a choice or fitting word (`extended/reader.py` refuses those and
-   any purpose not on the line). Refuse a held-out year read by any choice.
+   any purpose not on the line), and the draft binds its `heldout_*` reads to after its finalists' row and its
+   held-out row. **Refuse:**
+   - a draft that does not spend the market's held-out years but carries a `Judged-block reads:` line;
+   - a design-search draft whose market already has a `heldout_*` read by another declaration in
+     `results/read_ledger.jsonl` -- the held-out years are used once per market, across declarations (CHARTER 3.6 (c));
+     a re-declared search gets no fresh read;
+   - an RD declaration naming any held-out purpose before the market's verdict row;
+   - a draft that plans a new `registered_design` read of the held-out years (P-14, P-15, P-16) without a decision row
+     naming it.
+
+   The reader does not yet enforce the order or the market; **Q-158** (queued for wt-verify) is the guard to come, and
+   until it lands these refusals are the guard. Refuse a held-out year read by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
-   market (Stage 2 D-107, `vendor/stage2/prereg/REGISTRY.md`) and report it; that is not a refusal.
+   market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
+   `vendor/stage2/prereg/REGISTRY.md`), and state in the verdict that NQ's reserve becomes a confirmation window
+   only by the operator's decision (Stage 2 D-107; Stage 2's operator item 6). That is reported, not a refusal: the
+   confirmation is read only after a design is carried, and it is a purchase anyway.
 3. **The lever space** (template 3). Every lever a row of `docs/plans/LEVER_TABLE_topstep50k.md` or a row added with
    its columns, classed **fixed / searched / dropped**, explained in a phrase, with its source kind; every range from
    contract arithmetic, a verified rule or an RD map's search-year rows; nothing the loader refuses
@@ -71,11 +85,17 @@ result of this search's own cells.
    ahead; windows that do not collide; `feature-rules` for any bar-reading trigger; overnight triggers only after H2;
    **the side rule** (O-4 pending: the coin side evaluated, model sides only behind the no-harm floor); the contract
    fit item by item; conduct tier 1 true of the specification.
-5. **The zero-edge convention** (template 5): the reflection; the martingale-outcome reading with `BinaryDraw`'s
-   nearer-barrier race (its law, keyed by the coin field, not its stream); **m-2** (no design with overlapping
-   positions runs until the joint driftless path is defined and checked); **m-3** (a redrawn loss carries the run's
-   stop-fill convention); **R-10** (the time-limit redraw, zero gross expectation, its clock fixed from causal bars). A
-   draft that replaces the house form shows zero gross expectation by an exact-fraction test.
+5. **The zero-edge convention** (template 5): the reflection; the martingale-outcome reading with the race against
+   the nearer barrier **net of the stop-side exit cost** -- the loss barrier L = min(l, c - x_stop), rounded inward to
+   the tick lattice for a fractional cushion, p = L / (L + g), L <= 0 not taken (the runner's rule), so the engine's
+   clip never binds and net = -(costs); `BinaryDraw` is only its cost-free special case, and the draw is keyed by the
+   coin field, not its stream; **m-2** (no design with overlapping positions runs until the joint driftless path per
+   underlying is defined and checked); **m-3** (a redrawn loss carries the run's stop-fill convention); **R-10** (the
+   time-limit redraw: every terminal state mapped to its law, the stopped walk's loss barrier the same inward-rounded
+   min(l, c - x_stop) with the larger of the stop- and flatten-side costs, its step count from causal bars at the
+   alert); **the pair rule** (a resting entry against its reflection: a pair touching either leg's stop or target on
+   the fill bar contributes zero lift). A draft that replaces the house form shows zero gross expectation and
+   net = -(costs) by an exact-fraction test.
 6. **The survey, the surrogate and the rounds** (template 6): the survey size, the space-filling method, the surrogate
    method and its tuning inside the search years only, the number of rounds and the batch size **fixed and never
    extended**, the gates before any outcome, **the finalist order rule** and the plateau rule declared before the
@@ -84,15 +104,20 @@ result of this search's own cells.
    bankroll budgets, the dimensions with their normalisers and caps, the weights, the composite **or** the fallback
    (one, never both), the size that matters (O-3) and the power target, the regimes and "most years", the finalist
    order and plateau rules, the gate's quantile and the minimum complete held-out starts, the no-harm margin(s), the L
-   values, J and m -- each from the search years only, in one lead's row **before the survey**. A value "to be set"
-   after the survey is refused.
+   values, J and m -- each from the search years only, written in the file before its pin, and so **before the
+   survey**. A value "to be set" after the pin is refused. Section 7 is never pinned alone: the whole file is frozen by
+   one hash (On approving). The gate's quantile reads coin seeds and history-block resamples (CHARTER 3.8 (c)); **O-6**
+   (how the history part is formed on the held-out years) is the operator's: refuse to approve for a pin until O-6 is
+   ruled, and refuse a draft that chooses either option itself.
 8. **The three-way test** (template 8): the design note it adopts (`docs/plans/THREE_WAY_TEST_design.md`, the commit
    cited) and every departure; the coin-seed leg's statistic by the composite's form (no t decides); the time leg's
    conditions written exactly; the held-out leg's scope; **paired** seeds and start days for design and baselines.
-9. **Calibration and the power gate** (template 9): the whole pinned rule calibrated after the pinning row and before
-   the pin; the antithetic twin and disjoint seed sets; the history null and its false-pass rate; **the power gate** at
-   the size that matters, with its limit clause and the complete-start count; "if any fails, the search does not
-   pin"; the data question put to the operator before the first pin.
+9. **Calibration and the power gate** (template 9): their inputs (seeds, the R-10 estimator, the statistic, J and m,
+   the plants, the generator) fixed in the file before the pin; their outputs pinned afterwards in E-115's form
+   (`docs/calibration/<F-NN>_calibration.md` by its sha256); the antithetic twin and disjoint seed sets; the history
+   null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
+   complete-start count; "if any fails, the search goes no further" (no go row, no survey); the data question put to
+   the operator before the go row.
 10. **The pass line** (template 10): (a) the limits in the form in force, O-5's beside; (b) each baseline beaten,
     intersection-union, every comparison at the full level; (c) every floor, the stress floors (+1 tick, 10 % missed)
     and the as-traded floors read on the real path (N-1); the verdict at 0 % denial, the placement off, the Focused
@@ -112,10 +137,14 @@ result of this search's own cells.
   (k = 10) withdrawn and spent (E-007), F-02's k = 11 retired unspent (E-094, E-095), F-03 spent k = 12 (E-192); the
   next is k = 13.
 - **A search assigns its k at its held-out row** (E-204's rule, with "held-out test" in place of "stage B"): it is not
-  counted by this rule until that row exists. If another declaration pins between its held-out run and that row, its
-  held-out run is repeated at the new level under a repeat row. At the pin, write "k assigned at the held-out row",
-  state the k it would take if no other declaration pins first, and check the level's arithmetic
-  (k = 13: 0.05 / 182).
+  counted by this rule until that row exists. A pin spends no k; a held-out row does. On the template's order the
+  held-out row precedes the held-out run, so E-204's repeat clause (another declaration taking a k between a run and
+  its row) cannot arise; if a draft reverses the order, its held-out run is repeated at the new level under a repeat
+  row. At the pin, write "k assigned at the held-out row", state the k it would take if no other declaration takes a
+  k first, and check the level's arithmetic (k = 13: 0.05 / 182). If another declaration takes a k first, the
+  search must re-state its power gate's reading at the new level before its held-out run (exit (B) cites it).
+- **E-005 (d), restated:** a search withdrawn after its held-out row still spends its k, unless a decision row
+  releases it.
 
 ## Also check
 
@@ -131,7 +160,8 @@ result of this search's own cells.
 - **The overlap with earlier searches, families and RD maps**, named, and why this is not a re-run.
 - **The section for anything chosen later** exists and is empty.
 - **An RD reading's declaration** (a described map, deciding nothing, no k): checked against the same years, ledger,
-  seeds and refusals; it reads the held-out years only as its own row allows, and every such read enters the ledger.
+  seeds and refusals. It never reads the held-out years before the market's verdict row (CHARTER 3.6 (a), (c)):
+  refuse an RD declaration naming any held-out purpose before then.
 
 ## On approving
 
@@ -142,12 +172,16 @@ result of this search's own cells.
 3. **Hash the final file's LF text** -- the bytes with CRLF replaced by LF, exactly as
    `tests/test_declarations_fixed.py` reads it:
    `python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" prereg/F-NN_<slug>.md`
-   From here the file is fixed: nothing declared is edited; a change is a new declaration.
+   The rename comes first and the hash second, so the hash is the renamed file's. From here the file is frozen:
+   nothing declared is edited; a change is a new declaration. **One hash for the life of the declaration:** the pin,
+   the go row, the finalists' row and the held-out row all cite this one hash; a second hash for the same path is
+   what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7 is never pinned
+   alone.
 4. **Return the proposed pinning row as one finished line**, which must contain the exact pattern the hash test parses
    -- the path in backticks, the word `sha256`, the hash in backticks:
 
    ```
-   | E-NNN | <YYYY-MM-DD> | **Search F-NN declared before it is built or read: <title>, `prereg/F-NN_<slug>.md` sha256 `<64 hex>` (of its LF text).** k assigned at its held-out row (E-204); k = <k> if none pins first, level 0.05 / <k(k+1)>. The pinning row it rests on: <row>. Survey <N>, rounds <R> x <batch>, L values <...>. Held-out read ledger: <entries>. Confirmation declared now: ... Seeds by role: ... | <basis: the red-team review, the challenger brief, the template, the rows it rests on> |
+   | E-NNN | <YYYY-MM-DD> | **Search F-NN declared before it is built or read: <title>, `prereg/F-NN_<slug>.md` sha256 `<64 hex>` (of its LF text).** k assigned at its held-out row (E-204); k = <k> if none takes a k first, level 0.05 / <k(k+1)>. The whole file frozen by this hash; the calibration and power gate follow under E-115's form, then the go row. O-1 and O-6 ruled: <rows>. Survey <N>, rounds <R> x <batch>, L values <...>. Held-out read ledger: <entries>. Confirmation declared now: ... Seeds by role: ... | <basis: the red-team review, the challenger brief, the template, the rows it rests on> |
    ```
 
    Leave `E-NNN` for the lead to number. Report: APPROVED, the F-id, the k it would take and its level, the sha256,

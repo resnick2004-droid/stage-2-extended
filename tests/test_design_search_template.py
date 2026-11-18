@@ -288,3 +288,191 @@ def test_the_commands_show_the_search_and_brief_the_operator():
     _has("commands/status.md", "search rounds", "baselines", "held-out read ledger")
     _has("commands/brief.md", "plain English", "traced", "result file", "limits")
     assert (CLAUDE_DIR / "commands" / "brief.md").read_text(encoding="utf-8").startswith("---\n")
+
+
+# ============================================================================================ E. corrective cycle 1
+# (docs/reviews/TEMPLATE_AGENTS_2026-11-18.md: B-1 to B-5, m-1 to m-8, under the coordinator's rulings)
+
+#: B-1: every copy of the redraw's law races the cushion less the stop-side exit cost, rounded inward.
+RACE_COPIES = (
+    "prereg/TEMPLATE_design_search.md",
+    ".claude/agents/prereg-gatekeeper.md",
+    ".claude/agents/red-team.md",
+    ".claude/skills/merge-checklist/SKILL.md",
+    ".claude/skills/feature-rules/SKILL.md",
+    ".claude/skills/contract-engine/SKILL.md",
+)
+
+
+def test_every_copy_of_the_race_law_uses_the_cushion_less_the_stop_side_cost():
+    for rel in RACE_COPIES:
+        text = _text(ROOT / rel)
+        assert "min(l, c - x_stop)" in text, rel
+        assert "inward" in text, rel
+        assert not re.search(r"min\(l, c\)", text), rel          # the full-cushion form B-1 rules out
+        assert "uses BinaryDraw's law" not in text, rel
+
+
+def test_the_template_states_the_costed_race_and_r10_walk_exactly():
+    text = _text(TEMPLATE)
+    sec = text[text.index("## 5. The zero-edge convention"):text.index("## 6. The survey")]
+    for s in ("L = min(l, c - x_stop)", "p = L / (L + g)", "L <= 0", "the cost-free special case", "x = 0",
+              "`stop_slippage_ticks`", "`flatten_slippage_ticks`", "rounded inward", "net expectation",
+              "minus its costs", "the clip never binds", "the runner's rule", "fill-time law",
+              "n = round(sigma^2 T / s^2)", "overrides", "convexity", "underlying"):
+        assert s in sec, s
+    assert "slipping a tick" not in sec, "a rule value typed: cite fills.yaml's key"
+
+
+#: m-1 (ii): every terminal state of a run trade has its law, in one table.
+TERMINAL_STATES = ("target", "stop", "stop gapped through", "the floor or the daily loss limit", "15:10 CT flatten",
+                   "news window", "max hold", "any other exit")
+
+
+def test_r10_maps_every_terminal_state_to_a_law():
+    text = _text(TEMPLATE)
+    sec = text[text.index("| terminal state in the run |"):]
+    table = sec[:sec.index("\n\n")]
+    rows = [r for r in table.splitlines()[2:] if r.strip().startswith("|")]
+    assert len(rows) == len(TERMINAL_STATES), rows
+    for state, row in zip(TERMINAL_STATES, rows):
+        cells = row.split("|")
+        assert state in cells[1], (state, row)
+        assert ("race" in cells[2]) != ("stopped walk" in cells[2]), row        # exactly one law each
+
+
+def test_the_whole_file_is_pinned_once_and_section_7_never_alone():
+    """B-2: the whole renamed file is frozen by its hash at the first pin; section 7 is never pinned alone; the
+    calibration's and power gate's inputs sit in the file; their outputs are pinned in E-115's form."""
+    text = _text(TEMPLATE)
+    assert "never pinned alone" in text
+    assert "pinned first, alone" not in text and "from this heading to the next" not in text
+    sec9 = text[text.index("## 9. Calibration"):text.index("## 10. The pass line")]
+    for s in ("E-115", "docs/calibration/", "seeds", "estimator", "before the pin"):
+        assert s in sec9, s
+    run = text[text.index("## 14. The run order"):text.index("## 15.")]
+    order = [run.find(s) for s in ("challenger brief", "**The pin**", "**The calibration and the power gate**",
+                                   "**The go row**", "**The survey**", "**The finalists' row**",
+                                   "**The held-out row**")]
+    assert all(i >= 0 for i in order) and order == sorted(order), order
+
+
+def _pin_hashes(log: str) -> dict[str, set[str]]:
+    out: dict[str, set[str]] = {}
+    for rel, h in re.findall(r"`(prereg/(?:F|RD)-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`", log):
+        out.setdefault(rel, set()).add(h)
+    return out
+
+
+def _gatekeeper_rename_and_hash(draft: Path, nn: str) -> tuple[Path, str]:
+    """The gatekeeper's steps 2-3, as its file writes them: rename, replace `F-XX`, then hash the LF bytes."""
+    import hashlib
+
+    new = draft.with_name(draft.name.replace("DRAFT_F-XX", f"F-{nn}"))
+    new.write_bytes(draft.read_bytes().replace(b"F-XX", f"F-{nn}".encode()))
+    draft.unlink()
+    return new, hashlib.sha256(new.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def test_the_gatekeepers_rename_leaves_the_hash_as_pinned(tmp_path):
+    """B-2: the rename comes before the hash, so the pinned hash is the renamed file's and nothing the gatekeeper does
+    afterwards changes a byte; every row citing a declaration cites one hash, so the reader's `pins()` sees one."""
+    import hashlib
+
+    from extended import reader as RD
+
+    pre = tmp_path / "prereg"
+    pre.mkdir()
+    draft = pre / "DRAFT_F-XX_toy.md"
+    draft.write_text(_text(TEMPLATE).replace("# TEMPLATE: a design search's declaration", "# F-XX: toy"),
+                     encoding="utf-8", newline="\n")
+    pinned, h = _gatekeeper_rename_and_hash(draft, "13")
+    assert b"F-XX" not in pinned.read_bytes()
+    rel = f"prereg/{pinned.name}"
+    log = (f"| E-901 | d | pin `{rel}` sha256 `{h}` |\n"
+           f"| E-902 | d | go row: `{rel}` sha256 `{h}` and the calibration record |\n")
+    assert RD.pins(log) == {rel: {h}}
+    assert hashlib.sha256(pinned.read_bytes().replace(b"\r\n", b"\n")).hexdigest() == h
+    # positive control: a second hash for the same file is what the reader refuses for good
+    bad = log + f"| E-903 | d | `{rel}` sha256 `{'0' * 64}` |\n"
+    assert len(RD.pins(bad)[rel]) == 2
+    # the gatekeeper's text orders the rename before the hash, and keeps one hash
+    gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    assert gk.index("**Rename**") < gk.index("**Hash the final file's LF text**")
+    assert "one hash" in gk
+
+
+def test_every_pinned_declaration_carries_one_hash_in_the_log():
+    log = _text(ROOT / "DECISIONS.md")
+    multi = {rel: hs for rel, hs in _pin_hashes(log).items() if len(hs) > 1}
+    assert not multi, multi
+
+
+def test_held_out_reads_are_tied_to_the_run_order_and_the_market():
+    """B-3: a `heldout_*` read only after the finalists' row and the held-out row; once per market across
+    declarations; RD declarations never; no new registered_design read without a row; Q-158 the guard to come."""
+    text = _text(TEMPLATE)
+    run = text[text.index("## 14. The run order"):text.index("## 15.")]
+    for s in ("after the finalists' row and the held-out row", "once per market", "Q-158",
+              "no `Judged-block reads:` line", "registered_design", "five-minute cell", "path-structure edge",
+              "denial ladder", "model-side"):
+        assert s in run, s
+    gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    for s in ("results/read_ledger.jsonl", "an RD declaration naming any held-out purpose", "Q-158",
+              "registered_design"):
+        assert s in gk, s
+    au = _text(CLAUDE_DIR / "agents" / "auditor.md")
+    for s in ("`heldout_*`", "registered_design", "single use per market"):
+        assert s in au, s
+
+
+def test_the_long_run_gate_keeps_the_charter_quantile_and_o6_is_open():
+    """B-4: CHARTER 3.8 (c)'s 'over coin seeds and history-block resamples' kept; O-6 states both options; no pin."""
+    text = _text(TEMPLATE)
+    assert text.count("coin seeds and history-block resamples") >= 2
+    assert "over coin seeds, given the history" not in text
+    o6 = text[text.index("**O-6"):]
+    o6 = o6[:o6.index("\n\n")]
+    for s in ("(a)", "(b)", "coin seeds only on the held-out years", "search years only", "No search pins"):
+        assert s in o6, s
+    assert "O-6" in _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+
+
+def test_the_pair_rule_settlement_is_restored():
+    """B-5: wherever a floor compares a resting entry with its reflection, a pair touching either leg's stop or target
+    on the fill bar contributes zero lift, for the reason Phase 0's D-1 and D-13 give."""
+    fr = _text(CLAUDE_DIR / "skills" / "feature-rules" / "SKILL.md")
+    for s in ("contributes zero lift", "D-1", "D-13", "no-harm floor", "as-traded floor", "stop first"):
+        assert s in fr, s
+    text = _text(TEMPLATE)
+    sec = text[text.index("## 5. The zero-edge convention"):text.index("## 6. The survey")]
+    assert "contributes zero lift" in sec and "pair rule" in sec
+
+
+def test_the_minor_findings_are_carried():
+    gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    for s in ("takes a k first", "E-005 (d)", "re-state", "at most three a market", "P-05, P-06 and P-10",
+              "only by the operator's decision"):
+        assert s in gk, s                                                                   # m-2, m-3
+    rt = _text(CLAUDE_DIR / "agents" / "red-team.md")
+    for s in ("sealed", "reverse reading", "intersection-union", "complete-start minimum", "tier-3 denial",
+              "Focused Trader Program off"):
+        assert s in rt, s                                                                   # m-4
+    au = _text(CLAUDE_DIR / "agents" / "auditor.md")
+    for s in ("sealed", "reverse reading", "denial rung", "Focused Trader Program off"):
+        assert s in au, s                                                                   # m-4
+    sc = _text(CLAUDE_DIR / "agents" / "scout.md")
+    for s in ("2024-01-02", "never edits the finalist list"):
+        assert s in sc, s                                                                   # m-5
+    wp = _text(CLAUDE_DIR / "skills" / "worker-protocol" / "SKILL.md")
+    for s in ("0. **The never lines.**", "2026-07-17", "vendor/", "licence guard", "clean run", "docs/MEASURES.md",
+              "x_stop"):
+        assert s in wp, s                                                                   # m-6
+    assert ".commit_msg_*" in _text(ROOT / ".gitignore").splitlines()                         # m-6
+    text = _text(TEMPLATE)
+    for s in ("per unit and underlying", "a build requirement", "docs/plans/THREE_WAY_TEST_design.md` at"):
+        assert s in text, s                                                                 # m-7
+    assert "being revised" not in text
+    assert (ROOT / "docs" / "plans" / "THREE_WAY_TEST_design.md").is_file()
+    tr = _text(CLAUDE_DIR / "agents" / "results-tracer.md")
+    assert "D-621 (5)" not in tr and "cell count" not in tr and "every design tried" in tr     # m-8
