@@ -83,3 +83,5 @@ results/fo_opening.csv,level,in_state_offers,"the count of in-state offers per c
 # results/q126_val_size__spread.csv,pair,*count_*/ratio_*,"rejection counts over ratios of rates to levels: counts and statistics"
 # results/q126_val_size__spread.csv,pair,*size/admitted_share,"size (a sample count) over a share"
 # results/q126_val_size__spread.csv,pair,*size/count_*,"size (a sample count) over a rejection count"
+results/user_beside_starts.csv,pair,*,"every column of the per-start file is a count, a session index, a flag, a share or dollars of the user's own cash (fees, payouts, nets), classed column by column by the Q-44 audit (docs/audits/Q-44_user_beside_2026-11-18.md); no column is or derives from a bar price, so no ratio of two is one (E-201)"
+results/user_beside.csv,pair,n/enforcement_p,"n (a sample count of starts) over the tier-3 denial probability (a declared ladder rung in [0, 1]): a count over a probability (Q-44, E-201)"
