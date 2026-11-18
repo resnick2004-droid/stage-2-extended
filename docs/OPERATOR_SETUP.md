@@ -15,6 +15,7 @@ until it is done. **Nothing is ever bought without the operator's explicit yes.*
 | 8 | **More history, a purchase: Databento NQ 1-minute bars 2010-01-01 to 2019-12-31** | the same reason, on the operator's own licensed store, read locally | NQ 2020-2026 only | open -- a purchase; not authorised |
 | 9 | **Memory for heavy runs** | a campaign or a full identity needs about 3 GB; on 2026-11-15 the machine had about 1.7 GB available, the rest held by other applications | light work runs; a heavy run waits until the memory is there (the session checks before it starts) | open -- see below |
 | 10 | **Two written questions to other firms** (optional) -- DayTraders.com on its Terms s.26 item 3.c, TradeDay on its multiple-users sentence -- text below | the other-firms reading (`prereg/DRAFT_RD_firms.md`) names each question as open on its plan's rows | the reading runs as declared, those rows labelled | open |
+| 11 | **Alpha Futures' $50K terms, and Lucid's $50K prices, read by hand** (E-197) -- screenshots of public pages, saved unedited | Alpha's terms forbid automated access (E-020 (2)), and Lucid's, as modified on 2026-11-13, forbid copying or monitoring its content "by automated or unauthorized means", and an agent driving the operator's browser is still automated access, so no session reads Alpha's site | Alpha is carried as unread: no contract, no zero-edge map, no sizing grid; Lucid stays on Stage 2's verified LucidFlex record, unpriced for the other plans | open |
 
 ## Item 6 -- the repository outside OneDrive
 
@@ -88,3 +89,25 @@ Only if you hold or want an account there; each from your own account, by the fi
 > Funded Sim accounts outside it?
 
 Tell any session what they answer; it is recorded in a decision row.
+
+## Item 11 -- Alpha Futures' $50K terms, read by hand (E-197)
+
+Alpha Futures' terms forbid "any automated use of the system, such as ... web scraping robots" (E-009, E-020 (2)). A session driving your browser would still be automated use, so this one is done by hand, the way Stage 2 read Lucid's prices (Stage 2 D-574).
+
+1. Open https://alpha-futures.com/ in your own browser. Use only its public pages; don't sign in.
+2. For each page below, take full-page screenshots (or Print -> Save as PDF), unedited, and save them in `docs/rules/alpha_2026-11-18/` with names like `B-03_standard_50k.png`. The date in each capture's corner, or the file's date, is the read date.
+3. Tell any session "Alpha screenshots saved". The session hashes them, reads them, and the rules-verifier records each term under a decision row.
+
+The pages (the full list with what each must show is section "Pages for the lead's browser" of `docs/research/firms/alphafutures_50k_2026-11-18.md`):
+
+- B-1 the home page and its plan or pricing picker (every $50K product sold now)
+- B-2 the Terms and Conditions
+- B-3 the Standard $50K evaluation and funded account; B-4 the Advanced $50K; B-5 any instant-funded $50K
+- B-6 drawdown; B-7 daily loss limit; B-8 consistency (evaluation and funded); B-9 payouts
+- B-10 the move from funded to live; B-11 position size and scaling; B-12 account limits per person
+- B-13 news trading; B-14 prohibited strategies and copy trading
+- B-15 announcements from the last six months; B-16 data and platform fees; B-17 commissions
+
+### Lucid (added by E-197)
+
+Lucid's Terms of Use ("Last Modified: November 13, 2026") forbid anyone to "copy or monitor its content by automated or unauthorized means", so no session reads lucidtrading.com or its help centre from now on. By hand, as you did on 2026-11-05 (Stage 2 D-574): open https://lucidtrading.com/, and save unedited screenshots of the $50K pricing cards -- list and reset prices, and any activation, data or monthly fee line -- for LucidFlex (all four configurations), LucidPro (daily loss limit on and off), LucidDaily (each daily-loss-limit, drawdown and 30/40/50 % option) and LucidDirect, into `docs/rules/lucid_2026-11-18/`. Tell any session "Lucid screenshots saved".
