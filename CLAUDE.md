@@ -23,7 +23,7 @@ and its value-map price at that bound clears the family's declared bar; the long
 and conduct tier 1 stay floors. **The user scorecard is reported beside, never the pass line:** P (the mean share of
 start days ahead at months 1-3), the guarded measures and the frontier against **R\* = P-14**, with the denial ladder,
 the placement on and E-007 (e)'s other readings. The verdict keeps 0 % payout denial and the placement off. Families
-are numbered on from Stage 2's program U: F-01 (k = 10) was withdrawn, k spent (E-007); the next is k = 11.
+are numbered on from Stage 2's program U: F-01 (k = 10) was withdrawn, k spent (E-007); F-02 retired k = 11 unspent (E-094, E-095); F-03 spent k = 12 and closed at stage B (E-192); the next is k = 13.
 
 ## Rules that have teeth
 

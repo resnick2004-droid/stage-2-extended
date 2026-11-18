@@ -1,0 +1,119 @@
+{
+  "columns": [
+    "row",
+    "null",
+    "toy",
+    "size",
+    "value",
+    "model",
+    "candidate",
+    "cid",
+    "scope",
+    "k",
+    "reps_used",
+    "mdl50",
+    "mdl80",
+    "infinite_share"
+  ],
+  "description": "Q-108 (E-115): the validation toys' MDLs, beside",
+  "exploratory": false,
+  "git_commit": "11c2082c26cc0f0fccf3e02da68b80173a2939bf",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "blobs": {
+      "extended/lift_bound.py": "984f3467a4a05aa790d3ea43e94ac7761f0725b2",
+      "extended/lift_one_sample.py": "36df2c6f82a60b63213528d5907db082b23c9d6e",
+      "scripts/q108_calibrate.py": "30ce697f04010b802b93d0685386d8fdc17141ee",
+      "scripts/q108_validate.py": "01158b34943a69aca16cb74138297824bb0b79be",
+      "scripts/q16_calibrate.py": "677d6a738283a2c44d3ffa6b6650e131d99088f4",
+      "scripts/q82_validation.py": "9490fc57f855be5d61ee8d4ddb62c7b63e05a282"
+    },
+    "calendar_sha256": "d1e4524b15dc6a69c2f66865462a5fe30527c6a56b4c7cc7aaccc1436a30f3bd",
+    "calendar_source": {
+      "columns": [
+        "date"
+      ],
+      "declaration": "E-035",
+      "design": "P-16",
+      "file": "vendor/stage2/data/atlas/A1/days.parquet",
+      "purpose": "registered_design"
+    },
+    "candidates": [
+      "cons_m1.25",
+      "cons"
+    ],
+    "choice": "CHOSEN cons_m1.25 (scope Q)",
+    "choice_sha256": "357e91e87568088ae614f4649e73bd08e020e8c815c759efb5be1db80654ff3e",
+    "choosing_row": "E-149",
+    "chosen": "cons_m1.25",
+    "criterion": "the plan's 4.3: at every k in 13..20, on every one of the 2,293 nulls, no Monte Carlo null's 95 % interval wholly above nominal and no exact size above nominal",
+    "decision": "E-115",
+    "n_sessions": 657,
+    "pairs_sha256": "62e64491f2c51240569b4e9f58c072657135ae5d24237fc76bfaa8f6575f009d",
+    "plan": "docs/calibration/Q-108_one_sample_plan.md",
+    "plan_sha256": "c8e7424b46ff0c60ecb5b3ea875ac3b77e70f090a52f0cc0d999d7e416486d7e",
+    "reps": 200000,
+    "reps_beside": 100000,
+    "scalar_redecision": {
+      "checked": 1188215,
+      "mismatched": 0
+    },
+    "scope": "Q",
+    "seed_block": [
+      20262120,
+      20262121,
+      20262122,
+      20262123,
+      20262124,
+      20262125,
+      20262126,
+      20262127,
+      20262128,
+      20262129
+    ],
+    "seed_map": {
+      "beside_cp": 20262125,
+      "beside_flat": 20262126,
+      "exact_sample": 20262127,
+      "fixed_mc": 20262121,
+      "subset_mc": 20262123,
+      "subsets": 20262122,
+      "synthetic": 20262124,
+      "tests": 20262120
+    },
+    "seeds": {
+      "subset_mc": 20262123,
+      "subsets": 20262122,
+      "synthetic": 20262124
+    },
+    "sn_table_sha256": "085959bdd566f4a99453121d6a9c7282530b69f0c94644d49490e54d1d56e911",
+    "spare_seeds": [
+      20262128,
+      20262129
+    ],
+    "task": "Q-108",
+    "versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python": "3.12.10",
+      "scipy": "1.18.1"
+    }
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q108-validate",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q108-validate"
+    },
+    "read_ledger": "2 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "q108_val_power.csv",
+  "rows": 252,
+  "script": "scripts/q108_validate.py",
+  "seed": 20262123,
+  "sha256": "651614bd19e771170759e57bd09ca467de05b3323e9e3a08fa1f5deb7be08da2",
+  "timestamp": "2026-11-17T14:34:30+00:00",
+  "variant_count": null
+}

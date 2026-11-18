@@ -133,3 +133,62 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-131: the identity-wait tests made independent of the log's state; the held records commit. |
 | 2026-11-17 | lead | E-132: three light items started on idle worktrees (P-14's stress caveats, the next levers, component contention). |
 | 2026-11-17 | lead | E-133: dispatch only work that makes results better or more trustworthy (the operator); Q-103 parked, Q-18b and Q-114 kept. |
+| 2026-11-17 | lead | E-134: the next-levers note merged -- Back2Funded and an evaluation inventory first; a guard against levers that game P; their rules being verified. |
+| 2026-11-17 | lead | E-135: F-03's build merged; its identity A0 registered and queued; Q-18b merged; the contract-lever rules verified (merge deferred). |
+| 2026-11-17 | lead | E-136: F-03's W1 and W2 merged; Y1-Y4 before run 2; A0 waits for F-03's final code. |
+| 2026-11-17 | lead | E-137 to E-139: Q-93, Q-89 and RD-02's two-worker check hold; every shared identity now holds at the merged code. |
+| 2026-11-17 | lead | E-140: F-03's code final for A0 and run 1; A0 queued after the calibration; three minors before run 2. |
+| 2026-11-17 | lead | E-141: a second state-dependent test fixed; the held records commit. |
+| 2026-11-17 | lead | E-142: status questions never pause the workflow (the operator); the heavy queue's part 7 (A0 first after the calibration). |
+| 2026-11-17 | lead | E-143: F-03's build complete; A0 queued after the calibration, run 1 after A0. |
+| 2026-11-17 | lead | E-144: RD-03's draft started (Back2Funded, the evaluation inventory, house-money purchasing). |
+| 2026-11-17 | lead | E-145: RD-03 drafted, to the red team; a heavy test run outside the lock (no harm) and a guard against it. |
+| 2026-11-17 | lead | E-146: RD-03's read -- stage 0 decides nothing, every lever cell runs; the second text drafted. |
+| 2026-11-17 | lead | E-147: the heavy-test lock guard merged; RD-03's second text to its re-read. |
+| 2026-11-17 | lead | E-148, E-149: RD-03's re-read (two text fixes); the calibration chose a candidate statistic -- the validation run decides. |
+| 2026-11-17 | lead | E-150: the calibration's audit clean; the validation decides; RD-03's fourth text for two fixes the gatekeeper found. |
+| 2026-11-17 | lead | E-152: RD-03 (the contract levers) pinned after three red-team reads and the gatekeeper. |
+| 2026-11-17 | lead | E-153: F-03's A0 holds; its run 1 queued after the validation; RD-03's build started. |
+| 2026-11-17 | lead | E-154: F-03's run 1 queued after the validation, every wait met. |
+| 2026-11-17 | lead | E-155: the operator's volatility-drift question -- the pass line largely immune, the scorecard exposed; a scout drafts how to measure and correct it. |
+| 2026-11-17 | lead | E-156: RD-03's build partial (stage 0 and costs owed); red team reading it; its merge waits for the RD readings, with Q-115's, so the identities are re-held once. |
+| 2026-11-17 | lead | E-157: the volatility-drift note merged; an early-block descriptive, regime-bucketed readings and a calm-regime replay draft queued (Q-121..Q-123). |
+| 2026-11-17 | lead | E-158: RD-03's build read by the red team (merge after fixes); fixes sent; the volatility descriptive and the replay draft dispatched. |
+| 2026-11-17 | lead | E-159: the one-sample statistic's validation failed on one exact null; no one-sample line; audit and diagnosis dispatched. |
+| 2026-11-17 | lead | E-160: the validation's audit clean, the FAILS stands; E-159's clustering sentence withdrawn. |
+| 2026-11-17 | lead | E-161: the validation failure diagnosed (the aligned-pattern lottery through one trade set); a second one-sample plan queued, scope D first. |
+| 2026-11-17 | lead | E-163: the early-block volatility descriptive merged; its run queued after F-03's run 1. |
+| 2026-11-17 | lead | E-164: RD-04 red-teamed (pin after changes); Q-121's run held for an authorised mode; RD-03's fixes re-read; F-03 waiting on memory. |
+| 2026-11-17 | lead | E-165: RD-03's fixes re-read; T-3's 21-session miss a blind test, not a leak; a third cycle authorised. |
+| 2026-11-17 | lead | E-166: Q-121's authorised mode merged; its run re-queued after F-03's run 1. |
+| 2026-11-17 | lead | E-167: RD-04's second text re-read (pin after changes); a third text drafting. |
+| 2026-11-17 | lead | E-168: RD-04 (volatility drift: the whole-window descriptive and a calm-regime replay) pinned after two red-team reads and the gatekeeper. |
+| 2026-11-17 | lead | E-169: RD-03's cycle 3 back (every fix proved); stage 0 building, its slow tests moved out of the fast tier first. |
+| 2026-11-17 | lead | E-170: Q-127 stopped rightly (RD-04's pinned text forbids it); pre-read drafts get their pin-time text committed before RD-04's read instead. |
+| 2026-11-17 | lead | E-171: the second one-sample plan drafted (scope D first, sized calibration); red team reading; a seed-overlap fix dispatched. |
+| 2026-11-17 | lead | E-172: RD-03's stage 0 stopped (two Stage 2 rung files absent from the snapshot); the extension queued with the sequenced merge. |
+| 2026-11-17 | lead | E-173: the second one-sample plan red-teamed; its floor held no stricter than the validation it guards; a second text drafting. |
+| 2026-11-17 | lead | E-174: F-03's run 1 started; RD-03's cycle 3 read (minors left, a fourth cycle); the merge checklist's limit raised. |
+| 2026-11-17 | lead | E-175: F-03's run 1 crashed on a file-format defect after its walk; nothing spent; fix building; the rest of the heavy queue restarted. |
+| 2026-11-17 | lead | E-176: the second one-sample plan's computed cost showed the lead's floor ruling was the wrong trade; reversed; a third text. |
+| 2026-11-17 | lead | E-177: the early-block volatility descriptive run and collected, both identities held; audit dispatched. |
+| 2026-11-17 | lead | E-178: the seed-overlap fix merged, with a guard against additive seed offsets. |
+| 2026-11-17 | lead | E-179: Q-121's file audited clean but it reveals bar prices, so it stays local and git-ignored; a licence scan of committed results dispatched. |
+| 2026-11-17 | lead | E-180: no committed file leaks licensed prices; a guard against it building. |
+| 2026-11-17 | lead | E-181: F-03's reader fixed and merged; run 1 re-queued. |
+| 2026-11-17 | lead | E-182: the second one-sample plan re-read; the strict floor kept on a corrected basis (the line's size guarantee); a fourth text. |
+| 2026-11-17 | lead | E-183: RD-03's build complete (stage 0 stopped); merge waits for the RD readings, as sequenced. |
+| 2026-11-17 | lead | E-184: the one-sample plan's last read found the band check gameable; a balance limit closes it; a fifth text. |
+| 2026-11-17 | lead | E-185: the licence guard merged: no committed result file may reveal a bar price. |
+| 2026-11-17 | lead | E-186: the one-sample plan's light read found the regime-filter test gameable; a sixth text closes it. |
+| 2026-11-17 | lead | E-187: the second one-sample calibration plan pinned after six texts and six red-team reads (the regime-filter kind barred); its build next. |
+| 2026-11-17 | lead | E-188: the breakeven-fidelity reading run and collected (identities held); audit dispatched; F-03's run 1 started. |
+| 2026-11-17 | lead | E-189: the breakeven reading audited (no wrong number; the corrected figures not checkable, P-15 missing); a second version building. |
+| 2026-11-17 | lead | E-190: the second one-sample calibration built (synthetic only); its red-team read before the runs. |
+| 2026-11-17 | lead | E-191: the one-sample build red-teamed: its crash rule let a failed check be rerun; fixes building. |
+| 2026-11-18 | lead | E-192: F-03 closes at stage B (Kill B): no opening-timing cell cleared its selection bar on the choice block; the judged block stays unread; T-3 owed. |
+| 2026-11-18 | lead | E-193: the one-sample build's crash rule closed but for its ledger file; a final cycle chains and pins it. |
+| 2026-11-18 | lead | E-194: the second breakeven reading merged and queued with F-03's T-3; a test-marker gap found and queued. |
+| 2026-11-18 | lead | E-195: the second one-sample calibration's build merged after two corrective cycles; its roughly 30-hour calibration queued. |
+| 2026-11-18 | lead | E-196: the operator's multi-firm direction recorded; four firm scouts reading official terms. |
+| 2026-11-18 | lead | E-197: Topstep and My Funded Futures read; Alpha and Lucid forbid automated reading, so the operator captures them by hand. |
