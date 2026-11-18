@@ -39,6 +39,7 @@ def test_t11_the_identity_script_runs_the_reference_policy_only():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_t8_the_reference_policy_reproduces_the_registered_rows_at_4_paths_and_4_starts():
     row = os.environ.get("PP_IDENTITY_ROW")
     if not row:

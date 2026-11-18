@@ -48,6 +48,7 @@ def test_the_substitution_touches_p16s_walk_only():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_walker_is_stage2s_walk_on_p16s_first_days():
     if not (DATA / "bars").is_dir():
         pytest.skip("bars not copied (scripts/vendor_stage2.py --data)")

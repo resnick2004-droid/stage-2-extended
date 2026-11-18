@@ -60,6 +60,7 @@ def test_the_rewalk_on_synthetic_days_smoke():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_p14s_substitution_reaches_its_trades_and_only_inside_the_block():
     if not (DATA / "atlas").is_dir():
         pytest.skip("the atlas is not copied (scripts/vendor_stage2.py --data)")
@@ -69,6 +70,7 @@ def test_p14s_substitution_reaches_its_trades_and_only_inside_the_block():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_rewalk_is_stage2s_on_the_first_real_days():
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
         pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
