@@ -1,7 +1,7 @@
 # DIRECTIVE -- the lead's standing orders
 
 The lead orchestrator's standing orders: **Parts 1, 3, 5 and 6 of the bootstrap**, first taken verbatim (`docs/BOOTSTRAP_NEW_REPO_ORCHESTRATOR.md`,
-copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not edited here except where a decision row amends them in place (E-203: Parts 1 and 6.2's latency; E-NNN: the journey objective in Parts 3, 5 and 6); every such amendment is listed in the table below.
+copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not edited here except where a decision row amends them in place (E-203: Parts 1 and 6.2's latency; E-210: the journey objective in Parts 3, 5 and 6); every such amendment is listed in the table below.
 
 **How the text maps onto this repository** (E-005; the text below is left as written, except the amendments in place that the table's last two rows list):
 
@@ -14,9 +14,9 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 | `%LOCALAPPDATA%\<repo>-wt\<name>` | `%LOCALAPPDATA%\stage2-extended-wt\<name>` (branch `wt/<name>`) |
 | `%LOCALAPPDATA%\<repo>-runs\` | `%LOCALAPPDATA%\stage2-extended-runs\` |
 | the row to beat P-14, the family level 0.05/(k(k+1)) | the baselines -- naive coin harvesting, P-14, P-15, P-16, each under the design's convention -- and the level 0.05 / (k (k + 1)), one k per held-out test, as `CHARTER.md` sections 3.7-3.8 fix them (E-001: the program's first family here was k = 10; the next k is 13) |
-| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008; then E-207, E-NNN), and Part 3 rewritten in place:** a design is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), on the martingale-outcome reading: inside every operator limit with margin wider than its noise (E-207; the alternative form pending the operator, O-5), each baseline beaten on the composite pinned before the survey (or the pinned fallback, P under the bankroll stop) by the calibrated coin-seed test on the held-out years (a level bounding coin luck on that history; the history-level false-pass rate beside), the time leg a consistency condition, with the floors of CHARTER section 3.8; the trades' lift over the coin twin is no pass line; the verdict keeps 0 % denial, the placement off and the Focused Trader Program off; hand entry only stays |
+| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008; then E-207, E-210), and Part 3 rewritten in place:** a design is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), on the martingale-outcome reading: inside every operator limit with margin wider than its noise (E-207; the alternative form pending the operator, O-5), each baseline beaten on the composite pinned before the survey (or the pinned fallback, P under the bankroll stop) by the calibrated coin-seed test on the held-out years (a level bounding coin luck on that history; the history-level false-pass rate beside), the time leg a consistency condition, with the floors of CHARTER section 3.8; the trades' lift over the coin twin is no pass line; the verdict keeps 0 % denial, the placement off and the Focused Trader Program off; hand entry only stays |
 | Part 1 and Part 6.2: "at least 5 minutes" | **amended in place (E-203):** at least L minutes, L = 5 the reference, 3 and 2 counted variants (E-202 (2)(c)) |
-| Part 3, Part 5's worktree list and report, Part 6.2's test, 6.3 A, B and C, the power paragraph, "A candidate" | **amended in place (E-NNN):** judged on the journey under zero edge, not on a coin-twin lift; RL3 recast and F-02 and family B parked (E-208); each firm its own baselines; the data question asked before the first search pin |
+| Part 3, Part 5's worktree list and report, Part 6.2's test, 6.3 A, B and C, the power paragraph, "A candidate" | **amended in place (E-210):** judged on the journey under zero edge, not on a coin-twin lift; RL3 recast and F-02 and family B parked (E-208); each firm its own baselines; the data question asked before the first search pin |
 
 ---
 
@@ -37,7 +37,7 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 - **No result file deleted or overwritten.** A new reading is a new file under its own decision row.
 - **The objective (Part 3) changes only with the operator.** Propose; do not adopt.
 
-## Part 3. The objective (from the handoff, section 1; amended by the operator, E-008, E-207, E-NNN)
+## Part 3. The objective (from the handoff, section 1; amended by the operator, E-008, E-207, E-210)
 
 Find the way of running prop-firm accounts that gives a real user the best journey to making money: the least
 bankroll, the fastest and cheapest path to a pass and a payout, a steady income, the lowest chance of going broke
@@ -112,7 +112,7 @@ belongs on the funded openings and a frequent one on every trade (the value map,
   and each outcome redrawn at its bracket's driftless odds for the deciding reading, over paired seeds, its properties read -- supply, timing, resolution speed for a given shape, clustering, how
   differently timed it is from other components, hand-executability; supply and resolution gates before any outcome
   is read; nothing read on the held-out years outside a held-out test. The lift over the coin twin is no pass line
-  (E-NNN).
+  (E-210).
 
 ### 6.3 The first families (each declared in its own row before it is built)
 
@@ -145,5 +145,5 @@ stated not authorised) is the operator's call -- put both in `OPERATOR_SETUP.md`
 sequence on the held-out years, on the martingale-outcome reading: inside every operator limit with margin wider than
 its noise (E-207; O-5 pending), each baseline beaten on the pinned composite by the calibrated coin-seed test at its
 k's level (the history-level false-pass rate beside), the time leg's conditions met, the floors holding (the
-zero-edge gate, the fill and supply stress and the as-traded floors among them). It is then registered with the gatekeeper, audited, and waits for
+zero-edge gate, the fill and supply stress and the as-traded floors, read on the real path (CHARTER 3.8), among them). It is then registered with the gatekeeper, audited, and waits for
 confirmation data (a purchase: the operator's).

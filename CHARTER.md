@@ -21,7 +21,7 @@ documented, is a valid close.
 
 ## 2. The objective: the user's journey to making money
 
-**The objective (the operator, E-207; E-NNN).** Find the way of running prop-firm accounts that gives a real user the
+**The objective (the operator, E-207; E-210).** Find the way of running prop-firm accounts that gives a real user the
 best journey to making money: the least bankroll needed, the fastest and cheapest path to a pass and a payout, a steady
 income after that, and the lowest chance of going broke first. Topstep $50K first, then other firms, each on its own
 verified rules (section 4), its own execution protocol and its own baselines, never Topstep's reused (E-202). Which
@@ -137,7 +137,7 @@ firm's search declares its own baseline set, at least the naive coin on that fir
   - Fills, timing, costs and resolution stay as run.
   - The redraw's form for a trade that ends at a time limit (the flatten, or a max hold) is declared in the search
     template, with zero gross expectation.
-  - It is applied identically to designs and baselines. Every deciding reading of section 3.8 is this one.
+  - It is applied identically to designs and baselines. Every deciding reading of section 3.8 is this one (3.8's one exception: the no-harm and as-traded floors, read on the real path).
 - **Beside, never credited:**
   - the as-walked (reflected) result, and its gap from the martingale-outcome result, reported as the design's
     **path-structure edge**;
@@ -419,7 +419,7 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
   measure are reported beside. **Fallback:** if the weights cannot be set before the pinning row, that row pins P under
   the bankroll stop alone, with the rest as limits. It is never invoked after a look.
 
-**3.10 On record, no longer deciding.** These are kept as their rows adopted them and decide nothing from E-NNN on:
+**3.10 On record, no longer deciding.** These are kept as their rows adopted them and decide nothing from E-210 on:
 - the trades' lift over the coin twin on the same brackets, and its value-map bar, as the pass line (E-008 (1); Q-16's
   statistic stays available as a description);
 - R\* = P-14 as the one row to beat (Stage 2 D-626; P-14 is now one baseline among four);
@@ -451,12 +451,12 @@ pages permit automation through its paid API; the operator kept hand entry, E-00
 least L minutes after its alert (L as above). Designs are for one user's own accounts; a signal service whose users place the
 same tickets is out (Topstep's coordinated-trading prohibition, E-007 (c)).
 
-**Amended (E-NNN), from the operator's rulings E-202 (2)(a) and (2)(d):** no entry and no fill inside any verified news
+**Amended (E-210), from the operator's rulings E-202 (2)(a) and (2)(d):** no entry and no fill inside any verified news
 window, and a position open at a window's start is flattened under E-200 R-1 (RL3's 08:30-08:59 fill window stays
 closed); limit (resting) entries go live at the latency, fill only on a trade-through by one tick, and are cancelled at
 a news window's start.
 
-**Amended (E-NNN), the oracles under the zero-edge convention (section 3.2):** stage one's zero-edge ceilings are read
+**Amended (E-210), the oracles under the zero-edge convention (section 3.2):** stage one's zero-edge ceilings are read
 on the martingale-outcome reading, where an output outside them is an engine error as before. An as-walked (reflected)
 result outside them is the path-structure edge of section 3.2: it is reported beside the verdict, never booked as an
 engine error, and never "fixed" as one.

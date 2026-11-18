@@ -21,7 +21,7 @@ vendored read-only. The charter is [`CHARTER.md`](CHARTER.md); the decision log 
 
 ## The objective (CHARTER section 2)
 
-**Judged on the user's journey (the operator, E-207, E-NNN; amending E-008):** a user's best journey to making money --
+**Judged on the user's journey (the operator, E-207, E-210; amending E-008):** a user's best journey to making money --
 least bankroll, fastest, cheapest pass and payout, steady income, least ruin -- under zero edge (direction removed,
 each outcome redrawn at its bracket's driftless odds; the traded side rule pending the operator). A design passes only
 if it stays inside every operator limit with margin wider than its noise; beats each baseline (naive coin, P-14, P-15,
