@@ -200,3 +200,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-203: the 5/3/2-minute latency written into the charter and skills; F-04 to give each firm its own brackets, tested in a fixed sequence; RL3 drafted. |
 | 2026-11-18 | lead | E-204: the per-firm protocol family is pin-ready (its limit-order sets described only); it, RL3 and B-ON pin once Q-126's calibration adopts a statistic. |
 | 2026-11-18 | lead | E-205: the firm rules, RD-03's build and the vendor extension merged; every identity re-held next; RL3 pin-ready; four approved proposals queued, one parked. |
+| 2026-11-18 | lead | E-206: restart plan Wave 0 -- the freeze recorded, the plan committed; the objective's amendment drafted for the operator's confirmation. |
+| 2026-11-18 | lead | E-207: the operator confirmed the restart plan -- the pass line is now the user's journey; the review-speed and standing workflow rules in force. |
+| 2026-11-18 | lead | E-208: the restart triage -- old drafts recast as levers and triggers or parked; Q-126 parked; search and held-out years fixed; the three-way test's brief. |
