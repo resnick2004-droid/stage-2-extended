@@ -6,16 +6,20 @@ What it checks:
 - **under either name** -- exactly one RL3 declaration under `prereg/`, the draft's name or a pinned
   `F-<n>_resting_levels.md` (F-02's withdrawn draft, `DRAFT_F-02_resting_levels.md`, is not it);
 - **read as LF text** -- its pin is the sha256 of its LF text;
-- **the sections present** -- 0 to 20, and 5.10 (the band declaration) and 7.1 (the pre-pin power gate);
+- **the sections present** -- 0 to 20, 5.10 (the band declaration), 7.1 (the pre-pin power gate) and Appendix A;
 - **the seed block** -- section 15's table lists the ten seeds once each, every one in use; each appears, word-bounded,
   in the declaration; no other 8-digit 2026 token is in the text (other blocks are named by role only); and no other
   tracked file, and no other working text file of this checkout (the licensed data excluded), holds a seed of the block.
   The block is built here by arithmetic, so this file holds no literal of it; a planted copy is found by both scans;
 - **the counted cells** -- the counted-cells table's rows are consistent (5 rule-kinds x 3 stops x 3 latencies = 45;
-  x 3 R = 135; 108 fade-signed and 27 break-signed; 108 questions) and the header states the same counts;
-- **the operator's rulings of 2026-11-18** -- the closed 08:30-08:59 window, `t_live` 09:00 for every latency, the
-  latency table (5, 3, 2 minutes; `t_pub` = 09:00 - L; `P_ref`'s bar one minute earlier), the news item marked
-  ANSWERED in section 19, and the limit rule the draft cites still stated by `extended/walker.py`;
+  x 3 R = 135; 108 fade-signed and 27 break-signed; 108 questions; 90 paired sibling differences) and the header
+  states the same counts;
+- **the operator's rulings of 2026-11-18 (E-202 (2)) and the lead's on the red team's read (Q-143r)** -- nothing read
+  inside 08:30-08:59 and no ticket working there (D-281 (3)); the latency table (the information at the bar stamped
+  08:29, the alert at 09:00, `t_live` = 09:00 + L for L = 5, 3, 2, the void read a bar earlier); the gate dropping only
+  an empty MDL (B-1); the flatten at a verified window's start (B-3); unscheduled releases from their release time
+  (B-4); the value bar at C2's bound (S-4); every finding in Appendix A; the news item ANSWERED in section 19; the limit
+  rule the draft cites still stated by `extended/walker.py`;
 - **the judged-block purposes** -- one `Judged-block reads:` line, its four purposes as declared, none choosing;
 - **the cited hashes** -- the early-close calendar's LF sha256, Q-126's plan's LF sha256 (equal to E-187's pin), the
   judged session list's count and sha256 (E-094 (2)), and the blobs of `extended/lift_bound.py` and
@@ -45,7 +49,8 @@ _PREFIX = 2026 * 1000 + 340
 SEED_BLOCK = tuple(_PREFIX * 10 + i for i in range(10))
 #: the repository files allowed to hold a seed of the block besides the declaration; the build adds its own here
 DECLARED_USES: tuple[str, ...] = ()
-PURPOSES = frozenset({"stage_C_sides", "stage_C_judgement", "stage_D_gate_floor", "stage_D_scorecard"})
+PURPOSES = frozenset({"stage_C_sides", "stage_C_judgement", "stage_C_latency_beside", "stage_D_gate_floor",
+                      "stage_D_scorecard"})
 LATENCIES = (5, 3, 2)
 RULE_KINDS, STOPS, RS = 5, 3, 3
 FADE_KINDS, BREAK_KINDS = 4, 1
@@ -84,10 +89,11 @@ def _lf_sha256(rel: str) -> str:
 
 
 def test_title_and_sections(text: str) -> None:
+    assert "**Status: a draft, second text" in text
     assert re.match(r"# F-(XX|\d+): resting orders at pre-session levels, re-declared \(family RL3\)", text)
     for n in range(21):
         assert re.search(rf"^## {n}\. ", text, re.MULTILINE), f"section {n} missing"
-    for sub in ("### 5.10 ", "### 7.1 Before the pin: the power gate", "### 7.2 Stage A"):
+    for sub in ("### 5.10 ", "### 7.1 Before the pin: the power gate", "### 7.2 Stage A", "## Appendix A. "):
         assert sub in text, sub
 
 
@@ -183,6 +189,7 @@ def test_counts_consistent(text: str) -> None:
     assert c["fade-signed hypotheses"] + c["break-signed hypotheses"] == c["signed hypotheses"]
     assert c["questions"] == FADE_KINDS * STOPS * len(LATENCIES) * RS     # break shares fade's (kind, stop, L, R) at rn100
     assert c["placebo cells"] == cells and c["campaign cells"] == 1
+    assert c["paired sibling differences"] == (len(LATENCIES) - 1) * RULE_KINDS * STOPS * RS   # 3 v 5, 2 v 5
     head = _header(text)
     assert re.search(r"\| cells \(`k_cells`\) \|[^\n]*= \*\*45\*\*", head)
     assert re.search(r"\| hypotheses \|[^\n]*\*\*135\*\* signed hypotheses over 108 ", head)
@@ -198,16 +205,40 @@ def test_level_and_k(text: str) -> None:
 
 
 def test_closed_window_and_latency_table(text: str) -> None:
-    low = text.lower()
-    assert "no fill and no entry in 08:30-08:59 ct, nor inside any verified news window" in low
-    assert "`t_live` = 09:00 CT" in text
-    table = _section(text, "| L (minutes) | `t_pub` (CT) |", "\n\n")
+    """Q-143r B-2 as ruled: the information fixed (bars at or before 08:29, nothing in the window read), the alert at
+    09:00, the order live at 09:00 + L, the void read at the bar before it."""
+    assert "Nothing inside the closed window 08:30-08:59 is read." in text
+    assert "**RL3's own tickets never enter it.**" in text and "D-281 (3)" in text
+    table = _section(text, "| L (minutes) | the last bar read", "\n\n")
     for L in LATENCIES:
-        pub = 9 * 60 - L
         label = f"{L} (the reference)" if L == 5 else f"{L}"
-        row = f"| {label} | {pub // 60:02d}:{pub % 60:02d} | stamped {(pub - 1) // 60:02d}:{(pub - 1) % 60:02d} | 09:00 |"
+        row = f"| {label} | stamped 08:29 | 09:00 | 09:{L:02d} | stamped 09:{L - 1:02d} |"
         assert row in table, row
     assert len(re.findall(r"^\s*\| \d", table, re.MULTILINE)) == len(LATENCIES)
+    assert "`t_pub` = 09:00 - L" not in text.split("### 6.2")[0]       # the first text's design survives only in 6.2
+
+
+def test_the_rulings_on_the_red_teams_read(text: str) -> None:
+    """Q-143r B-1, B-3, B-4 and S-4 as the lead ruled them."""
+    body = text[:text.index("## Appendix A.")]                       # the appendix quotes what was removed
+    assert "lenient by construction" not in body
+    flat = re.sub(r"\s+", " ", text)                                  # phrases may wrap across lines
+    assert "only when its MDL80 is empty or infinite" in flat                               # B-1: E-086's form
+    assert "It never drops a cell, before the pin or after." in flat
+    s3 = re.sub(r"\s+", " ", _section(text, "## 3. ", "## 4. "))       # B-3: in the contract table and in 4.6
+    s4 = re.sub(r"\s+", " ", _section(text, "## 4. ", "## 5. "))
+    for part, article in ((s3, "a"), (s4, "the")):
+        assert f"A position open at {article} window's start is flattened at that bar" in part
+        assert "Nothing walks on through a window." in part
+    s47 = re.sub(r"\s+", " ", _section(text, "7. **Calendar voids", "8. **The tests**"))      # B-4: in 4.7 (d)
+    assert "**is acted on only from its release time**" in s47
+    assert "No cancel and no drop may use knowledge from before the release." in s47
+    assert "five minutes before its release" not in re.sub(r"\s+", " ", body)
+    head = _header(text)
+    assert "$500 a year at **C2's bound**" in head and "at C1's bound" not in head            # S-4
+    appendix = text[text.index("## Appendix A."):]
+    for f in ("B-1", "B-2", "B-3", "B-4", "S-1", "S-2", "S-3", "S-4", "S-5", *(f"N-{i}" for i in range(1, 10))):
+        assert re.search(rf"^\| {f} ", appendix, re.MULTILINE), f
 
 
 def test_news_item_answered(text: str) -> None:
