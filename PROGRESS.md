@@ -192,3 +192,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-195: the second one-sample calibration's build merged after two corrective cycles; its roughly 30-hour calibration queued. |
 | 2026-11-18 | lead | E-196: the operator's multi-firm direction recorded; four firm scouts reading official terms. |
 | 2026-11-18 | lead | E-197: Topstep and My Funded Futures read; Alpha and Lucid forbid automated reading, so the operator captures them by hand. |
+| 2026-11-18 | lead | E-198: the heavy-test markers merged; Topstep Labs and My Funded Futures rules recorded on their branch. |
