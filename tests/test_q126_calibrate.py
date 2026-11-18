@@ -81,6 +81,10 @@ def private_ledger(C, tmp_path, monkeypatch):
     """Every test's part ledger is its own (never the run's under RUNS_DIR)."""
     p = tmp_path / "ledger" / "q126-ledger.jsonl"
     monkeypatch.setattr(C, "ledger_path", lambda: p)
+    # the test runner imported numpy before the runner forced its variables, so OpenBLAS here runs its default
+    # threads and the live check would refuse every in-process preflight (rightly: a part process forces them before
+    # numpy loads, which test_the_thread_count_is_read_back_and_forced_in_a_child proves in a fresh process)
+    monkeypatch.setattr(C, "blas_live_threads", lambda: 1)
     return p
 
 
@@ -637,7 +641,7 @@ def _stepper(C, work, commit, ran, differs=()):
         o = _out(C, part)
         if part in differs:
             o["size"] = [{"null": "a", "x": 2}]
-        return C.finish_part(work, part, o, {"commit": commit, "seed_map": {}, "versions": {}}, runner="calibrate")
+        return C.finish_part(work, part, o, {"commit": commit, "seed_map": {}, "versions": {}, "ledger_head": C.ledger_head()}, runner="calibrate")
     return step
 
 
@@ -671,23 +675,23 @@ def test_the_driver_order_stops_and_reproduction(C, tmp_path, monkeypatch, priva
 def test_a_fresh_folder_after_a_code_fix_is_held_to_the_ledger(C, tmp_path, monkeypatch):
     """No `.prev-*` folder to compare in a fresh work folder: the ledger's earlier whole record is (F1)."""
     w1, w2 = tmp_path / "w1", tmp_path / "w2"
-    assert C.finish_part(w1, "sizing500", _out(C, "sizing500"), {"commit": "B", "seed_map": {}, "versions": {}},
+    assert C.finish_part(w1, "sizing500", _out(C, "sizing500"), {"commit": "B", "seed_map": {}, "versions": {}, "ledger_head": C.ledger_head()},
                          runner="calibrate") == 0
     o = _out(C, "sizing500")
     o["size"] = [{"null": "a", "x": 9}]
-    assert C.finish_part(w2, "sizing500", o, {"commit": "C", "seed_map": {}, "versions": {}},
+    assert C.finish_part(w2, "sizing500", o, {"commit": "C", "seed_map": {}, "versions": {}, "ledger_head": C.ledger_head()},
                          runner="calibrate") == C.FAILED_CHECK
     assert (w2 / "sizing500.failed").is_dir() and not (w2 / "sizing500").exists()
     # the same output at the new commit reproduces and is recorded whole
     w3 = tmp_path / "w3"
-    assert C.finish_part(w3, "sizing200", _out(C, "sizing200"), {"commit": "B", "seed_map": {}, "versions": {}},
+    assert C.finish_part(w3, "sizing200", _out(C, "sizing200"), {"commit": "B", "seed_map": {}, "versions": {}, "ledger_head": C.ledger_head()},
                          runner="calibrate") == 0
     assert C.finish_part(tmp_path / "w4", "sizing200", _out(C, "sizing200"), {"commit": "C", "seed_map": {},
-                                                                              "versions": {}}, runner="calibrate") == 0
+                                                                              "versions": {}, "ledger_head": C.ledger_head()}, runner="calibrate") == 0
     assert C.ledger_whole("calibrate", "sizing200", "C", C.read_manifest(tmp_path / "w4" / "sizing200")["files"])
     # at the choice: a part with no whole record at this commit is refused; one differing from its record fails
     monkeypatch.setattr(C, "git_head", lambda repo=None: "C")
-    C.write_part(tmp_path / "w5", "sizing1000", _out(C, "sizing1000"), {"commit": "C", "seed_map": {}, "versions": {}})
+    C.write_part(tmp_path / "w5", "sizing1000", _out(C, "sizing1000"), {"commit": "C", "seed_map": {}, "versions": {}, "ledger_head": C.ledger_head()})
     bad = C.ledger_choice_problems(tmp_path / "w5", ["sizing1000"], "C", "calibrate")
     assert bad["missing"] and not bad["differs"]
     bad = C.ledger_choice_problems(tmp_path / "w4", ["sizing200"], "C", "calibrate")
@@ -732,7 +736,8 @@ def test_failed_checks_are_recorded_and_never_rerun(C, tmp_path, monkeypatch):
     assert (work / "drift.failed" / "manifest.json").is_file()
     rec = C.ledger_read()[-1]
     assert rec["part"] == "drift" and rec["outcome"] == "failed" and "provenance" in rec["reasons"][0]
-    monkeypatch.undo()
+    monkeypatch.undo()                                                       # the fixture's pins too: set again
+    monkeypatch.setattr(C, "blas_live_threads", lambda: 1)
     monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "ledger2.jsonl")
 
     def boom(*a, **k):
@@ -753,9 +758,15 @@ def test_failed_checks_are_recorded_and_never_rerun(C, tmp_path, monkeypatch):
     monkeypatch.setattr(C, "choice_tables", raises)
     w3 = tmp_path / "w3"
     assert C.choice_main(w3, seeds=C.SEEDS) == C.FAILED_CHECK and (w3 / "choice.failed").is_dir()
+    # N4: the choice itself refuses while that record stands, whatever its caller checked
+    assert C.choice_main(w3, seeds=C.SEEDS) == C.REFUSED and not (w3 / "choice.failed-2").exists()
+    assert [r["part"] for r in C.ledger_read()] == ["choice"]
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "ledger3b.jsonl")
     monkeypatch.setattr(C, "choice_tables", lambda *a, **k: {"failed": ["NOT CHECKED: nulls missing -- planted"]})
-    assert C.choice_main(w3, seeds=C.SEEDS) == C.FAILED_CHECK and (w3 / "choice.failed-2").is_dir()
-    assert [r["part"] for r in C.ledger_read()] == ["choice", "choice"]
+    w3b = tmp_path / "w3b"
+    assert C.choice_main(w3b, seeds=C.SEEDS) == C.FAILED_CHECK and (w3b / "choice.failed").is_dir()
+    assert "NOT CHECKED" in C.ledger_read()[-1]["reasons"][0]
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "ledger3.jsonl")
     # the ledger's record refuses any work folder, the one used included
     monkeypatch.setattr(XR, "clean_run_problem", lambda: None)
     monkeypatch.setattr(C, "lock_problem", lambda env=None: None)
@@ -766,6 +777,194 @@ def test_failed_checks_are_recorded_and_never_rerun(C, tmp_path, monkeypatch):
     assert C.preflight(tmp_path / "t", "core", guard=False, work=tmp_path / "never-used") == []
     probs = C.preflight(tmp_path / "t", "core", guard=False, work=w3)
     assert any("choice.failed" in p for p in probs)                          # the folder actually used
+
+
+# ------------------------------------------------------------------------------------------------ cycle 2: the ledger
+
+
+def _three_lines(C):
+    for part in ("core", "sizing200", "sizing500"):
+        C.ledger_append({"runner": "filler", "part": part, "commit": "B", "outcome": "whole", "files": {"f": part}})
+
+
+def test_the_ledger_is_a_chain(C, private_ledger):
+    """C1.1: each line carries the sha256 of the line before it; an edited middle line, a deleted middle line, a
+    reordered pair and a torn last line each refuse; an intact chain reads."""
+    _three_lines(C)
+    recs = C.ledger_read()
+    assert [r["_line"] for r in recs] == [1, 2, 3]
+    assert recs[0]["prev_sha256"] == C._sha_text(C.LEDGER_GENESIS) and recs[1]["prev_sha256"] == recs[0]["_sha256"]
+    good = private_ledger.read_bytes().decode("utf-8")
+    assert chr(13) not in good                                                         # written with LF only
+    lines = good.split("\n")[:-1]
+    edited = lines[1].replace('"sizing200"', '"sizing20X"')
+    for bad in ("\n".join([lines[0], edited, lines[2]]) + "\n",                         # an edited middle line
+                "\n".join([lines[0], lines[2]]) + "\n",                                 # a deleted middle line
+                "\n".join([lines[1], lines[0], lines[2]]) + "\n",                       # reordered
+                good[:-1]):                                                             # a torn last line
+        private_ledger.write_bytes((bad).encode("utf-8"))
+        with pytest.raises(C.ProvenanceRefused):
+            C.ledger_read()
+        with pytest.raises(C.ProvenanceRefused):
+            C.ledger_append({"runner": "calibrate", "part": "x", "outcome": "whole"})   # never appended past a break
+    private_ledger.write_bytes((good).encode("utf-8"))
+    assert len(C.ledger_read()) == 3
+
+
+def test_the_recorded_head_must_be_a_prefix(C, private_ledger, tmp_path, monkeypatch):
+    """C1.2: a manifest's ledger head is a prefix of the current ledger, or the choice refuses -- a deleted last line
+    that the manifest saw, a ledger replaced, or a ledger at another path."""
+    _three_lines(C)
+    head = C.ledger_head()
+    assert head["lines"] == 3 and head["path"] == str(private_ledger) and C.head_problems(head, "m") == []
+    C.ledger_append({"runner": "calibrate", "part": "probe", "outcome": "whole", "commit": "B", "files": {}})
+    assert C.head_problems(head, "m") == []                                            # appended after: a prefix still
+    text = private_ledger.read_text(encoding="utf-8").split("\n")[:-1]
+    private_ledger.write_bytes(("\n".join(text[:2]) + "\n").encode("utf-8"))            # the last lines deleted
+    assert C.ledger_read() and C.head_problems(head, "m")                              # the chain alone cannot see it
+    private_ledger.unlink()                                                            # a ledger deleted for a restart
+    assert C.head_problems(head, "m")
+    assert C.head_problems(None, "m") and C.head_problems({"lines": 0}, "m")
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "elsewhere.jsonl")         # LOCALAPPDATA redirected
+    assert any("recorded against" in p for p in C.head_problems({**C.ledger_head(), "path": str(private_ledger)}, "m"))
+
+
+def _choice_ready(C, tmp_path, monkeypatch, commit="C"):
+    """Every part whole on disk at `commit` with a manifest the choice accepts (its head recorded), the ledger empty."""
+    monkeypatch.setattr(C, "git_head", lambda repo=None: commit)
+    work = tmp_path / "work"
+    need = [p for p in C.PARTS if p != "choice"]
+    for p in need:
+        C.write_part(work, p, _out(C, p), {"commit": commit, "seed_map": C.SEEDS, "versions": {"v": 1},
+                                           "ledger_head": C.ledger_head()})
+    return work, need
+
+
+def test_the_choice_holds_its_parts_to_the_real_ledger(C, tmp_path, monkeypatch, private_ledger):
+    """C2: `choice_main` with the ledger check live -- parts whole on disk but missing from the ledger are REFUSED;
+    parts that differ from an earlier whole record are a FAILED CHECK, recorded; a part manifest whose head is not a
+    prefix is refused."""
+    work, need = _choice_ready(C, tmp_path, monkeypatch)
+    reached = []
+    monkeypatch.setattr(C, "choice_tables", lambda *a, **k: reached.append(1) or {"failed": ["reached the tables"]})
+    assert C.choice_main(work, seeds=C.SEEDS) == C.REFUSED and reached == []           # missing from the ledger
+    for p in need:                                                                     # recorded whole at C
+        man = C.read_manifest(work / p)
+        C.ledger_append({"runner": "calibrate", "part": p, "commit": "C", "outcome": "whole",
+                         "files": C.data_files(man["files"])})
+    C.ledger_append({"runner": "calibrate", "part": "sizing2000", "commit": "B", "outcome": "whole",
+                     "files": {"size.csv": "0" * 64}})                                  # an earlier record that differs
+    assert C.choice_main(work, seeds=C.SEEDS) == C.FAILED_CHECK and reached == []
+    rec = C.read_manifest(work / "choice.failed")
+    assert any("sizing2000" in r and "differ" in r for r in rec["reasons"])
+    assert C.ledger_read()[-1]["outcome"] == "failed" and C.ledger_read()[-1]["part"] == "choice"
+
+
+def test_the_choice_refuses_a_part_whose_head_is_not_a_prefix(C, tmp_path, monkeypatch, private_ledger):
+    _three_lines(C)
+    work, need = _choice_ready(C, tmp_path, monkeypatch)
+    for p in need:
+        man = C.read_manifest(work / p)
+        C.ledger_append({"runner": "calibrate", "part": p, "commit": "C", "outcome": "whole",
+                         "files": C.data_files(man["files"])})
+    reached = []
+    monkeypatch.setattr(C, "choice_tables", lambda *a, **k: reached.append(1) or {"failed": ["reached the tables"]})
+    assert C.choice_main(work, seeds=C.SEEDS) == C.FAILED_CHECK and reached == [1]      # the ledger passes
+    # the run's lines kept, the first three (seen by every part's manifest) replaced: not a prefix
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "rebuilt.jsonl")
+    for p in need:
+        man = C.read_manifest(work / p)
+        C.ledger_append({"runner": "calibrate", "part": p, "commit": "C", "outcome": "whole",
+                         "files": C.data_files(man["files"])})
+    reached.clear()
+    w2 = tmp_path / "work"
+    import shutil
+    shutil.rmtree(w2 / "choice.failed")
+    assert C.choice_main(w2, seeds=C.SEEDS) == C.REFUSED and reached == []
+
+
+def test_the_driver_prints_the_head_at_every_exit(C, tmp_path, monkeypatch, capsys):
+    """C1.3: the head on a whole run's exit, on a failed check's and on a refusal's."""
+    monkeypatch.setattr(C, "git_head", lambda repo=None: "commitB")
+    work = tmp_path / "work"
+    ran = []
+    assert C.driver(C.PARTS, work, step=_stepper(C, work, "commitB", ran)) == 0
+    out = capsys.readouterr().out
+    h = C.ledger_head()
+    assert f"LEDGER HEAD (the calibrate driver's exit): lines {h['lines']} sha256 {h['sha256']}" in out
+    w2 = tmp_path / "w2"
+    assert C.driver(C.PARTS, w2, step=lambda *a, **k: C.FAILED_CHECK) == C.FAILED_CHECK
+    assert "LEDGER HEAD" in capsys.readouterr().out
+    C.record_failed(w2, "core", ["planted"], runner="calibrate")
+    assert C.driver(C.PARTS, w2, step=lambda *a, **k: 0) == C.FAILED_CHECK              # refused on the record
+    assert "LEDGER HEAD" in capsys.readouterr().out
+
+
+def test_a_failed_line_is_cleared_only_by_a_line_naming_its_row(C, tmp_path, monkeypatch, capsys):
+    """C1.4: clearance is a line appended by `--clear <sha256> --row E-NNN`, refused unless DECISIONS.md holds that row
+    naming the failed line's sha256; never an edit. Once cleared, preflight's record check passes; the folder is kept,
+    renamed."""
+    work = tmp_path / "work"
+    C.record_failed(work, "probe", ["planted scalar mismatch"], runner="calibrate", commit="B")
+    sha = C.ledger_read()[-1]["_sha256"]
+    assert C.failed_record_problems(work, "calibrate")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "DECISIONS.md").write_text("| E-900 | x | another row |\n", encoding="utf-8")
+    assert C.clear_failed(sha, "E-900", runner="calibrate", repo=repo)                 # the row does not name it
+    assert C.clear_failed(sha, "E-901", runner="calibrate", repo=repo)                 # no such row
+    assert C.clear_failed("0" * 64, "E-900", runner="calibrate", repo=repo)            # no such line
+    assert C.clear_failed(sha, "E-900", runner="validate", repo=repo)                  # another runner's
+    assert C.clear_failed(sha, "nine", runner="calibrate", repo=repo)
+    (repo / "DECISIONS.md").write_text(f"| E-900 | 2026-11-18 | **the failed line `{sha}` diagnosed** | basis |\n",
+                                       encoding="utf-8")
+    assert C.clear_failed(sha, "E-900", runner="calibrate", repo=repo) == []
+    last = C.ledger_read()[-1]
+    assert last["outcome"] == "cleared" and last["clears"] == sha and last["decision"] == "E-900"
+    assert (work / "probe.failed-cleared-E-900").is_dir() and not (work / "probe.failed").exists()
+    assert C.failed_record_problems(work, "calibrate") == []
+    assert C.clear_failed(sha, "E-900", runner="calibrate", repo=repo)                 # cleared already
+    assert C.clear_failed(last["_sha256"], "E-900", runner="calibrate", repo=repo)     # a clearance is no failure
+    # a later failure is not covered by the old clearance
+    C.record_failed(work, "probe", ["another"], runner="calibrate", commit="C")
+    assert C.failed_record_problems(work, "calibrate")
+    assert C.main(["--clear", sha]) == 3 and "--row" in capsys.readouterr().out
+
+
+def test_in_part_refusals_are_recorded(C, tmp_path, monkeypatch):
+    """N2: the manifest's seed-map check and the core output's hash checks, raised inside a part, are failed checks."""
+    monkeypatch.setattr(C, "compute_nulls", lambda *a, **k: _out(C, "drift"))
+    monkeypatch.setattr(C, "manifest_seed_problems", lambda seeds: ["planted seed map"])
+    w = tmp_path / "w"
+    assert C.compute_part_main("drift", w, seeds=C.SEEDS) == C.FAILED_CHECK
+    assert (w / "drift.failed").is_dir() and "seed map" in C.ledger_read()[-1]["reasons"][0]
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "l2.jsonl")
+
+    def bad_core(work):
+        raise C.ProvenanceRefused("REFUSED: the core part's pairs do not hash to its manifest")
+    monkeypatch.setattr(C, "load_core_inputs", bad_core)
+    w2 = tmp_path / "w2"
+    assert C.compute_part_main("sizing200", w2, seeds=C.SEEDS) == C.FAILED_CHECK
+    assert "do not hash" in C.ledger_read()[-1]["reasons"][0]
+
+
+def test_the_thread_count_is_read_back_and_forced_in_a_child(tmp_path):
+    """N1: a child whose session sets every BLAS variable to 2 loads the runner; the variables it then sees and the
+    thread count numpy's OpenBLAS reports are 1. Reverting the forcing to a default leaves 2, and fails this."""
+    code = ("import importlib.util, json, sys\n"
+            f"spec = importlib.util.spec_from_file_location('q126c_child', r'{ENTRY}')\n"
+            "m = importlib.util.module_from_spec(spec); sys.modules['q126c_child'] = m; spec.loader.exec_module(m)\n"
+            "v = m._versions(); print(json.dumps({'env': v['blas_threads'], 'live': v['blas_threads_live'], "
+            "'problems': m.thread_problems()}))\n")
+    env = {**_env(), "OMP_NUM_THREADS": "2", "OPENBLAS_NUM_THREADS": "2", "MKL_NUM_THREADS": "2"}
+    r = subprocess.run([sys.executable, "-c", code], cwd=str(ROOT), capture_output=True, text=True, timeout=600,
+                       env=env)
+    assert r.returncode == 0, r.stderr[-2000:]
+    got = json.loads(r.stdout.strip().splitlines()[-1])
+    assert got["env"] == {"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
+    assert got["live"] == 1 and got["problems"] == []
+    load_ = load()
+    assert load_.thread_problems({k: "1" for k in load_.BLAS_VARS}, live=2)            # a live count of 2 refuses
 
 
 def test_the_part_and_work_options_are_the_drivers(C, tmp_path, monkeypatch, capsys):
@@ -788,8 +987,9 @@ def test_one_blas_thread_forced_and_recorded(C, monkeypatch):
     assert all(os.environ[k] == "1" for k in C.BLAS_VARS)
     v = C._versions()
     assert v["blas_threads"] == {k: "1" for k in C.BLAS_VARS} and v["blas"]
-    assert C.thread_problems({k: "1" for k in C.BLAS_VARS}) == []
-    assert C.thread_problems({**{k: "1" for k in C.BLAS_VARS}, "OMP_NUM_THREADS": "2"})
+    assert C.thread_problems({k: "1" for k in C.BLAS_VARS}, live=1) == []
+    assert C.thread_problems({**{k: "1" for k in C.BLAS_VARS}, "OMP_NUM_THREADS": "2"}, live=1)
+    assert C.thread_problems({k: "1" for k in C.BLAS_VARS}, live=24)                  # the library's own count
     monkeypatch.setattr(XR, "clean_run_problem", lambda: None)
     monkeypatch.setattr(C, "lock_problem", lambda env=None: None)
     monkeypatch.setenv("OPENBLAS_NUM_THREADS", "2")
@@ -822,6 +1022,9 @@ def test_the_result_ceiling_and_its_shards(C, tmp_path, monkeypatch):
                    "q126_choice.csv"]
     man = json.loads((target / "q126_cal_size__probe.csv.manifest.json").read_text(encoding="utf-8"))
     assert man["parameters"]["this_file"]["sharded"] and len(man["parameters"]["size_check"]["q126_cal_size"]) == 3
+    led = man["parameters"]["ledger"]                                                   # C1.2
+    assert led["path"] == str(C.ledger_path()) and led["head"] == C.ledger_head() and led["runner_lines"] == \
+        C.ledger_runner_lines("calibrate")
     # a second write refuses before writing anything (the names exist)
     assert C.write_results({"q126_cal_size": df}, {"q126_cal_size": ("fixed_mc", ("fixed_mc",))},
                            {"q126_cal_size": "t"}, {}, C.SEEDS, target=target, work=tmp_path / "w", runner="calibrate",
@@ -842,9 +1045,14 @@ def test_the_prepared_licence_entries_parse_and_name_only_q126_files(tmp_path):
     p.write_text(head + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
     entries = PL.load_allowlist(p)
     assert entries and all(e.file.startswith("results/q126_") for e in entries)
-    assert {e.file for e in entries if e.column == "exact_index"} == {"results/q126_cal_size.csv",
-                                                                     "results/q126_cal_sizing.csv",
-                                                                     "results/q126_val_size.csv"}
+    files = {e.file for e in entries if e.column == "exact_index"}
+    assert {"results/q126_cal_size.csv", "results/q126_cal_sizing.csv", "results/q126_val_size.csv"} <= files
+    # N3: a sharded frame's files are prepared too, one for every part its rows can come from
+    C = load()
+    want = {f"results/q126_cal_size__{p}.csv" for p in ("core", "probe", "spread")} \
+        | {f"results/q126_cal_sizing__sizing{z}.csv" for z in C.SIZES} \
+        | {f"results/q126_val_size__{p}.csv" for p in ("core", "spread")}
+    assert want <= files, sorted(want - files)
 
 
 def test_refuses_outside_a_clean_run_before_any_step():

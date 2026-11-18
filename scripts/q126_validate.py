@@ -320,6 +320,17 @@ def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guar
 
 def part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | None = None,
               reps_beside: int | None = None) -> int:
+    """One part; any refusal raised inside it is a recorded failed check (N2)."""
+    try:
+        return _part_main(part, work, info, seeds=seeds, reps=reps, reps_beside=reps_beside)
+    except CALQ.CHECK_ERRORS as exc:
+        CALQ.record_failed(work, part, [f"{type(exc).__name__} inside the part: {exc}"], runner="validate")
+        print(f"FAILED CHECK: {type(exc).__name__}: {exc}", flush=True)
+        return FAILED_CHECK
+
+
+def _part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | None = None,
+               reps_beside: int | None = None) -> int:
     t0 = time.time()
     reps = CALQ.REPS if reps is None else reps
     reps_beside = CALQ.REPS_BESIDE if reps_beside is None else reps_beside
@@ -396,6 +407,10 @@ def part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | Non
 def criterion_main(work: Path, info: dict, *, seeds: dict) -> int:
     from extended import results as XR
 
+    bad = CALQ.failed_record_problems(work, "validate")               # N4: whatever the caller checked
+    if bad:
+        print("REFUSED: " + "; ".join(bad), flush=True)
+        return REFUSED
     commit = CALQ.git_head()
     need = ("core", "drift")
     probs = []
@@ -474,7 +489,11 @@ def main(argv=None) -> int:
     ap.add_argument("--parts", default=None)
     ap.add_argument("--part", default=None, help=argparse.SUPPRESS)
     ap.add_argument("--work", type=Path, default=None, help=argparse.SUPPRESS)
+    ap.add_argument("--clear", default=None, metavar="SHA256", help="clear a failed ledger line (with --row)")
+    ap.add_argument("--row", default=None, metavar="E-NNN", help="the decision row that names the line's sha256")
     a = ap.parse_args(argv)
+    if a.clear is not None or a.row is not None:
+        return CALQ.clear_main(a.clear, a.row, runner="validate")
     t0 = time.time()
     bad = CALQ.gate_problem(a.work, a.part)
     if bad:
@@ -492,18 +511,23 @@ def main(argv=None) -> int:
         print(f"REFUSED: the work folder {work} must lie outside this tree", flush=True)
         return REFUSED
     work.mkdir(parents=True, exist_ok=True)
-    if a.part is not None:
-        if a.part not in PARTS:
-            print(f"REFUSED: no part {a.part!r}; the parts are {PARTS}", flush=True)
-            return REFUSED
-        if a.part == "criterion":
-            return criterion_main(work, info, seeds=SEEDS)
-        return part_main(a.part, work, info, seeds=SEEDS)
-    parts = PARTS if a.parts is None else tuple(x for x in PARTS if x in a.parts.split(","))
-    _log(f"the choice ({info['row']}): {info['decision']}; statistics {statistics(info)}; seed map {SEEDS}")
-    rc = CALQ.driver(parts, work, SCRIPT, runner="validate", final="criterion")
-    _log(f"EXIT {rc} ({time.time() - t0:.0f} s)")
-    return rc
+    try:
+        if a.part is not None:
+            if a.part not in PARTS:
+                print(f"REFUSED: no part {a.part!r}; the parts are {PARTS}", flush=True)
+                return REFUSED
+            if a.part == "criterion":
+                return criterion_main(work, info, seeds=SEEDS)
+            return part_main(a.part, work, info, seeds=SEEDS)
+        parts = PARTS if a.parts is None else tuple(x for x in PARTS if x in a.parts.split(","))
+        _log(f"the choice ({info['row']}): {info['decision']}; statistics {statistics(info)}; seed map {SEEDS}")
+        rc = CALQ.driver(parts, work, SCRIPT, runner="validate", final="criterion")
+        _log(f"EXIT {rc} ({time.time() - t0:.0f} s)")
+        return rc
+    except CALQ.ProvenanceRefused as exc:                                # N2: recorded, as the calibration's
+        CALQ.record_failed(work, a.part or "driver", [f"ProvenanceRefused: {exc}"], runner="validate")
+        print(f"FAILED CHECK: {exc}", flush=True)
+        return FAILED_CHECK
 
 
 if __name__ == "__main__":

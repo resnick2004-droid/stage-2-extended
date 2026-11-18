@@ -54,6 +54,7 @@ def V():
 def private_ledger(V, tmp_path, monkeypatch):
     p = tmp_path / "ledger" / "q126-ledger.jsonl"
     monkeypatch.setattr(V.CALQ, "ledger_path", lambda: p)
+    monkeypatch.setattr(V.CALQ, "blas_live_threads", lambda: 1)     # see the calibration tests' fixture
     return p
 
 
@@ -286,6 +287,55 @@ def test_the_criterion_is_q108s_for_each_of_two_statistics(V):
     # beside: cons in both scopes, never a verdict
     assert set(res["beside"]["candidate"]) == {"cons_m1.25", "cons_m1.5", "cons"}
     assert set(res["beside"]["verdict"]) == {"beside: not the criterion"}
+
+
+# ------------------------------------------------------------------------------------------------ cycle 2
+
+
+def test_the_criterion_holds_its_parts_to_the_real_ledger(V, tmp_path, monkeypatch):
+    """C2: `criterion_main` with the ledger check live -- parts whole on disk but missing from the ledger are REFUSED;
+    a part differing from an earlier whole record is a FAILED CHECK, recorded; N4: the criterion refuses on a failed
+    record itself."""
+    C = V.CALQ
+    monkeypatch.setattr(C, "git_head", lambda repo=None: "C")
+    work = tmp_path / "work"
+    info = {"row": "E-999", "decision": "CHOSEN cons_m1.25 (scope D); SECOND cons_m1.5 (scope Q)",
+            "primary": ("cons_m1.25", "D"), "second": ("cons_m1.5", "Q")}
+    for p in ("core", "drift"):
+        o = C._empty_out(p)
+        o["size"] = [{"null": "a", "x": 1}]
+        C.write_part(work, p, o, {"commit": "C", "seed_map": V.SEEDS, "versions": {"v": 1}, "choice": info["decision"],
+                                  "ledger_head": C.ledger_head()})
+    reached = []
+    monkeypatch.setattr(V, "criterion_tables", lambda *a, **k: reached.append(1) or {"failed": ["reached"]})
+    assert V.criterion_main(work, info, seeds=V.SEEDS) == V.REFUSED and reached == []
+    for p in ("core", "drift"):
+        man = C.read_manifest(work / p)
+        C.ledger_append({"runner": "validate", "part": p, "commit": "C", "outcome": "whole",
+                         "files": C.data_files(man["files"])})
+    C.ledger_append({"runner": "validate", "part": "drift", "commit": "B", "outcome": "whole",
+                     "files": {"size.csv": "0" * 64}})
+    assert V.criterion_main(work, info, seeds=V.SEEDS) == V.FAILED_CHECK and reached == []
+    rec = C.read_manifest(work / "criterion.failed")
+    assert any("drift" in r and "differ" in r for r in rec["reasons"])
+    assert V.criterion_main(work, info, seeds=V.SEEDS) == V.REFUSED                     # N4: on the record
+
+
+def test_a_provenance_refusal_in_the_validations_main_is_recorded(V, tmp_path, monkeypatch, capsys):
+    """N2: a ProvenanceRefused escaping a part or the driver in the validation's `main` is recorded, as the
+    calibration's."""
+    C = V.CALQ
+    monkeypatch.setattr(V, "preflight", lambda *a, **k: ([], {"row": "E-999", "decision": "d",
+                                                               "primary": ("cons_m1.25", "D"), "second": None}))
+    monkeypatch.setattr(V, "work_dir", lambda: tmp_path / "work")
+
+    def raises(*a, **k):
+        raise C.ProvenanceRefused("REFUSED: planted inside the driver")
+    monkeypatch.setattr(C, "driver", raises)
+    assert V.main([]) == V.FAILED_CHECK
+    assert (tmp_path / "work" / "driver.failed").is_dir() and C.ledger_read()[-1]["runner"] == "validate"
+    assert "FAILED CHECK" in capsys.readouterr().out
+    assert V.main(["--clear", "0" * 64, "--row", "E-1"]) == 3                         # the clearance subcommand
 
 
 # ------------------------------------------------------------------------------------------------ end to end

@@ -25,7 +25,12 @@ append-only and outside every work folder, records each part's commit, data file
 choice's own failed checks -- refuses every later run in any work folder until the lead decides, and the choice holds
 every part to every earlier whole record of it. `--part` runs only with the token its driver wrote; the command takes
 no `--work`. One BLAS thread is forced and recorded in every manifest (F3); a result frame above 95 MB is written in
-shards by part, `<name>__<part>.csv` (F5).
+shards by part, `<name>__<part>.csv` (F5). **The ledger is a chain** (E-193, C1): each line carries the sha256 of the
+line before it, every part and result manifest records the ledger's head (a part's must be a prefix of the ledger at the
+choice), the result manifests carry the runner's lines and the ledger's path, and the driver prints the head at every
+exit. A failed line is cleared only by an appended line, never an edit:
+
+    python scripts/q126_calibrate.py --clear <the failed line's sha256> --row E-NNN   # the row must name that sha256
 
 **The choice** reads every part's manifest and refuses a missing part, another commit, another seed map or other
 package versions; it alone writes the result files, through `extended.results`, all or none (every frame and name
@@ -649,19 +654,45 @@ def _blas_name() -> str:
         return "unknown"
 
 
+def blas_live_threads() -> int | None:
+    """The thread count numpy's OpenBLAS reports itself (`*openblas*get_num_threads*` through ctypes, from the library
+    numpy loaded) -- read back, not the variable this script set (the red team's N1); None where it cannot be read."""
+    import ctypes
+    import glob
+
+    libs = os.path.join(os.path.dirname(np.__file__), os.pardir, "numpy.libs")
+    for f in sorted(glob.glob(os.path.join(libs, "*openblas*.dll")) + glob.glob(os.path.join(libs, "*openblas*.so*"))):
+        try:
+            lib = ctypes.CDLL(f)
+        except OSError:
+            continue
+        for nm in ("scipy_openblas_get_num_threads64_", "scipy_openblas_get_num_threads", "openblas_get_num_threads64_",
+                   "openblas_get_num_threads"):
+            fn = getattr(lib, nm, None)
+            if fn is not None:
+                fn.restype = ctypes.c_int
+                return int(fn())
+    return None
+
+
 def _versions() -> dict:
-    """The package versions (Q-108's), the BLAS library and the thread settings: a part of other versions or threads is
-    refused by the choice (the plan's 6.2; F3)."""
+    """The package versions (Q-108's), the BLAS library, the thread variables this process sees and the thread count
+    the BLAS library reports: a part of other versions or threads is refused by the choice (the plan's 6.2; F3, N1)."""
     v = dict(CAL._versions())
     v["blas"] = _blas_name()
     v["blas_threads"] = {k: os.environ.get(k) for k in BLAS_VARS}
+    v["blas_threads_live"] = blas_live_threads()
     return v
 
 
-def thread_problems(env: Mapping | None = None) -> list[str]:
+def thread_problems(env: Mapping | None = None, live: int | None = -1) -> list[str]:
     env = os.environ if env is None else env
+    live = blas_live_threads() if live == -1 else live
     bad = {k: env.get(k) for k in BLAS_VARS if env.get(k) != "1"}
-    return [f"the BLAS thread settings are {bad}, not 1 (one BLAS thread a process)"] if bad else []
+    out = [f"the BLAS thread settings are {bad}, not 1 (one BLAS thread a process)"] if bad else []
+    if live is not None and live != 1:
+        out.append(f"the BLAS library reports {live} threads, not 1")
+    return out
 
 
 def blob_id(path: Path) -> str:
@@ -1509,28 +1540,100 @@ def ledger_path() -> Path:
     return Path(RUNS_DIR) / LEDGER_NAME
 
 
-def ledger_read() -> list[dict]:
+#: the chain's anchor (E-193, the red team's C1): the first line's `prev_sha256` is this string's sha256
+LEDGER_GENESIS = "q126-ledger genesis (E-193)"
+
+
+def _sha_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def ledger_lines() -> list[str]:
+    """The ledger's lines as written (no line ending), refusing a torn last line (no final newline)."""
     p = ledger_path()
     if not p.is_file():
         return []
+    data = p.read_bytes().decode("utf-8")
+    if data and not data.endswith("\n"):
+        raise ProvenanceRefused(f"REFUSED: the part ledger {p} ends in a torn line (no final newline)")
+    return [x for x in data.split("\n")[:-1]] if data else []
+
+
+def ledger_read() -> list[dict]:
+    """The ledger's records, each with its own line's sha256 (`_sha256`), after the chain is checked: every line's
+    `prev_sha256` is the sha256 of the line before it (the genesis string's for the first). An unreadable line, a blank
+    line or a broken chain -- an edit, or a deletion anywhere but the tail -- refuses (C1)."""
+    p = ledger_path()
+    prev = _sha_text(LEDGER_GENESIS)
     out = []
-    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
-        if line.strip():
-            try:
-                out.append(json.loads(line))
-            except ValueError:
-                raise ProvenanceRefused(f"REFUSED: the part ledger {p} has an unreadable line {i}") from None
+    for i, line in enumerate(ledger_lines(), 1):
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            raise ProvenanceRefused(f"REFUSED: the part ledger {p} has an unreadable line {i}") from None
+        if not isinstance(rec, dict) or rec.get("prev_sha256") != prev:
+            raise ProvenanceRefused(f"REFUSED: the part ledger {p}'s chain is broken at line {i} (a line edited or "
+                                    "removed): it is the lead's to diagnose")
+        prev = _sha_text(line)
+        out.append({**rec, "_sha256": prev, "_line": i})
     return out
 
 
-def ledger_append(rec: dict) -> None:
+def ledger_head() -> dict:
+    """The ledger's head: its line count, the sha256 of its whole text (each line and its newline) and its path."""
+    lines = ledger_lines()
+    ledger_read()                                                         # the chain checked
+    return {"lines": len(lines), "sha256": hashlib.sha256("".join(x + "\n" for x in lines).encode("utf-8")).hexdigest(),
+            "path": str(ledger_path())}
+
+
+def head_problems(head: dict | None, what: str) -> list[str]:
+    """A recorded head is a prefix of the current ledger: as many lines at least, and its first lines hash to it (C1).
+    A deleted tail line that a later manifest saw, or a ledger replaced or redirected, refuses."""
+    if not isinstance(head, dict) or "lines" not in head or "sha256" not in head:
+        return [f"{what} records no ledger head"]
+    lines = ledger_lines()
+    n = int(head["lines"])
+    got = hashlib.sha256("".join(x + "\n" for x in lines[:n]).encode("utf-8")).hexdigest()
+    if n > len(lines) or got != head["sha256"]:
+        return [f"{what}'s recorded ledger head ({n} lines, {str(head['sha256'])[:12]}) is not a prefix of the ledger "
+                f"{ledger_path()} ({len(lines)} lines): lines were removed or the ledger replaced"]
+    if head.get("path") and Path(head["path"]) != ledger_path():
+        return [f"{what} was recorded against the ledger {head['path']}, not {ledger_path()}"]
+    return []
+
+
+def ledger_append(rec: dict) -> dict:
+    """One line, chained to the line before it; written and flushed to disk. Returns the record."""
     p = ledger_path()
     p.parent.mkdir(parents=True, exist_ok=True)
-    rec = {"time_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **rec}
-    with open(p, "a", encoding="utf-8") as f:
+    recs = ledger_read()
+    prev = recs[-1]["_sha256"] if recs else _sha_text(LEDGER_GENESIS)
+    rec = {"time_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **rec, "prev_sha256": prev}
+    with open(p, "a", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
         f.flush()
         os.fsync(f.fileno())
+    return rec
+
+
+def ledger_runner_lines(runner: str) -> list[str]:
+    """The runner's own ledger lines, verbatim (for the result manifests, C1)."""
+    lines = ledger_lines()
+    return [line for line, r in zip(lines, ledger_read()) if r.get("runner") == runner]
+
+
+def ledger_record_for_results(runner: str) -> dict:
+    return {"path": str(ledger_path()), "head": ledger_head(), "runner_lines": ledger_runner_lines(runner)}
+
+
+def print_head(where: str) -> None:
+    """The ledger head, printed at every exit of the driver: the lead's progress line quotes it (C1.3)."""
+    try:
+        h = ledger_head()
+        print(f"LEDGER HEAD ({where}): lines {h['lines']} sha256 {h['sha256']} path {h['path']}", flush=True)
+    except ProvenanceRefused as exc:
+        print(f"LEDGER HEAD ({where}): {exc}", flush=True)
 
 
 def data_files(files: dict) -> dict:
@@ -1538,7 +1641,39 @@ def data_files(files: dict) -> dict:
 
 
 def ledger_failures(runner: str) -> list[dict]:
-    return [r for r in ledger_read() if r.get("runner") == runner and r.get("outcome") != "whole"]
+    """The runner's failed lines not cleared by a clearance line (C1.4)."""
+    recs = ledger_read()
+    cleared = {r.get("clears") for r in recs if r.get("outcome") == "cleared"}
+    return [r for r in recs if r.get("runner") == runner and r.get("outcome") not in ("whole", "cleared")
+            and r["_sha256"] not in cleared]
+
+
+def clear_failed(line_sha: str, row: str, *, runner: str, repo: Path = ROOT) -> list[str]:
+    """Clear a failed line by a line, never an edit (C1.4): refuses unless the ledger holds that failed line of this
+    runner, not yet cleared, and `DECISIONS.md` holds the row `row` naming its sha256. Appends {"outcome": "cleared",
+    "clears", "decision"} and renames its kept folder `<name>-cleared-<row>`. Returns the problems (empty: cleared)."""
+    if not re.fullmatch(r"E-\d{3,}", str(row)):
+        return [f"{row!r} is not a decision row id (E-NNN)"]
+    recs = ledger_read()
+    hit = [r for r in recs if r["_sha256"] == line_sha]
+    if len(hit) != 1:
+        return [f"the ledger holds no line with sha256 {line_sha}"]
+    r = hit[0]
+    if r.get("runner") != runner or r.get("outcome") in ("whole", "cleared"):
+        return [f"line {r['_line']} is not a failed line of the runner {runner!r} ({r.get('outcome')})"]
+    if any(x.get("outcome") == "cleared" and x.get("clears") == line_sha for x in recs):
+        return [f"line {r['_line']} is cleared already"]
+    dec = (Path(repo) / "DECISIONS.md").read_text(encoding="utf-8") if (Path(repo) / "DECISIONS.md").is_file() else ""
+    if not any(x.startswith(f"| {row} |") and line_sha in x for x in dec.splitlines()):
+        return [f"DECISIONS.md holds no row {row} naming the failed line's sha256 {line_sha}"]
+    rec = r.get("record")
+    renamed = None
+    if rec and Path(rec).exists():
+        renamed = Path(rec).with_name(f"{Path(rec).name}-cleared-{row}")
+        os.replace(rec, renamed)
+    ledger_append({"runner": runner, "part": r.get("part"), "commit": r.get("commit"), "outcome": "cleared",
+                   "clears": line_sha, "decision": row, "record": str(renamed) if renamed else None})
+    return []
 
 
 def ledger_whole(runner: str, part: str, commit: str, files: dict) -> bool:
@@ -1575,7 +1710,7 @@ def record_failed(work: Path, part: str, reasons: list[str], *, runner: str, com
                                                     "reasons": [str(x) for x in reasons], "meta": meta or {}},
                                                    indent=1, default=str), encoding="utf-8")
     ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "failed", "work": str(work),
-                   "reasons": [str(x)[:500] for x in reasons[:20]]})
+                   "record": str(dest), "reasons": [str(x)[:500] for x in reasons[:20]]})
     return dest
 
 
@@ -1593,7 +1728,7 @@ def finish_part(work: Path, part: str, out: dict, manifest: dict, *, runner: str
         reasons += [f"nesting: {x}" for x in out["nesting"][:5]] + ([str(out["meta"].get("failed"))]
                                                                     if out["meta"].get("failed") else [])
         ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "failed", "work": str(work),
-                       "reasons": reasons})
+                       "record": str(dest), "reasons": reasons})
         return FAILED_CHECK
     probs = ledger_reproduction_problems(runner, part, man["files"])
     if list(work.glob(f"{part}.prev-*")):
@@ -1606,7 +1741,8 @@ def finish_part(work: Path, part: str, out: dict, manifest: dict, *, runner: str
             failed_dir = work / f"{part}.failed-{i}"
         os.replace(dest, failed_dir)
         ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "reproduction differs",
-                       "work": str(work), "files": data_files(man["files"]), "reasons": probs[:20]})
+                       "work": str(work), "record": str(failed_dir), "files": data_files(man["files"]),
+                       "reasons": probs[:20]})
         print("FAILED CHECK: a part rerun does not reproduce its earlier output -- " + "; ".join(probs[:5]), flush=True)
         return FAILED_CHECK
     ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "whole", "work": str(work),
@@ -1617,7 +1753,8 @@ def finish_part(work: Path, part: str, out: dict, manifest: dict, *, runner: str
 def failed_record_problems(work: Path, runner: str) -> list[str]:
     """A failed check on record -- in the work folder used, or anywhere in the ledger -- refuses (F1, F2)."""
     out = []
-    fails = sorted(p.name for p in Path(work).glob("*.failed*")) if Path(work).is_dir() else []
+    fails = sorted(p.name for p in Path(work).glob("*.failed*") if "-cleared-" not in p.name) \
+        if Path(work).is_dir() else []
     if fails:
         out.append(f"a failed check is on record in {work} ({fails})")
     led = ledger_failures(runner)
@@ -1768,7 +1905,7 @@ def _manifest_base(seeds: dict, extra: dict | None = None) -> dict:
     p = plan_path()
     return {"decision": DECISION, "task": TASK, "plan": p.relative_to(ROOT).as_posix(), "plan_sha256": file_sha_lf(p),
             "commit": git_head(), "seed_map": {k: int(v) for k, v in seeds.items()}, "spare_seeds": list(SPARE),
-            "versions": _versions(), "blobs": blobs, **(extra or {})}
+            "versions": _versions(), "blobs": blobs, "ledger_head": ledger_head(), **(extra or {})}
 
 
 def _time_fields(t0: float) -> dict:
@@ -1794,6 +1931,18 @@ def load_core_inputs(work: Path) -> tuple[list[str], str, pd.DataFrame]:
 
 def compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, reps_beside: int = REPS_BESIDE,
                       cands=CANDS) -> int:
+    """One part in its own process; any refusal raised inside it -- the manifest's seed-map check, the core output's
+    calendar and pairs hashes, an assertion or an overflow in a check -- is a recorded failed check (N2)."""
+    try:
+        return _compute_part_main(part, work, seeds=seeds, reps=reps, reps_beside=reps_beside, cands=cands)
+    except CHECK_ERRORS as exc:
+        record_failed(work, part, [f"{type(exc).__name__} inside the part: {exc}"], runner="calibrate")
+        print(f"FAILED CHECK: {type(exc).__name__}: {exc}", flush=True)
+        return FAILED_CHECK
+
+
+def _compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, reps_beside: int = REPS_BESIDE,
+                       cands=CANDS) -> int:
     """One part in its own process: its plan, the provenance assertion before any draw, its computation, its output
     written all or none."""
     t0 = time.time()
@@ -1899,6 +2048,10 @@ def choice_main(work: Path, *, seeds: dict) -> int:
     from extended import results as XR
 
     t0 = time.time()
+    bad = failed_record_problems(work, "calibrate")                    # N4: whatever the caller checked
+    if bad:
+        print("REFUSED: " + "; ".join(bad), flush=True)
+        return REFUSED
     commit = git_head()
     need = [p for p in PARTS if p != "choice"]
     probs = []
@@ -1990,6 +2143,7 @@ def ledger_choice_problems(work: Path, parts, commit: str, runner: str) -> dict:
     missing, differs = [], []
     for p in parts:
         man = read_manifest(Path(work) / p)
+        missing += head_problems(man.get("ledger_head"), f"the part {p}")       # C1.2
         if not ledger_whole(runner, p, commit, man.get("files", {})):
             missing.append(f"the part {p} has no whole record at this commit in the ledger {ledger_path()}")
             continue
@@ -2046,6 +2200,7 @@ def write_results(frames: dict, roles: dict, desc: dict, common: dict, seeds: di
         print(f"REFUSED: the result files {sorted(set(clash))} exist; a result file is never overwritten", flush=True)
         return REFUSED
     size_check = {nm: [{"file": f"{s}.csv", **info} for s, _, info in plan[nm]] for nm in roles}
+    common = {**common, "ledger": ledger_record_for_results(runner)}           # C1.2: path, head, the runner's lines
     written = []
     try:
         for nm in roles:
@@ -2108,7 +2263,14 @@ def driver(parts, work: Path, script: str = SCRIPT, *, step=_step, runner: str =
            final: str = "choice") -> int:
     """The parts in their declared order, each in its own process started with this driver's token; a failed check
     stops the run and stays on record (the work folder and the ledger), a crash stops it too (to be rerun from
-    scratch), a reproduction that differs is a failed check (F1)."""
+    scratch), a reproduction that differs is a failed check (F1). The ledger head is printed at every exit (C1.3)."""
+    try:
+        return _driver(parts, work, script, step=step, runner=runner, final=final)
+    finally:
+        print_head(f"the {runner} driver's exit")
+
+
+def _driver(parts, work: Path, script: str, *, step, runner: str, final: str) -> int:
     import uuid
 
     work = Path(work)
@@ -2141,7 +2303,7 @@ def driver(parts, work: Path, script: str = SCRIPT, *, step=_step, runner: str =
                 if bad:
                     os.replace(work / part, work / f"{part}.failed")
                     ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "reproduction differs",
-                                   "work": str(work), "reasons": bad[:20]})
+                                   "work": str(work), "record": str(work / f"{part}.failed"), "reasons": bad[:20]})
                     print("FAILED CHECK: a part rerun at a new commit does not reproduce its earlier output -- "
                           + "; ".join(bad[:5]), flush=True)
                     return FAILED_CHECK
@@ -2151,6 +2313,24 @@ def driver(parts, work: Path, script: str = SCRIPT, *, step=_step, runner: str =
             os.environ.pop(DRIVER_ENV, None)
         else:
             os.environ[DRIVER_ENV] = old
+    return 0
+
+
+def clear_main(line_sha: str | None, row: str | None, *, runner: str, repo: Path = ROOT) -> int:
+    """`--clear <sha256> --row E-NNN`: a failed line cleared by an appended line (C1.4); the head printed."""
+    if not line_sha or not row:
+        print("REFUSED: --clear takes the failed line's sha256 and --row the decision row naming it", flush=True)
+        return REFUSED
+    try:
+        probs = clear_failed(line_sha, row, runner=runner, repo=repo)
+    except ProvenanceRefused as exc:
+        probs = [str(exc)]
+    if probs:
+        print("REFUSED: " + "; ".join(probs), flush=True)
+        print_head("the clearance, refused")
+        return REFUSED
+    print(f"CLEARED: the {runner} ledger line {line_sha} under {row}", flush=True)
+    print_head("the clearance")
     return 0
 
 
@@ -2176,9 +2356,13 @@ def main(argv=None) -> int:
     ap.add_argument("--parts", default=None, help="a comma list of declared parts to run, in the declared order")
     ap.add_argument("--part", default=None, help=argparse.SUPPRESS)
     ap.add_argument("--work", type=Path, default=None, help=argparse.SUPPRESS)
+    ap.add_argument("--clear", default=None, metavar="SHA256", help="clear a failed ledger line (with --row)")
+    ap.add_argument("--row", default=None, metavar="E-NNN", help="the decision row that names the line's sha256")
     a = ap.parse_args(argv)
     if a.check_read:
         return _check_read()
+    if a.clear is not None or a.row is not None:
+        return clear_main(a.clear, a.row, runner="calibrate")
     t0 = time.time()
     part = a.part
     bad = gate_problem(a.work, part)
@@ -2212,9 +2396,10 @@ def main(argv=None) -> int:
         rc = driver(parts, work)
         _log(f"EXIT {rc} ({time.time() - t0:.0f} s)")
         return rc
-    except ProvenanceRefused as exc:
-        print(str(exc), flush=True)
-        return REFUSED
+    except ProvenanceRefused as exc:                                     # N2: recorded, never only printed
+        record_failed(work, part or "driver", [f"ProvenanceRefused: {exc}"], runner="calibrate")
+        print(f"FAILED CHECK: {exc}", flush=True)
+        return FAILED_CHECK
 
 
 if __name__ == "__main__":
