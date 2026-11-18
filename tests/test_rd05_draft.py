@@ -34,6 +34,7 @@ from pathlib import Path
 
 import pytest
 
+from extended import git_scan as GS
 from extended import reader
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -99,8 +100,7 @@ def test_seed_table(text: str) -> None:
 
 def _git_hits(repo: Path) -> list[str]:
     """Tracked files holding a seed of the block, word-bounded (`git grep`), as 'path:line' strings."""
-    out = subprocess.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, capture_output=True, text=True,
-                         check=False)
+    out = GS.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, text=True)       # Q-156: limited
     assert out.returncode in (0, 1), out.stderr
     return [line for line in out.stdout.splitlines() if line]
 

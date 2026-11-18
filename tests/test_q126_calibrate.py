@@ -43,6 +43,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from extended import git_scan as GS
+
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / "scripts" / "q126_calibrate.py"
 SEED = 20263010
@@ -73,7 +75,12 @@ def pristine_q108():
 
 @pytest.fixture(scope="module")
 def C():
-    return load()
+    # Q-156: the seed scans of Q-108's runner (this runner's private copy, holding Q-82's) through `extended.git_scan` --
+    # a time limit, the process tree killed and an error on it, never a pass; the pinned files are not edited
+    mod = load()
+    with pytest.MonkeyPatch.context() as mp:
+        GS.route_scans(mp, mod)
+        yield mod
 
 
 @pytest.fixture(autouse=True)
