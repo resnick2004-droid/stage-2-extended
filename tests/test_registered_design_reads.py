@@ -1,8 +1,8 @@
 """Q-58 (E-037): the three readings scripts re-read Stage 2's registered designs through the reader (purpose
 `registered_design`), ledgered only inside a clean run.
 
-What is asserted, for `scripts/user_beside.py` (Q-17), `scripts/breakeven_fidelity.py` (Q-20) and
-`scripts/p14_validation.py` (Q-18):
+What is asserted, for `scripts/user_beside.py` (Q-17), `scripts/breakeven_fidelity.py` (Q-20),
+`scripts/p14_validation.py` (Q-18) and `scripts/breakeven_fidelity_2.py` (Q-132, under E-024, which names P-15 too):
 
 * each run calls `extended.reader.authorise_engine_read` once, from its `main`, before any of the engine's work, with
   purpose `registered_design`, the decision row that admits it (E-024 for Q-17 and Q-20, E-026 for Q-18), the designs it
@@ -61,8 +61,12 @@ RUNS = (
     ("p14_validation", ["--check", "--part", "B1"], "E-026", ("P-14",), A1A3, "build_p14"),
     ("user_beside", ["--check", "--designs", "p13"], None, (), (), None),
     ("breakeven_fidelity", ["--check", "--designs", "p15"], None, (), (), None),
+    ("breakeven_fidelity_2", [], "E-024", ("P-14", "P-15", "P-16"), ALL4, "u1_reference"),
+    ("breakeven_fidelity_2", ["--check", "--starts", "4", "--paths", "4", "--designs", "p15"], "E-024", ("P-15",),
+     ALL4, "u1_reference"),
+    ("breakeven_fidelity_2", ["--check", "--designs", "p13"], None, (), (), None),
 )
-SCRIPTS = ("user_beside", "breakeven_fidelity", "p14_validation")
+SCRIPTS = ("user_beside", "breakeven_fidelity", "p14_validation", "breakeven_fidelity_2")
 FIRST = {s: next(r for r in RUNS if r[0] == s and r[2]) for s in SCRIPTS}
 
 DRIVER = r'''
@@ -117,7 +121,7 @@ def load(name):
     return m
 
 
-MODULES = {n: load(n) for n in ("user_beside", "breakeven_fidelity", "p14_validation")}
+MODULES = {n: load(n) for n in ("user_beside", "breakeven_fidelity", "p14_validation", "breakeven_fidelity_2")}
 MODULES["user_beside"].I.u1_reference = stop("u1_reference")      # user_beside_identity: both Q-17's and Q-20's
 MODULES["p14_validation"].build_p14 = stop("build_p14")
 
