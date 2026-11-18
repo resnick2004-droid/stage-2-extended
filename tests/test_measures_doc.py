@@ -1,8 +1,9 @@
 """Wave 1.2 (the restart plan, `docs/plans/RESTART_PLAN_journey_objective.md` section 3): `docs/MEASURES.md` held to
 the code.
 
-* the index (section 7, between the `measures-index` markers) has the 39 measures, numbered 1 .. 39, each with a
-  status `exists`, `partial` or `to build`;
+* the index (section 8, between the `measures-index` markers) has the plan's 39 items, numbered 1 .. 39: 37 measures,
+  each with a status `exists`, `partial` or `to build`, and the baseline set, (35) and (36), each a `comparator` (the
+  red team's m-3; the amendments' "37 measures plus the baseline set");
 * every measure has its section `### (n) name`, whose name and `**Status:**` line are the index's; a `to build` entry
   says so in its section, a `partial` one names what is to build (`**To build:**`);
 * every reference of a measure marked `exists` or `partial` -- and every ingredient a `to build` entry names -- is
@@ -10,6 +11,9 @@ the code.
   by parsing it (nothing is imported: no engine, no vendored module on the path); `path::CONST[item]` an element of the
   literal constant (for a tuple of calls, their first arguments); `path::"text"` text found in the file;
 * an `exists` or `partial` measure names at least one function or constant;
+* every entry has its per-unit and never-blank line (the red team's m-6);
+* every code line listed "to change" (section 6) holds the quoted text at or just after the line given;
+* no seed literal appears in the document;
 * the two measures the operator dropped are listed as dropped, and P is defined as not a p-value.
 
 Reads no data: only this repository's and the vendored tree's source files and the document.
@@ -25,8 +29,11 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 DOC = ROOT / "docs" / "MEASURES.md"
-N_MEASURES = 39
-STATUSES = ("exists", "partial", "to build")
+N_ITEMS = 39
+COMPARATORS = (35, 36)
+N_MEASURES = N_ITEMS - len(COMPARATORS)
+MEASURE_STATUSES = ("exists", "partial", "to build")
+STATUSES = (*MEASURE_STATUSES, "comparator")
 START, END = "<!-- measures-index:start -->", "<!-- measures-index:end -->"
 REF = re.compile(r"`([^`]+)`")
 
@@ -162,7 +169,7 @@ def sections() -> dict[int, dict]:
         end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
         end = min(end, text.find("\n## ", h.end()) if text.find("\n## ", h.end()) >= 0 else end)
         body = text[h.end():end]
-        st = re.search(r"^- \*\*Status:\*\* (exists|partial|to build)\b", body, flags=re.M)
+        st = re.search(r"^- \*\*Status:\*\* (exists|partial|to build|comparator)\b", body, flags=re.M)
         assert n not in out, f"measure {n} has two sections"
         out[n] = {"name": h.group(2).strip(), "status": st.group(1) if st else None, "body": body}
     return out
@@ -185,24 +192,30 @@ def test_the_checker_refuses_what_does_not_exist():
             check_ref(bad)
 
 
-def test_the_index_has_the_39_measures_each_with_a_status():
+def test_the_index_has_37_measures_and_the_baseline_set():
     idx = index()
-    assert sorted(idx) == list(range(1, N_MEASURES + 1))
+    assert sorted(idx) == list(range(1, N_ITEMS + 1))
     for n, r in idx.items():
-        assert r["status"] in STATUSES, f"measure {n}: status {r['status']!r}"
+        if n in COMPARATORS:
+            assert r["status"] == "comparator", f"item {n} is a comparator, not {r['status']!r}"
+        else:
+            assert r["status"] in MEASURE_STATUSES, f"measure {n}: status {r['status']!r}"
+    assert sum(r["status"] != "comparator" for r in idx.values()) == N_MEASURES
+    assert "37 measures plus the baseline set" in _doc().splitlines()[0]
 
 
 def test_every_measure_has_its_section_with_the_index_status():
     idx, sec = index(), sections()
-    assert sorted(sec) == list(range(1, N_MEASURES + 1))
+    assert sorted(sec) == list(range(1, N_ITEMS + 1))
     for n in idx:
         assert sec[n]["name"] == idx[n]["name"], f"measure {n}: section {sec[n]['name']!r}, index {idx[n]['name']!r}"
         assert sec[n]["status"] == idx[n]["status"], f"measure {n}: section {sec[n]['status']}, index {idx[n]['status']}"
-        for field in ("**Definition", "**Summary and unit:**", "**Where:**", "**Parameters:**"):
+        for field in ("**Definition", "**Summary and unit:**", "**Per unit; never blank:**", "**Where:**",
+                      "**Parameters:**"):
             assert field in sec[n]["body"], f"measure {n}: no {field}"
 
 
-@pytest.mark.parametrize("n", range(1, N_MEASURES + 1))
+@pytest.mark.parametrize("n", range(1, N_ITEMS + 1))
 def test_every_named_function_or_column_exists(n):
     r = index()[n]
     if r["status"] in ("exists", "partial"):
@@ -233,3 +246,23 @@ def test_the_dropped_measures_and_p():
         assert "dropped" in line, f"{name} is not listed as dropped"
     p = text.split("## 2. P (not a p-value)", 1)
     assert len(p) == 2 and "not a p-value" in p[1].split("\n## ", 1)[0]
+
+
+def test_the_code_to_change_is_where_it_says():
+    """Section 6: each `path:line` or `path:first-last` with its quoted text -- the file exists and the text is on one
+    of the lines from the first to six after the last."""
+    part = _doc().split("## 6. Code to change in Wave 3.1", 1)
+    assert len(part) == 2, "no section 6"
+    body = part[1].split("\n## ", 1)[0]
+    refs = re.findall(r"^- `([^`:]+):(\d+)(?:-(\d+))?` \(`([^`]+)`\)", body, flags=re.M)
+    assert len(refs) >= 2, "section 6 lists no code line"
+    for path, first, last, text in refs:
+        lines = _source(path).splitlines()
+        a, b = int(first), int(last or first)
+        assert text in "\n".join(lines[a - 1:b + 6]), f"{path}:{first}: {text!r} is not there"
+    for want in ("extended/user_beside.py:633", "extended/user_readings.py:183-189"):
+        assert f"`{want}`" in body, f"{want} is not listed to change"
+
+
+def test_no_seed_literal_in_the_document():
+    assert not re.search(r"(?<![\d-])20\d{6}(?![\d-])", _doc()), "a seed-like literal in docs/MEASURES.md"
