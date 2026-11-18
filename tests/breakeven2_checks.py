@@ -75,7 +75,7 @@ def synthetic_outs(key: int, n_days: int = N_DAYS, alt_every: int = 9, pay_rate:
 def summary(design: str, outs):
     from extended import user_beside as B
 
-    srows, _ = R.summary(design, "verdict", B.BY_NAME["off"], outs)
+    srows, _ = R.summary(design, "verdict", B.BY_NAME["off"], outs, blocks=R.Q44_BLOCKS)   # W3.1: named
     return srows
 
 

@@ -141,8 +141,8 @@ def choice_rows(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, An
     tp = purged_table(t)
     card = S.scorecard(records, S.EARLY)
     rows = [UR._row("scorecard", "choice", k, "value", v["value"], v["n"]) for k, v in card.items()]
-    rows += _relabel(UR.extra_rows(S.block(records, S.EARLY, S.P_HORIZON)))
-    rows += _relabel(UR.path_rows(tp) + UR.response_rows(tp))
+    rows += _relabel(UR.extra_rows(S.block(records, S.EARLY, S.P_HORIZON), UR.Q44_BLOCKS))   # W3.1: named
+    rows += _relabel(UR.path_rows(tp, UR.Q44_BLOCKS) + UR.response_rows(tp, UR.Q44_BLOCKS))
     head = {"design": design, "arm": arm, "response": resp.name, "kind": resp.kind,
             "enforcement_p": float(resp.enforcement_p), "rtp": bool(resp.rtp), "rtp_warnings": int(resp.rtp_warnings),
             "ftp_label": resp.ftp_label}
@@ -150,11 +150,20 @@ def choice_rows(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, An
 
 
 def choice_problems(rows: Sequence[Mapping[str, Any]], what: str) -> list[str]:
-    """The choice block's refusing check: the E-007 (e) P (on `early`'s 63-session starts) equals the card's P."""
+    """The choice block's refusing check, like with like since Wave 3.1 (`docs/MEASURES.md` section 6, m-11; as
+    `user_readings.consistency_problems`): the E-007 (e) P (on `early`'s 63-session starts; ahead above 1e-6) equal to
+    the mean of its own three month shares, and never above the card's P (Stage 2's `> 0`, read beside, never held
+    equal to it)."""
     by = {(r["section"], r["measure"], r["stat"]): float(r["value"]) for r in rows if r.get("block") == "choice"}
     card, mine = by.get(("scorecard", "P", "value")), by.get(("extra", "P", "value"))
-    if card is None or mine is None or not ((np.isnan(card) and np.isnan(mine)) or abs(card - mine) <= 1e-12):
-        return [f"{what} choice: the extra P {mine} is not the card's {card}"]
+    shares = [by.get(("extra", f"share_ahead_month_{m}", "value")) for m in (1, 2, 3)]
+    if card is None or mine is None:
+        return [f"{what} choice: the extra P {mine} or the card's {card} is missing"]
+    if np.isnan(card) or np.isnan(mine):
+        return [] if (np.isnan(card) and np.isnan(mine)) else [f"{what} choice: one of P {mine}, {card} is blank"]
+    if None in shares or abs(mine - float(np.mean(shares))) > 1e-12 or mine > card + 1e-12:
+        return [f"{what} choice: the extra P {mine} is not the mean of its month shares {shares}, at most the "
+                f"card's {card}"]
     return []
 
 

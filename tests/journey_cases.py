@@ -447,7 +447,8 @@ def case_u1(base: Path) -> None:
         for arm in U.ARMS:
             mine = start[(start["config"] == d) & (start["arm"] == arm)]
             recs = R.Starts.of(mine).records
-            out += [{"design": d, "arm": arm, "response": "off", **r} for r in UR.scorecard_rows(recs)]
+            out += [{"design": d, "arm": arm, "response": "off", **r}
+                    for r in UR.scorecard_rows(recs, UR.Q44_BLOCKS)]                       # W3.1: named
     rows = J.Rows(pd.DataFrame(out))
     n, bad = J.u1_identity(sp, rows, ROOT)
     info["u1_positive"] = [n, len(bad)]
