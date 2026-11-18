@@ -3,10 +3,12 @@ check, and the last test run.
 
     python scripts/status.py
 
-Reads only: `TASK_QUEUE.md` (this tree's), `run.lock` (the main tree's, through `scripts/run_lock.py`), `git worktree
-list` (through `scripts/worktrees.py`), every `results/*.csv` with its manifest (through `extended.results.
-list_results`, the vendored check), and `results/.last_test_run.json` when the fast-tier hook has written one. It holds
-no result number: a result file is named with its check, never read for a figure. Exit 0.
+Reads only: `TASK_QUEUE.md` (this tree's) and, when `scripts/archive_queue.py` has made it, the archive of its done rows
+`docs/archive/TASK_QUEUE_ARCHIVE.md` (counted, not listed; Q-147), `run.lock` (the main tree's, through
+`scripts/run_lock.py`), `git worktree list` (through `scripts/worktrees.py`), every `results/*.csv` with its manifest
+(through `extended.results.list_results`, the vendored check), and `results/.last_test_run.json` when the post-edit
+test hook has written one. It holds no result number: a result file is named with its check, never read for a figure.
+Exit 0.
 """
 from __future__ import annotations
 
@@ -25,6 +27,8 @@ import run_lock as RL  # noqa: E402
 import worktrees as W  # noqa: E402
 
 QUEUE = ROOT / "TASK_QUEUE.md"
+#: done rows moved out of the queue by scripts/archive_queue.py (Q-147); the same table form, read by queue_rows
+ARCHIVE = ROOT / "docs" / "archive" / "TASK_QUEUE_ARCHIVE.md"
 LAST_TESTS = ROOT / "results" / ".last_test_run.json"
 #: the queue table's columns after the task, read from the right so a pipe inside a task does not shift them
 RIGHT = ("owner", "state", "depends", "weight", "retries", "row")
@@ -57,6 +61,10 @@ def show_queue() -> None:
         task = r["task"].replace("**", "")
         task = task if len(task) <= 90 else task[:87] + "..."
         print(f"  {r['id']:<5} {r['state']:<15} {r['owner']:<12} {r['weight'][:24]:<24} {task}")
+    if ARCHIVE.is_file():
+        archived = queue_rows(ARCHIVE.read_text(encoding="utf-8"))
+        where = ARCHIVE.relative_to(ROOT).as_posix() if ARCHIVE.is_relative_to(ROOT) else str(ARCHIVE)
+        print(f"  archived: {len(archived)} row(s) in {where}, not listed")
 
 
 def show_lock() -> None:
@@ -94,7 +102,7 @@ def show_results() -> None:
 def show_tests() -> None:
     print("== last test run ==")
     if not LAST_TESTS.is_file():
-        print("  not recorded (the fast-tier hook writes results/.last_test_run.json)")
+        print("  not recorded (the post-edit test hook writes results/.last_test_run.json)")
         return
     try:
         t = json.loads(LAST_TESTS.read_text(encoding="utf-8"))
