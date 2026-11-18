@@ -14,6 +14,9 @@ What is asserted (the brief's item 4, and what the mechanism needs to be one):
   every time it runs there; a second run under the same declaration and purpose is refused unless a decision row names it;
   a ledger that was tampered with refuses the next read; a committed line removed or rewritten later is reported by
   the history check, here on a temporary repository and on this repository's own history;
+* Q-158 (`tests/test_reader_heldout.py` holds the held-out rules' own cases): the synthetic log's E-906 and E-907
+  carry read tokens naming `scripts/probe.py`, and E-913 a verdict token for NQ, so the reads below that touch the
+  held-out years are the ones those rules admit; outside a clean run a registered design's held-out read is refused;
 * Q-58 (E-037, E-038): the purpose `registered_design` re-reads only P-14, P-15 and P-16, from `scripts/` only, under
   a decision row naming each design (never a family's or a reading's file), ledgered only inside a clean run; a pinned
   described reading (`prereg/RD-nn_<slug>.md`) declares judged-block reads on exactly the rules a family file does;
@@ -100,13 +103,17 @@ def decisions(h90: str, h92: str, h94: str) -> str:
             f"| E-903 | 2026-11-16 | **A second stage-C read of `{FAMILY}`** after run 1 crashed | test |\n"
             "| E-904 | 2026-11-16 | **A row about nothing in particular** | test |\n"
             f"| E-905 | 2026-11-16 | **F-94 declared**, `{FITTER}` sha256 `{h94}` | test |\n"
-            "| E-906 | 2026-11-16 | **Readings beside P-14, P-15 and P-16** (Stage 2's registered designs) | test |\n"
-            "| E-907 | 2026-11-16 | **P-14's validation readings** (P-140 and XP-16 are other names) | test |\n"
+            "| E-906 | 2026-11-16 | heldout-read: P-14,P-15,P-16 by scripts/probe.py -- **Readings beside P-14, P-15 "
+            "and P-16** (Stage 2's registered designs) | test |\n"
+            "| E-907 | 2026-11-16 | heldout-read: P-14 by scripts/probe.py -- **P-14's validation readings** (P-140 and "
+            "XP-16 are other names) | test |\n"
             f"| E-908 | 2026-11-16 | **F-95 declared**, `{RIDER}` sha256 `{sha_lf(RIDER_TEXT)}` | test |\n"
             f"| E-909 | 2026-11-16 | **RD-01 declared**, `{READING}` sha256 `{sha_lf(READING_TEXT)}` | test |\n"
             f"| E-910 | 2026-11-16 | **RD-03 declared**, `{RD_EDITED}` sha256 `{sha_lf(RD_EDITED_PINNED_TEXT)}` | test |\n"
             f"| E-911 | 2026-11-16 | **RD-04 declared**, `{RD_FITTER}` sha256 `{sha_lf(RD_FITTER_TEXT)}` | test |\n"
-            "| E-912 | 2026-11-16 | **A second stage-D read of RD-01** after its run 1 crashed | test |\n")
+            "| E-912 | 2026-11-16 | **A second stage-D read of RD-01** after its run 1 crashed | test |\n"
+            "| E-913 | 2026-11-16 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict (Q-158: a "
+            "described reading reads the held-out years only after it) | test |\n")
 
 
 def bars_frame() -> pd.DataFrame:
@@ -358,14 +365,18 @@ def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clea
     monkeypatch.delenv("S2X_RUN_ID")
     for design, want in (("P-14", ("P-14",)), (("P-16", "P-14"), ("P-14", "P-16")),
                          (["P-14", "P-15", "P-16", "P-15"], ("P-14", "P-15", "P-16"))):
-        a = R.authorise_engine_read("2020-01-02", "2026-07-16", design=design, files=[tree / BARS, tree / WALKS],
+        a = R.authorise_engine_read("2020-01-02", "2023-12-29", design=design, files=[tree / BARS, tree / WALKS],
                                     repo=tree, **DESIGN)
-        assert a.judged and a.kind == "registered_design" and a.declaration == "E-906" and a.designs == want
+        assert not a.judged and a.declaration == "E-906" and a.designs == want
         assert not a.ledgered and a.declaration_sha256 is None
+        # Q-158 (rule 3): outside a clean run a held-out read is refused, even under a row whose token names it
+        with pytest.raises(R.HeldOutRefused, match="clean run"):
+            R.authorise_engine_read("2020-01-02", "2026-07-16", design=design, files=[tree / BARS, tree / WALKS],
+                                    repo=tree, **DESIGN)
     assert not led.exists(), "outside a clean run no ledger file appears"
     monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
     monkeypatch.setenv("S2X_RUN_ID", "q58-sim@run-1")
-    for i in range(2):                                            # never limited to once
+    for i in range(2):                                            # one run reads as often as it needs
         a = R.authorise_engine_read("2020-01-02", "2026-07-16", design=("P-14", "P-16"), files=[tree / BARS],
                                     repo=tree, **DESIGN)
         assert a.ledgered and len(ledger_lines(tree)) == i + 1

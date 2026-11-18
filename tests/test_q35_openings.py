@@ -510,6 +510,14 @@ def log(rows: list[str]) -> str:
     return head + "".join(line + "\n" for line in rows)
 
 
+def tokened(line: str, designs: str) -> str:
+    """Q-158 (the reader's held-out rule 3): the row with a read token naming `designs` and the driver as the first
+    text of its third cell -- the row as a new held-out read needs it."""
+    cells = line.split("|")
+    cells[3] = f" heldout-read: {designs} by scripts/q35_driver.py --{cells[3]}"
+    return "|".join(cells)
+
+
 def make_tree(base: Path, name: str, decisions: str) -> Path:
     t = base / "runs" / name
     (t / "scripts").mkdir(parents=True)
@@ -537,15 +545,16 @@ def reads(tmp_path_factory) -> dict:
     base = tmp_path_factory.mktemp("q35")
     row = real_row()
     assert row is not None
-    t = make_tree(base, "q35-reads", log([row]))
+    t = make_tree(base, "q35-reads", log([tokened(row, "P-14,P-16")]))
     name = t.name
     clean = {"S2X_CLEAN_RUN": name, "S2X_RUN_ID": f"{name}@q35-sim"}
-    no_p16 = row.replace("P-16", "the coin")
+    no_p16 = tokened(row.replace("P-16", "the coin"), "P-14")
     missing = log(["| E-904 | 2026-11-16 | **A row about nothing in particular** | test |"])
     phases = [{"name": "outside", "env": {}, "runs": [list(x) for x in OUTSIDE]},
               {"name": "inside", "env": clean, "runs": [list(x) for x in INSIDE]},
               {"name": "no_p16", "decisions": log([no_p16]), "env": {}, "runs": [["--check", "--starts", "4"]]},
-              {"name": "no_p16_p14_only", "env": {}, "runs": [["--check", "--starts", "4", "--designs", "p14"]]},
+              {"name": "no_p16_p14_only", "env": clean, "runs": [["--check", "--starts", "4", "--designs", "p14"]]},
+              {"name": "untokened", "decisions": log([row]), "env": clean, "runs": [["--check", "--starts", "4"]]},
               {"name": "missing", "decisions": missing, "env": clean, "runs": [[]]}]
     cfg = base / "q35.json"
     cfg.write_text(json.dumps({"repo": str(ROOT), "phases": phases}), encoding="utf-8")
@@ -582,12 +591,15 @@ def test_the_row_the_reading_names_exists_and_names_both_designs():
     assert re.search(rf'READ_ROW = "{ROW}"', src)
 
 
-def test_outside_a_clean_run_the_check_authorises_once_before_any_work_and_ledgers_nothing(reads):
+def test_outside_a_clean_run_the_check_authorises_once_is_refused_before_any_work_and_ledgers_nothing(reads):
+    """Q-158 (the reader's held-out rule 3): the whole window reaches the held-out years, so outside a clean run the
+    read is refused, even under a row whose token names it."""
     rs = _phase(reads, "outside")
     for r, designs, files in ((rs[0], ["P-14", "P-16"], ALL4), (rs[1], ["P-14"], A1A3)):
         a = _auth(r)
-        assert "error" not in r and r.get("stopped") == "load_calendars", _explain(r)
-        assert len(a) == 1 and r["events"].index(a[0]) == 0 and _work(r) == ["load_calendars"], _explain(r)
+        assert "error" not in r and r.get("rc") == 3 and "stopped" not in r, _explain(r)
+        assert "REFUSED" in r["stdout"] and "held-out rule 3" in r["stdout"], _explain(r)
+        assert len(a) == 1 and r["events"].index(a[0]) == 0 and _work(r) == [], _explain(r)
         assert a[0]["purpose"] == "registered_design" and a[0]["declaration"] == ROW and a[0]["design"] == designs
         assert (a[0]["start"], a[0]["end"]) == ("2020-01-02", "2026-07-16")
         assert not r["ledger_exists"] and r["new"] == []
@@ -621,7 +633,8 @@ def test_inside_a_clean_run_one_ledger_line_a_run(reads):
         who = line["who"]
         assert who["script"] == "scripts/q35_driver.py" and who["clean_run"] == tree.name and who["dirty"] is False
         assert "scripts/q35_openings.py:" in who["caller"].replace("\\", "/") and who["caller"].endswith(":main")
-    assert len(R.read_ledger(tree / R.LEDGER_REL)) == 2
+    # the inside phase's two lines and no_p16_p14_only's one (Q-158: that phase runs inside the clean run too)
+    assert len(R.read_ledger(tree / R.LEDGER_REL)) == 3
 
 
 def test_a_row_that_does_not_admit_the_reading_is_refused_and_nothing_starts(reads):
@@ -632,6 +645,10 @@ def test_a_row_that_does_not_admit_the_reading_is_refused_and_nothing_starts(rea
         assert _work(r) == [] and r["new"] == [] and r["prefix_kept"]
     r = _phase(reads, "no_p16_p14_only")[0]                    # the same row still admits P-14 alone
     assert r.get("stopped") == "load_calendars" and _auth(r)[0]["design"] == ["P-14"], _explain(r)
+    r = _phase(reads, "untokened")[0]                          # Q-158: E-021 as it stands admits no new held-out read
+    assert r.get("rc") == 3 and "error" not in r and "stopped" not in r, _explain(r)
+    assert "REFUSED" in r["stdout"] and "held-out rule 3" in r["stdout"], _explain(r)
+    assert _work(r) == [] and r["new"] == [] and r["prefix_kept"]
 
 
 # ------------------------------------------------------------------------------------------------ the pipeline (slow)
