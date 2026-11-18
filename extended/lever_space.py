@@ -1,0 +1,530 @@
+"""Q-151: the lever space of the Topstep $50K design search (`docs/plans/LEVER_TABLE_topstep50k.md`; the restart plan
+4.3 to 4.4b; the amendments' CHARTER 3.3 (a) and (g), 3.5; E-208) -- every lever's layer, range, step, source, unit,
+dependencies and class, and a loader that reads the rule-derived bounds from the record.
+
+**Sources (3.3 (a)).** A range comes from (1) a verified rule, read by its key; (2) contract arithmetic on verified rules
+and the engine's contract constants (tick values, the registered stand-aside floor), computed here; (3) a declared
+parameter of this table (`DECLARED`, each citing its row or declaration -- never a rule value); or it is (4) **a
+search-year reading, to compute** (2020-01-02 to 2023-12-29, E-208), or (5) **to declare** by a later item. The loader
+refuses (4) (`NotComputed`) and (5) (`NotDeclared`) whatever their keys, refuses every lever leaning on a key whose
+status is not `verified` (`firm_terms.UnverifiedTerm`: this repository's record first, where it holds the key, else
+Stage 2's vendored ledger), and has no range for a dropped lever (`DroppedLever`).
+
+**No rule value is typed here**: every number of a rule-derived bound is read from its key (`rule`) or from the RD-05
+build's term loaders (`extended.modes_terms`, `extended.modes_rules`); `tests/test_lever_space.py` scans this file for
+the read values outside `DECLARED`. It reads rules and configuration only -- never a bar, a trade or a result file.
+"""
+from __future__ import annotations
+
+import math
+import re
+from dataclasses import dataclass, field
+from typing import Any, Callable
+
+from extended import firm_terms as FT
+from extended import modes_rules as MR
+from extended import modes_terms as M
+from extended.firm_terms import UnverifiedTerm, parse
+
+TABLE = "docs/plans/LEVER_TABLE_topstep50k.md"
+TASK = "Q-151"
+CONFIGS = ("TS-S", "TS-N")                  # RD-05 2.1: Topstep $50K, the two price paths
+TRIGGER, SHAPE, POLICY = "trigger", "trade shape", "account policy"
+LAYERS = (TRIGGER, SHAPE, POLICY)
+SEARCHED, FIXED, DROPPED = "searched", "declared", "dropped"
+CLASSES = (SEARCHED, FIXED, DROPPED)
+RULE, ARITH, DECL, COMPUTE, TODECL = "rule", "arithmetic", "declared", "to compute", "to declare"
+SOURCES = (RULE, ARITH, DECL, COMPUTE, TODECL)
+MINUTES_PER_DAY = 24 * 60                   # clock arithmetic, never a rule value
+PM = 12 * 60
+
+
+class LeverRefused(RuntimeError):
+    """A lever whose range may not be loaded at this commit."""
+
+
+class NotComputed(LeverRefused):
+    """The range's source is 'a search-year reading, to compute': no range until that reading exists (3.3 (a))."""
+
+
+class NotDeclared(LeverRefused):
+    """The range's source is 'to declare': a later item fixes it; nothing is chosen here."""
+
+
+class DroppedLever(LeverRefused):
+    """A dropped lever has no range: it is held at its stated setting, or it does not exist."""
+
+
+# ------------------------------------------------------------------------------------------------ the declared table
+
+
+@dataclass(frozen=True)
+class Declared:
+    value: Any
+    cite: str
+
+
+#: the table's own parameters, each citing its source -- never a rule value (a rule value is read by its key)
+DECLARED: dict[str, Declared] = {
+    "sources": Declared(("coin", "p14", "p16", "rl3"),
+                        "E-208: the naive coin; P-14's breakout timing and P-16's marks, coin-sided; RL3's NY AM "
+                        "tickets -- the trigger library's sources (Wave 3.3)"),
+    "latency": Declared((5, 3, 2), "E-202 (2)(c); CHARTER 3.3 (g) as amended: five the reference, three and two "
+                        "counted variants"),
+    "latency.reference": Declared(5, "E-202 (2)(c): the five-minute cell, reported beside every finalist"),
+    "latency_free": Declared(("p16", "rl3"), "E-203 B-2 (P-16 scheduled); E-204 (RL3: alert 08:30, live 09:00)"),
+    "entry_types": Declared(("market", "limit"), "E-202 (2)(d); F-04 6.1 R-4; the triage: a coin-sided limit is "
+                            "exact (F-04 5.3)"),
+    "limit_window_min": Declared(30, "F-04 6.1: a limit works from its live time to 30 minutes later, a news "
+                                 "window's start, or the walk's last entry bar, the earliest"),
+    "side_rule": Declared(("coin",), "CHARTER 3.2 and 3.5 as amended: the coin side; the traded side pending O-4"),
+    "windows_ct": Declared((("asia", "18:00"), ("london", "02:00"), ("ny", "08:30")),
+                           "Stage 2 resolved_coin.WINDOWS (D-525 (3)): asia from 18:00, london from 02:00, us from "
+                           "08:30 CT; the hour before 18:00 is 'evening' here (an interpretation, Q-151)"),
+    "sessions": Declared(("evening", "asia", "london", "ny_am", "ny_pm"),
+                         "the restart plan 4.4b (Asia, London, NY AM, NY PM) and the evening hour the firm allows"),
+    "mark_step_min": Declared(5, "Stage 2 D-525 (2), resolved_coin.MARK_STEP: an offer mark every five minutes"),
+    "mixes": Declared(("MNQ", "mixed"), "F-04 6.1: micros only, or as many minis as fit and the rest micros "
+                      "(D-324); minis only dropped"),
+    "policies": Declared(("steady", "flip"), "RD-05 2.6; E-196 (the operator's flip days)"),
+    "session_rules": Declared(("one", "all", "cap"), "F-04 6.1 `q`: the operator's 'when to stop'"),
+    "price_paths": Declared(("standard", "naf"), "RD-03 2.4 (L-N); RD-05 2.1 (TS-S, TS-N)"),
+    "payout_paths": Declared(("standard", "consistency"), "RD-05 2.2 (TS/std, TS/con); chosen at activation"),
+    "evals_max": Declared(7, "RD-03 2.2 (L-I): C = 5 (Stage 2 D-34's bound) or 7, two above it; no rule caps "
+                          "evaluations (`combine_count_limit`)"),
+    "banking": Declared(("on", "off"), "RD-03 2.2: evaluations bought while a pass waits, or not (Stage 2 D-08)"),
+    "purchase_rules": Declared(("replace", "house_stop", "house_zero"),
+                               "RD-03 2.3 (L-H): the base's replacement, and the two house-money rules (gaming P, "
+                               "E-134 (2))"),
+    "purchase_budget_max": Declared(20, "Stage 2 D-501: at most 20 evaluation purchases a month; no rule limits "
+                                    "starts (`account_start_rate_limit`)"),
+    "payout_first": Declared(("elig", "lock"), "RD-02 6.1 L1"),
+    "payout_cadence": Declared(("every_eligible_close",), "RD-02 6.1: after the first payout, every eligible close"),
+    "payout_method": Declared(("aeropay",), "RD-02 7.1; Stage 2 D-24: Aeropay, the US baseline"),
+    "payout_amounts": Declared(("max", "half"), "RD-02 6.1 L2: the maximum, or half of it (`payout_frac` 0.5)"),
+}
+
+
+def declared(name: str) -> Any:
+    return DECLARED[name].value
+
+
+# ------------------------------------------------------------------------------------------------ the rule reader
+
+
+def rule(key: str) -> Any:
+    """A verified rule's value: this repository's record where it holds the key (its re-read supersedes; any status
+    but `verified` is refused), else Stage 2's vendored ledger (refused unless `verified`)."""
+    try:
+        FT.record_entry(key)
+    except KeyError:
+        return FT.stage2_value(key)
+    return FT.record_value(key)
+
+
+def rule_status(key: str) -> tuple[str, str]:
+    """(ledger, status) of a key, for the table's audit: 'record' or 'stage2'."""
+    try:
+        return "record", str(FT.record_entry(key).get("status"))
+    except KeyError:
+        e = FT._stage2().get(key)
+        if e is None:
+            raise KeyError(f"no rule {key!r} in either ledger") from None
+        return "stage2", str(e.get("status"))
+
+
+def _clock(text: str) -> int:
+    h, m = text.split(":")
+    return int(h) * 60 + int(m)
+
+
+def trading_day() -> dict[str, int]:
+    """The firm's trading day from `trading_hours` (8284206): the reopen and the flat, wall-clock minutes CT; the last
+    new entry from the verified note's 'Avoid opening new positions after h:mm PM CT'; and the day's length."""
+    v = rule("trading_hours")
+    reopen = _clock(parse(r"reopen_(\d\d:\d\d)_ct", v, "trading_hours").group(1))
+    flat = _clock(parse(r"flat_by_(\d\d:\d\d)_ct", v, "trading_hours").group(1))
+    m = parse(r"Avoid opening new positions after (?P<clock>\d{1,2}:\d\d) PM CT", M.s2_note("trading_hours"),
+              "trading_hours note (8284206)")
+    day = MINUTES_PER_DAY
+    last_entry = _clock(m.group("clock")) + PM                # a 12-hour clock's PM, as the page writes it
+    length = (flat - reopen) % day
+    return {"reopen": reopen, "flat": flat, "last_entry": last_entry, "length": length,
+            "last_entry_offset": (last_entry - reopen) % day}
+
+
+def session_windows() -> dict[str, tuple[int, int | None]]:
+    """The sessions as [start, end) in minutes after the reopen; `ny` is split at T2b's boundary (to declare), so
+    `ny_am` ends and `ny_pm` starts at None. Every boundary must fall inside the firm's day."""
+    td = trading_day()
+    starts = [(name, (_clock(t) - td["reopen"]) % MINUTES_PER_DAY) for name, t in declared("windows_ct")]
+    for name, off in starts:
+        if not 0 < off < td["length"]:
+            raise LeverRefused(f"session boundary {name!r} lies outside the firm's trading day (trading_hours)")
+    edges = [0] + [off for _, off in starts] + [td["length"]]
+    if edges != sorted(edges):
+        raise LeverRefused("the declared session boundaries are out of order against the firm's day")
+    names = ("evening", "asia", "london", "ny")
+    out: dict[str, tuple[int, int | None]] = dict(zip(names, zip(edges, edges[1:])))
+    ny_start, ny_end = out.pop("ny")
+    out["ny_am"], out["ny_pm"] = (ny_start, None), (None, ny_end)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ ranges
+
+
+@dataclass(frozen=True)
+class Range:
+    """A loaded range: `choices` (values), `interval` (lo, hi, step; step None where it is set by another lever), or
+    `fixed` (one value). `read` holds every rule value it was computed from, by key."""
+
+    lever: str
+    kind: str
+    values: tuple[Any, ...] | None = None
+    lo: float | None = None
+    hi: float | None = None
+    step: float | None = None
+    unit: str = ""
+    read: dict[str, Any] = field(default_factory=dict)
+    detail: dict[str, Any] = field(default_factory=dict)
+
+
+def _read(*keys: str) -> dict[str, Any]:
+    return {k: rule(k) for k in keys}
+
+
+def stop_caps() -> dict[str, Any]:
+    """S1's caps, contract arithmetic (before costs): the narrowest stop is the registered rule's stand-aside floor
+    (Stage 2 D-271 (3), D-272, read from its config), and the widest is the stop at which one micro's stop-out fills the
+    larger start room (`combine_mll`, `xfa_mll_start`) at the micro's tick value."""
+    sa = M.registered_stand_aside()
+    floor_ticks = max(int(sa["combine"][1]), int(sa["funded"][1]))
+    tv = M.tick_values()["MNQ"]
+    room = max(float(rule("combine_mll")), -float(rule("xfa_mll_start")))
+    cap_ticks = int(math.floor(room / tv + 1e-9))
+    if cap_ticks <= floor_ticks:
+        raise LeverRefused("the stop's cap is not above its floor")
+    return {"floor_ticks": floor_ticks, "cap_ticks": cap_ticks, "tick_value_mnq": tv, "room": room,
+            "source": sa["source"]}
+
+
+def _sources() -> Range:
+    return Range("T1", "choices", values=tuple(declared("sources")), unit="trigger source")
+
+
+def _session() -> Range:
+    td = trading_day()
+    return Range("T2", "choices", values=tuple(declared("sessions")), unit="session of the firm's day",
+                 read={"trading_hours": rule("trading_hours")},
+                 detail={"windows": session_windows(), "day": td})
+
+
+def _entry_window() -> Range:
+    td = trading_day()
+    return Range("T3", "interval", lo=0.0, hi=float(td["last_entry_offset"]), step=float(declared("mark_step_min")),
+                 unit="minutes after the reopen (an offer mark's time inside its session)",
+                 read={"trading_hours": rule("trading_hours")}, detail={"day": td})
+
+
+def _latency() -> Range:
+    vals = tuple(declared("latency"))
+    if vals[0] != declared("latency.reference"):
+        raise LeverRefused("the reference latency must come first")
+    return Range("T4", "choices", values=vals, unit="clock minutes from alert to order",
+                 detail={"reference": declared("latency.reference"), "latency_free": declared("latency_free")})
+
+
+def _entry_type() -> Range:
+    return Range("T5", "choices", values=tuple(declared("entry_types")), unit="order type")
+
+
+def _limit_window() -> Range:
+    return Range("T6", "fixed", values=(declared("limit_window_min"),), unit="minutes a limit works")
+
+
+def _side() -> Range:
+    return Range("T8", "fixed", values=tuple(declared("side_rule")), unit="side rule")
+
+
+def _ratio() -> Range:
+    g = M.grid_w()
+    return Range("S2", "interval", lo=min(g), hi=max(g), step=None, unit="target / stop (target floor(w s) ticks)",
+                 detail={"rd05_grid": g})
+
+
+def _risk(kind: str) -> Range:
+    caps = stop_caps()
+    lo = caps["floor_ticks"] * caps["tick_value_mnq"]
+    if kind == M.EVAL:
+        key, hi, lid = "combine_mll", float(rule("combine_mll")), "S3"
+    else:
+        key, hi, lid = "xfa_mll_start", -float(rule("xfa_mll_start")), "S4"
+    return Range(lid, "interval", lo=lo, hi=hi, step=None,
+                 unit="dollars at the stop (share of the start room beside); whole micros at the trade's stop",
+                 read={key: rule(key)}, detail={"lo_share": lo / hi, "hi_share": 1.0, "caps": caps})
+
+
+def _mix() -> Range:
+    return Range("S5", "choices", values=tuple(declared("mixes")), unit="instrument mix",
+                 read=_read("combine_position_size_limit", "funded_scaling_plan"),
+                 detail={"micros_per_mini": M.micros_per_mini()})
+
+
+def _policy_eval() -> Range:
+    t = M.eval_terms("TS-S")
+    k = MR.k_eval(t)
+    flips = {w: MR.r_flip(M.EVAL, t, w) for w in M.grid_w()}
+    return Range("A1", "choices", values=tuple(declared("policies")), unit="evaluation sizing policy",
+                 read=_read("combine_profit_target", "combine_consistency_max_day_frac", "combine_mll"),
+                 detail={"k_E": k, "r_flip_by_w": flips})
+
+
+def _policy_funded() -> Range:
+    det = {}
+    for mode in ("TS/std", "TS/con"):
+        f = M.funded_terms(mode)
+        det[mode] = {"k_F": MR.k_funded(f)["k_F"], "b_star": MR.b_star(f)["b_star"],
+                     "r_flip_by_w": {w: MR.r_flip(M.FUNDED, f, w) for w in M.grid_w()}}
+    return Range("A2", "choices", values=tuple(declared("policies")), unit="funded sizing policy",
+                 read=_read("xfa_std_winning_days", "xfa_cons_min_days", "xfa_cons_max_day_frac", "xfa_std_cap",
+                            "xfa_cons_cap", "payout_max_frac_of_balance", "xfa_mll_start"), detail=det)
+
+
+def _session_rule() -> Range:
+    return Range("A3", "choices", values=tuple(declared("session_rules")), unit="trades a session",
+                 read=_read("combine_consistency_max_day_frac", "xfa_cons_max_day_frac", "combine_profit_target"))
+
+
+def _price_path() -> Range:
+    r = _read("subscription_fee", "activation_fee", "subscription_fee_naf_50k", "activation_fee_naf_50k")
+    return Range("A4", "choices", values=tuple(declared("price_paths")), unit="evaluation price path", read=r,
+                 detail={"standard": (r["subscription_fee"], r["activation_fee"]),
+                         "naf": (r["subscription_fee_naf_50k"], r["activation_fee_naf_50k"])})
+
+
+def _payout_path() -> Range:
+    r = _read("xfa_payout_path_choice", "xfa_std_cap", "xfa_cons_cap", "xfa_std_winning_days",
+              "xfa_std_winning_day_min", "xfa_cons_min_days", "xfa_cons_max_day_frac")
+    parse(r"chosen_at_activation", r["xfa_payout_path_choice"], "xfa_payout_path_choice")
+    return Range("A5", "choices", values=tuple(declared("payout_paths")), unit="funded payout path", read=r)
+
+
+def _seats() -> Range:
+    n = int(rule("max_active_funded_accounts"))
+    return Range("A6", "interval", lo=1.0, hi=float(n), step=1.0, unit="funded accounts at once",
+                 read={"max_active_funded_accounts": rule("max_active_funded_accounts")})
+
+
+def _evals() -> Range:
+    v = rule("combine_count_limit")
+    parse(r"^unlimited$", v, "combine_count_limit")         # a stated cap would bound C instead of the declaration
+    return Range("A7", "interval", lo=1.0, hi=float(declared("evals_max")), step=1.0,
+                 unit="evaluations running at once", read={"combine_count_limit": v})
+
+
+def _banking() -> Range:
+    v = rule("hold_queue_behaviour")
+    parse(r"hold_until_slot_frees", v, "hold_queue_behaviour")
+    return Range("A8", "choices", values=tuple(declared("banking")), unit="banking rule",
+                 read={"hold_queue_behaviour": v})
+
+
+def _purchase_rule() -> Range:
+    return Range("A10", "choices", values=tuple(declared("purchase_rules")), unit="evaluation-purchase rule",
+                 read=_read("combine_cancellation"))
+
+
+def _purchase_budget() -> Range:
+    v = rule("account_start_rate_limit")
+    parse(r"^none_stated$", v, "account_start_rate_limit")  # a stated limit would bound the budget instead
+    return Range("A11", "interval", lo=1.0, hi=float(declared("purchase_budget_max")), step=1.0,
+                 unit="evaluation purchases a month", read={"account_start_rate_limit": v},
+                 detail={"month_sessions": M.declared("month")})
+
+
+def _back2funded() -> Range:
+    r = _read("back2funded_max_reactivations", "back2funded_reactivation_fee_50k", "back2funded_window_days",
+              "back2funded_eligibility", "back2funded_seat_count")
+    return Range("A12", "interval", lo=0.0, hi=float(r["back2funded_max_reactivations"]), step=1.0,
+                 unit="reactivations per funded account", read=r,
+                 detail={"window_sessions": M.calendar_to_sessions(float(r["back2funded_window_days"]), wait=False)})
+
+
+def _payout_first() -> Range:
+    return Range("A18", "choices", values=tuple(declared("payout_first")), unit="first-request rule",
+                 read=_read("xfa_lock_at", "payout_min", "xfa_std_winning_days", "xfa_std_winning_day_min"))
+
+
+def _payout_amount() -> Range:
+    return Range("A19", "choices", values=tuple(declared("payout_amounts")), unit="request amount",
+                 read=_read("payout_max_frac_of_balance", "xfa_std_cap", "payout_min",
+                            "payout_request_amount_choice"))
+
+
+def _payout_cadence() -> Range:
+    return Range("A20", "fixed", values=tuple(declared("payout_cadence")), unit="request cadence",
+                 read=_read("require_profit_since_payout"))
+
+
+def _payout_method() -> Range:
+    r = _read("payout_lag_days_aeropay", "payout_fee", "payout_lag_days_ach", "payout_fee_ach")
+    if not (float(r["payout_lag_days_aeropay"]) <= float(r["payout_lag_days_ach"])
+            and float(r["payout_fee"]) <= float(r["payout_fee_ach"])):
+        raise LeverRefused("Aeropay no longer dominates ACH on the record: the payout method becomes a lever")
+    return Range("A21", "fixed", values=tuple(declared("payout_method")), unit="payout method", read=r)
+
+
+def _hold_expiry() -> Range:
+    return Range("A9", "choices", values=("exp_none", "exp_30"), unit="the hold's expiry, both readings",
+                 read=_read("hold_expiry_days"))
+
+
+# ------------------------------------------------------------------------------------------------ the levers
+
+
+@dataclass(frozen=True)
+class Lever:
+    id: str
+    layer: str
+    name: str
+    cls: str
+    source: str
+    keys: tuple[str, ...]
+    depends: tuple[str, ...]
+    resolver: Callable[[], Range] | None = None
+
+
+def _L(i, layer, name, cls, source, keys="", depends="", resolver=None) -> Lever:
+    return Lever(i, layer, name, cls, source, tuple(keys.split()), tuple(depends.split()), resolver)
+
+
+#: the table's rows, in its order (the doc's table must list exactly these, `tests/test_lever_space.py`)
+LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
+    _L("T1", TRIGGER, "signal source", SEARCHED, DECL, "", "T2 T3 T4 T5 A16", _sources),
+    _L("T2", TRIGGER, "session", SEARCHED, ARITH, "trading_hours", "T1 T2b T3", _session),
+    _L("T2b", TRIGGER, "NY AM / NY PM boundary", FIXED, TODECL, "", "T2"),
+    _L("T3", TRIGGER, "entry window (offer marks)", SEARCHED, ARITH, "trading_hours", "T2 T4 A3", _entry_window),
+    _L("T4", TRIGGER, "latency L", SEARCHED, DECL, "", "T1 T3 T5", _latency),
+    _L("T5", TRIGGER, "entry type", SEARCHED, DECL, "", "T1 T4 T6", _entry_type),
+    _L("T6", TRIGGER, "limit working window", FIXED, DECL, "", "T5", _limit_window),
+    _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2"),
+    _L("T8", TRIGGER, "side rule", FIXED, DECL, "", "T1 T5 A15", _side),
+    _L("S1", SHAPE, "stop width", SEARCHED, COMPUTE, "combine_mll xfa_mll_start", "T2 S2 S3 S4 S5"),
+    _L("S2", SHAPE, "reward-to-risk w", SEARCHED, DECL, "", "S1 A1 A2", _ratio),
+    _L("S3", SHAPE, "dollar risk, evaluation", SEARCHED, ARITH, "combine_mll combine_position_size_limit",
+       "S1 S5 A1", lambda: _risk(M.EVAL)),
+    _L("S4", SHAPE, "dollar risk, funded", SEARCHED, ARITH, "xfa_mll_start funded_scaling_plan", "S1 S5 A2 A5",
+       lambda: _risk(M.FUNDED)),
+    _L("S5", SHAPE, "instrument mix", SEARCHED, DECL, "combine_position_size_limit funded_scaling_plan", "S3 S4",
+       _mix),
+    _L("S6", SHAPE, "maximum hold (time stop)", DROPPED, DECL, "trading_hours", ""),
+    _L("S7", SHAPE, "breakeven stop move", DROPPED, DECL, "prohibited_strategy_auto_breakeven_sim_fills", "T1"),
+    _L("S8", SHAPE, "partial exits, scaling in", DROPPED, DECL, "", ""),
+    _L("S9", SHAPE, "contracts", DROPPED, ARITH, "", "S1 S3 S4 S5"),
+    _L("A1", POLICY, "steady or flip, evaluation", SEARCHED, ARITH,
+       "combine_profit_target combine_consistency_max_day_frac combine_mll", "S2 S3", _policy_eval),
+    _L("A2", POLICY, "steady or flip, funded", SEARCHED, ARITH,
+       "xfa_std_winning_days xfa_cons_min_days xfa_cons_max_day_frac xfa_std_cap xfa_cons_cap "
+       "payout_max_frac_of_balance xfa_mll_start", "S2 S4 A5", _policy_funded),
+    _L("A3", POLICY, "session rule q (when to stop)", SEARCHED, DECL,
+       "combine_consistency_max_day_frac xfa_cons_max_day_frac combine_profit_target", "T3 A5", _session_rule),
+    _L("A4", POLICY, "price path", SEARCHED, RULE,
+       "subscription_fee activation_fee subscription_fee_naf_50k activation_fee_naf_50k", "A12", _price_path),
+    _L("A5", POLICY, "payout path", SEARCHED, RULE,
+       "xfa_payout_path_choice xfa_std_cap xfa_cons_cap xfa_std_winning_days xfa_std_winning_day_min "
+       "xfa_cons_min_days xfa_cons_max_day_frac", "A2 A3 A18 A19", _payout_path),
+    _L("A6", POLICY, "funded seats", SEARCHED, RULE, "max_active_funded_accounts", "A7 A8 A15", _seats),
+    _L("A7", POLICY, "evaluations at once", SEARCHED, DECL, "combine_count_limit", "A6 A8 A11", _evals),
+    _L("A8", POLICY, "banking while a pass waits", SEARCHED, DECL, "hold_queue_behaviour", "A6 A7 A9", _banking),
+    _L("A9", POLICY, "the hold's expiry (two readings)", FIXED, DECL, "hold_expiry_days", "A8 A10", _hold_expiry),
+    _L("A10", POLICY, "evaluation-purchase rule", SEARCHED, DECL, "combine_cancellation", "A9 A11", _purchase_rule),
+    _L("A11", POLICY, "evaluation-purchase budget", SEARCHED, DECL, "account_start_rate_limit", "A7 A10",
+       _purchase_budget),
+    _L("A12", POLICY, "Back2Funded reactivations", SEARCHED, RULE,
+       "back2funded_max_reactivations back2funded_reactivation_fee_50k back2funded_window_days "
+       "back2funded_eligibility back2funded_seat_count", "A4 A6 A18", _back2funded),
+    _L("A13", POLICY, "resets", DROPPED, DECL, "reset_rebill_push", "A4"),
+    _L("A14", POLICY, "daily-loss-limit election", DROPPED, DECL, "dll_offer_status", "S3 S4"),
+    _L("A15", POLICY, "routing (which account takes a trade)", SEARCHED, TODECL, "", "A6 A7 A16 T8"),
+    _L("A16", POLICY, "signal mix: shares and account assignment", SEARCHED, TODECL, "", "T1 A15"),
+    _L("A17", POLICY, "state rule (sizing by distance to floor or target)", SEARCHED, TODECL, "", "S3 S4 A1 A2"),
+    _L("A18", POLICY, "first payout request (RD-02 L1)", SEARCHED, DECL,
+       "xfa_lock_at payout_min xfa_std_winning_days xfa_std_winning_day_min", "A5 A19", _payout_first),
+    _L("A19", POLICY, "request amount (RD-02 L2)", SEARCHED, DECL,
+       "payout_max_frac_of_balance xfa_std_cap payout_min payout_request_amount_choice", "A5 A18", _payout_amount),
+    _L("A20", POLICY, "request cadence", FIXED, DECL, "require_profit_since_payout", "A18", _payout_cadence),
+    _L("A21", POLICY, "payout method", FIXED, DECL,
+       "payout_lag_days_aeropay payout_fee payout_lag_days_ach payout_fee_ach", "", _payout_method),
+)}
+
+
+def bounds(lever_id: str) -> Range:
+    """The lever's range, or a refusal: dropped (`DroppedLever`), 'to compute' (`NotComputed`), 'to declare'
+    (`NotDeclared`), or any key not verified (`UnverifiedTerm`)."""
+    lv = LEVERS[lever_id]
+    if lv.cls == DROPPED:
+        raise DroppedLever(f"{lever_id} ({lv.name}) is dropped: no range ({TABLE})")
+    if lv.source == COMPUTE:
+        raise NotComputed(f"{lever_id} ({lv.name}): its range is a search-year reading, to compute -- refused until "
+                          f"it exists (CHARTER 3.3 (a); E-208)")
+    if lv.source == TODECL:
+        raise NotDeclared(f"{lever_id} ({lv.name}): its range is to declare -- refused ({TABLE})")
+    for k in lv.keys:
+        rule(k)                                          # refuses any key not verified, before anything is computed
+    if lv.resolver is None:
+        raise LeverRefused(f"{lever_id} has no resolver")
+    return lv.resolver()
+
+
+def space() -> dict[str, Range]:
+    """Every lever whose range loads at this commit."""
+    out = {}
+    for i in LEVERS:
+        try:
+            out[i] = bounds(i)
+        except (LeverRefused, UnverifiedTerm):
+            pass
+    return out
+
+
+def refusals() -> dict[str, str]:
+    """Every lever refused at this commit, with its reason's class."""
+    out = {}
+    for i in LEVERS:
+        try:
+            bounds(i)
+        except (LeverRefused, UnverifiedTerm) as e:
+            out[i] = type(e).__name__
+    return out
+
+
+def latency_cells(source: str) -> tuple[int | None, ...]:
+    """T4's cells for a source: every declared L, counted (CHARTER 3.3 (g)); one latency-free cell for P-16 and RL3."""
+    if source not in declared("sources"):
+        raise ValueError(f"unknown source {source!r}")
+    return (None,) if source in declared("latency_free") else tuple(declared("latency"))
+
+
+def check_design(settings: dict[str, Any]) -> None:
+    """Refuse a combination no verified rule settles: Back2Funded under the No Activation Fee path
+    (`back2funded_fee_by_pricing_path`, RD-03 2.5) is loaded only once that key is verified."""
+    if settings.get("A4") == "naf" and float(settings.get("A12", 0) or 0) > 0:
+        rule("back2funded_fee_by_pricing_path")
+    lat = settings.get("T4")
+    src = settings.get("T1")
+    if src is not None and lat is not None and lat not in latency_cells(src):
+        raise LeverRefused(f"latency {lat!r} is not a cell of source {src!r}")
+
+
+def counts() -> dict[str, dict[str, int]]:
+    """Levers by layer and class."""
+    out: dict[str, dict[str, int]] = {layer: {c: 0 for c in CLASSES} for layer in LAYERS}
+    for lv in LEVERS.values():
+        out[lv.layer][lv.cls] += 1
+    return out
+
+
+__all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
+           "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
+           "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts"]
