@@ -1,0 +1,313 @@
+## 1. manifests and hashes
+breakeven_fidelity_2.csv sha256 matches manifest: True | rows 5702 manifest 5702 | commit b407fbb85c43ac43d46796f2aaa0d906ddaf62fd dirty False | exploratory True | prereg_id None | seed 20261920 | variant_count 9 | timestamp 2026-11-18T18:34:13+00:00
+breakeven_fidelity_2_starts.csv sha256 matches manifest: True | rows 40584 manifest 40584 | commit b407fbb85c43ac43d46796f2aaa0d906ddaf62fd dirty False | exploratory True | prereg_id None | seed 20261920 | variant_count 9 | timestamp 2026-11-18T18:34:12+00:00
+summary manifest names the start file's sha256: True
+reference a3_brk30_cb20_gate.csv hash equals manifest: True
+reference rc_reentry_screen.csv hash equals manifest: True
+reference rc_s100_all_gate.csv hash equals manifest: True
+reference rc_s150_all_gate.csv hash equals manifest: True
+reference user_journey.csv hash equals manifest: True
+
+## 2. the start file
+columns equal manifest: True | columns equal summary manifest's list: True
+rows by (design, rules, arm): [1691] groups 24
+alt non-empty: 0 | exact_runs_differing non-empty: 0
+start dates: 2020-01-02 to 2026-07-16 | any after 2026-07-16 : False
+one date per start_day across all groups: True | start days 0 to 1690 | calendar sessions 1691
+latest session index read by any start (start_day + observed - 1): 1690 | last calendar index 1690 | observed = min(252, sessions left) on every row: True
+
+## 3. per-row record identities (every design, rule set, arm, start)
+net = payouts received less fees at every observed month end: violations 0 | largest |received - net - fees| 1.42e-07
+fees non-negative and never falling month to month: violations 0
+payouts = len(pay_days) = len(pay_cash): violations 0 | event days ordered and within observed: violations 0
+first_payout/first_payout_cash/first_pass/first_funded = first listed event: violations 0
+p_months_ahead re-made from net_month_1..3 (starts with 63 sessions): differing rows 0 | months_ahead column: differing rows 0
+evenness columns re-made from nets and payouts (252-session starts; blank otherwise): differing rows {'share_months_positive': 0, 'longest_months_without_payout': 0, 'sd_monthly_net': 0, 'payouts_per_month': 0, 'payout_cash_per_month': 0, 'largest_month_share': 0}
+break_even_day <= every month end whose net is >= 0: violations 0 | fell_back = 1 where a later month end is below zero: violations 0 | deepest fall >= 0: violations 0 | blanks without break-even: violations 0
+spent_before_first_payout >= the cash below the start at every month end before it: violations 0 | spent columns negative: 0
+
+## 4. stage2 start rows against Stage 2's registered user_journey.csv (section start)
+p14 verdict: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+p14 point: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+p15 verdict: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+p15 point: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+p16 verdict: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+p16 point: starts 1691 vs registered 1691; columns differing beyond 1e-6: none; largest money difference 0
+
+## 5. scorecard, extra and path rows re-made from the start file
+rows re-made: 3456; compared 3456; differing (value 1e-9 relative or n) 0; my rows absent from the file 0; file rows I did not re-make (other than mdd_P) 0
+
+## 6. internal identities over the summary
+card P = extra P; P = mean of the three shares; bankroll P ordered; spent-over ordered; CVaR10 <= S5a; S1 = path p90; S3b = path p90 -- problems: 0 []
+share rows (scorecard, extra, path, honesty and the paired rare coverage): 1326 | finite 1326 | outside [0, 1]: 0
+paired rare_coverage outside [0,1]: 0 | trades shares outside [0,1]: 0 | gate shares/probabilities outside [0,1]: 0
+start file share_months_positive outside [0,1]: 0
+start file largest_month_share outside [0,1]: 0
+start file fell_back outside [0,1]: 0
+
+## 7. gate rows
+p14 (a3_brk30_cb20_gate.csv): 0 % gate rows 2 (shifts ['lower_bound', 'point'], rtp ['False']); registered rows != file: 0 of 30; stage2 rows != file (1e-6 rel): 0
+p15 (rc_s100_all_gate.csv): 0 % gate rows 2 (shifts ['lower_bound', 'point'], rtp ['False']); registered rows != file: 0 of 30; stage2 rows != file (1e-6 rel): 0
+p16 (rc_s150_all_gate.csv): 0 % gate rows 2 (shifts ['lower_bound', 'point'], rtp ['False']); registered rows != file: 0 of 30; stage2 rows != file (1e-6 rel): 0
+ruin_probability over every gate row: max 0.0
+pf_growth_on_base_p50 at lower_bound, every design and rule set above zero: True
+paths column = 500 on every gate row: True
+gate table (rules as columns), the measures beside growth:
+rules                 both  delay5  registered  stage2  stop_first
+design shift                                                      
+p14    lower_bound 1.50394 1.50481     1.45595 1.45595     1.45554
+       point       1.62995 1.62995     1.58549 1.58549     1.58397
+p15    lower_bound 1.34716 1.34706     1.31476 1.31476     1.31553
+       point       1.40641 1.40641     1.35236 1.35236      1.3509
+p16    lower_bound 1.54105  1.5406     1.50042 1.50042     1.50103
+       point       1.57863 1.57863     1.54372 1.54372     1.54337
+rules                 both  delay5  registered  stage2  stop_first
+design shift                                                      
+p14    lower_bound 3351.36 3351.36     3449.31 3449.31     3449.29
+       point       2939.18 2939.18        3052    3052        3052
+p15    lower_bound 3834.13 3827.78        3848    3848        3848
+       point          3648    3648     3815.17 3815.17     3815.17
+p16    lower_bound    3648    3648     3747.24 3747.24      3747.2
+       point       3602.29 3602.29        3652    3652        3652
+rules               both  delay5  registered  stage2  stop_first
+design shift                                                    
+p14    lower_bound     0       0           0       0           0
+       point           0       0           0       0           0
+p15    lower_bound     0       0           0       0           0
+       point           0       0           0       0           0
+p16    lower_bound     0       0           0       0           0
+       point           0       0           0       0           0
+rules                 both  delay5  registered  stage2  stop_first
+design shift                                                      
+p14    lower_bound 2984.13 2976.31     3176.13 3176.13     3157.77
+       point       2798.83 2800.95     2819.39 2819.39      2826.4
+p15    lower_bound 3402.65 3427.14     3439.98 3439.98     3430.02
+       point       3222.33 3222.33     3435.21 3435.21     3460.07
+p16    lower_bound 3074.99 3074.99     3206.47 3206.47     3214.25
+       point       2977.51 2977.51     3028.29 3028.29     3025.33
+rules               both  delay5  registered  stage2  stop_first
+design shift                                                    
+p14    lower_bound    17      17          17      17          17
+       point          17      17          17      17          17
+p15    lower_bound    17      17          18      18          18
+       point          17      17          17      17          17
+p16    lower_bound    19      19          20      20          20
+       point          19      19          20      20          20
+rules                    both     delay5  registered     stage2  stop_first
+design shift                                                               
+p14    lower_bound -0.0808698 -0.0808698  -0.0846709 -0.0846709  -0.0848273
+       point       -0.0216696 -0.0216696  -0.0236894 -0.0236894  -0.0238459
+p15    lower_bound -0.0502036 -0.0501671  -0.0529371 -0.0529371   -0.053038
+       point       -0.0259689 -0.0259689  -0.0277757 -0.0277757  -0.0278509
+p16    lower_bound -0.0535221 -0.0535137   -0.060406  -0.060406  -0.0603979
+       point       -0.0152048 -0.0151964   -0.021167  -0.021167   -0.021209
+
+## 8. trades section
+groups (design, R): 36 | problems: 0 []
+changed_kind by design and R (trades whose exit kind differs from stage2's):
+rules        both  delay5  stage2  stop_first
+design rr                                    
+p14    0.25    54      54       0           1
+       0.50   177     177       0           2
+       0.75   343     343       0           3
+       1.00   493     493       0           7
+       1.25   594     594       0           2
+       1.50   697     696       0           2
+       1.75   708     708       0           1
+       2.00   737     737       0           0
+       2.25   782     782       0           0
+       2.50   824     824       0           0
+       2.75   843     843       0           0
+       3.00   872     872       0           0
+p15    0.25   403     403       0           2
+       0.50  1352    1352       0           6
+       0.75  2458    2459       0          22
+       1.00  3564    3564       0          22
+       1.25  4441    4441       0          14
+       1.50  5138    5137       0          10
+       1.75  5604    5620       0           5
+       2.00  5853    5853       0           4
+       2.25  6139    6139       0           2
+       2.50  6346    6346       0           2
+       2.75  6520    6520       0           1
+       3.00  6665    6663       0           3
+p16    0.25   793     793       0           2
+       0.50  2310    2311       0          22
+       0.75  3775    3775       0          19
+       1.00  4751    4751       0          10
+       1.25  5175    5188       0           6
+       1.50  5438    5438       0           2
+       1.75  5623    5623       0           1
+       2.00  5777    5777       0           3
+       2.25  5918    5918       0           5
+       2.50  6008    6008       0           5
+       2.75  6056    6056       0           5
+       3.00  6031    6031       0           4
+changed_gross summed over R:
+rules   both  delay5  stage2  stop_first
+design                                  
+p14     7124    7123       0          18
+p15    54483   54497       0          93
+p16    57655   57669       0          84
+rc_reentry_screen.csv rc_s100_all rows: 1 | its candidates column: [295296.0] | this file's p15 stage2 trades at every R: [295296.0]
+
+## 9. paired rows re-made from the start file (RD-02 9.2)
+paired values compared 396; differing 0; problems 0 []
+paired 'interval' rows (no interval, with the reason): 6 design      rules     arm  block                                   note
+   p14 stop_first verdict judged              identical on these trades
+   p14 stop_first   point    all no spread across the separated windows
+   p14 stop_first   point judged              identical on these trades
+   p16 stop_first verdict    all no spread across the separated windows
+   p16 stop_first   point    all no spread across the separated windows
+   p16 stop_first   point judged no spread across the separated windows
+honesty settings present (h, n_w): [(63, 5), (63, 13)] | shapes per setting: [21, 21] | n per row: [20000]
+honesty: coverage + miss_above + miss_below = 1 on every shape: True
+
+the paired P differences (corrected less stage2; ahead-average units), as re-made:
+  p14 stop_first verdict all    mean +0.000205 n 1629 n_w 13 signs 1/12/0 ci90 [-0.000318, +0.001132] mdd 0.001081 label 0.0
+  p14 stop_first verdict judged mean +0.000000 n 595 n_w 5 signs 0/5/0 ci90 [+nan, +nan] mdd nan label nan
+  p14 stop_first point   all    mean -0.000205 n 1629 n_w 13 signs 0/13/0 ci90 [+nan, +nan] mdd nan label nan
+  p14 stop_first point   judged mean +0.000000 n 595 n_w 5 signs 0/5/0 ci90 [+nan, +nan] mdd nan label nan
+  p14 delay5     verdict all    mean +0.014119 n 1629 n_w 13 signs 7/2/4 ci90 [-0.005451, +0.046965] mdd 0.039039 label 0.0
+  p14 delay5     verdict judged mean +0.002801 n 595 n_w 5 signs 3/1/1 ci90 [-0.039175, +0.058222] mdd 0.070194 label 0.0
+  p14 delay5     point   all    mean +0.019030 n 1629 n_w 13 signs 7/0/6 ci90 [-0.017311, +0.039289] mdd 0.042155 label 0.0
+  p14 delay5     point   judged mean +0.020728 n 595 n_w 5 signs 4/0/1 ci90 [-0.013219, +0.068245] mdd 0.058710 label 0.0
+  p14 both       verdict all    mean +0.014119 n 1629 n_w 13 signs 7/2/4 ci90 [-0.005451, +0.046965] mdd 0.039039 label 0.0
+  p14 both       verdict judged mean +0.002801 n 595 n_w 5 signs 3/1/1 ci90 [-0.039175, +0.058222] mdd 0.070194 label 0.0
+  p14 both       point   all    mean +0.019030 n 1629 n_w 13 signs 7/0/6 ci90 [-0.017311, +0.039289] mdd 0.042155 label 0.0
+  p14 both       point   judged mean +0.020728 n 595 n_w 5 signs 4/0/1 ci90 [-0.013219, +0.068245] mdd 0.058710 label 0.0
+  p15 stop_first verdict all    mean -0.001228 n 1629 n_w 13 signs 0/12/1 ci90 [-0.004530, +0.001274] mdd 0.004322 label 0.0
+  p15 stop_first verdict judged mean -0.003361 n 595 n_w 5 signs 0/4/1 ci90 [-0.013256, +0.004791] mdd 0.013007 label 0.0
+  p15 stop_first point   all    mean -0.000205 n 1629 n_w 13 signs 0/12/1 ci90 [-0.002265, +0.000637] mdd 0.002161 label 0.0
+  p15 stop_first point   judged mean -0.000560 n 595 n_w 5 signs 0/4/1 ci90 [-0.003314, +0.001198] mdd 0.003252 label 0.0
+  p15 delay5     verdict all    mean -0.003069 n 1629 n_w 13 signs 5/0/8 ci90 [-0.040069, +0.012393] mdd 0.039074 label 0.0
+  p15 delay5     verdict judged mean -0.021849 n 595 n_w 5 signs 1/0/4 ci90 [-0.084107, +0.007917] mdd 0.066321 label 0.0
+  p15 delay5     point   all    mean -0.002455 n 1629 n_w 13 signs 4/0/9 ci90 [-0.048473, +0.013471] mdd 0.046136 label 0.0
+  p15 delay5     point   judged mean -0.033613 n 595 n_w 5 signs 0/0/5 ci90 [-0.119505, +0.020034] mdd 0.100565 label 0.0
+  p15 both       verdict all    mean -0.002660 n 1629 n_w 13 signs 5/0/8 ci90 [-0.039424, +0.012562] mdd 0.038719 label 0.0
+  p15 both       verdict judged mean -0.021289 n 595 n_w 5 signs 1/0/4 ci90 [-0.083132, +0.009058] mdd 0.066440 label 0.0
+  p15 both       point   all    mean -0.002455 n 1629 n_w 13 signs 4/0/9 ci90 [-0.048473, +0.013471] mdd 0.046136 label 0.0
+  p15 both       point   judged mean -0.033613 n 595 n_w 5 signs 0/0/5 ci90 [-0.119505, +0.020034] mdd 0.100565 label 0.0
+  p16 stop_first verdict all    mean -0.000205 n 1629 n_w 13 signs 0/13/0 ci90 [+nan, +nan] mdd nan label nan
+  p16 stop_first verdict judged mean -0.000560 n 595 n_w 5 signs 0/4/1 ci90 [-0.003314, +0.001198] mdd 0.003252 label 0.0
+  p16 stop_first point   all    mean -0.000205 n 1629 n_w 13 signs 0/13/0 ci90 [+nan, +nan] mdd nan label nan
+  p16 stop_first point   judged mean -0.000560 n 595 n_w 5 signs 0/5/0 ci90 [+nan, +nan] mdd nan label nan
+  p16 delay5     verdict all    mean +0.032331 n 1629 n_w 13 signs 9/0/4 ci90 [+0.005536, +0.064468] mdd 0.043892 label 0.0
+  p16 delay5     verdict judged mean +0.056022 n 595 n_w 5 signs 3/0/2 ci90 [-0.023915, +0.097989] mdd 0.087855 label 0.0
+  p16 delay5     point   all    mean +0.032535 n 1629 n_w 13 signs 10/0/3 ci90 [+0.005366, +0.063010] mdd 0.042933 label 0.0
+  p16 delay5     point   judged mean +0.057703 n 595 n_w 5 signs 4/1/0 ci90 [-0.009098, +0.091638] mdd 0.072600 label 0.0
+  p16 both       verdict all    mean +0.032331 n 1629 n_w 13 signs 9/0/4 ci90 [+0.005536, +0.064468] mdd 0.043892 label 0.0
+  p16 both       verdict judged mean +0.056022 n 595 n_w 5 signs 3/0/2 ci90 [-0.023915, +0.097989] mdd 0.087855 label 0.0
+  p16 both       point   all    mean +0.032535 n 1629 n_w 13 signs 10/0/3 ci90 [+0.005366, +0.063010] mdd 0.042933 label 0.0
+  p16 both       point   judged mean +0.057703 n 595 n_w 5 signs 4/1/0 ci90 [-0.009098, +0.091638] mdd 0.072600 label 0.0
+
+## 10. mdd_P: Q-16's pcons, re-coded, with the audit's own seeds
+manifest k 11 level 0.0003787878787878788 = 0.05/(k(k+1)): True | at k = 13 the level would be 0.0002747252747252747
+mdd_P rows: 48 | finite: 16 | blank by note: {"R* itself: mdd_P is a design's P against": 16, "Q-16 calibrated the judged block's compa": 16}
+  p15 stage2     verdict: n 595 (file 595); file 1.216548; audit 1.102557; ratio 0.9063; mean diff (P p15 less P-14) -0.058824
+  p15 stage2     point  : n 595 (file 595); file 1.071477; audit 0.962418; ratio 0.8982; mean diff (P p15 less P-14) -0.059944
+  p15 stop_first verdict: n 595 (file 595); file 1.236247; audit 1.123945; ratio 0.9092; mean diff (P p15 less P-14) -0.062185
+  p15 stop_first point  : n 595 (file 595); file 1.078180; audit 0.983446; ratio 0.9121; mean diff (P p15 less P-14) -0.060504
+  p15 delay5     verdict: n 595 (file 595); file 1.287930; audit 1.163195; ratio 0.9032; mean diff (P p15 less P-14) -0.083473
+  p15 delay5     point  : n 595 (file 595); file 1.203309; audit 1.094754; ratio 0.9098; mean diff (P p15 less P-14) -0.114286
+  p15 both       verdict: n 595 (file 595); file 1.298288; audit 1.169074; ratio 0.9005; mean diff (P p15 less P-14) -0.082913
+  p15 both       point  : n 595 (file 595); file 1.212469; audit 1.095606; ratio 0.9036; mean diff (P p15 less P-14) -0.114286
+  p16 stage2     verdict: n 595 (file 595); file 1.343710; audit 1.216797; ratio 0.9056; mean diff (P p16 less P-14) -0.103081
+  p16 stage2     point  : n 595 (file 595); file 1.171133; audit 1.052126; ratio 0.8984; mean diff (P p16 less P-14) -0.101401
+  p16 stop_first verdict: n 595 (file 595); file 1.343256; audit 1.214438; ratio 0.9041; mean diff (P p16 less P-14) -0.103641
+  p16 stop_first point  : n 595 (file 595); file 1.180469; audit 1.066400; ratio 0.9034; mean diff (P p16 less P-14) -0.101961
+  p16 delay5     verdict: n 595 (file 595); file 1.232728; audit 1.118082; ratio 0.9070; mean diff (P p16 less P-14) -0.049860
+  p16 delay5     point  : n 595 (file 595); file 1.070361; audit 0.975119; ratio 0.9110; mean diff (P p16 less P-14) -0.064426
+  p16 both       verdict: n 595 (file 595); file 1.226853; audit 1.119447; ratio 0.9125; mean diff (P p16 less P-14) -0.049860
+  p16 both       point  : n 595 (file 595); file 1.068003; audit 0.974898; ratio 0.9128; mean diff (P p16 less P-14) -0.064426
+audit critical values (own seed): {'obm n=595': 5.0655, 'ft n=595': 21.7653} | bm63 t critical df 8 5.2675
+
+## 10b. mdd_P replicated with the audit's own code at the runner's declared seeds (role: Q-16's fixed-b null
+     seed 20261919 for the critical values, 400,000 draws; mdd_P's flip seed 20262261 by (design, rule set, arm)
+     index, 20,000 replications in batches of 2,000) -- the method re-coded, not the runner's functions called
+critical values at the runner's seed (400,000 draws): obm 5.0842 ft 24.0157 | ft at two audit seeds (400,000 draws each): 20.8601 23.2535 | draws beyond the ft quantile: 152
+  p15 stage2     verdict: file 1.216548127; replicated 1.216548127; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.001, 0.0, 0.999]
+  p15 stage2     point  : file 1.071476961; replicated 1.071476961; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.006, 0.0, 0.994]
+  p15 stop_first verdict: file 1.236246587; replicated 1.236246587; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.001, 0.0, 0.999]
+  p15 stop_first point  : file 1.078179793; replicated 1.078179793; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.006, 0.0, 0.994]
+  p15 delay5     verdict: file 1.287930350; replicated 1.287930350; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.002, 0.002, 0.995]
+  p15 delay5     point  : file 1.203309094; replicated 1.203309094; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.002, 0.002, 0.996]
+  p15 both       verdict: file 1.298287749; replicated 1.298287749; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.002, 0.003, 0.995]
+  p15 both       point  : file 1.212468965; replicated 1.212468965; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.003, 0.003, 0.994]
+  p16 stage2     verdict: file 1.343710396; replicated 1.343710396; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.002, 0.0, 0.998]
+  p16 stage2     point  : file 1.171132717; replicated 1.171132717; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.004, 0.001, 0.995]
+  p16 stop_first verdict: file 1.343255970; replicated 1.343255970; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.002, 0.0, 0.997]
+  p16 stop_first point  : file 1.180468663; replicated 1.180468663; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.004, 0.001, 0.995]
+  p16 delay5     verdict: file 1.232728152; replicated 1.232728152; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.004, 0.001, 0.995]
+  p16 delay5     point  : file 1.070361367; replicated 1.070361367; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.005, 0.002, 0.993]
+  p16 both       verdict: file 1.226852685; replicated 1.226852685; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.005, 0.001, 0.994]
+  p16 both       point  : file 1.068002782; replicated 1.068002782; equal (1e-9): True; the binding lower limit's share bm63/obm126/ft63: [0.004, 0.002, 0.993]
+
+## 11. this file's P-14 and P-16 rows against E-188's results/breakeven_fidelity.csv (same rule sets)
+keys in E-188's file (these sections, p14/p16): 3404; common 3404; values differing (excluding mdd_P) 0; n differing 0; E-188 keys absent here 0
+differing by rule set: {} []
+
+## 12. Q-45 C5: where stop_first is ahead more months than stage2 (per start, 63-session starts)
+  p14 verdict: starts 1629; more months ahead under stop_first 1; fewer 0; net months 1
+      starts whose month-3 net differs at all: 1624
+  p14 point: starts 1629; more months ahead under stop_first 0; fewer 1; net months -1
+      starts whose month-3 net differs at all: 25
+  p15 verdict: starts 1629; more months ahead under stop_first 0; fewer 4; net months -6
+      starts whose month-3 net differs at all: 1620
+  p15 point: starts 1629; more months ahead under stop_first 2; fewer 2; net months -1
+      starts whose month-3 net differs at all: 15
+  p16 verdict: starts 1629; more months ahead under stop_first 0; fewer 1; net months -1
+      starts whose month-3 net differs at all: 1537
+  p16 point: starts 1629; more months ahead under stop_first 1; fewer 1; net months -1
+      starts whose month-3 net differs at all: 10
+  p15 delay5 against p15 stage2 (verdict): starts whose month-3 net differs: 1627
+  p15 both against p15 stop_first (verdict): starts whose month-3 net differs: 1627
+  p15 delay5 against p15 stage2 (point): starts whose month-3 net differs: 1595
+  p15 both against p15 stop_first (point): starts whose month-3 net differs: 1595
+
+## 13. the held-out years (2024-01-02 to 2026-07-16) in this file
+first held-out session index 1034 date 2024-01-02
+per (design, rules, arm), starts dated in the held-out years: 657 | earlier starts whose observed sessions reach into them: 251 | starts wholly before them: 783 | total 1691
+  P's starts on block all: 1629, of which touching the held-out years: 657
+  P's starts on block judged: 595, of which touching the held-out years: 595
+
+## problems found: 0
+
+## 14. the re-made scorecards (equal to the file's, section 5), described
+-- block all, arm verdict: P by design (rows) and rule set (columns); the best design per rule set
+      stage2  stop_first   delay5     both
+p14 0.671168    0.671373 0.685287 0.685287
+p15 0.642112    0.640884 0.639042 0.639452
+p16 0.620012    0.619808 0.652343 0.652343
+   best: {'stage2': 'p14', 'stop_first': 'p14', 'delay5': 'p14', 'both': 'p14'}
+-- block all, arm point: P by design (rows) and rule set (columns); the best design per rule set
+      stage2  stop_first   delay5     both
+p14 0.694496    0.694291 0.713526 0.713526
+p15 0.649683    0.649478 0.647227 0.647227
+p16 0.634336    0.634131 0.666871 0.666871
+   best: {'stage2': 'p14', 'stop_first': 'p14', 'delay5': 'p14', 'both': 'p14'}
+-- block judged, arm verdict: P by design (rows) and rule set (columns); the best design per rule set
+      stage2  stop_first   delay5     both
+p14 0.719328    0.719328 0.722129 0.722129
+p15 0.660504    0.657143 0.638655 0.639216
+p16 0.616246    0.615686 0.672269 0.672269
+   best: {'stage2': 'p14', 'stop_first': 'p14', 'delay5': 'p14', 'both': 'p14'}
+-- block judged, arm point: P by design (rows) and rule set (columns); the best design per rule set
+      stage2  stop_first   delay5     both
+p14 0.721569    0.721569 0.742297 0.742297
+p15 0.661625    0.661064 0.628011 0.628011
+p16 0.620168    0.619608 0.677871 0.677871
+   best: {'stage2': 'p14', 'stop_first': 'p14', 'delay5': 'p14', 'both': 'p14'}
+
+D-621 (3)(ii)'s tolerances applied descriptively, each corrected rule set against stage2 (same design, arm, block):
+worse by more than 5 points on a share, or by more than 10 % of |stage2's value| on dollars, sessions, ratios
+  p14 delay5 verdict all S5a: stage2 -768.713 -> -934.58 (worse by 165.867; tolerance 76.8713)
+  p14 delay5 verdict judged S5a: stage2 105.699 -> -476.206 (worse by 581.905; tolerance 10.5699)
+  p14 both verdict all S5a: stage2 -768.713 -> -934.571 (worse by 165.858; tolerance 76.8713)
+  p14 both verdict judged S5a: stage2 105.699 -> -476.167 (worse by 581.866; tolerance 10.5699)
+  p15 delay5 verdict all S5a: stage2 -1146.46 -> -1341.88 (worse by 195.426; tolerance 114.646)
+  p15 delay5 verdict judged S5a: stage2 -1010.84 -> -1609.75 (worse by 598.91; tolerance 101.084)
+  p15 delay5 point judged S5a: stage2 -1235.18 -> -1651.91 (worse by 416.733; tolerance 123.518)
+  p15 both verdict all S5a: stage2 -1146.46 -> -1342.03 (worse by 195.57; tolerance 114.646)
+  p15 both verdict judged S5a: stage2 -1010.84 -> -1609.83 (worse by 598.993; tolerance 101.084)
+  p15 both point judged S5a: stage2 -1235.18 -> -1651.91 (worse by 416.733; tolerance 123.518)
