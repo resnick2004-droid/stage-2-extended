@@ -208,3 +208,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-211, E-212: the measures, lever table and overnight features merged; the second breakeven reading recorded (no P difference detectable on the held-out starts); Q-05 holds again. |
 | 2026-11-18 | lead | E-213 to E-216: Wave 1 complete (measures aligned, the three-way test's design merged); four shared identities hold again. |
 | 2026-11-18 | lead | E-217: commit hooks serialised and git scans time-limited; a sixth operator item (the long-run gate on the held-out years). |
+| 2026-11-18 | lead | E-218 to E-220: every shared identity holds again; the reader's held-out guard built and held; a seventh operator item; the morning brief written. |
