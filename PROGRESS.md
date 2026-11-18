@@ -194,3 +194,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-197: Topstep and My Funded Futures read; Alpha and Lucid forbid automated reading, so the operator captures them by hand. |
 | 2026-11-18 | lead | E-198: the heavy-test markers merged; Topstep Labs and My Funded Futures rules recorded on their branch. |
 | 2026-11-18 | lead | E-199: the firm-modes reading's first text red-teamed; three blockers ruled (conduct by D-145's tiers, the request where uncapped, interval oracles); a second text. |
+| 2026-11-18 | lead | E-200: RD-05, the evaluation and funded account as two trading modes on each $50K plan, pinned after three red-team reads; its build waits on the rules record's merge. |
