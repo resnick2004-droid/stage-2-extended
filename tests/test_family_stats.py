@@ -433,13 +433,30 @@ def test_b2_level_replication():
 
 
 @pytest.mark.slow
+@pytest.mark.xfail(strict=True, reason=(
+    "Q-145, kept on record (the failure protocol, corrective cycle 1): this test's first run (at 3f05f44) asserted the "
+    "toy's premise -- nominal `cons` lax at 0.05 / 210 on stream 21 -- and it failed: stream 21's side series is nearly "
+    "balanced (mean side about -0.01), so the side-drift product barely persists and nominal's interval contains the "
+    "level (no-drift likewise). B2's own level held in every form on the same draws "
+    "(`test_b2_holds_its_level_at_the_family_level`). The family-level test therefore shows B2's level, not its teeth; "
+    "no other stream was chosen after this look."))
 def test_b2_holds_the_level_at_the_family_level():
     """At 0.05 / 210 (k = 14) on stream 21: nominal lax, the null spanning the truth holds, no drift term lax; the other
-    forms printed (decided before this ran, after the 0.01 finding)."""
+    forms printed (decided before this ran, after the 0.01 finding). Expected to fail on its premise (the record)."""
     out = _level_case(LEVEL_FAMILY, 400_000, 200_000, 21)
     assert out["nominal"][1] > LEVEL_FAMILY
     assert out["exact"][1] <= LEVEL_FAMILY and out["exact"][0] <= 1.25 * LEVEL_FAMILY
     assert out["no_drift"][1] > LEVEL_FAMILY
+
+
+@pytest.mark.slow
+def test_b2_holds_its_level_at_the_family_level():
+    """The level claims of the test above, on the same draws (cached): at 0.05 / 210 on stream 21 the null spanning the
+    truth holds, and so do the other forms, each interval's low end at or below the level."""
+    out = _level_case(LEVEL_FAMILY, 400_000, 200_000, 21)
+    assert out["exact"][1] <= LEVEL_FAMILY and out["exact"][0] <= 1.25 * LEVEL_FAMILY
+    for name in ("a_true", "declared", "a_twice"):
+        assert out[name][1] <= LEVEL_FAMILY, name
 
 
 def _power_case(level: float, persistent: bool, grid, truths: int, replicates: int, stream: int):
