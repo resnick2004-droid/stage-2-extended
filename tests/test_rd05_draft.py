@@ -166,27 +166,33 @@ def _counted(text: str) -> dict[str, int]:
             for m in re.finditer(r"^\| ([^|]+?) \| (\d+) \| ", block, re.MULTILINE)}
 
 
-def _mode_corners(text: str) -> tuple[int, int]:
+def _mode_corners(text: str) -> dict[str, int]:
     table = _section(text, "## Appendix M", "## Appendix R")
-    ev = fu = 0
-    for m in re.finditer(r"^\| (\d+) \| `[^`]+` (evaluation|funded) \| ", table, re.MULTILINE):
-        if m.group(2) == "evaluation":
-            ev += 1
-        else:
-            fu += 1
-    return ev, fu
+    out = {"evaluation": 0, "funded": 0, "shared_eval": 0, "shared_funded": 0, "close_only": 0}
+    for m in re.finditer(r"^\| (\d+) \| `[^`]+` (evaluation|funded) \| [a-z]+ \| ([^\n]*)\|$", table, re.MULTILINE):
+        kind, terms = m.group(2), m.group(3)
+        out[kind] += 1
+        if "gross shared" in terms:
+            out["shared_eval" if kind == "evaluation" else "shared_funded"] += 1
+        if "close-only" in terms:
+            out["close_only"] += 1
+    return out
 
 
 def test_counts_consistent(text: str) -> None:
     c = _counted(text)
-    ev, fu = _mode_corners(text)
-    corners = ev + fu
-    assert (ev, fu) == (19, 25), (ev, fu)
-    assert c["part C, gross coin"] == corners * GRID_CELLS * 2
+    m = _mode_corners(text)
+    ev, fu = m["evaluation"], m["funded"]
+    corners, shared = ev + fu, m["shared_eval"] + m["shared_funded"]
+    assert (ev, fu, shared, m["close_only"]) == (20, 25, 3, 2), m
+    per_corner = GRID_CELLS * 2 + GRID_CELLS * COSTED_STOPS               # gross steady and flip, costed steady
+    assert c["part C, gross coin"] == (corners - shared) * GRID_CELLS * 2
     assert c["part C, costed coin"] == corners * GRID_CELLS * COSTED_STOPS
     coin = c["part C, gross coin"] + c["part C, costed coin"]
-    ts_eval_runs = GRID_CELLS * 2 + GRID_CELLS * COSTED_STOPS         # `TS-S`'s evaluation mode-corner, every cell
-    assert c["statistical oracle checks"] == 2 * coin + ts_eval_runs + 1
+    eval_runs = ev * per_corner - m["shared_eval"] * GRID_CELLS * 2
+    ceiling = eval_runs - m["close_only"] * per_corner
+    ts_eval_runs = per_corner                                              # `TS-S`'s evaluation mode-corner, every cell
+    assert c["statistical oracle checks"] == coin + ceiling + ts_eval_runs + 1
     replays = c["part F, references"] + c["part F, steady corners"] + c["part F, flips"]
     beside = c["beside, denial ladder"] + c["beside, placement"]
     stated = re.search(

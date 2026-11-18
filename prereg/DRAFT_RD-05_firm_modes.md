@@ -1,18 +1,24 @@
 # RD-05 (draft): the evaluation and the funded account as two trading modes on each $50K plan -- flip days, the zero-edge maps, the sizing grid, the binding constraint, and the registered trades beside (reading FM) -- a described reading, unnumbered (E-023 (1))
 
-**Status: a second draft (TASK_QUEUE Q-137, corrective cycle 1 of 2; E-196, E-197), not pinned.** Drafted on
-`wt/wt-scout` with master merged at 2dd81fd. It goes to the red team's re-read and the prereg-gatekeeper before any
-pin. At the pin the file is renamed `prereg/RD-05_firm_modes.md` and nothing else changes; the pinning row names the
+**Status: a third draft (TASK_QUEUE Q-137, corrective cycle 2 of 2, the last; E-196, E-197, E-199), not pinned.**
+Drafted on `wt/wt-scout` with master merged at 2dd81fd. It goes to the red team's focused re-read and the
+prereg-gatekeeper before any pin. At the pin the file is renamed `prereg/RD-05_firm_modes.md` and nothing else changes; the pinning row names the
 commit and the sha256 of its LF text. Nothing declared is edited after the pin: a change is a new declaration under a
 new row. It takes no program family number (E-023 (1)).
 
 **Its text's history.** The first text (Q-137; wt/wt-scout f918897, LF sha256
 `8951defd293e3c4e68f974885dd052f94119edf626381ca4be822a15efa2fee1`) was read by the red team (Q-137r,
 `docs/reviews/DRAFT_RD-05_2026-11-18.md`: must be re-declared; three blockers, twelve should-fix items, ten notes).
-**This second text answers every finding as the lead ruled them** (the conduct classes of the first text dropped and
+**The second text answered every finding as the lead ruled them** (the conduct classes of the first text dropped and
 D-145 carried; one new rule for an uncapped request; interval oracles under a family-wise correction; Q-136's record
-read for the keys; the timing outside the seed block; a memory bound on every step). Appendix A maps each finding to
-the place it is answered.
+read for the keys; the timing outside the seed block; a memory bound on every step). **The third text** answers the
+red team's re-read of the second (Q-137r2, `docs/reviews/DRAFT_RD-05_v2_2026-11-18.md`, on 5244315, LF sha256
+`cbed60d13c717ecb9fb1a976ac2969cc86b3d2730c037bf22047150ec4999237`: two blockers, six should-fix items, five notes) as
+the lead ruled them -- the news rule decided at entry, with a forced flat at a window's start; the pass ceiling
+dropped where the floor is checked only at the close; exact tests for the martingale oracles; one convention for
+censored attempts; the stacking trigger defined -- and folds in Q-136b's My Funded Futures entries (the firm-wide
+commissions and the verified single-day ceilings), which clear the second text's two pin blockers. Appendix A maps
+every finding of both reads to the place it is answered.
 
 **What E-023 (1) makes of it, as E-134 (1) rules it.** Every question here is about the contract, not about an edge:
 
@@ -52,7 +58,7 @@ apart (section 20).
 | level, pass line, pick | **none** |
 | plans | 14 configurations of three firms' $50K plans (section 2.1); Lucid's other plans and Alpha Futures' plans join only by section 2.4 |
 | parts | A flip days from the rules (7); B the sizing grid (8); C the zero-edge maps (9); D the flip measurements (10); E the binding constraint (11); F the registered trades (12) |
-| rules | Stage 2's verified ledger; the vendored Lucid ledger; this repository's record at Q-136's commit 205fc42 on `wt/wt-firms` (Q-115's keys included), read by key, never typed (4.1) |
+| rules | Stage 2's verified ledger; the vendored Lucid ledger; this repository's record at Q-136's commit 205fc42 on `wt/wt-firms` (Q-115's keys included) and Q-136b's entries in the wt-firms working tree, read by key, never typed (4.1) |
 | development data | NQ 1-minute bars, 2020-01-02 to 2026-07-16, read only inside Stage 2's engine by P-14's and P-16's registered builders, in part F alone; parts A to E read no bar |
 | the unit | part C: one account in one mode, a coin path; part F: one start day replayed as U1 replays it, paired with Topstep on the same start |
 | judged-block reads | part F only, three purposes on the line of section 6 item 5 |
@@ -182,7 +188,11 @@ section 18's step 0 run; **any configuration that fails holds its whole firm bac
    index, so a join changes no stream.
 7. **Firm order.** A joining firm runs after every plan of 2.1.
 
-**LucidFlex stays on the vendored record in this reading** whatever a Lucid capture records about it: `LU40` and `LU50`
+**Lucid joins whole or not at all** (the red team's N-3): Lucid's joining enumeration is every configuration the capture
+lists at $50K, **LucidFlex's own configurations included** (its DLL-on ones too). LucidFlex's DLL-on configurations
+bring On Demand Payouts, which no adapter of 4.3 models, so **while that stands Lucid's other plans cannot join** by
+condition 4 -- they wait for a new declaration. **LucidFlex stays on the vendored record in this reading** whatever a
+Lucid capture records about it: `LU40` and `LU50`
 are read as Stage 2 verified them, and a difference the capture shows is listed beside their rows, for a later
 reading. A capture recorded after step 0's run commit waits for a new declaration; nothing of this reading is re-run
 for it. The firms' clauses against automated reading (E-020 (2), E-197) bar reading their sites by machine, not code
@@ -238,7 +248,13 @@ the stop width.
     headroom fraction of the allowance, read from the rule, never above it -- then the cuts above. **So a flip trade is
     never sized above the registered rule's cap, and never at the full allowance** (the major-news rule, 4.7 and the red
     team's S9). D-212's consistent-risk stand-aside is not applied to a flip trade (the flip's point is its size); every
-    such trade is counted. A flip trade follows every news rule the registered trades follow (4.7 item 3).
+    such trade is counted. A flip trade follows 4.7 item 3's news rule exactly as a steady trade does: no entry inside a
+    verified window, a forced flat at a window's start.
+  - **The calendar-to-sessions rounding** (the red team's N-1): a calendar period is translated to sessions as
+    `days x billing_days / billing_period_calendar_days` (Stage 2's keys), **rounded in the direction that helps the user
+    least** -- **up** for a wait that must pass before something the user wants (a payout clock, a purchase limit's
+    refill), **down** for a window whose end harms the user (a lifespan, an inactivity window, a hold's expiry). So
+    `PRO`'s `k_F`, and with it its `r_flip`, are fixed by this text.
 
 `flip` cells pair with their `steady` cells on common random numbers (section 15). On the registered trades, a `flip`
 cell pairs with its plan's `steady` cell on every start.
@@ -316,8 +332,11 @@ ledger (through Stage 2's adapter), or this repository's record (`config/rules_e
 on `wt/wt-firms`** (committed by the lead, not merged; E-198). **This text names every term by the key that commit
 records** (Appendix R) and types no rule value: every value is read from the record by a loader that refuses an entry
 not `verified` (17.2); an `unverified` or `unstated` entry is never loaded as a value -- it is read by a rule of section 5.
-A role with no key at 205fc42 is listed in section 19 as a **pin blocker** (two at this text: My Funded Futures'
-commissions and its single-day profit ceiling).
+A role with no key is a **pin blocker**. The second text's two -- My Funded Futures' commissions and its single-day
+profit ceiling -- are cleared by **Q-136b's entries**, read from the wt-firms working tree, where the lead commits them:
+`mffu.commissions` verified (firm-wide, naming no plan or account type); `mffu.<plan>.commissions` unverified, for all
+five plans; `mffu.rapideod50k.funded_single_day_profit_ceiling` and `mffu.rapid50k.funded_single_day_profit_ceiling`
+verified; the other eight ceiling keys unstated. **No pin blocker remains beyond the record's merge** (19).
 
 **The merge comes before step 0** (section 18): it writes under `config/`, which every identity's cover includes
 (E-117), so every shared identity is held again at a commit containing it before anything of this reading runs. If an
@@ -353,11 +372,11 @@ means a floor that never moves. Appendix R gives every key.
 | F | daily loss limit | none | soft: A-1 | soft: A-1 | `RE` none; `RED` soft: A-1 | none | none | U-28 | none |
 | F | the payout gate | field (both paths) | field, path by cell | **A-7** (Daily path); field (5 Winning Days) | **A-8** | A-8 | **A-9** (clock; U-17) | **A-10** (U-18) | `LucidFundedAccount`; coin form A-17 |
 | F | the request's size | field | field | A-7; field | **U-25** | U-25 | U-25 | field (its cap) | adapter |
-| F | an end by count | none | none | none | none (the ceiling: pin blocker, G-4) | none (the same) | the per-user cap: moot, counted | A-11 | adapter (A-17 on the coin) |
+| F | an end by count or ceiling | none | none | none | **A-11** (the verified single-day ceiling) | A-11 (the same) | the per-user cap: moot, counted; no ceiling (unstated) | A-11 (the count); no ceiling (unstated) | adapter (A-17 on the coin) |
 | F | allowance and scaling | field | field (U-20) | field | field | U-30 | **A-12** (U-26) | field | adapter |
 | F | seats | field | field | field | field (U-14) | field | field | field (U-14) | moot |
-| both | per-trade costs | 4.5 | 4.5 (U-23) | 4.5 (U-23) | 4.5 (pin blocker) | 4.5 (pin blocker) | 4.5 (pin blocker) | 4.5 (pin blocker) | 4.5 |
-| both | news | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 | 4.7 item 3 |
+| both | per-trade costs | 4.5 | 4.5 (U-23) | 4.5 (U-23) | 4.5 (U-32) | 4.5 (U-32) | 4.5 (U-32) | 4.5 (U-32) | 4.5 |
+| both | news | U1's own rule (4.7 item 3) | U1's own rule | U1's own rule | F: A-18 by U-31 | F: A-18 | F: A-18 | U1's own rule (unrestricted) | U1's own rule |
 
 ### 4.3 What the engine cannot represent: adapters in `extended/` (declared; built after the pin)
 
@@ -370,7 +389,7 @@ each is the vendored behaviour bit for bit (T-1, T-2). If any cannot be built th
 
 | id | adapter | what it adds |
 |---|---|---|
-| A-0 | the coin engine (`extended/modes_engine.py`) | `propsim.simulate_combine` and `simulate_xfa` copied verbatim with marked additions A-1 to A-17 and three more: separate evaluation and funded policies with `flip`'s schedule (2.6); the costed coin draw (9.2); online counters for parts D and E (A-13). With every addition off, every output array equals the vendored function's on the same seed and draw, bit for bit |
+| A-0 | the coin engine (`extended/modes_engine.py`) | `propsim.simulate_combine` and `simulate_xfa` copied verbatim with marked additions A-1 to A-17 (A-18 is the replay's, A-19 the rules') and three more: separate evaluation and funded policies with `flip`'s schedule (2.6); the costed coin draw (9.2); online counters for parts D and E (A-13). With every addition off, every output array equals the vendored function's on the same seed and draw, bit for bit |
 | A-1 | a soft daily loss limit | the day's trading ends when its loss reaches the limit; the account is not failed; the room a trade is handed is the smaller of the room above the floor and the day's remaining limit (as `lockstep.py` hands it). A record that reads a limit as a failure gives the hard form, by its record |
 | A-2 | evaluation minimum trading days | a pass needs that many sessions with an executed trade (RD-01's A-4 form); part A checks, plan by plan, whether the consistency share already implies them (the red team's N5); where implied, A-2 cannot bind and is checked so |
 | A-3 | lifespan and inactivity | the evaluation ends unpassed at its lifespan; an account with no trade in the stated window ends (funded: its profit forfeited where the record says so); calendar days exact in the replay, translated to sessions on the coin and in the gate by Stage 2's rule (`billing_days` sessions per `billing_period_calendar_days`), labelled |
@@ -381,22 +400,24 @@ each is the vendored behaviour bit for bit (T-1, T-2). If any cannot be built th
 | A-8 | My Funded Futures' buffer gate and cadence | a request needs the balance at the buffer plus the minimum and leaves the buffer (never the vendored `keep_balance`, a policy); the first request not before the gate's stated time after the first trade; later requests after the gate's stated profit since the last (none where the record states none, U-10) |
 | A-9 | `PRO`'s payout gate | the calendar clock of `mffu.pro50k.payout_timing` from the first trade and between requests; the buffer at two readings (U-17); the minimum |
 | A-10 | Builder's payout gate | the cycle's consistency share and day count (the engine's Consistency-path fields), the buffer and first-payout balance, the time after the first trade, the profit since the last request, the per-request cap; the first cycle's base at two readings (U-18) |
-| A-11 | an end by count | Builder's end at `mffu.builder50k.max_sim_payouts` (Stage 2's `_after_payout` seam, `lockstep.py` 854); `PRO`'s per-user cap is moot within the horizon (counted, U-7) |
+| A-11 | an end by count or by the single-day ceiling | Builder's end at `mffu.builder50k.max_sim_payouts` (Stage 2's `_after_payout` seam, `lockstep.py` 854); `PRO`'s per-user cap moot within the horizon (counted, U-7); **at `RE`, `RED` and `RI`, the verified single-day ceiling** (`mffu.rapideod50k.funded_single_day_profit_ceiling`, `mffu.rapid50k.funded_single_day_profit_ceiling`): a funded session whose net profit exceeds the key's threshold has the excess forfeited that day, and the account's modelled life ends at that close -- **a terminal state "moved to Live"**, printed apart from passes, failures and payouts, never counted as a payout, its remaining balance not credited (Live terms are not recorded, G-4); where a plan's ceiling key is unstated, nothing applies. On the coin, step 0 lists the cells at which one trade's win can exceed the threshold; elsewhere the rule cannot bind (checked) |
 | A-12 | an allowance counted in contracts | `PRO`'s funded cap at U-26's two readings |
 | A-13 | the online counters for parts D and E | per account: the flip and steady wins at a pass (from which `k*` follows exactly, 10.1), the session each gate first holds, the ending and its cause, the conduct exposures of 10.3 -- O(accounts) memory, never a per-session array (the red team's S12); in the replay, Q-94's recorder and the account classes' counters |
 | A-14 | the composition (`extended/modes_plans.py`) | each configuration's contract applied to a design's replay and gate arguments and to the coin engine, as RD-01's A-1 (`extended/firms.py`); `TS` leaves every argument unchanged (tested equal); `LU40`, `LU50` by Stage 2's `rc150_firm_split.lucid_setup` at each configuration |
 | A-15 | the readings (`extended/modes_reading.py`, `scripts/modes_*.py`) | parts A to F in section 18's order; section 13's checks; the menu; RD-02's 9.2 functions imported (`extended/pp_reading.py`) |
 | A-16 | the request-day exclusion on the coin | the session after a request at a plan whose record excludes it does not count toward the next window (`REQUEST_AFTER_5PM`'s rule, 8284233), so `TS/std` and the Labs 5 Winning Days maps carry it (the red team's S3) |
 | A-17 | LucidFlex's coin form | `LucidFundedAccount`'s three differences on A-0 -- the cycle's net-profit gate, the end at the stated payout count, no request-day exclusion -- and the evaluation lock above start, from Stage 2's adapter's own terms (`lucid_terms()`), imported |
+| A-18 | the news rule in the replay (4.7 item 3; the red team's B-1) | at an account a verified news rule reaches, on a release day of a pinned calendar: **no entry** whose alert falls inside the window -- decided at the alert from the clock and the calendar alone, the router passing the signal on as RD-01's A-5 no-trade decision -- and a position **open at the window's start is flattened at that bar**: the 1-minute bar stamped at the window's first minute, read through `extended.reader` under the run's purpose, priced at its open with the fill rule's flatten slippage (`fills.yaml`'s active profile, `flatten_slippage_ticks`); whether the position is open is the walk's state at that minute, known then. **Beside it, RD-01 G-3's bracket** on the flattened trades' own P&L (strict: the full stop loss; lenient: the target less a tick, with the flatten's cost) and the walked outcome, per trade and summed, the journey not re-run. Off in the gate (its days carry no date), the gate rows labelled. It changes nothing at an account no verified rule reaches, so every `TS`, Topstep and Labs trade is exactly U1's (tested) |
+| A-19 | the U-rule parser (the red team's S-3) | a U-rule end's figure that the record holds only in an unverified entry's `quote` is parsed from that quote, fail-loud, by a pattern declared beside the rule (RD-01's `extended/firm_terms.parse`, with a test on each entry): U-16's and U-29's lock levels, U-17's within-buffer share, U-22's two minimums, U-24's limit, U-28's daily limit, U-30's starting allowance. A figure in no quote is a pin blocker (none at this text; T-0 confirms each parse at the pin) |
 
 ### 4.4 What is not modelled, listed as gaps
 
 | id | gap | how it is shown |
 |---|---|---|
 | G-1 | the registered state tables solve Topstep's Standard path (Stage 2 D-501) and are not re-solved for any plan or mode; 4.6's mappings are part of "the design traded there" | every part-F row "first-order, the table fixed" |
-| G-2 | the coin has no calendar, so no news rule reaches a coin map; My Funded Futures' broader protocol on every release (`mffu.news_all_releases_protocol`, unverified) has no pinned calendar of every release here | coin rows "no calendar: no news rule"; part F follows 4.7 item 3; the broader protocol's strict reading not modelled, labelled on every My Funded Futures row |
+| G-2 | the coin has no calendar, so no news rule reaches a coin map; My Funded Futures' broader protocol on every release (`mffu.news_all_releases_protocol`, unverified) has no pinned calendar of every release here; Topstep's window schedule is in an entry whose status is `changed` (`tier1_news_events_restriction`), not loaded | coin rows "no calendar: no news rule"; part F follows 4.7 item 3; the broader protocol's strict reading not modelled, labelled on every My Funded Futures row; at Topstep and Labs the designs' own entry rules (U1's) stand, and trades open in the changed entry's windows are counted (expected zero, 12.4) |
 | G-3 | My Funded Futures' same-day upgrade; Labs' identity verification | the next session (2.7) |
-| G-4 | every live move: Topstep's, Labs', Lucid's, My Funded Futures' (Rapid's single-day profit ceiling is named only in a note of `mffu.rapideod50k.payout_cap`, with no entry of its own -- a pin blocker; Pro's reviews; Builder's after its count) | live accounts not modelled; an account moved ends, its balance not credited; the ceiling not modelled until recorded, and the accounts whose single-day profit reaches the threshold the record will state are counted once it is; Pro's reviews counted |
+| G-4 | every live move: Topstep's, Labs', Lucid's, My Funded Futures' (Rapid's and Rapid EOD's verified single-day ceiling, A-11; Pro's reviews; Builder's after its count); Live terms are not recorded | live accounts not modelled; an account moved ends, its balance not credited; the ceiling's move a terminal state of its own, "moved to Live" (A-11); where a ceiling key is unstated, no ceiling applies; Pro's reviews counted |
 | G-5 | Topstep's Focused Trader Program (unpublished thresholds; its binding models are Topstep-standard) | not run here, the gap named on every Topstep row |
 | G-6 | rule changes over 2020-2026 | today's terms on every start |
 | G-7 | My Funded Futures' price-limit rule (funded) | not modelled, labelled |
@@ -409,7 +430,7 @@ each is the vendored behaviour bit for bit (T-1, T-2). If any cannot be built th
 | plan | schedule (round turn: MNQ, NQ) | from | open |
 |---|---|---|---|
 | `TS`, `L6`, `L10`, `L11` | Topstep's all-in schedule (`vendor/stage2/config/fills.yaml`, `round_turn_by_instrument`; 8284213) | the registered schedule | Labs at Topstep's schedule by U-23 |
-| `RE` ... `B15` | the record's My Funded Futures commission entry | **no entry at 205fc42: a pin blocker** (19) | its basis by U-12 once recorded |
+| `RE` ... `B15` | **U-32's two ends**: strict, the firm-wide `mffu.commissions` figures on every fill, evaluation and funded; lenient, the engine's own commission, as on the registered trades (Topstep's schedule) | Q-136b: `mffu.commissions` verified, firm-wide; `mffu.<plan>.commissions` unverified | the figures read from the key, never typed |
 | `LU40`, `LU50` | Topstep's schedule, as Stage 2 D-575 reads Lucid | RD-01 4.8 | conservative in this term |
 
 **The costed coin** uses the same schedule at its contracts, plus the slippage of `fills.yaml`'s active profile (its
@@ -445,22 +466,30 @@ after a run, and a reclassing is a new declaration (the red team's B1 (d)).
 1. **Tier 1, hard.** D-145's mechanical list -- cross-account hedging; exploiting simulator fills (tight brackets or
    auto-breakeven for simulator fills); trading outside the best bid or offer; maximum position size into a major news
    event; coordinated trading -- and anything that conceals a pattern; **plus a firm's own rule that is mechanical and
-   prohibits a behaviour outright, where the record says so in a verified entry** (at 205fc42: Topstep's Tier-1 window
-   caps, `tier1_news_events_restriction` and `labs.50k_static.tier1_news_cap`; My Funded Futures' funded Tier-1 rule on
-   Rapid and Pro, `mffu.news_tier1_rule`; its hedging rule, `mffu.hedging_rule`). **Tier 1 is enforced, not counted:**
+   prohibits a behaviour outright, where the record says so in a verified entry** -- and **a firm news rule applies only
+   when its record key is verified** (the red team's S-2): My Funded Futures' funded Tier-1 rule on Rapid and Pro,
+   `mffu.news_tier1_rule`, verified, reaching `RE`'s and `RED`'s funded accounts only by U-31 (their own
+   `mffu.rapideod50k.funded_news` is unverified); its hedging rule, `mffu.hedging_rule`. **Topstep's
+   `tier1_news_events_restriction` has status `changed`, so it is not loaded**; its event list, as the record states
+   it, holds no FOMC minutes; and the Labs cap `labs.50k_static.tier1_news_cap`, though verified, takes its windows from
+   that entry, so it is not applied either. **No build applies the minutes calendar to `TS` or to any Labs account
+   beyond what U1 does**, so `TS`'s rows stay U1's (13.1). **Tier 1 is enforced, not counted:**
    every trade of every cell follows these rules by construction (one position at a time across the firm, D-429; the
    news rule of item 3), and the run checks each one at zero; **a nonzero count is an engine error** that stops its step
    (13.1). No cell is "labelled tier 1"; a cell that breaks tier 1 is a broken run.
 2. **Tier 2, modelled.** Topstep's Responsible Trading Program (13620045, `responsible_trading_program`): the placement
    off in the headline (Stage 2 D-289), on beside at `TS` (12.3). Its triggers are counted on every Topstep cell
    (10.3: trades at the full allowance; accounts at their floors on one day).
-3. **Major news (D-145's tier 1, the red team's S9).** Every trade -- flip trades included -- follows the registered
-   designs' own news rule (CHARTER section 4: report-day entries strictly after the window; FOMC days out), and where a
-   firm's verified Tier-1 rule reaches an account (item 1's entries), a trade whose position or resting order would be
-   open inside the window the record states, around a release of a pinned calendar (E-050's
-   `config/calendar_fomc_minutes.csv`), **stands aside** -- the router passes it on, as RD-01's A-5 no-trade decision.
-   No trade is ever sized at the full allowance (2.6: flip trades at most the registered rule's cap). The window's
-   times are derived from the record and the calendar, never typed.
+3. **Major news, decided at entry (D-145's tier 1; the lead's ruling on the red team's B-1).** Every trade -- flip and
+   steady alike -- follows the registered designs' own news rule (CHARTER section 4, as U1 applies it); the `TS` rows
+   keep exactly the rule their identity and U1 use, and nothing here changes them. **Where a verified firm news rule
+   reaches an account** (item 1), on a release day of a pinned calendar (E-050's `config/calendar_fomc_minutes.csv`, each
+   release's time in its rows): **no entry inside the window** -- decided at the alert from the clock and the calendar
+   alone -- and **a position open at the window's start is flattened at that bar**, priced from the bar under the
+   existing fill rule, with RD-01 G-3's bracket beside (A-18). Nothing is decided from a trade's exit. The window's
+   bounds are the record's minutes around the release's time, derived, never typed. No trade is ever sized at the full
+   allowance (2.6). The forced flats and the entries refused are counted (12.4); an entry inside a window is a tier-1
+   count that must be zero.
 4. **Tier 3, priced.** Every discretionary clause -- **Account Stacking** (10305426, `prohibited_trading_strategies`),
    **excessive purchases and the sole-discretion catch-all** (10296582, `prohibited_conduct`), **Terms of Use s.8**
    (`tou_s8_relative_position_size`, E-013 (1)), **My Funded Futures Pro's Consistent Trading Policy**
@@ -469,9 +498,13 @@ after a run, and a reclassing is a new declaration (the red team's B1 (d)).
    (10, 25, 50 %) beside every part-F cell, the verdict at 0 % (E-008). If the record gives such a clause a stated
    mechanical consequence, that consequence is modelled instead (none at 205fc42).
 5. **The exposures, printed beside every cell, the same for `flip` and `steady`** (behavioural, from the cell's own
-   outputs; never a label that removes a cell): D-145's stacking trigger (the user's accounts reaching their floors at
-   least twice in the preceding 21 sessions) -- in part F from the engine's conduct records, on the coin from 9.5's
-   renewal arithmetic (the chance that a journey meets it before its first payout); evaluations bought per 21 sessions;
+   outputs; never a label that removes a cell): **D-145's stacking trigger, defined exactly** (the lead's ruling on the
+   red team's S-6): a payout request meets it when **at least two floor breaches, across all the campaign's accounts,
+   fall in the 21 trading sessions that end on the day of the request, that day included** -- in part F, the share of
+   requests that meet it, from the engine's records; on the coin, whose journey holds one account at a time, the
+   probability that a journey's first payout request meets it, by 9.5's renewal carrying a window state (the end
+   sessions of the last two failed attempts), tested against a direct simulation (T-9); evaluations bought per 21
+   sessions;
    the share of trades at the full allowance (costed coin and part F; RTP trigger 2; Pro's policy's "maximum contract
    sizes"); the s.8 ratio (each trade's contracts over the median of the same account's other trades, printed, no
    threshold); for Pro's funded mode, the spread of trade sizes per account ("uniform position sizing", printed).
@@ -555,9 +588,23 @@ per-attempt net is zero; no price inside the grid is chosen. New here:
 - **U-30. Rapid's funded allowance** (`mffu.rapid50k.funded_position_limit`, unverified) -- both ends: strict, the
   scaling example's starting allowance for the account's life; lenient, the evaluation's stated cap. Costed coin and
   part F only.
+- **U-31. Rapid EOD's funded news rule** (`mffu.rapideod50k.funded_news`, unverified; the lead's ruling on the red
+  team's S-2) -- U-6's two ends: strict, `mffu.news_tier1_rule` reaches `RE`'s and `RED`'s funded accounts (A-18
+  applies there); lenient, it does not. Part F only (the coin has no calendar).
+- **U-32. My Funded Futures' per-plan commission** (`mffu.<plan>.commissions`, unverified, value null, for all five
+  plans; the lead's ruling on Q-136b) -- both ends: strict, the firm-wide `mffu.commissions` figures (verified, naming no
+  plan or account type) on every fill, evaluation and funded; lenient, the engine's own commission, as on the registered
+  trades (Topstep's schedule, 4.5). The figures come from the key, never typed. Costed coin and part F only. It replaces
+  RD-01's U-12 at My Funded Futures.
 
-(There is no U-19: the first text's single-day ceiling reading is withdrawn, since the record holds no entry for the
-ceiling (G-4).)
+**Where a U-rule's figure lives** (the red team's S-3). A U-rule end that needs a figure the record holds only in an
+unverified entry's `quote` reads it from that quote by A-19's declared parser, fail-loud; the loader's refusal (17.2)
+is a refusal to load a non-verified `value` as a field, not to parse a recorded quote for a declared end. Every figure
+U-16, U-17, U-22, U-24, U-28, U-29 and U-30 need is in its entry's quote at 205fc42; a figure in no quote would be a pin
+blocker (none).
+
+(There is no U-19: the first text's single-day ceiling reading is withdrawn. The ceiling is now verified at `RE`, `RED`
+and `RI` and modelled as a rule (A-11); elsewhere it is unstated and nothing applies.)
 
 **The strict and lenient corners** (RD-01 5.1, carried). A configuration-mode's **strict corner** has every two-ended
 term at its strict end at once, its **lenient corner** every one at its lenient end. The corners are bounds only for the
@@ -596,13 +643,18 @@ so both ends are exact arithmetic on the same runs (RD-01's A-10).
 | `RI` | F | `mffu.rapid50k.payout_gate` (profit since the last payout "not stated") | verified | U-10 (none invented) | -- | -- |
 | `LU50` | F | the live move's reach | verified; reach a reading | U-6 (RD-01's ends) | -- | yes |
 | `LU40`, `LU50` | F | funded fee, payout fee | unverified (vendored ledger) | U-3 | -- | -- |
-| `RE` ... `B15` | both | commissions | **no entry** | pin blocker; U-12 once recorded | -- | -- |
-| `RE`, `RED`, `RI` | F | the single-day profit ceiling | **no entry** (a note only) | pin blocker; G-4 | -- | -- |
+| `RE` ... `B15` | both | `mffu.<plan>.commissions` (Q-136b); `mffu.commissions` | unverified; verified, firm-wide | U-32 | costed coin only | yes |
+| `RE`, `RED`, `RI` | F | `mffu.rapideod50k.funded_single_day_profit_ceiling`, `mffu.rapid50k.funded_single_day_profit_ceiling` (Q-136b) | verified | a rule (A-11) | -- | -- |
+| `PRO`, `PRO1`, `B20`, `B15` | both | their `*_single_day_profit_ceiling` keys; every evaluation's (Q-136b) | unstated | none applies (U-10) | -- | -- |
+| `RE`, `RED` | F | `mffu.rapideod50k.funded_news` | unverified | U-31 | -- | yes |
+| `RE` ... `B15` | -- | `mffu.one_time_cutover_date` | unverified | U-7 (moot for a new purchase, as its note says) | -- | -- |
 
 The coin's mode-corners follow (Appendix M): every mode with a two-ended coin term has a strict and a lenient corner;
 the rest one. A term marked "costed coin only" acts on the costed cells alone: at a mode that has another two-ended coin
-term it sits at that mode's two corners; at a mode where it is the only one (`L6`'s two funded modes, U-20) it makes the
-two corners itself, and their gross cells are identical by construction -- run once each and checked equal (13.1).
+term it sits at that mode's two corners; at a mode where it is the only one (`L6`'s two funded modes by U-20; `PRO1`'s
+evaluation by U-32) it makes the two corners itself, and **their gross cells are identical by construction, so they are
+run once, at the strict corner, and shared** (the red team's N-4): the lenient corner of such a mode has costed cells
+only, and its oracle checks are counted once.
 
 ## 6. Data, blocks, the unit and the seal
 
@@ -646,7 +698,7 @@ two corners itself, and their gross cells are identical by construction -- run o
    account survives.
 3. **`k_F`, the sessions elapsed to the first eligible close when trading every session** (2.6), and beside it the
    fewest trading days with a profit: winning days and their minimum, the cycle's share and days, the buffer and
-   minimum, the clock (calendar days translated by Stage 2's rule where the record states calendar days), the profit
+   minimum, the clock (calendar days translated to sessions by 2.6's rounding where the record states calendar days), the profit
    since the last request -- under both semantics of a funded consistency rule, and at both ends of every two-ended
    term of the funded mode.
 4. **`b*`** at each end of U-25 where it applies, and otherwise the smallest balance above start at which the plan's own
@@ -657,9 +709,16 @@ two corners itself, and their gross cells are identical by construction -- run o
    and for `RI`'s funded mode whether `(w + 1) r_flip` lies within the read set (9.1).
 7. **The minimum days implied** (the red team's N5): per evaluation mode, whether `ceil(1/c)` is at least the plan's
    minimum trading days, so that A-2 cannot bind on the coin.
-8. **The boundary cells** of 9.6: the gross evaluation cells at which the pass ceiling is attained exactly (a static
-   floor; the daily limit at least `r`; `r` dividing the drawdown and `w r` dividing the target; no consistency raise
-   possible, `w r <= c T`; no minimum days beyond the share's) -- listed, so 9.6 tests them as equalities.
+8. **The boundary cells** of 9.6: the gross evaluation cells at which every pass ends at exactly `T` and every failure at
+   exactly `-D` (a static floor checked intraday; the daily limit at least `r`; `r` dividing the drawdown and `w r`
+   dividing the target; no consistency raise possible, `w r <= c T`; no minimum days beyond the share's) -- listed, so
+   9.6 tests them by their boundary quantity. **The lifespan is read from the record** (`labs.*.eval_lifespan_days`,
+   translated by 2.6's rounding): an account it ends counts among those neither passed nor failed (9.6).
+9. **The close-only corners** of 9.6: the mode-corners at which the floor is checked only at the close (at this text,
+   U-27's lenient end: Appendix M rows 15 and 17, `B20`'s and `B15`'s lenient evaluation corners, which were rows 14
+   and 16 before `PRO1`'s second corner was added) -- listed, so 9.6 drops the pass ceiling there.
+10. **The ceiling cells:** the coin cells at which one trade's win can exceed a verified single-day ceiling's threshold
+    (A-11); elsewhere the ceiling cannot bind (checked).
 
 **The stated-fewest check (refusing).** Where the record quotes a firm's own statement of the fewest days -- Topstep's
 one-day FAQ and its sentence on passing in as few days as its share allows (8284197, 8284208); LucidFlex's fewest days
@@ -754,9 +813,17 @@ the oracles' quantities.
 
 ### 9.4 The fee columns
 
-Per attempt: the evaluation's fees at both price ends (U-1) or on U-2's grid; the activation per pass; fees per pass
-(fees per attempt over the pass probability: Wald's identity for a user buying until a pass); fees per first payout;
-the payout fees. At `TS-N` every fee re-priced on `TS-S`'s runs, exactly.
+**One convention for an attempt unresolved at the horizon** (the lead's ruling on the red team's S-4), used here and in
+9.5 alike: it is **censored** -- a terminal outcome of its own, neither a pass nor a failure. **Its fees are counted as
+paid up to the horizon** (the subscriptions accrued to it; a one-time price once), and **the censored share is printed
+beside every fee and time reading.** A user's sequence of attempts therefore ends at the first pass or the first
+censored attempt.
+
+Per attempt: the evaluation's fees at both price ends (U-1) or on U-2's grid; the activation per pass. **Over a user's
+sequence** (Wald's identity over the attempts up to and including the terminal one): the fees per user, the mean fees
+per attempt over the sum of the pass and censored probabilities; the chance the sequence ends in a pass, the pass
+probability over that same sum; **the fees per pass**, the fees per user over that chance, labelled "per pass, the
+censored share beside"; fees per first payout; the payout fees. At `TS-N` every fee re-priced on `TS-S`'s runs, exactly.
 
 ### 9.5 The two modes joined (exact arithmetic, no run; the red team's S8)
 
@@ -767,57 +834,79 @@ other mode's (so a two-corner pair joins strict with strict and lenient with len
 - **The net per attempt** -- minus the evaluation's fees, plus the pass probability times (the funded mean net less the
   activation) -- stage one's `attempt_ev` form, reproduced to 1e-9 on the same inputs;
 - **the fee cost per attempt**, and **the pass-and-payout probability per attempt**;
-- **the net per funded journey** -- a user buying until a pass, then trading the funded account: minus the fees per
-  pass, less the activation, plus the funded mean net (Wald);
+- **the net per funded journey** -- a user buying until a terminal attempt, then trading the funded account where it
+  passed: minus the fees per user, plus the chance of a pass times (the funded mean net less the activation), with the
+  censored share beside (9.4's convention);
 - **under a purchase limit** (U-24): the chance of at least one pass within the limit's attempts, and the net over them;
-- **the sessions from the first purchase to the first payout, as a renewal**: attempts are bought one after another; the
-  number of failed attempts before the first pass is geometric with the cell's non-pass probability; each failed
-  attempt's duration is drawn from that cell's own law of failed-attempt durations (floor, expiry, inactivity); then the
-  passing attempt's sessions, the switch's session (2.7) and the funded sessions to the first payout. Its law is
-  computed exactly by convolution (a geometric mixture of convolutions) on sessions 0 to 2,520 (ten years of 252); the
-  mass beyond is printed as "beyond the window". **Censored mass is printed as such**: attempts unresolved at 504 and
-  funded accounts unpaid at 504 enter as "censored at the horizon", never as a duration. Means by Wald's identity, exact.
+- **the sessions from the first purchase to the first payout, as a renewal** (9.4's convention): attempts are bought one
+  after another; each ends in a pass, a failure (floor, expiry, inactivity) or censoring at the horizon; **the number of
+  failures before the terminal attempt is geometric with the failure probability `q_fail`**, each failure's duration
+  drawn from that cell's own law of failure durations; the terminal attempt is a pass (with the pass probability over
+  the pass and censored probabilities) or a censored end; after a pass, the switch's session (2.7) and the funded
+  sessions to the first payout, a funded account unpaid at its horizon censored too. Its law is computed exactly by
+  convolution (a geometric mixture of convolutions) on sessions 0 to 2,520 (ten years of 252); the mass beyond is printed
+  as "beyond the window", **the censored mass printed as such**, never as a duration. Means by Wald's identity, exact.
   One attempt's own timeline -- 504 evaluation sessions then 504 from activation -- can reach 1,008 sessions, labelled
   (the red team's N8).
+- **the stacking exposure on the coin** (4.7 item 5): the same convolution carrying a window state -- the end sessions of
+  the last two failures -- gives the probability that the first payout request falls within 21 trading sessions, that
+  day included, of the end of at least two failed attempts.
 
 The joined tables are printed whole, per configuration; **no cell is marked best**; the diagonal (the same `(w, r)` in
 both modes) is labelled "one policy in both modes (stage one's form)", and the four policy blocks are labelled.
 
-### 9.6 Oracles: interval tests under a family-wise correction (the red team's B3)
+### 9.6 Oracles: exact interval tests under a family-wise correction (the red team's B3, B-2 and S-1)
 
-An output outside an oracle is an engine error, never a finding, and **stops step 2**. Each statistical oracle is an
-interval test at a declared width, and the width is corrected for every statistical oracle check the reading makes:
+An output outside an oracle is an engine error, never a finding, and **stops step 2**. Every statistical oracle is an
+**exact** test -- valid at its tail whatever the skew of the quantity (the lead's ruling on S-1 (c)) -- at a width
+corrected for every statistical oracle check the reading makes.
 
 - **The family-wise level** is **0.01**, split by **Bonferroni over N**, the number of statistical oracle checks of steps
-  1 and 2 together: two per coin run (below), one supremum check per `TS-S` evaluation run, and the one reference check
-  of 13.1 (b). **N is at most 2 x 5,280 + 120 + 1 = 10,681**; its exact value (the sizeable costed cells and `RI`'s read
-  set are fixed by step 0) is printed by step 0 before step 1 runs. A one-sided check is at level `0.01 / N`; a
-  two-sided check puts `0.01 / (2 N)` in each tail.
-- **The intervals:** a probability by its exact (Clopper-Pearson) binomial interval; a mean by the normal interval on
-  its sample standard deviation over the 50,000 accounts.
-- **The checks, two per coin run:**
-  - **evaluation, the pass ceiling** (one-sided): a breach when the pass probability's lower limit exceeds `D / (D + T)`
-    -- D the evaluation's drawdown amount and T its base target, by key. A fair game stopped at `+T` or `-D` passes
-    with at most that chance; trailing floors, locks above start, consistency, minimum days, daily limits and costs only
-    lower it. **On a boundary cell** (7 item 8), where the ceiling is attained exactly, the check is instead the
-    two-sided equality with zero of the per-account quantity `T 1{pass} - D 1{fail} + B 1{unresolved}`, exact there;
-  - **evaluation, the martingale** (two-sided): the mean balance at resolution equals zero on the gross coin, and
-    minus the mean costs paid on the costed coin;
-  - **funded, the martingale** (two-sided): the mean of the balance plus gross payouts plus forfeitures at the horizon
-    equals zero on the gross coin, minus the mean costs on the costed;
-  - **funded, the payout bound** (one-sided): a breach when the mean gross payouts' lower limit exceeds the account's
-    starting distance to its floor, by key.
-- **The supremum** (one-sided, every `TS-S` evaluation run): a breach when the pass probability's lower limit exceeds
-  the supremum over fair strategies of `vendor/stage2/vendor/propsim/optimality/results_combine_supremum.csv`, read
-  from the file.
-- **The exact checks** (no interval; to 1e-9): every request within its plan's bounds and every net its split of it;
-  no trade larger than its room, its daily limit or (costed) its allowance; every costed fee its schedule at its
-  contracts; 9.5's per-attempt net equal to `propsim.attempt_ev` at `TS-S`.
-- **Shown to work** (T-9): each oracle fires on a hand-broken engine; and a **seeded false-alarm test on synthetic data
-  that knows the truth** -- batteries of N checks drawn exactly at the null (Bernoulli pass indicators at the bound,
-  mean-zero quantities, boundary cells at equality), on the `build_toys` seed, show the share of batteries with any
-  breach at most 0.01 beyond its binomial error, and a battery with one check shifted by six of its standard errors
-  breaches.
+  1 and 2 together (below). **N is at most 7,489**: one fairness check per coin run (5,256), one pass-ceiling check per
+  evaluation run outside the close-only corners (at most 2,352 less those corners' 240 runs), one supremum check per
+  `TS-S` evaluation run (120), and the one reference check of 13.1 (b); its exact value (the sizeable costed cells,
+  `RI`'s read set and the boundary cells are fixed by step 0) is printed by step 0 before step 1 runs. A one-sided check
+  is at level `0.01 / N`; a two-sided check puts `0.01 / (2 N)` in each tail.
+- **The exact accounting identities** (no interval; to 1e-9, on every account): its final balance plus its gross
+  payouts plus its forfeitures plus the costs it paid equals the sum of its trades' gross P&L; on the funded coin, its
+  final balance is at least its starting floor. With the fairness check below, these carry what the first text's
+  martingale and payout-bound checks carried: the mean gross payouts at most the starting distance to the floor follows
+  from them and is printed, not tested again.
+- **The fairness check, one per coin run** (two-sided; it replaces the normal-interval martingale checks): each trade's
+  chance of reaching its target is fixed when it is entered -- `c / (c + w r)` at its room `c`, or the costed
+  bracket's own race at its realised risk -- so `S`, the sum over all the run's trades of (1 if the target was reached,
+  else 0, less that chance) times the trade's span (its room plus its target distance), is a martingale with increments
+  bounded by the largest span `b` and predictable variance `V` (the sum of `p (1 - p)` times the span squared). **A
+  breach when `|S|` exceeds the bound of Freedman's inequality at the check's level** -- `2 exp(-a^2 / (2 (V + b a / 3)))`
+  equal to `0.01 / N` solved for `a`. The bound is exact for any skew and needs no normal tail. At `RI`'s funded cells
+  the losing trades' peaks are checked the same way against their law (9.2), in the same check.
+- **The pass ceiling** (one-sided, every evaluation run but those below): a breach when the pass probability's exact
+  (Clopper-Pearson) lower limit exceeds `D / (D + T)`, D the evaluation's drawdown amount and T its base target by key.
+  It holds because every failure ends at or above `-D` and every pass at or above `T`, with trailing floors, locks above
+  start, consistency, minimum days, daily limits, lifespans and costs only lowering it.
+  - **Dropped at the close-only corners** (7 item 9; the lead's ruling on B-2): where the floor is checked only at the
+    close, a failure can close below `-D`, so the ceiling is not a bound; the fairness check and the accounting
+    identities are the oracle there. **The corners where it is dropped: Appendix M rows 15 and 17** (`B20` and `B15`,
+    evaluation, lenient), and no other at this text.
+  - **At a boundary cell** (7 item 8) the pass-ceiling check is replaced by the **boundary quantity**
+    `T 1{pass} - D 1{fail} + B 1{neither}`, its third term over every account neither passed nor failed -- expired at
+    its lifespan (from the record) or unresolved at 504 -- tested **as a two-sided equality with zero at the corrected
+    width**. There it equals each account's summed trade P&L (every pass at exactly `T`, every failure at exactly `-D`,
+    checked as exact identities), so its test is the fairness check of that run, counted once.
+- **The supremum** (one-sided, every `TS-S` evaluation run): a breach when the pass probability's exact lower limit
+  exceeds the supremum over fair strategies of `vendor/stage2/vendor/propsim/optimality/results_combine_supremum.csv`,
+  read from the file.
+- **The other exact checks** (no interval; to 1e-9): every request within its plan's bounds and every net its split of
+  it; no trade larger than its room, its daily limit or (costed) its allowance; every costed fee its schedule at its
+  contracts; every forfeiture and every "moved to Live" ending at a verified ceiling (A-11); 9.5's per-attempt net
+  equal to `propsim.attempt_ev` at `TS-S`.
+- **Shown to work** (T-9; the lead's ruling on S-1 (a) and (c)): each oracle fires on a hand-broken engine; and a
+  **seeded false-alarm test on synthetic data that knows the truth**, on the `build_toys` seed -- batteries of N checks
+  drawn exactly at the null: Bernoulli pass indicators at the bound; fair trade sequences of the coin's own law; **and
+  skewed mean-zero sequences shaped like the funded quantity** (a balance plus payouts, many small losses and a long right
+  tail) -- show the share of batteries with any breach at most 0.01 beyond its binomial error; and a battery with one
+  check **shifted by eight of its standard errors** breaches in every one of a declared number of batteries (power above
+  0.999 at that shift).
 
 ## 10. Part D: flip days measured
 
@@ -851,8 +940,10 @@ days, and the row says so.
 
 ### 10.3 What is counted beside every flip cell
 
-The flip trades cut by the room, the daily limit or the registered cap; the flip trades stood aside under 4.7 item 3;
-and the exposures of 4.7 item 5, the same as for every steady cell.
+The flip trades cut by the room, the daily limit or the registered cap; the flip entries refused and the flip positions
+flattened under 4.7 item 3, with A-18's bracket beside; the flip rows at U-25's lenient corners labelled **"`b*` at
+the reference cap"** (the red team's N-5: the lenient `b*` borrows `xfa_std_cap` for a plan with no cap); and the
+exposures of 4.7 item 5, the same as for every steady cell.
 
 ## 11. Part E: which constraint binds, per plan and mode
 
@@ -910,12 +1001,16 @@ zero-edge twin (12.3).
 
 Per configuration, stream and block, before any paired outcome: the share of starts on which it differs from `TS` at
 all within 63, 126 and 252 sessions; the share of trades whose contracts differ from `TS`'s and the share in each of
-part B's size-binding constraints; the realised-to-intended risk (E-022 (1)); the trades stood aside (D-272, and 4.7
-item 3); **where each plan binds** (daily-limit days and signals lost to a paused account; passes delayed by minimum
-days; passes waiting at a funded cap (U-14) and their waits; buffer-blocked closes; Pro's clock waits; Builder's
-share-blocked closes and count endings; lifespan expiries; inactivity closures; purchase-limit exhaustion and the
-sessions after it with no evaluation); 4.7 item 5's exposures; **the checks that must be zero** (13.1): every tier-1
-count of 4.7 item 1; purchases refused for cash; trades exiting after the flatten time (`trading_hours`); trades on a
+part B's size-binding constraints; the realised-to-intended risk (E-022 (1)); the trades stood aside (D-272); **the news
+rule at work** (A-18): entries refused inside a verified window, positions flattened at a window's start with their
+bracket and walked outcome beside, by account kind, stream and year, and, at Topstep and Labs accounts, the trades open
+in the changed entry's windows (G-2, expected zero); **where each plan binds** (daily-limit days and signals lost to a
+paused account; passes delayed by minimum days; passes waiting at a funded cap (U-14) and their waits; buffer-blocked
+closes; Pro's clock waits; Builder's share-blocked closes and count endings; "moved to Live" endings at a verified
+ceiling and their forfeitures; lifespan expiries; inactivity closures; purchase-limit exhaustion and the sessions after
+it with no evaluation); 4.7 item 5's exposures; **the checks that must be zero** (13.1): every tier-1 count of 4.7 item
+1, an entry inside a verified window among them; purchases refused for cash; trades exiting after the flatten time
+(`trading_hours`); trades on a
 session that closes early by E-029's calendar (`config/calendar_early_closes.csv`, LF sha256
 `72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2`); resets and reactivations bought. E-050's calendar is
 `config/calendar_fomc_minutes.csv`, LF sha256 `0350d41fe224909d93ae9211761e839c4925c231b83f039ccb92f1d8a4127ce7`. A
@@ -978,8 +1073,10 @@ manifests) plus its script and its import closure (`identity_cover.imports(scrip
 its design's registered offered trades (Q-94's recorder); in `TS` no adapter switch fires and in each configuration no
 other plan's rule fires; a flip cell equals its steady cell on every account until that account's first flip trade;
 each two-ended term's corners equal each other where the term cannot bind; **every tier-1 count of 4.7 item 1 is
-zero**. Any failure stops the reading: nothing of a new cell is computed, written or printed; the failure protocol
-applies; a rerun is a further judged read under `repeat=` (E-053).
+zero** (no entry inside a verified window; no position held through a window's start at an account a verified rule
+reaches); **A-18 changes nothing at an account no verified news rule reaches**, so every `TS` trade is U1's. Any failure
+stops the reading: nothing of a new cell is computed, written or printed; the failure protocol applies; a rerun is a
+further judged read under `repeat=` (E-053).
 
 ### 13.2 The refusals before step 0 reads anything
 
@@ -1012,7 +1109,7 @@ never the reading.
 |---|---|---|---|
 | 20262380 | in use | `coin_eval` | part C's evaluation coin streams, keyed `[20262380, w_index, r_index]` -- the same stream for **every** mode-corner, policy and stop of that `(w, r)` (S1: corners, plans, `flip` and costed cells are all paired) |
 | 20262381 | in use | `coin_funded` | part C's funded coin streams, keyed the same way; independent of `coin_eval`, so 9.5's joins are exact |
-| 20262382 | in use | `coin_peak` | `RI`'s losing-trade peaks (9.2), keyed `[20262382, w_index, r_index]`, so `RI`'s outcome stream is every other funded mode's |
+| 20262382 | in use | `coin_peak` | `RI`'s losing-trade peaks (9.2), keyed `[20262382, w_index, r_index]` and, like the outcome stream, **drawn `n` per slot for every account, alive or not, winner or loser** (the red team's N-2), so `RI`'s outcome stream is every other funded mode's and `flip` and `steady` meet the same peak uniforms |
 | 20262383 | in use | `build_toys` | the build's toy campaigns, scripted streams and 9.6's false-alarm batteries (T-1 to T-13) |
 | 20262384 | in use | `coin_identity` | `modes_coin_identity`'s items (a), (c) and (d) |
 | 20262385 | in use | `honesty` | 12.5's honesty series (keys `[20262385, 1, shape, h, n_w]`; the build's test `[20262385, 0, ...]`) |
@@ -1050,15 +1147,16 @@ start seeds (`lockstep.child_seed(20261920, 0, start_day)`, E-024); U1's replay 
 
 1. **No program family number and no level** (E-023 (1)).
 2. **Step 0** writes tables, draws nothing and runs no engine.
-3. **The mode-corners** (Appendix M, at Q-136's statuses): 19 evaluation and 25 funded, **44**.
+3. **The mode-corners** (Appendix M, at Q-136's and Q-136b's statuses): 20 evaluation and 25 funded, **45**, of which
+   three (`L6/std` and `L6/con` funded, `PRO1` evaluation, lenient) share their strict corner's gross cells (5.2).
 4. **The cells and runs:**
 
 <!-- counted-cells: the rows below are summed by T-0 -->
 
 | block | runs | basis |
 |---|---|---|
-| part C, gross coin | 2112 | 44 mode-corners x 24 `(w, r)` x 2 policies, less `RI`'s funded cells outside its read set (printed at step 0) |
-| part C, costed coin | 3168 | 44 x 24 x 3 stops, at most: only the cells part B finds sizeable run (printed at step 0) |
+| part C, gross coin | 2016 | (45 mode-corners less 3 sharing their gross cells) x 24 `(w, r)` x 2 policies, less `RI`'s funded cells outside its read set (printed at step 0) |
+| part C, costed coin | 3240 | 45 x 24 x 3 stops, at most: only the cells part B finds sizeable run (printed at step 0) |
 | part F, references | 2 | `TS` on P-16 and P-14 (identities) |
 | part F, steady corners | 52 | 26 corners x 2 streams |
 | part F, flips | 28 | 14 configurations x 2 flips, P-16 |
@@ -1066,15 +1164,18 @@ start seeds (`lockstep.child_seed(20261920, 0, start_day)`, E-024); U1's replay 
 | beside, placement | 2 | `TS`'s two flips |
 | beside, gates | 13 | P-16 strict corners, 500 paths, point and bound, with the zero-edge twin |
 | reference checks against Q-44 | 4 | `TS-16` under the three ladder levels and the placement |
-| statistical oracle checks | 10681 | 2 per coin run, 1 per `TS-S` evaluation run (120), 1 reference (9.6), at most |
+| statistical oracle checks | 7489 | 1 fairness check per coin run (5,256); 1 pass ceiling per evaluation run (2,352) less the close-only corners' 240; 1 supremum per `TS-S` evaluation run (120); 1 reference (9.6), at most |
 
 <!-- end counted-cells -->
 
-   That is **at most 5,280 coin runs**, **82 replays** at 0 % on both arms (2 references, 80 new), **41 replays
-   beside** with 4 reference checks, **13 gates**, and **at most 10,681 statistical oracle checks**. The grid is bounded
-   and kept (the lead's ruling): Q-136's record moved the corners from 42 to 44 and part F's from 24 to 26. A joining
-   firm (2.4) adds, per configuration: 120 coin runs per mode-corner; 2 steady replays per part-F corner; 2 flips; 3
-   ladder replays; 1 gate; and the oracle checks that follow -- stated in the join's row before step 0.
+   That is **at most 5,256 coin runs**, **82 replays** at 0 % on both arms (2 references, 80 new), **41 replays
+   beside** with 4 reference checks, **13 gates**, and **at most 7,489 statistical oracle checks**. The grid is bounded
+   and kept (the lead's ruling): Q-136's record moved the corners from 42 to 44 and part F's from 24 to 26; Q-136b's
+   commission rule (U-32) adds `PRO1`'s second evaluation corner (45), whose gross cells, like `L6`'s funded lenient
+   corners', are shared, not re-run (N-4); the oracle checks fall with the exact fairness check and the dropped ceilings.
+   A joining firm (2.4) adds, per configuration: 120 coin runs per mode-corner (72 at a corner sharing its gross cells);
+   2 steady replays per part-F corner; 2 flips; 3 ladder replays; 1 gate; and the oracle checks that follow -- stated in
+   the join's row before step 0.
 5. **Exact arithmetic, not runs:** `TS-N`'s re-pricing; every price end and U-2's grid; 9.5's joins; part B.
 6. **Every block read** is recorded as read for plan and policy choices (14). **Nothing is selected by the program.**
 
@@ -1082,14 +1183,15 @@ start seeds (`lockstep.child_seed(20261920, 0, start_day)`, E-024); U1's replay 
 
 ### 17.1 The adapters
 
-Section 4.3's A-0 to A-17, in `extended/`, never in `vendor/`.
+Section 4.3's A-0 to A-19, in `extended/`, never in `vendor/`.
 
 ### 17.2 The rules in code
 
 Every value of every role is read by a loader that refuses an entry not `verified` (Stage 2's ledger through its own
 loader; the vendored Lucid ledger through Stage 2's adapter; `config/rules_extended.yaml` through RD-01's
 `extended/firm_terms.py`), parsing a value stated in text fail-loud. A test fails on any literal of a rule value in the
-adapters outside comments. The readings of section 5 come from one table of named constants citing 5.1. Stage 2's
+adapters outside comments. The readings of section 5 come from one table of named rules citing 5.1; **every figure a
+U-rule end needs is parsed by A-19 from its named entry's recorded quote, never typed** (S-3). Stage 2's
 operating constants -- D-117's headroom (`sizing.DEFAULT_HEADROOM_FRAC`) and D-212's and D-272's stand-aside share and
 cost floor (the registered sizing rule's `stand_aside`) -- are read from their modules, never typed (the red team's
 N10). Grid values (2.6), horizons, account counts and the oracle level come from one table citing this file.
@@ -1103,11 +1205,11 @@ N10). Grid values (2.6), horizons, account counts and the oracle level come from
 | T-2 | every account class of 4.3 with its switches at Topstep's setting equals the vendored class on toy campaigns (RD-01's T-1 form) |
 | T-3 | every adapter's coin form equals its account class on scripted streams, account for account -- daily limits soft and hard, static floors and their move at a payout, minimum days, lifespans, inactivity on the costed coin, buffers, cadences, clocks, cycle shares, counts, the contract-counted cap, the Daily path at both U-22 ends, the request-day exclusion (A-16), LucidFlex (A-17); and the base coin at `TS` against `CombineAccount` / `FundedAccount` with the known differences listed |
 | T-4 | 4.6's table inputs at each new plan on toy campaigns; the held reading; the day-logging micro |
-| T-5 | part A's arithmetic on hand-built rule sets with known answers, under both consistency semantics; `k_F` under a calendar clock and a trading-day clock; `b*` at both U-25 ends; the implied-days and boundary-cell lists; the stated-fewest check firing on a hand-broken record |
+| T-5 | part A's arithmetic on hand-built rule sets with known answers, under both consistency semantics; `k_F` under a calendar clock and a trading-day clock, with 2.6's rounding up and down; `b*` at both U-25 ends; the implied-days, boundary-cell, close-only and ceiling-cell lists; the stated-fewest check firing on a hand-broken record; **A-19's parser** on each named entry's quote at 205fc42 (and a hand-broken quote refused) |
 | T-6 | part B's arithmetic on hand-computed cells; the three mixes; U-26's two counts; the constants read from their modules |
 | T-7 | `flip`'s schedule on the coin and on toy replays: `k` and `r_flip` from part A; one flip trade a session; the cuts; the registered cap on flip trades; a flip cell equal to its steady cell until the first flip trade |
 | T-8 | the costed coin: `n` per trade from the room, costs inside the room, its mean equal to minus its mean costs; a stood-aside session counted toward inactivity; `RI`'s peak law against a fine random-walk simulation of the bracket (`build_toys`), within its interval; the read set on `r` and on `r_flip` |
-| T-9 | 9.6: each oracle fires on a hand-broken engine; the false-alarm batteries at the null within the family-wise level; the shifted battery breaches; 9.5's joins equal `propsim.attempt_ev` to 1e-9; the renewal's law against a direct simulation of sequential attempts on toy laws |
+| T-9 | 9.6: each oracle fires on a hand-broken engine; the false-alarm batteries at the null (Bernoulli, fair trade sequences, skewed funded-shaped sequences) within the family-wise level; a check shifted by eight standard errors breaches in every battery; Freedman's bound computed against a hand-worked case; 9.5's joins equal `propsim.attempt_ev` to 1e-9; the renewal's law, with 9.4's censoring convention, against a direct simulation of sequential attempts on toy laws; **D-145's stacking trigger** (4.7 item 5) on hand-built breach and request records -- two breaches inside the 21 sessions ending on the request day, that day included, fire; one does not; two with one on the 22nd session back do not -- and the coin's windowed renewal against a direct simulation |
 | T-10 | 10.1's `k*` from A-13's counters against a sort of hand-built day records; 11's last gate on hand-built gate records |
 | T-11 (`slow`, `heavy`) | 13.1's identities at 4 starts and 4 paths, and the coin identity at 200 accounts a cell (it reads the bars: E-198's marker, the red team's N7) |
 | T-12 | the menu: no P without its guard row; every exposure of 4.7 item 5 printed for `flip` and `steady` alike; no cell withheld for conduct; the flags of 12.6 on synthetic menus |
@@ -1154,38 +1256,41 @@ before:**
 **On any failure, nothing more of the failed step's own run is computed, written or printed**; the failure protocol
 applies.
 
-**The bounds, every step (the red team's S12; the lead's ruling).** The machine's limit is under 3 GB for the one heavy
-job running; every step's peak working set (`extended/procmem.py`) is held **under 2.5 GB**, at most two workers, one
-BLAS thread each:
+**The bounds, every step (the red team's S12 and S-5; the lead's ruling).** The machine's limit is under 3 GB for the
+one heavy job running. **Every step's memory bound is the job's summed working set** -- the parent process and every
+worker together: each process reports its own peak (`extended/procmem.py`, which measures one process) and the parent
+sums them -- held **under 2.5 GB**, one BLAS thread a process. **U1 replays run on one worker** (steps 1, 3, 4 and the
+gates of 5), since two of E-010's recorded U1 peaks would exceed the bound; the replays are deterministic, so one worker
+changes nothing but the time:
 
-| step | weight | time bound | memory bound | measured before it on |
-|---|---|---|---|---|
-| 0 | light | 1 hour | 0.5 GB | -- (arithmetic) |
-| 1 | heavy | 6 hours | 2.5 GB | E-010's recorded peak for U1's identity; the coin identity on the timing seed |
-| 2 | heavy | 12 hours | 2.5 GB | the synthetic coin on the timing seed (section 15), outputs discarded |
-| 3 | heavy | 24 hours | 2.5 GB | synthetic campaigns of the window's length (E-117's form) |
-| 4 | heavy | 12 hours | 2.5 GB | the same |
-| 5 | heavy | 12 hours | 2.5 GB | the same |
+| step | weight | workers | time bound | memory bound (summed) | measured before it on |
+|---|---|---|---|---|---|
+| 0 | light | 1 | 1 hour | 0.5 GB | -- (arithmetic) |
+| 1 | heavy | 1 | 8 hours | 2.5 GB | E-010's recorded peak for U1's identity; the coin identity on the timing seed |
+| 2 | heavy | at most 2 | 12 hours | 2.5 GB | the synthetic coin on the timing seed (section 15), outputs discarded |
+| 3 | heavy | 1 | 48 hours | 2.5 GB | synthetic campaigns of the window's length (E-117's form), at one worker |
+| 4 | heavy | 1 | 24 hours | 2.5 GB | the same |
+| 5 | heavy | 1 | 24 hours | 2.5 GB | the same |
 
 Part C's counters are O(accounts) (A-13), never per-session arrays. **A step whose measurement exceeds its bound is not
 started; a step that exceeds its bound while running is stopped**; either way the build reports, and **no grid is
 thinned and no worker added at run time** -- a smaller grid is a new declaration.
 
 **Waits, all before step 0:** Q-136 merged, then every shared identity and RD-01's `firms_identity` held at a commit
-containing it (4.1); section 19's pin blockers cleared; the pinning row; any join row (2.4); A-0 to A-17 built with T-0
-to T-13 and the red team's read of the build; **before step 4,** Q-44's file on master.
+containing it (4.1), Q-136b's entries among it; the pinning row; any join row (2.4); A-0 to A-19 built with T-0 to T-13
+and the red team's read of the build; **before step 4,** Q-44's file on master.
 
 ## 19. Open before the pin
 
 **The lead's:**
 
-1. **The pin blockers** (a role with no key at 205fc42): **My Funded Futures' commissions** (4.5) and **its single-day
-   profit ceiling** (G-4), both for the rules-verifier. With either still unrecorded at the pin, the text says how the
-   role is read before it is pinned (the ceiling as not modelled, already stated in G-4; the commissions have no
-   declared fallback here, since a typed figure would be a rule value).
-2. **Q-136's merge**, and T-0's pin-time mapping of every Appendix R key against the merged record: an entry whose status
-   differs from 205fc42's changes 5.2, Appendix M and section 16 by the rules already stated, before the pin.
-3. **The red team's re-read and the gatekeeper's**, of this text.
+1. **No pin blocker remains beyond the record's merge.** The second text's two -- My Funded Futures' commissions and
+   its single-day ceiling -- are recorded by Q-136b (4.1) and read by U-32 and A-11.
+2. **Q-136's and Q-136b's merge**, and T-0's pin-time mapping of every Appendix R key against the merged record: an
+   entry whose status differs from 205fc42's (or from Q-136b's working-tree entries) changes 5.2, Appendix M and section
+   16 by the rules already stated, before the pin; and A-19's parse of every named quote confirmed.
+3. **The red team's focused re-read and the gatekeeper's**, of this text (the last corrective cycle; a blocker still
+   standing goes to NEEDS_OPERATOR).
 4. **Whether `TS-S/con` and `L6/con` should be read on the registered trades** (they are not, G-1), and whether Labs
    should carry the placement beside (12.3).
 5. **The name at the pin:** `prereg/RD-05_firm_modes.md`, the draft renamed in the same commit, nothing else changing.
@@ -1214,50 +1319,53 @@ manifest, and recorded in its own decision row -- never in this file.)*
 | 1 | `L6` evaluation | single | -- |
 | 2 | `L10` evaluation | single | -- |
 | 3 | `L11` evaluation | single | -- |
-| 4 | `RE` evaluation | strict | U-15 |
-| 5 | `RE` evaluation | lenient | U-15 |
-| 6 | `RED` evaluation | strict | U-15 |
-| 7 | `RED` evaluation | lenient | U-15 |
-| 8 | `RI` evaluation | strict | U-15 |
-| 9 | `RI` evaluation | lenient | U-15 |
-| 10 | `PRO` evaluation | strict | U-15 |
-| 11 | `PRO` evaluation | lenient | U-15 |
-| 12 | `PRO1` evaluation | single | -- |
-| 13 | `B20` evaluation | strict | U-27, U-28 |
-| 14 | `B20` evaluation | lenient | U-27, U-28 |
-| 15 | `B15` evaluation | strict | U-27, U-28 |
-| 16 | `B15` evaluation | lenient | U-27, U-28 |
-| 17 | `LU40` evaluation | single | -- |
-| 18 | `LU50` evaluation | single | -- |
-| 19 | `TS/std` funded | single | -- |
-| 20 | `TS/con` funded | single | -- |
-| 21 | `L6/std` funded | strict | U-20 (costed only) |
-| 22 | `L6/std` funded | lenient | U-20 (costed only) |
-| 23 | `L6/con` funded | strict | U-20 (costed only) |
-| 24 | `L6/con` funded | lenient | U-20 (costed only) |
-| 25 | `L10/day` funded | strict | U-22 |
-| 26 | `L10/day` funded | lenient | U-22 |
-| 27 | `L10/5wd` funded | single | -- |
-| 28 | `L11/day` funded | strict | U-22 |
-| 29 | `L11/day` funded | lenient | U-22 |
-| 30 | `L11/5wd` funded | single | -- |
-| 31 | `RE` funded | strict | U-25 |
-| 32 | `RE` funded | lenient | U-25 |
-| 33 | `RED` funded | strict | U-25 |
-| 34 | `RED` funded | lenient | U-25 |
-| 35 | `RI` funded | strict | U-25, U-29; U-30 (costed only) |
-| 36 | `RI` funded | lenient | U-25, U-29; U-30 (costed only) |
-| 37 | `PRO` funded | strict | U-16, U-17, U-25; U-26 (costed only) |
-| 38 | `PRO` funded | lenient | U-16, U-17, U-25; U-26 (costed only) |
-| 39 | `B20` funded | strict | U-18, U-28 |
-| 40 | `B20` funded | lenient | U-18, U-28 |
-| 41 | `B15` funded | strict | U-18, U-28 |
-| 42 | `B15` funded | lenient | U-18, U-28 |
-| 43 | `LU` funded | single | -- |
+| 4 | `RE` evaluation | strict | U-15; U-32 (costed only) |
+| 5 | `RE` evaluation | lenient | U-15; U-32 (costed only) |
+| 6 | `RED` evaluation | strict | U-15; U-32 (costed only) |
+| 7 | `RED` evaluation | lenient | U-15; U-32 (costed only) |
+| 8 | `RI` evaluation | strict | U-15; U-32 (costed only) |
+| 9 | `RI` evaluation | lenient | U-15; U-32 (costed only) |
+| 10 | `PRO` evaluation | strict | U-15; U-32 (costed only) |
+| 11 | `PRO` evaluation | lenient | U-15; U-32 (costed only) |
+| 12 | `PRO1` evaluation | strict | U-32 (costed only) |
+| 13 | `PRO1` evaluation | lenient | U-32 (costed only); gross shared with the strict corner |
+| 14 | `B20` evaluation | strict | U-27, U-28; U-32 (costed only) |
+| 15 | `B20` evaluation | lenient | U-27, U-28; U-32 (costed only); **close-only: no pass ceiling** |
+| 16 | `B15` evaluation | strict | U-27, U-28; U-32 (costed only) |
+| 17 | `B15` evaluation | lenient | U-27, U-28; U-32 (costed only); **close-only: no pass ceiling** |
+| 18 | `LU40` evaluation | single | -- |
+| 19 | `LU50` evaluation | single | -- |
+| 20 | `TS/std` funded | single | -- |
+| 21 | `TS/con` funded | single | -- |
+| 22 | `L6/std` funded | strict | U-20 (costed only) |
+| 23 | `L6/std` funded | lenient | U-20 (costed only); gross shared with the strict corner |
+| 24 | `L6/con` funded | strict | U-20 (costed only) |
+| 25 | `L6/con` funded | lenient | U-20 (costed only); gross shared with the strict corner |
+| 26 | `L10/day` funded | strict | U-22 |
+| 27 | `L10/day` funded | lenient | U-22 |
+| 28 | `L10/5wd` funded | single | -- |
+| 29 | `L11/day` funded | strict | U-22 |
+| 30 | `L11/day` funded | lenient | U-22 |
+| 31 | `L11/5wd` funded | single | -- |
+| 32 | `RE` funded | strict | U-25; U-32 (costed only) |
+| 33 | `RE` funded | lenient | U-25; U-32 (costed only) |
+| 34 | `RED` funded | strict | U-25; U-32 (costed only) |
+| 35 | `RED` funded | lenient | U-25; U-32 (costed only) |
+| 36 | `RI` funded | strict | U-25, U-29; U-30 (costed only); U-32 (costed only) |
+| 37 | `RI` funded | lenient | U-25, U-29; U-30 (costed only); U-32 (costed only) |
+| 38 | `PRO` funded | strict | U-16, U-17, U-25; U-26 (costed only); U-32 (costed only) |
+| 39 | `PRO` funded | lenient | U-16, U-17, U-25; U-26 (costed only); U-32 (costed only) |
+| 40 | `B20` funded | strict | U-18, U-28; U-32 (costed only) |
+| 41 | `B20` funded | lenient | U-18, U-28; U-32 (costed only) |
+| 42 | `B15` funded | strict | U-18, U-28; U-32 (costed only) |
+| 43 | `B15` funded | lenient | U-18, U-28; U-32 (costed only) |
+| 44 | `LU` funded | single | -- |
 
-`L6`'s two funded corners differ only on the costed cells (U-20 needs contracts); their gross cells are identical by
-construction and are run once each anyway, the equality checked (13.1). The index fixes run order only; no seed key
-uses it.
+**Gross cells shared** (the red team's N-4): at the three lenient corners marked so (rows 13, 23 and 25), the only
+two-ended term acts on the costed cells alone, so the gross cells are identical to the strict corner's by construction;
+they are run once, at the strict corner, shared, and their oracle checks counted once. **Close-only corners** (the
+lead's ruling on B-2): rows 15 and 17 -- rows 14 and 16 in the second text, before `PRO1`'s second corner (U-32) was
+added -- carry no pass-ceiling check (9.6). The index fixes run order only; no seed key uses it.
 
 ## Appendix R -- the term roles each configuration leans on, with their keys at Q-136's commit 205fc42
 
@@ -1286,8 +1394,10 @@ Sources: `stage2` is `vendor/stage2/config/rules.yaml`; `lucid` the vendored Luc
 | funded allowance, scaling | `funded_scaling_plan`, `scaling_tier_after_payout` (stage2) | `labs.006_50k_static.funded_position_limit` (U-20), `labs.010_011_50k_dpp.funded_position_limit` (verified) | `mffu.rapideod50k.funded_position_limit`, `mffu.builder50k.position_limit` (verified); `mffu.pro50k.funded_position_limit` (U-26); `mffu.rapid50k.funded_position_limit` (unverified, U-30) | `funded_position_limit` |
 | seats, the hold | `max_active_funded_accounts`, `hold_queue_behaviour` (stage2) | `labs.006_50k_static.funded_seats`, `labs.010_011_50k_dpp.funded_seats` (verified) | `mffu.max_funded_accounts` (verified), `mffu.builder50k.funded_seats` (verified); `mffu.hold_queue_behaviour` (unstated, U-14) | `max_accounts` |
 | fees after funding, payout fee, lag | `payout_fee`, `payout_lag_days_aeropay` (stage2) | general (U-13) | `mffu.payout_fee` (unstated, U-3), `mffu.payout_processing_time` (unverified, U-5) | `funded_monthly_fee`, `payout_fee`, `payout_processing_days` |
-| commissions | `fills.yaml` (8284213) | U-23 | **none (pin blocker)** | `fills.yaml` (D-575) |
-| conduct, tier 1 (mechanical) | `cross_account_opposite_positions` (stage2); `tier1_news_events_restriction` (record) | `labs.50k_static.tier1_news_cap` (verified); `labs.010_011_50k_dpp.tier1_news_cap` (unstated) | `mffu.news_tier1_rule`, `mffu.hedging_rule`, `mffu.coordinated_trading_rule` (verified); `mffu.automation_and_sim_fills` (verified; unsized, 4.7 item 6) | `prohibited_conduct` |
+| commissions | `fills.yaml` (8284213) | U-23 | `mffu.commissions` (verified, firm-wide); `mffu.rapideod50k.commissions`, `mffu.rapid50k.commissions`, `mffu.pro50k.commissions`, `mffu.pro50k_oneday.commissions`, `mffu.builder50k.commissions` (unverified) -- U-32 (Q-136b) | `fills.yaml` (D-575) |
+| single-day profit ceiling | -- | -- | `mffu.rapideod50k.funded_single_day_profit_ceiling`, `mffu.rapid50k.funded_single_day_profit_ceiling` (verified, A-11); the other eight `*_single_day_profit_ceiling` keys (unstated) (Q-136b) | -- |
+| news (funded) | -- (U1's own rule) | -- (the Combine's rows are in the changed entry) | `mffu.rapid50k.funded_news`, `mffu.pro50k.funded_news` (verified); `mffu.rapideod50k.funded_news` (unverified, U-31); `mffu.builder50k.news` (verified, unrestricted) | `news_trading_terms` (lucid) |
+| conduct, tier 1 (mechanical) | `cross_account_opposite_positions` (stage2); `tier1_news_events_restriction` (record; status `changed`, not loaded, 4.7 item 1) | `labs.50k_static.tier1_news_cap` (verified); `labs.010_011_50k_dpp.tier1_news_cap` (unstated) | `mffu.news_tier1_rule`, `mffu.hedging_rule`, `mffu.coordinated_trading_rule` (verified); `mffu.automation_and_sim_fills` (verified; unsized, 4.7 item 6) | `prohibited_conduct` |
 | conduct, tier 2 | `responsible_trading_program` (stage2) | the same (unapplied, 12.3) | -- | -- |
 | conduct, tier 3 | `prohibited_trading_strategies`, `prohibited_conduct` (stage2); `tou_s8_relative_position_size` (record) | the same | `mffu.pro50k.funded_conduct_policy` (verified) | -- |
 
@@ -1323,9 +1433,37 @@ Sources: `stage2` is `vendor/stage2/config/rules.yaml`; `lucid` the vendored Luc
 | N9 | T-0 did not check the calendars' hashes | added | T-0 |
 | N10 | D-212's and D-117's constants typed | read from their modules | 8; 17.2 |
 
-**Declined:** none. **Narrowed, with reason:** B1 (b)'s behavioural test is applied as printed exposures beside every
-cell rather than as a label that removes a cell, because under D-145 nothing outside tier 1 removes a cell and tier 1
-is enforced in every cell; B1 (c)'s quote-matching rule is not needed, since no label rests on a quote any more.
+**Declined (first read):** none. **Narrowed, with reason:** B1 (b)'s behavioural test is applied as printed exposures
+beside every cell rather than as a label that removes a cell, because under D-145 nothing outside tier 1 removes a cell
+and tier 1 is enforced in every cell; B1 (c)'s quote-matching rule is not needed, since no label rests on a quote any
+more.
+
+### The re-read (Q-137r2) and Q-136b, and where each is answered in the third text
+
+| finding | what it found | the answer (the lead's ruling) | where |
+|---|---|---|---|
+| **B-1** | the news stand-aside decided on a trade's exit (look-ahead) | decided at entry: no entry inside a verified window; a position open at the window's start flattened at that bar, priced from the bar under the fill rule; RD-01 G-3's bracket beside; flip and steady alike; the `TS` rows keep U1's rule | 2.6; 4.3 A-18; 4.7 items 1, 3; 10.3; 12.4; 13.1 |
+| **B-2** | at Builder's close-only corners the pass ceiling is not a bound | the ceiling dropped there, the fairness check and the accounting identities the oracle; the corners listed (Appendix M rows 15 and 17, the second text's 14 and 16; no other) | 7 item 9; 9.6; Appendix M |
+| S-1 (a) | the shifted battery's power about 0.86-0.89 | the shift is eight standard errors, power above 0.999 | 9.6; T-9 |
+| S-1 (b) | the boundary quantity omitted expired accounts | its third term over every account neither passed nor failed, expired included; the lifespan read from the record | 7 item 8; 9.6 |
+| S-1 (c) | the normal interval at a 1e-6 tail on a skewed quantity | every statistical oracle exact: Clopper-Pearson for probabilities; Freedman's inequality on the trades' fairness martingale, valid for any skew; skewed funded-shaped batteries in T-9 | 9.6; T-9 |
+| S-2 | `mffu.rapideod50k.funded_news` missing; `tier1_news_events_restriction` is `changed` | a news rule applies only when its key is verified; U-31 for Rapid EOD; the changed entry not loaded, its list holding no minutes; no build applies the minutes calendar to `TS` or Labs beyond U1; `mffu.one_time_cutover_date` listed (moot) | 4.7 item 1; 5.1 U-31; 5.2; G-2; Appendix R |
+| S-3 | U-rule figures live only in unverified entries' quotes | parsed from the named quote by A-19's declared parser, fail-loud, with a test; none missing | 4.3 A-19; 5.1; 17.2; T-5 |
+| S-4 | censored attempts treated two ways | one convention: censored in both the renewal and the fee means, fees paid up to the horizon, the censored share printed | 9.4; 9.5 |
+| S-5 | the memory bound and the worker count could contradict | the bound is the job's summed working set; U1 replays on one worker; workers stated per step; step 3's time bound set for one worker | 18 |
+| S-6 | the coin's stacking exposure undefined | D-145's trigger defined exactly (two breaches across the campaign's accounts in the 21 sessions ending on the request day, that day included); the coin's windowed renewal; tested in T-9 | 4.7 item 5; 9.5; T-9 |
+| N-1 | the calendar-to-sessions rounding unnamed | named: the stricter direction, up for a wait, down for a window that ends an account | 2.6; 7 items 3, 8 |
+| N-2 | `coin_peak` aligned only if drawn every slot | drawn `n` per slot for every account | 15 |
+| N-3 | whether LucidFlex's own configurations are in Lucid's enumeration | yes; Lucid joins whole or not at all, and cannot while the DLL-on configurations stand unmodelled | 2.4 |
+| N-4 | identical gross runs counted twice | shared gross cells run once and counted once; the count fixed (45 corners, 2,016 gross runs) | 5.2; 16; Appendix M |
+| N-5 | the lenient `b*` borrows Topstep's cap | the flip rows there labelled "`b*` at the reference cap" | 10.3 |
+| Q-136b commissions | the per-plan commission unverified; the firm-wide figure verified | U-32: strict the firm-wide figure on every fill, lenient the engine's own; from the key, never typed | 4.5; 5.1 U-32; 5.2; Appendix R |
+| Q-136b ceiling | the single-day ceiling verified at Rapid and Rapid EOD | the excess forfeited that day; the account's life ends at that close, "moved to Live", a terminal state apart, never a payout; unstated elsewhere, nothing applies | 4.3 A-11; G-4; 5.2; 7 item 10; 9.6 |
+| Q-136b pin blockers | -- | none remains beyond the record's merge | 4.1; 19 |
+
+**Declined (re-read):** none. **Two choices the rulings left open, made here:** the martingale checks became
+Freedman's exact bound on the trades' fairness (an exact interval, as S-1 (c) allows), and the funded payout bound,
+which then follows from the fairness check and two exact accounting identities, is printed rather than tested again.
 
 ## Appendix C -- the drafter's choices, each with its reason
 
@@ -1358,3 +1496,9 @@ is enforced in every cell; B1 (c)'s quote-matching rule is not needed, since no 
 | 25 | the oracles at a family-wise 0.01, Bonferroni | 9.6 | the lead's ruling on B3; Bonferroni is valid under any dependence among the checks |
 | 26 | time and memory bounds per step, never thinned at run time | 18 | the lead's ruling on S12 |
 | 27 | the renewal computed to 2,520 sessions | 9.5 | ten years; the mass beyond printed |
+| 28 | the forced flat priced at the open of the window's first bar, with the flatten slippage | 4.3 A-18 | bars are stamped at their open, so that open is the first price at the window's start; the existing fill rule's flatten cost |
+| 29 | the G-3 bracket shown on the flattened trades' own P&L, the journey not re-run | 4.3 A-18 | a beside reading; a re-run per bracket end would double part F for a count RD-01 kept beside |
+| 30 | the martingale oracles as Freedman's bound on the fairness martingale; the payout bound derived | 9.6 | exact at any skew with power comparable to the normal width; the payout bound follows from fairness and the accounting identities |
+| 31 | `PRO1`'s evaluation split into two corners by U-32, its gross cells shared | Appendix M | U-32 acts on costed cells only; the rule of 5.2, applied as for `L6` |
+| 32 | the calendar rounding up for waits and down for windows that end an account | 2.6 | the direction that helps the user least (the lead's ruling on N-1) |
+| 33 | a censored attempt a terminal outcome, its fees paid to the horizon | 9.4, 9.5 | one convention in the renewal and the means (the lead's ruling on S-4) |
