@@ -185,3 +185,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-188: the breakeven-fidelity reading run and collected (identities held); audit dispatched; F-03's run 1 started. |
 | 2026-11-17 | lead | E-189: the breakeven reading audited (no wrong number; the corrected figures not checkable, P-15 missing); a second version building. |
 | 2026-11-17 | lead | E-190: the second one-sample calibration built (synthetic only); its red-team read before the runs. |
+| 2026-11-17 | lead | E-191: the one-sample build red-teamed: its crash rule let a failed check be rerun; fixes building. |
+| 2026-11-18 | lead | E-192: F-03 closes at stage B (Kill B): no opening-timing cell cleared its selection bar on the choice block; the judged block stays unread; T-3 owed. |
+| 2026-11-18 | lead | E-193: the one-sample build's crash rule closed but for its ledger file; a final cycle chains and pins it. |

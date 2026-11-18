@@ -35,3 +35,5 @@ results/p14_validation.csv,pair,*/added_ticks_*,"added slippage in ticks (a smal
 results/p14_validation.csv,pair,*/*_range,"ranges of counts and sessions across realisations; the numerators are dollars and counts"
 results/p14_validation.csv,pair,*/registered_pf_growth_on_base_p50,"dollars of growth; the numerator payouts per path (a count)"
 results/p14_validation.csv,pair,*/registered_v1_payout_drought_p90,"sessions of payout drought; the numerators are dollars"
+results/fo_opening.csv,name,L_close,"F-03's lift L_c under the close flatten convention (its 7.2 and 10.3): a lift statistic in R, not a close price (E-192)"
+results/fo_opening.csv,level,in_state_offers,"the count of in-state offers per cell and year (F-03 10.5): a whole-number count, not a price (E-192)"

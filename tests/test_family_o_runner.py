@@ -203,7 +203,9 @@ def test_t11_the_seeds_appear_only_in_the_familys_files_and_the_records_that_quo
     allowed = re.compile(r"^(prereg/F-03_opening_timing\.md|DECISIONS\.md|STATUS\.md|TASK_QUEUE\.md|PROGRESS\.md|"
                          r"docs/(reviews|briefs|audits)/.*|extended/opening_[a-z]+\.py|scripts/fo_opening\.py|"
                          r"identity/family_o_identity\.py|tests/test_family_o_[a-z0-9_]+\.py|tests/fo_[a-z0-9_]+\.py|"
-                         r"tests/test_family_r_band_exit\.py)$")
+                         r"tests/test_family_r_band_exit\.py|"
+                         # the family's own result manifests record the seeds they drew (E-192)
+                         r"results/fo_opening[a-z0-9_]*\.csv\.manifest\.json)$")
     stray = sorted(h for h in hits if not allowed.match(h.replace("\\", "/")))
     assert stray == [], stray
     fr = (ROOT / "tests" / "test_family_r_band_exit.py").read_text(encoding="utf-8")

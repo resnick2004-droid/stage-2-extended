@@ -1,0 +1,114 @@
+sha256 file 1afa9cf66b37424d1c6360406b133d10447f3960fc5e78e20fbb577cae65c66e manifest 1afa9cf66b37424d1c6360406b133d10447f3960fc5e78e20fbb577cae65c66e
+rows 2398 manifest rows 2398 columns equal True
+k 12 level recomputed 0.0003205128205128205 manifest 0.0003205128205128205
+
+== stage B
+s1: L -0.001026 (halves' mean -0.001026; by-year weighted by in-state offers -0.001026); L_long w -0.043838 vs -0.043838; L_short w 0.041786 vs 0.041786; max |by-year L - halves mean| 3.33e-16; t = L/SE -0.0467 vs q_B 2.1080: above False
+s2: L 0.017701 (halves' mean 0.017701; by-year weighted by in-state offers 0.017701); L_long w 0.002329 vs 0.002329; L_short w 0.033074 vs 0.033074; max |by-year L - halves mean| 2.64e-16; t = L/SE 1.0152 vs q_B 2.1080: above False
+u3: L 0.007195 (halves' mean 0.007195; by-year weighted by in-state offers 0.007195); L_long w -0.000828 vs -0.000828; L_short w 0.015218 vs 0.015218; max |by-year L - halves mean| 2.55e-16; t = L/SE 0.3850 vs q_B 2.1080: above False
+q_B bounds for 3 cells under normality: perfectly correlated 1.6448536269514722 independent 2.121201429680507
+
+== eligibility (10.3), from the CSV's other sections
+K0: CP intervals, rates and ratios re-derived; lax anywhere: False
+A10: CP intervals re-derived for 24 rows; lax anywhere: False
+s1: worst-year unresolved 0.0197; failing ['long>0', 'close>0']; eligible re-derived False, reported False
+s2: worst-year unresolved 0.0201; failing []; eligible re-derived True, reported True
+u3: worst-year unresolved 0.0079; failing ['long>0']; eligible re-derived False, reported False
+
+== Kill B: eligible cells above q_B: [] ; any cell above q_B: []
+
+== V_B (7.4 / 10.4), mean_dv from A9's lambda_bar and u_c, then against the vendored value map
+mean_dv implied by lambda_bar: {'s1': np.float64(2276.946964685715), 's2': np.float64(2276.9469646857146), 'u3': np.float64(2276.946964685713)}
+value map sha256 matches its manifest: True
+value map rows 1 mean_dv(c) 2276.9469646857124
+s1: V_B lower re-derived -480.9920 reported -480.9920; V_B point 1385.40; D_B/SE_D_B 1.565; screen MDL>3*lambda_bar True (ratio 8.26)
+s2: V_B lower re-derived -2919.3777 reported -2919.3777; V_B point -576.53; D_B/SE_D_B -0.519; screen MDL>3*lambda_bar True (ratio 7.78)
+u3: V_B lower re-derived -2233.9304 reported -2233.9304; V_B point -480.28; D_B/SE_D_B -0.577; screen MDL>3*lambda_bar True (ratio 8.57)
+start-years implied by openings/u_c: {'s1': np.float64(649.5), 's2': np.float64(649.5), 'u3': np.float64(649.5)}
+
+== the kind shares (10.5)
+s1 in-state shares sum 1.0 excess sum -1.01e-16 flatten share = K2 overall True
+s2 in-state shares sum 1.0 excess sum 1.73e-18 flatten share = K2 overall True
+u3 in-state shares sum 1.0 excess sum -1.04e-16 flatten share = K2 overall True
+
+== A2 / A7 consistency
+s1 design sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+s1 twin0 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+s1 twin1 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+s2 design sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+s2 twin0 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+s2 twin1 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+u3 design sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+u3 twin0 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+u3 twin1 sums {'mark': np.True_, 'hour': np.True_, 'day_kind': np.True_, 'wait': np.True_} wait>=5 == fallbacks True fallback share True openings True
+population offers per year implied by each cell (should agree): {2021: [np.float64(35166.0), np.float64(35166.0), np.float64(35166.0)], 2022: [np.float64(34980.0), np.float64(34980.0), np.float64(34980.0)], 2023: [np.float64(34608.0), np.float64(34608.0), np.float64(34608.0)]}
+s1 in-state offers by year 35888.0 by hour 35888.0 by day kind 35888.0
+s2 in-state offers by year 33044.0 by hour 33044.0 by day kind 33044.0
+u3 in-state offers by year 34405.0 by hour 34405.0 by day kind 34405.0
+
+== u3's forecast hash (canonical JSON in the manifest)
+final True
+2021 True
+2022 True
+2023 True
+coefficients 11
+asia True
+evening True
+london True
+fold 2021 True True
+fold 2022 True True
+fold 2023 True True
+
+== a*'s (b): the vendored S1/S3 lifts (11 item 3 (b)), read as data
+s1_sided_coin.csv mom15 nan reported 0.0135299508276435 found [0.01352995082764352] ['section', 'reading', 'check', 'holds', 'rule', 'definition', 'offers', 'ties', 'tie_share', 'long_share_of_sided', 'rule_index', 'R', 'trades', 'mean_lift', 'sd_boot', 't_boot', 'p_boot', 'survives', 'bh_reject', 'side_sign', 'winning_side', 'mean_r_rule_side', 'reps', 'mean_block', 'seed', 'statistic', 'fwer', 'critical_t', 'hypotheses', 'sessions', 'survivors', 'surviving_arms', 'bh_q', 'bh_rejections', 'max_abs_t_q50', 'max_abs_t_q90', 'max_abs_t_q95', 'max_abs_t_q99', 'arm', 'sign', 'candidates', 'side_rule', 'growth_on_required', 'growth_on_required_point', 'required_p90', 'growth_zero_edge_twin', 'trades_taken_per_session', 'trades_taken_per_session_point', 'median_days_to_first_payout', 'median_payouts_per_path', 'mean_payouts_per_path', 'mean_payout_gross', 'st_payouts_per_month_p50', 'share_accounts_ever_paid', 'share_payouts_exposed', 'pf_break_even_denial_p50', 'pf_net_p50', 'every_offered_r_resolves', 'slice_lines_hold', 'growth_minus_reference', 'cell_trades_sha256', 'unresolved_0.25', 'unresolved_worst_year_0.25', 'unresolved_1', 'unresolved_worst_year_1', 'unresolved_1.5', 'unresolved_worst_year_1.5', 'unresolved_2', 'unresolved_worst_year_2', 'unresolved_2.5', 'unresolved_worst_year_2.5', 'unresolved_3', 'unresolved_worst_year_3', 'every_grid_r_resolves', 'source', 'key', 'milestone', 'measure', 'at_days', 'value', 'direction', 'n', 'line', 'better', 'horizon', 'candidate', 'reference', 'difference', 'text', 'coin_seed', 'coins', 'wins', 'mean_difference', 'wins_needed', 'passes_g2', 'span', 'span_first', 'span_last', 'early_growth_minus_reference', 'late_growth_minus_reference', 'a_paired_beats_by_margin', 'b_every_offered_r_resolves', 'c_wins_coin_sequences', 'd_not_below_on_either_span']
+s1_sided_coin.csv lbrk5 nan reported 0.0115146704596927 found [0.01151467045969274] ['section', 'reading', 'check', 'holds', 'rule', 'definition', 'offers', 'ties', 'tie_share', 'long_share_of_sided', 'rule_index', 'R', 'trades', 'mean_lift', 'sd_boot', 't_boot', 'p_boot', 'survives', 'bh_reject', 'side_sign', 'winning_side', 'mean_r_rule_side', 'reps', 'mean_block', 'seed', 'statistic', 'fwer', 'critical_t', 'hypotheses', 'sessions', 'survivors', 'surviving_arms', 'bh_q', 'bh_rejections', 'max_abs_t_q50', 'max_abs_t_q90', 'max_abs_t_q95', 'max_abs_t_q99', 'arm', 'sign', 'candidates', 'side_rule', 'growth_on_required', 'growth_on_required_point', 'required_p90', 'growth_zero_edge_twin', 'trades_taken_per_session', 'trades_taken_per_session_point', 'median_days_to_first_payout', 'median_payouts_per_path', 'mean_payouts_per_path', 'mean_payout_gross', 'st_payouts_per_month_p50', 'share_accounts_ever_paid', 'share_payouts_exposed', 'pf_break_even_denial_p50', 'pf_net_p50', 'every_offered_r_resolves', 'slice_lines_hold', 'growth_minus_reference', 'cell_trades_sha256', 'unresolved_0.25', 'unresolved_worst_year_0.25', 'unresolved_1', 'unresolved_worst_year_1', 'unresolved_1.5', 'unresolved_worst_year_1.5', 'unresolved_2', 'unresolved_worst_year_2', 'unresolved_2.5', 'unresolved_worst_year_2.5', 'unresolved_3', 'unresolved_worst_year_3', 'every_grid_r_resolves', 'source', 'key', 'milestone', 'measure', 'at_days', 'value', 'direction', 'n', 'line', 'better', 'horizon', 'candidate', 'reference', 'difference', 'text', 'coin_seed', 'coins', 'wins', 'mean_difference', 'wins_needed', 'passes_g2', 'span', 'span_first', 'span_last', 'early_growth_minus_reference', 'late_growth_minus_reference', 'a_paired_beats_by_margin', 'b_every_offered_r_resolves', 'c_wins_coin_sequences', 'd_not_below_on_either_span']
+s3_event_kinds.csv lnbar1x4 nan reported 0.0131883746235796 found [0.013188374623579698] ['section', 'reading', 'holds', 'check', 'rule', 'definition', 'offers', 'ties', 'tie_share', 'long_share_of_sided', 'gap_sessions', 'gap_no_previous_close', 'gap_roll_sessions', 'rule_index', 'R', 'trades', 'mean_lift', 'sd_boot', 't_boot', 'p_boot', 'survives', 'bh_reject', 'side_sign', 'winning_side', 'mean_r_rule_side', 'reps', 'mean_block', 'seed', 'statistic', 'fwer', 'critical_t', 'hypotheses', 'sessions', 'survivors', 'surviving_arms', 'bh_q', 'bh_rejections', 'max_abs_t_q50', 'max_abs_t_q90', 'max_abs_t_q95', 'max_abs_t_q99', 'arm', 'sign', 'candidates', 'side_rule', 'growth_on_required', 'growth_on_required_point', 'required_p90', 'growth_zero_edge_twin', 'trades_taken_per_session', 'trades_taken_per_session_point', 'median_days_to_first_payout', 'median_payouts_per_path', 'mean_payouts_per_path', 'mean_payout_gross', 'st_payouts_per_month_p50', 'share_accounts_ever_paid', 'share_payouts_exposed', 'pf_break_even_denial_p50', 'pf_net_p50', 'every_offered_r_resolves', 'slice_lines_hold', 'growth_minus_reference', 'cell_trades_sha256', 'unresolved_0.25', 'unresolved_worst_year_0.25', 'unresolved_1', 'unresolved_worst_year_1', 'unresolved_1.5', 'unresolved_worst_year_1.5', 'unresolved_2', 'unresolved_worst_year_2', 'unresolved_2.5', 'unresolved_worst_year_2.5', 'unresolved_3', 'unresolved_worst_year_3', 'every_grid_r_resolves', 'source', 'key', 'milestone', 'measure', 'at_days', 'value', 'direction', 'n', 'line', 'better', 'horizon', 'candidate', 'reference', 'difference', 'text', 'coin_seed', 'coins', 'wins', 'mean_difference', 'wins_needed', 'passes_g2', 'span', 'span_first', 'span_last', 'early_growth_minus_reference', 'late_growth_minus_reference', 'a_paired_beats_by_margin', 'b_every_offered_r_resolves', 'c_wins_coin_sequences', 'd_not_below_on_either_span']
+s3_latency.csv lnbar1x4 5.0 reported 0.011661198108755 found [0.011661198108755036] ['section', 'reading', 'holds', 'check', 'identity', 'rule', 'latency', 'over', 'marks', 'changed', 'share_changed', 'share_flipped', 'share_side_to_tie', 'share_tie_to_side', 'tie_share_l0', 'tie_share_lag', 'R', 'sessions', 'offers', 'ties', 'trades', 'mean_lift', 'sd_boot', 't_boot', 'p_boot', 'mean_r_rule_side', 'boot_seed', 'mean_block', 'reps', 'selection', 'arm', 'sign', 'candidates', 'side_rule', 'cell_trades_sha256', 'growth_on_required', 'growth_on_required_point', 'required_p90', 'growth_zero_edge_twin', 'trades_taken_per_session', 'trades_taken_per_session_point', 'median_days_to_first_payout', 'median_payouts_per_path', 'mean_payouts_per_path', 'mean_payout_gross', 'st_payouts_per_month_p50', 'share_accounts_ever_paid', 'share_payouts_exposed', 'pf_break_even_denial_p50', 'pf_net_p50', 'growth_minus_reference', 'unresolved_0.25', 'unresolved_worst_year_0.25', 'unresolved_1', 'unresolved_worst_year_1', 'unresolved_1.5', 'unresolved_worst_year_1.5', 'unresolved_2', 'unresolved_worst_year_2', 'unresolved_2.5', 'unresolved_worst_year_2.5', 'unresolved_3', 'unresolved_worst_year_3', 'every_offered_r_resolves', 'every_grid_r_resolves', 'slice_lines_hold', 'source', 'key', 'milestone', 'measure', 'at_days', 'value', 'direction', 'n', 'line', 'better', 'horizon', 'candidate', 'reference', 'difference', 'text', 'order', 'guard', 'status', 'needed', 'reference_value', 'b_every_offered_r_resolves', 'a_paired_beats_by_margin', 'c_wins_coin_sequences', 'd_not_below_on_either_span', 'first_failing_guard']
+
+== the licence: numeric magnitudes
+cuts                                min 222 max 222 non-integer 0
+sessions                            min 30 max 725 non-integer 0
+starts                              min 775 max 775 non-integer 0
+count                               min 0 max 3.559e+04 non-integer 0
+share                               min 0 max 0.693 non-integer 94
+runs                                min 102 max 169 non-integer 0
+mean_run                            min 3.101 max 4.8 non-integer 3
+longest_run                         min 13 max 18 non-integer 0
+year                                min 2021 max 2023 non-integer 0
+sessions_in_state                   min 130 max 207 non-integer 0
+in_state_offers                     min 0 max 3.507e+04 non-integer 0
+unresolved_3r                       min 0 max 0.02807 non-integer 12
+openings                            min 3.162e+04 max 3.427e+04 non-integer 0
+fallback_share                      min 0.05455 max 0.2402 non-integer 9
+censored                            min 244 max 358 non-integer 0
+censored_inside_wait                min 241 max 305 non-integer 0
+declined                            min 6.354e+05 max 2.058e+06 non-integer 0
+rejections                          min 3 max 80 non-integer 0
+replications                        min 2e+05 max 2e+05 non-integer 0
+level                               min 0.0003205 max 0.05 non-integer 30
+rate                                min 1.5e-05 max 4.5e-05 non-integer 6
+ci_lo                               min 3.093e-06 max 0.03184 non-integer 30
+ci_hi                               min 4.384e-05 max 0.04954 non-integer 30
+ratio                               min 0.0468 max 0.1404 non-integer 6
+mdl                                 min 0.1342 max 0.1496 non-integer 3
+windows                             min 649 max 649 non-integer 0
+u_c                                 min 50.32 max 50.89 non-integer 3
+lambda_bar                          min 0.01726 max 0.01746 non-integer 3
+improvement                         min 0.1276 max 0.149 non-integer 3
+lower95                             min 0.07658 max 0.1004 non-integer 3
+selections                          min 2000 max 2000 non-integer 0
+latency                             min 5 max 5 non-integer 0
+abs_mean_lift                       min 0.01151 max 0.01353 non-integer 4
+L                                   min 0.001026 max 0.0177 non-integer 3
+SE                                  min 0.01744 max 0.02198 non-integer 3
+L_long                              min 0.0008282 max 0.1374 non-integer 12
+L_short                             min 0.01522 max 0.175 non-integer 12
+L_close                             min 0.001536 max 0.01723 non-integer 3
+D_B                                 min 0.01677 max 0.04793 non-integer 3
+SE_D_B                              min 0.02904 max 0.03837 non-integer 3
+V_B_lower                           min 481 max 2919 non-integer 3
+V_B_in_wait                         min 505.6 max 1964 non-integer 3
+V_B_fallback                        min 3.789 max 4409 non-integer 3
+value                               min 2.108 max 259.4 non-integer 2
+in_state_share                      min 0.004026 max 0.5891 non-integer 12
+excess_over_strata                  min 0.003793 max 0.04603 non-integer 12
