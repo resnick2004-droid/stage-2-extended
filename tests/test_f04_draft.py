@@ -1,11 +1,11 @@
-"""Q-141: T-0 of family FP (`prereg/DRAFT_F-04_firm_protocol.md`, renamed `prereg/F-04_firm_protocol.md` at its pin):
+"""Q-141 (second text): T-0 of family FP (`prereg/DRAFT_F-04_firm_protocol.md`, renamed `prereg/F-04_firm_protocol.md` at its pin):
 the draft's form, checked on its own text and on the repository's files (no engine, no bar, no result file; fast).
 
 What it checks now (the pin adds Appendix P's modes against RD-05's Appendix M and every key section 3.2 names against
 the merged record -- section 17.2's T-0 row):
 
 - **under either name** -- exactly one F-04 declaration under `prereg/`, read as LF text;
-- **the sections present** -- 0 to 20 and Appendices P and C;
+- **the sections present** -- 0 to 20 and Appendices P, A and C;
 - **the seed block appears nowhere else** -- section 15's table lists the ten seeds once each, six in use and four
   reserved; no other tracked or working text file (the licensed data excluded) holds any of them but `DECLARED_USES`;
   the block is built here by arithmetic, so this file holds no literal of it; and a planted copy is found (the scans'
@@ -15,8 +15,8 @@ the merged record -- section 17.2's T-0 row):
 - **every cell counted, the counts consistent** -- the counted-cells rows equal the grid's factors times Appendix P's
   configurations, modes, groups and corners, and section 16's totals sentence;
 - **the references cannot drift** -- RD-05's and Q-126's pins as the text cites them equal those files' LF sha256 and
-  the pins in the decision log; the two calendars' LF sha256 as section 5.4 cites them;
-- **the level** -- k = 13's 0.05 / 182 stated;
+  the pins in the decision log (the red team's N-5); the four calendars' LF sha256 as section 5.4 cites them (N-4);
+- **the level** -- the provisional level, k = 13's 0.05 / 182, stated;
 - **no typed dollar figure** -- every dollar amount in the text is one of the declared grids' (RD-05 2.6's risks, U-2's
   ends), the bar, or the plan size "$50K" -- a guard against a typed rule value.
 """
@@ -47,14 +47,16 @@ DECLARED_USES: tuple[str, ...] = ()
 PURPOSES = frozenset({"fp_judgement", "fp_gate_floor", "fp_scorecard_beside"})
 
 # section 16.2's factors
-STOPS_P14, STOPS_P16, RATIOS, LATENCIES, ENTRIES, CLASSES = 6, 5, 4, 3, 2, 2
+STOPS_P14, STOPS_P16, RATIOS, LATENCIES_P14, LATENCIES_P16, ENTRIES, CLASSES = 6, 5, 4, 3, 1, 2, 2
 SESSION_RULES, MIXES, SIZING_A_MODE = 3, 2, 6 * 2
 PAIRS = SIZING_A_MODE ** 2
 
 PINS = {
     "prereg/RD-05_firm_modes.md": "be7f90fb56af6e09c92c0277ce83c228f2e2fbeca8fc26b87d90ccf50239659c",
 }
-CALENDARS = ("config/calendar_early_closes.csv", "config/calendar_fomc_minutes.csv")
+CALENDARS = ("config/calendar_early_closes.csv", "config/calendar_fomc_minutes.csv",
+             "vendor/stage2/data/releases_bls_0830_2009_2025.csv", "vendor/stage2/data/releases_bls_0830_2026.csv")
+Q126_PLAN = "docs/calibration/Q-126_one_sample_plan_2.md"
 ALLOWED_DOLLARS = {"25", "250", "500", "750", "1,000", "1,500", "2,000", "50K"}
 
 
@@ -86,7 +88,7 @@ def test_one_declaration(text: str) -> None:
 def test_sections_present(text: str) -> None:
     for n in range(21):
         assert re.search(rf"^## {n}\. ", text, re.MULTILINE), f"section {n} missing"
-    for app in ("## Appendix P", "## Appendix C"):
+    for app in ("## Appendix P", "## Appendix A", "## Appendix C"):
         assert app in text
 
 
@@ -203,8 +205,8 @@ def test_counts_consistent(text: str) -> None:
     assert all(c["corners"] == "single" for c in cfg if c["run"] == "repriced")
 
     c = _counted(text)
-    eb14 = STOPS_P14 * RATIOS * LATENCIES * ENTRIES           # P-14's entries-brackets
-    eb16 = STOPS_P16 * RATIOS * LATENCIES * ENTRIES
+    eb14 = STOPS_P14 * RATIOS * LATENCIES_P14 * ENTRIES       # P-14's entries-brackets
+    eb16 = STOPS_P16 * RATIOS * LATENCIES_P16 * ENTRIES       # P-16: its registered timing only (B-2)
     assert c["P-14 trade sets"] == eb14 * CLASSES
     assert c["P-16 trade sets"] == eb16 * CLASSES
     per_mode = (eb14 + eb16) * SESSION_RULES * MIXES * SIZING_A_MODE
@@ -218,26 +220,29 @@ def test_counts_consistent(text: str) -> None:
     assert c["repriced protocol cells"] == (p14 + p16) * n_repriced
     assert c["zero-lift journeys"] == c["P-14 protocol cells"]
     assert c["K0 at stage B"] == c["P-14 trade sets"]
-    assert c["judged lift tests"] == 1 and c["K0 at stage C"] == 1
+    assert c["judged lift tests"] == len(groups) and c["K0 at stage C"] == len(groups)     # the fixed sequence
+    assert c["stage A, limit diagnostic rows"] == (STOPS_P14 * RATIOS * LATENCIES_P14 + STOPS_P16 * RATIOS) * CLASSES
+    assert c["stage A, choice-block rung map rows"] == RATIOS * LATENCIES_P14 * ENTRIES * CLASSES
     assert c["value lines"] == len(groups) and c["gates"] == len(groups)
     assert c["beside, configuration picks"] == 2 * n_cfg
-    assert c["beside, 5-minute cells"] == c["beside, configuration picks"]
+    assert c["beside, 5-minute cells"] == n_cfg                          # P-14's picks only: P-16 has no latency
     assert c["beside, lenient corners"] == 2 * two
     assert c["beside, denial ladder"] == 2 * len(groups) * 3
     assert c["beside, placement"] == 2
 
     stated = re.search(
         r"\*\*at most ([\d,]+) protocol cells\*\* \(([\d,]+) of P-14's and ([\d,]+) of P-16's, ([\d,]+) of them repriced\s+"
-        r"by arithmetic\), \*\*(\d+) trade sets\*\*, \*\*one judged lift test\*\*, \*\*at most (\d+) value lines and (\d+) "
-        r"gates\*\*, and \*\*at most (\d+)\s+journeys beside\*\*", text)
+        r"by arithmetic\), \*\*(\d+) trade sets\*\*, \*\*at most (\d+) judged lift tests in a fixed sequence\*\*, \*\*at most "
+        r"(\d+) value lines and (\d+)\s+gates\*\*, and \*\*at most (\d+) journeys beside\*\*", text)
     assert stated, "section 16's totals sentence"
     s = [int(g.replace(",", "")) for g in stated.groups()]
     assert s[0] == c["P-14 protocol cells"] + c["P-16 protocol cells"]
     assert s[1] == c["P-14 protocol cells"] and s[2] == c["P-16 protocol cells"]
     assert s[3] == c["repriced protocol cells"]
     assert s[4] == c["P-14 trade sets"] + c["P-16 trade sets"]
-    assert s[5] == c["value lines"] and s[6] == c["gates"]
-    assert s[7] == sum(v for k, v in c.items() if k.startswith("beside,"))
+    assert s[5] == c["judged lift tests"]
+    assert s[6] == c["value lines"] and s[7] == c["gates"]
+    assert s[8] == sum(v for k, v in c.items() if k.startswith("beside,"))
 
 
 # ------------------------------------------------------------------------------------------------- references
@@ -251,12 +256,13 @@ def test_rd05_pin_cited_is_the_pinned_text(text: str) -> None:
         assert digest in text, f"{rel}'s pin is not cited"
 
 
-def test_q126_plan_pin_is_the_logs(text: str) -> None:
-    rel = "docs/calibration/Q-126_one_sample_plan_2.md"
-    digest = hashlib.sha256(_lf(ROOT / rel)).hexdigest()
+def test_q126_plan_pin_cited_is_the_logs(text: str) -> None:
+    """The red team's N-5: section 11 cites the plan's path and LF sha256; both equal the file and the log's pin."""
+    digest = hashlib.sha256(_lf(ROOT / Q126_PLAN)).hexdigest()
     decisions = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
-    assert f"`{rel}` sha256 `{digest}`" in decisions
-    assert "Q-126" in text and "E-187" in text
+    assert f"`{Q126_PLAN}` sha256 `{digest}`" in decisions
+    cited = re.search(rf"`{re.escape(Q126_PLAN)}`, LF sha256\s+`([0-9a-f]{{64}})`", text)
+    assert cited and cited.group(1) == digest
 
 
 def test_calendars_cited_by_their_lf_sha256(text: str) -> None:
