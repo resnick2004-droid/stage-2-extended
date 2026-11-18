@@ -5161,7 +5161,8 @@ rules:
     stage2_value: null
     note: >
       Once verbatim; the summary fetch did not list a cap. Bound: a $10,000 single-day profit moves the account to
-      Live (H13134718, per Q-135d; not re-read here, Live terms not recorded).
+      Live (H13134718, per Q-135d; not re-read here, Live terms not recorded). Q-136b (2026-11-18): H13134718 read;
+      the bound is now its own entry, mffu.rapideod50k.funded_single_day_profit_ceiling.
 
   - key: mffu.rapideod50k.payout_request_amount
     firm: mffu
@@ -6168,3 +6169,324 @@ rules:
     stage2_value: null
     note: >
       Both fetches.
+
+  # ---- Q-136b (2026-11-18 UTC; the machine's local date 2026-11-17): RD-05's two missing terms, every $50K plan ------
+  # Read first: the Terms (myfundedfutures.com/terms), twice, for an automated-access clause -- none has appeared (no
+  # hit on automat-, scrap-, crawl-, spider-, robot-, bot-, script- or data min- about access; s.12.5's "Such processing
+  # may occur automatically, without further notice or consent" is about the firm's processing; no version date, only
+  # "© 2023-2026 MyFundedFutures."). Then named pages one at a time with WebFetch, each term from two differently
+  # worded fetches. Pages read for these terms: H9735811, H8528335, H8528337, H10082979, H8445591, H9006753, H10101257,
+  # H11802636, H8528339, H8528346, H11553890, H16158363, H18337038, H13134709, H13134718, H14290805, H17573707,
+  # P:rapid-eod, P:rapid, P:pro, P:builder; and the collection lists 5687009, 5786939, 5808821, 5808827, 14650040,
+  # 17350372. No platform vendor's own page was read (not MFFU's domains).
+
+  # -- Commissions and fees per round turn --
+  - key: mffu.commissions
+    firm: mffu
+    value: "per contract, round trip (column 'Total Cost Round Trip'): NQ 4.68 USD, MNQ 1.90 USD; the page names no account type or plan, and does not say what the figure includes or that it is charged in evaluation or sim funded P&L"
+    units: text
+    status: verified
+    article_id: "9735811"
+    url: https://help.myfundedfutures.com/en/articles/9735811-futures-instrument-list
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H9735811 "Futures Instrument List" (August 24, 2026), subtitle: "Includes Contract Specifications, Commissions, and Trading Fees"
+      CME table, columns "Instrument Name | Code | Trading Hours | Tick Size | Tick Value | Total Cost Round Trip":
+      "E-mini NASDAQ 100" | "NQ" | "Sunday - Friday 17:00 - 16:00 CT" "Daily Break: 16:00 - 17:00 CT" | "0.25" | "$5" | "$4.68"
+      "Micro E-mini Nasdaq-100" | "MNQ" | "Sunday - Friday 17:00 - 16:00 CT" "Daily Break: 16:00 - 17:00 CT" | "0.25" | "$0.50" | "$1.90"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both fetches gave the same two rows and the subtitle. Asked in both: the page names no plan (Rapid, Rapid EOD,
+      Builder, Pro, Pro One Day) and none of evaluation, sim funded, platform, Tradovate, Rithmic, NinjaTrader or
+      per side; it does not say whether exchange, NFA, clearing or platform fees are inside the figure. It sits in
+      the "Welcome Aboard" collection's "Core Rules" group. H10101257 ("Understanding Live Funded Account", August
+      24, 2026) assigns "Round-Trip Commissions and Fees" to the LIVE account ("All costs will be deducted directly
+      from your Live Funded Account balance.") and says nothing of commissions on evaluation or sim funded accounts.
+      No MFFU page read states a platform pass-through: H8528335 (Overview of Supported Platforms, October 8, 2026),
+      H8528337, H10082979 (NinjaTrader), H8445591 (Tradovate) and H9006753 (TradingView) mention no commission, fee
+      or licence. Against the engine: Stage 2's MNQ round trip is $1.22 (Q-135d section 13, TS fills); MFFU's table
+      is $1.90 (NQ $4.68 against $3.78). Which accounts it applies to is each plan's `commissions` entry below.
+
+  - key: mffu.rapideod50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "16158363; 18337038; plans/rapid-eod; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H16158363's only fee lines: "There are no activation fees on this plan." / "Our Rapid EOD account does not have an activation fee."
+      P:rapid-eod: "Recurring Costs" | "None"; "One-time purchase, nothing to cancel." (no commission, round-trip, per-side or P&L-deduction wording; asked).
+      H18337038 (DLL version): no commission, round-trip or trading-fee wording (asked).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both versions (default and DLL). Recorded unverified, not unstated, because a figure exists without an account
+      named (the precedent: lucid.flex50k.funded_monthly_fee). A family that needs the cost declares its reading of
+      the gap, e.g. both ends: none, and mffu.commissions' $4.68 / $1.90 round trip on every evaluation and sim funded
+      fill. Live accounts pay commissions from the Live balance (H10101257); Live terms are not recorded.
+
+  - key: mffu.builder50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "14290805; plans/builder; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H14290805's only fee lines: "Activation Fee" | "$0"; "There are absolutely no activation fees on any of our plans."; "No. There are no activation fees on the Builder Plan."
+      P:builder: no commission, round-trip, per-side or P&L-deduction wording (asked); "Activation Fee | $0"; "Evaluation fees are non-refundable."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Both Builder columns (Default and Add-On). As mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.pro50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H17573707: the only fee row is Sim Funded "Activation Fee" | "$0"; no commission, per-trade, round-trip, per-side or platform-fee wording (asked).
+      P:pro: no commission, round-trip, per-side or P&L-deduction wording (asked); "Activation Fee" "$0"; "Recurring Costs" "None"; "Evaluation fees are non-refundable."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.pro50k_oneday.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "17573707; plans/pro; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled, as Pro 50K: H17573707 states no commission for any Pro column, the "Pro 50k - One Day" column included; P:pro does not mention the One Day variant; H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90") names no account type or plan.
+      H17573707: "Pro 50k One Day account follow the same rules as the Pro 50k." (Q-136's reading, mffu.pro50k_oneday.funded_terms)
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The second fetch of H17573707 noted the Sim Funded fee table has no One Day column. As
+      mffu.rapideod50k.commissions: a family declares its reading.
+
+  - key: mffu.rapid50k.commissions
+    firm: mffu
+    value: null
+    units: text
+    status: unverified
+    article_id: "13134709; plans/rapid; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
+      H13134709's only fee line: "Our evaluation costs are among the lowest, and at MFFU, there are absolutely no activation fees for any of our plans."
+      P:rapid: no commission, round-trip, per-side or P&L-deduction wording (asked); its FAQ's "you can reset it for a specific fee" is a reset fee.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      As mffu.rapideod50k.commissions: a family declares its reading.
+
+  # -- The single-day profit ceiling (a cap on one day's profit, or on how much one day counts), per plan and stage.
+  # The evaluation consistency shares (each plan's eval_consistency; the base unsettled, mffu.eval_consistency_base;
+  # never a breach, mffu.eval_consistency_breach) and Builder's per-cycle 50 % best-day share
+  # (mffu.builder50k.funded_consistency) are recorded already and are not repeated here.
+  - key: mffu.rapideod50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "16158363; 18337038; 11802636; 8528339; 11553890; plans/rapid-eod"
+    url: https://help.myfundedfutures.com/en/articles/16158363
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit, or forfeits or discounts a day's profit, beyond the 30 % consistency share: H16158363 "Consistency" | "30% (Eval Only)" (a pass gate, not a breach). Asked of H16158363, H18337038, H11802636 ("Rapid Plan EOD ($25K and $50K)": "30% (Eval Only)"), H8528339, H11553890 and P:rapid-eod: none.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The sim funded $10,000 rule (next entry) is written for the Sim Funded account only. Not a permission.
+
+  - key: mffu.rapideod50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: "10000 USD net profit in a single trading day (session) on the sim funded account moves it to Live automatically, and any profit above 10000 USD for that day is forfeited; one threshold for every size; both versions (default and DLL)"
+    units: text
+    status: verified
+    article_id: "13134718; 16158363; 18337038"
+    url: https://help.myfundedfutures.com/en/articles/13134718-understanding-rapid-live
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H16158363 (August 24, 2026), section 3: "Live transition on Rapid EOD 50k follows the same rules as standard Rapid 50k." (and its FAQ: "Rapid EOD 50k follows the same rules as standard Rapid 50k.")
+      H13134718 "Understanding Rapid Live" (September 8, 2026): "$10,000 net profit achieved in a single trading day (automatic transition)" / "Automatic Live transition occurs when you generate $10,000 in net profit within a single trading session." / "any profit exceeding $10,000 for that trading day is forfeited"
+      H18337038 (DLL version): "Both versions follow the existing Rapid Live values for their account size."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H13134718 twice: the three sentences in both (the second fetch: one threshold for all sizes, "The 50k account
+      is not listed with a different figure."); the other pathway, "Consistent payout performance reviewed and
+      approved by our Risk Management Team", with "final transition approval remains at the Risk Management Team's
+      sole discretion". H16158363 three times: the first fetch did not return section 3; the second and third quoted
+      the sentence verbatim (Q-135d's capture has it too). H18337038 once. Not stated: whether "net profit" is after
+      commissions (mffu.rapideod50k.commissions), where the trading day starts, or whether the forfeited excess is
+      lost from the sim balance, the payout, or both. What follows is the Live account (merged accounts, a Reserve,
+      sim trading suspended; Q-135d section 3b), whose terms are not recorded. Earlier this bound sat only in the
+      note of mffu.rapideod50k.payout_cap (Q-136, "not re-read here").
+
+  - key: mffu.builder50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "14290805; 11802636; 8528339; 11553890; plans/builder"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a ceiling on one evaluation day's profit. H14290805: "Consistency Rule" | "None" | "None"; asked for a maximum daily profit or daily profit cap: none. H11802636 "Builder Plans (all sizes)": "None". H8528339, H11553890 and P:builder: none.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Builder's evaluation can be passed in one day (mffu.builder50k.eval_min_days, eval_consistency). Not a
+      permission.
+
+  - key: mffu.builder50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "14290805; plans/builder"
+    url: https://help.myfundedfutures.com/en/articles/14290805
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No dollar ceiling on one sim funded day's profit and no single-day Live trigger on any page read. The only single-day term is the per-cycle share: H14290805 "your single largest profit day cannot represent more than 50% of your total profits in the cycle"; P:builder "your single best day can't account for more than half of that cycle's profits."
+      The only Live trigger named: H14290805 "After 5th approved sim payout"; P:builder "The fifth approved payout triggers promotion to a live account underwritten by Blue Row Capital."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H14290805 twice (the second: "Maximum daily profit cap or daily profit target cap: None. Single-day profit
+      triggering a move to Live or a review: None."); P:builder once. The 50 % share is mffu.builder50k.funded_consistency
+      (a payout gate); the $2,000 per-cycle maximum is mffu.builder50k.payout_cap. Not a permission.
+
+  - key: mffu.pro50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; 11802636; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit beyond the 50 % consistency share: H17573707 "Consistency" | "50%"; P:pro "There's a 50% consistency rule in evaluation only — no single day's profit can exceed 50% of your total eval profits." Asked of H17573707 (twice), H11802636 and P:pro: no maximum daily profit or daily profit cap.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      The P:pro sentence once. Not a permission.
+
+  - key: mffu.pro50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; plans/pro"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read caps one sim funded day's profit or names a single-day Live trigger. H17573707's review triggers ("A trader is reviewed for a transition to a live account as a result of any of the below:"): "Three (3) consecutive payouts on the same Pro account." / "Reaching the $100,000 payout cap. Profits above $100,000 are forfeited." / "An invitation from the risk managements team. This invitation can happen at any time." / "Reaching $20,000 in profit. This triggers a review only. It does not guarantee a transition to a live account."
+      P:pro: "There's no rule that limits your best day to a fraction of your total profit."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H17573707 twice (the second fetch: "None of these conditions refers to profit made in a single day or
+      session. The $20,000 condition sets no time period"); P:pro once. The $20,000 review names no period (a
+      cumulative reading is not stated either); the $100,000 cap is mffu.pro50k.payout_cap (unverified). Not a
+      permission.
+
+  - key: mffu.pro50k_oneday.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707; 11994562"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read caps one evaluation day's profit on the One Day variant: H17573707 column "Pro 50k - One Day": "Consistency" "None", "Minimum Trading Days" "1 Day", "Profit Target" "$4,000"; asked for a maximum daily profit or daily profit cap: none (both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H11994562 (Q-136): "(Pro Plan One day pass has no consistency rule)". P:pro does not mention the variant. Not a
+      permission.
+
+  - key: mffu.pro50k_oneday.funded_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "17573707"
+    url: https://help.myfundedfutures.com/en/articles/17573707
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      As mffu.pro50k.funded_single_day_profit_ceiling: "Pro 50k One Day account follow the same rules as the Pro 50k."; no single-day cap or single-day Live trigger for either (H17573707, both fetches).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Not a permission.
+
+  - key: mffu.rapid50k.eval_single_day_profit_ceiling
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "13134709; 11802636; plans/rapid"
+    url: https://help.myfundedfutures.com/en/articles/13134709
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      No page read sets a dollar ceiling on one evaluation day's profit beyond the 50 % consistency share: H13134709 "Consistency" | "50% (Eval Only)"; asked for a daily profit cap or maximum daily profit: none. H11802636 "Rapid Plan Intraday ($25K to $150K)": "50% (Eval Only)". P:rapid: none (its only "$10,000" is "On a $10,000 payout cycle, a standard 80/20 split takes $2,000.").
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Not a permission.
+
+  - key: mffu.rapid50k.funded_single_day_profit_ceiling
+    firm: mffu
+    value: "10000 USD net profit in a single trading day (session) on the sim funded account moves it to Live automatically, and any profit above 10000 USD for that day is forfeited; one threshold for every size"
+    units: text
+    status: verified
+    article_id: "13134718"
+    url: https://help.myfundedfutures.com/en/articles/13134718-understanding-rapid-live
+    date_read: 2026-11-18
+    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    quote: |
+      H13134718 "Understanding Rapid Live" (September 8, 2026): "Traders may be transitioned from Rapid Sim Funded to Live through two primary pathways:" / "$10,000 net profit achieved in a single trading day (automatic transition)" / "Automatic Live transition occurs when you generate $10,000 in net profit within a single trading session." / "any profit exceeding $10,000 for that trading day is forfeited"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      Two fetches; the last three sentences in both, the "two primary pathways" sentence in the first. H13134709
+      (the Rapid 50k article) does not state the rule itself (asked: "$10,000 in a single day: none"); H13134718
+      sits in the "Rapid Plans - Path to Live" group and covers Rapid 25k to 150k in its table. The same open points
+      as mffu.rapideod50k.funded_single_day_profit_ceiling (net of what, the day's start, where the excess goes).
+      With Rapid's intraday equity trail (mffu.rapid50k.funded_drawdown), "net profit" may be realised or not:
+      not stated.
