@@ -722,6 +722,7 @@ def test_a_row_that_does_not_admit_the_reading_is_refused_and_nothing_starts(rea
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_pipeline_on_four_starts():
     """`--check --starts 4`: every identity holds (U1's start rows at 4 starts with the day recorder on, the ledger and
     the money against U1's columns, the frame) and the file is written to a temporary folder only. Reads the real bars

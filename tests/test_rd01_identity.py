@@ -37,6 +37,7 @@ def test_the_identity_refuses_to_run_without_its_decision_row():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_t8_items_1_to_3_at_4_starts_and_4_paths():
     row = os.environ.get("RD01_IDENTITY_ROW")
     if not row:
