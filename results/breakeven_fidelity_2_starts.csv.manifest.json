@@ -1,0 +1,291 @@
+{
+  "columns": [
+    "design",
+    "rules",
+    "arm",
+    "start_day",
+    "start_date",
+    "observed",
+    "pass_days",
+    "funded_days",
+    "pay_days",
+    "pay_cash",
+    "payouts",
+    "first_pass",
+    "first_funded",
+    "first_payout",
+    "first_payout_cash",
+    "spent_before_first_pass",
+    "spent_before_first_payout",
+    "net_month_1",
+    "net_month_2",
+    "net_month_3",
+    "net_month_4",
+    "net_month_5",
+    "net_month_6",
+    "net_month_7",
+    "net_month_8",
+    "net_month_9",
+    "net_month_10",
+    "net_month_11",
+    "net_month_12",
+    "fees_month_1",
+    "fees_month_2",
+    "fees_month_3",
+    "fees_month_4",
+    "fees_month_5",
+    "fees_month_6",
+    "fees_month_7",
+    "fees_month_8",
+    "fees_month_9",
+    "fees_month_10",
+    "fees_month_11",
+    "fees_month_12",
+    "net_30",
+    "exact_runs_differing",
+    "alt",
+    "p_months_ahead",
+    "months_ahead",
+    "break_even_day",
+    "fell_back",
+    "deepest_fall_after_break_even",
+    "share_months_positive",
+    "longest_months_without_payout",
+    "sd_monthly_net",
+    "payouts_per_month",
+    "payout_cash_per_month",
+    "largest_month_share"
+  ],
+  "description": "EXPLORATORY (Q-132): the per-start rows of breakeven_fidelity_2 -- one row a design, rule set, arm and start: the U1 record with its differing exact runs, the months ahead P reads, Q-17's path values; every scorecard, extra and path row of breakeven_fidelity_2 is re-made from them.",
+  "exploratory": true,
+  "git_commit": "b407fbb85c43ac43d46796f2aaa0d906ddaf62fd",
+  "git_dirty": false,
+  "notes": {
+    "assumptions": "Assumed: the fill profile 'assumed' (never measured); payouts lagged 3 session(s) after their request, spacing simulated by the engine (D-18), no assumed schedule, requests on the payout path (standard: 5 winning days >= $150 before each request); the no-closure state table state_dp_e-0.050_lamstar_noclose; the breakeven move at zero latency under stage2 and stop_first, five minutes after the open (D-266) under delay5 and both; every response off: 0 % payout denial (D-234), the placement off (D-289), no Focused Trader model.",
+    "of": "breakeven_fidelity_2.csv",
+    "selection": "none",
+    "status": "EXPLORATORY (Q-132; the Q-45 audit, E-189): beside the registered rows, never deciding; R* stays P-14 unless the operator rules otherwise",
+    "supersedes": "nothing: results/breakeven_fidelity.csv (E-188) stands; this is a second reading",
+    "variant_count_rule": "three corrections a design; Stage 2's walk is the identity, not a variant"
+  },
+  "parameters": {
+    "arms": [
+      "verdict",
+      "point"
+    ],
+    "assumptions": {
+      "breakeven_move": {
+        "latency": "stage2 and stop_first: the move takes effect on the session's open bar itself (zero latency, Stage 2's modelling); delay5 and both: decided on the open bar's open and in force from the first present bar opening five minutes after it -- Stage 2 D-266's five minutes from alert to order, for a move made by hand (E-012 (2), E-013 (2))",
+        "rule_sets": {
+          "both": {
+            "breakeven_delay": 5,
+            "breakeven_tie": "stop"
+          },
+          "delay5": {
+            "breakeven_delay": 5,
+            "breakeven_tie": "target"
+          },
+          "stage2": {
+            "breakeven_delay": 0,
+            "breakeven_tie": "target"
+          },
+          "stop_first": {
+            "breakeven_delay": 0,
+            "breakeven_tie": "stop"
+          }
+        }
+      },
+      "fills": {
+        "meaning": "the fill model is ASSUMED, never measured (Stage 2 D-95): entries and exits as the walk books them, costs at the stop (atlas_a3.fee_by_stop), a limit target filled at its price",
+        "profile": "assumed",
+        "source": "vendor/stage2/config/fills.yaml meta.active_profile"
+      },
+      "payout": {
+        "by_design_arm": {
+          "p14|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p14|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p15|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p15|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p16|point": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          },
+          "p16|verdict": {
+            "keep_balance": 0.0,
+            "one_at_a_time_minutes": 5.0,
+            "payout_frac": 1.0,
+            "payout_lag_days": 3,
+            "payout_method": "aeropay",
+            "payout_path": "standard",
+            "payout_timing": "'after_5pm_ct'",
+            "purchase_budget": [
+              20,
+              21
+            ]
+          }
+        },
+        "lag": "each payout arrives payout_lag_days sessions after its request (user_journey.payout_arrivals; the lag from the verified ledger's payout method, customer_slices.engine_args)",
+        "paths": {
+          "standard": "5 winning days >= $150 before each request"
+        },
+        "spacing": "no assumed spacing: payouts are simulated on the campaign's clock by the engine (Stage 2 D-18: dated payouts simulated, not a PayoutSchedule), each requested when the protocol's payout path allows it (PAYOUT_PATHS), at payout_frac of the maximum and never below keep_balance"
+      },
+      "response": "every response off: 0 % payout denial (D-234), the placement off (D-289), no Focused Trader model",
+      "state_table": {
+        "by_design_arm": {
+          "p14|point": "state_dp_e-0.050_lamstar_noclose",
+          "p14|verdict": "state_dp_e-0.050_lamstar_noclose",
+          "p15|point": "state_dp_e-0.050_lamstar_noclose",
+          "p15|verdict": "state_dp_e-0.050_lamstar_noclose",
+          "p16|point": "state_dp_e-0.050_lamstar_noclose",
+          "p16|verdict": "state_dp_e-0.050_lamstar_noclose"
+        },
+        "meaning": "the no-closure state table (a3_brk30_cb20.noclose_plan, pinned by D-509's hashes), solved at Stage 2's walk and frozen under every rule set here"
+      }
+    },
+    "columns": [
+      "design",
+      "rules",
+      "arm",
+      "start_day",
+      "start_date",
+      "observed",
+      "pass_days",
+      "funded_days",
+      "pay_days",
+      "pay_cash",
+      "payouts",
+      "first_pass",
+      "first_funded",
+      "first_payout",
+      "first_payout_cash",
+      "spent_before_first_pass",
+      "spent_before_first_payout",
+      "net_month_1",
+      "net_month_2",
+      "net_month_3",
+      "net_month_4",
+      "net_month_5",
+      "net_month_6",
+      "net_month_7",
+      "net_month_8",
+      "net_month_9",
+      "net_month_10",
+      "net_month_11",
+      "net_month_12",
+      "fees_month_1",
+      "fees_month_2",
+      "fees_month_3",
+      "fees_month_4",
+      "fees_month_5",
+      "fees_month_6",
+      "fees_month_7",
+      "fees_month_8",
+      "fees_month_9",
+      "fees_month_10",
+      "fees_month_11",
+      "fees_month_12",
+      "net_30",
+      "exact_runs_differing",
+      "alt",
+      "p_months_ahead",
+      "months_ahead",
+      "break_even_day",
+      "fell_back",
+      "deepest_fall_after_break_even",
+      "share_months_positive",
+      "longest_months_without_payout",
+      "sd_monthly_net",
+      "payouts_per_month",
+      "payout_cash_per_month",
+      "largest_month_share"
+    ],
+    "designs": [
+      "p14",
+      "p15",
+      "p16"
+    ],
+    "money": "as the engine booked it, unrounded",
+    "of": "breakeven_fidelity_2.csv",
+    "rule_sets": [
+      "stage2",
+      "stop_first",
+      "delay5",
+      "both"
+    ],
+    "task": "Q-132"
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\breakeven-fidelity-2",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "breakeven-fidelity-2"
+    },
+    "read_ledger": "1 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "breakeven_fidelity_2_starts.csv",
+  "rows": 40584,
+  "script": "scripts/breakeven_fidelity_2.py",
+  "seed": 20261920,
+  "sha256": "9dcbc8a6d62e02ec0d94d406f61138d28e426e7ef64dc2e9d380342caba42f48",
+  "timestamp": "2026-11-18T18:34:12+00:00",
+  "variant_count": 9
+}
