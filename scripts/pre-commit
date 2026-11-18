@@ -7,7 +7,10 @@
 # worktree), the data against vendor/DATA_MANIFEST_stage2.sha256 (E-002) --, (2) the licence check on the commit's own
 # index -- `python scripts/check_price_levels.py --index`: no tracked or staged CSV outside vendor/ holds or reveals an
 # NQ price level (Q-131) -- and (3) the suite's FAST tier (-m "not slow and not heavy"). A commit that breaks either is refused: a broken foundation committed is a broken
-# foundation someone later trusts. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
+# foundation someone later trusts. The fast tier runs one at a time on the machine (Q-155): through
+# `scripts/fasttier_lock.py run`, which takes the machine-wide lock %LOCALAPPDATA%\stage2-extended-fasttier.lock (waiting
+# for a live holder, taking over a dead or 2-hour-old one), waits until 1.5 GB of physical memory is free, and fails the
+# hook after 3 hours of waiting -- never a silent pass. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
 # /validate, never here.
 #
 # Bypass with `git commit --no-verify` only when you know why; say so in the commit message.
@@ -98,7 +101,14 @@ if [ ! -f scripts/check_price_levels.py ]; then
 fi
 "$PYTHON" scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed
 
-echo "--- tests, fast tier ---"
-"$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+echo "--- tests, fast tier (one at a time on the machine: scripts/fasttier_lock.py) ---"
+# Several trees' fast tiers at once ran the machine out of memory (MemoryError, OpenBLAS, WinError 1455; Q-155). The
+# wrapper holds the lock for exactly the pytest run, releases it on every exit, and returns pytest's own exit code; a
+# wait that runs out exits 75. Like the licence check, a tree without the script is refused, never run unlocked.
+if [ ! -f scripts/fasttier_lock.py ]; then
+    echo "pre-commit: scripts/fasttier_lock.py is missing from this tree; merge master (Q-155) and commit again." >&2
+    exit 1
+fi
+"$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
 
 echo "pre-commit: OK (fast tier; the identity, the heavy tier and the vendored stage-one suite run in /validate)"
