@@ -27,13 +27,16 @@ from extended.firm_terms import UnverifiedTerm, record_value
 ROOT = Path(__file__).resolve().parent.parent
 #: the build's files (the adapters and the reading's code) the literal check reads
 ADAPTERS = ("extended/modes_terms.py", "extended/modes_rules.py", "extended/modes_engine.py", "extended/modes_join.py",
-            "extended/modes_news.py", "extended/modes_reading.py", "extended/modes_plans.py")
+            "extended/modes_news.py", "extended/modes_reading.py", "extended/modes_plans.py",
+            "extended/modes_oracles.py", "extended/modes_steps.py", "scripts/modes_rules.py", "scripts/modes_coin.py",
+            "identity/modes_coin_identity.py")                        # N-12: every build file with code
 BUILD_FILES = ADAPTERS + ("extended/modes_oracles.py", "extended/modes_steps.py", "scripts/modes_rules.py",
                           "scripts/modes_coin.py", "scripts/modes_part_f.py", "scripts/modes_reading.py",
                           "scripts/modes_beside.py", "scripts/modes_gate.py", "identity/modes_coin_identity.py",
                           "identity/modes_identity.py")
 #: the assignments the literal check skips: the declared tables and the code's pins
-TABLES = {"DECLARED", "NOT_RULE_VALUES", "NUMBER_WORDS", "SEEDS", "RESERVED_SEEDS", "TIMING_SEED", "VENDORED_SHA256", "DECLARATION_SHA256", "A19",
+TABLES = {"DECLARED", "NOT_RULE_VALUES", "MATH", "LAYOUT", "NUMBER_WORDS", "STEPS", "RECORDED_BY", "NOT_BUILT", "REFERENCE_PROFILE",
+          "SEEDS", "RESERVED_SEEDS", "TIMING_SEED", "VENDORED_SHA256", "DECLARATION_SHA256", "A19",
           "U_RULES", "RECORD_KEYS", "STAGE2_KEYS", "TWO_ENDED", "MODE_CORNERS"}
 #: numbers that are structure, not rule values: none, one, a tolerance
 STRUCTURAL = {0, 1, -1}
@@ -95,6 +98,22 @@ def _numbers(rel: str) -> list[tuple[int, float]]:
                 skip.add(id(sub))
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "group":
             for sub in node.args:                                     # a regex group's index
+                skip.add(id(sub))
+        if isinstance(node, ast.Call):
+            f = node.func
+            name = f.attr if isinstance(f, ast.Attribute) else (f.id if isinstance(f, ast.Name) else "")
+            if name in ("step_problems", "main", "add_argument"):     # a step's number; a command line's default
+                for sub in [*node.args, *(k.value for k in node.keywords)]:
+                    for x in ast.walk(sub):
+                        skip.add(id(x))
+        if isinstance(node, ast.Compare) and isinstance(node.left, ast.Name) and node.left.id == "step":
+            for sub in ast.walk(node):                                # a step's number
+                skip.add(id(sub))
+        if isinstance(node, ast.Subscript):                           # an index, never a rule value
+            for sub in ast.walk(node.slice):
+                skip.add(id(sub))
+        if isinstance(node, ast.Return) and isinstance(node.value, (ast.Constant, ast.IfExp)):
+            for sub in ast.walk(node.value):                          # an exit code
                 skip.add(id(sub))
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
             skip.add(id(node.right))                                  # an exponent

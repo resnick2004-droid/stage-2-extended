@@ -11,11 +11,16 @@ correction, and the exact accounting identities. An output outside an oracle is 
 * **The pass ceiling** (one-sided): a breach when the pass probability's Clopper-Pearson lower limit exceeds
   `D / (D + T)`; dropped at the close-only corners; replaced at a boundary cell by the boundary quantity.
 * **The supremum** (one-sided, `TS-S`): against `results_combine_supremum.csv`, read (the largest `sup_p_pass` of its
-  no-DLL rows, the finest grid's).
+  no-DLL rows, the finest grid's -- a grid lower bound on the true supremum, labelled so, N-18).
 * **The reference** (13.1 (b), two-sided): stage one's 16/49, parsed from the vendored README.
 * **The exact identities** (to 1e-9 on every account): final balance + gross payouts + forfeitures + costs = the sum
-  of the trades' gross P&L; on the funded coin the final balance at least the starting floor; every request within
-  its bounds; every forfeiture at a verified ceiling.
+  of the trades' gross P&L; on the funded coin the final balance at least the starting floor; and the engine's
+  exact counters (`modes_engine.EXACT`, S-3), each zero: every trade's balance change its win or its loss at the room
+  the hook handed (so no trade larger than its room or daily limit, and on the costed coin every fee its schedule at
+  the contracts recomputed from the room and the tier's allowance); every trade taken exactly where the spec predicts
+  one; every `RI` peak inside its law; every net its split and every gross payout its request; every request within
+  its bounds; every forfeiture at the ceiling's threshold; and 9.5's per-attempt net equal to `propsim.attempt_ev` at
+  `TS-S` (`attempt_ev_problems`).
 """
 from __future__ import annotations
 
@@ -34,7 +39,10 @@ from extended import modes_terms as M
 ROOT = Path(__file__).resolve().parent.parent
 SUPREMUM_CSV = ROOT / "vendor" / "stage2" / "vendor" / "propsim" / "optimality" / "results_combine_supremum.csv"
 PROPSIM_README = ROOT / "vendor" / "stage2" / "vendor" / "propsim" / "README.md"
-HALF = 0.5
+
+
+#: mathematical constants of the bounds (Freedman's 2 and 3; a two-sided split), never rule values (17.2's scan)
+MATH: dict[str, float] = {"two": 2.0, "three": 3.0}
 
 
 class OracleBreach(RuntimeError):
@@ -50,9 +58,10 @@ def level(N: int) -> float:
 
 def freedman_bound(V: float, b: float, alpha: float) -> float:
     """`a` with `2 exp(-a^2 / (2 (V + b a / 3))) = alpha`: `a = L b / 3 + sqrt((L b / 3)^2 + 2 L V)`, `L = ln(2 / alpha)`."""
-    L = math.log(2.0 / float(alpha))
-    x = L * float(b) / 3.0
-    return x + math.sqrt(x * x + 2.0 * L * float(V))
+    two, three = MATH["two"], MATH["three"]
+    L = math.log(two / float(alpha))
+    x = L * float(b) / three
+    return x + math.sqrt(x * x + two * L * float(V))
 
 
 def fairness_breach(fair: dict[str, float], alpha: float) -> bool:
@@ -110,7 +119,8 @@ def stage_one_reference() -> Fraction:
 def reference_breach(x: int, n: int, alpha: float) -> bool:
     """13.1 (b): two-sided at the corrected width, `alpha / 2` in each tail."""
     ref = float(stage_one_reference())
-    return not (cp_lower(x, n, alpha / 2.0) <= ref <= cp_upper(x, n, alpha / 2.0))
+    half = float(alpha) / MATH["two"]
+    return not (cp_lower(x, n, half) <= ref <= cp_upper(x, n, half))
 
 
 def boundary_quantity(out: dict[str, Any], t: M.EvalTerms) -> np.ndarray:
@@ -147,9 +157,19 @@ def accounting_problems(out: dict[str, Any], kind: str, floor_start: float | Non
         probs.append("balance + payouts + forfeitures + costs != the trades' gross P&L")
     if kind == M.FUNDED and floor_start is not None and np.any(B < float(floor_start) - 1e-9):
         probs.append("a funded balance below its starting floor")
-    if kind == M.FUNDED and int(np.sum(out.get("request_check", 0))) != 0:
-        probs.append("a request outside its plan's bounds")
+    for k, v in (out.get("exact") or {}).items():
+        if int(v) != 0:
+            probs.append(f"exact check {k}: {int(v)}")
     return probs
+
+
+def attempt_ev_problems(p_pass: float, mean_sub_fees: float, mean_cash: float, activation: float, net: float) -> list[str]:
+    """9.6: 9.5's per-attempt net equal to `propsim.attempt_ev` on the same inputs, to 1e-9 (`TS-S` in the run)."""
+    from extended import modes_engine as E
+
+    ev = E._vp.attempt_ev({"p_pass": p_pass, "mean_sub_fees": mean_sub_fees}, {"mean_cash": mean_cash},
+                          E._vp.Rules(activation=activation))["ev_per_attempt"]
+    return [] if abs(float(ev) - float(net)) <= 1e-9 else [f"9.5's net {net!r} differs from attempt_ev {ev!r}"]
 
 
 def ceiling_problems(out: dict[str, Any], f: M.FundedTerms) -> list[str]:
@@ -177,7 +197,8 @@ def oracle_rows(kind: str, out: dict[str, Any], t: Any, *, N: int, mode: str, bo
                          "breach": pass_ceiling_breach(x, n, t, a)})
         if mode == "TS":
             rows.append({"check": "supremum", "value": cp_lower(x, n, a), "bound": supremum(),
-                         "breach": supremum_breach(x, n, a)})
+                         "breach": supremum_breach(x, n, a),
+                         "note": "the finest grid's supremum: a grid lower bound on the true supremum (N-18)"})
         ap = accounting_problems(out, kind)
     else:
         ap = accounting_problems(out, kind, t.floor_start) + ceiling_problems(out, t)
@@ -190,4 +211,5 @@ def oracle_rows(kind: str, out: dict[str, Any], t: Any, *, N: int, mode: str, bo
 
 __all__ = ["OracleBreach", "level", "freedman_bound", "fairness_breach", "cp_lower", "cp_upper", "pass_ceiling",
            "pass_ceiling_breach", "supremum", "supremum_breach", "stage_one_reference", "reference_breach",
-           "boundary_quantity", "boundary_problems", "accounting_problems", "ceiling_problems", "oracle_rows", "HALF"]
+           "boundary_quantity", "boundary_problems", "accounting_problems", "attempt_ev_problems", "ceiling_problems",
+           "oracle_rows"]

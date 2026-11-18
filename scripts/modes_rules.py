@@ -8,9 +8,9 @@ E item 1 and the oracle count N -- from the record by key. No seed, no bar, no e
 `e015-limits:` row; every Appendix R key at its stated status; every role of every mode-corner resolving (the loaders
 refusing a non-verified value; A-19's parses); every shared identity held at a commit containing the record (Q-05,
 Q-80, Q-93, Q-101, Q-104). Then **the stated-fewest check, refusing** (7): a computed `k_E` that differs from the
-firm's own statement stops step 0. Then **the boundary cells' exactness, refusing** (7 item 8 against 9.6): a declared
-boundary cell at which a pass cannot end at exactly `T` would stop step 2 on a correct engine, so step 0 refuses until
-the lead rules (see `extended.modes_rules.boundary_exact`).
+firm's own statement stops step 0. The boundary cells are 7 item 8's own definition (the lead's R-a): the declared
+conditions and the lattice landing every pass at `T`; the listing prints every declared cell with its exactness, and
+the six w = 2 cells take the ordinary pass ceiling.
 
 **Writes** `results/modes_rules.csv` (sections `terms`, `flip_days`, `stated_check`, `flip_sizes`, `implied_days`,
 `boundary_cells`, `sizing`, `allowed`, `size_binding`, `oracle_count`, and `coin_cells` -- the coin runs step 2 runs,
@@ -39,23 +39,12 @@ from extended import modes_terms as M  # noqa: E402
 SCRIPT = "scripts/modes_rules.py"
 
 
-class BoundaryDefect(RuntimeError):
-    """A declared boundary cell at which every pass cannot end at exactly T (7 item 8 against 9.6)."""
-
-
 def tables() -> pd.DataFrame:
-    """Every section of step 0's file as one frame (`section` first); refusing on the stated-fewest check and on an
-    inexact boundary cell."""
+    """Every section of step 0's file as one frame (`section` first); refusing on the stated-fewest check."""
     a = R.part_a_rows()
-    inexact = [b for b in a["boundary_cells"] if not b["exact_by_lattice"]]
-    if inexact:
-        cells = ", ".join(f"{b['mode']} w={b['w']:g} r={b['r']:g}" for b in inexact)
-        raise BoundaryDefect(f"7 item 8's declared conditions list {len(inexact)} boundary cells at which a pass "
-                             f"overshoots T ({cells}); 9.6 would stop step 2 there on a correct engine -- the lead's "
-                             "ruling is needed before step 0 writes (a declaration defect, reported)")
     b = R.part_b_rows()
     cells = R.coin_cells()
-    count = R.oracle_count(cells, a["boundary_cells"])
+    count = R.oracle_count(cells, R.boundary_cells())
     parts = {"terms": R.terms_rows(), **a, **b, "oracle_count": [count], "coin_cells": cells}
     frames = []
     for sec, rows in parts.items():
@@ -79,8 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.plan:
         try:
             a = R.part_a_rows()
-            print(f"stated-fewest rows: {len(a['stated_check'])}; boundary cells: {len(a['boundary_cells'])} "
-                  f"({sum(not b['exact_by_lattice'] for b in a['boundary_cells'])} inexact)")
+            print(f"stated-fewest rows: {len(a['stated_check'])}; declared boundary cells: "
+                  f"{len(a['boundary_cells'])} ({sum(b['boundary'] for b in a['boundary_cells'])} boundary under R-a)")
             print(f"oracle count: {R.oracle_count()}")
         except Exception as exc:                                   # noqa: BLE001
             print(f"REFUSED: {type(exc).__name__}: {exc}")
@@ -89,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     try:
         df = tables()
-    except (R.StatedFewestMismatch, BoundaryDefect) as exc:
+    except R.StatedFewestMismatch as exc:
         print(f"REFUSED: {exc}")
         return 3
     from extended import results

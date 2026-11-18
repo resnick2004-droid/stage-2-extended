@@ -13,6 +13,8 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import numpy as np  # noqa: E402
+
 import modes_coin as C  # noqa: E402
 import modes_rules as SR  # noqa: E402
 
@@ -22,14 +24,10 @@ from extended import modes_terms as M  # noqa: E402
 TOYS = M.seed("build_toys")
 
 
-def test_step0_refuses_on_the_inexact_boundary_cells() -> None:
-    with pytest.raises(SR.BoundaryDefect, match="overshoots T"):
-        SR.tables()
-
-
-def test_step0_tables_every_section(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(R, "boundary_exact", lambda t, w, r: R.boundary_declared(t, w, r))
-    df = SR.tables()
+def test_step0_tables_every_section() -> None:
+    df = SR.tables()                                                  # R-a: no refusal on the w = 2 cells
+    b = df[df["section"] == "boundary_cells"]
+    assert len(b) == 12 and int(b["boundary"].astype(bool).sum()) == 6
     want = {"terms", "flip_days", "stated_check", "flip_sizes", "implied_days", "boundary_cells", "sizing", "allowed",
             "size_binding", "oracle_count", "coin_cells"}
     assert set(df["section"]) == want
@@ -45,7 +43,18 @@ def test_step2_pipeline_on_toys() -> None:
     assert acc["oracle"] and acc["eval"] and acc["funded"] and acc["flip_pairs"] and acc["large_days"]
     assert j["joined"] and j["renewal"] and j["fees"]
     assert any(v.get("shared") for v in summ.values())            # PRO1 lenient's gross shared with its strict
-    assert set(j) == {"fees", "joined", "renewal"}                 # 18's declared sections only
+    assert set(j) == {"fees", "joined", "renewal", "flip_pairs"}   # 18's declared sections only
+    fp = j["flip_pairs"]
+    assert {r["flip"] for r in fp} == {"flip_E", "flip_F"}
+    assert {r["measure"] for r in fp} == {"net_per_attempt", "net_per_journey"}
+    assert all(np.isfinite(r["se"]) for r in fp)
+    assert all(np.isfinite(r["evaluations_per_21"]) for r in j["renewal"])
+    meas = {r["measure"] for r in acc["flip_pairs"]}
+    assert {"pass", "sessions_to_pass_mean", "sessions_to_pass_p50", "any_payout", "net",
+            "sessions_to_first_payout_mean"} <= meas
+    gross = [r for r in acc["eval"] if r["coin"] == "gross"]
+    assert all("allowance and scaling not applied" in r["labels"] and "no calendar: no news rule" in r["labels"]
+               for r in gross)
     ts_n = [r for r in j["joined"] if r["config"] == "TS-N" and r["what"] == "pair"]
     assert ts_n and all(r["activation"] == float(M.rv("activation_fee_naf_50k")) for r in ts_n)
     assert {r["diagonal"] for r in j["joined"] if r["what"] == "pair"} >= {"one policy in both modes (stage one's form)", ""}
@@ -86,3 +95,41 @@ def test_purchase_limit_arithmetic_and_lucid_price() -> None:
     assert M.purchase_limit("L6") == 5 and M.purchase_limit("RE") is None
     lu = M.eval_terms("LU40")
     assert lu.one_time is not None and "price unverified: on the grid" not in lu.labels
+
+
+
+def test_s11_a_step_unlocks_only_on_its_own_token() -> None:
+    from extended import modes_steps as S
+
+    h = S.head_sha()
+    good = "| E-999 | 2026-11-18 | " + S.step_cell(0, h[:12], "results/modes_rules.csv, RD-05 step 0") + " | b |"
+    assert S.recorded(0, "results/modes_rules.csv", decisions_text=good)
+    assert not S.recorded(1, "results/modes_rules.csv", decisions_text=good)          # another step's token
+    assert not S.recorded(0, "results/modes_rules.csv",
+                          decisions_text="| E-1 | 2026-11-18 | results/modes_rules.csv for RD-05 | b |")
+    assert not S.recorded(0, "results/modes_rules.csv",
+                          decisions_text="| E-2 | 2026-11-18 | " + S.step_cell(0, "0" * 12, "results/modes_rules.csv")
+                          + " | b |")                                                # not an ancestor
+    with pytest.raises(ValueError):
+        S.step_cell(0, "zz", "x")
+
+
+def test_n13_step_zero_rows_compared_cell_for_cell() -> None:
+    cells = R.coin_cells()
+    sig = C.cell_signature_rows(cells)
+    as_file = [{**c, "stop": float("nan") if c["stop"] is None else float(c["stop"]), "runs": str(c["runs"]),
+                "why": c["why"] or float("nan")} for c in cells]
+    assert C.cell_signature_rows(as_file) == sig
+    as_file[5] = {**as_file[5], "runs": str(not cells[5]["runs"])}
+    assert C.cell_signature_rows(as_file) != sig
+
+
+def test_n14_measure_refuses_without_the_lock(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from extended import lock_guard
+
+    monkeypatch.setattr(lock_guard, "main_root", lambda *a, **k: tmp_path)
+    assert "not held" in C.measure_lock_problem()
+    (tmp_path / "run.lock").write_text('{"job": "q132-other"}', encoding="utf-8")
+    assert "not an rd05- job" in C.measure_lock_problem()
+    (tmp_path / "run.lock").write_text('{"job": "rd05-measure"}', encoding="utf-8")
+    assert C.measure_lock_problem() is None

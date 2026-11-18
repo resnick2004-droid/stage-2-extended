@@ -140,8 +140,8 @@ def request_amount(f: M.FundedTerms, B: float, *, day_profit: float | None = Non
     if r == "builder":
         return max(0.0, min(float(f.cap), B - float(f.buffer)))
     withdrawable = max(0.0, B - float(f.buffer))
-    if f.within_buffer_share is not None:                   # U-17's lenient end: a request inside the buffer
-        withdrawable = max(withdrawable, float(f.within_buffer_share) * B)
+    if f.within_buffer_share is not None and B < float(f.buffer):   # U-17 lenient, literal (R-d): inside the buffer
+        withdrawable = float(f.within_buffer_share) * max(B, 0.0)
     if r == "u25_strict":
         return max(0.0, min(float(f.frac) * B, reference_cap(), withdrawable))
     if r == "u25_lenient":
@@ -165,14 +165,11 @@ def b_star(f: M.FundedTerms) -> dict[str, Any]:
     elif f.request in ("labs_daily_strict", "labs_daily_lenient", "builder"):
         cands = [float(f.buffer) + cap]
     elif f.request == "u25_strict":
-        withdraw = [float(f.buffer) + cap]
-        if f.within_buffer_share is not None:
-            withdraw.append(cap / float(f.within_buffer_share))
-        cands = [max(cap / float(f.frac), min(withdraw))]
+        cands = [max(cap / float(f.frac), float(f.buffer) + cap)]
     elif f.request == "u25_lenient":
         withdraw = [float(f.buffer) + cap]
-        if f.within_buffer_share is not None:
-            withdraw.append(cap / float(f.within_buffer_share))
+        if f.within_buffer_share is not None and cap / float(f.within_buffer_share) < float(f.buffer):
+            withdraw.append(cap / float(f.within_buffer_share))       # reached inside the buffer (R-d)
         cands = [min(withdraw)]
     b = min(cands)
     if abs(request_amount(f, b, day_profit=b) - cap) > 1e-6 or request_amount(f, b - 1e-3, day_profit=b) >= cap - 1e-9:
@@ -210,6 +207,13 @@ def ri_read_set(f: M.FundedTerms, w: float, size: float) -> bool:
     return (float(w) + 1.0) * float(size) <= float(f.mll) + EPS
 
 
+def ri_read_set_costed(m: M.ModeCorner, t: M.FundedTerms, w: float, r: float, s: int) -> bool:
+    """The lead's R-c: on the costed coin at `RI` the read set is `(w + 1) r' + stop-out costs <= D`, at the cell's
+    largest `r'` (part B's mixed size for `r` at `s` at the mode's start state)."""
+    z = size(states(m, t)[0], r, s, "mixed", t.commission, m.kind)
+    return (float(w) + 1.0) * z["realised_risk"] + z["cost"] <= float(t.mll) + EPS
+
+
 def implied_days(t: M.EvalTerms) -> dict[str, Any]:
     """7 item 7 (N5): whether `ceil(1/c)` is at least the plan's minimum days, so A-2 cannot bind on the coin."""
     share_days = None if t.consistency is None else _ceil_inv(t.consistency)
@@ -240,6 +244,12 @@ def boundary_declared(t: M.EvalTerms, w: float, r: float) -> bool:
     if not imp["implied"]:
         return False
     return True
+
+
+def is_boundary(t: M.EvalTerms, w: float, r: float) -> bool:
+    """The lead's R-a: 7 item 8's own definition -- a boundary cell is one at which every pass ends at exactly `T` and
+    every failure at exactly `-D`: the declared conditions hold and the lattice lands every pass at `T`."""
+    return boundary_declared(t, w, r) and boundary_exact(t, w, r)
 
 
 def boundary_exact(t: M.EvalTerms, w: float, r: float) -> bool:
@@ -376,6 +386,14 @@ def size(st: State, r: float, s: int, mix: str, schedule: str, kind: str) -> dic
             "cost_share": (cost / realised) if realised > 0 else float("nan"), "cost": float(cost)}
 
 
+#: N-8's, N-9's and R-b's labels on part B's rows
+STATE_NOTE = "each funded tier stated at its band's lower edge (the smallest room in the band, the builder's reading)"
+STAND_ASIDE_NOTE = ("the registered min_risk_share is nil: D-212's share test is vacuous; only n of at least 1 and the "
+                    "cost-floor ticks bind")
+HEADROOM_NOTE = ("both caps printed; the registered rule's cap is what the replays use (R-b, part F confirms); "
+                 "2.6's never-at-the-full-allowance withdrawn as a promise")
+
+
 def headroom_cap(st: State) -> dict[str, int]:
     """8: beside the allowance, Stage 2 D-117's headroom (`DEFAULT_HEADROOM_FRAC`, read) and the registered rule's own,
     of the allowance in micro-equivalents, rounded down."""
@@ -383,7 +401,7 @@ def headroom_cap(st: State) -> dict[str, int]:
     mpm = M.micros_per_mini()
     me = st.micros if st.counting == "ratio" else st.minis * mpm
     return {"allowance_me": int(me), "d117_cap_me": int(math.floor(sa["d117_headroom"] * me + 1e-9)),
-            "registered_cap_me": int(math.floor(sa["headroom"] * me + 1e-9))}
+            "registered_cap_me": int(math.floor(sa["headroom"] * me + 1e-9)), "headroom_note": HEADROOM_NOTE}
 
 
 def consistency_fit(t: Any, kind: str, w: float, realised: float) -> bool | None:
@@ -433,7 +451,7 @@ def coin_cells() -> list[dict[str, Any]]:
                     why = ""
                     if not sizeable_at_start(m, t, r, int(s)):
                         why = f"not sizeable at {s}"
-                    elif m.kind == M.FUNDED and t.floor == "intraday" and not ri_read_set(t, w, r):
+                    elif m.kind == M.FUNDED and t.floor == "intraday" and not ri_read_set_costed(m, t, w, r, int(s)):
                         why = "not read: a trade can be stopped by the floor its own peak raised"
                     rows.append({"index": m.index, "kind": m.kind, "mode": m.mode, "corner": m.corner, "w_index": wi,
                                  "r_index": ri, "w": w, "r": r, "policy": "steady", "coin": "costed", "stop": int(s),
@@ -441,8 +459,9 @@ def coin_cells() -> list[dict[str, Any]]:
     return rows
 
 
-def boundary_cells() -> list[dict[str, Any]]:
-    """7 item 8: the gross evaluation cells meeting the declared conditions, with their lattice exactness beside."""
+def boundary_listing() -> list[dict[str, Any]]:
+    """7 item 8: the gross evaluation cells meeting the declared conditions, each with its lattice exactness and
+    whether it is a boundary cell under R-a."""
     out = []
     for m in M.MODE_CORNERS:
         if m.kind != M.EVAL:
@@ -451,9 +470,17 @@ def boundary_cells() -> list[dict[str, Any]]:
         for w in M.grid_w():
             for r in M.grid_r():
                 if boundary_declared(t, w, r):
+                    ex = boundary_exact(t, w, r)
                     out.append({"index": m.index, "mode": m.mode, "corner": m.corner, "w": w, "r": r,
-                                "lifespan": t.lifespan, "exact_by_lattice": boundary_exact(t, w, r)})
+                                "lifespan": t.lifespan, "exact_by_lattice": ex, "boundary": ex,
+                                "label": "" if ex else ("R-a: not a boundary cell (a pass can land at T + r); the "
+                                                        "ordinary pass ceiling applies")})
     return out
+
+
+def boundary_cells() -> list[dict[str, Any]]:
+    """The boundary cells under R-a: the declared conditions and the lattice's exactness both hold."""
+    return [b for b in boundary_listing() if b["boundary"]]
 
 
 def oracle_count(cells: Iterable[dict[str, Any]] | None = None, bounds: Iterable[dict[str, Any]] | None = None
@@ -467,7 +494,7 @@ def oracle_count(cells: Iterable[dict[str, Any]] | None = None, bounds: Iterable
     run = [c for c in cells if c["runs"]]
     fair = len(run)
     ceil = sum(1 for c in run if c["kind"] == M.EVAL and c["index"] not in close
-               and not (c["coin"] == "gross" and (c["index"], c["w"], c["r"]) in bset))
+               and not (c["coin"] == "gross" and c["policy"] == "steady" and (c["index"], c["w"], c["r"]) in bset))
     sup = sum(1 for c in run if c["kind"] == M.EVAL and c["mode"] == "TS")
     total = fair + ceil + sup + 1
     if total > int(M.declared("oracle.n_max")):
@@ -486,7 +513,8 @@ def part_a_rows() -> dict[str, list[dict[str, Any]]]:
         if m.kind == M.EVAL:
             for sem in ("extends", "fails"):
                 lab = "" if sem == t.consistency_semantics else (
-                    "if the rule failed instead" if sem == "fails" else "if it extended instead")
+                    "if the rule failed instead (the builder's reading: a day above c T fails it)" if sem == "fails"
+                    else "if it extended instead")
                 flip_days.append({"index": m.index, "mode": m.mode, "corner": m.corner, "item": "k_E", "semantics": sem,
                                   "label": lab, "value": k_eval(t, sem)})
                 for X in first_day_levels(t):
@@ -525,7 +553,7 @@ def part_a_rows() -> dict[str, list[dict[str, Any]]]:
                 row["label"] = "b* at the reference cap"
             sizes.append(row)
     return {"flip_days": flip_days, "stated_check": stated, "flip_sizes": sizes, "implied_days": implied,
-            "boundary_cells": boundary_cells()}
+            "boundary_cells": boundary_listing()}
 
 
 def part_b_rows() -> dict[str, list[dict[str, Any]]]:
@@ -542,7 +570,8 @@ def part_b_rows() -> dict[str, list[dict[str, Any]]]:
                         z = size(st, r, s, mix, _schedule(t), m.kind)
                         base = {"index": m.index, "kind": m.kind, "mode": m.mode, "corner": m.corner, "state": st.name,
                                 "s": s, "r": r, "mix": mix}
-                        sizing.append({**base, **z, **hc})
+                        sizing.append({**base, **z, **hc, "note": STATE_NOTE if m.kind == M.FUNDED else "",
+                                       "stand_aside_note": STAND_ASIDE_NOTE})
                         binding.append({**base, "binding": z["binding"]})
                         if not z["stood_aside"]:
                             for w in M.grid_w():
@@ -576,6 +605,6 @@ def terms_rows() -> list[dict[str, Any]]:
 
 __all__ = ["StatedFewestMismatch", "MIXES", "k_eval", "further_days", "first_day_levels", "k_funded", "reference_cap",
            "request_amount", "b_star", "start_room", "r_flip", "ri_read_set", "implied_days", "boundary_declared",
-           "boundary_exact", "close_only", "ceiling_cells", "stated_check", "State", "states", "size", "headroom_cap",
+           "boundary_exact", "is_boundary", "boundary_listing", "ri_read_set_costed", "close_only", "ceiling_cells", "stated_check", "State", "states", "size", "headroom_cap",
            "consistency_fit", "sizeable_at_start", "coin_cells", "boundary_cells", "oracle_count", "part_a_rows",
            "part_b_rows", "terms_rows"]

@@ -5,7 +5,7 @@ last gate to open, the exposures, the paired coin readings, and the menu with it
   On a steady coin cell `k*` is arithmetic (`ceil(T / (w r))`, printed as such); on a flip cell it follows exactly from
   A-13's two win counts (`k_star_from_counts`): the flip wins first, then the steady wins. On records, a sort
   (`k_star_from_days`).
-* **The last gate (11).** From A-13's first-hold sessions: the condition that held last at the pass (ties named in the
+* **The last gate (11).** From A-13's sessions at which each gate last turned true (S-4): the condition that held last at the pass (ties named in the
   order base target, consistency-raised target, minimum days); for a failure its cause; on the funded side the gate
   that held last before the first payout (`last_funded_gate`).
 * **The menu (12.6).** Every cell stays on it; no P without its guard row; the exposures of 4.7 item 5 the same for
@@ -75,7 +75,7 @@ EVAL_GATES = ("base_target", "consistency_target", "min_days")
 
 
 def last_gate(first: dict[str, int], raised: bool) -> str:
-    """11 item 2 on one pass's first-hold sessions: the gate that held last (ties in `EVAL_GATES` order); the
+    """11 item 2 on one pass's last-rise sessions (the session each gate last turned true, S-4): the gate that held last (ties in `EVAL_GATES` order); the
     consistency target is named only when it raised the target."""
     order = [g for g in EVAL_GATES if g in first and first[g] is not None and first[g] >= 0]
     if not order:

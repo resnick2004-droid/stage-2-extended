@@ -437,7 +437,8 @@ U_RULES: dict[str, Declared] = {
     "U-15": Declared(("net", "wins"), "MFFU evaluation consistency base: strict the net profit; lenient winning days"),
     "U-16": Declared(("pro_strict", "reach"), "Pro's funded floor: strict trails uncapped then set at the first payout; "
                      "lenient locks on reaching"),
-    "U-17": Declared((False, True), "Pro's buffer: strict no request inside it; lenient at the quoted share"),
+    "U-17": Declared((False, True), "Pro's buffer: strict no request inside it; lenient at the quoted share while "
+                     "the balance is inside the buffer (read literally, R-d)"),
     "U-18": Declared(("above_buffer", "all"), "Builder's first-cycle base: strict profit above the buffer; lenient all"),
     "U-20": Declared(("entry_tier", "ladder"), "Labs #006's funded scaling: strict the entry tier; lenient the ladder "
                      "to the Labs cap"),
@@ -580,12 +581,15 @@ def _mffu_eval(mode: str, corner: str) -> EvalTerms:
         min_days = int(_num(parse(r"minimum (\d+) trading day", t, "mffu.pro50k_oneday.eval_terms").group(1)))
         mll = _num(parse(r"drawdown (\d+) EOD", t, "mffu.pro50k_oneday.eval_terms").group(1))
         m = parse(r"(\d+) mini / (\d+) micro", t, "mffu.pro50k_oneday.eval_terms")
+        q = " ".join(str(record_entry("mffu.pro50k_oneday.eval_terms").get("quote", "")).split())
+        word = parse(r"\(Pro Plan (\w+) day pass has no consistency rule\)", q, "mffu.pro50k_oneday.eval_terms quote")
+        stated = NUMBER_WORDS[word.group(1).lower()]                     # N-11: the firm's own sentence, not the field
         return EvalTerms(
             config="PRO1", corner=corner, target=target, mll=mll, floor="trail", lock=lock, consistency=None,
             consistency_semantics="extends", consistency_base="net", min_days=min_days, dll=None, lifespan=None,
             inactivity=_mffu_inactivity_sessions(), close_only=False, subscription=None, one_time=None, billing=None,
             allowance=Allowance(int(m.group(1)), int(m.group(2))), commission=_commission_eval(corner),
-            stated_fewest=min_days, labels=("price unverified: on the grid",),
+            stated_fewest=stated, labels=("price unverified: on the grid",),
             keys=("mffu.pro50k_oneday.eval_terms", "mffu.eval_drawdown_lock", "mffu.inactivity_rule"))
     p = {"RE": "mffu.rapideod50k.", "RED": "mffu.rapideod50k.", "RI": "mffu.rapid50k.", "PRO": "mffu.pro50k."}[mode]
     mll = rv_num(p + "eval_drawdown", r"^(\d+) USD, end-of-day trailing")
@@ -795,7 +799,8 @@ def _l6_funded(mode: str, corner: str) -> FundedTerms:
         c.update(cons_share=con_share)
     return FundedTerms(config="L6", mode=mode, corner=corner, gate="ts_std" if std else "ts_con",
                        cap=float(rv(p + "funded_payout_cap")), request_day_excluded=std,
-                       labels=("from the general article",),
+                       labels=("from the general article",) + (
+                           ("A-16 by U-13: Topstep's Standard path's request-day exclusion",) if std else ()),
                        keys=(p + "funded_mll", p + "funded_daily_loss_limit", p + "funded_payout_path",
                              p + "funded_payout_cap", p + "funded_position_limit", p + "activation_fee",
                              p + "funded_payout_terms_other"), **c)
@@ -950,7 +955,9 @@ def _pro_funded(corner: str) -> FundedTerms:
         within_buffer_share=(quote_figure("U-17.share") / NOT_RULE_VALUES["percent"]) if lenient17 else None, request_day_excluded=False,
         activation=float(rv("mffu.activation_fee")), inactivity=_mffu_inactivity_sessions(), allowance=allowance,
         commission=_commission_eval(corner),
-        labels=("lenient end at Topstep's schedule; zero-commission reading not run",),
+        labels=("lenient end at Topstep's schedule; zero-commission reading not run",)
+        + (("U-17 lenient read literally (R-d): the quoted share only while the balance is inside the buffer",)
+           if lenient17 else ()),
         keys=(p + "funded_drawdown", p + "funded_drawdown_lock", p + "funded_daily_loss_limit", p + "payout_timing",
               p + "funded_position_limit", p + "payout_buffer", p + "payout_min", p + "payout_split", p + "payout_cap",
               p + "funded_conduct_policy", "mffu.activation_fee", "mffu.inactivity_rule"))
@@ -982,7 +989,8 @@ def _builder_funded(mode: str, corner: str) -> FundedTerms:
         max_payouts=int(rv(p + "max_sim_payouts")), ceiling=None, request="builder", within_buffer_share=None,
         request_day_excluded=False, activation=float(rv("mffu.activation_fee")), inactivity=_mffu_inactivity_sessions(),
         allowance=Allowance(minis, micros), commission=_commission_eval(corner),
-        labels=("lenient end at Topstep's schedule; zero-commission reading not run",),
+        labels=("lenient end at Topstep's schedule; zero-commission reading not run",
+                "the buffer left after every request (A-8's My Funded Futures form)"),
         keys=(p + "funded_drawdown", p + "payout_gate", p + "position_limit", p + "daily_loss_limit", p + "payout_cap",
               p + "payout_min", p + "payout_split", p + "funded_consistency", p + "max_sim_payouts",
               "mffu.activation_fee", "mffu.inactivity_rule"))

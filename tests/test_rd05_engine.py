@@ -322,7 +322,7 @@ def test_t8_costed_coin_room_and_costs() -> None:
     assert np.isnan(pnl[0])                                          # no size fits: no trade
     ok = ~np.isnan(pnl)
     assert np.all(pnl[ok] >= -rooms[ok] - 1e-9)                       # costs inside the room
-    assert np.all(d.last["risk"][ok] <= 1000.0 + 1e-9)
+    assert np.all(d.table.realised[d.last["index"]][ok] <= 1000.0 + 1e-9)
     tb = d.table
     assert np.all(np.diff(tb.stopout) > 0)
 
@@ -332,7 +332,8 @@ def test_t8_costed_mean_is_minus_its_costs() -> None:
     d = E.CostedCoinDraw(1.5, 500.0, 50, t.allowance, "topstep", M.EVAL, toy(11))
     d.set_tier(200_000, np.zeros(200_000))
     x = d(200_000, 0, 0, np.full(200_000, 1e6))
-    cost = d.last["cost"]
+    idx = d.last["index"]
+    cost = np.where(x > 0, d.table.cost_win[idx], d.table.cost_loss[idx])
     se = float(np.std(x) / math.sqrt(len(x)))
     assert abs(float(np.mean(x)) + float(np.mean(cost))) < 4 * se
 
@@ -383,3 +384,72 @@ def test_t8_read_set_on_r_and_r_flip() -> None:
     assert all(not c["runs"] for c in rows if c["policy"] == "flip")
     assert {(c["w"], c["r"]) for c in rows if c["runs"]} == {(w, r) for w in M.grid_w() for r in M.grid_r()
                                                               if (w + 1) * r <= f.mll}
+
+
+# ------------------------------------------------------------------------------------------------- Q-138 cycle 1
+
+
+def test_b2_costed_ri_rows_36_and_37_run_with_their_peaks() -> None:
+    """B-2 / R-c: the costed coin at RI's funded corners draws its losing-trade peaks at a = r', b = w r' and runs its
+    oracles clean; the read set is (w + 1) r' + stop-out costs <= D."""
+    from extended import modes_oracles as O
+
+    for idx in (36, 37):
+        m = M.MODE_CORNERS[idx]
+        t = M.mode_corner_terms(m)
+        cells = [c for c in R.coin_cells() if c["index"] == idx and c["coin"] == "costed"]
+        assert any(c["runs"] for c in cells) and any(not c["runs"] for c in cells)
+        for c in cells:
+            if c["runs"]:
+                assert R.ri_read_set_costed(m, t, c["w"], c["r"], c["stop"])
+        c = next(c for c in cells if c["runs"])
+        spec = E.FundedSpec(t, c["w"], c["r"], coin="costed", stop=c["stop"])
+        out = E.run_funded(spec, 2000, toy(40, idx), toy(41, idx))
+        O.oracle_rows(M.FUNDED, out, t, N=R.oracle_count()["N"], mode=m.mode, boundary=False, close_only=False)
+        assert out["fair"]["trades"] > 0 and set(out["exact"].values()) == {0}
+
+
+def test_s4_last_gate_is_the_last_to_turn_true() -> None:
+    """S-4: consistency holds early, lapses on a large day, holds again last -- it is the gate that held last."""
+    o = run_eval_scripted("TS", M.SINGLE, [200.0, 200.0, 200.0, 200.0, 2000.0, 300.0, 600.0])
+    assert o["passed"][0] and o["raised"][0]
+    assert o["last_gate"][0] == "consistency_target"
+    assert o["gate_rise"]["consistency_target"][0] > o["gate_rise"]["base_target"][0]
+
+
+def test_s8_untraded_costed_session_is_no_cycle_day() -> None:
+    m = corner("B20", M.FUNDED, M.STRICT)
+    spec = E.FundedSpec(M.mode_corner_terms(m), 1.0, 500.0, coin="costed", stop=100)
+    st = spec.start(3, E.CostedCoinDraw(1.0, 500.0, 100, spec.t.allowance, spec.t.commission, M.FUNDED, toy(42)))
+    st.traded = np.array([True, False, True])
+    w_days = np.array([2, 2, 2])
+    spec.after_window(st, np.ones(3, bool), np.zeros(3), np.zeros(3, int), np.zeros(3, int), w_days)
+    assert w_days.tolist() == [2, 1, 2]
+    g = E.FundedSpec(M.mode_corner_terms(m), 1.0, 500.0)
+    st = g.start(1, E.CoinDraw(1.0, 500.0, toy(43)))
+    st.traded = np.array([False])
+    w = np.array([2])
+    g.after_window(st, np.ones(1, bool), np.zeros(1), np.zeros(1, int), np.zeros(1, int), w)
+    assert w.tolist() == [2]                                          # the gross coin trades every live session
+
+
+def test_s7_declared_streams_refuse_outside_step_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    for role in E.DECLARED_ROLES:
+        with pytest.raises(RuntimeError, match="S-7"):
+            E.stream(role, 0, 0)
+    E.stream("build_toys", 0, 0)
+    with pytest.raises(RuntimeError):
+        E.allow_declared_streams("a test")
+    monkeypatch.setitem(E._DECLARED_STREAMS, "cleared", False)
+    E.allow_declared_streams("scripts/modes_coin.py main: step_problems(2) empty")
+    assert E._DECLARED_STREAMS["cleared"]
+
+
+def test_n3_dll_applies_at_a_close_only_corner() -> None:
+    from dataclasses import replace
+
+    t = replace(M.eval_terms("B20", M.LENIENT), dll=1000.0)
+    spec = E.EvalSpec(t, 1.0, 500.0)
+    st = spec.start(2, E.CoinDraw(1.0, 500.0, toy(44)))
+    room = spec.room(st, np.array([5000.0, 5000.0]), np.array([0.0, -300.0]))
+    assert room.tolist() == [1000.0, 700.0]

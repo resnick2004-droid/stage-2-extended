@@ -12,7 +12,9 @@ a trade or a result's numbers.
 * before step 0: the record's merge -- every Appendix R key at the status the text states (`record_problems`, T-0's
   mapping) and Q-136b's entries present; every shared identity held at a commit containing it (`waited`): Q-05 (E-010),
   Q-80, Q-93 (with Q-100), Q-101, and RD-01's `firms_identity` (Q-104), each by `identity_tokens.held` on its cover;
-* before step 1: a decision row recording step 0 (`results/modes_rules.csv` named with `RD-05`);
+* before step 1: the lead's row recording step 0 -- **a positional token** (S-11, E-104's form): the row's third
+  cell begins `rd05-step-recorded: 0 @ <sha> -- ` (written in documents only as that placeholder), the sha the
+  recorded run's commit, an ancestor of (or) the commit being run, and the text naming `results/modes_rules.csv`;
 * before step 2: `modes_coin_identity` held (its own token, its cover `modes_cover`);
 * before step 3: `modes_identity` held, and a row recording step 2 (`results/modes_coin.csv`);
 * before step 4: a row recording step 3 (`results/modes_reading.csv`), and Q-44's per-start file on master
@@ -154,10 +156,30 @@ def own_wait(step: int) -> tuple[IR.Waited, ...]:
     return ()
 
 
-def recorded(path: str, repo: Path = ROOT) -> bool:
-    """Whether a decision row names a step's result file together with RD-05 (the lead's row recording that step)."""
-    for line in _decisions(repo).splitlines():
-        if line.startswith("| E-") and path in line and "RD-05" in line:
+STEP_STEM = "rd05-step-recorded"
+STEP_TOKEN = re.compile(rf"^\|\s*(E-\d+)\s*\|\s*\d{{4}}-\d{{2}}-\d{{2}}\s*\|\s*{STEP_STEM}: (\d) @ ([0-9a-f]{{7,40}}) -- "
+                        r"([^|]*)\|", re.MULTILINE)
+
+
+def step_cell(step: int, sha: str, text: str) -> str:
+    """The third cell of the lead's row recording step `step` (S-11), for tests and for the lead."""
+    if not re.fullmatch(r"[0-9a-f]{7,40}", str(sha)) or not str(text).strip():
+        raise ValueError("a step's record names a 7- to 40-hex sha and its text")
+    return f"{STEP_STEM}: {int(step)} @ {sha} -- {text}"
+
+
+def _ancestor(repo: Path, sha: str, head: str) -> bool:
+    r = subprocess.run(["git", "merge-base", "--is-ancestor", sha, head], cwd=str(repo), capture_output=True)
+    return r.returncode == 0
+
+
+def recorded(step_done: int, path: str, repo: Path = ROOT, *, decisions_text: str | None = None,
+             head: str = "HEAD") -> bool:
+    """S-11: whether a decision row's third cell begins with step `step_done`'s positional token, at a sha that is
+    the commit being run or an ancestor of it, its text naming the step's result file. Text elsewhere never counts."""
+    text = _decisions(repo) if decisions_text is None else decisions_text
+    for m in STEP_TOKEN.finditer(text):
+        if int(m.group(2)) == int(step_done) and path in m.group(4) and _ancestor(repo, m.group(3), head):
             return True
     return False
 
@@ -171,8 +193,9 @@ def step_problems(step: int, repo: Path = ROOT, *, head: str = "HEAD") -> list[s
     if step == 0:
         probs, _ = IR.waited_problems(repo, shared_waits(), head=head)
         out += probs
-    if step in RECORDED_BY and not recorded(RECORDED_BY[step], repo):
-        out.append(f"no decision row records step {step - 1} ({RECORDED_BY[step]} with RD-05)")
+    if step in RECORDED_BY and not recorded(step - 1, RECORDED_BY[step], repo, head=head):
+        out.append(f"no decision row records step {step - 1} by its token ({STEP_STEM}: {step - 1} @ <sha> -- naming "
+                   f"{RECORDED_BY[step]})")
     if step in (2, 3):
         probs, _ = IR.waited_problems(repo, own_wait(step), head=head)
         out += probs
@@ -190,4 +213,4 @@ def head_sha(repo: Path = ROOT) -> str:
 
 __all__ = ["STEPS", "RECORDED_BY", "NOT_BUILT", "COIN_IDENTITY", "MODES_IDENTITY", "declaration_problems",
            "e015_problems", "record_problems", "terms_problems", "modes_cover", "cover_problems", "shared_waits",
-           "own_wait", "recorded", "step_problems", "head_sha"]
+           "own_wait", "STEP_STEM", "STEP_TOKEN", "step_cell", "recorded", "step_problems", "head_sha"]

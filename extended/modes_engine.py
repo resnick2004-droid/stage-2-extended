@@ -28,7 +28,15 @@ for statement (`extended.campaign.recomposition_problems`, reused).
   A-16 the request-day exclusion (the session after a request counts toward no window).
 * the two policies (2.6): `steady (w, r)`; `flip (w, r)` -- the first `k` sessions at `r_flip`, then steady (the
   draws); the costed coin (9.2, `CostedCoinDraw`); A-13's online counters, O(accounts): the flip and steady wins, the
-  session each gate first holds, the ending and its cause, the conduct exposures, the fairness martingale's sums.
+  session each gate last turned true (S-4), the ending and its cause, the conduct exposures, the fairness martingale's
+  sums.
+
+**The oracles' facts come from the engine, never from the draw** (Q-138's first corrective cycle, B-1). The spec
+computes each trade's chance (`c / (c + w r)` at the room its own `room` hook handed, or the costed race at the size it
+recomputes from that room and the tier's allowance), its span and its outcome (the trade's change in the balance, which
+must be exactly the win or the loss -- anything else is an exact-check breach), and at `RI` the probability-integral
+value of the peak the engine applied, from 9.2's law written out on the spec's side. A draw that is biased, mis-sized
+or mis-costed therefore breaches 9.6; the draw's own `last` carries only the peak and the size, read as facts.
 
 Every value comes from `extended.modes_terms` (the record by key); none is typed here (17.2).
 """
@@ -246,7 +254,7 @@ def simulate_xfa(rules: Rules, policy: Policy, edge: float, n: int,
         wd = lk & (day_pnl >= rules.std_winning_day_min - EPS)
         win_days[wd] += 1
         win_days_total[wd] += 1
-        if spec is not None: spec.after_window(st, lk, day_pnl, win_days, win_days_total)  # RD-05
+        if spec is not None: spec.after_window(st, lk, day_pnl, win_days, win_days_total, w_days)  # RD-05
         # eligibility
         if policy.payout_path == "standard":
             elig = lk & (win_days >= rules.std_winning_days)
@@ -276,7 +284,7 @@ def simulate_xfa(rules: Rules, policy: Policy, edge: float, n: int,
             w_days[do] = 0
             w_profit[do] = 0.0
             w_best[do] = 0.0
-        if spec is not None: spec.after_payouts(st, d, do, req, B, F, alive, n_payouts)  # RD-05
+        if spec is not None: spec.after_payouts(st, d, do, req, B, F, alive, n_payouts, cash, gross_paid)  # RD-05
 
     out = dict(  # RD-05
         closed=closed, alive=alive, days=days, trades=trades,  # RD-05
@@ -393,16 +401,35 @@ def size_table(s: int, allowance: M.Allowance, schedule: str) -> SizeTable:
     return SizeTable(mi, mc, realised, stopout, cw, cl)
 
 
+def tier_cap_index(table: SizeTable, allowance: M.Allowance, balance: np.ndarray) -> np.ndarray:
+    """The current tier's allowance (the ladder by the balance above start; flat otherwise) as an index into the
+    size table: the largest size the tier allows."""
+    n = len(balance)
+    mpm = M.micros_per_mini()
+    if allowance.ladder is None:
+        return np.full(n, len(table.realised) - 1)
+    thr = np.array([t for t, _ in allowance.ladder], float)
+    minis = np.array([m for _, m in allowance.ladder], int)
+    tier = np.clip(np.searchsorted(thr, balance + EPS, side="right") - 1, 0, len(thr) - 1)
+    if allowance.counting == "ratio":
+        me = table.minis * mpm + table.micros
+        return np.searchsorted(me, minis[tier] * mpm, side="right") - 1
+    tot = table.minis + table.micros
+    caps = {int(m): int(np.max(np.nonzero(tot <= m)[0])) for m in set(minis.tolist())}
+    return np.array([caps[int(m)] for m in minis[tier]])
+
+
 class CostedCoinDraw:
     """The costed coin (9.2): at each trade `n` is recomputed from that trade's room -- the largest size whose stop-out
     (the stop's dollars, the stop and entry ticks, the round turn) lies within the room and the day's remaining limit,
     at most part B's contracts for `r` at `s` and the current tier's allowance; costs inside the room. A size below the
     registered rule's stand-aside share of `r`, or a stop below its cost floor, is no trade (NaN: the session is a
     no-trade session, counted toward inactivity). The bracket is driftless at the realised risk `r'`, its target at
-    `w r'`; costs subtracted at the exit."""
+    `w r'`; costs subtracted at the exit. With a peak stream (`RI`, the lead's R-c) a losing trade's highest point is
+    drawn from 9.2's law at `a = r'`, `b = w r'`, `n` uniforms every slot for every account (N-2)."""
 
     def __init__(self, w: float, r: float, s: int, allowance: M.Allowance, schedule: str, kind: str,
-                 rng: np.random.Generator):
+                 rng: np.random.Generator, peak_rng: np.random.Generator | None = None):
         self.w, self.r, self.s, self.rng, self.kind = float(w), float(r), int(s), rng, kind
         self.allowance = allowance
         self.table = size_table(int(s), allowance, schedule)
@@ -411,26 +438,11 @@ class CostedCoinDraw:
         # part B's contracts for r at s: the largest size whose realised risk is at most r
         self.risk_cap = int(np.searchsorted(self.table.realised, float(r) + EPS, side="right") - 1)
         self.cap_index = np.full(1, len(self.table.realised) - 1)
+        self.peak_rng = peak_rng
         self.last: dict[str, np.ndarray] = {}
 
     def set_tier(self, n: int, balance: np.ndarray) -> None:
-        """The current tier's allowance (the ladder by the balance above start; flat otherwise) as an index cap."""
-        a = self.allowance
-        mpm = M.micros_per_mini()
-        if a.ladder is None:
-            self.cap_index = np.full(n, len(self.table.realised) - 1)
-            return
-        thr = np.array([t for t, _ in a.ladder], float)
-        minis = np.array([m for _, m in a.ladder], int)
-        tier = np.searchsorted(thr, balance + EPS, side="right") - 1
-        tier = np.clip(tier, 0, len(thr) - 1)
-        if a.counting == "ratio":
-            cap_me = minis[tier] * mpm
-            me = self.table.minis * mpm + self.table.micros
-            self.cap_index = np.searchsorted(me, cap_me, side="right") - 1
-        else:
-            tot = self.table.minis + self.table.micros
-            self.cap_index = np.array([int(np.max(np.nonzero(tot <= m)[0])) for m in minis[tier]])
+        self.cap_index = tier_cap_index(self.table, self.allowance, np.asarray(balance, float)[:n])
 
     def __call__(self, n: int, day: int, slot: int, cushion: np.ndarray) -> np.ndarray:
         u = self.rng.random(n)
@@ -445,11 +457,12 @@ class CostedCoinDraw:
         gross = np.where(hit, self.w * realised, -realised)
         cost = np.where(hit, tb.cost_win[idx], tb.cost_loss[idx])
         pnl = np.where(take, gross - cost, np.nan)
-        self.last = {"p": p, "span": realised * (1.0 + self.w), "hit": hit, "gross": np.where(take, gross, 0.0),
-                     "cost": np.where(take, cost, 0.0), "risk": realised, "room_cut": np.zeros(n, bool),
-                     "flip": np.zeros(n, bool), "contracts": np.where(take, tb.minis[idx] * M.micros_per_mini()
-                                                                       + tb.micros[idx], 0),
-                     "full_allowance": take & (idx == self.cap_index), "minis": tb.minis[idx], "micros": tb.micros[idx]}
+        self.last = {"contracts": np.where(take, tb.minis[idx] * M.micros_per_mini() + tb.micros[idx], 0),
+                     "full_allowance": take & (idx == self.cap_index), "index": idx}
+        if self.peak_rng is not None:
+            s = self.peak_rng.random(n)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                self.last["peak"] = np.where(hit, self.w * realised, peak_inverse(s, realised, self.w * realised))
         return pnl
 
 
@@ -471,30 +484,182 @@ class _Fair:
     trades: int = 0
 
 
-def _fair_add(fair: _Fair, ex: np.ndarray, last: dict[str, np.ndarray], peak: bool) -> None:
-    """9.6's fairness martingale over the executed trades: (1{target} - p) x span; and with `peak` (A-6, N-2) the
-    losing trades' probability-integral increments (F(m) - 1/2) x span, variance span^2 / 12."""
+TOL = 1e-7
+
+
+def loss_peak_cdf(m: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """9.2's law of a losing trade's highest point, written out here on the spec's side (independent of the draw's
+    `peak_inverse` and of `peak_survival`): `F(x) = 1 - a (b - x) / (b (a + x))` for `0 <= x < b`."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return 1.0 - a * (b - m) / (b * (a + m))
+
+
+def _fair_add(fair: _Fair, ex: np.ndarray, p: np.ndarray, span: np.ndarray, hit: np.ndarray) -> None:
+    """9.6's fairness martingale over the executed trades, from the spec's engine-side facts (B-1): (1{target} - p)
+    x span, `p` the trade's chance at its room (`c / (c + w r)`, or the costed race at its realised risk)."""
     if not ex.any():
         return
-    p, span, hit = last["p"][ex], last["span"][ex], last["hit"][ex]
-    fair.S += float(np.sum((hit.astype(float) - p) * span))
+    p, span, h = p[ex], span[ex], hit[ex].astype(float)
+    fair.S += float(np.sum((h - p) * span))
     fair.V += float(np.sum(p * (1.0 - p) * span ** 2))
     fair.b = max(fair.b, float(np.max(span)))
     fair.trades += int(ex.sum())
-    if peak and "peak_F" in last:
-        lose = ex & ~last["hit"]
-        if lose.any():
-            sp = last["span"][lose]
-            half = M.NOT_RULE_VALUES["half"]
-            fair.S += float(np.sum((last["peak_F"][lose] - half) * sp))
-            fair.V += float(np.sum(sp ** 2) / M.NOT_RULE_VALUES["uniform_var"])
-            fair.b = max(fair.b, float(np.max(sp)) * half)
 
 
-class EvalSpec:
+def _fair_add_peaks(fair: _Fair, lose: np.ndarray, F: np.ndarray, span: np.ndarray) -> None:
+    """N-2: `RI`'s losing-trade peaks by their probability-integral increment (F(m) - 1/2) x span, variance
+    span^2 / 12, bound span / 2."""
+    if not lose.any():
+        return
+    half = M.NOT_RULE_VALUES["half"]
+    sp = span[lose]
+    fair.S += float(np.sum((F[lose] - half) * sp))
+    fair.V += float(np.sum(sp ** 2) / M.NOT_RULE_VALUES["uniform_var"])
+    fair.b = max(fair.b, float(np.max(sp)) * half)
+
+
+EXACT = ("malformed_outcome", "trade_taken_unpredicted", "loss_beyond_room", "peak_out_of_law", "net_not_split",
+         "paid_not_request", "forfeit_not_at_ceiling", "request_out_of_bounds")
+
+
+class _Spec:
+    """What both modes' specs share: the trade's engine-side facts (B-1), the exact checks (S-3), the counters."""
+
+    t: Any
+    w: float
+    r: float
+    k: int
+    r_flip: float | None
+    coin: str
+    stop: int | None
+    kind: str
+
+    def _base_state(self, n: int, draw: Any) -> dict[str, Any]:
+        z = lambda dt=float: np.zeros(n, dt)  # noqa: E731
+        st = dict(n=n, draw=draw, fair=_Fair(), trades_prev=np.zeros(n, int), idle=np.zeros(n, int),
+                  room_last=np.full(n, INF), traded=np.zeros(n, bool), gross_sum=z(), costs=z(),
+                  room_cuts=np.zeros(n, int), flip_trades=np.zeros(n, int), full_allowance=np.zeros(n, int),
+                  max_contracts=np.zeros(n, int), hist=None, no_trade_sessions=np.zeros(n, int),
+                  flip_wins=np.zeros(n, int), steady_wins=np.zeros(n, int), exact={k: 0 for k in EXACT},
+                  table=None, cap_index=np.zeros(n, int))
+        if self.coin == "costed":
+            st["table"] = size_table(int(self.stop), self.t.allowance, self.t.commission)
+            st["cap_index"] = tier_cap_index(st["table"], self.t.allowance, np.zeros(n))
+            draw.set_tier(n, np.zeros(n))
+            st["hist"] = np.zeros((n, _hist_size(draw)), np.int32)
+        return st
+
+    def risk_at(self, d: int) -> float:
+        return float(self.r_flip) if (self.k > 0 and d < self.k) else float(self.r)
+
+    def _set_tier(self, st: _State, B: np.ndarray) -> None:
+        if self.coin == "costed":
+            st.draw.set_tier(st.n, B)
+            st.cap_index = tier_cap_index(st.table, self.t.allowance, np.asarray(B, float))
+
+    def _room(self, st: _State, cushion: np.ndarray, day_pnl: np.ndarray) -> np.ndarray:
+        t = self.t
+        room = np.full(st.n, INF) if getattr(t, "close_only", False) else cushion
+        if t.dll is not None:                                                     # A-1, and N-3 at a close-only corner
+            room = np.minimum(room, float(t.dll) + day_pnl)
+        st.room_last = np.array(room, float)
+        return room
+
+    def _trade_facts(self, st: _State, d: int, alive_at_start: np.ndarray, ex: np.ndarray, pnl: np.ndarray
+                     ) -> dict[str, np.ndarray]:
+        """The trade's chance, span, outcome, gross P&L and costs, from engine facts only (B-1): the room the hook
+        handed, the cell's `w` and risk schedule, the trade's change in the balance (`pnl`), and on the costed coin the
+        size and costs recomputed here against the fee schedule. A change in the balance that is neither the trade's
+        win nor its loss is an exact-check breach (S-3)."""
+        n = st.n
+        room = np.maximum(st.room_last, 0.0)
+        if self.coin == "gross":
+            risk = self.risk_at(d)
+            win = self.w * risk
+            c = np.minimum(risk, room)
+            with np.errstate(invalid="ignore", divide="ignore"):
+                p = c / (c + win)
+            span = c + win
+            hit = ex & (np.abs(pnl - win) <= TOL * max(1.0, win))
+            loss = ex & (np.abs(pnl + c) <= TOL * max(1.0, win))
+            cost = np.zeros(n)
+            st.room_cuts[ex & (c < risk - EPS) & (self.k > 0 and d < self.k)] += 1
+            take = alive_at_start.copy()
+            a, b = c, np.full(n, win)
+        else:
+            tb = st.table
+            sa = M.registered_stand_aside()["combine" if self.kind == M.EVAL else "funded"]
+            risk_cap = int(np.searchsorted(tb.realised, float(self.r) + EPS, side="right") - 1)
+            idx = np.searchsorted(tb.stopout, room + EPS, side="right") - 1
+            idx = np.maximum(np.minimum(np.minimum(idx, risk_cap), st.cap_index), 0)
+            rr = tb.realised[idx]
+            take = alive_at_start & (idx > 0) & (rr >= float(sa[0]) * self.r - EPS) & (int(self.stop) >= int(sa[1]))
+            p = np.full(n, 1.0 / (1.0 + self.w))
+            span = rr * (1.0 + self.w)
+            w_amt, l_amt = self.w * rr - tb.cost_win[idx], -rr - tb.cost_loss[idx]
+            hit = ex & (np.abs(pnl - w_amt) <= TOL * max(1.0, float(np.max(span))))
+            loss = ex & (np.abs(pnl - l_amt) <= TOL * max(1.0, float(np.max(span))))
+            cost = np.where(hit, tb.cost_win[idx], tb.cost_loss[idx])
+            mpm = M.micros_per_mini()
+            contracts = tb.minis[idx] * mpm + tb.micros[idx]
+            st.full_allowance[ex & (idx == st.cap_index)] += 1
+            st.max_contracts = np.maximum(st.max_contracts, np.where(ex, contracts, 0))
+            rows = np.nonzero(ex)[0]
+            np.add.at(st.hist, (rows, np.minimum(contracts[rows], st.hist.shape[1] - 1)), 1)
+            a, b = rr, self.w * rr
+        st.exact["malformed_outcome"] += int(np.sum(ex & ~hit & ~loss))
+        st.exact["trade_taken_unpredicted"] += int(np.sum(ex != (take & alive_at_start)))
+        st.exact["loss_beyond_room"] += int(np.sum(ex & (-pnl > room + TOL * np.maximum(1.0, room))))
+        return {"p": p, "span": span, "hit": hit, "loss": loss, "cost": cost, "a": a, "b": b}
+
+    def _book(self, st: _State, d: int, alive_at_start: np.ndarray, day_pnl: np.ndarray, trades: np.ndarray,
+              peaks: bool) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+        ex = trades > st.trades_prev
+        st.trades_prev = trades.copy()
+        st.traded = ex
+        f = self._trade_facts(st, d, alive_at_start, ex, day_pnl)
+        _fair_add(st.fair, ex, f["p"], f["span"], f["hit"])
+        if peaks:                                                                # A-6 / R-c: the peak the engine applies
+            m = np.asarray(st.draw.last["peak"], float)
+            lose = ex & f["loss"]
+            bad = ex & f["hit"] & (np.abs(m - f["b"]) > TOL * np.maximum(1.0, f["b"]))
+            bad |= lose & ((m < -TOL) | (m >= f["b"]))
+            st.exact["peak_out_of_law"] += int(np.sum(bad))
+            F = loss_peak_cdf(np.clip(m, 0.0, None), f["a"], f["b"])
+            _fair_add_peaks(st.fair, lose, F, f["span"])
+            f["peak"] = m
+        st.gross_sum[ex] += day_pnl[ex] + f["cost"][ex]
+        st.costs[ex] += f["cost"][ex]
+        st.flip_trades[ex & (self.k > 0 and d < self.k)] += 1
+        win = ex & (day_pnl > EPS)
+        (st.flip_wins if (self.k > 0 and d < self.k) else st.steady_wins)[win] += 1
+        idle = alive_at_start & ~ex
+        st.no_trade_sessions[idle] += 1
+        st.idle[ex] = 0
+        st.idle[idle] += 1
+        return ex, f
+
+    def _rise(self, st: _State, d: int, name: str, cond: np.ndarray, live: np.ndarray) -> None:
+        """S-4: the session each gate last turned true (its false-to-true change), among the live accounts."""
+        prev = st.gate_prev[name]
+        rise = live & cond & ~prev
+        st.gate_rise[name][rise] = d
+        st.gate_prev[name] = np.where(live, cond, prev)
+
+    def _common_outputs(self, st: _State, out: dict[str, Any]) -> None:
+        out.update(gross_sum=st.gross_sum, costs=st.costs, room_cuts=st.room_cuts, flip_trades=st.flip_trades,
+                   full_allowance=st.full_allowance, no_trade_sessions=st.no_trade_sessions,
+                   flip_wins=st.flip_wins, steady_wins=st.steady_wins, exact=dict(st.exact),
+                   fair=dict(S=st.fair.S, V=st.fair.V, b=st.fair.b, trades=st.fair.trades),
+                   s8_ratio_max=_s8_ratio(st.hist) if st.hist is not None else None,
+                   size_spread=_size_spread(st.hist) if st.hist is not None else None, max_contracts=st.max_contracts)
+
+
+class EvalSpec(_Spec):
     """One evaluation mode-corner's run on the coin: its terms, the cell `(w, r)`, the policy and the coin."""
 
     kind = M.EVAL
+    GATES = ("base_target", "consistency_target", "min_days")
 
     def __init__(self, terms: M.EvalTerms, w: float, r: float, *, policy: str = "steady", coin: str = "gross",
                  stop: int | None = None):
@@ -526,57 +691,32 @@ class EvalSpec:
 
     # ---- hooks
     def start(self, n: int, draw: Any) -> _State:
-        z = lambda dt=float: np.zeros(n, dt)  # noqa: E731
-        st = _State(n=n, draw=draw, fair=_Fair(), trades_prev=np.zeros(n, int), idle=np.zeros(n, int),
-                    days_traded=np.zeros(n, int), win_sum=z(), flip_wins=np.zeros(n, int),
-                    steady_wins=np.zeros(n, int), expired=np.zeros(n, bool), inactive=np.zeros(n, bool),
-                    first_target=np.full(n, -1), first_consistency=np.full(n, -1), first_min_days=np.full(n, -1),
-                    gross_sum=z(), costs=z(), room_cuts=np.zeros(n, int), flip_trades=np.zeros(n, int),
-                    full_allowance=np.zeros(n, int), max_contracts=np.zeros(n, int), raised=np.zeros(n, bool),
-                    no_trade_sessions=np.zeros(n, int), hist=None)
-        if self.coin == "costed":
-            draw.set_tier(n, np.zeros(n))
-            st.hist = np.zeros((n, _hist_size(draw)), np.int32)
+        st = _State(**self._base_state(n, draw))
+        st.days_traded = np.zeros(n, int)
+        st.win_sum = np.zeros(n)
+        st.expired = np.zeros(n, bool)
+        st.inactive = np.zeros(n, bool)
+        st.raised = np.zeros(n, bool)
+        st.gate_prev = {g: np.zeros(n, bool) for g in self.GATES}
+        st.gate_rise = {g: np.full(n, -1) for g in self.GATES}
         return st
 
     def session_start(self, st: _State, d: int, alive: np.ndarray, B: np.ndarray, F: np.ndarray) -> None:
+        self._set_tier(st, B)
         if self.t.lifespan is not None and d >= int(self.t.lifespan):              # A-3: the lifespan ends it
             exp = alive.copy()
             st.expired |= exp
             alive &= ~exp
 
     def room(self, st: _State, cushion: np.ndarray, day_pnl: np.ndarray) -> np.ndarray:
-        if self.t.close_only:                                                     # U-27 lenient: the close only
-            return np.full(st.n, INF)
-        if self.t.dll is not None:                                                # A-1: the day's remaining limit
-            return np.minimum(cushion, float(self.t.dll) + day_pnl)
-        return cushion
+        return self._room(st, cushion, day_pnl)                                   # U-27 lenient; A-1
 
     def after_trades(self, st: _State, d: int, alive_at_start: np.ndarray, alive: np.ndarray, day_pnl: np.ndarray,
                      B: np.ndarray, F: np.ndarray, trades: np.ndarray) -> None:
-        ex = (trades > st.trades_prev)
-        st.trades_prev = trades.copy()
-        last = st.draw.last
-        _fair_add(st.fair, ex, last, peak=False)
-        st.gross_sum[ex] += last["gross"][ex]
-        st.costs[ex] += last["cost"][ex]
-        st.room_cuts[ex & last["room_cut"] & last["flip"]] += 1
-        st.flip_trades[ex & last["flip"]] += 1
+        ex, _f = self._book(st, d, alive_at_start, day_pnl, trades, peaks=False)
         st.days_traded[ex] += 1
         win = ex & (day_pnl > EPS)
         st.win_sum[win] += day_pnl[win]
-        fl = bool(self.k > 0 and d < self.k)
-        (st.flip_wins if fl else st.steady_wins)[win] += 1
-        if self.coin == "costed":
-            c = last["contracts"]
-            st.full_allowance[ex & last["full_allowance"]] += 1
-            st.max_contracts = np.maximum(st.max_contracts, np.where(ex, c, 0))
-            rows = np.nonzero(ex)[0]
-            np.add.at(st.hist, (rows, np.minimum(c[rows], st.hist.shape[1] - 1)), 1)
-        idle = alive_at_start & ~ex
-        st.no_trade_sessions[idle] += 1
-        st.idle[ex] = 0
-        st.idle[idle] += 1
         if self.t.inactivity is not None:                                         # A-3: the window untraded
             gone = alive & (st.idle >= int(self.t.inactivity))
             st.inactive |= gone
@@ -597,23 +737,21 @@ class EvalSpec:
         else:
             cons = alive & (B >= best_day / float(t.consistency) - EPS)
         md = alive.copy() if t.min_days is None else alive & (st.days_traded >= int(t.min_days))
-        for arr, cond in ((st.first_target, tgt), (st.first_consistency, cons), (st.first_min_days, md)):
-            arr[cond & (arr < 0)] = d
+        for g, cond in zip(self.GATES, (tgt, cons, md)):
+            self._rise(st, d, g, cond, alive)
         st.raised |= alive & tgt & ~cons
         if t.consistency_base == "wins":
-            out = tgt & cons & md
-        else:
-            out = newpass & md                                                    # the engine's own, with A-2
-        return out
+            return tgt & cons & md
+        return newpass & md                                                        # the engine's own, with A-2
 
     def outputs(self, st: _State, out: dict[str, Any]) -> dict[str, Any]:
         out = dict(out)
         out["unresolved"] = out["unresolved"] & ~st.expired & ~st.inactive
         last_gate = np.full(st.n, "", dtype=object)
         p = out["passed"]
-        g = np.stack([st.first_target, st.first_consistency, st.first_min_days])
-        idx = np.argmax(g, axis=0)                     # the gate that held last (ties: target, consistency, min days)
-        names = np.array(["base_target", "consistency_target", "min_days"], dtype=object)
+        g = np.stack([st.gate_rise[x] for x in self.GATES])
+        idx = np.argmax(g, axis=0)                   # the gate that turned true last (ties: target, consistency, days)
+        names = np.array(self.GATES, dtype=object)
         last_gate[p] = names[idx[p]]
         last_gate[p & (idx == 1) & ~st.raised] = "base_target"
         cause = np.full(st.n, "", dtype=object)
@@ -621,12 +759,9 @@ class EvalSpec:
         cause[st.expired] = "lifespan"
         cause[st.inactive] = "inactivity"
         cause[out["unresolved"]] = "censored"
-        out.update(expired=st.expired, inactive=st.inactive, flip_wins=st.flip_wins, steady_wins=st.steady_wins,
-                   last_gate=last_gate, cause=cause, gross_sum=st.gross_sum, costs=st.costs, raised=st.raised,
-                   room_cuts=st.room_cuts, flip_trades=st.flip_trades, full_allowance=st.full_allowance,
-                   no_trade_sessions=st.no_trade_sessions, days_traded=st.days_traded,
-                   fair=dict(S=st.fair.S, V=st.fair.V, b=st.fair.b, trades=st.fair.trades),
-                   s8_ratio_max=_s8_ratio(st.hist) if st.hist is not None else None, max_contracts=st.max_contracts)
+        self._common_outputs(st, out)
+        out.update(expired=st.expired, inactive=st.inactive, last_gate=last_gate, cause=cause, raised=st.raised,
+                   days_traded=st.days_traded, gate_rise={k: v.copy() for k, v in st.gate_rise.items()})
         return out
 
 
@@ -653,10 +788,25 @@ def _s8_ratio(hist: np.ndarray) -> np.ndarray:
     return out
 
 
-class FundedSpec:
+def _size_spread(hist: np.ndarray) -> dict[str, np.ndarray]:
+    """4.7 item 5 (S-10): the spread of each account's trade sizes -- the range and the standard deviation of its
+    contracts (micro-equivalents), from the histogram; NaN for an account with no trade."""
+    sizes = np.arange(hist.shape[1], dtype=float)
+    tot = hist.sum(axis=1).astype(float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean = (hist * sizes).sum(axis=1) / tot
+        var = (hist * sizes ** 2).sum(axis=1) / tot - mean ** 2
+    has = hist > 0
+    hi = np.where(has.any(axis=1), (has * sizes).max(axis=1), np.nan)
+    lo = np.where(has.any(axis=1), np.where(has, sizes, np.inf).min(axis=1), np.nan)
+    return {"range": hi - lo, "sd": np.sqrt(np.maximum(var, 0.0))}
+
+
+class FundedSpec(_Spec):
     """One funded mode-corner's run on the coin."""
 
     kind = M.FUNDED
+    GATES = ("winning_days", "cycle_share", "cycle_days", "buffer_min", "clock", "profit_since")
 
     def __init__(self, terms: M.FundedTerms, w: float, r: float, *, policy: str = "steady", coin: str = "gross",
                  stop: int | None = None):
@@ -675,7 +825,7 @@ class FundedSpec:
     def rules(self) -> Rules:
         t = self.t
         at_pay = t.floor_at_payout if t.floor_at_payout is not None else 0.0
-        big = 1e18
+        big = float(M.NOT_RULE_VALUES["never"])
         return replace(Rules(), xfa_mll_start=float(t.floor_start), mll=float(t.mll), xfa_lock_at=float(at_pay),
                        std_winning_days=int(t.winning_days) if t.winning_days is not None else 0,
                        std_winning_day_min=float(t.winning_day_min) if t.winning_day_min is not None else 0.0,
@@ -690,69 +840,56 @@ class FundedSpec:
     def policy_obj(self) -> Policy:
         return Policy(rr=self.w, risk=self.r, payout_path="consistency" if self.t.gate == "ts_con" else "standard")
 
+    def peaks(self) -> bool:
+        return self.t.floor == "intraday"
+
     def draw(self, rng: np.random.Generator, peak_rng: np.random.Generator | None = None) -> Any:
+        pr = peak_rng if self.peaks() else None
+        if self.peaks() and pr is None:
+            raise ValueError("RI's funded mode draws its peaks on the coin_peak stream (N-2)")
         if self.coin == "costed":
-            return CostedCoinDraw(self.w, self.r, int(self.stop), self.t.allowance, self.t.commission, M.FUNDED, rng)
-        return CoinDraw(self.w, self.r, rng, k=self.k, r_flip=self.r_flip,
-                        peak_rng=peak_rng if self.t.floor == "intraday" else None)
+            return CostedCoinDraw(self.w, self.r, int(self.stop), self.t.allowance, self.t.commission, M.FUNDED, rng,
+                                  peak_rng=pr)
+        return CoinDraw(self.w, self.r, rng, k=self.k, r_flip=self.r_flip, peak_rng=pr)
 
     # ---- hooks
     def start(self, n: int, draw: Any) -> _State:
         z = lambda dt=float: np.zeros(n, dt)  # noqa: E731
-        st = _State(n=n, draw=draw, fair=_Fair(), trades_prev=np.zeros(n, int), idle=np.zeros(n, int),
-                    first_trade=np.full(n, -1), last_req=np.full(n, -1), excl_next=np.zeros(n, bool),
-                    pending=z(), peak_eq=z(), moved_live=np.zeros(n, bool), forfeit=z(), inactive=np.zeros(n, bool),
-                    count_end=np.zeros(n, bool), flip_wins=np.zeros(n, int), steady_wins=np.zeros(n, int),
-                    flip_wins_at_first=np.full(n, -1), steady_wins_at_first=np.full(n, -1),
-                    balance_at_first=np.full(n, np.nan), first_gate=None, gross_sum=z(), costs=z(),
-                    room_cuts=np.zeros(n, int), flip_trades=np.zeros(n, int), full_allowance=np.zeros(n, int),
-                    max_contracts=np.zeros(n, int), hist=None, paid=np.zeros(n, bool),
-                    request_check=np.zeros(n, int), no_trade_sessions=np.zeros(n, int))
-        st.first_gate = {g: np.full(n, -1) for g in ("winning_days", "cycle_share", "cycle_days", "buffer_min",
-                                                     "clock", "profit_since", "count")}
-        if self.coin == "costed":
-            draw.set_tier(n, np.zeros(n))
-            st.hist = np.zeros((n, _hist_size(draw)), np.int32)
+        st = _State(**self._base_state(n, draw))
+        st.first_trade = np.full(n, -1)
+        st.last_req = np.full(n, -1)
+        st.excl_next = np.zeros(n, bool)
+        st.pending = z()
+        st.peak_eq = z()
+        st.moved_live = np.zeros(n, bool)
+        st.forfeit = z()
+        st.inactive = np.zeros(n, bool)
+        st.count_end = np.zeros(n, bool)
+        st.flip_wins_at_first = np.full(n, -1)
+        st.steady_wins_at_first = np.full(n, -1)
+        st.balance_at_first = np.full(n, np.nan)
+        st.paid = np.zeros(n, bool)
+        st.cash_prev = z()
+        st.paid_prev = z()
+        st.gate_prev = {g: np.zeros(n, bool) for g in self.GATES}
+        st.gate_rise = {g: np.full(n, -1) for g in self.GATES}
         return st
 
     def session_start(self, st: _State, d: int, trading: np.ndarray, B: np.ndarray, F: np.ndarray) -> None:
-        if self.coin == "costed":
-            st.draw.set_tier(st.n, B)
+        self._set_tier(st, B)
 
     def room(self, st: _State, cushion: np.ndarray, day_pnl: np.ndarray) -> np.ndarray:
-        if self.t.dll is not None:
-            return np.minimum(cushion, float(self.t.dll) + day_pnl)
-        return cushion
+        return self._room(st, cushion, day_pnl)
 
     def after_trades(self, st: _State, d: int, alive_at_start: np.ndarray, alive: np.ndarray, day_pnl: np.ndarray,
                      B: np.ndarray, F: np.ndarray, trades: np.ndarray) -> None:
         t = self.t
-        ex = trades > st.trades_prev
-        st.trades_prev = trades.copy()
-        last = st.draw.last
-        _fair_add(st.fair, ex, last, peak=t.floor == "intraday")
-        st.gross_sum[ex] += last["gross"][ex]
-        st.costs[ex] += last["cost"][ex]
-        st.room_cuts[ex & last["room_cut"] & last["flip"]] += 1
-        st.flip_trades[ex & last["flip"]] += 1
+        ex, f = self._book(st, d, alive_at_start, day_pnl, trades, peaks=self.peaks())
         st.first_trade[ex & (st.first_trade < 0)] = d
-        win = ex & (day_pnl > EPS)
-        fl = bool(self.k > 0 and d < self.k)
-        (st.flip_wins if fl else st.steady_wins)[win] += 1
-        if t.floor == "intraday":                                                  # A-6: the equity peak
+        if self.peaks():                                                           # A-6: the equity peak (R-c: gross)
             before = B - np.where(ex, day_pnl, 0.0)
-            pk = np.where(ex, before + last["peak"], B)
+            pk = np.where(ex, before + f["peak"], B)
             st.peak_eq = np.maximum(st.peak_eq, np.maximum(pk, B))
-        if self.coin == "costed":
-            c = last["contracts"]
-            st.full_allowance[ex & last["full_allowance"]] += 1
-            st.max_contracts = np.maximum(st.max_contracts, np.where(ex, c, 0))
-            rows = np.nonzero(ex)[0]
-            np.add.at(st.hist, (rows, np.minimum(c[rows], st.hist.shape[1] - 1)), 1)
-        idle = alive_at_start & ~ex
-        st.no_trade_sessions[idle] += 1
-        st.idle[ex] = 0
-        st.idle[idle] += 1
         if t.ceiling is not None:                                                  # A-11: the single-day ceiling
             over = alive & (day_pnl > float(t.ceiling) + EPS)
             if over.any():
@@ -761,6 +898,8 @@ class FundedSpec:
                 st.forfeit[over] += excess
                 st.moved_live |= over
                 alive &= ~over
+                net = day_pnl[over] - excess
+                st.exact["forfeit_not_at_ceiling"] += int(np.sum(np.abs(net - float(t.ceiling)) > TOL * float(t.ceiling)))
         if t.inactivity is not None:                                               # A-3
             gone = alive & (st.idle >= int(t.inactivity))
             st.inactive |= gone
@@ -781,7 +920,9 @@ class FundedSpec:
             F[unpaid] = np.maximum(F_prev[unpaid], B[unpaid] - float(t.mll))
 
     def after_window(self, st: _State, lk: np.ndarray, day_pnl: np.ndarray, win_days: np.ndarray,
-                     win_days_total: np.ndarray) -> None:
+                     win_days_total: np.ndarray, w_days: np.ndarray) -> None:
+        if self.coin == "costed":                                                  # S-8: an untraded session is no
+            w_days[lk & ~st.traded] -= 1                                           # cycle day
         if self.t.request_day_excluded:                                            # A-16
             ex = st.excl_next & lk
             wd = ex & (day_pnl >= float(self.t.winning_day_min) - EPS)
@@ -794,12 +935,11 @@ class FundedSpec:
                     win_days: np.ndarray, w_days: np.ndarray, w_profit: np.ndarray, w_best: np.ndarray
                     ) -> tuple[np.ndarray, np.ndarray]:
         t, g = self.t, self.t.gate
-        fg = st.first_gate
         pmin = float(t.payout_min)
+        live = lk & ~paid_once                                                     # the gates to the first payout
 
         def mark(name: str, cond: np.ndarray) -> None:
-            a = fg[name]
-            a[lk & cond & (a < 0) & ~paid_once] = d
+            self._rise(st, d, name, cond, live)
 
         if g in ("ts_std", "labs_5wd"):
             mark("winning_days", win_days >= int(t.winning_days))
@@ -852,11 +992,13 @@ class FundedSpec:
         raise ValueError(g)
 
     def _request(self, B: np.ndarray) -> np.ndarray:
-        """9.2's request at U-25's end (`modes_rules.request_amount`, vectorised)."""
+        """9.2's request at U-25's end (`modes_rules.request_amount`, vectorised); U-17's lenient end literal (R-d):
+        the quoted share of the balance only while it is inside the buffer."""
         t = self.t
         withdraw = np.maximum(B - float(t.buffer), 0.0)
         if t.within_buffer_share is not None:
-            withdraw = np.maximum(withdraw, float(t.within_buffer_share) * np.maximum(B, 0.0))
+            inside = B < float(t.buffer)
+            withdraw = np.where(inside, float(t.within_buffer_share) * np.maximum(B, 0.0), withdraw)
         if t.request == "u25_strict":
             return np.maximum(0.0, np.minimum(np.minimum(float(t.frac) * B, self.R.reference_cap()), withdraw))
         if t.request == "u25_lenient":
@@ -864,8 +1006,14 @@ class FundedSpec:
         raise ValueError(t.request)
 
     def after_payouts(self, st: _State, d: int, do: np.ndarray, req: np.ndarray, B: np.ndarray, F: np.ndarray,
-                      alive: np.ndarray, n_payouts: np.ndarray) -> None:
+                      alive: np.ndarray, n_payouts: np.ndarray, cash: np.ndarray, gross_paid: np.ndarray) -> None:
         t = self.t
+        dc, dg = cash - st.cash_prev, gross_paid - st.paid_prev                    # S-3: every net its split
+        want_c = np.where(do, float(t.split) * req, 0.0)
+        want_g = np.where(do, req, 0.0)
+        st.exact["net_not_split"] += int(np.sum(np.abs(dc - want_c) > TOL * np.maximum(1.0, np.abs(want_c))))
+        st.exact["paid_not_request"] += int(np.sum(np.abs(dg - want_g) > TOL * np.maximum(1.0, np.abs(want_g))))
+        st.cash_prev, st.paid_prev = cash.copy(), gross_paid.copy()
         if not do.any():
             return
         first = do & ~st.paid
@@ -877,7 +1025,7 @@ class FundedSpec:
         bad = do & (req < float(t.payout_min) - EPS)
         if t.cap is not None:
             bad |= do & (req > float(t.cap) + EPS)
-        st.request_check[bad] += 1
+        st.exact["request_out_of_bounds"] += int(np.sum(bad))
         if t.request_day_excluded:
             st.excl_next |= do
         if t.max_payouts is not None:                                              # A-11 / A-17: the end by count
@@ -895,23 +1043,34 @@ class FundedSpec:
         cause[nopay & st.inactive] = "inactivity"
         cause[nopay & st.moved_live] = "moved_to_live"
         cause[nopay & out["alive"]] = "censored"
+        self._common_outputs(st, out)
         out.update(moved_live=st.moved_live, forfeit=st.forfeit, inactive=st.inactive, count_end=st.count_end,
                    flip_wins_at_first=st.flip_wins_at_first, steady_wins_at_first=st.steady_wins_at_first,
-                   balance_at_first=st.balance_at_first, first_gate={k: v.copy() for k, v in st.first_gate.items()},
-                   cause=cause, gross_sum=st.gross_sum, costs=st.costs, room_cuts=st.room_cuts,
-                   flip_trades=st.flip_trades, full_allowance=st.full_allowance,
-                   no_trade_sessions=st.no_trade_sessions, request_check=st.request_check,
-                   fair=dict(S=st.fair.S, V=st.fair.V, b=st.fair.b, trades=st.fair.trades),
-                   s8_ratio_max=_s8_ratio(st.hist) if st.hist is not None else None, max_contracts=st.max_contracts,
-                   first_trade=st.first_trade)
+                   balance_at_first=st.balance_at_first, gate_rise={k: v.copy() for k, v in st.gate_rise.items()},
+                   cause=cause, first_trade=st.first_trade)
         return out
 
 
 # ------------------------------------------------------------------------------------------------ one run
 
+#: S-7: the declared coin streams are drawn only by step 2's `main`, after its refusals cleared
+DECLARED_ROLES = ("coin_eval", "coin_funded", "coin_peak")
+_DECLARED_STREAMS = {"cleared": False}
+
+
+def allow_declared_streams(cleared_by: str) -> None:
+    """Called only by `scripts/modes_coin.py`'s `main`, after `step_problems(2)` came back empty."""
+    if cleared_by != "scripts/modes_coin.py main: step_problems(2) empty":
+        raise RuntimeError("only step 2's main clears the declared coin streams (S-7)")
+    _DECLARED_STREAMS["cleared"] = True
+
 
 def stream(role: str, w_index: int, r_index: int) -> np.random.Generator:
-    """Section 15's keyed stream: `[seed, w_index, r_index]`, the same for every mode-corner, policy and stop."""
+    """Section 15's keyed stream: `[seed, w_index, r_index]`, the same for every mode-corner, policy and stop. The
+    three declared coin roles refuse unless step 2's refusals cleared (S-7)."""
+    if role in DECLARED_ROLES and not _DECLARED_STREAMS["cleared"]:
+        raise RuntimeError(f"REFUSED (S-7): the declared stream {role!r} is drawn only by step 2's main, after its "
+                           "refusals cleared")
     return np.random.default_rng([M.seed(role), int(w_index), int(r_index)])
 
 
@@ -939,5 +1098,6 @@ def spec_for(m: M.ModeCorner, w: float, r: float, *, policy: str = "steady", coi
 
 
 __all__ = ["VENDORED_SHA256", "MARKER", "check_vendored_sources", "recomposition_problems", "simulate_combine",
-           "simulate_xfa", "peak_survival", "peak_inverse", "CoinDraw", "SizeTable", "size_table", "CostedCoinDraw",
-           "EvalSpec", "FundedSpec", "stream", "run_eval", "run_funded", "spec_for"]
+           "simulate_xfa", "peak_survival", "peak_inverse", "loss_peak_cdf", "CoinDraw", "SizeTable", "size_table",
+           "tier_cap_index", "CostedCoinDraw", "EvalSpec", "FundedSpec", "EXACT", "DECLARED_ROLES",
+           "allow_declared_streams", "stream", "run_eval", "run_funded", "spec_for"]

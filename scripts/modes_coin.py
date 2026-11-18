@@ -10,8 +10,10 @@ days, part E's binding gates, and 4.7 item 5's exposures. No bar is read.
 
 **Refusing first** (`extended.modes_steps.step_problems(2)`): the declaration at its pin, the record's keys, the
 coin identity held (`modes_coin_identity`), and step 0's file read through its manifest (`extended.results.read_result`)
-whose `coin_cells` and `oracle_count` sections equal this commit's recomputation (`modes_rules.coin_cells`,
-`oracle_count`) -- a difference refuses. **Order** (18): `TS-S`'s evaluation mode first, then Appendix M's order; per
+whose `coin_cells` rows (every cell, its `runs` and its reason, N-13) and `oracle_count` equal this commit's
+recomputation -- a difference refuses. Only then are the declared coin streams cleared (`modes_engine.
+allow_declared_streams`, S-7); no other caller can draw them. `--measure` runs only under `run.lock` held by an
+`rd05-` job (N-14). **Order** (18): `TS-S`'s evaluation mode first, then Appendix M's order; per
 `(w, r)` the steady cell, its flip, its costed cells; **any oracle breach stops the step at once: nothing of the step is
 written**. Shared gross cells (N-4) are run once at the strict corner and copied, their checks counted once.
 
@@ -49,6 +51,18 @@ from extended.procmem import working_set_mb  # noqa: E402
 SCRIPT = "scripts/modes_coin.py"
 
 
+def cell_signature_rows(rows: list[dict[str, Any]]) -> list[tuple]:
+    """N-13: each coin cell's identity, whether it runs and why, normalised for comparison with step 0's file."""
+    def norm_stop(x: Any) -> Any:
+        if x is None or (isinstance(x, float) and math.isnan(x)) or str(x) in ("", "nan", "None"):
+            return None
+        return int(float(x))
+
+    return sorted((int(r["index"]), int(r["w_index"]), int(r["r_index"]), str(r["policy"]), str(r["coin"]),
+                   norm_stop(r["stop"]), str(r["runs"]) in ("True", "true", "1"), str(r.get("why") or "")
+                   if str(r.get("why")) != "nan" else "") for r in rows)
+
+
 def run_order() -> list[M.ModeCorner]:
     """18 step 2: `TS-S`'s evaluation mode first (Appendix M row 0 is it), then Appendix M's order."""
     return list(M.MODE_CORNERS)
@@ -84,11 +98,12 @@ def cell_rows(m: M.ModeCorner, wi: int, ri: int, policy: str, coin: str, stop: i
     w, r = M.grid_w()[wi], M.grid_r()[ri]
     key = {"index": m.index, "kind": m.kind, "mode": m.mode, "corner": m.corner, "w": w, "r": r, "policy": policy,
            "coin": coin, "stop": stop}
-    boundary = m.kind == M.EVAL and coin == "gross" and (m.index, w, r) in bset
+    boundary = m.kind == M.EVAL and coin == "gross" and policy == "steady" and (m.index, w, r) in bset   # a flip
+    # trades r_flip, off the cell's lattice: never a boundary cell
     orc = O.oracle_rows(m.kind, out, t, N=N, mode=m.mode, boundary=boundary, close_only=bool(m.index in
                                                                                              M.close_only_corners()))
     rows: dict[str, list[dict[str, Any]]] = {"oracle": [{**key, **o} for o in orc]}
-    labels = "; ".join(t.labels)
+    labels = "; ".join(t.labels + (GROSS_LABELS if coin == "gross" else COIN_LABELS))
     if m.kind == M.EVAL:
         rd = J.eval_reading(out, t)
         rows["eval"] = [{**key, **rd, "labels": labels}]
@@ -106,7 +121,7 @@ def cell_rows(m: M.ModeCorner, wi: int, ri: int, policy: str, coin: str, stop: i
         rd = J.funded_reading(out, t)
         rows["funded"] = [{**key, **rd, "labels": labels}]
         paid = np.asarray(out["first_payout_day"]) >= 0
-        firsts = [RD.last_funded_gate({g: int(out["first_gate"][g][i]) for g in out["first_gate"]})
+        firsts = [RD.last_funded_gate({g: int(out["gate_rise"][g][i]) for g in out["gate_rise"]})
                   for i in np.nonzero(paid)[0]]
         rows["binding"] = [{**key, "what": "last_gate", **RD.gate_shares([x or "" for x in firsts])},
                            {**key, "what": "cause", **RD.gate_shares(out["cause"][~paid])}]
@@ -114,9 +129,97 @@ def cell_rows(m: M.ModeCorner, wi: int, ri: int, policy: str, coin: str, stop: i
           if coin == "costed" else "not applicable",
           "s8_ratio_max": float(np.nanmax(out["s8_ratio_max"])) if coin == "costed" and out["s8_ratio_max"] is not None
           and np.any(np.isfinite(out["s8_ratio_max"])) else "not applicable",
-          "size_spread": float(np.mean(out["max_contracts"])) if coin == "costed" else "not applicable"}
+          "size_spread": (f"range {np.nanmean(out['size_spread']['range']):.6g}, "
+                          f"sd {np.nanmean(out['size_spread']['sd']):.6g} (contracts, micro-equivalents; per-account "
+                          "mean)") if coin == "costed" else "not applicable",
+          "stacking_share": "in the renewal section (the joined journey's)",
+          "evaluations_per_21": (int(M.declared("month")) / float(np.mean(out["days"])))
+          if m.kind == M.EVAL and float(np.mean(out["days"])) > 0 else "not applicable"}
     rows["exposure"] = [{**key, **RD.exposures_row(policy, ex)}]
     return rows
+
+
+#: the paired vectors' layout (flip first, then steady) and the variance algebra's constant (17.2's scan skips it)
+LAYOUT: dict[str, int] = {"flip": 0, "steady": 3, "two": 2}
+
+#: 2.6 / 12.6 (N-17): carried on step 2's rows themselves
+COIN_LABELS = ("no calendar: no news rule",)
+GROSS_LABELS = ("allowance and scaling not applied", "no calendar: no news rule")
+
+
+def eval_moments(steady: dict[str, Any], flip: dict[str, Any], t: M.EvalTerms) -> dict[str, Any]:
+    """10.2: the paired evaluation vectors' moments -- (periods, pass, censored) per account under flip and steady,
+    their means and covariance (O(1) to keep), and sessions to a pass under each."""
+    def vec(o: dict[str, Any]) -> np.ndarray:
+        per = (np.asarray(o["sub_fees"], float) / float(t.subscription)) if t.subscription is not None else \
+            np.ones(len(o["passed"]))
+        return np.stack([per, np.asarray(o["passed"], float), np.asarray(o["unresolved"], float)])
+
+    X = np.vstack([vec(flip["out"]), vec(steady["out"])])
+    sess = {}
+    for name, o in (("flip", flip["out"]), ("steady", steady["out"])):
+        p = np.asarray(o["passed"], bool)
+        d = np.asarray(o["pass_day"])[p] + 1.0
+        sess[name] = (float(np.mean(d)) if len(d) else math.nan, float(np.var(d, ddof=1)) if len(d) > 1 else math.nan,
+                      len(d), float(np.median(d)) if len(d) else math.nan)
+    return {"n": X.shape[1], "mean": X.mean(axis=1), "cov": np.cov(X), "sessions": sess}
+
+
+def funded_moments(steady: dict[str, Any], flip: dict[str, Any]) -> dict[str, Any]:
+    """10.2: the paired funded nets (cash to the user) under flip and steady: means, variances, covariance."""
+    Y = np.stack([np.asarray(flip["out"]["cash"], float), np.asarray(steady["out"]["cash"], float)])
+    return {"n": Y.shape[1], "mean": Y.mean(axis=1), "cov": np.cov(Y)}
+
+
+def flip_net_pairs(cfg: str, em: dict[str, Any], fm: dict[str, Any], price: float, act: float,
+                   key: dict[str, Any]) -> list[dict[str, Any]]:
+    """10.2 on the coin: the net per attempt and per funded journey, flip against steady, with paired standard
+    errors -- `flip_E` (the evaluation's flip, the funded steady) and `flip_F` (the evaluation steady, the funded flip);
+    the evaluation's and the funded account's streams are independent (section 15), so the variances are exact
+    functions of the two paired sets of moments; the journey's by the delta method."""
+    out = []
+    m, C, n = em["mean"], em["cov"], em["n"]
+    Ym, YC, nf = fm["mean"] - act, fm["cov"], fm["n"]
+    # flip_E: d = -price (per_f - per_s) + (P_f - P_s) Y_s, Y_s independent
+    a = np.array([-price, 0, 0, price, 0, 0])
+    bvec = np.array([0, 1, 0, 0, -1, 0])
+    EY, VY = Ym[1], YC[1, 1]
+    EB = float(bvec @ m)
+    VA, VB, CAB = float(a @ C @ a), float(bvec @ C @ bvec), float(a @ C @ bvec)
+    var_d = VA + (VB + EB ** 2) * (VY + EY ** 2) - (EB * EY) ** 2 + LAYOUT["two"] * EY * CAB
+    diff = float(a @ m) + EB * EY
+    out.append({**key, "flip": "flip_E", "measure": "net_per_attempt", "diff": diff,
+                "se": math.sqrt(max(var_d, 0.0) / n), "n": n})
+
+    def J(per: float, P: float, Cn: float, Y: float) -> float:
+        return (-price * per + P * Y) / (P + Cn) if P + Cn > 0 else math.nan
+
+    jf, js = J(m[0], m[1], m[2], EY), J(m[3], m[4], m[5], EY)
+    g = np.zeros(6)
+    for i in (LAYOUT["flip"], LAYOUT["steady"]):
+        per, P, Cn = m[i], m[i + 1], m[i + 2]
+        s = 1.0 if i == LAYOUT["flip"] else -1.0
+        T = P + Cn
+        if T > 0:
+            num = -price * per + P * EY
+            g[i] = s * (-price / T)
+            g[i + 1] = s * (EY / T - num / T ** 2)
+            g[i + 2] = s * (-num / T ** 2)
+    gy = (m[1] / (m[1] + m[2]) if m[1] + m[2] > 0 else 0.0) - (m[4] / (m[4] + m[5]) if m[4] + m[5] > 0 else 0.0)
+    var_j = float(g @ C @ g) / n + gy ** 2 * VY / nf
+    out.append({**key, "flip": "flip_E", "measure": "net_per_journey", "diff": jf - js, "se": math.sqrt(max(var_j, 0)),
+                "n": n, "note": "delta method"})
+    # flip_F: d = P_s (Y_f - Y_s), P_s from the evaluation, independent of the funded pair
+    EP, VP = m[4], C[4, 4]
+    EZ = float(Ym[0] - Ym[1])
+    VZ = float(YC[0, 0] + YC[1, 1] - LAYOUT["two"] * YC[0, 1])
+    var_f = (VP + EP ** 2) * (VZ + EZ ** 2) - (EP * EZ) ** 2
+    out.append({**key, "flip": "flip_F", "measure": "net_per_attempt", "diff": EP * EZ,
+                "se": math.sqrt(max(var_f, 0.0) / min(n, nf)), "n": min(n, nf)})
+    fac = m[4] / (m[4] + m[5]) if m[4] + m[5] > 0 else 0.0
+    out.append({**key, "flip": "flip_F", "measure": "net_per_journey", "diff": fac * EZ,
+                "se": fac * math.sqrt(max(VZ, 0.0) / nf), "n": nf})
+    return out
 
 
 def laws_of(m: M.ModeCorner, out: dict[str, Any]) -> dict[str, Any]:
@@ -138,7 +241,7 @@ def joins(summ: dict[tuple, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
     costed with costed at the same stop, corners strict with strict and lenient with lenient, a single corner with
     each); the renewal and the coin's stacking exposure."""
     W = J.window()
-    out = {"fees": [], "joined": [], "renewal": []}
+    out = {"fees": [], "joined": [], "renewal": [], "flip_net": []}
     by = {}
     for k, v in summ.items():
         by.setdefault((v["kind"], v["mode"]), []).append((k, v))
@@ -182,6 +285,19 @@ def joins(summ: dict[tuple, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
                                "diagonal": "one policy in both modes (stage one's form)" if (
                                    ev["w"], ev["r"], ev["policy"]) == (fv["w"], fv["r"], fv["policy"]) else "",
                                "block": f"{ev['policy']}/{fv['policy']}"}
+                        if cfg == "TS-S" and price is None:                    # 9.6: 9.5's net == attempt_ev
+                            probs = O.attempt_ev_problems(el["p_pass"], fees, fv["mean_net"], act, net)
+                            if probs:
+                                raise O.OracleBreach(f"9.6 at TS-S: {probs}")
+                        if (price is None or price == prices[0]) and ev["policy"] == "steady" and \
+                                fv["policy"] == "steady" and (ev["w"], ev["r"]) == (fv["w"], fv["r"]) and \
+                                ev.get("moments") is not None and fv.get("moments") is not None:
+                            key = {"config": cfg, "eval_corner": ev["corner"], "funded_mode": fmode,
+                                   "funded_corner": fv["corner"], "w": ev["w"], "r": ev["r"], "coin": ev["coin"],
+                                   "price": price if price is not None else (t.subscription or t.one_time)}
+                            out["flip_net"].extend(flip_net_pairs(cfg, ev["moments"], fv["moments"],
+                                                                  float(key["price"]) if key["price"] is not None
+                                                                  else 0.0, act, key))
                         if price is None or price == prices[0]:
                             evp = {k: (_pad(v, W) if isinstance(v, np.ndarray) else v) for k, v in el.items()}
                             fup = {k: (_pad(v, W) if isinstance(v, np.ndarray) else v) for k, v in fl.items()}
@@ -201,6 +317,7 @@ def joins(summ: dict[tuple, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
                                                    "censored_funded": rn["censored_funded"],
                                                    "mean_sessions_within": mean,
                                                    "stacking_share": J.stacking_exposure(evp, fup, ev["_Rn"]),
+                                                   "evaluations_per_21": ev["evaluations_per_21"],
                                                    "label": "one attempt can reach 1,008 sessions"})
                         out["joined"].append(row)
                         K = M.purchase_limit(cfg)
@@ -211,19 +328,37 @@ def joins(summ: dict[tuple, dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
                                                         "coin", "stop", "eval_w", "eval_r", "eval_policy",
                                                         "funded_w", "funded_r", "funded_policy")},
                                  "what": "purchase_limit", "u24_end": "strict: the limit in total", **pl})
+    out["flip_pairs"] = out.pop("flip_net")                   # 18's section name
     return out
 
 
 def flip_pair_rows(key: dict[str, Any], steady: dict[str, Any], flip: dict[str, Any]) -> list[dict[str, Any]]:
     """10.2 on the coin: each flip against its steady cell on the same streams, paired."""
     a, b = flip["out"], steady["out"]
+    def among(x: np.ndarray, y: np.ndarray, name: str) -> list[dict[str, Any]]:
+        """Sessions among each cell's own successes: a difference of means (its standard error from the two sets,
+        which share no account selection) and of medians."""
+        se = math.sqrt(np.var(x, ddof=1) / len(x) + np.var(y, ddof=1) / len(y)) if len(x) > 1 and len(y) > 1 \
+            else math.nan
+        return [{**key, "measure": f"{name}_mean", "diff": float(np.mean(x) - np.mean(y)) if len(x) and len(y)
+                 else math.nan, "se": se, "n": min(len(x), len(y)), "note": "among each cell's own; unpaired"},
+                {**key, "measure": f"{name}_p50", "diff": float(np.median(x) - np.median(y)) if len(x) and len(y)
+                 else math.nan, "se": math.nan, "n": min(len(x), len(y)), "note": "medians; no standard error"}]
+
     if key["kind"] == M.EVAL:
-        rows = [{**key, "measure": "pass", **RD.paired_difference(a["passed"], b["passed"])},
+        pa, pb = np.asarray(a["passed"], bool), np.asarray(b["passed"], bool)
+        rows = [{**key, "measure": "pass", **RD.paired_difference(pa, pb)},
                 {**key, "measure": "sessions_occupied", **RD.paired_difference(a["days"], b["days"])}]
+        rows += among(np.asarray(a["pass_day"])[pa] + 1.0, np.asarray(b["pass_day"])[pb] + 1.0, "sessions_to_pass")
     else:
-        pa, pb = a["first_payout_day"] >= 0, b["first_payout_day"] >= 0
+        fa, fb = np.asarray(a["first_payout_day"]), np.asarray(b["first_payout_day"])
+        pa, pb = fa >= 0, fb >= 0
         rows = [{**key, "measure": "any_payout", **RD.paired_difference(pa, pb)},
                 {**key, "measure": "net", **RD.paired_difference(a["cash"], b["cash"])}]
+        for w_ in M.declared("first_payout.within"):
+            rows.append({**key, "measure": f"first_payout_within_{w_}",
+                         **RD.paired_difference(pa & (fa < w_), pb & (fb < w_))})
+        rows += among(fa[pa] + 1.0, fb[pb] + 1.0, "sessions_to_first_payout")
     return rows
 
 
@@ -262,6 +397,7 @@ def run(n: int, N: int, bset: set, cells: list[dict[str, Any]], seeds: tuple | N
                     if m.kind == M.EVAL:
                         s["mean_periods"] = (float(np.mean(o["sub_fees"])) / float(t.subscription)
                                              if t.subscription is not None else 1.0)
+                        s["evaluations_per_21"] = int(M.declared("month")) / float(np.mean(o["days"]))
                     else:
                         s["mean_net"] = float(np.mean(o["cash"]))
                         s["activation"] = float(t.activation)
@@ -273,10 +409,30 @@ def run(n: int, N: int, bset: set, cells: list[dict[str, Any]], seeds: tuple | N
                 if ("steady", "gross", None) in kept and ("flip", "gross", None) in kept:
                     key = {"index": m.index, "kind": m.kind, "mode": m.mode, "corner": m.corner,
                            "w": M.grid_w()[wi], "r": M.grid_r()[ri]}
-                    acc["flip_pairs"].extend(flip_pair_rows(key, kept[("steady", "gross", None)],
-                                                            kept[("flip", "gross", None)]))
+                    st_, fl_ = kept[("steady", "gross", None)], kept[("flip", "gross", None)]
+                    acc["flip_pairs"].extend(flip_pair_rows(key, st_, fl_))
+                    sk = (m.index, wi, ri, "steady", "gross", None)
+                    summ[sk]["moments"] = (eval_moments(st_, fl_, st_["spec"].t) if m.kind == M.EVAL
+                                           else funded_moments(st_, fl_))
     acc["_summ"] = [summ]
     return acc
+
+
+def measure_lock_problem() -> str | None:
+    """N-14: `--measure` is compute-heavy -- it runs only while `run.lock` is held by an `rd05-` job."""
+    import json
+
+    from extended import lock_guard
+
+    root = lock_guard.main_root()
+    lock = None if root is None else root / "run.lock"
+    if lock is None or not lock.is_file():
+        return "run.lock is not held: take it (scripts/run_lock.py take) for an rd05- job first"
+    try:
+        job = json.loads(lock.read_text(encoding="utf-8")).get("job", "")
+    except (OSError, ValueError):
+        return "run.lock is unreadable"
+    return None if str(job).startswith("rd05-") else f"run.lock is held by {job!r}, not an rd05- job"
 
 
 def measure(n: int, sample: int) -> dict[str, float]:
@@ -301,6 +457,10 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     n = int(M.declared("accounts"))
     if args.measure:
+        bad = measure_lock_problem()
+        if bad:
+            print(f"REFUSED (N-14): {bad}")
+            return 3
         r = measure(n, args.sample)
         bound_h, bound_gb = M.declared("time.bound_h")[2], M.declared("memory.bound_gb")[2]
         print(f"timing on seed {M.TIMING_SEED}: {r}; bounds {bound_h} h, {bound_gb} GB (summed); "
@@ -319,7 +479,7 @@ def main(argv: list[str] | None = None) -> int:
 
     step0 = results.read_result("modes_rules.csv")
     cc = step0[step0["section"] == "coin_cells"]
-    if int(cc["runs"].astype(str).eq("True").sum()) != count["fairness"]:
+    if cell_signature_rows(cc.to_dict("records")) != cell_signature_rows(cells):        # N-13: the rows themselves
         print("REFUSED: step 0's coin_cells differ from this commit's recomputation")
         return 3
     oc = step0[step0["section"] == "oracle_count"]
@@ -327,6 +487,7 @@ def main(argv: list[str] | None = None) -> int:
         print("REFUSED: step 0's N differs from this commit's recomputation")
         return 3
     bset = {(b["index"], b["w"], b["r"]) for b in bounds}
+    E.allow_declared_streams("scripts/modes_coin.py main: step_problems(2) empty")   # S-7: only here
     t0 = time.time()
     try:
         acc = run(n, count["N"], bset, cells)

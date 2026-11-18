@@ -77,7 +77,9 @@ def test_b_star_at_both_u25_ends() -> None:
     assert R.b_star(l)["b_star"] == pytest.approx(l.buffer + cap)
     assert R.b_star(l)["label"] == "b* at the reference cap"
     pl = M.funded_terms("PRO", M.LENIENT)
-    assert R.b_star(pl)["b_star"] == pytest.approx(min(pl.buffer + cap, cap / pl.within_buffer_share))
+    assert R.b_star(pl)["b_star"] == pytest.approx(pl.buffer + cap)          # R-d: the share only inside the buffer
+    assert R.request_amount(pl, pl.buffer - 100.0) == pytest.approx(pl.within_buffer_share * (pl.buffer - 100.0))
+    assert R.request_amount(pl, pl.buffer + 100.0) == pytest.approx(100.0)
     assert R.b_star(M.funded_terms("TS/std"))["b_star"] == pytest.approx(cap / 0.5)
     for m in M.MODE_CORNERS:
         if m.kind == M.FUNDED:
@@ -88,11 +90,13 @@ def test_lists_implied_close_only_boundary_ceiling() -> None:
     assert all(x["implied"] for x in R.part_a_rows()["implied_days"])
     assert not R.implied_days(ev(consistency=0.5, min_days=5))["implied"]
     assert M.close_only_corners() == (15, 17)
-    cells = R.boundary_cells()
-    assert {(c["mode"], c["w"], c["r"]) for c in cells} == {(md, w, r) for md in ("L6", "L11") for w in (1.0, 2.0)
-                                                            for r in (250.0, 500.0, 1000.0)}
-    assert {c["exact_by_lattice"] for c in cells if c["w"] == 1.0} == {True}
-    assert {c["exact_by_lattice"] for c in cells if c["w"] == 2.0} == {False}
+    listing = R.boundary_listing()
+    assert {(c["mode"], c["w"], c["r"]) for c in listing} == {(md, w, r) for md in ("L6", "L11") for w in (1.0, 2.0)
+                                                              for r in (250.0, 500.0, 1000.0)}
+    assert {c["boundary"] for c in listing if c["w"] == 1.0} == {True}
+    assert {c["boundary"] for c in listing if c["w"] == 2.0} == {False}          # R-a: the ordinary pass ceiling
+    assert {(c["mode"], c["w"], c["r"]) for c in R.boundary_cells()} == {(md, 1.0, r) for md in ("L6", "L11")
+                                                                         for r in (250.0, 500.0, 1000.0)}
     for m in M.MODE_CORNERS:
         if m.kind == M.FUNDED:
             assert R.ceiling_cells(M.mode_corner_terms(m)) == []
@@ -108,6 +112,21 @@ def test_boundary_exactness_by_walking_the_lattice() -> None:
     while B + 2 * r < T:
         B += 2 * r
     assert B + 2 * r > T                                 # the pass lands above T, not at it
+
+
+def test_n11_pro1_stated_from_the_firms_sentence() -> None:
+    assert M.eval_terms("PRO1", M.STRICT).stated_fewest == 1                 # "One day pass", not the min-days field
+
+
+def test_r_a_counts_boundary_steady_cells_only() -> None:
+    c = R.oracle_count()
+    cells = [x for x in R.coin_cells() if x["runs"] and x["kind"] == M.EVAL]
+    close = set(M.close_only_corners())
+    bset = {(b["index"], b["w"], b["r"]) for b in R.boundary_cells()}
+    excluded = [x for x in cells if x["index"] not in close and x["coin"] == "gross" and x["policy"] == "steady"
+                and (x["index"], x["w"], x["r"]) in bset]
+    assert len(excluded) == 6
+    assert c["pass_ceiling"] == sum(1 for x in cells if x["index"] not in close) - 6
 
 
 def test_stated_fewest_check_fires_on_a_broken_record() -> None:
