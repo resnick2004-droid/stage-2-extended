@@ -1,9 +1,9 @@
 # DIRECTIVE -- the lead's standing orders
 
-The lead orchestrator's standing orders: **Parts 1, 3, 5 and 6 of the bootstrap, verbatim** (`docs/BOOTSTRAP_NEW_REPO_ORCHESTRATOR.md`,
-copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not edited here; a change is a decision row.
+The lead orchestrator's standing orders: **Parts 1, 3, 5 and 6 of the bootstrap**, first taken verbatim (`docs/BOOTSTRAP_NEW_REPO_ORCHESTRATOR.md`,
+copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not edited here except where a decision row amends them in place (E-203: Parts 1 and 6.2's latency; E-NNN: the journey objective in Parts 3, 5 and 6); every such amendment is listed in the table below.
 
-**How the text maps onto this repository** (E-005; the text below is left as written):
+**How the text maps onto this repository** (E-005; the text below is left as written, except the amendments in place that the table's last two rows list):
 
 | the bootstrap says | here |
 |---|---|
@@ -13,8 +13,10 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 | `TASK_QUEUE.md`, `STATUS.md`, `PROGRESS.md` | at the repository root |
 | `%LOCALAPPDATA%\<repo>-wt\<name>` | `%LOCALAPPDATA%\stage2-extended-wt\<name>` (branch `wt/<name>`) |
 | `%LOCALAPPDATA%\<repo>-runs\` | `%LOCALAPPDATA%\stage2-extended-runs\` |
-| the row to beat P-14, the family level 0.05/(k(k+1)) | as `CHARTER.md` section 3 fixes them (E-001: this repository's first family is k = 10) |
-| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008):** a design is judged on its trades first (lift over the coin twin, calibrated, at the family's level); P, the guarded measures and the frontier are reported beside against P-14; the verdict keeps 0 % denial with the placement off; hand entry only stays |
+| the row to beat P-14, the family level 0.05/(k(k+1)) | the baselines -- naive coin harvesting, P-14, P-15, P-16, each under the design's convention -- and the level 0.05 / (k (k + 1)), one k per held-out test, as `CHARTER.md` sections 3.7-3.8 fix them (E-001: the program's first family here was k = 10; the next k is 13) |
+| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008; then E-207, E-NNN), and Part 3 rewritten in place:** a design is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), on the martingale-outcome reading: inside every operator limit with margin wider than its noise (E-207; the alternative form pending the operator, O-5), each baseline beaten on the composite pinned before the survey (or the pinned fallback, P under the bankroll stop) by the calibrated coin-seed test on the held-out years (a level bounding coin luck on that history; the history-level false-pass rate beside), the time leg a consistency condition, with the floors of CHARTER section 3.8; the trades' lift over the coin twin is no pass line; the verdict keeps 0 % denial, the placement off and the Focused Trader Program off; hand entry only stays |
+| Part 1 and Part 6.2: "at least 5 minutes" | **amended in place (E-203):** at least L minutes, L = 5 the reference, 3 and 2 counted variants (E-202 (2)(c)) |
+| Part 3, Part 5's worktree list and report, Part 6.2's test, 6.3 A, B and C, the power paragraph, "A candidate" | **amended in place (E-NNN):** judged on the journey under zero edge, not on a coin-twin lift; RL3 recast and F-02 and family B parked (E-208); each firm its own baselines; the data question asked before the first search pin |
 
 ---
 
@@ -35,15 +37,17 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 - **No result file deleted or overwritten.** A new reading is a new file under its own decision row.
 - **The objective (Part 3) changes only with the operator.** Propose; do not adopt.
 
-## Part 3. The objective (from the handoff, section 1)
+## Part 3. The objective (from the handoff, section 1; amended by the operator, E-008, E-207, E-NNN)
 
-Improve a **user's journey** on prop-firm accounts: the primary measure **P** is the mean share of start days ahead
-(net cash = payouts received less fees paid, above zero) at months 1, 2 and 3; guarded measures are the bankroll
-needed (cash before the first payout, p90), the share paid by session 21, sessions to a first payout, payouts per fee
-dollar at month 3, the share ahead at months 6 and 12, and the unlucky tenth's month-3 net. **Payouts per fee dollar
-is the screening target** (it is what moves P across designs). The row to beat is P-14 (Stage 2). Report a frontier
-and a menu under declared limits, never one number. Beside it, always: Stage 2's long-run gate (growth on the
-required bankroll at the bound, D-145), so a design that helps users but cannot grow is visible.
+Find the way of running prop-firm accounts that gives a real user the best journey to making money: the least
+bankroll, the fastest and cheapest path to a pass and a payout, a steady income, the lowest chance of going broke
+first -- under zero edge (`CHARTER.md` section 3.2). Judged on the journey measures (`docs/MEASURES.md`) under the
+operator's limits, against each baseline (naive coin, P-14, P-15, P-16, each under the design's convention), on a
+composite score pinned with every other input before the survey (fallback P under the bankroll stop, pinned instead,
+never after), by the calibrated coin-seed test on the held-out years, read once per market, with the time leg a
+consistency condition (`CHARTER.md` sections 3.6-3.8). Report the frontier and a menu under the limits, never one
+number. A floor, always: the zero-edge long-run gate (`CHARTER.md` section 3.8 (c)), so a design that helps users but
+cannot grow is visible.
 
 ## Part 5. The loop (how the lead runs the work)
 
@@ -53,8 +57,10 @@ line with `D-NNN`; the lead numbers and commits them.
 
 **Worktrees always in use** (the operator wants several working at all times):
 - `wt-verify` -- the research-structure track: the identities, the audit's fixes, stress checks, the engine.
-- `wt-levels` -- the resting-order level family (Phase 1, family A).
-- `wt-features` -- the feature library, then the multi-feature model (family B).
+- `wt-levels` -- signal sources and the mix: the trigger library by session, the naive coin, the component
+  scheduler, the mix router and its no-opposing-positions guard (E-208).
+- `wt-features` -- the lever map and the search: the lever-space sampler, the surrogate, the round proposer, the
+  plateau check (E-208).
 - `wt-firms` -- other firms' contracts: verification with `rules-verifier`, contract-fit reads with the solver.
 - `wt-scout` -- read-only research and red-team reviews.
 Create more as the queue needs; remove ones that finish.
@@ -81,7 +87,7 @@ campaign result unless its brief says so.
 
 **Silence.** No chat to the operator for routine progress; log to `PROGRESS.md`. Chat only for a result, a decision
 the operator owns, or a blocker. **When the operator writes:** stop dispatching, give the progress report (the
-scorecard against the row to beat with the variant count; each family closed, carried or running with one line why;
+scorecard against each baseline inside the limits, with the variant count; each search's round, its finalists, its held-out read ledger, and each design closed, carried or running with one line why;
 what changed the picture; what the data cannot show; three to five next tasks), and wait.
 
 ## Part 6. Phase 1 -- the research tracks
@@ -101,32 +107,43 @@ belongs on the funded openings and a frequent one on every trade (the value map,
   entry, stop and target is read stop-first. Stage 2's walks hold this for every 5-minute mark at market entry.
 - **Features:** only from bars closed at or before t; normalised (rolling ATR, session spread, time-of-day medians),
   never raw price levels; a test that shifting the bars after t changes no feature (shift invariance).
-- **The test:** lift over the coin twin on the same brackets, then valued with the value map; supply and resolution
-  gates before any outcome is read.
+- **The test:** a signal source is judged by what it adds to a design's journey under zero edge (`CHARTER.md`
+  sections 3.2-3.8): its fills from the real orders, the path after each fill reflected with probability one half
+  and each outcome redrawn at its bracket's driftless odds for the deciding reading, over paired seeds, its properties read -- supply, timing, resolution speed for a given shape, clustering, how
+  differently timed it is from other components, hand-executability; supply and resolution gates before any outcome
+  is read; nothing read on the held-out years outside a held-out test. The lift over the coin twin is no pass line
+  (E-NNN).
 
 ### 6.3 The first families (each declared in its own row before it is built)
 
-- **A. Resting-order levels** (`wt-levels`): levels known before they trigger (prior day high/low, overnight
-  high/low, opening-range high/low after it closes, frozen session-VWAP bands, round numbers, prior swing points);
-  stop-entry for a break and limit for a pullback; the ticket published at least 5 minutes before it can trigger;
-  R values and an expiry fixed in the row; fill rate and adverse selection measured; lift over the coin twin valued
-  by the value map; family-wise level by its k.
-- **B. Feature library, then one multi-feature model** (`wt-features`): 30-50 normalised OHLCV features; two targets
-  -- resolution speed (expected to be predictable) and direction (expected to be hard); one pre-registered model
-  (a shallow gradient-boosted tree or a regularised logistic regression) with its hyperparameters fixed or searched
-  inside the declared walk-forward only; purged and embargoed splits longer than the longest trade; judged out of
-  fold by lift over the coin twin. Rules read off the model afterwards (SHAP and the like) are exploratory and need
-  their own family.
+- **A. Resting-order levels, as triggers** (`wt-levels`): levels known before they trigger (prior day high/low,
+  overnight high/low, opening-range high/low after it closes, frozen session-VWAP bands, round numbers, prior swing
+  points); stop-entry for a break and limit for a pullback; the ticket published at least L minutes before it can
+  trigger (L = 5 the reference; 3 and 2 counted variants, E-202); R values and an expiry as levers in the declared
+  lever space; fill rate and adverse selection measured; judged under `CHARTER.md` section 3.2's zero edge (the path
+  after the fill reflected with probability one half, and each outcome redrawn at its bracket's driftless odds for the
+  deciding reading), the as-traded result beside as a stress; RL3 recast as an NY AM component, F-02 parked (E-208);
+  one k per held-out test.
+- **B. Feature library, then the lever map's surrogate** (`wt-features`): 30-50 normalised OHLCV features, kept as
+  components for triggers' timing and resolution speed (`feature-rules` binds every source that reads bars); family
+  B as a direction model is parked (E-208: Q-14, Q-95, Q-149; `features.py` and the B2 machinery kept); the
+  machine learning is the surrogate over the lever space (`CHARTER.md` section 3.3) -- fitted on the search years'
+  survey, proposing each round inside the limits, its method, rounds and seeds declared and every design it tries
+  counted. Rules read off it afterwards (SHAP and the like) are exploratory and need their own declaration.
 - **C. Other firms' contracts** (`wt-firms`): firms with end-of-day drawdown or no consistency rule, verified on their
-  own pages; a solver-only contract-fit read first (payouts per fee dollar against Topstep's $50K), a campaign family
-  only if it clears a declared bar.
+  own pages; each firm its own execution protocol and its own baseline set, at least the naive coin on its own
+  protocol (E-202); a solver-only contract-fit read first, described; a design search for the firm only under
+  `CHARTER.md` section 3, its held-out years subject to their single use per market (section 3.6 (c)).
 - **D. Structure** (`wt-verify`, continuous): the identities, the audit's fixes, the stress checks of D-663 on any
   candidate.
 
 **Power:** six and a half years of NQ give low power for rare effects. More history (QuantConnect's free NQ/ES from
 2009, which needs the operator's QuantConnect user ID and API token configured; or a Databento purchase of older bars,
-stated not authorised) is the operator's call -- put both in `OPERATOR_SETUP.md` in your first commit.
+stated not authorised) is the operator's call -- put both in `OPERATOR_SETUP.md` in your first commit, and put the question to the operator with the power gate's result before the first design search is pinned (`CHARTER.md` section 3.7), never after a failure.
 
-**A candidate** is one that beats the row to beat on its judged block at its family's level, holds the guarded
-tolerances, the coin guard and the long-run gate floor. It is then registered with the gatekeeper, audited, and
-waits for confirmation data (a purchase: the operator's).
+**A candidate** is a finalist of a declared search that passes `CHARTER.md` section 3.8 in its place in the finalist
+sequence on the held-out years, on the martingale-outcome reading: inside every operator limit with margin wider than
+its noise (E-207; O-5 pending), each baseline beaten on the pinned composite by the calibrated coin-seed test at its
+k's level (the history-level false-pass rate beside), the time leg's conditions met, the floors holding (the
+zero-edge gate, the fill and supply stress and the as-traded floors among them). It is then registered with the gatekeeper, audited, and waits for
+confirmation data (a purchase: the operator's).
