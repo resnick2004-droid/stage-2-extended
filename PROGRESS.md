@@ -182,3 +182,6 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-17 | lead | E-185: the licence guard merged: no committed result file may reveal a bar price. |
 | 2026-11-17 | lead | E-186: the one-sample plan's light read found the regime-filter test gameable; a sixth text closes it. |
 | 2026-11-17 | lead | E-187: the second one-sample calibration plan pinned after six texts and six red-team reads (the regime-filter kind barred); its build next. |
+| 2026-11-17 | lead | E-188: the breakeven-fidelity reading run and collected (identities held); audit dispatched; F-03's run 1 started. |
+| 2026-11-17 | lead | E-189: the breakeven reading audited (no wrong number; the corrected figures not checkable, P-15 missing); a second version building. |
+| 2026-11-17 | lead | E-190: the second one-sample calibration built (synthetic only); its red-team read before the runs. |

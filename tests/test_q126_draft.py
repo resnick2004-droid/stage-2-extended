@@ -53,7 +53,10 @@ SEEDS = CAL_BLOCK + VAL_BLOCK
 SEED_PATTERN = "|".join(str(s) for s in SEEDS)
 #: the repository files allowed to hold a seed of the blocks besides the plan: its declared uses. The build adds its
 #: own files here (the module, the runners, their tests), as the plan's 4.1 allow-list names them.
-DECLARED_USES = ("tests/test_q126_draft.py",)
+DECLARED_USES = ("tests/test_q126_draft.py",
+                 # Q-126g, the build (the plan's 4.1 allow-list): the new module, the two runners and their tests
+                 "extended/lift_one_sample2.py", "scripts/q126_calibrate.py", "scripts/q126_validate.py",
+                 "tests/test_lift_one_sample2.py", "tests/test_q126_calibrate.py", "tests/test_q126_validate.py")
 LEAD_RECORDS = ("DECISIONS.md", "STATUS.md", "TASK_QUEUE.md", "PROGRESS.md")
 OWN_RESULTS = re.compile(r"results/q126_[A-Za-z0-9_]+\.csv(\.manifest\.json)?")
 
