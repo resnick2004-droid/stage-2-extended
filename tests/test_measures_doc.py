@@ -260,8 +260,29 @@ def test_the_code_to_change_is_where_it_says():
         lines = _source(path).splitlines()
         a, b = int(first), int(last or first)
         assert text in "\n".join(lines[a - 1:b + 6]), f"{path}:{first}: {text!r} is not there"
-    for want in ("extended/user_beside.py:633", "extended/user_readings.py:183-189"):
+    for want in ("extended/user_beside.py:633", "extended/user_readings.py:183-189", "extended/user_measures.py:82",
+                 "extended/user_readings.py:280-282", "extended/user_beside.py:648", "extended/user_readings.py:41",
+                 "extended/user_measures.py:49", "extended/firm_reading.py:258", "extended/openings.py:519",
+                 "extended/opening_wait.py:519"):
         assert f"`{want}`" in body, f"{want} is not listed to change"
+    assert "`extended/cl_reading.py:" in body, "cl_reading.py's run length is not listed"
+
+
+def test_the_strict_rule_for_censored_percentiles():
+    """N-1 (the second read): section 1.3 states the strict rule -- a dollar percentile is exact only if every
+    censored lower bound lies strictly above it, else "at least" -- and the rule it replaced is gone; (6) reads a
+    bankroll limit through (24)'s three states, never on its own percentile."""
+    text = _doc()
+    part = text.split("### 1.3 Summaries, censoring and blanks", 1)
+    assert len(part) == 2, "no section 1.3"
+    s13 = " ".join(part[1].split("\n### ", 1)[0].split())
+    assert ("A dollar percentile is exact only if every censored unit's lower bound lies strictly above it. "
+            "Otherwise it is reported as \"at least\" that value.") in s13
+    assert "A percentile that falls on a censored unit is reported as" not in " ".join(text.split())
+    s6 = " ".join(sections()[6]["body"].split())
+    assert "every censored unit's lower bound lies strictly above it" in s6
+    assert "never read on these percentiles" in s6 and "through (24)'s three states" in s6
+    assert "A limit on it reads its censoring" not in s6
 
 
 def test_no_seed_literal_in_the_document():
