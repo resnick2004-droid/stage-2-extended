@@ -190,6 +190,10 @@ def test_on_a_copy_of_this_trees_queue(tmp_path, monkeypatch):
     a = tmp_path / "TASK_QUEUE_ARCHIVE.md"
     before = S.queue_rows(q.read_text(encoding="utf-8"))
     assert _run(q, a) == 0
+    # The tree's own queue may already be archived (E-209): then the run moves nothing and writes no archive file.
+    if not any(r["state"].startswith("done") for r in before):
+        assert not a.exists() and S.queue_rows(q.read_text(encoding="utf-8")) == before
+        return
     live, arch = S.queue_rows(q.read_text(encoding="utf-8")), S.queue_rows(a.read_text(encoding="utf-8"))
     assert sorted(r["id"] for r in live + arch) == sorted(r["id"] for r in before)
     assert [r["id"] for r in arch] == [r["id"] for r in before if r["state"].startswith("done")]

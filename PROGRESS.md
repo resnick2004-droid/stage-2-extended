@@ -203,3 +203,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-206: restart plan Wave 0 -- the freeze recorded, the plan committed; the objective's amendment drafted for the operator's confirmation. |
 | 2026-11-18 | lead | E-207: the operator confirmed the restart plan -- the pass line is now the user's journey; the review-speed and standing workflow rules in force. |
 | 2026-11-18 | lead | E-208: the restart triage -- old drafts recast as levers and triggers or parked; Q-126 parked; search and held-out years fixed; the three-way test's brief. |
+| 2026-11-18 | lead | E-209: RD-05's coin side merged; the per-edit hook lightened and the done queue rows archived; the amendments cleared; the measures' definitions in correction. |
