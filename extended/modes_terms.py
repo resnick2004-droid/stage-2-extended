@@ -77,8 +77,8 @@ DECLARED: dict[str, Declared] = {
     "ladder.denial": Declared((0.10, 0.25, 0.50), "4.7 item 4 / 12.3: the denial ladder 10, 25, 50 %"),
     "shift.se": Declared(8.0, "9.6: a check shifted by eight of its standard errors"),
     "workers.max": Declared(2, "18: step 2 at most 2 workers"),
-    "exact.tol": Declared(1e-7, "9.6's exact checks: the relative tolerance on a balance change, a payout or a "
-                          "forfeiture -- far above float error, far below any money difference (V-6)"),
+    "exact.tol": Declared(1e-9, "9.6's exact checks, to 1e-9: the relative tolerance on a balance change, a payout "
+                          "or a forfeiture (V-6, W-1)"),
     "memory.bound_gb": Declared({0: 0.5, 1: 2.5, 2: 2.5, 3: 2.5, 4: 2.5, 5: 2.5}, "18: the steps' summed memory bounds"),
     "time.bound_h": Declared({0: 1, 1: 8, 2: 12, 3: 48, 4: 24, 5: 24}, "18: the steps' time bounds"),
 }
