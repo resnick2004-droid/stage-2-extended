@@ -1,24 +1,38 @@
 """Q-153: the three-way test's design note (`docs/plans/THREE_WAY_TEST_design.md`), checked on its own text and on the
-repository's files (no engine, no bar, no result file; fast).
+repository's files (no engine, no bar, no result file; fast). Corrective cycle 1 answers the red team's read
+(`docs/reviews/THREE_WAY_TEST_2026-11-18.md`).
 
-- **the sections present** -- 1 to 7 as the brief orders them, and Appendix A;
+- **the sections present** -- 0 to 7 and Appendices A and B;
 - **the arithmetic is the script's** -- Appendix A's fenced block equals, line for line, what
-  `docs/plans/scripts/three_way/three_way_arith.py`'s `report()` prints, so every figure the note states is computed,
-  from declared constants and the calendar, never typed;
-- **the level's arithmetic holds** -- at k = 13 an exact sign-flip needs twelve units, and the weekday bound on the
-  held-out years gives fewer than twelve disjoint units at every horizon from 63 sessions;
-- **the seed block** -- section 7's table lists ten consecutive seeds once each, each with a role and a status; each
-  appears, word-bounded, in the note; no other tracked file and no other working text file of this checkout (the
-  licensed data excluded) holds any of them. The block is built here by arithmetic, so this file holds no literal of it;
+  `docs/plans/scripts/three_way/three_way_arith.py`'s `report()` prints; the prose's counts are held to the script's
+  values (m-13);
+- **the constants against their sources** (m-13) -- the dates against E-208's row, k = 13 against CLAUDE.md, H_g
+  against Stage 2's gate configs, the power target against `family_stats.MDL_POWER`; the bounds' constants against
+  their formulas; and a seeded Monte-Carlo coverage check of the Hoeffding and empirical-Bernstein bounds at a
+  feasible level, on skewed and on non-identical terms;
+- **the race redraw** (B-1) -- every redrawn trade's gross expectation is exactly zero at every cushion on a grid of
+  (stop, target, cushion), and the unraced form has a positive edge exactly where the stop exceeds the cushion;
+- **the seed keys** (m-4) -- numpy's trailing-zero equivalence is real (the trap), and the note's fixed-length keys
+  never coincide once trailing zeros are stripped, across kinds and indices;
+- **the time conditions' arithmetic** -- the orthant formulas at their known points;
+- **the seed block** -- section 7's table lists ten consecutive seeds once each; no other tracked file and no other
+  working text file holds a literal of them; and an arithmetic fold over every tracked `.py` (pure-literal expressions
+  and names bound to them) finds the block's construction only in this file, which it must find (m-5's positive
+  control). The block is built here by arithmetic, so this file holds no literal of it;
 - **the scans work** -- a planted copy of a seed in a temporary repository is found by both scans.
 """
 from __future__ import annotations
 
+import ast
 import importlib.util
+import itertools
+import math
 import re
 import subprocess
+from fractions import Fraction
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,13 +40,17 @@ NOTE = ROOT / "docs" / "plans" / "THREE_WAY_TEST_design.md"
 ARITH = ROOT / "docs" / "plans" / "scripts" / "three_way" / "three_way_arith.py"
 VENDOR_DATA = ROOT / "vendor" / "stage2" / "data"          # the licensed bars and atlas: never scanned
 TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".csv", ".json", ".txt", ".sha256", ".toml", ".cfg", ".ini", ".jsonl"}
+THIS = Path(__file__).resolve().relative_to(ROOT).as_posix()
 
 #: section 7's block, built by arithmetic so that this file holds no literal of it
 _PREFIX = 2026 * 1000 + 587
 SEED_BLOCK = tuple(_PREFIX * 10 + i for i in range(10))
 #: the repository files allowed to hold a seed of the block besides the note (none yet: H3's build adds its own here)
 DECLARED_USES: tuple[str, ...] = ()
-SECTIONS = ("## 1. ", "## 2. ", "## 3. ", "## 4. ", "## 5. ", "## 6. ", "## 7. ", "## Appendix A. ")
+#: the files allowed to construct the block by arithmetic (this test; H3's seed module when it is written)
+DERIVED_USES: tuple[str, ...] = (THIS,)
+SECTIONS = ("## 0. ", "## 1. ", "## 2. ", "## 3. ", "## 4. ", "## 5. ", "## 6. ", "## 7. ", "## Appendix A. ",
+            "## Appendix B. ")
 ARITH_START = "<!-- three_way_arith: begin -->"
 ARITH_END = "<!-- three_way_arith: end -->"
 
@@ -53,7 +71,7 @@ def arith():
 def test_sections_present(text: str) -> None:
     pos = [text.find("\n" + s) for s in SECTIONS]
     assert all(p >= 0 for p in pos), [s for s, p in zip(SECTIONS, pos) if p < 0]
-    assert pos == sorted(pos), "the sections are in the brief's order"
+    assert pos == sorted(pos), "the sections are in order"
 
 
 def test_appendix_a_is_the_scripts_output(text: str, arith) -> None:
@@ -68,11 +86,110 @@ def test_the_levels_arithmetic(arith) -> None:
     assert a == pytest.approx(0.05 / 182)
     assert arith.b_min(a) == 12 and 2.0 ** -12 <= a < 2.0 ** -11
     wh = arith.weekdays(*arith.HELD_OUT)
-    assert all(arith.disjoint_units(wh, h) < arith.b_min(a) for h in (63, 126, 252))
+    assert all(arith.disjoint_units(wh, h) < arith.b_min(a) for h in (63, 126, 252, 504))
     assert arith.weekdays("2024-01-01", "2024-01-07") == 5          # Monday to Sunday: five weekdays
+    assert len(arith.weekday_dates(*arith.HELD_OUT)) == wh
     assert arith.complete_starts(100, 63) == 38 and arith.start_blocks(200, 63) == 2
     assert arith.binom_tail(3, 3) == 0.125 and arith.binom_tail(4, 3) == pytest.approx(5 / 16)
     assert arith.n_certify(0.05) == 59                                 # the rule of three's exact form
+
+
+def test_the_prose_counts_are_the_scripts(text: str, arith) -> None:
+    """m-13: each count the prose states in words is the script's value."""
+    words = {1: "one", 2: "two", 4: "four", 10: "ten", 12: "twelve", 13: "thirteen"}
+    wh, ws = arith.weekdays(*arith.HELD_OUT), arith.weekdays(*arith.SEARCH)
+    b13 = arith.b_min(arith.level(13))
+    phrases = (
+        f"at most {words[arith.disjoint_units(wh, 63)]} disjoint 63-session units",
+        f"{words[b13]} are needed",
+        f"B_min = {b13}",
+        f"At k = 14 to 17, B_min = {arith.b_min(arith.level(14))}",
+        f"at most {words[arith.disjoint_units(wh, arith.H_GATE)]} disjoint {arith.H_GATE}-session block",
+        f"search years hold at most {words[arith.disjoint_units(ws, arith.H_GATE)]}",
+    )
+    flat = " ".join(text.split())                                         # the prose's line breaks are not words
+    for phrase in phrases:
+        assert phrase in flat, f"the note's prose should state: {phrase!r}"
+    assert "eleven" not in text, "the partial-unit count is printed in Appendix A, never typed (m-11)"
+
+
+def test_the_constants_against_their_sources(arith) -> None:
+    """m-13: one check of each declared constant against the file it comes from."""
+    dec = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    row = next(line for line in dec.splitlines() if line.startswith("| E-208 |"))
+    assert f"NQ {arith.SEARCH[0]} to {arith.SEARCH[1]}" in row
+    assert f"{arith.HELD_OUT[0]} to {arith.HELD_OUT[1]}" in row
+    assert "the next is k = 13" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8") and arith.KS[0] == 13
+    for cfg in ("fv2_grid.yaml", "fv3_corrected_portfolio.yaml"):
+        assert f"horizon_days: {arith.H_GATE}" in (ROOT / "vendor" / "stage2" / "config" / cfg).read_text("utf-8")
+    from extended import family_stats
+    assert arith.POWER == family_stats.MDL_POWER
+    a = arith.level(13)
+    assert arith.hoeffding_constant(a) == pytest.approx(math.sqrt(-2 * math.log(a)))
+    c1, c2 = arith.eb_constants(a)
+    assert c1 == pytest.approx(math.sqrt(2 * math.log(2 / a))) and c2 == pytest.approx(7 * math.log(2 / a) / 3)
+
+
+def test_the_bounds_cover_at_a_feasible_level(arith) -> None:
+    """m-13: the bounds as coded hold their level by simulation at alpha = 0.05 -- the empirical-Bernstein bound on
+    skewed i.i.d. replicates, Hoeffding's on independent, non-identical terms in [-1, 1]; seeded from the block's
+    first seed (section 7: the tests' role)."""
+    alpha, reps = 0.05, 4000
+    rng = np.random.default_rng(arith.seed_key(SEED_BLOCK[0], "test", test=1, replicate=0))
+    for J in (5, 20, 200):
+        x = (rng.random((reps, J)) < 0.03).astype(float) * 2.0 - 1.0      # mean -0.94, heavily skewed
+        miss = sum(arith.eb_lower(row, alpha) > -0.94 for row in x)
+        assert miss <= reps * alpha, (J, miss)
+    p = np.linspace(0.05, 0.95, 400)                                      # non-identical terms
+    x = (rng.random((reps, p.size)) < p).astype(float) * 2.0 - 1.0
+    mu = float((2 * p - 1).mean())
+    miss = sum(arith.hoeffding_lower(row, alpha) > mu for row in x)
+    assert miss <= reps * alpha
+
+
+def test_the_race_redraw_has_zero_expectation_at_every_cushion(arith) -> None:
+    """B-1's oracle: with zero costs, every redrawn trade's gross expectation is exactly zero, for every stop, target
+    and cushion on the grid; the unraced form (a win at l / (l + g), the loss clipped) has a positive edge exactly
+    where the stop exceeds the cushion."""
+    grid = range(1, 41)
+    for l, g, c in itertools.product(grid, range(1, 41, 3), grid):
+        p, win, loss = arith.race_redraw(l, g, c)
+        assert isinstance(p, Fraction) and arith.gross_expectation(p, win, loss) == 0
+        assert loss == min(l, c)
+        edge = arith.unraced_edge(l, g, c)
+        assert (edge > 0) == (l > c) and (edge == 0) == (l <= c)
+        if l > c:
+            assert edge == Fraction(g * (l - c), l + g)
+    with pytest.raises(ValueError):
+        arith.race_redraw(10, 10, 0)
+
+
+def test_the_seed_key_trap_and_the_fixed_length_keys(arith) -> None:
+    """m-4: numpy reads [a, b] and [a, b, 0, 0] as one stream; the note's keys, fixed in length per kind with a
+    distinct nonzero tag, never coincide after the trailing zeros are stripped."""
+    a, b = 11, 7
+    assert np.array_equal(np.random.default_rng([a, b]).random(4), np.random.default_rng([a, b, 0, 0]).random(4))
+    assert not np.array_equal(np.random.default_rng([a, b]).random(4), np.random.default_rng([a, 0, b]).random(4))
+    seen: dict[tuple[int, ...], tuple] = {}
+    for kind, (_, names) in arith.KEY_KINDS.items():
+        for vals in itertools.product(range(3), repeat=len(names)):
+            k = arith.seed_key(SEED_BLOCK[3], kind, **dict(zip(names, vals)))
+            s = arith.stripped(k)
+            assert s not in seen, (kind, vals, seen.get(s))
+            seen[s] = (kind, vals)
+    tags = [t for t, _ in arith.KEY_KINDS.values()]
+    assert len(set(tags)) == len(tags) and all(t > 0 for t in tags)
+    with pytest.raises(ValueError):
+        arith.seed_key(SEED_BLOCK[3], "history", part=1)                  # a field missing
+    assert set(arith.KEY_KINDS["coin"][1]) >= {"part", "history"}        # m-4: kappa carries part and history
+    assert not set(arith.KEY_KINDS["coin"][1]) & {"account", "firm"}      # m-9: no account or firm in the side's key
+
+
+def test_the_orthant_formulas(arith) -> None:
+    assert arith.orthant(np.eye(2)) == pytest.approx(0.25)
+    assert arith.orthant(np.ones((2, 2))) == pytest.approx(0.5)
+    assert arith.orthant(np.eye(3)) == pytest.approx(0.125)
+    assert arith.orthant(np.ones((3, 3))) == pytest.approx(0.5)
 
 
 # ------------------------------------------------------------------------------------------------- the seed block
@@ -90,7 +207,7 @@ def test_seed_table(text: str) -> None:
         rows = re.findall(rf"^\| {seed} \| ([^|]+) \| ([^|]+) \|", table, re.MULTILINE)
         assert len(rows) == 1, f"seed {seed} must have exactly one row in section 7's table"
         role, status = (x.strip() for x in rows[0])
-        assert role and status in {"design check", "deciding", "build tests", "spare, drawn by nothing"}, (seed, status)
+        assert role and status in {"design check", "deciding", "tests", "spare, drawn by nothing"}, (seed, status)
         assert re.search(rf"\b{seed}\b", text)
     others = re.findall(rf"\b{_PREFIX}[0-9]\b", text)
     assert set(int(x) for x in others) <= set(SEED_BLOCK)
@@ -150,3 +267,71 @@ def test_the_seed_scans_find_a_planted_seed(tmp_path: Path) -> None:
     assert _working_hits(tmp_path) == ["sub/planted.py"]
     subprocess.run(["git", "add", "sub/planted.py"], cwd=tmp_path, check=True, capture_output=True)
     assert [h.split(":", 1)[0] for h in _git_hits(tmp_path)] == ["sub/planted.py"]
+
+
+# ------------------------------------------------------------------------------------------------- the fold (m-5)
+
+_OPS = {ast.Add: lambda a, b: a + b, ast.Sub: lambda a, b: a - b, ast.Mult: lambda a, b: a * b,
+        ast.FloorDiv: lambda a, b: a // b if b else None}
+
+
+def _fold(node: ast.AST, env: dict[str, int]) -> int | None:
+    """The integer value of a pure-literal expression, names bound earlier in the module to such an expression
+    included; None when it is not one (a loop index, a call, a string)."""
+    if isinstance(node, ast.Constant) and type(node.value) is int:
+        return node.value
+    if isinstance(node, ast.Name):
+        return env.get(node.id)
+    if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
+        a, b = _fold(node.left, env), _fold(node.right, env)
+        if a is None or b is None or abs(a) > 10 ** 12 or abs(b) > 10 ** 12:
+            return None
+        return _OPS[type(node.op)](a, b)
+    return None
+
+
+def _fold_hits(path: str, source: str) -> list[str]:
+    """Expressions in `source` folding to the block's prefix, to the prefix times ten, or to a seed of the block."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+    targets = {_PREFIX, _PREFIX * 10, *SEED_BLOCK}
+    env: dict[str, int] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            v = _fold(node.value, env)
+            if v is not None:
+                env[node.targets[0].id] = v
+    hits = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.BinOp) and _fold(node, env) in targets:
+            hits.append(f"{path}:{node.lineno}")
+    return hits
+
+
+def _fold_scan(repo: Path) -> set[str]:
+    files = subprocess.run(["git", "ls-files", "*.py"], cwd=repo, capture_output=True, text=True,
+                           check=True).stdout.splitlines()
+    found = set()
+    for f in files:
+        p = repo / f
+        if p.is_file() and VENDOR_DATA not in p.parents:
+            src = p.read_text(encoding="utf-8", errors="replace")
+            if "2026" in src:
+                found.update(h.split(":", 1)[0] for h in _fold_hits(f, src))
+    return found
+
+
+def test_the_arithmetic_fold_finds_the_construction_only_where_declared() -> None:
+    found = _fold_scan(ROOT)
+    tracked = subprocess.run(["git", "ls-files", THIS], cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if tracked:
+        assert THIS in found, "the fold must find this file's own construction of the block (positive control)"
+    assert found <= set(DERIVED_USES), f"the block is constructed by arithmetic outside its declared uses: {found}"
+
+
+def test_the_fold_sees_names_and_pure_literals() -> None:
+    src = "P = 2026 * 1000 + 587\nS = P * 10 + 3\nQ = 2026 * 1000 + 586\nfor i in range(3):\n    x = P * 10 + i\n"
+    lines = sorted({int(h.split(":")[1]) for h in _fold_hits("x.py", src)})
+    assert lines == [1, 2, 5], lines
