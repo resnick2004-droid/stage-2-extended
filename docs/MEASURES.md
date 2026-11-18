@@ -35,6 +35,18 @@ zero-edge convention (the amendments draft, CHARTER 3.2):
 So every design, baselines included, has the declaration's coin seeds. The seeds are fixed in the search declaration
 before its run (CLAUDE.md; CHARTER 3.6). They are never chosen here.
 
+**The coin keying (the three-way test's design, `docs/plans/THREE_WAY_TEST_design.md` 1.5, choice 3; the lead's
+ruling).**
+- **Each user has their own coin draws.** The key of every draw carries the start day, so under one seed `c` the units
+  `(s, c)` of different start days draw independently of each other. Two start days never share a coin draw.
+- **One user's accounts and firms share a draw.** The side coin's key carries no account or firm index, so at one
+  moment all of one user's accounts and firms read the one literal coin draw (CHARTER 3.5).
+- **The pairing.** The design and every baseline, deciding at the same moment on the same start under the same seed,
+  read the same side uniform.
+- The keying itself (its words, its generator) is the three-way test's, pinned with its declaration, never this
+  file's.
+- What the units of one seed still share is the history: neighbouring start days replay overlapping sessions.
+
 **The blocks (E-208).**
 
 | block | sessions | read by |
@@ -142,15 +154,18 @@ measures -- (22), (27), (31), (33) and (34) -- carry readings 1 and 3 only, and 
    user starting on `s` is in it), summarised over `s` by its p10, p50 and p90.
 3. **"The design statistic's coin noise"**: the statistic (P, a share, a percentile) computed separately for each seed
    over its start days, then its p10, p50 and p90 across the seeds. This is the coin-seed leg's replicate spread
-   (CHARTER 3.6 (f) (i)). It is **not a user quantity**: under one seed every start day shares the same coin draws on
-   the same calendar moments, so the per-seed statistic is one realisation of the design's population statistic.
+   (CHARTER 3.6 (f) (i)). It is **not a user quantity**. Under the keying of section 1.1 (each user's own draws,
+   choice 3), the per-seed statistic is a mean over independent users on the one fixed history. Its spread across
+   seeds is therefore the coin noise of a statistic averaged over many users. It shrinks with the number of start days
+   and says nothing about how much one user's results vary; reading 2 says that.
 
 The amendments' sentence "the coin-seed spread is reported: it is the user's payout variance" (CHARTER 2, 3.6) refers
 to reading 2.
 
 **The effective number of independent starts (m-5).** For each seed `c`, `n_eff_bartlett` of `x_{., c}` is taken in
-start order at the reading's horizon as the lag, and reported as the median across seeds. Beside it is the `n_eff` of
-the start-day means `mean_c x_{s,c}`, which is the history-limited count.
+start order at the reading's horizon as the lag, and reported as the median across seeds. Under section 1.1's keying the
+coin draws are independent across start days, so the dependence it measures is the shared history of overlapping
+sessions. Beside it is the `n_eff` of the start-day means `mean_c x_{s,c}`, which is the history-limited count.
 
 **The coin layer is to build** (the seed-paired runner, plan Wave 3.2, `wt-verify`, wired in by Wave 3.1). Every
 existing function below computes a measure over start days for one path per start.
