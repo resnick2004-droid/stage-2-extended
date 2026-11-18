@@ -48,6 +48,13 @@ GATE_COLS = ("pf_growth_on_base_p50", "pf_required_p90", "pf_growth_on_base_p10"
 P14_GATE_FILE = "a3_brk30_cb20_gate.csv"
 P16_GATE_FILE = "rc_s150_all_gate.csv"
 P16_PATHS_FILE = "rc_s150_all_gate_paths.csv"
+#: Q-132 (C1): P-15 (`rc_s100_all`, D-527), built by the same `atlas_a3.walk_minutes` walk as P-16 -- its registered
+#: gate (seed 20261204, D-529 (2)); no per-path file of it is vendored, so its gate is held to the registered row only
+P15_GATE_SEED = 20261204
+P15_GATE_FILE = "rc_s100_all_gate.csv"
+#: `rc_dev_test.build_cells`' two lines, which `p15_cells` reproduces (refused if the vendored function differs)
+P15_BUILD_CELLS_LINES = ("I = S.inputs()", "return I, RS.build(I)")
+GATE_FILES = {"p14": P14_GATE_FILE, "p15": P15_GATE_FILE, "p16": P16_GATE_FILE}
 
 
 # ------------------------------------------------------------------------------------------------ the walk
@@ -241,6 +248,94 @@ def p16_gate(x: dict[str, Any], n_paths: int, workers: int) -> tuple[pd.DataFram
     return df, bad
 
 
+# ------------------------------------------------------------------------------------------------ P-15 (Q-132, C1)
+
+
+def p15_cells(walk=None):
+    """P-15's cells as `rc_dev_test.build_cells()` builds them -- its two lines, `rc_screen.inputs()` then
+    `rc_reentry_screen.build(I)` -- with `walk` (None: Stage 2's) substituted for the second line only, the one call
+    that walks P-15's marks (both of FV3-C's rungs, as the screen walks them; the cutoff and cells read that walk), the
+    inputs (P-14's, A3's cached walk among them) loaded under Stage 2's walk (`walker_identity.substituted_walk`, the
+    narrow substitution P-16's `build_p16` uses). Refused if the vendored `build_cells` is not those two lines."""
+    import inspect
+
+    import rc_dev_test as D
+    import rc_reentry_screen as RS
+    import rc_screen as S
+    import walker_identity as WI
+
+    src = inspect.getsource(D.build_cells)
+    if not all(x in src for x in P15_BUILD_CELLS_LINES):
+        raise RuntimeError("REFUSED: rc_dev_test.build_cells is not the two lines this runner reproduces")
+    I = S.inputs()
+    if walk is None:
+        return I, RS.build(I)
+    with WI.substituted_walk(walk):
+        b = RS.build(I)
+    return I, b
+
+
+def p15_build(rules: W.Rules, rd) -> dict[str, Any]:
+    """P-15 re-walked under `rules` (`p15_cells`), then its U1 jobs as `user_journey.build_p15` makes them
+    (`_rc_campaign` at P-15's spec, `_single_jobs` at the plan and budget)."""
+    import a3_brk30_cb20 as C
+    import rc_dev_test as D
+    import user_journey as UJ
+
+    I, b = p15_cells(walk_minutes_for(rules))
+    camp = UJ._rc_campaign(I, b, D.P15.cell, D.P15)
+    jobs = UJ._single_jobs(camp, I["plan"], C.BUDGET)
+    return {"jobs": jobs, "I": I, "b": b, "trades": b["cells"][D.P15.cell]["trades"], "days": b["days"]}
+
+
+def p15_trade_problems(x: dict[str, Any], rd) -> list[str]:
+    """P-15's registered identity of its trades (`rc_dev_test.trade_problems`): the screen's row (`rc_reentry_screen.csv`,
+    its sha256 pinned -- count, busiest day, capacity, long share, candidates a day, every R's unresolved share) and the
+    pinned content hash `TRADES_SHA256`. Meaningful on Stage 2's walk only."""
+    import rc_dev_test as D
+
+    return D.trade_problems(rd, x["b"], x["I"]["L"]["fcfg"], spec=D.P15)
+
+
+def p15_gate(x: dict[str, Any], n_paths: int, workers: int) -> tuple[pd.DataFrame, list[str]]:
+    """P-15's gate on `x`'s trades exactly as `rc_dev_test.run` calls its section `gate` (seed 20261204, P-14's engine
+    call: `atlas_a3.gate_kwargs` with the cell's busiest-day capacity, the no-closure plan, the strict rule, the budget,
+    the lever hook, both shifts), at 0 % only (the registered row's other levels do not change its 0 % row: P-16's
+    identity at 500 paths, E-188). No per-path reference is vendored for P-15: the second item is always []."""
+    import a3_brk30 as B
+    import a3_brk30_cb20 as C
+    import atlas_a3 as A
+    import fv3d_lever_test as lt
+    import portfolio_stage as ps
+    import rc_dev_test as D
+    import score_fv3_grid as gf
+
+    from propedge.campaign import gate
+
+    if int(D.P15.seed) != P15_GATE_SEED:
+        raise SystemExit(f"REFUSED: P-15's seed in the vendored script is {D.P15.seed}, not {P15_GATE_SEED}")
+    I = x["I"]
+    L = I["L"]
+    cfg, fcfg, tv = L["cfg"], L["fcfg"], float(L["tv"])
+    t, days = x["trades"], x["days"]
+    keys = B.rrs(t)
+    cap = B.capacity(t, fcfg)
+    _, e_by, lb_by, _, _ = A.bounds(t, days, keys, cfg)
+    blocks, n_used = gf.gate_blocks(t, days, tv, keys, require_sides=True, require_exits=True)
+    if n_used != len(t):
+        raise SystemExit("REFUSED: the blocks hold a different number of trades")
+    pcfg = fcfg["portfolio"]
+    sink: list[dict] = []
+    inner = ps.composed_hook({"margin": float(pcfg["margin"]), "block_days": int(pcfg["block_days"])}, sink=sink)
+    hook = lt.lever_hook(inner)
+    ps._label(inner, "p15_q132")
+    kw = A.gate_kwargs(blocks, fcfg, tv, I["plan"], e_by, lb_by, hook, seed=P15_GATE_SEED, n_paths=int(n_paths),
+                       horizon=int(fcfg["gate"]["campaign"]["horizon_days"]), capacity=cap, levels=(0.0,), rtp=False,
+                       one_at_a_time=C.STRICT_GAP, purchase_budget=C.BUDGET)
+    df, _ = gate.run_gate(kw.pop("blocks"), workers=int(workers), **kw)
+    return df, []
+
+
 # ------------------------------------------------------------------------------------------------ the readings
 
 
@@ -264,7 +359,7 @@ def registered_gate(design: str) -> dict[str, dict[str, float]]:
     from propedge import RESULTS_DIR
     from propedge.reporting.results import read_result
 
-    return gate_rows(read_result(RESULTS_DIR / (P14_GATE_FILE if design == "p14" else P16_GATE_FILE)))
+    return gate_rows(read_result(RESULTS_DIR / GATE_FILES[design]))
 
 
 def gate_problems(mine: dict[str, dict[str, float]], ref: dict[str, dict[str, float]], tol: float = 1e-6) -> list[str]:
@@ -306,6 +401,7 @@ def trade_rows(t: pd.DataFrame, ref: pd.DataFrame, rr_grid) -> list[dict[str, An
     return out
 
 
-__all__ = ["RULE_SETS", "RULES", "GATE_COLS", "P14_GATE_SEED", "P16_GATE_SEED", "walk_minutes_for", "frame_problems",
-           "a3_inputs", "a3_frame", "a3_walk", "p14_build", "p14_gate", "p16_build", "p16_gate", "gate_rows",
+__all__ = ["RULE_SETS", "RULES", "GATE_COLS", "P14_GATE_SEED", "P15_GATE_SEED", "P16_GATE_SEED", "GATE_FILES",
+           "walk_minutes_for", "frame_problems", "a3_inputs", "a3_frame", "a3_walk", "p14_build", "p14_gate",
+           "p16_build", "p16_gate", "p15_cells", "p15_build", "p15_trade_problems", "p15_gate", "gate_rows",
            "registered_gate", "gate_problems", "trade_rows"]
