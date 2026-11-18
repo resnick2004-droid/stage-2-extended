@@ -199,3 +199,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-202: each firm gets its own execution protocol (a counted family); the operator's rulings on news, hours, latency and limit orders recorded; the sequenced merge and three Topstep drafts under way. |
 | 2026-11-18 | lead | E-203: the 5/3/2-minute latency written into the charter and skills; F-04 to give each firm its own brackets, tested in a fixed sequence; RL3 drafted. |
 | 2026-11-18 | lead | E-204: the per-firm protocol family is pin-ready (its limit-order sets described only); it, RL3 and B-ON pin once Q-126's calibration adopts a statistic. |
+| 2026-11-18 | lead | E-205: the firm rules, RD-03's build and the vendor extension merged; every identity re-held next; RL3 pin-ready; four approved proposals queued, one parked. |
