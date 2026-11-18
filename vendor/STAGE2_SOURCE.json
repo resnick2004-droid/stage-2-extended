@@ -112,9 +112,16 @@
     "results/a3_brk30_gate.csv",
     "results/a3_brk30_gate.csv.manifest.json",
     "results/a3_brk30_stop_distribution.csv",
-    "results/a3_brk30_stop_distribution.csv.manifest.json"
+    "results/a3_brk30_stop_distribution.csv.manifest.json",
+    "results/fv3_rung_shares_2020.csv",
+    "results/fv3_rung_shares_2020.csv.manifest.json",
+    "results/fv3_rung_availability_2021.csv",
+    "results/fv3_rung_availability_2021.csv.manifest.json",
+    "results/rc150_table_screen.csv",
+    "results/rc150_table_screen.csv.manifest.json",
+    "results/rc150_table_screen_policies.json"
   ],
-  "files": 710,
+  "files": 717,
   "manifest": "vendor/MANIFEST_stage2.sha256",
   "data_not_committed": [
     "data/bars",
@@ -143,6 +150,24 @@
       "files_before": 698,
       "files_after": 710,
       "manifest_before_sha256": "ea4339bcfb50f87f647228561cd7ff0e0e38c386dfe8a022876d9d4f48d88130"
+    },
+    {
+      "task": "Q-129",
+      "taken": "2026-11-18T10:17:50+00:00",
+      "commit": "f1b42e268f0a2c7a79ab358c6726353b38b5fa8e",
+      "method": "git archive of the same commit; every file already in the snapshot reproduced hash for hash by the archive and unchanged after the copy; only the added files copied",
+      "added": [
+        "results/fv3_rung_shares_2020.csv",
+        "results/fv3_rung_shares_2020.csv.manifest.json",
+        "results/fv3_rung_availability_2021.csv",
+        "results/fv3_rung_availability_2021.csv.manifest.json",
+        "results/rc150_table_screen.csv",
+        "results/rc150_table_screen.csv.manifest.json",
+        "results/rc150_table_screen_policies.json"
+      ],
+      "files_before": 710,
+      "files_after": 717,
+      "manifest_before_sha256": "1a907d65a27f5ed0b4325221e5b8f8d02d24a5a22d59549b64e0e49cd4c4aad5"
     }
   ]
 }

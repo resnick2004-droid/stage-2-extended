@@ -1,0 +1,34 @@
+{
+  "columns": [
+    "phase",
+    "rung",
+    "rr",
+    "n",
+    "with_outcome",
+    "share",
+    "from"
+  ],
+  "description": "Each rung's share of FV3's gate trades from 2021-01-01 whose room permits a target at each R, per phase and overall: the availability the state table solves with.",
+  "exploratory": true,
+  "git_commit": "fb4bfba3dec400f17efa940cbe89a28cd94d55d5",
+  "git_dirty": false,
+  "notes": {
+    "status": "a derived input to the state table (D-318, export version 6); no outcome enters it -- only whether the room rule permits each target"
+  },
+  "parameters": {
+    "availability": "a trade has an outcome at R when its room permits that target (the room rule at entry; continuations at any R)",
+    "decision": "D-318",
+    "rungs": "the ladder's (D-293): half / full / double by the room rule",
+    "source": "results/fv3_studio_portfolio_v3_point_trades.csv",
+    "start": "2021-01-01"
+  },
+  "prereg_id": null,
+  "provenance": null,
+  "result_file": "fv3_rung_availability_2021.csv",
+  "rows": 108,
+  "script": "scripts/fv3_rung_shares.py",
+  "seed": null,
+  "sha256": "aa4141b48230dfd091a27b93dd27d46fca92296d52277ff84c39950a6c147dd7",
+  "timestamp": "2026-10-08T04:17:41+00:00",
+  "variant_count": null
+}
