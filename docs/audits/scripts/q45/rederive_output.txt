@@ -1,0 +1,317 @@
+## 1. manifest
+sha256 mine 340669649cb92c12e5198e931ba9fcdf8fb12f3de783149ff86c382e11c1e620 manifest 340669649cb92c12e5198e931ba9fcdf8fb12f3de783149ff86c382e11c1e620 equal True
+rows mine 3430 manifest 3430 | columns equal True
+git_commit f7eda0d02e31daea7bfb92847f4ad1203cef014e git_dirty False exploratory True prereg_id None seed 20261920 variant_count 6 timestamp 2026-11-17T23:47:41+00:00
+reference a3_brk30_cb20_gate.csv mine == manifest: True
+reference rc_s150_all_gate.csv mine == manifest: True
+reference user_journey.csv mine == manifest: True
+distinct reading labels: ['EXPLORATORY (Q-20; E-012 (2), E-013 (2)): beside the registered rows, never deciding; R* stays P-14 unless the operator rules otherwise']
+any ISO date string in the CSV: True
+any 'CARRIED'/'chosen' in the CSV: False
+bars manifest first_day 2020-01-02 last_day 2026-07-16 days 1691
+ledger last line: purpose registered_design | declaration {'designs': ['P-14', 'P-16'], 'kind': 'registered_design', 'ref': 'E-024', 'sha256': None} | dates {'blocks': ['choice', 'judged'], 'end': '2026-07-16', 'judged_first': '2024-01-02', 'judged_last': '2026-07-16', 'start': '2020-01-02'} | commit f7eda0d02e31daea7bfb92847f4ad1203cef014e dirty False clean_run breakeven-fidelity | when 2026-11-17T20:56:47+00:00
+  ledger file vendor/stage2/data/atlas/A1/events.parquet sha in data manifest equal: True
+  ledger file vendor/stage2/data/atlas/A1/days.parquet sha in data manifest equal: True
+  ledger file vendor/stage2/data/atlas/A3/walks.parquet sha in data manifest equal: True
+  ledger file vendor/stage2/data/bars/NQ/bars.parquet sha in data manifest equal: True
+section x rules counts:
+rules      both  both point  both verdict  delay5  delay5 point  delay5 verdict  registered  stage2  stage2 point  stage2 verdict  stop_first  stop_first point  stop_first verdict
+section                                                                                                                                                                            
+extra       120           0             0     120             0               0           0     120             0               0         120                 0                   0
+gate         60           0             0      60             0               0          60      60             0               0          60                 0                   0
+identity      0           2             2       0             2               2           0       6             4               4           0                 2                   2
+path        384           0             0     384             0               0           0     384             0               0         384                 0                   0
+scorecard    80           0             0      80             0               0           0      80             0               0          80                 0                   0
+trades      192           0             0     192             0               0           0     192             0               0         192                 0                   0
+identity rows 26 all value 1.0: True
+
+## 2. gate: registered rows against the vendored files; stage2 against registered
+p14 a3_brk30_cb20_gate.csv 0 % gate rows 2 | registered != file: 0 | stage2 != file (1e-6 rel): 0 | rtp [False, False] | is_gate_row [False, True]
+p16 rc_s150_all_gate.csv 0 % gate rows 2 | registered != file: 0 | stage2 != file (1e-6 rel): 0 | rtp [False, False] | is_gate_row [False, True]
+rules                                                  registered        stage2    stop_first        delay5          both  d_stop_first     d_delay5       d_both
+design shift       measure                                                                                                                                       
+p14    lower_bound mean_accounts_funded                117.444000    117.444000    117.376000    116.740000    116.758000 -6.800000e-02    -0.704000    -0.686000
+                   mean_combine_purchases              419.794000    419.794000    419.880000    416.640000    416.580000  8.600000e-02    -3.154000    -3.214000
+                   mean_max_drawdown                  3176.126884   3176.126884   3157.767759   2976.311846   2984.131166 -1.835913e+01  -199.815038  -191.995719
+                   mean_payouts_per_path                81.870000     81.870000     81.834000     84.788000     84.778000 -3.600000e-02     2.918000     2.908000
+                   mean_r_used                          -0.084671     -0.084671     -0.084827     -0.080870     -0.080870 -1.564471e-04     0.003801     0.003801
+                   median_days_to_first_payout          17.000000     17.000000     17.000000     17.000000     17.000000  0.000000e+00     0.000000     0.000000
+                   median_log_growth                     0.000300      0.000300      0.000300      0.000323      0.000322 -2.616109e-07     0.000023     0.000023
+                   paths                               500.000000    500.000000    500.000000    500.000000    500.000000  0.000000e+00     0.000000     0.000000
+                   pf_growth_on_base_p10                 1.279943      1.279943      1.279968      1.327998      1.330772  2.581993e-05     0.048056     0.050830
+                   pf_growth_on_base_p50                 1.455949      1.455949      1.455539      1.504813      1.503938 -4.103907e-04     0.048864     0.047989
+                   pf_net_p50                        59989.360377  59989.360377  59937.006829  64613.571489  64494.773296 -5.235355e+01  4624.211112  4505.412918
+                   pf_required_p90                    3449.312190   3449.312190   3449.293661   3351.358439   3351.357311 -1.852920e-02   -97.953751   -97.954879
+                   realised_to_intended_capped_risk      0.999756      0.999756      0.999754      0.999988      0.999988 -1.948178e-06     0.000232     0.000232
+                   ruin_probability                      0.000000      0.000000      0.000000      0.000000      0.000000  0.000000e+00     0.000000     0.000000
+                   share_accounts_ever_paid              0.371496      0.371496      0.371916      0.377831      0.378098  4.196918e-04     0.006335     0.006602
+       point       mean_accounts_funded                113.102000    113.102000    113.152000    113.044000    113.080000  5.000000e-02    -0.058000    -0.022000
+                   mean_combine_purchases              404.610000    404.610000    404.734000    402.900000    403.314000  1.240000e-01    -1.710000    -1.296000
+                   mean_max_drawdown                  2819.386380   2819.386380   2826.402563   2800.954392   2798.827918  7.016183e+00   -18.431988   -20.558462
+                   mean_payouts_per_path                87.162000     87.162000     87.016000     90.196000     90.014000 -1.460000e-01     3.034000     2.852000
+                   mean_r_used                          -0.023689     -0.023689     -0.023846     -0.021670     -0.021670 -1.564471e-04     0.002020     0.002020
+                   median_days_to_first_payout          17.000000     17.000000     17.000000     17.000000     17.000000  0.000000e+00     0.000000     0.000000
+                   median_log_growth                     0.000348      0.000348      0.000347      0.000368      0.000368 -1.109450e-06     0.000020     0.000020
+                   paths                               500.000000    500.000000    500.000000    500.000000    500.000000  0.000000e+00     0.000000     0.000000
+                   pf_growth_on_base_p10                 1.403104      1.403104      1.402713      1.477508      1.466180 -3.911853e-04     0.074404     0.063077
+                   pf_growth_on_base_p50                 1.585495      1.585495      1.583966      1.629951      1.629951 -1.528787e-03     0.044456     0.044456
+                   pf_net_p50                        69680.405500  69680.405500  69458.361078  73617.712227  73617.712227 -2.220444e+02  3937.306727  3937.306727
+                   pf_required_p90                    3052.000000   3052.000000   3052.000000   2939.182200   2939.182200  0.000000e+00  -112.817800  -112.817800
+                   realised_to_intended_capped_risk      0.999788      0.999788      0.999785      0.999876      0.999876 -2.946997e-06     0.000089     0.000089
+                   ruin_probability                      0.000000      0.000000      0.000000      0.000000      0.000000  0.000000e+00     0.000000     0.000000
+                   share_accounts_ever_paid              0.393379      0.393379      0.392516      0.399172      0.398391 -8.631661e-04     0.005793     0.005011
+p16    lower_bound mean_accounts_funded                104.856000    104.856000    104.856000    105.996000    105.970000  0.000000e+00     1.140000     1.114000
+                   mean_combine_purchases              380.786000    380.786000    380.636000    377.662000    377.554000 -1.500000e-01    -3.124000    -3.232000
+                   mean_max_drawdown                  3206.465963   3206.465963   3214.248192   3074.991519   3074.992192  7.782229e+00  -131.474444  -131.473771
+                   mean_payouts_per_path                75.140000     75.140000     75.094000     77.844000     77.868000 -4.600000e-02     2.704000     2.728000
+                   mean_r_used                          -0.060406     -0.060406     -0.060398     -0.053514     -0.053522  8.174569e-06     0.006892     0.006884
+                   median_days_to_first_payout          20.000000     20.000000     20.000000     19.000000     19.000000  0.000000e+00    -1.000000    -1.000000
+                   median_log_growth                     0.000358      0.000358      0.000358      0.000379      0.000379  4.506590e-07     0.000021     0.000022
+                   paths                               500.000000    500.000000    500.000000    500.000000    500.000000  0.000000e+00     0.000000     0.000000
+                   pf_growth_on_base_p10                 1.360673      1.360673      1.359762      1.400134      1.400133 -9.108623e-04     0.039461     0.039460
+                   pf_growth_on_base_p50                 1.500423      1.500423      1.501027      1.540596      1.541051  6.036466e-04     0.040172     0.040628
+                   pf_net_p50                        71581.778321  71581.778321  71671.974687  75821.297501  75893.669076  9.019637e+01  4239.519180  4311.890756
+                   pf_required_p90                    3747.237414   3747.237414   3747.195171   3648.000000   3648.000000 -4.224318e-02   -99.237414   -99.237414
+                   realised_to_intended_capped_risk      0.964148      0.964148      0.964151      0.963800      0.963794  3.341368e-06    -0.000348    -0.000354
+                   ruin_probability                      0.000000      0.000000      0.000000      0.000000      0.000000  0.000000e+00     0.000000     0.000000
+                   share_accounts_ever_paid              0.297513      0.297513      0.297723      0.300030      0.300142  2.098116e-04     0.002517     0.002629
+       point       mean_accounts_funded                102.212000    102.212000    102.182000    103.240000    103.240000 -3.000000e-02     1.028000     1.028000
+                   mean_combine_purchases              369.442000    369.442000    369.802000    365.398000    365.398000  3.600000e-01    -4.044000    -4.044000
+                   mean_max_drawdown                  3028.285467   3028.285467   3025.326499   2977.509814   2977.509814 -2.958968e+00   -50.775654   -50.775654
+                   mean_payouts_per_path                78.462000     78.462000     78.410000     81.286000     81.286000 -5.200000e-02     2.824000     2.824000
+                   mean_r_used                          -0.021167     -0.021167     -0.021209     -0.015196     -0.015205 -4.198503e-05     0.005971     0.005962
+                   median_days_to_first_payout          20.000000     20.000000     20.000000     19.000000     19.000000  0.000000e+00    -1.000000    -1.000000
+                   median_log_growth                     0.000382      0.000382      0.000382      0.000405      0.000405 -2.816137e-07     0.000023     0.000023
+                   paths                               500.000000    500.000000    500.000000    500.000000    500.000000  0.000000e+00     0.000000     0.000000
+                   pf_growth_on_base_p10                 1.420764      1.420764      1.418346      1.444569      1.444569 -2.418127e-03     0.023804     0.023804
+                   pf_growth_on_base_p50                 1.543718      1.543718      1.543366      1.578631      1.578631 -3.521546e-04     0.034913     0.034913
+                   pf_net_p50                        76402.799426  76402.799426  76346.433660  81073.708891  81073.708891 -5.636577e+01  4670.909465  4670.909465
+                   pf_required_p90                    3652.000000   3652.000000   3652.000000   3602.288800   3602.288800  0.000000e+00   -49.711200   -49.711200
+                   realised_to_intended_capped_risk      0.964051      0.964051      0.964062      0.963525      0.963525  1.098717e-05    -0.000526    -0.000526
+                   ruin_probability                      0.000000      0.000000      0.000000      0.000000      0.000000  0.000000e+00     0.000000     0.000000
+                   share_accounts_ever_paid              0.310472      0.310472      0.310544      0.312340      0.312340  7.157983e-05     0.001868     0.001868
+pf_growth_on_base_p50 at the bound > 0, every rule set: True
+
+## 3. trades section
+groups 24 failing: 0
+mean_net_r by design, R and rule set:
+rules          stage2  stop_first    delay5      both
+design rr                                            
+p14    0.25 -0.035838   -0.035844 -0.035639 -0.035639
+       0.50 -0.033633   -0.033655 -0.033239 -0.033239
+       0.75 -0.028439   -0.028490 -0.027539 -0.027539
+       1.00 -0.023689   -0.023846 -0.021670 -0.021670
+       1.25 -0.022272   -0.022327 -0.019798 -0.019798
+       1.50 -0.022208   -0.022275 -0.019166 -0.019199
+       1.75 -0.025478   -0.025519 -0.021936 -0.021936
+       2.00 -0.023349   -0.023349 -0.019359 -0.019359
+       2.25 -0.018953   -0.018953 -0.014644 -0.014644
+       2.50 -0.017192   -0.017192 -0.012075 -0.012075
+       2.75 -0.004914   -0.004914  0.000867  0.000867
+       3.00 -0.002807   -0.002807  0.003318  0.003318
+p16    0.25 -0.027057   -0.027060 -0.026951 -0.026951
+       0.50 -0.025596   -0.025642 -0.024225 -0.024227
+       0.75 -0.023385   -0.023445 -0.019663 -0.019663
+       1.00 -0.021167   -0.021209 -0.015196 -0.015205
+       1.25 -0.020047   -0.020079 -0.013401 -0.013469
+       1.50 -0.015139   -0.015151 -0.008171 -0.008171
+       1.75 -0.010282   -0.010289 -0.002693 -0.002693
+       2.00 -0.004624   -0.004649  0.003724  0.003724
+       2.25 -0.003708   -0.003755  0.005068  0.005068
+       2.50 -0.001895   -0.001947  0.007975  0.007975
+       2.75 -0.000437   -0.000495  0.009187  0.009187
+       3.00  0.002499    0.002448  0.011989  0.011989
+changed_kind summed over R: {'stop_first': {'p14': 18.0, 'p16': 84.0}, 'delay5': {'p14': 7123.0, 'p16': 57669.0}, 'both': {'p14': 7124.0, 'p16': 57655.0}}
+
+## 4. the stage2 rule set's scorecard, extra and path rows re-derived from user_journey.csv's start rows
+exact_runs_differing non-blank on p14/p16 start rows: 0
+start rows (all configs): implied payouts (net + fees) < 0: 0 | fees falling month to month: 0 | payouts falling: 0
+rows compared 296 | value disagreements 0 | n disagreements 0
+design     arm  block           row     reported         mine  value_agrees  n_agrees
+   p14 verdict    all   scorecard:P     0.671168     0.671168          True      True
+   p14 verdict    all  scorecard:S1  3003.000000  3003.000000          True      True
+   p14 verdict    all scorecard:S3b    34.000000    34.000000          True      True
+   p14 verdict    all scorecard:S3a     0.794734     0.794734          True      True
+   p14 verdict    all scorecard:S3c     1.851329     1.851329          True      True
+   p14 verdict    all scorecard:S5a  -768.712628  -768.712628          True      True
+   p14 verdict    all scorecard:S4a     0.984674     0.984674          True      True
+   p14 verdict    all scorecard:S4b     1.000000     1.000000          True      True
+   p14 verdict    all scorecard:S5b    34.500000    34.500000          True      True
+   p14 verdict    all scorecard:S5c     0.419019     0.419019          True      True
+   p14 verdict judged   scorecard:P     0.719328     0.719328          True      True
+   p14 verdict judged  scorecard:S1  2463.100000  2463.100000          True      True
+   p14 verdict judged scorecard:S3b    24.000000    24.000000          True      True
+   p14 verdict judged scorecard:S3a     0.852433     0.852433          True      True
+   p14 verdict judged scorecard:S3c     1.900606     1.900606          True      True
+   p14 verdict judged scorecard:S5a   105.698614   105.698614          True      True
+   p14 verdict judged scorecard:S4a     0.996241     0.996241          True      True
+   p14 verdict judged scorecard:S4b     1.000000     1.000000          True      True
+   p14 verdict judged scorecard:S5b    34.900000    34.900000          True      True
+   p14 verdict judged scorecard:S5c     0.404774     0.404774          True      True
+   p16 verdict    all   scorecard:P     0.620012     0.620012          True      True
+   p16 verdict    all  scorecard:S1  3450.000000  3450.000000          True      True
+   p16 verdict    all scorecard:S3b    39.000000    39.000000          True      True
+   p16 verdict    all scorecard:S3a     0.594853     0.594853          True      True
+   p16 verdict    all scorecard:S3c     2.079778     2.079778          True      True
+   p16 verdict    all scorecard:S5a -1161.930635 -1161.930635          True      True
+   p16 verdict    all scorecard:S4a     0.977011     0.977011          True      True
+   p16 verdict    all scorecard:S4b     0.999306     0.999306          True      True
+   p16 verdict    all scorecard:S5b    34.000000    34.000000          True      True
+   p16 verdict    all scorecard:S5c     0.406874     0.406874          True      True
+   p16 verdict judged   scorecard:P     0.616246     0.616246          True      True
+   p16 verdict judged  scorecard:S1  3599.000000  3599.000000          True      True
+   p16 verdict judged scorecard:S3b    41.900000    41.900000          True      True
+   p16 verdict judged scorecard:S3a     0.609105     0.609105          True      True
+   p16 verdict judged scorecard:S3c     2.021459     2.021459          True      True
+   p16 verdict judged scorecard:S5a -1416.250221 -1416.250221          True      True
+   p16 verdict judged scorecard:S4a     0.968045     0.968045          True      True
+   p16 verdict judged scorecard:S4b     0.997537     0.997537          True      True
+   p16 verdict judged scorecard:S5b    34.000000    34.000000          True      True
+   p16 verdict judged scorecard:S5c     0.411452     0.411452          True      True
+p14 registered start rows 1691 first 2020-01-02 last 2026-07-16 cell a3_brk30_cb20 | P (all, verdict) from user_journey.csv start rows: (np.float64(0.6711684059750358), np.int64(1629))
+p15 registered start rows 1691 first 2020-01-02 last 2026-07-16 cell rc_s100_all | P (all, verdict) from user_journey.csv start rows: (np.float64(0.6421117249846532), np.int64(1629))
+p16 registered start rows 1691 first 2020-01-02 last 2026-07-16 cell rc_s150_all_nr | P (all, verdict) from user_journey.csv start rows: (np.float64(0.620012277470841), np.int64(1629))
+
+## 5. internal checks on every rule set (the corrected ones have no start rows in the file)
+share rows 800 outside [0, 1]: 0
+internal problems: 0 []
+mdd_P values: [nan] | n_eff_bartlett rows non-blank: 32
+paired / interval columns in the CSV: []
+
+## 6. each corrected rule set against the registered row (stage2 = registered, by the identities and section 4)
+design      rules     arm  block measure  registered   corrected        diff direction  beyond_tolerance
+   p14       both verdict    all       P    0.671168    0.685287    0.014119    better             False
+   p14       both verdict    all      S1 3003.000000 2907.000000  -96.000000    better             False
+   p14       both verdict    all     S3a    0.794734    0.819868    0.025135    better             False
+   p14       both verdict    all     S3b   34.000000   29.000000   -5.000000    better             False
+   p14       both verdict    all     S3c    1.851329    1.874011    0.022682    better             False
+   p14       both verdict    all     S4a    0.984674    0.987867    0.003193    better             False
+   p14       both verdict    all     S4b    1.000000    1.000000    0.000000      same             False
+   p14       both verdict    all     S5a -768.712628 -934.570730 -165.858101     worse              True
+   p14       both verdict    all     S5b   34.500000   34.000000   -0.500000    better             False
+   p14       both verdict    all     S5c    0.419019    0.412760   -0.006259    better             False
+   p14     delay5 verdict    all       P    0.671168    0.685287    0.014119    better             False
+   p14     delay5 verdict    all      S1 3003.000000 2907.000000  -96.000000    better             False
+   p14     delay5 verdict    all     S3a    0.794734    0.819868    0.025135    better             False
+   p14     delay5 verdict    all     S3b   34.000000   29.000000   -5.000000    better             False
+   p14     delay5 verdict    all     S3c    1.851329    1.875582    0.024253    better             False
+   p14     delay5 verdict    all     S4a    0.984674    0.988506    0.003831    better             False
+   p14     delay5 verdict    all     S4b    1.000000    1.000000    0.000000      same             False
+   p14     delay5 verdict    all     S5a -768.712628 -934.579751 -165.867123     worse              True
+   p14     delay5 verdict    all     S5b   34.500000   34.000000   -0.500000    better             False
+   p14     delay5 verdict    all     S5c    0.419019    0.411251   -0.007768    better             False
+   p14 stop_first verdict    all       P    0.671168    0.671373    0.000205    better             False
+   p14 stop_first verdict    all      S1 3003.000000 3003.000000    0.000000      same             False
+   p14 stop_first verdict    all     S3a    0.794734    0.794734    0.000000      same             False
+   p14 stop_first verdict    all     S3b   34.000000   34.000000    0.000000      same             False
+   p14 stop_first verdict    all     S3c    1.851329    1.850562   -0.000767     worse             False
+   p14 stop_first verdict    all     S4a    0.984674    0.984674    0.000000      same             False
+   p14 stop_first verdict    all     S4b    1.000000    1.000000    0.000000      same             False
+   p14 stop_first verdict    all     S5a -768.712628 -763.830801    4.881827    better             False
+   p14 stop_first verdict    all     S5b   34.500000   34.500000    0.000000      same             False
+   p14 stop_first verdict    all     S5c    0.419019    0.418212   -0.000807    better             False
+   p14       both verdict judged       P    0.719328    0.722129    0.002801    better             False
+   p14       both verdict judged      S1 2463.100000 2503.600000   40.500000     worse             False
+   p14       both verdict judged     S3a    0.852433    0.858713    0.006279    better             False
+   p14       both verdict judged     S3b   24.000000   25.000000    1.000000     worse             False
+   p14       both verdict judged     S3c    1.900606    1.926372    0.025766    better             False
+   p14       both verdict judged     S4a    0.996241    0.996241    0.000000      same             False
+   p14       both verdict judged     S4b    1.000000    1.000000    0.000000      same             False
+   p14       both verdict judged     S5a  105.698614 -476.166916 -581.865530     worse              True
+   p14       both verdict judged     S5b   34.900000   34.000000   -0.900000    better             False
+   p14       both verdict judged     S5c    0.404774    0.404868    0.000094     worse             False
+   p14     delay5 verdict judged       P    0.719328    0.722129    0.002801    better             False
+   p14     delay5 verdict judged      S1 2463.100000 2503.600000   40.500000     worse             False
+   p14     delay5 verdict judged     S3a    0.852433    0.858713    0.006279    better             False
+   p14     delay5 verdict judged     S3b   24.000000   25.000000    1.000000     worse             False
+   p14     delay5 verdict judged     S3c    1.900606    1.926355    0.025749    better             False
+   p14     delay5 verdict judged     S4a    0.996241    0.996241    0.000000      same             False
+   p14     delay5 verdict judged     S4b    1.000000    1.000000    0.000000      same             False
+   p14     delay5 verdict judged     S5a  105.698614 -476.206386 -581.905000     worse              True
+   p14     delay5 verdict judged     S5b   34.900000   34.000000   -0.900000    better             False
+   p14     delay5 verdict judged     S5c    0.404774    0.404714   -0.000061    better             False
+   p14 stop_first verdict judged       P    0.719328    0.719328    0.000000      same             False
+   p14 stop_first verdict judged      S1 2463.100000 2463.100000    0.000000      same             False
+   p14 stop_first verdict judged     S3a    0.852433    0.852433    0.000000      same             False
+   p14 stop_first verdict judged     S3b   24.000000   24.000000    0.000000      same             False
+   p14 stop_first verdict judged     S3c    1.900606    1.902105    0.001499    better             False
+   p14 stop_first verdict judged     S4a    0.996241    0.996241    0.000000      same             False
+   p14 stop_first verdict judged     S4b    1.000000    1.000000    0.000000      same             False
+   p14 stop_first verdict judged     S5a  105.698614  113.736884    8.038270    better             False
+   p14 stop_first verdict judged     S5b   34.900000   34.900000    0.000000      same             False
+   p14 stop_first verdict judged     S5c    0.404774    0.404403   -0.000372    better             False
+design      rules     arm  block measure   registered    corrected        diff direction  beyond_tolerance
+   p16       both verdict    all       P     0.620012     0.652343    0.032331    better             False
+   p16       both verdict    all      S1  3450.000000  3301.000000 -149.000000    better             False
+   p16       both verdict    all     S3a     0.594853     0.633154    0.038300    better             False
+   p16       both verdict    all     S3b    39.000000    37.000000   -2.000000    better             False
+   p16       both verdict    all     S3c     2.079778     2.187001    0.107223    better             False
+   p16       both verdict    all     S4a     0.977011     0.982120    0.005109    better             False
+   p16       both verdict    all     S4b     0.999306     1.000000    0.000694    better             False
+   p16       both verdict    all     S5a -1161.930635  -472.856876  689.073758    better             False
+   p16       both verdict    all     S5b    34.000000    34.000000    0.000000      same             False
+   p16       both verdict    all     S5c     0.406874     0.395907   -0.010967    better             False
+   p16     delay5 verdict    all       P     0.620012     0.652343    0.032331    better             False
+   p16     delay5 verdict    all      S1  3450.000000  3301.000000 -149.000000    better             False
+   p16     delay5 verdict    all     S3a     0.594853     0.633154    0.038300    better             False
+   p16     delay5 verdict    all     S3b    39.000000    37.000000   -2.000000    better             False
+   p16     delay5 verdict    all     S3c     2.079778     2.187004    0.107226    better             False
+   p16     delay5 verdict    all     S4a     0.977011     0.982120    0.005109    better             False
+   p16     delay5 verdict    all     S4b     0.999306     1.000000    0.000694    better             False
+   p16     delay5 verdict    all     S5a -1161.930635  -472.854045  689.076589    better             False
+   p16     delay5 verdict    all     S5b    34.000000    34.000000    0.000000      same             False
+   p16     delay5 verdict    all     S5c     0.406874     0.395910   -0.010964    better             False
+   p16 stop_first verdict    all       P     0.620012     0.619808   -0.000205     worse             False
+   p16 stop_first verdict    all      S1  3450.000000  3450.000000    0.000000      same             False
+   p16 stop_first verdict    all     S3a     0.594853     0.594255   -0.000598     worse             False
+   p16 stop_first verdict    all     S3b    39.000000    39.000000    0.000000      same             False
+   p16 stop_first verdict    all     S3c     2.079778     2.078621   -0.001157     worse             False
+   p16 stop_first verdict    all     S4a     0.977011     0.976373   -0.000639     worse             False
+   p16 stop_first verdict    all     S4b     0.999306     0.999306    0.000000      same             False
+   p16 stop_first verdict    all     S5a -1161.930635 -1161.877744    0.052890    better             False
+   p16 stop_first verdict    all     S5b    34.000000    34.000000    0.000000      same             False
+   p16 stop_first verdict    all     S5c     0.406874     0.407564    0.000690     worse             False
+   p16       both verdict judged       P     0.616246     0.672269    0.056022    better             False
+   p16       both verdict judged      S1  3599.000000  3406.800000 -192.200000    better             False
+   p16       both verdict judged     S3a     0.609105     0.673469    0.064364    better             False
+   p16       both verdict judged     S3b    41.900000    37.900000   -4.000000    better             False
+   p16       both verdict judged     S3c     2.021459     2.121091    0.099632    better             False
+   p16       both verdict judged     S4a     0.968045     0.992481    0.024436    better             False
+   p16       both verdict judged     S4b     0.997537     1.000000    0.002463    better             False
+   p16       both verdict judged     S5a -1416.250221  -468.149763  948.100458    better             False
+   p16       both verdict judged     S5b    34.000000    33.000000   -1.000000    better             False
+   p16       both verdict judged     S5c     0.411452     0.394036   -0.017416    better             False
+   p16     delay5 verdict judged       P     0.616246     0.672269    0.056022    better             False
+   p16     delay5 verdict judged      S1  3599.000000  3406.800000 -192.200000    better             False
+   p16     delay5 verdict judged     S3a     0.609105     0.673469    0.064364    better             False
+   p16     delay5 verdict judged     S3b    41.900000    37.900000   -4.000000    better             False
+   p16     delay5 verdict judged     S3c     2.021459     2.121093    0.099634    better             False
+   p16     delay5 verdict judged     S4a     0.968045     0.992481    0.024436    better             False
+   p16     delay5 verdict judged     S4b     0.997537     1.000000    0.002463    better             False
+   p16     delay5 verdict judged     S5a -1416.250221  -468.146613  948.103608    better             False
+   p16     delay5 verdict judged     S5b    34.000000    33.000000   -1.000000    better             False
+   p16     delay5 verdict judged     S5c     0.411452     0.394036   -0.017416    better             False
+   p16 stop_first verdict judged       P     0.616246     0.615686   -0.000560     worse             False
+   p16 stop_first verdict judged      S1  3599.000000  3599.000000    0.000000      same             False
+   p16 stop_first verdict judged     S3a     0.609105     0.607535   -0.001570     worse             False
+   p16 stop_first verdict judged     S3b    41.900000    41.900000    0.000000      same             False
+   p16 stop_first verdict judged     S3c     2.021459     2.018540   -0.002919     worse             False
+   p16 stop_first verdict judged     S4a     0.968045     0.966165   -0.001880     worse             False
+   p16 stop_first verdict judged     S4b     0.997537     0.997537    0.000000      same             False
+   p16 stop_first verdict judged     S5a -1416.250221 -1416.232379    0.017842    better             False
+   p16 stop_first verdict judged     S5b    34.000000    34.900000    0.900000     worse             False
+   p16 stop_first verdict judged     S5c     0.411452     0.413250    0.001799     worse             False
+beyond tolerance (share 0.05; else 10 % of |registered|):
+design  rules     arm  block measure  registered   corrected        diff direction  beyond_tolerance
+   p14 delay5 verdict    all     S5a -768.712628 -934.579751 -165.867123     worse              True
+   p14   both verdict    all     S5a -768.712628 -934.570730 -165.858101     worse              True
+   p14 delay5 verdict judged     S5a  105.698614 -476.206386 -581.905000     worse              True
+   p14   both verdict judged     S5a  105.698614 -476.166916 -581.865530     worse              True
+direction           better  same  worse
+arm     rules                          
+point   both            36     4      0
+        delay5          36     4      0
+        stop_first       2    25     13
+verdict both            31     4      5
+        delay5          32     4      4
+        stop_first       8    20     12

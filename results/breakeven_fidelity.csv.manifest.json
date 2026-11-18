@@ -1,0 +1,146 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "design",
+    "rules",
+    "arm",
+    "shift",
+    "rr",
+    "block",
+    "measure",
+    "stat",
+    "value",
+    "n",
+    "note"
+  ],
+  "description": "EXPLORATORY (Q-20): P-14's and P-16's trades re-walked with the breakeven move corrected -- the stop first on a bar touching the entry and trading through the target after the move, the move five minutes after the session open, each alone and both -- read beside the registered rows: the trades' exit kinds and net R, the gate row (500 paths at the registered seeds), and the user scorecard, E-007 (e)'s measures and the operator's path measures through Q-17's adapter (every start, both arms). Beside, never deciding.",
+  "exploratory": true,
+  "git_commit": "f7eda0d02e31daea7bfb92847f4ad1203cef014e",
+  "git_dirty": false,
+  "notes": {
+    "selection": "none",
+    "status": "EXPLORATORY (Q-20; E-012 (2), E-013 (2)): beside the registered rows, never deciding; R* stays P-14 unless the operator rules otherwise",
+    "variant_count_rule": "three corrections a design; Stage 2's walk is the identity, not a variant"
+  },
+  "parameters": {
+    "bounds": "recomputed from each rule set's trades by the design's own rule (atlas_a3.bounds)",
+    "corrections": {
+      "delay5": "the move decided on the session's open bar's open, in force from the first present bar opening five minutes after it (D-266); the original bracket governs until then",
+      "stop_first": "on a bar after the move that touches the entry and trades through the target, the stop first (Stage 2's walk books the target, fv3_rung_walk.py:184-185)"
+    },
+    "decisions": [
+      "E-012 (2)",
+      "E-013 (2)"
+    ],
+    "designs": [
+      "p14",
+      "p16"
+    ],
+    "gate_cols": [
+      "pf_growth_on_base_p50",
+      "pf_required_p90",
+      "pf_growth_on_base_p10",
+      "pf_net_p50",
+      "median_log_growth",
+      "mean_payouts_per_path",
+      "mean_combine_purchases",
+      "mean_accounts_funded",
+      "share_accounts_ever_paid",
+      "median_days_to_first_payout",
+      "ruin_probability",
+      "mean_max_drawdown",
+      "realised_to_intended_capped_risk",
+      "mean_r_used",
+      "paths"
+    ],
+    "gate_paths": 500,
+    "gate_seeds": {
+      "p14": 20261131,
+      "p16": 20261206
+    },
+    "references": {
+      "a3_brk30_cb20_gate.csv": "dabcbcfc67093bfbcbd92673e81e9e773db4916870c52ac33390d1d207d98a00",
+      "rc_s150_all_gate.csv": "dfd29188f364aeb7b06dcee1b79fc4c7ee3bca74bf0c5ad1f09845149160e3c6",
+      "user_journey.csv": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "rule_sets": {
+      "both": {
+        "breakeven_delay": 5,
+        "breakeven_tie": "stop",
+        "name": "stage2_be_both"
+      },
+      "delay5": {
+        "breakeven_delay": 5,
+        "breakeven_tie": "target",
+        "name": "stage2_be_delay5"
+      },
+      "stage2": {
+        "breakeven_delay": 0,
+        "breakeven_tie": "target",
+        "name": "stage2_fv3"
+      },
+      "stop_first": {
+        "breakeven_delay": 0,
+        "breakeven_tie": "stop",
+        "name": "stage2_be_stop_first"
+      }
+    },
+    "seconds": 10252.9,
+    "task": "Q-20",
+    "timing": {
+      "p14|both|build": 37.3,
+      "p14|both|gate": 259.2,
+      "p14|both|point": 409.9,
+      "p14|both|verdict": 394.3,
+      "p14|delay5|build": 39.1,
+      "p14|delay5|gate": 266.3,
+      "p14|delay5|point": 403.6,
+      "p14|delay5|verdict": 404.4,
+      "p14|stage2|build": 38.0,
+      "p14|stage2|gate": 266.2,
+      "p14|stage2|point": 402.6,
+      "p14|stage2|verdict": 398.5,
+      "p14|stop_first|build": 37.4,
+      "p14|stop_first|gate": 267.1,
+      "p14|stop_first|point": 407.5,
+      "p14|stop_first|verdict": 398.5,
+      "p16|both|build": 52.2,
+      "p16|both|gate": 341.4,
+      "p16|both|point": 536.9,
+      "p16|both|verdict": 528.3,
+      "p16|delay5|build": 50.6,
+      "p16|delay5|gate": 339.5,
+      "p16|delay5|point": 528.3,
+      "p16|delay5|verdict": 523.9,
+      "p16|stage2|build": 55.8,
+      "p16|stage2|gate": 355.9,
+      "p16|stage2|point": 524.8,
+      "p16|stage2|verdict": 542.3,
+      "p16|stop_first|build": 48.0,
+      "p16|stop_first|gate": 338.2,
+      "p16|stop_first|point": 530.3,
+      "p16|stop_first|verdict": 524.2
+    },
+    "u1_path_seeds": "Q-17's: lockstep.child_seed(20261920, 0, start_day); nothing drawn at 0 %",
+    "u1_response": "off (0 % denial, the placement off, no Focused Trader model)",
+    "u1_starts": "every start",
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\breakeven-fidelity",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "breakeven-fidelity"
+    },
+    "read_ledger": "1 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "breakeven_fidelity.csv",
+  "rows": 3430,
+  "script": "scripts/breakeven_fidelity.py",
+  "seed": 20261920,
+  "sha256": "340669649cb92c12e5198e931ba9fcdf8fb12f3de783149ff86c382e11c1e620",
+  "timestamp": "2026-11-17T23:47:41+00:00",
+  "variant_count": 6
+}
