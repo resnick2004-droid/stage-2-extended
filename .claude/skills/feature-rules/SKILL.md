@@ -15,8 +15,9 @@ checked by tests, not by care.
   US/Central after converting (DST-aware). A 1-minute bar stamped 08:25 covers 08:25:00-08:25:59 and **closes at 08:26**.
 - So at an alert time `t` (on a minute boundary) the last closed bar is the one stamped **`t - 1 minute`**. A feature at
   `t` reads bars with `timestamp <= t - 1 min` and nothing else. "The 08:25 bar's close" is known at 08:26, not 08:25.
-- Entry is no earlier than `t + 5 min` (Stage 2 D-266): a market entry fills at the open of the bar stamped `t + 5`;
-  a resting order is live from `t + 5` and can fill only on bars stamped `t + 5` or later.
+- Entry is no earlier than `t + L min` (Stage 2 D-266; L = 5 the reference, 3 and 2 declared and counted variants, E-202
+  (2)(c)): a market entry fills at the open of the bar stamped `t + L`; a resting order is live from `t + L` and can fill
+  only on bars stamped `t + L` or later.
 - Calendars (BLS 08:30 releases `vendor/stage2/data/releases_bls_0830_*.csv`, FOMC days) may be used only as they were
   published in advance; their provenance files say when.
 - **Never** read NQ from 2026-07-17 (the confirmation window, `vendor/stage2/config/windows.yaml`).
@@ -40,7 +41,7 @@ checked by tests, not by care.
 
 For each candidate alert `t`:
 
-- **Entry:** market at the open of the bar stamped `t + 5`, or a resting order live from `t + 5` -- a stop fills when a
+- **Entry:** market at the open of the bar stamped `t + L`, or a resting order live from `t + L` -- a stop fills when a
   bar trades at its price (gap-through fills at the bar's open, plus slippage); a **limit fills only on a trade
   through its level by at least one tick**, at the limit price, never better.
 - **Stop** from the stop band (`vendor/stage2/results/stop_band.csv`, which also holds the cost-drag floor of 45 ticks --
@@ -83,6 +84,6 @@ need their own family.
 
 - [ ] every feature reads `timestamp <= t - 1 min` only; a shift-invariance test exists and passes
 - [ ] no normaliser, scaler, threshold or level uses data after `t` (or outside the training fold)
-- [ ] entries at `t + 5` or later; limits need a trade-through; stop first on two-barrier bars; flatten at 15:10 CT
+- [ ] entries at `t + L` or later (L declared: 5, or a counted 3 or 2); limits need a trade-through; stop first on two-barrier bars; flatten at 15:10 CT
 - [ ] splits purged and embargoed by at least a session; hyperparameters fixed or searched in-fold and counted
 - [ ] no read of NQ from 2026-07-17; nothing chosen after an outcome without the exploratory label

@@ -23,7 +23,8 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 - **No payment, purchase, subscription, billing change or credit draw.** State the cost in `OPERATOR_SETUP.md` and
   move on.
 - **No live orders, and no automated or API order entry design** -- the operator: it gets prop accounts banned.
-  Every model is executed by hand with at least 5 minutes from alert to order; resting orders may be published ahead.
+  Every model is executed by hand with at least L minutes from alert to order (L = 5 the reference; 3 and 2 counted
+  variants, E-202); resting orders may be published ahead.
 - **No read of a confirmation window.** NQ from 2026-07-17 is reserved; it is not on disk, keep it that way. Declare a
   confirmation window per market before any development read.
 - **No edit of anything vendored** (Stage 2's engine, stage one's propsim). Adapt in your own code.
@@ -94,8 +95,8 @@ belongs on the funded openings and a frequent one on every trade (the value map,
 
 ### 6.2 Labels and features (shared by every model family)
 
-- **Label:** for each candidate alert time t, entry no earlier than t + 5 minutes (a market entry) or a resting order
-  live from t + 5 that fills when the bar trades through its level (a limit needs a trade-through by one tick); the
+- **Label:** for each candidate alert time t, entry no earlier than t + L minutes (L = 5, or a counted 3 or 2, E-202; a market entry) or a resting order
+  live from t + L that fills when the bar trades through its level (a limit needs a trade-through by one tick); the
   stop from the stop band; targets at each R; resolved by 15:10 CT as win, loss or flatten; a bar that could hit
   entry, stop and target is read stop-first. Stage 2's walks hold this for every 5-minute mark at market entry.
 - **Features:** only from bars closed at or before t; normalised (rolling ATR, session spread, time-of-day medians),

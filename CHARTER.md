@@ -130,8 +130,10 @@ researcher are the same.
 
 Stage 2's handoff section 2, unchanged: the firm rules in Stage 2's verified ledger (`vendor/stage2/config/rules.yaml`,
 `RULES_LEDGER.md`; an unverified rule is never loaded); the stop band and cost floor (`results/stop_band.csv`); stage
-one's zero-edge ceilings as oracles (an output outside them is an engine error); the execution rules -- at least five
-minutes from alert to order (a resting order may go live five minutes after its ticket and then fill at its level),
+one's zero-edge ceilings as oracles (an output outside them is an engine error); the execution rules -- at least L
+minutes from alert to order, L a declared parameter: five the reference, three and two counted variants declared before
+any read with the five-minute cell beside every pick (the operator, E-202 (2)(c)) (a resting order may go live L minutes after its
+ticket and then fill at its level),
 one position at a time per firm with five minutes flat between trades, every trade resolving (at most 5 % reach the
 15:10 CT flatten, Stage 2 D-212 as D-308 raised it from 2 %; no time stops), realised risk matching intended (at least
 90 % of trades within 10 % of the state's risk in whole micros, Stage 2 D-212 -- read, as P-14's registration read it,
@@ -141,7 +143,7 @@ Combine's room, E-022 (1), E-032), no entry before 07:35:00 CT on a BLS
 conduct tiers (Stage 2 D-145: no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into
 major news, nothing that conceals a pattern). No automated or API order entry -- **the operator's rule** (Topstep's
 pages permit automation through its paid API; the operator kept hand entry, E-008): every trade is placed by hand at
-least five minutes after its alert. Designs are for one user's own accounts; a signal service whose users place the
+least L minutes after its alert (L as above). Designs are for one user's own accounts; a signal service whose users place the
 same tickets is out (Topstep's coordinated-trading prohibition, E-007 (c)).
 
 ## 5. Exit criterion -- either is a valid close
