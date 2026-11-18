@@ -1,4 +1,4 @@
-"""Q-141 (second text): T-0 of family FP (`prereg/DRAFT_F-04_firm_protocol.md`, renamed `prereg/F-04_firm_protocol.md` at its pin):
+"""Q-141 (third text): T-0 of family FP (`prereg/DRAFT_F-04_firm_protocol.md`, renamed `prereg/F-04_firm_protocol.md` at its pin):
 the draft's form, checked on its own text and on the repository's files (no engine, no bar, no result file; fast).
 
 What it checks now (the pin adds Appendix P's modes against RD-05's Appendix M and every key section 3.2 names against
@@ -15,8 +15,10 @@ the merged record -- section 17.2's T-0 row):
 - **every cell counted, the counts consistent** -- the counted-cells rows equal the grid's factors times Appendix P's
   configurations, modes, groups and corners, and section 16's totals sentence;
 - **the references cannot drift** -- RD-05's and Q-126's pins as the text cites them equal those files' LF sha256 and
-  the pins in the decision log (the red team's N-5); the four calendars' LF sha256 as section 5.4 cites them (N-4);
+  the pins in the decision log (the red team's N-5); the seven calendars' and CHARTER's LF sha256 as cited (N-4, the re-read's N-4 and N-7);
 - **the level** -- the provisional level, k = 13's 0.05 / 182, stated;
+- **limit entries never eligible** -- NB-1's rule stated in 1.2 and 8.2, its decomposition printed, no limit form in
+  K0 or C0;
 - **no typed dollar figure** -- every dollar amount in the text is one of the declared grids' (RD-05 2.6's risks, U-2's
   ends), the bar, or the plan size "$50K" -- a guard against a typed rule value.
 """
@@ -55,7 +57,14 @@ PINS = {
     "prereg/RD-05_firm_modes.md": "be7f90fb56af6e09c92c0277ce83c228f2e2fbeca8fc26b87d90ccf50239659c",
 }
 CALENDARS = ("config/calendar_early_closes.csv", "config/calendar_fomc_minutes.csv",
-             "vendor/stage2/data/releases_bls_0830_2009_2025.csv", "vendor/stage2/data/releases_bls_0830_2026.csv")
+             "vendor/stage2/data/releases_bls_0830_2009_2025.csv", "vendor/stage2/data/releases_bls_0830_2026.csv",
+             # the FOMC meeting days: atlas_a1.yaml's news.fomc files (the re-read's N-4)
+             "vendor/stage2/config/im2_release_calendar.csv",
+             "vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv",
+             "vendor/stage2/config/sources/fomc_statements_2026q3.csv",
+             # CHARTER as E-203 amended it (the re-read's N-7)
+             "CHARTER.md")
+LIMIT_INELIGIBLE = "every P-14 limit trade set is described only and ineligible for any T_g"
 Q126_PLAN = "docs/calibration/Q-126_one_sample_plan_2.md"
 ALLOWED_DOLLARS = {"25", "250", "500", "750", "1,000", "1,500", "2,000", "50K"}
 
@@ -265,7 +274,7 @@ def test_q126_plan_pin_cited_is_the_logs(text: str) -> None:
     assert cited and cited.group(1) == digest
 
 
-def test_calendars_cited_by_their_lf_sha256(text: str) -> None:
+def test_calendars_and_charter_cited_by_their_lf_sha256(text: str) -> None:
     for rel in CALENDARS:
         digest = hashlib.sha256(_lf(ROOT / rel)).hexdigest()
         cited = re.search(rf"`{re.escape(rel)}`[^`]{{0,40}}LF\s+sha256\s+`([0-9a-f]{{64}})`", text)
@@ -277,3 +286,17 @@ def test_no_typed_dollar_figure(text: str) -> None:
     found = set(re.findall(r"\$(\d{1,3}(?:,\d{3})*K?)", text))
     assert found, "the scan is not vacuous"
     assert found <= ALLOWED_DOLLARS, sorted(found - ALLOWED_DOLLARS)
+
+
+def test_limit_sets_are_never_eligible(text: str) -> None:
+    """The lead's ruling on the re-read's NB-1: P-14's limit trade sets are described only. The rule is stated in 1.2 and
+    as 8.2's gate, and no T_g, K0 or C0 line keeps a limit form. Read with whitespace collapsed (line wrapping)."""
+    def flat(s: str) -> str:
+        return " ".join(s.split())
+
+    assert flat(text).count(LIMIT_INELIGIBLE) >= 2, "NB-1's rule must stand in 1.2 and 8.2"
+    assert LIMIT_INELIGIBLE in flat(_section(text, "### 8.2 ", "## 9. "))
+    assert "every T_g is a market set" in flat(_section(text, "### 9.7 ", "## 10. "))
+    assert "for a limit set, the exact twin computable" not in flat(text)
+    assert "(p - 1/2) m" in flat(_section(text, "### 8.1 ", "### 8.2 ")), "the supply term printed beside every limit set"
+    assert "placebo-selection twin" in flat(_section(text, "### 1.2 ", "### 1.3 ")), "the later route named"

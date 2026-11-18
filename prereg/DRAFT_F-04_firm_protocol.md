@@ -1,11 +1,13 @@
 # F-04 (draft): the per-firm execution protocol -- P-14's and P-16's registered signals re-bracketed, re-timed and re-sized across each $50K plan's allowed grid; the whole grid described on the choice block, one trade set and one protocol per firm group picked by a declared rule, judged once on its trades in a fixed sequence (family FP)
 
-**Status: the second text (TASK_QUEUE Q-141, corrective cycle 1 of 2), not pinned.** Drafted on `wt/wt-scout` with
-master merged at 4acf171 (E-202). It goes to the red team's re-read, then the prereg-gatekeeper. At the pin the file is
-renamed `prereg/F-04_firm_protocol.md` and nothing else changes; the pinning row names the commit and the sha256 of its
-LF text. **The program family number is not assigned at the pin: it is assigned by the stage-B row, and only if stage B
-sends at least one trade set to stage C** (16.1); until then every level is the provisional level at k = 13. Nothing
-declared is edited after the pin: a change is a new family under a new row.
+**Status: the third text (TASK_QUEUE Q-141, corrective cycle 2 of 2, the last), not pinned.** Drafted on `wt/wt-scout`
+with master merged at ce5143d (E-203). It goes to the red team's last read, then the prereg-gatekeeper. At the pin the
+file is renamed `prereg/F-04_firm_protocol.md` and nothing else changes; the pinning row names the commit and the sha256
+of its LF text. **The program family number is not assigned at the pin: it is assigned by the stage-B row, and only if
+stage B sends at least one trade set to stage C** (16.1); until then every level is the provisional level at k = 13.
+**Until that row exists the gatekeeper's k rule does not count this family** -- the lead's row that records this and
+amends the gatekeeper's text (the lead's ruling on the re-read's SF-1) precedes the pin. Nothing declared is edited
+after the pin: a change is a new family under a new row.
 
 **Its text's history.** The first text (Q-141; wt/wt-scout 675799c, LF sha256
 `5e158e7d601df9d402df6fabfa401f660aedd93c6715c0b2417ee884720d951f`) was read by the red team (Q-141r,
@@ -14,7 +16,12 @@ declared is edited after the pin: a change is a new family under a new row.
 registered timing kept and P-14's latency in clock minutes with a named identity difference (B-2); the chain in fill
 order, one working order or position at a time (B-3); a trade set per firm group tested in a fixed sequence at the
 family's full level (S-1); the reduction ladder, the per-trade pairs file, the count kill, the stage-A wait, the flip
-gate table and the number assigned at stage B (S-4 to S-9). Appendix A maps every finding to its place.
+gate table and the number assigned at stage B (S-4 to S-9). The second text (Q-141 cycle 1; wt/wt-scout d8655a0, LF
+sha256 `6a8f7060cc4979ad26e80f2d7ddcddd89bdc3346aee9648fd586adf18b8a0519`) was re-read (Q-141r2,
+`docs/reviews/DRAFT_F-04_v2_2026-11-18.md`: one blocker, two should-fix items, nine notes). **This third text answers
+the re-read as the lead ruled**: P-14's limit trade sets described only and ineligible, because the exact limit twin
+measures supply as well as direction (NB-1); the numbering rule for a family numbered at stage B (SF-1); step 2 split
+into 2a and 2b (SF-2); every note adopted. Appendix A maps both reads' findings to their places.
 
 **When this text was written, nothing of it had been built, no engine had been run for it, no bar or walk had been
 read for it, and no outcome of any protocol, plan or trade set had been computed or read.** It was written before
@@ -34,18 +41,21 @@ flattened under E-200 R-1; (R-2) **hours** -- executions at every hour of the da
 allows it; (R-3) **order latency** -- the alert-to-order latency a protocol parameter, 5 minutes the reference with 3 and
 2 minutes as counted variants, the 5-minute cell reported beside every pick (for P-14; P-16's entries are scheduled, B-2);
 (R-4) **entry type** -- resting limit entries beside market entries, live at the latency, filled only on a trade through
-by one tick, cancelled at a news window's start, at Topstep as at every other firm. CHARTER section 4, CLAUDE.md and
-the feature-rules skill are amended for R-3 by the lead's row that amends them (S-11); that row precedes the pin.
+by one tick, cancelled at a news window's start, at Topstep as at every other firm -- **modelled and described in this
+family, never carried by it** (NB-1; 1.2). R-3 is written into the standing texts by **E-203**: CHARTER section 4 now
+reads "at least L minutes from alert to order, L a declared parameter" (`CHARTER.md`, LF sha256
+`d7a2f2c055b4d3bb316622e13c486eb0503ef31e743af69aba11947e1eddd587` at this text), with DIRECTIVE and the skills
+`feature-rules` and `merge-checklist`; CLAUDE.md states no latency.
 
 | field | value |
 |---|---|
 | family | FP: the per-firm execution protocol -- for each $50K plan, the bracket (stop width, reward-to-risk), the entry (latency for P-14, market or limit), the session rule, the instrument mix and each mode's risk and steady-or-flip policy, applied to P-14's and P-16's registered signals |
 | id | F-04 (`prereg/F-04_firm_protocol.md` at the pin); every result's `prereg_id` is `F-04` |
-| program family number k | **assigned by the stage-B row** -- the next free number then (13 if nothing else is pinned first) -- and only if stage B sends a trade set to stage C; otherwise the family retires unspent (F-02's precedent, E-094, E-095) |
+| program family number k | **assigned by the stage-B row** -- the next free number then (13 if nothing else is numbered first) -- and only if stage B sends a trade set to stage C; otherwise the family retires unspent (F-02's precedent, E-094, E-095); not counted by the gatekeeper's k rule until that row (16.1) |
 | level | one-sided **0.05 / (k (k + 1))**: provisionally 0.05 / 182 at k = 13 |
 | stages | A the whole grid on the choice block, described, no pick (8); B the picks by declared rules on stage A's files alone (9); C the judgement of each group's trade set in a fixed sequence on the judged block (10); the scorecard beside (12) |
-| what can be carried | **only P-14's signal at a group's picked trade set T_g**, spent through the group's picked protocol, when T_g's lift over its coin twin passes C1 in the fixed sequence and its value at that bound through the plan's own contract clears the bar (C2), every floor holding (section 1) |
-| what is only described | every sizing, mix, policy, session-state and class comparison (E-023 (1), E-134 (1)); every P-16 protocol; the comparison of firms; the stage-A grid |
+| what can be carried | **only P-14's signal at a group's picked market-entry trade set T_g**, spent through the group's picked protocol, when T_g's lift over its coin twin passes C1 in the fixed sequence and its value at that bound through the plan's own contract clears the bar (C2), every floor holding (section 1) |
+| what is only described | every limit-entry trade set (NB-1); every sizing, mix, policy, session-state and class comparison (E-023 (1), E-134 (1)); every P-16 protocol; the comparison of firms; the stage-A grid |
 | base | P-14 (A3-BRK30-CB20) and P-16 (`rc_s150_all_nr`), their registered offers and sides; R\* = P-14's U1 row beside (another engine: 7.4) |
 | plans | 19 configurations in four groups (Appendix P): Topstep standard, Topstep Labs, My Funded Futures, LucidFlex -- RD-05's plans by reference; Alpha Futures and Lucid's other plans join only by RD-05 section 2.4, before stage A's commit |
 | rules | RD-05's catalogue by reference (its sections 2 to 5, Appendix R): Stage 2's verified ledger, the vendored Lucid ledger, the rules record at `wt/wt-firms` 1c9f34f as merged; read by key, never typed |
@@ -73,8 +83,9 @@ the first payout in a day or two ("flip"). Each plan's own caps decide which of 
   grid is printed: passes, payouts, money and time per start day, and -- for P-14 -- how much its side beats a fair coin
   on the same entries at each bracket.
 - **Stage B (the picks, by a rule written now).** From stage A's files alone: for each firm group, the P-14 trade set
-  (bracket, latency, entry type) that group can spend best, and the protocol that spends it; P-16's best protocol per
-  firm, picked the same way, as a description.
+  (bracket and latency, market entries only) that group can spend best, and the protocol that spends it; P-16's best
+  protocol per firm, picked the same way, as a description. **Limit orders are modelled and printed but cannot be picked
+  for judgement here**: with a resting order, how often the signal gets filled can look like skill when it is not (1.2).
 - **Stage C (the judgement, once).** On 2024 to mid-2026, never read before by this family: does P-14's side at each
   group's trade set beat the coin by more than chance at the program's strict level? The trade sets are tested one after
   another in an order fixed in advance, each at the full level, stopping at the first that fails -- so the chance of a
@@ -90,7 +101,8 @@ carries**; the most useful product may be stage A's grid and the firm-by-firm pi
 proven. A "no" is a valid close. The firm comparison itself (which firm is best) is never a test: it is shown with its
 uncertainty.
 
-**What it costs.** A family number is spent only if stage B finds a trade set worth judging; otherwise none is.
+**What it costs.** A family number is spent only if stage B finds a trade set worth judging; otherwise none is. Testing
+limit entries for skill needs a different kind of test, which a later family can declare (1.2).
 
 ## 0.1 Where the brief's questions are answered
 
@@ -123,10 +135,19 @@ brackets is above zero on the judged block at the family's level by a calibrated
 clears the family's declared bar; the floors bind; the scorecard is beside.
 
 - **A bracket and an entry change the trades.** Each offer walked at another stop, target, latency or entry type is a
-  different trade with its own outcome, and its coin twin at that bracket is defined in 5.3 (the walked mirror for a
-  market entry; the exact seedless twin on the resting side's fills for a limit entry). So a P-14 **trade set** -- the
-  signal at one stop, ratio, latency and entry type, under a state-free class (6.4) -- has a lift that can be tested.
-  That is the only thing this family tests.
+  different trade with its own outcome. For a **market** entry its coin twin at that bracket is the walked mirror (5.3),
+  so a P-14 market **trade set** -- the signal at one stop, ratio and latency, under a state-free class (6.4) -- has a
+  lift that can be tested. That is the only thing this family tests.
+- **A limit entry cannot be judged by a one-sample lift here** (the lead's ruling on the re-read's NB-1). For a resting
+  limit, the exact seedless form of 5.3 is exact for a coin, but **for a side-choosing signal it includes supply**: how
+  often the signal sits on the resting side, times the resting fills' mean outcome, which is not zero after costs. A
+  signal with no information about the outcome could pass on that term alone. So
+  **every P-14 limit trade set is described only and ineligible for any T_g**; its lift is printed with its
+  decomposition (8.1 item 1). **The route to
+  carrying limit entries** is a later family that tests the signal's choice among the resting fills against a
+  **placebo-selection twin** (CHARTER section 3; E-023 (2)) -- a seeded random subset of the same share of the same
+  fills -- once a calibrated statistic exists for that comparison; Q-126 (one-sample) does not supply one. Limit orders
+  are still modelled in every plan, as the operator asked (R-4).
 - **A size, a mix, a policy, a session-state rule and the class add no claimed value.** *This text's reading of E-134
   (1)* (whose row reads "routed, bought or kept -- purchases, seats, reactivation, stop rules"): a lever that changes
   which offered trades are sized or kept but adds no offered trade is described, never carried. The class `one` keeps a
@@ -139,9 +160,11 @@ clears the family's declared bar; the floors bind; the scorecard is beside.
   its confirmation tests only the lift, the protocol's scorecard descriptive (the red team's reading of section 19 item
   2). **It is not claimed better than any other protocol**, and the carrying row says so.
 - **P-16 can carry nothing.** Its side is a seeded coin (its registration: "a coin carries no information"), so its
-  lift over a coin twin is zero by construction at every bracket -- for market entries by the walked mirror, and for
-  limit entries **under the exact twin of 5.3 only**: the walked-mirror form for a limit is not a coin twin and its mean
-  is not zero in expectation (B-1); it is printed as a placebo of the mechanics (8.1 item 1), never read as P-16's lift.
+  lift over a coin twin is zero in expectation by construction at every bracket -- for market entries by the walked
+  mirror, and for limit entries **under the exact form of 5.3 only** (a coin's resting-side share is one half in
+  expectation, so the supply term vanishes for a coin): the walked-mirror form for a limit is not a coin twin and its
+  mean is not zero in expectation (B-1); it is printed as a placebo of the mechanics (8.1 item 1), never read as P-16's
+  lift.
 - **The firm comparison is described.** Each group's T_g is judged on its own lift (C1), its value through its own
   protocol (C2); which firm's journey is best is a scorecard comparison with its uncertainty (12), never a test.
 - **Not claimed either:** that T_g beats P-14's registered bracket, or that one group's T_g beats another's. C1 tests a
@@ -318,21 +341,34 @@ None is a choosing or fitting purpose (T-0). The identities run under the purpos
   do not depend on the side and the mirror pays the same entry tick and fees, so `x_i` is the trade's outcome less a
   fair coin's expected outcome on the same entry, exactly, with no seed. **The walked mirror is the twin for market
   entries only.**
-- **Limit entries: the exact seedless twin on the offer population** (the lead's ruling on B-1; the red team's option
-  (a)). At an offer's live time the limit price P is the alert's price; a buy limit at P is void if the price at live is
+- **Limit entries: the exact seedless form on the offer population** (the lead's ruling on B-1; the red team's option
+  (a)) -- **exact for a coin; for a side-choosing signal it includes supply** (the decomposition below; the lead's ruling
+  on NB-1). At an offer's live time the limit price P is the alert's price; a buy limit at P is void if the price at live is
   at or below P, a sell limit if it is at or above P. So **at most one side's limit can rest**: the **resting side**
   (none when the price at live equals P: the offer is void for both sides, out of the population). Let `n_i` be the
   resting side's limit outcome in net R (its fill, its walk at the bracket, the fill-bar rule above), and `s_i = +1`
   when the signal's side is the resting side, `-1` otherwise. Then **`x_i = s_i x n_i / 2`** over the trade set's
   resting-side fills: a fair coin rests on the resting side with probability one half and is void otherwise, so its
   expected outcome per offer is `n_i / 2`, and the signal's is `n_i` when `s_i = +1` and zero when it is void. Its
-  expectation is zero for any coin side, whatever the price dynamics.
+  expectation is zero for a coin side, whatever the price dynamics.
+  - **The decomposition** (the re-read's NB-1). With `p` the share of a trade set's resting-side fills on which
+    `s_i = +1`, `m+` and `m-` the mean `n_i` over those fills and over the others, and `m` the mean over all of them:
+    `lhat = p (m+ - m) + (p - 1/2) m`. The first term is the per-executed-trade lift `lamhat = m+ - m` scaled by the
+    share executed; **the second is supply**, non-zero whenever `p` differs from one half and `m` from zero -- and `m`
+    carries the costs, the fill-bar rule and the drift. Under P-14's null (a side with no information about the outcome,
+    `m+ = m-`) the lift is `(p - 1/2) m`, not zero. **So every P-14 limit trade set is described only and ineligible**
+    (8.2); for P-16 the supply term has expectation zero (its side is a coin).
   - The chain for a limit trade set is built on the resting side's fills (5.5), which do not depend on the signal's
     side; an offer whose signal side is void keeps its slot, as a stood-aside trade does, and the account takes no trade
     there.
-  - **If a limit trade set cannot be given the exact twin** -- the build cannot compute the resting side or `n_i` for
-    it -- it is **described only and never eligible** (8.2).
+  - A limit trade set whose resting side or `n_i` the build cannot compute prints "exact form not computable" in its
+    described rows.
 - **The lift** of a trade set is the mean of `x_i`; the statistic reads its session sums on the block's calendar (11).
+  **For every P-14 market set, beside every lift** (stage A and stage C; the re-read's N-8, describing, deciding
+  nothing): `lhat = mean(s_i v_i) = (2 q - 1) mean(v) + cov(s, v)`, with `q` the share of long trades and `v_i =
+  (net_R(long) - net_R(short)) / 2` -- the long-bias-times-drift term `(2 q - 1) mean(v)` printed beside the covariance
+  term, the share long and the mean `v`. Both terms are direction in the program's sense (Q-108's estimand); the print
+  shows how much of a lift is the block's drift met by a long bias.
   For P-16, `x_i` has expectation zero by construction under this section's twin for each entry type (the walked mirror
   for market entries, the exact form for limits) -- **not** under the walked-mirror form for limits, which is not a coin
   twin (8.1 item 1's diagnostic); its mean is printed as a check, never a reading.
@@ -359,8 +395,14 @@ under R-1's "no trading during news hours" (the red team's N-4); FOMC meeting da
   applied in the walks, so every plan and protocol meets it, and the resting side of a limit offer meets it whichever
   side the signal holds.
 - **Kept beside it**: CHARTER section 4's own rules -- no entry at or before 07:35:00 CT on a BLS 08:30 day, and FOMC
-  meeting days out on the FOMC day list the registered builders' news cuts use (named by the build from the builders'
-  source, its sha256 in step 0's file) -- unchanged; E-029's early closes (`config/calendar_early_closes.csv`, LF sha256
+  meeting days out on the list the registered builders' news cuts use, `vendor/stage2/config/atlas_a1.yaml`'s
+  `news.fomc` files (the re-read's N-4): `vendor/stage2/config/im2_release_calendar.csv`, LF sha256
+  `29077f1c1756cf201381d15e522588c5276193a07e9feefc6262c86059724451`;
+  `vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv`, LF sha256
+  `9e82d467a49b10bb4cfe877b5e0494f87f472f9d97e051aa6f9ac85bb11da44c`;
+  `vendor/stage2/config/sources/fomc_statements_2026q3.csv`, LF sha256
+  `3cc035edf3d2a8f7545338afd2b9a5e927868144e82b4064665310bb3c0ff03a` (A1's `days.parquet` day kind `o` is built from
+  them) -- unchanged; E-029's early closes (`config/calendar_early_closes.csv`, LF sha256
   `72db4941f95320900aac29c6c047742da176cd9b55c925cc9275a18fb3e67fb2`), no trade exiting after the session's flatten.
 - Events of the verified rule with no pinned calendar are not applied and are listed (RD-05 G-2's form).
 
@@ -387,10 +429,10 @@ For a signal, bracket, latency and entry type, a session's chain is built **in t
 | signal | whose offers and sides | P-14; P-16 | fixed: two | the registered signals (the brief); only P-14 is testable (1.2) |
 | `s` | stop width, ticks of 0.25 points (MNQ and NQ alike) | P-14: `rung` (its registered rung map), 50, 70, 100, 150, 200; P-16: 50, 70, 100, 150, 200 | searched (stage B) | P-14's rungs are 50 and 100 ticks and P-16's stop is 150 (the red team's N-8); a step either side; all above the cost-drag floor (Stage 2 D-271 (3)) and in RD-05 part B's widths |
 | `w` | target as a multiple of the stop | 1.0, 1.5, 2.0, 3.0 | searched | RD-05 2.6's ratios |
-| `L` | P-14's alert-to-order latency, clock minutes | 5 (reference), 3, 2 | searched; 5 reported beside every pick | R-3; CHARTER section 4's five minutes the reference, as the lead's amending row reads it |
+| `L` | P-14's alert-to-order latency, clock minutes | 5 (reference), 3, 2 | searched; 5 reported beside every pick | R-3; CHARTER section 4 as E-203 amends it: L a declared parameter, five the reference |
 | P-16's timing | -- | its registered convention: alert five minutes before the mark, order at the mark | fixed | the lead's ruling on B-2: P-16's marks and sides are scheduled |
-| `e` | entry type | market; limit | searched | R-4 |
-| limit price | where a limit rests | the price at the alert -- the close of the last bar closed at the alert (`walker.price_at`) | fixed | the signal's own price; a fill is the market retesting it; no free offset |
+| `e` | entry type | market; limit | market searched; **limit modelled and described only, never eligible** | R-4; NB-1 (1.2) |
+| limit price | where a limit rests | the price at the alert -- the close of the last bar closed at the alert (`walker.price_at`); **for P-16, whose alert is five minutes before the mark, the close of the last bar closed five minutes before the mark**, the order live at the mark (the re-read's N-3, intended) | fixed | the signal's own price; a fill is the market retesting it; no free offset |
 | limit window | how long a limit works | from its live time to the earliest of 30 minutes later, a news window's start (cancelled) and the walk's last entry bar | fixed | one value; a different window is a new family |
 | limit marketable at its live time | -- | void for that side (the walker's rule); the other side rests (5.3) | fixed | never a better fill than the limit; side-symmetric through the resting side (the red team's N-11) |
 | `q` | session rule ("when to stop") | `one` (the session's first chain trade only); `all` (every chain trade); `cap` (every chain trade until the session's net reaches the mode's consistency allowance, 6.4) | searched | the operator's "when to stop"; `cap` is identical to `all` at a mode with no consistency rule (run once, printed so) |
@@ -427,7 +469,10 @@ the start can stand aside later, counted.
 ### 6.4 Trade sets and classes
 
 A **trade set** is `(signal, s, w, L, e, class)` (P-16 without `L`), with `class` the state-free part of `q`: `one` (the
-first chain trade of each session) for `q = one`, `chain` (every chain trade) for `q = all` and `q = cap`. Its trades and
+**first chain slot** of each session) for `q = one`, `chain` (every chain slot) for `q = all` and `q = cap`. For a limit
+set the chain's slots are the resting side's fills; **when the signal is void on the session's first slot, that session
+trades nothing under `one`** -- the first slot, never the first slot the signal executes, so the class stays state-free
+and side-free (the re-read's N-2). Its trades and
 their twins are fixed by the walks and the chain (5.3, 5.5); its lift is tested on them, whatever an account later stands
 aside on. `cap`'s stop for the day depends on the session's earlier trades, known when the next would be placed: a
 session-state rule, described. The mode's consistency allowance is the mode's recorded consistency share times its base
@@ -471,10 +516,9 @@ seat (S1, S3a, S3b, S3c, S4a, S4b, S5a, S5b, S5c), E-014's journey variables, se
 
 ### 7.3 The value arms
 
-For a P-14 protocol on a configuration and a block, with `lhat` the block's lift of its trade set (the mean of `x_i`,
-5.3) and `lamhat` the **lift per executed trade** -- `lhat` itself for a market set; for a limit set, the mean `n_i` of
-the trades the design executes (`s_i = +1`) less the mean `n_i` of the trade set's resting-side fills, the coin's
-expected outcome per trade it takes:
+For a P-14 **market** protocol on a configuration and a block, with `lhat` the block's lift of its trade set (the mean
+of `x_i`, 5.3) and `lamhat = lhat` the lift per executed trade (for a limit set, `lamhat = m+ - m` of 5.3 is printed as
+a described quantity only, and no value arm is run for it):
 
 - **the design arm** -- the journeys as traded;
 - **the zero-lift arm** -- every executed trade's dollar P&L shifted by `-lamhat x n x s x the micro's tick value`: the
@@ -484,8 +528,9 @@ expected outcome per trade it takes:
 
 **The value at L**, `V(L)`, is the mean over the block's starts with 252 sessions left of month-12 net cash in the
 lift-L arm less in the zero-lift arm, at U-33's price that makes V smallest. Each arm is a full engine run (a shift moves
-floors, passes and payouts). Stage A runs the design arm for every cell and the zero-lift arm for every P-14 cell (or
-only where the reduction ladder's rung 2 allows, 18), so `V(lhat)` is printed for those cells.
+floors, passes and payouts). Stage A runs the design arm for every cell and the zero-lift arm for every P-14 market cell
+(or only where the reduction ladder's rung 2 allows, 18), so `V(lhat)` is printed for those cells; a P-14 limit cell's
+zero-lift arm is counted and printed "not run: described only (NB-1)".
 
 ### 7.4 What this engine is not
 
@@ -503,10 +548,11 @@ this engine every comparison is paired on the same starts.
    errors at the 21-, 42- and 63-session blocks; the band check of Q-126 section 2.5 on the trade set's sides (a
    switching side, below 42 sessions; 11) and, where the adopted statistic is scope D's, its 4.4 admission from sides
    only; the predicted judged trade count (9.2). For P-16 `lhat_A` is a check (expectation zero), printed as such.
-   **The limit diagnostic (beside, deciding nothing; the lead's ruling on B-1):** for every limit trade set of both
-   signals, the walked-mirror form's mean `(net_R(side) - net_R(mirror)) / 2` (pair rule, symmetric booking, its
-   ambiguous share) printed beside the exact form's `lhat_A` -- a placebo of the limit's mechanics, never an input to a
-   rule.
+   **The limit rows (beside, deciding nothing; the lead's rulings on B-1 and NB-1):** for every limit trade set of both
+   signals, the exact form's `lhat_A` and **its decomposition** -- `p`, `m+`, `m-`, `m` and the supply term
+   `(p - 1/2) m` -- beside **the walked-mirror diagnostic**, `(net_R(side) - net_R(mirror)) / 2` (pair rule, symmetric
+   booking, its ambiguous share): a description of the limit's mechanics, never an input to a rule. For every P-14
+   market set, the long-bias decomposition of 5.3 beside `lhat_A`.
 2. **The mode cells** (7.1): per mode, per trade set's entries-bracket, session rule, mix and sizing cell -- the
    evaluation's pass share per attempt, sessions to a pass, fees per pass, the causes; the funded account's payout share,
    sessions to the first payout, mean net per activation, the causes; the realised-to-intended risk (E-022 (1)'s
@@ -524,8 +570,9 @@ Nothing is marked best. Every row is labelled "choice block, described, in sampl
 
 - **Resolution:** a trade set whose chain's unresolved share exceeds 5 % (Stage 2 D-212 as D-308 raised it) is
   ineligible for stage B. Per year beside.
-- **Twin:** a limit trade set that cannot be given the exact twin (5.3) is described only and ineligible.
-- **Band:** a P-14 trade set whose sides fail Q-126 2.5's check for its declared band, or (in scope D) 4.4's admission,
+- **Limit entries: every P-14 limit trade set is described only and ineligible for any T_g** (the lead's ruling on
+  NB-1): its one-sample lift includes supply (5.3). Its cells are run and printed (R-4), never ranked or judged.
+- **Band:** a P-14 market trade set whose sides fail Q-126 2.5's check for its declared band, or (in scope D) 4.4's admission,
   is ineligible ("not judgeable at its persistence").
 - **Realised risk:** a protocol cell failing CHARTER section 4's realised-risk floor (at least 90 % of trades within 10 %
   of intended risk, allowance-capped, E-022 (1)) in either mode is ineligible.
@@ -547,18 +594,22 @@ to stage C (16.1).
 
 ### 9.2 The judged power and count of each P-14 trade set (computed from the choice block only)
 
-For each eligible P-14 trade set tau, from `results/fp_pairs.parquet` (18):
+For each eligible P-14 trade set tau -- a market set, every limit set being ineligible (8.2) -- from
+`results/fp_pairs.parquet` (18):
 
 - `MDL50_J(tau)`, the lift at which the adopted statistic, one-sided at the family's level, rejects with probability one
   half on the judged block: that statistic's own MDL function on tau's choice-block pairs, each member's standard error
   scaled to the judged block's sessions by `sqrt(n_A / n_J)` (n_A and n_J the blocks' session counts from the calendar,
   not from any trade), its degrees of freedom at the judged block's block counts;
 - `Lstar(tau) = lhat_A(tau) - MDL50_J(tau)`, the bound the judged block would give if the choice block's lift held;
-- the predicted judged count `N_J(tau)`, tau's choice-block chain trades a session times n_J.
+- the predicted judged count `N_J(tau)`, tau's choice-block chain trades a session times n_J. (For a limit set, printed in
+  its described rows only, `N_J` counts the x-population -- the resting-side fills -- not the executed trades; the
+  re-read's N-1.)
 
 **Kill B:** tau with `Lstar(tau) <= 0` is not judgeable. **Kill B' (the lead's ruling on S-4):** tau whose `N_J(tau)`
-lies outside 250 to 4,000 trades -- Q-126 section 3.1's validated subset sizes, 200 to 5,000, with a quarter's margin at
-each end -- is not sent to stage C. The selection's winner's curse makes `lhat_A`, `Lstar` and both kills optimistic at
+lies outside 250 to 4,000 trades -- Q-126 section 3.1's validated subset sizes, 200 to 5,000, **brought inside each end
+by a factor of 1.25** (200 x 1.25 and 5,000 / 1.25; both figures from Q-126's declared plan, not results) -- is not sent
+to stage C. The selection's winner's curse makes `lhat_A`, `Lstar` and both kills optimistic at
 the top of the ranking; that costs power, never size (the red team's N-10).
 
 ### 9.3 Values at the expected bound
@@ -571,7 +622,7 @@ the block's lift (a declared ranking rule; the judged value is computed by full 
 
 For each group g, T_g is the surviving tau that ranks first **within the group** by, in order: (a) whether the group's
 best `VA_c(pi; Lstar)` over `c in g` and pi reaches the bar; (b) that best value; (c) the larger `Lstar`; (d) latency 5
-before 3 before 2, market before limit; (e) the earlier tau in the order stops ascending (`rung` first), ratios
+before 3 before 2; (e) the earlier tau in the order stops ascending (`rung` first), ratios
 ascending, class `one` before `chain`. **K0 on T_g** (9.7); a lax T_g is struck, recorded, and the group's next tau by
 the same order is taken. A group with no tau left, or whose first tau's (a) is not met, sends nothing to stage C
 ("closed at stage B for this group"); its picks are still read beside as descriptions.
@@ -601,9 +652,8 @@ family number if a T_g goes on -- before stage C runs. Nothing of stage B is rev
 
 ### 9.7 K0: the statistic's own size on the pick's own magnitudes (F-03's K0 form; E-052 (1))
 
-Sign nulls on T_g's choice-block pairs: `x_i^0 = sign_i x |v_i|`, with `v_i = (net_R(long) - net_R(short)) / 2` for a
-market set and `v_i = n_i / 2` for a limit set (under the coin null `s_i` is independent of `n_i`, so the sign null is the
-twin's own law), under the declared band's side models -- the coin (independent fair signs a trade), flips at 1, 5 and 21
+Sign nulls on T_g's choice-block pairs: `x_i^0 = sign_i x |v_i|`, with `v_i = (net_R(long) - net_R(short)) / 2` (every
+T_g is a market set, 8.2), under the declared band's side models -- the coin (independent fair signs a trade), flips at 1, 5 and 21
 sessions, Markov sides of mean dwell 30 (Q-108's class below 42 sessions) -- 200,000 draws each, keyed
 `[20262430, tau index, model index]`; the adopted statistic at the family's level on each. **Lax** when, for any model,
 the rejection share's exact 95 % lower limit exceeds the level. K0 at stage C (10.2) repeats it on each T_g's judged
@@ -619,7 +669,7 @@ The stage-B row (with the family number); the statistic's adopting row with its 
 ### 10.2 C0, before any outcome of the T_g in turn is read (refusing)
 
 On the judged block, under `fp_judgement`, for the next T_g of the sequence: its offers walked; its supply; its
-unresolved share at most 5 % (a floor); for a limit set, the exact twin computable; the band check and, in scope D, 4.4's
+unresolved share at most 5 % (a floor); the band check and, in scope D, 4.4's
 admission on the judged sides (Q-126 2.5: a mismatch is "not claimed", never a switch); K0 on its judged counts (lax:
 "not claimed"); its judged trade count inside Q-126's validated sizes, 200 to 5,000 (outside: "not claimed"). **A T_g
 "not claimed" at C0 counts as a failure of the sequence**: it and every later T_g are not tested.
@@ -664,7 +714,7 @@ block included, so C1's level is nominal; the confirmation is the only clean tes
    (E-187).
 2. **Its validation HOLDS** by its criterion, and a row adopting the statistic -- scope D's primary, or the scope-Q
    branch's -- naming the code's git blob id. Every run of stages A to C refuses a commit whose blob differs. **Stage A
-   waits for the adopting row** (the lead's ruling on S-5): its band check and admission use the adopted statistic's
+   (from step 2a) waits for the adopting row** (the lead's ruling on S-5): its band check and admission use the adopted statistic's
    scope.
 3. **The declared side persistence** (E-035 (6); Q-126 2.5): P-14's side is a **switching side** set at each breakout,
    declared **below 42 sessions**; the traded share of sessions is printed by stage A. So the statistic used is the
@@ -675,7 +725,8 @@ block included, so C1's level is nominal; the confirmation is the only clean tes
    **K0 (9.7, 10.2) is this family's own size check at its level on T_g's own magnitudes and counts**, and Kill B' and C0
    keep the count inside the validated sizes. **K0 is a check against gross laxity, not a calibration** (the red team's
    N-2): at 200,000 draws and a level near 0.05/182 its exact lower limit exceeds the level only for a true size well
-   above nominal. It cannot detect a bias of the twin itself, which 5.3's exact form removes for limits.
+   above nominal. It cannot detect a bias of the twin itself -- which is why limit sets, whose one-sample lift includes
+   supply, are ineligible (8.2) rather than checked.
 5. **The level is inside the calibrated range**: every test of the sequence is at the family's own level, one of
    Q-126's k = 13 to 20, never a Bonferroni share of it (16.3).
 6. **If no one-sample statistic HOLDS**, stage A does not run and the family retires unspent (no number was assigned).
@@ -729,7 +780,10 @@ withheld for conduct** (RD-05 4.7).
   T_g's window bound; the scorecard descriptive. One window read serves every line.
 - **How much data:** at least six months, and at least the months at which the statistic has 80 % power for a lift equal
   to the first carried T_g's `L_J`, at its supply -- computed when a design is carried and written in the carrying row
-  before any confirmation data exist. If that is more than the operator will buy, no confirmation is registered.
+  before any confirmation data exist. **Beside it, for every line of the sequence** (the re-read's N-5): that line's power
+  at that length for a lift equal to its own `L_J` at its own supply, and the length at which it would reach 80 %, all in
+  the carrying row before any confirmation data exist. If the length is more than the operator will buy, no
+  confirmation is registered.
 
 ## 15. Seeds, fixed now and checked
 
@@ -747,9 +801,9 @@ withheld for conduct** (RD-05 4.7).
 | 20262439 | reserved, unused | -- | -- |
 
 **Nothing else draws.** The walks, the chains, the engine on historical trades, the composition, the value arms, the
-exact twins and the statistic (a closed-form t) draw nothing.
+exact limit forms and the statistic (a closed-form t) draw nothing.
 
-**The timing measurement is not on these streams.** Step 2's time and memory are measured before it on synthetic chains
+**The timing measurement is not on these streams.** Step 2b's time and memory are measured before it on synthetic chains
 drawn from `numpy.random.default_rng([0, j])` -- seed 0, outside the block, its outputs discarded.
 
 **The check, 2026-11-18 (UTC), on the first text, repeated on this one.** Word-bounded searches for the block's pattern
@@ -773,6 +827,13 @@ writes it before stage C runs; stage B computes its MDL and kills at that number
 provisionally 0.05 / 182. If stage B sends nothing, the family retires unspent, as F-02 did (E-094, E-095). Nothing is
 chosen after a look: the rule is mechanical.
 
+**How this meets the gatekeeper's k rule** (the lead's ruling on the re-read's SF-1, recorded by the lead's row that
+amends the gatekeeper's text, cited here by role and preceding the pin): a family numbered at its stage-B row **is not
+counted by the gatekeeper's k rule until that row exists**; families pinned meanwhile take their numbers in pin order;
+F-04's stage-B row takes the next free number at the stage-B run's commit. **If another family is pinned between F-04's
+stage-B run and its stage-B row**, the number and its level move, so **stage B is rerun at the new level under a repeat
+row** (E-053's form), from the same stage-A files, and its results are never relabelled.
+
 ### 16.2 Every cell counted
 
 The grid's factors: P-14's stops 6, P-16's 5; ratios 4; P-14's latencies 3, P-16's 1; entry types 2; trade-set classes
@@ -792,10 +853,10 @@ run, 2 repriced; Appendix P), 13 evaluation and 15 funded modes; groups 4; two-c
 | P-16 protocol cells | 656640 | 40 x 3 x 2 x 144 x 19, described |
 | repriced protocol cells | 317952 | the 2 repriced configurations' cells of both signals, exact arithmetic |
 | zero-lift journeys | 2363904 | one per P-14 protocol cell, at most |
-| stage A, limit diagnostic rows | 184 | the limit trade sets of both signals (144 + 40), beside |
+| stage A, limit diagnostic rows | 184 | the limit trade sets of both signals (144 + 40), beside: the exact form's decomposition and the walked-mirror diagnostic, described only |
 | stage A, choice-block rung map rows | 48 | P-14's `rung` trade sets (4 x 3 x 2 x 2), beside |
-| K0 at stage B | 288 | at most one per P-14 trade set |
-| judged lift tests | 4 | C1 in the fixed sequence, one per distinct T_g at most |
+| K0 at stage B | 288 | at most one per P-14 trade set (in fact only market sets are eligible) |
+| judged lift tests | 4 | C1 in the fixed sequence, one per distinct T_g at most, market sets only |
 | K0 at stage C | 4 | one per distinct T_g at most |
 | value lines | 4 | C2, one per group at most |
 | gates | 4 | one per group pick at most |
@@ -811,7 +872,7 @@ That is **at most 3,020,544 protocol cells** (2,363,904 of P-14's and 656,640 of
 by arithmetic), **368 trade sets**, **at most 4 judged lift tests in a fixed sequence**, **at most 4 value lines and 4
 gates**, and **at most 113 journeys beside**. A cell not allowed (6.3), identical by construction (`cap` where no
 consistency rule exists), killed (8.2) or dropped by the reduction ladder (18) is counted all the same, the ladder's
-rungs applied recorded in step 2's row. A joining firm (RD-05 2.4) adds its configurations' cells by the same products
+rungs applied recorded in the lead's row between steps 2a and 2b. A joining firm (RD-05 2.4) adds its configurations' cells by the same products
 and a group, stated in its join row before stage A's commit; after that commit nothing joins.
 
 ### 16.3 The judged tests and the family-wise error across firms (the lead's ruling on S-1)
@@ -849,15 +910,15 @@ and a group, stated in its join row before stage A's commit; after that commit n
 
 | test | what it asserts |
 |---|---|
-| T-0 | `tests/test_f04_draft.py`: one F-04 declaration; sections 0 to 20 and Appendices P, A and C; the seed table and the block nowhere else, its scans' positive control; one judged-reads line, three purposes, none choosing; the counted cells against the factors and Appendix P; RD-05's and Q-126's pins as cited, against the files and the log; the four calendars' LF sha256; the provisional level; no dollar figure but the declared grids and the bar. **At the pin, added:** Appendix P's modes against RD-05's Appendix M, and every key 3.2 names against the merged record |
+| T-0 | `tests/test_f04_draft.py`: one F-04 declaration; sections 0 to 20 and Appendices P, A and C; the seed table and the block nowhere else, its scans' positive control; one judged-reads line, three purposes, none choosing; the counted cells against the factors and Appendix P; RD-05's and Q-126's pins as cited, against the files and the log; the seven calendars' and CHARTER's LF sha256 as cited; the provisional level; **every P-14 limit trade set declared ineligible**; no dollar figure but the declared grids and the bar. **At the pin, added:** Appendix P's modes against RD-05's Appendix M, and every key 3.2 names against the merged record |
 | T-1 | F-A1 with a scripted binary chain equals RD-05's A-0 with `BinaryDraw` on the same uniforms, account for account |
-| T-2 | the walks on synthetic bars: latency in clock minutes moves the entry bar, **with a missing-bar case** where it differs from `entry_bar`'s five present bars; P-16's entry at the mark; a limit at the alert's price fills only on a trade through by a tick, is void when marketable at its live time, the other side then resting, cancelled at its window's end and at a news window's start; no fill inside a window; the forced flat at a window's first bar, both sides; **the exact limit twin's mean zero for a fair coin on a tick walk with bid-ask noise**, where the walked-mirror diagnostic's is not (the red team's B-1 construction, on the `build_toys` seed) |
+| T-2 | the walks on synthetic bars: latency in clock minutes moves the entry bar, **with a missing-bar case** where it differs from `entry_bar`'s five present bars; P-16's entry at the mark; a limit at the alert's price fills only on a trade through by a tick, is void when marketable at its live time, the other side then resting, cancelled at its window's end and at a news window's start; no fill inside a window; the forced flat at a window's first bar, both sides; **the exact limit form's mean zero for a fair coin on a tick walk with bid-ask noise**, where the walked-mirror diagnostic's is not (the red team's B-1 construction, on the `build_toys` seed); **and a toy whose side tracks the latency move but not the outcome after the fill** (the re-read's N-9): its exact-form lift equals its printed supply term `(p - 1/2) m`, not zero, while `m+ = m-` within noise -- the decomposition printed exactly as 8.1 item 1 prints it |
 | T-3 | the chain in fill order: one order or position at a time, five minutes flat, a stood-aside trade keeping its slot; **two overlapping limits, and a limit overlapping a market order** (the second not placed, counted); limit chains on the resting side's fills; `one`, `all` and `cap` |
 | T-4 | 6.5's sizing on hand-computed cells: the mix, the counting rule, micro-equivalents, the headroom cap, the room and the daily limit, the stand-aside, the flip |
 | T-5 | the composition against a direct sequential replay on toy tables; censoring at the block's end; no index past the block's last session ever read (a planted later session refused) |
-| T-6 | the value arms: the zero-lift arm's executed trades' mean lift zero exactly on a toy, market and limit (`lamhat`); `V` linear in the price; the interpolation of 9.3 |
-| T-7 | stage B's rules on synthetic stage-A files: Kill B and Kill B', the per-group order of 9.4, the strikes, duplicates removed, the fixed sequence's order, per-configuration picks, P-16's rule; the pick refuses any input but stage A's and RD-05's files or a file whose sha256 differs from its manifest |
-| T-8 | K0 on synthetic pairs, market and limit forms: a lax statistic flagged, a sound one not, at the family's level; the fixed sequence on synthetic bounds stops at the first failure and treats a C0 "not claimed" as one |
+| T-6 | the value arms: the zero-lift arm's executed trades' mean lift zero exactly on a toy market set; no value arm run for a limit set; `V` linear in the price; the interpolation of 9.3; the long-bias decomposition of 5.3 on a toy with a known drift |
+| T-7 | stage B's rules on synthetic stage-A files: no limit set ever eligible; Kill B and Kill B', the per-group order of 9.4, the strikes, duplicates removed, the fixed sequence's order, per-configuration picks, P-16's rule; the pick refuses any input but stage A's and RD-05's files or a file whose sha256 differs from its manifest |
+| T-8 | K0 on synthetic market pairs: a lax statistic flagged, a sound one not, at the family's level; the fixed sequence on synthetic bounds stops at the first failure and treats a C0 "not claimed" as one |
 | T-9 | U-33's and U-34's ends; the news windows derived from the key on a hand-built entry |
 | T-10 | the menu: no P without its guard row; the 5-minute cell beside every P-14 pick; the flags; the nominal-level sentence beside every verdict |
 | T-11 (`slow`, `heavy`) | 17.3's identities at 4 starts and a few hundred offers (reads the bars) |
@@ -891,7 +952,7 @@ applied, `exploratory=False`).
 - **Committed summaries:** `results/fp_rules.csv` (step 0); `results/fp_tradesets.csv` (every trade set's 8.1 item 1 row,
   the limit diagnostic and the choice-block rung map beside) and `results/fp_grid_summary.csv` (per configuration and
   trade set: the counts of allowed, eligible and killed cells and the distribution of P, month-12 net and `V(lhat_A)`
-  across its protocol cells, no cell marked) (step 2); `results/fp_pick.csv` (step 3); `results/fp_judgement.csv`
+  across its protocol cells, no cell marked) (steps 2a and 2b); `results/fp_pick.csv` (step 3); `results/fp_judgement.csv`
   (step 4); `results/fp_beside.csv` and `results/fp_menu.csv` (step 5).
 - **Bulk, kept local and git-ignored, with committed manifests** (the existing `results/*.parquet` rule; each manifest
   holds its file's sha256, and the row recording the step cites it; the lead's ruling on S-7): `results/fp_grid_<configuration>.parquet`,
@@ -906,41 +967,50 @@ machine under `run.lock`, watched to its exit, each step only after the lead's r
 |---|---|---|---|---|---|---|
 | 0 | the rules arithmetic: the allowed grid (6.3), the news windows, U-33 and U-34, the FOMC day list's hash, the counts; reads RD-05's step-0 file | light | 1 | 1 hour | 0.5 GB | -- |
 | 1 | the identities (17.3) | heavy | 1 | 8 hours | 2.5 GB | E-011's and E-010's recorded peaks |
-| 2 | stage A: the walks on the choice block, then the mode cells and journeys, streaming by entries-bracket | heavy | at most 2 | 48 hours | 2.5 GB | synthetic chains on seed 0 (15), outputs discarded |
+| 2a | stage A's walks on the choice block, the trade-set rows of 8.1 items 1 and 5, and `fp_pairs.parquet` | heavy | at most 2 | 6 hours | 2.5 GB | E-011's recorded walk peak |
+| 2b | stage A's mode cells and journeys, streaming by entries-bracket, after the lead's row on 2a | heavy | at most 2 | 48 hours | 2.5 GB | synthetic chains on seed 0 (15) sized by 2a's counts, outputs discarded |
 | 3 | stage B and its K0 (no bar) | heavy | 1 | 4 hours | 1 GB | K0 on synthetic pairs |
 | 4 | stage C: C0, C1 in the sequence, C2, the floors | heavy | 1 | 24 hours | 2.5 GB | the gate's recorded peaks at one seat |
-| 5 | the scorecard beside, after the verdict row | heavy | 1 | 12 hours | 2.5 GB | step 2's measurement |
+| 5 | the scorecard beside, after the verdict row | heavy | 1 | 12 hours | 2.5 GB | step 2b's measurement |
 
 Each step's memory bound is the job's summed working set (`extended/procmem.py` per process, summed by the parent), one
 BLAS thread a process.
 
-**The reduction ladder (declared now; the lead's ruling on S-7).** If step 2's synthetic measurement exceeds its time or
-memory bound, these rungs are applied **in order, each only while the measurement still exceeds a bound, triggered by the
-measurement alone and never by an outcome**, and recorded in a row before step 2 runs:
+**Step 2 in two parts (the lead's ruling on the re-read's SF-2).** Step 2a makes the walks and the trade-set rows; the
+lead's row records 2a, and with it the ladder's measurement, before step 2b runs. The measurement is made after 2a, on
+synthetic chains sized by 2a's own counts (trade sets, chain trades a session); **rung 2's saving is counted only after
+its lifts exist** -- from 2a's rows, the trade sets with `lhat_A > 0` that pass 8.2's gates -- and rungs 3 and 4 are
+decided by the measurement after it. Everything 2a reads and writes is on the choice block.
+
+**The reduction ladder (declared now; the lead's ruling on S-7).** If step 2b's measurement exceeds its time or memory
+bound, these rungs are applied **in order, each only while the measurement still exceeds a bound, triggered by the
+measurement alone and never by an outcome**, and recorded in the lead's row between 2a and 2b:
 
 1. P-16 without latency variants -- **already applied in this text** (B-2);
-2. the zero-lift arms and `V(lhat_A)` only for P-14 trade sets that pass 8.2's gates and have `lhat_A > 0` (Kill B kills
-   every other set anyway, since `Lstar <= lhat_A`); this needs `lhat_A` first, so the trade-set rows of 8.1 item 1 are
-   computed before any mode cell;
+2. the zero-lift arms and `V(lhat_A)` only for P-14 market trade sets that pass 8.2's gates and have `lhat_A > 0` (Kill
+   B kills every other set anyway, since `Lstar <= lhat_A`); its saving known from 2a's rows;
 3. P-16 at market entries and its registered stop (150 ticks) only;
 4. the funded mode's policy restricted to `steady`.
 
 Each rung's cells stay counted (16.2) and are printed "not run: reduction ladder rung n". **If the measurement still
-exceeds a bound after rung 4, step 2 is not started**; a step exceeding its bound while running is stopped; no other
+exceeds a bound after rung 4, step 2b is not started**; a step exceeding its bound while running is stopped; no other
 thinning and no worker added at run time -- a smaller grid than the ladder's is a new family.
 
-**Waits, before step 0:** the pin, which follows the lead's row amending CHARTER section 4, CLAUDE.md and the
-feature-rules skill for R-3 (S-11); the rules record (Q-136, Q-136b) merged and RD-05's build and step 0 on record
+**Waits, before step 0:** the pin, which follows E-203 (CHARTER section 4 and the skills amended for R-3, S-11); the rules record (Q-136, Q-136b) merged and RD-05's build and step 0 on record
 (E-202 (3)); every shared identity re-held at a commit containing the merge; this family's build with T-0 to T-12 and the
-red team's read of it. **Before step 2:** Q-126's adopting row (11 item 2). **Before step 4:** the stage-B row with the
-family number.
+red team's read of it; the lead's row on the gatekeeper's k rule (16.1). **Before step 2a:** Q-126's adopting row (11
+item 2). **Before step 2b:** the lead's row on 2a with the ladder. **Before step 4:** the stage-B row with the family
+number.
 
 ## 19. Open before the pin
 
-**Ruled by the lead on the first read (recorded here, not open):** item 1 (one common trade set or one per firm) -- one
-T_g per group, a fixed sequence at the family's full level (S-1, 9.4, 16.3); item 4 (spending k) -- the number assigned
-by the stage-B row only if a T_g goes on (S-9, 16.1); item 5 -- the bar stays F-03's $500 at month 12 unless the operator
-sets another; item 8 -- CHARTER section 4, CLAUDE.md and the skill amended by the lead's row (S-11).
+**Ruled by the lead on the first read and the re-read (recorded here, not open):** item 1 (one common trade set or one
+per firm) -- one T_g per group, a fixed sequence at the family's full level (S-1, 9.4, 16.3); item 4 (spending k) -- the
+number assigned by the stage-B row only if a T_g goes on, the gatekeeper's k rule not counting the family until then,
+a rerun under a repeat row if another family pins between the stage-B run and its row (S-9, SF-1, 16.1); item 5 -- the
+bar stays F-03's $500 at month 12 unless the operator sets another; item 8 -- R-3 in the standing texts by E-203 (S-11);
+limit entries described only, the placebo-selection route named for a later family (NB-1, 1.2); step 2 in two parts
+(SF-2, 18).
 
 **The lead's, left for the next read:**
 
@@ -959,7 +1029,8 @@ sets another; item 8 -- CHARTER section 4, CLAUDE.md and the skill amended by th
 12. **LucidFlex's corners**: `LU40` takes RD-01's `LU` corners and `LU50` RD-05 5.2's live-move corner (the red team's
     N-9: consistent as far as it checked).
 
-**At the pin (the red team's S-10):** the pinning row attests that no RD-05 part-F row and no RD-04 step-2 row had been
+**Before the pin:** the lead's row recording SF-1's numbering rule and amending the gatekeeper's text (and, if it
+reads pins, `tests/test_declarations_fixed.py`), cited here by role. **At the pin (the red team's S-10):** the pinning row attests that no RD-05 part-F row and no RD-04 step-2 row had been
 read at the pin; if RD-04's step 2 runs first, the row carries RD-04 9.3's "written before RD-04 was read, unchanged
 since <commit>" form.
 
@@ -1035,8 +1106,27 @@ by RD-01's `LU` corners (19 item 12); the choice is made at the strict corner.
 | N-12 | the bar's wording | "a year's value per user start at the lift's cautious bound" | 10.3; 19 |
 
 **Declined:** none. **Choices the rulings left open, made here:** C0's "not claimed" stops the sequence (conservative);
-Kill B' takes a quarter's margin at each end; the sequence's ties go to Appendix P's order of the first group picking the
-set; `lamhat` defines the value arms' shift per executed trade for limit sets.
+Kill B' brings each end of Q-126's sizes inside by a factor of 1.25; the sequence's ties go to Appendix P's order of the
+first group picking the set.
+
+### The re-read (Q-141r2) and where each is answered in the third text
+
+| finding | what it found | the answer (the lead's ruling) | where |
+|---|---|---|---|
+| **NB-1** | the exact limit form `x_i = s_i n_i / 2` measures supply, `(p - 1/2) m`, as well as direction | every P-14 limit trade set described only and ineligible for any T_g; beside each, the exact-form lift with `p`, `m+`, `m-`, `m` and the supply term, and the walked-mirror diagnostic; counts unchanged; the placebo-selection twin (E-023 (2)) named as the later route; the one-sample claims restricted to market sets; `lamhat` for limits described only, no value arm; K0's limit form removed | header; 0; 1.2; 5.3; 6.1; 7.3; 8.1 item 1; 8.2; 9.2; 9.4; 9.7; 10.2; 11 item 4; 16.2; T-2; T-6 to T-8; T-0 |
+| SF-1 | an unnumbered pin breaks the gatekeeper's k rule | the family not counted until its stage-B row, by the lead's row that amends the gatekeeper's text (cited by role, before the pin); a rerun of stage B at the new level under a repeat row if another family pins between the stage-B run and its row | header; field table; 16.1; 18; 19 |
+| SF-2 | rung 2 of the ladder cannot be measured before step 2 | step 2 split into 2a (the walks and trade-set rows) and 2b (the engine), a lead row between; the measurement after 2a, rung 2's saving counted from 2a's lifts | 18 |
+| N-1 | Kill B' for limit sets; its margin's wording | `N_J` for a limit set counts the resting-side fills (described rows only); "inside each end by a factor of 1.25", both figures Q-126's declared plan | 9.2 |
+| N-2 | class `one` for limit sets | the first chain slot; a void first slot trades nothing that session | 6.4 |
+| N-3 | P-16's limit price | the close five minutes before the mark, the order live at the mark: intended | 6.1 |
+| N-4 | the FOMC meeting days named after the pin | `atlas_a1.yaml`'s `news.fomc` files named with their LF sha256 and tested | 5.4; T-0 |
+| N-5 | the confirmation's power for later lines | each line's power at the chosen length and its own 80 % length, in the carrying row | 14 |
+| N-6 | a group with no T_g | checked, nothing to fix | 9.5 |
+| N-7 | cite the amending row | E-203 and CHARTER's LF sha256 cited; master merged at ce5143d | header; 6.1; 18 |
+| N-8 | the market twin's long-bias term | `(2 q - 1) mean(v)` and the covariance term printed beside every P-14 market lift, stage A and stage C | 5.3; 8.1 item 1; T-6 |
+| N-9 | T-2's limit case | a toy whose side tracks the latency move but not the outcome, its supply term printed | T-2 |
+
+**Declined (re-read):** none.
 
 ## Appendix C -- the drafter's choices, each with its reason
 
@@ -1050,7 +1140,7 @@ set; `lamhat` defines the value arms' shift per executed trade for limit sets.
 | 6 | stage B's value by linear interpolation between stage A's two arms | 9.3 | the bound is unknown at stage A; the judged value uses full arms |
 | 7 | `Lstar = lhat_A - MDL50_J` | 9.2 | the bound the judged block would give if the lift held; Kill B where it is not positive |
 | 8 | a single seat | 7.2 | a protocol compared across firms on one account; seats are RD-03's |
-| 9 | the market twin the walked mirror; the limit twin exact on the resting side | 5.3 | Q-108's estimand; the lead's ruling on B-1; no seed |
+| 9 | the market twin the walked mirror; the limit form exact for a coin on the resting side, described only for P-14 | 5.3 | Q-108's estimand; the lead's rulings on B-1 and NB-1; no seed |
 | 10 | every walk made anew; the caches as references | 5.2 | one code path for every bracket's trade and twin |
 | 11 | the chain state-free, in fill order | 5.5 | the lift's trade set fixed by the walks alone; the lead's ruling on B-3 |
 | 12 | `cap` as a session rule | 6.1, 6.4 | the operator's "when to stop" where a consistency rule binds |
@@ -1067,5 +1157,7 @@ set; `lamhat` defines the value arms' shift per executed trade for limit sets.
 | 23 | `TS/con` and `L6/con` read | Appendix P | G-1's reason does not reach a fixed protocol |
 | 24 | ties toward latency 5 and market entries | 9.4, 9.5 | the reference first, as the operator asked it reported |
 | 25 | the registered offers at every stop | 5.1 | the stop the only change (S-3) |
-| 26 | Kill B' with a quarter's margin | 9.2 | the validated sizes with room for the prediction's error |
+| 26 | Kill B' inside each end by a factor of 1.25 | 9.2 | the validated sizes with room for the prediction's error |
+| 28 | P-14's limit sets described only; no one-sample patch (centring `n_i`, or gross R) | 1.2; 8.2 | the lead's ruling on NB-1: no one-sample patch is exact (the re-read's remedy text) |
+| 29 | step 2 in two parts | 18 | the lead's ruling on SF-2: the ladder decided on 2a's own counts |
 | 27 | the reduction ladder's order | 18 | the lead's ruling on S-7: the cheapest loss of information first |
