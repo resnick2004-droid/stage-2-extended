@@ -51,7 +51,7 @@ cd $W && python scripts/vendor_stage2.py --verify
 - [ ] **no figure typed** into a document: `git diff master...$B -- '*.md'` read for result-shaped numbers; every one
       is a rule value with its article, a date, a seed, a declared parameter, or computed from a result file
 - [ ] for code that reads bars or builds features or labels (skill `feature-rules`): every feature reads bars closed
-      at or before the alert only, with a **shift-invariance test**; entries at `t + 5` or later; limit fills need a
+      at or before the alert only, with a **shift-invariance test**; entries at `t + L` or later (L declared: 5, or a counted 3 or 2, E-202); limit fills need a
       trade-through; stop first on two-barrier bars; splits purged and embargoed longer than the longest trade
 - [ ] randomness takes explicit seeds fixed in the declaration or the brief
 - [ ] nothing reads NQ from 2026-07-17
