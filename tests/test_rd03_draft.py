@@ -56,7 +56,7 @@ TEXT_SUFFIXES = {".md", ".py", ".yaml", ".yml", ".csv", ".json", ".txt", ".sha25
 SEED_BLOCK = tuple(range(20262240, 20262250))
 #: the repository files allowed to hold a seed of the block besides the declaration: its declared uses (section 12).
 #: The build adds its own files here as it writes them (the honesty series, the toy campaigns); T-9 holds them to 12.
-DECLARED_USES = ("tests/test_rd03_draft.py",)
+DECLARED_USES = ("tests/test_rd03_draft.py", "tests/cl_synthetic.py")       # Q-119: the build's toy seed
 
 PURPOSES = {"levers_scorecard", "levers_gate_beside", "levers_ladder_beside", "levers_ftp_beside"}
 BASES = ("P-14", "P-16")

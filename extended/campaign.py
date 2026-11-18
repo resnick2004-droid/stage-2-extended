@@ -39,6 +39,11 @@ vendored function, statement for statement (the docstrings aside).
 `_run_paths` without a reducer, so with None every call is as before; with one, the vendored runner re-composed so each
 path is recorded and read where it ran. The proof strips both markers (`MARKERS`).
 
+**Q-119 (RD-03's A-3, `prereg/RD-03_contract_levers.md` 14.1)** adds, on lines marked Q-119, the keyword `levers`
+(default None, last in the signature): given, it goes into every path's keywords and the paths run through
+`extended.levers_path`'s copy of the vendored path runner and path (`lever_runner`); the summary's provenance names it.
+None: every call as before. The proof strips the three markers.
+
 **The identities** (`identity/gate_identity.py`, through `extended.gate.run_gate`, which calls this campaign):
 synthetic in the fast tier; P-14's and P-16's registered gate paths at 4 paths (slow) and at 500 (heavy, the lead's).
 """
@@ -80,8 +85,8 @@ from propedge.campaign.lockstep import (  # noqa: E402,F401  -- every name the v
 VENDORED_CAMPAIGN_SHA256 = "0bb321f521e99dfcf560ea128de7cf9df2bf621c1878482cb9860e08f8285f90"
 #: the comment marker on every added line of this module's re-composed function
 MARKER = "Q-71"
-#: every marker the re-composition proof strips: Q-71's evaluation class, and Q-70's place recorder
-MARKERS = (MARKER, "Q-70")
+#: every marker the re-composition proof strips: Q-71's evaluation class, Q-70's place recorder, Q-119's levers
+MARKERS = (MARKER, "Q-70", "Q-119")
 
 
 def source_sha256(fn: Callable) -> str:
@@ -229,6 +234,7 @@ def simulate_lockstep_campaign(
     seat_ramp: int | None = None,
     combine_account_cls: type | None = None,                                    # Q-71
     path_reducer: Any = None,                                                   # Q-70
+    levers: Any = None,                                                         # Q-119
 ) -> tuple[CampaignSummary, list[LockstepPath]]:
     """The vendored `propedge.campaign.lockstep.simulate_lockstep_campaign` (its docstring holds every argument's
     meaning), plus `combine_account_cls`: the evaluation account's class on every path -- the vendored `CombineAccount`
@@ -237,7 +243,10 @@ def simulate_lockstep_campaign(
 
     `path_reducer` (Q-70; `extended.place_records`): every path recorded and read where it ran, its record riding on
     the path handed back (`extended.place_records.RecordedPath`); the summary is the unrecorded campaign's. None runs
-    the paths with the vendored runner."""
+    the paths with the vendored runner.
+
+    `levers` (Q-119; `extended.levers_path.Levers`): RD-03's options on every path, through the levers' path runner
+    (refused with a path reducer). None: as before."""
     check_vendored_source()                               # Q-71: refused unless the vendored function is the pinned one
     # ---- from here to the end, the vendored body; its two additions are marked Q-71, the recorder's runner Q-70
     from propedge.contract.adapter import Rules
@@ -302,8 +311,13 @@ def simulate_lockstep_campaign(
     path_kwargs.update(entry)
     if combine_account_cls is not None:                   # Q-71: passed only when given, so None is the vendored call
         path_kwargs["combine_account_cls"] = combine_account_cls                                # Q-71
+    if levers is not None:                                # Q-119: RD-03's levers on every path (A-3), only when given
+        from extended import levers_path as _lp                                 # Q-119
+        path_kwargs["levers"] = _lp.check_levers(levers)                        # Q-119
     seeds = path_seeds(seed, n_paths)
     _run_paths = path_runner(path_reducer, record_trades=record_trades, record_days=record_days)  # noqa: F811  # Q-70
+    if levers is not None:                                                      # Q-119: the paths through A-1's path
+        _run_paths = _lp.lever_runner(levers, _run_paths, path_reducer)         # noqa: F811  # Q-119
     results = _run_paths(protocol, path_kwargs, seeds, draw_factories_for_path, flip_for_path, wallet_for_path,
                          workers=workers, pool=pool, memory_per_worker_gb=memory_per_worker_gb)
 
@@ -322,6 +336,8 @@ def simulate_lockstep_campaign(
     if combine_account_cls is not None:                   # Q-71: named only when given, as funded_account_cls is
         provenance_extra["combine_account_cls"] = (                                            # Q-71
             f"{combine_account_cls.__module__}.{combine_account_cls.__qualname__}")                 # Q-71
+    if levers is not None:                                # Q-119: named only when given                # Q-119
+        provenance_extra["levers"] = {"decision": "RD-03 A-1", **levers.as_dict()}                  # Q-119
     summary = summarise_paths(
         [r.path for r in results],
         protocol=protocol, edge=edge, seed=seed, initial_bankroll=initial_bankroll,
