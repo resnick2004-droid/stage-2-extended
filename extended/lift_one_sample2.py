@@ -561,12 +561,13 @@ def band_of(persistence: int) -> str | None:
     return None
 
 
-def statistic_for(persistence: int, primary_scope: str | None, *, primary_holds: bool = True,
-                  second_holds: bool = False) -> tuple[str, str] | None:
+def statistic_for(persistence: int, primary_scope: str | None, *, primary_holds: bool,
+                  second_holds: bool) -> tuple[str, str] | None:
     """The plan's 2.5 table: which adopted statistic a family may use for its C1, by its declared persistence alone
     -- ("primary", its scope) or ("second", "Q") -- or None (no one-sample line). `primary_scope` is "D" when scope D
     chose the primary, "Q" when the scope-Q branch is the primary (scope D chose none), None at NONE. A statistic that
-    FAILS its validation leaves its rows with no line; the other is never extended to them (B-30)."""
+    FAILS its validation leaves its rows with no line; the other is never extended to them (B-30). Both verdicts are
+    required (the red team's F10: a default of "holds" would be the unsafe one)."""
     band = band_of(persistence)
     if primary_scope is None or band is None:
         return None

@@ -256,6 +256,66 @@ def test_the_dominated_side_with_and_without_the_limit():
 # ------------------------------------------------------------------------------------------------ the rejecting cells
 
 
+def test_the_balance_limits_boundary_is_at_most_b():
+    """The plan's "at most b" (F4): on the judged block b_D = 437/657, so a dense side with |sum| = 437 is admitted and
+    one with |sum| = 439 refused (657 is odd, so 438 is not a dense sum); with one session untraded the comparison is
+    |s| x 657 <= 437 x 656. In the scalar, the vectorised and the enumerated form."""
+    n = 657
+    b = L2.admission_b(n)
+    assert b == Fraction(437, 657)
+
+    def side(longs: int) -> np.ndarray:                      # 10 runs of shorts spread out: many runs, E >= 4
+        s = np.ones(n)
+        shorts = n - longs
+        per, rest = divmod(shorts, 10)
+        pos = 20
+        for i in range(10):
+            k = per + (1 if i < rest else 0)
+            s[pos:pos + k] = -1.0
+            pos += k + 40
+        assert int((s < 0).sum()) == shorts
+        return s
+    ses = np.arange(n)
+    at, over = side(547), side(548)                          # sums 437 and 439
+    assert abs(int(at.sum())) == 437 and abs(int(over.sum())) == 439
+    for s, want in ((at, True), (over, False)):
+        a = L2.admission2(s, ses, n)
+        assert a.runs >= 13 and a.effective >= 4 and a.admitted == want and a.balanced == want
+        m = s[:, None].astype(np.int8)
+        assert bool(L2.admitted_matrix(m, n)[0]) == want
+    # one session untraded: |s| = 436 of 656 non-tie is under b (436 x 657 = 286,452 <= 437 x 656 = 286,672)
+    m = at.copy()
+    m[100] = 0.0 if at[100] > 0 else m[100]
+    assert int((m != 0).sum()) == 656
+    assert bool(L2.admitted_matrix(m[:, None].astype(np.int8), n)[0]) == (abs(int(m.sum())) * 657 <= 437 * 656)
+    assert L2.balance_ok(437, 657, b) and not L2.balance_ok(438, 657, b)
+
+
+def test_the_enumerations_balance_boundary_against_an_independent_oracle(monkeypatch):
+    """`exact_flip2`'s admitted weight at a planted limit equal to an attained cell's |mean side|, against an oracle
+    written here: Q-108's runs admission and |s| <= v by integers -- so `<` in place of `<=` fails it (F4)."""
+    n, L = 100, 12
+    g = np.random.default_rng([SEED, 60])
+    N = (1 + g.poisson(3, n)).astype(float)                  # every session traded: the dense case
+    V = np.zeros(n)
+    s_tr = np.repeat(np.arange(n), N.astype(int))
+    Bs, _ = O.flip_cells(n, L)
+    Bmax = max(Bs)
+    cells = []
+    for p in range(L):
+        for q in range(2 ** Bs[p]):
+            sd = O.flip_cell_sides(n, L, p, q)
+            cells.append((p, q, 2 ** (Bmax - Bs[p]), O.admission(sd[s_tr], s_tr, n).admitted, abs(int(sd.sum()))))
+    sums = sorted({c[4] for c in cells if c[3]})
+    v = sums[len(sums) // 2]                                 # an attained |sum| among admitted cells
+    assert sum(1 for c in cells if c[3] and c[4] == v) > 0
+    monkeypatch.setattr(L2, "admission_b", lambda n_: Fraction(v, n))
+    want = sum(w for _, _, w, adm, s in cells if adm and s <= v)
+    ex = L2.exact_flip2(V, N, L, cands=["cons"])
+    assert ex.admitted == want
+    assert want > sum(w for _, _, w, adm, s in cells if adm and s < v)   # the boundary cells count
+
+
 def test_the_rejecting_cells_sum_to_the_exact_count():
     n = 300
     V, N = session_data(30, n, trades=4000, drift=0.08)
@@ -340,7 +400,11 @@ def test_the_switching_side_check():
 
 
 def test_which_statistic_a_family_uses():
-    S = L2.statistic_for
+    with pytest.raises(TypeError):
+        L2.statistic_for(30, "D")                                        # both verdicts are required (F10)
+
+    def S(p, scope, *, primary_holds=True, second_holds=False):
+        return L2.statistic_for(p, scope, primary_holds=primary_holds, second_holds=second_holds)
     assert L2.band_of(30) == "below 42" and L2.band_of(42) == "42 to 50" and L2.band_of(50) == "42 to 50"
     assert L2.band_of(51) == "51 to 62" and L2.band_of(62) == "51 to 62" and L2.band_of(63) is None
     # scope D chose the primary

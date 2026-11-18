@@ -19,7 +19,13 @@ when it is whole; a partial folder is deleted and counts as no output.
 check** -- the nesting assertion, a scalar mismatch, the provenance assertion -- leaves its record in `<part>.failed`
 and is never rerun: the command refuses while one is there. After a code fix (a new commit) every whole part of the
 earlier commit is moved to `<part>.prev-<commit>` and rerun, and must reproduce each of its data files' sha256, or the
-run stops.
+run stops. **The part ledger** (E-191, the red team's F1/F2), `%LOCALAPPDATA%/stage2-extended-runs/q126-ledger.jsonl`,
+append-only and outside every work folder, records each part's commit, data files' sha256 and outcome; a failed line
+-- a failed check, a provenance refusal inside a part, an exception inside a check, a reproduction that differs, the
+choice's own failed checks -- refuses every later run in any work folder until the lead decides, and the choice holds
+every part to every earlier whole record of it. `--part` runs only with the token its driver wrote; the command takes
+no `--work`. One BLAS thread is forced and recorded in every manifest (F3); a result frame above 95 MB is written in
+shards by part, `<name>__<part>.csv` (F5).
 
 **The choice** reads every part's manifest and refuses a missing part, another commit, another seed map or other
 package versions; it alone writes the result files, through `extended.results`, all or none (every frame and name
@@ -58,8 +64,11 @@ from collections.abc import Mapping
 from fractions import Fraction
 from pathlib import Path
 
-for _k in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_k, "1")
+#: one BLAS thread a process (CLAUDE.md; the red team's F3): forced, not defaulted, before numpy is imported, so the
+#: enumeration's matrix products sum in one order in every part; recorded in each manifest, refused otherwise
+BLAS_VARS = ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS")
+for _k in BLAS_VARS:
+    os.environ[_k] = "1"
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -632,8 +641,27 @@ def read_calendar(decision: str = DECISION, task: str = TASK) -> tuple[list[str]
                       "design": READ_DESIGN}
 
 
+def _blas_name() -> str:
+    try:
+        cfg = np.show_config(mode="dicts")
+        return str(cfg["Build Dependencies"]["blas"]["name"])
+    except Exception:                                                    # an older numpy: no dict form
+        return "unknown"
+
+
 def _versions() -> dict:
-    return CAL._versions()
+    """The package versions (Q-108's), the BLAS library and the thread settings: a part of other versions or threads is
+    refused by the choice (the plan's 6.2; F3)."""
+    v = dict(CAL._versions())
+    v["blas"] = _blas_name()
+    v["blas_threads"] = {k: os.environ.get(k) for k in BLAS_VARS}
+    return v
+
+
+def thread_problems(env: Mapping | None = None) -> list[str]:
+    env = os.environ if env is None else env
+    bad = {k: env.get(k) for k in BLAS_VARS if env.get(k) != "1"}
+    return [f"the BLAS thread settings are {bad}, not 1 (one BLAS thread a process)"] if bad else []
 
 
 def blob_id(path: Path) -> str:
@@ -1174,9 +1202,13 @@ def choose(elig: pd.DataFrame, psum: pd.DataFrame) -> dict:
             h = g[g[col]]
             if len(h):
                 r = min((r for _, r in h.iterrows()), key=_rank_key)
-                cost.append({"row": "cost", "decision": f"the most powerful candidate refused by {what} in scope {s_}",
-                             "candidate": r["candidate"], "cid": r["cid"], "scope": s_, "P": r["P"],
-                             "refusing_count": r.get(count), "refusing_column": count})
+                row_ = {"row": "cost", "decision": f"the most powerful candidate refused by {what} in scope {s_}",
+                        "candidate": r["candidate"], "cid": r["cid"], "scope": s_, "P": r["P"],
+                        "refusing_count": r.get(count), "refusing_column": count}
+                if count == "bad_subsets":                       # what the sizing adds against Q-108's own floor
+                    row_.update({"bad_core_subsets": r.get("bad_core_subsets"),
+                                 "bad_sizing_subsets": r.get("bad_sizing_subsets")})
+                cost.append(row_)
         empty = not bool(g["eligible"].any())
         emptied = bool(empty and g["eligible_without_floor"].any())
         cost.append({"row": "floor_emptied_branch", "scope": s_, "branch": "scope D (rows 1-8)" if s_ == "D" else
@@ -1465,6 +1497,151 @@ def reproduction_problems(work: Path, part: str) -> list[str]:
     return out
 
 
+# ---- the part ledger (F1): append-only, outside every work folder, never cleared by a runner ----
+
+LEDGER_NAME = "q126-ledger.jsonl"
+#: the environment variable by which the driver hands its token to the parts it starts (the hidden `--part`'s gate)
+DRIVER_ENV = "S2X_Q126_DRIVER"
+DRIVER_TOKEN = ".driver-token"
+
+
+def ledger_path() -> Path:
+    return Path(RUNS_DIR) / LEDGER_NAME
+
+
+def ledger_read() -> list[dict]:
+    p = ledger_path()
+    if not p.is_file():
+        return []
+    out = []
+    for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        if line.strip():
+            try:
+                out.append(json.loads(line))
+            except ValueError:
+                raise ProvenanceRefused(f"REFUSED: the part ledger {p} has an unreadable line {i}") from None
+    return out
+
+
+def ledger_append(rec: dict) -> None:
+    p = ledger_path()
+    p.parent.mkdir(parents=True, exist_ok=True)
+    rec = {"time_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **rec}
+    with open(p, "a", encoding="utf-8") as f:
+        f.write(json.dumps(rec, sort_keys=True, default=str) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def data_files(files: dict) -> dict:
+    return {k: v for k, v in files.items() if k != "manifest.json"}
+
+
+def ledger_failures(runner: str) -> list[dict]:
+    return [r for r in ledger_read() if r.get("runner") == runner and r.get("outcome") != "whole"]
+
+
+def ledger_whole(runner: str, part: str, commit: str, files: dict) -> bool:
+    return any(r.get("runner") == runner and r.get("part") == part and r.get("outcome") == "whole"
+               and r.get("commit") == commit and r.get("files") == data_files(files) for r in ledger_read())
+
+
+def ledger_reproduction_problems(runner: str, part: str, files: dict) -> list[str]:
+    """Every whole record of this part -- at any commit, in any work folder -- has the same data files' sha256 as this
+    output (the plan's 6.2: after a code fix each part reproduces its earlier output byte for byte)."""
+    out = []
+    now = data_files(files)
+    for r in ledger_read():
+        if r.get("runner") == runner and r.get("part") == part and r.get("outcome") == "whole" and r.get("files") != now:
+            diff = sorted(k for k in set(now) | set(r.get("files") or {}) if now.get(k) != (r.get("files") or {}).get(k))
+            out.append(f"{part}: {diff[:5]} differ from the ledger's whole record at commit {str(r.get('commit'))[:12]}")
+    return out
+
+
+def record_failed(work: Path, part: str, reasons: list[str], *, runner: str, commit: str | None = None,
+                  meta: dict | None = None) -> Path:
+    """A failed check, kept (F2): `<part>.failed` in the work folder with its reasons, and a failed line in the ledger;
+    never rerun -- preflight refuses while either is there."""
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    dest = work / f"{part}.failed"
+    i = 1
+    while dest.exists():
+        i += 1
+        dest = work / f"{part}.failed-{i}"
+    dest.mkdir()
+    commit = git_head() if commit is None else commit
+    (dest / "manifest.json").write_text(json.dumps({"part": part, "runner": runner, "commit": commit, "failed": True,
+                                                    "reasons": [str(x) for x in reasons], "meta": meta or {}},
+                                                   indent=1, default=str), encoding="utf-8")
+    ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "failed", "work": str(work),
+                   "reasons": [str(x)[:500] for x in reasons[:20]]})
+    return dest
+
+
+def finish_part(work: Path, part: str, out: dict, manifest: dict, *, runner: str,
+                extra_dirs: dict | None = None) -> int:
+    """A computed part: written all or none; a failed check kept and put in the ledger; else its files held to every
+    earlier whole record of the part (the ledger's, and a `<part>.prev-*` folder's) -- a difference is a failed check,
+    the part moved to `<part>.failed` -- and only then its whole record appended. Returns the exit code."""
+    work = Path(work)
+    dest = write_part(work, part, out, manifest, extra_dirs)
+    man = read_manifest(dest)
+    commit = man.get("commit")
+    if man.get("failed"):
+        reasons = [f"scalar mismatches: {out['mismatches'][:3]}"] if out["mismatches"] else []
+        reasons += [f"nesting: {x}" for x in out["nesting"][:5]] + ([str(out["meta"].get("failed"))]
+                                                                    if out["meta"].get("failed") else [])
+        ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "failed", "work": str(work),
+                       "reasons": reasons})
+        return FAILED_CHECK
+    probs = ledger_reproduction_problems(runner, part, man["files"])
+    if list(work.glob(f"{part}.prev-*")):
+        probs += reproduction_problems(work, part)
+    if probs:
+        failed_dir = work / f"{part}.failed"
+        i = 1
+        while failed_dir.exists():
+            i += 1
+            failed_dir = work / f"{part}.failed-{i}"
+        os.replace(dest, failed_dir)
+        ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "reproduction differs",
+                       "work": str(work), "files": data_files(man["files"]), "reasons": probs[:20]})
+        print("FAILED CHECK: a part rerun does not reproduce its earlier output -- " + "; ".join(probs[:5]), flush=True)
+        return FAILED_CHECK
+    ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "whole", "work": str(work),
+                   "files": data_files(man["files"])})
+    return 0
+
+
+def failed_record_problems(work: Path, runner: str) -> list[str]:
+    """A failed check on record -- in the work folder used, or anywhere in the ledger -- refuses (F1, F2)."""
+    out = []
+    fails = sorted(p.name for p in Path(work).glob("*.failed*")) if Path(work).is_dir() else []
+    if fails:
+        out.append(f"a failed check is on record in {work} ({fails})")
+    led = ledger_failures(runner)
+    if led:
+        out.append(f"the part ledger {ledger_path()} records {len(led)} failed check(s), first {led[0].get('part')} at "
+                   f"{str(led[0].get('commit'))[:12]}: {str(led[0].get('reasons'))[:200]}")
+    return out + (["it is diagnosed under the failure protocol, never rerun"] if out else [])
+
+
+def gate_problem(work: Path | None, part: str | None, env: Mapping | None = None) -> str | None:
+    """`--part` and `--work` are the driver's only (F1, F2): a part runs only with the token its driver wrote into that
+    work folder; the top-level command takes no `--work`."""
+    env = os.environ if env is None else env
+    if part is None:
+        return None if work is None else "--work is the driver's alone: the command uses its declared work folder"
+    if work is None:
+        return "a part runs only from the driver, with its work folder"
+    tok = Path(work) / DRIVER_TOKEN
+    want = tok.read_text(encoding="utf-8").strip() if tok.is_file() else None
+    if not want or env.get(DRIVER_ENV) != want:
+        return "a part runs only from the driver of its work folder (no driver token): run the command, not a part"
+    return None
+
+
 def read_part_frames(work: Path, part: str) -> dict:
     d = Path(work) / part
 
@@ -1504,8 +1681,18 @@ def lock_problem(env: Mapping | None = None) -> str | None:
     return None
 
 
+def result_clash(target: Path, names) -> list[str]:
+    """Result files (or shards of them) that exist already."""
+    out = []
+    for x in names:
+        for p in [target / f"{x}.csv", target / f"{x}.csv.manifest.json", *Path(target).glob(f"{x}__*.csv")]:
+            if p.exists():
+                out.append(p.name)
+    return out
+
+
 def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guard: bool = True,
-              repo: Path = ROOT) -> list[str]:
+              repo: Path = ROOT, work: Path | None = None) -> list[str]:
     """The refusals before any read, in order (each a reason; empty when the run may start)."""
     from extended import results as XR
 
@@ -1516,9 +1703,11 @@ def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guar
     bad = lock_problem()
     if bad:
         return [bad]
+    bad = thread_problems()
+    if bad:
+        return bad
     if part in (None, "choice"):
-        clash = [x for x in RESULT_FILES if (target / f"{x}.csv").exists()
-                 or (target / f"{x}.csv.manifest.json").exists()]
+        clash = result_clash(target, RESULT_FILES)
         if clash:
             return [f"{clash} exist in {target}; a result file is never overwritten"]
     probs = pin_problems(repo)
@@ -1528,12 +1717,12 @@ def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guar
     probs = provenance_problems(deterministic_plan(seeds), seeds, CAL_BLOCK)
     if probs:
         return [f"the seed-provenance assertion refuses: {probs[:5]}"]
-    work = work_dir()
+    work = work_dir() if work is None else Path(work)
     if not _outside_tree(work, repo):
         return [f"the work folder {work} must lie outside this tree"]
-    fails = sorted(p.name for p in work.glob("*.failed")) if work.is_dir() else []
-    if fails:
-        return [f"a failed check is on record ({fails}): it is diagnosed under the failure protocol, never rerun"]
+    bad = failed_record_problems(work, "calibrate")
+    if bad:
+        return bad
     if guard:
         sp, notes = seed_block_problems(repo)
         for x in notes:
@@ -1609,13 +1798,22 @@ def compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, r
     written all or none."""
     t0 = time.time()
     extra: dict = {}
-    extra_dirs: dict = {}
+
+    def provenance_failed(probs):                                        # a failed check the plan lists (6.2; F2)
+        record_failed(work, part, [f"the seed-provenance assertion: {x}" for x in probs[:20]], runner="calibrate")
+        print(f"FAILED CHECK: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
+        return FAILED_CHECK
+
+    def check_failed(exc):                                               # an exception raised inside a check (F2)
+        record_failed(work, part, [f"a check raised {type(exc).__name__}: {exc}"], runner="calibrate")
+        print(f"FAILED CHECK: {type(exc).__name__}: {exc}", flush=True)
+        return FAILED_CHECK
+
     if part == "core":
         plan = core_plan(seeds)
         probs = provenance_problems(plan, seeds, CAL_BLOCK)              # before any read and any draw
         if probs:
-            print(f"REFUSED: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
-            return REFUSED
+            return provenance_failed(probs)
         cal, sha, src = read_calendar()
         bad = calendar_problems(cal, sha)
         if bad:
@@ -1636,16 +1834,19 @@ def compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, r
                 return 1
             p, pinfo = Q82.load_pairs(scratch / "pairs" / "p16_pairs.parquet", cal)
             inp = CAL.Inputs(p, len(cal), seeds)
-            out = compute_nulls(part, plan, inp, len(cal), reps, list(cands), reps_beside=reps_beside)
+            try:
+                out = compute_nulls(part, plan, inp, len(cal), reps, list(cands), reps_beside=reps_beside)
+            except CHECK_ERRORS as exc:
+                return check_failed(exc)
             extra = {"calendar_sha256": sha, "calendar_source": src, "pairs_identity": pinfo.get("identity"),
                      "pairs_sha256": pinfo.get("parquet_sha256")}
-            extra_dirs = {"judged_sessions.csv": calf, "pairs": scratch / "pairs"}
-            dest = write_part(work, part, out, {**_manifest_base(seeds, extra), **_time_fields(t0),
-                                                "timing": out["timing"]}, extra_dirs)
+            rc = finish_part(work, part, out, {**_manifest_base(seeds, extra), **_time_fields(t0),
+                                               "timing": out["timing"]}, runner="calibrate",
+                             extra_dirs={"judged_sessions.csv": calf, "pairs": scratch / "pairs"})
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
-        _log(f"part core written to {dest}")
-        return FAILED_CHECK if failed(out) else 0
+        _log(f"part core: exit {rc}")
+        return rc
     if part.startswith("sizing") or part == "probe":
         if part == "probe":
             sz = []
@@ -1663,12 +1864,14 @@ def compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, r
             ranking = None
         probs = provenance_problems(plan, seeds, CAL_BLOCK)              # before the pairs are read, before any draw
         if probs:
-            print(f"REFUSED: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
-            return REFUSED
+            return provenance_failed(probs)
         cal, sha, p = load_core_inputs(work)
         n = len(cal)
         inp = CAL.Inputs(p, n, seeds)
-        out = compute_nulls(part, plan, inp, n, reps, list(cands), reps_beside=reps_beside)
+        try:
+            out = compute_nulls(part, plan, inp, n, reps, list(cands), reps_beside=reps_beside)
+        except CHECK_ERRORS as exc:
+            return check_failed(exc)
         if ranking is not None:
             out["ranking"] = ranking_frame(ranking)
         extra = {"calendar_sha256": sha}
@@ -1676,14 +1879,18 @@ def compute_part_main(part: str, work: Path, *, seeds: dict, reps: int = REPS, r
         plan = drift_plan(seeds)
         probs = provenance_problems(plan, seeds, CAL_BLOCK)
         if probs:
-            print(f"REFUSED: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
-            return REFUSED
-        out = compute_nulls(part, plan, None, N_SESSIONS, reps, list(cands), drift_inputs=drift_inputs_for(N_SESSIONS))
+            return provenance_failed(probs)
+        try:
+            out = compute_nulls(part, plan, None, N_SESSIONS, reps, list(cands),
+                                drift_inputs=drift_inputs_for(N_SESSIONS))
+        except CHECK_ERRORS as exc:
+            return check_failed(exc)
     else:
         raise ValueError(f"no part {part!r}")
-    dest = write_part(work, part, out, {**_manifest_base(seeds, extra), **_time_fields(t0), "timing": out["timing"]})
-    _log(f"part {part} written to {dest}")
-    return FAILED_CHECK if failed(out) else 0
+    rc = finish_part(work, part, out, {**_manifest_base(seeds, extra), **_time_fields(t0), "timing": out["timing"]},
+                     runner="calibrate")
+    _log(f"part {part}: exit {rc}")
+    return rc
 
 
 def choice_main(work: Path, *, seeds: dict) -> int:
@@ -1701,9 +1908,21 @@ def choice_main(work: Path, *, seeds: dict) -> int:
     if probs:
         print("REFUSED: " + "; ".join(probs[:8]), flush=True)
         return REFUSED
+    bad = ledger_choice_problems(work, need, commit, "calibrate")
+    if bad["missing"]:
+        print("REFUSED: " + "; ".join(bad["missing"][:8]), flush=True)
+        return REFUSED
+    if bad["differs"]:
+        record_failed(work, "choice", bad["differs"], runner="calibrate", commit=commit)
+        print("FAILED CHECK: " + "; ".join(bad["differs"][:5]), flush=True)
+        return FAILED_CHECK
     parts = {p: read_part_frames(work, p) for p in need}
-    res = choice_tables(parts, seeds)
+    try:
+        res = choice_tables(parts, seeds)
+    except CHECK_ERRORS as exc:
+        res = {"failed": [f"a check raised {type(exc).__name__}: {exc}"]}
     if res["failed"]:
+        record_failed(work, "choice", res["failed"], runner="calibrate", commit=commit)
         for f in res["failed"]:
             print(f"FAILED CHECK: {f}", flush=True)
         print("FAILED CHECK: no result is written and no choice is made; the record is in " + str(work), flush=True)
@@ -1744,29 +1963,108 @@ def choice_main(work: Path, *, seeds: dict) -> int:
             "q126_choice": f"the plan's 4.2 applied by code -- {ch['line'].replace(chr(10), '; ')}; from the tables "
                            "beside, no randomness of its own"}
     target = RESULTS_DIR
-    clash = [nm for nm in roles if (target / f"{nm}.csv").exists() or (target / f"{nm}.csv.manifest.json").exists()]
-    if clash or set(roles) != set(RESULT_FILES) or set(res["frames"]) != set(RESULT_FILES):
-        print(f"REFUSED: the result files {clash} exist, or the frames are not the declared files", flush=True)
+    if set(roles) != set(RESULT_FILES) or set(res["frames"]) != set(RESULT_FILES):
+        print("REFUSED: the frames are not the declared files", flush=True)
         return REFUSED
-    written = []
-    try:
-        for nm in RESULT_FILES:
-            seed, rr = roles[nm]
-            params = {**common, "seeds": {r: int(seeds[r]) for r in rr}}
-            csv, mp = XR.write_result(res["frames"][nm], nm, script=SCRIPT, seed=None if seed is None else
-                                      int(seeds[seed]), parameters=params, description=f"Q-126 ({DECISION}): {desc[nm]}",
-                                      exploratory=False, require_seed=seed is not None)
-            written.append(nm)
-            _log(f"wrote {csv} ({len(res['frames'][nm])} rows) and {mp.name}")
-    except Exception as exc:                                              # a partial write is a failed run
-        print(f"FAILED CHECK: the result files were written in part ({written}) -- {type(exc).__name__}: {exc}. A "
-              "partial write to results/ is a failed run, diagnosed; nothing is deleted", flush=True)
-        return FAILED_CHECK
+    rc = write_results(res["frames"], roles, desc, common, seeds, target=target, work=work, runner="calibrate",
+                       commit=commit)
+    if rc:
+        return rc
     for row in ch["cost"]:
         print(f"cost: {row['decision']}" + (f": {row['candidate']} P {row['P']}" if row.get("candidate") else ""),
               flush=True)
     print(ch["line"], flush=True)
     _log(f"the choice in {time.time() - t0:.0f} s")
+    return 0
+
+
+#: exceptions raised inside a check are failed checks, not crashes (F2): an assertion, an overflow of the exact
+#: comparison, a provenance refusal
+CHECK_ERRORS = (AssertionError, OverflowError, ProvenanceRefused)
+
+
+def ledger_choice_problems(work: Path, parts, commit: str, runner: str) -> dict:
+    """At the choice (F1): every part's whole record at this commit is in the ledger, with its files' sha256
+    ("missing" otherwise, a refusal); every other whole record of the part agrees with them and every `.prev-*` folder
+    is reproduced ("differs", a failed check). A fresh work folder cannot pass: the ledger is outside it."""
+    missing, differs = [], []
+    for p in parts:
+        man = read_manifest(Path(work) / p)
+        if not ledger_whole(runner, p, commit, man.get("files", {})):
+            missing.append(f"the part {p} has no whole record at this commit in the ledger {ledger_path()}")
+            continue
+        differs += ledger_reproduction_problems(runner, p, man["files"])
+        if list(Path(work).glob(f"{p}.prev-*")):
+            differs += reproduction_problems(work, p)
+    return {"missing": missing, "differs": differs}
+
+
+#: a result file's ceiling (F5): under the remote's 100 MB limit with margin
+RESULT_CEILING = 95_000_000
+
+
+def csv_bytes(df: pd.DataFrame) -> int:
+    return len(df.to_csv(index=False).encode("utf-8"))
+
+
+def shard_plan(name: str, df: pd.DataFrame, ceiling: int | None = None) -> list[tuple[str, pd.DataFrame, dict]]:
+    """The declared fallback (F5): a frame above the ceiling is written by part, `<name>__<part>.csv` (the part from
+    its `part` column, `spread` for rows without one), and a part still above it in row chunks,
+    `<name>__<part>__<i>.csv`; at or below the ceiling the frame is written whole under its own name."""
+    ceiling = RESULT_CEILING if ceiling is None else int(ceiling)
+    b = csv_bytes(df)
+    if b <= ceiling:
+        return [(name, df, {"bytes": b, "ceiling": ceiling, "sharded": False})]
+    key = df["part"].fillna("spread").astype(str) if "part" in df.columns else pd.Series("all", index=df.index)
+    out = []
+    for pv in sorted(set(key), key=lambda x: (PARTS.index(x) if x in PARTS else len(PARTS), x)):
+        g = df[key == pv]
+        gb = csv_bytes(g)
+        if gb <= ceiling:
+            out.append((f"{name}__{pv}", g, {"bytes": gb, "ceiling": ceiling, "sharded": True, "of": name}))
+            continue
+        k = math.ceil(gb / ceiling) + 1
+        step_ = math.ceil(len(g) / k)
+        for i in range(k):
+            gi = g.iloc[i * step_:(i + 1) * step_]
+            if len(gi):
+                out.append((f"{name}__{pv}__{i:02d}", gi, {"bytes": csv_bytes(gi), "ceiling": ceiling,
+                                                           "sharded": True, "of": name}))
+    return out
+
+
+def write_results(frames: dict, roles: dict, desc: dict, common: dict, seeds: dict, *, target: Path, work: Path,
+                  runner: str, commit: str, script: str = SCRIPT) -> int:
+    """Every result frame through `extended.results`, all or none: the shards planned and every name checked free
+    before the first write; the size check recorded in each manifest (F5). A partial write is a failed run, recorded."""
+    from extended import results as XR
+
+    plan = {nm: shard_plan(nm, frames[nm]) for nm in roles}
+    names = [s for nm in roles for s, _, _ in plan[nm]]
+    clash = result_clash(target, list(roles)) + [s for s in names if (target / f"{s}.csv").exists()]
+    if clash:
+        print(f"REFUSED: the result files {sorted(set(clash))} exist; a result file is never overwritten", flush=True)
+        return REFUSED
+    size_check = {nm: [{"file": f"{s}.csv", **info} for s, _, info in plan[nm]] for nm in roles}
+    written = []
+    try:
+        for nm in roles:
+            seed, rr = roles[nm]
+            for s, df, info in plan[nm]:
+                params = {**common, "seeds": {r: int(seeds[r]) for r in rr}, "size_check": size_check,
+                          "this_file": {"file": f"{s}.csv", **info}}
+                csv, mp = XR.write_result(df, s, script=script, seed=None if seed is None else int(seeds[seed]),
+                                          parameters=params, results_dir=target, description=f"Q-126 ({DECISION}): {desc[nm]}"
+                                          + (f" -- shard {s} of {nm} (F5)" if info.get("sharded") else ""),
+                                          exploratory=False, require_seed=seed is not None)
+                written.append(s)
+                _log(f"wrote {csv} ({len(df)} rows, {info['bytes']:,} bytes) and {mp.name}")
+    except Exception as exc:                                              # a partial write is a failed run
+        record_failed(work, "results", [f"written in part ({written}): {type(exc).__name__}: {exc}"], runner=runner,
+                      commit=commit)
+        print(f"FAILED CHECK: the result files were written in part ({written}) -- {type(exc).__name__}: {exc}. A "
+              "partial write to results/ is a failed run, diagnosed; nothing is deleted", flush=True)
+        return FAILED_CHECK
     return 0
 
 
@@ -1782,9 +2080,10 @@ def _step(name: str, args: list[str], log_file: Path | None = None) -> int:
     return r.returncode
 
 
-def prepare_part(work: Path, part: str, commit: str) -> str:
-    """Before a part runs: "done" when it is whole at this commit; else any partial folder is deleted and a whole part
-    of another commit moved to `<part>.prev-<commit>` (its rerun must reproduce it); "run"."""
+def prepare_part(work: Path, part: str, commit: str, runner: str = "calibrate") -> str:
+    """Before a part runs: "done" when it is whole at this commit and its whole record is in the ledger; else any
+    partial folder is deleted -- a folder whole but not in the ledger (interrupted before its record) is partial -- and a
+    whole part of another commit moved to `<part>.prev-<commit>` (its rerun must reproduce it); "run"."""
     work = Path(work)
     for tmp in work.glob(f".{part}.tmp-*"):
         shutil.rmtree(tmp, ignore_errors=True)                   # partial: no output
@@ -1792,7 +2091,10 @@ def prepare_part(work: Path, part: str, commit: str) -> str:
     if (d / "manifest.json").is_file():
         man = read_manifest(d)
         if man.get("commit") == commit:
-            return "done"
+            if ledger_whole(runner, part, commit, man.get("files", {})):
+                return "done"
+            shutil.rmtree(d)                                     # whole on disk, never recorded: no output
+            return "run"
         prev = work / f"{part}.prev-{str(man.get('commit'))[:12]}"
         if prev.exists():
             raise FileExistsError(f"{prev} exists already")
@@ -1802,29 +2104,53 @@ def prepare_part(work: Path, part: str, commit: str) -> str:
     return "run"
 
 
-def driver(parts, work: Path, script: str = SCRIPT, *, step=_step) -> int:
-    """The parts in their declared order, each in its own process; a failed check stops the run, a crash stops it too
-    (to be rerun from scratch), a reproduction that differs is a failed check."""
+def driver(parts, work: Path, script: str = SCRIPT, *, step=_step, runner: str = "calibrate",
+           final: str = "choice") -> int:
+    """The parts in their declared order, each in its own process started with this driver's token; a failed check
+    stops the run and stays on record (the work folder and the ledger), a crash stops it too (to be rerun from
+    scratch), a reproduction that differs is a failed check (F1)."""
+    import uuid
+
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    bad = failed_record_problems(work, runner)
+    if bad:
+        print("REFUSED: " + "; ".join(bad), flush=True)
+        return FAILED_CHECK
     commit = git_head()
-    log_file = Path(work) / "driver.log"
-    for part in parts:
-        state = prepare_part(work, part, commit)
-        if state == "done":
-            _log(f"part {part}: whole at this commit, not rerun")
-            continue
-        rc = step(part, [script, "--part", part, "--work", str(work)], log_file)
-        if rc == FAILED_CHECK:
-            print(f"FAILED CHECK: the part {part} stopped on a failed check; its record is in {work}", flush=True)
-            return FAILED_CHECK
-        if rc:
-            return rc
-        if part != "choice" and list(Path(work).glob(f"{part}.prev-*")):
-            bad = reproduction_problems(work, part)
-            if bad:
-                print("FAILED CHECK: a part rerun at a new commit does not reproduce its earlier output -- "
-                      + "; ".join(bad[:5]), flush=True)
+    log_file = work / "driver.log"
+    token = uuid.uuid4().hex
+    (work / DRIVER_TOKEN).write_text(token, encoding="utf-8")
+    old = os.environ.get(DRIVER_ENV)
+    os.environ[DRIVER_ENV] = token
+    try:
+        for part in parts:
+            state = prepare_part(work, part, commit, runner)
+            if state == "done":
+                _log(f"part {part}: whole at this commit and in the ledger, not rerun")
+                continue
+            rc = step(part, [script, "--part", part, "--work", str(work)], log_file)
+            if rc == FAILED_CHECK:
+                print(f"FAILED CHECK: the part {part} stopped on a failed check; its record is in {work} and "
+                      f"{ledger_path()}", flush=True)
                 return FAILED_CHECK
-            _log(f"part {part}: reproduces its earlier commit's output, file for file")
+            if rc:
+                return rc
+            if part != final and list(work.glob(f"{part}.prev-*")) and (work / part).is_dir():
+                bad = reproduction_problems(work, part)
+                if bad:
+                    os.replace(work / part, work / f"{part}.failed")
+                    ledger_append({"runner": runner, "part": part, "commit": commit, "outcome": "reproduction differs",
+                                   "work": str(work), "reasons": bad[:20]})
+                    print("FAILED CHECK: a part rerun at a new commit does not reproduce its earlier output -- "
+                          + "; ".join(bad[:5]), flush=True)
+                    return FAILED_CHECK
+                _log(f"part {part}: reproduces its earlier commit's output, file for file")
+    finally:
+        if old is None:
+            os.environ.pop(DRIVER_ENV, None)
+        else:
+            os.environ[DRIVER_ENV] = old
     return 0
 
 
@@ -1855,14 +2181,18 @@ def main(argv=None) -> int:
         return _check_read()
     t0 = time.time()
     part = a.part
+    bad = gate_problem(a.work, part)
+    if bad:
+        print(f"REFUSED: {bad}", flush=True)
+        return REFUSED
+    work = work_dir() if a.work is None else Path(a.work)
     try:
-        probs = preflight(RESULTS_DIR, part, guard=True)
+        probs = preflight(RESULTS_DIR, part, guard=True, work=work)
     except ProvenanceRefused as exc:
         probs = [str(exc)]
     if probs:
         print("REFUSED: " + "; ".join(probs), flush=True)
         return REFUSED
-    work = work_dir() if a.work is None else Path(a.work)
     if not _outside_tree(work):
         print(f"REFUSED: the work folder {work} must lie outside this tree", flush=True)
         return REFUSED

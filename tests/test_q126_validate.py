@@ -50,6 +50,13 @@ def V():
     return load()
 
 
+@pytest.fixture(autouse=True)
+def private_ledger(V, tmp_path, monkeypatch):
+    p = tmp_path / "ledger" / "q126-ledger.jsonl"
+    monkeypatch.setattr(V.CALQ, "ledger_path", lambda: p)
+    return p
+
+
 def toy_seeds(V):
     s = {r: TOY + i for i, r in enumerate(V.DRAW_ROLES)}
     s["tests"] = TOY + 40
@@ -144,18 +151,21 @@ def test_the_decision_lines(V):
     assert V.choosing_row("| E-1 | nothing |") == (None, None)
 
 
-def _choice_repo(tmp_path, V, line, *, script=None, clean=True, exploratory=False, blob=None):
+def _choice_repo(tmp_path, V, line, *, script=None, clean=True, exploratory=False, blob=None, runner_blob=None):
     from extended import results as XR
 
     repo = tmp_path / "repo"
     (repo / "results").mkdir(parents=True)
     (repo / "extended").mkdir()
+    (repo / "scripts").mkdir()
     (repo / "extended" / "lift_one_sample2.py").write_bytes((ROOT / "extended" / "lift_one_sample2.py").read_bytes())
+    (repo / "scripts" / "q126_calibrate.py").write_bytes((ROOT / "scripts" / "q126_calibrate.py").read_bytes())
     df = pd.DataFrame([{"row": "candidate", "candidate": "cons", "decision": None},
                        {"row": "decision", "candidate": None, "decision": line}])
     csv, man = XR.write_result(df, "q126_choice", script=script or V.CALQ.SCRIPT, seed=None, require_seed=False,
                                parameters={"blobs": {V.CALQ.MODULE: blob or V.CALQ.blob_id(
-                                   repo / "extended" / "lift_one_sample2.py")}},
+                                   repo / "extended" / "lift_one_sample2.py"),
+                                   V.CALQ.SCRIPT: runner_blob or V.CALQ.blob_id(repo / "scripts" / "q126_calibrate.py")}},
                                results_dir=repo / "results", exploratory=exploratory,
                                provenance={"clean_run": {"name": "t"}} if clean else None)
     sha = V.CALQ._sha(csv)
@@ -175,6 +185,8 @@ def test_the_choice_file_and_its_row(V, tmp_path):
     assert V.choice_problems(_choice_repo(tmp_path / "e", V, ok_line, exploratory=True))[0]
     probs, _ = V.choice_problems(_choice_repo(tmp_path / "f", V, ok_line, blob="0" * 40))
     assert any("the calibration ran" in p for p in probs)
+    probs, _ = V.choice_problems(_choice_repo(tmp_path / "f2", V, ok_line, runner_blob="0" * 40))     # F6
+    assert any("q126_calibrate.py" in p and "the calibration ran" in p for p in probs)
     repo = _choice_repo(tmp_path / "g", V, ok_line)
     (repo / "DECISIONS.md").write_text("| E-190 | `results/q126_choice.csv` sha256 `" + "0" * 64 + "` |\n",
                                        encoding="utf-8")

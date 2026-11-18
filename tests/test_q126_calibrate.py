@@ -76,6 +76,14 @@ def C():
     return load()
 
 
+@pytest.fixture(autouse=True)
+def private_ledger(C, tmp_path, monkeypatch):
+    """Every test's part ledger is its own (never the run's under RUNS_DIR)."""
+    p = tmp_path / "ledger" / "q126-ledger.jsonl"
+    monkeypatch.setattr(C, "ledger_path", lambda: p)
+    return p
+
+
 def toy_seeds(C):
     s = {r: TOY + i for i, r in enumerate(C.DRAW_ROLES)}
     s["tests"] = TOY + 40
@@ -270,6 +278,11 @@ def test_the_provenance_assertion_holds_the_full_entropy(C):
     assert refused(lambda p2: p2[-1].update(entropy=[s["drift"], 7, 148]))
     assert refused(lambda p2: at(p2, "sub:200:000:net3:flip63").update(subset_entropy=[s["subsets"], 0, 1]))
     assert refused(lambda p2: at(p2, "syn:iid:200").update(entropy=[TOY, 0]))   # off the block
+    # sample_entropy alone (F4): the exact index right, the uniform cells' seed another null's
+    probs = refused(lambda p2: at(p2, "sub:200:000:win1:flip55").update(sample_entropy=[s["exact_sample"], 20]))
+    assert probs and all("sample_entropy" in x for x in probs)
+    probs = refused(lambda p2: at(p2, "fixed:taken:win1:alt45").update(sample_entropy=[s["subsets"], 13]))
+    assert probs and any("sample_entropy" in x for x in probs)
 
 
 def test_each_imported_q108_construction_without_a_seed_map_is_refused(C, monkeypatch):
@@ -444,6 +457,7 @@ def test_condition_1_over_the_sizing_nulls_at_zero_tolerance(C):
     assert ch["line"].startswith("CHOSEN cons_m1.25 (scope D)")
     cost = [r for r in ch["cost"] if r["row"] == "cost" and "sized" in r["decision"] and r["scope"] == "D"]
     assert cost and cost[0]["candidate"] == "cons" and cost[0]["refusing_count"] == 1
+    assert cost[0]["bad_sizing_subsets"] == 1 and cost[0]["bad_core_subsets"] == 0           # the note on F10
     # a flip-42 sizing null just above nominal at k = 20 only: 1 bad subset (one in the 3,300 refuses)
     size = planted(C)
     x = FDEN // (20 * 20 * 21) + 1
@@ -612,44 +626,84 @@ def test_a_part_is_written_all_or_none(C, tmp_path, monkeypatch):
     assert C.versions_problems(work, ["sizing5000", "sizing2000"])
 
 
-def test_the_driver_order_stops_and_reproduction(C, tmp_path, monkeypatch):
+def _stepper(C, work, commit, ran, differs=()):
+    """A stub step that runs a part as the part process does (`finish_part`: written, held to the ledger, recorded)."""
+    def step(name, args, log_file=None):
+        part = args[2]
+        ran.append(part)
+        assert C.gate_problem(Path(args[4]), part) is None                 # the driver's token reaches its parts
+        if part in ("choice", "criterion"):
+            return 0
+        o = _out(C, part)
+        if part in differs:
+            o["size"] = [{"null": "a", "x": 2}]
+        return C.finish_part(work, part, o, {"commit": commit, "seed_map": {}, "versions": {}}, runner="calibrate")
+    return step
+
+
+def test_the_driver_order_stops_and_reproduction(C, tmp_path, monkeypatch, private_ledger):
     work = tmp_path / "work"
     work.mkdir()
     monkeypatch.setattr(C, "git_head", lambda repo=None: "commitB")
     ran = []
-
-    def step_ok(name, args, log_file=None):
-        part = args[2]
-        ran.append(part)
-        if part != "choice":
-            C.write_part(work, part, _out(C, part), {"commit": "commitB", "seed_map": {}, "versions": {}})
-        return 0
-    assert C.driver(C.PARTS, work, step=step_ok) == 0
+    assert C.driver(C.PARTS, work, step=_stepper(C, work, "commitB", ran)) == 0
     assert ran == list(C.PARTS)
+    led = C.ledger_read()
+    assert [r["part"] for r in led] == list(C.PARTS[:-1]) and {r["outcome"] for r in led} == {"whole"}
     ran.clear()
-    assert C.driver(C.PARTS, work, step=step_ok) == 0 and ran == ["choice"]            # whole parts are not rerun
+    assert C.driver(C.PARTS, work, step=_stepper(C, work, "commitB", ran)) == 0 and ran == ["choice"]
     # a code fix: commit C; every whole part of commit B is moved aside and must be reproduced file for file
     monkeypatch.setattr(C, "git_head", lambda repo=None: "commitC")
     ran.clear()
-
-    def step_c(name, args, log_file=None):
-        part = args[2]
-        ran.append(part)
-        if part != "choice":
-            o = _out(C, part)
-            if part == "probe":
-                o["size"] = [{"null": "a", "x": 2}]                                      # differs
-            C.write_part(work, part, o, {"commit": "commitC", "seed_map": {}, "versions": {}})
-        return 0
-    assert C.driver(C.PARTS, work, step=step_c) == C.FAILED_CHECK
-    assert ran[-1] == "probe" and (work / "probe.prev-commitB").is_dir()
+    assert C.driver(C.PARTS, work, step=_stepper(C, work, "commitC", ran, differs=("probe",))) == C.FAILED_CHECK
+    assert ran[-1] == "probe" and (work / "probe.prev-commitB").is_dir() and (work / "probe.failed").is_dir()
     assert C.reproduction_problems(work, "sizing200") == []
-    assert C.reproduction_problems(work, "probe")
-    # a crash: the driver stops, nothing after it runs; a partial folder is no output
+    assert C.ledger_read()[-1]["outcome"] == "reproduction differs"
+    # F1: invoking the driver again runs nothing and stops on the record
+    ran.clear()
+    assert C.driver(C.PARTS, work, step=_stepper(C, work, "commitC", ran)) == C.FAILED_CHECK and ran == []
+    # nor does a fresh work folder pass: the ledger is outside it
+    fresh = tmp_path / "fresh"
+    assert C.driver(C.PARTS, fresh, step=_stepper(C, fresh, "commitC", ran)) == C.FAILED_CHECK and ran == []
+    assert any("ledger" in p for p in C.failed_record_problems(fresh, "calibrate"))
+
+
+def test_a_fresh_folder_after_a_code_fix_is_held_to_the_ledger(C, tmp_path, monkeypatch):
+    """No `.prev-*` folder to compare in a fresh work folder: the ledger's earlier whole record is (F1)."""
+    w1, w2 = tmp_path / "w1", tmp_path / "w2"
+    assert C.finish_part(w1, "sizing500", _out(C, "sizing500"), {"commit": "B", "seed_map": {}, "versions": {}},
+                         runner="calibrate") == 0
+    o = _out(C, "sizing500")
+    o["size"] = [{"null": "a", "x": 9}]
+    assert C.finish_part(w2, "sizing500", o, {"commit": "C", "seed_map": {}, "versions": {}},
+                         runner="calibrate") == C.FAILED_CHECK
+    assert (w2 / "sizing500.failed").is_dir() and not (w2 / "sizing500").exists()
+    # the same output at the new commit reproduces and is recorded whole
+    w3 = tmp_path / "w3"
+    assert C.finish_part(w3, "sizing200", _out(C, "sizing200"), {"commit": "B", "seed_map": {}, "versions": {}},
+                         runner="calibrate") == 0
+    assert C.finish_part(tmp_path / "w4", "sizing200", _out(C, "sizing200"), {"commit": "C", "seed_map": {},
+                                                                              "versions": {}}, runner="calibrate") == 0
+    assert C.ledger_whole("calibrate", "sizing200", "C", C.read_manifest(tmp_path / "w4" / "sizing200")["files"])
+    # at the choice: a part with no whole record at this commit is refused; one differing from its record fails
+    monkeypatch.setattr(C, "git_head", lambda repo=None: "C")
+    C.write_part(tmp_path / "w5", "sizing1000", _out(C, "sizing1000"), {"commit": "C", "seed_map": {}, "versions": {}})
+    bad = C.ledger_choice_problems(tmp_path / "w5", ["sizing1000"], "C", "calibrate")
+    assert bad["missing"] and not bad["differs"]
+    bad = C.ledger_choice_problems(tmp_path / "w4", ["sizing200"], "C", "calibrate")
+    assert bad == {"missing": [], "differs": []}
+    # a folder whole on disk but never recorded (interrupted before its line) is partial: rerun
+    assert C.prepare_part(tmp_path / "w5", "sizing1000", "C") == "run" and not (tmp_path / "w5" / "sizing1000").exists()
+    assert C.prepare_part(tmp_path / "w4", "sizing200", "C") == "done"
+
+
+def test_the_driver_stops_on_a_crash_and_on_a_failed_step(C, tmp_path, monkeypatch):
+    """A crash: the driver stops, nothing after it runs, a partial folder is no output; a failed step stops it too."""
+    monkeypatch.setattr(C, "git_head", lambda repo=None: "commitB")
     w2 = tmp_path / "w2"
     w2.mkdir()
     (w2 / ".core.tmp-123").mkdir()
-    ran.clear()
+    ran = []
 
     def step_crash(name, args, log_file=None):
         ran.append(args[2])
@@ -667,6 +721,132 @@ def test_the_driver_order_stops_and_reproduction(C, tmp_path, monkeypatch):
 # ------------------------------------------------------------------------------------------------ the refusals
 
 
+def test_failed_checks_are_recorded_and_never_rerun(C, tmp_path, monkeypatch):
+    """F2: the in-part provenance refusal, an exception inside a check and the choice's failed checks are recorded in
+    the work folder and the ledger; preflight then refuses on the folder used and, through the ledger, on any other."""
+    from extended import results as XR
+
+    work = tmp_path / "work"
+    monkeypatch.setattr(C, "provenance_problems", lambda *a, **k: ["planted"])
+    assert C.compute_part_main("drift", work, seeds=C.SEEDS) == C.FAILED_CHECK
+    assert (work / "drift.failed" / "manifest.json").is_file()
+    rec = C.ledger_read()[-1]
+    assert rec["part"] == "drift" and rec["outcome"] == "failed" and "provenance" in rec["reasons"][0]
+    monkeypatch.undo()
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "ledger2.jsonl")
+
+    def boom(*a, **k):
+        raise AssertionError("planted: a check raised")
+    monkeypatch.setattr(C, "compute_nulls", boom)
+    w2 = tmp_path / "w2"
+    assert C.compute_part_main("drift", w2, seeds=C.SEEDS) == C.FAILED_CHECK
+    assert (w2 / "drift.failed").is_dir() and "AssertionError" in C.ledger_read()[-1]["reasons"][0]
+    # the choice: an exception in its tables, and a failed check it returns, both recorded
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "ledger3.jsonl")
+    monkeypatch.setattr(C, "part_problems", lambda *a, **k: [])
+    monkeypatch.setattr(C, "versions_problems", lambda *a, **k: [])
+    monkeypatch.setattr(C, "ledger_choice_problems", lambda *a, **k: {"missing": [], "differs": []})
+    monkeypatch.setattr(C, "read_part_frames", lambda *a, **k: {})
+
+    def raises(*a, **k):
+        raise OverflowError("planted overflow")
+    monkeypatch.setattr(C, "choice_tables", raises)
+    w3 = tmp_path / "w3"
+    assert C.choice_main(w3, seeds=C.SEEDS) == C.FAILED_CHECK and (w3 / "choice.failed").is_dir()
+    monkeypatch.setattr(C, "choice_tables", lambda *a, **k: {"failed": ["NOT CHECKED: nulls missing -- planted"]})
+    assert C.choice_main(w3, seeds=C.SEEDS) == C.FAILED_CHECK and (w3 / "choice.failed-2").is_dir()
+    assert [r["part"] for r in C.ledger_read()] == ["choice", "choice"]
+    # the ledger's record refuses any work folder, the one used included
+    monkeypatch.setattr(XR, "clean_run_problem", lambda: None)
+    monkeypatch.setattr(C, "lock_problem", lambda env=None: None)
+    monkeypatch.setattr(C, "pin_problems", lambda repo=None: [])
+    probs = C.preflight(tmp_path / "t", "core", guard=False, work=tmp_path / "never-used")
+    assert any("ledger" in p for p in probs)
+    monkeypatch.setattr(C, "ledger_path", lambda: tmp_path / "empty-ledger.jsonl")
+    assert C.preflight(tmp_path / "t", "core", guard=False, work=tmp_path / "never-used") == []
+    probs = C.preflight(tmp_path / "t", "core", guard=False, work=w3)
+    assert any("choice.failed" in p for p in probs)                          # the folder actually used
+
+
+def test_the_part_and_work_options_are_the_drivers(C, tmp_path, monkeypatch, capsys):
+    work = tmp_path / "work"
+    work.mkdir()
+    assert C.main(["--work", str(work)]) == 3 and "driver's alone" in capsys.readouterr().out
+    assert C.main(["--part", "core"]) == 3 and "from the driver" in capsys.readouterr().out
+    assert C.main(["--part", "core", "--work", str(work)]) == 3 and "token" in capsys.readouterr().out
+    (work / C.DRIVER_TOKEN).write_text("abc", encoding="utf-8")
+    assert C.gate_problem(work, "core", {C.DRIVER_ENV: "abd"}) is not None
+    assert C.gate_problem(work, "core", {C.DRIVER_ENV: "abc"}) is None
+    assert C.gate_problem(None, None) is None
+
+
+def test_one_blas_thread_forced_and_recorded(C, monkeypatch):
+    """F3: the three variables are 1 in this process (the runner forces them on import), recorded with the BLAS name
+    in every manifest's versions, and preflight refuses any other setting."""
+    from extended import results as XR
+
+    assert all(os.environ[k] == "1" for k in C.BLAS_VARS)
+    v = C._versions()
+    assert v["blas_threads"] == {k: "1" for k in C.BLAS_VARS} and v["blas"]
+    assert C.thread_problems({k: "1" for k in C.BLAS_VARS}) == []
+    assert C.thread_problems({**{k: "1" for k in C.BLAS_VARS}, "OMP_NUM_THREADS": "2"})
+    monkeypatch.setattr(XR, "clean_run_problem", lambda: None)
+    monkeypatch.setattr(C, "lock_problem", lambda env=None: None)
+    monkeypatch.setenv("OPENBLAS_NUM_THREADS", "2")
+    probs = C.preflight(Path("."), "core", guard=False)
+    assert probs and "BLAS thread" in probs[0]
+
+
+def test_the_result_ceiling_and_its_shards(C, tmp_path, monkeypatch):
+    """F5: a frame at or under the ceiling is written whole; above it, by part (`<name>__<part>`), and a part still
+    above it in row chunks; the size check is in every manifest; every shard name checked free before the first write."""
+    df = pd.DataFrame({"part": ["core"] * 50 + ["probe"] * 30 + [None] * 20, "x": range(100)})
+    assert [s for s, _, _ in C.shard_plan("q126_cal_size", df)] == ["q126_cal_size"]
+    small = C.csv_bytes(df[df["part"] == "core"]) + 1
+    names = [s for s, _, _ in C.shard_plan("q126_cal_size", df, ceiling=small)]
+    assert names == ["q126_cal_size__core", "q126_cal_size__probe", "q126_cal_size__spread"]
+    tiny = C.csv_bytes(df[df["part"] == "probe"]) - 1
+    sh = C.shard_plan("q126_cal_size", df, ceiling=tiny)
+    assert [s for s, _, _ in sh][:2] == ["q126_cal_size__core__00", "q126_cal_size__core__01"]
+    assert sum(len(g) for _, g, _ in sh) == 100 and all(i["bytes"] <= tiny for _, _, i in sh)
+    # written through extended.results into a folder of no tree (a test's), the size check in each manifest
+    target = tmp_path / "out"
+    target.mkdir()
+    monkeypatch.setattr(C, "RESULT_CEILING", small)
+    rc = C.write_results({"q126_cal_size": df, "q126_choice": df.head(3)}, {"q126_cal_size": ("fixed_mc", ("fixed_mc",)),
+                         "q126_choice": (None, ())}, {"q126_cal_size": "t", "q126_choice": "t"}, {"x": 1}, C.SEEDS,
+                         target=target, work=tmp_path / "w", runner="calibrate", commit="c")
+    assert rc == 0
+    got = sorted(p.name for p in target.glob("*.csv"))
+    assert got == ["q126_cal_size__core.csv", "q126_cal_size__probe.csv", "q126_cal_size__spread.csv",
+                   "q126_choice.csv"]
+    man = json.loads((target / "q126_cal_size__probe.csv.manifest.json").read_text(encoding="utf-8"))
+    assert man["parameters"]["this_file"]["sharded"] and len(man["parameters"]["size_check"]["q126_cal_size"]) == 3
+    # a second write refuses before writing anything (the names exist)
+    assert C.write_results({"q126_cal_size": df}, {"q126_cal_size": ("fixed_mc", ("fixed_mc",))},
+                           {"q126_cal_size": "t"}, {}, C.SEEDS, target=target, work=tmp_path / "w", runner="calibrate",
+                           commit="c") == C.REFUSED
+    assert C.result_clash(target, ["q126_cal_size"]) and not C.result_clash(target, ["q126_cal_sizing"])
+
+
+def test_the_prepared_licence_entries_parse_and_name_only_q126_files(tmp_path):
+    """F5: the allow-list entries for Q-126's result files are prepared, commented, in tests/price_level_allowlist.csv
+    -- uncommented in the collection commit (an entry that matches no finding is stale before then)."""
+    from extended import price_levels as PL
+
+    text = (ROOT / "tests" / "price_level_allowlist.csv").read_text(encoding="utf-8")
+    lines = [x[2:] for x in text.splitlines() if x.startswith("# results/q126_")]
+    assert any(",level,exact_index," in x for x in lines)
+    head = next(x for x in text.splitlines() if x.startswith("file,rule,column,reason"))
+    p = tmp_path / "allow.csv"
+    p.write_text(head + "\n" + "\n".join(lines) + "\n", encoding="utf-8")
+    entries = PL.load_allowlist(p)
+    assert entries and all(e.file.startswith("results/q126_") for e in entries)
+    assert {e.file for e in entries if e.column == "exact_index"} == {"results/q126_cal_size.csv",
+                                                                     "results/q126_cal_sizing.csv",
+                                                                     "results/q126_val_size.csv"}
+
+
 def test_refuses_outside_a_clean_run_before_any_step():
     r = subprocess.run([sys.executable, str(ENTRY)], cwd=str(ROOT), capture_output=True, text=True, timeout=600,
                        env=_env())
@@ -674,7 +854,7 @@ def test_refuses_outside_a_clean_run_before_any_step():
     assert "step" not in r.stdout.lower()
     r = subprocess.run([sys.executable, str(ENTRY), "--part", "core"], cwd=str(ROOT), capture_output=True, text=True,
                        timeout=600, env=_env())
-    assert r.returncode == 3 and "clean run" in r.stdout
+    assert r.returncode == 3 and "REFUSED" in r.stdout and "step" not in r.stdout.lower()   # the gate: no driver
 
 
 def test_the_lock_must_be_this_runs(C, tmp_path, monkeypatch):
@@ -824,6 +1004,14 @@ def test_a_small_end_to_end_calibration_writes_nothing(C, monkeypatch, tmp_path)
     monkeypatch.chdir(tmp_path)
     toy_grid(C, monkeypatch)
     p, days = synthetic_pairs(n_judged=130, per_session=10, sub=70)
+    # F4: every generator the run builds is seeded from the run's own block (a spy on numpy's default_rng)
+    real_rng = np.random.default_rng
+    entropies = []
+
+    def spy(seed=None, *a, **k):
+        entropies.append(seed)
+        return real_rng(seed, *a, **k)
+    monkeypatch.setattr(np.random, "default_rng", spy)
     n = len(days)
     seeds = toy_seeds(C)
     block = set(seeds.values())
@@ -854,6 +1042,12 @@ def test_a_small_end_to_end_calibration_writes_nothing(C, monkeypatch, tmp_path)
     assert not C.failed(out)
     C.write_part(work, "drift", out, {"commit": "toy", "seed_map": seeds, "versions": {}})
     parts["drift"] = C.read_part_frames(work, "drift")
+    monkeypatch.setattr(np.random, "default_rng", real_rng)
+    roles_used = {int(e[0]) for e in entropies}
+    assert entropies and all(isinstance(e, list) and int(e[0]) in block for e in entropies), \
+        [e for e in entropies if not (isinstance(e, list) and int(e[0]) in block)][:5]
+    assert {seeds[r] for r in ("fixed_mc", "subsets", "subset_mc", "synthetic", "beside_cp", "beside_flat",
+                               "exact_sample", "drift", "probe")} <= roles_used
     checked = {k: v["manifest"]["meta"]["scalar_checked"] for k, v in parts.items()}
     assert checked["core"] > 1000 and checked["probe"] > 0, checked                      # sizing: no rejection here
     assert checked["drift"] == 0                                                         # beside: not re-decided

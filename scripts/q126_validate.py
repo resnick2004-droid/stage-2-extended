@@ -42,7 +42,7 @@ import time
 from pathlib import Path
 
 for _k in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_k, "1")
+    os.environ[_k] = "1"                                   # forced, one BLAS thread a process (F3)
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -198,11 +198,13 @@ def choice_problems(repo: Path = ROOT) -> tuple[list[str], dict]:
     if parsed is None:
         return ["the calibration chose NONE: the validation block is retired, never drawn (the plan's 7 item 1)"], info
     info.update(parsed)
-    want = (man.get("parameters") or {}).get("blobs", {}).get(CALQ.MODULE)
-    got = CALQ.blob_id(repo / CALQ.MODULE)
-    if want != got:
-        probs.append(f"{CALQ.MODULE} is blob {got[:12]}, not the {str(want)[:12]} the calibration ran (the chosen "
-                     "statistics are that code)")
+    blobs = (man.get("parameters") or {}).get("blobs", {})
+    for rel in (CALQ.MODULE, CALQ.SCRIPT):                 # the module and the runner the validation imports (F6)
+        want = blobs.get(rel)
+        got = CALQ.blob_id(repo / rel) if (repo / rel).is_file() else None
+        if want != got:
+            probs.append(f"{rel} is blob {str(got)[:12]}, not the {str(want)[:12]} the calibration ran (the chosen "
+                         "statistics and their procedure are that code)")
     return probs, info
 
 
@@ -272,7 +274,7 @@ def work_dir() -> Path:
 
 
 def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guard: bool = True,
-              repo: Path = ROOT) -> tuple[list[str], dict]:
+              repo: Path = ROOT, work: Path | None = None) -> tuple[list[str], dict]:
     """The refusals before any read, in order."""
     from extended import results as XR
 
@@ -283,9 +285,11 @@ def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guar
     bad = CALQ.lock_problem()
     if bad:
         return [bad], {}
+    bad = CALQ.thread_problems()
+    if bad:
+        return bad, {}
     if part in (None, "criterion"):
-        clash = [x for x in RESULT_FILES if (target / f"{x}.csv").exists()
-                 or (target / f"{x}.csv.manifest.json").exists()]
+        clash = CALQ.result_clash(target, RESULT_FILES)
         if clash:
             return [f"{clash} exist in {target}; a result file is never overwritten"], {}
     probs, info = choice_problems(repo)
@@ -299,12 +303,12 @@ def preflight(target: Path, part: str | None, *, seeds: dict | None = None, guar
     probs = provenance(core_plan(seeds) + drift_plan(seeds), seeds)
     if probs:
         return [f"the seed-provenance assertion refuses: {probs[:5]}"], info
-    work = work_dir()
+    work = work_dir() if work is None else Path(work)
     if not CALQ._outside_tree(work, repo):
         return [f"the work folder {work} must lie outside this tree"], info
-    fails = sorted(p.name for p in work.glob("*.failed")) if work.is_dir() else []
-    if fails:
-        return [f"a failed check is on record ({fails}): it is diagnosed, never rerun"], info
+    bad = CALQ.failed_record_problems(work, "validate")
+    if bad:
+        return bad, info
     if guard:
         sp, notes = CALQ.seed_block_problems(repo)
         for x in notes:
@@ -322,6 +326,17 @@ def part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | Non
     stats_ = statistics(info)
     cands = candidates_for(stats_)
     record = sorted(set(stats_))
+
+    def provenance_failed(probs):
+        CALQ.record_failed(work, part, [f"the seed-provenance assertion: {x}" for x in probs[:20]], runner="validate")
+        print(f"FAILED CHECK: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
+        return FAILED_CHECK
+
+    def check_failed(exc):
+        CALQ.record_failed(work, part, [f"a check raised {type(exc).__name__}: {exc}"], runner="validate")
+        print(f"FAILED CHECK: {type(exc).__name__}: {exc}", flush=True)
+        return FAILED_CHECK
+
     extra = {"choosing_row": info["row"], "choice": info["decision"], "statistics": [list(x) for x in stats_],
              "candidates": cands}
     if part == "core":
@@ -331,8 +346,7 @@ def part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | Non
         plan = core_plan(seeds)
         probs = provenance(plan, seeds)                                  # before any read and any draw
         if probs:
-            print(f"REFUSED: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
-            return REFUSED
+            return provenance_failed(probs)
         cal, sha, src = CALQ.read_calendar()
         bad = CALQ.calendar_problems(cal, sha)
         if bad:
@@ -351,26 +365,31 @@ def part_main(part: str, work: Path, info: dict, *, seeds: dict, reps: int | Non
                 return 1
             p, pinfo = CALQ.Q82.load_pairs(scratch / "pairs" / "p16_pairs.parquet", cal)
             inp = CALQ.CAL.Inputs(p, len(cal), seeds)
-            out = CALQ.compute_nulls(part, plan, inp, len(cal), reps, cands, reps_beside=reps_beside, record=record)
+            try:
+                out = CALQ.compute_nulls(part, plan, inp, len(cal), reps, cands, reps_beside=reps_beside,
+                                         record=record)
+            except CALQ.CHECK_ERRORS as exc:
+                return check_failed(exc)
             extra.update({"calendar_sha256": sha, "calendar_source": src, "pairs_sha256": pinfo.get("parquet_sha256"),
                           "pairs_identity": pinfo.get("identity")})
-            CALQ.write_part(work, part, out, {**CALQ._manifest_base(seeds, extra), **CALQ._time_fields(t0),
-                                              "timing": out["timing"]},
-                            {"judged_sessions.csv": calf, "pairs": scratch / "pairs"})
+            return CALQ.finish_part(work, part, out, {**CALQ._manifest_base(seeds, extra), **CALQ._time_fields(t0),
+                                                      "timing": out["timing"]}, runner="validate",
+                                    extra_dirs={"judged_sessions.csv": calf, "pairs": scratch / "pairs"})
         finally:
             shutil.rmtree(scratch, ignore_errors=True)
-        return FAILED_CHECK if CALQ.failed(out) else 0
     if part == "drift":
         plan = drift_plan(seeds)
         probs = provenance(plan, seeds)
         if probs:
-            print(f"REFUSED: the seed-provenance assertion refuses: {probs[:5]}", flush=True)
-            return REFUSED
+            return provenance_failed(probs)
         n = CALQ.N_SESSIONS
-        out = CALQ.compute_nulls(part, plan, None, n, reps, cands, drift_inputs=CALQ.drift_inputs_for(n), record=record)
-        CALQ.write_part(work, part, out, {**CALQ._manifest_base(seeds, extra), **CALQ._time_fields(t0),
-                                          "timing": out["timing"]})
-        return FAILED_CHECK if CALQ.failed(out) else 0
+        try:
+            out = CALQ.compute_nulls(part, plan, None, n, reps, cands, drift_inputs=CALQ.drift_inputs_for(n),
+                                     record=record)
+        except CALQ.CHECK_ERRORS as exc:
+            return check_failed(exc)
+        return CALQ.finish_part(work, part, out, {**CALQ._manifest_base(seeds, extra), **CALQ._time_fields(t0),
+                                                  "timing": out["timing"]}, runner="validate")
     raise ValueError(f"no part {part!r}")
 
 
@@ -386,6 +405,14 @@ def criterion_main(work: Path, info: dict, *, seeds: dict) -> int:
     if probs:
         print("REFUSED: " + "; ".join(probs[:8]), flush=True)
         return REFUSED
+    bad = CALQ.ledger_choice_problems(work, need, commit, "validate")
+    if bad["missing"]:
+        print("REFUSED: " + "; ".join(bad["missing"][:8]), flush=True)
+        return REFUSED
+    if bad["differs"]:
+        CALQ.record_failed(work, "criterion", bad["differs"], runner="validate", commit=commit)
+        print("FAILED CHECK: " + "; ".join(bad["differs"][:5]), flush=True)
+        return FAILED_CHECK
     parts = {p: CALQ.read_part_frames(work, p) for p in need}
     for p in need:
         if parts[p]["manifest"].get("choice") != info["decision"]:
@@ -394,8 +421,12 @@ def criterion_main(work: Path, info: dict, *, seeds: dict) -> int:
     stats_ = statistics(info)
     cands = candidates_for(stats_)
     size = pd.concat([parts["core"]["size"], parts["drift"]["size"]], ignore_index=True, sort=False)
-    res = criterion_tables(size, stats_, cands)
+    try:
+        res = criterion_tables(size, stats_, cands)
+    except CALQ.CHECK_ERRORS as exc:
+        res = {"failed": [f"a check raised {type(exc).__name__}: {exc}"]}
     if res["failed"]:
+        CALQ.record_failed(work, "criterion", res["failed"], runner="validate", commit=commit)
         for f in res["failed"]:
             print(f"FAILED CHECK: {f}", flush=True)
         return FAILED_CHECK
@@ -428,24 +459,11 @@ def criterion_main(work: Path, info: dict, *, seeds: dict) -> int:
               "criterion": "the plan's 4.3 (E-052's): at every k in 13..20, on every one of the 2,293 nulls, no Monte "
                            "Carlo null's 95 % interval wholly above nominal and no exact size above nominal",
               "verdicts": verdict_line}
-    clash = [nm for nm in RESULT_FILES if (RESULTS_DIR / f"{nm}.csv").exists()]
-    if clash:
-        print(f"REFUSED: {clash} exist; a result file is never overwritten", flush=True)
-        return REFUSED
-    written = []
-    try:
-        for nm in RESULT_FILES:
-            seed, rr = roles[nm]
-            csv, mp = XR.write_result(frames[nm], nm, script=SCRIPT, seed=None if seed is None else int(seeds[seed]),
-                                      parameters={**common, "seeds": {r: int(seeds[r]) for r in rr}},
-                                      description=f"Q-126 ({DECISION}): the validation -- {nm}; {verdict_line}",
-                                      exploratory=False, require_seed=seed is not None)
-            written.append(nm)
-            _log(f"wrote {csv} ({len(frames[nm])} rows) and {mp.name}")
-    except Exception as exc:
-        print(f"FAILED CHECK: the result files were written in part ({written}) -- {type(exc).__name__}: {exc}",
-              flush=True)
-        return FAILED_CHECK
+    desc = {nm: f"the validation -- {nm}; {verdict_line}" for nm in RESULT_FILES}
+    rc = CALQ.write_results(frames, {nm: roles[nm] for nm in RESULT_FILES}, desc, common, seeds, target=RESULTS_DIR,
+                            work=work, runner="validate", commit=commit, script=SCRIPT)
+    if rc:
+        return rc
     for (c, s), v in res["verdicts"].items():
         print(f"criterion (Q-126) {c} (scope {s}): {v}", flush=True)
     return 0
@@ -458,14 +476,18 @@ def main(argv=None) -> int:
     ap.add_argument("--work", type=Path, default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     t0 = time.time()
+    bad = CALQ.gate_problem(a.work, a.part)
+    if bad:
+        print(f"REFUSED: {bad}", flush=True)
+        return REFUSED
+    work = work_dir() if a.work is None else Path(a.work)
     try:
-        probs, info = preflight(RESULTS_DIR, a.part)
+        probs, info = preflight(RESULTS_DIR, a.part, work=work)
     except CALQ.ProvenanceRefused as exc:
         probs, info = [str(exc)], {}
     if probs:
         print("REFUSED: " + "; ".join(probs), flush=True)
         return REFUSED
-    work = work_dir() if a.work is None else Path(a.work)
     if not CALQ._outside_tree(work):
         print(f"REFUSED: the work folder {work} must lie outside this tree", flush=True)
         return REFUSED
@@ -479,7 +501,7 @@ def main(argv=None) -> int:
         return part_main(a.part, work, info, seeds=SEEDS)
     parts = PARTS if a.parts is None else tuple(x for x in PARTS if x in a.parts.split(","))
     _log(f"the choice ({info['row']}): {info['decision']}; statistics {statistics(info)}; seed map {SEEDS}")
-    rc = CALQ.driver(parts, work, SCRIPT)
+    rc = CALQ.driver(parts, work, SCRIPT, runner="validate", final="criterion")
     _log(f"EXIT {rc} ({time.time() - t0:.0f} s)")
     return rc
 

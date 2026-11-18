@@ -35,3 +35,18 @@ results/p14_validation.csv,pair,*/added_ticks_*,"added slippage in ticks (a smal
 results/p14_validation.csv,pair,*/*_range,"ranges of counts and sessions across realisations; the numerators are dollars and counts"
 results/p14_validation.csv,pair,*/registered_pf_growth_on_base_p50,"dollars of growth; the numerator payouts per path (a count)"
 results/p14_validation.csv,pair,*/registered_v1_payout_drought_p90,"sessions of payout drought; the numerators are dollars"
+# Q-126g (prepared for the commit that collects Q-126's results, the red team's F5 on the build; E-191): uncomment each
+# line the licence scan then reports, never before -- an entry that matches no finding is stale. The columns are classed
+# by their meaning, as Q-108's files above were.
+# results/q126_cal_size.csv,level,exact_index,"the exact null index of the plan's 4.1: a row ordinal 0..33,019, not a price"
+# results/q126_cal_sizing.csv,level,exact_index,"the exact null index of the plan's 4.1: a row ordinal 0..33,019, not a price"
+# results/q126_val_size.csv,level,exact_index,"the exact null index of the plan's 4.1: a row ordinal 0..1,169, not a price"
+# results/q126_cal_size.csv,pair,*ratio_*/rate_*,"ratio_x is rate_x over its significance level by construction, so ratio/rate is 1/level (as Q-108's)"
+# results/q126_cal_size.csv,pair,*count_*/ratio_*,"rejection counts over ratios of rates to levels: counts and statistics"
+# results/q126_cal_size.csv,pair,*size/admitted_share,"size (a sample count) over a share"
+# results/q126_cal_size.csv,pair,*size/count_*,"size (a sample count) over a rejection count"
+# results/q126_val_size.csv,pair,*ratio_*/rate_*,"ratio_x is rate_x over its significance level by construction, so ratio/rate is 1/level (as Q-108's)"
+# results/q126_val_size.csv,pair,*count_*/ratio_*,"rejection counts over ratios of rates to levels: counts and statistics"
+# results/q126_val_size.csv,pair,*count_*/count_*,"rejection counts over rejection counts"
+# results/q126_val_size.csv,pair,*rate_*/rate_*,"rejection rates over rejection rates"
+# results/q126_val_size.csv,pair,*size/count_*,"size (a sample count) over a rejection count"
