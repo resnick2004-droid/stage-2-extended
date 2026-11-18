@@ -1,0 +1,1001 @@
+{
+  "columns": [
+    "section",
+    "reading",
+    "design",
+    "arm",
+    "response",
+    "measure",
+    "stat",
+    "value",
+    "n",
+    "note",
+    "kind",
+    "enforcement_p",
+    "rtp",
+    "rtp_warnings",
+    "ftp_label",
+    "block"
+  ],
+  "description": "EXPLORATORY (Q-17): P-14, P-15 and P-16's user scorecard (D-621), the extra measures of E-007 (e) and the operator's path measures, each design and arm under 19 firm responses (off, per-payout denial 10/25/50 %, all-accounts forfeiture 10/25/50 %, the placement on at 0 and 3 warnings, ten binding Focused Trader models) on every start of the development window; all starts and the judged block. Beside, never deciding.",
+  "exploratory": true,
+  "git_commit": "f7eda0d02e31daea7bfb92847f4ad1203cef014e",
+  "git_dirty": false,
+  "notes": {
+    "selection": "none",
+    "status": "EXPLORATORY (Q-17, E-007 (e)): beside the verdict, never deciding; R* stays P-14; the verdict stays at 0 % denial with the placement off (E-008 (2))",
+    "variant_count_rule": "one reading a design, arm and response; exploratory, no family (beside, E-007 (e))"
+  },
+  "parameters": {
+    "arms": [
+      "verdict",
+      "point"
+    ],
+    "bankroll_limits": [
+      2000.0,
+      2500.0
+    ],
+    "blocks": {
+      "all": "every start with the reading's horizon left",
+      "judged": "D-621 (4)(b)'s late block: starts from 2024"
+    },
+    "commit_read": "f7eda0d02e31",
+    "conventions": {
+      "bankroll_limit": "a start counts as ahead at a month only if its cash spent before the first payout is within the limit (the replay's own path, not a re-run with a wallet)",
+      "break_even": "the first close k >= 1 with cumulative net at or above zero (to 1e-6)",
+      "forfeiture": "the denied payout's close ends every live account (the engine's household rule, raised by the denial), no pass waiting activates, nothing more is bought; every payout whose cash would arrive after that close is taken out; cash arriving on it is kept",
+      "months": "sessions 21(m-1)+1 .. 21m are month m; a payout belongs to the month its cash arrives in",
+      "path_measures": "each start's long replay (daily closes); the scorecard and extra sections read an exact-length run where its event days differed (user_journey.Views)"
+    },
+    "decisions": [
+      "E-007 (e)",
+      "E-008 (2)",
+      "E-013 (1)"
+    ],
+    "denial_seed": 20261920,
+    "designs": [
+      "p14",
+      "p15",
+      "p16"
+    ],
+    "exact_runs": {
+      "off": "every start",
+      "other responses": "every start index a multiple of 21"
+    },
+    "first_window": 126,
+    "ftp_budget": [
+      20,
+      21
+    ],
+    "ftp_window_days": 21,
+    "mdd": "not computed: TASK_QUEUE Q-16's calibrated P comparison is not on master (2026-11-15); an uncalibrated MDD is what E-007 (1) found does not deliver its level",
+    "n_eff": "Bartlett, lag 63",
+    "responses": [
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "off",
+        "name": "off",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.1,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "denial",
+        "name": "denial_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.25,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "denial",
+        "name": "denial_25",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.5,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "denial",
+        "name": "denial_50",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.1,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "forfeit",
+        "name": "forfeit_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.25,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "forfeit",
+        "name": "forfeit_25",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.5,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "forfeit",
+        "name": "forfeit_50",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "rtp",
+        "name": "rtp",
+        "rtp": true,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "",
+        "ftp_measure": null,
+        "ftp_path": null,
+        "ftp_threshold": null,
+        "kind": "rtp",
+        "name": "rtp_w3",
+        "rtp": true,
+        "rtp_warnings": 3
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "slowdown purchases>=10/21d",
+        "ftp_measure": "combine_purchases",
+        "ftp_path": "slowdown",
+        "ftp_threshold": 10,
+        "kind": "ftp",
+        "name": "ftp_slowdown_purchases_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "slowdown purchases>=20/21d",
+        "ftp_measure": "combine_purchases",
+        "ftp_path": "slowdown",
+        "ftp_threshold": 20,
+        "kind": "ftp",
+        "name": "ftp_slowdown_purchases_20",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "slowdown lost>=3/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "slowdown",
+        "ftp_threshold": 3,
+        "kind": "ftp",
+        "name": "ftp_slowdown_lost_3",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "slowdown lost>=5/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "slowdown",
+        "ftp_threshold": 5,
+        "kind": "ftp",
+        "name": "ftp_slowdown_lost_5",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "slowdown lost>=10/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "slowdown",
+        "ftp_threshold": 10,
+        "kind": "ftp",
+        "name": "ftp_slowdown_lost_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "corrective purchases>=10/21d",
+        "ftp_measure": "combine_purchases",
+        "ftp_path": "corrective",
+        "ftp_threshold": 10,
+        "kind": "ftp",
+        "name": "ftp_corrective_purchases_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "corrective purchases>=20/21d",
+        "ftp_measure": "combine_purchases",
+        "ftp_path": "corrective",
+        "ftp_threshold": 20,
+        "kind": "ftp",
+        "name": "ftp_corrective_purchases_20",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "corrective lost>=3/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "corrective",
+        "ftp_threshold": 3,
+        "kind": "ftp",
+        "name": "ftp_corrective_lost_3",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "corrective lost>=5/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "corrective",
+        "ftp_threshold": 5,
+        "kind": "ftp",
+        "name": "ftp_corrective_lost_5",
+        "rtp": false,
+        "rtp_warnings": 0
+      },
+      {
+        "enforcement_p": 0.0,
+        "ftp_label": "corrective lost>=10/21d",
+        "ftp_measure": "funded_lost",
+        "ftp_path": "corrective",
+        "ftp_threshold": 10,
+        "kind": "ftp",
+        "name": "ftp_corrective_lost_10",
+        "rtp": false,
+        "rtp_warnings": 0
+      }
+    ],
+    "seconds": 21433.8,
+    "seed_block": [
+      20261920,
+      20261929
+    ],
+    "start_seed": "lockstep.child_seed(20261920, 0, start_day): one per start, the same for every design, arm and response (common random numbers)",
+    "starts": "every start of each design's development window",
+    "task": "Q-17",
+    "timing": {
+      "p14|point|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 195.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 191.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 182.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 83.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 68.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 55.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 179.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 93.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 106.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 81.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 92.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 180.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 93.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 99.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 84.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 94.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|off": {
+        "exact_runs_differing": 0,
+        "seconds": 432.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p14|point|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 193.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|point|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 196.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 259.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 238.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 235.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 96.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 65.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 49.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 180.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 97.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 112.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 81.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 96.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 164.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 112.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 97.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 100.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 113.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|off": {
+        "exact_runs_differing": 0,
+        "seconds": 524.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p14|verdict|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 251.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p14|verdict|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 238.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 284.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 268.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 259.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 104.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 63.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 48.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 267.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 165.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 180.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 154.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 162.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 261.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 161.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 172.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 152.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 159.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|off": {
+        "exact_runs_differing": 0,
+        "seconds": 612.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p15|point|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 285.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|point|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 283.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 285.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 275.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 267.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 110.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 69.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 53.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 269.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 165.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 180.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 154.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 163.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 258.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 164.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 171.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 156.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 164.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|off": {
+        "exact_runs_differing": 0,
+        "seconds": 616.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p15|verdict|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 301.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p15|verdict|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 290.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 248.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 243.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 235.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 104.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 66.6,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 52.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 243.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 149.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 167.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 138.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 150.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 241.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 147.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 157.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 139.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 149.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|off": {
+        "exact_runs_differing": 0,
+        "seconds": 534.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p16|point|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 254.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|point|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 254.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|denial_10": {
+        "exact_runs_differing": 0,
+        "seconds": 245.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|denial_25": {
+        "exact_runs_differing": 0,
+        "seconds": 239.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|denial_50": {
+        "exact_runs_differing": 0,
+        "seconds": 230.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|forfeit_10": {
+        "exact_runs_differing": 0,
+        "seconds": 100.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|forfeit_25": {
+        "exact_runs_differing": 0,
+        "seconds": 64.0,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|forfeit_50": {
+        "exact_runs_differing": 0,
+        "seconds": 50.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_corrective_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 239.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_corrective_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 146.9,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_corrective_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 164.5,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_corrective_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 138.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_corrective_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 148.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_slowdown_lost_10": {
+        "exact_runs_differing": 0,
+        "seconds": 238.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_slowdown_lost_3": {
+        "exact_runs_differing": 0,
+        "seconds": 145.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_slowdown_lost_5": {
+        "exact_runs_differing": 0,
+        "seconds": 155.2,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_slowdown_purchases_10": {
+        "exact_runs_differing": 0,
+        "seconds": 139.4,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|ftp_slowdown_purchases_20": {
+        "exact_runs_differing": 0,
+        "seconds": 147.8,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|off": {
+        "exact_runs_differing": 0,
+        "seconds": 530.1,
+        "starts": 1691,
+        "starts_with_exact_runs": 1670
+      },
+      "p16|verdict|rtp": {
+        "exact_runs_differing": 0,
+        "seconds": 253.3,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      },
+      "p16|verdict|rtp_w3": {
+        "exact_runs_differing": 0,
+        "seconds": 249.7,
+        "starts": 1691,
+        "starts_with_exact_runs": 80
+      }
+    },
+    "u1_reference": {
+      "file": "vendor/stage2/results/user_journey.csv",
+      "sha256": "5c8e7413767ba90cf54cf756352eb8b1e87572d5afe62818cbaef04c5f5090cc"
+    },
+    "workers": 1,
+    "year_window": 252
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\user-beside",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "user-beside"
+    },
+    "read_ledger": "1 line(s) appended to results/read_ledger.jsonl by this run, each a ledger record: recorded as its own writes (D-207)"
+  },
+  "result_file": "user_beside.csv",
+  "rows": 18927,
+  "script": "scripts/user_beside.py",
+  "seed": 20261920,
+  "sha256": "5ad0153d0747cafa77d10dff8d3fde10cdc29b88a8752a94d2d4ba8ac314764f",
+  "timestamp": "2026-11-18T09:09:37+00:00",
+  "variant_count": 114
+}
