@@ -1,8 +1,12 @@
 # The three-way test: design note (Q-153; the restart plan's Wave 3.2, first part)
 
 Drafted 2026-11-18 on `wt/wt-verify` for the lead and the red team. **Corrective cycle 1** answers the red team's read
-(`docs/reviews/THREE_WAY_TEST_2026-11-18.md`: four blocking findings, thirteen minor) under the coordinator's rulings
-(section 0).
+(`docs/reviews/THREE_WAY_TEST_2026-11-18.md`: four blocking findings, thirteen minor). **Corrective cycle 2** answers
+its re-read (`docs/reviews/THREE_WAY_TEST_v2_2026-11-18.md`: one new blocking finding, ten minor). Both follow the
+coordinator's rulings (section 0).
+
+**N-1's paragraph** sits between the markers `2.2a-admission` in 2.2 (a). It is written to be copied verbatim into
+H3's declaration, and it is the scope of the next re-read.
 
 **Status: a design note, not a declaration.** Nothing here is pinned, built or run. H3's declaration takes its rules
 from this note, after the red team's read.
@@ -29,8 +33,9 @@ opened was `results/calibration_p.csv`, for its header row.
   path; until the template defines overlap, no design with overlapping positions runs (B-3).
 - **Leg (i), the coin-seed leg, carries the level.** Given the held-out history, each user's coin draws are
   independent of every other user's. So the deciding bounds are exact on every history by theorem:
-  - Hoeffding's bound (McDiarmid's, for a clipped composite of means and shares) over every start-seed term;
-  - an empirical-Bernstein or betting bound over seed sets, when a quantile dimension is in the composite.
+  - Hoeffding's bound (McDiarmid's for a clipped composite) over every start-seed term, when every dimension is an
+    unconditional mean with a priori bounds (2.2 (a), N-1), under choice 3 only;
+  - otherwise, an empirical-Bernstein or betting bound over seed sets (2.2 (b)).
 
   There is no t branch (B-4). The composite is bounded by clipping.
 - **The two same-design nulls are symmetric by construction.** A third null is added: two different designs on toys,
@@ -49,7 +54,7 @@ opened was `results/calibration_p.csv`, for its header row.
 |---|---|---|
 | B-1 the redraw ignores the floor race | the race of the nearer barrier, as `BinaryDraw`; the same in the DP toys; an oracle test | 1.1, 2.4; test `test_the_race_redraw_has_zero_expectation_at_every_cushion`; script `race_redraw` |
 | B-2 the fallback's bankroll reading | MEASURES.md's `P_B`: peak out-of-pocket through each month close at most B | 1.2 |
-| B-3 the joint law of overlapping positions | one shared driftless path per instrument; the copy-against-stagger check in H3-A; no overlapping design until the template defines it | 1.6, 6.1 (A4) |
+| B-3 the joint law of overlapping positions | one shared driftless path (per underlying since cycle 2); the copy-against-stagger check in H3-A; no overlapping design until the template defines it | 1.6, 6.1 (A4) |
 | B-4 the t's escape branch | deleted; every dimension clipped, the caps pinned in 3.9's row; "certified" reworded | 1.3, 2.2, 2.6 |
 | m-1 EB is range-dominated | Hoeffding (McDiarmid) over all J x \|T\| terms for mean-type dimensions; EB or betting on seed sets for quantile ones, by a rule stated now; the held-out test's compute in the run plan; J fixed before the read | 2.2, 2.5, 6.1, 6.3, Appendix A |
 | m-2 clipping | the clipped normaliser shown to the operator; a cap margin pinned; the share at a cap reported | 1.3 |
@@ -65,6 +70,22 @@ opened was `results/calibration_p.csv`, for its header row.
 | m-12 "its noise" | adopted: coin noise decides in the limit clause (the level's scope), history variation beside; the operator's under O-5, fixed in the pinning row | 4.4 |
 | m-13 the arithmetic test | the constants checked against their sources; a seeded coverage check of both bounds; the prose's counts held to the script | tests `test_the_constants_against_their_sources`, `test_the_bounds_cover_at_a_feasible_level`, `test_the_prose_counts_are_the_scripts` |
 
+**Cycle 2** (the re-read, `docs/reviews/THREE_WAY_TEST_v2_2026-11-18.md`; B-1 to B-4 closed there):
+
+| finding | ruling (coordinator) | answered in |
+|---|---|---|
+| N-1 what 2.2 (a) admits; r_d's source (blocking) | only unconditional means over all of E_h with a priori per-unit bounds (contract arithmetic, or a per-unit clip pinned in the dimension's definition), never a range read from data; conditional shares, ratios of means and CVaR to (b); the build refuses a value outside its bounds; written to be copied verbatim | 2.2 (a), between the `2.2a-admission` markers |
+| N-2 valid only under choice 3 | stated in 2.2 (a); the build asserts every coin key carries the start; choice 3 stands, MEASURES.md aligned on wt-user | 1.5, 2.2 (a); test `test_the_seed_key_trap_and_the_fixed_length_keys` (the start in the coin key) |
+| N-3 the copy-against-stagger pass rule | the copy-against-stagger gap grows with the stagger; what shrinks is the gap between the shared-path law and independent draws; the zero-stagger identity runs through two separate code paths | 1.6 |
+| N-4 lattice, key, circularity | a deferred note for the template (wt-lit): barriers rounded inward to the lattice, the path keyed per underlying (MNQ and NQ one), overlap defined on scheduled entries and the run's exit times; overlap stays refused | 1.6 ("Deferred to the template"); script `KEY_KINDS` (`underlying`) |
+| N-5 costs and the clip | the race at the cushion less the exit cost; an oracle that the net expectation is minus the costs | 1.1; script `race_redraw`, `net_expectation`; test `test_the_race_with_costs_nets_minus_its_costs_and_never_passes_the_floor` |
+| N-6 the smaller-J rule needs delta\* | applied in H3-D only, after Wave 4.2 sets delta\*; H3-A reports both bounds' J | 2.2 (b), 6.1 |
+| N-7 vacuity of (Y) and (R) | a condition whose stated size is at least one half is labelled vacuous; n_Y = all of Y_ok; n_min from the calendar only, both choices' sizes shown and one proposed; the pinning row sets it | 3.4, Appendix A |
+| N-8 keys of 2^32 or more | `seed_key` refuses any word at or above 2^32; the guard compares `generate_state`; the `[7, 2**32+5]` case tested | 1.5, 2.3; script `seed_key`, `key_state`; test `test_the_seed_key_trap_and_the_fixed_length_keys` |
+| N-9 the fold's reach | every tracked `.py`, no prefilter; `**`, `+=` and tuple unpacking folded; each tested | 7; tests `test_the_fold_sees_powers_without_the_year_digits`, `test_the_fold_sees_augmented_assignment`, `test_the_fold_sees_tuple_unpacking` |
+| N-10 the key test's seed | the tests' role | 7; test `test_the_seed_key_trap_and_the_fixed_length_keys` |
+| N-11 the clipped estimand moves with J | noted beside the verdict with the share at a cap | 1.3, 3.5 |
+
 ---
 
 ## 1. The statistic
@@ -78,15 +99,23 @@ alike, with the same seed keying.
 "which keeps the floor barrier race"):
 - A trade has a stop of l ticks and a target of g ticks.
 - Its account's cushion c is the room to the nearer of the floor and, where it applies, the daily loss limit (the
-  engine's own `cushion`).
-- Its driftless first exit wins with probability p = min(l, c) / (min(l, c) + g). It then gains g; otherwise it loses
-  min(l, c). Costs are added on top.
-- With zero costs every trade's gross expectation is therefore exactly zero, at every cushion. A trade with no cushion
-  is not taken.
-- **The defect this rules out.** A win drawn at l / (l + g) with the loss then clipped at c has a gross edge of
-  g (l - c) / (l + g) whenever l > c.
-- `tests/test_three_way_design.py` checks both on a grid of (l, g, c), in exact fractions. The build's redraw must be
-  `three_way_arith.race_redraw`'s law.
+  engine's own `cushion`), read after the entry cost is booked. x is the trade's exit cost. All of these are in
+  ticks, and fractions are allowed.
+- **The loss barrier is L = min(l, c - x): the cushion less the exit cost (N-5).** The driftless first exit wins with
+  probability p = L / (L + g). It then gains g; otherwise it loses L. The exit cost is paid on either exit.
+- So a losing trade's loss plus its exit cost never passes the floor, and the engine's clip (`np.maximum(pnl,
+  -cushion)`) never binds. A trade with no room (L <= 0) is not taken.
+- **Every trade's gross expectation is exactly zero, and its net expectation is exactly minus its costs**, at every
+  cushion.
+- **The defect this rules out (B-1).** A win drawn at l / (l + g) with the loss then clipped at c has a gross edge of
+  g (l - c) / (l + g) whenever l > c. Racing the full cushion and then clipping its exit cost would credit near-floor
+  trades with that cost.
+- `tests/test_three_way_design.py` checks all three in exact fractions:
+  - the cost-free race over a grid of (l, g, c);
+  - the unraced edge;
+  - with costs, over fractional cushions, net = -(entry + exit) and a worst change never past the floor.
+
+  The build's redraw must be `three_way_arith.race_redraw`'s law.
 - On a trade held by several accounts at different cushions, each account has its own p (1.6).
 
 **The rest of the reading.**
@@ -157,6 +186,10 @@ replicate structure the deciding bound reads (2.2).
 - Where some Phi_d is a quantile, it is theta_m: the expectation per seed set of m seeds. That depends on m and on the
   keying across starts (m-9), and **both are pinned with the composite.** The plug-in over all the test's seeds is
   reported beside.
+- **Under clipping the estimand moves with J near a cap (N-11).** E[clip(plug-in)] is not clip(E[plug-in]), so theta
+  of a clipped composite depends on the number of units it is computed on wherever a dimension's plug-in can reach a
+  cap. Validity holds, because theta is pinned with J. **Printed beside the verdict:** this note, with the share of
+  seed sets (or units) at a cap.
 
 **Per start day (beside only).** delta_t^C = sum over d of w_d g_d' [psi_d(f; t) - psi_d(beta; t)], where psi_d is the
 dimension's influence function: x - mu for a mean; the indicator less the share for a share;
@@ -179,26 +212,35 @@ f beats the baseline set when every H0(f, beta) is rejected at the full level al
   rotation that draws.
 - **The key of a coin uniform has a fixed length**, `three_way_arith.seed_key(seed, "coin", ...)`:
 
-      kappa = [role seed, tag, part, history, seed index, start, instrument, moment, draw kind]
+      kappa = [role seed, tag, part, history, seed index, start, underlying, moment, draw kind]
 
   - It carries the part and the history (m-4), so two histories or two parts never read one field unless a row says
     the sharing is intended.
+  - It carries the **start** (choice 3). **The build asserts that every coin key carries the unit's start** (N-2).
+  - It carries the **underlying**, not the instrument: MNQ and NQ are one underlying (N-4).
   - Every other kind (history, symmetry, plant, test) has its own fixed length and its own nonzero tag.
+  - **Every word is below 2^32** (N-8): `seed_key` refuses any field, and any seed, at or above it. Moments are session
+    indices and minute offsets, never epoch times.
   - The key is passed to a counter-based generator. Distinct keys give independent uniforms. The build declares the
     generator.
-- **Why fixed length.** numpy reads `default_rng([a, b])` and `default_rng([a, b, 0, 0])` as the same stream. With
-  one length per kind and a distinct nonzero tag in the second word, no two keys can coincide once their trailing zeros
-  are stripped. The test enumerates every kind over a grid and checks it, and it demonstrates the trap.
+- **Why.** numpy reads `default_rng([a, b])` and `default_rng([a, b, 0, 0])` as one stream (trailing zeros carry no
+  entropy). It also splits a word of 2^32 or more into 32-bit words, so `default_rng([7, 2**32 + 5])` is
+  `default_rng([7, 5, 1])`.
+  - With one length per kind, a distinct nonzero tag in the second word, and every word below 2^32, no two keys can
+    give one stream.
+  - **The key guard compares what numpy actually seeds**, `SeedSequence(key).generate_state(4)` (`three_way_arith.key_state`),
+    not the integers.
+  - The test demonstrates both traps, checks the refusal at `[7, 2**32 + 5]`, and enumerates every kind over a grid
+    of indices under the tests' own seed.
 - **The design and every baseline use the same keying.** Two arms deciding at the same moment, on the same start,
   under the same seed, read the same side uniform. That is the pairing.
 - **The side coin's key carries no account and no firm index (m-9).** One user's accounts and firms at one moment
   share the one literal coin draw, as CHARTER 3.5's candidate default asks. The forced side of 3.5 (a new trade takes
   an open position's side) is a function of earlier uniforms.
-- **Each user (start) has its own coin draws** (choice 3, kept). The key carries the start day. Users are independent,
-  which 2.2's bounds use. **The keying is pinned with m.**
-  - **For wt-user:** MEASURES.md 1.4's reading 3 says "under one seed every start day shares the same coin draws on
-    the same calendar moments". Under choice 3 that sentence does not hold: the per-seed statistic is a mean over
-    independent users. MEASURES.md should follow this note's keying, or the lead rules between them.
+- **Each user (start) has its own coin draws** (choice 3; the coordinator's ruling stands). The key carries the start
+  day. Users are independent, which 2.2's bounds use; **2.2 (a) is valid only under it** (N-2). **The keying is pinned
+  with m.** MEASURES.md 1.4's reading 3, which assumed draws shared across starts, is being aligned to choice 3 on
+  wt-user.
 - **Uniforms lie on the symmetric grid** (2i + 1) 2^-53, for i = 0 .. 2^52 - 1: odd multiples of 2^-53, each exact in
   float64. 1 - U is (2 (2^52 - 1 - i) + 1) 2^-53, again on the grid and computed exactly, so the antithetic twin of 2.3
   is exact in floating point. Every threshold is written `U < p`.
@@ -212,8 +254,9 @@ declared, or the keying decides it by accident:
   produce.
 
 **The declared law.**
-- For each unit u and instrument, there is **one driftless tick path**: a symmetric lattice walk, its steps drawn from
-  the coin field, its clock scaled by the real path's causal volatility (the schedule's field, 1.7).
+- For each unit u and **underlying** (MNQ and NQ are one), there is **one driftless tick path**: a symmetric lattice
+  walk, its steps drawn from the coin field, its clock scaled by the real path's causal volatility (the schedule's
+  field, 1.7).
 - Every open position of the user, on every account and firm, reads its exit from that path from its fill:
   - the target g in its side's direction;
   - the nearer of its stop and its account's cushion against it.
@@ -231,17 +274,30 @@ declared, or the keying decides it by accident:
 - **To settle there:** whether a lone position also takes the path's exit time. This note uses the run's time for lone
   positions and the path's time inside an overlapping set.
 
-**The H3-A check: copy against stagger.**
-- On a toy, design X sends one trade to N accounts at one moment. Design Y sends the same N trades staggered across a
-  declared grid of minutes.
+**The H3-A check: copy against stagger (pass rule corrected, N-3).**
+- On a toy, design X sends one trade to N accounts at one moment, through **the copy routine**. Design Y sends the same
+  N trades staggered by s minutes, s on a declared grid starting at zero, through **the stagger routine**. These are two
+  separate code paths.
   - X is a test fixture only. Copying one trade across accounts is a conduct-tier-1 pattern and is never a candidate.
-- Under the shared path:
-  - at a stagger of zero, X and Y give **bit-identical** journeys;
-  - at each stagger on the grid, their composite difference is reported with its coin-noise interval, and it must
-    shrink with the stagger.
-- Under the per-trade independent keying the cycle before used, the same difference is reported beside, as the
-  artefact this law removes.
-- A difference that does not vanish at zero stagger is a build defect.
+- **The pass rule, under the shared path:**
+  1. **At s = 0, X and Y are bit-identical**, journey for journey. The two routines must agree; one routine compared
+     with itself would prove nothing.
+  2. **The X-against-Y composite difference is non-decreasing in s**, up to its coin-noise interval. Staggered
+     positions overlap less on one driftless path, and disjoint stretches are independent, so the stagger buys real
+     time-diversification, growing from zero toward the independent case.
+  3. **The gap between the shared-path law and per-trade independent draws**, for Y at the same s, falls to coin noise
+     once s exceeds the longest holding time on the toy. That gap is what must shrink with s.
+- A build that ignores the path fails (1) or (3). A correct build passes all three.
+
+**Deferred to the template (N-4; the search template on wt-lit), recorded now. Overlap stays refused until then.**
+- **The lattice.** A cushion in dollars over the tick value and size is generally not a whole number of ticks, and
+  several positions' barriers need not share a lattice.
+  - Every barrier is **rounded inward** to the path's lattice, so the walk never exits beyond the room and the clip
+    never binds. Rounding outward and then clipping would bring B-1's edge back in a small form.
+  - The zero-expectation oracle is extended to the path, per position, at fractional cushions.
+- **The key.** One path per **underlying**, never per instrument (MNQ and NQ are one).
+- **Overlap.** It is defined once, before any draw, on the scheduled entries and **the run's** exit times. The path's
+  exit times are never used to decide whether two positions overlap, because that would be circular.
 
 ### 1.7 The schedule interface (m-6)
 
@@ -249,7 +305,7 @@ The build's journey is a typed function: journey = f(schedule, coin field, rules
 history only through the schedule.
 
 **The schedule's fields, per trade:**
-- instrument, entry moment and fill price;
+- instrument and its underlying, entry moment and fill price;
 - bracket (g, l) in ticks;
 - the side's source;
 - the causal volatility per bar of the trade's holding window: the path's clock, and whatever R-10's time-limit
@@ -279,34 +335,66 @@ The account state (cushions, the daily loss room) is replayed from the rules, no
 
 ### 2.2 The deciding bound, by the composite's form (m-1, B-4)
 
-**(a) Every dimension a mean or a share** (the fallback `P_B` among them): **Hoeffding's or McDiarmid's bound over all
-J x |E_h| terms.**
-- For the fallback, the n = J x |E_63| terms lie in [-1, 1] and are independent given H:
+**(a) Unconditional means with a priori bounds: Hoeffding's or McDiarmid's bound over all J x |E_h| units.** The
+paragraph between the markers is written to be copied verbatim into H3's declaration (N-1, N-2).
 
-      LB = Delta-bar - sqrt( 2 ln(1/alpha) / n )
+<!-- 2.2a-admission: begin -->
+**Admission to the Hoeffding/McDiarmid bound (2.2 (a)).**
+1. **What it admits.** This bound decides a comparison only if **every** dimension d of the pinned composite, or the
+   pinned fallback, is an **unconditional mean over all of E_{h_d}** of a per-unit value x_d(u):
+   Phi_d = (1 / (J |E_{h_d}|)) x (the sum of x_d(u) over every unit u of E_{h_d} under the test's J seeds).
+   - The same E_{h_d} serves the design, every baseline and every seed.
+   - Membership of E_{h_d} depends on the calendar only, never on a unit's value.
+   - x_d(u) depends on the held-out history and on unit u's own coin field only.
+2. **Where the bounds come from.** Each x_d carries **a priori bounds** a_d <= x_d(u) <= a_d + r_d, fixed before any
+   read, from one of two sources only:
+   - (i) contract arithmetic or the verified rules: an indicator lies in [0, 1] (r_d = 1); a count of sessions in
+     [0, h_d]; a dollar amount within the limits that the firm's verified rules and the design's declared purchase cap
+     imply over h_d sessions;
+   - (ii) a per-unit clip written into the dimension's own definition, x_d(u) = clip(y_d(u), a_d, a_d + r_d), pinned
+     in CHARTER 3.9's row and shown to the operator with the composite's caps.
 
-  P(LB > theta(H)) <= alpha for every history, with no premise of identical distribution.
-- For a clipped composite of means and shares, C(f) - C(beta) is a function of the independent units with bounded
-  differences. Changing one unit's coin field moves it by at most
-  c_u = sum over d of w_d x 2 r_d / ((hi_d - lo_d) n_d), where r_d is the dimension's per-unit range, n_d = J |E_{h_d}|,
-  and a unit outside E_{h_d} contributes nothing to dimension d. Clipping is 1-Lipschitz.
-- McDiarmid's inequality then gives
+   **No bound is ever estimated from data, on any years.**
+3. **What it does not admit.** These are decided by 2.2 (b) whenever the composite holds one:
+   - a conditional share or mean, whose denominator is a random subset of E_{h_d} (the share falling back among those
+     who reached break-even, for example);
+   - a ratio of means (payouts per funded account, for example);
+   - a tail mean (CVaR10);
+   - a quantile.
 
-      LB = Delta-hat - sqrt( ln(1/alpha) x (sum over u of c_u^2) / 2 )
+   A unit-count share, an indicator averaged over all of E_{h_d}, is admitted with r_d = 1. The fallback `P_B` is
+   admitted: its per-unit value, the share of months 1 to 3 ahead under B (MEASURES.md section 2), lies in [0, 1].
+4. **The bound.** With every dimension admitted, changing one unit's coin field moves C(f) - C(beta) by at most
 
-  which is Hoeffding's when the composite is P alone.
+       c_u = sum over d of 1[u in E_{h_d}] x w_d x 2 r_d / ((hi_d - lo_d) x J x |E_{h_d}|)
+
+   The clip is 1-Lipschitz; for the unclipped fallback, w = 1 and hi - lo = 1. The deciding lower limit is
+
+       LB = Delta-hat - sqrt( ln(1/alpha) x (the sum of c_u^2 over every unit) / 2 )
+
+   For the fallback that is Delta-bar - sqrt( 2 ln(1/alpha) / (J |E_63|) ). H0(f, beta) is rejected when LB > 0.
+5. **Only under choice 3.** This branch is valid only when every coin key carries the unit's start, so the units are
+   independent given H. Under any keying that shares draws across starts, only 2.2 (b) is valid.
+6. **The build's refusals.** The build refuses the whole run, before any statistic is written:
+   - on the first per-unit value outside its declared bounds, for any design, baseline, unit or seed;
+   - on any coin key that does not carry the unit's start.
+<!-- 2.2a-admission: end -->
+
+- P(LB > theta(H)) <= alpha for every history, with no premise of identical distribution.
 - Narrow caps (hi_d - lo_d small against r_d) widen the bound. That is shown with the caps in Wave 4.2.
 
-**(b) Some dimension a quantile:** a bound over the J i.i.d. seed-set replicates, Delta_j in [-1, 1].
+**(b) Any dimension not admitted by (a):** a bound over the J i.i.d. seed-set replicates, Delta_j in [-1, 1].
 - The candidates are the one-sided empirical-Bernstein bound (Maurer and Pontil 2009, theorem 4), applied to
   (Delta_j + 1) / 2 and mapped back:
 
       LB = Delta-bar - sqrt( 2 V ln(2/alpha) / J ) - (7 ln(2/alpha) / 3) x 2 / (J - 1)
 
   and the hedged betting bound (Waudby-Smith and Ramdas, JRSS-B 2024).
-- **The rule, stated before H3-A:** of the two, the one that needs the smaller J for power pi\* at the sigma / delta
-  measured on H3-A's toys decides. H3-A applies the rule; it does not choose.
-- Both are valid for every J and every history.
+- **The rule, stated now: the one of the two that needs the smaller J for power pi\* at delta\* decides.**
+  - It is **applied in H3-D only** (N-6), after Wave 4.2 has set delta\*, with H4's search-year sigma, and before the
+    search's pin.
+  - H3-A reports both bounds' J on its toys, and applies nothing.
+- Both are valid for every J and every history, and under any keying across starts.
 
 **No t decides, in any branch.** Its size at alpha depends on the replicates' skewness and cannot be checked (2.6).
 The larger-of t of E-035 is reported beside, deciding nothing.
@@ -335,8 +423,9 @@ Delta_j = C(x; S_j) - C(x; S'_j). It is i.i.d. and symmetric with mean zero.
 **The guards, refused before any rate is read:**
 - a null pool whose Delta_j are all zero;
 - a disjoint pool whose variance is outside a declared tolerance of twice the single arm's;
-- **any two keys equal after their trailing zeros are stripped** (m-4), across the arms, the S sets and the S' sets,
-  the histories and the parts. This is checked on the key lists, never on outcomes.
+- **any two keys with one `generate_state`** (m-4, N-8), across the arms, the S sets and the S' sets, the histories
+  and the parts. This is checked on the key lists, never on outcomes;
+- any coin key without the unit's start (N-2), and any key word at or above 2^32 (N-8).
 
 ### 2.4 A third coin-seed null: exact centring on toys
 
@@ -520,22 +609,24 @@ Each condition is read for every pair (f, beta), on the martingale-outcome readi
   {2024, 2025, 2026}. So the groups partition leg (i)'s own start sets.
 - **The groups are not history blocks.** Their windows overlap: a start in late 2024 reads 2025's sessions. A last
   year's group is a partial block of starts, shorter than h\* except at h\* = 63.
-- **n_min is fixed by calendar arithmetic only**, never from a held-out count of anything but sessions. Proposed:
-  n_min = h\*, so a group spans at least one horizon of starts. Y_ok = the years whose count of complete starts at h\*
-  on the pinned session list is at least n_min.
+- **n_min is fixed by calendar arithmetic only** (N-7), never from a held-out count of anything but sessions.
+  Y_ok = the years whose count of complete starts at h\* on the pinned session list is at least n_min.
+  - Appendix A shows both candidates' stated sizes at each h\*: n_min = h\*, and n_min = 21 (a month of starts).
+  - **Proposed: n_min = 21**, the choice with the smaller stated size at every h\* the composite can have. At h\* = 252,
+    n_min = h\* leaves one group and a vacuous (Y), while 21 keeps two.
+  - The pinning row sets the final value, before any read.
 - Delta-hat_y = C(f; group y) - C(beta; group y), the composite on the group's units.
-- **(Y) holds when #{ y in Y_ok : Delta-hat_y > 0 } >= n_Y**, where n_Y ("most years") is pinned in 3.9 for the
-  composite's actual h\*.
+- **(Y) holds when Delta-hat_y > 0 for every y in Y_ok: n_Y = all of Y_ok** (N-7). A strict majority of three is a
+  size of one half whatever the correlation, so it would be vacuous.
 - **Its real size, with the overlap counted** (Appendix A's (Y) lines, on the weekday calendar). The model is
   per-session contributions i.i.d. and symmetric (white noise), so each group's difference is a weighted sum of them.
   - Groups whose windows share sessions are correlated, and P(all positive) is a Gaussian orthant probability.
   - Positive serial dependence in the real contributions raises it further. The history null's generator gives that
     figure (3.3 (4)).
-  - **At h\* = 252 with n_min = h\*, Y_ok holds one year, and (Y) is the sign on that year's group: vacuous** as a
-    consistency condition (its stated size is one half).
-  - At a smaller n_min, the two groups' overlap gives P(both positive) above the independent quarter (Appendix A).
-  - At h\* = 63 the three groups give a strict majority with probability one half whatever their correlation, by
-    symmetry.
+  - The white-noise figure is **a lower bound** (Slepian's inequality: positive dependence raises orthant
+    probabilities). Appendix A prints it as "size>=", and this word stays beside it wherever it is printed.
+  - At h\* = 252 with n_min = h\*, Y_ok holds one year: a stated size of one half, so vacuous. At n_min = 21, the two
+    groups' overlap gives a size above the independent quarter and below one half (Appendix A).
 
 **(R) Both regimes.**
 - rho(t) = volatile if v(t) > v\*, else calm.
@@ -544,7 +635,8 @@ Each condition is read for every pair (f, beta), on the martingale-outcome readi
   - v\* is fixed from the search years by a rule pinned in 3.9.
 - R_ok = the regimes holding at least n_min complete starts. n_min is the calendar's figure above, never a held-out
   regime count, which would need held-out bars.
-- **(R) holds when Delta-hat_r > 0 for every r in R_ok.** A regime outside R_ok is reported beside.
+- **(R) holds when Delta-hat_r > 0 for every r in R_ok.** A regime outside R_ok is reported beside. Its stated size
+  is computed on the history null's generator per horizon (3.3 (4)), and it carries the same vacuity label.
 - **(R) is not a split into history blocks.** Regimes interleave in time, so a calm start's window holds volatile
   days. If the held-out years sit mostly on one side of v\*, R_ok holds one regime and (R) is the overall sign again.
 
@@ -555,8 +647,12 @@ Each condition is read for every pair (f, beta), on the martingale-outcome readi
 
 The runner refuses any other start or session. (H) is a scope condition.
 
-**Printed beside every verdict:** |Y_ok| and |R_ok|, and whether (Y) or (R) is vacuous (one group or one regime), with
-each condition's stated size on the actual groups.
+**Vacuity (N-7).** **A condition whose stated size is at least one half is labelled vacuous**, and the label is printed.
+One group or one regime always gives one half. A vacuous condition is still applied, as the rule says, but it is
+reported as adding no protection against history luck.
+
+**Printed beside every verdict:** |Y_ok| and |R_ok|; each condition's stated size on the actual groups (the white-noise
+lower bound, and the history null's figure); and each condition's label, vacuous or not.
 
 **The rule for one pair:** LB > 0 and (Y) and (R) and (H). For the finalist, all four baselines, with CHARTER 3.8
 (a)'s limits and (c)'s floors.
@@ -566,7 +662,9 @@ each condition's stated size on the actual groups.
 - Per group and per regime: Delta-hat with its coin-noise standard error.
 - The exact sign-flip p-value over the complete blocks of length h\*, with its floor 2^-B.
 - For the fallback: the P comparison's interval with 3.1's per-horizon variance.
-- Each condition's stated size.
+- Each condition's stated size and its vacuity label (3.4).
+- The share of seed sets (or units) with any dimension at a cap, and the note that under clipping the estimand moves
+  with J near a cap (1.3, N-11).
 
 ---
 
@@ -603,7 +701,7 @@ together. **The line has power at delta\* when that MDL is at most delta\*.**
 ### 4.3 On synthetic plants and on H4's baselines
 
 - **H3-A (toys).** P1 to P4 on S1. They test the statistic, the replicate structure and 2.5's formulas against
-  simulation, and apply 2.2 (b)'s rule.
+  simulation, and report both of 2.2 (b)'s bounds' J (N-6). They apply no rule.
 - **H3-D (the deciding power gate, after H4 and the pinning row).**
   - H4's per-seed outputs of the four baselines on the search years supply the real spread of each pair's terms.
   - The planted finalist is the best baseline plus a plant of delta\*, against all four baselines.
@@ -673,11 +771,13 @@ Otherwise the search does not pin, and the data question (E-007 (2)) goes to the
 | **H7** the held-out test (Wave 6, listed for its cost; m-1) | after the search pin | the held-out years, once | the search declaration's own | heavy |
 
 - H3-A's results are **design checks only** (CHARTER 3.7, m-7). They:
-  - apply 2.2 (b)'s rule, stated in this note, to pick the quantile bound;
-  - size J, m and J';
+  - report both of 2.2 (b)'s bounds' J at placeholder values of delta;
+  - size m and J';
   - fix the generator's form.
 
   Nothing in them is read as the deciding calibration, and they choose no rule.
+- **H3-D applies 2.2 (b)'s smaller-J rule** (N-6), at the pinned delta\* and H4's search-year sigma, and fixes J and m
+  before the search's pin.
 - The deciding seeds are drawn by nothing before H3-D.
 
 ### 6.2 Memory
@@ -692,7 +792,7 @@ Otherwise the search does not pin, and the data question (E-007 (2)) goes to the
   - per seed: the composite's dimension values and the per-group and per-regime partial sums;
   - per unit: `P_B`'s inputs;
   - a schedule-level history is a few thousand rows.
-- The shared path of 1.6 is generated per unit and instrument as it is read, never stored.
+- The shared path of 1.6 is generated per unit and underlying as it is read, never stored.
 - A part that walks real bars (S2) holds one copy of the search years' minute bars per worker, read in place through
   the junction.
 
@@ -779,13 +879,23 @@ values are fixed in H3's declaration.
   test, which builds all ten seeds by arithmetic. So "no refusal" shows the block free of that one pattern only.
 - **The guards that repeat on every run** (`tests/test_three_way_design.py`):
   - the literal scan of every tracked file and every working text file;
-  - **an arithmetic fold over every tracked `.py`**: pure-literal integer expressions, and names bound to them. It
-    flags any expression equal to the block's prefix, the prefix times ten, or a seed of the block. **It must find this
-    test's own construction** (its positive control), and it allows it nowhere else. A unit test checks the fold on a
-    planted source.
-  - String concatenation and runtime arithmetic remain outside any static fold. H3's build therefore reads its seeds
-    from one module, added to the test's `DERIVED_USES` and `DECLARED_USES` as it is written. It asserts at run time,
-    in `RetiredSeedMap`'s manner, that every key whose first word lies in the block came from that module.
+  - **an arithmetic fold over every tracked `.py`**, with no prefilter on the year's digits (N-9). It folds:
+    - pure-literal integer expressions, `**` included;
+    - names bound to them, whether plainly, by tuple unpacking, or by augmented assignment (`+=`, `*=`, ...), in source
+      order.
+
+    It flags any expression or binding equal to the block's prefix, the prefix times ten, or a seed of the block. **It
+    must find this test's own construction** (its positive control), and it allows it nowhere else.
+  - Unit tests check the fold on planted sources: names; a power written without the year's digits; augmented
+    assignment; tuple unpacking.
+  - **The static fold is a tripwire, not the guard.** String concatenation, calls and runtime arithmetic stay outside
+    it. **The guard is the build's run-time assertion:**
+    - H3's build reads its seeds from one module, added to the test's `DERIVED_USES` and `DECLARED_USES` as it is
+      written;
+    - it asserts at run time, in `RetiredSeedMap`'s manner, that every key whose first word lies in the block came from
+      that module;
+    - it asserts that every key's `generate_state` is distinct from every other's (2.3).
+- **The key test builds its keys under the tests' own seed** (N-10), never under a design-check or deciding seed.
 
 ---
 
@@ -835,13 +945,16 @@ time leg, independent symmetric blocks: B, P(all B positive), P(strict majority 
   B=8   all=3.9062e-03  majority=3.6328e-01
   B=9   all=1.9531e-03  majority=5.0000e-01
   B=10  all=9.7656e-04  majority=3.7695e-01
-(Y) start-year groups (calendar only), white-noise overlap: h*, n_min, starts per year, |Y_ok|, smallest correlation, P(all positive), P(strict majority)
-  h*=63   n_min=63   starts [261, 261, 79]  |Y_ok|=3  rho_min=0.0000  all=0.1356  majority=0.5000
-  h*=63   n_min=21   starts [261, 261, 79]  |Y_ok|=3  rho_min=0.0000  all=0.1356  majority=0.5000
-  h*=126  n_min=126  starts [261, 261, 16]  |Y_ok|=2  rho_min=0.0959  all=0.2653  majority=0.2653
-  h*=126  n_min=21   starts [261, 261, 16]  |Y_ok|=2  rho_min=0.0959  all=0.2653  majority=0.2653
-  h*=252  n_min=252  starts [261, 151]  |Y_ok|=1  rho_min=nan  all=0.5000  majority=0.5000
-  h*=252  n_min=21   starts [261, 151]  |Y_ok|=2  rho_min=0.3471  all=0.3064  majority=0.3064
+(Y) start-year groups (calendar only), n_Y = all of Y_ok, white-noise overlap (a lower bound): h*, n_min, starts per year, |Y_ok|, smallest correlation, stated size, label
+  h*=63   n_min=63   starts [261, 261, 79]  |Y_ok|=3  rho_min=0.0000  size>=0.1356  not vacuous at this bound
+  h*=63   n_min=21   starts [261, 261, 79]  |Y_ok|=3  rho_min=0.0000  size>=0.1356  not vacuous at this bound
+  h*=63   proposed n_min=21 (the smaller stated size)
+  h*=126  n_min=126  starts [261, 261, 16]  |Y_ok|=2  rho_min=0.0959  size>=0.2653  not vacuous at this bound
+  h*=126  n_min=21   starts [261, 261, 16]  |Y_ok|=2  rho_min=0.0959  size>=0.2653  not vacuous at this bound
+  h*=126  proposed n_min=21 (the smaller stated size)
+  h*=252  n_min=252  starts [261, 151]  |Y_ok|=1  rho_min=nan  size>=0.5000  VACUOUS
+  h*=252  n_min=21   starts [261, 151]  |Y_ok|=2  rho_min=0.3471  size>=0.3064  not vacuous at this bound
+  h*=252  proposed n_min=21 (the smaller stated size)
 gate horizon H_g=504: complete held-out starts <= 160, disjoint held-out blocks <= 1, search <= 2
 memory: cap 2.5 GB over 2 workers, base 0.4 GB assumed, lane 1344 B: at most 632440 lanes a worker
 run plan (trades a session <= 4; 3 finalists + 4 baselines in H7; hours over 2 workers at the assumed costs 0.05 us, 0.5 us, 5.0 us a lane-trade)
@@ -858,23 +971,26 @@ run plan (trades a session <= 4; 3 finalists + 4 baselines in H7; hours over 2 w
 ```
 <!-- three_way_arith: end -->
 
-## Appendix B. The choices the red team should attack (cycle 1)
+## Appendix B. The choices the red team should attack (cycle 2)
 
-1. **2.2's split by the composite's form:**
-   - Hoeffding or McDiarmid over every unit for means and shares;
-   - EB or betting on seed sets for quantiles, by the smaller-J rule applied in H3-A;
-   - McDiarmid's c_u through the clip and the caps.
-2. **1.6's shared path:**
-   - the run's time for lone positions and the path's inside an overlapping set;
-   - the runner's refusal of overlapping designs until the template;
-   - the copy-against-stagger check's pass rule (bit-identical at zero stagger, shrinking with it).
-3. **The race law of 1.1** for time-limited trades (R-10, left to the template), and the daily loss room as the cushion
-   where it binds first.
-4. **`P_B` on the replay's own path**, and the wallet reading kept beside (1.2).
-5. **The clip** (1.3): never-blank forms before it, a pinned cap margin, and power lost at saturation.
-6. **Choice 3 with no account or firm index**, and MEASURES.md 1.4's reading 3 to be brought in line (1.5).
-7. **n_min = h\* from the calendar**, and (Y)'s stated size from a white-noise model as a lower bound (3.4).
-8. **The gate's held-out quantile over coin seeds only** at H_g = 504 (4.4).
-9. **Coin noise in the limit clause**, history beside (4.4; O-5).
-10. **The arithmetic fold's reach**, and the runtime assertion left to H3's build (7).
-11. **S1's stream swap as its symmetry**, and the "stylised" label (2.7).
+1. **N-1's admission paragraph** (2.2 (a), between the markers), verbatim for H3's declaration:
+   - the admitted dimensions are unconditional means over all of E_h only;
+   - the a priori bounds come from contract arithmetic or a pinned per-unit clip only;
+   - the build's refusals;
+   - c_u through the clip and the caps.
+2. **2.2 (b)'s smaller-J rule applied in H3-D** at the pinned delta\*, with H3-A reporting both bounds' J.
+3. **1.6's corrected copy-against-stagger rule:**
+   - identity at zero stagger through two code paths;
+   - a difference non-decreasing in the stagger;
+   - the shared-against-independent gap falling to coin noise beyond the longest hold.
+4. **The race at the cushion less the exit cost** (1.1), and N-4's deferred items for the template (lattice rounding
+   inward, one path per underlying, overlap on the run's exit times).
+5. **n_Y = all of Y_ok and the proposed n_min = 21** (3.4), with vacuity at a stated size of one half or more.
+6. **Keys:** every word below 2^32, and the guard on `generate_state` (1.5, 2.3).
+7. **The fold as a tripwire** and the run-time assertion as the guard (7).
+8. **Carried from cycle 1:**
+   - `P_B` on the replay's own path (1.2);
+   - the clip and the moving estimand (1.3);
+   - the gate's held-out quantile over coin seeds only (4.4);
+   - coin noise in the limit clause (4.4);
+   - S1's stream swap (2.7).

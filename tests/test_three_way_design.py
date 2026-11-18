@@ -12,12 +12,14 @@ repository's files (no engine, no bar, no result file; fast). Corrective cycle 1
   feasible level, on skewed and on non-identical terms;
 - **the race redraw** (B-1) -- every redrawn trade's gross expectation is exactly zero at every cushion on a grid of
   (stop, target, cushion), and the unraced form has a positive edge exactly where the stop exceeds the cushion;
-- **the seed keys** (m-4) -- numpy's trailing-zero equivalence is real (the trap), and the note's fixed-length keys
-  never coincide once trailing zeros are stripped, across kinds and indices;
+- **the race with costs** (N-5) -- every trade's net expectation is exactly minus its costs at every cushion, and its
+  worst change never passes the floor;
+- **the seed keys** (m-4, N-8, N-10) -- numpy's trailing-zero and split-word equivalences are real (the traps); the
+  note's fixed-length keys refuse words of 2^32 or more and never give one `generate_state` across kinds and indices;
 - **the time conditions' arithmetic** -- the orthant formulas at their known points;
 - **the seed block** -- section 7's table lists ten consecutive seeds once each; no other tracked file and no other
   working text file holds a literal of them; and an arithmetic fold over every tracked `.py` (pure-literal expressions
-  and names bound to them) finds the block's construction only in this file, which it must find (m-5's positive
+  with `**`, names bound to them plainly, by tuple unpacking or by augmented assignment; N-9) finds the block's construction only in this file, which it must find (m-5's positive
   control). The block is built here by arithmetic, so this file holds no literal of it;
 - **the scans work** -- a planted copy of a seed in a temporary repository is found by both scans.
 """
@@ -29,6 +31,7 @@ import itertools
 import math
 import re
 import subprocess
+import warnings
 from fractions import Fraction
 from pathlib import Path
 
@@ -164,25 +167,52 @@ def test_the_race_redraw_has_zero_expectation_at_every_cushion(arith) -> None:
         arith.race_redraw(10, 10, 0)
 
 
+def test_the_race_with_costs_nets_minus_its_costs_and_never_passes_the_floor(arith) -> None:
+    """N-5's oracle: with entry and exit costs (fractional ticks allowed), the race at the cushion less the exit cost
+    gives every trade a net expectation of exactly minus its costs, at every cushion (fractional cushions included),
+    and its worst balance change never passes the floor, so the engine's clip never binds."""
+    costs = [Fraction(0), Fraction(1, 4), Fraction(1, 2), Fraction(3, 2)]
+    cushions = [Fraction(k, 4) for k in range(1, 161, 3)]
+    for l, g, c, e, x in itertools.product(range(1, 41, 4), range(1, 41, 5), cushions, costs, costs):
+        if c - e - x <= 0:
+            with pytest.raises(ValueError):
+                arith.net_expectation(l, g, c, e, x)
+            continue
+        net, worst = arith.net_expectation(l, g, c, e, x)
+        assert net == -(e + x), (l, g, c, e, x)
+        assert worst >= -c, (l, g, c, e, x)
+
+
 def test_the_seed_key_trap_and_the_fixed_length_keys(arith) -> None:
-    """m-4: numpy reads [a, b] and [a, b, 0, 0] as one stream; the note's keys, fixed in length per kind with a
-    distinct nonzero tag, never coincide after the trailing zeros are stripped."""
+    """m-4 and N-8: numpy reads [a, b] and [a, b, 0, 0] as one stream, and splits a word of 2^32 or more
+    ([7, 2**32 + 5] is [7, 5, 1]); the note's keys -- fixed in length per kind, a distinct nonzero tag, every word
+    below 2^32 -- never give one `generate_state` across kinds and indices; built under the tests' own seed (N-10)."""
     a, b = 11, 7
     assert np.array_equal(np.random.default_rng([a, b]).random(4), np.random.default_rng([a, b, 0, 0]).random(4))
     assert not np.array_equal(np.random.default_rng([a, b]).random(4), np.random.default_rng([a, 0, b]).random(4))
+    assert arith.key_state([7, 2 ** 32 + 5]) == arith.key_state([7, 5, 1])            # the split-word trap
+    assert np.array_equal(np.random.default_rng([7, 2 ** 32 + 5]).random(4),
+                          np.random.default_rng([7, 5, 1]).random(4))
+    seed = SEED_BLOCK[0]
+    with pytest.raises(ValueError):
+        arith.seed_key(seed, "test", test=1, replicate=2 ** 32 + 5)
+    with pytest.raises(ValueError):
+        arith.seed_key(2 ** 32 + 5, "test", test=1, replicate=0)
+    arith.seed_key(seed, "test", test=1, replicate=2 ** 32 - 1)                        # the largest word passes
     seen: dict[tuple[int, ...], tuple] = {}
     for kind, (_, names) in arith.KEY_KINDS.items():
         for vals in itertools.product(range(3), repeat=len(names)):
-            k = arith.seed_key(SEED_BLOCK[3], kind, **dict(zip(names, vals)))
-            s = arith.stripped(k)
+            k = arith.seed_key(seed, kind, **dict(zip(names, vals)))
+            s = arith.key_state(k)
             assert s not in seen, (kind, vals, seen.get(s))
             seen[s] = (kind, vals)
     tags = [t for t, _ in arith.KEY_KINDS.values()]
     assert len(set(tags)) == len(tags) and all(t > 0 for t in tags)
     with pytest.raises(ValueError):
-        arith.seed_key(SEED_BLOCK[3], "history", part=1)                  # a field missing
-    assert set(arith.KEY_KINDS["coin"][1]) >= {"part", "history"}        # m-4: kappa carries part and history
-    assert not set(arith.KEY_KINDS["coin"][1]) & {"account", "firm"}      # m-9: no account or firm in the side's key
+        arith.seed_key(seed, "history", part=1)                           # a field missing
+    coin = set(arith.KEY_KINDS["coin"][1])
+    assert coin >= {"part", "history", "start", "underlying"}             # m-4; N-2 (choice 3); N-4 (one underlying)
+    assert not coin & {"account", "firm", "instrument"}                   # m-9; N-4
 
 
 def test_the_orthant_formulas(arith) -> None:
@@ -272,54 +302,92 @@ def test_the_seed_scans_find_a_planted_seed(tmp_path: Path) -> None:
 # ------------------------------------------------------------------------------------------------- the fold (m-5)
 
 _OPS = {ast.Add: lambda a, b: a + b, ast.Sub: lambda a, b: a - b, ast.Mult: lambda a, b: a * b,
-        ast.FloorDiv: lambda a, b: a // b if b else None}
+        ast.FloorDiv: lambda a, b: a // b if b else None,
+        ast.Pow: lambda a, b: a ** b if 0 <= b <= 64 and abs(a) < 10 ** 6 else None}
+_LIMIT = 10 ** 15
 
 
 def _fold(node: ast.AST, env: dict[str, int]) -> int | None:
-    """The integer value of a pure-literal expression, names bound earlier in the module to such an expression
-    included; None when it is not one (a loop index, a call, a string)."""
+    """The integer value of a pure-literal expression, names bound earlier to such an expression included; None when
+    it is not one (a loop index, a call, a string)."""
     if isinstance(node, ast.Constant) and type(node.value) is int:
         return node.value
     if isinstance(node, ast.Name):
         return env.get(node.id)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        v = _fold(node.operand, env)
+        return None if v is None else -v
     if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
         a, b = _fold(node.left, env), _fold(node.right, env)
-        if a is None or b is None or abs(a) > 10 ** 12 or abs(b) > 10 ** 12:
+        if a is None or b is None or abs(a) > _LIMIT or abs(b) > _LIMIT:
             return None
-        return _OPS[type(node.op)](a, b)
+        v = _OPS[type(node.op)](a, b)
+        return v if v is None or abs(v) <= _LIMIT else None
     return None
 
 
+class _Folder(ast.NodeVisitor):
+    """Walks a module in source order, binding names (plainly, by tuple unpacking, by augmented assignment) to folded
+    values, and records every expression or binding whose value is a target."""
+
+    def __init__(self, targets: set[int]):
+        self.targets, self.env, self.lines = targets, {}, []
+
+    def _bind(self, target: ast.AST, value: ast.AST | None, line: int) -> None:
+        if isinstance(target, ast.Name):
+            v = None if value is None else _fold(value, self.env)
+            if v is None:
+                self.env.pop(target.id, None)
+            else:
+                self.env[target.id] = v
+                if v in self.targets:
+                    self.lines.append(line)
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            same = isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts)
+            vals = value.elts if same else [None] * len(target.elts)
+            for t_, v_ in zip(target.elts, vals):
+                self._bind(t_, v_, line)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self.generic_visit(node)
+        for target in node.targets:
+            self._bind(target, node.value, node.lineno)
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self.generic_visit(node)
+        if isinstance(node.target, ast.Name):
+            expr = ast.BinOp(left=ast.Name(id=node.target.id, ctx=ast.Load()), op=node.op, right=node.value)
+            self._bind(node.target, expr, node.lineno)
+
+    def visit_BinOp(self, node: ast.BinOp) -> None:
+        if _fold(node, self.env) in self.targets:
+            self.lines.append(node.lineno)
+        self.generic_visit(node)
+
+
 def _fold_hits(path: str, source: str) -> list[str]:
-    """Expressions in `source` folding to the block's prefix, to the prefix times ten, or to a seed of the block."""
+    """Expressions and bindings in `source` folding to the block's prefix, the prefix times ten, or a seed of the
+    block."""
     try:
-        tree = ast.parse(source)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")                                # other files' escape warnings
+            tree = ast.parse(source)
     except SyntaxError:
         return []
-    targets = {_PREFIX, _PREFIX * 10, *SEED_BLOCK}
-    env: dict[str, int] = {}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            v = _fold(node.value, env)
-            if v is not None:
-                env[node.targets[0].id] = v
-    hits = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.BinOp) and _fold(node, env) in targets:
-            hits.append(f"{path}:{node.lineno}")
-    return hits
+    f = _Folder({_PREFIX, _PREFIX * 10, *SEED_BLOCK})
+    f.visit(tree)
+    return [f"{path}:{n}" for n in sorted(set(f.lines))]
 
 
 def _fold_scan(repo: Path) -> set[str]:
+    """Every tracked `.py`, with no prefilter (N-9)."""
     files = subprocess.run(["git", "ls-files", "*.py"], cwd=repo, capture_output=True, text=True,
                            check=True).stdout.splitlines()
     found = set()
     for f in files:
         p = repo / f
         if p.is_file() and VENDOR_DATA not in p.parents:
-            src = p.read_text(encoding="utf-8", errors="replace")
-            if "2026" in src:
-                found.update(h.split(":", 1)[0] for h in _fold_hits(f, src))
+            found.update(h.split(":", 1)[0] for h in _fold_hits(f, p.read_text(encoding="utf-8", errors="replace")))
     return found
 
 
@@ -331,7 +399,26 @@ def test_the_arithmetic_fold_finds_the_construction_only_where_declared() -> Non
     assert found <= set(DERIVED_USES), f"the block is constructed by arithmetic outside its declared uses: {found}"
 
 
+def _lines(src: str) -> list[int]:
+    return sorted({int(h.split(":")[1]) for h in _fold_hits("x.py", src)})
+
+
 def test_the_fold_sees_names_and_pure_literals() -> None:
     src = "P = 2026 * 1000 + 587\nS = P * 10 + 3\nQ = 2026 * 1000 + 586\nfor i in range(3):\n    x = P * 10 + i\n"
-    lines = sorted({int(h.split(":")[1]) for h in _fold_hits("x.py", src)})
-    assert lines == [1, 2, 5], lines
+    assert _lines(src) == [1, 2, 5]
+
+
+def test_the_fold_sees_powers_without_the_year_digits() -> None:
+    """N-9: no prefilter on the year's digits, and `**` folds: 2 ** 11 - 22 is the year, written without them."""
+    src = "Y = 2 ** 11 - 22\nP = Y * 1000 + 587\n"
+    assert "2026" not in src and _lines(src) == [2]
+
+
+def test_the_fold_sees_augmented_assignment() -> None:
+    src = "P = 2026\nP *= 1000\nP += 587\nQ = 5\nQ += 1\n"
+    assert _lines(src) == [3]
+
+
+def test_the_fold_sees_tuple_unpacking() -> None:
+    src = "A, B = 2026 * 1000, 587\nP = A + B\nC, D = f(), 1\n"
+    assert _lines(src) == [2]

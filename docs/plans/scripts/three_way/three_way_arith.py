@@ -79,30 +79,43 @@ PART_CAP_H = 8.0
 
 #: every draw's key is [role seed, kind tag, then exactly the kind's fields]; the tag is nonzero and distinct per kind,
 #: so two keys of different kinds differ in their second word and two keys of one kind have one length -- numpy's
-#: trailing-zero equivalence (default_rng([a, b]) is default_rng([a, b, 0, 0])) cannot join two keys
+#: trailing-zero equivalence (default_rng([a, b]) is default_rng([a, b, 0, 0])) cannot join two keys; and every word is
+#: below 2^32, because numpy splits a larger integer into 32-bit words (default_rng([7, 2**32 + 5]) is
+#: default_rng([7, 5, 1]); cycle 2, N-8). The coin key carries the start (choice 3; N-2) and the underlying, not the
+#: instrument: MNQ and NQ are one underlying (N-4)
 KEY_KINDS = {
     "history": (1, ("part", "history")),
     "symmetry": (2, ("part", "history", "block")),
-    "coin": (3, ("part", "history", "seed_index", "start", "instrument", "moment", "draw_kind")),
+    "coin": (3, ("part", "history", "seed_index", "start", "underlying", "moment", "draw_kind")),
     "plant": (4, ("part", "history", "plant", "replicate")),
     "test": (5, ("test", "replicate")),
 }
+WORD = 2 ** 32
 
 
 def seed_key(seed: int, kind: str, **fields: int) -> list[int]:
-    """The fixed-length key of one draw: [seed, tag, fields in the kind's order]; every field given, none extra, all
-    non-negative integers."""
+    """The fixed-length key of one draw: [seed, tag, fields in the kind's order]; every field given, none extra; the
+    seed positive, every index non-negative, and every word below 2^32 (moments are session indices and minute
+    offsets, never epoch times)."""
     tag, names = KEY_KINDS[kind]
     if set(fields) != set(names):
         raise ValueError(f"a {kind} key takes exactly {names}, not {sorted(fields)}")
     vals = [int(fields[n]) for n in names]
     if int(seed) <= 0 or any(v < 0 for v in vals):
         raise ValueError("a seed is positive and every index non-negative")
+    if int(seed) >= WORD or any(v >= WORD for v in vals):
+        raise ValueError("every word of a key is below 2^32: numpy splits larger integers into words")
     return [int(seed), tag, *vals]
 
 
+def key_state(key, words: int = 4) -> tuple[int, ...]:
+    """What numpy actually seeds from a key: `SeedSequence(key).generate_state(words)` (deterministic hashing, no
+    draw). The key guard compares these, so any two keys numpy would read as one stream are caught."""
+    return tuple(int(x) for x in np.random.SeedSequence(list(key)).generate_state(words))
+
+
 def stripped(key) -> tuple[int, ...]:
-    """A key as numpy's SeedSequence reads it: trailing zero words carry no entropy, so they are dropped."""
+    """A key with its trailing zero words dropped (the trap's shape; the guard compares `key_state`)."""
     k = list(key)
     while k and k[-1] == 0:
         k.pop()
@@ -112,19 +125,33 @@ def stripped(key) -> tuple[int, ...]:
 # --------------------------------------------------------------------------------------- the race redraw (B-1)
 
 
-def race_redraw(l: int, g: int, c: int) -> tuple[Fraction, int, int]:
-    """(win probability, win, loss) of a trade on the martingale-outcome reading, with stop l, target g and the
-    account's cushion c (the room to the nearer barrier: the floor, or the daily loss limit's room), in ticks: a
-    driftless first exit races the nearer of the stop and the cushion, as Stage 2's `BinaryDraw` (settlement `race`,
-    D-156) does. The loss is min(l, c); a trade with no cushion is not taken."""
-    if l <= 0 or g <= 0 or c <= 0:
-        raise ValueError("stop, target and cushion are positive tick counts")
-    loss = min(l, c)
-    return Fraction(loss, loss + g), g, loss
+def race_redraw(l, g, c, exit_cost=0) -> tuple[Fraction, Fraction, Fraction]:
+    """(win probability, win, loss) of a trade on the martingale-outcome reading, in ticks (fractions allowed): stop l,
+    target g, the account's cushion c after the entry cost is booked (the room to the nearer of the floor and the daily
+    loss limit), and the exit cost. A driftless first exit races the nearer of the stop and **the cushion less the exit
+    cost**, as Stage 2's `BinaryDraw` (settlement `race`, D-156) races the cushion, so a losing trade's loss plus its
+    exit cost never passes the floor and the engine's clip never binds (cycle 2, N-5). The loss barrier is
+    L = min(l, c - exit_cost); a trade with no room (L <= 0) is not taken."""
+    l, g, c, x = (Fraction(v) for v in (l, g, c, exit_cost))
+    if l <= 0 or g <= 0 or x < 0:
+        raise ValueError("stop and target are positive, the exit cost non-negative")
+    loss = min(l, c - x)
+    if loss <= 0:
+        raise ValueError("no room: the cushion does not cover the exit cost")
+    return loss / (loss + g), g, loss
 
 
-def gross_expectation(p: Fraction, win: int, loss: int) -> Fraction:
+def gross_expectation(p: Fraction, win, loss) -> Fraction:
     return p * win - (1 - p) * loss
+
+
+def net_expectation(l, g, c_before, entry_cost=0, exit_cost=0) -> tuple[Fraction, Fraction]:
+    """(the trade's net expectation, its worst balance change) from a cushion c_before measured before the entry cost:
+    the entry cost booked, the race at the cushion less the exit cost, the exit cost paid on either exit."""
+    e, x = Fraction(entry_cost), Fraction(exit_cost)
+    p, win, loss = race_redraw(l, g, Fraction(c_before) - e, x)
+    net = -e + p * (win - x) + (1 - p) * (-loss - x)
+    return net, -(e + loss + x)
 
 
 def unraced_edge(l: int, g: int, c: int) -> Fraction:
@@ -339,15 +366,26 @@ def orthant(rho: np.ndarray) -> float:
     raise ValueError("one to three groups")
 
 
-def y_size(h: int, n_min: int) -> tuple[int, float, float, float]:
-    """(|Y_ok|, the smallest pairwise correlation, P(all positive), P(strict majority positive)) for (Y)'s start-year
-    groups at h* = h; P(strict majority) is 1/2 for one or three symmetric groups and P(all) for two."""
+#: (Y)'s n_min candidates (calendar only): h* (a group spans one horizon of starts) and one month of starts
+N_MIN_CHOICES = ("h*", 21)
+#: a condition whose stated size is at least this is labelled vacuous (cycle 2, N-7)
+VACUOUS = 0.5
+
+
+def y_size(h: int, n_min: int) -> tuple[int, float, float, bool]:
+    """(|Y_ok|, the smallest pairwise correlation, the stated size with n_Y = all of Y_ok -- P(every group positive)
+    under white noise, a lower bound by Slepian's inequality -- and whether that size labels (Y) vacuous)."""
     ok, rho, _ = group_correlations(h, n_min)
     k = len(ok)
     r_min = float(rho[np.triu_indices(k, 1)].min()) if k > 1 else float("nan")
-    p_all = orthant(rho)
-    p_maj = p_all if k == 2 else 0.5
-    return k, r_min, p_all, p_maj
+    size = orthant(rho)
+    return k, r_min, size, size >= VACUOUS
+
+
+def proposed_n_min(h: int) -> int:
+    """The calendar-only n_min that minimises (Y)'s stated size at h* = h (the smaller n_min on a tie)."""
+    cands = sorted({h if c == "h*" else int(c) for c in N_MIN_CHOICES})
+    return min(cands, key=lambda n: (y_size(h, n)[2], n))
 
 
 # --------------------------------------------------------------------------------------- the run plan
@@ -435,14 +473,16 @@ def report() -> str:
     out.append("time leg, independent symmetric blocks: B, P(all B positive), P(strict majority positive)")
     for B in BLOCKS:
         out.append(f"  B={B:<2}  all={binom_tail(B, B):.4e}  majority={binom_tail(B, B // 2 + 1):.4e}")
-    out.append("(Y) start-year groups (calendar only), white-noise overlap: h*, n_min, starts per year, |Y_ok|,"
-               " smallest correlation, P(all positive), P(strict majority)")
+    out.append("(Y) start-year groups (calendar only), n_Y = all of Y_ok, white-noise overlap (a lower bound): h*,"
+               " n_min, starts per year, |Y_ok|, smallest correlation, stated size, label")
     for h in (63, 126, 252):
         _, _, counts = group_correlations(h, h)
-        for nm in (h, 21):
-            k, r, pa, pm = y_size(h, nm)
-            out.append(f"  h*={h:<3}  n_min={nm:<3}  starts {counts}  |Y_ok|={k}  rho_min={r:.4f}  all={pa:.4f}"
-                       f"  majority={pm:.4f}")
+        for c in N_MIN_CHOICES:
+            nm = h if c == "h*" else int(c)
+            k, r, s, vac = y_size(h, nm)
+            out.append(f"  h*={h:<3}  n_min={nm:<3}  starts {counts}  |Y_ok|={k}  rho_min={r:.4f}  size>={s:.4f}"
+                       f"  {'VACUOUS' if vac else 'not vacuous at this bound'}")
+        out.append(f"  h*={h:<3}  proposed n_min={proposed_n_min(h)} (the smaller stated size)")
     out.append(f"gate horizon H_g={H_GATE}: complete held-out starts <= {complete_starts(wh, H_GATE)},"
                f" disjoint held-out blocks <= {disjoint_units(wh, H_GATE)}, search <= {disjoint_units(ws, H_GATE)}")
     out.append(f"memory: cap {MEM_CAP_GB} GB over {WORKERS} workers, base {BASE_GB} GB assumed, lane {LANE_BYTES} B:"
