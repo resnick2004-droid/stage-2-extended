@@ -16,6 +16,7 @@ DATA = ROOT / "vendor" / "stage2" / "data"
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_p14_and_p16_reproduced():
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
         pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
@@ -26,6 +27,7 @@ def test_p14_and_p16_reproduced():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_u1_start_rows_reproduced():
     """Q-05: U1's start rows (`results/user_journey.csv`, section `start`, every column) for P-14 and P-16, both arms,
     at 4 starts spread as `user_journey.py --check --starts 4` spreads them, by the vendored replay."""
@@ -38,6 +40,7 @@ def test_u1_start_rows_reproduced():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_u1_p15_start_rows_reproduced():
     """Q-22: U1's start rows for P-15 (Stage 2's 25-point coin, `rc_s100_all`), both arms, every column, at 4 starts
     spread as `user_journey.py --check --starts 4` spreads them -- the same comparison as P-14's and P-16's, with

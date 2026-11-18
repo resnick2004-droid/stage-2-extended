@@ -65,6 +65,7 @@ def test_the_arms_parse_and_an_unknown_arm_is_refused():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_adapter_reproduces_p14_and_p16_registered_gate_paths_at_four_paths():
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
         pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")

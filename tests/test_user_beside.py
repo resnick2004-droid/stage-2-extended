@@ -67,6 +67,7 @@ def test_the_adapters_mechanics_on_synthetic_campaigns_smoke():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_every_response_off_reproduces_u1s_start_rows():
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
         pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
@@ -76,6 +77,7 @@ def test_every_response_off_reproduces_u1s_start_rows():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_u1s_start_rows_at_the_class_keywords_default_and_with_the_pass_through_class():
     """Q-76: the same identity at `funded_account_cls`'s default and with the gate's pass-through class given -- U1's
     start rows for both, and the class run's outputs the default's bit for bit apart from its naming."""
@@ -99,6 +101,7 @@ def test_u1s_start_rows_every_start_at_the_class_keywords_default_and_with_the_p
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_u1s_start_rows_at_q100s_defaults_and_with_its_keywords_given():
     """Q-100: the same identity at `household_closure`'s and `seed_base`'s defaults and with `household_closure=False`
     and `seed_base=20261920` given -- U1's start rows for both, and the given run's outputs the default's bit for bit
@@ -124,6 +127,7 @@ def test_u1s_start_rows_every_start_at_q100s_defaults_and_with_its_keywords_give
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_readings_pipeline_on_four_starts():
     """`scripts/user_beside.py --check`: the identity first, every reading's refusing checks, both files written with
     their manifests to a temporary folder and read back through their hashes -- one response of each kind."""
@@ -138,6 +142,7 @@ def test_the_readings_pipeline_on_four_starts():
 
 
 @pytest.mark.slow
+@pytest.mark.heavy         # Q-134: reads the real bars or atlas; the lock guard skips it while run.lock is held
 def test_the_comparison_refuses_a_response_switched_on():
     """The negative control: the same comparison with the placement on (P-14, 4 starts) must be refused."""
     if not ((DATA / "bars").is_dir() and (DATA / "atlas").is_dir()):
