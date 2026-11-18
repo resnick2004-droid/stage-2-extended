@@ -20,13 +20,25 @@ def test_status_prints_every_part():
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-3000:]
     for part in ("== queue", "== run lock", "== worktrees", "== results", "== last test run"):
         assert part in r.stdout, part
-    assert "Q-05" in r.stdout
+    # Every row of the live queue is listed (Q-05 was named here until Q-147's archive could move a done row out);
+    # once the archive exists its rows are counted.
+    S = _status()
+    live = S.queue_rows((ROOT / "TASK_QUEUE.md").read_text(encoding="utf-8"))
+    assert live and all(f"  {row['id']} " in r.stdout for row in live)
+    archive = ROOT / "docs" / "archive" / "TASK_QUEUE_ARCHIVE.md"
+    if archive.is_file():
+        assert f"archived: {len(S.queue_rows(archive.read_text(encoding='utf-8')))} row(s)" in r.stdout
 
 
-def test_queue_rows_parse_from_both_ends():
+def _status():
     spec = importlib.util.spec_from_file_location("s2x_status", ROOT / "scripts" / "status.py")
     S = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(S)          # importing it reads nothing vendored: the results are listed only in main()
+    return S
+
+
+def test_queue_rows_parse_from_both_ends():
+    S = _status()
     text = """
 | id | task | owner | state | depends on | weight | retries | row |
 |---|---|---|---|---|---|---|---|

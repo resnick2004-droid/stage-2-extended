@@ -11,5 +11,6 @@ markers = [
     "slow: runs Stage 2's engine (about a minute)",
     "heavy: reads the real bars or atlas (any amount; Q-134, tests/test_heavy_marker_guard.py) or runs a campaign; one at a time under run.lock",
 ]
-# Two tiers. The fast tier -- `-m "not slow and not heavy"` -- is what scripts/pre-commit and the .py-edit hook
-# (scripts/hooks/run_tests.py) run; the whole suite runs in /validate and before any reading is believed.
+# Two tiers. The fast tier -- `-m "not slow and not heavy"` -- is what scripts/pre-commit runs (the .py-edit hook,
+# scripts/hooks/run_tests.py, applies it to the edited file's tests and the two foundation checks only, Q-147);
+# the whole suite runs in /validate and before any reading is believed.

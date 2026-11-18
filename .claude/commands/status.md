@@ -20,7 +20,7 @@ Run `python scripts/status.py` (TASK_QUEUE Q-04 builds it). It reports:
 - **The identity** -- the board's state (`STATUS.md`) for P-14's and P-16's gate rows and U1's start rows.
 - **The run lock** -- `run.lock` at the repository root: free, or its holder, job, start and expected end (stale if older
   than its expected end plus an hour: investigated, never stolen).
-- **Last test run** from `results/.last_test_run.json`, written by the post-edit test hook (the fast tier).
+- **Last test run** from `results/.last_test_run.json`, written by the post-edit test hook (the edited file's tests and the two foundation checks, Q-147; not the fast tier).
 - **The closing checklist** (`TASK_QUEUE.md`, CHARTER section 5).
 
 If `scripts/status.py` does not exist yet, read the same sources directly and say that the script is not built.
