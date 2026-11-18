@@ -53,7 +53,7 @@ SEED_ROW = re.compile(r"^\|\s*(\d{8})\s*\|\s*([^|]+?)\s*\|", re.MULTILINE)
 
 
 def draft_path() -> Path:
-    found = sorted(PREREG.glob("DRAFT_RD_firms.md")) + sorted(PREREG.glob("RD-*firm*.md"))
+    found = sorted(PREREG.glob("DRAFT_RD_firms.md")) + sorted(PREREG.glob("RD-*_firm_contracts.md"))
     assert len(found) == 1, f"exactly one firms-reading declaration expected under prereg/, found {found}"
     return found[0]
 
