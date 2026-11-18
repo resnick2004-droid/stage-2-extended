@@ -30,6 +30,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from extended import git_scan as GS
+
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / "scripts" / "q108_validate.py"
 SEED = 20262120
@@ -48,7 +50,11 @@ def load_val():
 
 @pytest.fixture(scope="module")
 def V():
-    return load_val()
+    # Q-156: the seed scans of Q-108's runner (this runner's copy) through `extended.git_scan`; no pinned file edited
+    mod = load_val()
+    with pytest.MonkeyPatch.context() as mp:
+        GS.route_scans(mp, mod)
+        yield mod
 
 
 def _env():

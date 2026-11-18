@@ -122,7 +122,7 @@ def test_the_constants_against_their_sources(arith) -> None:
     row = next(line for line in dec.splitlines() if line.startswith("| E-208 |"))
     assert f"NQ {arith.SEARCH[0]} to {arith.SEARCH[1]}" in row
     assert f"{arith.HELD_OUT[0]} to {arith.HELD_OUT[1]}" in row
-    assert "the next is k = 13" in (ROOT / "CLAUDE.md").read_text(encoding="utf-8") and arith.KS[0] == 13
+    assert re.search(r"(the next is k = 13|; next 13\.)", (ROOT / "CLAUDE.md").read_text(encoding="utf-8")) and arith.KS[0] == 13  # E-210 reworded CLAUDE.md's k line ("next 13")
     for cfg in ("fv2_grid.yaml", "fv3_corrected_portfolio.yaml"):
         assert f"horizon_days: {arith.H_GATE}" in (ROOT / "vendor" / "stage2" / "config" / cfg).read_text("utf-8")
     from extended import family_stats

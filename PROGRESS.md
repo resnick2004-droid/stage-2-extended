@@ -206,3 +206,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-209: RD-05's coin side merged; the per-edit hook lightened and the done queue rows archived; the amendments cleared; the measures' definitions in correction. |
 | 2026-11-18 | lead | E-210: the journey objective is in force -- the charter, CLAUDE.md and the directive amended after three red-team reads. |
 | 2026-11-18 | lead | E-211, E-212: the measures, lever table and overnight features merged; the second breakeven reading recorded (no P difference detectable on the held-out starts); Q-05 holds again. |
+| 2026-11-18 | lead | E-213 to E-216: Wave 1 complete (measures aligned, the three-way test's design merged); four shared identities hold again. |

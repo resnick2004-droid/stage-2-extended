@@ -57,6 +57,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import breakeven_readings as BR  # noqa: E402
+from extended import git_scan as GS  # noqa: E402
 
 CHECKS = ROOT / "tests" / "breakeven2_checks.py"
 SCRIPT = ROOT / "scripts" / "breakeven_fidelity_2.py"
@@ -176,7 +177,7 @@ def test_the_logs_head():
 
 
 def _tracked_with_block() -> set[str]:
-    r = subprocess.run(["git", "grep", "-IlE", "2026226[0-9]", "--", "."], cwd=ROOT, capture_output=True, text=True)
+    r = GS.run(["git", "grep", "-IlE", "2026226[0-9]", "--", "."], cwd=ROOT, text=True)      # Q-156: limited
     files = {x.strip().replace("\\", "/") for x in r.stdout.splitlines() if x.strip()}
     return {f for f in files if BLOCK.search((ROOT / f).read_text(encoding="utf-8", errors="replace"))}
 

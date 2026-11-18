@@ -51,6 +51,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from extended import git_scan as GS
+
 ROOT = Path(__file__).resolve().parent.parent
 ENTRY = ROOT / "scripts" / "q108_calibrate.py"
 SEED = 20262110
@@ -70,7 +72,12 @@ def load_cal():
 
 @pytest.fixture(scope="module")
 def C():
-    return load_cal()
+    # Q-156: the runner's seed scans (`git grep` over every ref) through `extended.git_scan` -- a time limit, the process
+    # tree killed and an error on it, never a pass; the runner's file (pinned by blob) is not edited
+    mod = load_cal()
+    with pytest.MonkeyPatch.context() as mp:
+        GS.route_scans(mp, mod)
+        yield mod
 
 
 def _env():

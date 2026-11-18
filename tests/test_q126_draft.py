@@ -34,6 +34,8 @@ from pathlib import Path
 
 import pytest
 
+from extended import git_scan as GS
+
 ROOT = Path(__file__).resolve().parent.parent
 CALDIR = ROOT / "docs" / "calibration"
 DRAFT_NAME = "DRAFT_Q-126_one_sample_plan_2.md"
@@ -659,7 +661,8 @@ def test_the_checks_can_fail():
 
 
 def _git(*a: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    """Q-156: through `extended.git_scan` -- its time limit, the process tree killed and an error on it, never a pass."""
+    return GS.git(*a, cwd=ROOT, text=True, encoding="utf-8", errors="replace")
 
 
 def _allowed(path: str) -> bool:
@@ -681,13 +684,12 @@ def test_the_blocks_appear_in_no_other_file():
     hits = [f"working tree: {p}" for p in r.stdout.splitlines() if not _allowed(p)]
     refs = _git("for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes", "refs/tags").stdout.split()
     refs = [x for x in refs if not x.endswith("/HEAD")]
-    for i in range(0, len(refs), 40):
-        r = _git("grep", "-l", "-I", "-w", "-E", SEED_PATTERN, *refs[i:i + 40], "--")
-        assert r.returncode in (0, 1), r.stderr
-        for line in r.stdout.splitlines():
-            ref, _, path = line.partition(":")
-            if not _allowed(path):
-                hits.append(f"{ref}: {path}")
+    # Q-156: each distinct commit the refs name grepped once, its hits given under every ref naming it (the same pairs
+    # as grepping the ref names); a git failure raises, a stall raises on the limit
+    for ref, path in GS.grep_refs(ROOT, ["-l", "-I", "-w", "-E", SEED_PATTERN], refs, text=True, encoding="utf-8",
+                                  errors="replace"):
+        if not _allowed(path):
+            hits.append(f"{ref}: {path}")
     assert not hits, "\n".join(sorted(set(hits)))
 
 
