@@ -55,10 +55,13 @@ a k, its power is read from Q-126's power file (`results/q126_cal_power.csv`, wr
 under its plan's 6.2; columns as its `power_rows`): the toys' 80 % MDL for the family's adopted statistic and scope, its
 value (`win1`: win probability at 1R; `net3`: net R at 3R) and **the smallest calibrated k at or above the family's**
 and **the largest calibrated toy size (judged-block trades) at or below its declared supply**, the larger over the two
-side models (the coin's side and sides flipped by session). Each choice can only overstate the MDL, so the gate never
-passes a family whose true MDL is above the factor times its bar; at a calibrated point it is exact. The family
-**closes before its pin, taking no k, when that MDL exceeds the factor (3) times its bar** (in the value's unit).
-Beside, deciding nothing: the MDL scaled by sqrt(size / supply). **Until the file exists the gate refuses**, naming it;
+side models (the coin's side and sides flipped by session). Each choice can only overstate the MDL. **The rule at the
+pin (the lead's ruling after RL3's red-team read, finding B-1): a family or cell is dropped only when its MDL is empty
+-- infinite, no lift on the toys' range detects it -- as family R's cells were (E-086); `closes` says exactly that.**
+The ratio of the MDL to the bar is reported, and `screen_label` (the ratio above the factor, 3) is stage A's screen
+label only: it closes nothing, drops nothing and spends nothing, because the lookup reads the bar's lift at a supply
+that may not be the family's realistic one, and a pass-line rule must show power as well as size. Beside, deciding
+nothing: the MDL scaled by sqrt(size / supply). **Until the file exists the gate refuses**, naming it;
 it also refuses a file whose manifest does not verify, is not the calibration script's, is exploratory, is not from a
 clean run or is marked dirty, and a family outside the calibrated range (k 13 to 20, plan 7 item 5) or below the
 smallest toy size.
@@ -594,13 +597,15 @@ def screen_rule(mdl: Mapping[str, float], bar: Mapping[str, float], factor: floa
 
 @dataclass(frozen=True)
 class GateVerdict:
-    """The pre-pin power gate's reading: `closes` (the MDL above the factor times the bar: the family closes before its
-    pin, taking no k), the MDL read, the rows it came from, and the scaled MDL beside (deciding nothing)."""
+    """The pre-pin power gate's reading: `closes` (the 80 % MDL is empty, infinite: the family or cell is dropped before
+    its pin, taking no k -- the only drop, E-086's), the MDL read, its ratio to the bar, `screen_label` (the ratio above
+    the factor: stage A's screen label, closing nothing), the rows it came from, and the scaled MDL beside."""
     closes: bool
     mdl80: float
     bar: float
     factor: float
     ratio: float
+    screen_label: bool
     k: int
     k_used: int
     supply: float
@@ -613,7 +618,8 @@ class GateVerdict:
     source: str = "table"
 
     def as_dict(self) -> dict[str, Any]:
-        d = {k: getattr(self, k) for k in ("closes", "mdl80", "bar", "factor", "ratio", "k", "k_used", "supply",
+        d = {k: getattr(self, k) for k in ("closes", "mdl80", "bar", "factor", "ratio", "screen_label", "k", "k_used",
+                                           "supply",
                                            "size_used", "candidate", "scope", "value", "beside_scaled", "source")}
         d["rows"] = [dict(r) for r in self.rows]
         return d
@@ -674,7 +680,9 @@ def power_gate_from_table(table: pd.DataFrame, *, k: int, candidate: str, scope:
     mdl80 = float(m.max())
     rows = tuple({c: (v.item() if hasattr(v, "item") else v) for c, v in r.items()}
                  for r in sel[list(GATE_COLUMNS)].to_dict("records"))
-    return GateVerdict(bool(mdl80 > f * b), mdl80, b, f, mdl80 / b, int(k), int(k_used), sup, int(size_used),
+    # dropped only on an empty MDL (the lead's ruling, RL3 B-1; E-086); the factor is a label, never a closure
+    return GateVerdict(bool(mdl80 == math.inf), mdl80, b, f, mdl80 / b, bool(mdl80 > f * b), int(k), int(k_used),
+                       sup, int(size_used),
                        str(candidate), str(scope), str(value), rows, mdl80 * math.sqrt(size_used / sup), source)
 
 

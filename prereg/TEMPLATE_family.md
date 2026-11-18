@@ -124,14 +124,18 @@ judged block in trades -- the count the power gate reads (section 10).>
 
 - **The power gate, before the pin:** `extended.family_stats.power_gate` reads Q-126's power file
   (`results/q126_cal_power.csv`) at the family's k, its adopted statistic and scope, its value (`win1` or `net3`) and
-  its declared supply (section 5), against its bar in the same unit. **A family whose MDL there exceeds the factor
-  (3) times its bar closes before its pin, taking no k** (as family R's cells were dropped by their own power rule,
-  E-086). Until the file exists the gate refuses, and a one-sample family waits.
+  its declared supply (section 5), against its bar in the same unit. **At the pin a family or cell is dropped only
+  on an empty MDL** (infinite: no lift on the toys' range detects it), taking no k, as family R's cells were (E-086);
+  **the factor-3 screen is a label at stage A**, never a drop at the pin (the lead's ruling on RL3's red-team read,
+  finding B-1: a pass-line rule shows power as well as size, and the ratio at a ceiling supply understates the bar's
+  lift). The MDL's ratio to the bar and the gate's `screen_label` are written in the pinning row beside. Until the file
+  exists the gate refuses, and a one-sample family waits.
 - **The conjoint MDL (E-051's M5-2):** the minimum detectable lift of every deciding line together at the family's
   level, on choice-block proxies, seeded, written in stage A's result before stage B reads any lift
   (`conjoint_mdl_grid` or `conjoint_mdl_linear`): <the proxy, the planted lift's form, the grid, the draws, 80 %>.
-- **The screen rule:** if the conjoint MDL exceeds 3 times the value bar at every surviving cell, the family is
-  declared a screen (`screen_rule`), said with the figure; a pass is then carried with that said in its row.
+- **The screen rule (a label at stage A):** if the conjoint MDL exceeds 3 times the value bar at every surviving cell,
+  the family is declared a screen (`screen_rule`), said with the figure; it drops nothing, and a pass is then carried
+  with that said in its row.
 - **Every tightening shows its level and power at the family's level before the pin (E-051):** <the tests that show
   it, on toys with known truth, at fixed seeds of section 15>.
 
@@ -217,7 +221,8 @@ rule this family adds (E-051).>
 
 - Q-126's adoption row for the band of section 6 (a one-sample C1); the statistics its deciding lines use holding
   (E-094 (3) (a)).
-- The power gate passed (section 10), its verdict written in the pinning row.
+- The power gate read (section 10): every cell kept has a finite MDL (a cell with an empty one is dropped, counted);
+  its ratio and screen label written in the pinning row, deciding nothing.
 - The red team's read answered; the gatekeeper's approval; the seed search repeated at the pin.
 
 ## 19. Anything chosen after seeing results

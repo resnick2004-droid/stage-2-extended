@@ -34,8 +34,9 @@ eta the session effect sd 0.30, eps the offer noise sd 0.35; the sides a regime 
   not above 0.8 (within the draws' error); it is no smaller than any line's own MDL.
 * **The screen rule** flags only families whose power at their bar is small, and never one with power at its bar.
 * **The power gate** refuses cleanly, naming the file, before Q-126 writes its power file; on planted tables it reads
-  the declared rows, never passes a family whose true MDL is above the factor times its bar, and is exact at the
-  calibrated points.
+  the declared rows, drops exactly the families whose MDL is empty (the lead's ruling on RL3's red-team read, B-1;
+  E-086), sets its screen label exactly when the MDL exceeds 3 times the bar and closes nothing by it, never
+  understates the MDL, and is exact at the calibrated points.
 
 Seeds: `numpy.random.default_rng([14514500, j, ...])` -- this file's own seed (Q-145), outside the 2026 seed space the
 declarations' blocks use, checked unused in the tree, the vendored snapshot and every branch's history before it was
@@ -673,7 +674,8 @@ def test_the_gate_reads_the_declared_rows():
     v = FS.power_gate_from_table(t, k=14, candidate="cons_m1.25", scope="D", value="win1", supply=1500, bar=0.01)
     assert (v.k_used, v.size_used) == (15, 1000)
     assert v.mdl80 == max(gauss_mdl("win1", 1000, m, "cons_m1.25", "D", 15) for m in ("coin", "flip1"))
-    assert v.closes == (v.mdl80 > 3.0 * 0.01) and v.ratio == v.mdl80 / 0.01
+    assert v.ratio == v.mdl80 / 0.01 and v.screen_label == (v.ratio > 3.0)
+    assert not v.closes                                   # a finite MDL is never dropped, whatever its ratio
     assert v.beside_scaled == v.mdl80 * math.sqrt(1000 / 1500)
     assert len(v.rows) == 2
     for k, ku in ((13, 13), (15, 15), (16, 20), (20, 20)):
@@ -683,8 +685,11 @@ def test_the_gate_reads_the_declared_rows():
         assert FS.power_gate_from_table(t, k=13, candidate="cons_m1.5", scope="Q", value="net3", supply=sup,
                                         bar=1.0).size_used == zu
     t2 = planted_power(lambda *a: math.inf if a[2] == "flip1" else 0.001)
-    assert FS.power_gate_from_table(t2, k=13, candidate="cons_m1.25", scope="D", value="win1", supply=600,
-                                    bar=1.0).closes
+    v2 = FS.power_gate_from_table(t2, k=13, candidate="cons_m1.25", scope="D", value="win1", supply=600, bar=1.0)
+    assert v2.closes and v2.mdl80 == math.inf and v2.screen_label     # an empty MDL (either side model) is dropped
+    t3 = planted_power(lambda *a: 1000.0)                 # a finite MDL a thousand times the bar: labelled, not dropped
+    v3 = FS.power_gate_from_table(t3, k=13, candidate="cons_m1.25", scope="D", value="win1", supply=600, bar=1.0)
+    assert not v3.closes and v3.screen_label and v3.ratio == 1000.0
 
 
 @pytest.mark.parametrize("kw", [dict(k=12), dict(k=21), dict(supply=199), dict(candidate="cons"), dict(scope="X"),
@@ -707,25 +712,41 @@ def test_the_gate_refuses_an_incomplete_table():
         FS.power_gate_from_table(t, k=13, candidate="cons_m1.25", scope="D", value="win1", supply=200, bar=0.01)
 
 
-def test_the_gate_never_passes_a_family_without_power_and_is_exact_at_the_calibrated_points():
-    """Known truth: the planted table's MDL is the Gaussian one at every (k, size); a family's true MDL at its own k and
-    supply is the same formula there. The gate's lookup (the smallest calibrated k at or above the family's, the largest
-    calibrated size at or below its supply, the larger of the two side models) only overstates the MDL, so no family
-    whose true MDL is above the factor times its bar passes; at a calibrated (k, size) it decides exactly as the truth."""
-    t = planted_power(gauss_mdl)
+def empty_mdl(value, z, model, cand, scope, k):
+    """The Gaussian truth with an empty region: no lift on the toys' range detects the flip1 side model in scope D at
+    500 trades or fewer (its MDL infinite)."""
+    if scope == "D" and z <= 500 and model == "flip1":
+        return math.inf
+    return gauss_mdl(value, z, model, cand, scope, k)
+
+
+def test_the_gate_drops_exactly_the_empty_mdls_and_labels_the_rest():
+    """The lead's ruling (RL3's red-team read, B-1): at the pin a family or cell is dropped only when its MDL is empty, as
+    in E-086; the factor 3 is stage A's screen label only. Known truth: on a planted table whose MDL is the Gaussian
+    one except an empty region, the gate closes exactly the families whose looked-up MDL lies in the empty region
+    (scope D, the largest toy size at or below the supply 500 or less); its screen label is set exactly when the ratio
+    of the MDL to the bar exceeds 3 and closes nothing; its lookup (the next calibrated k up, the largest size not above
+    the supply, the worse side model) never understates the MDL, and at a calibrated (k, size) the label is the truth's."""
+    t = planted_power(empty_mdl)
+    sizes = (200, 500, 1000, 2000, 5000)
     g = rng(60, 0)
-    for _ in range(400):
+    seen = {"closed": 0, "labelled_kept": 0, "plain": 0}
+    for _ in range(600):
         k = int(g.integers(13, 21))
         supply = int(g.integers(200, 8000))
         cand, scope = str(g.choice(["cons_m1.25", "cons_m1.5"])), str(g.choice(["D", "Q"]))
-        true = max(gauss_mdl("win1", supply, m, cand, scope, k) for m in ("coin", "flip1"))
-        bar = true / 3.0 * float(g.uniform(0.5, 1.5))
+        z_used = max(z for z in sizes if z <= supply)
+        true = max(empty_mdl("win1", supply, m, cand, scope, k) for m in ("coin", "flip1"))
+        bar = gauss_mdl("win1", supply, "coin", cand, scope, k) / 3.0 * float(g.uniform(0.5, 1.5))
         v = FS.power_gate_from_table(t, k=k, candidate=cand, scope=scope, value="win1", supply=supply, bar=bar)
-        assert v.mdl80 >= true - 1e-15
-        if true > 3.0 * bar:
-            assert v.closes
-        if k in (13, 15, 20) and supply in (200, 500, 1000, 2000, 5000):
-            assert v.closes == (true > 3.0 * bar)
+        empty = scope == "D" and z_used <= 500
+        assert v.closes == empty == (v.mdl80 == math.inf)
+        assert v.screen_label == (v.ratio > 3.0) and v.ratio == v.mdl80 / bar
+        assert v.mdl80 >= true - 1e-15 or (math.isinf(true) and math.isinf(v.mdl80))
+        if k in (13, 15, 20) and supply in sizes:
+            assert v.mdl80 == true and v.screen_label == (true > 3.0 * bar)
+        seen["closed" if v.closes else ("labelled_kept" if v.screen_label else "plain")] += 1
+    assert all(n > 0 for n in seen.values()), seen       # every kind of reading occurs: the test is not vacuous
 
 
 CHILD = """
@@ -775,7 +796,8 @@ def test_the_gate_reads_a_manifested_file_and_refuses_one_not_from_a_clean_run(t
             Path(mp).write_text(json.dumps(m), encoding="utf-8")
             try:
                 v = FS.power_gate(path=csv, **kw)
-                got[name] = {"closes": v.closes, "mdl80": v.mdl80, "k_used": v.k_used, "size_used": v.size_used}
+                got[name] = {"closes": v.closes, "label": v.screen_label, "mdl80": v.mdl80, "k_used": v.k_used,
+                             "size_used": v.size_used}
             except FS.PowerGateRefused as e:
                 got[name] = "refused: " + str(e)[:200]
         mp = X.manifest_path_for(d / "good" / "q126_cal_power.csv")
@@ -797,7 +819,8 @@ def test_the_gate_reads_a_manifested_file_and_refuses_one_not_from_a_clean_run(t
         except FS.PowerGateRefused as e:
             got["edited"] = "refused: " + str(e)[:200]
         pure = FS.power_gate_from_table(t, **kw)
-        got["pure"] = {"closes": pure.closes, "mdl80": pure.mdl80, "k_used": pure.k_used, "size_used": pure.size_used}
+        got["pure"] = {"closes": pure.closes, "label": pure.screen_label, "mdl80": pure.mdl80, "k_used": pure.k_used,
+                       "size_used": pure.size_used}
         print(json.dumps(got))
     """, tmp_path)
     assert out["good"] == out["pure"]
