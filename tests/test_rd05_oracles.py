@@ -40,7 +40,6 @@ ALPHA = O.level(N_MAX)
 #: R-2's declared battery counts and shifts (fixed in this source before T-9 first ran)
 K_NULL = 200
 K_POWER = 200
-M_NULL = 50                 # trades a fair check in the null batteries
 M_POWER = 2000              # trades a fair check in the power batteries
 SHIFT_PROB = 8.0            # the probability checks: eight standard errors (power 0.99929 at n 1,000, p0 0.4)
 SHIFT_FAIR = 8.64           # the smallest shift giving power 0.999 for M_POWER fair trades (span 1, p 1/2)

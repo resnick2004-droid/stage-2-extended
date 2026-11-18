@@ -484,7 +484,7 @@ class _Fair:
     trades: int = 0
 
 
-TOL = 1e-7
+TOL = float(M.declared("exact.tol"))                         # 17.2's table (V-6)
 
 
 def loss_peak_cdf(m: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:

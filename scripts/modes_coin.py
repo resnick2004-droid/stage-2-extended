@@ -171,6 +171,12 @@ def funded_moments(steady: dict[str, Any], flip: dict[str, Any]) -> dict[str, An
     return {"n": Y.shape[1], "mean": Y.mean(axis=1), "cov": np.cov(Y)}
 
 
+#: V-3: the flip pairs' standard errors are approximations, said on their rows
+SE_NOTES = {"flip_E": "approximate SE: the per-account variance of A + B Y with Y independent, over n; the estimator's funded mean comes from nf accounts, so first order at n = nf (V-3)",
+            "flip_F": 'approximate SE: over min(n, nf) (V-3)',
+            "journey": 'approximate SE: delta method (V-3)'}
+
+
 def flip_net_pairs(cfg: str, em: dict[str, Any], fm: dict[str, Any], price: float, act: float,
                    key: dict[str, Any]) -> list[dict[str, Any]]:
     """10.2 on the coin: the net per attempt and per funded journey, flip against steady, with paired standard
@@ -189,7 +195,7 @@ def flip_net_pairs(cfg: str, em: dict[str, Any], fm: dict[str, Any], price: floa
     var_d = VA + (VB + EB ** 2) * (VY + EY ** 2) - (EB * EY) ** 2 + LAYOUT["two"] * EY * CAB
     diff = float(a @ m) + EB * EY
     out.append({**key, "flip": "flip_E", "measure": "net_per_attempt", "diff": diff,
-                "se": math.sqrt(max(var_d, 0.0) / n), "n": n})
+                "se": math.sqrt(max(var_d, 0.0) / n), "n": n, "note": SE_NOTES["flip_E"]})
 
     def J(per: float, P: float, Cn: float, Y: float) -> float:
         return (-price * per + P * Y) / (P + Cn) if P + Cn > 0 else math.nan
@@ -208,17 +214,17 @@ def flip_net_pairs(cfg: str, em: dict[str, Any], fm: dict[str, Any], price: floa
     gy = (m[1] / (m[1] + m[2]) if m[1] + m[2] > 0 else 0.0) - (m[4] / (m[4] + m[5]) if m[4] + m[5] > 0 else 0.0)
     var_j = float(g @ C @ g) / n + gy ** 2 * VY / nf
     out.append({**key, "flip": "flip_E", "measure": "net_per_journey", "diff": jf - js, "se": math.sqrt(max(var_j, 0)),
-                "n": n, "note": "delta method"})
+                "n": n, "note": SE_NOTES["journey"]})
     # flip_F: d = P_s (Y_f - Y_s), P_s from the evaluation, independent of the funded pair
     EP, VP = m[4], C[4, 4]
     EZ = float(Ym[0] - Ym[1])
     VZ = float(YC[0, 0] + YC[1, 1] - LAYOUT["two"] * YC[0, 1])
     var_f = (VP + EP ** 2) * (VZ + EZ ** 2) - (EP * EZ) ** 2
     out.append({**key, "flip": "flip_F", "measure": "net_per_attempt", "diff": EP * EZ,
-                "se": math.sqrt(max(var_f, 0.0) / min(n, nf)), "n": min(n, nf)})
+                "se": math.sqrt(max(var_f, 0.0) / min(n, nf)), "n": min(n, nf), "note": SE_NOTES["flip_F"]})
     fac = m[4] / (m[4] + m[5]) if m[4] + m[5] > 0 else 0.0
     out.append({**key, "flip": "flip_F", "measure": "net_per_journey", "diff": fac * EZ,
-                "se": fac * math.sqrt(max(VZ, 0.0) / nf), "n": nf})
+                "se": fac * math.sqrt(max(VZ, 0.0) / nf), "n": nf, "note": SE_NOTES["journey"]})
     return out
 
 
@@ -418,6 +424,15 @@ def run(n: int, N: int, bset: set, cells: list[dict[str, Any]], seeds: tuple | N
     return acc
 
 
+def assemble(acc: dict[str, list[dict[str, Any]]]) -> dict[str, list[dict[str, Any]]]:
+    """V-1: `main`'s sections -- `run`'s rows with the joins' rows added, a section the two share (`flip_pairs`)
+    extended, never replaced. Mutates and returns `acc`."""
+    summ = acc.pop("_summ")[0]
+    for k, rows in joins(summ).items():
+        acc.setdefault(k, []).extend(rows)
+    return acc
+
+
 def measure_lock_problem() -> str | None:
     """N-14: `--measure` is compute-heavy -- it runs only while `run.lock` is held by an `rd05-` job."""
     import json
@@ -494,8 +509,7 @@ def main(argv: list[str] | None = None) -> int:
     except O.OracleBreach as exc:
         print(f"STOPPED: {exc}; nothing of step 2 is written")
         return 4
-    summ = acc.pop("_summ")[0]
-    acc.update(joins(summ))
+    assemble(acc)
     acc["identity"] = [{"what": "modes_coin_identity", "held": "by the lead's row (step_problems(2))"}]
     frames = []
     for sec, rows in acc.items():

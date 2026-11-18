@@ -133,3 +133,20 @@ def test_n14_measure_refuses_without_the_lock(monkeypatch: pytest.MonkeyPatch, t
     assert "not an rd05- job" in C.measure_lock_problem()
     (tmp_path / "run.lock").write_text('{"job": "rd05-measure"}', encoding="utf-8")
     assert C.measure_lock_problem() is None
+
+
+def test_v1_main_assembles_every_paired_measure() -> None:
+    """V-1: the sections as `main` assembles them (`assemble`) keep part D's paired readings from `run` and add the
+    joins' nets -- the flip_pairs section is extended, never replaced."""
+    cells = [c for c in R.coin_cells() if c["index"] in (0, 20) and c["w_index"] == 1 and c["r_index"] == 1]
+    acc = C.run(300, R.oracle_count()["N"], set(), cells, seeds=(TOYS, 0, 0))
+    before = {r["measure"] for r in acc["flip_pairs"]}
+    C.assemble(acc)
+    meas = {r["measure"] for r in acc["flip_pairs"]}
+    ten = {"pass", "sessions_occupied", "sessions_to_pass_mean", "sessions_to_pass_p50", "any_payout", "net",
+           "first_payout_within_21", "first_payout_within_63", "sessions_to_first_payout_mean",
+           "sessions_to_first_payout_p50"}
+    assert before == ten and ten <= meas and {"net_per_attempt", "net_per_journey"} <= meas
+    assert "_summ" not in acc and {"fees", "joined", "renewal"} <= set(acc)
+    nets = [r for r in acc["flip_pairs"] if r["measure"].startswith("net_per")]
+    assert nets and all(str(r["note"]).startswith("approximate SE") for r in nets)      # V-3

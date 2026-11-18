@@ -453,3 +453,28 @@ def test_n3_dll_applies_at_a_close_only_corner() -> None:
     st = spec.start(2, E.CoinDraw(1.0, 500.0, toy(44)))
     room = spec.room(st, np.array([5000.0, 5000.0]), np.array([0.0, -300.0]))
     assert room.tolist() == [1000.0, 700.0]
+
+
+def test_v4_part_b_costs_agree_with_size_table() -> None:
+    """V-4: part B's independent cost code (`modes_rules.size`) against the costed coin's `size_table`, at every
+    start-state size of every mode-corner, costed stop and risk: the same contracts carry the same realised risk and
+    the same stop-out costs (the round turn and the entry and stop ticks)."""
+    checked = skipped = 0
+    for m in M.MODE_CORNERS:
+        t = M.mode_corner_terms(m)
+        st = R.states(m, t)[0]
+        for s in M.declared("grid.s_costed"):
+            tb = E.size_table(int(s), t.allowance, t.commission)
+            for r in M.grid_r():
+                z = R.size(st, r, int(s), "mixed", t.commission, m.kind)
+                if z["minis"] + z["micros"] == 0:
+                    skipped += 1
+                    continue
+                hit = np.nonzero((tb.minis == z["minis"]) & (tb.micros == z["micros"]))[0]
+                assert len(hit) == 1, (m.index, s, r, z["minis"], z["micros"])
+                i = int(hit[0])
+                assert tb.realised[i] == pytest.approx(z["realised_risk"], abs=1e-9), (m.index, s, r)
+                assert tb.cost_loss[i] == pytest.approx(z["cost"], abs=1e-9), (m.index, s, r)
+                checked += 1
+    assert checked + skipped == len(M.MODE_CORNERS) * len(M.declared("grid.s_costed")) * len(M.grid_r())
+    assert checked > 0
