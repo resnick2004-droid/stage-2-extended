@@ -1,15 +1,20 @@
 # F-XX: resting orders at pre-session levels, re-declared (family RL3) -- draft
 
-**Status: a draft, second text (Q-143, corrective cycle 1). Nothing of it is built, run or read.** No bar has been read
-for it, no level computed, no fill counted and no outcome of any order computed. It is pinned, if ever, by the sha256 of
-its LF text in a decision row; nothing declared is edited after that, and a change is a new family under a new row.
+**Status: a draft, third text (Q-143, corrective cycle 2, the last). Nothing of it is built, run or read.** No bar has
+been read for it, no level computed, no fill counted and no outcome of any order computed. It is pinned, if ever, by
+the sha256 of its LF text in a decision row; nothing declared is edited after that, and a change is a new family under
+a new row.
 
 **Its text's history.**
-- The first text is wt/wt-levels 4911821 (LF sha256
-  `5a210dd0edac67408a5c2d72d432cdd3e18ad5bca26f1211ae29fbc09ba29f08`).
-- The red team read it (Q-143r, `docs/reviews/DRAFT_F-RL3_2026-11-18.md`) and found 4 blockers, 5 should-fix and 9
-  notes. The lead ruled on them.
-- This second text answers every finding as ruled. Appendix A maps each finding to the section that answers it.
+- **The first text** is wt/wt-levels 4911821 (LF sha256
+  `5a210dd0edac67408a5c2d72d432cdd3e18ad5bca26f1211ae29fbc09ba29f08`). The red team read it (Q-143r,
+  `docs/reviews/DRAFT_F-RL3_2026-11-18.md`) and found 4 blockers, 5 should-fix and 9 notes.
+- **The second text** is wt/wt-levels 1dcb309 (LF sha256
+  `2f7e5dc3bd2822cd6677d19310cb4d81ca3cad2b36a5d81f1385a02a8246bcf9`). It answered that read as the lead ruled. The
+  red team re-read it (Q-143r2, `docs/reviews/DRAFT_F-RL3_v2_2026-11-18.md`) and found 1 blocker, 4 should-fix and 6
+  notes.
+- **This third text** answers the re-read as the lead ruled. Appendix A maps every finding of both reads to the section
+  that answers it.
 
 **What it is.** The successor of F-02's resting-levels text (`prereg/DRAFT_F-02_resting_levels.md`, the seventh text,
 approved by the gatekeeper under E-065 and withdrawn before any read under E-094). F-02's F-number and its k = 11 retired
@@ -18,9 +23,11 @@ with that text and are never reused (E-094 (3)(b)). F-02 failed on one thing onl
 floors. Section 0 lists what it changes:
 - C1 moves to the one-sample line Q-126 adopts;
 - the operator's rulings of 2026-11-18 are applied (E-202 (2), written into CHARTER section 4 and the skills by E-203):
-  no entry and no fill inside a verified news window, with a position open at a window's start flattened; the
-  08:30-08:59 window closed; the alert-to-order latency as a counted parameter; limit entries by the repository's fill
-  rule;
+  - no entry and no fill inside a verified news window, with a position open at a window's start flattened;
+  - the 08:30-08:59 window closed;
+  - limit entries by the repository's fill rule;
+  - the alert-to-order latency answered: RL3's information is complete before the window, so every declared latency is
+    met by one design (4.2);
 - the seeds are new.
 
 At the pin the file is renamed `prereg/F-NN_resting_levels.md` and `F-XX` becomes `F-NN` on line 1 and in the table's
@@ -28,10 +35,11 @@ At the pin the file is renamed `prereg/F-NN_resting_levels.md` and `F-XX` become
 
 **The pin's conditions -- every one must hold, or this text is not pinned and takes no k (section 19 item 1):**
 1. **Q-126's adoption row exists** (`docs/calibration/Q-126_one_sample_plan_2.md`, pinned by E-187, LF sha256
-   `117f5eb36dfd8312b24db35d1e6898167397fe374ae47a1feab94b5a2ebfcdc6`). It must adopt, as a one-sample line HOLDING its
-   validation, a statistic for the band this family declares: **side persistence below 42 sessions**, as a **switching
-   side** (5.10). That row pins `extended/lift_one_sample2.py`'s blob and names the statistic and its scope (D or Q,
-   plan 2.5's first row).
+   `117f5eb36dfd8312b24db35d1e6898167397fe374ae47a1feab94b5a2ebfcdc6`).
+   - It must adopt, as a one-sample line HOLDING its validation, a statistic for the band this family declares: **side
+     persistence below 42 sessions**, as a **switching side** (5.10).
+   - That row pins `extended/lift_one_sample2.py`'s blob, and names the statistic and its scope (D or Q, plan 2.5's
+     first row).
    - **If Q-126 adopts nothing for that band** (plan 7 items 1-2), the family stays unpinned and takes no k. This text
      stays on record.
 2. **The pre-pin power gate (7.1) has been run.** It drops a (cell, R) only when its minimum detectable lift is empty
@@ -40,8 +48,8 @@ At the pin the file is renamed `prereg/F-NN_resting_levels.md` and `F-XX` become
    the pin (E-051's rule; Q-108's 7 item 5), by a script committed and run before the pin with seeds
    `[20263409, 20..21]` (15).
 4. **The choice calendar** -- every trading day the bar store holds from 2020-01-02 to 2023-12-29 -- has its count and
-   its LF sha256 (of the LF-joined ISO dates) written before the pin by a light script that reads the store's session
-   dates only, from a clean run. The pinning row cites both, beside the judged calendar's (E-094 (2); 9.2).
+   its LF sha256 (of the LF-joined ISO dates) written before the pin, from a clean run, by a light script that reads
+   the store's session dates only. The pinning row cites both, beside the judged calendar's (E-094 (2); 9.2).
 5. **The family number k** is assigned by the gatekeeper at the pin. **Proposed: k = 14**: k = 13 goes to the
    per-firm protocol family (Q-141), and Q-126 calibrated k = 13 to 20 only (plan 7 item 5). The runner asserts that k
    lies in `lift_one_sample.K_RANGE_1S`.
@@ -60,8 +68,8 @@ line the reader requires (18.1, E-026).** Anything chosen after a reading is exp
 | choice block | fills from 2020-01-02 to 2023-12-29 |
 | judged block | fills from 2024-01-02 to 2026-07-16 |
 | confirmation | NQ from 2026-07-17 (`reserve`, reserved): NQ's fourth only by the operator's decision (Stage 2 D-107), a purchase |
-| cells (`k_cells`) | (`fade` at 4 kinds + `break` at 1 kind) x 3 stops x 3 latencies = 5 x 3 x 3 = **45**, each counted whether dropped, killed or read; none identical across latencies (5.9) |
-| hypotheses | 45 cells x 3 R = **135** signed hypotheses over 108 (kind, stop, latency, R) questions (5.9) |
+| cells (`k_cells`) | (`fade` at 4 kinds + `break` at 1 kind) x 3 stops = 5 x 3 = **15**, each counted whether dropped, killed or read; latency-free (4.2) |
+| hypotheses | 15 cells x 3 R = **45** signed hypotheses over 36 (kind, stop, R) questions (5.9) |
 | the pass statistic | C1: the lift over the coin twin on the same fills, under its C1 booking, by **the one-sample line Q-126's adoption row adopts for side persistence below 42 sessions**, in that row's scope, at the family's level (5.10, 9.2) |
 | the two-sample lines | C1' by `two_sample_bound` against the window-matched placebo levels (it holds, E-094 (1)) |
 | the value bar | $500 a year at **C2's bound**: the lower bound of the lift under its C2 booking, by the adopted statistic, at the family's level (9.4; `vendor/stage2/results/u_value_map.csv`, section `bar`, `target=500`) |
@@ -76,7 +84,7 @@ F-02's own corrections (its sections 0.1 to 0.6) are carried: Phase 0's findings
 gatekeeper's refusal of its fifth text and the pass-line review. They stay on record in
 `prereg/DRAFT_F-02_resting_levels.md` and its reviews (`docs/reviews/DRAFT_F-02_resting_levels_2026-11-15.md`, `_v3_`,
 `_v4_`). Every rule they settled is restated here as it stands in F-02, unless the table below changes it. The red
-team's read of this text's first version is answered as Appendix A maps.
+team's two reads of this text's earlier versions are answered as Appendix A maps.
 
 | # | F-02's seventh text | this text | basis | section |
 |---|---|---|---|---|
@@ -84,18 +92,20 @@ team's read of this text's first version is answered as Appendix A maps.
 | 2 | the pin waited on Q-55 and Q-83 | the pin waits on Q-126's adoption row, the pre-pin power gate (7.1), K0/C0's toys on the adopted statistic, the choice calendar's count and sha256, and k | E-094 (3); plan 7; E-051; E-086 | header, 19 |
 | 3 | the sides' persistence stated as "at most one session", for `cons`'s class | **declared as plan 2.5 asks before the pin: a switching side, band below 42 sessions, with the balance limit.** The band check and (in scope D) 4.4's admission run per (cell, R) at its own cutoff, on the choice block at stage A and on the judged block inside stage C, before any outcome | plan 2.5, 4.4; E-184; E-187 (regime-filter kind barred); Q-143r S-3 | 5.10, 7.2, 9.1 |
 | 4 | K0 and C0 by `cons` | K0 and C0 by **the adopted statistic** | Q-108's 7 item 5 (m4) | 7.2, 9.1 |
-| 5 | tickets worked from 08:30 CT; levels and sides from bars at or before 08:24 | **levels and sides from bars at or before 08:29; nothing inside 08:30-08:59 CT is read, and no ticket works there.** The window is Stage 2's closed opening-range branch (D-281 (3)), kept closed for RL3 by E-202 (2)(a), beside E-202's no-news-trading rule | D-281 (3); E-202 (2)(a); Q-143r S-1 | 3, 4 |
-| 6 | no rule for a news window | **no entry and no fill inside any verified news window.** An unfilled ticket is cancelled at the window's start; **a position open at the window's start is flattened at that bar**, and nothing walks on through a window. An unscheduled release is acted on only from its release time | E-202 (2)(a); E-200 R-1; F-02's third read N6; Q-143r B-3, B-4 | 3, 4.6, 4.7 |
-| 7 | the alert-to-order latency fixed at 5 minutes (`t_pub` 08:25, `t_live` 08:30) | **the latency L a declared, counted parameter: 5 minutes (the reference), 3 and 2.** The information is fixed (bars at or before 08:29) and the alert is at 09:00, the close of the window's last bar. The order is live at 09:00 + L, so a shorter L means the order is live sooner after the same information. Every variant is counted in the cells, in stage B's maximum and in the hypotheses; the 5-minute sibling and a paired sibling difference are reported beside | E-202 (2)(c); E-203; the lead's ruling on Q-143r B-2 | 4.2, 5.9, 8, 9.7, 16 |
-| 8 | the limit fill as the walker's | **checked against E-202 (2)(d):** a limit fills only on a trade through its price by at least one tick, at the limit price, never better; it is live from its latency after the alert; it is cancelled at a news window's start. Held by a build test (T-4) | E-202 (2)(d); `extended/walker.py`; feature-rules 3 | 5.2, 17 item 4 |
-| 9 | `on` = bars 17:00 CT to 08:24 | **`on` = bars 17:00 CT to 08:29**: the whole overnight session | consequence of item 5 | 5.1 |
-| 10 | k = 11, level 0.05/132 | proposed k = 14, level 0.05/210; the gatekeeper's number | Q-142; the brief | header, 16 |
-| 11 | seeds in F-02's two blocks | **one new block, 20263400 to 20263409**, found nowhere on any ref, worktree or the main tree by a word-bounded search (15) | E-094 (3)(b) (F-02's seeds retire with it) | 15 |
-| 12 | planning reported, R-16 not applied | **a pre-pin power gate** that drops a (cell, R) only on an empty MDL80 (E-086's form). **R-16's factor 3 is only stage A's "screen" label** (F-B's use), never a drop | E-086; R-16; Q-143r B-1, as the lead ruled | 7.1, 7.2 item 8 |
-| 13 | -- | **Q-122's readings beside** (regime-bucketed, equal-weight block); **E-161's drift nulls named beside** from the adoption row | E-157 (b); E-161; plan 3.3 | 9.7 |
-| 14 | -- | **a memory bound:** every heavy step at most 2.5 GB, its figure measured on the build | the machine (CLAUDE.md); the brief | 18.2 |
-| 15 | a stage-D ticket placed at 08:30 | submitted at the alert (09:00), live at 09:00 + L; the reachable count read at 09:00; the bases' entries inside 08:30-08:59 kept only where an identity needs them, their count and the reach without them beside | consequence of items 5 and 7; Q-143r S-1, S-5 | 10, 11.2, 11.5 |
-| 16 | rule values typed in sections 3 and 6.3 (news windows, the allowance, the stop band's edges) | cited by key or by file; the build reads them | "no typed rule value" (E-199 (S5); the brief) | 3, 6.3 |
+| 5 | tickets worked from 08:30 CT; levels and sides from bars at or before 08:24 | **every level, side and price from bars at or before 08:29; no bar inside 08:30-08:59 CT is read for any level, side or price, and no ticket works there.** The window is Stage 2's closed opening-range branch (D-281 (3)), kept closed for RL3 by E-202 (2)(a), beside E-202's no-news-trading rule | D-281 (3); E-202 (2)(a); Q-143r S-1; Q-143r2 SF-2 | 3, 4 |
+| 6 | no rule for a news window | **no entry and no fill inside any verified news window.** An unfilled ticket is cancelled at the window's start; **a position open at the window's start is flattened at that bar**; nothing walks on through a window. **An unscheduled release** is acted on only from its release time: unfilled tickets cancelled at its bar, and a position open then flattened at the first bar after its minute | E-202 (2)(a); E-200 R-1; F-02's third read N6; Q-143r B-3, B-4; the lead's ruling on Q-143r2 open item 5 | 3, 4.6, 4.7 |
+| 7 | the alert-to-order latency fixed at 5 minutes (`t_pub` 08:25, `t_live` 08:30) | **latency-free** (the lead's ruling on Q-143r2 SF-1). The information is complete at the close of the bar stamped 08:29 (the alert, 08:30). The ticket is submitted at 09:00:00 and is live from the bar stamped 09:00. That is 30 minutes after its alert, which meets every declared L (E-202 (2)(c): 5, 3 and 2) and dominates each of them. So one design, 15 cells, and no cell spent on the latency question, whose answer for RL3 is that it has no cost (1, 6.2) | E-202 (2)(c); E-203; Q-143r2 SF-1, SF-3 | 1, 4.2, 5.9, 6.2, 16 |
+| 8 | the limit fill as the walker's | **checked against E-202 (2)(d):** a limit fills only on a trade through its price by at least one tick, at the limit price, never better; it is live from 09:00; it is cancelled at a news window's start. Held by a build test (T-4) | E-202 (2)(d); `extended/walker.py`; feature-rules 3 | 5.2, 17 item 4 |
+| 9 | the walked mirror, from D-1 and D-13 | **kept, and argued to be the coin twin here:** the fade's walked mirror is the break stop at the same level, from the same ticket, filled on the same bar. **The lead's ruling: RL3 falls outside E-203's F-04 limit ruling** and keeps its walked pair, rung 1 booking and symmetric booking. T-4 checks the same-bar fill | Q-143r2 NB-1 and its section 2.1; E-203 | 5.5, 9.7, 17 item 4, 19 |
+| 10 | T-13 (b) on F-02's generator | **T-13 (b) at RL3's own timing, plus one declared heavier-print case; the switch reads the stricter of the two** | Q-143r2 SF-4 | 5.5, 17 item 5 |
+| 11 | `on` = bars 17:00 CT to 08:24 | **`on` = bars 17:00 CT to 08:29**: the whole overnight session | consequence of item 5 | 5.1 |
+| 12 | k = 11, level 0.05/132 | proposed k = 14, level 0.05/210; the gatekeeper's number | Q-142; the brief | header, 16 |
+| 13 | seeds in F-02's two blocks | **one new block, 20263400 to 20263409**, found nowhere on any ref, worktree or the main tree by a word-bounded search (15) | E-094 (3)(b) (F-02's seeds retire with it) | 15 |
+| 14 | planning reported, R-16 not applied | **a pre-pin power gate** that drops a (cell, R) only on an empty MDL80 (E-086's form). **R-16's factor 3 is only stage A's "screen" label** (F-B's use), never a drop | E-086; R-16; Q-143r B-1, as the lead ruled | 7.1, 7.2 item 8 |
+| 15 | -- | **Q-122's readings beside** (regime-bucketed, equal-weight block); **E-161's drift nulls named beside** from the adoption row | E-157 (b); E-161; plan 3.3 | 9.7 |
+| 16 | -- | **a memory bound:** every heavy step at most 2.5 GB, its figure measured on the build | the machine (CLAUDE.md); the brief | 18.2 |
+| 17 | a stage-D ticket placed at 08:30 | submitted at 09:00:00 and live from 09:00; the reachable count read at 09:00; the bases' entries inside 08:30-08:59 kept only where an identity needs them, their count and the reach without them beside | consequence of items 5 and 7; Q-143r S-1, S-5 | 10, 11.2, 11.5 |
+| 18 | rule values typed in sections 3 and 6.3 (news windows, the allowance, the stop band's edges) | cited by key or by file; the build reads them | "no typed rule value" (E-199 (S5); the brief) | 3, 6.3 |
 
 **What is not changed** (as F-02, restated below):
 - the four kinds, the two side rules and where each is offered;
@@ -105,7 +115,7 @@ team's read of this text's first version is answered as Appendix A maps.
 - K1, K2, K5, K3 and K4;
 - stage B's bootstrap and max-T;
 - the valuation (10), stage D (11), the scorecard beside (12) and the confirmation (14);
-- T-3, T-12, T-13, T-14 and T-15;
+- T-3, T-12, T-13 (a) and (c), T-14 and T-15;
 - the run order, with the refusals first.
 
 ## 1. Hypothesis
@@ -137,14 +147,21 @@ For NQ the mechanism is untested here. No later test was searched for this text 
 - Its atlases read `pdhl` as a market entry after the first close beyond it: five bars late (A1 to A3) and against the
   coin twin (A4, D-550).
 - This family adds something narrower: resting orders at four pre-session levels other than the opening range, filled
-  at the level itself. It reads nothing of the opening half-hour (4.3).
+  at the level itself. No level, side or price of a ticket reads the opening half-hour (4.3).
 
-**Why a resting order, and the latency question.** A ticket written before it can trigger moves the operator's latency
-(D-266) from the fill to the placing of the order, so the order fills at its level rather than some minutes after a
-touch. **The operator's question** (E-202 (2)(c)) is whether a shorter delay from the alert to a live order helps.
-Here every ticket is written from the same information: the bars stamped at or before 08:29. The alert comes at 09:00,
-when the closed window ends. The order is live L minutes later, for L = 5, 3 or 2 (4.2). So the three latencies answer
-exactly that question: the same tickets, live sooner or later after the alert.
+**Why a resting order.** A ticket written before it can trigger moves the operator's latency (D-266) from the fill to
+the placing of the order, so the order fills at its level rather than some minutes after a touch.
+
+**The operator's latency question, answered for this family.** The operator asked whether the delay from alert to
+order hinders results, and to try 3 and 2 minutes against the reference 5 (E-202 (2)(c)). For RL3 the answer is that
+the delay has no cost.
+- Every ticket's information is complete at the close of the bar stamped 08:29. That moment, 08:30, is its alert.
+- No ticket may work inside the closed window, so the earliest it can work is 09:00.
+- A user who submits it at 09:00:00 has had 30 minutes since the alert. That is more than every declared L, so the
+  ticket meets "at least L minutes from alert to order" for L = 5, 3 and 2 alike, and is live as early as any rule
+  allows.
+- So the three latencies give one and the same design. No cell is spent on them, and the 5-minute cell is the design
+  itself (4.2, 6.2).
 
 **Whose accounts.** One user's own accounts, each with its own trades, one position at a time across the firm (Stage 2
 D-157, D-429; E-012 (3)). There is no signal service: users placing the same tickets would be trading in coordination
@@ -179,7 +196,7 @@ round numbers as price levels** (searched 2026-11-15, F-02 section 2). Added sin
 **What follows** (as F-02):
 1. The judged block is late development, not out of sample. A pass is a development finding whose evidence is its
    confirmation (14).
-2. `or30` is out, and `break` at `on`, `pd` and `pdc` is dropped (6.2). Those 27 hypotheses were spent by Stage 2's
+2. `or30` is out, and `break` at `on`, `pd` and `pdc` is dropped (6.2). Those 9 hypotheses were spent by Stage 2's
    reads (D-592's follow effect; G1 at `pdc`), never by this family.
 3. A `break` cell passes only if its lift also exceeds that of matched non-level crossings (C1', 9.3).
 4. The pick's year-by-year readings are reported with every judgement (9.7). No reverse walk-forward (E-031 (2)).
@@ -188,18 +205,18 @@ round numbers as price levels** (searched 2026-11-15, F-02 section 2). Added sin
 
 | constraint | how the family meets it |
 |---|---|
-| latency (Stage 2 D-266; CHARTER section 4 as E-203 amends it: "at least L minutes from alert to order, L a declared parameter") | **L in {5, 3, 2} minutes, counted (E-202 (2)(c)).** 5 is the reference; 3 and 2 are counted variants declared before any read. The alert is at 09:00 CT and the order works from `t_live` = 09:00 + L (4.2) |
-| the closed window 08:30-08:59 CT | **Stage 2's closed opening-range branch (D-281 (3)), which E-202 (2)(a) keeps closed for RL3**, beside E-202's no-news-trading rule. It is not a verified news window. No bar inside it is read for any level, side or price, and no ticket works there. **RL3's own tickets never enter it.** The registered bases' entries inside it are kept as registered only where an identity needs them, with their count printed beside (11.2, 11.5) |
-| news (E-202 (2)(a); E-200 R-1; E-034) | **No entry and no fill inside any verified news window.** The verified windows are those the record holds under `tier1_news_events_restriction` (`config/rules_extended.yaml`, article 13613539), and any further window verified there before the pin. **An unfilled ticket is cancelled at a window's start bar. A position open at a window's start is flattened at that bar,** at a flatten's cost and exit ticks, and counted. Nothing walks on through a window. The ticket is re-written at the window's end and live L minutes later, void if already through, never after its cutoff. On a BLS 08:30 ET day no entry comes before 07:35:00 CT (E-007 (d)), which 09:00 + L meets by construction. FOMC statement days are void (4.7 (d)). An unscheduled release is acted on only from its release time (4.7 (d)). **The EIA releases are not verified windows, so they lie outside E-202 (2)(a).** Their full-allowance rule is stage D's (11.2), as F-02's final read (M5) ruled. USDA crop production is not modelled (12 item 8) |
+| latency (Stage 2 D-266; CHARTER section 4 as E-203 amends it: "at least L minutes from alert to order, L a declared parameter") | **every declared L (5, 3 and 2) is met by the one design** (E-202 (2)(c)). The alert is 08:30, when the information is complete, and the order works from 09:00: 30 minutes, more than any L (1, 4.2) |
+| the closed window 08:30-08:59 CT | **Stage 2's closed opening-range branch (D-281 (3)), which E-202 (2)(a) keeps closed for RL3**, beside E-202's no-news-trading rule. It is not a verified news window. **No bar inside it is read for any level, side or price**, and no ticket works there. **RL3's own tickets never enter it.** Two disclosed reads touch it: the void at 09:00 reads the price at submission, which is the close of its last bar (4.5), and the window-touched split, K4 and 13's label read only whether a ticket's level traded there (4.3). The registered bases' entries inside it are kept as registered only where an identity needs them, with their count printed beside (11.2, 11.5) |
+| news (E-202 (2)(a); E-200 R-1; E-034) | **No entry and no fill inside any verified news window.** The verified windows are those the record holds under `tier1_news_events_restriction` (`config/rules_extended.yaml`, article 13613539), and any further window verified there before the pin. **An unfilled ticket is cancelled at a window's start bar. A position open at a window's start is flattened at that bar,** at a flatten's cost and exit ticks, and counted. Nothing walks on through a window. The ticket is re-written at the window's end and live from the next minute, void if already through, never after its cutoff. On a BLS 08:30 ET day no entry comes before 07:35:00 CT (E-007 (d)), which 09:00 meets by construction. FOMC statement days are void (4.7 (d)). An unscheduled release is acted on only from its release time (4.7 (d)). **The EIA releases are not verified windows, so they lie outside E-202 (2)(a).** Their full-allowance rule is stage D's (11.2), as F-02's final read (M5) ruled. USDA crop production is not modelled (12 item 8) |
 | one position per firm, 5 minutes flat (D-429); one trade an account a session | stages A to C read every fill independently. Stage D routes by the strict rule: a ticket goes only to an account that has not traded that session, with cancel-on-entry (11.2) |
-| every trade resolving: at most 5 % to the flatten, overall and per year (D-212 (2) as D-308 (3) raised it) | the cutoff rule and K2 (7.2); the pick's rule side on 2020-2023 (8 item 5); C3 on the judged block (9.5). Each is read with every trade's own fill-bar rule, and a news-window flatten counts as unresolved |
+| every trade resolving: at most 5 % to the flatten, overall and per year (D-212 (2) as D-308 (3) raised it) | the cutoff rule and K2 (7.2); the pick's rule side on 2020-2023 (8 item 5); C3 on the judged block (9.5). Each is read with every trade's own fill-bar rule; a news flatten counts as unresolved |
 | realised risk matching intended (D-212 (1)) | it cannot fail in the walk (K3). In stage D the ticket is sized by the engine's own form (6.3), so it can miss only by whole-micro rounding: a build check (11.1). The charter records this allowance-capped reading (E-032 (3)) |
 | the stop band (`vendor/stage2/results/stop_band.csv`, D-201 (2)) | the band's narrow edge per state is read from that file by the build. Which of 50, 100 and 150 ticks lie inside it in each state is written to the `build` section and reported beside (6.3). No edge is typed here |
 | conduct, tier 1 (D-145) | no hedge (cancel-on-entry: never two positions in the firm); no simulator-fill exploitation (stops of at least 50 ticks, no stop move, limits need a trade-through); no maximum size into news (the news rule above, and 11.2's EIA rule); no copying (each ticket on one account, D-157); nothing concealed (a resting order at a public level) |
 | conduct, tier 2 (D-145; `vendor/stage2/propedge/campaign/conduct.py`) | each pattern is modelled off in the base case (D-289) and on beside in stage D's placement-on arm (11.5): (1) R at or below 1 (`conduct.MIN_RR`); (2) an account-deciding funded position (`MAX_FUNDED_RISK_FRACTION_OF_DRAWDOWN`); (3) maximum position on most trades, with the share of the pick's tickets at full allowance reported; (4) several accounts at the MLL in a day, a campaign pattern, with its share of days reported. Each is stated for the tickets and for the bases as F-02's section 3 states it |
 | conduct, tier 3 | priced at 0 % denial in the verdict, with 10, 25 and 50 % and the break-even denial beside (11.5) |
-| hours (E-202 (2)(b): executions at every hour are wanted) | **noted, and not taken up here.** The levels are pre-session, so this family's tickets rest in US regular hours, from 09:00 + L to their cutoff (14:30 at the latest). An overnight resting family would be a search of its own. The walk ends at the bar ending 15:08 CT |
-| entry by hand | **the tickets are written from bars at or before 08:29, and the user receives the alert at 09:00 CT.** The order works from `t_live` = 09:00 + L, so a ticket is never working inside the closed window. The levels of `pd`, `on` and `pdc`, and `rn100`'s multiples, are all known by 08:30 (4.3) |
+| hours (E-202 (2)(b): executions at every hour are wanted) | **noted, and not taken up here.** The levels are pre-session, so this family's tickets rest in US regular hours, from 09:00 to their cutoff (14:30 at the latest). An overnight resting family would be a search of its own. The walk ends at the bar ending 15:08 CT |
+| entry by hand | **the tickets are written from bars at or before 08:29 and submitted at 09:00:00 CT.** The order works from the bar stamped 09:00, so a ticket is never working inside the closed window. The levels of `pd`, `on` and `pdc`, and `rn100`'s multiples, are all known by 08:30 (4.3) |
 | firm rules | only rules verified in `vendor/stage2/config/rules.yaml` or `config/rules_extended.yaml` |
 
 ## 4. Time, data and calendar
@@ -207,53 +224,59 @@ round numbers as price levels** (searched 2026-11-15, F-02 section 2). Added sin
 1. **The clock.** The bar store's `ts` is the bar's **start**, in epoch seconds UTC (`vendor/stage2/data/README.md`
    section 5). Bars are read on Stage 2's trading-day clock in US/Central, DST handled there (the walker's clock). The
    bar stamped 08:29 CT covers 08:29:00-08:29:59 and closes at 08:30.
-2. **The information, the alert and the latency** (E-202 (2)(c); the lead's ruling on Q-143r B-2):
+2. **The information, the alert and the order** (E-202 (2)(c); the lead's ruling on Q-143r2 SF-1):
 
-   | L (minutes) | the last bar read (`P_ref`'s bar) | the alert (CT) | `t_live` (CT) | the void's price bar |
+   | the last bar read (`P_ref`'s bar) | the alert (CT) | submitted (CT) | `t_live` (CT) | the void's price |
    |---|---|---|---|---|
-   | 5 (the reference) | stamped 08:29 | 09:00 | 09:05 | stamped 09:04 |
-   | 3 | stamped 08:29 | 09:00 | 09:03 | stamped 09:02 |
-   | 2 | stamped 08:29 | 09:00 | 09:02 | stamped 09:01 |
+   | stamped 08:29 | 08:30 | 09:00:00 | 09:00 | the close of the bar stamped 08:59 |
 
-   - **The information is the same for every L:** every level, every side and `P_ref` come from bars stamped at or
-     before 08:29, closed by 08:30. Nothing inside the closed window 08:30-08:59 is read.
-   - **The alert is at 09:00**, the close of the window's last bar (the bar stamped 08:59). It is the first moment an
-     order may work.
-   - **The order is live at the alert plus L.** So a shorter L means the order works sooner after the same
-     information. That is the operator's question. No variant reads different information.
-   - **The bars resolve these latencies exactly.** Every L is a whole number of minutes on minute boundaries. The first
-     bar a ticket can fill on is the bar stamped `t_live`, and the void reads the close of the bar stamped `t_live - 1`.
-     What one-minute bars cannot show is the order of prints inside a fill bar; that is the pair rule's case (5.5), the
-     same at every L.
-   - Latencies of 1 minute or less, and any other value, are not declared: the operator asked for 5, 3 and 2 (N-3).
-3. **The reference price and its disclosure.** `P_ref` is the close of the bar stamped 08:29 that trading day; with
-   none, every kind is void that day (counted). It reads no bar of the opening half-hour. So no ticket is re-sided by a
-   move inside the closed window, and no ticket is a limit placed at an edge the opening range has just broken (ORB6's
-   hypothesis, D-278).
-   - **A level the window traded through is still a ticket**, on its pre-session side. At `t_live` it is void if
-     already marketable (item 5). Otherwise it rests: the price traded the level inside the window and came back.
-   - Such tickets lie in D-278's neighbourhood. They are reported apart beside every pick and sibling (9.7): the
-     **window-touched split**. A pass carried by them is labelled so (13).
-4. **The side, fixed at 08:30 and never re-read.** A level above `P_ref` is a resistance, below it a support. A level
-   exactly at `P_ref` is void (counted). `on`'s high is a resistance and its low a support by construction, since
-   `P_ref`'s bar is the overnight session's last.
-5. **Live and void.** The order works from the bar stamped `t_live`.
-   - "A bar after `t_live`" is a bar stamped at or after `t_live`.
-   - At `t_live` the price is the close of the bar stamped `t_live - 1`, the last closed by then (the walker's
-     `price_at`).
+   - **The information** -- every level, every side and `P_ref` -- comes from bars stamped at or before 08:29, closed
+     by 08:30. That moment is the alert.
+   - **The order is submitted at 09:00:00 and works from the bar stamped 09:00**, the first minute outside the closed
+     window.
+   - **Latency-free.** The delay from alert to order is 30 minutes, more than every declared L (5, 3 and 2), so every
+     L is met by this one design. It also dominates each of them: a design live at 09:00 + L would hold the same
+     tickets and only lose the touches in 09:00 to 09:0L. So there is one design and no latency cell (5.9). For RL3 the
+     operator's question has no cost (1). That is recorded as its answer, and E-202 (2)(c)'s "five-minute cell beside
+     every pick" is the pick itself.
+   - **The bars resolve the timing exactly.** The alert, the submission and `t_live` are on minute boundaries. What
+     one-minute bars cannot show is the order of prints inside a fill bar; that is the pair rule's case (5.5).
+3. **The reference price, and what reads the window.** `P_ref` is the close of the bar stamped 08:29 that trading day.
+   - **A day with no bar stamped 08:29 is void** for every kind (N-2). The information is defined as that bar's close,
+     and is not taken from an earlier bar. Such days are counted, and their count is printed in the `supply` section.
+   - **No level, side or price of a ticket reads the opening half-hour.** So no ticket is re-sided by a move inside the
+     closed window, and no ticket is a limit placed at an edge the opening range has just broken (ORB6's hypothesis,
+     D-278).
+   - **What does read the window, disclosed:**
+     - the void at 09:00 (item 5) reads the price at the order's submission, which is the close of the window's last
+       bar. That is the market any submission meets: a marketable order cannot rest;
+     - the window-touched split (9.7), K4's window-touched share (7.2 item 7) and 13's label read only whether a
+       ticket's level traded inside 08:30-08:59.
+   - **A level the window traded through is still a ticket**, on its pre-session side. At 09:00 it is void if already
+     marketable. Otherwise it rests: the price traded the level inside the window and came back. Such tickets lie in
+     D-278's neighbourhood, and they are reported apart (9.7). A pass carried by them is labelled so (13).
+   - **The opening selects the survivors (N-4).** Information 30 minutes old meets the opening's moves. A large opening
+     move voids more tickets, and leaves `rn100`'s two multiples on one side of the price. So the live tickets lean to
+     quiet opens and to window-touched levels. That is outcome-free; K4 reports it, and stage A's planning states it
+     beside the fills per session (7.2 item 8), since it moves supply between years.
+4. **The side, fixed at 08:30 and never re-read.** A level above `P_ref` is a resistance, below it a support. **A level
+   exactly at `P_ref` is void (counted), except `on`**, whose high is a resistance and whose low a support by
+   construction, since `P_ref`'s bar is the overnight session's last (N-1).
+5. **Live and void.** The order works from the bar stamped 09:00.
+   - "A bar after `t_live`" is a bar stamped at or after 09:00.
+   - At `t_live` the price is the close of the bar stamped 08:59, the last closed by then (the walker's `price_at`).
    - A stop already at or through its price, or a limit already at or beyond its price (marketable), is **void** for
      the day (skipped, counted).
-   - A bar stamped at or after `t_live` that opens beyond a stop fills at its open plus the slippage (a gap through).
-     One that opens through a limit fills at the limit's price, never better.
-   - **A touch or a trade through before `t_live` does nothing.** The order is not working then. That includes the
-     whole closed window and the minutes from 09:00 to `t_live`.
+   - A bar stamped 09:00 or later that opens beyond a stop fills at its open plus the slippage (a gap through). One
+     that opens through a limit fills at the limit's price, never better.
+   - **A touch or a trade through before 09:00 does nothing.** The order is not working then.
 6. **News windows inside the resting period** (3; E-202 (2)(a); E-200 R-1).
    - An unfilled ticket is cancelled at the window's start bar.
    - **A position open at the window's start is flattened at that bar:** at the worst of that bar's prices less two
      ticks, Stage 2's flatten convention (5.4). It counts as unresolved, and the count is reported. Nothing walks on
      through a window.
-   - The ticket is re-written at the window's end and live L minutes later, void if already through, never after its
-     cutoff.
+   - The ticket is re-written at the window's end and live from the next minute, void if already through, never after
+     its cutoff.
    - At this text's date the record's windows on a non-void day all fall before 09:00, so in stages A to C the rule
      binds only if the record gains a window before the pin. The counts of cancellations and flattens are reported.
 7. **Calendar voids and releases, from calendars fixed before the run, never from the day's own bars.** Each is counted.
@@ -268,21 +291,26 @@ round numbers as price levels** (searched 2026-11-15, F-02 section 2). Added sin
    - **(d) FOMC**, from the list Stage 2's A3 reads (`vendor/stage2/config/atlas_a3.yaml` `news.fomc`).
      - **A scheduled meeting's statement day carries no tickets.** The day was announced in advance.
      - **An unscheduled statement** (the list's "(unscheduled)" and "(notation vote)" rows) **is acted on only from
-       its release time** (F-02's third read, N6). No cancel and no drop may use knowledge from before the release.
+       its release time** (F-02's third read, N6). No cancel, no drop and no flatten may use knowledge from before the
+       release.
      - One released before 08:30 changes nothing, since it is part of the information.
      - One released at or after 08:30: every ticket not yet filled is cancelled at the bar stamped at its release
-       minute. A ticket filled before it walks on: an unscheduled statement is not a verified window (the record's
-       windows are scheduled events), so E-202 (2)(a)'s flatten does not bind it. That is the lead's to confirm (19).
-     - In the window this is the statement of 2020-03-03, released at 10:00 ET, which is 09:00 CT. It coincides with
-       the alert, so that day's tickets are cancelled at 09:00, before any can work, on knowledge public at 09:00.
+       minute, so it cannot fill on that bar or later.
+     - **A position open when it becomes known is flattened at the first bar after its release minute** (the lead's
+       ruling on Q-143r2 open item 5, under E-202 (2)(a)), at a flatten's price and ticks, and counted unresolved.
+       The count is printed.
+     - **The cancel's timing (N-3).** The cancel takes effect within the release minute. That is quicker than a hand
+       cancel, a small optimism stated here. In the window it binds one day: the statement of 2020-03-03, released at
+       10:00 ET, which is 09:00 CT. That is the first live minute, so that day's tickets are cancelled before any can
+       fill, on knowledge public at 09:00. The 2020-03-23 statement precedes 08:30 and changes nothing.
    - **(e) Edges.** The first trading day in the store voids `pd` and `pdc`.
    - **(f) Any other day whose bars end early** is kept. Its walk ends at the day's last present bar, and an open trade
      is flattened there and counted unresolved (the walker's `walk_end`).
 8. **The tests** (17 item 3).
-   - **(a)** For each L, every level, side, `P_ref`, `A_E` and placebo ticket is unchanged when every bar stamped at
-     or after 08:30 that day, and every bar of every later day, is replaced.
-   - **(b)** For each L, each ticket's void status is unchanged when every bar stamped at or after `t_live` is
-     replaced. It is realised at `t_live`.
+   - **(a) The information.** Every level, side, `P_ref`, `A_E` and placebo ticket is unchanged when every bar stamped
+     at or after 08:30 that day, and every bar of every later day, is replaced.
+   - **(b) The void.** Each ticket's void status is unchanged when every bar stamped at or after 09:00 is replaced. It
+     is realised at 09:00.
 
 ## 5. The grid and the walk
 
@@ -295,8 +323,6 @@ round numbers as price levels** (searched 2026-11-15, F-02 section 2). Added sin
 | `pdc` | the prior regular session's close: the close of its bar stamped 14:59 CT (void when that bar is missing) | 1 |
 | `rn100` | the nearest multiples of 100 points of the futures' own price above and below `P_ref`; when `P_ref` is exactly a multiple, the multiples 100 points above and below it | 2 |
 
-No level and no side depends on L. Only `t_live`, and so the void, the fills and everything after them, does (4.2).
-
 ### 5.2 Side rules (order types), and where each is offered
 
 | rule | offered at | at a resistance | at a support | fill |
@@ -308,14 +334,14 @@ No level and no side depends on L. Only `t_live`, and so the void, the fills and
 fill rule: a trade-through by one tick, live from the order's latency, cancelled at a news window's start.
 - **The trade-through and the price:** the walker's `LIMIT_ENTRY` (`extended/walker.py`'s module text and `fill_order`)
   states exactly that rule, and feature-rules 3 states it too.
-- **"Live from the order's latency":** the walker's `live` slot is set to `t_live` = 09:00 + L. The order fills only on
-  bars stamped at or after it.
+- **"Live from the order's latency":** the walker's `live` slot is set to `t_live` = 09:00, which is at least every
+  declared L after the alert (4.2). The order fills only on bars stamped at or after it.
 - **The void:** a limit already marketable at `live` is void (the walker's `price_at` rule).
 - **The cancellation at a news window's start**, and the flatten of a position open there (4.6): the family's adapter
-  adds them, as a cutoff at the window's start, a flatten at that bar, and a re-written order live L minutes after the
-  window's end.
+  adds them, as a cutoff at the window's start, a flatten at that bar, and a re-written order live after the window's
+  end.
 
-T-4 holds each of these on synthetic bars at every L (17 item 4).
+T-4 holds each of these on synthetic bars (17 item 4).
 
 ### 5.3 Per ticket
 
@@ -331,7 +357,7 @@ This repository's walker (`extended/walker.py`; its identity with Stage 2's walk
 preset, built after the pin:
 - **The walk's end and the flatten.** The walk's last bar is the bar ending 15:08 CT. A trade still open there is
   flattened at the worst of the bars ending 15:08-15:10 CT, less two ticks (Stage 2's `fv3_rung_walk` convention). A
-  news-window flatten (4.6) uses the window's start bar in the same way.
+  news flatten (4.6, 4.7 (d)) uses its own bar in the same way.
 - **No stop move** (`breakeven` off).
 - **The barriers.** From the fill, the stop at S ticks is reached by a touch, and the target at floor(R x S) ticks by a
   trade through it by a tick. On a bar reaching both, the stop.
@@ -342,27 +368,57 @@ preset, built after the pin:
 
 ### 5.5 The pair, the fill bar, and the bookings
 
-As F-02's 5.5, unchanged.
+As F-02's 5.5.
 - **The mirror.** Every fill has a mirror: the opposite side at the same fill bar, with the same stop, targets and walk.
 - **The pair rule** (`fill_bar="pair"`). If a pair's fill bar touches either trade's stop or target, the pair is
   ambiguous: both are booked as stopped losses, zero lift, and counted (K5). Otherwise both are walked from the next
   bar.
 - **Symmetric booking** (`mirror_booking="symmetric"`) decides C1 and C1'. **Rung 1** (`mirror_booking="rule_fill"`)
   decides C2. Rungs 2 and 4 are read beside.
-- **T-13 (b)'s switches** run per (side rule, stop, R) and apply to every latency alike, since the latency does not
-  change the null T-13 reads:
+- **T-13 (b)'s switches** run per (side rule, stop, R), read from the stricter of T-13 (b)'s two generators (17 item 5):
   - symmetric booking moves to rung 1 where its null interval lies wholly on the rule's side;
   - C2's rung 1 moves to rung 2 where rung 1's interval does;
   - the (cell, R) is killed where rung 2's interval does too (KB).
 - **What T-13 (b) can move.** Only `fade` cells. A level-specific overshoot stays in `break`'s C1, bounded by K5,
   cancelled in part by C1', and absorbed by a tick in C2's rung 1. The rest is stated, not removed.
-- **E-203's ruling for F-04 on a limit entry's walked mirror** bears on the `fade` cells. Whether it changes this
-  section is 19 item 4.
+
+**Why the walked mirror is the coin twin here, and RL3 falls outside E-203's F-04 limit ruling** (the red team's
+re-read, section 2.1; NB-1).
+- **E-203's ruling for F-04.** For F-04 the walked mirror of a resting limit is not the coin twin. A resting buy fills
+  only on a dip, and its walked mirror is in effect a stop that a coin-sided limit could never have filled.
+- **RL3 is a different object, because its grid ties the side to the order type at each level.** `fade` is a limit at
+  the level, and `break` is the opposite side as a stop one tick beyond it. By the walker's rules (`fill_order`):
+  - **the same bar:** a fade buy limit at a support P fills on the first bar from `live` whose low is at most P less a
+    tick. A break sell stop at P less a tick fills on the first bar whose low reaches it, which is the same bar. The
+    same holds at a resistance;
+  - **the same price:** under symmetric booking the fade's mirror is booked at 2 x trigger - P, one tick beyond the
+    print a tick through. That is the break stop's own fill at one tick of slippage (`mirror_price`). Break and fade at
+    `rn100` are near-exact negatives (5.6).
+- **The only exceptions are countable.** At the void boundary, a reference exactly at P voids the fade but not the
+  break. On a gap bar, the fade fills at P and the walked mirror at 2 x open - P, against the break's open less a tick.
+  T-4 counts them on synthetic bars, and K4 counts them per (cell, R) on the choice block (7.2 item 7).
+- **So the fade's walked mirror is the break order at the same level.** It is realisable, placed at the same time from
+  the same ticket, and filled on the same bar at the break's own fill price. A fair coin choosing at the ticket between
+  the family's two resting orders at that level reproduces the pair exactly. That is CHARTER section 2's coin twin:
+  - supply cancels (the same fill bar);
+  - schedule cancels (the same ticket and the same `t_live`);
+  - cost cancels (both legs booked a tick off the same trigger).
+
+  There is no resting-side share and no supply term, which is the defect E-203 corrected for F-04.
+- **The lead's ruling (on Q-143r2 NB-1): RL3 falls outside E-203's F-04 limit ruling,** and keeps its walked pair, rung
+  1 booking and symmetric booking.
+- **What the walked pair is still open to: print noise at bar extremes.** A one-tick trade-through is often the bar's
+  extreme print, and symmetric booking can then hand the fade about a tick against the break. That is a fill-model
+  artefact, not direction, and it is what T-13 (b)'s ladder is for. The ladder is run at RL3's own timing and on a
+  heavier-print case (17 item 5).
+- **A true mean reversion is not a bias.** If NQ reverts at these crossings, the reversal is real and a user can bank
+  it with realisable orders on both legs. At `pd`, `on` and `pdc` it is the declared estimand, with no level claim
+  (9.8). At `rn100`, C1' differences it out against placebo crossings before any level claim is made.
 
 ### 5.6 The lift, and the estimand of every stage
 
 As F-02's 5.6.
-- **The pair term:** w = 1/2 [win(rule) - win(mirror)], in win probability. A news-window flatten is not a win.
+- **The pair term:** w = 1/2 [win(rule) - win(mirror)], in win probability. A news flatten is not a win.
 - **The lift:** the mean of w over all the (cell, R)'s fills in a block, ambiguous pairs included as zero. The net R
   lift is beside.
 - **The estimand:** direction on fills whose fill minute stayed inside the pair rule's band, diluted toward zero by the
@@ -377,8 +433,7 @@ A seeded coin twin is computed beside: one fair side per fill, in date order of 
 
 ### 5.8 The placebo (decisive for `break` at `rn100`; beside for every `fade`)
 
-As F-02's 5.8. The information is latency-free, so the placebo's tickets are the same at every L; only their `t_live`
-differs.
+As F-02's 5.8.
 - **`A_D`:** the mean, over the 20 most recent full regular sessions before day D, of the regular session's range.
 - **The source day:** drawn past-only, from the kind's eligible days at least 21 and at most 252 trading days before
   the target day E.
@@ -386,16 +441,14 @@ differs.
   - its side is E's own real ticket's side (the target day's own side);
   - its distance from E's `P_ref` is the counterpart's distance on D: scaled by `A_E / A_D` at `pd`, `on` and `pdc`,
     unscaled at `rn100`;
-  - everything else is the real ticket's: rule, stop, R, L, `t_live`, cutoff, void rule, walk, bookings and 4.6's news
+  - everything else is the real ticket's: rule, stop, R, `t_live`, cutoff, void rule, walk, bookings and 4.6's news
     rule.
 - **The draws.** Five replicates, j = 0..4. Each (replicate j, kind k, block b) has its own generator,
   `numpy.random.default_rng([20263402, j, k, b])`, with k: 0 `pd`, 1 `on`, 2 `pdc`, 3 `rn100`, and b: 0 the choice
   block, 1 the judged block, 2 the confirmation window. It makes one `integers(len(pool))` draw per target day, in date
-  order, over the source pool in date order.
-  - The source day and the distance of (j, k, E) are the same at every L.
-  - A target day with an empty pool carries no placebo, and is counted.
+  order, over the source pool in date order. A target day with an empty pool carries no placebo, and is counted.
 - **Coincidences** with a real level are kept (conservative for a pass).
-- **Placebo cells:** 45, one per cell. They are controls, not hypotheses. Only `rn100`'s decides anything (C1').
+- **Placebo cells:** 15, one per cell. They are controls, not hypotheses. Only `rn100`'s decides anything (C1').
 - **What it identifies:**
   - at `rn100` the placebo's distances are exchangeable with the level's;
   - at `pdc` it matches the overnight move's sign but not its size;
@@ -405,50 +458,34 @@ differs.
 
 ### 5.9 Cells and hypotheses
 
-- **Cells:** (4 `fade` kinds + 1 `break` kind) x 3 stops x 3 latencies = **45 cells**.
-- **Table order** (the cell index c = 0..44, used by every seed and every tie):
-  - c = (g x 3 + s) x 3 + l;
-  - g is the rule-kind, 0 to 4: `fade` `pd`, `fade` `on`, `fade` `pdc`, `fade` `rn100`, `break` `rn100`;
-  - s is the stop, 0 to 2: 50, 100 and 150 ticks;
-  - l is the latency, 0 to 2: 5, 3 and 2 minutes, the reference first.
+- **Cells:** (4 `fade` kinds + 1 `break` kind) x 3 stops = **15 cells**.
+- **Table order** (the cell index c = 0..14, used by every seed and every tie): c = g x 3 + s.
+  - g is the rule-kind, 0 to 4: `fade` `pd`, `fade` `on`, `fade` `pdc`, `fade` `rn100`, `break` `rn100`.
+  - s is the stop, 0 to 2: 50, 100 and 150 ticks.
   - R's index r is 0 to 2 for R = 1, 1.5 and 3.
-- **Hypotheses:** each cell at R = 1, 1.5 and 3, so **135 signed hypotheses**: 108 `fade`-signed and 27
-  `break`-signed, over **108 (kind, stop, latency, R) questions**. At `rn100` both signs are asked; elsewhere only the
-  fade sign.
-- **No cell is identical across latencies** (the lead's ruling on B-2: a cell identical across L would be counted
-  once).
-  - The three siblings share their tickets but not their `t_live`. A sibling at a shorter L can fill on a trade-through
-    in the minutes before a longer sibling goes live. Its void is read at an earlier bar, and its cutoff is its own.
-  - This holds for every kind, `on` included. So every one of the 45 cells is counted.
-  - On a ticket-day with no trade-through and no change of void status between 09:02 and 09:05, the siblings' trades
-    coincide. The paired sibling difference (9.7, 8 item 8) measures exactly what is left, and K4 reports the share of
-    coinciding ticket-days.
-- **How they are counted.** Every cell is counted whether dropped at the pin (7.1), killed or read. **Every latency
-  variant is counted in `k_cells`, in the hypotheses and in stage B's family-wise maximum (8 item 4)**, which covers
-  the dependence between latencies, as it covers that between break and fade (E-003 (d)).
-- **Why the latencies cost little power at stage B.** The siblings share every ticket and most fills, so their
-  statistics are close to perfectly correlated. The max-T's critical value therefore rises far less than three separate
-  families would. That is stated, not assumed: stage B's bootstrap computes it.
-- **Nothing is chosen after a look.** The three latencies are the operator's and are declared now. The pick among them
-  is stage B's declared rule (8 item 7).
-  - A shorter L has more fills (it is live longer and voids less), so at an equal per-fill lift it is worth more and
-    has a smaller se. **A pick at 3 or 2 minutes is not by itself evidence that a shorter delay helps.**
-  - That evidence is the paired sibling difference, reported beside (9.7).
+- **Hypotheses:** each cell at R = 1, 1.5 and 3, so **45 signed hypotheses**: 36 `fade`-signed and 9 `break`-signed,
+  over **36 (kind, stop, R) questions**. At `rn100` both signs are asked; elsewhere only the fade sign.
+- **Latency-free.** The three declared latencies give one and the same design (4.2), so they are one cell each, not
+  three. That is the lead's ruling (Q-143r2 SF-1): with the information complete at 08:30 and the order live at 09:00,
+  every declared L is met and dominated by one design.
+  - The second text's 45 latency cells and its 90 paired sibling readings are withdrawn. So is the judged-block
+    purpose that read them; with it goes the exposure of the whole eligible grid that the re-read's SF-3 found.
+- **How they are counted.** Every cell is counted whether dropped at the pin (7.1), killed or read. Stage B's
+  family-wise maximum covers the dependence between break and fade (E-003 (d)).
 
 <!-- counted-cells -->
 | what | count | how |
 |---|---|---|
 | rule-kinds | 5 | 4 `fade` kinds + 1 `break` kind |
 | stops | 3 | 50, 100, 150 ticks |
-| latencies | 3 | 5, 3, 2 minutes |
-| cells | 45 | 5 x 3 x 3, none identical across latencies |
+| latencies | 1 | latency-free: one design meets every declared L (4.2) |
+| cells | 15 | 5 x 3 |
 | R per cell | 3 | 1, 1.5, 3 |
-| signed hypotheses | 135 | 45 x 3 |
-| fade-signed hypotheses | 108 | 4 x 3 x 3 x 3 |
-| break-signed hypotheses | 27 | 1 x 3 x 3 x 3 |
-| questions | 108 | (kind, stop, latency, R): 4 x 3 x 3 x 3 |
-| placebo cells | 45 | one per cell, controls |
-| paired sibling differences | 90 | (L = 3 against 5, L = 2 against 5) x 45 (rule-kind, stop, R); readings, not cells |
+| signed hypotheses | 45 | 15 x 3 |
+| fade-signed hypotheses | 36 | 4 x 3 x 3 |
+| break-signed hypotheses | 9 | 1 x 3 x 3 |
+| questions | 36 | (kind, stop, R): 4 x 3 x 3 |
+| placebo cells | 15 | one per cell, controls |
 | campaign cells | 1 | stage D, if it runs |
 <!-- end counted-cells -->
 
@@ -477,13 +514,12 @@ holds it to that statement from its sides alone (plan 2.5, E-184, E-187). This f
   most sessions; `pd` and `pdc` on fewer, since their levels can lie far from the price. This is an expectation, not a
   figure. Each (cell, R)'s share of sessions with a non-tie side is reported at stage A. A thinly traded (cell, R) is
   refused more often, which costs power, never size (plan 2.5).
-- **Which fills the checks read (S-3).** For each (cell, R), the fills of that (cell, R) at its own cutoff (7.2 item 2),
-  on the declared calendar of the block read:
+- **Which fills the checks read.** For each (cell, R), the fills of that (cell, R) at its own cutoff (7.2 item 2), on
+  the declared calendar of the block read:
   - the choice calendar, whose count and sha256 the pinning row cites (header item 4);
   - or the judged calendar of 9.2.
 
-  A (cell, R) is checked, kept or killed on its own fills, and is judged on the same fills' rule. No other cutoff's
-  series is read for it.
+  A (cell, R) is checked, kept or killed on its own fills, and is judged on the same fills' rule.
 - **The series, as Q-108's 4.4 defines it.** Each traded session's net side is the sum of the (cell, R)'s fills' sides.
   Sessions with no fill, and ties (both levels of a kind filled, a net of zero), are dropped. What is left is the
   non-tie series m_j in calendar order. R is its runs, E its effective count, and the mean side |sum m_j| over its
@@ -517,35 +553,37 @@ holds it to that statement from its sides alone (plan 2.5, E-184, E-187). This f
 | side rules | break or fade | searched | `fade` at all four kinds; `break` at `rn100` | F-02's (6.2) |
 | stops | the stop's distance from the fill | searched | 50, 100, 150 ticks (12.5, 25, 37.5 points) | P-14's two rungs and P-16's stop; 6.3 |
 | R | target over stop | searched | 1, 1.5, 3 | the table's main asks (`u_value_map.csv` `records_leaf`) |
-| **latency L** | the minutes from the alert to the order's working | **searched, counted** | **5 (the reference), 3, 2** | E-202 (2)(c); CHARTER section 4 as E-203 amends it |
-| the information | the bars every level and side reads | fixed | bars stamped at or before 08:29 CT, every L | the lead's ruling on Q-143r B-2; D-281 (3) |
-| the alert | when the order may first work | fixed | 09:00 CT (the close of the bar stamped 08:59), every L | the closed window's end (E-202 (2)(a)) |
-| `t_live` | when a ticket starts working | fixed per L | 09:00 + L: 09:05, 09:03, 09:02 CT | 4.2 |
-| `P_ref` | the price that sets each side | fixed | the close of the bar stamped 08:29 | 4.3 |
-| void rule | an order already through at `t_live` is skipped | fixed | the price at `t_live` = the close of the bar stamped `t_live - 1` | the walker's `price_at` |
-| the closed window | where nothing is read and no ticket works | fixed | 08:30-08:59 CT | D-281 (3), kept closed by E-202 (2)(a) |
-| news windows | when no entry or fill may happen | fixed rule | every window under `tier1_news_events_restriction` in the record at the pin; unfilled tickets cancelled at the start, open positions flattened at the start bar, re-written at the end and live L later | E-202 (2)(a), (d); E-200 R-1 |
-| unscheduled releases | an unannounced FOMC statement | fixed rule | acted on only from its release minute: unfilled tickets cancelled at that bar | F-02's third read N6; Q-143r B-4 |
+| latency L | the minutes from the alert to the order's working | fixed, latency-free | every declared L (5, 3, 2) met by one design: alert 08:30, live 09:00 | E-202 (2)(c); E-203; the lead's ruling on Q-143r2 SF-1 |
+| the information | the bars every level and side reads | fixed | bars stamped at or before 08:29 CT | D-281 (3); 4.2 |
+| the alert | when the information is complete | fixed | 08:30 CT (the close of the bar stamped 08:29) | 4.2 |
+| `t_live` | when a ticket starts working | fixed | 09:00 CT, the order submitted at 09:00:00 | the closed window's end (E-202 (2)(a)) |
+| `P_ref` | the price that sets each side | fixed | the close of the bar stamped 08:29; a day without that bar void | 4.3 |
+| void rule | an order already through at `t_live` is skipped | fixed | the price at `t_live` = the close of the bar stamped 08:59 | the walker's `price_at` |
+| the closed window | where no level, side or price is read and no ticket works | fixed | 08:30-08:59 CT | D-281 (3), kept closed by E-202 (2)(a) |
+| news windows | when no entry or fill may happen | fixed rule | every window under `tier1_news_events_restriction` in the record at the pin; unfilled tickets cancelled at the start, open positions flattened at the start bar, re-written at the end | E-202 (2)(a), (d); E-200 R-1 |
+| unscheduled releases | an unannounced FOMC statement | fixed rule | from its release minute only: unfilled tickets cancelled at that bar, an open position flattened at the first bar after it | F-02's third read N6; Q-143r B-4; the lead's ruling on Q-143r2 open item 5 |
 | stop slippage | ticks paid on a stop entry | fixed | 1 tick; symmetric booking at 2 and 4 beside (break) | `atlas_a3.yaml` `slip_ticks`; D-95 |
 | limit fill | when a limit fills | fixed | a trade through by at least 1 tick, at the limit's price, never better | feature-rules 3; the walker; E-202 (2)(d) |
 | target rounding; two-barrier bar | -- | fixed | floor(R x S); the stop first | Stage 2's `target_ticks`; feature-rules 3 |
 | fill-bar settlement | the fill bar | fixed | the pair rule for the lift; each trade's own rule for resolution | E-010; F-02's N5 |
-| booking for C1 and C1' | the mirror's price in the pass line | fixed rule | symmetric; rung 1 where T-13 (b) finds symmetric booking favours the rule; per (side rule, stop, R), every L alike | E-010; 5.5 |
+| the mirror | what the rule is compared with | fixed | the walked mirror: for a fade, the break stop at the same level on the same bar; RL3 outside E-203's F-04 ruling | 5.5; the lead's ruling on Q-143r2 NB-1 |
+| booking for C1 and C1' | the mirror's price in the pass line | fixed rule | symmetric; rung 1 where T-13 (b), at the stricter of its two generators, finds symmetric booking favours the rule; per (side rule, stop, R) | E-010; 5.5; 17 item 5 |
 | booking for C2 | the mirror's price in the value line | fixed rule | rung 1; rung 2 where T-13 (b) finds rung 1 favours the rule; killed where rung 2 does too | 5.5 |
-| walk end and flatten | where an open trade is closed | fixed | the bar ending 15:08 CT; the worst of bars ending 15:08-15:10, less 2 ticks; a news window's start bar likewise | Stage 2's convention |
+| walk end and flatten | where an open trade is closed | fixed | the bar ending 15:08 CT; the worst of bars ending 15:08-15:10, less 2 ticks; a news flatten's bar likewise | Stage 2's convention |
 | costs | fees and ticks | fixed | Stage 2's at the stop; exit ticks 1 / 0 / 2 | E-010, E-011 |
 | cutoff | when an unfilled ticket is cancelled | fixed rule, value read on the choice block | per (cell, R): the latest of 14:30, 14:00, ..., 10:00 CT passing 7.2 item 2 | F-02's rule |
 | resolution ceiling | the most that may reach the flatten | fixed | 5 % overall and in every calendar year | D-212 (2) as D-308 (3) raised it |
 | K1 supply | the fewest fills | fixed | 100 on the choice block and 12 in every calendar year of it | F-02 |
 | K5 ambiguity cap | the most fills the walk cannot settle | fixed | 5 % of fills | the drafter's choice (F-02's): it buys measurability, not an error rate |
-| calendar voids | days with no ticket | fixed | 4.7's lists | E-029 |
+| calendar voids | days with no ticket | fixed | 4.7's lists, and days with no bar stamped 08:29 | E-029; 4.3 |
 | `rn100` spacing | the round number | fixed | 100 points, in the futures' own price | F-02 |
-| placebo | the control for `break` | fixed | 5 replicates; past-only sources 21 to 252 trading days back; the target day's own sides; distances scaled by `A` (20 full sessions) at `pd`, `on`, `pdc`, unscaled at `rn100`; the same at every L | F-02's 5.8; 5.8 |
+| placebo | the control for `break` | fixed | 5 replicates; past-only sources 21 to 252 trading days back; the target day's own sides; distances scaled by `A` (20 full sessions) at `pd`, `on`, `pdc`, unscaled at `rn100` | F-02's 5.8 |
 | the side's persistence | the band C1's statistic is fixed by | fixed, declared | a switching side, below 42 sessions, checked per (cell, R) at its own cutoff (5.10) | plan 2.5; E-187 |
 | power gate | what a (cell, R) must show before the pin | fixed rule | 7.1: dropped only when its MDL80 at ceiling supply is empty or infinite | E-086 |
 | screen label | when the family is called a screen | fixed rule, a label only | stage A: the MDL80 above 3 x the value-bar lift at every surviving (cell, R) | R-16 (a declared factor); F-B's 3 |
+| T-13 (b)'s heavier-print rate | the share of steps printing a transient extreme | fixed, the drafter's choice | 0.01 a step, 2 or 3 ticks beyond the mid (17 item 5) | Q-143r2 SF-4 |
 | stage B bootstrap | the family-wise gate on the choice block | fixed | stationary, mean block 21 sessions, circular, 2,000 replicates, centred, normalised by the sample's se, seed 20263400 | F-02's 8 |
-| stage B's gate | the choice block's selection device | fixed, not calibrated | the stationary bootstrap's max-T over every surviving (cell, R), every latency included, at family-wise 0.05 | 8 |
+| stage B's gate | the choice block's selection device | fixed, not calibrated | the stationary bootstrap's max-T over every surviving (cell, R), at family-wise 0.05 | 8 |
 | stage C level and statistic | the pass line | fixed | one-sided 0.05 / (k (k + 1)); the adopted one-sample line for C1 and C2; `two_sample_bound` (treated-cluster df) for C1' | E-008; E-187; 9 |
 | value bar | the least a pass must be worth | fixed | $500 a year at C2's bound | `u_value_map.csv` `bar`; E-008 |
 | valuation | where a lift is priced | fixed rule | section 10 | F-02's 10 |
@@ -554,7 +592,7 @@ holds it to that statement from its sides alone (plan 2.5, E-184, E-187). This f
 | realised risk in stage D | floor (ii) | a build check | at least 0.9 of the allowance- and room-capped intention | E-022 (1) |
 | stage D bound level | the shift of both streams | fixed | the one-sided 0.05 bound, both streams | U1's verdict arm; CHARTER section 2 |
 | stage D base, routing, seed | the floors and the scorecards | fixed | section 11; campaign seed 20263405, 500 paths | E-008; E-022 (2) |
-| hours | when tickets rest | fixed | `t_live` to the cutoff | 4; E-202 (2)(b) noted (3) |
+| hours | when tickets rest | fixed | 09:00 to the cutoff | 4; E-202 (2)(b) noted (3) |
 | memory | each heavy step's ceiling | fixed | at most 2.5 GB, measured on the build | 18.2 |
 
 ### 6.2 Dropped, and why
@@ -569,21 +607,27 @@ F-02's 6.2 is carried:
 - the breakeven stop move;
 - time stops, other sessions and the signal-service distribution.
 
-**The latency's design, and the designs not taken** (the lead's ruling on Q-143r B-2). The operator's question is
-whether a shorter delay from alert to live order helps (E-202 (2)(c)). So the cells hold the information fixed and move
-only the order's live time:
-- the information is the bars stamped at or before 08:29, so nothing inside the closed window is read;
-- the alert is at 09:00, the close of the window's last bar;
-- the order is live at 09:00 + L, for L = 5, 3 and 2.
+**The latency designs, and why none is a cell** (the lead's ruling on Q-143r2 SF-1). The operator's question is whether
+a shorter delay from alert to order helps (E-202 (2)(c)).
 
-Dropped:
-- **An alert that moves with L at a fixed order time** (the first text's `t_pub` = 09:00 - L, `t_live` = 09:00). Its
-  variants read different information, a `P_ref` inside the half-hour. At `on` they were the same tickets at every L,
-  and elsewhere they were nested populations: the shorter L added re-sided retest tickets at levels broken inside the
-  window, close to ORB6's closed hypothesis (D-278). So it measured not the cost of a delay, but a difference in
-  information and in trade type (Q-143r B-2, S-2).
-- **Information read at the 08:59 close, live at 09:00 + L.** Every L would then read the opening half-hour, which the
-  ruled design forbids.
+**For RL3 it has no cost, and that is recorded as the answer:**
+- the information is complete at 08:30, before the closed window;
+- the earliest any ticket may work is 09:00;
+- a ticket submitted at 09:00:00 is 30 minutes past its alert, which meets every declared L and is live as early as
+  any rule allows.
+
+So the design taken is that one: **the information at 08:29's close, the alert at 08:30, the order live at 09:00, for
+every L.** The designs dropped:
+- **Live at 09:00 + L, from the same information** (the second text's cells). The same tickets, live later. The
+  design taken dominates them: it loses no touch in 09:00 to 09:0L. A cell there would measure the cost of a wait the
+  design imposes, not of a delay a user faces (Q-143r2 SF-1).
+- **An alert that moves with L at a fixed order time** (the first text's `t_pub` = 09:00 - L). Its variants read
+  different information, a `P_ref` inside the half-hour. At `on` they were the same tickets at every L, and elsewhere
+  they were nested populations: re-sided retest tickets at levels broken inside the window, close to ORB6's closed
+  hypothesis (D-278). So it measured a difference in information and in trade type, not the cost of a delay (Q-143r
+  B-2, S-2).
+- **Information read at the 08:59 close.** It would read the opening half-hour for every ticket's level and side, which
+  the ruled design forbids.
 - **A `t_live` inside the closed window**, for any L.
 - **Latencies of 1 minute or less, and any between those declared:** not asked by the operator.
 
@@ -618,13 +662,13 @@ So before a k is spent, the family's minimum detectable lift is put on record, a
 dropped. The gate runs after Q-126's adoption row and before the pin.
 - **What it reads:** no bar and no outcome of this family -- only `results/q126_cal_power.csv`, from the calibration's
   clean run.
-- **A disclosure (N-4):** those MDLs come from thinned streams of P-16's judged pairs (Q-126 plan 3.2, 5), so they
-  carry P-16's judged variance and dependence. Q-108's power file, built on the same toys, was on master when this text
-  was written.
+- **A disclosure (N-4 of the first read):** those MDLs come from thinned streams of P-16's judged pairs (Q-126 plan
+  3.2, 5), so they carry P-16's judged variance and dependence. Q-108's power file, built on the same toys, was on
+  master when this text was written.
 - **How it is run:** by a script committed and run from a clean checkout before the pin (17's opening). Its rows go to
   `results/rl3_power_gate.csv` and are cited in the pinning row.
 
-**For each (cell, R)** -- in practice per (kind, stop, R), since the latency changes none of the inputs:
+**For each (cell, R):**
 1. **The supply, at its ceiling.** The most fills the cell could have on the judged block, with every ticket filling on
    every one of its 657 sessions (E-094 (2)'s count): two tickets a session at `pd`, `on` and `rn100`, one at `pdc`.
    The power file's row is the largest toy size at or below that ceiling.
@@ -660,8 +704,8 @@ shows how far prices travelled, never which way. No lift is computed.
    kills a (cell, R) at the ladder's end.
 2. **The cutoff rule and K2, resolution.** A (cell, R)'s cutoff is the latest of 14:30, 14:00, 13:30, ..., 10:00 CT
    such that, over its fills before it, the pooled unresolved share at its own R is at most 5 %, overall and in each
-   calendar year 2020 to 2023. Each trade is walked by its own fill-bar rule, and a news-window flatten counts as
-   unresolved. With no such time the (cell, R) is killed.
+   calendar year 2020 to 2023. Each trade is walked by its own fill-bar rule, and a news flatten counts as unresolved.
+   With no such time the (cell, R) is killed.
 3. **K1, supply:** at least 100 fills on the choice block after its cutoff, and at least 12 in each calendar year.
 4. **K5, ambiguity:** a (cell, R) whose ambiguous share among its choice-block fills (after its cutoff, under symmetric
    booking) exceeds 5 % is killed. The share by year is reported.
@@ -670,13 +714,15 @@ shows how far prices travelled, never which way. No lift is computed.
 7. **K4, fill realism: reported, decides nothing.**
    - For `fade`: fills over touches.
    - For `break`: the share of gap fills.
-   - For both: the share of fills on the first live bar (the bar stamped `t_live`), and in the first five minutes after
-     `t_live`; the share on fill bars spanning a quarter of the stop.
-   - For each L: the share of tickets void at `t_live`, and the share of ticket-days whose trade coincides with the
-     5-minute sibling's (5.9).
-   - The window-touched share: tickets whose level traded inside 08:30-08:59 (4.3).
+   - For both: the share of fills on the first live bar (the bar stamped 09:00), and in the first five minutes after
+     09:00; the share on fill bars spanning a quarter of the stop.
+   - The share of tickets void at 09:00, and the window-touched share: tickets whose level traded inside 08:30-08:59
+     (4.3).
+   - **The same-bar exceptions** (5.5; NB-1): per (cell, R), for each `fade` fill, whether the break stop at the same
+     level would have filled on the same bar. The void-boundary and gap-bar exceptions are counted and printed.
+   - The days voided for want of a bar stamped 08:29 (4.3).
 8. **Planning (D-4), from counts only, written before stage B reads anything.** For every surviving (cell, R):
-   - its choice-block fills;
+   - its choice-block fills, with the opening's selection of survivors stated beside them (4.3, N-4);
    - its judged-block fills, estimated as the choice-block rate per session times 657;
    - **the MDL80 from `results/q126_cal_power.csv`**, by 7.1 item 2's rules at the estimated judged fills in place of
      the ceiling ("above the smallest toy entry" when below it, with no figure);
@@ -719,35 +765,27 @@ Every cell killed or dropped: the family closes at stage A.
 
 ## 8. Stage B: choose on the choice block
 
-As F-02's section 8, over every surviving (cell, R) at every latency:
+As F-02's section 8, over every surviving (cell, R):
 
 1. **The statistics:** the lift L under its C1 booking; for `break`, also D = L - L_placebo; the lift under its C2
    booking.
 2. **The bootstrap.** A stationary bootstrap (Politis and Romano) of the choice block's sessions in date order:
    circular, mean block 21 sessions, **2,000 replicates, seed 20263400**.
-   - Each replicate is one draw of session indices, shared by every statistic, every latency and the placebo fills.
+   - Each replicate is one draw of session indices, shared by every statistic and the placebo fills.
    - The standard error is the replicates' sd. t = L / se, and a centred replicate is t\*_b = (L\*_b - L) / se,
      normalised by the sample's se.
 3. **The decisive statistic** T(c, R): t_L for `fade`; for `break`, the smaller of t_L and t_D.
 4. **The family-wise critical value** q: the 95th percentile over replicates of the maximum of T\* over **every
-   surviving (cell, R), all three latencies included** -- one-sided, family-wise 0.05. Benjamini-Hochberg at 10 % is
-   reported beside and never selects.
+   surviving (cell, R)** -- one-sided, family-wise 0.05. Benjamini-Hochberg at 10 % is reported beside and never
+   selects.
 5. **Eligibility.** A (cell, R) above q is eligible only if its rule-side trades at its R on the choice block, each
    walked by its own fill-bar rule, leave at most 5 % unresolved, overall and in each calendar year 2020 to 2023.
 6. **Kill B.** No eligible (cell, R) above q: the family closes, and the judged block is not read.
 7. **The pick.** The eligible (cell, R) with the largest valued lift (10) at the lower limit of its C2-booked lift,
    L_C2 - q x se_C2.
    - A tie (equal to the dollar) goes to more choice-block fills, then to the first in table order (5.9: rule-kind,
-     stop, latency with 5 minutes first, R ascending).
-   - There is one pick. Its latency is part of it, and every stage after B uses it.
-8. **The paired sibling differences on the choice block** (beside, deciding nothing). They are computed after the
-   pick's row is written, so they cannot move it.
-   - For every (rule-kind, stop, R) whose siblings survive stage A: the lift at L = 3 less the lift at L = 5, and at
-     L = 2 less at L = 5.
-   - Each is read under the C1 booking, with its stationary-bootstrap se from the same replicates.
-   - Also beside: the share of ticket-days whose trades differ between the two siblings, and the lift on those
-     ticket-days alone.
-   - A pair with a sibling killed is written "not available", with the reason.
+     stop, R ascending).
+   - There is one pick.
 
 Stage B is a gate, not a claim. Its bootstrap is not calibrated and is kept as the choice block's selection device only
 (F-02's section 8, the paragraph on calibration, unchanged). The program's error rate rests on C1 at the family's
@@ -755,8 +793,8 @@ level, by the adopted statistic, on a judged block that played no part in the ch
 
 ## 9. Stage C: judge the pick on the judged block (the pass line, E-008)
 
-The pick alone, with its latency, its cutoff and every rule as fixed in stages A and B, on fills from 2024-01-02 to
-2026-07-16. **The side checks, C0 and C1 to C4 must all hold; any failure closes the family.**
+The pick alone, with its cutoff and every rule as fixed in stages A and B, on fills from 2024-01-02 to 2026-07-16. **The
+side checks, C0 and C1 to C4 must all hold; any failure closes the family.**
 
 1. **The side checks and C0, before any x is computed.**
    - **The sides (5.10)**, under the purpose `stage_C_sides`. The pick's judged fills at its cutoff are counted per
@@ -806,44 +844,33 @@ The pick alone, with its latency, its cutoff and every rule as fixed in stages A
 4. **C2, value.** The valued lift (10, on its capped uses) at the lower bound -- at the same level, by the same adopted
    one-sample line -- of the pick's lift **under its C2 booking** (rung 1, or rung 2 where 5.5 moves it) is at least
    **$500 a year**. It is a conjunctive gate on a calibrated bound, not a claim.
-   - **Why one-sample** (N-9): C2 prices the bound of the lift over the coin twin, as E-008 reads "its value-map price
-     at that bound". A two-sample bound is a bound on D, a different estimand, and no two-sample line exists for a fade
+   - **Why one-sample:** C2 prices the bound of the lift over the coin twin, as E-008 reads "its value-map price at
+     that bound". A two-sample bound is a bound on D, a different estimand, and no two-sample line exists for a fade
      pick.
    - **Two residuals, stated.** C2 is the C2 booking's bound by the same statistic, not literally C1's bound. And a
      break pick's priced lift includes the non-level follow component Stage 2 has seen on this window (D-592). For a
      `break` pick, C2 is also read beside at D's bound, deciding nothing.
 5. **C3, resolution (a floor):** on the judged block, the pick's rule-side trades at its R, each walked by its own
    fill-bar rule, leave at most 5 % unresolved, overall and in every calendar year (2024, 2025, and 2026 to 07-16). A
-   news-window flatten counts as unresolved. A calendar year with fewer than 63 sessions in a window is pooled with the
+   news flatten counts as unresolved. A calendar year with fewer than 63 sessions in a window is pooled with the
    adjacent year (D-604).
 6. **C4, measurability:** K5 on the judged block -- the ambiguous share is at most 5 %.
 7. **Beside, deciding nothing:**
-   - **the pick's latency siblings:** the same (rule-kind, stop, R) at the other two latencies, **the 5-minute cell
-     always among them** (when the pick is the 5-minute cell, its 3- and 2-minute siblings). Each with its judged
-     lift, its net R lift, its fills, its unresolved and K5 shares and, for `break`, D, each lift with its one-sided
-     0.05 bound by the adopted statistic on the judged calendar;
-   - **the paired sibling differences on the judged block** (the lead's ruling on B-2), read after C's verdict row is
-     written, under the purpose `stage_C_latency_beside`:
-     - for every (rule-kind, stop, R) that survived stage B's eligibility at both latencies of a pair: the lift at
-       L = 3 less the lift at L = 5, and at L = 2 less at L = 5, under the C1 booking;
-     - each with its one-sided 0.05 bound by `two_sample_bound` on the judged calendar (the two siblings' fills summed
-       per session, the count-centred block sums carrying their shared sessions);
-     - the share of ticket-days whose trades differ, and the lift on those alone.
-
-     They describe whether a shorter delay changed the result. They decide nothing and cannot move the verdict, which
-     is written first;
-   - **the window-touched split** (4.3; D-278): the pick's and each sibling's lift on tickets whose level traded inside
-     08:30-08:59 and on the rest, with each share and its one-sided 0.05 bound;
-   - **the first live bar** (N-8): the share of the pick's fills on the bar stamped `t_live`, and C1's lift with those
-     fills excluded;
+   - **the window-touched split** (4.3; D-278): the pick's lift on tickets whose level traded inside 08:30-08:59 and on
+     the rest, with each share and its one-sided 0.05 bound;
+   - **the first live bar:** the share of the pick's fills on the bar stamped 09:00, and C1's lift with those fills
+     excluded;
+   - **the same-bar exceptions** (5.5): the share of the pick's fills at the void boundary or on gap bars, and C1's lift
+     without them;
+   - **the resting fills' own mean (supply and profitability, not a lift):** for a `fade` pick, the mean win rate and
+     the mean net R of its own resting fills. That is what E-203's exact twin would compute on this offer population.
+     For RL3 it is not a lift: the resting side is the fade side on every live ticket (Q-143r2 NB-1);
    - **the pick's year-by-year readings:** for each calendar year of each block, its lift, net R lift, fills,
      unresolved share, K5 share and, for `break`, D, each with its one-sided 0.05 bound on that year's calendar;
    - **Q-122's readings** (E-157 (b)): the pick's lift by tercile of a causal trailing session range, absolute and
      relative, and the equal-weight-block reading beside the adopted statistic, in the form Q-122's merged module fixes;
    - **E-161's drift nulls:** the adopted statistic's sizes on the drift nulls, cited from the adoption row (plan 3.3);
    - drift: the lifts on long-rule and short-rule fills, and their mean, the side-balanced lift;
-   - **the walked mirror against E-203's exact twin** (19 item 4): the pick's lift by the seedless twin E-203 fixes for
-     a limit entry, beside the walked mirror's;
    - the seeded coin twin (20263401); the net R lift; C1's lift under the other bookings;
    - the booking ladder: for `break`, symmetric booking at 2 and 4 ticks of slippage; rungs 2 and 4 for both;
    - Benjamini-Hochberg; K4's adverse selection; the placebo-differenced lift for a `fade` pick;
@@ -860,7 +887,7 @@ The pick alone, with its latency, its cutoff and every rule as fixed in stages A
 
 ## 10. The valued lift
 
-As F-02's section 10, with the reach read at the alert (09:00). It uses the value map's own first-order formula
+As F-02's section 10, with the reach read at 09:00. It uses the value map's own first-order formula
 (`vendor/stage2/results/u_value_map.csv`, definitions `extra_win_prob_points` and `mean_dv`), with each place's uses
 capped by what the routing can reach.
 
@@ -917,36 +944,37 @@ it.
   holds.
 - **Its entries inside 08:30-08:59** are kept for that reason only. Their count is printed beside, with the
   take-up and reach without them (11.5 item 3).
-- **The bases are checked for positions open at a verified news window's start** (S-5). The count is printed; it is
-  expected to be zero, since today's windows fall before the bases' regular-hours trades or on void FOMC days.
-  - If it is not zero, those base positions are flattened at the window's start bar in the verdict's arms (4.6).
+- **The bases are checked for positions open at a verified news window's start, or when an unscheduled release becomes
+  known.** The counts are printed; they are expected to be zero, since today's windows fall before the bases'
+  regular-hours trades or on void FOMC days.
+  - If a count is not zero, those base positions are flattened by 4.6's and 4.7 (d)'s rules in the verdict's arms.
   - The difference from the registered paths is then printed beside. The identity run keeps them as registered.
 
 The pick's tickets are added as follows.
-- **Written and placed.** A ticket is written from the information of 4.2 on every day its kind has one. At the alert
-  (09:00) it goes to one account: the first, in the router's order, in the highest-priority place of section 10 with an
+- **Written and placed.** A ticket is written from the information of 4.2 on every day its kind has one. At 09:00:00 it
+  is submitted on one account: the first, in the router's order, in the highest-priority place of section 10 with an
   account that asks the pick's R, has not traded that session, and sits in a firm flat and not within five minutes of a
-  close. It works from `t_live` = 09:00 + L. With no such account there is no ticket that day (counted).
-- **A busy firm at 09:00.** The ticket is re-written once the firm has been flat five minutes, on an account meeting
-  the same conditions. It is live L minutes later, void if already through, never after the cutoff. This is a use the
-  valuation does not count, so the valuation errs low.
+  close. It works from the bar stamped 09:00. With no such account there is no ticket that day (counted).
+- **A busy firm at 09:00.** The ticket is re-placed once the firm has been flat five minutes, on an account meeting the
+  same conditions, void if already through, never after the cutoff. This is a use the valuation does not count, so the
+  valuation errs low.
 - **Reserved:** the account is reserved while the ticket rests; the base routes no offer to it.
-- **Cancel on entry.** Before any base entry on another account, the resting ticket is cancelled. It is re-written five
-  minutes after that trade's exit, on the reserved account if it still has not traded that session. It is live L
-  minutes later, void if already through, never after the cutoff.
+- **Cancel on entry.** Before any base entry on another account, the resting ticket is cancelled. It is re-placed five
+  minutes after that trade's exit, on the reserved account if it still has not traded that session, void if already
+  through, never after the cutoff.
 - **A fill** takes the firm's one position; the base's offers are refused until five minutes after its exit (D-429).
   That is the account's one trade of the session.
 - **No second trade.** A ticket is never an account's second trade of a session. The two tickets of a kind are
   one-cancels-other.
 - **Size:** the engine's own sizing at the pick's stop (6.3).
-- **Verified news windows:** 4.6's rule, for every ticket. An unfilled ticket is cancelled at the start; a filled one
-  is flattened at the start bar.
+- **Verified news windows and unscheduled releases:** 4.6's and 4.7 (d)'s rules, for every ticket.
 - **The EIA releases inside the resting window** (F-02's final read, M5). These are not verified windows, so E-202
-  (2)(a) does not bind them. A resting ticket sized at its account's full allowance is cancelled five minutes before
-  each EIA crude oil or natural gas inventories release on its day (`vendor/stage2/config/im2_release_calendar.csv`,
-  rows `EIAC` and `EIAG`, their `time_ct`). It is re-written five minutes after, live L minutes later, void if already
-  through, never after the cutoff. A ticket that filled before walks on. Tickets below the full allowance rest through.
-  The screen counts every fill; the share of the pick's fills inside these windows is reported beside.
+  (2)(a) does not bind them.
+  - A resting ticket sized at its account's full allowance is cancelled five minutes before each EIA crude oil or
+    natural gas inventories release on its day (`vendor/stage2/config/im2_release_calendar.csv`, rows `EIAC` and
+    `EIAG`, their `time_ct`). It is re-placed five minutes after, void if already through, never after the cutoff.
+  - A ticket that filled before walks on. Tickets below the full allowance rest through.
+  - The screen counts every fill; the share of the pick's fills inside these windows is reported beside.
 
 ### 11.3 Conduct
 
@@ -976,12 +1004,10 @@ One level for both streams: **the one-sided 0.05 bound** (U1's verdict arm, `scr
    - the zero-edge twin;
    - the tickets' e and its bound for each R, and stage one's D-47 criterion at the pick's R;
    - D-212 (1)'s letter share; floor (ii)'s check; the share of tickets outside the stop band;
-   - **the pick's 5-minute sibling's campaign** (when the pick is not the 5-minute cell): the same gate call with the
-     sibling's tickets, at the same seed and level;
-   - **the closed window's effect on the base** (S-1): the count of the base's entries inside 08:30-08:59, and the
-     tickets' take-up and realised reach in a beside arm with those entries removed. A reading beside needs no
-     identity. For a 150-tick pick this is the dependence of P-16's reach on the window;
-   - the count of base positions open at a verified window's start (11.2).
+   - **the closed window's effect on the base:** the count of the base's entries inside 08:30-08:59, and the tickets'
+     take-up and realised reach in a beside arm with those entries removed. A reading beside needs no identity. For a
+     150-tick pick this is the dependence of P-16's reach on the window;
+   - the counts of base positions open at a verified window's start or at an unscheduled release (11.2).
 4. **D-663's validation readings** (EXPLORATORY, deciding nothing), through `extended/v1_adapter.py`, heavy, under the
    run lock, after the gate:
    - A0 (no draws);
@@ -1028,7 +1054,7 @@ close at A or B there is no scorecard, and the closing row says so.
    - the user's time (E-202 (2)(b) leaves it unmodelled);
    - taxes;
    - E-034's unstated news rules;
-   - **unverified releases at 09:00 CT (10:00 ET), which coincide with the alert** (S-1);
+   - **unverified releases at 09:00 CT (10:00 ET), which coincide with the first live minute**;
    - USDA crop production inside the resting window;
    - the base's full-size trades held through an unnamed release;
    - the bases' own entries inside 08:30-08:59.
@@ -1037,15 +1063,14 @@ The replay draws nothing.
 
 ## 13. What a pass and a fail mean
 
-- **CARRIED** -- the side checks, C0 to C4, C1' for a break pick, and stage D's floors all hold. The pick, with its
-  latency, is a development finding on a late-development block. It takes a registration id, a model card, its
-  registered development test, the auditor, and **one confirmation** (14).
+- **CARRIED** -- the side checks, C0 to C4, C1' for a break pick, and stage D's floors all hold. The pick is a
+  development finding on a late-development block. It takes a registration id, a model card, its registered
+  development test, the auditor, and **one confirmation** (14).
   - **A break pass** is a direction at round numbers, beyond what a crossing matched on its side and an exchangeable
     distance carries.
   - **A fade pass** is a reversal after these crossings (9.8).
-  - **A pick at 3 or 2 minutes** is carried at that latency. Its 5-minute sibling and the paired sibling difference
-    are stated beside in the carrying row. A pick's latency says which delay it was judged at; only the paired
-    difference speaks to whether a shorter delay helps.
+  - **The latency.** The pick meets every declared latency (4.2). Its carrying row says so, and says that for this
+    family the operator's latency question has no cost.
   - **A pass carried by window-touched tickets.** If the pick's lift on the tickets whose level the opening half-hour
     did not trade has no one-sided 0.05 bound above zero (9.7), the carrying row labels the pass "carried by levels the
     opening half-hour traded (D-278's neighbourhood)". It is a label; a confirmation still decides.
@@ -1071,7 +1096,7 @@ As F-02's section 14.
   - It becomes NQ's fourth confirmation window only by the operator's decision (D-107). It is a purchase.
   - Stage 2's draft P-16 confirmation targets the same window. If any test reads it first, the lead records that and
     the operator decides.
-- **What it tests: the pick's trades, at the pick's latency, not P.**
+- **What it tests: the pick's trades, not P.**
   - The pick's lift over its coin twin on the window's fills, one-sided at the registered 0.05, by the adopted
     statistic on the window's calendar of sessions, with the bound at 0.05/N beside (D-189).
   - **The statistic's size at 0.05 and at the window's length is shown at the registration**, before the window is
@@ -1094,26 +1119,26 @@ As F-02's section 14.
 
 | seed | status | what it draws |
 |---|---|---|
-| 20263400 | in use | stage B's stationary bootstrap on the choice block, and the choice-block sibling differences' se from the same replicates (8) |
+| 20263400 | in use | stage B's stationary bootstrap on the choice block (8) |
 | 20263401 | in use | the seeded coin twin beside (5.7) |
-| 20263402 | in use | the placebo's source draws: `default_rng([20263402, j, k, b])` -- j the replicate (0..4), k the kind (0..3), b the block (0 choice, 1 judged, 2 confirmation); the same at every latency (5.8) |
+| 20263402 | in use | the placebo's source draws: `default_rng([20263402, j, k, b])` -- j the replicate (0..4), k the kind (0..3), b the block (0 choice, 1 judged, 2 confirmation) (5.8) |
 | 20263403 | in use | D-663's A1 and B2 readings: `v1_adapter.Engine(mc_seed = 20263403)`, each run's Monte-Carlo error (11.5 item 4) |
 | 20263404 | in use | D-663's B1: `v1_adapter.part_b1(seed = 20263404)` (11.5 item 4) |
 | 20263405 | in use | stage D's campaign seed: the gate floor and every beside arm, 500 paths (11) |
 | 20263406 | in use | D-663's C1: `v1_adapter.part_c1(seed = 20263406)`, each realisation's seed `v1_adapter.c1_seed(20263406, subject, arm, realisation)` (11.5 item 4) |
 | 20263407 | in use | the confirmation's length rule: `default_rng([20263407, m])` (14) |
 | 20263408 | in use | K0 and C0 (7.2 item 10, 9.1): `[20263408, 0, c, r]` K0 by the adopted statistic, `[20263408, 1, c, r]` K0's two-sample form for `break` cells, `[20263408, 2, 0]` C0, `[20263408, 3, 0]` C0's two-sample form |
-| 20263409 | in use | the build's synthetic tests: `[20263409, j]` -- j = 0 the shift tests, 1 T-3's synthetic judged block, 2 T-13 (b), 3 T-13 (c), 4 T-13 (a)'s extension; 10 to 14 T-14 (a), (b), (c), (e) gap follow, (e) gap reversal; 20 and 21 the K0/C0 toys' count patterns and outcome draws (header, condition 3) |
+| 20263409 | in use | the build's synthetic tests: `[20263409, j]` -- j = 0 the shift tests, 1 T-3's synthetic judged block, 2 T-13 (b) at RL3's timing, 3 T-13 (c), 4 T-13 (a)'s extension, 5 T-13 (b)'s heavier-print case, 6 T-4's same-bar check; 10 to 14 T-14 (a), (b), (c), (e) gap follow, (e) gap reversal; 20 and 21 the K0/C0 toys' count patterns and outcome draws (header, condition 3) |
 
-**Trailing zeros (N-5).** numpy's `SeedSequence` reads an entropy list ending in zeros as the shorter list: `[base, 0]`
-draws the stream of the bare `base`, and `[base, a, 0]` that of `[base, a]`. Within this block no two uses collide:
+**Trailing zeros.** numpy's `SeedSequence` reads an entropy list ending in zeros as the shorter list: `[base, 0]` draws
+the stream of the bare `base`, and `[base, a, 0]` that of `[base, a]`. Within this block no two uses collide:
 - each seed's tuples have a fixed length;
 - 20263408's 3-tuples begin 2 or 3, while its 4-tuples begin 0 or 1, so no 4-tuple reduces to a 3-tuple's stream;
 - the bare seeds are never used except as such a reduction.
 
 T-12 at the build compares uses after stripping trailing zeros.
 
-**The search (2026-11-18, before the first text, and re-run for this one).**
+**The search (2026-11-18, before the first text, and re-run for each later one).**
 - Every 8-digit token beginning 2026 was collected, word-bounded, from every tracked text file on every local branch
   and remote-tracking ref (`git grep -Iow`, the vendored snapshot included).
 - The same was done on every uncommitted or untracked text file of the main tree and every worktree under
@@ -1141,22 +1166,19 @@ the block to this table, finds it nowhere else, and finds no other 2026 seed tok
    gatekeeper assigns k at the pin, within Q-126's calibrated k = 13 to 20.
 2. **One cell reaches judgement**, with no further division in the family. C1' is an intersection with C1 at the same
    level; C2 is a conjunctive gate; stage B's family-wise test, on the choice block, spends nothing.
-3. **The latency variants spend nothing of the program's budget.** They are cells of this one family, counted in
-   `k_cells` and in stage B's family-wise maximum, which fixes the one pick before the judged block is read. The paired
-   sibling differences are readings after the verdict, not tests.
+3. **The latency spends nothing.** One design meets every declared latency (4.2), so no cell is spent on it.
 4. **The program's honesty sentence.** Stage 2 ran programs S and U on this same window, each with its own 5 %. The
    development-stage level is a screening threshold. **The decision is carried by one confirmation on unread data**
    (D-189).
 5. **Counted** (5.9's table):
-   - 45 cells, each counted whether dropped at the pin, killed or read, none identical across latencies;
-   - 135 signed hypotheses over 108 questions;
-   - 45 placebo cells, as controls;
-   - 90 paired sibling differences, as readings;
+   - 15 cells, each counted whether dropped at the pin, killed or read;
+   - 45 signed hypotheses over 36 questions;
+   - 15 placebo cells, as controls;
    - one campaign cell, if stage D runs.
 
-   The pick's latency siblings and year-by-year readings re-read the grid and add no cell. The 27 `break` cells at
-   `on`, `pd` and `pdc` (3 kinds x 3 stops x 3 latencies) were dropped before any read and are not counted: their
-   hypotheses were spent by Stage 2's reads (2).
+   The pick's year-by-year readings re-read the pick and add no cell. The 9 `break` cells at `on`, `pd` and `pdc`
+   (3 kinds x 3 stops) were dropped before any read and are not counted: their hypotheses were spent by Stage 2's reads
+   (2).
 6. **D_protocol 1.5's holes:**
    - (a) no fitted model;
    - (b) no normaliser spans the sample;
@@ -1167,8 +1189,8 @@ the block to this table, finds it nowhere else, and finds no other 2026 seed tok
 
 ## 17. The build's identities and tests, before any reading
 
-**What runs before the pin, and what after (N-7).** Three light scripts are committed and run, each from a clean
-checkout, **before** the pin:
+**What runs before the pin, and what after.** Three light scripts are committed and run, each from a clean checkout,
+**before** the pin:
 - the power gate (7.1);
 - the K0/C0 toys (header item 3);
 - the choice calendar's count and sha256 (header item 4).
@@ -1180,63 +1202,86 @@ diagnosis.
 1. **The walker** (E-011: P-16's `TRADES_SHA256` under `STAGE2`) holds at the build's commit. The family's preset
    differs from `STAGE2` only in the breakeven move. (fast)
 2. **E-002's and Q-05's identities** hold, and the run refuses, never skips, when their data are absent. (slow)
-3. **No look-ahead**, for each L (4.8). (fast)
+3. **No look-ahead** (4.8). (fast)
    - **(a) The information.** Replaced: every bar stamped at or after 08:30 on day E, and every bar of every later day.
      Not moved: every level, side and `P_ref` on E, every `A_E`, and every placebo ticket on E.
-   - **(b) The void.** Replaced: every bar stamped at or after `t_live`. Not moved: each ticket's void status.
+   - **(b) The void.** Replaced: every bar stamped at or after 09:00. Not moved: each ticket's void status.
    - The replacements are a seeded walk (`[20263409, 0]`) and a constant, over days including roll days, DST changes,
      the seam, early closes and the days after them.
-   - Also asserted: no level is all-NaN or constant, and the three latencies' tickets are identical while their
-     `t_live` differ.
-4. **Fill rules on synthetic bars**, under the family's preset, at every L (fast):
-   - the void at `t_live`; the gap through;
+   - Also asserted: no level is all-NaN or constant, and a day with no bar stamped 08:29 is void and counted.
+4. **Fill rules on synthetic bars**, under the family's preset (fast):
+   - the void at 09:00; the gap through;
    - **the limit's trade-through by one tick at the limit's price, never better, including a bar opening through it,
      and no fill on a bar that only reaches the price** (E-202 (2)(d));
-   - **no fill on any bar stamped before `t_live`, the closed window's bars and 09:00 to `t_live - 1` included,
-     whatever they trade**;
+   - **no fill on any bar stamped before 09:00, the closed window's bars included, whatever they trade**;
+   - **the fade and the break stop at the same level fill on the same bar** (5.5; Q-143r2 NB-1). On synthetic bars
+     (seed `[20263409, 6]`), every fade ticket is paired with the break stop at the same level from the same ticket.
+     Their fill bars must be equal, except at the void boundary (a reference exactly at the level) and on gap bars.
+     Those exceptions are counted and printed. Any other difference fails the test;
    - **a verified news window inside the resting period, one toy case each way:**
-     - an unfilled ticket cancelled at the window's start, re-written at its end, live L minutes later, void if through,
-       never after the cutoff;
+     - an unfilled ticket cancelled at the window's start, re-written at its end, void if through, never after the
+       cutoff;
      - **a filled ticket flattened at the window's start bar**, at the flatten's price and ticks, counted unresolved;
-   - **an unscheduled release at 09:00, and one at 10:30:** unfilled tickets cancelled at the release bar, none
-     earlier; a ticket filled before the release walking on;
+   - **an unscheduled release at 09:00, and one at 10:30:**
+     - unfilled tickets cancelled at the release bar, none earlier;
+     - a position open at the release flattened at the first bar after the release minute, none earlier;
    - one fill; the cutoff; every calendar void from the pinned files; a scheduled FOMC day;
    - the pair rule under every booking, and each trade's own rule for resolution; the rungs for both side rules;
    - two levels a day; break and fade near-exact negatives under symmetric booking.
-5. **T-13, the mirror's zero**, per side rule, per stop and per R (latency-free; its tickets live from 09:00). All as
-   F-02's 17 item 5, with its tickets live every five minutes from 09:00 to 13:25 CT and cancelled at 14:00:
-   - (a) today's form extended, seed `[20263409, 4]`, slow;
-   - (b) spread and jumps, seed `[20263409, 2]`, slow, deciding 5.5's switches;
-   - (c) the precise form, seed `[20263409, 3]`, heavy, under the run lock.
+5. **T-13, the mirror's zero**, per side rule, per stop and per R.
+   - **(a) and (c)** as F-02's 17 item 5, with tickets live every five minutes from 09:00 to 13:25 CT and cancelled at
+     14:00:
+     - (a) today's form extended, seed `[20263409, 4]`, slow;
+     - (c) the precise form, seed `[20263409, 3]`, heavy, under the run lock.
+   - **(b) Spread and jumps, at RL3's own timing** (Q-143r2 SF-4; slow; runs in the build before stage A). Two
+     generators, both declared now.
+     - **The base generator,** seed `[20263409, 2]`:
+       - bars stamped 08:00-15:09, of which 08:00-08:29 is the pre-session reference;
+       - the mid moves one tick a step, 400 steps a minute;
+       - with probability 0.002 a step it moves instead 2 to 8 ticks (uniform);
+       - a one-tick bid-ask print bounce: the print at the ask after an up-move, at the bid after a down-move.
+     - **The heavier-print generator,** seed `[20263409, 5]`: the same, and in addition, with probability 0.01 a step,
+       the print lies 2 or 3 ticks (equally likely) beyond the mid on the side of that step's move, with the mid itself
+       unmoved -- a transient extreme print. The rate is the drafter's choice, fixed now.
+     - **The tickets, at RL3's timing:**
+       - 20 levels a day, each d ticks from the close of the bar stamped 08:29, d uniform on 4 to 400 ticks
+         (pre-session-like distances, from a near level out to a 100-point multiple), above or below by a fair coin;
+       - the side by the level's place, above a resistance and below a support;
+       - the window 08:30-08:59 walked but unworked;
+       - the void at the close of the bar stamped 08:59; live from 09:00; cutoff 14:00;
+       - `break` as a stop and `fade` as a limit; the family's preset; 9,000 days per (side rule, stop).
+     - **What it reads:** each booking's -- symmetric, rungs 1, 2 and 4 -- mean lift under each generator's null per
+       (side rule, stop, R), with its two-sided 95 % interval clustered by day, written to the `build` section. There is
+       no multiplicity correction here, by design: a per-cell interval acts on a bias more readily, which is the
+       conservative direction for a switch.
+     - **What it decides:** 5.5's switches and kill, per (side rule, stop, R), **read from the stricter of the two
+       generators**. A booking moves, or a (cell, R) is killed, if either generator's interval lies wholly on the
+       rule's side.
 6. **T-14, planted effects** (seeds `[20263409, 10..14]`; (c) and (e) heavy, under the run lock). The generator is
    F-02's 17 item 6 (the regular session 08:30-15:09, the overnight session 17:00-08:29, one tick a step), with the
-   levels and sides read at 08:30, tickets live from 09:05, and plant (a) at the first touch after 09:05. Its checks are
-   at `rn100`'s `break` cells, per stop, at R = 1 and L = 5:
+   levels and sides read at 08:30, tickets live from 09:00, and plant (a) at the first touch after 09:00. Its checks are
+   at `rn100`'s `break` cells, per stop, at R = 1:
    - (a) L and D bounded above zero at the family's level;
    - (b) D's interval covering zero at Z = 2.394;
    - (c) and (e), 9 kill checks at Z = 2.773, with F-02's precision and visibility rules;
    - (d) a level read from a bar at or after 08:30 caught by test 3.
-
-   A (kind, stop) killed or withdrawn by (c) or (e) is so at every latency.
 7. **T-3, choice-stage invariance** (slow). Stage A's and B's outputs are byte-identical when every judged row of every
    file stages A and B open is replaced, on temporary copies: the bars from 2024-01-02 on by a seeded walk
    (`[20263409, 1]`), and the judged rows of the reachable count's walk and event files. The outputs compared: cutoffs,
-   kills, sides, planning, the valuation's inputs, the critical value, the pick and the choice-block sibling
-   differences.
+   kills, sides, planning, the valuation's inputs, the critical value and the pick.
 8. **T-15, stage D's routing** (slow): the identity with no tickets, and toy days for:
    - the priority order and the reach rule;
    - the reservation;
-   - cancel-on-entry and re-writing with live at L; the void at re-place;
+   - cancel-on-entry and re-placing; the void at re-place;
    - one-cancels-other; the cutoff;
-   - a verified news window (cancel and flatten);
+   - a verified news window (cancel and flatten), and an unscheduled release;
    - a base position open at a window's start;
    - `_plain_size` with the room cap binding; floor (ii)'s check; the need-aware exit.
 9. **The adopted statistic's own tests** (Q-126's build) pass at the build's commit, at the adopted blob.
 10. **T-12:** section 15's seeds are used nowhere else, telling references from uses and comparing after stripping
     trailing zeros.
 11. **T-7's analogue:** stage C reads the pick from stage B's result file by its sha256, and its entry point cannot run
-    stage B. It writes the sides' and C0's rows before computing any x, and the verdict's row before any reading under
-    `stage_C_latency_beside`.
+    stage B. It writes the sides' and C0's rows before computing any x.
 12. **The stage-C runner's assertions**, each refusing, a test showing each refusing:
     - the level and k (9.2);
     - the judged and choice calendars' counts and sha256 (9.2; header item 4);
@@ -1251,14 +1296,13 @@ Every read of Stage 2's bars or walks goes through `extended/reader.py`. A read 
 the one line below, inside a clean run of a committed tree, once per purpose (a repeat needs a row). No purpose here
 contains a choosing or fitting word.
 
-- **Judged-block reads:** `stage_C_sides`, `stage_C_judgement`, `stage_C_latency_beside`, `stage_D_gate_floor`, `stage_D_scorecard`
+- **Judged-block reads:** `stage_C_sides`, `stage_C_judgement`, `stage_D_gate_floor`, `stage_D_scorecard`
 
 | purpose | what it reads, and why |
 |---|---|
 | `stage_C_sides` | the pick's judged fills at its cutoff and their sides only, from the fill rule (no walk past a fill, no pair term): the band check and, in scope D, 4.4's judged admission, before any outcome (9.1) |
-| `stage_C_judgement` | the pick's judged fills, its placebo and its walks, and those of its two latency siblings: C0 to C4 and the readings beside the pick (9.7) |
-| `stage_C_latency_beside` | after the verdict's row is written: the judged fills and walks of every (rule-kind, stop, R) pair of siblings that survived stage B's eligibility, for the paired sibling differences (9.7). It decides nothing |
-| `stage_D_gate_floor` | the stage-D campaign over the development window: the engine's reads and the tickets' walks at every R of the base's menu, for the pick and, beside, its 5-minute sibling and the base without its window entries (11.5) |
+| `stage_C_judgement` | the pick's judged fills, its placebo and its walks: C0 to C4 and the readings beside the pick (9.7) |
+| `stage_D_gate_floor` | the stage-D campaign over the development window: the engine's reads and the tickets' walks at every R of the base's menu, for the pick and, beside, the base without its window entries (11.5) |
 | `stage_D_scorecard` | the real-order replay over start days of the three designs (12) |
 
 **Not on this line:**
@@ -1272,28 +1316,26 @@ contains a choosing or fitting word.
 
 - **Files:**
   - `results/rl3_levels.csv`, with sections `build`, `supply`, `cutoff`, `kill`, `sides`, `planning`, `valuation`,
-    `choice`, `judged`, `latency`, `placebo` and `beside`;
+    `choice`, `judged`, `placebo` and `beside`;
   - `results/rl3_campaign.csv`;
   - `results/rl3_journey.csv`;
   - before the pin, `results/rl3_power_gate.csv` and `results/rl3_choice_calendar.csv`, each from a clean run.
 
   Each is written with its sidecar manifest through `extended.results.write_result`. The manifest carries `prereg_id`,
-  the cell and hypothesis counts, every seed and parameter, the latencies, the sha256 of
-  `vendor/DATA_MANIFEST_stage2.sha256` and of `config/calendar_early_closes.csv`, and the adopted statistic's blob.
-  They are EXPLORATORY until a carried candidate is registered.
+  the cell and hypothesis counts, every seed and parameter, the sha256 of `vendor/DATA_MANIFEST_stage2.sha256` and of
+  `config/calendar_early_closes.csv`, and the adopted statistic's blob. They are EXPLORATORY until a carried candidate
+  is registered.
 - **The run.** Once, from a clean checkout of a named commit (`scripts/run_clean.py`), under the run lock, watched to
   its end.
   - **The order is fixed, the refusals first:** the identities (T-15 item 1, E-002, Q-05), refusing; the blob and
     calendar assertions; the build's synthetic KB tests; stage A (the side checks, K0 and the reachable count
-    included); B (its sibling differences after the pick's row); C (the sides, then C0, then the lines, then the verdict
-    row, then the latency readings); then D.
+    included); B; C (the sides, then C0, then the lines); then D.
   - Each stage's file is written before the next reads anything. A kill stops the sequence. A run aborted or restarted
     is recorded by the lead with its log, and only the first complete run is read.
 - **Memory.** Each heavy step declares its peak at most **2.5 GB**: stage A with the reachable count, stage B, stage C,
   stage D's gate and each D-663 reading, and T-13 (c), T-14 (c) and (e).
   - The figure is measured on the build at its final commit and recorded, and `run_lock.py take` is given it.
-  - The 45 cells' fills are walked one stop at a time, all latencies together, so the working set does not grow with
-    the latency count.
+  - The 15 cells' fills are walked one stop at a time.
 - **Pre-run conditions, each refusing:** this file pinned; Q-122's module merged (for 9.7). Q-133's fix is not needed:
   this family reuses no opening path.
 
@@ -1324,20 +1366,25 @@ on record.
   closed by E-202 (2)(a) (3, 4). Q-142's question for this family is closed.
 - **(b) Hours -- noted.** Executions at every hour are wanted. This family's levels are pre-session, so its tickets
   rest in regular hours, and an overnight resting family would be a search of its own (3).
-- **(c) Latency -- ANSWERED.** 5 minutes (the reference), 3 and 2, every one counted, in the design the lead ruled on
-  Q-143r B-2 (4.2, 5.9, 6.2). CHARTER section 4 and the skills are amended to it by E-203. The first text's item on the
-  charter is closed.
+- **(c) Latency -- ANSWERED.** RL3 is latency-free. Its information is complete at 08:30 and its orders work from
+  09:00, so every declared latency (5, 3, 2) is met by one design, and for this family the delay has no cost (1, 4.2,
+  6.2). CHARTER section 4 and the skills carry the parameter by E-203.
 - **(d) Limit entries -- ANSWERED.** The repository's fill rule, checked in 5.2 and held by T-4.
 
-**Ruled by the lead on the red team's read, and applied** (Appendix A):
-- the gate (B-1);
-- the latency design (B-2);
-- the flatten at a window (B-3);
-- unscheduled releases from their release time (B-4);
-- the window's label and the bases' entries in it (S-1);
-- S-2 to S-5.
-
-The first text's items on `P_ref` inside the half-hour and on the bases' window entries are closed by B-2 and S-1.
+**Ruled by the lead, and applied** (Appendix A):
+- on the first read: the gate (B-1), the latency design (B-2, superseded by SF-1 below), the flatten at a window
+  (B-3), unscheduled releases from their release time (B-4), the window's label and the bases' entries in it (S-1),
+  and S-2 to S-5;
+- on the re-read:
+  - **E-203's exact twin (NB-1).** RL3 falls outside E-203's F-04 limit ruling. It keeps its walked pair, rung 1 booking
+    and symmetric booking (5.5). The alternative this item offered in the second text -- the exact twin as C1's
+    construction for the `fade` cells -- is struck: on RL3's offers it is degenerate and cannot fail;
+  - latency-free (SF-1, settling SF-3);
+  - the narrower wording on the window (SF-2);
+  - T-13 (b) at RL3's timing with a heavier-print case (SF-4);
+  - the notes;
+  - **a position open when an unscheduled release becomes known**, flattened at the first bar after the release minute
+    under E-202 (2)(a), from the release only, its count printed (4.7 (d)). This was the second text's open item 5.
 
 **The lead's, still open before the pin:**
 
@@ -1349,19 +1396,8 @@ The first text's items on `P_ref` inside the half-hour and on the bases' window 
      re-declaration, and nothing is read before the pin.
    - **The alternative:** a sides-only, choice-block-only read before the pin, as a declared heavy step of its own,
      with any re-declaration in the pinning row.
-4. **E-203's ruling for F-04 (B-1) bears on this family's `fade` cells.** It rules that for a limit entry the walked
-   mirror is not the coin twin: a resting buy fills only on a dip, and its mirror is a stop a coin could not have
-   filled. So F-04's limit sets are judged by the exact seedless twin on the offer population.
-   - This text keeps F-02's walked mirror: the pair rule and symmetric booking about the trigger (D-1, D-13), held to
-     zero on driftless synthetic walks by T-13.
-   - **Declared default:** as written, with E-203's exact twin read beside the pick (9.7) and at stage B (deciding
-     nothing).
-   - **The alternative:** the exact twin as C1's construction for the `fade` cells. That would be a further text.
-   - The lead rules before the pin.
-5. **An unscheduled statement's filled tickets** (4.7 (d)). Such a statement is not a verified window, so a ticket
-   filled before it walks on. If the lead rules it under E-202 (2)(a), the flatten at its release bar applies instead.
-6. **C2's statistic (a note).** The red team agrees that C2 stays on the one-sample line (N-9; 9.4). A ruling that C2
-   decides at the two-sample bound would be a further text.
+4. **C2's statistic (a note).** The red team agrees that C2 stays on the one-sample line (Q-143r N-9; 9.4). A ruling
+   that C2 decides at the two-sample bound would be a further text.
 
 **Readings beside, needed before stage D:** Q-17's adapter for 12 item 4, and E-015's approved limits for 12 item 6.
 **Optional:** a per-rung `dv` from D-667's solver would replace rho.
@@ -1376,29 +1412,44 @@ The first text's items on `P_ref` inside the half-hour and on the bases' window 
 *(Empty at declaration. Anything added after a reading is exploratory, reported apart, `exploratory=True` in its
 manifest, and recorded in its own decision row -- never in this file.)*
 
-## Appendix A. The red team's first read (Q-143r) and what changed
+## Appendix A. The red team's reads and what changed
 
-`docs/reviews/DRAFT_F-RL3_2026-11-18.md`, on the first text (4911821). Each finding, the lead's ruling where one was
-made, and the section that answers it.
+### A.1 The first read (Q-143r, `docs/reviews/DRAFT_F-RL3_2026-11-18.md`, on the first text 4911821)
 
 | finding | what it found | the answer (the lead's ruling where given) | sections |
 |---|---|---|---|
-| B-1 (blocker) | the gate's ratio is strictest at the ceiling, not lenient; the factor 3 had no source as a drop; no power shown; rho undefined at the gate | **ruled:** drop only an empty or infinite MDL80 (E-086's form); the factor 3 kept as stage A's screen label only, never a drop; "lenient by construction" removed; every MDL80 written before the pin, so power is shown. rho is no longer needed at the gate | 0 row 12, 6.1, 7.1, 7.2 item 8, 13, 19 |
-| B-2 (blocker) | the latencies as declared: `on` identical at every L; nested populations elsewhere; a pick's latency not evidence of a delay's cost; the question not the operator's | **ruled:** the information fixed (bars at or before 08:29; nothing in the window read); the alert at 09:00, the close of the window's last bar; live at 09:00 + L. No cell identical across L, so 45 are counted (stated in 5.9). The paired sibling differences beside, on both blocks; 6.2 rewritten; counts recomputed | 0 row 7, 1, 4.2, 4.3, 5.1, 5.9, 6.1, 6.2, 8 item 8, 9.7, 13, 16, 18.1 |
-| B-3 (blocker) | a position open at a window "walks on", against E-202 (2)(a) | **ruled:** flattened at the window's start bar (E-200 R-1), counted unresolved; nothing walks on through a window; the EIA releases stated outside the ruling; T-4 has one toy case each way | 3, 4.6, 5.2, 5.4, 9.5, 11.2, 17 item 4 |
-| B-4 (blocker) | an unscheduled FOMC statement cancelled tickets five minutes before its release (look-ahead) | **ruled:** acted on only from its release time (F-02's third read, N6); the 2020-03-03 case stated; T-4 has a toy release at 09:00. A filled ticket walks on, since such a statement is not a verified window (19 item 5) | 4.7 (d), 6.1, 17 item 4, 19 |
+| B-1 (blocker) | the gate's ratio is strictest at the ceiling, not lenient; the factor 3 had no source as a drop; no power shown; rho undefined at the gate | **ruled:** drop only an empty or infinite MDL80 (E-086's form); the factor 3 kept as stage A's screen label only, never a drop; "lenient by construction" removed; every MDL80 written before the pin, so power is shown. rho is no longer needed at the gate | 0 row 14, 6.1, 7.1, 7.2 item 8, 13, 19 |
+| B-2 (blocker) | the latencies as first declared: `on` identical at every L; nested populations elsewhere; not the operator's question | **ruled in cycle 1:** the information fixed at 08:29, live at 09:00 + L. **Superseded in cycle 2 by the ruling on the re-read's SF-1:** latency-free, one design live at 09:00, 15 cells | 0 row 7, 1, 4.2, 5.9, 6.2, 16 |
+| B-3 (blocker) | a position open at a window "walks on", against E-202 (2)(a) | **ruled:** flattened at the window's start bar (E-200 R-1), counted unresolved; nothing walks on through a window; the EIA releases stated outside the ruling; T-4 holds one toy case each way | 3, 4.6, 5.2, 5.4, 9.5, 11.2, 17 item 4 |
+| B-4 (blocker) | an unscheduled FOMC statement cancelled tickets before its release (look-ahead) | **ruled:** acted on only from its release time (F-02's third read, N6); the 2020-03-03 case stated; T-4 holds toy releases. A position open at the release is flattened at the first bar after its minute (the ruling on the re-read's open item 5) | 4.7 (d), 6.1, 17 item 4, 19 |
 | S-1 | the closed window labelled as news; its basis is D-281 (3) | **ruled:** labelled D-281 (3), kept closed by E-202 (2)(a), beside the no-news rule; RL3's tickets never enter it; the bases' entries kept only where an identity needs them, their count beside; the take-up and P-16's reach without them beside; unverified 09:00 CT releases added to 12 item 8 | 0 row 5, 3, 7.2 item 11, 10, 11.2, 11.5, 11.6, 12 item 8 |
-| S-2 | the "differ" tickets near ORB6 (D-278) | **ruled: adopted.** D-278 named. Under B-2's design `P_ref` reads nothing in the window, so no ticket is re-sided. The window-touched split is beside the pick and each sibling, and a pass carried by it is labelled | 1, 4.3, 6.2, 9.7, 13 |
-| S-3 | the side checks' fills unstated; the choice calendar undeclared | **ruled: adopted.** Per (cell, R) at its own cutoff, killing that (cell, R); the choice calendar's count and sha256 written before the pin and cited by the pinning row, asserted by the runner | header item 4, 5.10, 7.2 item 9, 9.1, 9.2, 17 item 12 |
-| S-4 | the header's value bar at "C1's bound" | **ruled: adopted.** "C2's bound (its booking, the adopted statistic, the family's level)" | header |
-| S-5 | the bases at a verified window's start | **ruled: adopted.** Checked, the count printed (expected zero), B-3's flatten applied in the verdict's arms if not zero | 11.2, 11.5, 17 item 8 |
+| S-2 | re-sided tickets near ORB6 (D-278) | **adopted.** D-278 named; `P_ref` reads nothing of the window, so no ticket is re-sided; the window-touched split is beside, with a label | 1, 4.3, 6.2, 9.7, 13 |
+| S-3 | the side checks' fills unstated; the choice calendar undeclared | **adopted.** Per (cell, R) at its own cutoff; the choice calendar's count and sha256 written before the pin, cited, asserted | header item 4, 5.10, 7.2 item 9, 9.2, 17 item 12 |
+| S-4 | the header's value bar at "C1's bound" | **adopted.** "C2's bound (its booking, the adopted statistic, the family's level)" | header |
+| S-5 | the bases at a verified window's start | **adopted.** Checked, the count printed, the flatten applied in the verdict's arms if not zero | 11.2, 11.5, 17 item 8 |
 | N-1 | the charter item already answered | closed: E-202 (2)(c), written into CHARTER section 4 and the skills by E-203 | 3, 6.1, 19 |
 | N-2 | E-202 (2)(b) unmentioned | noted, with why this family keeps regular hours | 3, 19 |
-| N-3 | the reason for excluding L of 1 or less wrong | the reason is now that the operator did not ask for it | 4.2, 6.2 |
+| N-3 | the reason for excluding L of 1 or less wrong | the reason is that the operator did not ask for it; now moot under latency-free | 6.2 |
 | N-4 | "reads no bar and no outcome" overstates | disclosed: the gate's MDLs carry P-16's judged variance; Q-108's power file was on master | 7.1 |
 | N-5 | trailing zeros in seed lists | stated, collision-free within the block, T-12 strips trailing zeros | 15, 17 item 10 |
 | N-6 | "no threshold typed" followed by quoted ones | reworded: quoted from plan 2.5 and 4.4, computed by its functions | 5.10 |
 | N-7 | the gate and toy scripts run before the pin, against 17's opening | 17's opening names the three pre-pin scripts | 17 |
-| N-8 | fills on the first live bar assume an exact submission | the share of fills on the bar stamped `t_live`, and C1's lift without them, beside; K4 reports the share | 7.2 item 7, 9.7 |
-| N-9 | C2 one-sample; the dropped break cells; the k = 15 column | C2's reason and its two residuals stated; the 27 dropped hypotheses stated as spent by Stage 2; the k = 15 column called conservative | 2, 7.1, 9.4, 16 |
+| N-8 | fills on the first live bar assume an exact submission | the share of fills on the bar stamped 09:00, and C1's lift without them, beside; K4 reports the share | 7.2 item 7, 9.7 |
+| N-9 | C2 one-sample; the dropped break cells; the k = 15 column | C2's reason and its two residuals stated; the dropped hypotheses stated as spent by Stage 2; the k = 15 column called conservative | 2, 7.1, 9.4, 16 |
 | "what it tried" | a second shift test on the void | added as 4.8 (b) and 17 item 3 (b) | 4.8, 17 |
+
+### A.2 The re-read (Q-143r2, `docs/reviews/DRAFT_F-RL3_v2_2026-11-18.md`, on the second text 1dcb309)
+
+| finding | what it found | the answer (the lead's ruling) | sections |
+|---|---|---|---|
+| NB-1 (blocker) | E-203's exact twin is degenerate for RL3 (the resting side is the fade side on every live ticket), yet the second text offered it as C1 for fade and read it beside as a lift | **ruled:** the alternative struck from 19; the red team's realisability argument written in (the fade's walked mirror is the break stop at the same level, from the same ticket, on the same bar, at the break's own fill); RL3 falls outside E-203's F-04 limit ruling and keeps its walked pair, rung 1 and symmetric booking; the beside reading relabelled "the resting fills' own mean (supply and profitability, not a lift)"; T-4 checks the same-bar fill, exceptions counted and printed, K4 counting them per (cell, R) | 0 row 9, 5.5, 6.1, 7.2 item 7, 9.7, 17 item 4, 19 |
+| SF-1 | the alert at 09:00 was stipulated; the dominant design, live at 09:00 for every L, dropped without a record | **ruled:** latency-free. One design, live at 09:00; the three latency cells collapse to one (15 cells, 45 signed hypotheses over 36 questions); 1 and 6.2 record that for RL3 the latency question has no cost | header, 0 row 7, 1, 3, 4.2, 5.9, 6.1, 6.2, 13, 16, 19 |
+| SF-2 | "nothing inside the closed window is read" is false (the window-touched split, K4, 13's label) | **ruled:** section 3's narrower wording throughout: no level, side or price reads the window; the void at 09:00 and the window-touched readings disclosed as what does; T-0 asserts the narrower sentence | 0 row 5, 1, 3, 4.3, 6.1 |
+| SF-3 | the 90 paired readings' judged-block exposure and multiplicity | settled by SF-1: the paired readings and their judged-block purpose are removed | 5.9, 9.7, 18.1 |
+| SF-4 | T-13 (b) decides the fade bookings on a ticket population and noise unlike RL3's | **ruled:** T-13 (b) at RL3's own timing (levels from 08:29, the window walked but unworked, the void at 08:59, live at 09:00, pre-session-like distances), plus one declared heavier-print case; the switch reads the stricter of the two | 0 row 10, 5.5, 6.1, 15, 17 item 5 |
+| N-1 (re-read) | `on` at `P_ref` equality: the two sentences conflict | "except `on`" restored | 4.4 |
+| N-2 (re-read) | a missing 08:29 bar voids the whole day | intended: the information is that bar's close; such days are void, counted and printed | 4.3, 6.1, 7.2 item 7, 17 item 3 |
+| N-3 (re-read) | the unscheduled-release cancel acts within the release minute | stated as a small optimism against a hand cancel; it binds 2020-03-03 only, before any fill | 4.7 (d) |
+| N-4 (re-read) | information 30 minutes old is selected by the opening | stated, reported by K4 and beside the fills per session in planning | 4.3, 7.2 item 8 |
+| N-5 (re-read) | nothing else reads ahead | no change | -- |
+| N-6 (re-read) | the 90 readings ran after the verdict | moot: removed under SF-1 | -- |
