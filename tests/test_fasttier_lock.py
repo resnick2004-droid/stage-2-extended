@@ -286,7 +286,8 @@ def test_a_holder_that_lost_its_lock_before_pytest_refuses(lock, clock):
 
 def test_the_cli_runs_the_command_under_the_lock(lock):
     probe = f"import json,sys; d=json.load(open(r'{lock}')); sys.exit(0 if d['pid'] > 0 else 9)"
-    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "run",
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock),
+                           "--min-free-gb", "0", "run",                 # the memory wait has its own tests
                            "--", sys.executable, "-c", probe], capture_output=True, text=True, timeout=120)
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert not lock.exists()
@@ -346,7 +347,7 @@ def test_the_cli_tees_the_commands_output_to_the_named_file_and_returns_its_code
     out = tmp_path / "fasttier-last.log"
     child = "import os, sys; print('7 passed in 0.01s'); print('tee seen:', os.environ.get('S2X_FASTTIER_TEE')); sys.exit(3)"
     env = {**os.environ, F.ENV_TEE: str(out)}
-    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "run",
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "--min-free-gb", "0", "run",
                            "--", sys.executable, "-c", child], capture_output=True, text=True, timeout=120, env=env)
     assert proc.returncode == 3, proc.stdout + proc.stderr
     assert "7 passed in 0.01s" in proc.stdout
@@ -357,8 +358,114 @@ def test_the_cli_tees_the_commands_output_to_the_named_file_and_returns_its_code
 
 def test_without_the_tee_variable_nothing_is_written(lock, tmp_path):
     env = {k: v for k, v in os.environ.items() if k != F.ENV_TEE}
-    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "run",
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "--min-free-gb", "0", "run",
                            "--", sys.executable, "-c", "print('ok')"], capture_output=True, text=True, timeout=120,
                           env=env, cwd=tmp_path)
     assert proc.returncode == 0 and "ok" in proc.stdout
-    assert list(tmp_path.iterdir()) == []
+    assert [p.name for p in tmp_path.iterdir() if p != F.queue_dir(lock)] == []      # no tee file (the queue dir is the lock's)
+
+
+# ------------------------------------------------------------------------------------------------ first come, first served (Q-165)
+
+def _cli(lock: Path, *args: str) -> list[str]:
+    return [sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), *args]
+
+
+def _tickets(lock: Path) -> list[Path]:
+    q = F.queue_dir(lock)
+    return sorted(q.glob("*.ticket")) if q.is_dir() else []
+
+
+def _wait_until(pred, limit: float = 60.0) -> bool:
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < limit:
+        if pred():
+            return True
+        time.sleep(0.05)
+    return pred()
+
+
+def test_three_waiters_are_served_in_the_order_they_arrived(lock, tmp_path):
+    """A holder (this process) has the lock; A, B and C arrive in that order and wait. The fastest poller arrives
+    last: without the queue it would usually take the freed lock first. With it, the order of service is A, B, C."""
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    served = tmp_path / "served.txt"
+    procs = []
+    try:
+        for name, poll in (("A", "0.5"), ("B", "0.3"), ("C", "0.05")):
+            child = f"import time; open(r'{served}', 'a').write('{name} '); time.sleep(0.3)"
+            procs.append(subprocess.Popen(_cli(lock, "--poll-s", poll, "--min-free-gb", "0", "run", "--",
+                                               sys.executable, "-c", child),
+                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
+            n = len(procs)
+            assert _wait_until(lambda: len(_tickets(lock)) == n), f"waiter {name} took no ticket"
+        lock.unlink()                                             # the holder finishes
+        outs = [p.communicate(timeout=120)[0] for p in procs]
+        assert all(p.returncode == 0 for p in procs), outs
+    finally:
+        for p in procs:
+            if p.poll() is None:
+                p.kill()
+    assert served.read_text(encoding="utf-8").split() == ["A", "B", "C"]
+    assert "place 3 of 3" in outs[2], outs[2]
+    assert _tickets(lock) == [] and not lock.exists()
+
+
+def test_a_dead_waiters_ticket_does_not_block_the_line_and_is_removed(lock, capsys):
+    q = F.queue_dir(lock)
+    q.mkdir()
+    dead = q / F.ticket_name(time.time_ns() - 10**9, dead_pid(), "deadbeef")
+    dead.write_text("", encoding="utf-8")
+    h = F.acquire(lock, tree="T", timeout_s=30, poll_s=0.05)
+    assert h.record["tree"] == "T"
+    assert not dead.exists() and _tickets(lock) == []
+    F.release(lock, h)
+
+
+def test_a_live_ticket_older_than_the_cap_is_skipped_and_removed(lock):
+    q = F.queue_dir(lock)
+    q.mkdir()
+    old_ns = time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9)
+    old = q / F.ticket_name(old_ns, os.getpid(), "0ld0ld")
+    old.write_text("", encoding="utf-8")
+    h = F.acquire(lock, tree="T", timeout_s=30, poll_s=0.05)
+    assert not old.exists()
+    F.release(lock, h)
+
+
+def test_a_live_earlier_ticket_is_honoured(lock, clock):
+    """A live waiter that arrived first keeps its place: a later waiter does not take a free lock past it."""
+    q = F.queue_dir(lock)
+    q.mkdir()
+    first = q / F.ticket_name(time.time_ns() - 10**9, os.getpid(), "f1rst")
+    first.write_text("", encoding="utf-8")
+    with pytest.raises(F.WaitTimeout):
+        acquire(lock, clock, timeout_s=90)
+    assert not lock.exists() and first.exists()
+    assert _tickets(lock) == [first], "the waiter that gave up left its ticket"
+
+
+def test_a_waiter_killed_while_waiting_leaves_no_live_ticket(lock):
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    p = subprocess.Popen(_cli(lock, "--poll-s", "0.1", "run", "--", sys.executable, "-c", "pass"),
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        assert _wait_until(lambda: len(_tickets(lock)) == 1), "the waiter took no ticket"
+        p.kill()
+        p.wait(timeout=60)
+    finally:
+        if p.poll() is None:
+            p.kill()
+    live = [t for t in _tickets(lock) if F.pid_alive(F.parse_ticket(t.name)[1])]
+    assert live == [], live
+    lock.unlink()
+    h = F.acquire(lock, tree="next", timeout_s=30, poll_s=0.05)     # the line is not blocked by what was left
+    assert _tickets(lock) == []
+    F.release(lock, h)
+
+
+def test_the_waiting_line_names_the_place(lock, clock, capsys):
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    with pytest.raises(F.WaitTimeout):
+        acquire(lock, clock, timeout_s=90)
+    assert "place 1 of 1" in capsys.readouterr().out

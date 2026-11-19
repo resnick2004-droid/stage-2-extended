@@ -11,7 +11,11 @@ pytest through `run`, which:
 
 1. **takes the lock** -- the file `%LOCALAPPDATA%\\stage2-extended-fasttier.lock` (machine-wide, never on OneDrive),
    created atomically (`O_CREAT | O_EXCL`), holding the holder's tree, pid, host, start and a random token;
-2. **waits for a live holder**, polling every 30 s and printing one line a minute;
+2. **waits for a live holder, first come first served** (Q-165), polling every 30 s and printing one line a minute
+   with its place in line: on arrival a waiter takes a ticket -- a file created atomically in the queue directory
+   beside the lock (`<lock>.queue/`), named by its arrival time, pid and token -- and takes the lock only while its
+   ticket is the oldest live one. A ticket whose process is not running, or older than the 3-hour cap, is skipped and
+   removed, never honoured. The ticket is removed on every exit path; a hard kill leaves it with a dead pid;
 3. **takes over a stale holder**, saying so: its pid is not running (a hook that crashed or was killed), or its record
    is older than 2 hours (a hung run, or a reused pid), or the file has been unreadable for over a minute (a hook killed
    between creating and writing it). A takeover is serialised by a short-lived guard file and removes the lock only if
@@ -240,36 +244,104 @@ def _take_over(path: Path, raw_seen: str) -> bool:
         _unlink(guard)
 
 
+# ------------------------------------------------------------------------------------------------ the queue (Q-165)
+
+def queue_dir(lock: Path) -> Path:
+    """The waiters' tickets, beside the lock."""
+    return Path(str(lock) + ".queue")
+
+
+def ticket_name(arrival_ns: int, pid: int, token: str) -> str:
+    """Sorts by arrival time (fixed-width nanoseconds), then pid, then token."""
+    return f"{arrival_ns:020d}-{pid:010d}-{token}.ticket"
+
+
+def parse_ticket(name: str) -> tuple[int, int, str] | None:
+    """(arrival_ns, pid, token) from a ticket's name; None for anything else."""
+    if not name.endswith(".ticket"):
+        return None
+    parts = name[: -len(".ticket")].split("-")
+    if len(parts) != 3 or not parts[0].isdigit() or not parts[1].isdigit():
+        return None
+    return int(parts[0]), int(parts[1]), parts[2]
+
+
+def _make_ticket(q: Path, name: str) -> Path:
+    q.mkdir(parents=True, exist_ok=True)
+    t = q / name
+    try:
+        os.close(os.open(t, os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_BINARY", 0)))
+    except FileExistsError:
+        pass
+    return t
+
+
+def line(q: Path, mine: str, cap_s: float = TIMEOUT_S) -> list[str]:
+    """The live tickets, oldest first. A ticket whose process is not running, or older than the cap, is removed here
+    (never honoured); this waiter's own ticket (`mine`) is always kept."""
+    if not q.is_dir():
+        return []
+    live = []
+    now_ns = time.time_ns()
+    for t in sorted(q.iterdir(), key=lambda x: x.name):
+        parsed = parse_ticket(t.name)
+        if parsed is None:
+            continue
+        if t.name != mine:
+            arrival_ns, pid, _ = parsed
+            if not pid_alive(pid) or (now_ns - arrival_ns) / 1e9 > cap_s:
+                _unlink(t)
+                continue
+        live.append(t.name)
+    return live
+
+
 def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float = POLL_S,
             sleep: Sleep = time.sleep, monotonic: Clock = time.monotonic) -> Holder:
-    """Take the lock, waiting for a live holder and taking over a stale one; WaitTimeout after `timeout_s`."""
+    """Take the lock in arrival order (Q-165): wait for a live holder and for every live waiter that arrived earlier,
+    take over a stale holder; WaitTimeout after `timeout_s`. This waiter's ticket is removed on every exit."""
     t0 = monotonic()
     last_print: float | None = None
     token = uuid.uuid4().hex
-    while True:
-        stamp = now().isoformat()
-        record = {"tree": tree, "pid": os.getpid(), "host": socket.gethostname(), "start": stamp, "updated": stamp,
-                  "phase": "waiting-for-memory", "token": token}
-        if try_create(path, record):
-            return Holder(token, record)
-        raw = _read_raw(path)
-        if raw is None:
-            continue                                      # released between our create and our read: try again
-        why = stale_reason(path, raw)
-        if why is not None:
-            if _take_over(path, raw):
-                _say(f"taking over a stale fast-tier lock {path}: {why}")
-                continue
-        elapsed = monotonic() - t0
-        if elapsed >= timeout_s:
-            raise WaitTimeout(f"FAILED: the fast-tier lock {path} stayed held by {describe(_parse(raw))} for the "
-                              f"whole wait ({timeout_s / 60:.0f} min); the fast tier did not run and the commit is "
-                              f"refused. See `python scripts/fasttier_lock.py status`; commit again when it is free.")
-        if last_print is None or monotonic() - last_print >= PRINT_EVERY_S:
-            _say(f"fast-tier lock held by {describe(_parse(raw))}; waiting ({elapsed / 60:.0f} of "
-                 f"{timeout_s / 60:.0f} min)")
-            last_print = monotonic()
-        sleep(poll_s)
+    q = queue_dir(path)
+    mine = ticket_name(time.time_ns(), os.getpid(), token)
+    ticket = _make_ticket(q, mine)
+    try:
+        while True:
+            if not ticket.exists():
+                ticket = _make_ticket(q, mine)            # removed under us: back in, at the same place
+            ahead = line(q, mine)
+            place = ahead.index(mine) + 1 if mine in ahead else 1
+            if place == 1:
+                stamp = now().isoformat()
+                record = {"tree": tree, "pid": os.getpid(), "host": socket.gethostname(), "start": stamp,
+                          "updated": stamp, "phase": "waiting-for-memory", "token": token}
+                if try_create(path, record):
+                    return Holder(token, record)
+                raw = _read_raw(path)
+                if raw is None:
+                    continue                              # released between our create and our read: try again
+                why = stale_reason(path, raw)
+                if why is not None:
+                    if _take_over(path, raw):
+                        _say(f"taking over a stale fast-tier lock {path}: {why}")
+                        continue
+            else:
+                raw = _read_raw(path)
+            held = describe(_parse(raw)) if raw else "nobody (an earlier waiter is taking it)"
+            elapsed = monotonic() - t0
+            if elapsed >= timeout_s:
+                raise WaitTimeout(f"FAILED: the fast-tier lock {path} stayed held by {held} for the whole wait "
+                                  f"({timeout_s / 60:.0f} min; place {place} of {len(ahead)} in line); the fast tier "
+                                  f"did not run and the commit is refused. See `python scripts/fasttier_lock.py "
+                                  f"status`; commit again when it is free.")
+            if last_print is None or monotonic() - last_print >= PRINT_EVERY_S:
+                _say(f"fast-tier lock held by {held}; waiting, place {place} of {len(ahead)} in line "
+                     f"({elapsed / 60:.0f} of {timeout_s / 60:.0f} min)")
+                last_print = monotonic()
+            sleep(poll_s)
+    finally:
+        _unlink(ticket)
 
 
 def refresh(path: Path, holder: Holder, phase: str) -> bool:
@@ -387,6 +459,16 @@ def status(lock: Path) -> int:
     why = stale_reason(lock, raw)
     print(f"{lock}: HELD by {describe(_parse(raw))}" + (f"  ** STALE: {why}; the next hook takes it over **"
                                                          if why else "") + f"  ({mem})")
+    q = queue_dir(lock)
+    names = sorted(t.name for t in q.iterdir()) if q.is_dir() else []
+    place = 0
+    for name in names:                                    # read only: the waiters themselves remove dead tickets
+        parsed = parse_ticket(name)
+        if parsed is None or not pid_alive(parsed[1]):
+            continue
+        place += 1
+        since = datetime.fromtimestamp(parsed[0] / 1e9, timezone.utc).replace(microsecond=0).isoformat()
+        print(f"  {place}. waiting since {since} (pid {parsed[1]})")
     return 0
 
 
