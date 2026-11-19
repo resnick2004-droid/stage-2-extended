@@ -25,6 +25,13 @@ What it reports (the test asserts each):
   2026-07-17), dates out of order, a keyword that is not a bool;
 * **composition**: with the pass-through funded class too, the outputs are the journey run's apart from the class's
   naming key (still last); the task carries `True` fourteenth;
+* **corrective cycle 1** (`docs/reviews/BUILD_W31_Q152_2026-11-18.md`): M-3 -- a default (search-years) journey call
+  given a held-out start is refused before the pool, `journey_block` names the blocks, and a summary tables only its
+  blocks' starts; M-2 -- under the keyword every start is checked under every response (`exact_every` 1), an
+  unchecked or differing start refuses the readings unless a declared reason explains it, and the cost of the check is
+  timed; M-1 -- a start whose exact 63-session run differs reads P_B's peak from that run (an injected record), and a
+  missing exact peak refuses; N-8 -- the block check is recomputed from the dates alone, and the runner's guard is
+  shown to catch the whole-window length (the mutation);
 * **the readings on journeys**: `journey_readings.summary` on both E-208 blocks with two budgets, `consistency_problems` empty; `P_B`
   equal to `journey_measures.p_bankroll` recomputed from each journey's `rel` (a second code path), its sub-reading
   likewise, `P_B` at most its sub-reading and P; (24)'s three states summing to one; the per-start peak columns the
@@ -218,14 +225,25 @@ out["defaults"] = {"BLOCKS": list(UR.BLOCKS), "Q44_BLOCKS": list(UR.Q44_BLOCKS)}
 t1 = time.time()
 POOL.calls.clear()
 jo: dict[str, list[dict]] = {}
+BOTH = ("search", "held_out")
 for name in ("off", "denial_50", "forfeit_25", "rtp", "ftp_corrective_lost_3"):
-    jo[name] = run(B, name, journey=True)
+    jo[name] = run(B, name, journey=True, journey_block=BOTH)
+#: the absent runs with every start checked, as the journey checks them (M-2), for the uncut comparison
+absent1 = {name: (absent[name] if name == "off" else run(B, name, exact_every=1)) for name in jo}
 out["journey_task"] = [len(POOL.calls[0][0]), POOL.calls[0][0][13] is True,
                        list(POOL.calls[0][0][8:13]) == [None, None, {}, False, None]]
 names, last = B.journey_window(days)
 win, extra_key, same_uncut, cut, rel_ok, peak_ok, arr_ok, other_block = {}, {}, {}, {}, {}, {}, {}, {}
+legacy_crosses, guard_catches, checked_all = {}, {}, {}
+
+
+def block_by_date(d: str) -> str:
+    """N-8: a session's block from its date alone (E-208's boundary), not through the function under test."""
+    return "search" if d <= "2023-12-29" else "held_out"
+
+
 for name, o in jo.items():
-    for x, a in zip(o, absent[name]):
+    for x, a in zip(o, absent1[name]):
         s = int(x["rec"]["start_day"])
         j = x["journey"]
         L_old, L_new = int(a["rec"]["observed"]), int(x["rec"]["observed"])
@@ -233,7 +251,12 @@ for name, o in jo.items():
         win[key] = (L_new == min(252, last[s] - s + 1) and j["block_left"] == last[s] - s + 1
                     and j["block"] == names[s])
         cut[key] = L_new < L_old
-        other_block[key] = any(names[k] != names[s] for k in range(s, s + L_new))
+        other_block[key] = any(block_by_date(days[k]) != block_by_date(days[s]) for k in range(s, s + L_new))
+        # the mutation the check catches: the whole-window length crosses the block's end on the cut starts
+        legacy_crosses[key] = any(block_by_date(days[k]) != block_by_date(days[s]) for k in range(s, s + L_old))
+        guard_catches[key] = bool(B.journey_run_problems(s, L_old, names)) == legacy_crosses[key] and \
+            not B.journey_run_problems(s, L_new, names)
+        checked_all[key] = sorted(x["checked"]) == [h for h in (21, 63, 90, 126) if h < L_new]
         extra_key[key] = list(x) == [k for k in a if k != "seed"] + ["journey", "seed"]
         if L_new == L_old:
             same_uncut[key] = diff({k: v for k, v in x.items() if k != "journey"}, a)
@@ -246,6 +269,9 @@ for name, o in jo.items():
 out["journey_window_ok"] = all(win.values())
 out["journey_cut"] = sorted(k for k, v in cut.items() if v)
 out["journey_other_block"] = sorted(k for k, v in other_block.items() if v)
+out["legacy_crosses"] = sorted(k for k, v in legacy_crosses.items() if v)
+out["guard_catches_the_mutation"] = all(guard_catches.values())
+out["journey_every_start_checked"] = all(checked_all.values())
 out["journey_key_placed"] = all(extra_key.values())
 out["journey_uncut_diff"] = {k: v for k, v in same_uncut.items() if v}
 out["journey_uncut_compared"] = len(same_uncut)
@@ -265,9 +291,84 @@ out["refusals"]["not_a_bool"] = refused(run, B, "off", None, journey="yes")
 out["refusals_reached_pool"] = len(POOL.calls)
 out["absent_accepts_any_calendar"] = refused(run, B, "off", bad_jobs["confirmation"]) is None
 
+# -- M-3: only the named blocks are replayed or tabled
+POOL.calls.clear()
+search_starts = [st for st in STARTS if st <= LAST_SEARCH]
+held_starts = [st for st in STARTS if st > LAST_SEARCH]
+m3 = {"default_mixed": refused(B.run_starts, "syn", "point", B.BY_NAME["off"], job, STARTS, 1, journey=True),
+      "held_out_named_given_search": refused(B.run_starts, "syn", "point", B.BY_NAME["off"], job, search_starts[:1], 1,
+                                             journey=True, journey_block="held_out"),
+      "block_without_journey": refused(B.run_starts, "syn", "point", B.BY_NAME["off"], job, search_starts[:1], 1,
+                                       journey_block="search"),
+      "unknown_block": refused(B.run_starts, "syn", "point", B.BY_NAME["off"], job, search_starts[:1], 1,
+                               journey=True, journey_block="confirmation")}
+m3["reached_pool"] = len(POOL.calls)
+d_search = B.run_starts("syn", "point", B.BY_NAME["off"], job, search_starts, 1, journey=True)
+d_held = B.run_starts("syn", "point", B.BY_NAME["off"], job, held_starts, 1, journey=True, journey_block="held_out")
+m3["default_search_ran"] = [int(x["rec"]["start_day"]) for x in d_search] == search_starts
+m3["held_named_ran"] = [int(x["rec"]["start_day"]) for x in d_held] == held_starts
+_, t_s = JR.summary("syn", "point", B.BY_NAME["off"], jo["off"], blocks=("search",), budgets=BUDGETS)
+m3["search_table_starts"] = sorted(int(v) for v in t_s["start_day"]) == search_starts
+m3["search_table_blocks"] = sorted(set(t_s["block"].astype(str)))
+out["m3"] = m3
+
+# -- M-2: every start checked, and a difference no declared reason explains refuses
+t2 = time.time()
+sparse = run(B, "denial_50", journey=True, journey_block=BOTH, exact_every=21)
+t_sparse = time.time() - t2
+t2 = time.time()
+dense = run(B, "denial_50", journey=True, journey_block=BOTH)
+t_dense = time.time() - t2
+m2 = {"cost_ratio_every_start_against_one_in_21": round(t_dense / t_sparse, 2) if t_sparse > 0 else None,
+      "seconds_one_in_21": round(t_sparse, 2), "seconds_every_start": round(t_dense, 2),
+      "unchecked_refused": refused(JR.summary, "syn", "point", B.BY_NAME["denial_50"], sparse, blocks=BOTH,
+                                   budgets=BUDGETS),
+      "dense_reads": refused(JR.summary, "syn", "point", B.BY_NAME["denial_50"], dense, blocks=BOTH,
+                             budgets=BUDGETS) is None}
+victim = next(x for x in jo["off"] if int(x["rec"]["observed"]) > 63 and x["journey"]["block"] == "search")
+vs = int(victim["rec"]["start_day"])
+with_diff = [({**x, "differs": [63]} if x is victim else x) for x in jo["off"]]
+m2["difference_refused"] = refused(JR.summary, "syn", "point", B.BY_NAME["off"], with_diff, blocks=BOTH,
+                                   budgets=BUDGETS)
+m2["difference_refused_by_user_readings"] = refused(UR.summary, "syn", "point", B.BY_NAME["off"], with_diff,
+                                                    blocks=BOTH, budgets=BUDGETS)
+m2["explained_reads"] = refused(JR.summary, "syn", "point", B.BY_NAME["off"], with_diff, blocks=BOTH,
+                                budgets=BUDGETS, explained={(vs, 63): "a test's declared reason"}) is None
+m2["empty_reason_refused"] = refused(JR.summary, "syn", "point", B.BY_NAME["off"], with_diff, blocks=BOTH,
+                                     budgets=BUDGETS, explained={(vs, 63): " "})
+out["m2"] = m2
+
+# -- M-1: P_B reads "ahead" and the peak from one record, the exact run's where it differs
+o = jo["off"]
+lim = BUDGETS[-1]
+e63 = [x for x in o if x["journey"]["block"] == "search" and int(x["rec"]["observed"]) >= 63]
+pick = next(x for x in e63 if float(x["journey"]["rel"][63]) > M.TOL and x["journey"]["peak_month"][2] <= lim
+            and int(x["rec"]["observed"]) > 63)
+ps = int(pick["rec"]["start_day"])
+alt_rec = {k: v for k, v in pick["rec"].items() if k != "alt"}       # the exact 63-session run's record: same events
+inj_j = {**pick["journey"], "peak_exact": {**pick["journey"]["peak_exact"],
+                                           63: tuple([lim + 1.0] * 12)}}  # ... but a peak above the budget
+inj = {**pick, "rec": {**pick["rec"], "alt": {"63": alt_rec}}, "differs": [63], "journey": inj_j}
+o_inj = [inj if x is pick else x for x in o]
+why = {(ps, 63): "a test's declared reason"}
+base_rows, _ = JR.summary("syn", "point", B.BY_NAME["off"], o, blocks=("search",), budgets=(lim,))
+inj_rows, _ = JR.summary("syn", "point", B.BY_NAME["off"], o_inj, blocks=("search",), budgets=(lim,), explained=why)
+key = ("extra", "search", f"P_B_{lim:g}", "value")
+pb0 = {(r["section"], r["block"], r["measure"], r["stat"]): r for r in base_rows}[key]
+pb1 = {(r["section"], r["block"], r["measure"], r["stat"]): r for r in inj_rows}[key]
+no_peak = {**inj, "journey": {**inj_j, "peak_exact": {}}}
+m1 = {"pb_before": pb0["value"], "pb_after": pb1["value"], "n": pb1["n"],
+      "drop_is_one_month": abs((pb0["value"] - pb1["value"]) - 1.0 / (3 * pb1["n"])) <= 1e-12,
+      "missing_exact_peak_refused": refused(JR.summary, "syn", "point", B.BY_NAME["off"],
+                                            [no_peak if x is pick else x for x in o], blocks=("search",),
+                                            budgets=(lim,), explained=why),
+      "peak_exact_held": sorted(int(h) for h in pick["journey"]["peak_exact"]) ==
+      [h for h in (21, 63, 90, 126) if h < int(pick["rec"]["observed"])]}
+out["m1"] = m1
+
 # -- composition with the pass-through class
 PT = XG.PassThroughFundedAccount
-got = run(B, "off", funded_account_cls=PT, journey=True)
+got = run(B, "off", funded_account_cls=PT, journey=True, journey_block=BOTH)
 out["class_composes"] = (diff(jo["off"], [{k: v for k, v in x.items() if k != "funded_account_cls"} for x in got])
                          is None and all(list(x)[-1] == "funded_account_cls" for x in got))
 
