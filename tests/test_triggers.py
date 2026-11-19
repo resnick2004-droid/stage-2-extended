@@ -41,6 +41,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from extended import day_calendar as DC
 from extended import lever_space as LS
 from extended import synthetic_bars as sb
 from extended import triggers as T
@@ -114,6 +115,7 @@ def sources() -> dict[str, object]:
         "p14_market": T.P14Breakout(latency=5),
         "p14_limit_L2": T.P14Breakout(latency=2, entry=T.LIMIT),
         "p16_limit": T.P16Marks(T.p16_grid(T.RTH_OPEN), entry=T.LIMIT),
+        "coin_limit_L3": T.CoinMarks(0, 1300, latency=3, entry=T.LIMIT),
         **{f"rl3_{k}": T.RL3Tickets(k, T.RL3_CUTOFFS[-1]) for k in T.RL3_KINDS},
     }
 
@@ -175,7 +177,7 @@ def test_p14_offers_carry_no_side_and_one_moment_each(hist):
     src = T.P14Breakout(latency=3)
     for i in range(len(hist)):
         offs = src.offers(hist, i, ctx_of(hist, i))
-        assert all(o.alert >= T.RTH_OPEN and o.alert <= T.P14_LAST for o in offs)
+        assert all(0 <= o.alert <= T.P14_LAST for o in offs)
         assert len({o.decision for o in offs}) == len(offs)
         assert all(o.live == o.alert + 3 and o.decision == o.alert and o.sub == 0 for o in offs)
         assert not any(hasattr(o, "side") for o in offs)
@@ -196,7 +198,9 @@ def violations(before: dict, after: dict, cut_day: str, cut_slot: int) -> tuple[
             continue
         a = [key(o) for o in offs if d < cut_day or o.alert <= cut_slot]
         if d not in after:
-            assert d == cut_day and not a, "a deleted day had offers known before the cut"
+            # the whole day deleted (a cut at its 17:00 open): only a clock-only source (the coin) has offers known
+            # then, and none of them read a bar; nothing of the day is left to compare
+            assert d == cut_day and all(o[0] == "coin" for o in a), "a deleted day had bar-read offers before the cut"
             continue
         b = [key(o) for o in after[d] if d < cut_day or o.alert <= cut_slot]
         n += len(a)
@@ -386,7 +390,9 @@ def test_rl3_levels_match_a_timestamp_reference(bars, hist):
         _, lp = T.rl3_levels(hist, i, "pd")
         _, lc = T.rl3_levels(hist, i, "pdc")
         if hist.contract[i] != hist.contract[i - 1]:
-            assert {v[3] for v in lp + lc} == {"roll"}
+            # a roll: the void calendar's `prior_void` voids it (Q-169), never RL3's own copy of the rule
+            assert "roll" not in {v[3] for v in lp + lc}
+            assert {v[3] for v in T.rl3_levels(hist, i, "pd", prior_void=True)[1]} == {"prior_void"}
             continue
         for (n, x, r, why), want in zip(lp, (rth["high"].max(), rth["low"].min())):
             assert x == want
@@ -403,7 +409,7 @@ def test_rl3_levels_match_a_timestamp_reference(bars, hist):
         assert lr[0][1] == up and lr[1][1] == dn
         assert lr[0][2] == 1 and lr[1][2] == -1
     _, first = T.rl3_levels(hist, 0, "pd")
-    assert {v[3] for v in first} == {"first_day"}
+    assert {v[3] for v in first} == {"no_prior_day"}
     _, pv = T.rl3_levels(hist, 5, "pdc", prior_void=True)
     assert pv[0][3] == "prior_void" or pv[0][3] == "roll"
 
@@ -427,8 +433,10 @@ def test_rl3_voids_at_the_reference_and_without_the_0829_bar():
     for kind in T.RL3_KINDS:
         _, lv = T.rl3_levels(two_days(prev, day), 1, kind)
         assert {w for *_, w in lv} == {"no_ref_bar"}
-    _, lroll = T.rl3_levels(two_days(prev, flat_day(), ("NQH1", "NQM1")), 1, "pdc")
-    assert lroll[0][3] == "roll"
+    _, lroll = T.rl3_levels(two_days(prev, flat_day(), ("NQH1", "NQM1")), 1, "pdc", prior_void=True)
+    assert lroll[0][3] == "prior_void"                                         # the calendar's flag, not the contract
+    _, lfirst = T.rl3_levels(one_day(flat_day()), 0, "pd")
+    assert {w for *_, w in lfirst} == {"no_prior_day"}                         # no previous row in the history
 
 
 def test_rl3_fade_and_break_fill_on_the_same_bar(hist):
@@ -454,7 +462,20 @@ def test_rl3_fade_and_break_fill_on_the_same_bar(hist):
                     assert ex[1].trade.fill.bar == ex[-1].trade.fill.bar
                     filled += 1
     assert pairs > 30 and filled > 15
-    assert boundary >= 0
+
+
+@pytest.mark.parametrize("role", [1, -1])
+def test_rl3_void_boundary_voids_the_fade_and_not_the_break(role):
+    """The pair's one countable exception (RL3 5.5): at a price at live exactly at the level, the fade limit is
+    marketable (void) and the break stop, a tick beyond, rests. Catches: the break stop placed at the level itself
+    (no tick offset), which voids both; a fade void rule comparing strictly."""
+    tkt = T.Offer("rl3", 0, 930, 0, 930, 960, T.TICKET, P, role, expires=1199, group="g", rewrite=True)
+    h = one_day(flat_day(P))                                                   # the price at 09:00 is the level
+    ctx = T.DayContext(0, h.days[0])
+    fade = T.execute(tkt, -role, h, 0, ctx, 100, 1.0)
+    brk = T.execute(tkt, role, h, 0, ctx, 100, 1.0)
+    assert fade.order_kind == W.LIMIT_ENTRY and fade.trade.fill.status == "void"
+    assert brk.order_kind == W.STOP_ENTRY and brk.trade.fill.status == "cancelled"
 
 
 def test_order_for_maps_the_coin_to_fade_or_break():
@@ -500,20 +521,36 @@ def test_a_working_limit_is_cancelled_at_a_windows_start():
     assert no_window.trade.fill.status == "filled" and no_window.fill_slot == 1003     # the window did the cancelling
 
 
-def test_an_open_position_is_flattened_at_a_windows_start():
+@pytest.mark.parametrize("side", [1, -1])
+def test_an_open_position_is_flattened_at_a_windows_first_bar_worst_less_two(side):
+    """E-223 M-4 ruling (lead): a position open at a window's start is booked at the adverse extreme of the window's
+    first bar (the bar stamped at its first minute) less two ticks, exiting at that bar's end -- RL3 4.6 / 5.4's
+    convention, for every source. Catches: the old close-before-the-window booking (gross 0 here), the bar's
+    favourable extreme, the two ticks dropped, the flatten bar one minute off."""
     day = flat_day()
-    for s in range(1010, 1439):                                                # three ticks up: no barrier reached
-        set_bar(day, s, P + 3 * TK, P + 3 * TK, P + 3 * TK, P + 3 * TK)
+    set_bar(day, 1020, P, P + (20 * TK if side < 0 else TK), P - (20 * TK if side > 0 else TK), P)
     h = one_day(day)
     w = T.Window(1020, 1030, "news")
     ctx = T.DayContext(0, h.days[0], windows=(w,))
     off = hand_offer(995, alert=990)
-    ex = T.execute(off, 1, h, 0, ctx, 200, 3.0)
+    ex = T.execute(off, side, h, 0, ctx, 200, 3.0, costs=W.Costs(fee_micro_eq=0.74))
     tr = ex.trade
-    assert ex.rules.walk_end == w.first and ex.rules.flatten == "close"
-    assert tr.rule.kind[0] == W.FLATTEN and ex.exit_slot == w.first
-    assert tr.fill.price == P and tr.rule.gross[0] == 3                       # closed at the price at the start
+    assert ex.rules.walk_end == w.first and ex.window_flatten
+    assert tr.fill.price == P and tr.rule.kind[0] == W.FLATTEN
+    assert ex.exit_slot == w.first + 1 == ex.flatten_slot                     # the end of the bar stamped 10:20
+    assert tr.rule.gross[0] == -22                                             # 20 ticks adverse, less two
+    assert tr.rule.net_r[0] == pytest.approx(float(W.net_r([-22], [W.FLATTEN], 200, entry_ticks=1.0,
+                                                           costs=W.Costs(fee_micro_eq=0.74))[0]))
     assert ex.rules.walk_end < T.JOURNEY.walk_end
+    stopped = T.execute(off, side, h, 0, ctx, 10, 3.0)                        # the bar reaches a 10-tick stop
+    assert stopped.trade.rule.kind[0] == W.STOP and stopped.trade.rule.gross[0] == -10
+    assert stopped.exit_slot == w.first + 1
+    gap = [a.copy() for a in day]                                              # n-5: the window's first bar missing
+    for a in gap:
+        a[w.first + 1] = np.nan
+    set_bar(gap, w.first + 1, P, P + (20 * TK if side < 0 else TK), P - (20 * TK if side > 0 else TK), P)
+    moved = T.execute(off, side, one_day(gap), 0, ctx, 200, 3.0)
+    assert moved.exit_slot == moved.flatten_slot == w.first + 2 and moved.trade.rule.gross[0] == -22
 
 
 def test_an_unscheduled_release_cancels_from_its_minute_and_flattens_after_it():
@@ -525,8 +562,12 @@ def test_an_unscheduled_release_cancels_from_its_minute_and_flattens_after_it():
     h = one_day(day)
     off = hand_offer(1090, alert=1085, entry=T.LIMIT, level=P, expires=1119)
     assert T.execute(off, 1, h, 0, ctx, 50, 1.0).trade.fill.status == "cancelled"
-    m = T.execute(hand_offer(1050, alert=1045), 1, one_day(flat_day()), 0, ctx, 200, 3.0)
-    assert m.exit_slot == r + 1 and m.trade.rule.kind[0] == W.FLATTEN       # the first bar after the release minute
+    flat = flat_day()
+    set_bar(flat, r, P, P, P - 30 * TK, P)                                     # the release bar: walked, no barrier
+    set_bar(flat, r + 1, P, P, P - 8 * TK, P)                                  # the first bar after it: the flatten
+    m = T.execute(hand_offer(1050, alert=1045), 1, one_day(flat), 0, ctx, 200, 3.0)
+    assert m.exit_slot == r + 2 and m.trade.rule.kind[0] == W.FLATTEN       # the end of the bar stamped r + 1
+    assert m.trade.rule.gross[0] == -10 and m.trade.rule.mae[0] == 30         # its low less two; the release bar's MAE
     tkt = T.Offer("rl3", 0, 930, 0, 930, 960, T.TICKET, P, -1, expires=1199, group="g", rewrite=True)
     assert T.segments(tkt, ctx) == [(960, r - 1)]                              # no re-write after an unscheduled release
 
@@ -574,7 +615,8 @@ def test_a_position_open_at_0830_is_flattened_there(monkeypatch):
     kept, _ = T.admit([off], ctx)
     assert kept == [off]
     ex = T.execute(off, -1, one_day(flat_day()), 0, ctx, 200, 3.0)
-    assert ex.exit_slot == T.CLOSED_FIRST and ex.trade.rule.kind[0] == W.FLATTEN
+    assert ex.exit_slot == T.CLOSED_FIRST + 1 and ex.trade.rule.kind[0] == W.FLATTEN
+    assert ex.trade.rule.gross[0] == -2                                        # a flat bar: its extreme less two
 
 
 def test_bls_days_have_no_entry_at_or_before_0735(monkeypatch):
@@ -613,22 +655,122 @@ def test_windows_are_checked_and_built_from_release_minutes():
 # ------------------------------------------------------------------------------------------------ the overnight guard
 
 
-def test_overnight_triggers_wait_for_h2s_row(hist, monkeypatch):
-    assert T.H2_ROW is None and not T.overnight_allowed()
-    with pytest.raises(T.OvernightRefused):
-        T.P16Marks(T.p16_grid(5, T.RTH_OPEN), overnight=True)
-    with pytest.raises(T.OvernightRefused):
-        T.P14Breakout(first=0)
+def test_overnight_is_admitted_after_h2s_row_and_held_out_days_stay_refused(hist, monkeypatch):
+    """Q-169 (1): H2 is recorded (E-231), so overnight marks and sources are admitted on the search years; the row must
+    exist in the decision log; the calendar still raises on a held-out or a confirmation-window day. Catches: the row
+    unset or naming no row, overnight still refused, a context given for a day after the search years."""
+    assert T.H2_ROW == "E-231" and "E-231" in T.decision_rows() and T.overnight_allowed()
+    src = T.P16Marks(T.p16_grid(5, T.RTH_OPEN), overnight=True)
+    assert src.offers(hist, 2, ctx_of(hist, 2))[0].alert == 0
+    assert T.P14Breakout(first=0).first == 0 == T.P14Breakout().first           # P-14's registered 17:00 start
     with pytest.raises(T.TriggerRefused):
         T.P16Marks((900, 905))                                                 # overnight marks as day marks
     kept, refused = T.admit([hand_offer(600)], T.DayContext(0, "2021-03-03"))
-    assert kept == [] and refused[0][1] == "overnight"
-    monkeypatch.setattr(T, "H2_ROW", "E-999")
-    assert not T.overnight_allowed()                                           # a row the log does not hold
-    monkeypatch.setattr(T, "decision_rows", lambda: frozenset({"E-999"}))
-    assert T.overnight_allowed()
-    src = T.P16Marks(T.p16_grid(5, T.RTH_OPEN), overnight=True)
-    assert src.offers(hist, 2, ctx_of(hist, 2))[0].alert == 0
+    assert kept and not refused
+    cal = calendar_sources(["2023-12-28", "2023-12-29"])
+    assert T.context_for(src, cal, date(2023, 12, 29), 1).date == "2023-12-29"
+    with pytest.raises(DC.HeldOutDay):
+        T.context_for(src, cal, date(2024, 1, 2), 2)
+    with pytest.raises(DC.ConfirmationDay):
+        T.context_for(src, cal, date(2026, 7, 17), 3)
+    monkeypatch.setattr(T, "H2_ROW", "E-999")                                  # a row the log does not hold
+    assert not T.overnight_allowed()
+    with pytest.raises(T.OvernightRefused):
+        T.P16Marks(T.p16_grid(5, T.RTH_OPEN), overnight=True)
+    assert T.admit([hand_offer(600)], T.DayContext(0, "2021-03-03"))[1][0][1] == "overnight"
+
+
+def calendar_sources(days, **kw) -> DC.Sources:
+    """A synthetic void calendar (no file read): every day clean unless `kw` says otherwise (as
+    `tests/test_day_calendar.py` builds them)."""
+    ds = [date.fromisoformat(d) for d in days]
+    cal = {date.fromisoformat(k): {"date": k, **v} for k, v in kw.get("calendar", {}).items()}
+    lb = {d: "15:59" for d in ds}
+    fl = {d: {"missing_after_reopen": "0", "verdict": "OK", "void": "", "special": ""} for d in ds}
+    fl.update({date.fromisoformat(k): v for k, v in kw.get("flags", {}).items()})
+    return DC.Sources(ds, cal, frozenset(date.fromisoformat(x) for x in kw.get("rolls", ())), frozenset(), lb,
+                      frozenset(), frozenset(), fl)
+
+
+def all_sources() -> dict[str, object]:
+    return {"p14": T.P14Breakout(), "p16_day_market": T.P16Marks(T.p16_grid(960, 1000)),
+            "p16_overnight": T.P16Marks(T.p16_grid(300, 400), overnight=True),
+            "coin_day": T.CoinMarks(960, 1200), "coin_overnight": T.CoinMarks(300, 600, entry=T.LIMIT),
+            **{f"rl3_{k}": T.RL3Tickets(k, T.RL3_CUTOFFS[-1]) for k in T.RL3_KINDS}}
+
+
+def test_every_source_drops_the_calendars_void_days(hist):
+    """Q-169 (2): each source's day context comes from the void calendar (`T.context_for`, through
+    `day_calendar.day_context` with what the source reads), and a day the calendar voids carries no offer of any source;
+    an overnight-only void (H2's VOID verdict) voids exactly the sources that read overnight bars; RL3's prior-session
+    levels follow the calendar's `prior_void` (a roll), never their own copy of the rule. Catches: a source deciding
+    its voids by itself, a source's reads declared wrong, RL3 voiding a roll from the contract column."""
+    days = list(hist.days)
+    defect, h2void, roll = days[3], days[5], "2021-03-12"                   # the series' NQH1 -> NQM1 roll
+    cal = calendar_sources(days, calendar={defect: {"kind": "data_defect_candidate", "close_ct": "", "source": "t"}},
+                           flags={h2void: {"missing_after_reopen": "0", "verdict": "VOID", "void": "long_gap",
+                                           "special": ""}}, rolls=[roll])
+    reads = {name: s.calendar_reads() for name, s in all_sources().items()}
+    assert reads["p16_day_market"] == (False, False) and reads["p16_overnight"][0] and reads["coin_overnight"][0]
+    assert reads["coin_day"] == (False, False) and reads["p14"][0]
+    assert all(reads[f"rl3_{k}"] == (True, True) for k in T.RL3_KINDS)
+    # a day limit resting at the price at an alert at or before 08:30 reads an overnight bar's close; later, none
+    assert T.P16Marks(T.p16_grid(935, 1000), entry=T.LIMIT).calendar_reads() == (True, False)
+    assert T.P16Marks(T.p16_grid(940, 1000), entry=T.LIMIT).calendar_reads() == (False, False)
+    assert T.CoinMarks(930, 1000, entry=T.LIMIT).calendar_reads() == (True, False)
+    assert T.CoinMarks(935, 1000, entry=T.LIMIT).calendar_reads() == (False, False)
+    for name, s in all_sources().items():
+        for d in (defect, h2void):
+            i = days.index(d)
+            ctx = T.context_for(s, cal, date.fromisoformat(d), i)
+            offs = s.offers(hist, i, ctx)
+            kept, refused = T.admit(offs, ctx)
+            if d == defect or reads[name][0]:
+                assert ctx.void and kept == [] and all(r in ("calendar",) or o.void for o, r in refused), (name, d)
+            else:
+                assert not ctx.void and kept, (name, d)
+    i = days.index(roll)
+    for k in ("pd", "pdc"):
+        s = T.RL3Tickets(k, T.RL3_CUTOFFS[-1])
+        ctx = T.context_for(s, cal, date.fromisoformat(roll), i)
+        assert ctx.prior_void and {o.void for o in s.offers(hist, i, ctx)} == {"prior_void"}
+        clean = T.DayContext(i, roll)                                          # no calendar: the levels are computed
+        assert "roll" not in {o.void for o in s.offers(hist, i, clean)}
+
+
+# ------------------------------------------------------------------------------------------------ the naive coin source
+
+
+def test_the_coin_source_is_a_fixed_schedule_entered_at_alert_plus_L(hist):
+    """Q-169 (3): the naive coin (CHARTER 3.2's baseline; lever table T1 `coin`, latency cells 5, 3 and 2): its
+    moments are a fixed schedule -- every `mark_step_min` minutes from its first slot to its last, on the grid from the
+    17:00 reopen -- chosen by the clock alone; each enters at alert + L, market or limit (a limit at the price at the
+    alert, working `limit_window_min` minutes). Catches: a schedule read from the bars, live not alert + L, a latency
+    cell other than the lever table's, a mark off the grid."""
+    for L in T.LATENCIES:
+        src = T.CoinMarks(300, 1200, latency=L)
+        assert LS.latency_cells("coin") == T.LATENCIES and src.marks == tuple(range(300, 1201, T.MARK_STEP))
+        for i in (2, 9):
+            offs = src.offers(hist, i, ctx_of(hist, i))
+            assert [o.alert for o in offs] == list(src.marks) and all(o.live == o.alert + L for o in offs)
+            assert all(o.decision == o.alert and o.source == "coin" and o.entry == T.MARKET for o in offs)
+            for o in offs:
+                T.check_latency(o, L)
+        flat = one_day(flat_day())                                             # the same moments on any bars
+        assert [(o.alert, o.live) for o in src.offers(flat, 0, T.DayContext(0, flat.days[0]))] ==             [(o.alert, o.live) for o in src.offers(hist, 2, ctx_of(hist, 2))]
+    lim = T.CoinMarks(960, 1000, latency=2, entry=T.LIMIT)
+    o, _, _, c = hist.day(4)
+    for off in lim.offers(hist, 4, ctx_of(hist, 4)):
+        assert off.level == W.price_at(o, c, off.alert) and off.expires == off.live + T.LIMIT_WINDOW - 1
+    for bad in (lambda: T.CoinMarks(300, 1200, latency=None), lambda: T.CoinMarks(300, 1200, latency=4),
+                lambda: T.CoinMarks(301, 1200), lambda: T.CoinMarks(1200, 300), lambda: T.CoinMarks(0, 1440),
+                lambda: T.CoinMarks(300, 1200, entry="stop")):
+        with pytest.raises(T.TriggerRefused):
+            bad()
+    ex = T.execute(T.CoinMarks(1000, 1000, latency=3).offers(hist, 4, ctx_of(hist, 4))[0], -1, hist, 4,
+                   ctx_of(hist, 4), 100, 1.0)
+    want = next(j for j in range(1004, 1441) if not np.isnan(hist.o[4][j]))
+    assert ex.trade.fill.bar == want                                          # the bar stamped 09:43, alert + 3
 
 
 # ------------------------------------------------------------------------------------------------ the coin key

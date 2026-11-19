@@ -24,23 +24,43 @@ inside the window.
 component's, admitted by `triggers.admit`, are taken in order of their live slot, one group at a time (an offer alone,
 or RL3's one-cancels-other tickets of a kind). An order is placed only when **the firm is flat, no other entry order is
 working, and at least five minutes have passed since the last position's exit**; otherwise the offer is skipped and
-counted (`position`, `order`, `gap`). A placed group's sides are drawn from the coin (`triggers.coin_side`), each member
-is executed (`triggers.execute`), and the earliest fill is the position (two members filling on one bar void the group,
-`oco_tie`: the order of their fills inside the bar is unknown); the others are cancelled at that fill. The chain is
-fixed by the walks as run (the run's exit times), before any redraw (the design note 1.6: overlap is decided on the
-scheduled entries and the run's exits, never the path's).
+counted by the firm's state at its live minute (`order` while an entry order works, `position` while a position is
+open, `gap` in the five minutes after its exit; corrective cycle 1, M-7). A placed group's sides are drawn from the
+coin (`triggers.coin_side`), each member is executed (`triggers.execute`), and the earliest fill is the position; the
+others are cancelled at that fill.
+* **An unfilled group keeps the firm busy until the last of its working stretches ends** (`Execution.busy_until`): a
+  stretch cancelled at its cutoff or a window's start, and a re-written ticket that the re-write finds void, which
+  waited through the window for it (corrective cycle 1, B-1: freeing the firm from the void's first live made a later
+  offer's placement depend on the price after the window).
+* **Two members filling on one bar** (the order of their fills inside the bar is unknown) book the member whose walked
+  trade is worse for the user -- the lower gross, the walk settling a two-barrier bar stop first; then the later exit;
+  then the lower sub -- flagged `oco_tie`, the other counted `oco_tie_cancelled`; never no trade. The firm stays busy
+  to the later of the two walked exits (`busy_until`), so no later offer's placement depends on which one is booked,
+  an outcome decided after that offer's moment (**the M-6 ruling (lead)**: E-223's booking, its busy time amended by
+  the lead to the later exit, E-223's "busy to its exit" being a look-ahead as worded). In the user's book a tie is
+  either ticket's position, both sides, over [fill, busy_until) (`positions_of`; the re-read's m-1, conduct tier 1).
+* **A day whose bars end before the walk's end** (`W.last_bar` before `rules.walk_end`: under `JOURNEY`, no bar
+  stamped 15:07 CT or later) is refused (`DayRefused`) unless the caller voided it (`DayContext.void`, or an FOMC day):
+  the walker's last fill bar is the bar before its walk's end, so on such a day a fill would depend on whether later
+  bars exist (the re-read's m-3). The void condition: an early close or a data defect on the pinned calendar.
+
+The chain is fixed by the walks as run (the run's exit times), before any redraw (the design note 1.6: overlap is
+decided on the scheduled entries and the run's exits, never the path's). Every decision -- placed, skipped and why,
+refused -- depends on bars before its own moment only (`tests/test_components.py`'s decision shift test, M-5).
 
 **The user's book** (`UserBook`, `schedule_user`): every position of the user, on every firm and account. Adding one
 that overlaps another in time is refused -- **opposite sides as conduct tier 1** (`TierOneRefused`: no hedging across
 accounts or firms, CHARTER 3.4, 4), the same side as an overlap the template has not defined (`OverlapRefused`). Two
 positions overlap when their holding intervals [open, close) on the absolute clock intersect: the open is the fill bar's
 open minute, the close the exit bar's end. Inside one firm the chain makes overlap impossible; across firms the book
-refuses the design.
+refuses the design. A tie's alternatives (`positions_of`) are each checked against every other position; a
+refusal is a property of the design on that day, never a reason to drop the day (the re-read's n-6).
 
 **The schedule's fields** (`ScheduledTrade`; the design note 1.7): firm, component and source; the session, its date;
 the decision, alert and live slots; the order kind (and a ticket's fade or break); the side and its source (`coin`);
 the fill's minute and price; the bracket (stop and target ticks, R); the exit's minute and kind; the flatten slot and
-whether it is a window's; the instrument and underlying; the gross ticks and, with costs, the net R. The causal
+whether it is a window's; the instrument and underlying; the gross ticks and, with costs, the net R; whether it was
+booked from a same-bar tie, and the minute the firm stays busy to (its exit, or a tie's later exit). The causal
 volatility of the holding window (the shared path's clock) is not computed here: it is the three-way runner's.
 """
 from __future__ import annotations
@@ -68,6 +88,11 @@ class OverlapRefused(RuntimeError):
 
 class TierOneRefused(RuntimeError):
     """Two opposite positions of the user held at once, across accounts or firms: conduct tier 1."""
+
+
+class DayRefused(RuntimeError):
+    """A day the caller did not void whose bars end before the walk's end (m-3): the walker's last fill bar would
+    depend on whether later bars exist."""
 
 
 # ------------------------------------------------------------------------------------------------ components and designs
@@ -102,14 +127,22 @@ class Component:
         return W.target_ticks(self.rr, self.stop_ticks)
 
 
-def session_bounds() -> dict[str, tuple[int, int]]:
-    """Each session's [start, end) in trading-day slots from the firm's day (`lever_space.session_windows`, minutes
-    after the reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new
-    entry. The clock is 17:00-based: a firm reopening at another time is refused."""
+def session_windows_of(day=None) -> dict[str, tuple[int, int | None]]:
+    """**The one function every session window is read through** (Q-169 (5)): the firm's sessions as [start, end) in
+    minutes after the reopen. Today `lever_space.session_windows()`, the same every day (`day` ignored); to be
+    repointed to the per-date windows (`lever_space.session_windows(day)`, the local-time anchors of
+    `day_calendar.anchored_starts`) once Wave 3.4's change is on master -- nothing else reads them."""
+    return LS.session_windows()
+
+
+def session_bounds(day=None) -> dict[str, tuple[int, int]]:
+    """Each session's [start, end) in trading-day slots from the firm's day (`session_windows_of`, minutes after the
+    reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new entry. The
+    clock is 17:00-based: a firm reopening at another time is refused."""
     td = LS.trading_day()
     if int(td["reopen"]) != 17 * 60:
         raise DesignRefused("the trading-day clock starts at 17:00 CT; this firm reopens at another time")
-    sw = LS.session_windows()
+    sw = session_windows_of(day)
     ny = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))
     out = {k: (int(a), int(b)) for k, (a, b) in sw.items() if k not in ("ny_am", "ny_pm")}
     out["ny_am"] = out["ny_pm"] = ny
@@ -187,6 +220,9 @@ class ScheduledTrade:
     underlying: str
     gross_ticks: int
     net_r: float | None
+    oco_tie: bool = False
+    busy_until: int = -1
+    tie_sides: tuple[int, ...] = ()
 
 
 @dataclass
@@ -222,7 +258,8 @@ def _groups(offers: Sequence[tuple[int, T.Offer]]) -> list[list[tuple[int, T.Off
     return groups
 
 
-def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayContext, base: W.Rules) -> ScheduledTrade:
+def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayContext, oco_tie: bool = False,
+               busy_until: int | None = None, tie_sides: tuple[int, ...] = ()) -> ScheduledTrade:
     off, tr = ex.offer, ex.trade
     ticket = ""
     if off.entry == T.TICKET:
@@ -233,56 +270,107 @@ def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayConte
         order_kind=ex.order_kind, ticket_rule=ticket, side=int(ex.side), side_source="coin",
         fill_slot=ex.fill_slot, fill_price=float(tr.fill.price), resting=bool(tr.fill.resting),
         stop_ticks=int(comp.stop_ticks), target_ticks=int(comp.target_ticks), rr=float(comp.rr),
-        exit_slot=ex.exit_slot, exit_kind=W.KIND_CODE[int(tr.rule.kind[0])], flatten_slot=int(ex.rules.walk_end),
-        window_flatten=int(ex.rules.walk_end) < int(base.walk_end), instrument=comp.instrument,
+        exit_slot=ex.exit_slot, exit_kind=W.KIND_CODE[int(tr.rule.kind[0])], flatten_slot=ex.flatten_slot,
+        window_flatten=ex.window_flatten, instrument=comp.instrument,
         underlying="NQ", gross_ticks=int(tr.rule.gross[0]),
-        net_r=None if tr.rule.net_r is None else float(tr.rule.net_r[0]))
+        net_r=None if tr.rule.net_r is None else float(tr.rule.net_r[0]), oco_tie=bool(oco_tie),
+        busy_until=ex.exit_slot if busy_until is None else int(busy_until), tie_sides=tuple(int(x) for x in tie_sides))
+
+
+def _worse(e: T.Execution) -> tuple:
+    """The order of badness of a tied member's walked trade for the user (the M-6 ruling, E-223 as amended): the lower gross first (the
+    walk's own stop-first settlement on two-barrier bars), then the later exit, then the lower sub."""
+    return int(e.trade.rule.gross[0]), -e.exit_slot, int(e.offer.sub)
+
+
+def calendar_contexts(design: Design, cal, hist: T.History, i: int, *, windows: Sequence[T.Window] = (),
+                      market: str = "NQ", rules: W.Rules = T.JOURNEY) -> tuple[T.DayContext, dict[str, T.DayContext]]:
+    """Q-169 (2): the day's contexts from the void calendar (`extended.day_calendar`): the day-wide one (a source reading
+    nothing: its `void` is the day-wide void, which `schedule_day`'s day-end guard honours), and each component's, from
+    what its source reads (`triggers.context_for`), so every source drops its void days by the calendar. The session
+    index is the history's index `i`. Raises on a held-out or a confirmation-window day."""
+    from datetime import date as _date
+
+    d = _date.fromisoformat(hist.days[i])
+    base = T.context_for(None, cal, d, i, windows, market=market, rules=rules)
+    return base, {c.name: T.context_for(c.trigger, cal, d, i, windows, market=market, rules=rules)
+                  for c in design.components}
+
+
+def coin_component(name: str, session: str, latency: int, *, stop_ticks: int, rr: float, entry: str = T.MARKET,
+                   day=None, instrument: str = "MNQ") -> Component:
+    """The naive coin over one session (Q-169 (3)): its moments every `mark_step_min` minutes from the session's start
+    to the last moment whose order goes live before the session's end (and before the firm's last new entry), the
+    session read through `session_windows_of`; the component's window is the orders' live slots."""
+    b = session_bounds(day)
+    start, end = b[session]
+    end = min(end, b["_last_entry"][1] + 1)
+    first = -(-int(start) // T.MARK_STEP) * T.MARK_STEP
+    last = ((end - 1 - int(latency)) // T.MARK_STEP) * T.MARK_STEP
+    trig = T.CoinMarks(first, last, latency=latency, entry=entry)
+    return Component(name, session, first + int(latency), last + int(latency), trig, stop_ticks, rr, instrument)
 
 
 def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, unit: T.CoinUnit, *,
-                 rules: W.Rules = T.JOURNEY, costs: W.Costs | None = None) -> DaySchedule:
-    """One firm's day under the chain (the module docstring)."""
+                 rules: W.Rules = T.JOURNEY, costs: W.Costs | None = None,
+                 contexts: dict[str, T.DayContext] | None = None) -> DaySchedule:
+    """One firm's day under the chain (the module docstring). `ctx` is the day-wide context; `contexts`, when given
+    (`calendar_contexts`), each component's own, under which its offers are admitted and executed."""
     if hist.days[i] != ctx.date:
         raise ValueError(f"the day's context is {ctx.date}, the history's day {i} is {hist.days[i]}")
+    if not (ctx.void or ctx.fomc):                                   # m-3: a data-integrity refusal, not a decision
+        last = W.last_bar(hist.o[i])
+        if last is None or last < int(rules.walk_end):
+            raise DayRefused(f"{ctx.date}: the day's last bar ends at slot {last}, before the walk's end "
+                             f"{int(rules.walk_end)}; such a day is voided by the caller's calendar (DayContext.void)")
     out = DaySchedule(design.firm, int(ctx.session), ctx.date)
     mine: list[tuple[int, T.Offer]] = []
+    cctx = {c.name: (contexts[c.name] if contexts is not None else ctx) for c in design.components}
     for ci, comp in enumerate(design.components):
-        offs = [o for o in comp.trigger.offers(hist, i, ctx) if int(comp.first) <= int(o.live) <= int(comp.last)]
-        kept, refused = T.admit(offs, ctx)
+        cx = cctx[comp.name]
+        if (cx.session, cx.date) != (ctx.session, ctx.date):
+            raise ValueError(f"component {comp.name}'s context is not the day's")
+        offs = [o for o in comp.trigger.offers(hist, i, cx) if int(comp.first) <= int(o.live) <= int(comp.last)]
+        kept, refused = T.admit(offs, cx)
         out.refused += refused
         mine += [(ci, o) for o in kept]
-    free_at, why_busy = -1, "position"
-    exit_at = -1
+    # the firm's state from the last placed group: [start, end) stretches labelled 'order' (an entry order working),
+    # 'position' (a position open) and 'gap' (the five minutes flat after an exit); free from `free_at`
+    busy: list[tuple[int, int, str]] = []
+    free_at = -1
     for grp in _groups(mine):
         live = int(grp[0][1].live)
         if live < free_at:
-            reason = why_busy if why_busy == "order" else ("position" if live < exit_at else "gap")
+            reason = next(lbl for a, b, lbl in busy if a <= live < b)     # M-7: the state at the skip's live minute
             out.skipped += [(o, reason) for _, o in grp]
             continue
         comp = design.components[grp[0][0]]
-        exs = [T.execute(o, T.coin_side(unit, o), hist, i, ctx, comp.stop_ticks, comp.rr, rules=rules, costs=costs)
-               for _, o in grp]
+        exs = [T.execute(o, T.coin_side(unit, o), hist, i, cctx[comp.name], comp.stop_ticks, comp.rr, rules=rules,
+                         costs=costs) for _, o in grp]
         filled = [e for e in exs if e.filled]
         if filled:
             first_bar = min(e.trade.fill.bar for e in filled)
-            winners = [e for e in filled if e.trade.fill.bar == first_bar]
-            if len(winners) > 1:
-                out.unfilled += [(e.offer, "oco_tie") for e in exs]
-                free_at, why_busy = max(free_at, first_bar), "order"
-                continue
-            win = winners[0]
-            row = _trade_row(design, comp, win, ctx, rules)
-            out.trades.append(row)
-            out.unfilled += [(e.offer, "oco_cancelled") for e in exs if e is not win]
-            exit_at = row.exit_slot
-            free_at, why_busy = exit_at + T.GAP_MINUTES, "position"
+            tied = [e for e in filled if e.trade.fill.bar == first_bar]
+            win = min(tied, key=_worse)                                     # M-6: the worse walked trade on a tie
+            end = max(e.exit_slot for e in tied)                            # busy to the later exit, whichever booked
+            out.trades.append(_trade_row(design, comp, win, ctx, oco_tie=len(tied) > 1, busy_until=end,
+                                         tie_sides=tuple(e.side for e in tied) if len(tied) > 1 else ()))
+            for e in exs:
+                if e is not win:
+                    out.unfilled.append((e.offer, "oco_tie_cancelled" if any(e is x for x in tied)
+                                         else "oco_cancelled"))
+            # the fill on the bar stamped first_bar - 1 is known when that bar closes, at first_bar: until then the
+            # state is a working order (an offer at the fill bar's own minute cannot know of the fill)
+            busy = [(live, first_bar, "order"), (first_bar, end, "position"), (end, end + T.GAP_MINUTES, "gap")]
+            free_at = end + T.GAP_MINUTES
         else:
             out.unfilled += [(e.offer, f"{e.trade.fill.status}:{e.trade.fill.reason}") for e in exs]
-            placed = [e.ended for e in exs if e.trade.fill.status != "void"]
-            if placed:
-                free_at, why_busy = max(free_at, max(placed)), "order"
+            ends = [b for b in (e.busy_until for e in exs) if b is not None]   # B-1: every stretch that worked
+            if ends:
+                busy = [(live, max(ends), "order")]
+                free_at = max(ends)
     for a, b in zip(out.trades, out.trades[1:]):
-        if int(b.fill_slot) < int(a.exit_slot) + T.GAP_MINUTES:          # the chain's own invariant, checked
+        if int(b.fill_slot) < int(a.busy_until) + T.GAP_MINUTES:         # the chain's own invariant, checked
             raise OverlapRefused(f"{design.firm}: trades at {a.fill_slot} and {b.fill_slot} break the chain")
     return out
 
@@ -293,7 +381,9 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
 @dataclass(frozen=True)
 class Position:
     """A position of the user: its firm and account, its session, the minutes it opens (the fill bar's open) and closes
-    (the exit bar's end), its side and underlying, and a reference for messages."""
+    (the exit bar's end), its side and underlying, and a reference for messages. `group`: the alternatives of one
+    same-bar tie (`positions_of`) share a non-empty group and are never checked against each other -- they are the two
+    positions the user may hold, of which the user holds one."""
 
     firm: str
     account: str
@@ -303,6 +393,7 @@ class Position:
     side: int
     underlying: str = "NQ"
     ref: str = ""
+    group: str = ""
 
     def interval(self) -> tuple[int, int]:
         base = int(self.session) * T.DAY_SLOTS
@@ -310,12 +401,26 @@ class Position:
 
 
 def position_of(tr: ScheduledTrade, account: str = "") -> Position:
+    """The booked position of a trade, [fill, exit). For the user's book use `positions_of`, which covers a tie."""
     return Position(tr.firm, account, tr.session, tr.fill_slot, tr.exit_slot, tr.side, tr.underlying,
                     f"{tr.firm}/{tr.component}/{tr.date}@{tr.fill_slot}")
 
 
+def positions_of(tr: ScheduledTrade, account: str = "") -> list[Position]:
+    """The positions the user may hold from a trade (the re-read's m-1, conduct tier 1): the booked one, [fill, exit);
+    or, for a same-bar tie, where which ticket the broker filled is unknown, every tied ticket's side over
+    [fill, busy_until) -- so another account's or firm's position in that span is refused, as tier 1 where it opposes
+    either side."""
+    ref = f"{tr.firm}/{tr.component}/{tr.date}@{tr.fill_slot}"
+    if not tr.oco_tie:
+        return [position_of(tr, account)]
+    return [Position(tr.firm, account, tr.session, tr.fill_slot, tr.busy_until, int(s), tr.underlying,
+                     f"{ref} (tie, side {int(s):+d})", group=ref) for s in sorted(set(tr.tie_sides))]
+
+
 class UserBook:
-    """Every position of the user across accounts and firms; `add` refuses an overlap (opposite sides: tier 1)."""
+    """Every position of the user across accounts and firms; `add` refuses an overlap -- as conduct tier 1 when any
+    position it overlaps has the opposite side, else as an undefined overlap."""
 
     def __init__(self, overlap: str = "refused"):
         if overlap not in OVERLAP_MODES:
@@ -326,14 +431,16 @@ class UserBook:
         if int(p.side) not in (1, -1) or int(p.close_slot) < int(p.open_slot):
             raise ValueError(f"a position has a side and closes after it opens: {p}")
         a0, a1 = p.interval()
-        for q in self.positions:
-            b0, b1 = q.interval()
-            if a0 < b1 and b0 < a1:
-                if int(p.side) != int(q.side):
-                    raise TierOneRefused(f"REFUSED (conduct tier 1): {p.ref} ({p.firm}/{p.account}) opposes {q.ref} "
-                                         f"({q.firm}/{q.account}) while both are open")
-                raise OverlapRefused(f"REFUSED: {p.ref} and {q.ref} are held at once; overlap is undefined until the "
-                                     "search template defines it")
+        hits = [q for q in self.positions if not (p.group and q.group == p.group)
+                and a0 < q.interval()[1] and q.interval()[0] < a1]
+        opposed = [q for q in hits if int(q.side) != int(p.side)]
+        if opposed:
+            q = opposed[0]
+            raise TierOneRefused(f"REFUSED (conduct tier 1): {p.ref} ({p.firm}/{p.account}) opposes {q.ref} "
+                                 f"({q.firm}/{q.account}) while both may be open")
+        if hits:
+            raise OverlapRefused(f"REFUSED: {p.ref} and {hits[0].ref} are held at once; overlap is undefined until the "
+                                 "search template defines it")
         self.positions.append(p)
 
     def extend(self, ps: Iterable[Position]) -> None:
@@ -352,10 +459,10 @@ def schedule_user(designs: Sequence[Design], hist: T.History, i: int, ctx: T.Day
     book = UserBook() if book is None else book
     days = [schedule_day(d, hist, i, ctx, unit, rules=rules, costs=costs) for d in designs]
     for day in days:
-        book.extend(position_of(t) for t in day.trades)
+        book.extend(p for t in day.trades for p in positions_of(t))
     return days, book
 
 
-__all__ = ["TASK", "OVERLAP_MODES", "SKIP_REASONS", "DesignRefused", "OverlapRefused", "TierOneRefused", "Component",
-           "session_bounds", "Design", "ScheduledTrade", "DaySchedule", "schedule_day", "Position", "position_of",
-           "UserBook", "schedule_user"]
+__all__ = ["TASK", "OVERLAP_MODES", "SKIP_REASONS", "DesignRefused", "OverlapRefused", "TierOneRefused", "DayRefused",
+           "Component", "session_windows_of", "session_bounds", "Design", "calendar_contexts", "coin_component", "ScheduledTrade", "DaySchedule", "schedule_day", "Position",
+           "position_of", "positions_of", "UserBook", "schedule_user"]

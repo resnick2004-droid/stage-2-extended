@@ -41,8 +41,11 @@ before its run (CLAUDE.md; CHARTER 3.6). They are never chosen here.
 ruling).**
 - **Each user has their own coin draws.** The key of every draw carries the start day, so under one seed `c` the units
   `(s, c)` of different start days draw independently of each other. Two start days never share a coin draw.
-- **One user's accounts and firms share a draw.** The side coin's key carries no account or firm index, so at one
-  moment all of one user's accounts and firms read the one literal coin draw (CHARTER 3.5).
+- **One user's trades at one moment read the same side draw.** The side coin's key carries no account or firm
+  index, so trades of one user's accounts and firms at the same moment read the same draw. That means only the
+  conduct-tier-1 refusal -- no two of the user's accounts or firms hold opposite positions at once -- never that
+  every account copies every trade: accounts alternate, and the coin is the evaluation's device, not the
+  playbook's (CHARTER 3.5; E-221, O-4).
 - **The pairing.** The design and every baseline, deciding at the same moment on the same start under the same seed,
   read the same side uniform.
 - The keying itself (its words, its generator) is the three-way test's, pinned with its declaration, never this
@@ -54,7 +57,7 @@ ruling).**
 | block | sessions | read by |
 |---|---|---|
 | search years | NQ 2020-01-02 to 2023-12-29 | the search, its lever ranges, limits, budgets, weights and H4 |
-| held-out years | NQ 2024-01-02 to 2026-07-16, on the pinned calendar `results/q82_judged_sessions.csv` | the search's one held-out test only |
+| held-out years | NQ 2024-01-02 to 2026-07-16, on the pinned calendar `results/q82_judged_sessions.csv` | the one joint held-out test of every firm's finalists only (CHARTER 3.6 (c); E-221) |
 
 The confirmation window (NQ from 2026-07-17) is never read by any measure here.
 
@@ -252,7 +255,8 @@ only if its **peak out-of-pocket through the month close** is at most `B`:
   funded accounts already live when the budget binds. This is conservative and biased against designs that hold many
   accounts. The alternative stop, "no new fee after `B`, the live accounts kept", needs a re-run with a wallet. It is
   to build as a reading beside, never deciding until a row says so.
-- `B` is **the operator's bankroll budget, set in Wave 4** (plan 4.2, 9.3; CHARTER 3.9).
+- `B` is **the bankroll budget, the lead's, set in Wave 4.2 from H4's search-year results by a rule declared before
+  H4 is read** (CHARTER 3.9; E-221).
 
 **Where.**
 - Functions: `extended/user_measures.py`, `p_by_month` (P and `P_B`: on E-208's blocks its caller,
@@ -263,9 +267,9 @@ only if its **peak out-of-pocket through the month close** is at most `B`:
   u_select.py`, `scorecard`, `p_of` and `months_ahead` (Stage 2's, `> 0`).
 - [B]: `scorecard/P/value`; `extra/P/value` (held equal to the card's by a refusing check);
   `extra/share_ahead_month_{1,2,3}/value`; `extra/P_bankroll_2000/value` and `extra/P_bankroll_2500/value` (the
-  "before the first payout" form, at Q-17's own limits, which are not the operator's; on the registered blocks
-  only). On E-208's blocks, at each budget the caller names: `extra/P_B_{B}/value` and, beside it,
-  `extra/P_B_before_first_payout_{B}/value`.
+  "before the first payout" form, at Q-17's own limits, which are not the pinned ones of CHARTER 3.9, E-221; on
+  the registered blocks only). On E-208's blocks, at each budget the caller names: `extra/P_B_{B}/value` and, beside
+  it, `extra/P_B_before_first_payout_{B}/value`.
 - [BS]: `months_ahead` (the long record).
 - [U1]: `periodic:share_positive@21`, `@42` and `@63`, each on its own eligible starts (`u_select.p_from_u1`).
 
@@ -546,7 +550,7 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   - Journey: `extra/P/value`, `extra/P_B_{B}/value`; `journey/S4a/value`, `journey/S4b/value`.
   - [B]: `scorecard/P/value`, `scorecard/S4a/value`, `scorecard/S4b/value`.
   - [U1]: `periodic:share_positive@126` and `@252`.
-- **Parameters:** for `P_B`, the operator's budgets `B` (Wave 4).
+- **Parameters:** for `P_B`, the budgets `B` (the lead's, Wave 4.2; CHARTER 3.9; E-221).
 
 ### (14) Payouts per fee dollar (S3c)
 - **Definition:** the pooled ratio at month 3: `sum over u in E_63 of Pay_u[63]` divided by `sum over u in E_63 of
@@ -735,7 +739,8 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   - Also: `extended/user_measures.py`, `p_by_month`; `vendor/stage2/propedge/research/customer_journey.py`,
     `spent_before`.
 - **Parameters:**
-  - `B`: **the operator's bankroll budgets, set in Wave 4** (plan 4.2, 9.3; CHARTER 3.9).
+  - `B`: **the bankroll budgets, the lead's, set in Wave 4.2 from H4's search-year results by a rule declared
+    before H4 is read** (CHARTER 3.9; E-221).
   - `W`: the search declaration's.
 
 ### (25) Peak out-of-pocket in 12 months
@@ -828,7 +833,7 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Parameters:**
   - L: the declaration's searched lever (E-202 (2)(c); CHARTER 3.3 (g)).
   - The horizon `h`: the declaration's.
-  - Workload is reported. A ceiling applies only if the operator sets one as a limit (CHARTER 3.5).
+  - Workload is reported. A ceiling applies only if the pinning row sets one as a limit (CHARTER 3.5, 3.9; E-221).
 
 ### (31) Funded-account lifetime: payouts per funded account before it is lost
 - **Definition (B-7):** for each funded account activated within a unit's observed window, its count of payouts whose
@@ -863,6 +868,11 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   payouts plus those lost at k; an account censored at k has left (`km_survival`'s default). The reading beside in
   sessions alive is a time on a clock and keeps the usual tie rule (a censoring at t outlives an event at t;
   `censored_leave_at_count=False`).
+- **Beside the curve (m-4, the re-read):** under that rule a percentile can rest on very few known outcomes (one loss
+  and 99 accounts open at 0 payouts give `S(1) = 0`). So every step's risk and event weights (`n_k`, `d_k`;
+  `journey_measures.km_steps`) and, beside each percentile, the risk weight of the step it was read at are reported;
+  a percentile below a risk floor declared with the reading is marked thin (`funded_lifetime(..., risk_floor=)`; no
+  floor is declared here).
 - **Where:**
   - Functions: `extended/journey_measures.py`, `account_ending`, `account_lifetime`, `km_survival`, `km_quantile` and
     `funded_lifetime` (built in Wave 3.1), on the journey's `accounts` field (`extended/user_beside.py`,
@@ -1128,6 +1138,28 @@ changed line the test also checks that the text it replaced is gone.
   from the coin first. That is the seed-paired runner's (Wave 3.2): the path seed drives both streams in the vendored
   engine, which is not edited.
 
+**To run before the held-out runner is declared (the red team's n-3, re-read of cycle 1; heavy, queued by the lead).**
+Under M-2 every exact-run difference refuses a journey reading, and no reason is declared. If the held-out runner met
+a difference, the held-out years would be replayed and then refused, and any reason written then would be written after
+seeing held-out records. So the rate is measured first, on the search years only:
+- **What runs:** P-14's search-year job (its registered latency and brackets, both of U1's arms), through
+  `extended/user_beside.py`, `run_starts(..., journey=True)` with its defaults: `journey_block` the search years (a
+  held-out start is refused before the pool) and `exact_every` 1 (every start checked). Responses: `off`, and the denial
+  ladder's `denial_25` (the response D-145's gate reads), so a difference that only a response produces is seen.
+- **Which starts:** the last 252 search-year starts, the ones whose long run is cut at 2023-12-29, plus every 21st
+  earlier search start as the uncut control.
+- **What is counted, per design, arm and response:** for each exact horizon h (21, 63, 90, 126), the starts checked at h
+  and the starts whose exact h-session run's event days differ from the cut long run's (`differs`); for each
+  difference, which event moved (first pass, first payout, a pay day) and by how many sessions. Counts only: no
+  measure's value is read or written.
+- **Written:** one result file with its manifest, from a clean checkout of a named commit (`scripts/run_clean.py`),
+  under `run.lock`; its manifest names the record read (m-8).
+- **What follows:** with no difference, no reason is needed and M-2's refusal stands as a guard. With any, each kind of
+  difference is described and a reason or a treatment (for instance, reading the exact run's record as `Views` does)
+  is declared under a row before the held-out runner is declared, never after.
+- **Cost:** one heavy run, about U1's cost for 252 starts per arm and response (the exact runs are over half of a
+  start's cost, and every start makes them), memory as U1's replay (a Stage 2 family run peaked near 3 GB).
+
 **A note outside this file's scope (B-1's pattern).** Other runners use the same whole-window run length. Any of them
 that feeds a measure for a search needs B-1's fix too: the run stops at the block's last outcome session. Each is
 listed so the pattern is not copied; the test checks that each line is where it says.
@@ -1143,7 +1175,7 @@ listed so the pattern is not copied; the test checks that each line is where it 
 
 These constants and readings were set or read with the held-out years (the `judged` block, 2024 on) visible. Every
 search declaration that uses one carries it in its held-out read ledger (CHARTER 3.6 (b), RD-04's leak-clause form:
-"written after this reading; no figure cited"). An operator budget, limit or window that lands on one of them is
+"written after this reading; no figure cited"). A pinned budget, limit or window (E-221) that lands on one of them is
 recorded as such.
 
 | constant or reading | where | origin row | read with the held-out years visible |

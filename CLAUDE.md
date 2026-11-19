@@ -23,11 +23,15 @@ vendored read-only. The charter is [`CHARTER.md`](CHARTER.md); the decision log 
 
 **Judged on the user's journey (the operator, E-207, E-210; amending E-008):** a user's best journey to making money --
 least bankroll, fastest, cheapest pass and payout, steady income, least ruin -- under zero edge (direction removed,
-each outcome redrawn at its bracket's driftless odds; the traded side rule pending the operator). A design passes only
-if it stays inside every operator limit with margin wider than its noise; beats each baseline (naive coin, P-14, P-15,
-P-16, same convention) on the composite pinned before the survey (fallback: P under the bankroll stop) by the
-calibrated coin-seed test at 0.05 / (k (k+1)) on the held-out years, read once -- bounding coin luck on that history,
-not a lucky history (the history null's rate beside); and holds the floors. Verdict: 0 % payout denial, placement off,
+each outcome redrawn at its bracket's driftless odds; the coin is the evaluation's, not the playbook's: each design's
+side comes from its own trigger under the no-harm floor, accounts alternate, and no two of the user's accounts or firms
+hold opposite positions at once, E-221). A design passes only if it sits inside each limit at its point estimate,
+which governs, the one-sided check beside it (E-221, the lead's O-5 ruling); beats each baseline (naive
+coin, P-14, P-15, P-16, same convention) on the composite pinned before the survey (fallback: P under the bankroll
+stop; the limits, budgets and weights the lead's, from H4's search-year results by a rule declared before H4 is read,
+E-221) by the calibrated coin-seed test at 0.05 / (k (k+1)) on the held-out years, read once, by one joint test of
+every firm's finalists (E-221) -- bounding coin luck on that history, not a lucky history (the history null's rate
+beside); and holds the floors. Verdict: 0 % payout denial, placement off,
 Focused Trader Program off; measures: `docs/MEASURES.md`. One k per held-out test: k = 10 spent (F-01, E-007), 11
 unspent (F-02, E-094, E-095), 12 spent (F-03, E-192); next 13.
 

@@ -1,0 +1,50 @@
+{
+  "columns": [
+    "day",
+    "weekday",
+    "reopen_ct",
+    "last_overnight_bar_ct",
+    "overnight_bars",
+    "scheduled_overnight_minutes",
+    "missing_after_reopen",
+    "longest_gap_min",
+    "gaps_ge5",
+    "gaps_ge15",
+    "verdict",
+    "void",
+    "special"
+  ],
+  "description": "Q-154 (H2): per trading day of the search years, the overnight's (17:00-08:29 CT) counts, clock labels and void / special flags; no price column",
+  "exploratory": false,
+  "git_commit": "3cf3453c2e23198bcb1b86c2093120977023ecca",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "blocks": {
+      "held_out_bars_read": false,
+      "search": [
+        "2020-01-02",
+        "2023-12-29"
+      ]
+    },
+    "reopen_tol_min": 5,
+    "special_gap_min": 5,
+    "void_gap_min": 15
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q154-h2",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q154-h2"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "h2_overnight_flags.csv",
+  "rows": 1034,
+  "script": "scripts/h2_overnight_bars.py",
+  "seed": null,
+  "sha256": "c5e44e57ab4ea8766dd57f8e097857b5583b583778caafa1b8f9e584bdc4b702",
+  "timestamp": "2026-11-19T08:33:39+00:00",
+  "variant_count": null
+}

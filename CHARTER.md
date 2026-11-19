@@ -24,24 +24,25 @@ documented, is a valid close.
 **The objective (the operator, E-207; E-210).** Find the way of running prop-firm accounts that gives a real user the
 best journey to making money: the least bankroll needed, the fastest and cheapest path to a pass and a payout, a steady
 income after that, and the lowest chance of going broke first. Topstep $50K first, then other firms, each on its own
-verified rules (section 4), its own execution protocol and its own baselines, never Topstep's reused (E-202). Which
-firm's search spends NQ's held-out years, or whether one search covers several firms, is **the operator's, pending
-(O-1)** (section 3.6 (c)).
+verified rules (section 4), its own execution protocol and its own baselines, never Topstep's reused (E-202). **Every
+model is built, tuned and chosen on the search years only** (any number of internal time splits there), and NQ's
+held-out years are spent **once, by one joint fixed-sequence test of every finalist across the firms searched**
+(Topstep, My Funded Futures, Lucid), held until each firm's search has finalists (E-221, O-1; section 3.6 (c)).
 
 **Where the money comes from.** The firm's asymmetry: a funded account's loss costs the user only fees; its win is
 paid. Not from predicting market direction. Stage 2's breakout and mean-reversion designs made money this way with no
 trade edge (Stage 2's handoff, section 0). That is accepted: the goal is to make money, however it is done inside
 section 4.
 
-**What a design is judged on.** The user's journey -- the measures below, under the operator's limits, by the method
-and pass line of section 3 -- never the trades' edge. Every trade runs under the zero-edge convention of section 3.2,
-and a design must work under it.
+**What a design is judged on.** The user's journey -- the measures below, under the limits (section 3.9; E-221), by
+the method and pass line of section 3 -- never the trades' edge. Every trade runs under the zero-edge convention of
+section 3.2, and a design must work under it.
 
 **Terms.**
 
 | term | meaning |
 |---|---|
-| design (execution model) | one complete way of running accounts, in three layers: (1) **triggers** -- the reason and moment to trade, with the side set by the design's side rule (section 3.5; the side rule is pending the operator, O-4); (2) **trade shape** -- stop, target, max hold, contracts, dollar risk; (3) **account policy** -- which account takes the trade, evaluation vs funded behaviour (RD-05's modes), daily stops, evaluation purchases, the component schedule |
+| design (execution model) | one complete way of running accounts, in three layers: (1) **triggers** -- the reason and moment to trade, with the side set by the design's side rule (section 3.5: in the playbook, the trigger's own side, held by the no-harm floor; in the evaluation, the zero-edge coin of 3.2; E-221, O-4); (2) **trade shape** -- stop, target, max hold, contracts, dollar risk; (3) **account policy** -- which account takes the trade, evaluation vs funded behaviour (RD-05's modes), daily stops, evaluation purchases, the component schedule |
 | component | one session-specific trigger with its own trade shape (for example an NY AM component, an NY PM component); a design is a schedule of components |
 | lever | a setting the user controls: bracket (stop, target, max hold), contracts, reward-to-risk, dollar risk per trade, accounts held, rotation rule, evaluation-purchase rule, model mix, the order latency L, and any state rule (sizing by distance to drawdown or target) |
 | signal source | what decides *when* a trade is taken: a model (breakout, mean reversion, ...) or the naive coin |
@@ -49,15 +50,15 @@ and a design must work under it.
 | start day | one development session taken as a fresh user (fresh bankroll, fresh accounts) |
 | coin seed | one sequence of coin draws; re-running with many seeds gives the spread a user can live |
 | search years | NQ 2020-01-02 to 2023-12-29 (E-208): the only years a search, its lever ranges, volatility units, regime thresholds, schedules, limits, budgets and weights may read |
-| held-out years | NQ 2024-01-02 to 2026-07-16, on the pinned calendar `results/q82_judged_sessions.csv` (E-208): read only by a search's held-out test, once per market (section 3.6) |
+| held-out years | NQ 2024-01-02 to 2026-07-16, on the pinned calendar `results/q82_judged_sessions.csv` (E-208): read only by the held-out test, once per market (section 3.6) |
 | held-out read ledger | every past read of the held-out years for a search's comparators and trigger families, carried in its declaration (section 3.6 (b)) |
-| held-out test | a search's one test of its ordered finalists on the held-out years; it spends one k |
+| held-out test | the one joint fixed-sequence test, on the held-out years, of every ordered finalist across the firms searched (Topstep, My Funded Futures, Lucid), held until each firm's search has finalists; it spends one k (E-221, O-1) |
 | confirmation | the one read of a carried design on the confirmation window (NQ from 2026-07-17): a purchase and the operator's decision; it spends no k |
-| limits | the operator's floors and ceilings on what a user feels (bankroll, chance of running out, trades per day, ...), each with its direction |
+| limits | the floors and ceilings on what a user feels (bankroll, chance of running out, trades per day, ...), each with its direction; the lead's, set from H4's search-year results by a rule declared before H4 is read (section 3.9; E-221) |
 | baselines | for Topstep: naive coin harvesting (its levers fixed in the declaration) and Stage 2's P-14, P-15, P-16, each run under the design's convention (section 3.8 (b)); for another firm: the set its own search declares, at least the naive coin on that firm's own protocol |
 | P | **not a p-value**: the mean share of start days ahead in cash at months 1, 2 and 3 |
 | frontier | the designs not beaten on one measure without losing on another |
-| composite score | one number over the measures' dimensions, weighted by the operator's trade-off answers, pinned with every other input of section 3.9 before the survey; the held-out test's hypothesis |
+| composite score | one number over the measures' dimensions, its weights the lead's, set from H4's search-year results by a rule declared before H4 is read (section 3.9; E-221), pinned with every other input of section 3.9 before the survey; the held-out test's hypothesis |
 
 **The unit** is one user: one development trading session taken as a fresh start (fresh bankroll, fresh accounts), the
 design's trades replayed in historical order under the zero-edge convention, over coin seeds fixed in the declaration
@@ -86,8 +87,9 @@ stated otherwise, and also over coin seeds. Each carries its uncertainty from th
   with a positive net change; (19) spread of monthly net; (20) longest run of months without a payout; (21) longest
   gap between payouts within 126 sessions (S5b); (22) best quarter's share of month-6 net (S5c); (23) largest month's
   share of the year's payouts.
-- **Bankroll and downside.** (24) chance of running out before the first payout at budgets the operator sets (the
-  bankroll stop); (25) peak out-of-pocket in 12 months; (26) month-3 net of the unlucky tenth (S5a); (27) CVaR10.
+- **Bankroll and downside.** (24) chance of running out before the first payout at the bankroll budgets pinned under
+  section 3.9 (the bankroll stop; the lead's, E-221); (25) peak out-of-pocket in 12 months; (26) month-3 net of the
+  unlucky tenth (S5a); (27) CVaR10.
 - **Realism and robustness.** (28) headline measures with 10 % and 20 % of signals missed or late; (29) headline
   measures at +1 and +2 ticks of worse fills; (30) workload: orders a day, accounts at once, screen hours;
   (31) funded-account lifetime: payouts per funded account before it is lost; (32) worst year and highest-volatility
@@ -101,12 +103,13 @@ stated otherwise, and also over coin seeds. Each carries its uncertainty from th
 Dropped by the operator: firm-rule exposure (the flagged-pattern rate); rule-change sensitivity.
 
 **Limits, the frontier and luck.**
-- The lead proposes the limits on what a user feels from the re-baseline on the search years only (section 3.6 (e)).
-  The operator approves them before use, and they are pinned with every other input of section 3.9.
+- The lead sets the limits on what a user feels from the re-baseline's (H4's) search-year results (section 3.6 (e)),
+  by a rule declared before H4 is read, and they are pinned in one row with every other input of section 3.9, before
+  the survey and never after a held-out read (E-221).
 - Each limit states its direction: a floor (for example supply) or a ceiling (for example bankroll, or trades per day
   as workload).
-- A limit is set at the operator's value with no noise margin of its own. Noise is allowed for once, in section
-  3.8 (a)'s check.
+- A limit is set at its pinned value with no noise margin of its own, and there is no second margin: the point
+  estimate governs (section 3.8 (a); E-221, the lead's O-5 ruling).
 - The operator's condition carries (E-015): **the limits must not fail profitable models by being too strict.**
   Section 3.8 (a) and the power gate of section 3.7 enforce it.
 - Every reading reports the frontier over the measures and a menu under the limits.
@@ -193,19 +196,21 @@ D-429) stays.
   scheduled not to collide (one position at a time across a firm). Every execution rule of section 4 holds.
 - **Any hour.** There is no cap on trading hours (the operator, 2026-11-18; E-202 (2)(b)). Every session the firm
   allows is in the search, and any valid component found in any of them can be approved. Workload (30) is reported;
-  a workload ceiling applies only if the operator sets one as a limit.
-- **The side rule** (part of every design; **pending the operator, O-4**). The zero-edge evaluation convention (3.2)
-  is not the operator's choice, and it stands. Which side a user actually trades is the operator's.
-  - **The candidate default** is the evaluated object: one literal coin draw per moment, shared by all the user's
-    accounts and firms.
-  - **Under any side rule** (3.4's hard rule): while any position is open in the user's accounts, a new trade's side is
-    that position's side, or the trade is skipped, so no two of the user's positions are ever opposite (conduct
-    tier 1). The evaluation uses the same rule.
-  - **Until O-4 is ruled,** every playbook states the coin side, with the model-side and as-traded readings beside, and
-    no playbook goes to a user.
-  - **Model sides** appear only beside. A playbook may give a model's side only if it clears the **no-harm floor**:
-    its composite on the search years is not below the coin side's by more than the margin pinned in 3.9. Its held-out
-    reading is reported beside, never judged.
+  a workload ceiling applies only if the pinning row of 3.9 sets one as a limit (E-221).
+- **The side rule** (part of every design; **ruled, E-221, O-4**). The zero-edge evaluation convention (3.2) stands:
+  **the coin is the evaluation's device, not the playbook's.**
+  - **In the playbook, each design's side comes from its own trigger**, held by the **no-harm floor** against the coin
+    on the real path: its composite on the search years is not below the coin side's by more than the margin pinned
+    in 3.9. Its held-out reading is reported beside, never judged. A trigger whose side fails the no-harm floor offers
+    no playbook side; that design is not carried (E-221).
+  - **Accounts alternate:** different accounts take different trades at different moments, the rotation a lever of
+    the search (3.4), because copying one trade to every account correlates their failures and defeats the fee
+    asymmetry (E-221).
+  - **The one hard rule** (3.4's; conduct tier 1): no two of the user's accounts or firms hold opposite positions at
+    once. While any position is open in the user's accounts, a new trade's side is that position's side, or the
+    trade is skipped; the scheduler refuses a same-moment opposite side. The evaluation uses the same rule. In the
+    evaluation the side coin's key carries no account or firm index, so trades of one user at one moment read the same
+    draw; that means only this refusal, never that every account copies every trade (E-221).
   - **A resting trigger traded as its real order** (one with no realisable construction; RL3's pair is one that has
     one) clears **the same no-harm floor**: its as-traded composite on the search years is not below the reflected one
     by more than the margin pinned in 3.9. Its held-out as-traded reading is reported beside, and it meets 3.8 (c)'s
@@ -237,11 +242,14 @@ The list is a floor: each declaration completes it.
 When the ledger is not empty, the level is printed as **nominal** beside the verdict (E-203 S-2's form). For the
 Topstep NQ search it is not empty: Stage 2's baselines were chosen on the whole window, so for them "held out" means
 unread by this search only (E-208).
-(c) **Single use per market.** The held-out years are read by one held-out test per market. Which firm's search
-spends NQ's held-out years, or whether one search covers several firms, is the operator's, pending (O-1). After that, a later
-search on the same market's bars cannot carry on them. Either its reading there is a description only, or its held-out
-years move to data not yet read (the confirmation window, or more history), which is a purchase or the operator's
-setup. A held-out test on such data spends its own k.
+(c) **Single use per market** (E-221, O-1). The held-out years are read by one held-out test per market. No firm's
+search spends NQ's held-out years alone: every model is built, tuned and chosen on the search years only (any number
+of internal time splits there), and the held-out years are held until the Topstep, My Funded Futures and Lucid
+searches each have finalists; every finalist across the firms is then tested in **one joint fixed-sequence test** at
+the full level of the one k it spends, the one use per market. After that, a later search on the same market's bars
+cannot carry on them. Either its reading there is a description only, or its held-out years move to data not yet read
+(the confirmation window, or more history), which is a purchase or the operator's setup. A held-out test on such data
+spends its own k.
 (d) **The horizon embargo.**
 - A search-year start is read at horizon h only if h sessions remain inside the search years. This purges, at the end
   of the search years, a strip as long as the longest horizon read: twelve months for the 12-month measures, and
@@ -272,8 +280,9 @@ beside") is not run before the held-out test. Afterwards it is run only as a des
 **3.7 The held-out test: finalists, calibration, power and the budget.**
 - **Finalists.** An ordered list of finalists, produced on the search years by a rule declared before the survey and
   pinned before the held-out read. They are tested by fixed-sequence testing, each at the full level of the search's
-  k, stopping at the first failure (E-203 S-1's precedent): one k for the sequence. The fallback (3.9) is pinned in
-  place of the composite, never tried after it.
+  k, stopping at the first failure (E-203 S-1's precedent): one k for the sequence. Every firm's finalists enter the
+  one joint sequence of 3.6 (c), held until each firm's search has finalists, its order across the firms declared
+  before the held-out read (E-221). The fallback (3.9) is pinned in place of the composite, never tried after it.
 - **Calibration.** The exact pinned rule (the composite or the fallback, the limit checks, the time leg's conditions
   and the floors, all on the martingale-outcome reading) is calibrated as a whole (E-007 (f)). **The deciding run
   follows section 3.9's pinning row** (after Wave 4.2) and precedes the search's pin. H3's earlier runs, as queued
@@ -295,8 +304,9 @@ beside") is not run before the held-out test. Afterwards it is run only as a des
 - **Power gate** (before any search is pinned).
   - The whole pass line's power at the level of its k is measured on synthetic paths carrying NQ's dependence, with
     **design pairs drawn from H4's baselines and from synthetic plants**, and with a planted improvement of **the size
-    that matters (the operator's, set in Wave 4.2; O-3)**. It applies the horizon embargo of 3.6 (d), at the declared
-    power target.
+    that matters** -- the lead's, set in Wave 4.2 from the baselines' own search-year results: the smallest difference
+    that would change which design a user should run, with the power reported (E-221, O-3). It applies the horizon
+    embargo of 3.6 (d), at the declared power target.
   - In the same run, a design equal to the best baseline on every limit must pass every limit check, in the form in
     force (3.8 (a)), with at least the power target.
   - **The count of held-out starts complete over D-145's horizon** is stated. It must reach the minimum pinned in 3.9
@@ -304,10 +314,10 @@ beside") is not run before the held-out test. Afterwards it is run only as a des
   - If any of these fails, the search does not pin.
   - Exit (B) states the line's power from this gate. It replaces E-007 (e)'s "minimum detectable difference before the
     read".
-- **Open operator item (E-007 (2), the data decision; asked before the first search is pinned, not after a
-  failure).** Should more history be added (QuantConnect's free NQ/ES from 2009, which needs the operator's setup; or
-  a Databento purchase of older bars, stated, not authorised), so that the held-out test has power? The lead puts the
-  question with the power gate's result. The operator decides.
+- **The data decision (E-007 (2); held, E-221).** More history (QuantConnect's free NQ/ES from 2009, which needs the
+  operator's setup; or a Databento purchase of older bars, stated, not authorised) is not added: the operator held the
+  purchase (E-221). The size that matters and the power are the lead's, set in Wave 4.2, and the power gate's result
+  is reported with them (E-221). A purchase stays the operator's, never asked for after a failure.
 - **The budget.** Each held-out test spends one k at 0.05 / (k (k + 1)); the confirmation spends none.
   - E-204's rule is carried in full, with "held-out test" in place of "stage B": a search whose declaration assigns
     its k at its held-out row is not counted by the gatekeeper's k rule until that row exists; if another declaration
@@ -328,13 +338,12 @@ model's side, or the resting order's real side, unreflected) with the coin side 
 same fills, same seeds. The held-out as-traded floor compares the finalist's as-traded composite with each
 baseline's as-walked composite. For a market-entry baseline, its as-traded and as-walked readings coincide.
 
-(a) **Limits.** Two forms are written side by side until the operator rules (O-5).
-- **In force (the operator's confirmed words, E-207):** the finalist stays inside every operator limit with a margin
-  wider than its noise. That is the one margin, applied once; the limits carry none of their own.
-- **Pending the operator (O-5; the red team's B-10):** a limit fails the finalist only if a one-sided check, at a level
-  pinned with 3.9's inputs, shows that the finalist crosses it. Until O-5 is ruled, this form is computed and reported
-  beside, never deciding.
-- Under either form, E-015's condition -- the limits must not fail profitable models by being too strict -- is enforced
+(a) **Limits** (E-221, the lead's O-5 ruling, by the operator's delegation; it replaces E-207's limit wording).
+- **The point estimate governs:** the finalist passes a limit when its point estimate sits inside it, and fails it when
+  the estimate is outside. There is no second margin; the limits carry none of their own.
+- **Beside each limit, never deciding:** a one-sided check of crossing (the red team's B-10 form), at a level pinned
+  with 3.9's inputs. It never fails a design whose estimate is inside.
+- Under this form, E-015's condition -- the limits must not fail profitable models by being too strict -- is enforced
   by the power gate's limit clause (3.7). A pinning row whose limits would fail a design equal to the best baseline, at
   the target power, does not pin.
 
@@ -359,7 +368,8 @@ coin-seed leg on the held-out years, with the time leg's conditions met (3.6 (f)
 - Section 4's constraints, every trade resolving among them.
 - Hand entry at least L minutes from alert to order (3.5).
 - **The zero-edge long-run gate:** the median log growth (Stage 2 D-14) of the required bankroll over D-145's horizon,
-  above zero at a lower quantile over coin seeds and history-block resamples pinned with 3.9's inputs. It is read on
+  above zero at a lower quantile pinned with 3.9's inputs, **over coin seeds on the held-out years**; the
+  history-block reading on the search years is read beside, as a consistency condition (E-221, O-6). It is read on
   starts complete under 3.6 (d), whose count must reach the pinned minimum (3.7).
   - On the martingale-outcome reading, with no shift of outcomes.
   - Fees, payout latency, the tier-2 consequences and D-145's tier-3 denial probability of 25 % applied, with the
@@ -383,8 +393,9 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
 - P by month; mean net; CVaR10; P under a bankroll limit; the effective sample size (E-007 (e));
 - the as-walked result and the path-structure edge (3.2), never credited;
 - the as-traded stress of resting triggers;
-- the model-side reading, where a playbook uses one (3.5);
-- the limit check in the pending form (O-5).
+- the playbook's trigger-side reading (3.5; E-221);
+- each limit's one-sided check of crossing, limit by limit, beside its point estimate, which decides (E-221, the
+  lead's O-5 ruling).
 
 **3.9 The objective is a combination, fixed before the survey.**
 - **Search: every measure at once.** The search is multi-objective: the surrogate models every measure and reports the
@@ -392,28 +403,33 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
 - **Measure structure.** On the re-baseline (H4, search years only), find which measures carry independent information
   and which move together (the expected dimensions: speed, cost and bankroll, steadiness, downside, supply, workload),
   and the trade-off curves between them. With only the four baselines in H4, the dimensions come from variation
-  across start days and seeds, not across designs, so the trade-off curves put to the operator are not curves across
-  designs.
-- **The operator's weights.** From those curves the operator answers concrete trade-off questions. The answers set the
-  weights of a **composite score** over the dimensions. One of the dimensions is P under the bankroll stop (the share of
-  users with the operator's budget who are ahead in cash at months 1-3, `p_by_month` with `spent` and `limit`). S3c
-  (14) is not a dimension.
+  across start days and seeds, not across designs, so the trade-off curves the weights are read from are not curves
+  across designs.
+- **The weights are the lead's** (E-221, Wave 4.2, by the operator's delegation). From H4's search-year results, by a
+  rule declared before H4 is read, the lead sets the weights of a **composite score** over the dimensions. One of the
+  dimensions is P under the bankroll stop (the share of users with the pinned budget who are ahead in cash at months
+  1-3, `p_by_month` with `spent` and `limit`). S3c (14) is not a dimension.
 - **One row pins every input of 3.8 and 3.9 before the survey runs:**
-  - the limits (values, directions, the noise margin of the form in force, the check's level of the pending form);
+  - the limits (values and directions; the level of the one-sided check reported beside them, 3.8 (a); E-221, the
+    lead's O-5 ruling);
   - the bankroll budgets of (24);
   - the dimension definitions and their normalisers or loadings;
   - the weights;
   - the composite **or** the fallback (one, never both);
-  - the size that matters (the operator's, set in Wave 4.2; O-3) and the power target;
+  - the size that matters (the lead's, set in Wave 4.2 from the baselines' search-year results, 3.7; E-221) and the
+    power target;
   - the regimes and "most years";
   - the finalist order rule and the plateau rule;
-  - the gate's quantile, and the minimum count of held-out starts complete over its horizon;
-  - the no-harm margin for model sides and for as-traded resting triggers (one margin for both, unless the row
-    names two);
+  - the gate's quantile over coin seeds on the held-out years, the search years' history-block consistency
+    condition beside it (E-221), and the minimum count of held-out starts complete over its horizon;
+  - the no-harm margin for the playbook's trigger sides (E-221) and for as-traded resting triggers (one margin for
+    both, unless the row names two);
   - the L values in the lever space.
 
-  All are set from the search years only. None is changed after a search-year result except by re-declaring the
-  search.
+  All are set from the search years only. The limits, the bankroll budgets, the weights and the size that matters are
+  the lead's, set from H4's search-year results by a rule declared before H4 is read, pinned in this one row before
+  the survey, never after a held-out read (E-221). None is changed after a search-year result except by re-declaring
+  the search.
 - **Limits stay hard lines** in the form in force (3.8 (a)): no score buys crossing one.
 - **The held-out test reads the pinned objective once**, along the finalist sequence of 3.7. The frontier and every
   measure are reported beside. **Fallback:** if the weights cannot be set before the pinning row, that row pins P under
@@ -424,8 +440,8 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
   statistic stays available as a description);
 - R\* = P-14 as the one row to beat (Stage 2 D-626; P-14 is now one baseline among four);
 - Stage 2 D-621 (3)'s rule as E-001 adopted it (its text is CHARTER section 3 at E-008's sha256);
-- E-015 (3)'s "a limit never fails a design", replaced by 3.8 (a)'s limit check (E-207's form in force, the
-  one-sided form pending the operator, O-5), with E-015's operator condition carried;
+- E-015 (3)'s "a limit never fails a design", replaced by 3.8 (a)'s limit check (the point estimate governing, in force
+  from E-221, the lead's O-5 ruling, which retires E-207's limit wording), with E-015's operator condition carried;
 - E-023's two rules (no-trade levers described, never carried; side-keeping filters against a placebo-selection
   twin): such levers and filters are now searched in the lever space;
 - Stage 2's `verdict` arm (each R shifted to its edge's lower bound) and D-145's edge-bound form of the gate, both
