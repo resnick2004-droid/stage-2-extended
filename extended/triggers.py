@@ -10,8 +10,10 @@ execution rules every source obeys, and the coin that sets every offer's side.
     ex = T.execute(offer, side, hist, i, ctx, stop_ticks, rr)  # the walker's fill and walk under the window rules
 
 Nothing here reads a file of bars (the caller passes them through the window guard), a result, or the held-out years;
-`DECISIONS.md` is read only by the overnight guard. **No rule value is typed**: the latencies, the limit's working
-window and the mark step are read from the lever table's declared parameters (`extended.lever_space.DECLARED`).
+`DECISIONS.md` is read only by the overnight guard. **Read, not typed**: the latencies, the limit's working window, the
+mark step and the entry types come from the lever table's declared parameters (`extended.lever_space.DECLARED`). **Typed
+here, each with its citation** (the red team's N-5): the five-minute flat between trades, the 07:35 and 08:30-08:59
+bounds, P-14's k and last slot, RL3's cutoffs and round-number step; the tests hold the clock slots and the cutoff grid.
 
 **The clock** is the walker's (`extended/walker.py`): a slot is minutes after 17:00 CT of the evening the trading day
 opens; a day's arrays o, h, l, c are indexed by each bar's END minute, so the bar stamped (opening at) slot s is index
@@ -55,12 +57,16 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
 
 * **News** (E-202 (2)(a), (d); E-200 R-1): no entry and no fill inside a verified window (`Window`, the caller's, from
   the record). An offer whose order would go live inside a window is refused; an alert inside a window whose order goes
-  live after it is not. A working order is cancelled at a window's start (it fills only on bars stamped before it). A
-  position open at a window's start is flattened: walked to the window's first slot and closed at the price there (the
-  close of the last bar closed by then, the walker's `close` flatten, two ticks charged as its flatten cost); for an
-  unscheduled release, known only from its minute, at the bar after it.
-* **The closed window**, 08:30-08:59 CT (bars stamped 08:30 to 08:59), every day: a window of kind `closed` under the
-  same rules (E-202 (2)(a): "RL3's 08:30-08:59 fill window stays closed").
+  live after it is not. A working order is cancelled at a window's start: it fills only on bars stamped before it, and,
+  since the walker never opens a position on the bar it would flatten on, not on the bar stamped `first - 1` either
+  (one minute conservative; the red team's N-1). A position open at a window's start is walked to the window's first
+  slot and **booked at the adverse extreme of the window's first bar less two ticks, exiting at that bar's end** (at its
+  stop where that extreme reaches it) -- **E-222 M-4 ruling (lead)**, RL3 4.6 / 5.4's convention, the as-walked
+  convention for every source until the search template pins one (`window_flatten_trade`); for an unscheduled release,
+  known only from its minute, at the first bar after that minute.
+* **The closed window**, 08:30-08:59 CT (bars stamped 08:30 to 08:59), every day and **for every source**: a window of
+  kind `closed` under the same rules (E-202 (2)(a): "RL3's 08:30-08:59 fill window stays closed"), applied to every
+  source as a conservative floor -- **E-222 M-8 ruling (lead)**, which the lead records in a row.
 * **BLS 08:30 release days**: no entry at or before 07:35:00 CT (E-007 (d), CHARTER 4: strictly after it): a window of
   kind `bls` over the bars stamped 17:00 to 07:35, so the earliest fill is the open of the bar stamped 07:36.
 * **FOMC statement days are out** whole (CHARTER 4), and a calendar void day (an early close, a data defect: the
@@ -648,7 +654,8 @@ def order_for(offer: Offer, side: int) -> tuple[str, float | None]:
 @dataclass(frozen=True)
 class Execution:
     """An offer traded on a side: `trade` the walker's (fill, walk at the bracket) of the stretch that decided it,
-    `rules` the walk used, `attempts` every stretch's trade in order (a re-written ticket can have several)."""
+    `rules` the walk used there, `attempts` every stretch's trade in order (a re-written ticket can have several) and
+    `attempt_rules` each one's walk, `base` the walk without windows."""
 
     offer: Offer
     side: int
@@ -656,6 +663,8 @@ class Execution:
     trade: W.Trade
     rules: W.Rules
     attempts: tuple[W.Trade, ...]
+    attempt_rules: tuple[W.Rules, ...] = ()
+    base: W.Rules = JOURNEY
 
     @property
     def filled(self) -> bool:
@@ -672,18 +681,82 @@ class Execution:
         return int(self.trade.rule.exit[0])
 
     @property
-    def ended(self) -> int:
-        """When the order stopped working unfilled: the last stretch's last slot + 1 (its live for a void)."""
-        last = self.trade.order.cutoff
-        if self.trade.fill.status == "void":
-            return int(self.trade.order.live)
-        return int(last) if last is not None else int(self.rules.walk_end)
+    def window_flatten(self) -> bool:
+        """Whether a window's start ends this stretch's walk (a position open then is flattened there)."""
+        return int(self.rules.walk_end) < int(self.base.walk_end)
+
+    @property
+    def flatten_slot(self) -> int:
+        """Where an open position would close: the end of a window's flatten bar (`window_flatten_trade`), or the
+        base walk's end."""
+        return int(self.rules.walk_end) + 1 if self.window_flatten else int(self.rules.walk_end)
+
+    @property
+    def busy_until(self) -> int | None:
+        """For an order that never filled: the first minute at which none of its stretches is working any more --
+        the latest over its attempts of a cancelled stretch's end (its cutoff, or its walk's end) and of a later
+        stretch's live where the re-write found it void (it waited through the window for that re-write). None when it
+        never worked (void at its first live). Corrective cycle 1, B-1: a re-written ticket that turns void keeps the
+        firm busy for the stretches it worked, so no later decision depends on the price at the re-write."""
+        if self.filled:
+            raise ValueError("a filled order's busy time is its position's (the chain's)")
+        ends = []
+        rules = self.attempt_rules or (self.rules,) * len(self.attempts)
+        for k, (a, r) in enumerate(zip(self.attempts, rules)):
+            if a.fill.status == "void":
+                if k > 0:
+                    ends.append(int(a.order.live))
+            elif a.order.cutoff is not None:
+                ends.append(int(a.order.cutoff))
+            else:
+                ends.append(int(r.walk_end))
+        return max(ends) if ends else None
+
+
+def window_flatten_trade(tr: W.Trade, er: W.Rules, base: W.Rules, o, h, l, c, costs: W.Costs | None) -> W.Trade:
+    """**E-222 M-4 ruling (lead), the as-walked convention for every source:** a position still open when a window
+    ends its walk (`rules_for`) is booked at the window's flatten bar -- the bar stamped at the window's first minute
+    (for an unscheduled release, the first bar after its minute; the first present bar from there) -- at that bar's
+    adverse extreme less two ticks (RL3 4.6 / 5.4's convention, the most conservative of the three texts), exiting at
+    the bar's end; where that extreme reaches the trade's resting stop, at the stop. The two ticks are in the price;
+    the walker's flatten cost (`EXIT_TICKS`) is charged beside, as at the 15:10 flatten under `STAGE2`. The rule and
+    its mirror alike. The deciding reading redraws every outcome (CHARTER 3.2); this is the as-walked booking only."""
+    if tr.fill.status != "filled" or int(er.walk_end) >= int(base.walk_end):
+        return tr
+    if W.walk_end(o, er) != int(er.walk_end):
+        return tr                                   # the day's bars end earlier: the walker's own flatten stands
+    hi = min(int(base.walk_end), len(o) - 1)
+    fb = next((j for j in range(int(er.walk_end) + 1, hi + 1) if not math.isnan(o[j])), None)
+    if fb is None:
+        return tr
+    S = int(tr.stop_ticks)
+    entry = costs.entry_ticks(tr.order.kind) if costs is not None else 0.0
+
+    def rebook(out: W.Outcome | None, side: int, fill: float) -> W.Outcome | None:
+        if out is None or not (out.kind == W.FLATTEN).any():
+            return out
+        k, g, ex, m = out.kind.copy(), out.gross.copy(), out.exit.copy(), out.mae.copy()
+        f = k == W.FLATTEN
+        adverse = float(l[fb]) if side > 0 else float(h[fb])
+        a = int(round(side * (fill - adverse) / TICK))
+        if a >= S:
+            k[f], g[f], m[f] = W.STOP, -S, S
+        else:
+            g[f] = -a - W.FLATTEN_SLIP_TICKS
+            m[f] = np.maximum(m[f], max(a, 0))
+        ex[f] = fb
+        nr = W.net_r(g, k, S, entry_ticks=entry, costs=costs) if costs is not None else None
+        return W.Outcome(k, ex, m, g, nr)
+
+    return replace(tr, rule=rebook(tr.rule, int(tr.order.side), float(tr.fill.price)),
+                   mirror=rebook(tr.mirror, -int(tr.order.side), float(tr.mirror_price)))
 
 
 def execute(offer: Offer, side: int, hist: History, i: int, ctx: DayContext, stop_ticks: int, rr: float, *,
             rules: W.Rules = JOURNEY, costs: W.Costs | None = None) -> Execution:
     """Trade an admitted offer on `side` at the bracket (stop ticks, R): each working stretch (`segments`) is one
-    walker order (live at the stretch's start, cut off at its end, walked by `rules_for`) until one fills or voids."""
+    walker order (live at the stretch's start, cut off at its end, walked by `rules_for`) until one fills or voids; a
+    position open at a window's start is booked by `window_flatten_trade`."""
     if offer.void:
         raise TriggerRefused(f"a void offer ({offer.void}) is not traded")
     segs = segments(offer, ctx)
@@ -691,16 +764,18 @@ def execute(offer: Offer, side: int, hist: History, i: int, ctx: DayContext, sto
         raise TriggerRefused("an offer with no working stretch is not traded (admit refuses it)")
     o, h, l, c = hist.day(i)
     kind, price = order_for(offer, side)
-    attempts = []
+    attempts, used = [], []
     tr = er = None
     for lv, last in segs:
         er = rules_for(lv, ctx, rules)
         order = W.Order(kind, int(side), int(lv), price, None if last is None else int(last) + 1)
         tr = W.trade(order, o, h, l, c, int(stop_ticks), (float(rr),), rules=er, costs=costs)
+        tr = window_flatten_trade(tr, er, rules, o, h, l, c, costs)
         attempts.append(tr)
+        used.append(er)
         if tr.fill.status in ("filled", "void"):
             break
-    return Execution(offer, int(side), kind, tr, er, tuple(attempts))
+    return Execution(offer, int(side), kind, tr, er, tuple(attempts), tuple(used), rules)
 
 
 # ------------------------------------------------------------------------------------------------ the coin
@@ -774,5 +849,6 @@ __all__ = ["TASK", "LATENCIES", "REFERENCE_L", "LIMIT_WINDOW", "MARK_STEP", "ENT
            "H2_ROW", "OvernightRefused", "TriggerRefused", "decision_rows", "overnight_allowed", "require_overnight",
            "History", "Window", "release_window", "DayContext", "Offer", "check_latency", "breakout_events",
            "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "SOURCES", "admit", "segments",
-           "rules_for", "order_for", "Execution", "execute", "COIN_TAG", "COIN_FIELDS", "WORD", "UNDERLYING",
+           "rules_for", "order_for", "Execution", "window_flatten_trade", "execute", "COIN_TAG", "COIN_FIELDS", "WORD",
+           "UNDERLYING",
            "DRAW_SIDE", "MOMENT_SUBS", "CoinUnit", "moment", "coin_key", "key_state", "coin_uniform", "coin_side"]

@@ -24,11 +24,23 @@ inside the window.
 component's, admitted by `triggers.admit`, are taken in order of their live slot, one group at a time (an offer alone,
 or RL3's one-cancels-other tickets of a kind). An order is placed only when **the firm is flat, no other entry order is
 working, and at least five minutes have passed since the last position's exit**; otherwise the offer is skipped and
-counted (`position`, `order`, `gap`). A placed group's sides are drawn from the coin (`triggers.coin_side`), each member
-is executed (`triggers.execute`), and the earliest fill is the position (two members filling on one bar void the group,
-`oco_tie`: the order of their fills inside the bar is unknown); the others are cancelled at that fill. The chain is
-fixed by the walks as run (the run's exit times), before any redraw (the design note 1.6: overlap is decided on the
-scheduled entries and the run's exits, never the path's).
+counted by the firm's state at its live minute (`order` while an entry order works, `position` while a position is
+open, `gap` in the five minutes after its exit; corrective cycle 1, M-7). A placed group's sides are drawn from the
+coin (`triggers.coin_side`), each member is executed (`triggers.execute`), and the earliest fill is the position; the
+others are cancelled at that fill.
+* **An unfilled group keeps the firm busy until the last of its working stretches ends** (`Execution.busy_until`): a
+  stretch cancelled at its cutoff or a window's start, and a re-written ticket that the re-write finds void, which
+  waited through the window for it (corrective cycle 1, B-1: freeing the firm from the void's first live made a later
+  offer's placement depend on the price after the window).
+* **Two members filling on one bar** (the order of their fills inside the bar is unknown) book the member whose walked
+  trade is worse for the user -- the lower gross, the walk settling a two-barrier bar stop first; then the later exit;
+  then the lower sub -- flagged `oco_tie`, the other counted `oco_tie_cancelled`; never no trade. The firm stays busy
+  to the later of the two walked exits (`busy_until`), so no later offer's placement depends on which one is booked,
+  an outcome decided after that offer's moment (**E-222 M-6 ruling (lead)**, with the busy time made causal).
+
+The chain is fixed by the walks as run (the run's exit times), before any redraw (the design note 1.6: overlap is
+decided on the scheduled entries and the run's exits, never the path's). Every decision -- placed, skipped and why,
+refused -- depends on bars before its own moment only (`tests/test_components.py`'s decision shift test, M-5).
 
 **The user's book** (`UserBook`, `schedule_user`): every position of the user, on every firm and account. Adding one
 that overlaps another in time is refused -- **opposite sides as conduct tier 1** (`TierOneRefused`: no hedging across
@@ -40,7 +52,8 @@ refuses the design.
 **The schedule's fields** (`ScheduledTrade`; the design note 1.7): firm, component and source; the session, its date;
 the decision, alert and live slots; the order kind (and a ticket's fade or break); the side and its source (`coin`);
 the fill's minute and price; the bracket (stop and target ticks, R); the exit's minute and kind; the flatten slot and
-whether it is a window's; the instrument and underlying; the gross ticks and, with costs, the net R. The causal
+whether it is a window's; the instrument and underlying; the gross ticks and, with costs, the net R; whether it was
+booked from a same-bar tie, and the minute the firm stays busy to (its exit, or a tie's later exit). The causal
 volatility of the holding window (the shared path's clock) is not computed here: it is the three-way runner's.
 """
 from __future__ import annotations
@@ -187,6 +200,8 @@ class ScheduledTrade:
     underlying: str
     gross_ticks: int
     net_r: float | None
+    oco_tie: bool = False
+    busy_until: int = -1
 
 
 @dataclass
@@ -222,7 +237,8 @@ def _groups(offers: Sequence[tuple[int, T.Offer]]) -> list[list[tuple[int, T.Off
     return groups
 
 
-def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayContext, base: W.Rules) -> ScheduledTrade:
+def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayContext, oco_tie: bool = False,
+               busy_until: int | None = None) -> ScheduledTrade:
     off, tr = ex.offer, ex.trade
     ticket = ""
     if off.entry == T.TICKET:
@@ -233,10 +249,17 @@ def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayConte
         order_kind=ex.order_kind, ticket_rule=ticket, side=int(ex.side), side_source="coin",
         fill_slot=ex.fill_slot, fill_price=float(tr.fill.price), resting=bool(tr.fill.resting),
         stop_ticks=int(comp.stop_ticks), target_ticks=int(comp.target_ticks), rr=float(comp.rr),
-        exit_slot=ex.exit_slot, exit_kind=W.KIND_CODE[int(tr.rule.kind[0])], flatten_slot=int(ex.rules.walk_end),
-        window_flatten=int(ex.rules.walk_end) < int(base.walk_end), instrument=comp.instrument,
+        exit_slot=ex.exit_slot, exit_kind=W.KIND_CODE[int(tr.rule.kind[0])], flatten_slot=ex.flatten_slot,
+        window_flatten=ex.window_flatten, instrument=comp.instrument,
         underlying="NQ", gross_ticks=int(tr.rule.gross[0]),
-        net_r=None if tr.rule.net_r is None else float(tr.rule.net_r[0]))
+        net_r=None if tr.rule.net_r is None else float(tr.rule.net_r[0]), oco_tie=bool(oco_tie),
+        busy_until=ex.exit_slot if busy_until is None else int(busy_until))
+
+
+def _worse(e: T.Execution) -> tuple:
+    """The order of badness of a tied member's walked trade for the user (E-222 M-6): the lower gross first (the
+    walk's own stop-first settlement on two-barrier bars), then the later exit, then the lower sub."""
+    return int(e.trade.rule.gross[0]), -e.exit_slot, int(e.offer.sub)
 
 
 def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, unit: T.CoinUnit, *,
@@ -251,12 +274,14 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
         kept, refused = T.admit(offs, ctx)
         out.refused += refused
         mine += [(ci, o) for o in kept]
-    free_at, why_busy = -1, "position"
-    exit_at = -1
+    # the firm's state from the last placed group: [start, end) stretches labelled 'order' (an entry order working),
+    # 'position' (a position open) and 'gap' (the five minutes flat after an exit); free from `free_at`
+    busy: list[tuple[int, int, str]] = []
+    free_at = -1
     for grp in _groups(mine):
         live = int(grp[0][1].live)
         if live < free_at:
-            reason = why_busy if why_busy == "order" else ("position" if live < exit_at else "gap")
+            reason = next(lbl for a, b, lbl in busy if a <= live < b)     # M-7: the state at the skip's live minute
             out.skipped += [(o, reason) for _, o in grp]
             continue
         comp = design.components[grp[0][0]]
@@ -265,24 +290,26 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
         filled = [e for e in exs if e.filled]
         if filled:
             first_bar = min(e.trade.fill.bar for e in filled)
-            winners = [e for e in filled if e.trade.fill.bar == first_bar]
-            if len(winners) > 1:
-                out.unfilled += [(e.offer, "oco_tie") for e in exs]
-                free_at, why_busy = max(free_at, first_bar), "order"
-                continue
-            win = winners[0]
-            row = _trade_row(design, comp, win, ctx, rules)
-            out.trades.append(row)
-            out.unfilled += [(e.offer, "oco_cancelled") for e in exs if e is not win]
-            exit_at = row.exit_slot
-            free_at, why_busy = exit_at + T.GAP_MINUTES, "position"
+            tied = [e for e in filled if e.trade.fill.bar == first_bar]
+            win = min(tied, key=_worse)                                     # M-6: the worse walked trade on a tie
+            end = max(e.exit_slot for e in tied)                            # busy to the later exit, whichever booked
+            out.trades.append(_trade_row(design, comp, win, ctx, oco_tie=len(tied) > 1, busy_until=end))
+            for e in exs:
+                if e is not win:
+                    out.unfilled.append((e.offer, "oco_tie_cancelled" if any(e is x for x in tied)
+                                         else "oco_cancelled"))
+            # the fill on the bar stamped first_bar - 1 is known when that bar closes, at first_bar: until then the
+            # state is a working order (an offer at the fill bar's own minute cannot know of the fill)
+            busy = [(live, first_bar, "order"), (first_bar, end, "position"), (end, end + T.GAP_MINUTES, "gap")]
+            free_at = end + T.GAP_MINUTES
         else:
             out.unfilled += [(e.offer, f"{e.trade.fill.status}:{e.trade.fill.reason}") for e in exs]
-            placed = [e.ended for e in exs if e.trade.fill.status != "void"]
-            if placed:
-                free_at, why_busy = max(free_at, max(placed)), "order"
+            ends = [b for b in (e.busy_until for e in exs) if b is not None]   # B-1: every stretch that worked
+            if ends:
+                busy = [(live, max(ends), "order")]
+                free_at = max(ends)
     for a, b in zip(out.trades, out.trades[1:]):
-        if int(b.fill_slot) < int(a.exit_slot) + T.GAP_MINUTES:          # the chain's own invariant, checked
+        if int(b.fill_slot) < int(a.busy_until) + T.GAP_MINUTES:         # the chain's own invariant, checked
             raise OverlapRefused(f"{design.firm}: trades at {a.fill_slot} and {b.fill_slot} break the chain")
     return out
 

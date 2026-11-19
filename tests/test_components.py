@@ -7,15 +7,23 @@ What is held:
 * one position at a time across a firm (Stage 2 D-429): offers while a position is open are skipped (`position`),
   within five minutes of its exit (`gap`), while an entry order is working (`order`); every schedule's trades are five
   minutes apart at least, on hand-built and synthetic days;
-* RL3's one-cancels-other tickets: the first fill wins and cancels the other; two fills on one bar void the group;
+* RL3's one-cancels-other tickets: the first fill wins and cancels the other; two fills on one bar book the worse
+  walked trade and keep the firm busy to the later exit (E-222 M-6 ruling);
+* a group keeps the firm busy until its last working stretch ends, a re-written ticket that turns void included
+  (corrective cycle 1, B-1; the red team's day `docs/reviews/BUILD_W31_Q152_2026-11-18.md`);
+* **every decision of `schedule_day` -- placed, skipped (with its reason), refused -- is unchanged when the bars from
+  that decision's moment on are replaced or deleted** (M-5): on the red team's day and on synthetic days with news
+  windows after 09:00 and re-written tickets;
+* a skip is counted by the state at its live minute: `order` while an order works, `position`, `gap` (M-7);
 * the user's book: two positions held at once refused -- opposite sides as conduct tier 1 (across accounts and
   firms), the same side as an undefined overlap; touching intervals and other sessions accepted; `schedule_user`
-  refuses two firms trading at once;
+  refuses two firms trading at once, on hand-built days whose overlap is certain (N-8);
 * the coin: one unit's draw shared by every firm, the schedule a function of the unit (same unit, same schedule);
 * the schedule's fields are the walker's trade.
 
 Seeds fixed for this file (the test's own, used nowhere else): 20261524 (the synthetic series), 20261525 (the coin
-unit's role seed).
+unit's role seed), 20261526 (the shift test's replacement walks; each cut a child `SeedSequence(20261526,
+spawn_key=(day, cut))`). The red team's day uses its own unit, seed 1 (as `chk_rewrite_void.py` ran it).
 """
 from __future__ import annotations
 
@@ -30,7 +38,7 @@ from extended import synthetic_bars as sb
 from extended import triggers as T
 from extended import walker as W
 
-SEED_SERIES, SEED_COIN = 20261524, 20261525
+SEED_SERIES, SEED_COIN, SEED_SHIFT = 20261524, 20261525, 20261526
 P = 13000.0
 TK = T.TICK
 UNIT = T.CoinUnit(SEED_COIN, 0, 0, 0, 0)
@@ -151,12 +159,55 @@ def test_rl3_one_cancels_other_and_a_same_bar_tie():
     assert len(s.trades) == 1 and s.trades[0].tag == "pd_hi" and s.trades[0].fill_slot == 1020
     assert s.trades[0].ticket_rule == ("break" if sides["pd_hi"] == 1 else "fade")
     assert s.unfilled == [(next(o for o in offs if o.tag == "pd_lo"), "oco_cancelled")]
-    tie = flat_day(13050.0)
-    set_bar(tie, 1020, 13050.0, 13150.0 + 2 * TK, 12950.0 - 2 * TK, 13050.0)   # both levels traded through on one bar
-    ht = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
-                               *[np.stack([a, b]) for a, b in zip(prev, tie)])
-    st = C.schedule_day(C.Design("ts", (comp,)), ht, 1, ctx, UNIT)
-    assert st.trades == [] and {r for _, r in st.unfilled} == {"oco_tie"}
+
+def test_a_same_bar_tie_books_the_worse_trade_and_stays_busy_to_the_later_exit():
+    """E-222 M-6 ruling (lead): both one-cancels-other tickets filling on one bar book the ticket whose walked trade is
+    worse for the user (lower gross; then the later exit; then the lower sub), never no trade, and the firm stays busy
+    to the later of the two walked exits (the booked one may be the earlier: the decision of a later offer must not
+    depend on which is booked, M-5). Catches: no trade booked on a tie, the better trade booked, the firm freed at the
+    tie bar or at the booked trade's own exit."""
+    prev = flat_day(13050.0)
+    set_bar(prev, W.slot(9, 0), 13050.0, 13150.0, 12950.0, 13050.0)            # pd: high 13150, low 12950
+    stop, rr = 400, 3.0                                                         # 100 points; targets 300 points away
+    rl3 = C.Component("rl3", "ny_am", 960, 1015, T.RL3Tickets("pd", T.RL3_CUTOFFS[2]), stop, rr)
+    mk = marks_component("mk", 1016, 1300, (1025, 1035, 1060, 1105, 1110, 1200), stop=40, rr=1.0)
+    ctx = T.DayContext(1, "2021-03-03")
+
+    def path(kind: str) -> list[np.ndarray]:
+        tie = flat_day(13050.0)
+        set_bar(tie, 1020, 13050.0, 13150.0 + 2 * TK, 12950.0 - 2 * TK, 13050.0)  # both levels traded on one bar
+        if kind == "up":            # to 13250 at 10:30 (a short from 13150 stopped), through it at 11:40
+            for s in range(1030, 1439):
+                set_bar(tie, s, 13250.0, 13250.0, 13250.0, 13250.0)
+            set_bar(tie, 1100, 13250.0, 13251.0, 13250.0, 13250.0)
+        elif kind == "down":        # the mirror: to 12850 at 10:30, through it at 11:40
+            for s in range(1030, 1439):
+                set_bar(tie, s, 12850.0, 12850.0, 12850.0, 12850.0)
+            set_bar(tie, 1100, 12850.0, 12850.0, 12849.0, 12850.0)
+        return tie
+
+    earlier_booked = 0
+    for kind in ("flat", "up", "down"):
+        ht = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
+                                   *[np.stack([a, b]) for a, b in zip(prev, path(kind))])
+        offs = rl3.trigger.offers(ht, 1, ctx)
+        exs = [T.execute(o, T.coin_side(UNIT, o), ht, 1, ctx, stop, rr) for o in offs]
+        assert all(e.filled and e.trade.fill.bar == 1021 for e in exs)
+        worst = min(exs, key=lambda e: (int(e.trade.rule.gross[0]), -e.exit_slot, e.offer.sub))
+        end = max(e.exit_slot for e in exs)
+        earlier_booked += worst.exit_slot < end
+        st = C.schedule_day(C.Design("ts", (rl3, mk)), ht, 1, ctx, UNIT)
+        rl3_rows = [t for t in st.trades if t.component == "rl3"]
+        assert len(rl3_rows) == 1 and rl3_rows[0].tag == worst.offer.tag and rl3_rows[0].oco_tie
+        assert rl3_rows[0].gross_ticks == int(worst.trade.rule.gross[0]) and rl3_rows[0].busy_until == end
+        other = next(o for o in offs if o.tag != worst.offer.tag)
+        assert (other, "oco_tie_cancelled") in st.unfilled
+        tie_skips = [(o.live, r) for o, r in st.skipped if o.live < end + T.GAP_MINUTES]
+        assert tie_skips and all(r == ("position" if live < end else "gap") for live, r in tie_skips)
+        mk_rows = [t for t in st.trades if t.component == "mk"]
+        assert all(t.live >= end + T.GAP_MINUTES for t in mk_rows)
+        assert mk_rows or end + T.GAP_MINUTES > 1200                 # the last mark is 13:00
+    assert earlier_booked >= 1                                       # a case where the booked trade closes first
 
 
 def test_the_chain_on_synthetic_days(hist):
@@ -235,16 +286,25 @@ def test_schedule_user_refuses_two_firms_at_once_and_shares_the_coin(hist):
     assert [t.side for t in sa.trades] == [t.side for t in sb_.trades]
     with pytest.raises(C.DesignRefused):
         C.schedule_user((a, a), hist, i, ctx, UNIT)
-    am = C.Design("mffu", (marks_component("am", 960, 1000, (960,), stop=40, rr=0.5),))
-    pa = [C.position_of(t) for t in sa.trades]
-    pm = [C.position_of(t) for t in C.schedule_day(am, hist, i, ctx, UNIT).trades]
-    clash = any(x.interval()[0] < y.interval()[1] and y.interval()[0] < x.interval()[1] for x in pa for y in pm)
-    if clash:
-        with pytest.raises((C.OverlapRefused, C.TierOneRefused)):
-            C.schedule_user((a, am), hist, i, ctx, UNIT)
-    else:
-        days, book = C.schedule_user((a, am), hist, i, ctx, UNIT)
-        assert len(book.positions) == len(pa) + len(pm) > len(pa)
+
+
+def test_schedule_user_on_certain_overlap_and_certain_separation():
+    """N-8: on hand-built days whose overlap is certain, `schedule_user` refuses -- as tier 1 exactly when the coin
+    gives the two moments opposite sides -- and on a day whose separation is certain it books both. Catches: the book
+    not consulted (no refusal), the opposite-side check missing or swapped, a refusal of separated positions."""
+    ts = C.Design("ts", (marks_component("a", 960, 1005, (1000,), stop=40),))
+    mf = C.Design("mffu", (marks_component("b", 1006, 1100, (1010,), stop=40),))
+    h = one_day(flat_day())                                                    # flat: both held to the flatten
+    s1 = T.coin_side(UNIT, T.Offer("p16", 0, 1000, 0, 995, 1000, T.MARKET))
+    s2 = T.coin_side(UNIT, T.Offer("p16", 0, 1010, 0, 1005, 1010, T.MARKET))
+    with pytest.raises(C.TierOneRefused if s1 != s2 else C.OverlapRefused):
+        C.schedule_user((ts, mf), h, 0, ctx0(h), UNIT)
+    day = flat_day()
+    set_bar(day, 1002, P, P + 50 * TK, P - 50 * TK, P)                         # stops the 10:00 trade, either side
+    h2 = one_day(day)
+    days, book = C.schedule_user((ts, mf), h2, 0, ctx0(h2), UNIT)
+    assert [t.exit_slot for t in days[0].trades] == [1003] and [t.fill_slot for t in days[1].trades] == [1010]
+    assert len(book.positions) == 2
 
 
 def test_the_coin_follows_the_unit(hist):
@@ -258,3 +318,161 @@ def test_the_coin_follows_the_unit(hist):
     assert a != b and len(offs) > 100
     assert C.schedule_day(d, hist, 2, T.DayContext(2, hist.days[2]), UNIT).trades == \
         C.schedule_day(d, hist, 2, T.DayContext(2, hist.days[2]), T.CoinUnit(SEED_COIN, 0, 0, 0, 0, "MNQ")).trades
+
+
+# ------------------------------------------------------------------------------------------------ corrective cycle 1
+
+RT_UNIT = T.CoinUnit(1, 0, 0, 0, 0)                     # the red team's unit (`chk_rewrite_void.py`: seed 1)
+
+
+def red_team_day(moved: bool) -> tuple[T.History, T.DayContext, C.Design]:
+    """B-1's failing input (the review, B-1): a prior day with one bar, stamped 14:59, at 13100 (`pdc` 13100, a
+    resistance above P_ref 13050); the day flat at 13050; a news window 09:40-09:50 CT; the ticket re-written at 09:51.
+    `moved`: the bars stamped 09:45 and later at 13200, so the re-write finds the ticket through (void)."""
+    prev = [np.full(1441, np.nan) for _ in range(4)]
+    set_bar(prev, W.slot(14, 59), 13100.0, 13100.0, 13100.0, 13100.0)
+    day = flat_day(13050.0)
+    if moved:
+        for s in range(1005, 1439):
+            set_bar(day, s, 13200.0, 13200.0, 13200.0, 13200.0)
+    h = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
+                              *[np.stack([a, b]) for a, b in zip(prev, day)])
+    ctx = T.DayContext(1, "2021-03-03", windows=(T.Window(1000, 1010, "news", "the red team's window"),))
+    design = C.Design("ts", (C.Component("rl3", "ny_am", 960, 960, T.RL3Tickets("pdc", W.slot(14, 30)), 100, 1.0),
+                             C.Component("mk", "ny_am", 961, 995, T.P16Marks((970, 980, 990)), 100, 1.0)))
+    return h, ctx, design
+
+
+def decisions(design: C.Design, hist: T.History, i: int, ctx: T.DayContext, unit: T.CoinUnit) -> dict:
+    """Every offer's decision, {(source, decision, tag): (its moment = live, 'placed' | 'skipped:<why>' |
+    'refused:<why>')}, read from `schedule_day`'s outputs only (so the old code runs it too)."""
+    s = C.schedule_day(design, hist, i, ctx, unit)
+    live = {}
+    for comp in design.components:
+        for o in comp.trigger.offers(hist, i, ctx):
+            live[(o.source, o.decision, o.tag)] = int(o.live)
+    out = {}
+    for t in s.trades:
+        out[(t.source, t.decision, t.tag)] = "placed"
+    for o, _ in s.unfilled:
+        out[(o.source, o.decision, o.tag)] = "placed"
+    for o, r in s.skipped:
+        out[(o.source, o.decision, o.tag)] = f"skipped:{r}"
+    for o, r in s.refused:
+        out[(o.source, o.decision, o.tag)] = f"refused:{r}"
+    return {k: (live[k], v) for k, v in out.items()}
+
+
+def shifted(h: T.History, i: int, t: int, mode: str, seed: np.random.SeedSequence) -> T.History:
+    """The history with every bar of day i stamped at or after slot t, and every bar of every later day, replaced by
+    a seeded random walk on the tick grid at another level (`replace`; which minutes hold a bar unchanged) or deleted
+    (`delete`: minutes without a trade). The delete keeps day i's bars from the walk's end on (the bars ending 15:08 CT
+    and later), so the day still ends where it did: where a day's bars end is the walker's `walk_end` (its last present
+    bar, identity-covered Stage 2 convention), a calendar fact on the store (an early close or a data defect is a
+    calendar void), and a day cut short would move the walker's own last fill bar."""
+    arrs = [x.copy() for x in (h.o, h.h, h.l, h.c)]
+    mask = np.zeros(arrs[0].shape, dtype=bool)
+    mask[i, t + 1:] = True
+    mask[i + 1:, 1:] = True
+    mask &= ~np.isnan(arrs[0])
+    if mode == "delete":
+        mask[i, W.FLAT_ENTRY:] = False
+        for a in arrs:
+            a[mask] = np.nan
+    else:
+        rng = np.random.default_rng(seed)
+        k = int(mask.sum())
+        walk = 13000.0 + TK * (rng.integers(-1600, 1600) + np.cumsum(rng.integers(-12, 13, k)))
+        wid = TK * rng.integers(0, 30, (k, 2))
+        o = walk + TK * rng.integers(-8, 9, k)
+        arrs[0][mask], arrs[3][mask] = o, walk
+        arrs[1][mask] = np.maximum(o, walk) + wid[:, 0]
+        arrs[2][mask] = np.minimum(o, walk) - wid[:, 1]
+    return T.History(h.days, h.contract, *arrs)
+
+
+def shift_violations(design, hist, i, ctx, unit, *, day_key: int, modes=("replace", "delete")) -> tuple[list, int]:
+    """For each decision moment t of day i: the decisions with moment <= t, recomputed on `shifted` bars, against the
+    base. Returns (violations, decisions compared)."""
+    base = decisions(design, hist, i, ctx, unit)
+    bad, n = [], 0
+    for c, t in enumerate(sorted({m for m, _ in base.values()})):
+        for mode in modes:
+            seed = np.random.SeedSequence(SEED_SHIFT, spawn_key=(day_key, c))
+            got = decisions(design, shifted(hist, i, t, mode, seed), i, ctx, unit)
+            for k, (m, v) in base.items():
+                if m <= t:
+                    n += 1
+                    if got.get(k) != (m, v):
+                        bad.append((mode, t, k, (m, v), got.get(k)))
+    return bad, n
+
+
+def test_b1_a_rewritten_ticket_that_turns_void_keeps_the_firm_busy():
+    """B-1: the ticket worked from 09:00 to the window, so the offers at 09:10, 09:20 and 09:30 meet a working order
+    on both days, whatever the price after the window. Catches: `Execution.ended` taking the void re-write's live and
+    the chain dropping executions whose last stretch is void (the old code trades 09:10 on the moved day)."""
+    got = {}
+    for moved in (False, True):
+        h, ctx, design = red_team_day(moved)
+        s = C.schedule_day(design, h, 1, ctx, RT_UNIT)
+        assert s.unfilled[0][1] == ("void:through" if moved else "cancelled:cutoff")
+        assert {o.live: r for o, r in s.skipped} == {970: "order", 980: "order", 990: "order"}
+        assert s.trades == []
+        got[moved] = {k: v for k, v in decisions(design, h, 1, ctx, RT_UNIT).items() if v[0] <= 1004}
+    assert got[False] == got[True] and len(got[False]) == 4
+
+
+def test_m5_every_decision_is_shift_invariant_on_the_red_teams_day():
+    """M-5 on B-1's day: every decision is unchanged when the bars from its moment on are replaced or deleted.
+    Catches B-1 (the old code fails here: the 09:10 offer is placed when a replacement leaves the ticket through at
+    its re-write)."""
+    for moved in (False, True):
+        h, ctx, design = red_team_day(moved)
+        bad, n = shift_violations(design, h, 1, ctx, RT_UNIT, day_key=int(moved))
+        assert not bad, bad[:3]
+        assert n >= 8
+
+
+def test_m5_every_decision_is_shift_invariant_on_synthetic_days(hist):
+    """M-5 on synthetic days with a news window after 09:00 (09:40-09:50) and an unscheduled release (11:10), so RL3
+    tickets are re-written and cancelled: placed, skipped (with reasons) and refused decisions never depend on bars
+    after their moment. Catches: a busy time computed from a stretch's outcome after the moment, a skip reason read
+    from a later state (M-7), a tie booked by its outcome with the busy time following the booked trade (M-6)."""
+    design = C.Design("ts", (
+        C.Component("rl3", "ny_am", 960, 960, T.RL3Tickets("pdc", W.slot(12, 0)), 100, 1.0),
+        C.Component("lim", "ny_am", 961, 1075, T.P16Marks(T.p16_grid(965, 1080), entry=T.LIMIT), 60, 1.0),
+        C.Component("brk", "ny_pm", 1080, 1260, T.P14Breakout(latency=3), 50, 1.5),
+    ))
+    windows = (T.Window(1000, 1010, "news", "test"), T.Window(1150, 1152, "unscheduled", "test"))
+    total = rl3_placed = 0
+    for i in range(1, 9):
+        ctx = T.DayContext(i, hist.days[i], windows=windows)
+        bad, n = shift_violations(design, hist, i, ctx, UNIT, day_key=100 + i)
+        assert not bad, (hist.days[i], bad[:3])
+        total += n
+        s = C.schedule_day(design, hist, i, ctx, UNIT)
+        rl3_placed += sum(1 for o, _ in s.unfilled if o.source == "rl3") + sum(1 for t in s.trades
+                                                                                if t.source == "rl3")
+    assert total > 500 and rl3_placed > 0
+
+
+def test_m7_skips_are_counted_by_the_state_at_their_live_minute():
+    """M-7: a ticket working from 09:00 and filling at 10:40: the offer at 10:00 meets a working order (`order`), the
+    one at 11:40 an open position (`position`). Catches: the skip reason taken from the group's final state."""
+    prev = [np.full(1441, np.nan) for _ in range(4)]
+    set_bar(prev, W.slot(14, 59), 13100.0, 13100.0, 13100.0, 13100.0)          # pdc 13100, a resistance
+    day = flat_day(13050.0)
+    # gapping up to the level and through it by two ticks: the fade (sell limit at 13100) and the break (buy stop at
+    # 13100.25) both fill, neither near its stop on the fill bar
+    set_bar(day, W.slot(10, 40), 13100.0, 13100.0 + 2 * TK, 13100.0, 13100.0 + 2 * TK)
+    for s in range(W.slot(10, 41), 1439):
+        set_bar(day, s, 13100.0 + 2 * TK, 13100.0 + 2 * TK, 13100.0 + 2 * TK, 13100.0 + 2 * TK)
+    h = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
+                              *[np.stack([a, b]) for a, b in zip(prev, day)])
+    design = C.Design("ts", (C.Component("rl3", "ny_am", 960, 960, T.RL3Tickets("pdc", W.slot(14, 30)), 100, 1.0),
+                             C.Component("mk", "ny_am", 961, 1300, T.P16Marks((W.slot(10, 0), W.slot(11, 40))),
+                                         100, 1.0)))
+    s = C.schedule_day(design, h, 1, T.DayContext(1, "2021-03-03"), UNIT)
+    assert [t.fill_slot for t in s.trades] == [W.slot(10, 40)]
+    assert {o.live: r for o, r in s.skipped} == {W.slot(10, 0): "order", W.slot(11, 40): "position"}
