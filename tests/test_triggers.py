@@ -454,7 +454,20 @@ def test_rl3_fade_and_break_fill_on_the_same_bar(hist):
                     assert ex[1].trade.fill.bar == ex[-1].trade.fill.bar
                     filled += 1
     assert pairs > 30 and filled > 15
-    assert boundary >= 0
+
+
+@pytest.mark.parametrize("role", [1, -1])
+def test_rl3_void_boundary_voids_the_fade_and_not_the_break(role):
+    """The pair's one countable exception (RL3 5.5): at a price at live exactly at the level, the fade limit is
+    marketable (void) and the break stop, a tick beyond, rests. Catches: the break stop placed at the level itself
+    (no tick offset), which voids both; a fade void rule comparing strictly."""
+    tkt = T.Offer("rl3", 0, 930, 0, 930, 960, T.TICKET, P, role, expires=1199, group="g", rewrite=True)
+    h = one_day(flat_day(P))                                                   # the price at 09:00 is the level
+    ctx = T.DayContext(0, h.days[0])
+    fade = T.execute(tkt, -role, h, 0, ctx, 100, 1.0)
+    brk = T.execute(tkt, role, h, 0, ctx, 100, 1.0)
+    assert fade.order_kind == W.LIMIT_ENTRY and fade.trade.fill.status == "void"
+    assert brk.order_kind == W.STOP_ENTRY and brk.trade.fill.status == "cancelled"
 
 
 def test_order_for_maps_the_coin_to_fade_or_break():
@@ -500,20 +513,36 @@ def test_a_working_limit_is_cancelled_at_a_windows_start():
     assert no_window.trade.fill.status == "filled" and no_window.fill_slot == 1003     # the window did the cancelling
 
 
-def test_an_open_position_is_flattened_at_a_windows_start():
+@pytest.mark.parametrize("side", [1, -1])
+def test_an_open_position_is_flattened_at_a_windows_first_bar_worst_less_two(side):
+    """E-223 M-4 ruling (lead): a position open at a window's start is booked at the adverse extreme of the window's
+    first bar (the bar stamped at its first minute) less two ticks, exiting at that bar's end -- RL3 4.6 / 5.4's
+    convention, for every source. Catches: the old close-before-the-window booking (gross 0 here), the bar's
+    favourable extreme, the two ticks dropped, the flatten bar one minute off."""
     day = flat_day()
-    for s in range(1010, 1439):                                                # three ticks up: no barrier reached
-        set_bar(day, s, P + 3 * TK, P + 3 * TK, P + 3 * TK, P + 3 * TK)
+    set_bar(day, 1020, P, P + (20 * TK if side < 0 else TK), P - (20 * TK if side > 0 else TK), P)
     h = one_day(day)
     w = T.Window(1020, 1030, "news")
     ctx = T.DayContext(0, h.days[0], windows=(w,))
     off = hand_offer(995, alert=990)
-    ex = T.execute(off, 1, h, 0, ctx, 200, 3.0)
+    ex = T.execute(off, side, h, 0, ctx, 200, 3.0, costs=W.Costs(fee_micro_eq=0.74))
     tr = ex.trade
-    assert ex.rules.walk_end == w.first and ex.rules.flatten == "close"
-    assert tr.rule.kind[0] == W.FLATTEN and ex.exit_slot == w.first
-    assert tr.fill.price == P and tr.rule.gross[0] == 3                       # closed at the price at the start
+    assert ex.rules.walk_end == w.first and ex.window_flatten
+    assert tr.fill.price == P and tr.rule.kind[0] == W.FLATTEN
+    assert ex.exit_slot == w.first + 1 == ex.flatten_slot                     # the end of the bar stamped 10:20
+    assert tr.rule.gross[0] == -22                                             # 20 ticks adverse, less two
+    assert tr.rule.net_r[0] == pytest.approx(float(W.net_r([-22], [W.FLATTEN], 200, entry_ticks=1.0,
+                                                           costs=W.Costs(fee_micro_eq=0.74))[0]))
     assert ex.rules.walk_end < T.JOURNEY.walk_end
+    stopped = T.execute(off, side, h, 0, ctx, 10, 3.0)                        # the bar reaches a 10-tick stop
+    assert stopped.trade.rule.kind[0] == W.STOP and stopped.trade.rule.gross[0] == -10
+    assert stopped.exit_slot == w.first + 1
+    gap = [a.copy() for a in day]                                              # n-5: the window's first bar missing
+    for a in gap:
+        a[w.first + 1] = np.nan
+    set_bar(gap, w.first + 1, P, P + (20 * TK if side < 0 else TK), P - (20 * TK if side > 0 else TK), P)
+    moved = T.execute(off, side, one_day(gap), 0, ctx, 200, 3.0)
+    assert moved.exit_slot == moved.flatten_slot == w.first + 2 and moved.trade.rule.gross[0] == -22
 
 
 def test_an_unscheduled_release_cancels_from_its_minute_and_flattens_after_it():
@@ -525,8 +554,12 @@ def test_an_unscheduled_release_cancels_from_its_minute_and_flattens_after_it():
     h = one_day(day)
     off = hand_offer(1090, alert=1085, entry=T.LIMIT, level=P, expires=1119)
     assert T.execute(off, 1, h, 0, ctx, 50, 1.0).trade.fill.status == "cancelled"
-    m = T.execute(hand_offer(1050, alert=1045), 1, one_day(flat_day()), 0, ctx, 200, 3.0)
-    assert m.exit_slot == r + 1 and m.trade.rule.kind[0] == W.FLATTEN       # the first bar after the release minute
+    flat = flat_day()
+    set_bar(flat, r, P, P, P - 30 * TK, P)                                     # the release bar: walked, no barrier
+    set_bar(flat, r + 1, P, P, P - 8 * TK, P)                                  # the first bar after it: the flatten
+    m = T.execute(hand_offer(1050, alert=1045), 1, one_day(flat), 0, ctx, 200, 3.0)
+    assert m.exit_slot == r + 2 and m.trade.rule.kind[0] == W.FLATTEN       # the end of the bar stamped r + 1
+    assert m.trade.rule.gross[0] == -10 and m.trade.rule.mae[0] == 30         # its low less two; the release bar's MAE
     tkt = T.Offer("rl3", 0, 930, 0, 930, 960, T.TICKET, P, -1, expires=1199, group="g", rewrite=True)
     assert T.segments(tkt, ctx) == [(960, r - 1)]                              # no re-write after an unscheduled release
 
@@ -574,7 +607,8 @@ def test_a_position_open_at_0830_is_flattened_there(monkeypatch):
     kept, _ = T.admit([off], ctx)
     assert kept == [off]
     ex = T.execute(off, -1, one_day(flat_day()), 0, ctx, 200, 3.0)
-    assert ex.exit_slot == T.CLOSED_FIRST and ex.trade.rule.kind[0] == W.FLATTEN
+    assert ex.exit_slot == T.CLOSED_FIRST + 1 and ex.trade.rule.kind[0] == W.FLATTEN
+    assert ex.trade.rule.gross[0] == -2                                        # a flat bar: its extreme less two
 
 
 def test_bls_days_have_no_entry_at_or_before_0735(monkeypatch):
