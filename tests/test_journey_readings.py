@@ -109,6 +109,7 @@ def test_the_journey_rows_are_not_vacuous(got):
     assert {"share_paid_within", "share_run_out", "share_peak_over"} <= set(ex["states_nonzero"]), ex
     assert ex["accounts"] > 0 and ex["lost"] > 0 and ex["e252"] > 0, ex
     assert any(0 < v < 1 for v in ex["p_b"]), ex
+    assert ex["risk_rows"] > 0, ex                         # m-4: every step's risk weight is beside the curve
 
 
 # ------------------------------------------------------------------------------------------------ corrective cycle 1

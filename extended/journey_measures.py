@@ -386,14 +386,27 @@ def km_survival(times: Sequence[float], lost: Sequence[bool], weights: Sequence[
         raise ValueError("one time, event flag and weight an observation")
     if len(t) and ((t < 0).any() or (t != np.round(t)).any() or (w <= 0).any()):
         raise ValueError("times are whole numbers of at least 0 and weights above 0")
-    top = int(t.max()) if len(t) else 0
     s, out = 1.0, [(0, 1.0)]
-    for k in range(0, top + 1):
-        n_k = float(w[(t > k) | ((t == k) & e)].sum()) if censored_leave_at_count else float(w[t >= k].sum())
-        d_k = float(w[(t == k) & e].sum())
+    for k, n_k, d_k in km_steps(t, e, w, censored_leave_at_count=censored_leave_at_count):
         if n_k > 0:
             s *= 1.0 - d_k / n_k
         out.append((k + 1, float(s)))
+    return out
+
+
+def km_steps(times: Sequence[float], lost: Sequence[bool], weights: Sequence[float] | None = None, *,
+             censored_leave_at_count: bool = True) -> list[tuple[int, float, float]]:
+    """Each step of `km_survival`'s curve as (k, n_k, d_k): the risk weight and the event weight of the step k -> k + 1,
+    k = 0 .. max time, under the same risk-set rule (m-4: reported beside the curve, so a step read off almost no known
+    outcome shows it)."""
+    t = np.asarray(times, float)
+    e = np.asarray(lost, bool)
+    w = np.ones(len(t)) if weights is None else np.asarray(weights, float)
+    top = int(t.max()) if len(t) else 0
+    out = []
+    for k in range(0, top + 1):
+        n_k = float(w[(t > k) | ((t == k) & e)].sum()) if censored_leave_at_count else float(w[t >= k].sum())
+        out.append((k, n_k, float(w[(t == k) & e].sum())))
     return out
 
 
@@ -407,12 +420,15 @@ def km_quantile(curve: Sequence[tuple[int, float]], q: float) -> float:
 
 
 def funded_lifetime(units: Sequence[Sequence[Mapping[str, Any]]], window: int,
-                    pcts: Sequence[int] = PERCENTILES) -> dict[str, Any]:
+                    pcts: Sequence[int] = PERCENTILES, *, risk_floor: float | None = None) -> dict[str, Any]:
     """(31) over the units of `E_W`, one list of funded-account records a unit (the accounts activated by W): the
     Kaplan-Meier curve of payouts before loss (and, beside, of sessions alive), each unit weighted equally (an account
     of a unit holding A funded accounts carries 1 / A), its percentiles read off it ("beyond" -- NaN with `p{p}_beyond`
     -- where it does not fall that far), the censored count and share (by accounts, and weighted), and every censored
-    ending by kind."""
+    ending by kind. m-4: beside each curve its steps' risk and event weights (`steps_payouts`, `steps_sessions`:
+    (k, n_k, d_k)), and beside each percentile the risk weight of the step it was read at (`p{p}_risk`, blank when
+    beyond) and, with `risk_floor` (declared with the reading; none here), whether that weight is below it
+    (`p{p}_thin`)."""
     rows = []
     for accs in units:
         mine = [a for a in accs if int(a["activation_day"]) <= int(window)]
@@ -424,7 +440,10 @@ def funded_lifetime(units: Sequence[Sequence[Mapping[str, Any]]], window: int,
     w = [r["weight"] for r in rows]
     curve = km_survival(pay, lost, w)                                   # B-2: censored leave at their count
     curve_s = km_survival(ses, lost, w, censored_leave_at_count=False)  # sessions: the usual clock tie rule
-    out: dict[str, Any] = {"curve_payouts": curve, "curve_sessions": curve_s, "n_accounts": len(rows),
+    steps = km_steps(pay, lost, w) if rows else []                      # m-4: (k, n_k, d_k) beside each curve
+    steps_s = km_steps(ses, lost, w, censored_leave_at_count=False) if rows else []
+    out: dict[str, Any] = {"curve_payouts": curve, "curve_sessions": curve_s, "steps_payouts": steps,
+                           "steps_sessions": steps_s, "n_accounts": len(rows),
                            "n_units": int(sum(1 for accs in units if any(int(a["activation_day"]) <= int(window)
                                                                          for a in accs))),
                            "n_lost": int(sum(lost)), "n_censored": int(len(rows) - sum(lost))}
@@ -436,6 +455,9 @@ def funded_lifetime(units: Sequence[Sequence[Mapping[str, Any]]], window: int,
     for p in pcts:
         v = km_quantile(curve, p / 100.0)
         out[f"p{p}"], out[f"p{p}_beyond"] = v, not math.isfinite(v)
+        risk = dict((k, n) for k, n, _ in steps).get(int(v), NAN) if math.isfinite(v) else NAN
+        out[f"p{p}_risk"] = float(risk)
+        out[f"p{p}_thin"] = bool(risk_floor is not None and math.isfinite(risk) and risk < float(risk_floor))
         v = km_quantile(curve_s, p / 100.0)
         out[f"sessions_p{p}"], out[f"sessions_p{p}_beyond"] = v, not math.isfinite(v)
     return out
@@ -754,7 +776,7 @@ __all__ = ["MONTH", "MONTHS", "YEAR", "TOL", "PERCENTILES", "STATES", "LOST", "C
            "first_within", "first_arrival", "days_reading", "strict_quantiles", "spent_to_event",
            "evaluations_to_first_pass", "months_ahead_under", "p_bankroll", "share_ahead_at", "peak_oop",
            "return_on_money_at_risk", "monthly_changes", "monthly_net_4_12", "longest_wait", "bankroll_state",
-           "bankroll_stop", "account_ending", "account_lifetime", "km_survival", "km_quantile", "funded_lifetime",
+           "bankroll_stop", "account_ending", "account_lifetime", "km_survival", "km_steps", "km_quantile", "funded_lifetime",
            "workload", "supply", "trading_day_of", "firm_day", "coverage", "idle", "coin_readings",
            "design_coin_readings", "variance_decomposition", "by_year", "subset_reading", "break_even_denial_rate",
            "exposed_share"]

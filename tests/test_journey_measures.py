@@ -395,3 +395,27 @@ def test_the_break_even_denial_rate():
     # not monotone: the first crossing in grid order
     assert J.break_even_denial_rate(g, [0.7, 0.4, 0.6, 0.3])["p_star"] == pytest.approx(0.1 * 0.2 / 0.3)
     assert J.exposed_share([4, 6], [1, 1]) == 0.2 and math.isnan(J.exposed_share([0], [0]))
+
+
+def test_m4_each_steps_risk_and_events_are_reported_beside_the_curve():
+    """m-4 (the red team's re-read): one account lost at 0 payouts and 99 still open at 0 give S(1) = 0 -- the median
+    and the p90 at 0 -- read off one observation. Beside the curve every step's risk and event weights (n_k, d_k) are
+    reported, and each percentile carries the risk weight of the step it was read at (here 1 of 100 accounts), so the
+    reading shows it rests on one account; with a declared floor the percentile is marked thin. The sessions curve on
+    the same accounts (the loss at 4 sessions alive) falls only to 0.99."""
+    lost = {"activation_day": 1, "ended_on": 5, "closed": True, "arrivals": ()}
+    open_ = {"activation_day": 1, "ended_on": None, "arrivals": ()}
+    r = J.funded_lifetime([[lost]] + [[open_]] * 99, 126, risk_floor=10.0)
+    assert dict(r["curve_payouts"])[1] == 0.0 and r["p50"] == 0.0 and r["p90"] == 0.0
+    assert r["steps_payouts"] == [(0, 1.0, 1.0)]                      # (k, n_k, d_k): one account at risk, one lost
+    assert r["p50_risk"] == 1.0 and r["p90_risk"] == 1.0 and r["p50_thin"] and r["p90_thin"]
+    assert min(v for _, v in r["curve_sessions"]) == pytest.approx(0.99)
+    assert r["steps_sessions"][0] == (0, 100.0, 0.0)
+    # without a floor nothing is marked, the weights are still beside
+    r0 = J.funded_lifetime([[lost]] + [[open_]] * 99, 126)
+    assert r0["p50_risk"] == 1.0 and r0["p50_thin"] is False
+    # a beyond percentile has no step: no risk weight, never thin
+    assert math.isnan(J.funded_lifetime([[open_]], 126)["p50_risk"])
+    # km_steps by hand on the definition's case: lost 0, lost 1, censored 1, lost 2, censored 3
+    assert J.km_steps([0, 1, 1, 2, 3], [True, True, False, True, False]) == \
+        [(0, 5.0, 1.0), (1, 3.0, 1.0), (2, 2.0, 1.0), (3, 0.0, 0.0)]

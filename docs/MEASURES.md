@@ -868,6 +868,11 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   payouts plus those lost at k; an account censored at k has left (`km_survival`'s default). The reading beside in
   sessions alive is a time on a clock and keeps the usual tie rule (a censoring at t outlives an event at t;
   `censored_leave_at_count=False`).
+- **Beside the curve (m-4, the re-read):** under that rule a percentile can rest on very few known outcomes (one loss
+  and 99 accounts open at 0 payouts give `S(1) = 0`). So every step's risk and event weights (`n_k`, `d_k`;
+  `journey_measures.km_steps`) and, beside each percentile, the risk weight of the step it was read at are reported;
+  a percentile below a risk floor declared with the reading is marked thin (`funded_lifetime(..., risk_floor=)`; no
+  floor is declared here).
 - **Where:**
   - Functions: `extended/journey_measures.py`, `account_ending`, `account_lifetime`, `km_survival`, `km_quantile` and
     `funded_lifetime` (built in Wave 3.1), on the journey's `accounts` field (`extended/user_beside.py`,
@@ -1132,6 +1137,28 @@ changed line the test also checks that the text it replaced is gone.
   design with a flip stream. Under CHARTER 3.2 every design has a coin, so the enforcement stream must be seeded apart
   from the coin first. That is the seed-paired runner's (Wave 3.2): the path seed drives both streams in the vendored
   engine, which is not edited.
+
+**To run before the held-out runner is declared (the red team's n-3, re-read of cycle 1; heavy, queued by the lead).**
+Under M-2 every exact-run difference refuses a journey reading, and no reason is declared. If the held-out runner met
+a difference, the held-out years would be replayed and then refused, and any reason written then would be written after
+seeing held-out records. So the rate is measured first, on the search years only:
+- **What runs:** P-14's search-year job (its registered latency and brackets, both of U1's arms), through
+  `extended/user_beside.py`, `run_starts(..., journey=True)` with its defaults: `journey_block` the search years (a
+  held-out start is refused before the pool) and `exact_every` 1 (every start checked). Responses: `off`, and the denial
+  ladder's `denial_25` (the response D-145's gate reads), so a difference that only a response produces is seen.
+- **Which starts:** the last 252 search-year starts, the ones whose long run is cut at 2023-12-29, plus every 21st
+  earlier search start as the uncut control.
+- **What is counted, per design, arm and response:** for each exact horizon h (21, 63, 90, 126), the starts checked at h
+  and the starts whose exact h-session run's event days differ from the cut long run's (`differs`); for each
+  difference, which event moved (first pass, first payout, a pay day) and by how many sessions. Counts only: no
+  measure's value is read or written.
+- **Written:** one result file with its manifest, from a clean checkout of a named commit (`scripts/run_clean.py`),
+  under `run.lock`; its manifest names the record read (m-8).
+- **What follows:** with no difference, no reason is needed and M-2's refusal stands as a guard. With any, each kind of
+  difference is described and a reason or a treatment (for instance, reading the exact run's record as `Views` does)
+  is declared under a row before the held-out runner is declared, never after.
+- **Cost:** one heavy run, about U1's cost for 252 starts per arm and response (the exact runs are over half of a
+  start's cost, and every start makes them), memory as U1's replay (a Stage 2 family run peaked near 3 GB).
 
 **A note outside this file's scope (B-1's pattern).** Other runners use the same whole-window run length. Any of them
 that feeds a measure for a search needs B-1's fix too: the run stops at the block's last outcome session. Each is
