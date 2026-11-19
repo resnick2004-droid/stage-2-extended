@@ -5,15 +5,17 @@ only ever a design that was read (`extended.plateau` refuses anything but a `Rea
 
     from extended import search_space as SS, surrogate as SG
     sg = SG.Surrogate(space, seed=S2, restarts=4)
-    record = sg.fit(readings)                       # the one door: refuses anything tagged held-out (SS.admit)
+    record = sg.fit(readings, ledger=ledger, protocol=protocol)   # the one door (SS.admit): counted cells only
     pred = sg.predict(designs)                      # pred.mean, pred.sd (the latent measure's), in its own units
 
 **The one door.** `Surrogate.fit` is the only way data reaches the model. It passes every reading through
-`search_space.admit` (tagged ``search``, every block inside the search years 2020-01-02 to 2023-12-29, E-208), refuses
-a reading of another measure, a design the space refuses, and readings on different blocks or coin seeds (they are
-different quantities: the survey and the rounds read every design on the same blocks and seeds, paired). A refused
-fit leaves the surrogate as it was. The model's arrays are private (`_GP`); `believe` adds the surrogate's **own**
-predicted means at designs it is asked about (the kriging-believer batch, `extended.proposer`), never an outside value.
+`search_space.admit` with the cell ledger and the declared `Protocol` (the red team's B-1): tagged ``search``, every
+block and every outcome session inside the search years 2020-01-02 to 2023-12-29 (E-208, CHARTER 3.6 (d)), exactly
+the protocol's measure, blocks, seeds, horizon and library versions, and **a design that is a counted survey or round
+cell of the ledger**. It refuses a protocol of another measure than the surrogate's and a design the space refuses. A
+refused fit leaves the surrogate as it was. The model's arrays are private (`_GP`); `believe` adds the surrogate's
+**own** predicted means at designs it is asked about (the kriging-believer batch, `extended.proposer`), never an
+outside value.
 
 **The model.** Each design is encoded by the space: a real or integer lever scaled to [0, 1] by its bounds (a window's
 marks by its slot's), a categorical as its cell's code (an inactive lever holds a code of its own, and 0 on the
@@ -26,15 +28,17 @@ a fitted nugget plus each reading's own squared standard error when it gives one
 integrated out under a unit prior variance (`MEAN_VAR`, a constant kernel term), so a model that finds no structure
 still says how well it knows the level.
 
-**The fit** (the template's section 6: "hyperparameters fixed here or chosen ... inside the search years"): the
-hyperparameters maximise the log posterior on the admitted search-year readings -- the log marginal likelihood plus
+**The fit** is a **fixed procedure**, to be named as such in the search declaration with `PRIOR_TAU`, `MEAN_VAR`,
+`BOUNDS`, `START` and the restarts pinned (the red team's n-4: it is neither of the template's two options, "fixed
+here" or "chosen by cross-validation", but the first with a declared prior): the hyperparameters maximise the log
+posterior on the admitted search-year readings -- the log marginal likelihood plus
 **the SAAS prior** (`PRIOR_TAU`; a half-Cauchy on each inverse squared length-scale and each categorical rate, MAP in
 the rates), because the likelihood alone, with one length-scale a lever, reads pure noise as structure (a short
 length-scale on a few levers interpolates it; `tests/test_surrogate.py` holds the diagnosis) -- with analytic
 gradients (`_GP.nll`, `_GP.neg_log_prior`, checked against finite differences by the tests), by L-BFGS-B inside
 declared bounds (`BOUNDS`, in the standardised units), from a fixed start and `restarts` starts drawn from `seed`'s fit
-stream; the lowest wins. The seed, the starts and the winning hyperparameters are in the fit's record. No held-out
-reading can enter, so nothing fitted here can read the held-out years.
+stream; the lowest wins. The seed, the starts, the winning hyperparameters and the numpy and scipy versions are in
+the fit's record. No held-out reading can enter, so nothing fitted here can read the held-out years.
 """
 from __future__ import annotations
 
@@ -88,6 +92,8 @@ class FitRecord:
     readings: tuple[str, ...]
     blocks: tuple[tuple[str, str], ...]
     seeds: tuple[int, ...]
+    horizon: int
+    libs: tuple[tuple[str, str], ...]
 
 
 # ------------------------------------------------------------------------------------------------ the encoding
@@ -291,21 +297,18 @@ class Surrogate:
         self._gp: _GP | None = None
         self.record: FitRecord | None = None
 
-    def fit(self, readings: Sequence[Any]) -> FitRecord:
-        """The one door (the module docstring): admit, check, encode, fit."""
-        rs = SS.admit(readings)
+    def fit(self, readings: Sequence[Any], *, ledger: SS.CellLedger, protocol: SS.Protocol) -> FitRecord:
+        """The one door (the module docstring): admit (ledger and protocol), check, encode, fit."""
+        if type(protocol) is not SS.Protocol or protocol.measure != self.measure:
+            raise SurrogateRefused(f"the surrogate of {self.measure!r} fits readings on a protocol of that measure")
+        rs = SS.admit(readings, ledger=ledger, protocol=protocol, roles=SS.searched)
         if len(rs) < 2:
             raise SurrogateRefused("a fit needs at least two readings")
         for r in rs:
-            if r.measure != self.measure:
-                raise SurrogateRefused(f"a reading of {r.measure!r} given to the surrogate of {self.measure!r}")
             why = self.space.check(r.design)
             if why is not None:
                 raise SurrogateRefused(f"a reading of a design the space refuses ({why[0]}: {why[1]})")
-        blocks, seeds = rs[0].blocks, rs[0].seeds
-        if any(r.blocks != blocks or r.seeds != seeds for r in rs):
-            raise SurrogateRefused("readings on different blocks or coin seeds are different quantities: one fit "
-                                   "reads one protocol")
+        blocks, seeds = protocol.blocks, protocol.seeds
         xc, xk = self.encoder.encode([r.design for r in rs])
         y = np.array([float(r.value) for r in rs])
         se2 = np.array([0.0 if r.se is None else float(r.se) ** 2 for r in rs])
@@ -317,7 +320,7 @@ class Surrogate:
                  "s2": s2, "noise": noise, "y_mean": gp.ymu, "y_sd": gp.ysd}
         self._gp = gp
         self.record = FitRecord(self.measure, len(rs), self.seed, self.restarts, starts, float(nll), hyper,
-                                tuple(r.id for r in rs), blocks, seeds)
+                                tuple(r.id for r in rs), blocks, seeds, protocol.horizon, SS.LIBS)
         return self.record
 
     @property

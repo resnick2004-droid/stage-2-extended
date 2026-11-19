@@ -4,10 +4,13 @@ counted and the round's seed recorded. It proposes; it never reads, and it never
 
     from extended import proposer as P
     spec = P.RoundSpec(batch=8, pool=1024, acquisition="ei")
-    rnd = P.propose(space, readings, spec=spec, round_index=1, seed=S2, ledger=ledger)
+    rnd = P.propose(space, readings, spec=spec, round_index=1, seed=S2, ledger=ledger, protocol=protocol)
     rnd.designs                                    # exactly `spec.batch` designs, each recorded as `round-1`
 
 **One round** (`propose`):
+0. **Begin** the round in the cell ledger (`CellLedger.begin`): a round number already recorded, under any seed, is
+   refused, and so is a round before the one before it (the red team's B-1) -- a round is drawn once, never re-drawn
+   under a new seed for the reader to choose from.
 1. **Fit** the composite's surrogate (`extended.surrogate.Surrogate.fit`, the one door: every reading tagged
    ``search`` and inside the search years) with the seed's fit stream keyed by the round; and one surrogate a declared
    limit
@@ -28,6 +31,14 @@ counted and the round's seed recorded. It proposes; it never reads, and it never
    never shrunk after a look).
 5. **Counted**: every proposal enters the cell ledger as ``round-<i>`` with the round seed.
 The number of rounds is the declaration's, never extended after a look; nothing here decides to stop or continue.
+
+**One protocol** (the red team's m-10): every reading -- the composite's and each limit's -- passes the one door on the
+declared protocol (`search_space.admit`), a limit's on the same blocks, seeds and horizon under its own measure.
+**Single objective under limits** is this engine's reading of CHARTER 3.3 (d)'s "constrained, multi-objective"
+optimisation: the composite is the objective and the limits are constraints by probability of feasibility. The
+multi-objective frontier and the finalist order rule are the search declaration's (Wave 5, the lead's ruling); `limits`
+and one surrogate a measure are their hooks, and every reading the frontier would need is a counted cell on the
+protocol.
 """
 from __future__ import annotations
 
@@ -103,6 +114,7 @@ class Round:
     candidates: dict[str, int]
     fit: SG.FitRecord
     limit_fits: dict[str, SG.FitRecord] = field(default_factory=dict)
+    libs: tuple[tuple[str, str], ...] = SS.LIBS
 
 
 def expected_improvement(mu: np.ndarray, sd: np.ndarray, best: float, xi: float) -> np.ndarray:
@@ -162,25 +174,28 @@ def _candidates(space: SS.Space, sg: SG.Surrogate, read: Sequence[Mapping[str, A
 
 
 def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_index: int, seed: int,
-            ledger: SS.CellLedger, limits: Sequence[Limit] = (),
+            ledger: SS.CellLedger, protocol: SS.Protocol, limits: Sequence[Limit] = (),
             limit_readings: Mapping[str, Sequence[Any]] | None = None) -> Round:
     """One round (the module docstring)."""
     SS.child_rng(seed)
-    if int(round_index) < 1:
+    if type(round_index) is not int or round_index < 1:
         raise ProposerRefused("rounds are numbered from one (the survey is round zero's role)")
-    sg = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure="composite", key=(int(round_index), 0))
-    fit = sg.fit(readings)
+    for lim in limits:
+        if not (limit_readings or {}).get(lim.measure):
+            raise ProposerRefused(f"a limit on {lim.measure!r} needs that measure's readings")
+    ledger.begin(f"round-{round_index}", int(seed))
+    sg = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=protocol.measure,
+                      key=(int(round_index), 0))
+    fit = sg.fit(readings, ledger=ledger, protocol=protocol)
     fits: list[tuple[Limit, SG.Surrogate]] = []
     limit_fits: dict[str, SG.FitRecord] = {}
     for li, lim in enumerate(limits):
-        rs = (limit_readings or {}).get(lim.measure)
-        if not rs:
-            raise ProposerRefused(f"a limit on {lim.measure!r} needs that measure's readings")
+        rs = (limit_readings or {})[lim.measure]
         ls = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=lim.measure,
                           key=(int(round_index), li + 1))
-        limit_fits[lim.measure] = ls.fit(rs)
+        limit_fits[lim.measure] = ls.fit(rs, ledger=ledger, protocol=protocol.with_measure(lim.measure))
         fits.append((lim, ls))
-    read = [r.design for r in SS.admit(readings)]
+    read = [r.design for r in SS.admit(readings, ledger=ledger, protocol=protocol)]
     cands, stats = _candidates(space, sg, read, spec, seed, int(round_index))
     if len(cands) < spec.batch:
         raise ProposerRefused(f"{len(cands)} valid candidates for a batch of {spec.batch}: the round is refused, "
@@ -213,7 +228,7 @@ def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_
         ledger.record(space, d, role=f"round-{int(round_index)}", seed=int(seed), refusal=None,
                       round_index=int(round_index))
     return Round(int(round_index), int(seed), spec, chosen, acq_v, mu_v, sd_v, pf_v, incumbent, stats, fit,
-                 limit_fits)
+                 limit_fits, SS.LIBS)
 
 
 __all__ = ["TASK", "ACQUISITIONS", "DIRECTIONS", "ProposerRefused", "RoundSpec", "Limit", "Round",

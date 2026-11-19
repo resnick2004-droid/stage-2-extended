@@ -5,9 +5,14 @@ What is asserted: every returned design passes every constraint, each checked he
 (windows on the mark grid, inside their sessions and never colliding; the loader's combination rules; latency cells as
 `lever_space.latency_cells` gives them; conduct tier 1 never returned); **every cell proposed is in the ledger**, the
 refused ones included, shown by replaying the sampler's unit points by hand; the sampler is reproducible from its seed
-and space-filling (stratified marginals, lower discrepancy than independent draws); the door refuses anything tagged
-held-out or touching the held-out years. **Mutations** (each a planted defect a test here must catch): the collision
-check removed, refused cells left unrecorded, the tier-1 check removed, the seed ignored, the door left open.
+and space-filling (stratified marginals, lower discrepancy than independent draws); a role is begun once, under one
+seed; **the door** (ledger and protocol, the red team's B-1) refuses anything tagged held-out (naming the held-out
+years), touching the held-out years in a block or an outcome session (m-3), off the declared protocol, not exactly a
+frozen `Reading` (m-4), or of a design that is not a counted cell; tier 1 matches case-insensitively and refuses
+`firms=True` (m-5); NY windows whose first mark is inside the closed 08:30-08:59 window are refused and counted (n-3);
+`to_components` gives `components.Design(day=...)` on each date pattern (m-11). **Mutations** (each a planted defect
+a test here must catch): the collision check removed, refused cells left unrecorded, the tier-1 check removed, the seed
+ignored, the door left open, the ledger check dropped, the held-out word check dropped, offsets bounded on one date.
 """
 from __future__ import annotations
 
@@ -169,6 +174,8 @@ def test_the_lever_space_loads_what_the_loader_loads_and_carries_its_refusals(le
                                                                                       DC.SEARCH_END))
     if not T.overnight_allowed():
         assert lever.dim("london.0.on").values == (SS.OFF,) and lever.refused["london.0"] == "OvernightRefused"
+    else:                                                               # H2's row (E-231): overnight admitted
+        assert lever.dim("london.0.on").values == (SS.OFF, SS.ON) and "london.0" not in lever.refused
     with pytest.raises(SS.SpaceRefused):
         SS.from_lever_space(slots={"ny_am": 1})                       # T2b is to declare
     split = SS.session_slots(ny_boundary=1080)
@@ -283,10 +290,26 @@ def test_conduct_tier_one_is_refused_at_sampling():
     drew = [r for r in led.rows if r["design"]["routing"] == "copy_trade_across_accounts"]
     assert drew and all(r["status"] == "refused" and r["class"] == "tier1" for r in drew)
     good = ds[0]
-    assert sp.check(dict(good, firms=2))[0] == "tier1"                  # one firm a design
-    assert sp.check(dict(good, overlap="allowed"))[0] == "tier1"        # m-2: overlap refused
+    for bad in (dict(good, firms=2), dict(good, firms=True), dict(good, firms=1.0), dict(good, overlap="allowed"),
+                dict(good, routing="Copy_Trade_Across_Accounts"), dict(good, routing="COPY_TRADE_ACROSS_ACCOUNTS")):
+        assert sp.check(bad)[0] == "tier1", bad                          # m-5: one firm, the integer; names casefolded
     with pytest.raises(SS.SpaceRefused):
         SS.Space(sp.dims, slots=sp.slots, fixed={"overlap": "allowed"})
+    mixed = TY.slot_space(routing=("longest_wait", "Copy_Trade_Across_Accounts"))
+    got = SS.Sampler(mixed, seed=SEED, method="sobol").survey(16, ledger=SS.CellLedger())
+    assert all(d["routing"] == "longest_wait" for d in got)
+
+
+def test_conduct_tier_one_on_the_real_lever_space(lever):
+    """The real space offers no tier-1 value (m-5): tier 1 there is the fixed overlap and firm values, refused here,
+    and a tier-1 name injected into a real design."""
+    d = SS.Sampler(lever, seed=SEED, method="sobol").survey(4, ledger=SS.CellLedger())[0]
+    assert lever.fixed["overlap"] == "refused" and lever.fixed["firms"] == 1
+    for bad in (dict(d, overlap="allowed"), dict(d, firms=2), dict(d, firms=True),
+                dict(d, A10="Max_Size_Into_Major_News"), dict(d, A3="hedge_across_firms")):
+        assert lever.check(bad)[0] == "tier1", bad
+    assert not any(isinstance(v, str) and v.casefold() in {t.casefold() for t in SS.TIER_ONE}
+                   for dim in lever.dims for v in dim.every_value())
 
 
 def test_the_sampler_is_reproducible_from_its_seed_and_needs_one():
@@ -341,20 +364,153 @@ def test_unit_of_decodes_back_to_the_design():
 # ------------------------------------------------------------------------------------------------ the door
 
 
+def one_counted(space=None):
+    led = SS.CellLedger()
+    d = SS.Sampler(space or TY.toy_space(), seed=SEED, method="sobol").survey(1, ledger=led)[0]
+    return d, led
+
+
 def test_the_door_refuses_anything_held_out():
-    d = SS.Sampler(TY.toy_space(), seed=SEED, method="sobol").survey(1, ledger=SS.CellLedger())[0]
-    assert SS.admit([TY.reading(d, 1.0)])
-    for tag in ("held_out", "heldout", "HELD-OUT", "judged", "holdout", "confirmation", "", "other"):
-        with pytest.raises(SS.HeldOutInput):
-            SS.admit([TY.reading(d, 1.0), TY.reading(d, 1.0, tag=tag)])
+    d, led = one_counted()
+    kw = dict(ledger=led, protocol=TY.PROTOCOL)
+    assert SS.admit([TY.reading(d, 1.0)], **kw)
+    for tag in ("held_out", "heldout", "HELD-OUT", "judged", "holdout", "confirmation"):
+        with pytest.raises(SS.HeldOutInput, match="is held-out"):          # survivor 6: the refusal names it
+            SS.admit([TY.reading(d, 1.0), TY.reading(d, 1.0, tag=tag)], **kw)
+    for tag in ("", "other"):
+        with pytest.raises(SS.HeldOutInput, match="only 'search'"):
+            SS.admit_one(TY.reading(d, 1.0, tag=tag), **kw)
     for blocks in ((("2023-06-01", "2024-01-05"),), (("2024-01-02", "2024-12-31"),), (("2023-12-30", "2023-12-31"),),
                    (("2026-07-17", "2026-08-01"),), (("2019-12-01", "2020-03-01"),), ()):
         with pytest.raises(SS.HeldOutInput):
-            SS.admit_one(TY.reading(d, 1.0, blocks=blocks))
-    for bad in (TY.reading(d, float("nan")), TY.reading(d, 1.0, seeds=()), TY.reading(d, 1.0, seeds=(1.5,)),
-                TY.reading(d, 1.0, se=-1.0), {"design": d, "value": 1.0}):
+            SS.admit_one(TY.reading(d, 1.0, blocks=blocks), **kw)
+    for through in ("2024-01-02", "2023-12-30", "2026-07-20", "2021-12-31"):      # m-3: the horizon embargo
         with pytest.raises(SS.HeldOutInput):
-            SS.admit_one(bad)
+            SS.admit_one(TY.reading(d, 1.0, reads_through=through), **kw)
+    for bad in (TY.reading(d, float("nan")), TY.reading(d, 1.0, seeds=()), TY.reading(d, 1.0, seeds=(1.5,)),
+                TY.reading(d, 1.0, se=-1.0), TY.reading(d, 1.0, per_seed=[1.0]), {"design": d, "value": 1.0}):
+        with pytest.raises(SS.HeldOutInput):
+            SS.admit_one(bad, **kw)
+
+
+def test_the_door_is_bound_to_the_ledger_and_the_protocol():
+    """The red team's B-1: (1) a design never drawn; (2) a reading on a month and other seeds; (3) a design of another
+    role; (4) every protocol field."""
+    d, led = one_counted()
+    kw = dict(ledger=led, protocol=TY.PROTOCOL)
+    with pytest.raises(SS.Uncounted):
+        SS.admit_one(TY.reading(TY.SMOOTH_ARGMIN, 0.0), **kw)
+    month = SS.Protocol("composite", (("2021-03-01", "2021-03-31"),), (5, 6), 0)
+    with pytest.raises(SS.OffProtocol):
+        SS.admit_one(TY.reading(d, 0.0, protocol=month), **kw)
+    for over in (dict(measure="ruin"), dict(blocks=TY.OTHER_BLOCKS), dict(seeds=(1, 2, 3)), dict(horizon=21),
+                 dict(horizon=True)):
+        with pytest.raises(SS.OffProtocol):
+            SS.admit_one(TY.reading(d, 0.0, **over), **kw)
+    with pytest.raises(SS.Uncounted):
+        SS.admit_one(TY.reading(d, 0.0), ledger=led, protocol=TY.PROTOCOL, roles=lambda r: r == "round-1")
+    with pytest.raises(SS.ReadingRefused):
+        SS.admit_one(TY.reading(d, 0.0), ledger=None, protocol=TY.PROTOCOL)
+    led2 = SS.CellLedger()
+    SS.Sampler(TY.slot_space(), seed=SEED, method="sobol").survey(8, ledger=led2)
+    rfz = [r["design"] for r in led2.rows if r["status"] == "refused"]
+    assert rfz
+    with pytest.raises(SS.Uncounted):                                      # a refused cell is no reading's design
+        SS.admit_one(TY.reading(rfz[0], 0.0), ledger=led2, protocol=TY.PROTOCOL)
+
+
+def test_a_protocol_is_validated_and_pins_the_library_versions():
+    for bad in (dict(measure=""), dict(blocks=(("2024-01-02", "2024-03-01"),)), dict(seeds=(1, 1)),
+                dict(seeds=(1.5,)), dict(horizon=-1), dict(horizon=1.0), dict(libs=(("numpy", "0.0"),))):
+        f = dict(measure="composite", blocks=TY.BLOCKS, seeds=TY.SEEDS, horizon=0)
+        f.update(bad)
+        with pytest.raises(SS.ReadingRefused):
+            SS.Protocol(**f)
+    assert TY.PROTOCOL.libs == SS.LIBS and dict(SS.LIBS)["numpy"] == np.__version__
+    d, led = one_counted()
+    other_libs = SS.Reading(d, 0.0, TY.BLOCKS, TY.SEEDS, "search", "composite", 0, "2023-12-29",
+                            libs=(("numpy", "0.0"), ("scipy", "0.0")))
+    with pytest.raises(SS.OffProtocol):
+        SS.admit_one(other_libs, ledger=led, protocol=TY.PROTOCOL)
+    assert all(r["libs"] == dict(SS.LIBS) for r in led.rows)
+    assert all(v["params"]["_libs"] == dict(SS.LIBS) for v in led.variant_rows("F-XX"))
+
+
+def test_a_reading_is_frozen_and_of_the_exact_type():
+    d, led = one_counted()
+    r = TY.reading(d, 1.0)
+    d["x1"] = 0.123456                                                    # the caller's dict changes; the reading not
+    assert r.design["x1"] != 0.123456
+    with pytest.raises(TypeError):
+        r.design["x1"] = 0.5                                             # m-4: a read-only mapping
+    assert isinstance(r.blocks, tuple) and isinstance(r.seeds, tuple)
+
+    class Sneaky(SS.Reading):
+        @property
+        def tag(self):                                                    # noqa: D401
+            return "search"
+
+    s = Sneaky.__new__(Sneaky)
+    object.__setattr__(s, "__dict__", dict(r.__dict__))
+    with pytest.raises(SS.HeldOutInput, match="exactly"):
+        SS.admit_one(s, ledger=led, protocol=TY.PROTOCOL)
+
+
+def test_a_role_is_begun_once_under_one_seed():
+    sp = TY.toy_space()
+    led = SS.CellLedger()
+    SS.Sampler(sp, seed=SEED, method="sobol").survey(4, ledger=led)
+    with pytest.raises(SS.LedgerRefused):
+        SS.Sampler(sp, seed=SEED, method="sobol").survey(4, ledger=led)                  # a second survey
+    with pytest.raises(SS.LedgerRefused):
+        led.record(sp, led.rows[0]["design"], role="survey", seed=SEED + 1, refusal=None)  # off its seed
+    with pytest.raises(SS.LedgerRefused):
+        led.record(sp, led.rows[0]["design"], role="round-9", seed=SEED, refusal=None)     # never begun
+    with pytest.raises(SS.LedgerRefused):
+        led.begin("round-2", SEED)                                                           # out of order
+    led.begin("round-1", 5)
+    with pytest.raises(SS.LedgerRefused):
+        led.begin("round-1", 6)
+
+
+def test_ny_windows_inside_the_closed_window_are_refused_and_counted(lever):
+    led = SS.CellLedger()
+    ds = SS.Sampler(lever, seed=SEED, method="sobol").survey(64, ledger=led)
+    for d in ds:
+        for s in lever.slots:
+            if s.session == "ny" and d[SS.slot_dim(s.name, "on")] == SS.ON:
+                assert d[SS.slot_dim(s.name, "first")] >= 30                       # 09:00 CT and after
+    closed = [r for r in led.rows if "closed window" in r["reason"]]
+    assert closed and all(r["class"] == "session" for r in closed)
+    assert all(any(r["design"][f"ny.{i}.on"] == SS.ON and r["design"][f"ny.{i}.first"] < 30 for i in (0, 1))
+               for r in closed)
+
+
+def test_to_components_gives_the_schedulers_design_on_each_date_pattern(anchored):
+    from extended import components as C
+
+    ds = [d for d in SS.Sampler(anchored, seed=SEED, method="sobol").survey(48, ledger=SS.CellLedger())
+          if d["asia.0.on"] == SS.ON]
+    assert ds
+
+    def build(slot, levers):
+        return T.P14Breakout(latency=5, entry=T.MARKET), 40
+
+    patterns = [date.fromisoformat(x["first"]) for x in LS.session_window_range(DC.SEARCH_START,
+                                                                                DC.SEARCH_END)["distinct"]]
+    assert len(patterns) == 3
+    for d in ds[:6]:
+        for day in patterns:
+            cd = SS.to_components(anchored, d, day, firm="topstep", build=build)
+            assert isinstance(cd, C.Design) and cd.day == day
+            want = {(w[0], w[2], w[3]) for w in anchored.windows_on(d, day)}
+            assert {(c.name, c.first, c.last) for c in cd.components} == want
+            assert {c.session for c in cd.components} <= {"evening", "asia", "london", "ny_am"}
+    early = [d for d in ds if d["asia.0.first"] < 60]                        # inside asia only from its own start
+    if early:
+        with pytest.raises(C.DesignRefused):
+            C.Design("topstep", SS.to_components(anchored, early[0], DAYS[0], firm="topstep",
+                                                 build=build).components)    # day=None: the every-day bounds
 
 
 # ------------------------------------------------------------------------------------------------ mutations
@@ -398,8 +554,32 @@ def test_mutation_seed_ignored_is_caught(monkeypatch):
 
 
 def test_mutation_door_left_open_is_caught(monkeypatch):
-    monkeypatch.setattr(SS, "admit_one", lambda r: r)
-    d = SS.Sampler(TY.toy_space(), seed=SEED, method="sobol").survey(1, ledger=SS.CellLedger())[0]
-    with pytest.raises(pytest.fail.Exception):
-        with pytest.raises(SS.HeldOutInput):
-            SS.admit([TY.reading(d, 1.0, tag="held_out")])
+    d, led = one_counted()
+    monkeypatch.setattr(SS, "admit_one", lambda r, **kw: r)
+    got = SS.admit([TY.reading(d, 1.0, tag="held_out")], ledger=led, protocol=TY.PROTOCOL)
+    assert len(got) == 1 and got[0].tag == "held_out"                      # the door test would fail
+
+
+def test_mutation_ledger_check_dropped_is_caught(monkeypatch):
+    """B-1's mutation: the ledger's ids ignored -- the never-drawn design is admitted."""
+    d, led = one_counted()
+    monkeypatch.setattr(SS.CellLedger, "proposed_ids", lambda self, roles: frozenset([TY.reading(
+        TY.SMOOTH_ARGMIN, 0.0).id, SS.design_id(d)]))
+    assert SS.admit_one(TY.reading(TY.SMOOTH_ARGMIN, 0.0), ledger=led, protocol=TY.PROTOCOL)
+
+
+def test_mutation_held_out_word_check_dropped_is_caught(monkeypatch):
+    """Survivor 6 (n-1): without the word check a held-out tag is refused only as 'not search', and the refusal no
+    longer names the held-out years -- the door test's message check fails."""
+    d, led = one_counted()
+    real = SS.admit_one
+
+    def no_words(r, **kw):
+        if type(r) is SS.Reading and r.tag != SS.SEARCH_TAG:
+            raise SS.HeldOutInput(f"REFUSED: a reading tagged {r.tag!r}; only 'search' is admitted")
+        return real(r, **kw)
+
+    monkeypatch.setattr(SS, "admit_one", no_words)
+    with pytest.raises(SS.HeldOutInput) as e:
+        SS.admit([TY.reading(d, 1.0, tag="held_out")], ledger=led, protocol=TY.PROTOCOL)
+    assert "is held-out" not in str(e.value)

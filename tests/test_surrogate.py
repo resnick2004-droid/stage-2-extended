@@ -2,10 +2,12 @@
 
 What is asserted: the likelihood's analytic gradient equals finite differences; the surrogate recovers a smooth known
 function (error small against the function's spread, 95 % intervals covering) and **widens its uncertainty away from
-its data**; on pure noise it calls the readings noise and shrinks its predictions; the fit is reproducible from its
-seed; **the one door refuses** anything tagged held-out or touching the held-out years, another measure, a refused
-design, and readings on other blocks or seeds, leaving the surrogate as it was. Thresholds were set before the first
-run. **Mutations**: the gradient's factor, the predictive variance's reduction, the prior removed, the door.
+its data**; on a rugged surface it calls the readings noise and shrinks its predictions, at every one of the declared
+seeds, and on signal it does not; the fit is reproducible from its seed and records the library versions; **the one
+door** (ledger and protocol) refuses anything tagged held-out or touching the held-out years, off the protocol,
+uncounted, or a refused design, leaving the surrogate as it was. Every threshold here was set before the first run
+and is unchanged. **Mutations**: the gradient's factor, the predictive variance's reduction, the prior removed, the
+door left open, `noise_share` a constant.
 """
 from __future__ import annotations
 
@@ -22,15 +24,22 @@ from extended import search_space as SS  # noqa: E402
 from extended import surrogate as SG  # noqa: E402
 
 SEED = 777
+#: the noise test's declared seeds (the red team's m-7: one seed is not a test)
+NOISE_SEEDS = (21, 22, 23, 24, 25)
+
+
+def survey(n: int, seed: int, space=None):
+    led = SS.CellLedger()
+    return SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led), led
 
 
 def designs(n: int, seed: int, space=None):
-    return SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=SS.CellLedger())
+    return survey(n, seed, space)[0]
 
 
-def fitted(train, fn, seed=SEED, restarts=2):
+def fitted(train, led, fn, seed=SEED, restarts=2, **kw):
     sg = SG.Surrogate(TY.toy_space(), seed=seed, restarts=restarts)
-    sg.fit([TY.reading(d, fn(d)) for d in train])
+    sg.fit([TY.reading(d, fn(d), **kw) for d in train], ledger=led, protocol=TY.PROTOCOL)
     return sg
 
 
@@ -65,13 +74,23 @@ def recovery(sg, test):
     return rmse / float(np.std(f)), cover
 
 
-def widening(sg_factory):
-    near_train = [d for d in designs(400, 11) if max(d["x1"], d["x2"], d["x3"]) < 0.45][:40]
-    sg = sg_factory(near_train)
+def widening():
+    ds, led = survey(400, 11)
+    near_train = [d for d in ds if max(d["x1"], d["x2"], d["x3"]) < 0.45][:40]
+    sg = fitted(near_train, led, TY.smooth)
     pool = designs(1200, 12)
     near = [d for d in pool if max(d["x1"], d["x2"], d["x3"]) < 0.45]
     far = [d for d in pool if min(d["x1"], d["x2"], d["x3"]) > 0.75]
     return float(np.mean(sg.predict(far).sd)) / float(np.mean(sg.predict(near).sd)), len(near), len(far)
+
+
+def noise_reading(seed: int):
+    train, led = survey(64, seed)
+    y = np.array([TY.noise(d) for d in train])
+    sg = fitted(train, led, TY.noise)
+    spread = float(np.std(sg.predict(designs(200, seed + 1)).mean))
+    insample = float(np.corrcoef(sg.predict(train).mean, y)[0, 1])
+    return sg.noise_share(), spread / float(np.std(y)), insample
 
 
 # ------------------------------------------------------------------------------------------------ the model
@@ -83,44 +102,44 @@ def test_the_likelihood_and_prior_gradients_are_exact():
 
 
 def test_it_recovers_a_smooth_known_function():
-    sg = fitted(designs(64, 1), TY.smooth)
+    tr, led = survey(64, 1)
+    sg = fitted(tr, led, TY.smooth)
     err, cover = recovery(sg, designs(300, 2))
     assert err < 0.10                                    # RMSE under a tenth of the function's spread
     assert cover >= 0.85                                 # 95 % intervals cover most of the truth
     assert sg.record.n == 64 and sg.record.seed == SEED and sg.record.starts == 3
+    assert sg.record.libs == SS.LIBS and sg.record.horizon == TY.PROTOCOL.horizon
 
 
 def test_it_widens_its_uncertainty_away_from_data():
-    ratio, n_near, n_far = widening(lambda tr: fitted(tr, TY.smooth))
+    ratio, n_near, n_far = widening()
     assert n_near >= 20 and n_far >= 10
     assert ratio > 3.0
 
 
-def noise_reading(seed: int):
-    train = designs(64, seed)
-    y = np.array([TY.noise(d) for d in train])
-    sg = fitted(train, TY.noise)
-    spread = float(np.std(sg.predict(designs(200, seed + 1)).mean))
-    insample = float(np.corrcoef(sg.predict(train).mean, y)[0, 1])
-    return sg.noise_share(), spread / float(np.std(y)), insample
-
-
 def test_it_calls_pure_noise_noise_and_does_not_chase_it():
-    """On record (the failure protocol): the first build fitted the likelihood alone and failed this test -- at this
-    seed the length-scales of x3 and n fell to about 0.09 and 0.08, the in-sample correlation with the noise was 0.98
-    and the prediction spread 0.72 of the readings' (`test_mutation_prior_removed_is_caught` keeps that reading). The
-    SAAS prior (`surrogate.PRIOR_TAU`) was adopted after a comparison over 30 seeds against a dimension-scaled
-    log-normal prior and leave-one-out selection, both of which still interpolated noise at some seeds. The first
-    `noise_share` counted a constant offset (every length-scale at its bound) as signal; it now reads the variance
-    across the read designs. The thresholds 0.8 and 0.5 are the first run's."""
-    share, spread, _ = noise_reading(21)
-    assert share > 0.8
-    assert spread < 0.5
+    """On record (the failure protocol): the first build fitted the likelihood alone and failed this test -- short
+    length-scales on two levers interpolated the noise (`test_mutation_prior_removed_is_caught` reproduces that build
+    at seed 21). The SAAS prior (`surrogate.PRIOR_TAU`) was adopted after comparing it, over 30 seeds, with a
+    dimension-scaled log-normal prior and with leave-one-out selection, both of which still interpolated noise at some
+    seeds; that comparison was a design check in a scratch script and is not kept as an artefact (the red team's n-2).
+    The first `noise_share` counted a constant offset (every length-scale at its bound) as signal; it now reads the
+    variance across the read designs. The thresholds 0.8 and 0.5 were set before the first run and are unchanged; the
+    seeds are `NOISE_SEEDS`."""
+    for seed in NOISE_SEEDS:
+        share, spread, _ = noise_reading(seed)
+        assert share > 0.8, seed
+        assert spread < 0.5, seed
+
+
+def test_noise_share_reads_low_on_signal():
+    tr, led = survey(64, 1)
+    assert fitted(tr, led, TY.smooth).noise_share() < 0.2
 
 
 def test_the_fit_is_reproducible_from_its_seed_and_needs_one():
-    tr = designs(32, 31)
-    a, b = fitted(tr, TY.smooth), fitted(tr, TY.smooth)
+    tr, led = survey(32, 31)
+    a, b = fitted(tr, led, TY.smooth), fitted(tr, led, TY.smooth)
     assert a.record.hyper == b.record.hyper and a.record.nll == b.record.nll
     test = designs(20, 32)
     assert np.array_equal(a.predict(test).mean, b.predict(test).mean)
@@ -129,17 +148,15 @@ def test_the_fit_is_reproducible_from_its_seed_and_needs_one():
 
 
 def test_a_reading_standard_error_widens_the_fit():
-    tr = designs(32, 41)
-    sp = TY.toy_space()
-    tight = SG.Surrogate(sp, seed=SEED, restarts=1)
-    tight.fit([TY.reading(d, TY.smooth(d), se=0.0) for d in tr])
-    loose = SG.Surrogate(sp, seed=SEED, restarts=1)
-    loose.fit([TY.reading(d, TY.smooth(d), se=0.5) for d in tr])
+    tr, led = survey(32, 41)
+    tight = fitted(tr, led, TY.smooth, restarts=1, se=0.0)
+    loose = fitted(tr, led, TY.smooth, restarts=1, se=0.5)
     assert float(np.mean(loose.predict(tr).sd)) > float(np.mean(tight.predict(tr).sd))
 
 
 def test_believe_conditions_on_its_own_mean_only():
-    sg = fitted(designs(32, 51), TY.smooth)
+    tr, led = survey(32, 51)
+    sg = fitted(tr, led, TY.smooth)
     x = designs(1, 52)
     b = sg.believe(x)
     assert b.predict(x).mean[0] == pytest.approx(sg.predict(x).mean[0], abs=1e-6)
@@ -149,10 +166,10 @@ def test_believe_conditions_on_its_own_mean_only():
 
 def test_slot_designs_encode_and_fit():
     sp = TY.slot_space(routing=("longest_wait", "fewest_trades"))
-    ds = designs(40, 61, space=sp)
+    ds, led = survey(40, 61, space=sp)
     f = [d["risk"] / 900.0 + sum(d[f"{s.name}.on"] == SS.ON for s in sp.slots) for d in ds]
     sg = SG.Surrogate(sp, seed=SEED, restarts=1)
-    sg.fit([TY.reading(d, v) for d, v in zip(ds, f)])
+    sg.fit([TY.reading(d, v) for d, v in zip(ds, f)], ledger=led, protocol=TY.PROTOCOL)
     xc, xk = sg.encoder.encode(ds)
     assert xc.shape[0] == xk.shape[0] == 40 and np.all((0 <= xc) & (xc <= 1))
     lat = sg.encoder.cat.index(sp.dim("s1.0.T4"))
@@ -164,31 +181,32 @@ def test_slot_designs_encode_and_fit():
 # ------------------------------------------------------------------------------------------------ the door
 
 
-def test_the_one_door_refuses_held_out_and_mixed_inputs():
-    tr = designs(16, 71)
+def test_the_one_door_refuses_held_out_off_protocol_and_uncounted_inputs():
+    tr, led = survey(16, 71)
     good = [TY.reading(d, TY.smooth(d)) for d in tr]
     sg = SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1)
-    bad_sets = {
-        "tagged": good[:-1] + [TY.reading(tr[-1], 0.0, tag="held_out")],
-        "judged": good[:-1] + [TY.reading(tr[-1], 0.0, tag="judged")],
-        "block 2024": good[:-1] + [TY.reading(tr[-1], 0.0, blocks=(("2023-01-03", "2024-03-01"),))],
-        "prediction": good[:-1] + [sg],
+    refusals = {
+        SS.HeldOutInput: [TY.reading(tr[-1], 0.0, tag="held_out"), TY.reading(tr[-1], 0.0, tag="judged"),
+                          TY.reading(tr[-1], 0.0, blocks=(("2023-01-03", "2024-03-01"),)),
+                          TY.reading(tr[-1], 0.0, reads_through="2024-02-01"), sg],
+        SS.OffProtocol: [TY.reading(tr[-1], 0.0, measure="ruin"), TY.reading(tr[-1], 0.0, blocks=TY.OTHER_BLOCKS),
+                         TY.reading(tr[-1], 0.0, seeds=(1, 2, 3)), TY.reading(tr[-1], 0.0, horizon=21)],
+        SS.Uncounted: [TY.reading(TY.SMOOTH_ARGMIN, 0.0)],
     }
-    for name, rs in bad_sets.items():
-        with pytest.raises(SS.HeldOutInput):
-            sg.fit(rs)
-        assert not sg.fitted, name
-    for rs in (good[:-1] + [TY.reading(tr[-1], 0.0, measure="ruin")],
-               good[:-1] + [TY.reading(tr[-1], 0.0, blocks=TY.OTHER_BLOCKS)],
-               good[:-1] + [TY.reading(tr[-1], 0.0, seeds=(1, 2, 3))],
-               good[:-1] + [TY.reading(dict(tr[-1], n=99), 0.0)],
-               good[:1]):
+    for cls, bad in refusals.items():
+        for b in bad:
+            with pytest.raises(cls):
+                sg.fit(good[:-1] + [b], ledger=led, protocol=TY.PROTOCOL)
+            assert not sg.fitted, (cls, b)
+    for rs, proto in ((good[:1], TY.PROTOCOL), (good, TY.PROTOCOL.with_measure("ruin"))):
         with pytest.raises(SG.SurrogateRefused):
-            sg.fit(rs)
+            sg.fit(rs, ledger=led, protocol=proto)
         assert not sg.fitted
-    rec = sg.fit(good)
+    with pytest.raises(SS.Uncounted):                                     # a design off the space was never a cell
+        sg.fit(good[:-1] + [TY.reading(dict(tr[-1], n=99), 0.0)], ledger=led, protocol=TY.PROTOCOL)
+    rec = sg.fit(good, ledger=led, protocol=TY.PROTOCOL)
     with pytest.raises(SS.HeldOutInput):
-        sg.fit(good[:-1] + [TY.reading(tr[-1], 0.0, tag="heldout")])
+        sg.fit(good[:-1] + [TY.reading(tr[-1], 0.0, tag="heldout")], ledger=led, protocol=TY.PROTOCOL)
     assert sg.record is rec                                              # a refused fit leaves the last one
 
 
@@ -217,7 +235,7 @@ def test_mutation_variance_not_reduced_is_caught(monkeypatch):
         return mu, np.full(len(mu), np.sqrt(s2) * self.ysd)
 
     monkeypatch.setattr(SG._GP, "predict", prior_sd)
-    ratio, _, _ = widening(lambda tr: fitted(tr, TY.smooth))
+    ratio, _, _ = widening()
     assert not ratio > 3.0
 
 
@@ -229,19 +247,29 @@ def test_mutation_prior_removed_is_caught(monkeypatch):
 
 
 def test_mutation_door_left_open_is_caught(monkeypatch):
-    monkeypatch.setattr(SS, "admit", lambda readings: list(readings))
-    tr = designs(16, 81)
+    tr, led = survey(16, 81)
     rs = [TY.reading(d, TY.smooth(d)) for d in tr[:-1]] + [TY.reading(tr[-1], 0.0, tag="held_out")]
-    SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1).fit(rs)          # the mutant admits it: the door test fails
+    with pytest.raises(SS.HeldOutInput):
+        SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1).fit(rs, ledger=led, protocol=TY.PROTOCOL)
+    monkeypatch.setattr(SS, "admit", lambda readings, **kw: list(readings))
+    sg = SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1)
+    sg.fit(rs, ledger=led, protocol=TY.PROTOCOL)
+    assert sg.fitted and sg.record.n == 16                               # the mutant fits it: the door test fails
+
+
+def test_mutation_noise_share_constant_is_caught(monkeypatch):
+    monkeypatch.setattr(SG.Surrogate, "noise_share", lambda self: 0.99)
+    tr, led = survey(64, 1)
+    assert not fitted(tr, led, TY.smooth).noise_share() < 0.2
 
 
 def test_the_surrogate_and_the_proposer_name_no_finalist():
-    """They propose; a finalist is only a design that was read (`plateau.check` takes a `Reading`, never a
-    prediction): neither module offers anything that selects, ranks or names one."""
+    """They propose; a finalist is only a counted design that was read (`plateau.check` takes a `Reading` through the
+    ledger's door, never a prediction): neither module offers anything that selects, ranks or names one."""
     from extended import proposer as P
 
     words = ("final", "select", "winner", "best", "rank", "choose")
     names = dir(SG) + dir(SG.Surrogate) + dir(P) + dir(P.Round)
     assert not [n for n in names if not n.startswith("__") and any(w in n.lower() for w in words)]
     with pytest.raises(SS.HeldOutInput):
-        SS.admit_one(SG.Prediction(np.zeros(1), np.ones(1)))
+        SS.admit_one(SG.Prediction(np.zeros(1), np.ones(1)), ledger=SS.CellLedger(), protocol=TY.PROTOCOL)

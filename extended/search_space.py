@@ -29,14 +29,25 @@ local market times converted per date, `day_calendar.anchored_starts`): `Space.w
 day's slots, and the offsets' bounds are the tightest over the search years' weekdays, so a window never leaves its
 session on any of them.
 
+**Window levers are offsets from local anchors, by construction** (the red team's m-6, kept by the lead): a window
+is an offset from its session's anchored start, bounded by the session's shortest span over the search years'
+weekdays. So an absolute CT window that lies inside its session on only part of the year (London reaching 07:30 CT
+outside the US/UK mismatch weeks, Asia reaching 00:55 CT on CST dates, the evening reaching 18:00 CT on CDT dates) is
+legitimately excluded from a fixed design: a design means the same local window on every date.
+
 **What a cell is refused for, at sampling** (`Space.check`, in this order; the first reason is recorded):
-1. ``tier1`` -- conduct tier 1 (CHARTER 4; Stage 2 D-145): any setting naming a tier-1 practice (`TIER_ONE`), an
-   overlap mode other than ``refused`` (the template's m-2: no design holding two positions of the user at once), or
-   more than one firm in a design;
+1. ``tier1`` -- conduct tier 1 (CHARTER 4; Stage 2 D-145): any setting naming a tier-1 practice (`TIER_ONE`, matched
+   case-insensitively), an overlap mode other than ``refused`` (the template's m-2: no design holding two positions of
+   the user at once), or a firm count other than the integer 1 (``True`` is refused). **Where tier 1 is really
+   enforced** (m-5): on the real lever space no lever offers a tier-1 value, so the name list is a guard; what holds
+   tier 1 there is the fixed ``overlap`` and ``firms`` values here and, downstream, `extended.triggers` and
+   `extended.components` (the news, BLS and FOMC windows, one position at a time across a firm, the user's book
+   refusing opposite positions);
 2. ``invalid`` -- a value outside its dimension's cells, bounds or lattice, or an inactive dimension holding a value;
 3. ``collision`` -- two windows that collide;
 4. ``session`` -- a declared source-session rule (`from_lever_space`: RL3's tickets go live at 09:00, so an RL3
-   window holds that slot);
+   window holds that slot on every date; and a window whose first mark falls inside the closed 08:30-08:59 CT window
+   on any date is refused, since it cannot fill there -- `triggers.CLOSED_FIRST` to `CLOSED_LAST`);
 5. ``rule`` -- a combination no verified rule settles (`lever_space.check_design`: Back2Funded under the No
    Activation Fee path, a latency off its source's cells), read from the record each time.
 A refused cell is recorded in the ledger with its class and reason and is never returned as a design.
@@ -50,15 +61,33 @@ own stream. Streams are children of the seed (`numpy.random.SeedSequence(seed, s
 an offset (E-171).
 
 **The cell ledger** (`CellLedger`) counts every cell the sampler, the round proposer or the plateau check proposes,
-refused ones included, with its role (``survey``, ``round-<i>``, ``plateau``), its seed, its status and reason, and
-the latency of every active component (every L tried counted, CHARTER 3.3 (g)). It holds designs only, never a reading.
-`variant_rows` gives the rows for the variants ledger (`results/variants.jsonl`), which only a clean run writes.
+refused ones included, with its role (``survey``, ``round-<i>``, ``plateau:<finalist id>``), its seed, its status and
+reason, the latency of every active component (every L tried counted, CHARTER 3.3 (g)), the plateau rule's sha256 on
+a plateau row, and the numpy and scipy versions (`LIBS`). It holds designs only, never a reading. **A role is begun
+once** (`begin`), with its seed: a second survey, a second round ``i`` (under any seed), a round before the one before
+it, a row under a seed other than its role's, and a second plateau check of one finalist are all refused (the red
+team's B-1 and m-2). `variant_rows` gives the rows for the variants ledger (`results/variants.jsonl`), which only a
+clean run writes.
 
-**Readings** (`Reading`, `admit`): a design's composite (or another measure) read on declared history blocks and coin
-seeds. `admit` is the one door: it refuses anything not tagged ``search``, any block touching the held-out years
-(2024-01-02 on, E-208; `extended.reader`'s blocks) or the confirmation window, a non-finite value, and anything that is
-not a `Reading` (a surrogate's prediction is never a reading). The held-out years are never read by a search
-(CHARTER 3.6 (a), E-221 O-1).
+**Readings and the one door** (`Protocol`, `Reading`, `admit`; the red team's B-1, the lead's ruling). A `Protocol`
+is the declaration's reading protocol: the measure, the history blocks, the coin seeds, the outcome horizon in
+sessions, and the library versions. A `Reading` is one design's measure read on it, frozen (its design a read-only
+mapping, m-4) and carrying the last session any outcome read (`reads_through`, m-3). `admit(readings, ledger=,
+protocol=, roles=)` is the one door. It refuses:
+- anything that is not exactly a `Reading` (a subclass or a prediction never is);
+- a tag other than ``search``; a held-out tag names the held-out years in its refusal;
+- a block or an outcome session past 2023-12-29 (CHARTER 3.6 (a), (d); E-208), the confirmation window, or a day before
+  2020-01-02;
+- a reading off the protocol (another measure, blocks, seeds, horizon or library versions);
+- **a design that is not a counted ``proposed`` cell of the ledger in one of the allowed roles**.
+Every reading the surrogate, the proposer or the plateau check sees comes through this door, so a design read outside
+the count, or on a protocol picked after a look, never reaches a fit or a finalist. The held-out years are never read
+by a search (CHARTER 3.6 (a), E-221 O-1).
+
+**Wave 5's hooks** (the red team's m-9 and m-10, Wave 5's declaration by the lead's ruling): the finalist order rule
+and the multi-objective frontier are not built here. A finalist reaches `extended.plateau.check` only as a counted
+survey or round cell on the protocol; the order rule that names it is the declaration's. `to_components` is the bridge
+from a design's offsets to `extended.components.Design(day=...)` per date (m-11).
 """
 from __future__ import annotations
 
@@ -66,13 +95,16 @@ import hashlib
 import itertools
 import json
 import math
+import re
 import warnings
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date
+from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 import numpy as np
+import scipy
 from scipy.stats import qmc
 
 from extended import reader as R
@@ -98,15 +130,41 @@ SLOT_LEVERS = ("T1", "T3", "T4", "T5", "S1", "S2")
 TICKET = "ticket"
 #: the unit-cube coordinate a dimension takes when inactive (any value: an inactive dimension ignores it)
 _INACTIVE_U = 0.5
+#: the library versions every protocol, reading, ledger row, fit and round records (the red team's m-8): Sobol, LHS
+#: and L-BFGS-B reproduce from a seed only under one set of versions, so a declaration pins them
+LIBS: tuple[tuple[str, str], ...] = (("numpy", np.__version__), ("scipy", scipy.__version__))
+_TIER_ONE_FOLDED = frozenset(x.casefold() for x in TIER_ONE)
+_ROUND = re.compile(r"round-(\d+)")
 
 
 class SpaceRefused(ValueError):
     """A space, a slot or a sampler request this module cannot stand behind."""
 
 
-class HeldOutInput(RuntimeError):
+class LedgerRefused(SpaceRefused):
+    """A ledger entry that would hide a choice: a role begun twice, a round out of order, a row off its role's seed."""
+
+
+class ReadingRefused(RuntimeError):
+    """A reading the one door does not admit."""
+
+
+class HeldOutInput(ReadingRefused):
     """An input tagged held-out, touching the held-out years, or not a search-year reading: refused (CHARTER
     3.6 (a))."""
+
+
+class OffProtocol(ReadingRefused):
+    """A reading on another measure, blocks, seeds, horizon or library versions than the declared protocol."""
+
+
+class Uncounted(ReadingRefused):
+    """A reading of a design that is not a counted cell of the ledger in an allowed role."""
+
+
+def searched(role: str) -> bool:
+    """A survey or round cell: what the surrogate fits and what a finalist may be."""
+    return role == "survey" or _ROUND.fullmatch(role) is not None
 
 
 # ------------------------------------------------------------------------------------------------ dimensions
@@ -296,15 +354,50 @@ class Space:
         for k, v in list(design.items()) + list(self.fixed.items()):
             vals = v if isinstance(v, (tuple, list)) else (v,)
             for x in vals:
-                if isinstance(x, str) and x in TIER_ONE:
+                if isinstance(x, str) and x.casefold() in _TIER_ONE_FOLDED:
                     return f"{k} = {x!r} is conduct tier 1 (CHARTER 4; Stage 2 D-145)"
         ov = design.get(OVERLAP_KEY, self.fixed.get(OVERLAP_KEY, OVERLAP_REFUSED))
         if ov != OVERLAP_REFUSED:
             return f"overlap {ov!r}: a design holding two positions of the user at once is refused (m-2, E-210)"
         firms = design.get(FIRMS_KEY, self.fixed.get(FIRMS_KEY, 1))
-        if not isinstance(firms, int) or firms != 1:
+        if type(firms) is not int or firms != 1:
             return f"{firms!r} firms: a design is one firm's (one position at a time across a firm, D-429)"
         return None
+
+    # -- the centre and the repair (a plateau neighbour's dependent levers)
+    def centre(self, dim: Dim, design: Mapping[str, Any]) -> Any:
+        """The dimension's centre value given the design so far: its middle cell, or its lattice's or range's middle."""
+        if dim.kind == CAT:
+            cells = dim.cells_of(design)
+            return cells[len(cells) // 2]
+        lo = float(design[dim.after]) if dim.after else float(dim.lo)
+        if dim.step is None:
+            return lo + 0.5 * (float(dim.hi) - lo)
+        n = dim.lattice(lo)
+        v = lo + (n // 2) * float(dim.step)
+        return int(round(v)) if dim.kind == INT else v
+
+    def repair(self, design: Mapping[str, Any], changed: Iterable[str]) -> dict[str, Any]:
+        """After `changed` levers move: every lever after them that turned inactive holds None; one that turned active,
+        or a categorical whose cells depend on a changed lever and no longer hold its value, takes its centre. Nothing
+        else moves (a window's last left before its first stays, so the space refuses it)."""
+        out = dict(design)
+        moved = set(changed)
+        for d in self.dims:
+            if d.name in moved:
+                continue
+            if not self.active(d, out):
+                if out[d.name] is not None:
+                    out[d.name] = None
+                    moved.add(d.name)
+                continue
+            if out[d.name] is None:
+                out[d.name] = self.centre(d, out)
+                moved.add(d.name)
+            elif d.kind == CAT and d.cells is not None and out[d.name] not in d.cells_of(out):
+                out[d.name] = self.centre(d, out)
+                moved.add(d.name)
+        return out
 
     def _invalid(self, design: Mapping[str, Any]) -> str | None:
         extra = sorted(set(design) - set(self.names()) - {OVERLAP_KEY, FIRMS_KEY})
@@ -420,19 +513,46 @@ class CellLedger:
     (g); the template's section 13). Designs only: a reading never enters it."""
 
     rows: list[dict[str, Any]] = field(default_factory=list)
+    roles: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    def begin(self, role: str, seed: int, **meta: Any) -> None:
+        """Open `role` under `seed`, once (the module docstring): a role begun before is refused, and a round needs the
+        one before it (the survey before round one)."""
+        if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
+            raise LedgerRefused("a role's seed is an explicit integer")
+        if not role:
+            raise LedgerRefused("a cell has a role")
+        if role in self.roles:
+            raise LedgerRefused(f"role {role!r} is already recorded (seed {self.roles[role]['seed']}): a second "
+                                f"{role} under seed {seed} would let the reader choose between them")
+        m = _ROUND.fullmatch(role)
+        if m:
+            i = int(m.group(1))
+            before = "survey" if i == 1 else f"round-{i - 1}"
+            if i < 1 or before not in self.roles:
+                raise LedgerRefused(f"{role} before {before}: rounds are recorded in order, from the survey")
+        self.roles[role] = {"seed": int(seed), "meta": dict(meta)}
 
     def record(self, space: Space, design: Mapping[str, Any], *, role: str, seed: int,
                refusal: tuple[str, str] | None, round_index: int | None = None) -> dict[str, Any]:
         if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
-            raise SpaceRefused("a cell's seed is an explicit integer")
-        if not role:
-            raise SpaceRefused("a cell has a role")
+            raise LedgerRefused("a cell's seed is an explicit integer")
+        if role not in self.roles:
+            raise LedgerRefused(f"role {role!r} was not begun: a cell is recorded under a begun role")
+        if int(seed) != self.roles[role]["seed"]:
+            raise LedgerRefused(f"a {role} cell under seed {seed}, its role's seed is {self.roles[role]['seed']}")
+        meta = self.roles[role]["meta"]
         row = {"cell": len(self.rows), "id": design_id(design), "role": role, "seed": int(seed),
                "round": round_index, "status": "refused" if refusal else "proposed",
                "class": refusal[0] if refusal else "", "reason": refusal[1] if refusal else "",
-               "latencies": [str(x) for x in space.latencies(design)], "design": dict(design)}
+               "latencies": [str(x) for x in space.latencies(design)], "design": dict(design),
+               "rule": meta.get("rule", ""), "libs": dict(LIBS)}
         self.rows.append(row)
         return row
+
+    def proposed_ids(self, roles: Callable[[str], bool]) -> frozenset[str]:
+        """The ids of the cells proposed (not refused) under the roles `roles` accepts."""
+        return frozenset(r["id"] for r in self.rows if r["status"] == "proposed" and roles(r["role"]))
 
     def counts(self) -> dict[str, Any]:
         rows = self.rows
@@ -446,7 +566,7 @@ class CellLedger:
 
     def variant_rows(self, prereg_id: str) -> list[dict[str, Any]]:
         """The rows for `VariantCounter.record` (prereg id, params, seed, label): written only by a clean run."""
-        return [{"prereg_id": prereg_id, "params": r["design"], "seed": r["seed"],
+        return [{"prereg_id": prereg_id, "params": dict(r["design"], _libs=r["libs"]), "seed": r["seed"],
                  "label": f"{r['role']}:{r['status']}" + (f":{r['class']}" if r["class"] else "")} for r in self.rows]
 
 
@@ -524,14 +644,15 @@ class Sampler:
         if int(n) <= 0:
             raise SpaceRefused("a survey has at least one design")
         cap = int(max_proposals) if max_proposals is not None else 64 * int(n)
-        if not cross:
-            return self._stream(0, {}, int(n), ledger, role, cap, round_index)
         idx = []
         for name in cross:
             d = self.space.dim(name)
             if d.kind != CAT or d.cells is not None or d.active_if is not None:
                 raise SpaceRefused(f"{name}: only a static, always-active categorical is enumerated")
             idx.append((self.space.names().index(name), d.values))
+        ledger.begin(role, self.seed)
+        if not cross:
+            return self._stream(0, {}, int(n), ledger, role, cap, round_index)
         out: list[dict[str, Any]] = []
         for c, combo in enumerate(itertools.product(*[vals for _, vals in idx])):
             fixed = {j: (vals.index(v) + 0.5) / len(vals) for (j, vals), v in zip(idx, combo)}
@@ -549,14 +670,16 @@ def _overnight_allowed() -> bool:
 
 
 def session_spans(day: date, ny_boundary: int | None = None) -> dict[str, tuple[int, int]]:
-    """Trading day `day`'s sessions as [start, end) in slots after the reopen (`lever_space.session_windows(day)`,
-    anchored per date, E-231 (3)), each end clipped to one past the firm's last new entry. Until T2b (the NY AM / NY
-    PM boundary) is declared, NY is one session, `ny`; given the boundary (a slot), `ny_am` and `ny_pm`."""
+    """Trading day `day`'s sessions as [start, end) in slots after the reopen (`components.session_windows_of(day)`, the
+    one function every session window is read through, anchored per date, E-231 (3)), each end clipped to one past the
+    firm's last new entry. Until T2b (the NY AM / NY PM boundary) is declared, NY is one session, `ny`; given the
+    boundary (a slot), `ny_am` and `ny_pm`."""
+    from extended import components as C
     from extended import lever_space as LS
 
     td = LS.trading_day()
     step = int(LS.bounds("T3").step)
-    sw = LS.session_windows(day)
+    sw = C.session_windows_of(day)                         # the one function every session window is read through
     spans = {k: v for k, v in sw.items() if k not in ("ny_am", "ny_pm")}
     ny = (sw["ny_am"][0], sw["ny_pm"][1])
     if ny_boundary is None:
@@ -615,6 +738,24 @@ def _rl3_live(slot: str, session_starts: Sequence[int]) -> Callable[[Mapping[str
             a, b = int(design[slot_dim(slot, "first")]), int(design[slot_dim(slot, "last")])
             if not all(a <= o <= b for o in offs):
                 return f"an RL3 window holds its live slot {live} (09:00, offsets {offs}); got [{a}, {b}]"
+        return None
+
+    return fn
+
+
+def _closed_first(slot: str, session_starts: Sequence[int]) -> Callable[[Mapping[str, Any]], str | None]:
+    """A window whose first mark falls inside the closed 08:30-08:59 CT window on any date is refused (it cannot fill
+    there; the red team's n-3, the lead's ruling)."""
+    from extended import triggers as T
+
+    lo, hi = int(T.CLOSED_FIRST), int(T.CLOSED_LAST)
+
+    def fn(design: Mapping[str, Any]) -> str | None:
+        if design.get(slot_dim(slot, "on")) == ON:
+            a = int(design[slot_dim(slot, "first")])
+            bad = sorted({s + a for s in session_starts if lo <= s + a <= hi})
+            if bad:
+                return f"its first mark {bad} lies inside the closed window [{lo}, {hi}] (08:30-08:59 CT)"
         return None
 
     return fn
@@ -693,6 +834,9 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
             if "rl3" in srcs:
                 constraints.append(Constraint(f"{sn} rl3 live", "session",
                                               _rl3_live(sn, [sp[name][0] for sp in spans_by_day.values()])))
+            session_starts = sorted({sp[name][0] for sp in spans_by_day.values()})
+            if any(int(T.CLOSED_FIRST) <= a + last and a + first <= int(T.CLOSED_LAST) for a in session_starts):
+                constraints.append(Constraint(f"{sn} closed window", "session", _closed_first(sn, session_starts)))
 
     def starts(day: date) -> dict[str, int]:
         return {k: a for k, (a, _) in session_spans(day, ny_boundary).items()}
@@ -704,38 +848,23 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
 # ------------------------------------------------------------------------------------------------ readings
 
 
-@dataclass(frozen=True)
-class Reading:
-    """A design's measure read on declared history blocks ((start, end) ISO days) and coin seeds. `tag` 'search' is the
-    only one admitted; `se` the reading's standard error over its seeds, if known."""
-
-    design: Mapping[str, Any]
-    value: float
-    blocks: tuple[tuple[str, str], ...]
-    seeds: tuple[int, ...]
-    tag: str
-    measure: str = "composite"
-    se: float | None = None
-
-    @property
-    def id(self) -> str:
-        return design_id(self.design)
+def _search_day(x: Any, what: str) -> date:
+    """A day inside the search years, or `HeldOutInput` (the confirmation window and days before 2020-01-02 too)."""
+    try:
+        d0, _ = R.span(x, x, what)
+    except (R.ReadRefused, ValueError, TypeError) as e:
+        raise HeldOutInput(f"REFUSED: {what} {x!r}: {e}") from e
+    if d0 > R.CHOICE_END:
+        raise HeldOutInput(f"REFUSED: {what} {d0} is after the search years end on {R.CHOICE_END} (E-208; CHARTER "
+                           "3.6 (a), (d)): a search reads the search years only")
+    return d0
 
 
-def admit_one(r: Any) -> Reading:
-    """The one door (the module docstring): the reading, or `HeldOutInput`."""
-    if not isinstance(r, Reading):
-        raise HeldOutInput(f"REFUSED: {type(r).__name__} is not a search-year reading (a prediction never is one)")
-    tag = str(r.tag)
-    low = tag.lower().replace("-", "").replace("_", "").replace(" ", "")
-    if any(w in low for w in ("heldout", "judged", "holdout", "confirm")):
-        raise HeldOutInput(f"REFUSED: a reading tagged {tag!r} is held-out: a search never reads the held-out years "
-                           "(CHARTER 3.6 (a); E-208, E-221 O-1)")
-    if tag != SEARCH_TAG:
-        raise HeldOutInput(f"REFUSED: a reading tagged {tag!r}; only {SEARCH_TAG!r} is admitted")
-    if not r.blocks:
+def _check_blocks(blocks: Any) -> tuple[tuple[str, str], ...]:
+    if not blocks:
         raise HeldOutInput("REFUSED: a reading names the search-year blocks it was read on")
-    for b in r.blocks:
+    out = []
+    for b in blocks:
         if not (isinstance(b, tuple) and len(b) == 2):
             raise HeldOutInput(f"REFUSED: a block is (start, end), got {b!r}")
         try:
@@ -745,23 +874,156 @@ def admit_one(r: Any) -> Reading:
         if got != ("choice",):
             raise HeldOutInput(f"REFUSED: block {b[0]} to {b[1]} touches the held-out years ({got}; E-208): a search "
                                "reads the search years only")
-    if not r.seeds or not all(isinstance(s, (int, np.integer)) and not isinstance(s, bool) for s in r.seeds):
+        out.append((str(b[0]), str(b[1])))
+    return tuple(out)
+
+
+def _int_seeds(seeds: Any) -> tuple[int, ...]:
+    if not seeds or not all(isinstance(x, (int, np.integer)) and not isinstance(x, bool) for x in seeds):
         raise HeldOutInput("REFUSED: a reading names its coin seeds, as integers")
+    return tuple(int(x) for x in seeds)
+
+
+@dataclass(frozen=True)
+class Protocol:
+    """The declaration's reading protocol: the measure, the search-year blocks, the coin seeds, the outcome horizon in
+    sessions (how far after its start an outcome reads), and the library versions (`LIBS`; the run's must be these)."""
+
+    measure: str
+    blocks: tuple[tuple[str, str], ...]
+    seeds: tuple[int, ...]
+    horizon: int
+    libs: tuple[tuple[str, str], ...] = LIBS
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.measure, str) or not self.measure:
+            raise OffProtocol("a protocol names its measure")
+        object.__setattr__(self, "blocks", _check_blocks(tuple(tuple(b) for b in self.blocks)))
+        seeds = _int_seeds(self.seeds)
+        if len(set(seeds)) != len(seeds):
+            raise OffProtocol(f"a protocol's seeds are distinct, got {seeds}")
+        object.__setattr__(self, "seeds", seeds)
+        if type(self.horizon) is not int or self.horizon < 0:
+            raise OffProtocol(f"a protocol's horizon is a whole number of sessions, got {self.horizon!r}")
+        object.__setattr__(self, "libs", tuple(tuple(x) for x in self.libs))
+        if self.libs != LIBS:
+            raise OffProtocol(f"the protocol pins {self.libs}; this run has {LIBS} -- a seed reproduces only under the "
+                              "declared versions (m-8)")
+
+    def with_measure(self, measure: str) -> "Protocol":
+        return Protocol(measure, self.blocks, self.seeds, self.horizon, self.libs)
+
+    def with_seeds(self, seeds: Sequence[int]) -> "Protocol":
+        return Protocol(self.measure, self.blocks, tuple(seeds), self.horizon, self.libs)
+
+
+@dataclass(frozen=True)
+class Reading:
+    """A design's measure read on a protocol: its blocks ((start, end) ISO days), coin seeds, outcome horizon in
+    sessions, and the last session any outcome read (`reads_through`, ISO). `tag` 'search' is the only one admitted;
+    `se` the value's standard error over its seeds, `per_seed` its value under each seed (in the protocol's order),
+    when known. Frozen: the design becomes a read-only mapping of a copy, the sequences tuples (m-4)."""
+
+    design: Mapping[str, Any]
+    value: float
+    blocks: tuple[tuple[str, str], ...]
+    seeds: tuple[int, ...]
+    tag: str
+    measure: str
+    horizon: int
+    reads_through: str
+    se: float | None = None
+    per_seed: tuple[float, ...] | None = None
+    libs: tuple[tuple[str, str], ...] = LIBS
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "design", MappingProxyType(dict(self.design)))
+        object.__setattr__(self, "blocks", tuple(tuple(b) for b in self.blocks))
+        object.__setattr__(self, "seeds", tuple(self.seeds))
+        if self.per_seed is not None:
+            object.__setattr__(self, "per_seed", tuple(float(x) for x in self.per_seed))
+        object.__setattr__(self, "libs", tuple(tuple(x) for x in self.libs))
+
+    @property
+    def id(self) -> str:
+        return design_id(self.design)
+
+
+def admit_one(r: Any, *, ledger: CellLedger, protocol: Protocol,
+              roles: Callable[[str], bool] = searched) -> Reading:
+    """The one door (the module docstring): the reading, or a `ReadingRefused` naming why."""
+    if type(r) is not Reading:
+        raise HeldOutInput(f"REFUSED: {type(r).__name__} is not exactly a search-year Reading (a prediction or a "
+                           "subclass never is one)")
+    if type(ledger) is not CellLedger or type(protocol) is not Protocol:
+        raise ReadingRefused("the door takes the cell ledger and the declared protocol")
+    tag = str(r.tag)
+    low = tag.lower().replace("-", "").replace("_", "").replace(" ", "")
+    if any(w in low for w in ("heldout", "judged", "holdout", "confirm")):
+        raise HeldOutInput(f"REFUSED: a reading tagged {tag!r} is held-out: a search never reads the held-out years "
+                           "(CHARTER 3.6 (a); E-208, E-221 O-1)")
+    if tag != SEARCH_TAG:
+        raise HeldOutInput(f"REFUSED: a reading tagged {tag!r}; only {SEARCH_TAG!r} is admitted")
+    blocks = _check_blocks(r.blocks)
+    seeds = _int_seeds(r.seeds)
+    last_block = max(_search_day(b[1], "a block's end") for b in blocks)
+    through = _search_day(r.reads_through, "an outcome's last session (reads_through)")
+    if through < last_block:
+        raise HeldOutInput(f"REFUSED: reads_through {through} is before the last block's end {last_block}: it names "
+                           "the last session any outcome read")
     if not math.isfinite(float(r.value)):
         raise HeldOutInput(f"REFUSED: a reading's value is finite, got {r.value!r}")
     if r.se is not None and not (math.isfinite(float(r.se)) and float(r.se) >= 0):
         raise HeldOutInput(f"REFUSED: a reading's standard error is finite and non-negative, got {r.se!r}")
+    if r.per_seed is not None and (len(r.per_seed) != len(seeds)
+                                   or not all(math.isfinite(x) for x in r.per_seed)):
+        raise HeldOutInput("REFUSED: a reading's per-seed values are finite, one a seed")
+    for what, got, want in (("measure", r.measure, protocol.measure), ("blocks", blocks, protocol.blocks),
+                            ("seeds", seeds, protocol.seeds), ("horizon", r.horizon, protocol.horizon),
+                            ("library versions", r.libs, protocol.libs)):
+        if got != want or (what == "horizon" and type(got) is not int):
+            raise OffProtocol(f"REFUSED: a reading on {what} {got!r}; the declared protocol's are {want!r}")
+    if r.id not in ledger.proposed_ids(roles):
+        raise Uncounted(f"REFUSED: design {r.id} is not a counted proposed cell of the ledger in an allowed role: a "
+                        "design read outside the count never reaches a fit or a finalist (CHARTER 3.3 (f))")
     return r
 
 
-def admit(readings: Iterable[Any]) -> list[Reading]:
+def admit(readings: Iterable[Any], *, ledger: CellLedger, protocol: Protocol,
+          roles: Callable[[str], bool] = searched) -> list[Reading]:
     """Every reading through the one door, or the first refusal (nothing admitted)."""
-    return [admit_one(r) for r in readings]
+    return [admit_one(r, ledger=ledger, protocol=protocol, roles=roles) for r in readings]
+
+
+# ------------------------------------------------------------------------------------------------ to the scheduler
+
+
+def to_components(space: Space, design: Mapping[str, Any], day: date, *, firm: str,
+                  build: Callable[[str, Mapping[str, Any]], tuple[Any, int]]) -> Any:
+    """The design on trading day `day` as `extended.components.Design(day=day)` (the red team's m-11): each active
+    slot's offsets read from that date's session start (`Space.windows_on`), its session named as the scheduler
+    names it (`ny` is `ny_am`, whose bounds are the whole NY session until T2b), its reward-to-risk from S2.
+    `build(slot, levers)` gives the slot's trigger and stop in ticks (S1 and the sources' own parameters are not levers
+    yet: the caller's, from its declaration)."""
+    from extended import components as C
+
+    why = space.check(design)
+    if why is not None:
+        raise SpaceRefused(f"a design the space refuses ({why[0]}: {why[1]})")
+    comps = []
+    for name, sess, a, b in space.windows_on(design, day):
+        levers = {k[len(name) + 1:]: v for k, v in design.items() if k.startswith(name + ".")}
+        if levers.get("S2") is None:
+            raise SpaceRefused(f"slot {name} has no reward-to-risk (S2)")
+        trigger, stop = build(name, MappingProxyType(levers))
+        comps.append(C.Component(name, "ny_am" if sess == "ny" else sess, int(a), int(b), trigger, int(stop),
+                                 float(levers["S2"])))
+    return C.Design(firm, tuple(comps), day=day)
 
 
 __all__ = ["TASK", "REAL", "INT", "CAT", "OFF", "ON", "METHODS", "SEARCH_TAG", "REFUSAL_CLASSES", "TIER_ONE",
-           "SLOT_LEVERS", "TICKET", "SpaceRefused", "HeldOutInput", "Dim", "Slot", "slot_dim", "Constraint",
+           "SLOT_LEVERS", "TICKET", "LIBS", "SpaceRefused", "LedgerRefused", "ReadingRefused", "HeldOutInput",
+           "OffProtocol", "Uncounted", "searched", "Dim", "Slot", "slot_dim", "Constraint",
            "design_id", "Space", "CellLedger", "child_rng", "STREAM_SURVEY", "STREAM_POOL", "STREAM_LOCAL",
            "STREAM_FIT", "STREAM_PLATEAU", "UnitPoints", "Sampler", "session_spans", "search_days", "session_slots",
-           "from_lever_space", "Reading",
-           "admit_one", "admit"]
+           "from_lever_space", "Protocol", "Reading", "admit_one", "admit", "to_components"]

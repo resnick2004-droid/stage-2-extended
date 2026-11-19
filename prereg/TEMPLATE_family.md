@@ -160,7 +160,8 @@ closes and its judged block is not read.*
 - **E-161's drift nulls** (Q-126's plan 3.3, constant and sign-varying drift) named beside the one-sample line.
 - **The user scorecard (E-008, E-014, E-015):** P and the guarded measures against `R* = P-14`, the frontier, the
   denial ladder, the placement on and E-007 (e)'s readings, each a distribution over start days; the verdict at 0 %
-  denial with the placement off; the operator's limits as menu flags only. Beside, never the pass line.
+  denial with the placement off; the limits (the lead's, pinned before the survey, E-221) as menu flags only. Beside,
+  never the pass line.
 
 ## 13. The judged block's reads (E-026)
 

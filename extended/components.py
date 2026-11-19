@@ -129,22 +129,29 @@ class Component:
         return W.target_ticks(self.rr, self.stop_ticks)
 
 
-def session_bounds(day: date | None = None) -> dict[str, tuple[int, int]]:
-    """Each session's [start, end) in trading-day slots from the firm's day (`lever_space.session_windows`, minutes
-    after the reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new
-    entry. The clock is 17:00-based: a firm reopening at another time is refused.
+def session_windows_of(day: date) -> dict[str, tuple[int, int | None]]:
+    """**The one function every session window is read through** (Q-169 (5)): trading day `day`'s sessions as
+    [start, end) in minutes after the reopen, from `lever_space.session_windows(day)` -- each start its local market
+    time converted for that date (E-231 (3), `day_calendar.anchored_starts`). Nothing else reads them."""
+    return LS.session_windows(day)
 
-    The session starts are anchored to their local market times per date (E-231 (3), `day_calendar.anchored_starts`).
-    With `day`, that trading day's sessions; without, **the bounds that hold on every weekday of the search years**
-    (`day_calendar.SEARCH_START` to `SEARCH_END`): each session from its latest start to its earliest end, so a window
-    inside them is inside its session on every date."""
+
+def session_bounds(day: date | None = None) -> dict[str, tuple[int, int]]:
+    """Each session's [start, end) in trading-day slots from the firm's day (`session_windows_of`, minutes after the
+    reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new entry. The
+    clock is 17:00-based: a firm reopening at another time is refused.
+
+    The session starts are anchored to their local market times per date (E-231 (3)). With `day`, that trading day's
+    sessions; without, **the bounds that hold on every weekday of the search years** (`day_calendar.SEARCH_START` to
+    `SEARCH_END`): each session from its latest start to its earliest end, so a window inside them is inside its session
+    on every date."""
     td = LS.trading_day()
     if int(td["reopen"]) != 17 * 60:
         raise DesignRefused("the trading-day clock starts at 17:00 CT; this firm reopens at another time")
     days = [day] if day is not None else LS.trading_dates(DC.SEARCH_START, DC.SEARCH_END)
     out: dict[str, tuple[int, int]] = {}
     for d in days:
-        sw = LS.session_windows(d)
+        sw = session_windows_of(d)
         ny = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))
         cur = {k: (int(a), int(b)) for k, (a, b) in sw.items() if k not in ("ny_am", "ny_pm")}
         cur["ny_am"] = cur["ny_pm"] = ny
@@ -294,9 +301,42 @@ def _worse(e: T.Execution) -> tuple:
     return int(e.trade.rule.gross[0]), -e.exit_slot, int(e.offer.sub)
 
 
+def calendar_contexts(design: Design, cal, hist: T.History, i: int, *, windows: Sequence[T.Window] = (),
+                      market: str = "NQ", rules: W.Rules = T.JOURNEY) -> tuple[T.DayContext, dict[str, T.DayContext]]:
+    """Q-169 (2): the day's contexts from the void calendar (`extended.day_calendar`): the day-wide one (a source reading
+    nothing: its `void` is the day-wide void, which `schedule_day`'s day-end guard honours), and each component's, from
+    what its source reads (`triggers.context_for`), so every source drops its void days by the calendar. The session
+    index is the history's index `i`. Raises on a held-out or a confirmation-window day."""
+    from datetime import date as _date
+
+    d = _date.fromisoformat(hist.days[i])
+    base = T.context_for(None, cal, d, i, windows, market=market, rules=rules)
+    return base, {c.name: T.context_for(c.trigger, cal, d, i, windows, market=market, rules=rules)
+                  for c in design.components}
+
+
+def coin_component(name: str, session: str, latency: int, *, stop_ticks: int, rr: float, entry: str = T.MARKET,
+                   day=None, instrument: str = "MNQ") -> Component:
+    """The naive coin over one session (Q-169 (3)): its moments every `mark_step_min` minutes from the session's start
+    to the last moment whose order goes live before the session's end (and before the firm's last new entry), the
+    session read through `session_windows_of`; the component's window is the orders' live slots. `day` given, that
+    trading day's session (build its `Design` with the same `day=`); None, the bounds holding on every search-year
+    weekday (`session_bounds`)."""
+    b = session_bounds(day)
+    start, end = b[session]
+    end = min(end, b["_last_entry"][1] + 1)
+    first = -(-int(start) // T.MARK_STEP) * T.MARK_STEP
+    last = ((end - 1 - int(latency)) // T.MARK_STEP) * T.MARK_STEP
+    trig = T.CoinMarks(first, last, latency=latency, entry=entry)
+    return Component(name, session, first + int(latency), last + int(latency), trig, stop_ticks, rr, instrument)
+
+
 def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, unit: T.CoinUnit, *,
-                 rules: W.Rules = T.JOURNEY, costs: W.Costs | None = None) -> DaySchedule:
-    """One firm's day under the chain (the module docstring)."""
+                 rules: W.Rules = T.JOURNEY, costs: W.Costs | None = None,
+                 contexts: dict[str, T.DayContext] | None = None) -> DaySchedule:
+    """One firm's day under the chain (the module docstring). `ctx` is the day-wide context; `contexts`, when given
+    (`calendar_contexts`), each component's own, under which its offers are admitted and executed. A design checked
+    against one day's sessions (`Design(day=...)`) is scheduled on that day only."""
     if design.day is not None and design.day.isoformat() != ctx.date:
         raise DesignRefused(f"a design checked against the sessions of {design.day} is scheduled on {ctx.date}")
     if hist.days[i] != ctx.date:
@@ -308,9 +348,13 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
                              f"{int(rules.walk_end)}; such a day is voided by the caller's calendar (DayContext.void)")
     out = DaySchedule(design.firm, int(ctx.session), ctx.date)
     mine: list[tuple[int, T.Offer]] = []
+    cctx = {c.name: (contexts[c.name] if contexts is not None else ctx) for c in design.components}
     for ci, comp in enumerate(design.components):
-        offs = [o for o in comp.trigger.offers(hist, i, ctx) if int(comp.first) <= int(o.live) <= int(comp.last)]
-        kept, refused = T.admit(offs, ctx)
+        cx = cctx[comp.name]
+        if (cx.session, cx.date) != (ctx.session, ctx.date):
+            raise ValueError(f"component {comp.name}'s context is not the day's")
+        offs = [o for o in comp.trigger.offers(hist, i, cx) if int(comp.first) <= int(o.live) <= int(comp.last)]
+        kept, refused = T.admit(offs, cx)
         out.refused += refused
         mine += [(ci, o) for o in kept]
     # the firm's state from the last placed group: [start, end) stretches labelled 'order' (an entry order working),
@@ -324,8 +368,8 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
             out.skipped += [(o, reason) for _, o in grp]
             continue
         comp = design.components[grp[0][0]]
-        exs = [T.execute(o, T.coin_side(unit, o), hist, i, ctx, comp.stop_ticks, comp.rr, rules=rules, costs=costs)
-               for _, o in grp]
+        exs = [T.execute(o, T.coin_side(unit, o), hist, i, cctx[comp.name], comp.stop_ticks, comp.rr, rules=rules,
+                         costs=costs) for _, o in grp]
         filled = [e for e in exs if e.filled]
         if filled:
             first_bar = min(e.trade.fill.bar for e in filled)
@@ -443,5 +487,6 @@ def schedule_user(designs: Sequence[Design], hist: T.History, i: int, ctx: T.Day
 
 
 __all__ = ["TASK", "OVERLAP_MODES", "SKIP_REASONS", "DesignRefused", "OverlapRefused", "TierOneRefused", "DayRefused",
-           "Component", "session_bounds", "Design", "ScheduledTrade", "DaySchedule", "schedule_day", "Position",
+           "Component", "session_windows_of", "session_bounds", "Design", "calendar_contexts", "coin_component",
+           "ScheduledTrade", "DaySchedule", "schedule_day", "Position",
            "position_of", "positions_of", "UserBook", "schedule_user"]

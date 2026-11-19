@@ -26,7 +26,7 @@ least bankroll, fastest, cheapest pass and payout, steady income, least ruin -- 
 each outcome redrawn at its bracket's driftless odds; the coin is the evaluation's, not the playbook's: each design's
 side comes from its own trigger under the no-harm floor, accounts alternate, and no two of the user's accounts or firms
 hold opposite positions at once, E-221). A design passes only if it sits inside each limit at its point estimate,
-failing one only when the evidence shows it crosses, the single margin applied once (E-221); beats each baseline (naive
+which governs, the one-sided check beside it (E-221, the lead's O-5 ruling); beats each baseline (naive
 coin, P-14, P-15, P-16, same convention) on the composite pinned before the survey (fallback: P under the bankroll
 stop; the limits, budgets and weights the lead's, from H4's search-year results by a rule declared before H4 is read,
 E-221) by the calibrated coin-seed test at 0.05 / (k (k+1)) on the held-out years, read once, by one joint test of
