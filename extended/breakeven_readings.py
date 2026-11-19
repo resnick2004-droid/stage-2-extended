@@ -234,7 +234,8 @@ def rederive_problems(df: pd.DataFrame, srows: Sequence[Mapping[str, Any]], what
     `extended.user_readings`' own functions) against the runner's `srows`: the same keys, every value to `tol`
     relative (absolute below 1; a blank equal to a blank) and every `n` exactly."""
     recs = records_from_frame(df)
-    mine = R.scorecard_rows(recs) + R.extra_rows(recs) + R.path_rows(path_table(df))
+    mine = (R.scorecard_rows(recs, R.Q44_BLOCKS) + R.extra_rows(recs, R.Q44_BLOCKS)       # W3.1: named
+            + R.path_rows(path_table(df), R.Q44_BLOCKS))
     keep = ("scorecard", "extra", "path")
     key = lambda r: (r["section"], r["block"], r["measure"], r["stat"])          # noqa: E731
     theirs = {key(r): r for r in srows if r["section"] in keep}

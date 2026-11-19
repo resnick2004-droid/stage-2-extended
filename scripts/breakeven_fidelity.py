@@ -189,8 +189,8 @@ def main(argv: list[str] | None = None) -> int:
                         f"user_journey.csv's (every column, {'every start' if a.starts is None else a.starts})",
                         I.u1_compare_outs(design, defs[design], arm, outs, ref, len(job["blocks"]), a.starts)):
                     return refuse()
-                srows, _ = R.summary(design, arm, off, outs)
-                bad = R.consistency_problems(srows, outs, f"{design} {name} {arm}")
+                srows, _ = R.summary(design, arm, off, outs, blocks=R.Q44_BLOCKS)          # W3.1: named
+                bad = R.consistency_problems(srows, outs, f"{design} {name} {arm}", blocks=R.Q44_BLOCKS)
                 if not ident(design, f"{name} {arm}", "every run's payouts and fees against the engine's totals; the "
                              "extra P equal to the card's; the limits' P ordered; shares in [0, 1]", bad):
                     return refuse()

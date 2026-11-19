@@ -442,7 +442,8 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
     """Section 5 item 6 and section 14 (E-041, E-053): this draft's own text, pinned as `prereg/RD-02_payout_policy.md`
     by a synthetic row in a temporary tree, authorises the engine's whole-window reads under each purpose of its line,
     inside a (simulated) clean run, ledgered as a described reading; another run under the same purpose is refused,
-    unless `repeat=` names a row naming the file -- one row, one more run."""
+    unless `repeat=` names a row naming the file -- one row, one more run. Q-158: the synthetic log's E-992 carries
+    NQ's held-out verdict token, which a described reading's judged read now needs (the reader's held-out rule 4)."""
     rel = "prereg/RD-02_payout_policy.md"
     body = text()
     pin = hashlib.sha256(body.encode("utf-8")).hexdigest()
@@ -453,7 +454,9 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
     (t / "DECISIONS.md").write_text(
         "# Decisions (synthetic, Q-92)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
         f"| E-990 | 2026-11-16 | **RD-02 declared**, `{rel}` sha256 `{pin}` | test |\n"
-        f"| E-991 | 2026-11-16 | **A rerun of RD-02** (`{rel}`) after a synthetic restart | test |\n", encoding="utf-8")
+        f"| E-991 | 2026-11-16 | **A rerun of RD-02** (`{rel}`) after a synthetic restart | test |\n"
+        "| E-992 | 2026-11-16 | heldout-verdict: NQ F-13 -- NQ's held-out test has its verdict | test |\n",
+        encoding="utf-8")
     (t / ".gitignore").write_text("vendor/stage2/data/\nresults/\n", encoding="utf-8")
     for f in ENGINE_FILES:
         (t / f).parent.mkdir(parents=True, exist_ok=True)

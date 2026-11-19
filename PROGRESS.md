@@ -209,3 +209,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-18 | lead | E-213 to E-216: Wave 1 complete (measures aligned, the three-way test's design merged); four shared identities hold again. |
 | 2026-11-18 | lead | E-217: commit hooks serialised and git scans time-limited; a sixth operator item (the long-run gate on the held-out years). |
 | 2026-11-18 | lead | E-218 to E-220: every shared identity holds again; the reader's held-out guard built and held; a seventh operator item; the morning brief written. |
+| 2026-11-18 | lead | E-221: the operator's answers recorded -- held-out years confirmed once, jointly across firms; playbook sides from triggers, accounts alternating, no opposite positions; limits, gate and firm readings ruled; no data purchase. |
+| 2026-11-18 | lead | E-222: Wave 3.1's journey measures, the reader's held-out guard and the trigger library merged in one commit; the identity block re-queued once at it; a commit written without its hook's verdict put on record and its repair dispatched; H2, the firm readings' re-declarations and E-221's texts dispatched. |

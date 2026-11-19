@@ -87,7 +87,7 @@ ARMS = ("verdict", "point")                      # Stage 2's `user_journey.ARMS`
 MONTH = UR.MONTH                                 # 21 sessions
 FIRST_WINDOW = UR.FIRST_WINDOW                   # 126: the first pass and the first payout
 YEAR_WINDOW = UR.YEAR_WINDOW                     # 252: break-even
-BLOCKS = UR.BLOCKS                               # ("all", "judged")
+BLOCKS = UR.Q44_BLOCKS                           # ("all", "judged"): Q-44's, named (W3.1)
 #: the judged block's first year (Stage 2 `u_select.JUDGED_FIRST_YEAR`, checked by the script; D-621 (4)(b))
 JUDGED_FIRST_YEAR = JUDGED_START.year
 SPEND_MONTHS = (1, 2, 3, 4, 5, 6)

@@ -218,7 +218,9 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     engine reads over the whole development window under each purpose of its `Judged-block reads:` line -- judged,
     ledgered inside a (simulated) clean run as a described reading with its pin's sha256 -- and is refused where a
     family's file would be: outside a clean run, by another run under the same purpose with no decision row naming
-    it, and once edited after its pin; and, as a family's, never for the purpose `registered_design` (E-037)."""
+    it, and once edited after its pin; and, as a family's, never for the purpose `registered_design` (E-037). Q-158:
+    the synthetic log's E-991 carries NQ's held-out verdict token, which a described reading's judged read now needs
+    (the reader's held-out rule 4)."""
     rel = "prereg/RD-01_firm_contracts.md"
     body = text()                                                      # LF, as the pins are taken
     pin = hashlib.sha256(body.encode("utf-8")).hexdigest()
@@ -227,7 +229,9 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     (t / "prereg").mkdir(parents=True)
     (t / rel).write_bytes(body.encode("utf-8"))
     (t / "DECISIONS.md").write_text("# Decisions (synthetic, Q-74)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
-                                    f"| E-990 | 2026-11-16 | **RD-01 declared**, `{rel}` sha256 `{pin}` | test |\n",
+                                    f"| E-990 | 2026-11-16 | **RD-01 declared**, `{rel}` sha256 `{pin}` | test |\n"
+                                    "| E-991 | 2026-11-16 | heldout-verdict: NQ F-13 -- NQ's held-out test has its "
+                                    "verdict | test |\n",
                                     encoding="utf-8")
     (t / ".gitignore").write_text("vendor/stage2/data/\nresults/\n", encoding="utf-8")
     for f in ENGINE_FILES:

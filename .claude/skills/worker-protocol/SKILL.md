@@ -126,3 +126,5 @@ shows it. A line that does not apply is answered "n/a" with the reason.
 The skill `merge-checklist`: reads the diff, reruns the tests, checks the identities, sends declarations to the red
 team and results that matter to the auditor, then merges with `--no-ff`, numbers and commits the row, updates
 STATUS / TASK_QUEUE / PROGRESS, pushes, and fast-forwards the other worktrees (`python scripts/worktrees.py sync`).
+
+- **Never wrap `git commit` in `timeout`** (E-222): a killed hook stub let git write a commit without the fast tier's verdict; run the commit in the background and wait for it -- the hook has its own three-hour cap.

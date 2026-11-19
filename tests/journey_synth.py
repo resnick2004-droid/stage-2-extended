@@ -216,8 +216,8 @@ def frames(seed: int = SEEDS[0], *, starts: int = 130, full: int = 80, first: da
         for arm in U.ARMS:
             for resp in resps:
                 outs = [one_start(seed, name, arm, resp, s, dates[s], obs[s]) for s in range(starts)]
-                srows, table = R.summary(name, arm, resp, outs)
-                probs = R.consistency_problems(srows, outs, f"{name}|{arm}|{resp.name}")
+                srows, table = R.summary(name, arm, resp, outs, blocks=R.Q44_BLOCKS)       # W3.1: named
+                probs = R.consistency_problems(srows, outs, f"{name}|{arm}|{resp.name}", blocks=R.Q44_BLOCKS)
                 if probs:
                     raise RuntimeError("the synthetic readings fail the writer's own checks: " + "; ".join(probs[:4]))
                 ident(name, arm, f"{resp.name}: every run's payouts and fees against the engine's totals; the extra P "

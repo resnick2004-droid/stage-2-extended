@@ -9,6 +9,10 @@ What is asserted, for `scripts/user_beside.py` (Q-17), `scripts/breakeven_fideli
   reads (P-14, P-15, P-16 -- the run's own subset), the whole development window and the files the engine opens (A1's
   events and days and A3's cached walk; the bars wherever a walk is made afresh -- P-15's and P-16's coins, and P-14's
   A3 frame re-walked by Q-20);
+* Q-158 (the reader's held-out rule 3): the whole window reaches the held-out years, so a run is admitted only under a
+  row carrying a read token that names it (here the real rows with the token added, the process script the driver),
+  inside a clean run; outside one it is refused (exit 3, nothing ledgered), and the real rows as they stand, without
+  the token, refuse every reading inside one too;
 * outside a clean run no ledger file appears; inside a simulated one exactly one line a run (its row, purpose, the
   designs, the window, each file with its hash, the script, the clean run, a `caller` in the script's `main`);
 * a row missing from the decision log, or present but not naming the run's designs, is refused (the script prints
@@ -177,6 +181,17 @@ def log(rows: dict[str, str]) -> str:
     return head + "".join(line + "\n" for line in rows.values())
 
 
+def tokened(rows: dict[str, str | None]) -> dict[str, str]:
+    """Q-158 (the reader's held-out rule 3): each real row with a read token naming its designs, as the first text of
+    its third cell, the reading's process script the driver -- the rows as a new held-out read needs them."""
+    out = {}
+    for r, line in rows.items():
+        cells = line.split("|")
+        cells[3] = f" heldout-read: {','.join(ROWS[r])} by scripts/q58_driver.py --{cells[3]}"
+        out[r] = "|".join(cells)
+    return out
+
+
 NO_DESIGN = log({r: f"| {r} | 2026-11-16 | **A row about nothing in particular** | test |" for r in ROWS})
 MISSING = log({"E-904": "| E-904 | 2026-11-16 | **A row about nothing in particular** | test |"})
 
@@ -221,13 +236,14 @@ def clean_env(name: str) -> dict[str, str]:
 @pytest.fixture(scope="module")
 def results(tmp_path_factory) -> dict:
     base = tmp_path_factory.mktemp("q58")
-    valid = log(real_rows())
+    valid = log(tokened(real_rows()))
     runs = [[s, a] for s, a, *_ in RUNS]
     refuse = [[s, FIRST[s][1]] for s in SCRIPTS]
     t = make_tree(base, "q58-scripts", "scripts", valid)
     ok = drive(t, "scripts", [
         {"name": "outside", "env": {}, "runs": runs},
         {"name": "inside", "env": clean_env(t.name), "runs": runs},
+        {"name": "untokened_inside", "decisions": log(real_rows()), "env": clean_env(t.name), "runs": refuse},
         {"name": "no_design_outside", "decisions": NO_DESIGN, "env": {}, "runs": refuse},
         {"name": "no_design_inside", "env": clean_env(t.name), "runs": refuse},
         {"name": "missing_outside", "decisions": MISSING, "env": {}, "runs": refuse},
@@ -271,7 +287,9 @@ def test_the_rows_the_readings_name_exist_and_name_their_designs():
 
 
 @pytest.mark.parametrize("i", range(len(RUNS)), ids=IDS)
-def test_outside_a_clean_run_the_read_is_checked_and_nothing_is_ledgered(results, i):
+def test_outside_a_clean_run_the_read_is_checked_refused_and_nothing_is_ledgered(results, i):
+    """Q-158 (rule 3): the whole window reaches the held-out years, so outside a clean run the read is refused -- even
+    under a row whose token names it -- after its one authorisation and before any of the engine's work."""
     script, argv, row, designs, files, first = RUNS[i]
     r = phase(results, "scripts", "outside")[i]
     assert (r["script"], r["argv"]) == (script, argv)
@@ -280,11 +298,23 @@ def test_outside_a_clean_run_the_read_is_checked_and_nothing_is_ledgered(results
         assert r.get("rc") == 2 and authorisations(r) == [] and work(r) == [], explain(r)
     else:
         a = authorisations(r)
-        assert r.get("stopped") == first and work(r) == [first], explain(r)
+        assert r.get("rc") == 3 and "stopped" not in r and work(r) == [], explain(r)
+        assert "REFUSED" in r["stdout"] and "held-out rule 3" in r["stdout"] and "clean run" in r["stdout"], explain(r)
         assert len(a) == 1 and r["events"].index(a[0]) == 0, "one authorisation, before any of the engine's work"
         assert a[0]["purpose"] == "registered_design" and a[0]["declaration"] == row
         assert tuple(a[0]["design"]) == designs and (a[0]["start"], a[0]["end"]) == ("2020-01-02", "2026-07-16")
     assert not r["ledger_exists"] and r["new"] == [], "no ledger file outside a clean run"
+
+
+@pytest.mark.parametrize("script", SCRIPTS)
+def test_the_real_rows_without_a_token_admit_no_new_held_out_read(results, script):
+    """Q-158 (rule 3): E-024 and E-026 as they stand carry no read token, so inside a clean run each reading is
+    refused under them; the lines the inside phase wrote before stay."""
+    r = next(x for x in phase(results, "scripts", "untokened_inside") if x["script"] == script)
+    assert r.get("rc") == 3 and "error" not in r and "stopped" not in r, explain(r)
+    assert "REFUSED" in r["stdout"] and "held-out rule 3" in r["stdout"], explain(r)
+    assert work(r) == [] and r["new"] == [] and r["prefix_kept"], "nothing starts, nothing is written"
+    assert [a["declaration"] for a in authorisations(r)] == [FIRST[script][2]]
 
 
 @pytest.mark.parametrize("i", range(len(RUNS)), ids=IDS)

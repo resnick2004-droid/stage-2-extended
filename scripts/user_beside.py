@@ -184,8 +184,8 @@ def main(argv: list[str] | None = None) -> int:
                     probs = []
                     if resp.name == "off":
                         probs = I.u1_compare_outs(name, c, arm, outs, ref, len(job["blocks"]), a.starts)
-                    srows, table = R.summary(name, arm, resp, outs)
-                    probs += R.consistency_problems(srows, outs, key)
+                    srows, table = R.summary(name, arm, resp, outs, blocks=R.Q44_BLOCKS)   # W3.1: Q-44's
+                    probs += R.consistency_problems(srows, outs, key, blocks=R.Q44_BLOCKS)
                     got = {"rows": srows, "table": R.rounded(table), "problems": probs, "starts": len(outs),
                            "seconds": time.time() - t1,
                            "exact_checked": int(sum(1 for x in outs if x["checked"])),

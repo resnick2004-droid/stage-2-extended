@@ -13,7 +13,9 @@ journey figure from it.
 `tests/test_measures_doc.py` holds this file to the code. Every function, constant and column named in the index
 (section 8) for a measure marked `exists` or `partial` must be defined in the named file. Every measure has a status,
 every `to build` entry is marked so, and every code line listed as "to change" (section 6) is where it says. The test
-reads no data. It checks names, not meanings: one synthetic test per definition is Wave 3.1's (m-13).
+reads no data. It checks names, not meanings. The meanings are Wave 3.1's tests (m-13): `tests/test_journey_measures.py`
+(one synthetic test with a known answer per definition built, the red team's cases by name) and
+`tests/test_journey_readings.py` (the journey's window and readings through the engine, on a synthetic campaign).
 
 ---
 
@@ -95,9 +97,9 @@ payout lag (U1's `payout_arrivals`).
   of a dollar.
 
 **Ahead (m-11)** means `rel_u[k] > 1e-6`, above zero by more than a millionth of a dollar, the same tolerance as
-break-even. A path whose payouts equal its fees is not ahead by float residue. The existing code reads `> 0` exactly
-(`extended/user_measures.py:64`; Stage 2's vendored `u_select`), which is to change in Wave 3.1 (section 6). Stage 2's
-registered rows beside keep Stage 2's reading.
+break-even. A path whose payouts equal its fees is not ahead by float residue. Since Wave 3.1 this repository's two
+"ahead" tests read `> 1e-6` (`extended/user_measures.py`, `p_by_month` and `months_ahead`; section 6). Stage 2's
+vendored `u_select` reads `> 0`, and Stage 2's registered rows beside keep Stage 2's reading.
 
 **Spent before a close.** `spent_before(rel, k) = max(0, -min_{0 <= j < k} rel[j])` is the deepest net below zero over
 the closes *before* close `k` (`vendor/stage2/propedge/research/customer_journey.py`, `spent_before`). **The peak
@@ -167,8 +169,12 @@ start order at the reading's horizon as the lag, and reported as the median acro
 coin draws are independent across start days, so the dependence it measures is the shared history of overlapping
 sessions. Beside it is the `n_eff` of the start-day means `mean_c x_{s,c}`, which is the history-limited count.
 
-**The coin layer is to build** (the seed-paired runner, plan Wave 3.2, `wt-verify`, wired in by Wave 3.1). Every
-existing function below computes a measure over start days for one path per start.
+**The readings are computed by `extended/journey_measures.py`** (Wave 3.1): `coin_readings` for a per-unit measure
+(readings 1, 2 and 3, and the two `n_eff` values) and `design_coin_readings` for a design-level one (readings 1 and 3),
+each on the matrix `x[s, c]` of start days by seeds; (34)'s ANOVA is `variance_decomposition`. Reading 2's "median start
+day's within-day p10 and p90" is computed as the median over start days of the within-day p10, and of the within-day
+p90. **The seed-paired runner that fills `x[s, c]` is to build** (plan Wave 3.2, `wt-verify`): every reading below is
+today made on one path per start.
 
 ### 1.5 The old input path, and where values are written
 
@@ -181,6 +187,22 @@ The functions are pure and reusable on the new path. The path itself (the zero-e
 window, the seeds) is Wave 3.1's and 3.2's. A reading under the firm's responses is computed with every response off in
 the verdict (0 % payout denial, the placement off, the Focused Trader Program off; CHARTER 3.8), and the ladder is
 reported beside.
+
+**The block-bounded window, built in Wave 3.1 (B-1).** `extended/user_beside.py`, `run_starts(..., journey=True)`,
+stops each start's long run at the last session of its block of E-208 and refuses a calendar with a date in neither
+block. Each start's output then carries its `journey` fields: its block, the sessions left in it, the run's
+close-by-close net `rel`, the peak out-of-pocket through each month close, the Combines' purchase days and each funded
+account's ending fields and payout arrivals. `extended/user_readings.py`, `summary`, on the blocks `search` and
+`held_out` (its default is `search`), reads those journeys; `extended/journey_readings.py`, `summary`, adds the
+section `journey`. Every `journey` row reads closes `0 .. h` of `rel`.
+Corrective cycle 1: a journey run replays only the starts of the blocks it names (`journey_block`, by default the
+search years; a held-out start is refused before the pool, M-3), and a summary tables only its blocks' starts; under the
+journey every start is checked against its exact-length runs under every response (`exact_every` 1, M-2), and a reading
+is refused when a start is unchecked or differs, unless a declared reason explains it (`user_readings.
+journey_check_problems`); `P_B` takes "ahead" and the peak from one record, the exact run's where it differs (M-1). The zero-edge convention and the seeds are
+still Wave 3.2's, so these readings are still made on Stage 2's arms and one coin sequence. No such reading has been
+written to a file: the keys below marked "Journey" name the summary rows (`section` / `measure` / `stat`, `block`
+`search` or `held_out`) a reading writes.
 
 **Where values are written (the keys used below).**
 
@@ -233,13 +255,17 @@ only if its **peak out-of-pocket through the month close** is at most `B`:
 - `B` is **the operator's bankroll budget, set in Wave 4** (plan 4.2, 9.3; CHARTER 3.9).
 
 **Where.**
-- Functions: `extended/user_measures.py`, `p_by_month` (P and `P_B`; its `spent` argument must then carry the peak
-  through each month close, not U1's `spent_before_first_payout`: the caller, `extended/user_readings.py:184`, is to
-  change) and `months_ahead`; `vendor/stage2/propedge/research/u_select.py`, `scorecard`, `p_of` and `months_ahead`
-  (Stage 2's, `> 0`).
+- Functions: `extended/user_measures.py`, `p_by_month` (P and `P_B`: on E-208's blocks its caller,
+  `extended/user_readings.py`, `extra_rows`, passes the peak through each month close, the journey's `peak_month`
+  field, made by `user_measures.peak_by_month`; the sub-reading passes the spending before the first payout, read on
+  closes `0 .. 21 m`) and `months_ahead`; `extended/journey_measures.py`, `months_ahead_under` and `p_bankroll` (the
+  same from each unit's `rel`, a second code path the synthetic test holds equal); `vendor/stage2/propedge/research/
+  u_select.py`, `scorecard`, `p_of` and `months_ahead` (Stage 2's, `> 0`).
 - [B]: `scorecard/P/value`; `extra/P/value` (held equal to the card's by a refusing check);
   `extra/share_ahead_month_{1,2,3}/value`; `extra/P_bankroll_2000/value` and `extra/P_bankroll_2500/value` (the
-  "before the first payout" form, at Q-17's own limits, which are not the operator's).
+  "before the first payout" form, at Q-17's own limits, which are not the operator's; on the registered blocks
+  only). On E-208's blocks, at each budget the caller names: `extra/P_B_{B}/value` and, beside it,
+  `extra/P_B_before_first_payout_{B}/value`.
 - [BS]: `months_ahead` (the long record).
 - [U1]: `periodic:share_positive@21`, `@42` and `@63`, each on its own eligible starts (`u_select.p_from_u1`).
 
@@ -293,13 +319,13 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   - Unit: sessions.
 - **Per unit; never blank:** `x_u = first_pass_u`, or `W + 1` if unpassed. The censored percentile and the share are
   never blank.
-- **Status:** partial
-- **To build:** (v2 m-1) the censored percentile at `W + 1` as the headline. `days_quantile` sets an unreached unit
-  at `BEYOND` and blanks a percentile beyond the window (Stage 2's form, kept beside); the censored form is to change
-  (section 6).
+- **Status:** exists
+- **Built in Wave 3.1:** the censored percentile at `W + 1` as the headline (v2 m-1).
 - **Where:**
-  - Functions: `extended/user_measures.py`, `days_quantile` (the blanking form; the censored form is the same
-    percentile with `W + 1` in place of beyond); `extended/user_readings.py`, `path_rows`.
+  - Functions: `extended/user_measures.py`, `days_quantile` (`censored=True`: the headline, through `censored_days`;
+    the default is Stage 2's blanking form, kept beside); `extended/journey_measures.py`, `days_reading`;
+    `extended/user_readings.py`, `path_rows`.
+  - Journey: `path/first_pass_days/p10`, `p50`, `p90` (censored), `stage2_p10` .. (Stage 2's form), `share_by_126`.
   - [B]: `path/first_pass_days/p10`, `p50`, `p90`, `share_by_126`.
   - [BS]: `first_pass` (the long record).
   - [U1]: `first_pass:days_p50@42`, `first_pass:days_p90@42` (U1's window is 42).
@@ -322,7 +348,10 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Status:** exists
 - **Where:**
   - Functions: `extended/user_readings.py`, `path_rows`; `vendor/stage2/propedge/research/user_journey.py`,
-    `start_record`; `extended/user_spend.py`, `spend_record` (the fees reading).
+    `start_record`; `extended/user_spend.py`, `spend_record` (the fees reading); `extended/journey_measures.py`,
+    `spent_to_event` (the all-units form, its censored flag) and `strict_quantiles` (the strict rule).
+  - Journey: `journey/cash_to_first_pass/p10` .. `p90`, each with `p10_exact` .. (1 exact, 0 "at least"),
+    `share_passed_by_W`, `n_censored`.
   - [B]: `path/spent_before_first_pass/p10`, `p50`, `p90`.
   - [BS]: `spent_before_first_pass`.
   - [U1]: `first_pass:spent_before_p50@42`, `p90@42`, `p95@42` (Stage 2's S2, its cash half at p90).
@@ -340,7 +369,9 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   all-units percentiles follow section 1.3's strict rule (N-1).
 - **Status:** exists (in code; its file is not yet written)
 - **Where:**
-  - Functions: `extended/user_spend.py`, `spend_record` and `SUMMARY_MEASURES`.
+  - Functions: `extended/user_spend.py`, `spend_record` and `SUMMARY_MEASURES`; `extended/journey_measures.py`,
+    `evaluations_to_first_pass` (the all-units form, its censored flag).
+  - Journey: `journey/evaluations_before_first_pass/p10` .. `p90`, `p10_exact` .., `share_passed_by_W`.
   - [SP]: `evaluations_before_first_pass` and `resets_before_first_pass`.
 - **Parameters:** window `W`, as in (1).
 
@@ -366,12 +397,12 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   - Beside: the share paid by `W`, and Stage 2's blanking form.
   - Unit: sessions.
 - **Per unit; never blank:** `x_u = first_payout_u`, or `W + 1`.
-- **Status:** partial
-- **To build:** (v2 m-1) the censored percentile at `W + 1` as the headline. `days_quantile` sets an unreached unit
-  at `BEYOND` and blanks a percentile beyond the window (Stage 2's form, kept beside); the censored form is to change
-  (section 6).
+- **Status:** exists
+- **Built in Wave 3.1:** the censored percentile at `W + 1` as the headline (v2 m-1).
 - **Where:**
-  - Functions: `extended/user_readings.py`, `path_rows`; `vendor/stage2/propedge/research/u_select.py`, `scorecard`.
+  - Functions: `extended/user_readings.py`, `path_rows`; `extended/user_measures.py`, `days_quantile`
+    (`censored=True`); `vendor/stage2/propedge/research/u_select.py`, `scorecard`.
+  - Journey: `path/first_payout_days/p10` .. (censored), `stage2_p10` .., `share_by_126`.
   - [B]: `path/first_payout_days/p10`, `p50`, `p90`, `share_by_126`; `scorecard/S3b/value`.
   - [BS]: `first_payout`.
   - [U1]: `first_payout:days_p50@126`, `days_p90@126`, `days_p95@126`.
@@ -393,15 +424,16 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Per unit; never blank:** `x_u` as above, with its censored flag. Never blank.
 - **Alias (v2 m-7):** (24) reads the same per-unit quantity, and every bankroll limit is read there, through (24)'s
   three states, never on (6)'s percentile.
-- **Status:** partial
+- **Status:** exists
 - **Where:**
   - Functions: `extended/user_readings.py`, `path_rows`; `vendor/stage2/propedge/research/user_journey.py`,
     `start_record`; `vendor/stage2/propedge/research/customer_journey.py`, `spent_before` (which gives the censored
-    value at `W + 1`).
+    value at `W + 1`); `extended/journey_measures.py`, `spent_to_event` and `strict_quantiles` (the all-`E_W`
+    reading with its censored flag, built in Wave 3.1).
+  - Journey: `journey/spent_before_first_payout_all/p10` .. `p90`, `p10_exact` .., `share_paid_by_W`, `n_censored`.
   - [B]: `path/spent_before_first_payout/p10`, `p50`, `p90`; `scorecard/S1/value` (the paid-only form).
   - [BS]: `spent_before_first_payout`.
   - [U1]: `first_payout:spent_before_p50@126`, `p90@126`, `p95@126`.
-- **To build:** the all-`E_W` reading, with its censored flag.
 - **Parameters:** window `W`, as in (5).
 
 ### (7) The first payout's size (S3d)
@@ -445,12 +477,12 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
     and 12.
   - Unit: sessions.
 - **Per unit; never blank:** `x_u = be_u`, or 253.
-- **Status:** partial
-- **To build:** (v2 m-1) the censored percentile at 253 (`W + 1` at `W = 252`) as the headline. `days_quantile` sets an unreached unit
-  at `BEYOND` and blanks a percentile beyond the window (Stage 2's form, kept beside); the censored form is to change
-  (section 6).
+- **Status:** exists
+- **Built in Wave 3.1:** the censored percentile at 253 (`W + 1` at `W = 252`) as the headline (v2 m-1).
 - **Where:**
-  - Functions: `extended/user_measures.py`, `break_even_day`; `extended/user_readings.py`, `path_rows`.
+  - Functions: `extended/user_measures.py`, `break_even_day` and `days_quantile` (`censored=True`);
+    `extended/user_readings.py`, `path_rows`.
+  - Journey: `path/break_even_days/p10` .. (censored at 253), `stage2_p10` .., `share_by_252`.
   - [B]: `path/break_even_days/p10`, `p50`, `p90`, `share_by_252`; `path/break_even/share_by_month_{1,2,3,6,12}`.
   - [BS]: `break_even_day`.
   - [SP]: `break_even_day`.
@@ -505,14 +537,15 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** shares, read three ways.
 - **Per unit; never blank:** `months_ahead_u` and the indicators. Never blank.
 - **Alias:** P is section 2 (m-4).
-- **Status:** partial
+- **Status:** exists
+- **Built in Wave 3.1:** `P_B` with the peak through each month close (B-2), and "ahead" at `> 1e-6` (m-11).
 - **Where:**
   - Functions: `extended/user_measures.py`, `p_by_month`; `extended/user_readings.py`, `extra_rows`;
+    `extended/journey_measures.py`, `share_ahead_at` (S4a and S4b above `1e-6`) and `p_bankroll`;
     `vendor/stage2/propedge/research/u_select.py`, `scorecard`.
+  - Journey: `extra/P/value`, `extra/P_B_{B}/value`; `journey/S4a/value`, `journey/S4b/value`.
   - [B]: `scorecard/P/value`, `scorecard/S4a/value`, `scorecard/S4b/value`.
   - [U1]: `periodic:share_positive@126` and `@252`.
-- **To build:** `P_B` with the peak through each month close (B-2), and "ahead" at `> 1e-6` (m-11). Both are to
-  change (section 6).
 - **Parameters:** for `P_B`, the operator's budgets `B` (Wave 4).
 
 ### (14) Payouts per fee dollar (S3c)
@@ -543,9 +576,11 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** p10, p50 and p90 over `E_252`. Unit: a ratio (dollars of 12-month net per dollar of peak
   out-of-pocket).
 - **Per unit; never blank:** `ROMR_u`. Never blank on a real start.
-- **Status:** to build
-- **Where:** nothing computes it.
-  - Ingredients: `extended/user_spend.py`, `spend_record`. Its `return_on_spend_month_m` is a different ratio: net
+- **Status:** exists
+- **Where:**
+  - Function: `extended/journey_measures.py`, `return_on_money_at_risk` (built in Wave 3.1).
+  - Journey: `journey/return_on_money_at_risk/p10`, `p50`, `p90`.
+  - Not to confuse with `extended/user_spend.py`, `spend_record`'s `return_on_spend_month_m`, a different ratio: net
     over the fees paid, months 1 to 6.
 - **Parameters:** none.
 
@@ -558,10 +593,12 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** p10, p50 and p90 over `E_252`. Unit: dollars per month.
 - **Per unit; never blank:** the per-unit median. Never blank on `E_252`.
 - **Alias:** it is a function of the same monthly changes as (18) and (19) (m-4).
-- **Status:** to build
-- **Where:** no function computes it.
-  - Ingredients: [U1] start rows `net_month_3` to `net_month_12`; [BS] `net_month_3` and `net_month_12` (the mean
-    only).
+- **Status:** exists
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `monthly_net_4_12` and `monthly_changes` (built in Wave 3.1).
+  - Journey: `journey/monthly_net_4_12_median/p10` .. `p90`; beside, `journey/monthly_net_4_12_mean/p10` .. `p90`.
+  - Ingredients elsewhere: [U1] start rows `net_month_3` to `net_month_12`; [BS] `net_month_3` and `net_month_12`
+    (the mean only).
 - **Parameters:** none.
 
 ### (17) Payouts per month
@@ -634,13 +671,13 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
     (`payout_rhythm`, p50, p90 and the longest).
   - Unit: sessions.
 - **Per unit; never blank:** the wait, with unpaid units at 127. Never blank.
-- **Status:** partial
+- **Status:** exists
 - **Where:**
-  - Functions: `vendor/stage2/propedge/research/user_journey.py`, `payout_rhythm` and `metric_rows` (S5b, Stage 2's
-    form).
+  - Functions: `extended/journey_measures.py`, `longest_wait` (the wait from day 0 over all of `E_126`, built in Wave
+    3.1); `vendor/stage2/propedge/research/user_journey.py`, `payout_rhythm` and `metric_rows` (S5b, Stage 2's form).
+  - Journey: `journey/longest_wait/p10`, `p50`, `p90` (unpaid at 127), `share_paid_by_126`.
   - [U1]: `consistency:longest_gap_p50@126`, `longest_gap_p90@126`, `longest_gap_longest@126` (and `@252`).
   - [B]: `scorecard/S5b/value`. E-201 D1 applies, as in (14).
-- **To build:** the wait from day 0 over all of `E_126`.
 - **Parameters:** none.
 
 ### (22) Best quarter's share of month-6 net (S5c)
@@ -686,12 +723,15 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** for each `B`, the three shares over `E_W`, read three ways (section 1.4). Unit: shares.
 - **Per unit; never blank:** the unit's state. Never blank.
 - **Alias:** (6)'s per-unit quantity.
-- **Status:** to build
-- **Where:** no function computes it.
-  - Ingredients: `extended/user_measures.py`, `share_over_limit`, written to [B] `extra/share_spent_over_2000` and
-    `share_spent_over_2500`. These count only units *with* a first payout, and their spending is read from the long
-    record up to 252 sessions on a 63-session block, the leak of B-1 (`extended/user_readings.py:183-189`, to
-    change). They are not this measure.
+- **Status:** exists
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `bankroll_state` and `bankroll_stop` (built in Wave 3.1).
+  - Journey: `journey/bankroll_stop_{B}/share_paid_within`, `share_run_out`, `share_censored`,
+    `share_not_paid_within` (the limit's reading) and `share_peak_over` (the peak form, beside).
+  - Not this measure: `extended/user_measures.py`, `share_over_limit`, written to [B] `extra/share_spent_over_2000`
+    and `share_spent_over_2500` on the registered blocks only. These count only units *with* a first payout, and
+    their spending is read from the long record up to 252 sessions on a 63-session block (B-1's leak). On E-208's
+    blocks (24)'s three states replace them.
   - Also: `extended/user_measures.py`, `p_by_month`; `vendor/stage2/propedge/research/customer_journey.py`,
     `spent_before`.
 - **Parameters:**
@@ -704,9 +744,12 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** p10, p50 and p90 over `E_252`. Unit: dollars.
 - **Per unit; never blank:** `PeakOOP_u`. Never blank.
 - **Alias:** (24)'s peak form at `W = 252`, and (15)'s denominator.
-- **Status:** to build. The function exists in the vendored tree. No reading or column uses it for the journey.
+- **Status:** exists
 - **Where:**
-  - Ingredient: `vendor/stage2/propedge/research/customer_journey.py`, `drawdown_from_start`.
+  - Functions: `extended/journey_measures.py`, `peak_oop`; `extended/user_measures.py`, `peak_through` (built in Wave
+    3.1); the vendored tree's `vendor/stage2/propedge/research/customer_journey.py`, `drawdown_from_start`, is the
+    same quantity.
+  - Journey: `journey/peak_oop_12_months/p10`, `p50`, `p90`.
   - [SP] `spent_before_break_even` is a different quantity: the peak before break-even only.
 - **Parameters:** none.
 
@@ -775,8 +818,11 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   - Units: orders per session, accounts, and hours per session.
 - **Per unit; never blank:** the per-unit means and maxima. Never blank. A session with `accounts_d = 0` has
   `orders_d = 0` and `screen_d = 0`.
-- **Status:** to build
-- **Where:** nothing computes it.
+- **Status:** partial
+- **To build:** the feed from the replay's trade records to `workload`'s per-session input (each session's live
+  accounts and its trades' entry and exit minutes), and its rows (the seed-paired runner, Wave 3.2).
+- **Where:**
+  - Function: `extended/journey_measures.py`, `workload` (built in Wave 3.1, on that input).
   - Ingredient: `extended/replay_records.py`, `ReplayRecorder` (each trade's account, place and booking on the
     replay).
 - **Parameters:**
@@ -806,11 +852,25 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** as above. Unit: payouts per funded account (sessions beside).
 - **Per unit; never blank:** **none** (a curve over accounts). Not a composite input unless pinned in a never-blank
   form. Readings 1 and 3 only: reading 2 needs a per-unit value (section 1.4).
-- **Status:** to build
-- **Where:** nothing computes it.
-  - Ingredients: the engine's funded records (`payout_days`, `ended_on`, `n_payouts`), as read in
-    `extended/user_beside.py`, `response_record`; `extended/replay_records.py`, `ReplayRecorder` (its accounts
-    frame).
+- **Status:** exists
+- **How the engine's endings are named (Wave 3.1, for a row to confirm):** a breach of the floor, a tier-3 denial's
+  closure and the Focused Trader Program's closure are endings by a firm rule, so the event; the policy's abandon is a
+  policy closure; the household rule (R7, the firm moving the account live) is a move to Live; an account still open
+  at the window's end, and one reaching the engine's own horizon, are censored. The vendored engine has no
+  payout-cap ending for Topstep. A payout counts when its cash arrives strictly before the account's end close; for an
+  open account, by close W.
+- **The risk set (corrective cycle 1, B-2):** the step from k to k + 1 payouts has at risk the accounts with more than k
+  payouts plus those lost at k; an account censored at k has left (`km_survival`'s default). The reading beside in
+  sessions alive is a time on a clock and keeps the usual tie rule (a censoring at t outlives an event at t;
+  `censored_leave_at_count=False`).
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `account_ending`, `account_lifetime`, `km_survival`, `km_quantile` and
+    `funded_lifetime` (built in Wave 3.1), on the journey's `accounts` field (`extended/user_beside.py`,
+    `journey_record`, from the engine's funded records as `response_record` reads them).
+  - Journey: `journey/funded_lifetime_payouts/p10`, `p50`, `p90` (blank: beyond), `n_accounts`, `n_units`, `n_lost`,
+    `n_censored`, `share_censored`, `share_censored_weighted`, `censored_{kind}`, `lost_{kind}`;
+    `journey/funded_lifetime_sessions/p10` .. (beside).
+  - Ingredient elsewhere: `extended/replay_records.py`, `ReplayRecorder` (its accounts frame).
 - **Parameters:** the window: the declaration's.
 
 ### (32) Worst year and highest-volatility period
@@ -827,8 +887,12 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   and baseline in a comparison is read on the same years.
 - **Summary and unit:** each headline measure in its own summary and unit, on each subset.
 - **Per unit; never blank:** each headline measure's own forms, on the subset.
-- **Status:** to build
-- **Where:** nothing computes it on the journey.
+- **Status:** partial
+- **To build:** the headline set (Wave 4) and the volatility rule (RD-04, search-year data only) that feed the two
+  readings, and their rows.
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `by_year` (each start year, the worst and its year, the year set
+    recorded) and `subset_reading` (the period's units, from the rule's own mask), built in Wave 3.1.
   - Ingredients: `vendor/stage2/propedge/research/u_select.py`, `START_YEARS` (and its `year_rule`); [U1]
     `luck:share_paid_by@21[year]` (S3a by start year).
 - **Parameters:** the volatility rule and its period (RD-04 and the search declaration, from search-year data only),
@@ -853,10 +917,14 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
 - **Summary and unit:** one probability a design. It is **reported, never a limit** (plan section 3). The verdict
   stays at 0 % (CHARTER 3.8).
 - **Per unit; never blank:** none (design-level). Readings 1 and 3 only: reading 2 needs a per-unit value (section 1.4).
-- **Status:** to build. The ladder's ingredient refuses any design with a flip stream
-  (`extended/user_beside.py:355-357`). Under CHARTER 3.2 every design has a coin, so the ladder serves only once the
-  enforcement stream is seeded apart from the coin (to change, section 6).
-- **Where:** ingredients:
+- **Status:** partial
+- **To build:** the ladder on the coin path. The ladder's ingredient refuses any design with a flip stream
+  (`extended/user_beside.py`, `base_problems`). Under CHARTER 3.2 every design has a coin, so the ladder serves only
+  once the enforcement stream is seeded apart from the coin (still to change, section 6).
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `break_even_denial_rate` (the first crossing, `p* = 0`, "untested beyond
+    the grid") and `exposed_share`, built in Wave 3.1, reading a ladder already run.
+  - Ingredients (the existing ladder):
   - `extended/user_beside.py`, `RESPONSES` and `DENIAL_LEVELS` (the existing ladder: 10 %, 25 % and 50 %, plus the
     all-accounts forfeiture arms), and `start_seed`;
   - [B] and [BS] at `response` = `denial_10`, `denial_25`, `denial_50`.
@@ -887,7 +955,9 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
     `luck:sd_across_starts_over_sd_of_configuration_means@...`, `luck:monthly_mean_over_sd_p{10,50,90}@252`,
     `luck:share_paid_by@21[year]`.
   - [B]: `extra/n_eff_bartlett/value`, `extra/n_nonoverlapping/value`.
-- **To build:** the ANOVA decomposition and section 1.4's three readings, with the seed-paired runner (plan Wave 3.2).
+- **Built in Wave 3.1:** the ANOVA decomposition (`extended/journey_measures.py`, `variance_decomposition`) and
+  section 1.4's three readings (`coin_readings`, `design_coin_readings`).
+- **To build:** the seed-paired runner that feeds them (plan Wave 3.2).
 - **Parameters:** the coin seeds: the declaration's.
 
 ### The baseline set (comparators, not measures)
@@ -945,8 +1015,11 @@ design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe run
   - `offered_d` depends only on the calendar date, so its spread across start days is the calendar's.
 - **Per unit; never blank:** the means of `offered` and `taken`. `taken_per_account` is blank only for a unit with no
   account ever live, which cannot happen after a day 0 purchase.
-- **Status:** to build
-- **Where:** nothing computes it.
+- **Status:** partial
+- **To build:** the feed from the replay's offer and trade records to `supply`'s per-session input, and its rows
+  (Wave 3.2).
+- **Where:**
+  - Function: `extended/journey_measures.py`, `supply` (built in Wave 3.1, on that input).
   - Ingredient: `extended/replay_records.py`, `ReplayRecorder` (each trade's offer and place).
 - **Parameters:** the horizon `h`: the declaration's.
 
@@ -959,8 +1032,13 @@ design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe run
   - An Asia entry belongs to the trading day it opens, the date after the evening it falls on.
 - **Summary and unit:** p10, p50 and p90 over `E_h`, for each window. Unit: a share.
 - **Per unit; never blank:** the per-unit shares. Never blank.
-- **Status:** to build
-- **Where:** nothing computes it.
+- **Status:** partial
+- **To build:** the session windows' declaration (`wt-levels`, Wave 3.3), the feed from the replay's records, and its
+  rows.
+- **Where:**
+  - Functions: `extended/journey_measures.py`, `coverage`, `trading_day_of` (a moment as its trading day and minutes
+    after the reopen; an evening entry belongs to the next date) and `firm_day` (the reopen and the flat from the
+    verified `trading_hours`, through `extended/lever_space.py`, `trading_day`), built in Wave 3.1.
 - **Parameters:**
   - The windows' boundaries: the trigger library's declaration (`wt-levels`, plan Wave 3.3), inside the hours the
     firm allows.
@@ -977,8 +1055,11 @@ design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe run
   - Then p10, p50 and p90 over `E_h`.
   - Unit: minutes.
 - **Per unit; never blank:** the per-unit median and maximum. Never blank (a day with no trade is idle throughout).
-- **Status:** to build
-- **Where:** nothing computes it.
+- **Status:** partial
+- **To build:** the feed from the replay's records and the verified news windows, and its rows.
+- **Where:**
+  - Function: `extended/journey_measures.py`, `idle` (built in Wave 3.1: the idle form, the tradeable form with the
+    news windows out, and the no-signal form).
 - **Parameters:** the firm's trading-day hours and news windows, from its verified rules only
   (`vendor/stage2/config/rules.yaml`; `config/rules_extended.yaml` through `extended/firm_terms.py`); the horizon `h`,
   the declaration's.
@@ -993,48 +1074,59 @@ design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe run
 
 ---
 
-## 6. Code to change in Wave 3.1 (not changed in this cycle)
+## 6. Code changed in Wave 3.1, and code still to change
 
-Each line is checked by the test: the file exists and the quoted text is at or just after the line given.
+Each line is checked by the test: the file exists and the quoted text is at or just after the line given. For each
+changed line the test also checks that the text it replaced is gone.
 
-- `extended/user_beside.py:633` (`L = min(U.HORIZON, n - s)`): **to change (B-1).** The long run's length counts
-  sessions to the end of the development window. It must stop at the last session of the start's block, and the
-  runner must refuse sessions of another block.
-- `extended/user_readings.py:183-189` (`M.share_over_limit(spent[:, 2], lim)`): **to change (B-1, B-2, B-3).**
-  - The spending is the long record's `spent_before_first_payout`, finite whenever a first payout comes within up to
-    252 sessions, read on a 63-session block. It must be read from closes `0 .. h` only.
-  - `P_bankroll_*` (line 184) passes the spending before the first payout. It must pass the peak through each month
-    close.
-  - `share_spent_over_*` drops unpaid units. (24)'s three states replace it.
-- `extended/user_readings.py:118-134` (`def _elig`): **to change (B-1).** Block `all` means `observed >= h` over the
-  whole window. It must mean `E_h` inside a block.
-- `extended/user_measures.py:64` (`ahead = x[ok] > 0`): **to change (m-11).** "Ahead" at `> 1e-6`.
-- `extended/user_beside.py:355-357` (`args["draws"].get("flip") is not None`): **to change (m-2).** The ladder refuses
-  a design with a flip stream. Under CHARTER 3.2 every design has a coin, so the enforcement stream must be seeded
-  apart from the coin first.
+**Changed in Wave 3.1.**
 
-Added in corrective cycle 2 (the second read's m-1):
+- `extended/user_beside.py:776` (`L = min(U.HORIZON, n - s) if not jour else journey_length(s, blk_last, U.HORIZON)`):
+  **changed (B-1).** Was `L = min(U.HORIZON, n - s)`, which counted sessions to the end of the development window. With
+  `run_starts(..., journey=True)` the long run stops at the last session of the start's block, and the runner refuses a
+  calendar with a date in neither block and any run reading a session of another block. Absent, the adapter is the one
+  before, bit for bit (`tests/test_journey_readings.py`), so every registered reading and identity that runs it is
+  unchanged.
+- `extended/user_beside.py:796` (`jr = ({"journey": journey_record(s, blk[s], blk_last[s], long_run, lag, rel, exact)}`):
+  **changed (B-2).** The peak out-of-pocket through each month close (`peak_month`, by `user_measures.peak_by_month`) is
+  made here from `rel`, where `M.daily(rel)` is made, with `rel` itself, and carried to the start table
+  (`user_readings.PEAK_COLS`). It is what `P_B` and (24)'s peak form pass.
+- `extended/user_readings.py:319` (`q = M.p_by_month(nets, spent=pk, limit=float(lim))`): **changed (B-2).** On
+  E-208's blocks `P_B` passes the peak through each month close. Its sub-reading passes the spending before the first
+  payout, read on closes `0 .. 21 m`. The registered blocks keep `P_bankroll_*`, which section 2 names as that
+  sub-reading.
+- `extended/journey_readings.py:108` (`stop = J.bankroll_stop(`): **changed (B-1, B-3).** On E-208's blocks (24)'s
+  three states replace `share_spent_over_*` (from `extended/user_readings.py:183-189` before), read from closes `0 .. W`
+  of each journey; the section `journey` is this new module's, so `user_readings` imports nothing new. The registered
+  blocks keep the old rows.
+- `extended/user_readings.py:206` (`if block in E208_BLOCKS:`): **changed (B-1).** In `_elig`, a block of E-208 means
+  `E_h` inside the block: its journeys with at least h sessions observed, the run itself bounded. A table that is not
+  of journeys is refused. The registered blocks are unchanged.
+- `extended/user_readings.py:72` (`BLOCKS = ("search",)`): **changed (B-1).** Was `BLOCKS = ("all", "judged")`. The
+  default everywhere is now the search years, and on outputs that are not journeys it refuses. A held-out reading names
+  `held_out`. Q-44's blocks are `Q44_BLOCKS`, which every caller that reproduces a registered reading now names
+  (`scripts/user_beside.py`, `scripts/breakeven_fidelity.py`, `scripts/breakeven_fidelity_2.py`, `scripts/fo_opening.py`,
+  `extended/breakeven_readings.py`, `extended/journey_page.py`, `extended/opening_journey.py`, `extended/user_spend.py`
+  and three test helpers), so their rows are as before.
+- `extended/user_readings.py:485` (`abs(mine - float(np.mean(shares))) > 1e-12 or mine > card + 1e-12`): **changed
+  (m-11).** Was `abs(card - mine) <= 1e-12`. The check compares like with like: this repository's P equals the mean of
+  its own three month shares, on the card's starts. Stage 2's card is read beside: the new P is never above it (a net
+  above 1e-6 is above 0) and never held equal to it. `extended/opening_journey.py`, `choice_problems`, held the same
+  equality and follows the same rule.
+- `extended/user_measures.py:77` (`ahead = x[ok] > TOL`): **changed (m-11).** Was `ahead = x[ok] > 0`.
+- `extended/user_measures.py:96` (`c = (x > TOL).sum(axis=1)`): **changed (m-11).** Was `c = (x > 0).sum(axis=1)`.
+  `months_ahead` and `p_by_month` agree.
+- `extended/user_measures.py:219` (`def days_quantile(first: np.ndarray, window: int, p: float, *, censored: bool = False)`):
+  **changed (1.3).** `days_quantile` gains the censored form (`censored=True`, through `censored_days`: an unreached
+  unit at `W + 1`, never blank), the headline on E-208's blocks. Its default, with `BEYOND`, is Stage 2's blanking
+  form, kept beside.
 
-- `extended/user_measures.py:82` (`c = (x > 0).sum(axis=1)`): **to change (m-11).** `months_ahead` is the second
-  "ahead" test. It feeds [BS] `months_ahead` and `n_eff_bartlett`, so it moves to `> 1e-6` with line 64, or the two
-  disagree.
-- `extended/user_readings.py:280-282` (`abs(card - mine) <= 1e-12`): **to change (m-11).** The refusing check holds
-  the extra P (`p_by_month`) equal to the card's (vendored `u_select`, `> 0`). Once `p_by_month` reads `> 1e-6`, it
-  would refuse on any start ahead by float residue. The rule: the check compares like with like (this repository's
-  P against this repository's P, both at `> 1e-6`), and Stage 2's card is read beside under Stage 2's tolerance,
-  never held equal to the new P.
-- `extended/user_beside.py:648` (`rel = np.asarray(long_run.path.cash_series, float)`): **to change (B-2).** The peak
-  out-of-pocket through each month close has no record field: `start_record` and `start_table` carry only the
-  spending before the first pass and the first payout. The new field, the peak through each month close k = 1 .. 12
-  (and through each reading's window), is made here from `rel`, where `M.daily(rel)` is built, and carried to the
-  start table. It is what `P_B` at line 184 and (24)'s peak form pass.
-- `extended/user_readings.py:41` (`BLOCKS = ("all", "judged")`): **to change (B-1).** It is the default everywhere,
-  with `_which`'s mapping in `extra_rows` and `scorecard_rows`. Under E-208 the readings are the search years and the
-  held-out years, and a held-out reading is sealed (CHARTER 3.6 (e)). As written, a default call computes a `judged`
-  reading. The default becomes the search years, and a held-out reading is made only by the held-out test's runner.
-- `extended/user_measures.py:49` (`BEYOND = 1e9`): **to change (1.3).** `days_quantile` sets an unreached unit at
-  `BEYOND` and blanks a percentile beyond the window. The headline is now the percentile censored at `W + 1`, so the
-  function gains that form, with Stage 2's blanking form kept beside. This makes (1), (5) and (9) `partial`.
+**Still to change.**
+
+- `extended/user_beside.py:386` (`args["draws"].get("flip") is not None`): **to change (m-2).** The ladder refuses a
+  design with a flip stream. Under CHARTER 3.2 every design has a coin, so the enforcement stream must be seeded apart
+  from the coin first. That is the seed-paired runner's (Wave 3.2): the path seed drives both streams in the vendored
+  engine, which is not edited.
 
 **A note outside this file's scope (B-1's pattern).** Other runners use the same whole-window run length. Any of them
 that feeds a measure for a search needs B-1's fix too: the run stops at the block's last outcome session. Each is
@@ -1087,45 +1179,45 @@ checked the same way.
 <!-- measures-index:start -->
 | # | measure | status | code | names |
 |---|---|---|---|---|
-| 1 | Sessions to the first evaluation pass | partial | `extended/user_measures.py::days_quantile`; `extended/user_readings.py::path_rows`; `extended/user_readings.py::FIRST_WINDOW` | `extended/user_readings.py::START_COLS[first_pass]`; `vendor/stage2/propedge/research/user_journey.py::PASS_DAYS[42]` |
-| 2 | Cash to the first pass | exists | `extended/user_readings.py::path_rows`; `vendor/stage2/propedge/research/user_journey.py::start_record`; `vendor/stage2/propedge/research/customer_journey.py::spent_before`; `extended/user_spend.py::spend_record` | `extended/user_readings.py::START_COLS[spent_before_first_pass]`; `extended/user_spend.py::"fees_at_first_pass"` |
-| 3 | Evaluations bought before the first pass | exists | `extended/user_spend.py::spend_record`; `extended/user_spend.py::SUMMARY_MEASURES` | `extended/user_spend.py::"evaluations_before_first_pass"`; `extended/user_spend.py::"resets_before_first_pass"` |
+| 1 | Sessions to the first evaluation pass | exists | `extended/user_measures.py::days_quantile`; `extended/user_measures.py::censored_days`; `extended/journey_measures.py::days_reading`; `extended/user_readings.py::path_rows`; `extended/user_readings.py::FIRST_WINDOW` | `extended/user_readings.py::START_COLS[first_pass]`; `vendor/stage2/propedge/research/user_journey.py::PASS_DAYS[42]`; `extended/user_readings.py::"stage2_p"` |
+| 2 | Cash to the first pass | exists | `extended/user_readings.py::path_rows`; `vendor/stage2/propedge/research/user_journey.py::start_record`; `vendor/stage2/propedge/research/customer_journey.py::spent_before`; `extended/user_spend.py::spend_record`; `extended/journey_measures.py::spent_to_event`; `extended/journey_measures.py::strict_quantiles`; `extended/journey_readings.py::journey_rows` | `extended/user_readings.py::START_COLS[spent_before_first_pass]`; `extended/user_spend.py::"fees_at_first_pass"`; `extended/journey_readings.py::"cash_to_first_pass"` |
+| 3 | Evaluations bought before the first pass | exists | `extended/user_spend.py::spend_record`; `extended/user_spend.py::SUMMARY_MEASURES`; `extended/journey_measures.py::evaluations_to_first_pass` | `extended/user_spend.py::"evaluations_before_first_pass"`; `extended/user_spend.py::"resets_before_first_pass"`; `extended/journey_readings.py::"evaluations_before_first_pass"` |
 | 4 | Share of starts passed by session 21 | exists | `vendor/stage2/propedge/research/user_journey.py::stats` | `vendor/stage2/propedge/research/user_journey.py::PASS_DAYS[21]` |
-| 5 | Sessions to the first payout (S3b) | partial | `extended/user_readings.py::path_rows`; `vendor/stage2/propedge/research/u_select.py::scorecard` | `extended/user_readings.py::START_COLS[first_payout]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S3b]` |
-| 6 | Cash spent before the first payout: the bankroll needed (S1) | partial | `extended/user_readings.py::path_rows`; `vendor/stage2/propedge/research/user_journey.py::start_record`; `vendor/stage2/propedge/research/customer_journey.py::spent_before` | `extended/user_readings.py::START_COLS[spent_before_first_payout]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S1]` |
+| 5 | Sessions to the first payout (S3b) | exists | `extended/user_readings.py::path_rows`; `extended/user_measures.py::days_quantile`; `vendor/stage2/propedge/research/u_select.py::scorecard` | `extended/user_readings.py::START_COLS[first_payout]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S3b]` |
+| 6 | Cash spent before the first payout: the bankroll needed (S1) | exists | `extended/user_readings.py::path_rows`; `vendor/stage2/propedge/research/user_journey.py::start_record`; `vendor/stage2/propedge/research/customer_journey.py::spent_before`; `extended/journey_measures.py::spent_to_event`; `extended/journey_measures.py::strict_quantiles` | `extended/user_readings.py::START_COLS[spent_before_first_payout]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S1]`; `extended/journey_readings.py::"spent_before_first_payout_all"` |
 | 7 | The first payout's size (S3d) | exists | `extended/user_spend.py::u1_money`; `vendor/stage2/propedge/research/user_journey.py::start_record`; `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `extended/user_spend.py::"first_payout_day_cash"`; `vendor/stage2/propedge/research/user_journey.py::RECORD_KEYS[first_payout_cash]`; `vendor/stage2/propedge/research/user_journey.py::"cash_p"` |
 | 8 | Share of starts paid by session 21 (S3a) | exists | `vendor/stage2/propedge/research/user_journey.py::stats`; `vendor/stage2/propedge/research/u_select.py::scorecard` | `vendor/stage2/propedge/research/user_journey.py::PAYOUT_DAYS[21]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S3a]` |
-| 9 | Sessions to break-even | partial | `extended/user_measures.py::break_even_day`; `extended/user_readings.py::path_rows`; `extended/user_readings.py::BREAK_EVEN_MONTHS` | `extended/user_readings.py::START_COLS[break_even_day]`; `extended/user_readings.py::"break_even_days"` |
+| 9 | Sessions to break-even | exists | `extended/user_measures.py::break_even_day`; `extended/user_measures.py::days_quantile`; `extended/user_readings.py::path_rows`; `extended/user_readings.py::BREAK_EVEN_MONTHS` | `extended/user_readings.py::START_COLS[break_even_day]`; `extended/user_readings.py::"break_even_days"` |
 | 10 | Share falling back below break-even | exists | `extended/user_measures.py::fell_back`; `extended/user_readings.py::path_rows` | `extended/user_readings.py::START_COLS[fell_back]`; `extended/user_readings.py::"share_fell_back"`; `extended/user_spend.py::"break_even_lost"` |
 | 11 | Deepest fall after break-even | exists | `extended/user_measures.py::deepest_fall_after`; `extended/user_readings.py::path_rows` | `extended/user_readings.py::START_COLS[deepest_fall_after_break_even]` |
 | 12 | Net cash at months 1, 2, 3, 6 and 12 | exists | `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `extended/user_readings.py::START_COLS[net_month_1]`; `extended/user_readings.py::START_COLS[net_month_6]`; `extended/user_readings.py::START_COLS[net_month_12]`; `vendor/stage2/propedge/research/user_journey.py::PERIODIC_MONTHS[6]`; `vendor/stage2/propedge/research/user_journey.py::NET_PERCENTILES[10]` |
-| 13 | P, and the shares ahead at months 6 and 12 (S4a, S4b) | partial | `extended/user_measures.py::p_by_month`; `extended/user_measures.py::months_ahead`; `vendor/stage2/propedge/research/u_select.py::scorecard`; `vendor/stage2/propedge/research/u_select.py::p_of`; `extended/user_readings.py::extra_rows` | `extended/user_readings.py::START_COLS[months_ahead]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[P]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S4a]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S4b]`; `extended/user_readings.py::"P_bankroll_"` |
+| 13 | P, and the shares ahead at months 6 and 12 (S4a, S4b) | exists | `extended/user_measures.py::p_by_month`; `extended/user_measures.py::months_ahead`; `extended/user_measures.py::peak_by_month`; `extended/journey_measures.py::p_bankroll`; `extended/journey_measures.py::months_ahead_under`; `extended/journey_measures.py::share_ahead_at`; `vendor/stage2/propedge/research/u_select.py::scorecard`; `vendor/stage2/propedge/research/u_select.py::p_of`; `extended/user_readings.py::extra_rows` | `extended/user_readings.py::START_COLS[months_ahead]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[P]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S4a]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S4b]`; `extended/user_readings.py::"P_bankroll_"`; `extended/user_readings.py::"P_B_"`; `extended/user_readings.py::PEAK_COLS` |
 | 14 | Payouts per fee dollar (S3c) | exists | `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `vendor/stage2/propedge/research/user_journey.py::"payouts_per_fee_dollar_pooled"`; `vendor/stage2/propedge/research/user_journey.py::MONEY_BACK_MONTHS[3]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S3c]` |
-| 15 | Return on money at risk | to build | `extended/user_spend.py::spend_record` | — |
-| 16 | Monthly net in months 4-12 | to build | — | `extended/user_readings.py::START_COLS[net_month_3]`; `extended/user_readings.py::START_COLS[net_month_12]` |
+| 15 | Return on money at risk | exists | `extended/journey_measures.py::return_on_money_at_risk` | `extended/journey_readings.py::"return_on_money_at_risk"` |
+| 16 | Monthly net in months 4-12 | exists | `extended/journey_measures.py::monthly_net_4_12`; `extended/journey_measures.py::monthly_changes` | `extended/user_readings.py::START_COLS[net_month_3]`; `extended/user_readings.py::START_COLS[net_month_12]`; `extended/journey_readings.py::"monthly_net_4_12_median"` |
 | 17 | Payouts per month | exists | `extended/user_measures.py::evenness`; `extended/user_readings.py::path_rows` | `extended/user_readings.py::START_COLS[payouts_per_month]`; `extended/user_readings.py::START_COLS[payout_cash_per_month]` |
 | 18 | Share of months with a positive net change | exists | `extended/user_measures.py::evenness` | `extended/user_readings.py::START_COLS[share_months_positive]` |
 | 19 | Spread of monthly net | exists | `extended/user_measures.py::evenness`; `vendor/stage2/propedge/research/user_journey.py::monthly_mean_over_sd` | `extended/user_readings.py::START_COLS[sd_monthly_net]` |
 | 20 | Longest run of months without a payout | exists | `extended/user_measures.py::evenness` | `extended/user_readings.py::START_COLS[longest_months_without_payout]` |
-| 21 | The user's longest wait for a payout within 126 sessions (S5b beside) | partial | `vendor/stage2/propedge/research/user_journey.py::payout_rhythm`; `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `vendor/stage2/propedge/research/user_journey.py::GAP_WINDOWS[126]`; `vendor/stage2/propedge/research/user_journey.py::"longest_gap_p"`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S5b]` |
+| 21 | The user's longest wait for a payout within 126 sessions (S5b beside) | exists | `extended/journey_measures.py::longest_wait`; `vendor/stage2/propedge/research/user_journey.py::payout_rhythm`; `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `extended/journey_readings.py::WAIT_WINDOW`; `vendor/stage2/propedge/research/user_journey.py::GAP_WINDOWS[126]`; `vendor/stage2/propedge/research/user_journey.py::"longest_gap_p"`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S5b]` |
 | 22 | Best quarter's share of month-6 net (S5c) | exists | `vendor/stage2/propedge/research/user_journey.py::concentration`; `vendor/stage2/propedge/research/user_journey.py::metric_rows` | `vendor/stage2/propedge/research/user_journey.py::CONCENTRATION_MONTHS[6]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S5c]` |
 | 23 | Largest month's share of the year's payouts | exists | `extended/user_measures.py::evenness` | `extended/user_readings.py::START_COLS[largest_month_share]` |
-| 24 | Chance of running out before the first payout (the bankroll stop) | to build | `extended/user_measures.py::share_over_limit`; `extended/user_measures.py::p_by_month`; `vendor/stage2/propedge/research/customer_journey.py::spent_before` | `extended/user_readings.py::"share_spent_over_"` |
-| 25 | Peak out-of-pocket in 12 months | to build | `vendor/stage2/propedge/research/customer_journey.py::drawdown_from_start` | — |
+| 24 | Chance of running out before the first payout (the bankroll stop) | exists | `extended/journey_measures.py::bankroll_state`; `extended/journey_measures.py::bankroll_stop`; `extended/user_measures.py::share_over_limit`; `extended/user_measures.py::p_by_month`; `vendor/stage2/propedge/research/customer_journey.py::spent_before` | `extended/user_readings.py::"share_spent_over_"`; `extended/journey_readings.py::"bankroll_stop_"`; `extended/journey_measures.py::STATES[run_out]` |
+| 25 | Peak out-of-pocket in 12 months | exists | `extended/journey_measures.py::peak_oop`; `extended/user_measures.py::peak_through`; `vendor/stage2/propedge/research/customer_journey.py::drawdown_from_start` | `extended/journey_readings.py::"peak_oop_12_months"` |
 | 26 | Month-3 net of the unlucky tenth (S5a) | exists | `vendor/stage2/propedge/research/user_journey.py::metric_rows`; `vendor/stage2/propedge/research/u_select.py::scorecard` | `extended/user_readings.py::START_COLS[net_month_3]`; `vendor/stage2/propedge/research/u_select.py::MEASURES[S5a]` |
 | 27 | CVaR10 | exists | `extended/user_measures.py::cvar`; `extended/user_readings.py::extra_rows` | `extended/user_readings.py::"cvar10_net_month_3"` |
 | 28 | Headline measures with 10 % and 20 % of signals missed or late | to build | — | — |
 | 29 | Headline measures at one and two ticks of worse fills | to build | — | — |
-| 30 | Workload: orders a day, accounts at once, screen hours | to build | `extended/replay_records.py::ReplayRecorder` | — |
-| 31 | Funded-account lifetime: payouts per funded account before it is lost | to build | `extended/user_beside.py::response_record`; `extended/replay_records.py::ReplayRecorder` | — |
-| 32 | Worst year and highest-volatility period | to build | `vendor/stage2/propedge/research/u_select.py::START_YEARS`; `vendor/stage2/propedge/research/u_select.py::year_rule` | — |
-| 33 | Break-even denial rate | to build | `extended/user_beside.py::RESPONSES`; `extended/user_beside.py::DENIAL_LEVELS`; `extended/user_beside.py::start_seed`; `extended/user_beside.py::base_problems` | — |
-| 34 | Luck against design (S6) | partial | `vendor/stage2/propedge/research/user_journey.py::metric_rows`; `vendor/stage2/propedge/research/user_journey.py::luck_rows`; `vendor/stage2/propedge/research/user_journey.py::monthly_mean_over_sd`; `extended/user_measures.py::n_eff_bartlett` | `vendor/stage2/propedge/research/user_journey.py::LUCK_MONTHS[12]`; `extended/user_readings.py::"n_eff_bartlett"` |
+| 30 | Workload: orders a day, accounts at once, screen hours | partial | `extended/journey_measures.py::workload`; `extended/replay_records.py::ReplayRecorder` | — |
+| 31 | Funded-account lifetime: payouts per funded account before it is lost | exists | `extended/journey_measures.py::funded_lifetime`; `extended/journey_measures.py::km_survival`; `extended/journey_measures.py::km_quantile`; `extended/journey_measures.py::account_ending`; `extended/journey_measures.py::account_lifetime`; `extended/user_beside.py::journey_record`; `extended/user_beside.py::response_record`; `extended/replay_records.py::ReplayRecorder` | `extended/journey_measures.py::LOST[breach]`; `extended/journey_measures.py::CENSORED[window]`; `extended/journey_readings.py::"funded_lifetime_payouts"` |
+| 32 | Worst year and highest-volatility period | partial | `extended/journey_measures.py::by_year`; `extended/journey_measures.py::subset_reading`; `vendor/stage2/propedge/research/u_select.py::START_YEARS`; `vendor/stage2/propedge/research/u_select.py::year_rule` | — |
+| 33 | Break-even denial rate | partial | `extended/journey_measures.py::break_even_denial_rate`; `extended/journey_measures.py::exposed_share`; `extended/user_beside.py::RESPONSES`; `extended/user_beside.py::DENIAL_LEVELS`; `extended/user_beside.py::start_seed`; `extended/user_beside.py::base_problems` | — |
+| 34 | Luck against design (S6) | partial | `vendor/stage2/propedge/research/user_journey.py::metric_rows`; `vendor/stage2/propedge/research/user_journey.py::luck_rows`; `vendor/stage2/propedge/research/user_journey.py::monthly_mean_over_sd`; `extended/user_measures.py::n_eff_bartlett`; `extended/journey_measures.py::variance_decomposition`; `extended/journey_measures.py::coin_readings`; `extended/journey_measures.py::design_coin_readings` | `vendor/stage2/propedge/research/user_journey.py::LUCK_MONTHS[12]`; `extended/user_readings.py::"n_eff_bartlett"` |
 | 35 | Naive coin harvesting | comparator | — | — |
 | 36 | P-14, P-15 and P-16 | comparator | `extended/user_beside.py::run_starts`; `vendor/stage2/propedge/research/u_select.py::ROWS_TO_BEAT` | `vendor/stage2/propedge/research/u_select.py::ROWS_TO_BEAT[p14]`; `vendor/stage2/propedge/research/u_select.py::ROWS_TO_BEAT[p15]`; `vendor/stage2/propedge/research/u_select.py::ROWS_TO_BEAT[p16]` |
-| 37 | Trades available per day, per account and in total | to build | `extended/replay_records.py::ReplayRecorder` | — |
-| 38 | Session coverage | to build | — | — |
-| 39 | Longest idle stretch inside the firm's trading day | to build | — | — |
+| 37 | Trades available per day, per account and in total | partial | `extended/journey_measures.py::supply`; `extended/replay_records.py::ReplayRecorder` | — |
+| 38 | Session coverage | partial | `extended/journey_measures.py::coverage`; `extended/journey_measures.py::trading_day_of`; `extended/journey_measures.py::firm_day`; `extended/lever_space.py::trading_day` | — |
+| 39 | Longest idle stretch inside the firm's trading day | partial | `extended/journey_measures.py::idle` | — |
 <!-- measures-index:end -->
 
 ---
@@ -1156,7 +1248,7 @@ one-line reason is given.
 | m-10 constants seen with the held-out years visible | 7 (the ledger entries) |
 | m-11 "ahead" at exact zero | 1.2 and 2 (`> 1e-6`); 6 (`user_measures.py:64`) |
 | m-12 smaller gaps | (7) the first close's total; (10), (11) `k <= 252`; (30), (37) `accounts_d = 0`; (38), (39) the trading day from 17:00 CT, news-barred windows idle with the other form beside; (14) never a dimension, within one trade stream; 2 and (24) the stop's bias stated, the wallet re-run to build beside |
-| m-13 the test checks names, not meanings | not adopted in this cycle: the new definitions have no code yet, so one synthetic test per definition is written with that code in Wave 3.1 (stated in the header) |
+| m-13 the test checks names, not meanings | Wave 3.1: `tests/test_journey_measures.py` (one synthetic test with a known answer per definition built) and `tests/test_journey_readings.py` (stated in the header) |
 
 ### Corrective cycle 2: the second read (`docs/reviews/MEASURES_v2_2026-11-18.md`)
 

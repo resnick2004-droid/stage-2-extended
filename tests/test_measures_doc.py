@@ -12,7 +12,8 @@ the code.
   literal constant (for a tuple of calls, their first arguments); `path::"text"` text found in the file;
 * an `exists` or `partial` measure names at least one function or constant;
 * every entry has its per-unit and never-blank line (the red team's m-6);
-* every code line listed "to change" (section 6) holds the quoted text at or just after the line given;
+* every code line section 6 lists (changed in Wave 3.1, or still to change) holds the quoted text at or just after
+  the line given, and the text each changed line replaced is gone;
 * no seed literal appears in the document;
 * the two measures the operator dropped are listed as dropped, and P is defined as not a p-value.
 
@@ -248,10 +249,21 @@ def test_the_dropped_measures_and_p():
     assert len(p) == 2 and "not a p-value" in p[1].split("\n## ", 1)[0]
 
 
+#: Wave 3.1: the code lines section 6 listed "to change" and the text each held before; each is gone from its file
+REPLACED = (("extended/user_beside.py", r"^\s*L = min\(U\.HORIZON, n - s\)$"),
+            ("extended/user_readings.py", r"^BLOCKS = \(\"all\", \"judged\"\)"),
+            ("extended/user_readings.py", r"abs\(card - mine\) <= 1e-12"),
+            ("extended/opening_journey.py", r"abs\(card - mine\) <= 1e-12"),
+            ("extended/user_measures.py", r"ahead = x\[ok\] > 0\b"),
+            ("extended/user_measures.py", r"c = \(x > 0\)\.sum\(axis=1\)"))
+
+
 def test_the_code_to_change_is_where_it_says():
     """Section 6: each `path:line` or `path:first-last` with its quoted text -- the file exists and the text is on one
-    of the lines from the first to six after the last."""
-    part = _doc().split("## 6. Code to change in Wave 3.1", 1)
+    of the lines from the first to six after the last. Since Wave 3.1 the section lists the lines changed (each named
+    change from the old to-change list, at its new line) and the one still to change; the text each changed line
+    replaced is gone from its file (`REPLACED`)."""
+    part = _doc().split("## 6. Code changed in Wave 3.1, and code still to change", 1)
     assert len(part) == 2, "no section 6"
     body = part[1].split("\n## ", 1)[0]
     refs = re.findall(r"^- `([^`:]+):(\d+)(?:-(\d+))?` \(`([^`]+)`\)", body, flags=re.M)
@@ -260,12 +272,18 @@ def test_the_code_to_change_is_where_it_says():
         lines = _source(path).splitlines()
         a, b = int(first), int(last or first)
         assert text in "\n".join(lines[a - 1:b + 6]), f"{path}:{first}: {text!r} is not there"
-    for want in ("extended/user_beside.py:633", "extended/user_readings.py:183-189", "extended/user_measures.py:82",
-                 "extended/user_readings.py:280-282", "extended/user_beside.py:648", "extended/user_readings.py:41",
-                 "extended/user_measures.py:49", "extended/firm_reading.py:258", "extended/openings.py:519",
-                 "extended/opening_wait.py:519"):
-        assert f"`{want}`" in body, f"{want} is not listed to change"
-    assert "`extended/cl_reading.py:" in body, "cl_reading.py's run length is not listed"
+    changed, still = body.split("**Still to change.**", 1)
+    for want in ("extended/user_beside.py:776", "extended/user_beside.py:796", "extended/user_readings.py:319",
+                 "extended/journey_readings.py:108", "extended/user_readings.py:206", "extended/user_readings.py:72",
+                 "extended/user_readings.py:485", "extended/user_measures.py:77", "extended/user_measures.py:96",
+                 "extended/user_measures.py:219"):
+        assert f"`{want}`" in changed, f"{want} is not listed as changed"
+    assert "`extended/user_beside.py:386`" in still, "the flip refusal is not listed still to change"
+    for want in ("extended/firm_reading.py:258", "extended/openings.py:519", "extended/opening_wait.py:519"):
+        assert f"`{want}`" in still, f"{want} is not listed to change"
+    assert "`extended/cl_reading.py:" in still, "cl_reading.py's run length is not listed"
+    for path, pattern in REPLACED:
+        assert not re.search(pattern, _source(path), flags=re.M), f"{path}: the replaced text {pattern!r} is back"
 
 
 def test_the_strict_rule_for_censored_percentiles():
