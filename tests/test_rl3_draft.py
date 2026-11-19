@@ -130,8 +130,8 @@ def test_no_other_seed_token_in_the_text(text: str) -> None:
 
 
 def _git_hits(repo: Path) -> list[str]:
-    out = subprocess.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, capture_output=True, text=True,
-                         check=False)
+    from extended import git_scan  # the suite's time-limited scan (Q-156, E-217)
+    out = git_scan.run(["git", "grep", "-IwnE", f"{_PREFIX}[0-9]"], cwd=repo, text=True)
     assert out.returncode in (0, 1), out.stderr
     return [line for line in out.stdout.splitlines() if line]
 
