@@ -13,34 +13,136 @@
 # hook after 3 hours of waiting -- never a silent pass. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
 # /validate, never here.
 #
-# Bypass with `git commit --no-verify` only when you know why; say so in the commit message.
+# THE VERDICT (Q-161). A commit is written only when the fast tier itself returned 0.
+#   * Git for Windows reads a hook's exit status as the LOW BYTE of its Windows exit code, and the MSYS runtime gives a
+#     shell killed by signal N the exit code N << 8 (SIGTERM 0xF00, SIGKILL 0x900, SIGPIPE 0xD00): a killed hook reads
+#     as exit 0, a pass. `timeout 3000 git commit` wrote 3451a10 that way on 2026-11-18 while its fast tier still ran.
+#     So this shell never dies of a signal it can catch: HUP, INT, QUIT and TERM are trapped (the child's process tree
+#     is killed and the hook exits 128+N, which git reads as a refusal); SIGPIPE is ignored, so a closed output pipe
+#     makes a write fail and the hook exit non-zero. Every step runs as a background child the shell `wait`s for, so a
+#     trap runs at once, not after the child ends. There is no re-exec (it put a second shell between git and the traps).
+#   * SIGKILL cannot be trapped. The hook writes <git-dir>/fasttier-pending (the commit's tree) before its checks,
+#     removes it on every exit it lives to make, and records a verdict only after the fast tier returned 0; the
+#     commit-msg hook (which git runs after this one and before it writes the commit) refuses a commit whose tree is
+#     pending without a verdict.
+#   * On success the verdict -- tree, UTC time, worktree, pytest's pass line -- is appended to
+#     <git-common-dir>/fasttier-verdicts.log; the post-commit hook warns about a commit without one, and
+#     `python scripts/check_verdicts.py <range>` lists such commits for the merge checklist.
+#
+# THE TREE. Every path the hook uses is the tree the commit is made in: the git directory git commits into, its index,
+# and that git directory's own worktree, resolved before the inherited GIT_DIR / GIT_WORK_TREE / GIT_INDEX_FILE are
+# cleared. If they disagree (git committing into one tree while the hook would check another), the commit is refused.
+#
+# Run by hand only under git's own sh: `"$(git var GIT_SHELL_PATH)" .git/hooks/pre-commit`. On Windows `bash` on PATH
+# can be WSL's, which cannot see this checkout the way git does.
+#
+# Bypass with `git commit --no-verify` only when you know why; say so in the commit message (the post-commit hook
+# records such a commit as NO VERDICT).
 
 set -e
 
-# Run under git's own sh, found from git itself (`git var GIT_SHELL_PATH`), never from PATH. On Windows `bash` on PATH
-# can be WSL's, which cannot see this checkout the way git does. git already runs hooks with its own sh; this also
-# covers the hook being started by hand with some other shell. The marker stops the re-exec from repeating.
-if [ -z "$PRECOMMIT_UNDER_GIT_SH" ]; then
-    GIT_SH=$(git var GIT_SHELL_PATH 2>/dev/null) || GIT_SH=
-    if [ -n "$GIT_SH" ] && [ -x "$GIT_SH" ]; then
-        PRECOMMIT_UNDER_GIT_SH=1
-        export PRECOMMIT_UNDER_GIT_SH
-        exec "$GIT_SH" "$0" "$@"
-    fi
-fi
+# ------------------------------------------------------------------------------------------------ signals first
+CHILD=
+PENDING=
 
-REPO_ROOT=$(git rev-parse --show-toplevel)
-cd "$REPO_ROOT"
+kill_tree() {
+    # The child's whole process tree. On Windows a native child (python, and pytest under it) is killed with
+    # taskkill /T, found from the MSYS pid's Windows pid; elsewhere the child gets SIGTERM (fasttier_lock.py then
+    # releases its lock and kills pytest).
+    _pid=$1
+    _wp=
+    if [ -r "/proc/$_pid/winpid" ]; then
+        _wp=$(cat "/proc/$_pid/winpid" 2>/dev/null) || _wp=
+    fi
+    if [ -n "$_wp" ] && command -v taskkill >/dev/null 2>&1; then
+        MSYS2_ARG_CONV_EXCL='*' taskkill /T /F /PID "$_wp" >/dev/null 2>&1 || :
+    fi
+    kill -TERM "$_pid" 2>/dev/null || :
+}
+
+on_signal() {
+    trap '' HUP INT QUIT TERM
+    echo "pre-commit: killed by SIG$1 before the fast tier returned; the commit is REFUSED (exit $2)." >&2 || :
+    if [ -n "$CHILD" ]; then
+        kill_tree "$CHILD"
+    fi
+    exit "$2"
+}
+
+trap '' PIPE
+trap 'on_signal HUP 129' HUP
+trap 'on_signal INT 130' INT
+trap 'on_signal QUIT 131' QUIT
+trap 'on_signal TERM 143' TERM
+trap 'if [ -n "$PENDING" ]; then rm -f "$PENDING"; fi' EXIT
+
+# Run a step as a background child and wait for it, so that a trapped signal is handled at once (a shell waiting on a
+# foreground child runs its trap only after the child ends).
+run_child() {
+    "$@" &
+    CHILD=$!
+    _rc=0
+    wait "$CHILD" || _rc=$?
+    CHILD=
+    return "$_rc"
+}
+
+refuse() {
+    echo "pre-commit: $1" >&2 || :
+    shift
+    for _line in "$@"; do
+        echo "pre-commit: $_line" >&2 || :
+    done
+    exit 1
+}
+
+# ------------------------------------------------------------------------------------------------ the tree committed
+# Resolved with the environment git gave this hook: these are what git commits into.
+GITDIR=$(git rev-parse --absolute-git-dir) || refuse "cannot find the git directory this commit is made in."
+COMMON=$(git rev-parse --path-format=absolute --git-common-dir) || refuse "cannot find the common git directory."
+TOP=$(git rev-parse --show-toplevel) || refuse "cannot find the work tree this hook runs in."
 
 # The index this commit records. `git commit -a` or `git commit <paths>` stages into a temporary index named by
 # GIT_INDEX_FILE, so the licence check below reads that one; it is kept here before the environment is cleared.
 COMMIT_INDEX="${GIT_INDEX_FILE:-}"
 
+# The commit's tree, from that index: the verdict's key (git writes the same tree when it commits).
+TREE=$(git write-tree) || refuse "cannot write the index's tree (unmerged paths?); the commit is refused."
+PENDING="$GITDIR/fasttier-pending"
+printf '%s\n' "$TREE" > "$PENDING" || refuse "cannot write $PENDING; the commit is refused."
+
+# The worktree that owns GITDIR: a linked worktree's git directory names it in its `gitdir` file (<tree>/.git); the
+# main repository's is core.worktree or the parent of its .git.
+OWN=
+if [ -f "$GITDIR/gitdir" ]; then
+    OWN=$(sed -n 1p "$GITDIR/gitdir")
+    OWN=${OWN%/.git}
+elif _wt=$(git config --get core.worktree 2>/dev/null) && [ -n "$_wt" ]; then
+    case "$_wt" in
+        /* | [A-Za-z]:*) OWN=$_wt ;;
+        *) OWN="$GITDIR/$_wt" ;;
+    esac
+elif [ "${GITDIR##*/}" = ".git" ]; then
+    OWN=${GITDIR%/.git}
+fi
+if [ -z "$OWN" ] || ! [ "$TOP" -ef "$OWN" ]; then
+    refuse "REFUSED: git is committing into $GITDIR, whose work tree is ${OWN:-unknown}, but this hook would check $TOP." \
+        "The inherited GIT_DIR='${GIT_DIR:-}' GIT_WORK_TREE='${GIT_WORK_TREE:-}' point the commit and the checked tree at different trees." \
+        "Unset them (unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE) and commit from the tree you mean."
+fi
+if [ -n "$COMMIT_INDEX" ] && ! [ "$(dirname "$COMMIT_INDEX")" -ef "$GITDIR" ]; then
+    refuse "REFUSED: the index being committed ($COMMIT_INDEX) is not in this tree's git directory ($GITDIR)." \
+        "An inherited GIT_INDEX_FILE names another index; unset it and commit again."
+fi
+
 # git exports GIT_INDEX_FILE (and, depending on the invocation, GIT_DIR / GIT_WORK_TREE / GIT_PREFIX) to its hooks.
 # Inherited by the suite, they would point every nested `git` -- a test that builds a temporary repository, the
 # provenance code, `git ls-files` in tests/test_vendor_integrity.py -- at this commit's index (Stage 2 saw a fixture's
 # `git add` stage its file into the real index). The checks must see the environment a shell gives them.
-unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX
+unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+
+REPO_ROOT=$TOP
+cd "$REPO_ROOT"
 
 # Pick a Python that actually runs. `command -v python3` is not enough on Windows: the App Execution Alias stubs for
 # python3.exe and python.exe exist on PATH and resolve, but running them prints "Python was not found" and exits
@@ -70,7 +172,8 @@ export PYTHONDONTWRITEBYTECODE=1
 # pass count is suppressed.
 FAST_TIER="not slow and not heavy"
 
-echo "pre-commit: vendor integrity + the licence check + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON, tree = $REPO_ROOT"
+BRANCH=$(git symbolic-ref -q --short HEAD 2>/dev/null) || BRANCH="(detached)"
+echo "pre-commit: vendor integrity + the licence check + the fast tier (-m \"$FAST_TIER\"), python = $PYTHON, tree = $REPO_ROOT, branch = $BRANCH, index tree = $TREE"
 
 echo "--- vendor integrity (scripts/vendor_stage2.py --verify) ---"
 # The check must stop the hook on failure on every branch. `set -e` does not fire inside an `a && b` list or on the
@@ -81,7 +184,7 @@ vendor_failed() {
     echo "pre-commit: restore the snapshot (never re-pin it) and find what wrote to it." >&2
     exit 1
 }
-"$PYTHON" scripts/vendor_stage2.py --verify || vendor_failed
+run_child "$PYTHON" scripts/vendor_stage2.py --verify || vendor_failed
 
 echo "--- result files: no licensed price level (scripts/check_price_levels.py --index) ---"
 # Every tracked or staged .csv/.tsv outside vendor/, as this commit's index holds it: a level column, a column of levels
@@ -99,7 +202,7 @@ if [ ! -f scripts/check_price_levels.py ]; then
     echo "pre-commit: scripts/check_price_levels.py is missing from this tree; merge master (Q-131) and commit again." >&2
     exit 1
 fi
-"$PYTHON" scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed
+run_child "$PYTHON" scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed
 
 echo "--- tests, fast tier (one at a time on the machine: scripts/fasttier_lock.py) ---"
 # Several trees' fast tiers at once ran the machine out of memory (MemoryError, OpenBLAS, WinError 1455; Q-155). The
@@ -109,6 +212,27 @@ if [ ! -f scripts/fasttier_lock.py ]; then
     echo "pre-commit: scripts/fasttier_lock.py is missing from this tree; merge master (Q-155) and commit again." >&2
     exit 1
 fi
-"$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+# The wrapper copies pytest's output into this tree's own git directory (never a shared scratch file), for the
+# verdict's pass line and for reading afterwards (S2X_FASTTIER_TEE; it is not passed on to pytest).
+FT_OUT="$GITDIR/fasttier-last.log"
+rm -f "$FT_OUT"
+S2X_FASTTIER_TEE=$FT_OUT
+export S2X_FASTTIER_TEE
+set +e
+run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+FT_RC=$?
+set -e
+unset S2X_FASTTIER_TEE
+if [ "$FT_RC" -ne 0 ]; then
+    refuse "the fast tier FAILED (exit $FT_RC); the commit is refused. Its output: $FT_OUT"
+fi
+
+# The verdict: written only here, after the fast tier itself returned 0.
+SUMMARY=$(grep -E '[0-9]+ passed' "$FT_OUT" 2>/dev/null | tail -n 1 | tr -d '\r') || SUMMARY=
+[ -n "$SUMMARY" ] || SUMMARY="-"
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '%s\t%s\t%s\t%s\n' "$TREE" "$NOW" "$REPO_ROOT" "$SUMMARY" >> "$COMMON/fasttier-verdicts.log" ||
+    refuse "the fast tier passed but its verdict could not be recorded in $COMMON/fasttier-verdicts.log; the commit is refused."
 
 echo "pre-commit: OK (fast tier; the identity, the heavy tier and the vendored stage-one suite run in /validate)"
+echo "pre-commit: verdict recorded for tree $TREE ($SUMMARY) in $COMMON/fasttier-verdicts.log; full output $FT_OUT"

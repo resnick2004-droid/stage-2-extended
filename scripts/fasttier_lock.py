@@ -19,7 +19,9 @@ pytest through `run`, which:
 4. **waits, holding the lock, until free physical memory is at least 1.5 GB**, with the same polling; while it waits
    it refreshes its record (`updated`), so a waiting holder is never mistaken for a hung one;
 5. **runs the command** with the token in `S2X_FASTTIER_TOKEN` (a commit made from inside the fast tier re-enters
-   under the lock it already holds instead of waiting on itself), and returns its exit code;
+   under the lock it already holds instead of waiting on itself), and returns its exit code; with `S2X_FASTTIER_TEE`
+   set (the hook sets it, Q-161) the command's output is also copied into that file, and the command is killed if
+   this wrapper is interrupted;
 6. **releases on every exit path** -- success, failure, an exception, Ctrl+C, SIGTERM/SIGBREAK -- and only its own
    lock (the token must match). A hard kill leaves the file behind; the next hook sees the dead pid and takes over.
 
@@ -60,6 +62,7 @@ GUARD_GRACE_S = 60               # a takeover guard older than this was left by 
 
 LOCK_NAME = "stage2-extended-fasttier.lock"
 ENV_TOKEN = "S2X_FASTTIER_TOKEN"
+ENV_TEE = "S2X_FASTTIER_TEE"     # Q-161: a file the command's output is copied into (the hook's verdict reads its pass line)
 EXIT_TIMEOUT = 75                # EX_TEMPFAIL: the wait ran out
 EXIT_LOST = 76                   # the lock was taken from this holder before pytest started
 
@@ -319,22 +322,48 @@ def wait_for_memory(path: Path, holder: Holder, min_free_gb: float, deadline_s: 
             raise LockLost(f"FAILED: the fast-tier lock {path} was taken from this hook while it waited for memory")
 
 
-def _subprocess_runner(cmd: list[str], env: dict) -> int:
-    return subprocess.run(cmd, env=env).returncode
+def _subprocess_runner(cmd: list[str], env: dict, tee: str | None = None) -> int:
+    """Run `cmd`; its exit code. With `tee`, its output (stdout and stderr together) is printed and also appended to
+    that file; if this process is interrupted (a signal's SystemExit, Ctrl+C, a closed output pipe), the command is
+    killed rather than left running as an orphan, and the interruption propagates."""
+    if not tee:
+        return subprocess.run(cmd, env=env).returncode
+    with open(tee, "ab") as f:
+        proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        try:
+            out = sys.stdout.buffer
+            for chunk in iter(lambda: proc.stdout.read1(65536), b""):
+                f.write(chunk)
+                f.flush()
+                out.write(chunk)
+                out.flush()
+            return proc.wait()
+        except BaseException:
+            proc.kill()
+            proc.wait()
+            raise
 
 
 def run(cmd: list[str], lock: Path, tree: str, min_free_gb: float = MIN_FREE_GB, timeout_s: float = TIMEOUT_S,
         poll_s: float = POLL_S, free_gb: Callable = available_gb, sleep: Sleep = time.sleep,
         monotonic: Clock = time.monotonic, runner: Callable[[list[str], dict], int] = _subprocess_runner,
         env: dict | None = None) -> int:
-    """Run `cmd` under the lock, after the memory wait; its exit code. Raises WaitTimeout / LockLost."""
+    """Run `cmd` under the lock, after the memory wait; its exit code. Raises WaitTimeout / LockLost.
+
+    `S2X_FASTTIER_TEE` in the environment names a file the command's output is copied into (Q-161); it is removed from
+    the command's own environment, so a nested run never writes into the outer hook's file."""
     env = dict(os.environ if env is None else env)
+    tee = env.pop(ENV_TEE, None) or None
+
+    def _run(c: list[str], e: dict) -> int:
+        return _subprocess_runner(c, e, tee) if runner is _subprocess_runner else runner(c, e)
+
     inherited = env.get(ENV_TOKEN)
     if inherited:
         rec = _parse(_read_raw(lock) or "")
         if rec is not None and rec.get("token") == inherited:
             _say("the fast-tier lock is already held by the run this commit is nested in; running under it")
-            return runner(cmd, env)
+            return _run(cmd, env)
     t0 = monotonic()
     holder = acquire(lock, tree, timeout_s=timeout_s, poll_s=poll_s, sleep=sleep, monotonic=monotonic)
     try:
@@ -343,7 +372,7 @@ def run(cmd: list[str], lock: Path, tree: str, min_free_gb: float = MIN_FREE_GB,
             raise LockLost(f"FAILED: the fast-tier lock {lock} was taken from this hook before its fast tier started")
         _say(f"fast-tier lock taken ({lock}; {'memory unknown' if gb is None else f'{gb:.1f} GB free'})")
         env[ENV_TOKEN] = holder.token
-        return runner(cmd, env)
+        return _run(cmd, env)
     finally:
         release(lock, holder)
 

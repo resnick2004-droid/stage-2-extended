@@ -1,0 +1,41 @@
+#!/bin/sh
+# Stage 2 Extended's git commit-msg hook (Q-161): the gate behind the pre-commit hook. Install with
+# `python scripts/install_hooks.py` (into the hooks directory of `git rev-parse --git-common-dir`, shared by every tree).
+#
+# Git runs it after the pre-commit hook and before it writes the commit. Git for Windows reads a hook's exit status as
+# the low byte of its Windows exit code, and a shell killed by SIGKILL (which no trap can catch) gets 0x900 from the
+# MSYS runtime: git reads the dead pre-commit as a pass. The pre-commit hook writes <git-dir>/fasttier-pending (the
+# commit's tree) before its checks and removes it on every exit it lives to make; it records a verdict in
+# <git-common-dir>/fasttier-verdicts.log only after the fast tier returned 0. So a pending marker naming this commit's
+# tree, with no verdict for that tree, means the pre-commit was killed: the commit is refused.
+#
+# Narrow on purpose: a commit whose pre-commit did not run for this tree (a merge, which runs pre-merge-commit instead;
+# a marker left by another tree's attempt) is not judged here -- the post-commit hook and scripts/check_verdicts.py
+# report a commit without a verdict. Skipped, like the pre-commit, by --no-verify.
+
+trap '' PIPE
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 131' QUIT
+trap 'exit 143' TERM
+
+gitdir=$(git rev-parse --absolute-git-dir 2>/dev/null) || exit 0
+pending="$gitdir/fasttier-pending"
+[ -f "$pending" ] || exit 0
+
+pend=$(sed -n 1p "$pending" | tr -d '\r')
+tree=$(git write-tree 2>/dev/null) || tree=
+if [ -n "$tree" ] && [ "$pend" != "$tree" ]; then
+    exit 0                                                  # another attempt's marker: not this commit's pre-commit
+fi
+
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=$gitdir
+tab=$(printf '\t')
+if [ -n "$tree" ] && grep -q "^$tree$tab" "$common/fasttier-verdicts.log" 2>/dev/null; then
+    exit 0                                                  # the tree has a verdict
+fi
+
+echo "commit-msg: REFUSED -- the pre-commit hook started for tree ${tree:-$pend} and recorded no verdict: it was" \
+    "killed before the fast tier returned (git reads a killed hook on Windows as a pass). No verdict, no commit." >&2 || :
+echo "commit-msg: commit again and let the hook finish ($pending is removed by the next pre-commit)." >&2 || :
+exit 1
