@@ -1,7 +1,8 @@
 """E-221: the constitution's text says what the lead's rulings (by the operator's delegation) rule.
 
 Each of the five rulings is present in the files that carry it, inside a block that names E-221, and every phrase it
-replaced is gone from CHARTER.md, DIRECTIVE.md, CLAUDE.md and docs/MEASURES.md:
+replaced is gone from CHARTER.md, DIRECTIVE.md, CLAUDE.md, docs/MEASURES.md, the restart plan, the three-way
+design note and the family template:
 
 - **O-1:** every model built, tuned and chosen on the search years; the held-out years spent once per market by one
   joint fixed-sequence test of every finalist across the firms searched (Topstep, My Funded Futures, Lucid), held
@@ -12,8 +13,9 @@ replaced is gone from CHARTER.md, DIRECTIVE.md, CLAUDE.md and docs/MEASURES.md:
 - **O-4:** the coin is the evaluation's device, not the playbook's; each design's side from its own trigger under the
   no-harm floor; accounts alternate; the one hard rule is no opposite positions at once; the per-start coin keying of
   MEASURES stays.
-- **O-5:** inside each limit at its point estimate, failing one only when the evidence shows it crosses, the single
-  margin applied once.
+- **O-5 (the lead's ruling):** the point estimate governs -- inside a limit passes it, outside fails it; the one-sided
+  check is reported beside and never fails an inside estimate; no second margin. Also: a trigger side failing the
+  no-harm floor offers no playbook side; the data purchase held, the size that matters and the power the lead's.
 - **O-6:** the long-run gate's quantile over coin seeds on the held-out years, the search years' history-block
   reading beside as a consistency condition.
 
@@ -28,7 +30,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-FILES = ("CHARTER.md", "DIRECTIVE.md", "CLAUDE.md", "docs/MEASURES.md")
+FILES = ("CHARTER.md", "DIRECTIVE.md", "CLAUDE.md", "docs/MEASURES.md", "docs/plans/RESTART_PLAN_journey_objective.md",
+         "docs/plans/THREE_WAY_TEST_design.md", "prereg/TEMPLATE_family.md")
 
 
 def _norm(s: str) -> str:
@@ -85,14 +88,29 @@ PRESENT = (
     ("O-4", "docs/MEASURES.md", "no two of the user's accounts or firms hold opposite positions at once"),
     ("O-4", "docs/MEASURES.md", "never that every account copies every trade"),
     ("O-4", "docs/MEASURES.md", "the coin is the evaluation's device, not the playbook's"),
-    # O-5
-    ("O-5", "CHARTER.md", "the finalist must sit inside each limit at its point estimate, and it fails a limit only when the "
-                          "evidence shows it crosses it"),
-    ("O-5", "CHARTER.md", "That is the single margin, applied once"),
-    ("O-5", "DIRECTIVE.md", "inside each limit at its point estimate, failing a limit only when the evidence shows it crosses, "
-                            "the single margin applied once"),
-    ("O-5", "CLAUDE.md", "sits inside each limit at its point estimate, failing one only when the evidence shows it crosses, "
-                         "the single margin applied once"),
+    # O-5 (the lead's ruling: the point estimate governs; the one-sided check beside, never failing an inside estimate)
+    ("O-5", "CHARTER.md", "the finalist passes a limit when its point estimate sits inside it, and fails it when the "
+                          "estimate is outside. There is no second margin"),
+    ("O-5", "CHARTER.md", "a one-sided check of crossing (the red team's B-10 form), at a level pinned with 3.9's inputs. "
+                          "It never fails a design whose estimate is inside"),
+    ("O-5", "CHARTER.md", "there is no second margin: the point estimate governs"),
+    ("O-5", "CHARTER.md", "beside its point estimate, which decides"),
+    ("O-5", "DIRECTIVE.md", "inside each limit at its point estimate, which governs, the one-sided check beside it"),
+    ("O-5", "CLAUDE.md", "sits inside each limit at its point estimate, which governs, the one-sided check beside it"),
+    ("O-5", "docs/plans/RESTART_PLAN_journey_objective.md", "it sits inside every limit at its point estimate, which governs"),
+    # O-4's addition (the lead, after the first hand-back)
+    ("O-4", "CHARTER.md", "A trigger whose side fails the no-harm floor offers no playbook side; that design is not carried"),
+    ("O-4", "docs/plans/THREE_WAY_TEST_design.md", "that means only the refusal of opposite positions at once"),
+    # the data question held; the size that matters and the power the lead's
+    ("data", "CHARTER.md", "is not added: the operator held the purchase"),
+    ("data", "CHARTER.md", "The size that matters and the power are the lead's, set in Wave 4.2"),
+    ("data", "DIRECTIVE.md", "the operator held it"),
+    ("data", "DIRECTIVE.md", "The size that matters and the power are the lead's, set in Wave 4.2"),
+    # Wave 4.2 in the restart plan and the family template
+    ("Wave 4.2", "docs/plans/RESTART_PLAN_journey_objective.md", "the lead's, by the operator's delegation (E-221)"),
+    ("Wave 4.2", "docs/plans/RESTART_PLAN_journey_objective.md", "Delegated to the lead (E-221)"),
+    ("Wave 4.2", "docs/plans/RESTART_PLAN_journey_objective.md", "The lead's weights (E-221, by the operator's delegation)"),
+    ("Wave 4.2", "prereg/TEMPLATE_family.md", "the limits (the lead's, pinned before the survey, E-221) as menu flags only"),
     # O-6
     ("O-6", "CHARTER.md", "over coin seeds on the held-out years; the history-block reading on the search years is read beside, "
                           "as a consistency condition"),
@@ -129,6 +147,15 @@ GONE = (
     "coin seeds and history-block resamples pinned",  # O-6
     "is the operator's, pending (O-1)",        # O-1
     "Which firm's search spends NQ's held-out years",  # O-1
+    "evidence shows it crosses",               # O-5 before the lead's ruling (the point estimate governs)
+    "the single margin applied once",          # O-5 before the lead's ruling
+    "That is the single margin",               # O-5 before the lead's ruling
+    "The operator decides.",                   # the data question (held, E-221)
+    "is the operator's call",                  # the data question (held, E-221)
+    "candidate default",                       # O-4 (the three-way note's 1.5)
+    "OPERATOR answers and approves",           # Wave 4.2 (the restart plan)
+    "the operator's ceilings and floors",      # Wave 4.2 (the restart plan)
+    "the trade-off answers that set the weights",  # Wave 4.2 (the restart plan)
 )
 
 

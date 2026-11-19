@@ -108,8 +108,8 @@ Dropped by the operator: firm-rule exposure (the flagged-pattern rate); rule-cha
   the survey and never after a held-out read (E-221).
 - Each limit states its direction: a floor (for example supply) or a ceiling (for example bankroll, or trades per day
   as workload).
-- A limit is set at its pinned value with no noise margin of its own. Noise is allowed for once, in section
-  3.8 (a)'s check, the single margin applied once (E-221).
+- A limit is set at its pinned value with no noise margin of its own, and there is no second margin: the point
+  estimate governs (section 3.8 (a); E-221, the lead's O-5 ruling).
 - The operator's condition carries (E-015): **the limits must not fail profitable models by being too strict.**
   Section 3.8 (a) and the power gate of section 3.7 enforce it.
 - Every reading reports the frontier over the measures and a menu under the limits.
@@ -201,7 +201,8 @@ D-429) stays.
   **the coin is the evaluation's device, not the playbook's.**
   - **In the playbook, each design's side comes from its own trigger**, held by the **no-harm floor** against the coin
     on the real path: its composite on the search years is not below the coin side's by more than the margin pinned
-    in 3.9. Its held-out reading is reported beside, never judged (E-221).
+    in 3.9. Its held-out reading is reported beside, never judged. A trigger whose side fails the no-harm floor offers
+    no playbook side; that design is not carried (E-221).
   - **Accounts alternate:** different accounts take different trades at different moments, the rotation a lever of
     the search (3.4), because copying one trade to every account correlates their failures and defeats the fee
     asymmetry (E-221).
@@ -313,10 +314,10 @@ beside") is not run before the held-out test. Afterwards it is run only as a des
   - If any of these fails, the search does not pin.
   - Exit (B) states the line's power from this gate. It replaces E-007 (e)'s "minimum detectable difference before the
     read".
-- **Open operator item (E-007 (2), the data decision; asked before the first search is pinned, not after a
-  failure).** Should more history be added (QuantConnect's free NQ/ES from 2009, which needs the operator's setup; or
-  a Databento purchase of older bars, stated, not authorised), so that the held-out test has power? The lead puts the
-  question with the power gate's result. The operator decides.
+- **The data decision (E-007 (2); held, E-221).** More history (QuantConnect's free NQ/ES from 2009, which needs the
+  operator's setup; or a Databento purchase of older bars, stated, not authorised) is not added: the operator held the
+  purchase (E-221). The size that matters and the power are the lead's, set in Wave 4.2, and the power gate's result
+  is reported with them (E-221). A purchase stays the operator's, never asked for after a failure.
 - **The budget.** Each held-out test spends one k at 0.05 / (k (k + 1)); the confirmation spends none.
   - E-204's rule is carried in full, with "held-out test" in place of "stage B": a search whose declaration assigns
     its k at its held-out row is not counted by the gatekeeper's k rule until that row exists; if another declaration
@@ -337,11 +338,11 @@ model's side, or the resting order's real side, unreflected) with the coin side 
 same fills, same seeds. The held-out as-traded floor compares the finalist's as-traded composite with each
 baseline's as-walked composite. For a market-entry baseline, its as-traded and as-walked readings coincide.
 
-(a) **Limits** (E-221, O-5, by the operator's delegation; it replaces E-207's limit wording).
-- **The form in force:** the finalist must sit inside each limit at its point estimate, and it fails a limit only when
-  the evidence shows it crosses it -- a one-sided check, at a level pinned with 3.9's inputs (the red team's B-10).
-  That is the single margin, applied once; the limits carry none of their own. A good design is not failed on noise,
-  and a limit still holds.
+(a) **Limits** (E-221, the lead's O-5 ruling, by the operator's delegation; it replaces E-207's limit wording).
+- **The point estimate governs:** the finalist passes a limit when its point estimate sits inside it, and fails it when
+  the estimate is outside. There is no second margin; the limits carry none of their own.
+- **Beside each limit, never deciding:** a one-sided check of crossing (the red team's B-10 form), at a level pinned
+  with 3.9's inputs. It never fails a design whose estimate is inside.
 - Under this form, E-015's condition -- the limits must not fail profitable models by being too strict -- is enforced
   by the power gate's limit clause (3.7). A pinning row whose limits would fail a design equal to the best baseline, at
   the target power, does not pin.
@@ -393,7 +394,8 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
 - the as-walked result and the path-structure edge (3.2), never credited;
 - the as-traded stress of resting triggers;
 - the playbook's trigger-side reading (3.5; E-221);
-- each limit's point estimate and its one-sided check's reading, limit by limit (E-221).
+- each limit's one-sided check of crossing, limit by limit, beside its point estimate, which decides (E-221, the
+  lead's O-5 ruling).
 
 **3.9 The objective is a combination, fixed before the survey.**
 - **Search: every measure at once.** The search is multi-objective: the surrogate models every measure and reports the
@@ -408,7 +410,8 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
   dimensions is P under the bankroll stop (the share of users with the pinned budget who are ahead in cash at months
   1-3, `p_by_month` with `spent` and `limit`). S3c (14) is not a dimension.
 - **One row pins every input of 3.8 and 3.9 before the survey runs:**
-  - the limits (values, directions, and the one-sided check's level, the single margin of 3.8 (a); E-221);
+  - the limits (values and directions; the level of the one-sided check reported beside them, 3.8 (a); E-221, the
+    lead's O-5 ruling);
   - the bankroll budgets of (24);
   - the dimension definitions and their normalisers or loadings;
   - the weights;
@@ -437,8 +440,8 @@ is printed nominal when the ledger is not empty, and **the history-level false-p
   statistic stays available as a description);
 - R\* = P-14 as the one row to beat (Stage 2 D-626; P-14 is now one baseline among four);
 - Stage 2 D-621 (3)'s rule as E-001 adopted it (its text is CHARTER section 3 at E-008's sha256);
-- E-015 (3)'s "a limit never fails a design", replaced by 3.8 (a)'s limit check (the one-sided form, in force from
-  E-221, which retires E-207's limit wording), with E-015's operator condition carried;
+- E-015 (3)'s "a limit never fails a design", replaced by 3.8 (a)'s limit check (the point estimate governing, in force
+  from E-221, the lead's O-5 ruling, which retires E-207's limit wording), with E-015's operator condition carried;
 - E-023's two rules (no-trade levers described, never carried; side-keeping filters against a placebo-selection
   twin): such levers and filters are now searched in the lever space;
 - Stage 2's `verdict` arm (each R shifted to its edge's lower bound) and D-145's edge-bound form of the gate, both
