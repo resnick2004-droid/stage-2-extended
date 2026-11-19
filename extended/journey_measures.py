@@ -367,12 +367,18 @@ def account_lifetime(acc: Mapping[str, Any], window: int) -> dict[str, Any]:
     return {"ending": kind, "lost": kind in LOST, "payouts": int(count), "sessions": int(end - act)}
 
 
-def km_survival(times: Sequence[float], lost: Sequence[bool], weights: Sequence[float] | None = None
-                ) -> list[tuple[int, float]]:
+def km_survival(times: Sequence[float], lost: Sequence[bool], weights: Sequence[float] | None = None, *,
+                censored_leave_at_count: bool = True) -> list[tuple[int, float]]:
     """A weighted Kaplan-Meier curve on whole-number times: `[(k, S(k))]` for k = 0 .. max time + 1, with `S(k)` the
-    chance the time reaches k, `S(0) = 1`, `S(k) = prod_{t < k} (1 - d_t / n_t)` -- `d_t` the weight of the events at
-    t, `n_t` the weight of every observation with time >= t (a censored one stays in the risk set at its own time and
-    leaves after it, the usual convention)."""
+    chance the time reaches k, `S(0) = 1`, `S(k) = prod_{t < k} (1 - d_t / n_t)`, `d_t` the weight of the events at t.
+
+    **The risk set `n_t` of the step t -> t + 1** (corrective cycle 1, B-2):
+    * `censored_leave_at_count=True` -- (31)'s rule for a count of payouts (MEASURES.md (31): "censored accounts
+      leaving the risk set at their count"): the weight with time above t, plus the weight lost at t. A lost account
+      with count t was lost between its t-th and (t + 1)-th payout; a censored one with count t is known only to have
+      reached t, so it is not counted as surviving the step it is in.
+    * `censored_leave_at_count=False` -- the usual tie rule for a time measured on a clock (the sessions alive, (31)'s
+      reading beside): every observation with time t or above, a censoring at t outliving an event at t."""
     t = np.asarray(times, float)
     e = np.asarray(lost, bool)
     w = np.ones(len(t)) if weights is None else np.asarray(weights, float)
@@ -383,7 +389,7 @@ def km_survival(times: Sequence[float], lost: Sequence[bool], weights: Sequence[
     top = int(t.max()) if len(t) else 0
     s, out = 1.0, [(0, 1.0)]
     for k in range(0, top + 1):
-        n_k = float(w[t >= k].sum())
+        n_k = float(w[(t > k) | ((t == k) & e)].sum()) if censored_leave_at_count else float(w[t >= k].sum())
         d_k = float(w[(t == k) & e].sum())
         if n_k > 0:
             s *= 1.0 - d_k / n_k
@@ -416,8 +422,8 @@ def funded_lifetime(units: Sequence[Sequence[Mapping[str, Any]]], window: int,
     ses = [r["sessions"] for r in rows]
     lost = [r["lost"] for r in rows]
     w = [r["weight"] for r in rows]
-    curve = km_survival(pay, lost, w)
-    curve_s = km_survival(ses, lost, w)
+    curve = km_survival(pay, lost, w)                                   # B-2: censored leave at their count
+    curve_s = km_survival(ses, lost, w, censored_leave_at_count=False)  # sessions: the usual clock tie rule
     out: dict[str, Any] = {"curve_payouts": curve, "curve_sessions": curve_s, "n_accounts": len(rows),
                            "n_units": int(sum(1 for accs in units if any(int(a["activation_day"]) <= int(window)
                                                                          for a in accs))),

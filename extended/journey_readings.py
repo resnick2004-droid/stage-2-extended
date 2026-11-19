@@ -68,12 +68,19 @@ def _strict_rows(block: str, measure: str, vals: Sequence[tuple[float, bool]], w
 
 def journey_rows(outs: Sequence[Mapping[str, Any]], blocks: Sequence[str] = UR.BLOCKS, *,
                  budgets: Sequence[float] = (), window: int = UR.FIRST_WINDOW,
-                 lifetime_window: int = UR.YEAR_WINDOW) -> list[dict[str, Any]]:
+                 lifetime_window: int = UR.YEAR_WINDOW,
+                 explained: Mapping[tuple[int, int], str] | None = None) -> list[dict[str, Any]]:
     """The section `journey` (the module docstring) on E-208's blocks, from each journey's closes 0 .. h. Every output
-    must be a block-bounded journey (`user_beside.run_starts(..., journey=True)`), and every block one of E-208's."""
+    must be a block-bounded journey (`user_beside.run_starts(..., journey=True)`), and every block one of E-208's.
+    Corrective cycle 1 (M-2): the named blocks' starts must pass `user_readings.journey_check_problems` -- every start
+    checked at every exact horizon below its run's length, and no exact-run difference unless `explained` (the
+    declaration's reasons, by (start day, h)) explains it -- or the rows are refused."""
     if not UR.is_journey(outs):
         raise ValueError("REFUSED (W3.1): the journey rows read block-bounded journeys")
     UR.check_blocks(blocks, True, "the journey rows")
+    bad = UR.journey_check_problems([x for x in outs if x["journey"]["block"] in blocks], explained)
+    if bad:
+        raise ValueError("REFUSED (W3.1, M-2): " + "; ".join(bad))
     W = int(window)
     out: list[dict[str, Any]] = []
 
@@ -88,7 +95,8 @@ def journey_rows(outs: Sequence[Mapping[str, Any]], blocks: Sequence[str] = UR.B
         out.append(UR._row("journey", b, "record", "exact_runs_differing",
                            float(sum(1 for x in units if x["differs"])), len(units),
                            "the long run cut at the block's end; the starts whose exact h-session runs' event days "
-                           f"differ from it, of {sum(1 for x in units if x['checked'])} checked (m-8)"))
+                           f"differ from it, of {sum(1 for x in units if x['checked'])} checked; each one explained by "
+                           "a declared reason, or the reading is refused (m-8, M-2)"))
         ew = [x for x in units if obs(x) >= W]
         out += _strict_rows(b, "cash_to_first_pass",
                             [J.spent_to_event(rel(x), x["rec"]["first_pass"], W) for x in ew], W, "passed")
@@ -143,15 +151,17 @@ def journey_rows(outs: Sequence[Mapping[str, Any]], blocks: Sequence[str] = UR.B
 
 def summary(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, Any]], *,
             blocks: Sequence[str] = UR.BLOCKS, budgets: Sequence[float] = (), window: int = UR.FIRST_WINDOW,
-            lifetime_window: int = UR.YEAR_WINDOW) -> tuple[list[dict], pd.DataFrame]:
+            lifetime_window: int = UR.YEAR_WINDOW,
+            explained: Mapping[tuple[int, int], str] | None = None) -> tuple[list[dict], pd.DataFrame]:
     """`user_readings.summary` on block-bounded journeys (E-208's blocks; the search years by default) with the
     section `journey` added: (the rows, the per-start table)."""
     if not UR.is_journey(outs):
         raise ValueError("REFUSED (W3.1): a journey reading reads block-bounded journeys")
-    rows, t = UR.summary(design, arm, resp, outs, blocks=blocks, budgets=budgets)
+    rows, t = UR.summary(design, arm, resp, outs, blocks=blocks, budgets=budgets, explained=explained)
     head = {k: rows[0][k] for k in ("design", "arm", "response", "kind", "enforcement_p", "rtp", "rtp_warnings",
                                     "ftp_label")} if rows else {}
-    more = journey_rows(outs, blocks, budgets=budgets, window=window, lifetime_window=lifetime_window)
+    more = journey_rows(outs, blocks, budgets=budgets, window=window, lifetime_window=lifetime_window,
+                        explained=explained)
     return rows + [{**head, **r} for r in more], t
 
 

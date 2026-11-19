@@ -151,6 +151,18 @@ form pass), the Combines' purchase days (`purchases`, for (3)) and each funded a
 arrival closes (`accounts`, for (31)). The task gains `True` as its fourteenth item (the earlier ones padded as Q-119
 pads them). Absent (None or False), every task, replay and output is the adapter's before Wave 3.1 (master at c35cf40)
 bit for bit; its checks: `tests/w31_synthetic.py`, run by `tests/test_journey_readings.py`. Lines marked W3.1.
+
+Corrective cycle 1 (the red team's build read, `docs/reviews/BUILD_W31_Q152_2026-11-18.md`): with the keyword on,
+* **only the named blocks are replayed** (M-3): `journey_block` (default `"search"`; a name or a tuple of names of
+  `JOURNEY_BLOCK_NAMES`) -- a start of another block is refused (`ValueError`) before the pool is reached, so a
+  search-years call never replays a held-out start; the held-out test's runner names `"held_out"`;
+* **every start is checked against its exact-length runs under every response** (M-2): `exact_every` defaults to 1
+  (it stays `EXACT_EVERY` with the keyword absent); the readings refuse a difference no declared reason explains
+  (`user_readings.journey_check_problems`);
+* **the exact runs' peaks are carried** (M-1): `journey["peak_exact"]` maps each exact horizon run to its own peak
+  through each month close, so `P_B` reads its "ahead" and its peak from one record (`user_readings.extra_rows`);
+* the run's length and its block check are functions (`journey_length`, `journey_run_problems`), so the check can be
+  shown to catch a run that crosses the block's end (N-8).
 """
 from __future__ import annotations
 
@@ -548,6 +560,33 @@ def journey_window(dates: Sequence[Any]) -> tuple[list[str], list[int]]:
     return names, last
 
 
+def journey_length(s: int, blk_last: Sequence[int], horizon: int) -> int:
+    """W3.1: a start's long-run length inside its block: `min(horizon, the sessions from s to its block's last)`."""
+    return int(min(int(horizon), int(blk_last[s]) - int(s) + 1))
+
+
+def journey_run_problems(s: int, L: int, blk: Sequence[str]) -> list[str]:
+    """W3.1: why a run of `L` sessions from start `s` is not inside the start's block (empty when it is): a session
+    past the calendar's end, or a session of another block (B-1; the runner refuses it)."""
+    s, L = int(s), int(L)
+    if L < 1 or s + L > len(blk):
+        return [f"start {s}: a run of {L} sessions does not fit the calendar's {len(blk)} sessions"]
+    other = [k for k in range(s, s + L) if blk[k] != blk[s]]
+    return [f"start {s}: {len(other)} of its {L} sessions lie in another block (first: session {other[0]})"] \
+        if other else []
+
+
+def check_journey_block(journey_block: Any) -> tuple[str, ...]:
+    """W3.1 (M-3): the blocks a journey run may replay -- None the search years; a name or a tuple of names of
+    `JOURNEY_BLOCK_NAMES`; `ValueError` for anything else."""
+    if journey_block is None:
+        return ("search",)
+    names = (journey_block,) if isinstance(journey_block, str) else tuple(journey_block)
+    if not names or any(not isinstance(n, str) or n not in JOURNEY_BLOCK_NAMES for n in names):
+        raise ValueError(f"REFUSED (W3.1): journey_block names blocks of {JOURNEY_BLOCK_NAMES}, got {journey_block!r}")
+    return names
+
+
 def check_journey(journey: Any) -> bool:
     """W3.1: the keyword as a bool -- None or False absent, True on; `TypeError` for anything else."""
     if journey is None:
@@ -557,11 +596,13 @@ def check_journey(journey: Any) -> bool:
     return bool(journey)
 
 
-def journey_record(s: int, block: str, last: int, run: Any, lag: int, rel: np.ndarray) -> dict[str, Any]:
+def journey_record(s: int, block: str, last: int, run: Any, lag: int, rel: np.ndarray,
+                   exact: dict[int, Any] | None = None) -> dict[str, Any]:
     """W3.1: a start's journey fields from its block-bounded long run (the module docstring): its block, the sessions
     left in it, `rel`, the peak through each month close, the Combines' purchase days, each funded account's ending
     fields and its payouts' arrival closes (activation + 1 + the request's relative day + the lag, U1's
-    `payout_arrivals`; under the forfeiture, the adapter's view, the forfeited payouts out)."""
+    `payout_arrivals`; under the forfeiture, the adapter's view, the forfeited payouts out); and (M-1) `peak_exact`,
+    each exact-length run's own peak through each month close, by its horizon (`exact`: horizon -> that run's path)."""
     from extended import user_measures as M
 
     accounts = tuple({"activation_day": int(f.activation_day),
@@ -572,9 +613,12 @@ def journey_record(s: int, block: str, last: int, run: Any, lag: int, rel: np.nd
                       "ftp_closed": bool(getattr(f, "ftp_closed", False)),
                       "arrivals": tuple(int(f.activation_day) + 1 + int(r) + int(lag) for r in f.payout_days)}
                      for f in run.funded)
+    peak_exact = {int(h): tuple(M.peak_by_month(np.asarray(lp.path.cash_series, float)
+                                                 - float(lp.path.initial_bankroll)))
+                  for h, lp in sorted((exact or {}).items())}
     return {"block": str(block), "block_left": int(last) - int(s) + 1, "rel": tuple(float(v) for v in rel),
             "peak_month": tuple(M.peak_by_month(rel)), "purchases": tuple(int(c.purchase_day) for c in run.combines),
-            "accounts": accounts}
+            "accounts": accounts, "peak_exact": peak_exact}
 
 
 # ------------------------------------------------------------------------------------------------ forfeiture
@@ -729,13 +773,15 @@ def _task(task: tuple) -> Any:
 
     out = []
     for s in starts:
-        L = min(U.HORIZON, n - s) if not jour else min(U.HORIZON, blk_last[s] - s + 1)   # W3.1: inside the block
-        if jour and any(blk[k] != blk[s] for k in range(s, s + L)):             # W3.1: never another block's session
-            raise RuntimeError(f"{design} {arm} {rname} start {s}: its run reads a session of another block")
+        L = min(U.HORIZON, n - s) if not jour else journey_length(s, blk_last, U.HORIZON)   # W3.1: in the block
+        bad = journey_run_problems(s, L, blk) if jour else []                   # W3.1: never another block's session
+        if bad:
+            raise RuntimeError(f"{design} {arm} {rname}: " + "; ".join(bad))
         long_run, info = run(s, L, red is not None, cnt)                        # Q-94, Q-105: the long run alone
         if len(long_run.path.cash_series) != L + 1:
             raise RuntimeError(f"{design} {arm} {rname} start {s}: {len(long_run.path.cash_series)} closes, not {L + 1}")
         mine = long_record(s, dates[s], long_run, pay, totals)
+        exact = {}
         if int(s) % int(exact_every) == 0:
             exact = {h: run(s, h)[0] for h in U.EXACT if h < L}
             o = UJ._one_start(design, arm, s, dates[s], long_run, exact, sub, CJ.single_events, pay, totals,
@@ -747,7 +793,7 @@ def _task(task: tuple) -> Any:
         else:
             o = {**mine, "differs": [], "checked": [], "record_same": None}
         rel = np.asarray(long_run.path.cash_series, float) - float(long_run.path.initial_bankroll)
-        jr = ({"journey": journey_record(s, blk[s], blk_last[s], long_run, lag, rel)} if jour else {})   # W3.1
+        jr = ({"journey": journey_record(s, blk[s], blk_last[s], long_run, lag, rel, exact)} if jour else {})  # W3.1
         out.append({"rec": o["rec"], "differs": o["differs"], "checked": o["checked"], "pay_bad": o["pay_bad"],
                     "cash_bad": o["cash_bad"], "fee_bad": o["fee_bad"], "record_same": o["record_same"],
                     "daily": M.daily(rel), "response": response_record(long_run, resp, info), **jr,
@@ -784,7 +830,7 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
                funded_account_cls: type | None = None, recorder: Any = None, household_closure: Any = None,
                seed_base: Any = None, counters: Any = None,
                levers: Any = None, lever_sink: Any = None,                      # Q-119
-               journey: Any = None,                                             # W3.1
+               journey: Any = None, journey_block: Any = None,                  # W3.1
                ) -> list[dict[str, Any]]:
     """Every chosen start of one design, arm and response, in start order, across `customer_journey._pool_run`'s
     guarded pool (`workers`; 1 runs in this process). The exact-length runs on every start for `off`, on every
@@ -821,7 +867,9 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
 
     W3.1 (`docs/MEASURES.md` 1.1, B-1): `journey` (default None: every behaviour as before) True replays each start
     inside its own block of E-208 and adds each start's `journey` fields (the module's docstring); the job's calendar
-    is checked (`journey_window`) before any start runs; the tasks gain `True` as their fourteenth item."""
+    is checked (`journey_window`) before any start runs; the tasks gain `True` as their fourteenth item. With it,
+    `journey_block` (default the search years) names the blocks whose starts may run -- any other start is refused
+    before the pool -- and `exact_every` defaults to 1, every start checked (corrective cycle 1, M-2, M-3)."""
     import customer_journey as CJ
 
     if job.get("engine") != "single":
@@ -842,14 +890,21 @@ def run_starts(design: str, arm: str, resp: Response, job: dict[str, Any], start
         from extended import levers_path as LP                                  # Q-119
         LP.check_run_levers(levers, lever_sink, counters, funded_account_cls)   # Q-119
     jour = check_journey(journey)                                               # W3.1: refused before any start
+    if journey_block is not None and not jour:
+        raise ValueError("REFUSED (W3.1): journey_block is read only with journey=True")
     if jour:
-        journey_window(job["dates"])                                            # W3.1: every date in a block, in order
+        names, _ = journey_window(job["dates"])                                 # W3.1: every date in a block, in order
+        allowed = check_journey_block(journey_block)                            # M-3: the named blocks only
+        other = [int(st) for st in starts if names[int(st)] not in allowed]
+        if other:
+            raise ValueError(f"REFUSED (W3.1): {len(other)} starts lie outside the named blocks {allowed} (first: "
+                             f"start {other[0]}, {names[other[0]]}); a held-out start runs only where it is named")
     red = None
     if recorder is not None:                                                    # Q-94: refused before any start
         from extended import replay_records as RR
 
         red = RR.check_recorder(recorder).reducer(design, arm, resp, job)
-    every = 1 if resp.kind == "off" else int(EXACT_EVERY if exact_every is None else exact_every)
+    every = 1 if resp.kind == "off" else int((1 if jour else EXACT_EVERY) if exact_every is None else exact_every)
     chunks = [list(starts[j:j + chunk]) for j in range(0, len(starts), chunk)]
     tasks = [(design, arm, resp.name, job["blocks"], job["dates"], job["args"], c, every) for c in chunks]
     if funded_account_cls is not None:                                          # Q-76: the ninth item, only when given
@@ -885,4 +940,4 @@ __all__ = ["SEED_BLOCK", "DENIAL_SEED", "DENIAL_LEVELS", "EXACT_EVERY", "FTP_BIN
            "check_funded_account_cls", "class_name", "class_parameters", "own_household_rule", "forfeit_over",
            "class_problems", "check_class_response", "check_household_closure", "check_seed_base", "seam_parameters",
            "run_parameters", "JOURNEY_BLOCK_NAMES", "journey_blocks", "journey_block_of", "journey_window",
-           "check_journey", "journey_record"]
+           "check_journey", "journey_record", "journey_length", "journey_run_problems", "check_journey_block"]

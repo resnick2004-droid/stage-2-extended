@@ -273,12 +273,12 @@ def test_the_code_to_change_is_where_it_says():
         a, b = int(first), int(last or first)
         assert text in "\n".join(lines[a - 1:b + 6]), f"{path}:{first}: {text!r} is not there"
     changed, still = body.split("**Still to change.**", 1)
-    for want in ("extended/user_beside.py:732", "extended/user_beside.py:750", "extended/user_readings.py:300",
-                 "extended/journey_readings.py:100", "extended/user_readings.py:206", "extended/user_readings.py:72",
-                 "extended/user_readings.py:428", "extended/user_measures.py:77", "extended/user_measures.py:96",
+    for want in ("extended/user_beside.py:776", "extended/user_beside.py:796", "extended/user_readings.py:319",
+                 "extended/journey_readings.py:108", "extended/user_readings.py:206", "extended/user_readings.py:72",
+                 "extended/user_readings.py:485", "extended/user_measures.py:77", "extended/user_measures.py:96",
                  "extended/user_measures.py:219"):
         assert f"`{want}`" in changed, f"{want} is not listed as changed"
-    assert "`extended/user_beside.py:374`" in still, "the flip refusal is not listed still to change"
+    assert "`extended/user_beside.py:386`" in still, "the flip refusal is not listed still to change"
     for want in ("extended/firm_reading.py:258", "extended/openings.py:519", "extended/opening_wait.py:519"):
         assert f"`{want}`" in still, f"{want} is not listed to change"
     assert "`extended/cl_reading.py:" in still, "cl_reading.py's run length is not listed"
