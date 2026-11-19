@@ -411,6 +411,9 @@ for name in ("off", "denial_50", "forfeit_25"):
                                       and r["value"] > 0}),
             "accounts": by[("journey", "search", "funded_lifetime_payouts", "n_accounts")]["value"],
             "lost": by[("journey", "search", "funded_lifetime_payouts", "n_lost")]["value"],
+            "risk_rows": sum(1 for r in sr if r["measure"] == "funded_lifetime_payouts"
+                             and r["stat"].startswith("n_at_risk_")),
+            "risk_p50": by[("journey", "search", "funded_lifetime_payouts", "p50_risk")]["value"],
             "e252": by[("journey", "search", "S4b", "value")]["n"],
             "p_b": sorted({r["value"] for r in rows if r["section"] == "extra" and r["measure"].startswith("P_B_")})}
 out["journey_summary"], out["journey_problems"] = summ, jprob
