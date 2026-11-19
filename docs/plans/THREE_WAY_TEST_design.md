@@ -234,8 +234,10 @@ f beats the baseline set when every H0(f, beta) is rejected at the full level al
     of indices under the tests' own seed.
 - **The design and every baseline use the same keying.** Two arms deciding at the same moment, on the same start,
   under the same seed, read the same side uniform. That is the pairing.
-- **The side coin's key carries no account and no firm index (m-9).** One user's accounts and firms at one moment
-  share the one literal coin draw, as CHARTER 3.5's candidate default asks. The forced side of 3.5 (a new trade takes
+- **The side coin's key carries no account and no firm index (m-9).** Trades of one user's accounts and firms at one
+  moment read the same draw. Since E-221 (O-4) that means only the refusal of opposite positions at once (conduct
+  tier 1), never that every account copies every trade: accounts alternate, and the coin is the evaluation's device,
+  not the playbook's (CHARTER 3.5). The forced side of 3.5 (a new trade takes
   an open position's side) is a function of earlier uniforms.
 - **Each user (start) has its own coin draws** (choice 3; the coordinator's ruling stands). The key carries the start
   day. Users are independent, which 2.2's bounds use; **2.2 (a) is valid only under it** (N-2). **The keying is pinned

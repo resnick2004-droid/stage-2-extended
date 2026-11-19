@@ -14,10 +14,10 @@ copied byte-exact from Stage 2 commit a5708aa; sha256 in E-005). They are not ed
 | `%LOCALAPPDATA%\<repo>-wt\<name>` | `%LOCALAPPDATA%\stage2-extended-wt\<name>` (branch `wt/<name>`) |
 | `%LOCALAPPDATA%\<repo>-runs\` | `%LOCALAPPDATA%\stage2-extended-runs\` |
 | the row to beat P-14, the family level 0.05/(k(k+1)) | the baselines -- naive coin harvesting, P-14, P-15, P-16, each under the design's convention -- and the level 0.05 / (k (k + 1)), one k per held-out test, as `CHARTER.md` sections 3.7-3.8 fix them (E-001: the program's first family here was k = 10; the next k is 13) |
-| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008; then E-207, E-210; E-221 by the operator's delegation), and Part 3 rewritten in place:** a design is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), on the martingale-outcome reading: inside each limit at its point estimate, failing a limit only when the evidence shows it crosses, the single margin applied once (E-221, O-5; the limits, budgets and weights the lead's, pinned before the survey), each baseline beaten on the composite pinned before the survey (or the pinned fallback, P under the bankroll stop) by the calibrated coin-seed test on the held-out years, one joint test of every firm's finalists (E-221, O-1) (a level bounding coin luck on that history; the history-level false-pass rate beside), the time leg a consistency condition, with the floors of CHARTER section 3.8; the trades' lift over the coin twin is no pass line; the verdict keeps 0 % denial, the placement off and the Focused Trader Program off; hand entry only stays |
+| Part 3: P primary, payouts per fee dollar the screening target | **amended by the operator (E-008; then E-207, E-210; E-221 by the operator's delegation), and Part 3 rewritten in place:** a design is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), on the martingale-outcome reading: inside each limit at its point estimate, which governs, the one-sided check beside it (E-221, the lead's O-5 ruling; the limits, budgets and weights the lead's, pinned before the survey), each baseline beaten on the composite pinned before the survey (or the pinned fallback, P under the bankroll stop) by the calibrated coin-seed test on the held-out years, one joint test of every firm's finalists (E-221, O-1) (a level bounding coin luck on that history; the history-level false-pass rate beside), the time leg a consistency condition, with the floors of CHARTER section 3.8; the trades' lift over the coin twin is no pass line; the verdict keeps 0 % denial, the placement off and the Focused Trader Program off; hand entry only stays |
 | Part 1 and Part 6.2: "at least 5 minutes" | **amended in place (E-203):** at least L minutes, L = 5 the reference, 3 and 2 counted variants (E-202 (2)(c)) |
 | Part 3, Part 5's worktree list and report, Part 6.2's test, 6.3 A, B and C, the power paragraph, "A candidate" | **amended in place (E-210):** judged on the journey under zero edge, not on a coin-twin lift; RL3 recast and F-02 and family B parked (E-208); each firm its own baselines; the data question asked before the first search pin |
-| Part 3, 6.3 C, "A candidate" and the Part 3 row above | **amended in place (E-221, the lead's rulings by the operator's delegation):** inside each limit at its point estimate, failing one only when the evidence shows it crosses (O-5); the held-out years spent once by one joint fixed-sequence test of every firm's finalists (O-1); the limits, bankroll budgets, weights and size that matters the lead's, from H4's search-year results by a rule declared before H4 is read (O-3, Wave 4.2) |
+| Part 3, 6.3 C, "A candidate" and the Part 3 row above | **amended in place (E-221, the lead's rulings by the operator's delegation):** inside each limit at its point estimate, which governs, the one-sided check beside it (the lead's O-5 ruling); the held-out years spent once by one joint fixed-sequence test of every firm's finalists (O-1); the limits, bankroll budgets, weights and size that matters the lead's, from H4's search-year results by a rule declared before H4 is read (O-3, Wave 4.2) |
 
 ---
 
@@ -143,12 +143,14 @@ belongs on the funded openings and a frequent one on every trade (the value map,
 
 **Power:** six and a half years of NQ give low power for rare effects. More history (QuantConnect's free NQ/ES from
 2009, which needs the operator's QuantConnect user ID and API token configured; or a Databento purchase of older bars,
-stated not authorised) is the operator's call -- put both in `OPERATOR_SETUP.md` in your first commit, and put the question to the operator with the power gate's result before the first design search is pinned (`CHARTER.md` section 3.7), never after a failure.
+stated not authorised) is a purchase or the operator's setup, and the operator held it (E-221): both stay in
+`OPERATOR_SETUP.md`. The size that matters and the power are the lead's, set in Wave 4.2 with the power gate's result
+(`CHARTER.md` section 3.7; E-221); a purchase is never asked for after a failure.
 
 **A candidate** is a finalist of a declared search that passes `CHARTER.md` section 3.8 in its place in the finalist
-sequence on the held-out years, on the martingale-outcome reading: inside each limit at its point estimate, failing a
-limit only when the evidence shows it crosses, the single margin applied once (E-221, O-5), each baseline beaten on
-the pinned composite by the calibrated coin-seed test at its k's level (the history-level false-pass rate beside),
-the time leg's conditions met, the floors holding (the zero-edge gate, the fill and supply stress and the as-traded
-floors, read on the real path (CHARTER 3.8), among them). It is then registered with the gatekeeper, audited, and
-waits for confirmation data (a purchase: the operator's).
+sequence on the held-out years, on the martingale-outcome reading: inside each limit at its point estimate, which
+governs, the one-sided check of crossing beside it (E-221, the lead's O-5 ruling), each baseline beaten on the pinned
+composite by the calibrated coin-seed test at its k's level (the history-level false-pass rate beside), the time
+leg's conditions met, the floors holding (the zero-edge gate, the fill and supply stress and the as-traded floors,
+read on the real path (CHARTER 3.8), among them). It is then registered with the gatekeeper, audited, and waits for
+confirmation data (a purchase: the operator's).

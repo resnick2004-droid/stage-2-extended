@@ -30,11 +30,11 @@ trade edge (the handoff, section 0), and that is accepted: the goal is to make m
 | start day | one development session taken as a fresh user (fresh bankroll, fresh accounts) |
 | coin seed | one sequence of coin flips; re-running with many seeds gives the spread a user can live |
 | search years / held-out years | the years the lever search may read / the years only the finalists' confirmation reads |
-| limits | the operator's ceilings and floors on what a user feels (bankroll, time to first payout, ...) |
+| limits | the ceilings and floors on what a user feels (bankroll, time to first payout, ...); the lead's, set in Wave 4.2 from H4's search-year results (E-221) |
 | baselines | naive coin harvesting, and Stage 2's P-14, P-15, P-16 |
 | P | **not a p-value**: the mean share of start days ahead in cash at months 1, 2 and 3 |
 | frontier | the designs not beaten on one measure without losing on another |
-| composite score | one number over the measures' dimensions, weighted by the operator's trade-off answers, pinned before the held-out years are read; the confirmation's single hypothesis |
+| composite score | one number over the measures' dimensions, its weights the lead's, set in Wave 4.2 from H4's search-year results (E-221), pinned before the held-out years are read; the confirmation's single hypothesis |
 
 ## 3. The measures (39)
 
@@ -53,8 +53,9 @@ dollar (S3c); (15) return on money at risk = 12-month net / peak out-of-pocket (
 months with a positive net change; (19) spread of monthly net; (20) longest run of months without a payout;
 (21) longest gap between payouts within 126 sessions (S5b); (22) best quarter's share of month-6 net (S5c);
 (23) largest month's share of the year's payouts.
-**Bankroll and downside.** (24) chance of running out before the first payout at budgets the operator sets (new: the
-bankroll stop); (25) peak out-of-pocket in 12 months (new); (26) month-3 net of the unlucky tenth (S5a); (27) CVaR10.
+**Bankroll and downside.** (24) chance of running out before the first payout at the bankroll budgets the lead sets in
+Wave 4.2 (E-221; new: the bankroll stop); (25) peak out-of-pocket in 12 months (new); (26) month-3 net of the
+unlucky tenth (S5a); (27) CVaR10.
 **Realism and robustness.** (28) headline measures with 10 % and 20 % of signals missed or late (new); (29) headline
 measures at +1 and +2 ticks of worse fills (approved item 2); (30) workload: orders a day, accounts at once, screen
 hours (new); (31) funded-account lifetime: payouts per funded account before it is lost (new); (32) worst year and
@@ -117,7 +118,8 @@ Dropped by the operator: firm-rule exposure (flagged-pattern rate); rule-change 
    (a planted improvement of the size that matters must be found). Each confirmation spends one k at
    0.05 / (k (k + 1)), the next k = 13. A design that passes is carried; the confirmation window (NQ from
    2026-07-17) is a purchase and the operator's decision.
-7. **Pass line.** A design passes when (a) it stays inside every operator limit with margin wider than its noise,
+7. **Pass line.** A design passes when (a) it sits inside every limit at its point estimate, which governs, the
+   one-sided check beside it (E-221, the lead's O-5 ruling),
    (b) it beats the best baseline on the declared composite score (section 4.8) by the calibrated test at its level, and (c) the
    floors hold: verified rules, conduct tier 1, the long-run gate, hand entry with at least five minutes alert to
    order. The verdict is read at 0 % payout denial with the denial ladder and break-even denial rate reported beside.
@@ -129,9 +131,9 @@ Dropped by the operator: firm-rule exposure (flagged-pattern rate); rule-change 
      carry independent information and which move together -- expected to reduce the 39 to about five or six
      dimensions (speed, cost and bankroll, steadiness, downside, supply, workload) -- and the trade-off curves between
      them (what each step of one costs in another).
-   - **The operator's weights.** From those curves the operator answers concrete trade-off questions ("5 more
-     sessions to first payout for 15 % less bankroll?"); the answers set the weights of a **composite score** over the
-     dimensions, one of which is P under the bankroll stop (the share of users with the operator's budget who are
+   - **The lead's weights (E-221, by the operator's delegation).** From those curves, by a rule declared before H4 is
+     read, the lead sets the weights of a **composite score** over the
+     dimensions, one of which is P under the bankroll stop (the share of users with the pinned budget who are
      ahead in cash at months 1-3, `p_by_month` with `spent` and `limit`). The weights are recorded and pinned in the
      search declaration, before any held-out year is read, and never changed after a result is seen.
    - **Limits stay hard lines** (bankroll, chance of running out, trades per day, ...): no score buys crossing one.
@@ -273,8 +275,9 @@ with other applications closed). Heavy work joins the single heavy queue (H1, H2
 - `/collect`, auditor, trace.
 - 4.1 `wt-user` with `wt-verify`: the measure-structure analysis on H4's results (search years only) -- the
   dimensions, the redundant measures, the trade-off curves.
-- 4.2 Lead: proposes starting limits, bankroll budgets, and the trade-off questions that set the composite's
-  weights -- **OPERATOR answers and approves**; recorded under an E-row.
+- 4.2 Lead: sets the limits, the bankroll budgets, the composite's weights and the size that matters from H4's
+  search-year results, by a rule declared before H4 is read, pinned in one row before the survey, never after a
+  held-out read -- **the lead's, by the operator's delegation (E-221)**; recorded under an E-row.
 
 **Wave 5 -- the first design search (Topstep $50K).**
 - 5.1 `wt-features` drafts the declaration on the new template (the lever space from RD-03/RD-05 and the firm record;
@@ -297,9 +300,10 @@ starts from the Topstep map; cross-firm rotation (item 4) enters the lever space
 
 1. Approve this plan (or amend it) before the lead starts Phase 1.
 2. **Decided (the operator delegated it, 2026-11-18):** the objective is a composite score over the measures'
-   dimensions with the operator's weights, fixed before the held-out years are read (section 4.8); fallback P under
+   dimensions with weights fixed before the held-out years are read (section 4.8); fallback P under
    the bankroll stop.
-3. The limits, the bankroll budgets for (24) and the trade-off answers that set the weights -- in Wave 4.
+3. **Delegated to the lead (E-221):** the limits, the bankroll budgets for (24) and the weights -- in Wave 4.2, from
+   H4's search-year results by a rule declared before H4 is read.
 4. The review changes (blocking/minor rule; the checklist).
 5. KOA, if wanted: its licence, usage policy and cost checks first.
 6. **Decided (the operator, 2026-11-18):** no cap on trading hours; every session the firm allows is in the search.
