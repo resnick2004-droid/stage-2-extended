@@ -18,6 +18,12 @@ test ids (`three_way_seeds.TEST_IDS`), never the note's own test id.
 - **the nulls' guards**, **the time legs' stated sizes** and vacuity, the **search-years-only** refusal, **the gate at
   H_g = 504** over coin seeds, **O-5's limit check**, and **the history null on S1** (exact on the toys: the swapped
   history's pair is the pair's negative).
+
+Corrective cycle 1 (the red team's read of 746a245): only a plain mean is admitted (m-3); the betting bound's bets are
+predictable and both 2.2 (b) bounds cover where they are near tight (m-4); O-5 as E-230 ruled, with the headroom
+z_pi sigma / sqrt(J) (m-6); the gate at 25 % denial (m-7); the resample's dates tied to its series (m-8); P1 refused
+for the betting bound (m-12); every boundary the red team's mutants O, P, P2, R and S passed through (m-13); the
+smaller-J rule's declared inputs (m-14); a calendar with no group of n_min refused (m-17).
 """
 from __future__ import annotations
 
@@ -74,6 +80,8 @@ def test_admission() -> None:
         assert not ok and "2.2 (b)" in why[0]
     ok, why = ST.admission([ST.Dimension("dollars", "mean", 63)])
     assert not ok and "M-3" in why[0]
+    ok, why = ST.admission([ST.Dimension("m", "mean", 63, a=0, r=1, source="arithmetic", stat=np.median)])
+    assert not ok and "m-3" in why[0]                                     # a median labelled as a mean
     with pytest.raises(ValueError, match="not admitted"):
         ST.mcdiarmid([ST.Dimension("q", "quantile", 63, a=0, r=1, source="clip")], {"q": np.zeros((2, 2))},
                      {"q": np.zeros((2, 2))}, {"q": [0, 1]}, 0.05)
@@ -146,6 +154,36 @@ def test_the_bounds_cover_at_a_feasible_level() -> None:
     assert miss["mcdiarmid"] <= 2000 * 0.05 and miss["eb"] <= 500 * 0.05 and miss["betting"] <= 500 * 0.05, miss
 
 
+def check_tight_coverage() -> dict[str, float]:
+    """m-4: the miss rates where each 2.2 (b) bound is near tight -- replicates of +1 or -1 (sd near the range), the
+    empirical-Bernstein bound at J = 2000 over 4000 samples, the betting bound at J = 400 over 300 -- each at
+    alpha = 0.05; a bound of half its width misses well above alpha there."""
+    rng = np.random.default_rng(K.seed_key(SEED, "test", test=S.TEST_IDS["coverage_tight"], replicate=0))
+    mu = 0.2
+    X = np.where(rng.random((4000, 2000)) < 0.6, 1.0, -1.0)
+    eb = float(np.mean([ST.eb_lower(x, 0.05) > mu for x in X]))
+    Y = np.where(rng.random((300, 400)) < 0.6, 1.0, -1.0)
+    bet = float(np.mean([ST.betting_lower(y, 0.05, grid=401) > mu for y in Y]))
+    return {"eb": eb, "betting": bet}
+
+
+def test_the_bounds_cover_where_they_are_near_tight() -> None:
+    miss = check_tight_coverage()
+    assert miss["eb"] <= 0.05 and miss["betting"] <= 0.05, miss
+
+
+def test_the_betting_bounds_bets_are_predictable() -> None:
+    """m-4 (the red team's mutant K): lambda_i reads y_1 .. y_{i-1} only -- changing y_k moves no bet up to and
+    including the k-th."""
+    rng = rng_for("betting", 7)
+    y = rng.random(60)
+    lam = ST.bets(y, 0.05)
+    for k in range(60):
+        z = y.copy()
+        z[k] = 1.0 - z[k]
+        assert np.array_equal(ST.bets(z, 0.05)[:k + 1], lam[:k + 1]), k
+
+
 # ------------------------------------------------------------------------------------------------ power
 
 
@@ -173,8 +211,17 @@ def test_a_planted_edge_is_found_at_the_stated_power_and_none_under_the_null() -
 def test_the_planted_mdl_and_the_smaller_j_rule() -> None:
     rng = rng_for("plant")
     lowers0 = np.array([ST.hoeffding_terms(rng.choice([-0.5, 0.5], 400), 0.05) for _ in range(200)])
-    mdl = ST.planted_mdl(lowers0, grid=np.linspace(0.01, 0.5, 50))
+    mdl = ST.planted_mdl(lowers0, "hoeffding", grid=np.linspace(0.01, 0.5, 50))
     assert 0 < mdl.mdl < 0.5
+    with pytest.raises(ValueError, match="m-12"):
+        ST.planted_mdl(lowers0, "betting")
+    rates = ST.planted_rates(lambda x: ST.betting_lower(x, 0.05, grid=201), [rng.choice([-0.5, 0.5], 200)
+                                                                             for _ in range(20)], [0.0, 0.4])
+    assert rates[0] <= rates[1] and rates[1] > 0.5
+    assert ST.SMALLER_J_GRID == tuple(2 ** k for k in range(4, 16)) and ST.SMALLER_J_DRAWS == 2000
+    src = rng.choice([-0.5, 0.5], 50)
+    x = ST.bootstrap_draw(src, 0.1)(rng, 4000)
+    assert np.allclose(np.unique(x), np.unique(src - src.mean() + 0.1)) and abs(x.mean() - 0.1) < 0.05
     out = ST.smaller_j(0.3, 0.3, 0.05, 0.8, (10, 20, 40, 80), rng_for("betting"), reps=60)
     assert set(out["J"]) == {"eb", "betting"} and out["decides"] in ("eb", "betting")
     assert out["J"][out["decides"]] == min(v for v in out["J"].values() if v is not None)
@@ -206,6 +253,10 @@ def test_the_time_legs_sizes_and_vacuity() -> None:
     c = ST.condition({2024: 0.1, 2025: 0.2, 2026: -0.3}, {2024: 252, 2025: 252, 2026: 15}, 21)
     assert c["ok"] == [2024, 2025] and c["holds"]
     assert not ST.condition({2024: 0.1, 2025: -0.2}, {2024: 252, 2025: 252}, 21)["holds"]
+    edge = ST.condition({2024: 0.1, 2025: 0.2, 2026: -0.3}, {2024: 252, 2025: 252, 2026: 21}, 21)
+    assert edge["ok"] == [2024, 2025, 2026] and not edge["holds"]     # a group of exactly n_min counts (mutant O)
+    with pytest.raises(ValueError, match="m-17"):
+        ST.condition({2024: 0.1}, {2024: 20}, 21)
     assert ST.regimes([1.0, 3.0], 2.0).tolist() == ["calm", "volatile"]
 
 
@@ -221,6 +272,24 @@ def test_the_resampled_size_reads_the_search_years_only() -> None:
         ST.resampled_size(contrib, days + np.timedelta64(1500, "D"), groups, 63, 63.0, rng, 10)
     with pytest.raises(ValueError, match="h\\*"):
         ST.resampled_size(contrib, days, groups, 63, 21.0, rng, 10)
+    # m-8: the dates tied to the series
+    with pytest.raises(ValueError, match="m-8"):
+        ST.resampled_size(np.concatenate([contrib, contrib]), days, groups, 63, 63.0, rng, 10)
+    with pytest.raises(ValueError, match="m-8"):
+        ST.resampled_size(contrib, days[::-1], groups, 63, 63.0, rng, 10)
+    with pytest.raises(ValueError, match="m-8"):
+        ST.resampled_size(contrib, days - np.timedelta64(30, "D"), groups, 63, 63.0, rng, 10)
+    # mutant R, by behaviour: a series whose last session is 2024-01-02 itself is refused
+    edge = np.arange(np.datetime64("2023-12-01"), np.datetime64("2024-01-03"), dtype="datetime64[D]")
+    assert edge[-1] == np.datetime64("2024-01-02")
+    with pytest.raises(ValueError, match="held-out"):
+        ST.refuse_held_out(edge, edge.size)
+    inside = edge[edge <= np.datetime64("2023-12-29")]
+    ST.refuse_held_out(inside, inside.size)                            # up to the search years' last day: accepted
+    # mutant S: the size is the centred series' -- a constant added changes nothing, on the same draws
+    r1 = ST.resampled_size(contrib, days, groups, 63, 63.0, rng_for("resample", 5), 100)
+    r2 = ST.resampled_size(contrib + 5.0, days, groups, 63, 63.0, rng_for("resample", 5), 100)
+    assert r1 == r2 and r1["size"] < 0.9
 
 
 def test_the_gate_at_h_g_and_the_limit_check() -> None:
@@ -235,10 +304,25 @@ def test_the_gate_at_h_g_and_the_limit_check() -> None:
     assert out["passes"] and out["starts"] == 160
     assert not ST.long_run_gate(g, 0.1, min_starts=200)["passes"]
     assert not ST.long_run_gate(g - 0.1, 0.1, min_starts=100)["passes"]
-    assert ST.limit_check(0.9, 1.0, 0.2)["passes"]                           # inside at the point estimate
-    assert not ST.limit_check(1.05, 1.0, 0.2)["passes"]                      # outside at the point estimate
-    assert ST.limit_check(1.05, 1.0, 0.2)["evidence_crosses"] is False
-    assert not ST.limit_check(1.5, 1.0, 0.2)["passes"]
+    # mutant P: the lower quantile, where the lower and upper quantiles of the per-seed medians straddle zero
+    g2 = np.tile(np.linspace(-1.0, 1.0, 50), (160, 1)) + 0.1
+    assert not ST.long_run_gate(g2, 0.1, min_starts=100)["passes"]
+    assert ST.long_run_gate(g2, 0.1, min_starts=100)["lower_quantile"] < 0 < float(np.quantile(g2[0], 0.9))
+    # mutant P2: the median over starts, on a skewed g whose mean and median differ in sign
+    g3 = np.vstack([np.full((150, 50), -0.01), np.full((10, 50), 5.0)])
+    assert not ST.long_run_gate(g3, 0.1, min_starts=100)["passes"] and g3.mean(axis=0).min() > 0
+    # m-7: read at D-145's 25 % denial, the 0 % reading beside
+    gr = ST.gate_reading(g - 0.1, g, 0.1, min_starts=100)
+    assert ST.GATE_DENIAL == 0.25 and gr["denial"] == 0.25 and not gr["passes"]
+    assert gr["beside_at_zero_denial"]["passes"]
+    # O-5 as E-230 ruled: the point estimate governs, the one-sided check beside, a negative width refused (m-6)
+    assert ST.limit_check(0.9, 1.0, 0.2)["passes"]
+    assert not ST.limit_check(1.05, 1.0, 0.2)["passes"]
+    assert ST.limit_check(1.05, 1.0, 0.2)["beside_evidence_crosses"] is False
+    assert ST.limit_check(0.95, 1.0, 0.0)["passes"] and not ST.limit_check(1.5, 1.0, 0.2)["passes"]
+    with pytest.raises(ValueError, match="m-6"):
+        ST.limit_check(0.9, 1.0, -0.2)
+    assert ST.headroom_needed(1.0, 100, 0.8) == pytest.approx(0.8416212335729143 / 10)
 
 
 # ------------------------------------------------------------------------------------------------ the history null

@@ -23,10 +23,13 @@ symmetric grid. **The antithetic twin** reads i' = 2^52 - 1 - i: the uniform 1 -
 u + u' == 1.0 bit for bit and no uniform is ever exactly one half.
 
 **Refusals.** `seed_key` refuses a missing or extra field, a non-positive seed, a negative field, any word at or above
-2^32 (N-8), and a seed of H3's block that `extended.three_way_seeds.issue` did not make (`ProvenanceRefused`). The
-`KeyGuard` refuses two different keys with one `generate_state` (2.3; the comparison is what numpy seeds, never the
-integers), a coin or enforce key whose start word is not the unit's (N-2), and a disjoint-seed null whose two sets share
-a key.
+2^32 (N-8), a seed of H3's block that `extended.three_way_seeds.issue` did not make (`ProvenanceRefused`), and a block
+seed drawn outside its role's key kinds and parts (`three_way_seeds.check_use`; the red team's m-9). `Unit` checks every
+coin and enforce key's start word as it builds it (N-2, unstored). **The guard** (the lead's ruling on the red team's
+B-2): distinctness is proved by the packing (`packing_problems`), with the birthday bound on a 128-bit state printed
+beside (`collision_bound`); the stored `generate_state` comparison runs on a declared sample only (`KeyGuard.sampled`:
+a plan's first start, its first `SAMPLE_SEEDS` seed indices, every arm), which fits a worker's memory at every declared
+size; the disjoint null's exact check is on its two seed-index sets.
 
 numpy only; reads no file, no bar.
 """
@@ -75,9 +78,11 @@ def seed_key(seed: int, kind: str, **fields: int) -> list[int]:
         raise ValueError("a seed is positive and every index non-negative")
     if int(seed) >= WORD or any(v >= WORD for v in vals):
         raise ValueError("every word of a key is below 2^32: numpy splits larger integers into words")
-    if S.in_block(seed) and not S.is_issued(seed):
-        raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in H3's block but was not issued by "
-                                  "extended.three_way_seeds (a literal or a derived value)")
+    if S.in_block(seed):
+        if not S.is_issued(seed):
+            raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in H3's block but was not issued by "
+                                      "extended.three_way_seeds (a literal or a derived value)")
+        S.check_use(seed, kind, fields.get("part"))                    # m-9: each seed draws only its role
     return [int(seed), tag, *vals]
 
 
@@ -131,13 +136,23 @@ class Unit:
             raise ValueError(f"unknown underlying {underlying!r}")
         if draw_kind not in DRAW_KINDS.values():
             raise ValueError(f"unknown draw kind {draw_kind!r}")
-        return seed_key(self.seed, "coin", part=self.part, history=self.history, seed_index=self.seed_index,
-                        start=self.start, underlying=UNDERLYING[underlying], moment=int(moment_),
-                        draw_kind=int(draw_kind))
+        key = seed_key(self.seed, "coin", part=self.part, history=self.history, seed_index=self.seed_index,
+                       start=self.start, underlying=UNDERLYING[underlying], moment=int(moment_),
+                       draw_kind=int(draw_kind))
+        return _carries_start(key, self.start)
 
     def enforce_key(self, account: int, request: int) -> list[int]:
-        return seed_key(self.seed, "enforce", part=self.part, history=self.history, seed_index=self.seed_index,
-                        start=self.start, account=int(account), request=int(request))
+        key = seed_key(self.seed, "enforce", part=self.part, history=self.history, seed_index=self.seed_index,
+                       start=self.start, account=int(account), request=int(request))
+        return _carries_start(key, self.start)
+
+
+def _carries_start(key: list[int], start: int) -> list[int]:
+    """N-2 at construction (the lead's ruling on B-2): every coin and enforce key carries its unit's start, checked
+    as the key is made, for every key, with nothing stored."""
+    if key_start(key) != int(start):
+        raise ValueError(f"REFUSED (N-2): the key {key} does not carry its unit's start {start}")
+    return key
 
 
 def key_start(key: Sequence[int]) -> int | None:
@@ -150,40 +165,93 @@ def key_start(key: Sequence[int]) -> int | None:
     return None
 
 
+#: the guard's declared sample (the lead's ruling on B-2): every key of a plan's first start under its first
+#: `SAMPLE_SEEDS` seed indices, across every arm of the call, is stored with its `generate_state` and compared
+SAMPLE_SEEDS = 64
+#: the state's width: `generate_state(4)`, 128 bits (Philox's own key is the same 128 bits as two uint64 words)
+STATE_BITS = 128
+
+
+def collision_bound(n_keys: int) -> float:
+    """The chance that any two of n distinct keys give one 128-bit state, the hash taken as a random function: at most
+    n (n - 1) / 2 / 2^128 <= n^2 / 2^129 (the birthday bound)."""
+    n = float(n_keys)
+    return n * (n - 1.0) / 2.0 / 2.0 ** STATE_BITS
+
+
+def packing_problems() -> list[str]:
+    """Why two different field tuples could make one key input (empty when the packing is injective): one fixed length
+    per kind; a distinct nonzero tag in the second word, so keys of two kinds differ there; every word below 2^32
+    (`seed_key` refuses larger, so numpy never splits a word); the moment injective in (session, slot, sub) by its
+    fixed radices; and the unit kinds at least five words long, so SeedSequence's zero padding of a key of four words
+    or fewer never applies to them."""
+    out = []
+    tags = [t for t, _ in KEY_KINDS.values()]
+    if len(set(tags)) != len(tags) or min(tags) <= 0:
+        out.append("the tags are not distinct and nonzero")
+    for kind in UNIT_KINDS:
+        if 2 + len(KEY_KINDS[kind][1]) < 5:
+            out.append(f"{kind}: a key of fewer than five words")
+    if moment(1, 0, 0) != DAY_SLOTS * MOMENT_SUBS or moment(0, 1, 0) != MOMENT_SUBS or moment(0, 0, 1) != 1:
+        out.append("the moment's radices are not session x 1440 x 16")
+    return out
+
+
 @dataclass
 class KeyGuard:
-    """Every key a run reads, with what numpy seeds from it: refuses two different keys with one state (2.3) and a
-    unit key without its unit's start (N-2). The same key read twice (the design and a baseline at one moment on one
-    unit: the pairing) is one entry."""
+    """The key guard. **N-2 is checked on every key, unstored** (a unit key's start word against its unit's start, at
+    construction and again here); **distinctness comes from the packing** (`packing_problems`; `collision_bound` the
+    chance two distinct inputs share a state); the stored comparison of `generate_state` -- two different keys with
+    one state refused (2.3) -- is **a tripwire on a declared sample**: the unit keys of `sample_starts` under
+    `sample_seeds` (`KeyGuard.sampled`), and every key of another kind. `KeyGuard()` stores every key (the tests' full
+    mode). The same key read twice (the design and a baseline at one moment on one unit: the pairing) is one entry."""
 
+    sample_starts: frozenset | None = None
+    sample_seeds: frozenset | None = None
     states: dict[tuple[int, ...], tuple[int, ...]] = field(default_factory=dict)
+    checked: int = 0
 
-    def add(self, key: Sequence[int], start: int | None = None) -> None:
-        """Record `key`; a unit kind's key (coin, enforce) is added with its unit's `start`, which its start word must
-        equal (N-2)."""
+    @classmethod
+    def sampled(cls, starts, seed_indices) -> "KeyGuard":
+        """The declared sample of a plan: its first start, its first `SAMPLE_SEEDS` seed indices."""
+        st, sd = list(starts), list(seed_indices)
+        return cls(frozenset(st[:1]), frozenset(sd[:SAMPLE_SEEDS]))
+
+    def in_sample(self, start: int | None, seed_index: int | None) -> bool:
+        if self.sample_starts is None:
+            return True
+        return start in self.sample_starts and (self.sample_seeds is None or seed_index in self.sample_seeds)
+
+    def add(self, key: Sequence[int], start: int | None = None, seed_index: int | None = None) -> None:
+        """Check `key`: a unit kind's key (coin, enforce) comes with its unit's `start` (and seed index), which its
+        start word must equal (N-2); a key in the sample (every key in full mode) is stored with its state."""
         k = tuple(int(x) for x in key)
         ks = key_start(k)
         if ks is not None and (start is None or ks != int(start)):
             raise ValueError(f"REFUSED (N-2): the unit key {k} does not carry its unit's start {start}")
-        s = key_state(k)
-        prev = self.states.get(s)
+        self.checked += 1
+        if ks is not None and not self.in_sample(start, seed_index):
+            return
+        st = key_state(k)
+        prev = self.states.get(st)
         if prev is not None and prev != k:
             raise ValueError(f"REFUSED (2.3): two keys give one generate_state: {prev} and {k}")
-        self.states[s] = k
+        self.states[st] = k
 
     def keys(self) -> set[tuple[int, ...]]:
         return set(self.states.values())
 
     def merge(self, other: "KeyGuard") -> None:
-        for s, k in other.states.items():
-            prev = self.states.get(s)
+        for st, k in other.states.items():
+            prev = self.states.get(st)
             if prev is not None and prev != k:
                 raise ValueError(f"REFUSED (2.3): two keys give one generate_state: {prev} and {k}")
-            self.states[s] = k
+            self.states[st] = k
 
 
 def disjoint(a: KeyGuard, b: KeyGuard) -> None:
-    """The disjoint-seed null's guard: the two sets share no key and no state (refused otherwise)."""
+    """The disjoint-seed null's tripwire on the stored keys: the two sets share no state (refused otherwise). The exact
+    check is the runner's, on the two seed-index sets."""
     shared = set(a.states) & set(b.states)
     if shared:
         raise ValueError(f"REFUSED (2.3): the disjoint seed sets share {len(shared)} key states")
@@ -200,4 +268,5 @@ def check_keys(keys: Iterable[Sequence[int]]) -> int:
 
 __all__ = ["WORD", "DAY_SLOTS", "MOMENT_SUBS", "KEY_KINDS", "UNIT_KINDS", "SIDE", "RACE", "WALK", "MISSED",
            "DRAW_KINDS", "UNDERLYING", "TOP", "seed_key", "key_state", "grid_indices", "to_uniform", "uniforms",
-           "moment", "Unit", "key_start", "KeyGuard", "disjoint", "check_keys"]
+           "moment", "Unit", "key_start", "SAMPLE_SEEDS", "STATE_BITS", "collision_bound", "packing_problems",
+           "KeyGuard", "disjoint", "check_keys"]

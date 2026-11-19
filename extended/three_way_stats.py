@@ -37,8 +37,10 @@ held-out years refused) -- and **a size at or above one half is labelled vacuous
 
 **The long-run gate** (CHARTER 3.8 (c); O-6): over D-145's horizon `H_GATE` = 504 sessions, on the held-out years its
 lower quantile is **over coin seeds only** (`long_run_gate`); the history-block reading of the search years is beside.
-**The limits** (O-5): a design sits inside each limit at its point estimate and fails it only when the evidence shows it
-crosses (`limit_check`, B-10's form, coin noise its noise, m-12).
+**The gate's denial** (CHARTER 3.8 (c)): read at D-145's 25 % (`gate_reading`), the 0 % reading beside. **The limits**
+(O-5 as E-230 ruled): the point estimate governs -- inside passes, outside fails -- and the one-sided check is reported
+beside, never a second margin (`limit_check`); the power gate's headroom is z_pi sigma_M / sqrt(J)
+(`headroom_needed`).
 
 **Power** (4): P1's linear plant through `family_stats.conjoint_mdl_linear`; the rule's pass rate at a plant on a grid
 through `family_stats.conjoint_mdl_grid`; 2.5's formulas (`hoeffding_units`, `power_hoeffding`).
@@ -113,6 +115,9 @@ class Dimension:
         """Whether 2.2 (a) admits it, and why not."""
         if self.kind != "mean":
             return False, f"{self.name}: a {self.kind} is decided by 2.2 (b), never by Hoeffding/McDiarmid"
+        if self.stat is not None:
+            return False, (f"{self.name}: a functional given through `stat` is not the plain mean 2.2 (a) admits "
+                           "(the red team's m-3): decided by 2.2 (b)")
         if self.source is None:
             return False, f"{self.name}: neither an arithmetic bound nor a pinned clip (M-3): decided by 2.2 (b)"
         return True, ""
@@ -248,17 +253,24 @@ def _capital(y: np.ndarray, m: np.ndarray, alpha: float, c: float) -> np.ndarray
     variance estimate (1/4 + sum over j < i of (y_j - mu_j)^2) / i (i from one), mu_j the running mean
     (1/2 + y_1 + ... + y_j) / (j + 1); c < 1 keeps every factor positive, and under mean(y) <= m the capital is a
     non-negative supermartingale, so P(K_J(m) >= 1 / alpha) <= alpha."""
+    lam = bets(y, alpha)
+    logk = np.zeros_like(m)
+    for i in range(y.size):
+        li = np.minimum(lam[i], c / np.maximum(m, 1e-12))
+        logk += np.log1p(li * (y[i] - m))
+    return logk
+
+
+def bets(y: np.ndarray, alpha: float) -> np.ndarray:
+    """The plug-in bets before the c / m cap: lambda_i = sqrt(2 ln(1/alpha) / (J sigma2_{i-1})), a function of
+    y_1 .. y_{i-1} only (predictable; `tests/test_three_way_stats.py` holds it so by perturbing each later term)."""
+    y = np.asarray(y, float)
     J = y.size
     lg = math.log(1.0 / alpha)
     mus = (0.5 + np.cumsum(y)) / np.arange(2, J + 2)
     sq = np.concatenate([[0.0], np.cumsum((y - mus) ** 2)[:-1]])
     s2 = (0.25 + sq) / np.arange(1, J + 1)
-    lam = np.sqrt(2.0 * lg / (J * s2))
-    logk = np.zeros_like(m)
-    for i in range(J):
-        li = np.minimum(lam[i], c / np.maximum(m, 1e-12))
-        logk += np.log1p(li * (y[i] - m))
-    return logk
+    return np.sqrt(2.0 * lg / (J * s2))
 
 
 def betting_lower(D, alpha: float, grid: int = 2001, c: float = 0.5) -> float:
@@ -290,10 +302,32 @@ def power_of(bound: str, J: int, delta: float, sigma: float, alpha: float, rng: 
     return hits / int(reps)
 
 
+#: the smaller-J rule's declared inputs (the red team's m-14): J on powers of two from 16 to 32768, 2000 simulated
+#: replicate samples a J, the power model a resample with replacement of the pair's per-seed-set search-year
+#: replicates (H4's outputs) shifted to mean delta\* (`bootstrap_draw`); the normal model only for H3-A's toys
+SMALLER_J_GRID = tuple(2 ** k for k in range(4, 16))
+SMALLER_J_DRAWS = 2000
+
+
+def bootstrap_draw(replicates, delta: float) -> Callable[[np.random.Generator, int], np.ndarray]:
+    """The smaller-J rule's power model in H3-D: J replicates drawn with replacement from the pair's per-seed-set
+    replicates, recentred to mean `delta`, clipped to [-1, 1]."""
+    r = np.asarray(replicates, float).ravel()
+    if r.size < 2:
+        raise ValueError("the power model needs the pair's replicates")
+    r = r - r.mean() + float(delta)
+
+    def draw(rng: np.random.Generator, J: int) -> np.ndarray:
+        return np.clip(r[rng.integers(0, r.size, int(J))], -1.0, 1.0)
+
+    return draw
+
+
 def smaller_j(delta: float, sigma: float, alpha: float, power: float, J_grid: Sequence[int],
               rng: np.random.Generator, reps: int, draw=None) -> dict:
     """2.2 (b)'s rule (N-6): each bound's smallest J on the grid with power at least `power` at delta, and the one
-    needing the smaller J (a tie: the empirical-Bernstein bound, the simpler); None where the grid holds none."""
+    needing the smaller J (a tie: the empirical-Bernstein bound, the simpler); None where the grid holds none. H3-D
+    calls it with `SMALLER_J_GRID`, `SMALLER_J_DRAWS` and `bootstrap_draw` of H4's replicates."""
     need = {}
     for b in BOUNDS_B:
         need[b] = next((int(J) for J in J_grid if power_of(b, int(J), delta, sigma, alpha, rng, reps, draw) >= power),
@@ -346,7 +380,9 @@ def condition(delta_hat: Mapping, counts: Mapping, n_min: int) -> dict:
     """(Y) or (R): the groups with at least n_min complete starts (calendar only), and whether Delta-hat is positive in
     every one of them (n_Y = all of Y_ok, N-7)."""
     ok = [g for g in delta_hat if int(counts[g]) >= int(n_min)]
-    return {"ok": ok, "holds": bool(ok) and all(float(delta_hat[g]) > 0 for g in ok)}
+    if not ok:
+        raise ValueError("REFUSED (m-17): no group reaches n_min -- a declaration error, not a failed pair")
+    return {"ok": ok, "holds": all(float(delta_hat[g]) > 0 for g in ok)}
 
 
 def _orthant(rho: np.ndarray) -> float:
@@ -387,11 +423,22 @@ def regimes(v_start, v_star: float) -> np.ndarray:
     return np.where(np.asarray(v_start, float) > float(v_star), "volatile", "calm")
 
 
-def refuse_held_out(dates) -> None:
-    """The time legs' resamples and the gate's beside reading are the search years' only."""
+SEARCH_FIRST, SEARCH_LAST = np.datetime64("2020-01-02"), np.datetime64("2023-12-29")
+
+
+def refuse_held_out(dates, n: int | None = None) -> None:
+    """The time legs' resamples and the gate's beside reading are the search years' only: the dates one a value of
+    the series (`n` its length), strictly increasing, and every one inside 2020-01-02 to 2023-12-29 (m-8); a held-out
+    session refused."""
     d = np.asarray(dates, dtype="datetime64[D]")
     if (d >= HELD_OUT_FIRST).any():
         raise ValueError("REFUSED (3.6; E-208): a search-year reading was handed a held-out session")
+    if n is not None and d.size != int(n):
+        raise ValueError(f"REFUSED (m-8): {d.size} dates for a series of {n} values")
+    if d.size > 1 and not (np.diff(d) > np.timedelta64(0, "D")).all():
+        raise ValueError("REFUSED (m-8): the dates are not strictly increasing")
+    if d.size and (d.min() < SEARCH_FIRST or d.max() > SEARCH_LAST):
+        raise ValueError("REFUSED (m-8): a date outside the search years")
 
 
 def resampled_size(contrib, dates, groups_of: Callable[[int], Sequence[Sequence[int]]], h: int, mean_block: float,
@@ -400,7 +447,7 @@ def resampled_size(contrib, dates, groups_of: Callable[[int], Sequence[Sequence[
     per-session null contributions (`family_stats.stationary_indices`, mean block at least h) on which every group's
     window mean is positive; with the median count of distinct source blocks (2.6: S2's histories recombine few
     blocks) and the vacuity label."""
-    refuse_held_out(dates)
+    refuse_held_out(dates, np.asarray(contrib).size)
     if mean_block < h:
         raise ValueError("REFUSED (3.1): resampled blocks are at least h* long")
     x = np.asarray(contrib, float)
@@ -431,6 +478,19 @@ def complete_starts(n_sessions: int, h: int = H_GATE) -> int:
     return max(0, int(n_sessions) - int(h) + 1)
 
 
+#: CHARTER 3.8 (c): the gate is read at D-145's tier-3 denial probability of 25 %, the 0 % reading beside (m-7)
+GATE_DENIAL = 0.25
+
+
+def gate_reading(g_at_denial, g_at_zero, q: float, min_starts: int) -> dict:
+    """The long-run gate as CHARTER 3.8 (c) reads it: deciding on `g_at_denial` (the journeys at `GATE_DENIAL`), the
+    0 % reading beside, never deciding."""
+    out = long_run_gate(g_at_denial, q, min_starts)
+    out["denial"] = GATE_DENIAL
+    out["beside_at_zero_denial"] = long_run_gate(g_at_zero, q, min_starts)
+    return out
+
+
 def long_run_gate(g, q: float, min_starts: int) -> dict:
     """The zero-edge long-run gate on the held-out years (O-6 (a)): `g[s, c]` the log growth of the required bankroll
     over H_g on each complete start s under seed c; per seed the median over starts; the gate passes when the lower q
@@ -446,16 +506,25 @@ def long_run_gate(g, q: float, min_starts: int) -> dict:
 
 
 def limit_check(estimate: float, limit: float, halfwidth: float, ceiling: bool = True) -> dict:
-    """O-5 (E-221): a design sits inside a limit at its point estimate and fails it only when the evidence shows it
-    crosses -- for a ceiling, fails when estimate - w > limit (w the coin-seed half-width at the pinned margin's
-    level); a floor mirrored. The point estimate inside the limit is required too."""
+    """O-5 as E-230 ruled: **the point estimate governs** -- a design passes a limit when its point estimate is inside
+    it and fails it when outside; the one-sided check (B-10's form: for a ceiling, estimate - w > limit, w the coin-seed
+    half-width at the pinned level; a floor mirrored) is reported beside, never a second margin. A negative half-width
+    is refused (m-6)."""
+    if not halfwidth >= 0:
+        raise ValueError("REFUSED (m-6): a half-width is non-negative")
     if ceiling:
         inside = estimate <= limit
         crosses = estimate - halfwidth > limit
     else:
         inside = estimate >= limit
         crosses = estimate + halfwidth < limit
-    return {"inside_at_point": bool(inside), "evidence_crosses": bool(crosses), "passes": bool(inside and not crosses)}
+    return {"passes": bool(inside), "inside_at_point": bool(inside), "beside_evidence_crosses": bool(crosses)}
+
+
+def headroom_needed(sigma: float, J: int, power: float = FS.MDL_POWER) -> float:
+    """Under the point-estimate rule a design equal to the best baseline passes a limit with probability
+    Phi((L - M_best) sqrt(J) / sigma), so the headroom for `power` is z_power sigma / sqrt(J) (no c_L; m-6)."""
+    return float(stats.norm.ppf(power)) * float(sigma) / math.sqrt(int(J))
 
 
 # ------------------------------------------------------------------------------------------------ power (2.5, 4)
@@ -474,11 +543,29 @@ def power_hoeffding(n: int, delta: float, alpha: float, sigma: float) -> float:
     return float(stats.norm.cdf((math.sqrt(n) * delta - ch) / sigma))
 
 
-def planted_mdl(lowers0, grid=None, power: float = FS.MDL_POWER):
-    """P1, the linear plant: each draw's bound at no plant, lower(delta) = lower(0) + delta (the Hoeffding and
-    empirical-Bernstein bounds move one for one with a constant shift of the terms); the conjoint MDL
-    (`family_stats.conjoint_mdl_linear`)."""
+#: the bounds whose lower limit moves one for one with a constant shift of unclipped terms (P1's linear form)
+LINEAR_PLANT_BOUNDS = ("hoeffding", "mcdiarmid_unclipped", "eb")
+
+
+def planted_mdl(lowers0, bound: str, grid=None, power: float = FS.MDL_POWER):
+    """P1, the linear plant: each draw's bound at no plant, lower(delta) = lower(0) + delta; the conjoint MDL
+    (`family_stats.conjoint_mdl_linear`). **Valid only for `LINEAR_PLANT_BOUNDS` on unclipped terms** (EB while the
+    shifted replicates stay in [-1, 1]); refused for the betting bound, whose bet cap moves with the location, and for
+    a clipped composite (m-12) -- those run the plant through the bound itself (`planted_rates`)."""
+    if bound not in LINEAR_PLANT_BOUNDS:
+        raise ValueError(f"REFUSED (m-12): P1's linear form is not valid for {bound!r}; use planted_rates")
     return FS.conjoint_mdl_linear(lowers0, None, grid, power)
+
+
+def planted_rates(lower: Callable[[np.ndarray], float], null_samples: Sequence[np.ndarray], deltas: Sequence[float]
+                  ) -> np.ndarray:
+    """The plant run through the bound itself: for each delta, the share of the null samples, shifted by delta and
+    clipped to [-1, 1], on which `lower` is above zero (any bound, the betting bound and clipped composites
+    included)."""
+    out = []
+    for dl in deltas:
+        out.append(float(np.mean([lower(np.clip(np.asarray(x, float) + dl, -1.0, 1.0)) > 0 for x in null_samples])))
+    return np.array(out)
 
 
 def fpr_hist(passes: Sequence[bool], pair_label: str) -> dict:
@@ -493,5 +580,6 @@ __all__ = ["H_GATE", "VACUOUS", "HELD_OUT_FIRST", "KINDS", "SOURCES", "level", "
            "session_count", "fallback", "admission", "composite", "Bound", "mcdiarmid", "hoeffding_terms", "eb_lower",
            "betting_lower", "BOUNDS_B", "power_of", "smaller_j", "seed_set_replicates", "null_pool_guards",
            "size_label", "condition", "white_noise_size", "label", "regimes", "refuse_held_out", "resampled_size",
-           "complete_starts", "long_run_gate", "limit_check", "hoeffding_units", "power_hoeffding", "planted_mdl",
-           "fpr_hist"]
+           "complete_starts", "GATE_DENIAL", "gate_reading", "long_run_gate", "limit_check", "headroom_needed",
+           "hoeffding_units", "power_hoeffding", "LINEAR_PLANT_BOUNDS", "planted_mdl", "planted_rates", "bets",
+           "SMALLER_J_GRID", "SMALLER_J_DRAWS", "bootstrap_draw", "SEARCH_FIRST", "SEARCH_LAST", "fpr_hist"]

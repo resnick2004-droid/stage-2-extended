@@ -23,8 +23,9 @@ checks). A failed account is replaced at that close by a new evaluation.
 
 **The cushion** is the room to the nearer of the floor and the daily loss limit, read after the entry cost
 (`three_way_redraw`'s race); a breach is a balance at or below the floor (within `EPS`), as the vendored lockstep
-reads it. The race's barrier is rounded inward to whole ticks; a float cushion is read with `SNAP` of slack before the
-floor so that a cushion of exactly k ticks is not read as k - 1 by rounding error (the same in both lane kinds).
+reads it. **The barrier is fractional** (the lead's ruling on B-1): a cushion-bound loss ends exactly on the floor, so
+the account fails at that close and is replaced, as the engine's; R-10's walk ends its last step by a two-point race
+to the fractional barrier (`three_way_redraw.walk_law`).
 
 **The money and the readings** (MEASURES.md 1.2): `rel[k]` is the cash at close k less the start -- payouts arrived
 less fees paid; day 0 is the purchase evening. A payout's cash arrives `payout_lag` closes after its request. The
@@ -45,13 +46,16 @@ from typing import Callable, Sequence
 
 import numpy as np
 
+from extended import three_way_fastkeys as F
 from extended import three_way_keys as K
 from extended import three_way_redraw as RD
 
 MONTH = 21
 TOL = 1e-6              # "ahead" above a millionth of a dollar (MEASURES.md 1.2)
 EPS = 1e-6              # a breach: the balance at or below the floor within this
-SNAP = 1e-9             # ticks of slack read before the race's inward rounding
+#: R-10's walk is read this many steps at a time, only for the lanes still walking (`three_way_redraw.walk_run`): the
+#: same outcome as reading every step, at the cost of the steps walked
+WALK_CHUNK = 32
 
 
 # ------------------------------------------------------------------------------------------------ the schedule
@@ -228,16 +232,13 @@ def _room(L: Lanes, rules: ToyRules) -> np.ndarray:
 
 
 def _barrier(t: Trade, room: np.ndarray, extra: float) -> np.ndarray:
-    """The loss barrier in ticks after the entry cost, the stop side's cost (or, for a walk, the larger of the stop's
-    and the flatten's), rounded inward to whole ticks (a walk: to its lattice); 0 where not taken."""
+    """The floor-side barrier in ticks, **fractional** (the lead's ruling on B-1): min(l, (room - entry - x) / tick
+    dollars), x the stop side's cost (a walk: the larger of the stop's and the flatten's); 0 where the room left is at
+    most `EPS` dollars (no trade). A cushion-bound loss then ends exactly on the floor and fails the account."""
     e, xs, xf = t.entry_cost + extra, t.x_stop + extra, t.x_flat + extra
     x = xs if t.law == "race" else max(xs, xf)
-    c = (room - e - x) / t.tvn
-    Lt = np.minimum(float(t.l), c)
-    step = 1 if t.law == "race" else int(t.walk_step)
-    if RD.LATTICE is None and t.law == "race":
-        return np.maximum(Lt, 0.0)
-    return np.maximum(step * np.floor((Lt + SNAP) / step), 0.0)
+    Lt = np.minimum(float(t.l), (room - e - x) / t.tvn)
+    return np.where(Lt * t.tvn > EPS, Lt, 0.0)
 
 
 def _settle(L: Lanes, act: np.ndarray, change: np.ndarray, rules: ToyRules) -> None:
@@ -277,25 +278,44 @@ class ArmSpec:
 
 
 class CoinLanes:
-    """The coin field of the lanes of one start: lane j is unit (start, seed_indices[j]). Every key read is recorded
-    in the guard with its unit's start (N-2)."""
+    """The coin field of the lanes of one start: lane j is unit (start, seed_indices[j]). The uniforms come from the
+    declared law vectorised (`three_way_fastkeys`, admitted by its bit-identity tests against the scalar path, every
+    output a walk reads included); every key carries the start by construction (one start a call); the guard checks
+    and stores the keys of its declared sample, built one by one through `three_way_keys.Unit` (N-2 at construction)."""
 
     def __init__(self, seed: int, part: int, history: int, start: int, seed_indices: Sequence[int],
                  guard: K.KeyGuard | None, twin: bool):
-        self.units = [K.Unit(seed, part, history, int(c), int(start)) for c in seed_indices]
-        self.guard, self.twin, self.start = guard, bool(twin), int(start)
+        self.seed, self.part, self.history, self.start = seed, int(part), int(history), int(start)
+        self.seed_idx = np.asarray([int(c) for c in seed_indices], dtype=np.int64)
+        self.units = [K.Unit(seed, self.part, self.history, int(c), self.start) for c in self.seed_idx]
+        self.guard, self.twin = guard, bool(twin)
 
-    def _read(self, key: list[int], n: int) -> np.ndarray:
-        if self.guard is not None:
-            self.guard.add(key, self.start)
-        return K.uniforms(key, n, self.twin)
+    def _record(self, idx, make) -> None:
+        if self.guard is None:
+            return
+        for j in idx:
+            c = int(self.seed_idx[j])
+            if self.guard.in_sample(self.start, c):
+                self.guard.add(make(int(j)), self.start, c)
+            else:
+                self.guard.checked += 1
 
-    def coin(self, t: Trade, kind: int, n: int = 1, lanes: np.ndarray | None = None) -> np.ndarray:
-        idx = range(len(self.units)) if lanes is None else lanes
-        return np.array([self._read(self.units[j].coin_key(t.moment, kind, t.underlying), n) for j in idx])
+    def coin(self, t: Trade, kind: int, n: int = 1, lanes: np.ndarray | None = None, first: int = 0,
+             record: bool = True) -> np.ndarray:
+        idx = np.arange(len(self.units)) if lanes is None else np.asarray(lanes, dtype=np.int64)
+        if record:
+            self.record(t, kind, idx)
+        return F.coin_uniforms(self.seed, self.part, self.history, self.seed_idx[idx], self.start, t.moment, kind,
+                               n, self.twin, t.underlying, first)
+
+    def record(self, t: Trade, kind: int, idx) -> None:
+        self._record(np.asarray(idx, dtype=np.int64), lambda j: self.units[j].coin_key(t.moment, kind, t.underlying))
 
     def enforce(self, acct: np.ndarray, req: np.ndarray, lanes: np.ndarray) -> np.ndarray:
-        return np.array([self._read(self.units[j].enforce_key(int(acct[j]), int(req[j])), 1)[0] for j in lanes])
+        idx = np.asarray(lanes, dtype=np.int64)
+        self._record(idx, lambda j: self.units[j].enforce_key(int(acct[j]), int(req[j])))
+        return F.enforce_uniforms(self.seed, self.part, self.history, self.seed_idx[idx], self.start, acct[idx],
+                                  req[idx], self.twin)
 
 
 # ------------------------------------------------------------------------------------------------ one session
@@ -320,7 +340,8 @@ def _trade_mc(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec, coins: CoinLane
         if t.walked_ticks is None:
             raise ValueError("the as-walked reading needs each trade's walked ticks")
         side = np.where(coins.coin(t, K.SIDE)[:, 0] < 0.5, 1.0, -1.0)
-        pnl = side * float(t.walked_ticks) * t.tvn - xs     # beside only: the stop side's cost on every exit
+        # beside only, never deciding, and labelled so wherever it is printed: the stop side's cost on every exit (n-5)
+        pnl = side * float(t.walked_ticks) * t.tvn - xs
         pnl = np.maximum(pnl, -(room - e))                  # liquidated at the floor, as the engine clips
         _settle(L, taken, -e + pnl, rules)
         return
@@ -331,12 +352,18 @@ def _trade_mc(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec, coins: CoinLane
         pnl = np.where(win, t.g * t.tvn - xt, -Lt * t.tvn - xs)
     else:
         s = int(t.walk_step)
-        up = np.full(len(L), t.g // s)
-        down = (Lt // s).astype(np.int64)
-        U = coins.coin(t, K.WALK, int(t.walk_n))
-        pos, kind = RD.walk_outcomes(U, up, np.maximum(down, 1))
+        rows_all = np.flatnonzero(taken)
+        coins.record(t, K.WALK, rows_all)
+
+        def read(rows, first, count):
+            return coins.coin(t, K.WALK, count, rows_all[rows], first=first, record=False)
+
+        v_t, k_t = RD.walk_run(read, rows_all.size, t.g // s, Lt[rows_all], s, int(t.walk_n), WALK_CHUNK)
+        val = np.zeros(len(L))
+        kind = np.zeros(len(L), np.int64)
+        val[rows_all], kind[rows_all] = v_t, k_t
         cost = np.where(kind == 1, xt, np.where(kind == -1, xs, xf))
-        pnl = pos * s * t.tvn - cost
+        pnl = val * t.tvn - cost
     _settle(L, taken, -e + pnl, rules)
 
 
@@ -370,14 +397,14 @@ def _trade_dp(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec) -> Lanes:
     else:
         s = int(t.walk_step)
         up = t.g // s
-        for dn in np.unique((Lg // s).astype(np.int64)):
-            sel = np.flatnonzero((Lg // s).astype(np.int64) == dn)
-            law = RD.walk_law(int(up), int(dn), int(t.walk_n))
-            for x, pr in law.items():
+        for Lv in np.unique(Lg):
+            sel = np.flatnonzero(Lg == Lv)
+            law = RD.walk_law(int(up), float(Lv), s, int(t.walk_n))
+            for (k, v), pr in law.items():
                 b = go.take(sel)
                 b.w = b.w * float(pr)
-                cost = xt if x >= up else xs if x <= -int(dn) else xf
-                _settle(b, np.ones(len(b), bool), np.full(len(b), -e + x * s * t.tvn - cost), rules)
+                cost = {"target": xt, "stop": xs, "time": xf}[k]
+                _settle(b, np.ones(len(b), bool), np.full(len(b), -e + float(v) * t.tvn - cost), rules)
                 parts.append(b)
     return Lanes.concat(parts)
 
@@ -543,7 +570,7 @@ def _state_key(L: Lanes, rules: ToyRules, budget: float | None) -> np.ndarray:
     peak = np.where(L.floor >= lock - 1e-12, 0.0, L.peak)
     age = np.where(L.phase == 0, L.age % rules.billing, 0)
     within = (L.minrel >= -float(budget) - 1e-9) if budget is not None else np.zeros(len(L))
-    cols = [L.phase, L.bal, L.floor, peak, age, L.wins, L.cash, within, L.ahead]
+    cols = [L.phase, L.bal, L.floor, peak, age, L.wins, L.cash, within, L.ahead, L.first_pass > 0]
     return np.column_stack([np.round(np.asarray(c, float), 9) for c in cols] + [np.round(L.pend, 9)])
 
 
@@ -604,6 +631,6 @@ def days_to_first_payout(rec: Records, window: int) -> np.ndarray:
     return np.where((f > 0) & (f <= window), f, float(window + 1))
 
 
-__all__ = ["MONTH", "TOL", "EPS", "SNAP", "Trade", "Schedule", "ToyRules", "Lanes", "fresh", "ArmSpec", "CoinLanes",
+__all__ = ["MONTH", "TOL", "EPS", "Trade", "Schedule", "ToyRules", "Lanes", "fresh", "ArmSpec", "CoinLanes",
            "Records", "check_window", "simulate", "expect", "p_b_values", "share_ahead_values",
            "days_to_first_payout"]

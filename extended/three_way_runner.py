@@ -13,8 +13,10 @@ outcome redrawn at its bracket's driftless first-exit odds (CHARTER 3.2; `docs/p
 
 **The pairing.** Every arm reads the coin field of the same plan: the same role seed, part and history, the same
 starts and seed indices. Two arms deciding at the same moment of the same unit read the same uniform (the note's 1.5);
-one `KeyGuard` holds every key read by every arm and refuses two different keys with one `generate_state`, and any unit
-key without its unit's start (N-2). The baselines must be exactly the four (`BASELINES`); a stress applies to every arm
+every key is checked for its unit's start as it is built (N-2), and one sampled `KeyGuard` per call stores the keys of
+the plan's first start under its first `three_way_keys.SAMPLE_SEEDS` seed indices across every arm, refusing two
+different keys with one `generate_state` (the lead's ruling on B-2: distinctness by the packing, the stored check a
+tripwire). The baselines must be exactly the four (`BASELINES`); a stress applies to every arm
 alike or the call is refused.
 
 **Choice 3.** Each start is its own user: every coin key carries the start (`three_way_keys.Unit`), so under one seed
@@ -22,7 +24,8 @@ the units of different starts draw independently (2.1), which the Hoeffding/McDi
 
 **What it reads.** Schedules, rules and the plan -- never a bar (the shift-invariance test: a history enters only
 through its schedule, and a unit reads only the sessions of its own window). The block bound refuses a start whose
-window passes its block's end (CHARTER 3.6 (d)).
+window passes its block's end (CHARTER 3.6 (d)); a plan with dates refuses held-out sessions unless the joint held-out
+test's declaration is named and the reader authorises it (`Plan`; m-10).
 
 **The enforcement stream is seeded apart** (`three_way_keys` kind `enforce`): the denial ladder (beside; 0 % in the
 verdict) moves no coin draw, which `tests/test_three_way_runner.py` holds key for key. This is what Wave 3.1's
@@ -45,10 +48,27 @@ from extended import three_way_redraw as RD
 BASELINES = ("naive_coin", "p14", "p15", "p16")
 
 
+#: E-208's held-out years begin here, and the confirmation window (never read) here
+HELD_OUT_FIRST = np.datetime64("2024-01-02")
+CONFIRMATION_FIRST = np.datetime64("2026-07-17")
+
+
+class HeldOutRefused(ValueError):
+    """A unit's window reads a held-out session with no joint held-out test's declaration named, or a session of the
+    confirmation window."""
+
+
 @dataclass(frozen=True)
 class Plan:
     """The units read: the coin role seed, the part and history indices, the starts and the seed indices, the horizon,
-    the block's session count (the window bound) and P_B's budget."""
+    the block's session count (the window bound), P_B's budget, and -- for a history of real sessions -- each
+    session's date and the declaration of the joint held-out test that authorises any held-out session (m-10).
+
+    **The held-out refusal** (the red team's m-10; CHARTER 3.6 (e)): a plan with dates refuses, before any draw, a
+    unit whose window holds a session dated 2024-01-02 or later unless `held_out_declaration` names the joint held-out
+    test's pinned declaration -- which `extended.reader.authorise` must accept for its held-out purpose -- and refuses
+    any session dated 2026-07-17 or later always. A plan without dates is a synthetic history (S1), which has no
+    calendar."""
 
     seed: int
     part: int
@@ -58,6 +78,8 @@ class Plan:
     horizon: int
     block_sessions: int
     budget: float | None = None
+    dates: tuple | None = None
+    held_out_declaration: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "starts", tuple(int(s) for s in self.starts))
@@ -66,6 +88,28 @@ class Plan:
             raise ValueError("a start or a seed index listed twice")
         for s in self.starts:
             J.check_window(s, self.horizon, self.block_sessions)
+        if self.dates is not None:
+            self._check_dates()
+
+    def _check_dates(self) -> None:
+        d = np.asarray(self.dates, dtype="datetime64[D]")
+        if d.size != self.block_sessions or (d.size > 1 and not (np.diff(d) > np.timedelta64(0, "D")).all()):
+            raise ValueError("one increasing date a session of the block")
+        if (d >= CONFIRMATION_FIRST).any():
+            raise HeldOutRefused("REFUSED (CHARTER 3.6): a session of the confirmation window, never read")
+        windows = [d[s:s + self.horizon] for s in self.starts]
+        held = [w for w in windows if (w >= HELD_OUT_FIRST).any()]
+        if not held:
+            return
+        if self.held_out_declaration is None:
+            raise HeldOutRefused("REFUSED (m-10; CHARTER 3.6 (e)): a unit's window reads held-out sessions and no "
+                                 "joint held-out test's declaration is named")
+        from extended import reader                                     # the one door's authorisation, no bar read
+
+        first = min(w[w >= HELD_OUT_FIRST][0] for w in held)
+        last = max(w[-1] for w in held)
+        reader.authorise(str(first), str(last), purpose=reader.HELDOUT_TEST, declaration=self.held_out_declaration,
+                         what="the three-way runner's held-out units")
 
 
 #: a per-unit value: one start's records -> one value per seed
@@ -94,8 +138,8 @@ def matrix(records: Sequence[J.Records], value: ValueFn) -> np.ndarray:
 
 
 def paired(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.ToyRules, plan: Plan, value: ValueFn,
-           *, design_arm: J.ArmSpec = J.ArmSpec(), base_arm: J.ArmSpec = J.ArmSpec()
-           ) -> tuple[dict[str, np.ndarray], K.KeyGuard]:
+           *, design_arm: J.ArmSpec = J.ArmSpec(), base_arm: J.ArmSpec = J.ArmSpec(),
+           guard: K.KeyGuard | None = None) -> tuple[dict[str, np.ndarray], K.KeyGuard]:
     """x[s, c] for the design and each baseline on the same units and keys. Refused: a baseline set other than the
     four, a design named as a baseline, and arms whose convention differs (twin, reading, worse fill, missed share or
     denial) -- only P3's plant, a design-arm device of the power check, may differ."""
@@ -108,7 +152,7 @@ def paired(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.Toy
                          "stress and denial)")
     if base_arm.plant_eps:
         raise ValueError("a plant is the design's arm only")
-    guard = K.KeyGuard()
+    guard = guard if guard is not None else K.KeyGuard.sampled(plan.starts, plan.seed_indices)
     out = {design.name: matrix(run(design, rules, plan, design_arm, guard), value)}
     for name in BASELINES:
         out[name] = matrix(run(baselines[name], rules, plan, base_arm, guard), value)
@@ -120,7 +164,7 @@ def antithetic(schedule: J.Schedule, rules: J.ToyRules, plan: Plan, value: Value
     """The same design on U and on its complement 1 - U (2.3 (a)): x and x_twin on the same units."""
     if arm.twin:
         raise ValueError("the arm given is the base; the twin is made here")
-    g = K.KeyGuard()
+    g = K.KeyGuard.sampled(plan.starts, plan.seed_indices)
     x = matrix(run(schedule, rules, plan, arm, g), value)
     xt = matrix(run(schedule, rules, plan, replace(arm, twin=True), g), value)
     return x, xt
@@ -132,7 +176,8 @@ def disjoint(schedule: J.Schedule, rules: J.ToyRules, plan: Plan, other_seed_ind
     other = replace(plan, seed_indices=tuple(other_seed_indices))
     if set(other.seed_indices) & set(plan.seed_indices):
         raise ValueError("REFUSED (2.3 (b)): the seed sets share a seed index")
-    g1, g2 = K.KeyGuard(), K.KeyGuard()
+    g1 = K.KeyGuard.sampled(plan.starts, plan.seed_indices)
+    g2 = K.KeyGuard.sampled(other.starts, other.seed_indices)
     x1 = matrix(run(schedule, rules, plan, arm, g1), value)
     x2 = matrix(run(schedule, rules, other, arm, g2), value)
     K.disjoint(g1, g2)
@@ -149,15 +194,28 @@ def exact_centres(f: J.Schedule, b: J.Schedule, rules: J.ToyRules, plan: Plan, a
                                 budget=plan.budget)["p_b"] for s in plan.starts])
 
 
+#: CHARTER 3.8 (c)'s supply stress (measure 28; the red team's m-7): a tenth of the signals missed
+MISSED_SHARE = 0.10
+
+
+def stress_arms() -> dict[str, J.ArmSpec]:
+    """The declared stress arms, each run on the design and every baseline alike: measure 29's +1 and +2 ticks
+    (`three_way_redraw.WORSE_FILL_TICKS`), and measure 28's missed signals at `MISSED_SHARE`."""
+    arms = {f"worse_{int(k)}": J.ArmSpec(worse_ticks=int(k)) for k in RD.WORSE_FILL_TICKS}
+    arms[f"missed_{MISSED_SHARE:g}"] = J.ArmSpec(missed_q=MISSED_SHARE)
+    return arms
+
+
+def stress_cells(n_arms: int = 1 + len(BASELINES)) -> int:
+    """The stress arms counted: every compared arm at every declared stress."""
+    return int(n_arms) * len(stress_arms())
+
+
 def stress(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.ToyRules, plan: Plan, value: ValueFn
-           ) -> dict[int, dict[str, np.ndarray]]:
-    """Measure 29: the design and every baseline at each declared worse fill (`three_way_redraw.WORSE_FILL_TICKS`),
-    paired on the same units; the arms counted: `three_way_redraw.stress_cells(1 + len(BASELINES))`."""
-    out = {}
-    for k in RD.WORSE_FILL_TICKS:
-        arm = J.ArmSpec(worse_ticks=int(k))
-        out[int(k)] = paired(design, baselines, rules, plan, value, design_arm=arm, base_arm=arm)[0]
-    return out
+           ) -> dict[str, dict[str, np.ndarray]]:
+    """The design and every baseline under each declared stress arm (`stress_arms`), paired on the same units."""
+    return {name: paired(design, baselines, rules, plan, value, design_arm=arm, base_arm=arm)[0]
+            for name, arm in stress_arms().items()}
 
 
 def seed_sets(n_seeds: int, m: int) -> list[np.ndarray]:
@@ -167,5 +225,6 @@ def seed_sets(n_seeds: int, m: int) -> list[np.ndarray]:
     return [np.arange(j * m, (j + 1) * m) for j in range(n_seeds // m)]
 
 
-__all__ = ["BASELINES", "Plan", "ValueFn", "p_b", "run", "matrix", "paired", "antithetic", "disjoint",
-           "exact_centres", "stress", "seed_sets"]
+__all__ = ["BASELINES", "HELD_OUT_FIRST", "CONFIRMATION_FIRST", "HeldOutRefused", "Plan", "ValueFn", "p_b", "run",
+           "matrix", "paired", "antithetic", "disjoint", "exact_centres", "MISSED_SHARE", "stress_arms",
+           "stress_cells", "stress", "seed_sets"]

@@ -1,6 +1,8 @@
 # H3: the three-way test's calibration, power check and stress, declared (a draft)
 
-**Status: a draft, first text, for the red team (Wave 3.2's read).** Copied from `prereg/TEMPLATE_family.md`'s form and
+**Status: a draft, second text (corrective cycle 1), for the red team's re-read.** The first text (746a245) was read
+in `docs/reviews/BUILD_W32_H3_2026-11-19.md` (blocked: B-1 to B-3, seventeen minors, five notes); the lead's rulings
+on it are carried here, and Appendix D maps every finding to its answer. Copied from `prereg/TEMPLATE_family.md`'s form and
 adapted: H3 is a calibration of the deciding rule, not a family of trades, so it takes **no k**, names no cell that
 reaches a judgement of a design, and reads **no held-out session**. It is pinned (by the sha256 of its LF text, in the
 lead's row) only after the red team's read; nothing declared is edited after that -- a change is a new declaration.
@@ -54,7 +56,10 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 
 ## 2. Prior exposure
 
-- H3-0 and H3-A read no bar. H3-D reads the search years only, through the runner's refusal (section 4).
+- H3-0 and H3-A read no bar. H3-D reads the search years only: a plan with session dates refuses, before any draw,
+  a unit whose window holds a session from 2024-01-02 unless the joint held-out test's declaration is named and
+  `extended/reader.py` authorises it, and refuses the confirmation window always (`three_way_runner.Plan`; the red
+  team's m-10); the bars themselves come only through the reader (section 4).
 - Q-16's real paired nulls (E-035, E-083, E-085) read the judged block, the held-out years: they are **not** H3's
   nulls (the note's m-7) and Q-16 enters the held-out read ledger of CHARTER 3.6 (b) (the note, 3.1, for the lead).
 - The baselines (naive coin, P-14, P-15, P-16) were chosen by Stage 2 on the whole development window (E-208): for
@@ -117,22 +122,27 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 | pi\* | the power target | fixed | `family_stats.MDL_POWER` |
 | delta\* | the size that matters | fixed, the lead's (O-3, Wave 4.2) | a parameter of H3-D, set before it |
 | the race's loss barrier | the stop exit's own cost in the race (the third read's M-4) | fixed | L = min(l, c - x_stop), c the cushion after the entry cost, x_stop the stop exit's own cost (commission plus declared stop slippage); p = L / (L + g); +g less x_target, else -L less x_stop |
-| the race's lattice | L rounded inward | fixed | whole ticks (`three_way_redraw.LATTICE` = 1); no trade where L <= 0 |
-| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | the search template's house form (wt/wt-lit, with its red team): lattice step s dividing l and g; loss barrier as the race's with the larger of x_stop and the flatten cost, rounded inward to the lattice; n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost |
+| the race's barrier | fractional, never rounded (the lead's ruling on B-1) | fixed | L = min(l, c - x_stop) as a fraction of a tick, `adapter.BinaryDraw`'s form (CHARTER 3.2; the note's 1.1); a cushion-bound loss ends exactly on the floor and the account fails and is replaced; no trade where the room left is at most $1e-6 (`three_way_redraw.LATTICE` = None; inward rounding is N-4's rule for the shared path only) |
+| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | the search template's house form (wt/wt-lit, with its red team) with the lead's ruling on its residual: lattice step s dividing l and g; the floor-side barrier as the race's with the larger of x_stop and the flatten cost, **fractional**; **inside the last lattice step before that barrier the walk resolves by a driftless two-point race between the barrier and the lattice point one step up** (to the barrier with probability s / (s + rho), rho the residual), so no account is stranded below a tick and gross stays zero; n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost; read in chunks of 32 steps for the lanes still walking (`three_way_journey.WALK_CHUNK`; the same outcome on the same uniforms) |
 | the exit-state map | which terminal state takes which law | fixed | `three_way_redraw.EXIT_LAW` (R-10's table); any other state refused |
-| the worse-fill stress | measure 29 | fixed, declared and counted | +1 and +2 ticks on every fill (the entry and each exit), the design and every baseline alike: 2 arms a compared design (`three_way_redraw.WORSE_FILL_TICKS`, `stress_cells`) |
+| the stress arms | CHARTER 3.8 (c)'s fill and supply stress | fixed, declared and counted | measure 29's +1 and +2 ticks on every fill (the entry and each exit), and measure 28's 10 % of signals missed (the red team's m-7), each on the design and every baseline alike: 3 arms a compared design (`three_way_runner.stress_arms`, `stress_cells`) |
+| the coin generator | the declared law, computed on arrays (Q-170) | fixed | `three_way_fastkeys`: SeedSequence's hash and numpy's Philox (4x64, 10 rounds) vectorised, admitted because its tests hold it bit for bit equal to the scalar path on 10^5 random keys of every field's range, the boundary words, every draw kind and key kind, and every output a walk reads up to 1024 steps; nothing of the law changes |
+| the key guard | 2.3's refusal, at run-time cost (the lead's ruling on B-2) | fixed | N-2 checked on every key at construction, unstored; distinctness by the injective packing (one length a kind, distinct nonzero tags, every word below 2^32, the moment's fixed radices; `three_way_keys.packing_problems`), the chance two distinct keys share a 128-bit state at most n^2 / 2^129 (`collision_bound`, printed beside); the stored `generate_state` comparison on a declared sample: every key of a plan's first start under its first 64 seed indices across every arm (`KeyGuard.sampled`, `SAMPLE_SEEDS`), within 1.25 GB a worker at every declared size (tested); the disjoint null's exact check on its two seed-index sets |
 | the deciding bound | by the composite's form | fixed | section 9 (2.2 (a) or (b)) |
 | J, m | seeds and seed-set size | fixed in H3-D before the search's pin | by 2.5's formulas at delta\* and H4's sigma; H3-A reports both of 2.2 (b)'s bounds' J and applies nothing |
-| the betting bound's form | WSR's one-sided capital | fixed | predictable plug-in bets truncated at c / m, c = 1/2; a grid of 2001 points on [0, 1]; the bound the largest grid point below which every point is rejected (`three_way_stats.betting_lower`) |
+| the betting bound's form | WSR's one-sided capital | fixed | predictable plug-in bets truncated at c / m, c = 1/2 (`three_way_stats.bets`, a function of the earlier replicates only, tested); a grid of 2001 points on [0, 1]; the bound the largest grid point below which every point is rejected (`three_way_stats.betting_lower`) |
+| the smaller-J rule's inputs | the red team's m-14 | fixed | J on powers of two from 16 to 32768 (`three_way_stats.SMALLER_J_GRID`), 2000 simulated samples a J (`SMALLER_J_DRAWS`); H3-D's power model the resample with replacement of the pair's per-seed-set search-year replicates from H4, recentred to delta\* (`bootstrap_draw`); H3-A's report the normal model at each pool's own sd; the rng's key the `plant` kind under the D3 plants' seed (H3-D) or the tests' seed (H3-A's report is a design check); a tie goes to the empirical-Bernstein bound |
+| P1's linear plant | the planted MDL's form | fixed | only for Hoeffding's, McDiarmid's on unclipped terms and the empirical-Bernstein bound (`three_way_stats.LINEAR_PLANT_BOUNDS`); refused for the betting bound and a clipped composite, which run the plant through the bound itself (`planted_rates`; m-12) |
 | the disjoint pool's variance tolerance | 2.3's guard | fixed | within 0.5 of twice the single arm's (`null_pool_guards`) |
 | n_min | (Y)'s and (R)'s group minimum | fixed in 3.9's row | proposed 21 (the note's 3.4, calendar only) |
 | vacuity | a time condition's label | fixed | a stated size of one half or more is labelled vacuous |
 | the resample's mean block | S2's blocks | fixed | at least h\* (`resampled_size` refuses a shorter one) |
 | H_g | D-145's gate horizon | fixed | 504 sessions (`three_way_stats.H_GATE`; Stage 2's gate configs) |
 | the gate's quantile | O-6 (a) | fixed in 3.9's row | over coin seeds only on the held-out years; the search years' history-block reading beside |
-| the limits' form | O-5 (E-221) | fixed | inside each limit at the point estimate, failed only when the evidence shows it crosses, the coin-seed half-width at the pinned margin's level (`limit_check`) |
-| S1's parameters | the toy generator | fixed per part: stylised in H3-A, fitted on the search years in H3-D | `three_way_s1.S1Params`; H3-D's fit is declared in its own row before it runs |
-| the toy rules | H3-0's and H3-A's accounts | fixed, stylised, no firm's | `three_way_journey.ToyRules`, the values written in each part's manifest |
+| the gate's denial | CHARTER 3.8 (c) (the red team's m-7) | fixed | read at D-145's tier-3 denial probability of 25 % (`three_way_stats.GATE_DENIAL`, `gate_reading`), the 0 % reading beside, never deciding |
+| the limits' form | O-5 as E-230 ruled (the red team's m-6) | fixed | **the point estimate governs**: a design passes a limit when its point estimate is inside it and fails when outside; the one-sided check (B-10's form, the coin-seed half-width at the pinned level) is reported beside, never a second margin; a negative half-width refused (`limit_check`) |
+| H3-A's inputs | every one, fixed here (the lead's ruling on B-3) | fixed | **Appendix C**, printed from `extended/three_way_h3a.py` and held equal to it by `tests/test_h3_draft.py`: the toy rules (stylised, no firm's), S1's parameters, the starts, horizon, seeds and placeholder budget, A1's design and the baselines' toys, the disjoint sets, J' and the levels, the clipped toy composite, A2's pair, A3's stream pair and the shortcut's subset, A4's lever changes and grids, the centring test's z, the smaller-J report's model; nothing is chosen or written at run time |
+| S1 in H3-D | the generator fitted to the search years | fixed by its own row before H3-D runs | its fit (and the 15:10 flatten and five minutes flat S1 now holds; the red team's n-2) declared there, never after a look |
 | the part cap | the cut rule | fixed | 8 hours at H3-0's measured cost (`three_way_arith.PART_CAP_H`) |
 | overlapping designs | several positions at once | **dropped** until the template defines one shared driftless path per underlying | refused by the runner (section 3) |
 | a t-test | any t as a decision | **dropped** | the larger-of t of E-035 beside, deciding nothing |
@@ -145,7 +155,8 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
   part (A1, A2, D1); each history reported alone and pooled.
 - **The history null:** one rate per finalist (or per stylised pair in H3-A), each labelled with its pair (A3, D2).
 - **The power checks:** plants P1 to P4 x the grid of sizes, each line's pass rate and the conjoint MDL (A4, D3).
-- **The stress:** 2 worse fills x (the design and four baselines) per compared pair (`stress_cells`).
+- **The stress:** 3 arms (+1 tick, +2 ticks, 10 % missed) x (the design and four baselines) per compared pair
+  (`three_way_runner.stress_cells`).
 - The program's honesty sentence: Stage 2's programs S and U and this repository's F-01 to F-03 read the development
   window; H3 adds no read of the held-out years, and the held-out test's level stays nominal while the held-out read
   ledger is not empty (CHARTER 3.6 (b)).
@@ -161,8 +172,10 @@ most on the floor, so the engine's clip never binds (`three_way_redraw.race_net`
 uniform, the walk's steps, measure 28's missed signal, each its own draw kind of the coin key; the denial ladder's
 draws are the `enforce` kind, keyed per unit, account and request, **seeded apart** (its own tag), so the ladder moves
 no coin draw. The generator: numpy's Philox (4x64) seeded by `SeedSequence(key)`, the uniform (2 i + 1) 2^-53 on the
-symmetric grid; the antithetic twin reads 1 - u exactly. Keys are compared by `generate_state`; two keys with one state
-refuse the run.
+symmetric grid, computed on arrays by the vectorised implementation its tests admit (section 7); the antithetic twin
+reads 1 - u exactly. Every key carries its unit's start, checked as it is built; the declared sample's keys are
+compared by `generate_state`, two keys with one state refusing the run (section 7, the key guard). Each block seed draws
+only its role's key kinds in its role's parts (`three_way_seeds.ROLE_USE`, refused otherwise; the red team's m-9).
 
 **2.2 (a), copied from the note between its markers, with the third read's minors carried (each insertion marked):**
 
@@ -218,7 +231,7 @@ refuse the run.
 
 **2.2 (b).** Any composite holding a dimension 2.2 (a) does not admit is decided over J i.i.d. seed-set replicates
 Delta_j in [-1, 1], by the one-sided empirical-Bernstein bound (Maurer and Pontil, theorem 4, on (Delta + 1) / 2) or
-the hedged betting bound (section 7): **the one of the two that needs the smaller J for power pi\* at delta\*
+the betting bound (section 7): **the one of the two that needs the smaller J for power pi\* at delta\*
 decides**, applied in H3-D only, after Wave 4.2 sets delta\* and with H4's search-year sigma, before the search's pin.
 **No t decides, in any branch.**
 
@@ -236,21 +249,26 @@ LB > 0 and (Y) and (R) and (H); for the finalist, all four baselines (an interse
   only; F-04's value arm); P4 regime-varying, delta_t = delta\* (1 + a rho_t), rho_t a slow sign.
 - **The conjoint MDL** at alpha over every leg together (`family_stats.conjoint_mdl_grid`); the line has power at
   delta\* when it is at most delta\*.
-- **The gate's other clauses** (the note's 4.4): every limit's headroom at least (c_L + z_pi) sigma_M / sqrt(J) for a
-  design equal to the best baseline; the complete-start count at H_g reaching the minimum pinned in 3.9.
+- **The gate's other clauses** (the note's 4.4, with O-5 as E-230 ruled): every limit's headroom at least
+  z_pi sigma_M / sqrt(J) for a design equal to the best baseline -- under the point-estimate rule it passes with
+  probability Phi((L - M_best) sqrt(J) / sigma_M), so no c_L (`three_way_stats.headroom_needed`; the red team's m-6);
+  the complete-start count at H_g reaching the minimum pinned in 3.9.
 - If any fails, the search does not pin, and the data question goes to the operator with H3-D's result (E-007 (2)).
 
 ## 11. The stages and the kill rules
 
-- **H3-0, the probe** (light enough to run first, still under the lock): measures the process base M_0 and the cost c
-  of one lane-trade **with the declared generator's keyed draws included**, on toys; applies the cut rule to every
-  later part at the measured c (Appendix A) and records the cut sizes in the lead's row before any part runs.
+- **H3-0, the probe** (light enough to run first, still under the lock): measures the process base M_0 and the cost
+  of a lane-trade **with the declared generator's keyed draws included**, in its two terms -- the race's, and the
+  walk's at n steps (c = c_race + share_walk x (c_walk(n-bar) - c_race); `docs/plans/scripts/three_way/h3_cost.py`'s
+  model) -- and a slot runs only when its modelled c is at most its c_max (Appendix A); the lead's row after H3-0
+  records the measured c, each slot's share of walks and n-bar (H3-D's from H4's schedules), and any further cut, before
+  any part runs.
 - **H3-A, design checks** (before Wave 4.2): A1 the same-design nulls on placeholder composites (`P_B` at a placeholder
   budget, and a clipped toy composite); A2 the exact-centred toy null (the exact program; barrier and R-10 trades);
   A3 the history null on S1 (the stream swap); A4 the plants P2 to P4, and the copy-against-stagger check **only once
   the template defines overlap** (until then A4 runs the plants alone, and says so). **Kill:** a premise failing (a pool
-  not centred, an asymmetric twin, a term out of range, a key guard refusal) stops the part and goes to the failure
-  protocol; a size count whose 95 % Clopper-Pearson interval lies wholly above its feasible level is a laxity, recorded
+  not centred -- |its mean| above 4 standard errors, two-sided, `three_way_h3a.CENTRING_Z` --, an asymmetric twin, a
+  term out of range, a key guard refusal) stops the part and goes to the failure protocol; a size count whose 95 % Clopper-Pearson interval lies wholly above its feasible level is a laxity, recorded
   and diagnosed before H3-D.
 - **CHARTER 3.9's pinning row** (Wave 4.2): the composite, its caps and clips, delta\*, n_min, the gate's quantile and
   minimum, the limits.
@@ -303,7 +321,7 @@ so two parts never read one field. The runner reads its seeds from `extended/thr
 | 20265878 | H3-D3: the plants' own draws (P3's tilts, P4's regime signs) | deciding |
 | 20265879 | spare | spare, drawn by nothing |
 
-- **This build's tests** use the tests' seed with the `test` kind and test ids 11 to 19 (`three_way_seeds.TEST_IDS`),
+- **This build's tests** use the tests' seed with the `test` kind and test ids 11 to 23 (`three_way_seeds.TEST_IDS`),
   and the coin kind under the tests' part; the note's own test uses test id 1 and is never shared.
 - **The search** (2026-11-18, before this text was committed; the house search, word-bounded on the block's ten
   values):
@@ -324,8 +342,10 @@ so two parts never read one field. The runner reads its seeds from `extended/thr
    holding for the runner's cover (the runner's own identity, below); a clean checkout of a named commit
    (`scripts/run_clean.py`); the run lock held, one heavy job on the machine; memory checked.
 2. **The runner's identity** (before any H3-D output is believed): on the search years, each baseline's schedule
-   through the runner equals its registered trades (times and brackets, path for path), and the runner's race at no
-   cost equals `adapter.BinaryDraw`'s on the same uniforms (held by the build's test at no cost already).
+   through the runner equals its registered **trigger-level** trades (times and brackets, path for path), never trades
+   pruned by the real run's account state, which would read the real outcomes (the red team's n-1); and the
+   journey's own race step at no cost equals `adapter.BinaryDraw`'s on the same uniforms -- held by the build's test on
+   `three_way_journey._trade_mc` itself, not only on `race_dollars` (the red team's n-4).
 3. **H3-0**, then **H3-A**'s parts, one heavy slot each, each watched to its exit; then the pinning row; then H4; then
    **H3-D**'s parts.
 4. Each output written with its manifest (`write_result`) from a clean run, carrying its seed map and its keys' kinds.
@@ -340,11 +360,15 @@ the journey and its exact program (`three_way_journey`), the seed-paired runner 
 `_runner.py`, `_stats.py`, `_mutations.py` and `tests/test_h3_draft.py`, on synthetic data with known answers.
 
 **Open before H3-0 (for the red team and the lead).**
-- **The generator's cost.** The declared generator hashes each key (`SeedSequence`) and builds a Philox state per
-  draw; the plan's assumed costs (Appendix A) may sit below what it costs a lane-trade. If H3-0's measured c puts a
-  part over the cap, the remedy is declared before the part runs: a vectorised implementation of **the same law**
-  (SeedSequence's hash and Philox4x64-10 on arrays), admitted only when a test holds it bit for bit equal to
-  `triggers.coin_uniform` on every key kind; any other generator is a new declaration.
+- **The generator** is the vectorised implementation of the declared law (section 7), admitted by its tests; the
+  journey reads every uniform through it.
+- **R-10's long walks.** A walk reads one uniform a step, so its cost grows with n; at S1's declared mix every slot
+  of Appendix A fits its cap, but NQ's time-limited trades may walk thousands of steps, and at a share of a quarter
+  and 2048 steps no H3-A or H3-D slot fits eight hours (`h3_cost.py` prints both readings). H3-0 measures H4's real
+  share and n-bar before H3-D; if they put a slot over its c_max, **the lead decides between** further splits, and
+  re-declaring R-10's sampling as one uniform a walk through the inverse of `walk_law`'s exact terminal law (the same
+  law, O(1) a trade, the antithetic null still exact; the red team's suggestion) -- a change of a declared rule,
+  never made at run time.
 - **The runner on the vendored engine** (H3-D, H4): the toy rules are for H3-0 and H3-A; H3-D's journeys run the
   firm's verified rules through the vendored lockstep with the runner's race as its draw (the form `race_dollars`
   holds equal to `BinaryDraw` at no cost), which is the next build item.
@@ -374,20 +398,32 @@ for its cost only (Wave 6).
 
 <!-- h3_plan: begin -->
 ```text
-H3's parts: part | seed roles | reads | R arms M T h | lane-trades | hours over 2 workers at the assumed costs 0.05 us, 0.5 us, 5.0 us a lane-trade
-  H3-0 probe                 | h3_0_probe | synthetic toys | R=1 arms=5 M=64 T=40 h=63 | 3.226e+06 | 0.0  0.0  0.0
-  A1 same-design nulls       | h3a_histories, h3a_coins | S1, stylised | R=20 arms=3 M=10000 T=120 h=63 | 1.814e+10 | 0.1  1.3  12.6  over 8 h from 5.0 us: cut M first or split
-  A2 exact-centred toy null  | h3a_histories, h3a_coins | S1 toys, the exact program | R=20 arms=2 M=10000 T=120 h=63 | 1.210e+10 | 0.1  0.8  8.4  over 8 h from 5.0 us: cut M first or split
-  A3 history null            | h3a3_history_null | S1, stylised | R=200 arms=2 M=2000 T=120 h=63 | 2.419e+10 | 0.2  1.7  16.8  over 8 h from 5.0 us: cut M first or split
-  A4 plants, copy-stagger    | h3a_histories, h3a_coins | S1, stylised | R=10 arms=8 M=10000 T=120 h=63 | 2.419e+10 | 0.2  1.7  16.8  over 8 h from 5.0 us: cut M first or split
-  D1 same-design nulls       | h3d_histories, h3d_coins | S1 fitted to the search years; S2 | R=20 arms=3 M=2000 T=412 h=252 | 4.984e+10 | 0.3  3.5  34.6  over 8 h from 5.0 us: cut M first or split
-  D2 history null            | h3d_histories, h3d2_history_null | S1 fitted to the search years; S2 | R=200 arms=2 M=500 T=412 h=252 | 8.306e+10 | 0.6  5.8  57.7  over 8 h from 5.0 us: cut M first or split
-  D3 power gate plants       | h3d_histories, h3d_coins, h3d3_plants | H4's search-year outputs; S1 fitted; S2 | R=10 arms=6 M=2000 T=412 h=252 | 4.984e+10 | 0.3  3.5  34.6  over 8 h from 5.0 us: cut M first or split
-  D3 full-J check (EB)       | h3d_histories, h3d_coins | S1 fitted to the search years | R=5 arms=2 M=20752 T=412 h=252 | 8.618e+10 | 0.6  6.0  59.8  over 8 h from 5.0 us: cut M first or split
-  H7 held-out, Hoeffding     | the search declaration's own | the held-out years, once (Wave 6; not H3) | R=1 arms=7 M=100 T=601 h=63 | 1.060e+08 | 0.0  0.0  0.1
-  H7 held-out, EB sets       | the search declaration's own | the held-out years, once (Wave 6; not H3) | R=1 arms=7 M=20752 T=412 h=252 | 6.033e+10 | 0.4  4.2  41.9  over 8 h from 5.0 us: cut M first or split
+H3's heavy slots: part | seed roles | reads | R arms M T h | lane-trades | hours over 2 workers at the assumed costs 0.05 us, 0.5 us, 5.0 us a lane-trade | c_max (the largest cost a lane-trade that fits 8 h)
+  H3-0 probe                     | h3_0_probe | synthetic toys | R=1 arms=5 M=64 T=40 h=63 | 3.226e+06 | 0.0  0.0  0.0 | c_max=17857.14 us
+  A1 same-design nulls           | h3a_histories, h3a_coins | S1, stylised | R=20 arms=3 M=10000 T=120 h=63 | 1.814e+10 | 0.1  1.3  12.6 | c_max=3.17 us
+  A2 exact-centred toy null      | h3a_histories, h3a_coins | S1 toys, the exact program | R=20 arms=2 M=10000 T=120 h=63 | 1.210e+10 | 0.1  0.8  8.4 | c_max=4.76 us
+  A3 history null                | h3a3_history_null | S1, stylised | R=200 arms=2 M=2000 T=120 h=63 | 2.419e+10 | 0.2  1.7  16.8 | c_max=2.38 us
+  A4 plants, copy-stagger        | h3a_histories, h3a_coins | S1, stylised | R=10 arms=8 M=10000 T=120 h=63 | 2.419e+10 | 0.2  1.7  16.8 | c_max=2.38 us
+  D1 same-design nulls [1/2]     | h3d_histories, h3d_coins | S1 fitted to the search years; S2 | R=10 arms=3 M=2000 T=412 h=252 | 2.492e+10 | 0.2  1.7  17.3 | c_max=2.31 us
+  D1 same-design nulls [2/2]     | h3d_histories, h3d_coins | S1 fitted to the search years; S2 | R=10 arms=3 M=2000 T=412 h=252 | 2.492e+10 | 0.2  1.7  17.3 | c_max=2.31 us
+  D2 history null [1/4]          | h3d_histories, h3d2_history_null | S1 fitted to the search years; S2 | R=50 arms=2 M=500 T=412 h=252 | 2.076e+10 | 0.1  1.4  14.4 | c_max=2.77 us
+  D2 history null [2/4]          | h3d_histories, h3d2_history_null | S1 fitted to the search years; S2 | R=50 arms=2 M=500 T=412 h=252 | 2.076e+10 | 0.1  1.4  14.4 | c_max=2.77 us
+  D2 history null [3/4]          | h3d_histories, h3d2_history_null | S1 fitted to the search years; S2 | R=50 arms=2 M=500 T=412 h=252 | 2.076e+10 | 0.1  1.4  14.4 | c_max=2.77 us
+  D2 history null [4/4]          | h3d_histories, h3d2_history_null | S1 fitted to the search years; S2 | R=50 arms=2 M=500 T=412 h=252 | 2.076e+10 | 0.1  1.4  14.4 | c_max=2.77 us
+  D3 power gate plants [1/2]     | h3d_histories, h3d_coins, h3d3_plants | H4's search-year outputs; S1 fitted; S2 | R=5 arms=6 M=2000 T=412 h=252 | 2.492e+10 | 0.2  1.7  17.3 | c_max=2.31 us
+  D3 power gate plants [2/2]     | h3d_histories, h3d_coins, h3d3_plants | H4's search-year outputs; S1 fitted; S2 | R=5 arms=6 M=2000 T=412 h=252 | 2.492e+10 | 0.2  1.7  17.3 | c_max=2.31 us
+  D3 full-J check (EB) [1/5]     | h3d_histories, h3d_coins | S1 fitted to the search years | R=1 arms=2 M=20752 T=412 h=252 | 1.724e+10 | 0.1  1.2  12.0 | c_max=3.34 us
+  D3 full-J check (EB) [2/5]     | h3d_histories, h3d_coins | S1 fitted to the search years | R=1 arms=2 M=20752 T=412 h=252 | 1.724e+10 | 0.1  1.2  12.0 | c_max=3.34 us
+  D3 full-J check (EB) [3/5]     | h3d_histories, h3d_coins | S1 fitted to the search years | R=1 arms=2 M=20752 T=412 h=252 | 1.724e+10 | 0.1  1.2  12.0 | c_max=3.34 us
+  D3 full-J check (EB) [4/5]     | h3d_histories, h3d_coins | S1 fitted to the search years | R=1 arms=2 M=20752 T=412 h=252 | 1.724e+10 | 0.1  1.2  12.0 | c_max=3.34 us
+  D3 full-J check (EB) [5/5]     | h3d_histories, h3d_coins | S1 fitted to the search years | R=1 arms=2 M=20752 T=412 h=252 | 1.724e+10 | 0.1  1.2  12.0 | c_max=3.34 us
+  H7 held-out, Hoeffding         | the search declaration's own | the held-out years, once (Wave 6; not H3; one firm's three finalists -- the joint test across firms is larger) | R=1 arms=7 M=100 T=601 h=63 | 1.060e+08 | 0.0  0.0  0.1 | c_max=543.31 us
+  H7 held-out, EB sets [1/3]     | the search declaration's own | the held-out years, once (Wave 6; not H3; one firm's three finalists -- the joint test across firms is larger) | R=1 arms=7 M=6918 T=412 h=252 | 2.011e+10 | 0.1  1.4  14.0 | c_max=2.86 us
+  H7 held-out, EB sets [2/3]     | the search declaration's own | the held-out years, once (Wave 6; not H3; one firm's three finalists -- the joint test across firms is larger) | R=1 arms=7 M=6917 T=412 h=252 | 2.011e+10 | 0.1  1.4  14.0 | c_max=2.86 us
+  H7 held-out, EB sets [3/3]     | the search declaration's own | the held-out years, once (Wave 6; not H3; one firm's three finalists -- the joint test across firms is larger) | R=1 arms=7 M=6917 T=412 h=252 | 2.011e+10 | 0.1  1.4  14.0 | c_max=2.86 us
 memory: cap 2.5 GB over 2 workers, base 0.4 GB assumed (H3-0 measures it), lane 1344 B: at most 632440 lanes a worker
-the cut rule: a part whose estimate at H3-0's measured cost exceeds 8 hours is cut, M first, with the power cost stated, or split into sub-parts each its own heavy slot under run.lock
+the cut rule: a slot runs only if H3-0's measured cost a lane-trade (the race's and the walks' terms, `h3_cost.py`) is at most its c_max; otherwise it is cut, M first, with the power cost stated, or split further, before it starts
+the held-out test's split: no statistic is read until every sub-part completes; a crashed sub-part is re-run whole from its declared seeds, never resumed; each crash is recorded in the part ledger (E-195)
 ```
 <!-- h3_plan: end -->
 
@@ -400,3 +436,76 @@ the cut rule: a part whose estimate at H3-0's measured cost exceeds 8 hours is c
 | M-2: a censored session count's range is [0, W + 1] | section 9, 2.2 (a) item 2 (i) (replaced); `three_way_stats.session_count` |
 | M-3: a dimension with neither bound nor clip is excluded from (a) | section 9, 2.2 (a) item 3 (inserted); `Dimension.admitted` |
 | M-4: the stop exit's own cost is in the race | sections 7 and 9; `three_way_redraw.race`, `three_way_journey._barrier` |
+
+## Appendix C. H3-A's inputs (printed by `docs/plans/scripts/three_way/h3a_inputs.py`)
+
+Every input of H3-A, as `extended/three_way_h3a.py` declares it (the lead's ruling on B-3). Values in dollars, ticks,
+sessions and minutes after 17:00 CT; none is a firm's.
+
+<!-- h3a_inputs: begin -->
+```text
+TOY_RULES = ToyRules(combine_fee=40.0, billing=21, target=2500.0, mll=1500.0, dll=800.0, activation_fee=100.0, funded_mll=1500.0, win_day=100.0, payout_days=5, payout_share=0.5, payout_cap=3000.0, split=0.9, payout_lag=3, combine_lock=0.0, label="toy rules, no firm's")
+TOY_RULES_EXACT = ToyRules(combine_fee=40.0, billing=21, target=600.0, mll=400.0, dll=None, activation_fee=100.0, funded_mll=400.0, win_day=100.0, payout_days=3, payout_share=0.5, payout_cap=1000.0, split=1.0, payout_lag=2, combine_lock=0.0, label="toy rules, no firm's")
+S1_PARAMS = S1Params(n_sessions=200, vol_mean=6.0, phi=0.9, vol_sd=0.15, regime_amp=0.2, regime_switch=0.02, rate=1.5, rate_beta=1.0, hold_mean=30.0, hold_stop=40.0, time_limit=90.0)
+S1_PARAMS_EXACT = S1Params(n_sessions=200, vol_mean=6.0, phi=0.9, vol_sd=0.15, regime_amp=0.0, regime_switch=0.02, rate=0.3, rate_beta=1.0, hold_mean=30.0, hold_stop=40.0, time_limit=90.0)
+STARTS = range(0, 120)
+HORIZON = 63
+SEEDS = 10000
+BUDGET = 1000.0
+COST = 2.12
+STOP_SLIP = 5.0
+FLAT_SLIP = 10.0
+TICK = 5.0
+A1_DESIGN = DesignSpec(name='a1_design', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=None, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.12, walk_step=2, latency=5, per_session=3)
+BASELINES = {naive_coin: DesignSpec(name='naive_coin', stream=None, marks=(960, 1080), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=40, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p14: DesignSpec(name='p14', stream=None, marks=(1000), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=50, rr=2.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p15: DesignSpec(name='p15', stream=None, marks=(1020), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=100, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p16: DesignSpec(name='p16', stream=None, marks=(1140), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=150, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3)}
+DISJOINT = ((0, 5000), (5000, 10000))
+J_PRIME = 100
+LEVELS = (0.05, 0.01, 0.001)
+TOY_COMPOSITE = (Dimension(name='P_B', kind='mean', horizon=63, a=0.0, r=1.0, source='arithmetic', lo=0.0, hi=1.0, weight=0.5), Dimension(name='paid_by_63', kind='mean', horizon=63, a=0.0, r=1.0, source='arithmetic', lo=0.0, hi=0.6, weight=0.3), Dimension(name='sessions_saved_to_payout', kind='mean', horizon=63, a=0.0, r=64.0, source='arithmetic', lo=0.0, hi=64.0, weight=0.2))
+A2_PAIR = (DesignSpec(name='a2_x1', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=20, rr=1.0, contracts=1, tick_value=5.0, entry_cost=0.0, x_target=0.0, x_stop=0.0, x_flat=0.0, walk_step=2, latency=5, per_session=1), DesignSpec(name='a2_x2', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=40, rr=0.5, contracts=1, tick_value=5.0, entry_cost=0.0, x_target=0.0, x_stop=0.0, x_flat=0.0, walk_step=2, latency=5, per_session=1))
+A3_PAIR = (DesignSpec(name='a3_D', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=10, rr=1.0, contracts=1, tick_value=5.0, entry_cost=0.0, x_target=0.0, x_stop=0.0, x_flat=0.0, walk_step=2, latency=5, per_session=1), DesignSpec(name="a3_D'", stream='B', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=10, rr=1.0, contracts=1, tick_value=5.0, entry_cost=0.0, x_target=0.0, x_stop=0.0, x_flat=0.0, walk_step=2, latency=5, per_session=1))
+A3_HISTORIES = 200
+SHORTCUT_HISTORIES = (0, 1, 2, 3, 4)
+P2_LEVERS = {fee_less_a_fifth: {combine_fee: 32.0}, payout_lag_one: {payout_lag: 1}, activation_halved: {activation_fee: 50.0}}
+P3_EPS = (0.0025, 0.005, 0.01, 0.02)
+P4_A = (0.0, 0.5, 1.0)
+P4_SWITCH = 0.02
+SIZE_GRID = (0.0025, 0.005, 0.01, 0.02, 0.04)
+CENTRING_Z = 4.0
+SMALLER_J_MODEL = "normal at each pool's own sd (H3-A); H3-D: three_way_stats.bootstrap_draw of H4's replicates"
+SMALLER_J_GRID = (16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
+SMALLER_J_DRAWS = 2000
+```
+<!-- h3a_inputs: end -->
+
+## Appendix D. The red team's read of the first text, answered
+
+`docs/reviews/BUILD_W32_H3_2026-11-19.md` on 746a245; the lead's rulings of corrective cycle 1.
+
+| finding | the answer | where |
+|---|---|---|
+| B-1 | the race fractional (BinaryDraw's form); R-10's last step a two-point race to the fractional barrier; the forced-loss toy fails and replaces every account; the journey's own race equals BinaryDraw | section 7; `three_way_redraw`, `three_way_journey._barrier`; `test_b1_...`, `test_the_race_and_the_journeys_race_are_the_vendored_draw_at_no_cost` |
+| B-2 | the start checked at construction; distinctness by the packing with its collision bound; the stored check on a declared sample within 1.25 GB a worker | section 7 (the key guard); `three_way_keys`; `test_b2_...` |
+| B-3 | every H3-A input fixed in this text | Appendix C; `extended/three_way_h3a.py` |
+| m-1 | the journey's race step against `race_net` on a fractional grid; the simulation against the exact program where the cushion binds | `test_m1_...` (kills W and A) |
+| m-2 | the simulation's walk step against the walk's outcome; the exact program's walk step against `walk_net`; the two against each other on a small toy | `test_m2_...` (kills B, B2, C) |
+| m-3 | only a plain mean admitted to McDiarmid | `Dimension.admitted`; `test_admission` |
+| m-4 | the bets predictable (tested by perturbation); both 2.2 (b) bounds' coverage where near tight | `three_way_stats.bets`; `test_the_betting_bounds_bets_are_predictable` (kills K), `test_the_bounds_cover_where_they_are_near_tight` |
+| m-5 | the vectorised generator (Q-170) wired into the journey; the walk read in chunks; the cost model's walk term; the splits; the plan's c_max | sections 7, 11, 17; Appendix A; `h3_cost.py` |
+| m-6 | O-5 as E-230 ruled; a negative half-width refused; the headroom z_pi sigma / sqrt(J) | sections 7, 10; `limit_check`, `headroom_needed` |
+| m-7 | the gate at 25 % denial, 0 % beside; the 10 % missed-signal arm | section 7; `gate_reading`, `stress_arms` |
+| m-8 | the resample's dates one a value, increasing, inside the search years | `refuse_held_out`; the resample test |
+| m-9 | each block seed drawn only in its role's kinds and parts | `three_way_seeds.ROLE_USE`, `check_use`; `test_m9_...` |
+| m-10 | the runner's held-out refusal, the first held-out day included | section 2; `three_way_runner.Plan`; `test_m10_...` (kills R2) |
+| m-11 | the exact program's state carries whether it passed (0.875 on the red team's toy) | `three_way_journey._state_key`; `test_m11_...` |
+| m-12 | P1 refused for the betting bound and clipped composites; `planted_rates` for those | section 7; `planted_mdl`, `planted_rates` |
+| m-13 | a boundary test each: n_min exactly, quantiles straddling zero, a skewed g, the first held-out day, a constant added to the resample, the exact program's denial | the stats and runner tests (kill O, P, P2, R, S, U) |
+| m-14 | the smaller-J rule's grid, draws, power model and rng declared | section 7 |
+| m-15 | the generator admitted on every output a walk reads, up to 1024 | `tests/test_three_way_fastkeys.py` |
+| m-16 | the history null's pair differs in its stream only | `three_way_s1.stream_pair`; `test_m16_...` |
+| m-17 | a negative half-width and a calendar with no group of n_min refused | `limit_check`, `condition` |
+| n-1 | the runner's identity checks trigger-level schedules | section 16 |
+| n-2 | S1 holds the 15:10 flatten and five minutes flat; its volatility is latent, H3-D's causal | `three_way_s1.schedule`; `test_n2_...` |
+| n-3 | H7's rows are one firm's; the joint held-out test across firms costs more and is its own declaration's | Appendix A's H7 rows, labelled |
+| n-4 | the vendored-equality test drives the journey's race step | section 16 |
+| n-5 | the as-walked reading labelled beside wherever printed, its stop-side cost on every exit | `three_way_journey._trade_mc` |

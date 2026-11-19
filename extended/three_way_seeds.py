@@ -12,6 +12,9 @@ enters a key only as a `RoleSeed`, an `int` that only `issue` makes and that car
 `RoleSeed` -- a literal typed elsewhere, or a value rebuilt by arithmetic, cannot draw. The spare seed is drawn by
 nothing: `issue("spare")` refuses.
 
+**Roles enforced** (m-9): `ROLE_USE` names each role's key kinds and parts, and `three_way_keys.seed_key` refuses a
+block seed drawn outside them -- a deciding seed cannot draw in a design-check part, nor a history seed a coin.
+
 **Parts and test ids.** Every coin key carries the part (the note's 1.5), so two parts never read one field even under
 one role seed; `PARTS` fixes each part's index. The unit tests share the tests' seed with the note's own test, which
 uses the `test` key kind with test id 1; this build's tests take ids from `TEST_IDS`, never 1.
@@ -63,7 +66,24 @@ BLOCK = frozenset(ROLES.values())
 PARTS: dict[str, int] = {"tests": 1, "H3-0": 2, "A1": 3, "A2": 4, "A3": 5, "A4": 6, "D1": 7, "D2": 8, "D3": 9}
 #: the `test` key kind's test ids this build's tests use (the note's own test uses id 1, never reused here)
 TEST_IDS: dict[str, int] = {"bounds_cover": 11, "power": 12, "history_null": 13, "betting": 14, "s1": 15,
-                            "resample": 16, "plant": 17, "mutations": 18, "gate": 19}
+                            "resample": 16, "plant": 17, "mutations": 18, "gate": 19,
+                            "fastkeys": 20, "journey_oracle": 21, "walk_oracle": 22, "coverage_tight": 23}
+
+
+#: m-9 (the red team's read of 746a245): each role's seed draws only its own key kinds in its own parts -- None for the
+#: tests' role, which draws anything under the tests' part ids and the `test` kind. A part split into sub-parts keeps
+#: its part's id (the sub-parts take disjoint histories or seed indices, so their keys stay distinct).
+ROLE_USE: dict[str, tuple[frozenset, frozenset] | None] = {
+    "tests": None,
+    "h3_0_probe": (frozenset({"history", "coin", "enforce", "plant"}), frozenset({"H3-0"})),
+    "h3a_histories": (frozenset({"history", "symmetry", "plant"}), frozenset({"A1", "A2", "A4"})),
+    "h3a_coins": (frozenset({"coin", "enforce"}), frozenset({"A1", "A2", "A4"})),
+    "h3a3_history_null": (frozenset({"history", "symmetry", "coin", "enforce"}), frozenset({"A3"})),
+    "h3d_histories": (frozenset({"history", "symmetry"}), frozenset({"D1", "D2", "D3"})),
+    "h3d_coins": (frozenset({"coin", "enforce"}), frozenset({"D1", "D3"})),
+    "h3d2_history_null": (frozenset({"symmetry", "coin", "enforce"}), frozenset({"D2"})),
+    "h3d3_plants": (frozenset({"plant"}), frozenset({"D3"})),
+}
 
 
 class ProvenanceRefused(RuntimeError):
@@ -98,6 +118,20 @@ def issue(role: str) -> RoleSeed:
     return RoleSeed(ROLES[role], role, _ISSUER)
 
 
+def check_use(seed: "RoleSeed", kind: str, part: int | None) -> None:
+    """Refused (`ProvenanceRefused`) when an issued seed would draw a key kind, or a part, outside its role (m-9)."""
+    use = ROLE_USE[seed.role]
+    if use is None:
+        return
+    kinds, parts = use
+    if kind not in kinds:
+        raise ProvenanceRefused(f"REFUSED (m-9): the {seed.role} seed draws {sorted(kinds)} keys, not {kind!r}")
+    names = {v: k for k, v in PARTS.items()}
+    if part is None or names.get(int(part)) not in parts:
+        raise ProvenanceRefused(f"REFUSED (m-9): the {seed.role} seed draws in the parts {sorted(parts)}, not "
+                                f"{names.get(int(part), part) if part is not None else 'a key with no part'}")
+
+
 def in_block(seed: int) -> bool:
     return int(seed) in BLOCK
 
@@ -110,4 +144,4 @@ def is_issued(seed: object) -> bool:
 
 __all__ = ["TESTS", "H3_0", "H3A_HISTORIES", "H3A_COINS", "H3A3_HISTORY_NULL", "H3D_HISTORIES", "H3D_COINS",
            "H3D2_HISTORY_NULL", "H3D3_PLANTS", "SPARE", "ROLES", "STATUS", "BLOCK", "PARTS", "TEST_IDS",
-           "ProvenanceRefused", "RoleSeed", "issue", "in_block", "is_issued"]
+           "ROLE_USE", "ProvenanceRefused", "RoleSeed", "issue", "check_use", "in_block", "is_issued"]

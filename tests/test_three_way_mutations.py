@@ -5,38 +5,79 @@ Each mutant is the module's own source with one textual change (`_mutant`: the c
 compiled apart; its pieces are patched over the real module's for the one check, which must then fail. The unmutated
 check passes in its own test file.
 
+**The build's own** (746a245, updated to corrective cycle 1's code):
+
 | mutant | the piece | the check that kills it |
 |---|---|---|
-| M1 | the race's barrier at the full cushion, min(l, c) | the race's exact oracles (a loss passes the floor) |
-| M2 | the race's barrier at the target side's cost | the race's exact oracles (unequal exit costs, M-4) |
-| M3 | the race's lattice rounded outward | the race's exact oracles |
-| M4 | R-10's walk barrier rounded outward | the walk's exact oracles |
+| M1 | the race's barrier at the full cushion, min(l, c) | `check_race_oracles` (a loss passes the floor) |
+| M2 | the race's barrier at the target side's cost | `check_race_oracles` (unequal exit costs, M-4) |
+| M3 | the shared path's lattice rounded outward | `check_race_oracles` at lattice 1 |
 | M5 | the journey's barrier at the target side's cost | the journey's floor invariant, near the floor with a daily loss limit |
-| M6 | the twin reading u, not 1 - u | the exact-complement test |
-| M7 | the coin key without its start (choice 3) | the key-collision test (the guard refuses) |
-| M8 | the denial ladder drawn from the coin's race stream | the enforcement-apart test |
-| M9 | McDiarmid's c_u without its factor 2 | the fallback-is-Hoeffding test |
-| M10 | a source-(ii) clip not applied | the clips-bind test |
-| M11 | overlapping positions admitted | the overlap refusal |
-| M12 | the exact program's race probabilities swapped | the brute-force enumeration |
-| M13 | the empirical-Bernstein bound at ln(1/alpha) | the note's script's bound |
-| M14 | the held-out refusal of the resample removed | the search-years-only test |
-| M15 | Hoeffding's width dropped | the null-at-the-stated-size check |
-| M16 | the block bound removed | the window refusal |
-| M17 | vacuity at more than one half (not at least) | the time legs' labels |
-| M18 | the key guard comparing integers, not `generate_state` | the trap test |
+| M6 | the twin reading u, not 1 - u | `test_the_antithetic_complement_is_exact` |
+| M7 | the coin key without its start (choice 3) | the start check at construction, in `test_keys_collide_nowhere_...` |
+| M8 | the denial ladder drawn from the coin's race stream | `test_the_enforcement_stream_is_apart_from_the_coin` |
+| M9 | McDiarmid's c_u without its factor 2 | `check_fallback_is_hoeffding` |
+| M10 | a source-(ii) clip not applied | `check_clips_bind` |
+| M11 | overlapping positions admitted | `test_overlap_and_shared_moments_and_windows_are_refused` |
+| M12 | the exact program's race probabilities swapped | `test_the_exact_program_is_a_brute_force_enumeration` |
+| M13 | the empirical-Bernstein bound at ln(1/alpha) | `test_the_empirical_bernstein_bound_is_the_notes_script` |
+| M14 | the resample's held-out refusal removed | `test_the_resampled_size_reads_the_search_years_only` |
+| M15 | Hoeffding's width dropped | `test_a_planted_edge_is_found_at_the_stated_power_and_none_under_the_null` |
+| M16 | the block bound removed | `test_overlap_and_shared_moments_and_windows_are_refused` |
+| M17 | vacuity at more than one half (not at least) | `test_the_time_legs_sizes_and_vacuity` |
+| M18 | the key guard comparing integers, not `generate_state` | `test_the_guard_refuses_the_traps_and_a_key_without_its_start` |
+
+**The red team's survivors** (`docs/reviews/BUILD_W32_H3_2026-11-19.md`, its driver's texts, re-pointed at this code
+where B-1's fix moved them), each now killed by the named behaviour test:
+
+| mutant | the piece | the check that kills it |
+|---|---|---|
+| W | the simulation's race at the unraced p = l / (l + g) | `test_m1_the_journeys_race_books_race_net_on_a_fractional_grid` |
+| A | the journey's race rounded to whole ticks (B-1's stranding) | `test_b1_the_forced_loss_toy_fails_and_replaces_every_account` |
+| B | the simulation's walk: the time exit charged the stop's cost | `test_m2_the_simulations_walk_step_books_the_walks_outcome` |
+| B2 | the simulation's walk: the step size dropped from the value | `test_m2_the_simulations_walk_step_books_the_walks_outcome` |
+| C | the exact program's walk: the step size dropped | `test_m2_the_exact_programs_walk_step_is_walk_net` |
+| K | the betting bound's variance not predictable | `test_the_betting_bounds_bets_are_predictable` |
+| O | a group of exactly n_min starts dropped | `test_the_time_legs_sizes_and_vacuity` |
+| P | the gate at the upper quantile | `test_the_gate_at_h_g_and_the_limit_check` (quantiles straddling zero) |
+| P2 | the gate's median over starts replaced by the mean | `test_the_gate_at_h_g_and_the_limit_check` (a skewed g) |
+| R | the resample's refusal admitting 2024-01-02 itself | `test_the_resampled_size_reads_the_search_years_only` (the boundary date, by behaviour) |
+| R2 | the runner's held-out refusal admitting 2024-01-02 itself | `test_m10_held_out_sessions_are_refused_unless_the_joint_test_is_named` |
+| S | the resample not centred | `test_the_resampled_size_reads_the_search_years_only` (a constant added changes nothing) |
+| U | the exact program's denial keeping the account | `test_u_the_exact_programs_denial_is_the_simulations` |
+
+The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
+by `_replace_accounts` whatever their flag, and `dead` is read no more that close, so no test can kill it. The mutant
+recorded here is the one that changes the law: the denied account kept, not replaced.
+
+**This cycle's fixes:**
+
+| mutant | the piece | the check that kills it |
+|---|---|---|
+| N1 | the exact program's state without its pass (m-11) | `test_m11_the_exact_programs_passed_survives_its_merges` |
+| N2 | a functional through `stat` admitted (m-3) | `test_admission` |
+| N3 | the role table not enforced (m-9) | `test_m9_each_seed_draws_only_its_role` |
+| N4 | the guard's sample storing nothing (B-2) | `test_b2_the_guard_checks_every_start_and_stores_its_sample_only` |
+| N5 | R-10's residual step at one half (the barrier not raced) | `check_walk_oracles` |
+| N6 | a negative half-width admitted (m-6) | `test_the_gate_at_h_g_and_the_limit_check` |
+| N7 | the walk's chunks read from step zero | `test_the_walk_read_in_chunks_is_the_walk_read_whole` |
+| N8 | the runner's held-out refusal removed (m-10) | `test_m10_held_out_sessions_are_refused_unless_the_joint_test_is_named` |
+| N9 | the vectorised denial drawn from the coin kind | `test_the_wrappers_and_the_refusals` |
 """
 from __future__ import annotations
 
-import importlib
+import sys
 import types
 
 import numpy as np
 import pytest
 
+from extended import three_way_fastkeys as F
 from extended import three_way_journey as J
 from extended import three_way_keys as K
 from extended import three_way_redraw as RD
+from extended import three_way_runner as RU
+from extended import three_way_seeds as SE
 from extended import three_way_stats as ST
 
 
@@ -45,7 +86,6 @@ def _mutant(module: types.ModuleType, old: str, new: str) -> types.ModuleType:
     assert src.count(old) == 1, f"the mutation's text must match exactly once in {module.__name__}: {old!r}"
     m = types.ModuleType(module.__name__ + "_mutant")
     m.__file__ = module.__file__
-    import sys
     sys.modules[m.__name__] = m
     try:
         exec(compile(src.replace(old, new), module.__file__ + " (mutant)", "exec"), m.__dict__)
@@ -60,8 +100,16 @@ def _patch(monkeypatch, module, mutant, *names: str) -> None:
 
 
 def _killed(check, *args) -> None:
-    with pytest.raises((AssertionError, ValueError, RuntimeError, pytest.fail.Exception)):
+    with pytest.raises((AssertionError, ValueError, RuntimeError, TypeError, SE.ProvenanceRefused,
+                        pytest.fail.Exception)):
         check(*args)
+
+
+def _mp(request):
+    return request.getfixturevalue("monkeypatch")
+
+
+# ------------------------------------------------------------------------------------------------ the build's own
 
 
 def test_m1_race_at_the_full_cushion(monkeypatch) -> None:
@@ -80,13 +128,12 @@ def test_m2_race_at_the_target_sides_cost(monkeypatch) -> None:
     _killed(check_race_oracles)
 
 
-def test_m3_and_m4_outward_rounding(monkeypatch) -> None:
-    from tests.test_three_way_redraw import check_race_oracles, check_walk_oracles
+def test_m3_outward_rounding_on_the_shared_paths_lattice(monkeypatch) -> None:
+    from tests.test_three_way_redraw import check_race_oracles
 
     m = _mutant(RD, "    return q * math.floor(L / q)", "    return q * math.ceil(L / q)")
-    _patch(monkeypatch, RD, m, "inward", "race", "race_net", "walk_barriers", "walk_net")
-    _killed(check_race_oracles, (RD.LATTICE,))
-    _killed(check_walk_oracles)
+    _patch(monkeypatch, RD, m, "inward", "race", "race_net")
+    _killed(check_race_oracles, (1,))
 
 
 def _near_floor_run() -> None:
@@ -95,12 +142,9 @@ def _near_floor_run() -> None:
     sch = J.Schedule("near", tuple(J.Trade(session=s, decision=600 + 60 * i, entry=605 + 60 * i, exit=650 + 60 * i,
                                            exit_reason="target", g=10, l=10, tick_value=5.0, entry_cost=0.5,
                                            x_target=0.25, x_stop=3.0) for s in range(40) for i in range(3)))
-    from extended import three_way_runner as R
-    from extended import three_way_seeds as S
-
-    plan = R.Plan(seed=S.issue("tests"), part=S.PARTS["tests"], history=0, starts=(0,), seed_indices=tuple(range(64)),
-                  horizon=30, block_sessions=40)
-    R.run(sch, rules, plan)
+    plan = RU.Plan(seed=SE.issue("tests"), part=SE.PARTS["tests"], history=0, starts=(0,),
+                   seed_indices=tuple(range(64)), horizon=30, block_sessions=40)
+    RU.run(sch, rules, plan)
 
 
 def test_m5_the_journeys_barrier_at_the_target_sides_cost(monkeypatch) -> None:
@@ -129,9 +173,9 @@ def test_m7_the_coin_key_without_its_start(monkeypatch) -> None:
 def test_m8_the_ladder_on_the_coins_stream(monkeypatch) -> None:
     from tests.test_three_way_runner import test_the_enforcement_stream_is_apart_from_the_coin
 
-    old = ('        return seed_key(self.seed, "enforce", part=self.part, history=self.history, seed_index=self.seed_index,\n'
-           '                        start=self.start, account=int(account), request=int(request))')
-    m = _mutant(K, old, "        return self.coin_key(int(account) * 64 + int(request), RACE)")
+    old = ('        key = seed_key(self.seed, "enforce", part=self.part, history=self.history, seed_index=self.seed_index,\n'
+           '                       start=self.start, account=int(account), request=int(request))')
+    m = _mutant(K, old, "        key = self.coin_key(int(account) * 64 + int(request), RACE)")
     _patch(monkeypatch, K, m, "Unit")
     _killed(test_the_enforcement_stream_is_apart_from_the_coin)
 
@@ -211,7 +255,200 @@ def test_m17_vacuity_at_more_than_one_half(monkeypatch) -> None:
 def test_m18_the_guard_comparing_integers(monkeypatch) -> None:
     from tests.test_three_way_keys import test_the_guard_refuses_the_traps_and_a_key_without_its_start
 
-    m = _mutant(K, "        s = key_state(k)\n        prev = self.states.get(s)\n        if prev is not None and prev != k:\n            raise ValueError(f\"REFUSED (2.3): two keys give one generate_state: {prev} and {k}\")\n        self.states[s] = k\n\n    def keys",
-                "        s = k\n        prev = self.states.get(s)\n        if prev is not None and prev != k:\n            raise ValueError(f\"REFUSED (2.3): two keys give one generate_state: {prev} and {k}\")\n        self.states[s] = k\n\n    def keys")
+    m = _mutant(K, "        st = key_state(k)\n", "        st = k\n")
     _patch(monkeypatch, K, m, "KeyGuard")
     _killed(test_the_guard_refuses_the_traps_and_a_key_without_its_start)
+
+
+# ------------------------------------------------------------------------------------------------ the red team's survivors
+
+
+def test_w_the_unraced_p(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m1_the_journeys_race_books_race_net_on_a_fractional_grid as check
+
+    m = _mutant(J, "        p = Lt / (Lt + float(t.g))\n        u = coins.coin(t, K.RACE)",
+                "        p = float(t.l) / (float(t.l) + float(t.g))\n        u = coins.coin(t, K.RACE)")
+    _patch(monkeypatch, J, m, "_trade_mc")
+    _killed(check, monkeypatch)
+
+
+def test_a_the_race_rounded_to_whole_ticks(request) -> None:
+    from tests.test_three_way_runner import test_b1_the_forced_loss_toy_fails_and_replaces_every_account as check
+
+    mp = _mp(request)
+    m = _mutant(J, "    return np.where(Lt * t.tvn > EPS, Lt, 0.0)",
+                "    Lt = np.floor(Lt + 1e-9)\n    return np.where(Lt * t.tvn > EPS, Lt, 0.0)")
+    _patch(mp, J, m, "_barrier")
+    _killed(check, mp)
+
+
+def test_b_the_time_exit_at_the_stops_cost(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m2_the_simulations_walk_step_books_the_walks_outcome as check
+
+    m = _mutant(J, "        cost = np.where(kind == 1, xt, np.where(kind == -1, xs, xf))",
+                "        cost = np.where(kind == 1, xt, np.where(kind == -1, xs, xs))")
+    _patch(monkeypatch, J, m, "_trade_mc")
+    _killed(check)
+
+
+def test_b2_the_walks_step_size_dropped_in_the_simulation(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m2_the_simulations_walk_step_books_the_walks_outcome as check
+
+    m = _mutant(RD, "        pos += c\n    val = np.where(kind == -1, -L, np.where(kind == 1, up * s, i * s))",
+                "        pos += c\n    val = np.where(kind == -1, -L, np.where(kind == 1, up * s, i))")
+    _patch(monkeypatch, RD, m, "walk_run")
+    _killed(check)
+
+
+def test_c_the_walks_step_size_dropped_in_the_exact_program(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m2_the_exact_programs_walk_step_is_walk_net as check
+
+    m = _mutant(J, "np.full(len(b), -e + float(v) * t.tvn - cost)", "np.full(len(b), -e + float(v) / s * t.tvn - cost)")
+    _patch(monkeypatch, J, m, "_trade_dp")
+    _killed(check)
+
+
+def test_k_the_betting_variance_not_predictable(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_betting_bounds_bets_are_predictable as check
+
+    m = _mutant(ST, "    sq = np.concatenate([[0.0], np.cumsum((y - mus) ** 2)[:-1]])", "    sq = np.cumsum((y - mus) ** 2)")
+    _patch(monkeypatch, ST, m, "bets")
+    _killed(check)
+
+
+def test_o_a_group_of_exactly_n_min_dropped(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_time_legs_sizes_and_vacuity as check
+
+    m = _mutant(ST, "    ok = [g for g in delta_hat if int(counts[g]) >= int(n_min)]",
+                "    ok = [g for g in delta_hat if int(counts[g]) > int(n_min)]")
+    _patch(monkeypatch, ST, m, "condition")
+    _killed(check)
+
+
+def test_p_the_gate_at_the_upper_quantile(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_gate_at_h_g_and_the_limit_check as check
+
+    m = _mutant(ST, "    lowq = float(np.quantile(med, q))", "    lowq = float(np.quantile(med, 1.0 - q))")
+    _patch(monkeypatch, ST, m, "long_run_gate", "gate_reading")
+    _killed(check)
+
+
+def test_p2_the_gates_mean_over_starts(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_gate_at_h_g_and_the_limit_check as check
+
+    m = _mutant(ST, "    med = np.median(g, axis=0)", "    med = np.mean(g, axis=0)")
+    _patch(monkeypatch, ST, m, "long_run_gate", "gate_reading")
+    _killed(check)
+
+
+def test_r_the_resample_admits_the_first_held_out_day(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_resampled_size_reads_the_search_years_only as check
+
+    m = _mutant(ST, "    if (d >= HELD_OUT_FIRST).any():", "    if (d > HELD_OUT_FIRST).any():")
+    _patch(monkeypatch, ST, m, "refuse_held_out", "resampled_size")
+    _killed(check)
+
+
+def test_r2_the_runner_admits_the_first_held_out_day(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m10_held_out_sessions_are_refused_unless_the_joint_test_is_named as check
+
+    m = _mutant(RU, "        held = [w for w in windows if (w >= HELD_OUT_FIRST).any()]",
+                "        held = [w for w in windows if (w > HELD_OUT_FIRST).any()]")
+    _patch(monkeypatch, RU, m, "Plan")
+    _killed(check)
+
+
+def test_s_the_resample_not_centred(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_resampled_size_reads_the_search_years_only as check
+
+    m = _mutant(ST, "    x = x - x.mean()\n    n = x.size", "    n = x.size")
+    _patch(monkeypatch, ST, m, "resampled_size")
+    _killed(check)
+
+
+def test_u_the_denial_keeps_the_account(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_u_the_exact_programs_denial_is_the_simulations as check
+
+    m = _mutant(J, "        p = _replace_accounts(parts[0], np.ones(len(parts[0]), bool), np.zeros(len(parts[0]), bool), rules)",
+                "        p = parts[0]")
+    _patch(monkeypatch, J, m, "_close")
+    _killed(check)
+
+
+# ------------------------------------------------------------------------------------------------ this cycle's fixes
+
+
+def test_n1_the_state_without_its_pass(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m11_the_exact_programs_passed_survives_its_merges as check
+
+    m = _mutant(J, "within, L.ahead, L.first_pass > 0]", "within, L.ahead]")
+    _patch(monkeypatch, J, m, "_state_key")
+    _killed(check)
+
+
+def test_n2_a_stat_admitted(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_admission as check
+
+    m = _mutant(ST, "        if self.stat is not None:", "        if False:")
+    _patch(monkeypatch, ST, m, "Dimension")
+    _killed(check)
+
+
+def test_n3_roles_not_enforced(monkeypatch) -> None:
+    from tests.test_three_way_keys import test_m9_each_seed_draws_only_its_role as check
+
+    m = _mutant(SE, "    use = ROLE_USE[seed.role]\n    if use is None:", "    use = ROLE_USE[seed.role]\n    if True:")
+    _patch(monkeypatch, SE, m, "check_use")
+    _killed(check)
+
+
+def test_n4_the_sample_storing_nothing(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_b2_the_guard_checks_every_start_and_stores_its_sample_only as check
+
+    m = _mutant(K, "        return start in self.sample_starts and", "        return False and")
+    _patch(monkeypatch, K, m, "KeyGuard")
+    _killed(check)
+
+
+def test_n5_the_residual_step_at_one_half(monkeypatch) -> None:
+    from tests.test_three_way_redraw import check_walk_oracles
+
+    m = _mutant(RD, "    q_bar = (s / (s + rho)) if exact else float(s) / (float(s) + float(rho))",
+                "    q_bar = Fraction(1, 2) if exact else 0.5")
+    _patch(monkeypatch, RD, m, "walk_law", "walk_net")
+    _killed(check_walk_oracles)
+
+
+def test_n6_a_negative_half_width_admitted(monkeypatch) -> None:
+    from tests.test_three_way_stats import test_the_gate_at_h_g_and_the_limit_check as check
+
+    m = _mutant(ST, "    if not halfwidth >= 0:", "    if False:")
+    _patch(monkeypatch, ST, m, "limit_check")
+    _killed(check)
+
+
+def test_n7_the_walks_chunks_from_step_zero(monkeypatch) -> None:
+    from tests.test_three_way_runner import check_chunk_invariance as check
+
+    m = _mutant(J, "first=first, record=False)", "first=0, record=False)")
+    _patch(monkeypatch, J, m, "_trade_mc")
+    _killed(check, monkeypatch, m)                                       # the chunk set where the mutant reads it
+
+
+def test_n8_the_runners_held_out_refusal_removed(monkeypatch) -> None:
+    from tests.test_three_way_runner import test_m10_held_out_sessions_are_refused_unless_the_joint_test_is_named as check
+
+    m = _mutant(RU, "        if self.dates is not None:\n            self._check_dates()", "        if False:\n            pass")
+    _patch(monkeypatch, RU, m, "Plan")
+    _killed(check)
+
+
+def test_n9_the_vectorised_denial_on_the_coin_kind(monkeypatch) -> None:
+    from tests.test_three_way_fastkeys import test_the_wrappers_and_the_refusals as check
+
+    m = _mutant(F, '    M = key_matrix(seed, "enforce", part=part, history=history, seed_index=seed_index, start=start, account=account,\n'
+                   '                   request=request)',
+                '    M = key_matrix(seed, "coin", part=part, history=history, seed_index=seed_index, start=start, underlying=1,\n'
+                '                   moment=account, draw_kind=request * 0 + 2)')
+    _patch(monkeypatch, F, m, "enforce_uniforms")
+    _killed(check)

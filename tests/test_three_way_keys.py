@@ -139,3 +139,37 @@ def test_the_guard_refuses_the_traps_and_a_key_without_its_start() -> None:
     with pytest.raises(ValueError):
         K.disjoint(a, b)
     assert K.check_keys([key, u.coin_key(6, K.RACE)]) == 2
+
+
+
+def test_m9_each_seed_draws_only_its_role() -> None:
+    """The red team's m-9: a deciding seed in a design-check part, a history seed as a coin, a coin seed as a history
+    are refused; each role's own use passes; the tests' role is unrestricted."""
+    u = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3d_coins"), "coin", part=S.PARTS["A1"], **u)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3a_histories"), "coin", part=S.PARTS["A1"], **u)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3a_coins"), "history", part=S.PARTS["A1"], history=0)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3d3_plants"), "test", test=1, replicate=0)
+    K.seed_key(S.issue("h3d_coins"), "coin", part=S.PARTS["D1"], **u)
+    K.seed_key(S.issue("h3a_histories"), "history", part=S.PARTS["A2"], history=3)
+    K.seed_key(S.issue("h3_0_probe"), "coin", part=S.PARTS["H3-0"], **u)
+    assert set(S.ROLE_USE) == set(S.ROLES) - {"spare"}
+    used = [p for r, v in S.ROLE_USE.items() if v is not None for p in v[1]]
+    assert set(used) <= set(S.PARTS) and "tests" not in used
+
+
+def test_b2_the_packing_is_injective_and_the_collision_bound_is_stated() -> None:
+    assert K.packing_problems() == []
+    assert K.collision_bound(2) == pytest.approx(1 / 2 ** 128)
+    assert K.collision_bound(10 ** 11) <= (10 ** 11) ** 2 / 2 ** 129
+    g = K.KeyGuard.sampled([5, 6], range(200))
+    assert g.sample_starts == frozenset({5}) and g.sample_seeds == frozenset(range(K.SAMPLE_SEEDS))
+    u = K.Unit(SEED, 1, 0, 100, 6)
+    g.add(u.coin_key(3, K.RACE), 6, 100)                              # outside the sample: checked, not stored
+    assert g.checked == 1 and not g.states
+    with pytest.raises(ValueError, match="N-2"):
+        g.add(u.coin_key(3, K.RACE), 5, 100)

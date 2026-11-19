@@ -13,7 +13,11 @@ on the build (no engine, no bar, no result file; fast).
 - **the seed table** -- the note's ten seeds once each, each with the note's role and status, equal to the build's seed
   module role for role; no other eight-digit 2026 token in the text;
 - **the run plan is the script's** -- Appendix A's fenced block equals `docs/plans/scripts/three_way/h3_plan.py`'s
-  output line for line, and every part's seed roles are the seed module's.
+  output line for line, and every part's seed roles are the seed module's;
+- **corrective cycle 1** -- the second text carries the lead's rulings (the race fractional, R-10's residual race, the
+  key guard's sample, O-5 as E-230 ruled, the gate at 25 % denial, the missed-signal arm, the declared smaller-J
+  inputs); Appendix C equals `h3a_inputs.py`'s output (every H3-A input fixed in the text, B-3); Appendix D answers
+  every finding of the red team's read (B-1 to B-3, m-1 to m-17, n-1 to n-5) once each.
 """
 from __future__ import annotations
 
@@ -32,6 +36,9 @@ PLAN = ROOT / "docs" / "plans" / "scripts" / "three_way" / "h3_plan.py"
 NOTE_MARKS = ("<!-- 2.2a-admission: begin -->", "<!-- 2.2a-admission: end -->")
 DRAFT_MARKS = ("<!-- h3-admission: begin -->", "<!-- h3-admission: end -->")
 PLAN_MARKS = ("<!-- h3_plan: begin -->", "<!-- h3_plan: end -->")
+H3A = ROOT / "docs" / "plans" / "scripts" / "three_way" / "h3a_inputs.py"
+H3A_MARKS = ("<!-- h3a_inputs: begin -->", "<!-- h3a_inputs: end -->")
+REVIEW_FINDINGS = (("B-1", "B-2", "B-3") + tuple(f"m-{i}" for i in range(1, 18)) + tuple(f"n-{i}" for i in range(1, 6)))
 
 
 def _lf(p: Path) -> str:
@@ -54,7 +61,7 @@ def _flat(s: str) -> str:
 
 def test_the_form(text: str) -> None:
     assert text.startswith("# H3: ") and "**Status: a draft" in text
-    heads = [f"\n## {n}. " for n in range(20)] + ["\n## Appendix A. ", "\n## Appendix B. "]
+    heads = [f"\n## {n}. " for n in range(20)] + [f"\n## Appendix {a}. " for a in "ABCD"]
     pos = [text.find(h) for h in heads]
     assert all(p >= 0 for p in pos), [h for h, p in zip(heads, pos) if p < 0]
     assert pos == sorted(pos)
@@ -99,7 +106,7 @@ def test_the_five_minors_are_carried(text: str) -> None:
 def test_the_notes_rulings(text: str) -> None:
     flat = _flat(text)
     for phrase in ("No t decides, in any branch.", "overlap is refused", "applied in H3-D only",
-                   "504 sessions", "over coin seeds only", "inside each limit at the point estimate",
+                   "504 sessions", "over coin seeds only", "**the point estimate governs**",
                    "a stated size of one half or more is labelled vacuous", "takes **no k**",
                    "**Judged-block reads:** none.", "seeded apart", "the antithetic twin reads 1 - u exactly"):
         assert phrase in flat, phrase
@@ -128,4 +135,39 @@ def test_the_run_plan_is_the_scripts(text: str) -> None:
     for roles in mod.ROLES.values():
         for r in roles:
             assert r in S.ROLES or r == "the search declaration's own", r
-    assert {name for name, *_ in mod.rows()} == set(mod.ROLES) == set(mod.READS)
+    assert {mod.base(name) for name, *_ in mod.rows()} == set(mod.ROLES) == set(mod.READS)
+    assert "c_max=" in block and "crashed sub-part is re-run whole" in block
+
+
+def test_corrective_cycle_1s_rulings(text: str) -> None:
+    flat = _flat(text)
+    for phrase in ("second text (corrective cycle 1)", "fractional, never rounded",
+                   "a driftless two-point race between the barrier and the lattice point one step up",
+                   "N-2 checked on every key at construction", "n^2 / 2^129", "first 64 seed indices",
+                   "within 1.25 GB a worker", "the one-sided check (B-10's form", "never a second margin",
+                   "25 % (`three_way_stats.GATE_DENIAL`", "10 % of signals missed", "SMALLER_J_GRID",
+                   "z_pi sigma_M / sqrt(J)", "unless the joint held-out test's declaration is named",
+                   "trigger-level", "re-declaring R-10's sampling"):
+        assert phrase in flat, phrase
+    assert "(c_L + z_pi)" not in flat and "whole ticks (`three_way_redraw.LATTICE` = 1)" not in flat
+
+
+def test_appendix_c_is_the_declared_inputs(text: str) -> None:
+    spec = importlib.util.spec_from_file_location("h3a_inputs_for_test", H3A)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    block = _between(text, H3A_MARKS).strip()
+    assert block.startswith("```text\n") and block.endswith("\n```")
+    assert block[len("```text\n"):-len("\n```")] == mod.report()
+    from extended import three_way_h3a as H
+
+    names = [n for n, _ in H.declared()]
+    for need in ("TOY_RULES", "S1_PARAMS", "A1_DESIGN", "BASELINES", "BUDGET", "J_PRIME", "TOY_COMPOSITE", "A2_PAIR",
+                 "A3_PAIR", "SHORTCUT_HISTORIES", "P2_LEVERS", "P3_EPS", "P4_A", "SIZE_GRID", "CENTRING_Z"):
+        assert need in names, need
+
+
+def test_appendix_d_answers_every_finding(text: str) -> None:
+    appd = text[text.index("## Appendix D."):]
+    for f in REVIEW_FINDINGS:
+        assert len(re.findall(rf"^\| {re.escape(f)} \|", appd, re.MULTILINE)) == 1, f
