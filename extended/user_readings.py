@@ -261,11 +261,30 @@ def scorecard_rows(records: Sequence[Mapping[str, Any]], blocks: Sequence[str] =
     return out
 
 
+def _peak_for(entry: Any, rec: Mapping[str, Any], m: int) -> float:
+    """M-1 (corrective cycle 1): the peak through month m's close from the record the reading at 21 m reads
+    (`user_journey.effective`): the exact 21 m-session run's own where its event days differed from the long run's
+    (`rec["alt"]`), else the long run's. `entry`: `{"long": the long run's 12 peaks, "exact": {h: that run's}}` (or
+    the long run's peaks alone); refused when the record read is an exact run whose peak is not held."""
+    h = MONTH * int(m)
+    if isinstance(entry, Mapping):
+        long, exact = entry["long"], {int(k): v for k, v in (entry.get("exact") or {}).items()}
+    else:
+        long, exact = entry, {}
+    if str(h) in (rec.get("alt") or {}):
+        if h not in exact:
+            raise ValueError(f"REFUSED (W3.1, M-1): start {rec['start_day']}'s exact {h}-session run differs from its "
+                             "long run and that run's peak is not held: P_B would mix two records")
+        return float(exact[h][int(m) - 1])
+    return float(long[int(m) - 1])
+
+
 def extra_rows(records: Sequence[Mapping[str, Any]], blocks: Sequence[str] = BLOCKS, *,
                block_of: Mapping[int, str] | None = None, peaks: Mapping[int, Sequence[float]] | None = None,
                budgets: Sequence[float] = ()) -> list[dict[str, Any]]:
     """E-007 (e)'s rows on each block. W3.1, on E-208's blocks (`block_of`, and `peaks`: start day -> the peak
-    out-of-pocket through each month close): at each budget B, `P_B_{B}` (MEASURES.md section 2: ahead at a month only
+    out-of-pocket through each month close, the long run's and each exact run's, `_peak_for` choosing the one the
+    month's reading reads): at each budget B, `P_B_{B}` (MEASURES.md section 2: ahead at a month only
     with the peak through its close at most B) and `P_B_before_first_payout_{B}` (its named sub-reading: the spending
     before the first payout, read on closes 0 .. 21 m); the share past a limit is not written there ((24) replaces it,
     `journey_rows`)."""
@@ -293,7 +312,7 @@ def extra_rows(records: Sequence[Mapping[str, Any]], blocks: Sequence[str] = BLO
         if b in E208_BLOCKS:                                                    # W3.1: P_B, the peak through the close
             if peaks is None:
                 raise ValueError(f"REFUSED (W3.1): P_B on the {b!r} block needs each journey's peak by month")
-            pk = np.array([[float(peaks[int(r["start_day"])][m - 1]) for m in M.P_MONTHS] for r in sub], float)
+            pk = np.array([[_peak_for(peaks[int(r["start_day"])], r, m) for m in M.P_MONTHS] for r in sub], float)
             fy = np.column_stack([V.at(MONTH * m)["first_payout"].to_numpy(float) for m in M.P_MONTHS])
             within = np.where(fy <= np.array([MONTH * m for m in M.P_MONTHS]), spent, np.nan)   # closes 0 .. 21 m
             for lim in budgets:
@@ -373,19 +392,57 @@ def response_rows(t: pd.DataFrame, blocks: Sequence[str] = BLOCKS) -> list[dict[
     return out
 
 
+def journey_check_problems(outs: Sequence[Mapping[str, Any]],
+                           explained: Mapping[tuple[int, int], str] | None = None) -> list[str]:
+    """M-2 (corrective cycle 1; MEASURES.md 1.1): a journey reading reads each start's long run cut at its block's end,
+    which is allowed only with U1's identity checked on the cut runs. Why the outputs cannot be read (empty: they
+    can): a start not checked at every exact horizon below its run's length (`user_journey.EXACT`, h < observed; run
+    `user_beside.run_starts(..., journey=True)` with its default `exact_every=1`), and a start whose exact h-session
+    run differs from its long run, unless a declared reason explains it -- `explained[(start day, h)]`, a non-empty
+    text from the declaration (none is declared today, so every difference refuses)."""
+    from propedge.research import user_journey as U
+
+    ex = dict(explained or {})
+    if any(not isinstance(v, str) or not v.strip() for v in ex.values()):
+        raise ValueError("REFUSED (W3.1, M-2): a declared reason is a non-empty text")
+    unchecked, unexplained = [], []
+    for x in outs:
+        st, obs = int(x["rec"]["start_day"]), int(x["rec"]["observed"])
+        if sorted(int(h) for h in x["checked"]) != [h for h in U.EXACT if h < obs]:
+            unchecked.append(st)
+        unexplained += [(st, int(h)) for h in x["differs"] if (st, int(h)) not in ex]
+    out = []
+    if unchecked:
+        out.append(f"{len(unchecked)} starts not checked at every exact horizon below their run's length (first: "
+                   f"start {unchecked[0]}); run the journey with exact_every=1")
+    if unexplained:
+        out.append(f"{len(unexplained)} exact-run differences no declared reason explains (first: start "
+                   f"{unexplained[0][0]} at {unexplained[0][1]} sessions)")
+    return out
+
+
 def summary(design: str, arm: str, resp: Any, outs: Sequence[Mapping[str, Any]], *,
-            blocks: Sequence[str] = BLOCKS, budgets: Sequence[float] = ()) -> tuple[list[dict], pd.DataFrame]:
+            blocks: Sequence[str] = BLOCKS, budgets: Sequence[float] = (),
+            explained: Mapping[tuple[int, int], str] | None = None) -> tuple[list[dict], pd.DataFrame]:
     """One design, arm and response: (the summary rows, the per-start table), on `blocks` -- by default the search
     years (W3.1), which read block-bounded journeys; a registered reading names its blocks (`Q44_BLOCKS`,
     `READING_BLOCKS`). On E-208's blocks `budgets` are `P_B`'s B (the operator's); the section `journey` is
-    `extended.journey_readings`' (its `summary` is this one with that section added)."""
-    records = [x["rec"] for x in outs]
+    `extended.journey_readings`' (its `summary` is this one with that section added). On journeys (corrective cycle
+    1): only the named blocks' starts are read or tabled (M-3), and the outputs must pass `journey_check_problems`
+    (M-2; `explained`, the declaration's reasons) or the reading is refused."""
     jour = is_journey(outs)                                                     # W3.1
     check_blocks(blocks, jour, "the summary")
+    if jour:                                                                    # M-3: the named blocks' starts only
+        outs = [x for x in outs if str(x["journey"]["block"]) in blocks]
+        bad = journey_check_problems(outs, explained)                           # M-2: the cut runs' identity enforced
+        if bad:
+            raise ValueError("REFUSED (W3.1, M-2): " + "; ".join(bad))
+    records = [x["rec"] for x in outs]
     t = start_table(design, arm, resp.name, outs)
     if jour:
         block_of = {int(x["rec"]["start_day"]): str(x["journey"]["block"]) for x in outs}
-        peaks = {int(x["rec"]["start_day"]): list(x["journey"]["peak_month"]) for x in outs}
+        peaks = {int(x["rec"]["start_day"]): {"long": list(x["journey"]["peak_month"]),
+                                              "exact": dict(x["journey"].get("peak_exact") or {})} for x in outs}
         rows = (scorecard_rows(records, blocks, block_of=block_of)
                 + extra_rows(records, blocks, block_of=block_of, peaks=peaks, budgets=budgets)
                 + path_rows(t, blocks) + response_rows(t, blocks))
@@ -456,6 +513,6 @@ def consistency_problems(rows: Sequence[Mapping[str, Any]], outs: Sequence[Mappi
 
 
 __all__ = ["BLOCKS", "Q44_BLOCKS", "E208_BLOCKS", "KNOWN_BLOCKS", "READING_BLOCKS", "START_COLS", "MONEY_COLS",
-           "PEAK_COLS", "JOURNEY_COLS", "MDD_NOTE", "is_journey", "is_journey_table", "check_blocks", "start_table",
+           "PEAK_COLS", "JOURNEY_COLS", "MDD_NOTE", "is_journey", "is_journey_table", "check_blocks", "journey_check_problems", "start_table",
            "rounded", "scorecard_rows", "extra_rows", "path_rows", "response_rows", "summary",
            "consistency_problems"]

@@ -74,7 +74,7 @@ def test_the_journey_stops_at_its_blocks_last_session(got):
 
 
 def test_uncut_journeys_equal_the_absent_run_apart_from_their_key(got):
-    assert got["journey_uncut_compared"] == 5 * 5
+    assert got["journey_uncut_compared"] == 5 * 5          # against the absent run with every start checked
     assert got["journey_uncut_diff"] == {}, got["journey_uncut_diff"]
     assert got["journey_key_placed"]
     assert got["journey_rel_ok"] and got["journey_peak_ok"] and got["journey_arrivals_ok"]
@@ -109,3 +109,45 @@ def test_the_journey_rows_are_not_vacuous(got):
     assert {"share_paid_within", "share_run_out", "share_peak_over"} <= set(ex["states_nonzero"]), ex
     assert ex["accounts"] > 0 and ex["lost"] > 0 and ex["e252"] > 0, ex
     assert any(0 < v < 1 for v in ex["p_b"]), ex
+
+
+# ------------------------------------------------------------------------------------------------ corrective cycle 1
+
+
+def test_the_block_check_is_independent_and_catches_the_whole_window_length(got):
+    """N-8: the block check is recomputed from the dates alone; the whole-window length (the mutation) crosses the
+    block's end on exactly the cut starts, and the runner's own check (`journey_run_problems`) refuses it there and
+    passes the journey's length."""
+    last = got["last_search"]
+    assert {int(k.split("|")[1]) for k in got["legacy_crosses"]} == {200, last - 40, last}
+    assert len(got["legacy_crosses"]) == 3 * 5
+    assert got["guard_catches_the_mutation"]
+
+
+def test_m3_a_search_call_never_replays_or_tables_a_held_out_start(got):
+    m3 = got["m3"]
+    for k in ("default_mixed", "held_out_named_given_search", "block_without_journey", "unknown_block"):
+        assert m3[k] == "ValueError", (k, m3[k])
+    assert m3["reached_pool"] == 0                          # refused before the pool
+    assert m3["default_search_ran"] and m3["held_named_ran"]
+    assert m3["search_table_starts"] and m3["search_table_blocks"] == ["search"]
+
+
+def test_m2_every_start_is_checked_and_a_difference_refuses_unless_declared(got):
+    m2 = got["m2"]
+    assert got["journey_every_start_checked"]               # exact_every defaults to 1 under the journey
+    assert m2["unchecked_refused"] == "ValueError"          # exact_every=21 given: 20 in 21 unchecked
+    assert m2["dense_reads"]
+    assert m2["difference_refused"] == "ValueError" and m2["difference_refused_by_user_readings"] == "ValueError"
+    assert m2["explained_reads"] and m2["empty_reason_refused"] == "ValueError"
+    assert m2["cost_ratio_every_start_against_one_in_21"] > 1.0       # reported: the check's cost
+
+
+def test_m1_p_b_reads_ahead_and_the_peak_from_one_record(got):
+    """A start whose exact 63-session run differs (an injected record: the same events, a peak above the budget)
+    loses exactly its month-3 count from P_B; with the long run's peak (the mutation) P_B would not move. A missing
+    exact peak refuses."""
+    m1 = got["m1"]
+    assert m1["drop_is_one_month"] and m1["pb_after"] < m1["pb_before"], m1
+    assert m1["missing_exact_peak_refused"] == "ValueError"
+    assert m1["peak_exact_held"]
