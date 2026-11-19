@@ -36,7 +36,13 @@ others are cancelled at that fill.
   trade is worse for the user -- the lower gross, the walk settling a two-barrier bar stop first; then the later exit;
   then the lower sub -- flagged `oco_tie`, the other counted `oco_tie_cancelled`; never no trade. The firm stays busy
   to the later of the two walked exits (`busy_until`), so no later offer's placement depends on which one is booked,
-  an outcome decided after that offer's moment (**E-222 M-6 ruling (lead)**, with the busy time made causal).
+  an outcome decided after that offer's moment (**the M-6 ruling (lead)**: E-223's booking, its busy time amended by
+  the lead to the later exit, E-223's "busy to its exit" being a look-ahead as worded). In the user's book a tie is
+  either ticket's position, both sides, over [fill, busy_until) (`positions_of`; the re-read's m-1, conduct tier 1).
+* **A day whose bars end before the walk's end** (`W.last_bar` before `rules.walk_end`: under `JOURNEY`, no bar
+  stamped 15:07 CT or later) is refused (`DayRefused`) unless the caller voided it (`DayContext.void`, or an FOMC day):
+  the walker's last fill bar is the bar before its walk's end, so on such a day a fill would depend on whether later
+  bars exist (the re-read's m-3). The void condition: an early close or a data defect on the pinned calendar.
 
 The chain is fixed by the walks as run (the run's exit times), before any redraw (the design note 1.6: overlap is
 decided on the scheduled entries and the run's exits, never the path's). Every decision -- placed, skipped and why,
@@ -47,7 +53,8 @@ that overlaps another in time is refused -- **opposite sides as conduct tier 1**
 accounts or firms, CHARTER 3.4, 4), the same side as an overlap the template has not defined (`OverlapRefused`). Two
 positions overlap when their holding intervals [open, close) on the absolute clock intersect: the open is the fill bar's
 open minute, the close the exit bar's end. Inside one firm the chain makes overlap impossible; across firms the book
-refuses the design.
+refuses the design. A tie's alternatives (`positions_of`) are each checked against every other position; a
+refusal is a property of the design on that day, never a reason to drop the day (the re-read's n-6).
 
 **The schedule's fields** (`ScheduledTrade`; the design note 1.7): firm, component and source; the session, its date;
 the decision, alert and live slots; the order kind (and a ticket's fade or break); the side and its source (`coin`);
@@ -81,6 +88,11 @@ class OverlapRefused(RuntimeError):
 
 class TierOneRefused(RuntimeError):
     """Two opposite positions of the user held at once, across accounts or firms: conduct tier 1."""
+
+
+class DayRefused(RuntimeError):
+    """A day the caller did not void whose bars end before the walk's end (m-3): the walker's last fill bar would
+    depend on whether later bars exist."""
 
 
 # ------------------------------------------------------------------------------------------------ components and designs
@@ -202,6 +214,7 @@ class ScheduledTrade:
     net_r: float | None
     oco_tie: bool = False
     busy_until: int = -1
+    tie_sides: tuple[int, ...] = ()
 
 
 @dataclass
@@ -238,7 +251,7 @@ def _groups(offers: Sequence[tuple[int, T.Offer]]) -> list[list[tuple[int, T.Off
 
 
 def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayContext, oco_tie: bool = False,
-               busy_until: int | None = None) -> ScheduledTrade:
+               busy_until: int | None = None, tie_sides: tuple[int, ...] = ()) -> ScheduledTrade:
     off, tr = ex.offer, ex.trade
     ticket = ""
     if off.entry == T.TICKET:
@@ -253,11 +266,11 @@ def _trade_row(design: Design, comp: Component, ex: T.Execution, ctx: T.DayConte
         window_flatten=ex.window_flatten, instrument=comp.instrument,
         underlying="NQ", gross_ticks=int(tr.rule.gross[0]),
         net_r=None if tr.rule.net_r is None else float(tr.rule.net_r[0]), oco_tie=bool(oco_tie),
-        busy_until=ex.exit_slot if busy_until is None else int(busy_until))
+        busy_until=ex.exit_slot if busy_until is None else int(busy_until), tie_sides=tuple(int(x) for x in tie_sides))
 
 
 def _worse(e: T.Execution) -> tuple:
-    """The order of badness of a tied member's walked trade for the user (E-222 M-6): the lower gross first (the
+    """The order of badness of a tied member's walked trade for the user (the M-6 ruling, E-223 as amended): the lower gross first (the
     walk's own stop-first settlement on two-barrier bars), then the later exit, then the lower sub."""
     return int(e.trade.rule.gross[0]), -e.exit_slot, int(e.offer.sub)
 
@@ -267,6 +280,11 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
     """One firm's day under the chain (the module docstring)."""
     if hist.days[i] != ctx.date:
         raise ValueError(f"the day's context is {ctx.date}, the history's day {i} is {hist.days[i]}")
+    if not (ctx.void or ctx.fomc):                                   # m-3: a data-integrity refusal, not a decision
+        last = W.last_bar(hist.o[i])
+        if last is None or last < int(rules.walk_end):
+            raise DayRefused(f"{ctx.date}: the day's last bar ends at slot {last}, before the walk's end "
+                             f"{int(rules.walk_end)}; such a day is voided by the caller's calendar (DayContext.void)")
     out = DaySchedule(design.firm, int(ctx.session), ctx.date)
     mine: list[tuple[int, T.Offer]] = []
     for ci, comp in enumerate(design.components):
@@ -293,7 +311,8 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
             tied = [e for e in filled if e.trade.fill.bar == first_bar]
             win = min(tied, key=_worse)                                     # M-6: the worse walked trade on a tie
             end = max(e.exit_slot for e in tied)                            # busy to the later exit, whichever booked
-            out.trades.append(_trade_row(design, comp, win, ctx, oco_tie=len(tied) > 1, busy_until=end))
+            out.trades.append(_trade_row(design, comp, win, ctx, oco_tie=len(tied) > 1, busy_until=end,
+                                         tie_sides=tuple(e.side for e in tied) if len(tied) > 1 else ()))
             for e in exs:
                 if e is not win:
                     out.unfilled.append((e.offer, "oco_tie_cancelled" if any(e is x for x in tied)
@@ -320,7 +339,9 @@ def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, uni
 @dataclass(frozen=True)
 class Position:
     """A position of the user: its firm and account, its session, the minutes it opens (the fill bar's open) and closes
-    (the exit bar's end), its side and underlying, and a reference for messages."""
+    (the exit bar's end), its side and underlying, and a reference for messages. `group`: the alternatives of one
+    same-bar tie (`positions_of`) share a non-empty group and are never checked against each other -- they are the two
+    positions the user may hold, of which the user holds one."""
 
     firm: str
     account: str
@@ -330,6 +351,7 @@ class Position:
     side: int
     underlying: str = "NQ"
     ref: str = ""
+    group: str = ""
 
     def interval(self) -> tuple[int, int]:
         base = int(self.session) * T.DAY_SLOTS
@@ -337,12 +359,26 @@ class Position:
 
 
 def position_of(tr: ScheduledTrade, account: str = "") -> Position:
+    """The booked position of a trade, [fill, exit). For the user's book use `positions_of`, which covers a tie."""
     return Position(tr.firm, account, tr.session, tr.fill_slot, tr.exit_slot, tr.side, tr.underlying,
                     f"{tr.firm}/{tr.component}/{tr.date}@{tr.fill_slot}")
 
 
+def positions_of(tr: ScheduledTrade, account: str = "") -> list[Position]:
+    """The positions the user may hold from a trade (the re-read's m-1, conduct tier 1): the booked one, [fill, exit);
+    or, for a same-bar tie, where which ticket the broker filled is unknown, every tied ticket's side over
+    [fill, busy_until) -- so another account's or firm's position in that span is refused, as tier 1 where it opposes
+    either side."""
+    ref = f"{tr.firm}/{tr.component}/{tr.date}@{tr.fill_slot}"
+    if not tr.oco_tie:
+        return [position_of(tr, account)]
+    return [Position(tr.firm, account, tr.session, tr.fill_slot, tr.busy_until, int(s), tr.underlying,
+                     f"{ref} (tie, side {int(s):+d})", group=ref) for s in sorted(set(tr.tie_sides))]
+
+
 class UserBook:
-    """Every position of the user across accounts and firms; `add` refuses an overlap (opposite sides: tier 1)."""
+    """Every position of the user across accounts and firms; `add` refuses an overlap -- as conduct tier 1 when any
+    position it overlaps has the opposite side, else as an undefined overlap."""
 
     def __init__(self, overlap: str = "refused"):
         if overlap not in OVERLAP_MODES:
@@ -353,14 +389,16 @@ class UserBook:
         if int(p.side) not in (1, -1) or int(p.close_slot) < int(p.open_slot):
             raise ValueError(f"a position has a side and closes after it opens: {p}")
         a0, a1 = p.interval()
-        for q in self.positions:
-            b0, b1 = q.interval()
-            if a0 < b1 and b0 < a1:
-                if int(p.side) != int(q.side):
-                    raise TierOneRefused(f"REFUSED (conduct tier 1): {p.ref} ({p.firm}/{p.account}) opposes {q.ref} "
-                                         f"({q.firm}/{q.account}) while both are open")
-                raise OverlapRefused(f"REFUSED: {p.ref} and {q.ref} are held at once; overlap is undefined until the "
-                                     "search template defines it")
+        hits = [q for q in self.positions if not (p.group and q.group == p.group)
+                and a0 < q.interval()[1] and q.interval()[0] < a1]
+        opposed = [q for q in hits if int(q.side) != int(p.side)]
+        if opposed:
+            q = opposed[0]
+            raise TierOneRefused(f"REFUSED (conduct tier 1): {p.ref} ({p.firm}/{p.account}) opposes {q.ref} "
+                                 f"({q.firm}/{q.account}) while both may be open")
+        if hits:
+            raise OverlapRefused(f"REFUSED: {p.ref} and {hits[0].ref} are held at once; overlap is undefined until the "
+                                 "search template defines it")
         self.positions.append(p)
 
     def extend(self, ps: Iterable[Position]) -> None:
@@ -379,10 +417,10 @@ def schedule_user(designs: Sequence[Design], hist: T.History, i: int, ctx: T.Day
     book = UserBook() if book is None else book
     days = [schedule_day(d, hist, i, ctx, unit, rules=rules, costs=costs) for d in designs]
     for day in days:
-        book.extend(position_of(t) for t in day.trades)
+        book.extend(p for t in day.trades for p in positions_of(t))
     return days, book
 
 
-__all__ = ["TASK", "OVERLAP_MODES", "SKIP_REASONS", "DesignRefused", "OverlapRefused", "TierOneRefused", "Component",
-           "session_bounds", "Design", "ScheduledTrade", "DaySchedule", "schedule_day", "Position", "position_of",
-           "UserBook", "schedule_user"]
+__all__ = ["TASK", "OVERLAP_MODES", "SKIP_REASONS", "DesignRefused", "OverlapRefused", "TierOneRefused", "DayRefused",
+           "Component", "session_bounds", "Design", "ScheduledTrade", "DaySchedule", "schedule_day", "Position",
+           "position_of", "positions_of", "UserBook", "schedule_user"]

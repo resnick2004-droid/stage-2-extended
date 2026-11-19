@@ -8,7 +8,7 @@ What is held:
   within five minutes of its exit (`gap`), while an entry order is working (`order`); every schedule's trades are five
   minutes apart at least, on hand-built and synthetic days;
 * RL3's one-cancels-other tickets: the first fill wins and cancels the other; two fills on one bar book the worse
-  walked trade and keep the firm busy to the later exit (E-222 M-6 ruling);
+  walked trade and keep the firm busy to the later exit (the M-6 ruling, E-223 as amended);
 * a group keeps the firm busy until its last working stretch ends, a re-written ticket that turns void included
   (corrective cycle 1, B-1; the red team's day `docs/reviews/BUILD_W31_Q152_2026-11-18.md`);
 * **every decision of `schedule_day` -- placed, skipped (with its reason), refused -- is unchanged when the bars from
@@ -160,36 +160,48 @@ def test_rl3_one_cancels_other_and_a_same_bar_tie():
     assert s.trades[0].ticket_rule == ("break" if sides["pd_hi"] == 1 else "fade")
     assert s.unfilled == [(next(o for o in offs if o.tag == "pd_lo"), "oco_cancelled")]
 
-def test_a_same_bar_tie_books_the_worse_trade_and_stays_busy_to_the_later_exit():
-    """E-222 M-6 ruling (lead): both one-cancels-other tickets filling on one bar book the ticket whose walked trade is
-    worse for the user (lower gross; then the later exit; then the lower sub), never no trade, and the firm stays busy
-    to the later of the two walked exits (the booked one may be the earlier: the decision of a later offer must not
-    depend on which is booked, M-5). Catches: no trade booked on a tie, the better trade booked, the firm freed at the
-    tie bar or at the booked trade's own exit."""
+TIE_STOP, TIE_RR = 400, 3.0                             # 100 points; targets 300 points away
+TIE_KINDS = ("flat", "up", "down")
+TIE_MK_MARKS = (1025, 1035, 1060, 1105, 1110, 1200)
+
+
+def tie_component() -> C.Component:
+    return C.Component("rl3", "ny_am", 960, 1015, T.RL3Tickets("pd", T.RL3_CUTOFFS[2]), TIE_STOP, TIE_RR)
+
+
+def tie_history(kind: str) -> T.History:
+    """The M-6 tie days: a prior day whose regular session spans 12950-13150 (`pd`), and a day on which both levels
+    trade through on the bar stamped 10:20; then flat, up (to 13250 at 10:30, a short from 13150 stopped there; through
+    13250 at 11:40, a long from 12950's target) or down (the mirror)."""
     prev = flat_day(13050.0)
-    set_bar(prev, W.slot(9, 0), 13050.0, 13150.0, 12950.0, 13050.0)            # pd: high 13150, low 12950
-    stop, rr = 400, 3.0                                                         # 100 points; targets 300 points away
-    rl3 = C.Component("rl3", "ny_am", 960, 1015, T.RL3Tickets("pd", T.RL3_CUTOFFS[2]), stop, rr)
-    mk = marks_component("mk", 1016, 1300, (1025, 1035, 1060, 1105, 1110, 1200), stop=40, rr=1.0)
+    set_bar(prev, W.slot(9, 0), 13050.0, 13150.0, 12950.0, 13050.0)
+    tie = flat_day(13050.0)
+    set_bar(tie, 1020, 13050.0, 13150.0 + 2 * TK, 12950.0 - 2 * TK, 13050.0)
+    if kind == "up":
+        for s in range(1030, 1439):
+            set_bar(tie, s, 13250.0, 13250.0, 13250.0, 13250.0)
+        set_bar(tie, 1100, 13250.0, 13251.0, 13250.0, 13250.0)
+    elif kind == "down":
+        for s in range(1030, 1439):
+            set_bar(tie, s, 12850.0, 12850.0, 12850.0, 12850.0)
+        set_bar(tie, 1100, 12850.0, 12850.0, 12849.0, 12850.0)
+    return T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
+                                 *[np.stack([a, b]) for a, b in zip(prev, tie)])
+
+
+def test_a_same_bar_tie_books_the_worse_trade_and_stays_busy_to_the_later_exit():
+    """The M-6 ruling (lead; E-223 as amended to this rule): both one-cancels-other tickets filling on one bar book the
+    ticket whose walked trade is worse for the user (lower gross; then the later exit; then the lower sub), never no
+    trade, and the firm stays busy to the later of the two walked exits (the booked one may be the earlier: the
+    decision of a later offer must not depend on which is booked, M-5). Catches: no trade booked on a tie, the better
+    trade booked, the firm freed at the tie bar or at the booked trade's own exit."""
+    stop, rr = TIE_STOP, TIE_RR
+    rl3 = tie_component()
+    mk = marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0)
     ctx = T.DayContext(1, "2021-03-03")
-
-    def path(kind: str) -> list[np.ndarray]:
-        tie = flat_day(13050.0)
-        set_bar(tie, 1020, 13050.0, 13150.0 + 2 * TK, 12950.0 - 2 * TK, 13050.0)  # both levels traded on one bar
-        if kind == "up":            # to 13250 at 10:30 (a short from 13150 stopped), through it at 11:40
-            for s in range(1030, 1439):
-                set_bar(tie, s, 13250.0, 13250.0, 13250.0, 13250.0)
-            set_bar(tie, 1100, 13250.0, 13251.0, 13250.0, 13250.0)
-        elif kind == "down":        # the mirror: to 12850 at 10:30, through it at 11:40
-            for s in range(1030, 1439):
-                set_bar(tie, s, 12850.0, 12850.0, 12850.0, 12850.0)
-            set_bar(tie, 1100, 12850.0, 12850.0, 12849.0, 12850.0)
-        return tie
-
     earlier_booked = 0
-    for kind in ("flat", "up", "down"):
-        ht = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
-                                   *[np.stack([a, b]) for a, b in zip(prev, path(kind))])
+    for kind in TIE_KINDS:
+        ht = tie_history(kind)
         offs = rl3.trigger.offers(ht, 1, ctx)
         exs = [T.execute(o, T.coin_side(UNIT, o), ht, 1, ctx, stop, rr) for o in offs]
         assert all(e.filled and e.trade.fill.bar == 1021 for e in exs)
@@ -208,6 +220,63 @@ def test_a_same_bar_tie_books_the_worse_trade_and_stays_busy_to_the_later_exit()
         assert all(t.live >= end + T.GAP_MINUTES for t in mk_rows)
         assert mk_rows or end + T.GAP_MINUTES > 1200                 # the last mark is 13:00
     assert earlier_booked >= 1                                       # a case where the booked trade closes first
+
+
+def test_m2_decisions_on_the_tie_days_are_shift_invariant():
+    """m-2 (the re-read): the decision shift test on the three tie days. Catches: the firm kept busy only to the
+    booked trade's exit (the M-6 wording before its amendment), which the red team's read found makes three decisions
+    depend on later bars here."""
+    design = C.Design("ts", (tie_component(), marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0)))
+    ctx = T.DayContext(1, "2021-03-03")
+    total = 0
+    for k, kind in enumerate(TIE_KINDS):
+        bad, n = shift_violations(design, tie_history(kind), 1, ctx, UNIT, day_key=200 + k)
+        assert not bad, (kind, bad[:3])
+        total += n
+    assert total > 30
+
+
+@pytest.mark.parametrize("mfffu_mark, refused", [(1040, True), (1110, False)])
+def test_m1_a_tie_counts_as_either_ticket_in_the_users_book(mfffu_mark, refused):
+    """m-1 (the re-read; conduct tier 1): on a same-bar tie the user may hold either ticket's position until the
+    group's busy time, so the book holds both possible positions, both sides, over [fill, busy_until), and another
+    firm's position inside that span is refused -- as tier 1, since one of the two sides opposes it. The red team's
+    input: the "down" tie day (the booked long closes at 10:11, the short could be open to 11:21) and an MFFU mark at
+    10:20 CT; a mark at 11:30, after the later exit, is accepted. Catches: the book closing the tie at the booked
+    ticket's exit, the book checking the booked side only."""
+    ts = C.Design("ts", (tie_component(),))
+    mf = C.Design("mffu", (marks_component("m", 1016, 1300, (mfffu_mark,), stop=40),))
+    h, ctx = tie_history("down"), T.DayContext(1, "2021-03-03")
+    row = C.schedule_day(ts, h, 1, ctx, UNIT).trades[0]
+    assert row.oco_tie and row.exit_slot < row.busy_until and set(row.tie_sides) == {1, -1}
+    alts = C.positions_of(row)
+    assert {p.side for p in alts} == {1, -1} and all(p.interval()[1] - p.session * 1440 == row.busy_until
+                                                      for p in alts)
+    if refused:
+        with pytest.raises(C.TierOneRefused):
+            C.schedule_user((ts, mf), h, 1, ctx, UNIT)
+    else:
+        days, book = C.schedule_user((ts, mf), h, 1, ctx, UNIT)
+        assert len(book.positions) == 3 and days[1].trades[0].fill_slot == mfffu_mark
+
+
+def test_m3_a_day_ending_before_the_walks_end_is_refused_unless_voided():
+    """m-3 (the re-read): a day whose last bar is before `rules.walk_end` (under `JOURNEY`, no bar stamped 15:07 or
+    later) is refused unless the caller voided it -- the walker's last fill bar would otherwise depend on whether later
+    bars exist. Catches: the guard missing, a guard off by a bar (a day ending at 15:07 is accepted)."""
+    comp = marks_component("m", 1016, 1300, (1200,), stop=40)
+    day = flat_day()
+    for a in day:
+        a[W.slot(15, 3) + 1:] = np.nan                                      # the last bar is stamped 15:02
+    h = one_day(day)
+    with pytest.raises(C.DayRefused):
+        C.schedule_day(C.Design("ts", (comp,)), h, 0, ctx0(h), UNIT)
+    s = C.schedule_day(C.Design("ts", (comp,)), h, 0, ctx0(h, void=True), UNIT)
+    assert s.trades == [] and {r for _, r in s.refused} == {"calendar"}
+    ok = flat_day()
+    for a in ok:
+        a[W.slot(15, 8) + 1:] = np.nan                                      # the last bar is stamped 15:07
+    assert C.schedule_day(C.Design("ts", (comp,)), one_day(ok), 0, ctx0(one_day(ok)), UNIT).trades
 
 
 def test_the_chain_on_synthetic_days(hist):
@@ -437,8 +506,9 @@ def test_m5_every_decision_is_shift_invariant_on_the_red_teams_day():
 def test_m5_every_decision_is_shift_invariant_on_synthetic_days(hist):
     """M-5 on synthetic days with a news window after 09:00 (09:40-09:50) and an unscheduled release (11:10), so RL3
     tickets are re-written and cancelled: placed, skipped (with reasons) and refused decisions never depend on bars
-    after their moment. Catches: a busy time computed from a stretch's outcome after the moment, a skip reason read
-    from a later state (M-7), a tie booked by its outcome with the busy time following the booked trade (M-6)."""
+    after their moment. Catches: a busy time computed from a stretch's outcome after the moment (B-1), a skip reason
+    read from a later state or a fill known before its bar closes (M-7). These days hold no same-bar tie: the tie's
+    busy time is held by `test_m2_decisions_on_the_tie_days_are_shift_invariant`."""
     design = C.Design("ts", (
         C.Component("rl3", "ny_am", 960, 960, T.RL3Tickets("pdc", W.slot(12, 0)), 100, 1.0),
         C.Component("lim", "ny_am", 961, 1075, T.P16Marks(T.p16_grid(965, 1080), entry=T.LIMIT), 60, 1.0),

@@ -61,12 +61,12 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
   since the walker never opens a position on the bar it would flatten on, not on the bar stamped `first - 1` either
   (one minute conservative; the red team's N-1). A position open at a window's start is walked to the window's first
   slot and **booked at the adverse extreme of the window's first bar less two ticks, exiting at that bar's end** (at its
-  stop where that extreme reaches it) -- **E-222 M-4 ruling (lead)**, RL3 4.6 / 5.4's convention, the as-walked
+  stop where that extreme reaches it) -- **E-223 M-4 ruling (lead)**, RL3 4.6 / 5.4's convention, the as-walked
   convention for every source until the search template pins one (`window_flatten_trade`); for an unscheduled release,
   known only from its minute, at the first bar after that minute.
 * **The closed window**, 08:30-08:59 CT (bars stamped 08:30 to 08:59), every day and **for every source**: a window of
   kind `closed` under the same rules (E-202 (2)(a): "RL3's 08:30-08:59 fill window stays closed"), applied to every
-  source as a conservative floor -- **E-222 M-8 ruling (lead)**, which the lead records in a row.
+  source as a conservative floor -- **E-223 M-8 ruling (lead)**, which the lead records in a row.
 * **BLS 08:30 release days**: no entry at or before 07:35:00 CT (E-007 (d), CHARTER 4: strictly after it): a window of
   kind `bls` over the bars stamped 17:00 to 07:35, so the earliest fill is the open of the bar stamped 07:36.
 * **FOMC statement days are out** whole (CHARTER 4), and a calendar void day (an early close, a data defect: the
@@ -82,8 +82,10 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
 **The coin** (`docs/plans/THREE_WAY_TEST_design.md` 1.5, choice 3): an offer's side is +1 when the unit's uniform for
 it is below one half. The uniform's key is the design note's fixed-length coin key
 [role seed, 3, part, history, seed index, start, underlying, moment, draw kind] (`three_way_arith.seed_key`'s layout):
-it carries the unit's **start** and its seed index, **never an account or a firm index** (one literal draw per moment,
-shared by the user's accounts and firms), the **underlying** (MNQ and NQ are one), and the moment as
+it carries the unit's **start** and its seed index, **never an account or a firm index** -- which, in the evaluation,
+means only that opposite positions across a user's accounts or firms are refused (`components.UserBook`); it is not
+the traded side rule: in the playbook, sides come from each design's own trigger, under the no-harm floor, with
+accounts alternating (E-221, the operator's O-4 ruling) --, the **underlying** (MNQ and NQ are one), and the moment as
 (session x 1440 + decision slot) x 16 + sub -- a session index and a minute offset, never an epoch time. Every word is
 below 2^32. **The generator, declared:** numpy's counter-based Philox (4x64), seeded by `SeedSequence(key)`; the
 first raw 64-bit output's top 52 bits i give the uniform (2 i + 1) 2^-53, on the note's symmetric grid.
@@ -665,6 +667,7 @@ class Execution:
     attempts: tuple[W.Trade, ...]
     attempt_rules: tuple[W.Rules, ...] = ()
     base: W.Rules = JOURNEY
+    flatten_bar: int = -1
 
     @property
     def filled(self) -> bool:
@@ -687,9 +690,13 @@ class Execution:
 
     @property
     def flatten_slot(self) -> int:
-        """Where an open position would close: the end of a window's flatten bar (`window_flatten_trade`), or the
+        """Where an open position would close: the end of the window's flatten bar actually booked
+        (`window_flatten_trade`: the first present bar from the window's first minute, so it agrees with `exit_slot`
+        when the nominal bar is missing; the re-read's n-5), the walker's own walk end when no such bar exists, or the
         base walk's end."""
-        return int(self.rules.walk_end) + 1 if self.window_flatten else int(self.rules.walk_end)
+        if not self.window_flatten:
+            return int(self.rules.walk_end)
+        return int(self.flatten_bar) if int(self.flatten_bar) >= 0 else int(self.rules.walk_end)
 
     @property
     def busy_until(self) -> int | None:
@@ -713,8 +720,18 @@ class Execution:
         return max(ends) if ends else None
 
 
+def flatten_bar(o, er: W.Rules, base: W.Rules) -> int | None:
+    """The bar a window's flatten books (`window_flatten_trade`): the first present bar from the one ending a minute
+    after `er`'s walk end (the bar stamped at the window's first minute, or the minute after an unscheduled release)
+    to the base walk's end; None when `er` is the base walk or no such bar exists."""
+    if int(er.walk_end) >= int(base.walk_end):
+        return None
+    hi = min(int(base.walk_end), len(o) - 1)
+    return next((j for j in range(int(er.walk_end) + 1, hi + 1) if not math.isnan(o[j])), None)
+
+
 def window_flatten_trade(tr: W.Trade, er: W.Rules, base: W.Rules, o, h, l, c, costs: W.Costs | None) -> W.Trade:
-    """**E-222 M-4 ruling (lead), the as-walked convention for every source:** a position still open when a window
+    """**E-223 M-4 ruling (lead), the as-walked convention for every source:** a position still open when a window
     ends its walk (`rules_for`) is booked at the window's flatten bar -- the bar stamped at the window's first minute
     (for an unscheduled release, the first bar after its minute; the first present bar from there) -- at that bar's
     adverse extreme less two ticks (RL3 4.6 / 5.4's convention, the most conservative of the three texts), exiting at
@@ -725,8 +742,7 @@ def window_flatten_trade(tr: W.Trade, er: W.Rules, base: W.Rules, o, h, l, c, co
         return tr
     if W.walk_end(o, er) != int(er.walk_end):
         return tr                                   # the day's bars end earlier: the walker's own flatten stands
-    hi = min(int(base.walk_end), len(o) - 1)
-    fb = next((j for j in range(int(er.walk_end) + 1, hi + 1) if not math.isnan(o[j])), None)
+    fb = flatten_bar(o, er, base)
     if fb is None:
         return tr
     S = int(tr.stop_ticks)
@@ -775,7 +791,8 @@ def execute(offer: Offer, side: int, hist: History, i: int, ctx: DayContext, sto
         used.append(er)
         if tr.fill.status in ("filled", "void"):
             break
-    return Execution(offer, int(side), kind, tr, er, tuple(attempts), tuple(used), rules)
+    fb = flatten_bar(o, er, rules)
+    return Execution(offer, int(side), kind, tr, er, tuple(attempts), tuple(used), rules, -1 if fb is None else fb)
 
 
 # ------------------------------------------------------------------------------------------------ the coin
@@ -795,7 +812,9 @@ MOMENT_SUBS = 16
 @dataclass(frozen=True)
 class CoinUnit:
     """One user's coin: the declaration's coin role seed, the part and history, the seed's index, the unit's start
-    day and the underlying. No account and no firm: their accounts and firms share each draw (m-9)."""
+    day and the underlying. No account and no firm index (m-9): in the evaluation that means only that opposite
+    positions across the user's accounts or firms are refused; in the playbook, sides come from each design's own
+    trigger, under the no-harm floor, with accounts alternating (E-221)."""
 
     seed: int
     part: int
@@ -849,6 +868,6 @@ __all__ = ["TASK", "LATENCIES", "REFERENCE_L", "LIMIT_WINDOW", "MARK_STEP", "ENT
            "H2_ROW", "OvernightRefused", "TriggerRefused", "decision_rows", "overnight_allowed", "require_overnight",
            "History", "Window", "release_window", "DayContext", "Offer", "check_latency", "breakout_events",
            "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "SOURCES", "admit", "segments",
-           "rules_for", "order_for", "Execution", "window_flatten_trade", "execute", "COIN_TAG", "COIN_FIELDS", "WORD",
+           "rules_for", "order_for", "Execution", "flatten_bar", "window_flatten_trade", "execute", "COIN_TAG", "COIN_FIELDS", "WORD",
            "UNDERLYING",
            "DRAW_SIDE", "MOMENT_SUBS", "CoinUnit", "moment", "coin_key", "key_state", "coin_uniform", "coin_side"]

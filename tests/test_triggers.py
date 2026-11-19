@@ -515,7 +515,7 @@ def test_a_working_limit_is_cancelled_at_a_windows_start():
 
 @pytest.mark.parametrize("side", [1, -1])
 def test_an_open_position_is_flattened_at_a_windows_first_bar_worst_less_two(side):
-    """E-222 M-4 ruling (lead): a position open at a window's start is booked at the adverse extreme of the window's
+    """E-223 M-4 ruling (lead): a position open at a window's start is booked at the adverse extreme of the window's
     first bar (the bar stamped at its first minute) less two ticks, exiting at that bar's end -- RL3 4.6 / 5.4's
     convention, for every source. Catches: the old close-before-the-window booking (gross 0 here), the bar's
     favourable extreme, the two ticks dropped, the flatten bar one minute off."""
@@ -537,6 +537,12 @@ def test_an_open_position_is_flattened_at_a_windows_first_bar_worst_less_two(sid
     stopped = T.execute(off, side, h, 0, ctx, 10, 3.0)                        # the bar reaches a 10-tick stop
     assert stopped.trade.rule.kind[0] == W.STOP and stopped.trade.rule.gross[0] == -10
     assert stopped.exit_slot == w.first + 1
+    gap = [a.copy() for a in day]                                              # n-5: the window's first bar missing
+    for a in gap:
+        a[w.first + 1] = np.nan
+    set_bar(gap, w.first + 1, P, P + (20 * TK if side < 0 else TK), P - (20 * TK if side > 0 else TK), P)
+    moved = T.execute(off, side, one_day(gap), 0, ctx, 200, 3.0)
+    assert moved.exit_slot == moved.flatten_slot == w.first + 2 and moved.trade.rule.gross[0] == -22
 
 
 def test_an_unscheduled_release_cancels_from_its_minute_and_flattens_after_it():
