@@ -95,7 +95,7 @@ SECTIONS = ("identity", "scorecard", "extra", "path", "response")
 KEY = ("section", "design", "arm", "response", "block", "measure", "stat")
 VERDICT, BESIDE = S.ARM, S.BESIDE_ARM                   # "verdict" (cautious), "point" (as traded)
 OFF = B.RESPONSES[0].name                                # every response off: the verdict view's
-ALL, JUDGED = UR.BLOCKS
+ALL, JUDGED = UR.Q44_BLOCKS                     # W3.1: Q-44's blocks, named
 MONTH = UR.MONTH
 FIRST_WINDOW, YEAR_WINDOW = UR.FIRST_WINDOW, UR.YEAR_WINDOW
 P_MONTHS = M.P_MONTHS
@@ -358,7 +358,7 @@ def cross_problems(rows: Rows, starts: StartRows) -> tuple[int, list[str]]:
     money = set(UR.MONEY_COLS)
     compared, out = 0, []
     for (d, a, r), t in starts.groups.items():
-        for row in UR.path_rows(t) + UR.response_rows(t):
+        for row in UR.path_rows(t, UR.Q44_BLOCKS) + UR.response_rows(t, UR.Q44_BLOCKS):
             k = (row["section"], d, a, r, row["block"], row["measure"], row["stat"])
             if k not in rows.by:
                 out.append(f"the summary has no row {k}")
@@ -824,7 +824,7 @@ def _blocks(rows: Rows, d: str) -> list[tuple[str, str]]:
     """(block, its words) the file holds for a design's verdict view."""
     have = {k[4] for k in rows.by if k[0] == "scorecard" and k[1] == d and k[2] == VERDICT and k[3] == OFF}
     words = {ALL: "All start days", JUDGED: f"Judged block (from {S.JUDGED_FIRST_YEAR})"}
-    return [(b, words[b]) for b in UR.BLOCKS if b in have]
+    return [(b, words[b]) for b in UR.Q44_BLOCKS if b in have]
 
 
 #: Q-86's journey rows: (measure, words, unit, window for a days percentile or None)

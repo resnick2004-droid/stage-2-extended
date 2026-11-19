@@ -1365,11 +1365,13 @@ def _run2(ctx: Ctx, pre, workers: int, run1_df, run1_params: dict[str, Any]) -> 
                     outs = camp_outs[name]                   # E-129 item 3: the campaign stage's replay, reused
                     if ctx.check_reuse:                      # the test's proof: the fresh call, row for row
                         fresh = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
-                        reuse_checks[name] = (UR.summary(name, arm, B.BY_NAME[resp], fresh)[0]
-                                              == UR.summary(name, arm, B.BY_NAME[resp], outs)[0])
+                        reuse_checks[name] = (UR.summary(name, arm, B.BY_NAME[resp], fresh,
+                                                         blocks=UR.Q44_BLOCKS)[0]          # W3.1: named
+                                              == UR.summary(name, arm, B.BY_NAME[resp], outs,
+                                                            blocks=UR.Q44_BLOCKS)[0])
                 else:
                     outs = B.run_starts(f"fo_{name}", arm, B.BY_NAME[resp], jb, st_, int(workers), **kw)
-                rows_, t = UR.summary(name, arm, B.BY_NAME[resp], outs)
+                rows_, t = UR.summary(name, arm, B.BY_NAME[resp], outs, blocks=UR.Q44_BLOCKS)   # W3.1
                 jr += [dict(r_) for r_ in rows_]
                 if resp == "off":
                     tables[(name, arm)] = t
