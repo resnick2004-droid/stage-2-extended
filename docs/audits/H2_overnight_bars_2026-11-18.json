@@ -1,5 +1,6 @@
 {
  "held_out_bar_checked": false,
+ "extra_reasons": [],
  "search": {
   "block": [
    "2020-01-02",
@@ -1859,13 +1860,13 @@
  },
  "meta": {
   "date": "2026-11-18",
-  "commit": "6ce8e6a3bbe2f72ad4f0229f97e86917bcc1316f",
-  "tree": "uncommitted changes",
-  "ran": "2026-11-19T02:19:39Z",
+  "commit": "3cf3453c2e23198bcb1b86c2093120977023ecca",
+  "tree": "clean",
+  "ran": "2026-11-19T08:33:39Z",
   "verify": "exit 0; data: 8 files match DATA_MANIFEST_stage2.sha256",
   "code_sha256": {
-   "scripts/h2_overnight_bars.py": "6abe9fb606d39527001f97217cb29465fea28b12fd222dd2de9429617e9a8a2c",
-   "extended/overnight_bars_check.py": "6177584b4c5aace7a9d9b2017407bc9bc7b63483499ad22a5ed74e42152b31f3"
+   "scripts/h2_overnight_bars.py": "d89ccc6797ecd576d3e497dd7aeacde4a0835b20dfafeb9ac7e4990069bd27d4",
+   "extended/overnight_bars_check.py": "0f5673d597c97f9452e0ab8ed74ff9b3a6f6391a385c32ee0d9428e467066e4b"
   },
   "schema": "columns and dtypes as README section 5: `ts` int64, `day` string, `contract` string, `open` float64, `high` float64, `low` float64, `close` float64, `volume` int64",
   "trading_day": {
@@ -1935,6 +1936,7 @@
      "first_dropped_day": "2026-07-17"
     }
    ]
-  }
+  },
+  "flags": "results\\h2_overnight_flags.csv"
  }
 }

@@ -170,3 +170,22 @@ Append-only: a row is never edited here; a correction is made in the decision lo
 | Q-134 | Every test that reads the real bar store or the walk caches carries the `heavy` marker (the lock guard then skips it while another job holds the lock), with a check that none lacks it | wt-infra | done: merged (E-198) | E-194 | light | 0 | E-194 |
 | Q-138 | Build RD-05 (A-0 to A-19, T-0 to T-13, R-1/R-2 and the notes of E-200), after Q-136/Q-136b merge in the sequenced merge and the shared identities are re-held | wt-user | done (E-209): coin side and step 0 merged; part F is Q-138b | E-200 | light | 0 | E-200 |
 | Q-147 | A lighter per-edit test hook (the edited file's tests, vendor integrity, the pinned declarations; the pre-commit fast tier unchanged); then done queue rows archived to `docs/archive/TASK_QUEUE_ARCHIVE.md` once `scripts/status.py` is shown to cope | wt-infra | done (E-209): merged; the queue archived | E-205 | light | 0 | E-205 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-18
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-152 | The trigger library's first sources: P-14's breakout timing, P-16's day and overnight marks and RL3's pre-session tickets as coin-sided sources, each with its declared zero-edge twin, the news rule, the chain and the closed 08:30-08:59 window; synthetic tests only | wt-levels | done (E-222) | E-208 | light | 0 | E-208 |
+| Q-155 | One pre-commit fast tier at a time across the machine (a lock under %LOCALAPPDATA%, waiting for memory before pytest) | wt-infra | done (E-217) | E-209 | light | 0 | E-209 |
+| Q-156 | A time limit on every `git grep` / `git log -S` the suite runs (`extended/git_scan.py`) | wt-infra | done (E-217) | E-217 | light | 0 | E-217 |
+| Q-157 | Wave 3.1: the journey measures MEASURES.md marks to build, and its to-change list | wt-user | done (E-222) | E-211 | light | 0 | E-222 |
+| Q-158 | The reader enforces CHARTER 3.6-3.7's held-out rules | wt-verify | done (E-222) | E-220 | light | 0 | E-222 |
+| Q-161 | The pre-commit hook: no commit written without the fast tier's own exit 0 (the killed-stub defect of 3451a10); a verdict record per tree and `scripts/check_verdicts.py` for the merge checklist; the tree label | wt-report | done (E-224) | E-222 | light | 0 | E-222 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-18
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-154 | H2: data integrity on the overnight bars (17:00 to 08:30 CT): gaps, session boundaries, daylight-saving transitions, thin bars -- before any overnight trigger enters a search | data-integrity | done (E-231) | E-208 | heavy | 0 | E-208 |
+| Q-163 | The red team's re-read of B-1's and B-2's fixes in full and the minors' by diff (E-207), Wave 3.1's and Q-152's corrective cycles | red-team | done (E-229) | E-223 | light | 0 | E-223 |
+| Q-164 | `scripts/install_hooks.py` installs each hook by a temporary file and `os.replace`, never in place | wt-report | done (E-230) | E-224 | light | 0 | E-224 |

@@ -43,6 +43,7 @@ cd $W && python scripts/vendor_stage2.py --verify
 
 - [ ] the tests pass in the worktree, with a time limit, and the count matches the hand-back
 - [ ] the tests the item needs exist and assert the right thing (read them: a test that cannot fail is no test)
+- [ ] **every commit of the branch has a fast-tier verdict** (Q-161, E-223): `python scripts/check_verdicts.py master..wt/<name>` exits 0; a listed commit (`--no-verify`, a rebase, a killed hook, or one made before the hooks of a3db3aa were installed) is covered by a verdict at the branch tip or rerun through the fast tier there, and named in the row -- otherwise the branch is not merged
 - [ ] **the identities hold** on the branch (E-002's gate rows at 4 paths in the suite; U1's start rows once Q-05
       lands); a branch that touches anything the engine or a walker uses runs them again
 
