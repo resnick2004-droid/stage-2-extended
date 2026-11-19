@@ -67,8 +67,10 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Iterable, Sequence
 
+from extended import day_calendar as DC
 from extended import lever_space as LS
 from extended import triggers as T
 from extended import walker as W
@@ -127,17 +129,31 @@ class Component:
         return W.target_ticks(self.rr, self.stop_ticks)
 
 
-def session_bounds() -> dict[str, tuple[int, int]]:
+def session_bounds(day: date | None = None) -> dict[str, tuple[int, int]]:
     """Each session's [start, end) in trading-day slots from the firm's day (`lever_space.session_windows`, minutes
     after the reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new
-    entry. The clock is 17:00-based: a firm reopening at another time is refused."""
+    entry. The clock is 17:00-based: a firm reopening at another time is refused.
+
+    The session starts are anchored to their local market times per date (E-231 (3), `day_calendar.anchored_starts`).
+    With `day`, that trading day's sessions; without, **the bounds that hold on every weekday of the search years**
+    (`day_calendar.SEARCH_START` to `SEARCH_END`): each session from its latest start to its earliest end, so a window
+    inside them is inside its session on every date."""
     td = LS.trading_day()
     if int(td["reopen"]) != 17 * 60:
         raise DesignRefused("the trading-day clock starts at 17:00 CT; this firm reopens at another time")
-    sw = LS.session_windows()
-    ny = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))
-    out = {k: (int(a), int(b)) for k, (a, b) in sw.items() if k not in ("ny_am", "ny_pm")}
-    out["ny_am"] = out["ny_pm"] = ny
+    days = [day] if day is not None else LS.trading_dates(DC.SEARCH_START, DC.SEARCH_END)
+    out: dict[str, tuple[int, int]] = {}
+    for d in days:
+        sw = LS.session_windows(d)
+        ny = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))
+        cur = {k: (int(a), int(b)) for k, (a, b) in sw.items() if k not in ("ny_am", "ny_pm")}
+        cur["ny_am"] = cur["ny_pm"] = ny
+        for k, (a, b) in cur.items():
+            a0, b0 = out.get(k, (a, b))
+            out[k] = (max(a0, a), min(b0, b))
+    for k, (a, b) in out.items():
+        if not a < b:
+            raise DesignRefused(f"session {k} holds no slot on every date of {days[0]} to {days[-1]}")
     out["_last_entry"] = (0, int(td["last_entry_offset"]))
     return out
 
@@ -149,6 +165,7 @@ class Design:
     firm: str
     components: tuple[Component, ...]
     overlap: str = "refused"
+    day: date | None = None                 # checked against that trading day's sessions; None: every search-year day
 
     def __post_init__(self) -> None:
         if self.overlap not in OVERLAP_MODES:
@@ -160,7 +177,9 @@ class Design:
         names = [c.name for c in comps]
         if len(set(names)) != len(names):
             raise DesignRefused(f"component names repeat: {names}")
-        bounds = session_bounds()
+        if self.day is not None and not isinstance(self.day, date):
+            raise DesignRefused(f"a design's day is a date, got {self.day!r}")
+        bounds = session_bounds(self.day)
         last_entry = bounds["_last_entry"][1]
         for c in comps:
             if c.session not in bounds or c.session.startswith("_"):
@@ -278,6 +297,8 @@ def _worse(e: T.Execution) -> tuple:
 def schedule_day(design: Design, hist: T.History, i: int, ctx: T.DayContext, unit: T.CoinUnit, *,
                  rules: W.Rules = T.JOURNEY, costs: W.Costs | None = None) -> DaySchedule:
     """One firm's day under the chain (the module docstring)."""
+    if design.day is not None and design.day.isoformat() != ctx.date:
+        raise DesignRefused(f"a design checked against the sessions of {design.day} is scheduled on {ctx.date}")
     if hist.days[i] != ctx.date:
         raise ValueError(f"the day's context is {ctx.date}, the history's day {i} is {hist.days[i]}")
     if not (ctx.void or ctx.fomc):                                   # m-3: a data-integrity refusal, not a decision
