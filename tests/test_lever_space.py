@@ -4,6 +4,10 @@ rule-derived bound equals its key's value as `firm_terms` reads it. The loader r
 compute" or "to declare", a dropped lever, and any lever leaning on a key that is not verified -- on the record as it
 stands (A9, A19) and on a record hand-broken here. No rule value is typed in the loader outside its declared table. It
 reads rules only: no bar, atlas, trade or result file is opened. Pure Python; fast.
+
+S1's reading (Q-171) may exist in a tree once the lead's clean run has written `results/s1_range.csv`; the tests here
+that assert S1's refusal point the loader at an absent file (`no_s1_reading`), so they assert the refusal *before the
+reading exists* in every tree. Loading it once it exists is `tests/test_s1_range.py`'s.
 """
 from __future__ import annotations
 
@@ -92,7 +96,13 @@ def test_the_counts_by_layer() -> None:
 # ------------------------------------------------------------------------------------------------ the refusals
 
 
-def test_to_compute_and_to_declare_and_dropped_are_refused() -> None:
+@pytest.fixture
+def no_s1_reading(tmp_path, monkeypatch):
+    """S1's reading absent (Q-171): the loader pointed at a file that does not exist."""
+    monkeypatch.setattr(LS, "S1_PATH", tmp_path / "absent" / "s1_range.csv")
+
+
+def test_to_compute_and_to_declare_and_dropped_are_refused(no_s1_reading) -> None:
     for i, lv in LS.LEVERS.items():
         if lv.cls == LS.DROPPED:
             with pytest.raises(LS.DroppedLever):
@@ -240,7 +250,7 @@ def test_latency_and_the_operators_dimensions() -> None:
     assert LS.bounds("A21").values == ("aeropay",)
 
 
-def test_space_and_refusals_partition_the_levers() -> None:
+def test_space_and_refusals_partition_the_levers(no_s1_reading) -> None:
     sp, rf = LS.space(), LS.refusals()
     assert set(sp) | set(rf) == set(LS.LEVERS) and not set(sp) & set(rf)
     assert {"T7", "S1", "T2b", "A15", "A16", "A17", "A9", "A19"} <= set(rf)
@@ -282,7 +292,7 @@ def test_no_rule_value_typed_in_the_loader_outside_its_declared_table() -> None:
     assert not bad, bad
 
 
-def test_the_loader_reads_rules_only(monkeypatch) -> None:
+def test_the_loader_reads_rules_only(monkeypatch, no_s1_reading) -> None:
     for f in (FT._record, FT._stage2, FT._fills, M.registered_stand_aside, M.tick_values, M.topstep_round_turn,
               M.fill_slippage):
         f.cache_clear()
