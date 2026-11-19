@@ -38,8 +38,8 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
   first below its low, each at most once per reference bar, events to 14:00 CT (`last_decision_ct`). The event's
   direction is dropped: each event is one offer moment. Alert = the event slot (its bar has closed); live = alert + L,
   L in the declared latencies, counted in clock minutes (F-04 5.1). A limit rests at the price at the alert (the close
-  of the last bar closed by then, `walker.price_at`; F-04 6.1) and works `limit_window_min` minutes. **Day events only**
-  (alert from 08:30) until H2's row: an earlier first slot is an overnight trigger (the restart plan 3.3).
+  of the last bar closed by then, `walker.price_at`; F-04 6.1) and works `limit_window_min` minutes. Its events run
+  from 17:00 CT, P-14's registered span, since H2's row (E-231) admits overnight triggers on the search years.
 * `P16Marks` -- P-16's marks, coin-sided, latency-free (E-203 B-2; F-04 5.1): each mark is scheduled, so the alert is
   sent `latency.reference` minutes before it and the order goes live at the mark; every declared L is met by that one
   timing (`lever_space.latency_cells('p16')` is one cell). A limit rests at the price at the alert. The marks are the
@@ -151,9 +151,10 @@ REWRITE_AFTER = ("news", "closed")
 
 # ------------------------------------------------------------------------------------------------ the overnight guard
 
-#: the decision row recording H2's pass (the overnight bars' data integrity, the restart plan's Wave 3); None until the
-#: lead writes it. While None, no overnight offer is made or admitted.
-H2_ROW: str | None = None
+#: the decision row recording H2's pass (the overnight bars' data integrity, the restart plan's Wave 3): E-231 -- the
+#: search years' overnight bars are clean apart from the void calendar's days (`extended.day_calendar`). Overnight
+#: offers are admitted only while it names a row of the decision log (the guard stays: a row removed refuses them).
+H2_ROW: str | None = "E-231"
 
 
 class OvernightRefused(RuntimeError):
@@ -380,11 +381,11 @@ def breakout_events(c: np.ndarray, o: np.ndarray, h: np.ndarray, l: np.ndarray, 
 @dataclass(frozen=True)
 class P14Breakout:
     """P-14's breakout timing, coin-sided (the module docstring). `latency` one of the declared L; `entry` market or
-    limit; `first`, `last` the alert slots kept (08:30 to 14:00 CT by default; an earlier `first` is overnight)."""
+    limit; `first`, `last` the alert slots kept (17:00 to 14:00 CT by default, P-14's registered span)."""
 
     latency: int = REFERENCE_L
     entry: str = MARKET
-    first: int = RTH_OPEN
+    first: int = 0
     last: int = P14_LAST
     k: int = P14_K
     source: str = field(default="p14", init=False)
@@ -397,6 +398,11 @@ class P14Breakout:
             require_overnight(f"P-14's breakout timing from slot {self.first}")
         if not 0 <= int(self.first) <= int(self.last) <= P14_LAST:
             raise TriggerRefused(f"P-14's events lie in 17:00 to 14:00 CT, got {self.first}..{self.last}")
+
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """(reads overnight bars, reads the bar stamped 08:29) for the void calendar: an event at or before 09:00 is
+        measured against a 30-minute bar ending at or before 08:30, of overnight bars; the 08:29 bar is not needed."""
+        return int(self.first) <= RTH_OPEN + int(self.k), False
 
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         o, h, l, c = hist.day(i)
@@ -430,7 +436,8 @@ def p16_grid(first: int = 0, end: int = SESSION_END, step: int = MARK_STEP) -> t
 @dataclass(frozen=True)
 class P16Marks:
     """P-16's marks, coin-sided and latency-free (the module docstring). `marks` the caller's (P-16's admitted marks);
-    `overnight` False for day marks (08:30 to 15:10 CT), True for overnight marks (17:00 to 08:29 CT), refused until H2."""
+    `overnight` False for day marks (08:30 to 15:10 CT), True for overnight marks (17:00 to 08:29 CT), admitted since
+    H2's row (E-231)."""
 
     marks: tuple[int, ...]
     entry: str = MARKET
@@ -455,6 +462,12 @@ class P16Marks:
             raise TriggerRefused("P-16's day marks lie in 08:30 to 15:05 CT")
         object.__setattr__(self, "marks", ms)
 
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Overnight marks trade on overnight bars; a day limit whose alert is at or before 08:30 rests at an overnight
+        bar's close; a day market order reads no bar."""
+        early = self.entry == LIMIT and min(self.marks) - REFERENCE_L <= RTH_OPEN
+        return bool(self.overnight or early), False
+
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         o, h, l, c = hist.day(i)
         out = []
@@ -478,9 +491,10 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
                                                                                                         str]]]:
     """(P_ref, [(name, level, role, void reason)]) of one day's tickets of a kind (RL3 4.3-4.4, 5.1), from bars stamped
     at or before 08:29 of the day and the previous day's regular session: `role` +1 a resistance (above P_ref), -1 a
-    support; a level exactly at P_ref void except `on`'s; `pd` and `pdc` void on the store's first day, a roll day (the
-    previous day charted another contract) and after a calendar void; `pdc` void without its bar stamped 14:59; every
-    ticket void without a bar stamped 08:29."""
+    support; a level exactly at P_ref void except `on`'s; `pd` and `pdc` void when the calendar voids the prior
+    session's levels (`prior_void`: a roll, the store's first day, after an abbreviated or void day -- the void
+    calendar's rules, `extended.day_calendar`, never a copy here; Q-169) and when the history holds no previous day;
+    `pdc` void without its bar stamped 14:59; every ticket void without a bar stamped 08:29 (data, read at the alert)."""
     if kind not in RL3_KINDS:
         raise TriggerRefused(f"unknown RL3 level kind {kind!r}; one of {RL3_KINDS}")
     o, h, l, c = hist.day(i)
@@ -492,12 +506,10 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
     out: list[tuple[str, float, int, str]] = []
     if kind in ("pd", "pdc"):
         why = ""
-        if i == 0:
-            why = "first_day"
-        elif hist.contract[i - 1] != hist.contract[i]:
-            why = "roll"
-        elif prior_void:
+        if prior_void:
             why = "prior_void"
+        elif i == 0:
+            why = "no_prior_day"
         if why:
             return p_ref, [(n, float("nan"), 0, why) for n in names]
         po, ph, pl, pc = hist.day(i - 1)
@@ -556,6 +568,11 @@ class RL3Tickets:
         if int(self.cutoff) not in RL3_CUTOFFS:
             raise TriggerRefused(f"RL3's cutoff {self.cutoff} is not one of its declared cutoffs (6.1)")
 
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Every kind reads the bar stamped 08:29 (P_ref, an overnight bar, sets every ticket's side), and `on` the
+        whole overnight range: all four are overnight readers needing the 08:29 bar (the conservative reading)."""
+        return True, True
+
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         _, levels = rl3_levels(hist, i, self.kind, prior_void=ctx.prior_void)
         out = []
@@ -568,7 +585,76 @@ class RL3Tickets:
         return out
 
 
-SOURCES = ("p14", "p16", "rl3")
+# ------------------------------------------------------------------------------------------------ the naive coin
+
+
+@dataclass(frozen=True)
+class CoinMarks:
+    """The naive coin (CHARTER 3.2's baseline; lever table T1 `coin`): a fixed schedule of moments with a coin side,
+    entering at alert + L like P-14 (its latency has the lever table's three cells, `lever_space.latency_cells`, unlike
+    P-16's latency-free cell). **Its moments, declared:** every `mark_step_min` minutes (lever table T3's step) from
+    `first` to `last` inclusive, both on that grid from the 17:00 reopen -- the clock alone chooses them, no bar is read
+    to choose a moment. Each moment is the alert and the decision; the order goes live L minutes later; a limit rests
+    at the price at the alert and works `limit_window_min` minutes. A session's schedule is
+    `components.coin_component`'s (the session's bounds through `components.session_windows_of`)."""
+
+    first: int
+    last: int
+    latency: int | None = REFERENCE_L
+    entry: str = MARKET
+    source: str = field(default="coin", init=False)
+    latency_free: bool = field(default=False, init=False)
+
+    def __post_init__(self) -> None:
+        _latency("coin", self.latency)
+        _entry(self.entry)
+        if not 0 <= int(self.first) <= int(self.last) < DAY_SLOTS:
+            raise TriggerRefused(f"the coin's schedule is first <= last on the trading-day clock, got {self.first}, "
+                                 f"{self.last}")
+        if int(self.first) % MARK_STEP or int(self.last) % MARK_STEP:
+            raise TriggerRefused(f"the coin's moments lie on the {MARK_STEP}-minute grid from the reopen")
+        if int(self.first) < RTH_OPEN:
+            require_overnight(f"the coin's moments from slot {self.first}")
+
+    @property
+    def marks(self) -> tuple[int, ...]:
+        return tuple(range(int(self.first), int(self.last) + 1, MARK_STEP))
+
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Overnight moments trade on overnight bars; a limit alert at or before 08:30 rests at an overnight bar's
+        close; a day market order reads no bar."""
+        early = int(self.first) < RTH_OPEN or (self.entry == LIMIT and int(self.first) <= RTH_OPEN)
+        return bool(early), False
+
+    def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
+        o, h, l, c = hist.day(i)
+        out = []
+        for m in self.marks:
+            live = m + int(self.latency)
+            if self.entry == LIMIT:
+                lvl, why = _limit_level(o, c, m)
+                off = Offer("coin", ctx.session, m, 0, m, live, LIMIT, lvl, expires=live + LIMIT_WINDOW - 1,
+                            tag="coin", void=why)
+            else:
+                off = Offer("coin", ctx.session, m, 0, m, live, MARKET, tag="coin")
+            check_latency(off, self.latency)
+            out.append(off)
+        return out
+
+
+SOURCES = ("p14", "p16", "rl3", "coin")
+
+
+def context_for(trigger, cal, d, session: int, windows: Sequence[Window] = (), *, market: str = "NQ",
+                rules: W.Rules = JOURNEY) -> DayContext:
+    """A source's day context from the void calendar (Q-169; `extended.day_calendar.day_context` with what the source
+    reads, `trigger.calendar_reads()`; None reads nothing), the verified news `windows` added. The calendar raises on a
+    held-out or a confirmation-window day (`day_calendar.HeldOutDay`, `ConfirmationDay`)."""
+    from extended import day_calendar as DC
+
+    ro, r0829 = trigger.calendar_reads() if trigger is not None else (False, False)
+    ctx = DC.day_context(cal, market, d, int(session), reads_overnight=ro, reads_0829=r0829, rules=rules)
+    return replace(ctx, windows=tuple(windows))
 
 # ------------------------------------------------------------------------------------------------ the rules for every source
 
@@ -867,7 +953,7 @@ __all__ = ["TASK", "LATENCIES", "REFERENCE_L", "LIMIT_WINDOW", "MARK_STEP", "ENT
            "JOURNEY", "P14_K", "P14_LAST", "RL3_KINDS", "RL3_CUTOFFS", "RL3_SUBS", "WINDOW_KINDS", "REWRITE_AFTER",
            "H2_ROW", "OvernightRefused", "TriggerRefused", "decision_rows", "overnight_allowed", "require_overnight",
            "History", "Window", "release_window", "DayContext", "Offer", "check_latency", "breakout_events",
-           "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "SOURCES", "admit", "segments",
+           "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "CoinMarks", "SOURCES", "context_for", "admit", "segments",
            "rules_for", "order_for", "Execution", "flatten_bar", "window_flatten_trade", "execute", "COIN_TAG", "COIN_FIELDS", "WORD",
            "UNDERLYING",
            "DRAW_SIDE", "MOMENT_SUBS", "CoinUnit", "moment", "coin_key", "key_state", "coin_uniform", "coin_side"]
