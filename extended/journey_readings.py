@@ -22,7 +22,9 @@ new (`extended/identity_cover.py`'s rule: a file a runner's closure reaches is i
 * (13) `S4a`, `S4b` -- ahead above 1e-6 at months 6 and 12, on `E_126` and `E_252`;
 * (15) `return_on_money_at_risk`, (16) `monthly_net_4_12_median` (the mean beside, `monthly_net_4_12_mean`), (25)
   `peak_oop_12_months` -- `p10` .. `p90` on `E_252`;
-* (31) `funded_lifetime_payouts` -- the Kaplan-Meier percentiles of payouts before loss (blank: beyond), the counts,
+* (31) `funded_lifetime_payouts` -- the Kaplan-Meier percentiles of payouts before loss (blank: beyond), each with the
+  risk weight of the step it was read at (`p10_risk` ..), every step's risk and event weights (`n_at_risk_k`,
+  `lost_at_k`; m-4), the counts,
   the censored share (by accounts and weighted) and every ending by kind; `funded_lifetime_sessions` beside.
 
 `window` (W) is (2), (3), (6) and (24)'s, `lifetime_window` (31)'s, `budgets` (24)'s B: all the declaration's and the
@@ -140,6 +142,13 @@ def journey_rows(outs: Sequence[Mapping[str, Any]], blocks: Sequence[str] = UR.B
                                "so far)"))
             out.append(UR._row("journey", b, "funded_lifetime_sessions", f"p{p}", lt[f"sessions_p{p}"],
                                lt["n_accounts"], "beside: in sessions alive"))
+        for p in M.PERCENTILES:                                        # m-4: the risk weight a percentile rests on
+            out.append(UR._row("journey", b, "funded_lifetime_payouts", f"p{p}_risk", lt[f"p{p}_risk"],
+                               lt["n_accounts"], "the risk weight of the step the percentile was read at"))
+        for k, n_k, d_k in lt["steps_payouts"]:                       # m-4: every step's risk and event weights
+            out.append(UR._row("journey", b, "funded_lifetime_payouts", f"n_at_risk_{k}", n_k, lt["n_accounts"],
+                               f"the step {k} -> {k + 1} payouts: at risk (above {k}, or lost at {k})"))
+            out.append(UR._row("journey", b, "funded_lifetime_payouts", f"lost_at_{k}", d_k, lt["n_accounts"]))
         for k in ("n_accounts", "n_units", "n_lost", "n_censored", "share_censored", "share_censored_weighted"):
             out.append(UR._row("journey", b, "funded_lifetime_payouts", k, float(lt[k]), lt["n_accounts"]))
         kinds = {**{f"censored_{k}": v for k, v in lt["censored_by_kind"].items()},

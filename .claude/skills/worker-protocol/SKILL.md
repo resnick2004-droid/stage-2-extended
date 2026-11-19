@@ -42,8 +42,13 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
 1. Read the brief, the rows it names, `CLAUDE.md`, and the skills it names (always `feature-rules` for anything that
    touches bars, features or labels). If something in the brief contradicts a declaration or a rule, stop and say so:
    the declaration wins.
-2. Tests first; then the code; then the tests again, with a time limit. **The fast tier is always
-   `timeout 1800 python -m pytest -q -m "not slow and not heavy" ...`** (the tier takes about 21 minutes on this machine
+2. Tests first; then the code; then the tests again, with a time limit. **Before committing, run your own tests and
+   the files your change can reach, never the whole fast tier by hand** (E-222): the pre-commit hook runs the whole fast
+   tier once, under the machine-wide lock (`scripts/fasttier_lock.py`), and a second, unlocked copy only doubles the
+   memory that crashed this machine (Q-155). If you need the whole tier before the hook (a wide change you want to
+   diagnose first), run it through the lock: `python scripts/fasttier_lock.py run -- python -m pytest -q -o addopts=
+   -m "not slow and not heavy"`. **The fast tier's selection is always
+   `-m "not slow and not heavy"`** (the tier takes about 21 minutes on this machine
    under load, E-163; a test killed by the limit prints an `F` that is the limit, not a defect -- run that file alone
    before reporting it) -- `-m "not slow"` does not exclude `heavy`. A test
    marked `heavy` is skipped by the root `conftest.py` whenever `run.lock` is held by another job (Q-118); only the
@@ -128,3 +133,4 @@ team and results that matter to the auditor, then merges with `--no-ff`, numbers
 STATUS / TASK_QUEUE / PROGRESS, pushes, and fast-forwards the other worktrees (`python scripts/worktrees.py sync`).
 
 - **Never wrap `git commit` in `timeout`** (E-222): a killed hook stub let git write a commit without the fast tier's verdict; run the commit in the background and wait for it -- the hook has its own three-hour cap.
+- **Never send command output to a generic name in the session scratchpad** (Q-161, E-223): it is one directory for every agent of the session, so two workers' `commit.log` cross; write logs inside your worktree, or under a name that carries the worktree.

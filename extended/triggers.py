@@ -10,8 +10,10 @@ execution rules every source obeys, and the coin that sets every offer's side.
     ex = T.execute(offer, side, hist, i, ctx, stop_ticks, rr)  # the walker's fill and walk under the window rules
 
 Nothing here reads a file of bars (the caller passes them through the window guard), a result, or the held-out years;
-`DECISIONS.md` is read only by the overnight guard. **No rule value is typed**: the latencies, the limit's working
-window and the mark step are read from the lever table's declared parameters (`extended.lever_space.DECLARED`).
+`DECISIONS.md` is read only by the overnight guard. **Read, not typed**: the latencies, the limit's working window, the
+mark step and the entry types come from the lever table's declared parameters (`extended.lever_space.DECLARED`). **Typed
+here, each with its citation** (the red team's N-5): the five-minute flat between trades, the 07:35 and 08:30-08:59
+bounds, P-14's k and last slot, RL3's cutoffs and round-number step; the tests hold the clock slots and the cutoff grid.
 
 **The clock** is the walker's (`extended/walker.py`): a slot is minutes after 17:00 CT of the evening the trading day
 opens; a day's arrays o, h, l, c are indexed by each bar's END minute, so the bar stamped (opening at) slot s is index
@@ -36,8 +38,8 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
   first below its low, each at most once per reference bar, events to 14:00 CT (`last_decision_ct`). The event's
   direction is dropped: each event is one offer moment. Alert = the event slot (its bar has closed); live = alert + L,
   L in the declared latencies, counted in clock minutes (F-04 5.1). A limit rests at the price at the alert (the close
-  of the last bar closed by then, `walker.price_at`; F-04 6.1) and works `limit_window_min` minutes. **Day events only**
-  (alert from 08:30) until H2's row: an earlier first slot is an overnight trigger (the restart plan 3.3).
+  of the last bar closed by then, `walker.price_at`; F-04 6.1) and works `limit_window_min` minutes. Its events run
+  from 17:00 CT, P-14's registered span, since H2's row (E-231) admits overnight triggers on the search years.
 * `P16Marks` -- P-16's marks, coin-sided, latency-free (E-203 B-2; F-04 5.1): each mark is scheduled, so the alert is
   sent `latency.reference` minutes before it and the order goes live at the mark; every declared L is met by that one
   timing (`lever_space.latency_cells('p16')` is one cell). A limit rests at the price at the alert. The marks are the
@@ -55,12 +57,16 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
 
 * **News** (E-202 (2)(a), (d); E-200 R-1): no entry and no fill inside a verified window (`Window`, the caller's, from
   the record). An offer whose order would go live inside a window is refused; an alert inside a window whose order goes
-  live after it is not. A working order is cancelled at a window's start (it fills only on bars stamped before it). A
-  position open at a window's start is flattened: walked to the window's first slot and closed at the price there (the
-  close of the last bar closed by then, the walker's `close` flatten, two ticks charged as its flatten cost); for an
-  unscheduled release, known only from its minute, at the bar after it.
-* **The closed window**, 08:30-08:59 CT (bars stamped 08:30 to 08:59), every day: a window of kind `closed` under the
-  same rules (E-202 (2)(a): "RL3's 08:30-08:59 fill window stays closed").
+  live after it is not. A working order is cancelled at a window's start: it fills only on bars stamped before it, and,
+  since the walker never opens a position on the bar it would flatten on, not on the bar stamped `first - 1` either
+  (one minute conservative; the red team's N-1). A position open at a window's start is walked to the window's first
+  slot and **booked at the adverse extreme of the window's first bar less two ticks, exiting at that bar's end** (at its
+  stop where that extreme reaches it) -- **E-223 M-4 ruling (lead)**, RL3 4.6 / 5.4's convention, the as-walked
+  convention for every source until the search template pins one (`window_flatten_trade`); for an unscheduled release,
+  known only from its minute, at the first bar after that minute.
+* **The closed window**, 08:30-08:59 CT (bars stamped 08:30 to 08:59), every day and **for every source**: a window of
+  kind `closed` under the same rules (E-202 (2)(a): "RL3's 08:30-08:59 fill window stays closed"), applied to every
+  source as a conservative floor -- **E-223 M-8 ruling (lead)**, which the lead records in a row.
 * **BLS 08:30 release days**: no entry at or before 07:35:00 CT (E-007 (d), CHARTER 4: strictly after it): a window of
   kind `bls` over the bars stamped 17:00 to 07:35, so the earliest fill is the open of the bar stamped 07:36.
 * **FOMC statement days are out** whole (CHARTER 4), and a calendar void day (an early close, a data defect: the
@@ -76,8 +82,10 @@ it is re-written after a window (RL3 4.6) and, for an offer the source voids, th
 **The coin** (`docs/plans/THREE_WAY_TEST_design.md` 1.5, choice 3): an offer's side is +1 when the unit's uniform for
 it is below one half. The uniform's key is the design note's fixed-length coin key
 [role seed, 3, part, history, seed index, start, underlying, moment, draw kind] (`three_way_arith.seed_key`'s layout):
-it carries the unit's **start** and its seed index, **never an account or a firm index** (one literal draw per moment,
-shared by the user's accounts and firms), the **underlying** (MNQ and NQ are one), and the moment as
+it carries the unit's **start** and its seed index, **never an account or a firm index** -- which, in the evaluation,
+means only that opposite positions across a user's accounts or firms are refused (`components.UserBook`); it is not
+the traded side rule: in the playbook, sides come from each design's own trigger, under the no-harm floor, with
+accounts alternating (E-221, the operator's O-4 ruling) --, the **underlying** (MNQ and NQ are one), and the moment as
 (session x 1440 + decision slot) x 16 + sub -- a session index and a minute offset, never an epoch time. Every word is
 below 2^32. **The generator, declared:** numpy's counter-based Philox (4x64), seeded by `SeedSequence(key)`; the
 first raw 64-bit output's top 52 bits i give the uniform (2 i + 1) 2^-53, on the note's symmetric grid.
@@ -143,9 +151,10 @@ REWRITE_AFTER = ("news", "closed")
 
 # ------------------------------------------------------------------------------------------------ the overnight guard
 
-#: the decision row recording H2's pass (the overnight bars' data integrity, the restart plan's Wave 3); None until the
-#: lead writes it. While None, no overnight offer is made or admitted.
-H2_ROW: str | None = None
+#: the decision row recording H2's pass (the overnight bars' data integrity, the restart plan's Wave 3): E-231 -- the
+#: search years' overnight bars are clean apart from the void calendar's days (`extended.day_calendar`). Overnight
+#: offers are admitted only while it names a row of the decision log (the guard stays: a row removed refuses them).
+H2_ROW: str | None = "E-231"
 
 
 class OvernightRefused(RuntimeError):
@@ -372,11 +381,11 @@ def breakout_events(c: np.ndarray, o: np.ndarray, h: np.ndarray, l: np.ndarray, 
 @dataclass(frozen=True)
 class P14Breakout:
     """P-14's breakout timing, coin-sided (the module docstring). `latency` one of the declared L; `entry` market or
-    limit; `first`, `last` the alert slots kept (08:30 to 14:00 CT by default; an earlier `first` is overnight)."""
+    limit; `first`, `last` the alert slots kept (17:00 to 14:00 CT by default, P-14's registered span)."""
 
     latency: int = REFERENCE_L
     entry: str = MARKET
-    first: int = RTH_OPEN
+    first: int = 0
     last: int = P14_LAST
     k: int = P14_K
     source: str = field(default="p14", init=False)
@@ -389,6 +398,11 @@ class P14Breakout:
             require_overnight(f"P-14's breakout timing from slot {self.first}")
         if not 0 <= int(self.first) <= int(self.last) <= P14_LAST:
             raise TriggerRefused(f"P-14's events lie in 17:00 to 14:00 CT, got {self.first}..{self.last}")
+
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """(reads overnight bars, reads the bar stamped 08:29) for the void calendar: an event at or before 09:00 is
+        measured against a 30-minute bar ending at or before 08:30, of overnight bars; the 08:29 bar is not needed."""
+        return int(self.first) <= RTH_OPEN + int(self.k), False
 
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         o, h, l, c = hist.day(i)
@@ -422,7 +436,8 @@ def p16_grid(first: int = 0, end: int = SESSION_END, step: int = MARK_STEP) -> t
 @dataclass(frozen=True)
 class P16Marks:
     """P-16's marks, coin-sided and latency-free (the module docstring). `marks` the caller's (P-16's admitted marks);
-    `overnight` False for day marks (08:30 to 15:10 CT), True for overnight marks (17:00 to 08:29 CT), refused until H2."""
+    `overnight` False for day marks (08:30 to 15:10 CT), True for overnight marks (17:00 to 08:29 CT), admitted since
+    H2's row (E-231)."""
 
     marks: tuple[int, ...]
     entry: str = MARKET
@@ -447,6 +462,12 @@ class P16Marks:
             raise TriggerRefused("P-16's day marks lie in 08:30 to 15:05 CT")
         object.__setattr__(self, "marks", ms)
 
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Overnight marks trade on overnight bars; a day limit whose alert is at or before 08:30 rests at an overnight
+        bar's close; a day market order reads no bar."""
+        early = self.entry == LIMIT and min(self.marks) - REFERENCE_L <= RTH_OPEN
+        return bool(self.overnight or early), False
+
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         o, h, l, c = hist.day(i)
         out = []
@@ -470,9 +491,10 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
                                                                                                         str]]]:
     """(P_ref, [(name, level, role, void reason)]) of one day's tickets of a kind (RL3 4.3-4.4, 5.1), from bars stamped
     at or before 08:29 of the day and the previous day's regular session: `role` +1 a resistance (above P_ref), -1 a
-    support; a level exactly at P_ref void except `on`'s; `pd` and `pdc` void on the store's first day, a roll day (the
-    previous day charted another contract) and after a calendar void; `pdc` void without its bar stamped 14:59; every
-    ticket void without a bar stamped 08:29."""
+    support; a level exactly at P_ref void except `on`'s; `pd` and `pdc` void when the calendar voids the prior
+    session's levels (`prior_void`: a roll, the store's first day, after an abbreviated or void day -- the void
+    calendar's rules, `extended.day_calendar`, never a copy here; Q-169) and when the history holds no previous day;
+    `pdc` void without its bar stamped 14:59; every ticket void without a bar stamped 08:29 (data, read at the alert)."""
     if kind not in RL3_KINDS:
         raise TriggerRefused(f"unknown RL3 level kind {kind!r}; one of {RL3_KINDS}")
     o, h, l, c = hist.day(i)
@@ -484,12 +506,10 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
     out: list[tuple[str, float, int, str]] = []
     if kind in ("pd", "pdc"):
         why = ""
-        if i == 0:
-            why = "first_day"
-        elif hist.contract[i - 1] != hist.contract[i]:
-            why = "roll"
-        elif prior_void:
+        if prior_void:
             why = "prior_void"
+        elif i == 0:
+            why = "no_prior_day"
         if why:
             return p_ref, [(n, float("nan"), 0, why) for n in names]
         po, ph, pl, pc = hist.day(i - 1)
@@ -548,6 +568,11 @@ class RL3Tickets:
         if int(self.cutoff) not in RL3_CUTOFFS:
             raise TriggerRefused(f"RL3's cutoff {self.cutoff} is not one of its declared cutoffs (6.1)")
 
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Every kind reads the bar stamped 08:29 (P_ref, an overnight bar, sets every ticket's side), and `on` the
+        whole overnight range: all four are overnight readers needing the 08:29 bar (the conservative reading)."""
+        return True, True
+
     def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
         _, levels = rl3_levels(hist, i, self.kind, prior_void=ctx.prior_void)
         out = []
@@ -560,7 +585,76 @@ class RL3Tickets:
         return out
 
 
-SOURCES = ("p14", "p16", "rl3")
+# ------------------------------------------------------------------------------------------------ the naive coin
+
+
+@dataclass(frozen=True)
+class CoinMarks:
+    """The naive coin (CHARTER 3.2's baseline; lever table T1 `coin`): a fixed schedule of moments with a coin side,
+    entering at alert + L like P-14 (its latency has the lever table's three cells, `lever_space.latency_cells`, unlike
+    P-16's latency-free cell). **Its moments, declared:** every `mark_step_min` minutes (lever table T3's step) from
+    `first` to `last` inclusive, both on that grid from the 17:00 reopen -- the clock alone chooses them, no bar is read
+    to choose a moment. Each moment is the alert and the decision; the order goes live L minutes later; a limit rests
+    at the price at the alert and works `limit_window_min` minutes. A session's schedule is
+    `components.coin_component`'s (the session's bounds through `components.session_windows_of`)."""
+
+    first: int
+    last: int
+    latency: int | None = REFERENCE_L
+    entry: str = MARKET
+    source: str = field(default="coin", init=False)
+    latency_free: bool = field(default=False, init=False)
+
+    def __post_init__(self) -> None:
+        _latency("coin", self.latency)
+        _entry(self.entry)
+        if not 0 <= int(self.first) <= int(self.last) < DAY_SLOTS:
+            raise TriggerRefused(f"the coin's schedule is first <= last on the trading-day clock, got {self.first}, "
+                                 f"{self.last}")
+        if int(self.first) % MARK_STEP or int(self.last) % MARK_STEP:
+            raise TriggerRefused(f"the coin's moments lie on the {MARK_STEP}-minute grid from the reopen")
+        if int(self.first) < RTH_OPEN:
+            require_overnight(f"the coin's moments from slot {self.first}")
+
+    @property
+    def marks(self) -> tuple[int, ...]:
+        return tuple(range(int(self.first), int(self.last) + 1, MARK_STEP))
+
+    def calendar_reads(self) -> tuple[bool, bool]:
+        """Overnight moments trade on overnight bars; a limit alert at or before 08:30 rests at an overnight bar's
+        close; a day market order reads no bar."""
+        early = int(self.first) < RTH_OPEN or (self.entry == LIMIT and int(self.first) <= RTH_OPEN)
+        return bool(early), False
+
+    def offers(self, hist: History, i: int, ctx: DayContext) -> list[Offer]:
+        o, h, l, c = hist.day(i)
+        out = []
+        for m in self.marks:
+            live = m + int(self.latency)
+            if self.entry == LIMIT:
+                lvl, why = _limit_level(o, c, m)
+                off = Offer("coin", ctx.session, m, 0, m, live, LIMIT, lvl, expires=live + LIMIT_WINDOW - 1,
+                            tag="coin", void=why)
+            else:
+                off = Offer("coin", ctx.session, m, 0, m, live, MARKET, tag="coin")
+            check_latency(off, self.latency)
+            out.append(off)
+        return out
+
+
+SOURCES = ("p14", "p16", "rl3", "coin")
+
+
+def context_for(trigger, cal, d, session: int, windows: Sequence[Window] = (), *, market: str = "NQ",
+                rules: W.Rules = JOURNEY) -> DayContext:
+    """A source's day context from the void calendar (Q-169; `extended.day_calendar.day_context` with what the source
+    reads, `trigger.calendar_reads()`; None reads nothing), the verified news `windows` added. The calendar raises on a
+    held-out or a confirmation-window day (`day_calendar.HeldOutDay`, `ConfirmationDay`)."""
+    from extended import day_calendar as DC
+
+    ro, r0829 = trigger.calendar_reads() if trigger is not None else (False, False)
+    ctx = DC.day_context(cal, market, d, int(session), reads_overnight=ro, reads_0829=r0829, rules=rules)
+    return replace(ctx, windows=tuple(windows))
 
 # ------------------------------------------------------------------------------------------------ the rules for every source
 
@@ -648,7 +742,8 @@ def order_for(offer: Offer, side: int) -> tuple[str, float | None]:
 @dataclass(frozen=True)
 class Execution:
     """An offer traded on a side: `trade` the walker's (fill, walk at the bracket) of the stretch that decided it,
-    `rules` the walk used, `attempts` every stretch's trade in order (a re-written ticket can have several)."""
+    `rules` the walk used there, `attempts` every stretch's trade in order (a re-written ticket can have several) and
+    `attempt_rules` each one's walk, `base` the walk without windows."""
 
     offer: Offer
     side: int
@@ -656,6 +751,9 @@ class Execution:
     trade: W.Trade
     rules: W.Rules
     attempts: tuple[W.Trade, ...]
+    attempt_rules: tuple[W.Rules, ...] = ()
+    base: W.Rules = JOURNEY
+    flatten_bar: int = -1
 
     @property
     def filled(self) -> bool:
@@ -672,18 +770,95 @@ class Execution:
         return int(self.trade.rule.exit[0])
 
     @property
-    def ended(self) -> int:
-        """When the order stopped working unfilled: the last stretch's last slot + 1 (its live for a void)."""
-        last = self.trade.order.cutoff
-        if self.trade.fill.status == "void":
-            return int(self.trade.order.live)
-        return int(last) if last is not None else int(self.rules.walk_end)
+    def window_flatten(self) -> bool:
+        """Whether a window's start ends this stretch's walk (a position open then is flattened there)."""
+        return int(self.rules.walk_end) < int(self.base.walk_end)
+
+    @property
+    def flatten_slot(self) -> int:
+        """Where an open position would close: the end of the window's flatten bar actually booked
+        (`window_flatten_trade`: the first present bar from the window's first minute, so it agrees with `exit_slot`
+        when the nominal bar is missing; the re-read's n-5), the walker's own walk end when no such bar exists, or the
+        base walk's end."""
+        if not self.window_flatten:
+            return int(self.rules.walk_end)
+        return int(self.flatten_bar) if int(self.flatten_bar) >= 0 else int(self.rules.walk_end)
+
+    @property
+    def busy_until(self) -> int | None:
+        """For an order that never filled: the first minute at which none of its stretches is working any more --
+        the latest over its attempts of a cancelled stretch's end (its cutoff, or its walk's end) and of a later
+        stretch's live where the re-write found it void (it waited through the window for that re-write). None when it
+        never worked (void at its first live). Corrective cycle 1, B-1: a re-written ticket that turns void keeps the
+        firm busy for the stretches it worked, so no later decision depends on the price at the re-write."""
+        if self.filled:
+            raise ValueError("a filled order's busy time is its position's (the chain's)")
+        ends = []
+        rules = self.attempt_rules or (self.rules,) * len(self.attempts)
+        for k, (a, r) in enumerate(zip(self.attempts, rules)):
+            if a.fill.status == "void":
+                if k > 0:
+                    ends.append(int(a.order.live))
+            elif a.order.cutoff is not None:
+                ends.append(int(a.order.cutoff))
+            else:
+                ends.append(int(r.walk_end))
+        return max(ends) if ends else None
+
+
+def flatten_bar(o, er: W.Rules, base: W.Rules) -> int | None:
+    """The bar a window's flatten books (`window_flatten_trade`): the first present bar from the one ending a minute
+    after `er`'s walk end (the bar stamped at the window's first minute, or the minute after an unscheduled release)
+    to the base walk's end; None when `er` is the base walk or no such bar exists."""
+    if int(er.walk_end) >= int(base.walk_end):
+        return None
+    hi = min(int(base.walk_end), len(o) - 1)
+    return next((j for j in range(int(er.walk_end) + 1, hi + 1) if not math.isnan(o[j])), None)
+
+
+def window_flatten_trade(tr: W.Trade, er: W.Rules, base: W.Rules, o, h, l, c, costs: W.Costs | None) -> W.Trade:
+    """**E-223 M-4 ruling (lead), the as-walked convention for every source:** a position still open when a window
+    ends its walk (`rules_for`) is booked at the window's flatten bar -- the bar stamped at the window's first minute
+    (for an unscheduled release, the first bar after its minute; the first present bar from there) -- at that bar's
+    adverse extreme less two ticks (RL3 4.6 / 5.4's convention, the most conservative of the three texts), exiting at
+    the bar's end; where that extreme reaches the trade's resting stop, at the stop. The two ticks are in the price;
+    the walker's flatten cost (`EXIT_TICKS`) is charged beside, as at the 15:10 flatten under `STAGE2`. The rule and
+    its mirror alike. The deciding reading redraws every outcome (CHARTER 3.2); this is the as-walked booking only."""
+    if tr.fill.status != "filled" or int(er.walk_end) >= int(base.walk_end):
+        return tr
+    if W.walk_end(o, er) != int(er.walk_end):
+        return tr                                   # the day's bars end earlier: the walker's own flatten stands
+    fb = flatten_bar(o, er, base)
+    if fb is None:
+        return tr
+    S = int(tr.stop_ticks)
+    entry = costs.entry_ticks(tr.order.kind) if costs is not None else 0.0
+
+    def rebook(out: W.Outcome | None, side: int, fill: float) -> W.Outcome | None:
+        if out is None or not (out.kind == W.FLATTEN).any():
+            return out
+        k, g, ex, m = out.kind.copy(), out.gross.copy(), out.exit.copy(), out.mae.copy()
+        f = k == W.FLATTEN
+        adverse = float(l[fb]) if side > 0 else float(h[fb])
+        a = int(round(side * (fill - adverse) / TICK))
+        if a >= S:
+            k[f], g[f], m[f] = W.STOP, -S, S
+        else:
+            g[f] = -a - W.FLATTEN_SLIP_TICKS
+            m[f] = np.maximum(m[f], max(a, 0))
+        ex[f] = fb
+        nr = W.net_r(g, k, S, entry_ticks=entry, costs=costs) if costs is not None else None
+        return W.Outcome(k, ex, m, g, nr)
+
+    return replace(tr, rule=rebook(tr.rule, int(tr.order.side), float(tr.fill.price)),
+                   mirror=rebook(tr.mirror, -int(tr.order.side), float(tr.mirror_price)))
 
 
 def execute(offer: Offer, side: int, hist: History, i: int, ctx: DayContext, stop_ticks: int, rr: float, *,
             rules: W.Rules = JOURNEY, costs: W.Costs | None = None) -> Execution:
     """Trade an admitted offer on `side` at the bracket (stop ticks, R): each working stretch (`segments`) is one
-    walker order (live at the stretch's start, cut off at its end, walked by `rules_for`) until one fills or voids."""
+    walker order (live at the stretch's start, cut off at its end, walked by `rules_for`) until one fills or voids; a
+    position open at a window's start is booked by `window_flatten_trade`."""
     if offer.void:
         raise TriggerRefused(f"a void offer ({offer.void}) is not traded")
     segs = segments(offer, ctx)
@@ -691,16 +866,19 @@ def execute(offer: Offer, side: int, hist: History, i: int, ctx: DayContext, sto
         raise TriggerRefused("an offer with no working stretch is not traded (admit refuses it)")
     o, h, l, c = hist.day(i)
     kind, price = order_for(offer, side)
-    attempts = []
+    attempts, used = [], []
     tr = er = None
     for lv, last in segs:
         er = rules_for(lv, ctx, rules)
         order = W.Order(kind, int(side), int(lv), price, None if last is None else int(last) + 1)
         tr = W.trade(order, o, h, l, c, int(stop_ticks), (float(rr),), rules=er, costs=costs)
+        tr = window_flatten_trade(tr, er, rules, o, h, l, c, costs)
         attempts.append(tr)
+        used.append(er)
         if tr.fill.status in ("filled", "void"):
             break
-    return Execution(offer, int(side), kind, tr, er, tuple(attempts))
+    fb = flatten_bar(o, er, rules)
+    return Execution(offer, int(side), kind, tr, er, tuple(attempts), tuple(used), rules, -1 if fb is None else fb)
 
 
 # ------------------------------------------------------------------------------------------------ the coin
@@ -720,7 +898,9 @@ MOMENT_SUBS = 16
 @dataclass(frozen=True)
 class CoinUnit:
     """One user's coin: the declaration's coin role seed, the part and history, the seed's index, the unit's start
-    day and the underlying. No account and no firm: their accounts and firms share each draw (m-9)."""
+    day and the underlying. No account and no firm index (m-9): in the evaluation that means only that opposite
+    positions across the user's accounts or firms are refused; in the playbook, sides come from each design's own
+    trigger, under the no-harm floor, with accounts alternating (E-221)."""
 
     seed: int
     part: int
@@ -773,6 +953,7 @@ __all__ = ["TASK", "LATENCIES", "REFERENCE_L", "LIMIT_WINDOW", "MARK_STEP", "ENT
            "JOURNEY", "P14_K", "P14_LAST", "RL3_KINDS", "RL3_CUTOFFS", "RL3_SUBS", "WINDOW_KINDS", "REWRITE_AFTER",
            "H2_ROW", "OvernightRefused", "TriggerRefused", "decision_rows", "overnight_allowed", "require_overnight",
            "History", "Window", "release_window", "DayContext", "Offer", "check_latency", "breakout_events",
-           "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "SOURCES", "admit", "segments",
-           "rules_for", "order_for", "Execution", "execute", "COIN_TAG", "COIN_FIELDS", "WORD", "UNDERLYING",
+           "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "CoinMarks", "SOURCES", "context_for", "admit", "segments",
+           "rules_for", "order_for", "Execution", "flatten_bar", "window_flatten_trade", "execute", "COIN_TAG", "COIN_FIELDS", "WORD",
+           "UNDERLYING",
            "DRAW_SIDE", "MOMENT_SUBS", "CoinUnit", "moment", "coin_key", "key_state", "coin_uniform", "coin_side"]
