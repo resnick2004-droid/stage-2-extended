@@ -1,9 +1,13 @@
-"""Install `scripts/pre-commit` and `scripts/post-commit` as the repository's git hooks.
+"""Install `scripts/pre-commit`, `scripts/commit-msg` and `scripts/post-commit` as the repository's git hooks.
 
     python scripts/install_hooks.py
 
 The pre-commit hook checks the vendored snapshot (`scripts/vendor_stage2.py --verify`) and runs the suite's fast tier,
-one at a time on the machine under the fast-tier lock (`scripts/fasttier_lock.py`, Q-155); the post-commit hook pushes each commit to the private remote `origin` in the background (E-004).
+one at a time on the machine under the fast-tier lock (`scripts/fasttier_lock.py`, Q-155), and records a verdict keyed
+by the commit's tree only after the fast tier itself returned 0; the commit-msg hook refuses a commit whose pre-commit
+started for that tree and recorded no verdict (a hook killed outright, which git on Windows reads as a pass; Q-161); the
+post-commit hook warns about a commit without a verdict (`NO VERDICT`, also `scripts/check_verdicts.py <range>`) and
+pushes each commit to the private remote `origin` in the background (E-004).
 
 **Where.** Into `<git rev-parse --git-common-dir>/hooks/` -- the main repository's `.git/hooks/` -- which every linked
 worktree (`%LOCALAPPDATA%\\stage2-extended-wt\\<name>`) and detached clean-run checkout shares, so one install covers
@@ -25,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 #: The hooks installed, each copied from `scripts/<name>` into the common git directory's `hooks/`.
-HOOKS = ("pre-commit", "post-commit")
+HOOKS = ("pre-commit", "commit-msg", "post-commit")
 
 
 def _git(*args: str) -> str | None:
@@ -77,6 +81,9 @@ def main() -> int:
     print("  before every commit (main tree or worktree): `scripts/vendor_stage2.py --verify` and the fast tier "
           '(-m "not slow and not heavy"), one tree at a time under the machine-wide fast-tier lock '
           '(scripts/fasttier_lock.py: waits for a live holder and for 1.5 GB free, at most 3 h); the identity, the heavy tier and the vendored stage-one suite run in /validate')
+    print(f"  the verdict: tree, time, worktree and pass line in {gd / 'fasttier-verdicts.log'}, written only when the "
+          f"fast tier returned 0; commit-msg refuses a tree whose pre-commit was killed; post-commit logs NO VERDICT; "
+          f"`python scripts/check_verdicts.py <range>` lists commits without one")
     print(f"  after every commit on a branch: a background push to `origin` (log: {gd / 'push.log'})")
     print("bypass with `git commit --no-verify` only when you know why, and say so in the message")
     return 0

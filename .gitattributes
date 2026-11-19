@@ -12,6 +12,7 @@ results/*.csv -text
 *.sh text eol=lf
 # The git hooks run under git's sh: a CRLF checkout (core.autocrlf=true) would break them once installed.
 scripts/pre-commit text eol=lf
+scripts/commit-msg text eol=lf
 scripts/post-commit text eol=lf
 
 # The read ledger of the judged block (Q-32) is append-only and compared line by line across commits: LF everywhere,

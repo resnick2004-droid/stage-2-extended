@@ -335,3 +335,30 @@ def test_the_pre_commit_hook_runs_the_fast_tier_under_the_lock():
     assert text.index('scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed') < text.index(
         wrapped)
     assert b"\r\n" not in (ROOT / "scripts" / "pre-commit").read_bytes()
+
+
+# ------------------------------------------------------------------------------------------------ the tee (Q-161)
+
+def test_the_cli_tees_the_commands_output_to_the_named_file_and_returns_its_code(lock, tmp_path):
+    """The pre-commit hook records pytest's pass line in its verdict: the wrapper copies the command's output to the
+    file named by S2X_FASTTIER_TEE, still prints it, returns the command's own code, and does not pass the variable on
+    (a nested fast tier would otherwise write into the outer hook's file)."""
+    out = tmp_path / "fasttier-last.log"
+    child = "import os, sys; print('7 passed in 0.01s'); print('tee seen:', os.environ.get('S2X_FASTTIER_TEE')); sys.exit(3)"
+    env = {**os.environ, F.ENV_TEE: str(out)}
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "run",
+                           "--", sys.executable, "-c", child], capture_output=True, text=True, timeout=120, env=env)
+    assert proc.returncode == 3, proc.stdout + proc.stderr
+    assert "7 passed in 0.01s" in proc.stdout
+    text = out.read_text(encoding="utf-8")
+    assert "7 passed in 0.01s" in text and "tee seen: None" in text
+    assert not lock.exists()
+
+
+def test_without_the_tee_variable_nothing_is_written(lock, tmp_path):
+    env = {k: v for k, v in os.environ.items() if k != F.ENV_TEE}
+    proc = subprocess.run([sys.executable, str(ROOT / "scripts" / "fasttier_lock.py"), "--lock", str(lock), "run",
+                           "--", sys.executable, "-c", "print('ok')"], capture_output=True, text=True, timeout=120,
+                          env=env, cwd=tmp_path)
+    assert proc.returncode == 0 and "ok" in proc.stdout
+    assert list(tmp_path.iterdir()) == []
