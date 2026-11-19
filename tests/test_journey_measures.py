@@ -237,15 +237,51 @@ def test_a_lifetime_counts_the_payouts_arrived_before_the_end():
     assert J.account_lifetime(open_, 126) == {"ending": "window", "lost": False, "payouts": 2, "sessions": 116}
 
 
-def test_kaplan_meier_by_hand():
-    """lost at 0, lost at 1, censored at 1, lost at 2, censored at 3: S(1) = 4/5, S(2) = 4/5 x 3/4, S(3) = that x 1/2;
-    the median is 2, the p10 0, the p90 beyond."""
+def test_kaplan_meier_by_hand_from_the_definition():
+    """(31), from MEASURES.md's definition (B-2, corrective cycle 1): S(k) is the chance an account reaches its k-th
+    payout before loss, and censored accounts leave the risk set at their count -- the step k -> k + 1's risk set is
+    the accounts with more than k payouts plus those lost at k. Lost at 0, lost at 1, censored at 1, lost at 2,
+    censored at 3:
+    * step 0: 4 above 0 and 1 lost at 0 at risk, 1 lost -> S(1) = 4/5;
+    * step 1: 2 above 1 (2, 3) and 1 lost at 1, 1 lost -> S(2) = 4/5 x 2/3 = 8/15 (the censored account at 1 is out);
+    * step 2: 1 above 2 and 1 lost at 2, 1 lost -> S(3) = 4/15; step 3: none at risk -> S(4) = 4/15.
+    The median is 2 (S(3) <= 1/2 < S(2)), the p10 0, the p90 beyond. The rule before the fix (a censored account in
+    the risk set of its own step) gives S(2) = 0.6 here and fails this test."""
     curve = J.km_survival([0, 1, 1, 2, 3], [True, True, False, True, False])
     s = dict(curve)
-    assert s[0] == 1.0 and s[1] == pytest.approx(0.8) and s[2] == pytest.approx(0.6) and s[3] == pytest.approx(0.3)
-    assert s[4] == pytest.approx(0.3)
+    assert s[0] == 1.0 and s[1] == pytest.approx(4 / 5) and s[2] == pytest.approx(8 / 15)
+    assert s[3] == pytest.approx(4 / 15) and s[4] == pytest.approx(4 / 15)
     assert J.km_quantile(curve, 0.5) == 2.0 and J.km_quantile(curve, 0.1) == 0.0
     assert math.isnan(J.km_quantile(curve, 0.9))
+
+
+def test_red_team_the_twelve_accounts():
+    """B-2's failing input: 4 lost with 0 payouts, 4 still open with 0, 2 lost with 1, 2 open with 1 (equal weights).
+    Step 0's risk set is the 4 above 0 and the 4 lost at 0 -- the 4 open at 0 are out -- so S(1) = 1/2 and the median
+    is 0 payouts (the rule before the fix: S(1) = 2/3, median 1). Through `funded_lifetime` too, one unit an account."""
+    t = [0] * 4 + [0] * 4 + [1] * 2 + [1] * 2
+    e = [True] * 4 + [False] * 4 + [True] * 2 + [False] * 2
+    curve = J.km_survival(t, e)
+    assert dict(curve)[1] == pytest.approx(0.5) and J.km_quantile(curve, 0.5) == 0.0
+    lost0 = {"activation_day": 1, "ended_on": 5, "closed": True, "arrivals": ()}
+    open0 = {"activation_day": 1, "ended_on": None, "arrivals": ()}
+    lost1 = {"activation_day": 1, "ended_on": 9, "closed": True, "arrivals": (4,)}
+    open1 = {"activation_day": 1, "ended_on": None, "arrivals": (4,)}
+    units = [[lost0]] * 4 + [[open0]] * 4 + [[lost1]] * 2 + [[open1]] * 2
+    r = J.funded_lifetime(units, 126)
+    assert dict(r["curve_payouts"])[1] == pytest.approx(0.5) and r["p50"] == 0.0
+
+
+def test_the_sessions_curve_keeps_the_clock_tie_rule():
+    """(31)'s reading beside, in sessions alive, is a time on a clock: a censoring at t outlives an event at t (the
+    usual convention, stated in `km_survival`). On the hand case that is S(2) = 4/5 x 3/4 = 0.6."""
+    curve = J.km_survival([0, 1, 1, 2, 3], [True, True, False, True, False], censored_leave_at_count=False)
+    s = dict(curve)
+    assert s[1] == pytest.approx(0.8) and s[2] == pytest.approx(0.6) and s[3] == pytest.approx(0.3)
+    a = {"activation_day": 0, "ended_on": 10, "closed": True, "arrivals": ()}
+    b = {"activation_day": 0, "ended_on": None, "arrivals": ()}
+    r = J.funded_lifetime([[a], [b]], 10)                  # both 10 sessions alive: the censored one outlives the loss
+    assert dict(r["curve_sessions"])[11] == pytest.approx(0.5)
 
 
 def test_the_lifetime_weights_each_unit_equally_and_names_every_censored_ending():

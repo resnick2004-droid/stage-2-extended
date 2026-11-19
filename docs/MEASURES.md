@@ -194,7 +194,12 @@ block. Each start's output then carries its `journey` fields: its block, the ses
 close-by-close net `rel`, the peak out-of-pocket through each month close, the Combines' purchase days and each funded
 account's ending fields and payout arrivals. `extended/user_readings.py`, `summary`, on the blocks `search` and
 `held_out` (its default is `search`), reads those journeys; `extended/journey_readings.py`, `summary`, adds the
-section `journey`. Every `journey` row reads closes `0 .. h` of `rel`. The zero-edge convention and the seeds are
+section `journey`. Every `journey` row reads closes `0 .. h` of `rel`.
+Corrective cycle 1: a journey run replays only the starts of the blocks it names (`journey_block`, by default the
+search years; a held-out start is refused before the pool, M-3), and a summary tables only its blocks' starts; under the
+journey every start is checked against its exact-length runs under every response (`exact_every` 1, M-2), and a reading
+is refused when a start is unchecked or differs, unless a declared reason explains it (`user_readings.
+journey_check_problems`); `P_B` takes "ahead" and the peak from one record, the exact run's where it differs (M-1). The zero-edge convention and the seeds are
 still Wave 3.2's, so these readings are still made on Stage 2's arms and one coin sequence. No such reading has been
 written to a file: the keys below marked "Journey" name the summary rows (`section` / `measure` / `stat`, `block`
 `search` or `held_out`) a reading writes.
@@ -854,6 +859,10 @@ on closes `0 .. h` of its horizon, on the common `E_h` (section 1.1), with the t
   at the window's end, and one reaching the engine's own horizon, are censored. The vendored engine has no
   payout-cap ending for Topstep. A payout counts when its cash arrives strictly before the account's end close; for an
   open account, by close W.
+- **The risk set (corrective cycle 1, B-2):** the step from k to k + 1 payouts has at risk the accounts with more than k
+  payouts plus those lost at k; an account censored at k has left (`km_survival`'s default). The reading beside in
+  sessions alive is a time on a clock and keeps the usual tie rule (a censoring at t outlives an event at t;
+  `censored_leave_at_count=False`).
 - **Where:**
   - Functions: `extended/journey_measures.py`, `account_ending`, `account_lifetime`, `km_survival`, `km_quantile` and
     `funded_lifetime` (built in Wave 3.1), on the journey's `accounts` field (`extended/user_beside.py`,
@@ -1072,21 +1081,21 @@ changed line the test also checks that the text it replaced is gone.
 
 **Changed in Wave 3.1.**
 
-- `extended/user_beside.py:732` (`L = min(U.HORIZON, n - s) if not jour else min(U.HORIZON, blk_last[s] - s + 1)`):
+- `extended/user_beside.py:776` (`L = min(U.HORIZON, n - s) if not jour else journey_length(s, blk_last, U.HORIZON)`):
   **changed (B-1).** Was `L = min(U.HORIZON, n - s)`, which counted sessions to the end of the development window. With
   `run_starts(..., journey=True)` the long run stops at the last session of the start's block, and the runner refuses a
   calendar with a date in neither block and any run reading a session of another block. Absent, the adapter is the one
   before, bit for bit (`tests/test_journey_readings.py`), so every registered reading and identity that runs it is
   unchanged.
-- `extended/user_beside.py:750` (`jr = ({"journey": journey_record(s, blk[s], blk_last[s], long_run, lag, rel)}`):
+- `extended/user_beside.py:796` (`jr = ({"journey": journey_record(s, blk[s], blk_last[s], long_run, lag, rel, exact)}`):
   **changed (B-2).** The peak out-of-pocket through each month close (`peak_month`, by `user_measures.peak_by_month`) is
   made here from `rel`, where `M.daily(rel)` is made, with `rel` itself, and carried to the start table
   (`user_readings.PEAK_COLS`). It is what `P_B` and (24)'s peak form pass.
-- `extended/user_readings.py:300` (`q = M.p_by_month(nets, spent=pk, limit=float(lim))`): **changed (B-2).** On
+- `extended/user_readings.py:319` (`q = M.p_by_month(nets, spent=pk, limit=float(lim))`): **changed (B-2).** On
   E-208's blocks `P_B` passes the peak through each month close. Its sub-reading passes the spending before the first
   payout, read on closes `0 .. 21 m`. The registered blocks keep `P_bankroll_*`, which section 2 names as that
   sub-reading.
-- `extended/journey_readings.py:100` (`stop = J.bankroll_stop(`): **changed (B-1, B-3).** On E-208's blocks (24)'s
+- `extended/journey_readings.py:108` (`stop = J.bankroll_stop(`): **changed (B-1, B-3).** On E-208's blocks (24)'s
   three states replace `share_spent_over_*` (from `extended/user_readings.py:183-189` before), read from closes `0 .. W`
   of each journey; the section `journey` is this new module's, so `user_readings` imports nothing new. The registered
   blocks keep the old rows.
@@ -1099,7 +1108,7 @@ changed line the test also checks that the text it replaced is gone.
   (`scripts/user_beside.py`, `scripts/breakeven_fidelity.py`, `scripts/breakeven_fidelity_2.py`, `scripts/fo_opening.py`,
   `extended/breakeven_readings.py`, `extended/journey_page.py`, `extended/opening_journey.py`, `extended/user_spend.py`
   and three test helpers), so their rows are as before.
-- `extended/user_readings.py:428` (`abs(mine - float(np.mean(shares))) > 1e-12 or mine > card + 1e-12`): **changed
+- `extended/user_readings.py:485` (`abs(mine - float(np.mean(shares))) > 1e-12 or mine > card + 1e-12`): **changed
   (m-11).** Was `abs(card - mine) <= 1e-12`. The check compares like with like: this repository's P equals the mean of
   its own three month shares, on the card's starts. Stage 2's card is read beside: the new P is never above it (a net
   above 1e-6 is above 0) and never held equal to it. `extended/opening_journey.py`, `choice_problems`, held the same
@@ -1114,7 +1123,7 @@ changed line the test also checks that the text it replaced is gone.
 
 **Still to change.**
 
-- `extended/user_beside.py:374` (`args["draws"].get("flip") is not None`): **to change (m-2).** The ladder refuses a
+- `extended/user_beside.py:386` (`args["draws"].get("flip") is not None`): **to change (m-2).** The ladder refuses a
   design with a flip stream. Under CHARTER 3.2 every design has a coin, so the enforcement stream must be seeded apart
   from the coin first. That is the seed-paired runner's (Wave 3.2): the path seed drives both streams in the vendored
   engine, which is not edited.
