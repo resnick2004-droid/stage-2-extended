@@ -1,20 +1,69 @@
 #!/bin/sh
-# Stage 2 Extended's git post-commit hook (E-004: "push after every commit"). Install with
-# `python scripts/install_hooks.py`, which copies this into the hooks directory of `git rev-parse --git-common-dir`, so
-# the main tree and every worktree share it.
+# Stage 2 Extended's git post-commit hook. Install with `python scripts/install_hooks.py`, which copies this into the
+# hooks directory of `git rev-parse --git-common-dir`, so the main tree and every worktree share it.
 #
-# Pushes the branch just committed to the private remote `origin`, in the background, so every commit leaves this
-# machine -- `master` from the lead, `wt/<name>` from a worker's worktree. It never blocks or fails a commit: the push
-# runs detached and its outcome is appended to <git-common-dir>/push.log (one log for every worktree); a push that fails
-# (offline, a rejected credential) is retried by the next commit's push, which carries every commit since. Skipped when
-# GIT_PUSH_ON_COMMIT=0, when there is no `origin`, or on a detached HEAD (a clean-run checkout, a rebase or a bisect in
-# progress).
+# (1) The verdict check (Q-161). The pre-commit hook records, after the fast tier returned 0, a verdict keyed by the
+# commit's tree in <git-common-dir>/fasttier-verdicts.log. A commit whose tree has none -- `--no-verify`, a rebase or
+# cherry-pick (new trees nobody tested), or a pre-commit killed in a way the commit-msg gate did not catch -- is
+# recorded as `NO VERDICT <branch> <sha>` in that log and in push.log, with a loud warning on stderr. A post-commit
+# hook cannot refuse (the commit exists); `python scripts/check_verdicts.py <range>` lists such commits for the merge
+# checklist. A merge commit is exempt here when every parent's tree has a verdict.
+#
+# (2) The push (E-004: "push after every commit"). Pushes the branch just committed to the private remote `origin`, in
+# the background, so every commit leaves this machine -- `master` from the lead, `wt/<name>` from a worker's worktree.
+# It never blocks or fails a commit: the push runs detached and its outcome is appended to <git-common-dir>/push.log
+# (one log for every worktree); a push that fails (offline, a rejected credential) is retried by the next commit's push,
+# which carries every commit since. Skipped when GIT_PUSH_ON_COMMIT=0, when there is no `origin`, or on a detached HEAD
+# (a clean-run checkout, a rebase or a bisect in progress). The verdict check is never skipped.
+
+trap '' PIPE
+
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=$(git rev-parse --git-common-dir)
+log="$common/push.log"
+verdicts="$common/fasttier-verdicts.log"
+tab=$(printf '\t')
+
+has_verdict() {
+    [ -n "$1" ] && grep -q "^$1$tab" "$verdicts" 2>/dev/null
+}
+
+sha=$(git rev-parse HEAD 2>/dev/null) || sha=
+if [ -n "$sha" ]; then
+    vbranch=$(git symbolic-ref -q --short HEAD 2>/dev/null) || vbranch="(detached)"
+    tree=$(git rev-parse "HEAD^{tree}" 2>/dev/null) || tree=
+    covered=0
+    if has_verdict "$tree"; then
+        covered=1
+    else
+        parents=$(git rev-list --parents -n 1 HEAD 2>/dev/null | cut -d' ' -f2-)
+        nparents=0
+        all=1
+        for p in $parents; do
+            nparents=$((nparents + 1))
+            has_verdict "$(git rev-parse "$p^{tree}" 2>/dev/null)" || all=0
+        done
+        if [ "$nparents" -ge 2 ] && [ "$all" -eq 1 ]; then
+            covered=1                                       # a merge of verified parents
+        fi
+    fi
+    if [ "$covered" -eq 0 ]; then
+        now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        echo "NO VERDICT $vbranch $sha at $now (no fast-tier verdict for tree $tree)" >>"$verdicts" 2>/dev/null
+        echo "$now NO VERDICT $vbranch $sha (no fast-tier verdict for tree $tree)" >>"$log" 2>/dev/null
+        {
+            echo "post-commit: ********************************************************************************"
+            echo "post-commit: NO VERDICT $vbranch $sha"
+            echo "post-commit: this commit's tree ($tree) has no fast-tier verdict: the pre-commit hook did not run"
+            echo "post-commit: (--no-verify, a rebase or cherry-pick) or did not finish. Run the fast tier and say so"
+            echo "post-commit: before this branch is merged (scripts/check_verdicts.py lists such commits)."
+            echo "post-commit: ********************************************************************************"
+        } >&2 2>/dev/null
+    fi
+fi
 
 [ "${GIT_PUSH_ON_COMMIT:-1}" = "0" ] && exit 0
 git remote get-url origin >/dev/null 2>&1 || exit 0
 branch=$(git symbolic-ref -q --short HEAD) || exit 0
-common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common=$(git rev-parse --git-common-dir)
-log="$common/push.log"
 head=$(git rev-parse --short HEAD)
 
 (

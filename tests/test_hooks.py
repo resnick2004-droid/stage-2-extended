@@ -295,7 +295,7 @@ def test_the_test_hooks_failure_message_names_both_kinds_of_pinned_declaration()
 
 
 def test_the_git_hooks_keep_lf_and_install_into_the_common_dir():
-    for name in ("pre-commit", "post-commit"):
+    for name in ("pre-commit", "commit-msg", "post-commit"):
         assert b"\r\n" not in (ROOT / "scripts" / name).read_bytes(), f"scripts/{name} has CRLF"
     text = (ROOT / "scripts" / "install_hooks.py").read_text(encoding="utf-8")
     assert "--git-common-dir" in text
