@@ -492,11 +492,14 @@ def test_refuses_a_lift_bound_other_than_the_validated_blob(q82, tmp_path):
 
 
 def test_asks_the_reader_before_the_calendar_read():
+    """Q-158 (the reader's held-out rule 3): the judged calendar read under E-035, a row without a read token, is now
+    refused by the reader before anything is read; a row whose token is `heldout-read: P-16 by
+    scripts/q82_validation.py` (the lead's) would admit one run of it, inside a clean run."""
     r = _run([ENTRY, "--check-read"], timeout=300)
     out = r.stdout + r.stderr
     assert "reader: purpose=registered_design declaration=E-035 design=P-16" in out, out[-2000:]
     assert "data/atlas/A1/days.parquet" in out
-    assert r.returncode == 0 and "AUTHORISED" in out, out[-2000:]
+    assert r.returncode == 3 and "REFUSED (held-out rule 3" in out and "AUTHORISED" not in out, out[-2000:]
 
 
 @pytest.mark.slow

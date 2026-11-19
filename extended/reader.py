@@ -38,8 +38,9 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
    `scripts/p14_validation.py`). `design=` names the designs read, each one of `REGISTERED_DESIGNS` (P-14, P-15,
    P-16; nothing else, on either block); the declaration is a decision row that exists and names each of them
    (never a family's or a described reading's file: a family can never use this purpose, whatever its line says);
-   the process's script must be one of this repository's `scripts/*.py`. Checked wherever it runs and ledgered only
-   inside a clean run, exactly as an identity's read; never limited to once;
+   the process's script must be one of this repository's `scripts/*.py`. On the choice block, checked wherever it runs
+   and never limited; **a read touching the held-out years is admitted only under the held-out rule 3 below** (a row
+   with a read token naming it, inside a clean run, one run a row; Q-158);
 3. every other purpose: a purpose containing a choice or fitting word (`choose`, `choice`, `fit`, `select`, `search`,
    `tune`, `train`, ...) never reads the judged block, whatever a declaration says (the audit's H-2); the declaration
    is a family file `prereg/F-NN_<name>.md` (or its id `F-NN`) or a described reading's `prereg/RD-NN_<name>.md` (or
@@ -57,6 +58,40 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
 5. **once**: if the ledger already holds a read of the same declaration and purpose by another run, the read is
    refused (`JudgedBlockReadTwice`) unless `repeat="E-NNN"` names a decision row that names the declaration -- one
    row, one more run. One run may read as often as it needs (bars, then walks; its own workers share the run id).
+
+**The held-out rules** (CHARTER 3.6-3.7, in force since E-210; Q-158; the red team's B-3 of
+`docs/reviews/TEMPLATE_AGENTS_2026-11-18.md`). The judged block is E-208's held-out years. On top of the rules above,
+each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins with its rule's name (`RULES`):
+
+* **rule 1, the finalists' row first.** A held-out purpose (`heldout_test`, `heldout_stress`) is honoured only once a
+  decision row carries a finalists' token for exactly this pinned declaration, in a row newer than the pin's first
+  row; a described reading (RD-) never takes a held-out purpose;
+* **rule 2, once per market.** A market's held-out window is read for a test by one declaration: the first family (F-)
+  whose judged read of it is ledgered, under any purpose. Any other family's judged read of that window is refused,
+  whatever its bytes or purpose, unless a row opens a new window (a window token) that holds the read's days;
+* **rule 3, a registered design's held-out read named by its own row.** A `registered_design` read touching the
+  held-out years is admitted only by a row whose read token names every design read and this process's script,
+  inside a clean run, one run a row; a row without the token (E-021, E-024, E-026, E-035, ...) admits no new one --
+  the reads it admitted stay valid as the ledger records them;
+* **rule 4, a described reading after the verdict.** A described reading (RD-) reads a market's held-out window only
+  once a verdict token for that market exists in a row newer than the window's opening row.
+
+**The held-out tokens** (`HELDOUT_TOKENS`; `extended/identity_tokens.py`'s positional form): exactly the first text of
+a decision row's third cell, the row beginning exactly `| E-NNN | YYYY-MM-DD | `, unquoted, ending ` -- ` and the
+row's text; that shape anywhere else is never a token (`heldout_token_problems` lists a row whose third cell begins
+token-like but is not exactly one):
+
+    | E-NNN | YYYY-MM-DD | heldout-finalists: F-NN @ <declaration's LF sha256> list <the finalists' sha256> -- <text> |
+    | E-NNN | YYYY-MM-DD | heldout-window: NQ 2026-07-17 to 2027-07-16 -- <text> |
+    | E-NNN | YYYY-MM-DD | heldout-verdict: NQ F-NN -- <text> |
+    | E-NNN | YYYY-MM-DD | heldout-read: P-14,P-16 by scripts/<name>.py -- <text> |
+
+(the shas 64 lowercase hexadecimal characters; a market a root of capitals and digits; the designs P-14, P-15, P-16
+joined by commas; the script one of `scripts/*.py`). The window a judged read falls in is the newest window row for its
+market whose days hold the read's judged part, else E-208's base window (`BASE_WINDOW_ROW`, the seal's first day to
+2026-07-16, every market); a window row cannot widen what `span` allows (the confirmation window stays refused here).
+A family's or described reading's judged line, and a registered design's held-out line, carry a `heldout` field: the
+market and window, the finalists' row and list sha256, the verdict row, or the read row.
 
 **The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every family's
 or described reading's read touching the judged block, and every identity's or registered design's read inside a clean
@@ -139,6 +174,39 @@ E_ID = re.compile(r"E-\d+")
 NAME = re.compile(r"[A-Za-z0-9_]+")
 THIS_FILE = Path(__file__).resolve()
 
+# --- the held-out rules (CHARTER 3.6-3.7, in force since E-210; Q-158) --------------------------------------------
+#: the held-out test's purposes (the design-search template's section 14): honoured only after a finalists' row
+HELDOUT_TEST, HELDOUT_STRESS = "heldout_test", "heldout_stress"
+HELDOUT_PURPOSES = (HELDOUT_TEST, HELDOUT_STRESS)
+#: E-208's split: every market's base held-out window, opened by E-208 -- from the seal's first day (so a read inside
+#: the holiday gap falls in it) to the judged block's last; a `heldout-window` row opens another
+BASE_WINDOW_ROW = "E-208"
+#: each refusal's rule, named in its message
+RULES = {1: "held-out rule 1, the finalists' row first (CHARTER 3.7)",
+         2: "held-out rule 2, once per market (CHARTER 3.6 (c))",
+         3: "held-out rule 3, a registered design's held-out read named by its own row (CHARTER 3.6 (b))",
+         4: "held-out rule 4, a described reading only after the market's verdict row (CHARTER 3.6 (a), (c))"}
+#: the held-out tokens, each exactly the first text of a decision row's third cell (`extended/identity_tokens.py`'s
+#: positional form): the row's exact start, the stem, its fields, ` -- `, then text whose first character is neither a
+#: space nor a bar
+_HO_HEAD = r"\| (?P<row>E-\d+) \| (?P<date>\d{4}-\d{2}-\d{2}) \| "
+_HO_TAIL = r" -- (?=[^\s|])"
+_HO_DAY = r"\d{4}-\d{2}-\d{2}"
+_HO_MARKET = r"[A-Z][A-Z0-9]{0,7}"
+HELDOUT_TOKENS = {
+    "finalists": re.compile(_HO_HEAD + r"heldout-finalists: (?P<decl>F-\d+) @ (?P<sha>[0-9a-f]{64}) "
+                            r"list (?P<list>[0-9a-f]{64})" + _HO_TAIL),
+    "window": re.compile(_HO_HEAD + rf"heldout-window: (?P<market>{_HO_MARKET}) (?P<start>{_HO_DAY}) to "
+                         rf"(?P<end>{_HO_DAY})" + _HO_TAIL),
+    "verdict": re.compile(_HO_HEAD + rf"heldout-verdict: (?P<market>{_HO_MARKET}) (?P<decl>F-\d+)" + _HO_TAIL),
+    "read": re.compile(_HO_HEAD + r"heldout-read: (?P<designs>P-1[456](?:,P-1[456])*) "
+                       r"by (?P<script>scripts/[A-Za-z0-9_]+\.py)" + _HO_TAIL),
+}
+#: a held-out token-like string: what a hand meaning one types (any case, `-`, `_`, a space or nothing as joiners)
+HELDOUT_TOKEN_LIKE = re.compile(r"held[-_ ]?out[-_ ]?(?:finalists|window|verdict|read)\s*[:=]", re.IGNORECASE)
+_HO_THIRD_CELL = re.compile(r"\|\s*E-\d+\s*\|[^|]*\|")
+_HO_MARKS = re.compile(r"[\s`*_~]*")
+
 
 class ReadRefused(RuntimeError):
     """A read of Stage 2's bars or walks this module does not allow; raised before anything is read."""
@@ -158,6 +226,33 @@ class JudgedBlockReadTwice(JudgedBlockSealed):
 
 class LedgerError(ReadRefused):
     """The read ledger does not verify or cannot be written, or the commit cannot be named: no judged read."""
+
+
+class HeldOutRefused(JudgedBlockSealed):
+    """A read of the held-out years one of the held-out rules (CHARTER 3.6-3.7, Q-158) refuses; `rule` is its number
+    (`RULES`), and the message begins with the rule's name."""
+
+    def __init__(self, rule: int, what: str, why: str):
+        self.rule = rule
+        super().__init__(f"REFUSED ({RULES[rule]}): {what}: {why}")
+
+
+@dataclass(frozen=True)
+class HeldOutToken:
+    """A held-out token of a decision row: its kind (`finalists`, `window`, `verdict`, `read`), the row's id and date,
+    and its fields (finalists: `decl`, `sha`, `list`; window: `market`, `start`, `end`; verdict: `market`, `decl`;
+    read: `designs` (a tuple), `script`)."""
+    kind: str
+    row: str
+    date: str
+    fields: tuple[tuple[str, Any], ...]
+
+    def get(self, key: str) -> Any:
+        return dict(self.fields)[key]
+
+    @property
+    def number(self) -> int:
+        return int(self.row[2:])
 
 
 @dataclass(frozen=True)
@@ -180,6 +275,13 @@ class Authorisation:
     ledgered: bool = False
     #: the registered designs a `registered_design` read re-reads, in `REGISTERED_DESIGNS`' order (else empty)
     designs: tuple[str, ...] = ()
+    #: the market read (a root such as "NQ")
+    market: str = "NQ"
+    #: what the held-out rules checked (Q-158), written to the ledger line as its `heldout` field: for a family's or a
+    #: described reading's judged read the market and the window (`window`, the row that opened it), with the
+    #: finalists' row (`finalists`, `finalists_list_sha256`) for a held-out purpose and the verdict row (`verdict`) for
+    #: a described reading; for a registered design's held-out read the row naming it (`read_row`). None otherwise
+    heldout: tuple[tuple[str, Any], ...] | None = None
 
 
 # ------------------------------------------------------------------------------------------------- dates and blocks
@@ -501,6 +603,192 @@ def _once(repo: Path, ref: str, purpose: str, repeat: str | None, what: str) -> 
             "repeat='E-NNN' (the failure protocol: never rerun until it passes)")
 
 
+# ----------------------------------------------------------------------------------- the held-out rules (Q-158)
+
+
+def heldout_tokens(decisions_text: str, kind: str | None = None) -> list[HeldOutToken]:
+    """Every held-out token of the decision log, in file order (of one `kind` if given): positional only -- a token
+    is exactly `HELDOUT_TOKENS[kind]` at a line's start; that shape anywhere else is never one. A window whose end is
+    before its start, or whose days are not dates, is no token (`heldout_token_problems` reports it)."""
+    out = []
+    for line in decisions_text.splitlines():
+        for k, rx in HELDOUT_TOKENS.items():
+            if kind is not None and k != kind:
+                continue
+            m = rx.match(line)
+            if not m:
+                continue
+            f = {x: v for x, v in m.groupdict().items() if x not in ("row", "date")}
+            if k == "window":
+                try:
+                    s, e = date.fromisoformat(f["start"]), date.fromisoformat(f["end"])
+                except ValueError:
+                    continue
+                if e < s:
+                    continue
+                f["start"], f["end"] = s, e
+            if k == "read":
+                f["designs"] = tuple(d for d in REGISTERED_DESIGNS if d in f["designs"].split(","))
+            out.append(HeldOutToken(k, m["row"], m["date"], tuple(sorted(f.items()))))
+    return out
+
+
+def heldout_token_problems(decisions_text: str) -> list[str]:
+    """The decision rows whose third cell begins (after spaces, backticks and emphasis marks) with a held-out
+    token-like string (`HELDOUT_TOKEN_LIKE`) that is not exactly a token: such a row authorises nothing, and the lead
+    rewrites it in the next row. [] is clean."""
+    out = []
+    for n, line in enumerate(decisions_text.splitlines(), start=1):
+        r = ROW.match(line)
+        c = _HO_THIRD_CELL.match(line) if r else None
+        if not c:
+            continue
+        p = _HO_MARKS.match(line, c.end()).end()
+        if HELDOUT_TOKEN_LIKE.match(line, p) and not heldout_tokens(line):
+            out.append(f"{r.group(1)} (line {n}): {ascii(line[p:p + 80])} is held-out token-like but not exactly a "
+                       "token (heldout-finalists: F-NN @ <sha256> list <sha256> -- ...; heldout-window: NQ <first> to "
+                       "<last> -- ...; heldout-verdict: NQ F-NN -- ...; heldout-read: P-14,P-16 by scripts/<x>.py -- "
+                       "..., each the first text of the row's third cell), so it authorises nothing")
+    return out
+
+
+def _row_number(row: str) -> int:
+    return int(row[2:])
+
+
+def _pin_row(decisions_text: str, ref: str, sha: str) -> int | None:
+    """The number of the first decision row carrying the pin of `ref` at `sha`, or None."""
+    want = f"`{ref}` sha256 `{sha}`"
+    nums = [_row_number(m.group(1)) for line in decisions_text.splitlines()
+            if (m := ROW.match(line)) and want in line]
+    return min(nums) if nums else None
+
+
+def heldout_window(decisions_text: str, market: str, first: date, last: date) -> tuple[str, date, date]:
+    """(the opening row, first day, last day) of the window a judged read of `market` from `first` to `last` falls in:
+    the newest `heldout-window` row for the market whose days contain the read's, else E-208's base window (the seal's
+    first day to the judged block's last, every market)."""
+    rows = [t for t in heldout_tokens(decisions_text, "window")
+            if t.get("market") == market and t.get("start") <= first and last <= t.get("end")]
+    if rows:
+        t = max(rows, key=lambda x: x.number)
+        return t.row, t.get("start"), t.get("end")
+    return BASE_WINDOW_ROW, SEAL_START, JUDGED_END
+
+
+def _line_market(rec: dict[str, Any]) -> str | None:
+    """A ledger line's market: its `heldout.market`, else the root of a bar store it read, else None (unknown)."""
+    ho = rec.get("heldout") if isinstance(rec.get("heldout"), dict) else {}
+    if ho.get("market"):
+        return str(ho["market"])
+    for f in ((rec.get("what") or {}).get("files") or []):
+        m = re.search(r"data/bars/([A-Za-z0-9_]+)/", str((f or {}).get("path", "")))
+        if m:
+            return m.group(1)
+    return None
+
+
+def _finalists(ref: str, sha: str, text: str, what: str) -> HeldOutToken:
+    """Rule 1: a held-out purpose is honoured only under a finalists' row for exactly this pinned declaration, newer
+    than its pin."""
+    fid = DECLARATION_ID.match(ref).group(1)
+    if not fid.startswith("F-"):
+        raise HeldOutRefused(1, what, f"{ref} is a described reading; the held-out purposes {HELDOUT_PURPOSES} belong "
+                                      "to a search's held-out test, after its finalists' row (a token names an F- "
+                                      "declaration only)")
+    mine = [t for t in heldout_tokens(text, "finalists") if t.get("decl") == fid]
+    if not mine:
+        raise HeldOutRefused(1, what, f"no decision row carries a finalists' token for {fid} (`heldout-finalists: {fid} "
+                                      "@ <its sha256> list <the finalists' sha256> -- ...`, the first text of the "
+                                      "row's third cell); the held-out years are read only after the ordered finalists "
+                                      "are pinned")
+    same = [t for t in mine if t.get("sha") == sha]
+    if not same:
+        raise HeldOutRefused(1, what, f"the finalists' row(s) {[t.row for t in mine]} for {fid} carry "
+                                      f"{sorted({t.get('sha')[:12] for t in mine})}, not {ref}'s sha256 {sha[:12]}")
+    pin = _pin_row(text, ref, sha)
+    if pin is None:
+        raise HeldOutRefused(1, what, f"no decision row carries {ref}'s pin at {sha[:12]}, so the finalists' row "
+                                      "cannot be shown to follow it")
+    after = [t for t in same if t.number > pin]
+    if not after:
+        raise HeldOutRefused(1, what, f"the finalists' row(s) {[t.row for t in same]} for {fid} precede its pin "
+                                      f"(E-{pin}); the finalists are chosen on the search years after the pin")
+    return max(after, key=lambda t: t.number)
+
+
+def _market_once(repo: Path, ref: str, market: str, window: str, what: str) -> None:
+    """Rule 2: a market's held-out window is read for a test by one declaration -- the first family whose judged read
+    of it is ledgered; any other family's read of it is refused, whatever its bytes or its purpose. A line whose market
+    or window is unrecorded counts for every market or window."""
+    for r in read_ledger(ledger_path(repo)):
+        d = r.get("declaration") if isinstance(r.get("declaration"), dict) else {}
+        if d.get("kind") != "family" or d.get("ref") == ref:
+            continue
+        if not (r.get("dates") or {}).get("judged_first"):
+            continue
+        m = _line_market(r)
+        ho = r.get("heldout") if isinstance(r.get("heldout"), dict) else {}
+        w = ho.get("window")
+        if (m is None or m == market) and (w is None or w == window):
+            raise HeldOutRefused(2, what, f"{market}'s held-out window opened by {window} was already read for a test "
+                                          f"by {d.get('ref')} ({r.get('purpose')!r}, run "
+                                          f"{(r.get('who') or {}).get('run_id')}); it is read by one declaration per "
+                                          "market, whatever another's bytes -- a later search reads elsewhere only "
+                                          "under a row opening a new window (`heldout-window: <market> <first> to "
+                                          "<last> -- ...`)")
+
+
+def _rd_after_verdict(text: str, market: str, window: str, what: str) -> HeldOutToken:
+    """Rule 4: a described reading reads a market's held-out window only once a verdict row for that market, newer
+    than the window's opening row, exists."""
+    rows = [t for t in heldout_tokens(text, "verdict")
+            if t.get("market") == market and t.number > _row_number(window)]
+    if not rows:
+        raise HeldOutRefused(4, what, f"no verdict row for {market}'s held-out window opened by {window} "
+                                      f"(`heldout-verdict: {market} F-NN -- ...`, newer than {window}); a described "
+                                      "reading never reads the held-out years before the market's held-out test has "
+                                      "its verdict")
+    return max(rows, key=lambda t: t.number)
+
+
+def _registered_heldout(declaration: str, designs: tuple[str, ...], repo: Path, what: str) -> HeldOutToken:
+    """Rule 3: a registered design's read of the held-out years is admitted only by a row naming that read -- its
+    `heldout-read` token naming every design read and this process's script -- inside a clean run, one run a row.
+    The rows admitting earlier reads, without the token, admit no new one; those reads stay as the ledger records."""
+    row = decision_row(_decisions(repo), declaration) or ""
+    toks = heldout_tokens(row, "read")
+    if not toks:
+        raise HeldOutRefused(3, what, f"{declaration}'s row carries no `heldout-read: <designs> by scripts/<x>.py -- "
+                                      "...` token: no new registered_design read of the held-out years without a row "
+                                      "naming that read (earlier reads stay valid as the ledger records them)")
+    t = toks[0]
+    missing = [d for d in designs if d not in t.get("designs")]
+    if missing:
+        raise HeldOutRefused(3, what, f"{declaration}'s token names {','.join(t.get('designs'))}, not "
+                                      f"{', '.join(missing)}")
+    script = _main_script()
+    rel = _rel(script, repo) if script else None
+    if rel != t.get("script"):
+        raise HeldOutRefused(3, what, f"{declaration}'s token names the read by {t.get('script')}, and this process's "
+                                      f"script is {rel or script or 'none'}")
+    if not _run()[0]:
+        raise HeldOutRefused(3, what, f"a registered design's held-out read runs only inside a clean run, where it is "
+                                      f"ledgered ({CLEAN_RUN_ENV} is not set)")
+    return t
+
+
+def _registered_heldout_once(repo: Path, declaration: str, what: str) -> None:
+    _, run_id = _run()
+    used = sorted({str((r.get("who") or {}).get("run_id")) for r in read_ledger(ledger_path(repo))
+                   if r.get("purpose") == REGISTERED_DESIGN
+                   and ((r.get("declaration") or {}) if isinstance(r.get("declaration"), dict) else {}).get("ref")
+                   == declaration and (r.get("dates") or {}).get("judged_first")} - {run_id})
+    if used:
+        raise HeldOutRefused(3, what, f"{declaration} already admitted the held-out read of run {used[0]}; one row, "
+                                      "one run")
+
+
 def _exists(declaration: Any, repo: Path) -> bool:
     """A choice-block read's declaration, if it names one, exists: a decision row, an F- or RD-id, or a file of the
     tree."""
@@ -514,13 +802,15 @@ def _exists(declaration: Any, repo: Path) -> bool:
 
 def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: Any = None,
               repeat: str | None = None, design: Any = None, repo: Path | str | None = None,
-              what: str = "read") -> Authorisation:
-    """Whether a read of `start` to `end` (trading days, inclusive) may happen, and under what; raises otherwise.
-    Reads nothing and writes nothing. `repo` is the tree whose `DECISIONS.md`, `prereg/`, git state and ledger count
-    (this repository's root; tests pass a temporary tree). `design` (a name or a list) belongs to the purpose
-    `registered_design` only."""
+              what: str = "read", market: str = "NQ") -> Authorisation:
+    """Whether a read of `start` to `end` (trading days, inclusive) of `market` may happen, and under what; raises
+    otherwise. Reads nothing and writes nothing. `repo` is the tree whose `DECISIONS.md`, `prereg/`, git state and
+    ledger count (this repository's root; tests pass a temporary tree). `design` (a name or a list) belongs to the
+    purpose `registered_design` only."""
     tree = Path(repo).resolve() if repo is not None else ROOT
     s, e = span(start, end, what)
+    if not isinstance(market, str) or not NAME.fullmatch(market):
+        raise ValueError(f"a market is a root such as 'NQ', not {market!r}")
     if purpose is not None:
         _check_purpose(purpose)
     if design is not None and purpose != REGISTERED_DESIGN:
@@ -533,7 +823,7 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
             raise ReadRefused(f"REFUSED: {what}: the declaration {declaration!r} does not exist in {tree}")
         return Authorisation(s, e, blocks, False, None, None, purpose,
                              str(declaration) if declaration is not None else None, None, None, repeat, False,
-                             designs)
+                             designs, market)
     # the judged part as the judged block names it; a span inside the holiday gap alone keeps its own first day
     first = max(s, JUDGED_START) if e >= JUDGED_START else max(s, SEAL_START)
     head = f"{what} ({s} to {e}) reaches the judged block ({first} to {e})"
@@ -545,19 +835,30 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
         inside = bool(_run()[0])                        # E-026: an identity's read is ledgered only in a clean run,
         if inside:                                      # and a clean run's marker is checked as a family read's is
             _clean_run(tree, head)
-        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, "identity", repeat, inside)
+        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, "identity", repeat, inside, (), market)
     if purpose == REGISTERED_DESIGN:
         ref = _registered(declaration, designs, tree, head)
-        inside = bool(_run()[0])                        # E-037: ledgered only in a clean run, exactly as an identity
-        if inside:
-            _clean_run(tree, head)
-        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, REGISTERED_DESIGN, repeat, inside,
-                             designs)
+        tok = _registered_heldout(ref, designs, tree, head)     # rule 3: a row naming this read, in a clean run
+        _clean_run(tree, head)
+        _registered_heldout_once(tree, ref, head)
+        return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, REGISTERED_DESIGN, repeat, True,
+                             designs, market, (("read_row", tok.row),))
     ref, sha = _family(declaration, purpose, tree, head)
+    text = _decisions(tree)
+    window = heldout_window(text, market, first, e)[0]
+    held: dict[str, Any] = {"market": market, "window": window}
+    if purpose in HELDOUT_PURPOSES:                     # rule 1: after the finalists' row (an RD never: rule 1 too)
+        fin = _finalists(ref, sha, text, head)
+        held.update(finalists=fin.row, finalists_list_sha256=fin.get("list"))
+    kind = "described_reading" if ref.startswith("prereg/RD-") else "family"
+    if kind == "described_reading":                     # rule 4: only after the market's verdict row
+        held["verdict"] = _rd_after_verdict(text, market, window, head).row
     _clean_run(tree, head)
     _once(tree, ref, purpose, repeat, head)
-    kind = "described_reading" if ref.startswith("prereg/RD-") else "family"
-    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, kind, repeat, True)
+    if kind == "family":                                # rule 2: one declaration per market's window
+        _market_once(tree, ref, market, window, head)
+    return Authorisation(s, e, blocks, True, first, e, purpose, ref, sha, kind, repeat, True, (), market,
+                         tuple(sorted(held.items())))
 
 
 # ------------------------------------------------------------------------------------------------------- the ledger
@@ -643,6 +944,8 @@ def _record(a: Authorisation, kind: str, files: Sequence[Path], columns: list[st
         "purpose": a.purpose,
         "repeat": a.repeat,
     }
+    if a.heldout is not None:                           # Q-158: what the held-out rules checked
+        rec["heldout"] = dict(a.heldout)
     path = ledger_path(repo)
     read_ledger(path)                                   # a ledger that does not verify takes no new line
     data = (json.dumps(rec, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
@@ -736,10 +1039,10 @@ def read_bars(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     own window guard (the vendored `propedge.data.bars.read_bars`, purpose `development`). A judged-block read is
     ledgered before the bars are read. `columns` selects columns (all by default)."""
     tree = Path(repo).resolve() if repo is not None else ROOT
-    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
-                  what=what)
-    if not NAME.fullmatch(market):
+    if not isinstance(market, str) or not NAME.fullmatch(market):
         raise ValueError(f"a market is a root such as 'NQ', not {market!r}")
+    a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
+                  what=what, market=market)
     store = tree / STORE_REL
     path = store / market / "bars.parquet"
     if not path.is_file():
@@ -768,7 +1071,7 @@ def read_walks(family: str, table: str, start: Any, end: Any, *, purpose: str | 
     table is read."""
     tree = Path(repo).resolve() if repo is not None else ROOT
     a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
-                  what=what)
+                  what=what, market=market)
     for x in (family, table, market):
         if not NAME.fullmatch(str(x)):
             raise ValueError(f"{what}: {x!r} is not a plain name (a family such as 'A3', a table such as 'walks')")
@@ -797,14 +1100,14 @@ def read_walks(family: str, table: str, start: Any, end: Any, *, purpose: str | 
 
 def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], what: str,
                           purpose: str | None = None, declaration: Any = None, repeat: str | None = None,
-                          design: Any = None, repo: Path | str | None = None) -> Authorisation:
+                          design: Any = None, repo: Path | str | None = None, market: str = "NQ") -> Authorisation:
     """For a runner whose reads happen inside Stage 2's engine (the identities, the U1 replay, a cell rebuilt by
     `build_cells`): the same checks as a read here, and the same ledger line, for the `files` the engine will open.
     Reads no data; call it before the engine runs. A judged read names its files and they must exist, ledgered or
     not (an identity outside a clean run, E-026)."""
     tree = Path(repo).resolve() if repo is not None else ROOT
     a = authorise(start, end, purpose=purpose, declaration=declaration, repeat=repeat, design=design, repo=tree,
-                  what=what)
+                  what=what, market=market)
     paths = [Path(f) if Path(f).is_absolute() else tree / f for f in files]
     if a.judged:
         if not paths:
@@ -822,4 +1125,6 @@ __all__ = ["CHOICE_START", "CHOICE_END", "JUDGED_START", "JUDGED_END", "CONFIRMA
            "JudgedBlockReadTwice", "LedgerError", "span", "blocks_of", "check_returned", "declared_purposes", "pins",
            "REGISTERED_DESIGN", "REGISTERED_DESIGNS", "names_design",
            "decision_row", "authorise", "read_bars", "read_walks", "authorise_engine_read", "ledger_path",
-           "read_ledger", "missing_lines", "ledger_history_problems"]
+           "read_ledger", "missing_lines", "ledger_history_problems",
+           "HELDOUT_TEST", "HELDOUT_STRESS", "HELDOUT_PURPOSES", "BASE_WINDOW_ROW", "RULES", "HELDOUT_TOKENS",
+           "HeldOutRefused", "HeldOutToken", "heldout_tokens", "heldout_token_problems", "heldout_window"]

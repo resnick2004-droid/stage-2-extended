@@ -138,13 +138,15 @@ TEXTS = {
 @pytest.fixture
 def tree(tmp_path, monkeypatch) -> Path:
     """A temporary git tree at `<tmp>/runs/<RUN>`: RD-04, RD-03 and F-90 (synthetic) each naming
-    `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it."""
+    `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it. Q-158: E-960 carries NQ's
+    held-out verdict token, so a described reading's judged read is admitted (the reader's held-out rule 4)."""
     t = tmp_path / "runs" / RUN
     (t / "prereg").mkdir(parents=True)
     rows = []
     for i, (rel, text) in enumerate(TEXTS.items()):
         (t / rel).write_bytes(text.encode("utf-8"))
         rows.append(f"| E-{950 + i} | 2026-11-17 | **{rel} declared**, `{rel}` sha256 `{sha_lf(text)}` | test |")
+    rows.append("| E-960 | 2026-11-17 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict | test |")
     (t / "DECISIONS.md").write_bytes(("# Decisions (synthetic)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
                                       + "\n".join(rows) + "\n").encode("utf-8"))
     git(t, "init", "-q", "-b", "master")
