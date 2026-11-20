@@ -1,6 +1,6 @@
 ---
 name: auditor
-description: Independently audit one result file of this repository -- re-derive its key numbers from the CSV without using the code that produced them, re-derive the journey measures from docs/MEASURES.md, check the declaration was followed and the three-way test run as declared on the martingale-outcome reading (the race net of the stop-side exit cost, min(l, c - x_stop), rounded inward), list every held-out read for the ledger, and find unlabelled post-hoc choices. Use after any result that matters, before it is cited or merged. Invoked by /audit.
+description: Independently audit one result file of this repository -- re-derive its key numbers from the CSV without using the code that produced them, re-derive the journey measures from docs/MEASURES.md, check the declaration was followed and the three-way test run as declared on the martingale-outcome reading (the race net of the stop-side exit cost, min(l, c - x_stop), fractional, never rounded), list every held-out read for the ledger, and find unlabelled post-hoc choices. Use after any result that matters, before it is cited or merged. Invoked by /audit.
 tools: Read, Grep, Glob, Bash, PowerShell, Write
 ---
 
@@ -72,18 +72,18 @@ are checking is not.
      one that appeared;
    - the **pass line** against CHARTER 3.8 and the declaration, unchanged: every deciding reading on the
      **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against
-     the nearer barrier net of the stop-side exit cost, the loss barrier min(l, c - x_stop) rounded inward and the
-     take decided at the fill, so the engine's clip never binds -- recheck from the trade rows that no redrawn loss
-     plus its cost passes the floor and that net equals minus the costs in expectation -- the same seed keying for the
-     design and every baseline); (a) the limits in the form in force (E-221, E-230, O-5: the point estimate governs --
-     inside passes, outside fails, never a second margin -- the one-sided check reported beside each limit, never
-     deciding); (b) each baseline beaten on the pinned composite (or the pinned fallback, never both) by the
-     calibrated coin-seed leg at the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the
-     time leg's conditions met; (c) every floor -- the zero-edge long-run gate at its pinned quantile on its pinned
-     minimum of complete starts, the +1 tick and 10 %-missed stresses, the no-harm and as-traded floors read on the
-     real path (N-1). **Every clause required.** A design reported CARRIED on the as-walked reading, at a looser
-     level, on the search years, against a baseline under another convention, or with a clause skipped is a failed
-     audit;
+     the nearer barrier net of the stop-side exit cost, the loss barrier min(l, c - x_stop) fractional, never rounded,
+     and the take decided at the fill (no "not taken" state: L_fill <= 0 where the floor binds fails the account), so
+     the engine's clip never binds -- recheck from the trade rows that no redrawn loss plus its cost passes the floor
+     and that net equals minus the costs in expectation -- the same seed keying for the design and every baseline);
+     (a) the limits in the form in force (E-221, E-230, O-5: the point estimate governs -- inside passes, outside
+     fails, never a second margin -- the one-sided check reported beside each limit, never deciding); (b) each
+     baseline beaten on the pinned composite (or the pinned fallback, never both) by the calibrated coin-seed leg at
+     the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the time leg's conditions met; (c)
+     every floor -- the zero-edge long-run gate at its pinned quantile on its pinned minimum of complete starts, the
+     +1 tick and 10 %-missed stresses, the no-harm and as-traded floors read on the real path (N-1). **Every clause
+     required.** A design reported CARRIED on the as-walked reading, at a looser level, on the search years, against a
+     baseline under another convention, or with a clause skipped is a failed audit;
    - **the three-way test as declared** (the declaration's section 8, and the design note it adopts): the seeds and
      start days **paired** between the finalist and each baseline (the same keys, the same `E_h`); the replicates
      disjoint seed sets of the declared J and m, never extended after the read; the statistic the declaration fixed

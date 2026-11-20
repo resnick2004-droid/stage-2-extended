@@ -30,7 +30,7 @@ Run `python scripts/status.py` (TASK_QUEUE Q-04 builds it). It reports:
   commit.
 - **The identity** -- the board's state (`STATUS.md`) for P-14's and P-16's gate rows and U1's start rows.
 - **The operator's open items** -- any NEEDS_OPERATOR on the board, each with its state (O-1 and O-3 to O-7 ruled at
-  E-221; the data purchase held).
+  E-221, O-5's governing form at E-230; the data purchase held).
 - **The run lock** -- `run.lock` at the repository root: free, or its holder, job, start and expected end (stale if older
   than its expected end plus an hour: investigated, never stolen).
 - **Last test run** from `results/.last_test_run.json`, written by the post-edit test hook (the edited file's tests and the two foundation checks, Q-147; not the fast tier).

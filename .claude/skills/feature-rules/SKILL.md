@@ -15,12 +15,13 @@ supply and timing as surely as a side model's accuracy.
 
 - Stage 2's bar store (`bars.parquet`, `vendor/stage2/data/README.md`) carries **`ts`, the bar's START**, in epoch
   seconds **UTC** (the README's generic input schema calls it `timestamp`, "Bar OPEN time"); session times are read in
-  US/Central after converting (DST-aware). A 1-minute bar stamped 08:25 covers 08:25:00-08:25:59 and **closes at 08:26**.
+  US/Central after converting (DST-aware). A 1-minute bar stamped 08:25 covers 08:25:00-08:25:59 and **closes at
+  08:26**.
 - So at an alert time `t` (on a minute boundary) the last closed bar is the one stamped **`t - 1 minute`**. A feature at
   `t` reads bars with `timestamp <= t - 1 min` and nothing else. "The 08:25 bar's close" is known at 08:26, not 08:25.
-- Entry is no earlier than `t + L min` (Stage 2 D-266; L = 5 the reference, 3 and 2 declared and counted variants, E-202
-  (2)(c)): a market entry fills at the open of the bar stamped `t + L`; a resting order is live from `t + L` and can fill
-  only on bars stamped `t + L` or later.
+- Entry is no earlier than `t + L min` (Stage 2 D-266; L = 5 the reference, 3 and 2 declared and counted variants,
+  E-202 (2)(c)): a market entry fills at the open of the bar stamped `t + L`; a resting order is live from `t + L` and
+  can fill only on bars stamped `t + L` or later.
 - Calendars (BLS 08:30 releases `vendor/stage2/data/releases_bls_0830_*.csv`, FOMC days) may be used only as they were
   published in advance; their provenance files say when.
 - **Never** read NQ from 2026-07-17 (the confirmation window, `vendor/stage2/config/windows.yaml`).
@@ -50,23 +51,24 @@ For each candidate alert `t`:
 - **Entry:** market at the open of the bar stamped `t + L`, or a resting order live from `t + L` -- a stop fills when a
   bar trades at its price (gap-through fills at the bar's open, plus slippage); a **limit fills only on a trade
   through its level by at least one tick**, at the limit price, never better.
-- **Stop** from the stop band (`vendor/stage2/results/stop_band.csv`, which also holds the cost-drag floor of 45 ticks --
-  Stage 2 D-271 (3), not D-527; the registered designs trade 12.5 and 25 points (P-14) and 25 and 37.5 points (the
+- **Stop** from the stop band (`vendor/stage2/results/stop_band.csv`, which also holds the cost-drag floor of 45 ticks
+  -- Stage 2 D-271 (3), not D-527; the registered designs trade 12.5 and 25 points (P-14) and 25 and 37.5 points (the
   coins P-15, P-16)); **targets** at each declared R.
 - **Resolution** by 15:10 CT: win (target), loss (stop) or flatten (at 15:10, its actual P&L). No time stop.
 - **Ties:** a bar that could hit both stop and target is read **stop first**; on a resting order's fill bar a stop
   touch counts and a target touch does not -- **for one trade's own outcome only.** Kept as a fill-realism rule: in a
-  comparison of a resting entry with its mirror (or its reflection) that rule is biased with a predictable sign:
-  price reaches the fill from the side of the trade's target, so stop first on the fill bar throws away the real
-  trade's target touches and stops out the reflected trade, whose stop now lies on the pre-fill side -- it favours the
-  real resting side by construction (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13). So **wherever a
-  reading compares a resting entry with its reflection or mirror** -- the **no-harm floor** (the real resting side
-  against the reflected one, search years) and the **as-traded floor** (held-out years), both deciding and read on the
-  real path (CHARTER 3.8), and the path-structure gap -- the **pair rule** settles the fill bar: a pair whose fill bar
-  touches either trade's stop or target **contributes zero lift** -- both legs are booked at the
+  comparison of a resting entry with its mirror (or its reflection) that rule is biased with a predictable sign: price
+  reaches the fill from the side of the trade's target, so stop first on the fill bar throws away the real trade's
+  target touches and stops out the reflected trade, whose stop now lies on the pre-fill side -- it favours the real
+  resting side by construction (Phase 0 audit `docs/audits/phase0/D_protocol.md` D-1, D-13). So **wherever a reading
+  compares a resting entry with its reflection or mirror** -- the **no-harm floor** (the real resting side against the
+  reflected one, search years) and the **as-traded floor** (held-out years), both deciding and read on the real path
+  (CHARTER 3.8), and the path-structure gap -- the **pair rule** settles the fill bar: a pair whose fill bar touches
+  either trade's stop or target **contributes zero lift** -- both legs are booked at the
   as-walked leg's settled outcome for that pair, each with its own (equal) costs, so the pair's
-  difference is exactly zero by construction -- is counted, and its share reported and capped; both sides are booked symmetrically about the trigger. The as-walked and as-traded readings
-  use this label; the deciding reading redraws it (section 5).
+  difference is exactly zero by construction -- is counted, and its share reported and capped; both sides are booked
+  symmetrically about the trigger. The as-walked and as-traded readings use this label; the deciding reading redraws
+  it (section 5).
 - **Costs:** Stage 2's per-contract costs at the stop (`atlas_a3.fee_by_stop`; `vendor/stage2/config/fills.yaml`),
   the stop exit at `stop_slippage_ticks`, a limit target at `target_slippage_ticks` (the profile in use).
 - **Gates before any outcome is read:** signals per session (supply), the unresolved share at every R (at most 5 %
@@ -92,20 +94,23 @@ must reproduce them (or P-16's pinned trades hash) before it labels anything new
 A trigger or a feature is judged by what it adds to a design's journey under zero edge, never by a lift over the coin
 twin (CHARTER 3.10). Its fills come from the real order; the path after each fill is reflected with probability one
 half (direction removed); and the deciding reading is the **martingale-outcome reading** -- each trade's outcome
-redrawn at its bracket's driftless first-exit odds against the nearer barrier net of the stop-side exit cost --
-the loss barrier L = min(l, c - x_stop) -- c the room to the nearer of the floor and the daily loss limit after the entry cost, x_stop the stop-side exit cost (commission plus `stop_slippage_ticks`) -- rounded inward to the tick lattice for a fractional cushion, p = L / (L + g), L <= 0 not taken (the design-search template's section 5; `adapter.BinaryDraw` is its cost-free case) -- over seeds
-paired with every baseline's. What a feature can still change, and
-what the search rewards, is supply, timing, resolution speed for a given shape, clustering and how differently a
-component is timed from the others. The as-walked result's gap from the martingale-outcome result is the design's
-path-structure edge, reported beside, never credited. Rules read off a model afterwards (SHAP and the like) are
-exploratory and need their own declaration.
+redrawn at its bracket's driftless first-exit odds against the nearer barrier net of the stop-side exit cost -- the
+loss barrier L = min(l, c - x_stop) -- c the room to the nearer of the floor and the daily loss limit after the entry
+cost, x_stop the stop-side exit cost (commission plus `stop_slippage_ticks`) -- fractional, never rounded (E-237),
+p = L / (L + g), an account with L_fill <= 0 failed at the fill where the floor binds (no "not taken" state) (the
+design-search template's section 5; `adapter.BinaryDraw` is its cost-free case) -- over seeds paired with every
+baseline's. What a feature can still change, and what the search rewards, is supply, timing, resolution speed for a
+given shape, clustering and how differently a component is timed from the others. The as-walked result's gap from the
+martingale-outcome result is the design's path-structure edge, reported beside, never credited. Rules read off a model
+afterwards (SHAP and the like) are exploratory and need their own declaration.
 
 ## Checklist for a reviewer
 
 - [ ] every feature and trigger reads `timestamp <= t - 1 min` only; a shift-invariance test exists and passes
 - [ ] no normaliser, scaler, threshold or level uses data after `t` (or outside the training fold), and none reads the
       held-out years
-- [ ] entries at `t + L` or later (L declared: 5, or a counted 3 or 2); limits need a trade-through; stop first on two-barrier bars; flatten at 15:10 CT
+- [ ] entries at `t + L` or later (L declared: 5, or a counted 3 or 2); limits need a trade-through; stop first on
+  two-barrier bars; flatten at 15:10 CT
 - [ ] splits inside the search years, purged and embargoed by at least a session; hyperparameters fixed or searched
       in-fold and counted
 - [ ] no read of NQ from 2026-07-17; nothing chosen after an outcome without the exploratory label

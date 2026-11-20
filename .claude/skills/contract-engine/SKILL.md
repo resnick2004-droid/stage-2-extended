@@ -126,15 +126,18 @@ engine error and never "fixed" (CHARTER section 4, amended E-210).
 
 ### The criteria, old and current
 
-Stage one's research criterion -- e >= 0.10 net, one-sided 95 % lower bound >= 0.05, out of sample (propsim D-47) -- was
-reopened as a gate by Stage 2 D-145 and is **reported beside, never this repository's pass line**. From E-210 this
-repository judges a design on the user's journey under zero edge (CHARTER sections 2-3; skill `prereg-discipline`):
-on the martingale-outcome reading -- each trade's outcome redrawn at its bracket's driftless first-exit odds against
-the nearer barrier net of the stop-side exit cost: the loss barrier L = min(l, c - x_stop) -- c the room to the nearer of the floor and the daily loss limit after the entry cost, x_stop the stop-side exit cost (commission plus `stop_slippage_ticks`) -- rounded inward to the tick lattice for a fractional cushion, p = L / (L + g), L <= 0 not taken, so `lockstep`'s clip of the costed P&L at the
-cushion never binds and no cost is credited back (`adapter.BinaryDraw` at `edge = 0` is the cost-free case, x = 0;
-the design-search template's section 5) -- inside the operator's limits, each baseline beaten
-on the pinned composite by the calibrated paired test on the held-out years, with the zero-edge long-run gate as a
-floor. Stage 2 D-621 (3) and R\* = P-14 as the row to beat are on record and no longer decide (CHARTER 3.10).
+Stage one's research criterion -- e >= 0.10 net, one-sided 95 % lower bound >= 0.05, out of sample (propsim D-47) --
+was reopened as a gate by Stage 2 D-145 and is **reported beside, never this repository's pass line**. From E-210 this
+repository judges a design on the user's journey under zero edge (CHARTER sections 2-3; skill `prereg-discipline`): on
+the martingale-outcome reading -- each trade's outcome redrawn at its bracket's driftless first-exit odds against the
+nearer barrier net of the stop-side exit cost: the loss barrier L = min(l, c - x_stop) -- c the room to the nearer of
+the floor and the daily loss limit after the entry cost, x_stop the stop-side exit cost (commission plus
+`stop_slippage_ticks`) -- fractional, never rounded (E-237), p = L / (L + g), an account with L_fill <= 0
+failed at the fill where the floor binds (no "not taken" state), so `lockstep`'s clip of the costed P&L at the cushion
+never binds and no cost is credited back (`adapter.BinaryDraw` at `edge = 0` is the cost-free case, x = 0; the
+design-search template's section 5) -- inside the operator's limits, each baseline beaten on the pinned composite by
+the calibrated paired test on the held-out years, with the zero-edge long-run gate as a floor. Stage 2 D-621 (3) and
+R\* = P-14 as the row to beat are on record and no longer decide (CHARTER 3.10).
 
 ### Sample size
 
