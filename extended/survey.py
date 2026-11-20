@@ -2,68 +2,64 @@
 and 14): the survey runner -- the end-to-end driver of one declared design search, on the search years only.
 
     from extended import survey as SV
-    parts = SV.Parts(space=space, build_schedule=build, runner=run, gate=gate)
-    out = SV.run_survey("prereg/F-NN_<name>.md", parts, results_dir=..., name="F-NN_survey")
+    out = SV.run_survey("prereg/F-NN_<name>.md", results_dir=..., name="F-NN_survey")
     out.token          # "heldout-finalists: F-NN @ <declaration sha> list <list sha>", or None (no finalist)
 
-Built on Wave 3.4's engine as it stood (`wt/wt-features` df367a7; `Engine.check` refuses any other API): **the survey
-declares the protocol to the one cell ledger** (`Sampler.survey(..., protocol=, reread_seeds=, measures=)`) and every
-door takes it from there (`search_space.admit_one(..., measure=, reread=)`), never from this module's callers.
+**Nothing is injected** (the red team's F-2): the declaration names every part -- the lever space, the gate, the
+schedule builder, the three-way runner and the playbook writer -- by a factory id (`module:function`) and its
+parameters, and this module builds each part itself (`build_part`). Each part is **bound** by the sha256 of its id, its
+canonical parameters and the code it runs: its module and every module of `extended/` it imports, transitively
+(`code_closure`); the engine (Wave 3.4: `search_space`, `surrogate`, `proposer`, `plateau`) and the objective's code
+(`extended.wave42`) are bound the same way. A binding that differs from the declaration's refuses (`PartRefused`).
+Under a pin a part's module is this repository's (`extended.`), the tree is clean, and its commit is recorded.
 
-**Refusals first** (nothing is written by these): the declaration's bytes are read once, hashed (LF sha256) and parsed
-from the same bytes (n-3); its one fenced ```` ```survey-spec ```` JSON block holds every number (`load_spec`: every key
-required, none unknown, every seed an explicit integer, the baselines exactly `BASELINES`, at least
-`MIN_REREAD_SEEDS` fresh re-read seeds, the margin and z strictly positive); the file is **pinned** -- its sha256 in a
-pin of exactly its path `prereg/F-NN_<name>.md` in **this repository's** `DECISIONS.md` (`ROOT`; the pin's row
-recorded), the results folder inside this tree -- or, for a test, carries `fixture_pin(path)` (honoured only for a file
-outside `prereg/`, writing outside any `results/` folder); **every injected part is bound to the declaration**
-(`bindings`: the lever space by the digest of its canonical form, the gate, the schedule builder and the runner by
-their declared id and their source file's LF sha256 -- plus `survey_config()`'s digest when the part's object has one,
-its settings and data files' shas -- and the engine by its four modules' shas), a part that differs from the pin
-refused (`PartRefused`), the engine and the writers injectable only under a fixture pin; a searched lever that sets a
-side is refused (O-4: the side is the trigger's); the protocol is built from the spec and refuses the held-out years
-at construction.
+**One objective** (F-1, F-11): the composite, its dimensions and every limit are W42-R1's, computed by
+`extended.wave42`'s own functions (`_derived`, `_rows`, `_z`, `_stat`; its `DIMENSIONS` and `LIMITS`) from **its
+pinned result file** (the declaration names the file and its sha256): each dimension averaged over the starts complete
+for its own horizon (the runner reports each start's sessions left), each limit read as its declared statistic (a
+quantile as a quantile) over its own complete starts, pooled over seeds. The weights, caps, budget B*, limits and their
+check level, the size that matters (delta*) and the no-harm margin are read from that file; none is typed in the
+declaration. The plateau rule's margin is the word ``delta_star``.
 
-**The loop**, each step a function of this module (so a test can mutate it):
-2. `draw_survey`: the space-filling survey; every cell counted under ``survey``; the ledger's protocol then checked
-   against the spec's by digest (rb2-a);
-3-5. `read_design`: the schedule built from the design, run through the three-way runner (`RunOutput`: per arm -- the
-   design's and each baseline's, paired on the same starts -- a start-by-seed matrix per key; the design's real-path
-   as-traded and reflected readings; where its sides come from; every position it opens), checked (`_check_output`),
-   then **refused before any measure is read** if the user's book refuses its positions (`components.UserBook`: two
-   opposite positions across the user's accounts or firms are conduct tier 1) or the declared gate (supply, resolution,
-   realised risk) refuses it -- the cell stays counted; else the composite (`composite_score`, built from the spec's
-   dimensions, never passed in) and each limit measure scored into a `Reading` and **admitted through the door** at
-   once, so a held-out reading refuses at its read;
-6. `run_rounds`: exactly the declared rounds (`proposer.propose`), each proposal read; never extended;
-7. `choose_finalists`, by **the finalist order rule** declared here: the read survey and round cells by selection
-   reading (the minimised composite, ties by id), the first `candidates`; each re-read on the declared fresh seeds
-   beside every baseline (paired, the same run) and kept only if (a) it beats **each** baseline by more than the margin
-   at the declared z, one-sided and paired over the re-read seeds (`beats_baselines`); (b) every limit's point estimate
-   on its selection reading is inside its bound (E-230: the point estimate governs; the one-sided check of crossing at
-   the declared level reported beside, never deciding; the engine reads limit measures on the selection seeds only);
-   (c) **the no-harm floor** (O-4, `no_harm`): its sides come from its own trigger and its real-path as-traded
-   composite is no worse than the reflected (coin) composite by more than the declared margin; (d) `plateau.check`
-   accepts it. A plateau neighbour refused by the book or the gate refuses the candidate;
-8. `emit`: the readings, every candidate's record, and **the finalists' list**, through `extended.results.write_result`
-   by default (a `results/` folder only inside a clean run), **then** the variants ledger (`ledger.variant_rows`, each
-   row carrying the declaration's and the protocol's sha256, through the vendored `VariantCounter`; a held-out row
-   refused first) -- variants last, so a writer failure leaves no counted rows without their results; the token in
-   Q-158's form, `heldout-finalists: F-NN @ <the declaration's LF sha256> list <the list file's LF sha256>`. No finalist:
-   the list is written empty and the token is None (the search closes).
-**A refusal after the survey's first cell** (any exception) writes a failure record and the ledger's variants rows, in
-that order, and is re-raised (m-4): no counted cell vanishes.
+**Refusals first** (nothing is written by these): the declaration's bytes read once, hashed and parsed (n-3); its
+`survey-spec` block exactly its form (`load_spec`; the four baselines, at least `MIN_REREAD_SEEDS` fresh re-read seeds,
+z above zero); **pinned** in this repository's `DECISIONS.md` only (or a test's `fixture_pin`, outside `prereg/` and any
+`results/`); every binding equal; every searched lever an id of `extended.lever_space`'s searched levers (an
+allowlist, none of which sets a side: F-8); the engine able to read the declared limits on the re-read seeds (Q-192);
+**not a second run** of this declaration (F-5: no output of the run's names in the folder, no variants row of this
+declaration, no finalists' token for it in the decision log); the protocol refusing the held-out years.
+
+**The loop** (each step a function, so a test can mutate it):
+2. `draw_survey`: the survey declares the protocol, re-read seeds and limit measures to the one cell ledger;
+3-5. `read_design`: the part-built schedule run through the runner; **`_check_output` refuses a held-out tag, block or
+   horizon first** (F-4: the whole run refuses, before the book, the gate or any reading), then an off-protocol or
+   unpaired report; `screen` -- one `components.UserBook` per (start, seed) path (n-a; tier 1 and overlap) and the
+   gate on **only its declared keys** of the design's arm (F-10) -- refuses a design before any measure; then the
+   composite and each limit through the door;
+6. `run_rounds`: exactly the declared rounds;
+7. `choose_finalists` (the finalist order rule): the read searched cells by selection reading, the first `candidates`;
+   each re-read on the fresh seeds and kept only if (a) it beats **each** baseline by more than delta* at the declared z,
+   read as a one-sided level and compared on the t law with n - 1 degrees of freedom (F-7); (b) **every limit's
+   re-read point estimate** is inside its bound (F-3, E-230), the selection reading and the one-sided check (t law,
+   W42's check level) beside; (c) the no-harm floor (the trigger's side; the as-traded composite no worse than the
+   coin-side as-walked one, `REFLECTED`, by more than the margin); (d) the plateau (side ``worse`` only, n-c);
+8. `emit`: the readings (the baselines' included, n-e), the candidates, the finalists' list (each with its bound
+   playbook's text and sha256), then the variants rows (each carrying the declaration's and protocol's sha256); the
+   token in Q-158's form. A refusal after the first cell writes the variants rows, then the failure record, each
+   attempted whatever the other does (F-6), and is re-raised.
 """
 from __future__ import annotations
 
+import ast
 import hashlib
-import inspect
+import importlib
+import importlib.util
 import json
 import math
 import re
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
-from statistics import NormalDist
+from types import MappingProxyType
 from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
@@ -73,18 +69,22 @@ from extended import reader as R
 
 TASK = "Wave 5"
 ENGINE_COMMIT = "df367a7"
+W42_RULE = "W42-R1"
 DESIGN_ARM = "design"
 BASELINE_ROLE = "baseline"
 BASELINES = ("naive_coin", "p14", "p15", "p16")       # CHARTER 2, 3.8 (b): Topstep's baseline set (E-221)
-MIN_REREAD_SEEDS = 5                                    # the lead's floor (Q-186 cycle 1, m-1)
+MIN_REREAD_SEEDS = 5                                    # the lead's floor (E-251)
 AS_TRADED, REFLECTED = "as_traded", "reflected"
 TRIGGER = "trigger"
+SEARCH_TAG = "search"
+DELTA_STAR = "delta_star"
 SPEC_FENCE = re.compile(rb"^```survey-spec[ \t]*\n(.*?)^```[ \t]*$", re.MULTILINE | re.DOTALL)
 FIXTURE_PREFIX = "survey-fixture-pin:"
 SEARCH_DECLARATION = re.compile(r"prereg/F-\d+_[^/`]*\.md")
-PART_NAMES = ("space", "gate", "schedule_builder", "runner", "engine")
-SIDE_WORDS = frozenset({"long", "short", "buy", "sell"})
-_SIDE_NAME = re.compile(r"(?:^|[._])side(?:$|[._])", re.IGNORECASE)
+PART_NAMES = ("space", "gate", "schedule_builder", "runner", "playbook")
+ENGINE_MODULES = ("extended.search_space", "extended.surrogate", "extended.proposer", "extended.plateau")
+OUTPUTS = ("readings", "candidates", "finalists", "failure")
+_HELD_OUT_WORDS = ("heldout", "judged", "holdout", "confirm")
 _HELD_OUT_LABEL = re.compile(r"held[-_ ]?out|judged|confirmation", re.IGNORECASE)
 _ISO = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 
@@ -95,13 +95,11 @@ SPEC_KEYS: dict[str, tuple[str, ...] | None] = {
     "survey": ("n", "method", "seed", "max_proposals"),
     "rounds": ("count", "seed") + ROUND_KEYS,
     "protocol": ("measure", "blocks", "seeds", "horizon"),
-    "composite": ("dims",),
-    "limits": ("list", "check_level"),
+    "objective": ("rule_id", "file", "sha256", "code_sha256"),
     "baselines": ("names", "seed"),
-    "finalists": ("candidates", "reread_seeds", "margin", "z"),
-    "no_harm": ("margin",),
+    "finalists": ("candidates", "reread_seeds", "z"),
     "plateau": ("rule", "seed", "box_seed"),
-    "parts": PART_NAMES,
+    "parts": PART_NAMES + ("engine",),
 }
 
 
@@ -114,11 +112,15 @@ class NotPinned(SurveyRefused):
 
 
 class SpecRefused(SurveyRefused):
-    """The declaration's survey-spec block is missing, malformed, or off its form."""
+    """The declaration's survey-spec block, or the objective's result file, is missing, malformed or off its form."""
 
 
 class PartRefused(SurveyRefused):
-    """An injected part that is not the one the declaration binds, or a part the runner never accepts."""
+    """A part whose binding differs from the declaration's, or a part the runner never accepts."""
+
+
+class RunRepeated(SurveyRefused):
+    """A second run of one declaration (F-5): results are never overwritten and a survey is run once."""
 
 
 class HeldOutRow(SurveyRefused):
@@ -133,25 +135,29 @@ class _Refused(Exception):
         self.cls, self.reason = cls, reason
 
 
-# ------------------------------------------------------------------------------------------------ the parts
+# ------------------------------------------------------------------------------------------------ what a run reports
 
 
 @dataclass(frozen=True)
 class RunOutput:
-    """What the three-way runner reports for one design on one protocol (the module docstring): `arms[arm][key]` a
-    start-by-seed matrix for `DESIGN_ARM` and each baseline, on the same starts; `real_path[AS_TRADED | REFLECTED]
-    [key]` the design's real-path readings (the no-harm floor's, never the deciding reading); `side_source` where its
-    sides come from (`TRIGGER` for a playbook side); `positions` every `components.Position` it opens, across the
-    user's accounts and firms; the seeds, blocks and horizon it ran; its tag."""
+    """The three-way runner's report for one design on one protocol: `arms[arm][key]` a start-by-seed matrix for
+    `DESIGN_ARM` and each baseline, on the same starts, for every key W42-R1 reads (its `REQUIRED`, and each optional
+    key a limit reads) and the gate's keys; `sessions_left` each start's sessions left in its block (MEASURES 1.1, the
+    dimension's complete starts); `real_path[AS_TRADED | REFLECTED][key]` the design's real-path readings --
+    `AS_TRADED` its trigger's own sides, `REFLECTED` the coin side on the as-walked (reflected) path, same fills, same
+    seeds (CHARTER 3.8's exception; n-b) -- never the deciding reading; `side_source` where the playbook's sides come
+    from (`TRIGGER`); `positions[path]` every `components.Position` of one (start, seed) path, across the user's
+    accounts and firms; the seeds, blocks and horizon it ran; its tag."""
 
     arms: Mapping[str, Mapping[str, Any]]
+    sessions_left: tuple[int, ...]
     real_path: Mapping[str, Mapping[str, Any]]
     side_source: str
-    positions: tuple[Any, ...]
+    positions: Mapping[str, Sequence[Any]]
     seeds: tuple[int, ...]
     blocks: tuple[tuple[str, str], ...]
     horizon: int
-    tag: str = "search"
+    tag: str = SEARCH_TAG
 
 
 @dataclass(frozen=True)
@@ -172,12 +178,13 @@ class Engine:
 
     def check(self) -> None:
         """Refuse an engine without the API that stood (df367a7: the protocol is the ledger's)."""
+        import inspect
+
         SS, PL = self.SS, self.PL
-        want = [(SS.Sampler.survey, ("protocol", "reread_seeds", "measures")), (SS.admit_one, ("measure", "reread")),
-                (SS.CellLedger.begin, ("protocol", "reread_seeds", "measures"))]
-        for fn, names in want:
-            got = inspect.signature(fn).parameters
-            if not all(n in got for n in names):
+        for fn, names in ((SS.Sampler.survey, ("protocol", "reread_seeds", "measures")),
+                          (SS.admit_one, ("measure", "reread")),
+                          (SS.CellLedger.begin, ("protocol", "reread_seeds", "measures"))):
+            if not all(n in inspect.signature(fn).parameters for n in names):
                 raise PartRefused(f"the engine's {fn.__qualname__} lacks {names}: not the engine that stood "
                                   f"({ENGINE_COMMIT})")
         if "protocol" in inspect.signature(PL.check).parameters or not hasattr(SS.CellLedger, "protocol_for") \
@@ -186,25 +193,10 @@ class Engine:
                               "protocol")
 
 
-@dataclass
-class Parts:
-    """The survey's parts (dependency injection), each bound to the declaration (`bindings`): the lever space;
-    `build_schedule(design)`; `runner(schedule, protocol) -> RunOutput`; `gate(RunOutput) -> reason or None` (required:
-    supply, resolution, realised risk); and, optional, `playbook(design) -> text`, the engine, the result writer
-    (`extended.results.write_result`'s signature) and the variants writer (`(rows, results_dir) -> path`) -- the last
-    three honoured only under a fixture pin."""
-
-    space: Any
-    build_schedule: Callable[[Mapping[str, Any]], Any]
-    runner: Callable[[Any, Any], RunOutput]
-    gate: Callable[[RunOutput], str | None]
-    playbook: Callable[[Mapping[str, Any]], str] | None = None
-    engine: Engine | None = None
-    writer: Callable[..., Any] | None = None
-    variants_writer: Callable[[Sequence[Mapping[str, Any]], Path], Path] | None = None
+# ------------------------------------------------------------------------------------------------ bindings
 
 
-def _file_sha(p: Any) -> str:
+def _lf_sha(p: Any) -> str:
     return hashlib.sha256(Path(p).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
@@ -214,62 +206,232 @@ def _digest(obj: Any) -> str:
     return hashlib.sha256(json.dumps(obj, sort_keys=True, default=str).encode("utf-8")).hexdigest()
 
 
-def part_binding(fn: Any) -> dict[str, str]:
-    """A callable's binding: its declared id (module and qualified name), its source file's LF sha256, and, when its
-    object has `survey_config()` (its settings, its data files' sha256), that config's digest."""
-    if not callable(fn):
-        raise PartRefused(f"a part is a callable, got {type(fn).__name__}")
-    f = getattr(fn, "__func__", fn)
-    src = inspect.getsourcefile(f)
-    if src is None:
-        raise PartRefused(f"{fn!r} has no source file to bind")
-    out = {"id": f"{f.__module__}:{f.__qualname__}", "sha256": _file_sha(src)}
-    owner = getattr(fn, "__self__", None)
-    if owner is not None and hasattr(owner, "survey_config"):
-        out["config"] = _digest(owner.survey_config())
+def _origin(name: str) -> str | None:
+    try:
+        spec = importlib.util.find_spec(name)
+    except (ImportError, ValueError):
+        return None
+    return spec.origin if spec is not None and spec.origin and spec.origin.endswith(".py") else None
+
+
+def _imports(path: str, name: str) -> set[str]:
+    """The `extended` modules a file imports (absolute or relative), as module names."""
+    tree = ast.parse(Path(path).read_bytes())
+    pkg = name.rsplit(".", 1)[0] if not path.endswith("__init__.py") else name
+    out: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            out |= {a.name for a in node.names if a.name.split(".")[0] == "extended"}
+        elif isinstance(node, ast.ImportFrom):
+            base = node.module or ""
+            if node.level:
+                parts = pkg.split(".")
+                base = ".".join(parts[:len(parts) - node.level + 1] + ([node.module] if node.module else []))
+            if base.split(".")[0] != "extended":
+                continue
+            out.add(base)
+            out |= {f"{base}.{a.name}" for a in node.names if _origin(f"{base}.{a.name}")}
     return out
 
 
+def code_closure(module: str) -> dict[str, str]:
+    """{module: LF sha256 of its file} for `module` and every `extended` module it imports, transitively."""
+    seen: dict[str, str] = {}
+    todo = [module]
+    while todo:
+        name = todo.pop()
+        if name in seen:
+            continue
+        src = _origin(name)
+        if src is None:
+            raise PartRefused(f"the module {name!r} has no source file to bind")
+        seen[name] = _lf_sha(src)
+        todo += sorted(_imports(src, name) - set(seen))
+    return dict(sorted(seen.items()))
+
+
 def _canon(x: Any) -> Any:
-    if callable(x):
-        return part_binding(x)
     if isinstance(x, Mapping):
         return {str(k): _canon(v) for k, v in sorted(x.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(x, (set, frozenset)):
+        return sorted(_canon(v) for v in x)
     if isinstance(x, (list, tuple)):
         return [_canon(v) for v in x]
+    if isinstance(x, (int, float, str, bool)) or x is None:
+        return x
+    raise PartRefused(f"a part's parameter is plain data (numbers, text, lists, maps), not {type(x).__name__}")
+
+
+def part_sha(part: Mapping[str, Any]) -> str:
+    """A part's binding: its factory id, its canonical parameters (and a gate's keys), and its code closure."""
+    pid = str(part["id"])
+    mod = pid.partition(":")[0]
+    return _digest({"id": pid, "params": _canon(part.get("params", {})), "keys": _canon(part.get("keys", [])),
+                    "code": code_closure(mod)})
+
+
+def engine_sha(E: Engine) -> str:
+    return _digest({m.__name__: code_closure(m.__name__) for m in E.modules().values()})
+
+
+def w42_code_sha() -> str:
+    return _digest(code_closure("extended.wave42"))
+
+
+def build_part(part: Mapping[str, Any], *, fixture: bool) -> Any:
+    """The part its factory builds from its declared parameters (F-2): `module:function(**params)`."""
+    pid = str(part["id"])
+    mod, _, attr = pid.partition(":")
+    if not attr:
+        raise PartRefused(f"a part's id is module:function, got {pid!r}")
+    if not fixture and not mod.startswith("extended."):
+        raise PartRefused(f"under a pin a part is this repository's own (extended.), not {mod!r}")
+    factory = getattr(importlib.import_module(mod), attr)
+    return factory(**dict(part.get("params", {})))
+
+
+def check_bindings(spec: "Spec", E: Engine) -> dict[str, Any]:
+    """Every binding recomputed and compared with the declaration's: the parts, the engine and the objective's code."""
+    got = {k: part_sha(spec.parts[k]) for k in PART_NAMES}
+    got["engine"] = engine_sha(E)
+    got["objective_code"] = w42_code_sha()
+    want = {k: spec.parts[k]["sha256"] for k in PART_NAMES}
+    want["engine"] = spec.parts["engine"]["sha256"]
+    want["objective_code"] = spec.raw["objective"]["code_sha256"]
+    off = [k for k in got if got[k] != want[k]]
+    if off:
+        raise PartRefused(f"REFUSED: the binding(s) {off} differ from the declaration's (F-2): "
+                          + "; ".join(f"{k} declared {want[k][:12]}, here {got[k][:12]}" for k in off))
+    return got
+
+
+def searched_levers() -> frozenset[str]:
+    """The allowlist (F-8): the searched lever ids of the lever table; the side is a declared rule, never one."""
+    from extended import lever_space as LS
+    return frozenset(k for k, v in LS.LEVERS.items() if v.cls == LS.SEARCHED)
+
+
+def check_levers(space: Any) -> None:
+    allowed = searched_levers()
+    bad = [d.name for d in space.dims if str(getattr(d, "lever", "")) not in allowed]
+    if bad:
+        raise PartRefused(f"REFUSED: the dimension(s) {bad} are not searched levers of the lever table (an allowlist: "
+                          "the side is the trigger's, O-4)")
+
+
+def _space_canon(x: Any) -> Any:
+    if callable(x):
+        return f"{getattr(x, '__module__', '')}:{getattr(x, '__qualname__', type(x).__name__)}"
     if is_dataclass(x) and not isinstance(x, type):
-        return {f.name: _canon(getattr(x, f.name)) for f in fields(x)}
+        return {f.name: _space_canon(getattr(x, f.name)) for f in fields(x)}
+    if isinstance(x, Mapping):
+        return {str(k): _space_canon(v) for k, v in sorted(x.items(), key=lambda kv: str(kv[0]))}
+    if isinstance(x, (set, frozenset)):
+        return sorted(str(_space_canon(v)) for v in x)
+    if isinstance(x, (list, tuple)):
+        return [_space_canon(v) for v in x]
     return x if isinstance(x, (int, float, str, bool)) or x is None else str(x)
 
 
 def space_digest(space: Any) -> str:
-    """The lever space's digest: the canonical JSON of every field (dimensions with their bounds, lattices and cells,
-    fixed and refused levers, slots, constraints, session anchors, days); a callable by its binding."""
-    return _digest(_canon(space))
+    """The built space's canonical digest, recorded beside the binding (sets sorted: no hash-seed dependence)."""
+    return _digest(_space_canon(space))
 
 
-def engine_binding(E: Engine) -> dict[str, str]:
-    return {"id": f"wave34@{ENGINE_COMMIT}",
-            "sha256": _digest({k: _file_sha(inspect.getsourcefile(m)) for k, m in sorted(E.modules().items())})}
+# ------------------------------------------------------------------------------------------------ the objective
 
 
-def bindings(parts: Parts, engine: Engine | None = None) -> dict[str, Any]:
-    """Every part's binding, as the declaration's `parts` holds them."""
-    E = engine or parts.engine or Engine.default()
-    return {"space": {"id": "lever-space", "sha256": space_digest(parts.space)},
-            "gate": part_binding(parts.gate), "schedule_builder": part_binding(parts.build_schedule),
-            "runner": part_binding(parts.runner), "engine": engine_binding(E)}
+@dataclass(frozen=True)
+class Objective:
+    """W42-R1's pinned values as the survey reads them (the module docstring)."""
+
+    values: Mapping[str, Any]
+    dims: tuple[tuple[Any, float, float, float], ...]          # (wave42.Dim, lo, hi, weight)
+    budget: float
+    delta: float
+    limits: tuple[Mapping[str, Any], ...]                      # name, key, direction <= / >=, horizon, stat, bound
+    check_level: float
+    no_harm_margin: float
 
 
-def side_levers(space: Any) -> list[str]:
-    """The searched levers that set a side (O-4: refused; the side is the trigger's)."""
-    out = []
-    for d in space.dims:
-        cells = tuple(getattr(d, "values", ()) or ()) + tuple(getattr(d, "labels", ()) or ())
-        if _SIDE_NAME.search(d.name) or str(getattr(d, "lever", "")).lower() == "side" or \
-                any(isinstance(c, str) and c.lower() in SIDE_WORDS for c in cells):
-            out.append(d.name)
-    return out
+def _wave42() -> Any:
+    from extended import wave42
+    return wave42
+
+
+def load_objective(raw: Mapping[str, Any], *, fixture: bool) -> Objective:
+    """W42-R1's result file, by its sha256 (F-1, F-11)."""
+    W = _wave42()
+    p = Path(raw["file"])
+    if not p.is_absolute():
+        p = ROOT / p
+    if not fixture and not _inside(p, ROOT):
+        raise SpecRefused(f"REFUSED: under a pin W42-R1's result is this repository's file, not {p}")
+    if not p.is_file() or _lf_sha(p) != raw["sha256"]:
+        raise SpecRefused(f"REFUSED: W42-R1's result file {p} is missing or does not hash to its declared sha256")
+    v = json.loads(p.read_text(encoding="utf-8"))
+    if raw["rule_id"] != W42_RULE or v.get("rule_id") != W42_RULE or W.RULE_ID != W42_RULE:
+        raise SpecRefused(f"REFUSED: the objective is {W42_RULE}'s, got {raw['rule_id']!r} / {v.get('rule_id')!r}")
+    try:
+        by = {d.name: d for d in W.DIMENSIONS}
+        dims = tuple((by[d["name"]], float(d["lo"]), float(d["hi"]), float(v["weights"][d["name"]]))
+                     for d in v["dimensions"] if d["name"] in v["weights"])
+        lim_by = {lim.name: lim for lim in W.LIMITS}
+        lims = tuple({"name": x["name"], "key": x["key"], "direction": "<=" if x["direction"] == "ceiling" else ">=",
+                      "horizon": int(lim_by[x["name"]].horizon), "stat": lim_by[x["name"]].stat,
+                      "bound": float(x["value"])} for x in v["limits"]["values"] if x.get("status") == "set")
+        ob = Objective(v, dims, float(v["budgets"]["primary"]), float(v["delta_star"]["value"]), lims,
+                       float(v["limits"]["check_level"]), float(v["no_harm"]["margin"]))
+    except (KeyError, TypeError, ValueError) as e:
+        raise SpecRefused(f"REFUSED: W42-R1's result lacks {e} (dimensions, weights, budgets, delta*, limits, the "
+                          "no-harm margin)") from e
+    if not dims or abs(sum(w for *_, w in dims) - 1.0) > 1e-9 or not ob.delta > 0 or not ob.no_harm_margin >= 0:
+        raise SpecRefused("REFUSED: W42-R1's weights sum to one, delta* is above zero, the no-harm margin is not "
+                          "negative")
+    return ob
+
+
+def composite(ctx: "Context", arm: Mapping[str, Any], sl: Sequence[int]) -> np.ndarray:
+    """W42-R1's composite per seed (higher better): C(c) = sum_d w_d mean_{s in E_d} z_d(s, c), by wave42's own
+    `_derived`, `_rows` and `_z`, each dimension over its own complete starts."""
+    W, ob = ctx.W, ctx.obj
+    per = dict(arm)
+    per.update(W._derived({k: np.asarray(x, float) for k, x in arm.items()}, ob.budget))
+    sl = np.asarray(sl)
+    c: Any = 0.0
+    for dim, lo, hi, w in ob.dims:
+        rows = W._rows(sl, dim.horizon)
+        if not rows.any():
+            raise SurveyRefused(f"no start is complete over {dim.name}'s horizon {dim.horizon}")
+        c = c + w * W._z(dim, np.asarray(per[dim.key], float)[rows], lo, hi).mean(axis=0)
+    return np.asarray(c, float)
+
+
+def limit_value(ctx: "Context", arm: Mapping[str, Any], sl: Sequence[int], lim: Mapping[str, Any]
+                ) -> tuple[float, np.ndarray]:
+    """A limit's point estimate -- its declared statistic over its complete starts, pooled over seeds (wave42's
+    `_stat`) -- and the same statistic seed by seed."""
+    W = ctx.W
+    per = dict(arm)
+    per.update(W._derived({k: np.asarray(x, float) for k, x in arm.items()}, ctx.obj.budget))
+    rows = W._rows(np.asarray(sl), lim["horizon"])
+    if not rows.any():
+        raise SurveyRefused(f"no start is complete over {lim['name']}'s horizon {lim['horizon']}")
+    x = np.asarray(per[lim["key"]], float)[rows]
+    return W._stat(x, lim["stat"]), np.array([W._stat(x[:, c], lim["stat"]) for c in range(x.shape[1])])
+
+
+def t_threshold(z: float, n: int) -> float:
+    """The declared z read as its one-sided level, then the t quantile at n - 1 degrees of freedom (F-7)."""
+    from scipy import stats
+    return float(stats.t.ppf(stats.norm.cdf(z), n - 1))
+
+
+def crossing_check(over: float, se: float, level: float, n: int) -> tuple[float, bool]:
+    """The one-sided check of crossing beside a limit (E-230), never deciding: (t, shown at `level`, t law)."""
+    from scipy import stats
+    t = over / se if se > 0 else (math.inf if over > 0 else -math.inf)
+    return t, bool(t > float(stats.t.ppf(1.0 - level, n - 1)))
 
 
 # ------------------------------------------------------------------------------------------------ the declaration
@@ -287,15 +449,9 @@ def _ints(xs: Any, what: str) -> tuple[int, ...]:
     return tuple(_int(x, what) for x in xs)
 
 
-def _pos(x: Any, what: str) -> float:
-    if isinstance(x, bool) or not isinstance(x, (int, float)) or not (math.isfinite(x) and x > 0):
-        raise SpecRefused(f"{what} is a finite number above zero, got {x!r}")
-    return float(x)
-
-
 @dataclass(frozen=True)
 class Spec:
-    """The declaration's survey numbers (its survey-spec block), checked."""
+    """The declaration's survey-spec block, checked."""
 
     raw: Mapping[str, Any]
     prereg_id: str
@@ -310,16 +466,11 @@ class Spec:
     blocks: tuple[tuple[str, str], ...]
     seeds: tuple[int, ...]
     horizon: int
-    dims: tuple[Mapping[str, Any], ...]
-    limits: tuple[Mapping[str, Any], ...]
-    check_level: float
     baselines: tuple[str, ...]
     baseline_seed: int
     candidates: int
     reread_seeds: tuple[int, ...]
-    margin: float
     z: float
-    no_harm_margin: float
     plateau_rule: Mapping[str, Any]
     plateau_seed: int
     plateau_box_seed: int | None
@@ -345,29 +496,14 @@ def load_spec(raw: bytes | str) -> Spec:
     if set(s) != set(SPEC_KEYS):
         raise SpecRefused(f"the survey-spec keys are exactly {sorted(SPEC_KEYS)}, got {sorted(s)}")
     for k, want in SPEC_KEYS.items():
-        if want is None:
-            continue
-        if not isinstance(s[k], dict) or set(s[k]) != set(want):
+        if want is not None and (not isinstance(s[k], dict) or set(s[k]) != set(want)):
             got = sorted(s[k]) if isinstance(s[k], dict) else type(s[k]).__name__
             raise SpecRefused(f"survey-spec {k} holds exactly {sorted(want)}, got {got}")
     pid = s["prereg_id"]
     if not isinstance(pid, str) or not re.fullmatch(r"F-\d+", pid):
         raise SpecRefused(f"a search is declared as a family F-NN, got {pid!r}")
-    sv, rd, pr, lm, bl, fi, pl = (s[k] for k in ("survey", "rounds", "protocol", "limits", "baselines", "finalists",
-                                                 "plateau"))
-    if not isinstance(lm["list"], list):
-        raise SpecRefused("survey-spec limits.list is a list (empty for none)")
-    for lim in lm["list"]:
-        if not isinstance(lim, dict) or set(lim) != {"measure", "key", "bound", "direction"} or \
-                lim["direction"] not in ("<=", ">="):
-            raise SpecRefused(f"a limit is {{measure, key, bound, direction <= or >=}}, got {lim!r}")
-    dims = s["composite"]["dims"]
-    if not isinstance(dims, list) or not dims:
-        raise SpecRefused("the composite has at least one dimension")
-    for d in dims:
-        if not isinstance(d, dict) or set(d) != {"key", "lo", "hi", "direction", "weight"} or \
-                not float(d["hi"]) > float(d["lo"]) or d["direction"] not in (1, -1) or float(d["weight"]) < 0:
-            raise SpecRefused(f"a composite dimension is {{key, lo < hi, direction +1 or -1, weight >= 0}}: {d!r}")
+    sv, rd, pr, bl, fi, pl, parts = (s[k] for k in ("survey", "rounds", "protocol", "baselines", "finalists",
+                                                    "plateau", "parts"))
     if not isinstance(bl["names"], list) or tuple(bl["names"]) != BASELINES:
         raise SpecRefused(f"the baselines are exactly {BASELINES} (CHARTER 3.8 (b)), got {bl['names']!r}")
     seeds, reread = _ints(pr["seeds"], "a protocol seed"), _ints(fi["reread_seeds"], "a re-read seed")
@@ -375,34 +511,38 @@ def load_spec(raw: bytes | str) -> Spec:
         raise SpecRefused(f"at least {MIN_REREAD_SEEDS} distinct re-read seeds, got {len(reread)}")
     if set(seeds) & set(reread):
         raise SpecRefused("the re-read seeds are fresh: disjoint from the selection seeds")
-    if not isinstance(pl["rule"], dict):
-        raise SpecRefused("the plateau rule is an object of PlateauRule's fields")
-    parts = s["parts"]
+    z = fi["z"]
+    if isinstance(z, bool) or not isinstance(z, (int, float)) or not (math.isfinite(z) and z > 0):
+        raise SpecRefused(f"the finalists' z is a finite number above zero, got {z!r}")
+    rule = pl["rule"]
+    if not isinstance(rule, dict) or rule.get("margin") != DELTA_STAR or rule.get("side") != "worse":
+        raise SpecRefused("the plateau rule's margin is the word 'delta_star' (W42-R1's, never typed) and its side "
+                          "'worse' (n-c)")
     for k in PART_NAMES:
         b = parts[k]
-        if not isinstance(b, dict) or not {"id", "sha256"} <= set(b) or \
+        keys = {"id", "params", "sha256"} | ({"keys"} if k == "gate" else set())
+        if not isinstance(b, dict) or set(b) != keys or not isinstance(b["params"], dict) or \
                 not re.fullmatch(r"[0-9a-f]{64}", str(b["sha256"])):
-            raise SpecRefused(f"the part {k} is bound by its id and sha256, got {b!r}")
-    lvl = _pos(lm["check_level"], "the limits' one-sided check level")
-    if lvl >= 0.5:
-        raise SpecRefused("the limits' check level is below one half")
+            raise SpecRefused(f"the part {k} is {{{', '.join(sorted(keys))}}}, got {b!r}")
+    if not isinstance(parts["gate"]["keys"], list) or not parts["gate"]["keys"]:
+        raise SpecRefused("the gate declares the keys it reads (F-10)")
+    if not isinstance(parts["engine"], dict) or set(parts["engine"]) != {"id", "sha256"}:
+        raise SpecRefused("the engine is bound by {id, sha256}")
+    ob = s["objective"]
+    if not all(isinstance(ob[k], str) for k in ob) or not re.fullmatch(r"[0-9a-f]{64}", ob["sha256"]):
+        raise SpecRefused("the objective names W42-R1's rule id, its result file, its sha256 and its code's sha256")
     out = Spec(raw=s, prereg_id=pid, survey_n=_int(sv["n"], "the survey size"), method=str(sv["method"]),
                survey_seed=_int(sv["seed"], "the survey seed"),
                max_proposals=_int(sv["max_proposals"], "max_proposals"),
                rounds=_int(rd["count"], "the rounds' count"), round_seed=_int(rd["seed"], "the rounds' seed"),
                round_kw={k: rd[k] for k in ROUND_KEYS}, measure=str(pr["measure"]),
                blocks=tuple((str(b[0]), str(b[1])) for b in pr["blocks"]), seeds=seeds,
-               horizon=_int(pr["horizon"], "the horizon"), dims=tuple(dims), limits=tuple(lm["list"]),
-               check_level=lvl, baselines=BASELINES, baseline_seed=_int(bl["seed"], "the baselines' seed"),
-               candidates=_int(fi["candidates"], "the candidates' count"), reread_seeds=reread,
-               margin=_pos(fi["margin"], "the finalists' margin (the size that matters)"),
-               z=_pos(fi["z"], "the finalists' z"),
-               no_harm_margin=float(s["no_harm"]["margin"]), plateau_rule=dict(pl["rule"]),
-               plateau_seed=_int(pl["seed"], "the plateau seed"),
+               horizon=_int(pr["horizon"], "the horizon"), baselines=BASELINES,
+               baseline_seed=_int(bl["seed"], "the baselines' seed"),
+               candidates=_int(fi["candidates"], "the candidates' count"), reread_seeds=reread, z=float(z),
+               plateau_rule=dict(rule), plateau_seed=_int(pl["seed"], "the plateau seed"),
                plateau_box_seed=None if pl["box_seed"] is None else _int(pl["box_seed"], "the box seed"),
                parts=dict(parts))
-    if not (math.isfinite(out.no_harm_margin) and out.no_harm_margin >= 0):
-        raise SpecRefused("the no-harm margin is finite and non-negative")
     if out.rounds < 0 or out.candidates < 1 or out.survey_n < 1:
         raise SpecRefused("the rounds a count, the survey and the candidates at least one")
     return out
@@ -410,20 +550,24 @@ def load_spec(raw: bytes | str) -> Spec:
 
 def fixture_pin(path: Path | str) -> str:
     """A test's stand-in for a pin: honoured only outside `prereg/` and outside any `results/` folder."""
-    return FIXTURE_PREFIX + _file_sha(path)
+    return FIXTURE_PREFIX + _lf_sha(path)
 
 
 def _inside(p: Path, d: Path) -> bool:
     try:
-        p.resolve().relative_to(d.resolve())
+        Path(p).resolve().relative_to(Path(d).resolve())
         return True
     except ValueError:
         return False
 
 
+def _decisions() -> str:
+    dec = ROOT / "DECISIONS.md"
+    return dec.read_text(encoding="utf-8") if dec.is_file() else ""
+
+
 def check_pinned(path: Path, sha: str, spec: Spec, *, results_dir: Path, pin_fixture: str | None) -> str:
-    """The pin's decision row ("fixture" under a fixture pin) when the declaration is pinned (the module docstring),
-    else `NotPinned`. The decision log is this repository's (`ROOT`) only (m-5)."""
+    """The pin's decision row ("fixture" under a fixture pin), else `NotPinned`; this repository's log only (m-5)."""
     if pin_fixture is not None:
         if _inside(path, ROOT / "prereg"):
             raise NotPinned("REFUSED: a fixture pin never stands for a declaration under prereg/ (pin it by its row)")
@@ -436,18 +580,14 @@ def check_pinned(path: Path, sha: str, spec: Spec, *, results_dir: Path, pin_fix
         rel = path.resolve().relative_to(ROOT.resolve()).as_posix()
     except ValueError as e:
         raise NotPinned(f"REFUSED: {path} is not a file of this repository ({ROOT})") from e
-    if not SEARCH_DECLARATION.fullmatch(rel):
-        raise NotPinned(f"REFUSED: a search's declaration is prereg/F-NN_<name>.md, not {rel}")
-    if not rel.startswith(f"prereg/{spec.prereg_id}_"):
-        raise NotPinned(f"REFUSED: the spec's id {spec.prereg_id} is not the file's ({rel})")
+    if not SEARCH_DECLARATION.fullmatch(rel) or not rel.startswith(f"prereg/{spec.prereg_id}_"):
+        raise NotPinned(f"REFUSED: a search's declaration is prereg/{spec.prereg_id}_<name>.md, not {rel}")
     if not _inside(results_dir, ROOT):
         raise NotPinned(f"REFUSED: a pinned survey writes inside this repository's tree, not {results_dir}")
-    dec = ROOT / "DECISIONS.md"
-    text = dec.read_text(encoding="utf-8") if dec.is_file() else ""
+    text = _decisions()
     pinned = R.pins(text).get(rel)
     if not pinned:
-        raise NotPinned(f"REFUSED: {rel} is not pinned: no decision row carries its sha256 (the lead pins a "
-                        "declaration before its survey)")
+        raise NotPinned(f"REFUSED: {rel} is not pinned: no decision row carries its sha256")
     if pinned != {sha}:
         raise NotPinned(f"REFUSED: {rel} hashes to {sha[:12]}, its pin is {sorted(h[:12] for h in pinned)}: a change "
                         "is a new declaration")
@@ -458,28 +598,17 @@ def check_pinned(path: Path, sha: str, spec: Spec, *, results_dir: Path, pin_fix
     raise NotPinned(f"REFUSED: {rel}'s pin is in no decision row")
 
 
-# ------------------------------------------------------------------------------------------------ scoring
-
-
-def composite_score(dims: Sequence[Mapping[str, Any]]) -> Callable[[Mapping[str, Any]], np.ndarray]:
-    """The composite per seed from the spec's dimensions, higher better: C(c) = sum_d w_d mean_s z_d(s, c),
-    z_d = clip((x - lo) / (hi - lo), 0, 1), flipped for a lower-is-better dimension (`extended/wave42.py`'s form)."""
-    ds = [dict(d) for d in dims]
-
-    def score(arm: Mapping[str, Any]) -> np.ndarray:
-        c: Any = 0.0
-        for d in ds:
-            x = np.asarray(arm[d["key"]], float)
-            u = np.clip((x - float(d["lo"])) / (float(d["hi"]) - float(d["lo"])), 0.0, 1.0)
-            z = u if d["direction"] > 0 else 1.0 - u
-            c = c + float(d["weight"]) * z.mean(axis=0)
-        return np.asarray(c, float)
-    return score
-
-
-def limit_values(arm: Mapping[str, Any], key: str) -> np.ndarray:
-    """A limit measure per seed: its key's mean over the starts."""
-    return np.asarray(arm[key], float).mean(axis=0)
+def check_once(sha: str, results_dir: Path, name: str) -> None:
+    """F-5: no output of this run's names in the folder, no variants row of this declaration, no finalists' token for
+    it in the decision log."""
+    there = [f"{name}_{o}.csv" for o in OUTPUTS if (results_dir / f"{name}_{o}.csv").exists()]
+    if there:
+        raise RunRepeated(f"REFUSED: {there} exist in {results_dir}: a result is never overwritten")
+    if any(r.get("params", {}).get("_declaration_sha256") == sha for r in _existing_rows(results_dir / "variants.jsonl")):
+        raise RunRepeated(f"REFUSED: the variants ledger in {results_dir} already counts a run of this declaration "
+                          f"({sha[:12]}): a survey is run once")
+    if any(t.get("sha") == sha for t in R.heldout_tokens(_decisions(), "finalists")):
+        raise RunRepeated(f"REFUSED: a finalists' token for this declaration ({sha[:12]}) is already in the log")
 
 
 # ------------------------------------------------------------------------------------------------ the context
@@ -488,22 +617,32 @@ def limit_values(arm: Mapping[str, Any], key: str) -> np.ndarray:
 @dataclass
 class Context:
     spec: Spec
-    parts: Parts
     E: Engine
+    W: Any
+    obj: Objective
+    space: Any
+    gate: Callable[[Mapping[str, Any]], str | None]
+    gate_keys: tuple[str, ...]
+    build_schedule: Callable[[Mapping[str, Any]], Any]
+    runner: Callable[[Any, Any], RunOutput]
+    playbook: Callable[[Mapping[str, Any]], str]
     ledger: Any
     protocol: Any
     limits: tuple[Any, ...]
     sha: str
+    writer: Callable[..., Any] | None = None
+    variants_writer: Callable[..., Path] | None = None
     rows: list[dict[str, Any]] = field(default_factory=list)
-    readings: list[Any] = field(default_factory=list)                      # the objective's, searched cells
+    readings: list[Any] = field(default_factory=list)
     limit_readings: dict[str, list[Any]] = field(default_factory=dict)
+    selection: dict[str, dict[str, Any]] = field(default_factory=dict)
     rounds: list[Any] = field(default_factory=list)
     records: list[dict[str, Any]] = field(default_factory=list)
     memo: dict[tuple[str, tuple[int, ...]], dict[str, Any]] = field(default_factory=dict)
 
     @property
-    def score(self) -> Callable[[Mapping[str, Any]], np.ndarray]:
-        return composite_score(self.spec.dims)
+    def limit_names(self) -> tuple[str, ...]:
+        return tuple(lim["name"] for lim in self.obj.limits)
 
 
 def new_ledger(E: Engine) -> Any:
@@ -516,40 +655,73 @@ def protocol_digest(p: Any) -> str:
                     "horizon": p.horizon, "libs": [list(x) for x in p.libs]})
 
 
+def _held_out_first(ctx: Context, out: RunOutput) -> None:
+    """F-4: a held-out tag, block or horizon refuses the whole run, before anything else is read of it."""
+    SS = ctx.E.SS
+    tag = str(out.tag)
+    low = tag.lower().replace("-", "").replace("_", "").replace(" ", "")
+    if any(w in low for w in _HELD_OUT_WORDS) or tag != SEARCH_TAG:
+        raise SS.HeldOutInput(f"REFUSED: the runner labels a run {tag!r}: a search reads the search years only "
+                              "(CHARTER 3.6 (a); E-208, E-221 O-1)")
+    for b in out.blocks:
+        try:
+            got = R.blocks_of(b[0], b[1])
+        except (R.ReadRefused, ValueError, TypeError) as e:
+            raise SS.HeldOutInput(f"REFUSED: the runner reports block {b!r}: {e}") from e
+        if got != ("choice",):
+            raise SS.HeldOutInput(f"REFUSED: the runner reports block {b!r}, touching the held-out years ({got})")
+    SS._check_through(tuple(tuple(b) for b in out.blocks), out.horizon)
+
+
+def _check_real_path(out: RunOutput, keys: set[str]) -> None:
+    if set(out.real_path) != {AS_TRADED, REFLECTED} or any(not keys <= set(v) for v in out.real_path.values()):
+        raise SurveyRefused(f"the runner reports exactly the real path's {AS_TRADED} and {REFLECTED} readings, each on "
+                            f"every key the composite reads; got {sorted(out.real_path)}")
+
+
 def _check_output(ctx: Context, out: Any, protocol: Any) -> None:
-    """The run's report on the protocol it was given, the design and every baseline paired (the same starts)."""
+    """The run's report: held-out first (F-4); then on the protocol given, every arm and key, paired on the same
+    starts, one column a seed, each start's sessions left, positions per path."""
     if type(out) is not RunOutput:
         raise SurveyRefused(f"the runner reports a RunOutput, got {type(out).__name__}")
+    _held_out_first(ctx, out)
     if tuple(out.seeds) != tuple(protocol.seeds) or tuple(tuple(b) for b in out.blocks) != tuple(protocol.blocks) \
             or out.horizon != protocol.horizon:
         raise SurveyRefused("the runner ran off the protocol it was given (seeds, blocks or horizon)")
-    missing = [a for a in (DESIGN_ARM,) + ctx.spec.baselines if a not in out.arms]
-    if missing or set(out.real_path) != {AS_TRADED, REFLECTED}:
-        raise SurveyRefused(f"the runner reports the design's and every baseline's arm and the real path's two "
-                            f"readings; missing {missing or sorted({AS_TRADED, REFLECTED} - set(out.real_path))}")
+    need = set(ctx.W.REQUIRED) | {lim["key"] for lim in ctx.obj.limits if lim["key"] in ctx.W.OPTIONAL}
+    missing = [a for a in (DESIGN_ARM,) + ctx.spec.baselines if a not in out.arms or
+               not need <= set(out.arms[a])]
+    if missing or not set(ctx.gate_keys) <= set(out.arms.get(DESIGN_ARM, {})):
+        raise SurveyRefused(f"the runner reports the design's and every baseline's arm on every key W42-R1 reads "
+                            f"and the gate's keys; incomplete: {missing or 'the gate keys'}")
+    _check_real_path(out, need)
+    n = len(out.sessions_left)
     shapes = {np.asarray(x).shape for arm in list(out.arms.values()) + list(out.real_path.values())
               for x in arm.values()}
-    if len(shapes) != 1 or next(iter(shapes))[-1:] != (len(protocol.seeds),):
-        raise SurveyRefused(f"every arm on the same starts and one column a seed (paired), got shapes {sorted(shapes)}")
+    if n < 1 or shapes != {(n, len(protocol.seeds))}:
+        raise SurveyRefused(f"every arm on the same {n} starts and one column a seed (paired), got {sorted(shapes)}")
+    if not isinstance(out.positions, Mapping):
+        raise SurveyRefused("the positions are reported per (start, seed) path (n-a)")
 
 
 def book_check(out: RunOutput) -> None:
-    """Every position of the run into one user's book (`components.UserBook`): two opposite positions at once across
-    the user's accounts or firms are conduct tier 1, two at once an undefined overlap (m-2): `_Refused` either way."""
+    """One user's book per (start, seed) path (`components.UserBook`): opposite positions at once across the user's
+    accounts or firms are conduct tier 1, two at once an undefined overlap: `_Refused` either way."""
     from extended import components as C
 
-    book = C.UserBook()
-    try:
-        book.extend(out.positions)
-    except C.TierOneRefused as e:
-        raise _Refused("tier1", str(e)) from e
-    except C.OverlapRefused as e:
-        raise _Refused("overlap", str(e)) from e
+    for path, ps in sorted(out.positions.items()):
+        try:
+            C.UserBook().extend(ps)
+        except C.TierOneRefused as e:
+            raise _Refused("tier1", f"path {path}: {e}") from e
+        except C.OverlapRefused as e:
+            raise _Refused("overlap", f"path {path}: {e}") from e
 
 
 def gate_check(ctx: Context, out: RunOutput) -> None:
-    """The declared gate (supply, resolution, realised risk) before any measure: `_Refused` with its reason."""
-    why = ctx.parts.gate(out)
+    """The declared gate on only its declared keys of the design's arm (F-10)."""
+    view = MappingProxyType({k: np.asarray(out.arms[DESIGN_ARM][k]) for k in ctx.gate_keys})
+    why = ctx.gate(view)
     if why:
         raise _Refused("gate", str(why))
 
@@ -560,18 +732,14 @@ def screen(ctx: Context, out: RunOutput) -> None:
     gate_check(ctx, out)
 
 
-def _reading(ctx: Context, design: Mapping[str, Any], per: Any, out: RunOutput, measure: str, reread: bool,
-             roles: Callable[[str], bool]) -> Any:
+def _reading(ctx: Context, design: Mapping[str, Any], per: Any, value: float | None, out: RunOutput, measure: str,
+             reread: bool, roles: Callable[[str], bool]) -> Any:
     SS = ctx.E.SS
     per = np.asarray(per, float).ravel()
     se = float(per.std(ddof=1) / math.sqrt(len(per))) if len(per) > 1 else 0.0
-    r = SS.Reading(dict(design), float(per.mean()), tuple(out.blocks), tuple(out.seeds), str(out.tag), measure,
-                   out.horizon, se, tuple(per))
+    r = SS.Reading(dict(design), float(per.mean()) if value is None else float(value), tuple(out.blocks),
+                   tuple(out.seeds), str(out.tag), measure, out.horizon, se, tuple(per))
     return SS.admit_one(r, ledger=ctx.ledger, measure=measure, reread=reread, roles=roles)
-
-
-def _any(role: str) -> bool:
-    return True
 
 
 def _row(ctx: Context, role: str, design: Mapping[str, Any], measure: str, r: Any, refused: str = "") -> None:
@@ -581,40 +749,57 @@ def _row(ctx: Context, role: str, design: Mapping[str, Any], measure: str, r: An
                      "design": json.dumps(dict(design), sort_keys=True, default=str)})
 
 
+def _roles(ctx: Context, role: str) -> Callable[[str], bool]:
+    if role == "plateau":
+        return lambda r: r.startswith("plateau:")
+    return ctx.E.SS.searched
+
+
+def _rows_of(ctx: Context, role: str, design: Mapping[str, Any], got: Mapping[str, Any]) -> None:
+    for k, r in got.items():
+        if k == BASELINE_ROLE:
+            for b, rb in r.items():
+                _row(ctx, f"{role}:{BASELINE_ROLE}", {"baseline": b}, ctx.spec.measure, rb)
+        elif k != "out":
+            _row(ctx, role, design, k, r)
+
+
 def read_design(ctx: Context, design: Mapping[str, Any], protocol: Any, role: str) -> dict[str, Any]:
-    """Steps 3-5 (the module docstring): {measure: Reading} for the design, `BASELINE_ROLE`: {baseline: Reading} on
-    the same run, `"out"`: the run; `_Refused` when the book or the gate refuses."""
+    """Steps 3-5 (the module docstring): {measure: Reading} for the design and each limit, `BASELINE_ROLE`:
+    {baseline: Reading}, `"out"`: the run; `_Refused` when the book or the gate refuses."""
     reread = tuple(protocol.seeds) != tuple(ctx.protocol.seeds)
     key = (ctx.E.SS.design_id(design), tuple(protocol.seeds))
     if key in ctx.memo:
-        return ctx.memo[key]
-    out = ctx.parts.runner(ctx.parts.build_schedule(dict(design)), protocol)
+        got = ctx.memo[key]
+        _rows_of(ctx, f"{role}(memo)", design, got)                        # n-d: every read reported
+        return got
+    out = ctx.runner(ctx.build_schedule(dict(design)), protocol)
     _check_output(ctx, out, protocol)
     try:
         screen(ctx, out)
     except _Refused as g:
         _row(ctx, role, design, "", None, f"{g.cls}: {g.reason}")
         raise
-    m = ctx.spec.measure
-    got: dict[str, Any] = {m: _reading(ctx, design, -ctx.score(out.arms[DESIGN_ARM]), out, m, reread, _any)}
-    if not reread:
-        for lim in ctx.spec.limits:
-            got[lim["measure"]] = _reading(ctx, design, limit_values(out.arms[DESIGN_ARM], lim["key"]), out,
-                                           lim["measure"], False, _any)
-    got[BASELINE_ROLE] = {b: _reading(ctx, {"baseline": b}, -ctx.score(out.arms[b]), out, m, reread,
+    m, sl, roles = ctx.spec.measure, out.sessions_left, _roles(ctx, role)
+    got: dict[str, Any] = {m: _reading(ctx, design, -composite(ctx, out.arms[DESIGN_ARM], sl), None, out, m, reread,
+                                       roles)}
+    for lim in ctx.obj.limits:                                  # every read: a neighbour may later be a candidate
+        v, per = limit_value(ctx, out.arms[DESIGN_ARM], sl, lim)
+        got[lim["name"]] = _reading(ctx, design, per, v, out, lim["name"], reread, roles)
+    got[BASELINE_ROLE] = {b: _reading(ctx, {"baseline": b}, -composite(ctx, out.arms[b], sl), None, out, m, reread,
                                       lambda r: r == BASELINE_ROLE) for b in ctx.spec.baselines}
     got["out"] = out
-    for k, r in got.items():
-        if k not in (BASELINE_ROLE, "out"):
-            _row(ctx, role, design, k, r)
+    _rows_of(ctx, role, design, got)
     ctx.memo[key] = got
     return got
 
 
 def _keep(ctx: Context, got: Mapping[str, Any]) -> None:
-    ctx.readings.append(got[ctx.spec.measure])
-    for lim in ctx.spec.limits:
-        ctx.limit_readings.setdefault(lim["measure"], []).append(got[lim["measure"]])
+    r = got[ctx.spec.measure]
+    ctx.readings.append(r)
+    ctx.selection.setdefault(r.id, dict(got))
+    for name in ctx.limit_names:
+        ctx.limit_readings.setdefault(name, []).append(got[name])
 
 
 def read_all(ctx: Context, designs: Sequence[Mapping[str, Any]], role: str) -> None:
@@ -629,9 +814,20 @@ def draw_survey(ctx: Context) -> list[dict[str, Any]]:
     """Step 2: the space-filling survey, every cell counted under ``survey``, which declares the protocol, the re-read
     seeds and the limit measures to the ledger."""
     s = ctx.spec
-    return ctx.E.SS.Sampler(ctx.parts.space, seed=s.survey_seed, method=s.method).survey(
+    return ctx.E.SS.Sampler(ctx.space, seed=s.survey_seed, method=s.method).survey(
         s.survey_n, ledger=ctx.ledger, protocol=ctx.protocol, reread_seeds=s.reread_seeds,
-        measures=tuple(lim["measure"] for lim in s.limits), max_proposals=s.max_proposals)
+        measures=ctx.limit_names, max_proposals=s.max_proposals)
+
+
+def check_engine_rereads(ctx: Context) -> None:
+    """Q-192: the engine reads the declared limit measures on the re-read seeds (F-3), or the run refuses here, after
+    the survey's cells and before any read."""
+    for name in ctx.limit_names:
+        try:
+            ctx.ledger.protocol_for(name, reread=True)
+        except ctx.E.SS.OffProtocol as e:
+            raise PartRefused(f"REFUSED: the engine does not read the limit {name!r} on the re-read seeds (Q-192's "
+                              f"change; F-3): {e}") from e
 
 
 def run_rounds(ctx: Context) -> None:
@@ -639,7 +835,7 @@ def run_rounds(ctx: Context) -> None:
     P = ctx.E.P
     spec = P.RoundSpec(**ctx.spec.round_kw)
     for i in range(1, ctx.spec.rounds + 1):
-        rnd = P.propose(ctx.parts.space, ctx.readings, spec=spec, round_index=i, seed=ctx.spec.round_seed,
+        rnd = P.propose(ctx.space, ctx.readings, spec=spec, round_index=i, seed=ctx.spec.round_seed,
                         ledger=ctx.ledger, limits=ctx.limits,
                         limit_readings=dict(ctx.limit_readings) if ctx.limits else None)
         ctx.rounds.append(rnd)
@@ -656,55 +852,57 @@ def finalist_candidates(ctx: Context) -> list[Any]:
 
 
 def beats_baselines(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
-    """On the re-read: each baseline's paired gap (baseline - candidate, minimised units) past the margin at z."""
+    """On the re-read: each baseline's paired gap (baseline - candidate, minimised units) past delta* on the t law."""
     mine = np.asarray(got[ctx.spec.measure].per_seed, float)
+    thr = t_threshold(ctx.spec.z, len(mine))
     gaps, ok = {}, True
     for b in ctx.spec.baselines:
         diff = np.asarray(got[BASELINE_ROLE][b].per_seed, float) - mine
         d = float(diff.mean())
         se = float(diff.std(ddof=1) / math.sqrt(len(diff)))
-        z = (d - ctx.spec.margin) / se if se > 0 else (math.inf if d > ctx.spec.margin else -math.inf)
-        gaps[b] = {"gap": d, "se": se, "z": z, "beaten": bool(z > ctx.spec.z)}
+        t = (d - ctx.obj.delta) / se if se > 0 else (math.inf if d > ctx.obj.delta else -math.inf)
+        gaps[b] = {"gap": d, "se": se, "t": t, "threshold": thr, "beaten": bool(t > thr)}
         ok = ok and gaps[b]["beaten"]
     return ok, {"gaps": gaps}
 
 
-def limits_inside(ctx: Context, sel: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
-    """E-230: each limit's point estimate (its selection reading) inside its bound decides; the one-sided check of
-    crossing at the declared level is reported beside, never deciding (m-2)."""
-    crit = NormalDist().inv_cdf(1.0 - ctx.spec.check_level)
+def limits_inside(ctx: Context, reread: Mapping[str, Any], selection: Mapping[str, Any]) -> tuple[bool, dict]:
+    """F-3, E-230: each limit's **re-read** point estimate inside its bound decides; the selection reading and the
+    one-sided check of crossing (t law, W42-R1's level) beside, never deciding."""
     out, ok = {}, True
-    for lim in ctx.spec.limits:
-        r = sel[lim["measure"]]
+    for lim in ctx.obj.limits:
+        r, s = reread[lim["name"]], selection.get(lim["name"])
         v, b = float(r.value), float(lim["bound"])
         inside = v <= b if lim["direction"] == "<=" else v >= b
         over = (v - b) if lim["direction"] == "<=" else (b - v)
-        z = over / float(r.se) if r.se else (math.inf if over > 0 else -math.inf)
-        out[lim["measure"]] = {"value": v, "bound": b, "direction": lim["direction"], "inside": inside,
-                               "check_z": z, "check_level": ctx.spec.check_level, "crossing_shown": bool(z > crit)}
+        t, shown = crossing_check(over, float(r.se or 0.0), ctx.obj.check_level, len(r.per_seed))
+        out[lim["name"]] = {"value": v, "bound": b, "direction": lim["direction"], "stat": lim["stat"],
+                            "inside": inside, "selection_value": None if s is None else float(s.value),
+                            "check_t": t, "check_level": ctx.obj.check_level, "crossing_shown": shown}
         ok = ok and inside
     return ok, {"limits": out}
 
 
 def no_harm(ctx: Context, out: RunOutput) -> tuple[bool, dict[str, Any]]:
-    """O-4's floor: the sides come from the design's own trigger, and its real-path as-traded composite is no worse
-    than the reflected (coin) composite by more than the declared margin (point estimate, CHARTER 3.8 (c))."""
-    d = float(np.mean(ctx.score(out.real_path[AS_TRADED]) - ctx.score(out.real_path[REFLECTED])))
-    held = out.side_source == TRIGGER and d >= -ctx.spec.no_harm_margin
+    """O-4's floor: the trigger's own sides, and the as-traded composite no worse than the coin-side as-walked
+    (`REFLECTED`) composite by more than W42-R1's no-harm margin (point estimates, CHARTER 3.8 (c))."""
+    d = float(np.mean(composite(ctx, out.real_path[AS_TRADED], out.sessions_left)
+                      - composite(ctx, out.real_path[REFLECTED], out.sessions_left)))
+    held = out.side_source == TRIGGER and d >= -ctx.obj.no_harm_margin
     return held, {"no_harm": {"side_source": out.side_source, "as_traded_minus_reflected": d,
-                              "margin": ctx.spec.no_harm_margin, "held": bool(held)}}
+                              "margin": ctx.obj.no_harm_margin, "held": bool(held)}}
 
 
 def plateau_step(ctx: Context, finalist: Any) -> Any:
-    """`plateau.check` on the ledger's re-read seeds; a neighbour refused by the book or the gate refuses the
-    candidate (raised as `_Refused`)."""
+    """`plateau.check` on the ledger's re-read seeds, its margin delta*; a neighbour refused by the book or the gate
+    refuses the candidate (raised as `_Refused`)."""
     PL = ctx.E.PL
-    rule = PL.PlateauRule(**ctx.spec.plateau_rule)
+    rule = PL.PlateauRule(**dict(ctx.spec.plateau_rule, margin=ctx.obj.delta))
 
     def evaluate(design: Mapping[str, Any], *, protocol: Any) -> Any:
         return read_design(ctx, design, protocol, "plateau")[ctx.spec.measure]
 
-    return PL.check(finalist, ctx.parts.space, rule, evaluate, ledger=ctx.ledger, ledger_seed=ctx.spec.plateau_seed,
+    return PL.check(finalist, ctx.space, rule, evaluate, ledger=ctx.ledger, ledger_seed=ctx.spec.plateau_seed,
                     seed=ctx.spec.plateau_box_seed)
 
 
@@ -712,12 +910,6 @@ def choose_finalists(ctx: Context) -> list[dict[str, Any]]:
     """Step 7 (the module docstring): the finalists in order; every candidate's record in `ctx.records`."""
     SS = ctx.E.SS
     finalists = []
-    sel: dict[str, dict[str, Any]] = {}
-    for r in ctx.readings:
-        sel.setdefault(r.id, {ctx.spec.measure: r})
-    for m, rs in ctx.limit_readings.items():
-        for r in rs:
-            sel[r.id].setdefault(m, r)
     for rank, cand in enumerate(finalist_candidates(ctx), 1):
         rec: dict[str, Any] = {"rank": rank, "id": cand.id, "selection_value": float(cand.value),
                                "design": dict(cand.design)}
@@ -729,7 +921,7 @@ def choose_finalists(ctx: Context) -> list[dict[str, Any]]:
             continue
         rec["reread_value"] = float(got[ctx.spec.measure].value)
         steps = (("beats each baseline", beats_baselines(ctx, got)),
-                 ("every limit inside", limits_inside(ctx, sel[cand.id])),
+                 ("every limit inside", limits_inside(ctx, got, ctx.selection.get(cand.id, {}))),
                  ("the no-harm floor", no_harm(ctx, got["out"])))
         for _, (_, info) in steps:
             rec.update(info)
@@ -790,11 +982,11 @@ def vendored_variants_writer(rows: Sequence[Mapping[str, Any]], results_dir: Pat
 
 
 def _writers(ctx: Context) -> tuple[Callable[..., Any], Callable[..., Path]]:
-    if ctx.parts.writer is not None:
-        w = ctx.parts.writer
+    if ctx.writer is not None:
+        w = ctx.writer
     else:
         from extended.results import write_result as w
-    return w, (ctx.parts.variants_writer or vendored_variants_writer)
+    return w, (ctx.variants_writer or vendored_variants_writer)
 
 
 def variant_rows(ctx: Context) -> list[dict[str, Any]]:
@@ -837,25 +1029,24 @@ def emit(ctx: Context, finalists: Sequence[Mapping[str, Any]], *, params: Mappin
     common = _common(ctx, dict(params, fit_sha256=fits, counts=ctx.ledger.counts()), results_dir)
     rd = pd.DataFrame(ctx.rows, columns=["role", "id", "measure", "value", "se", "per_seed", "refused", "design"])
     rpath, _ = write(rd, f"{name}_readings", description=f"{ctx.spec.prereg_id}: every reading of the survey, its "
-                     "rounds, the re-reads and the plateau checks (search years only)", **common)
+                     "rounds, the re-reads, the baselines and the plateau checks (search years only)", **common)
     cpath, _ = write(_records_frame(ctx), f"{name}_candidates", description=f"{ctx.spec.prereg_id}: every "
                      "candidate of the finalist order rule, in rank order, kept or refused and why", **common)
     out = []
     for i, f in enumerate(finalists, 1):
-        text = (ctx.parts.playbook(f["design"]) if ctx.parts.playbook is not None else "").replace("\r\n", "\n")
+        text = str(ctx.playbook(dict(f["design"]))).replace("\r\n", "\n")
         out.append({"order": i, "id": f["id"], "design": json.dumps(f["design"], sort_keys=True, default=str),
                     "selection_value": f["selection_value"], "reread_value": f["reread_value"],
                     "gaps": json.dumps(f["gaps"], sort_keys=True), "limits": json.dumps(f["limits"], sort_keys=True),
                     "no_harm": json.dumps(f["no_harm"], sort_keys=True), "plateau_rule": f["plateau"]["rule"],
                     "plateau_reason": f["plateau"]["reason"], "playbook": text,
-                    "playbook_sha256": hashlib.sha256(text.encode()).hexdigest() if text else "",
-                    "fit_sha256": json.dumps(fits)})
+                    "playbook_sha256": hashlib.sha256(text.encode()).hexdigest(), "fit_sha256": json.dumps(fits)})
     cols = ["order", "id", "design", "selection_value", "reread_value", "gaps", "limits", "no_harm", "plateau_rule",
             "plateau_reason", "playbook", "playbook_sha256", "fit_sha256"]
     lpath, _ = write(pd.DataFrame(out, columns=cols), f"{name}_finalists",
                      description=f"{ctx.spec.prereg_id}: the finalists' list in the declared order (the finalist "
                      "order rule; empty when none)", **common)
-    lsha = _file_sha(lpath)
+    lsha = _lf_sha(lpath)
     vpath = vwrite(rows, results_dir)                       # last: no counted rows without their results
     token = f"heldout-finalists: {ctx.spec.prereg_id} @ {ctx.sha} list {lsha}" if out else None
     return {"variants": Path(vpath), "readings": Path(rpath), "candidates": Path(cpath), "list": Path(lpath),
@@ -864,19 +1055,24 @@ def emit(ctx: Context, finalists: Sequence[Mapping[str, Any]], *, params: Mappin
 
 def emit_failure(ctx: Context, exc: BaseException, *, params: Mapping[str, Any], results_dir: Path,
                  name: str) -> None:
-    """m-4: a refusal after the survey's first cell -- the failure record (with the candidates so far), then the
-    variants rows."""
+    """m-4, F-6: a refusal after the survey's first cell -- the variants rows, then the failure record, each attempted
+    whatever the other does; a failure of either is noted on the refusal."""
     import pandas as pd
 
     write, vwrite = _writers(ctx)
-    rows = variant_rows(ctx)
-    common = _common(ctx, dict(params, counts=ctx.ledger.counts(), failed=type(exc).__name__), results_dir)
-    df = pd.DataFrame([{"exception": type(exc).__name__, "message": str(exc)[:2000],
-                        "counts": json.dumps(ctx.ledger.counts(), sort_keys=True),
-                        "candidates": _records_frame(ctx).to_json(orient="records")}])
-    write(df, f"{name}_failure", description=f"{ctx.spec.prereg_id}: the survey refused after its first cell; "
-          "its record and the counts (its variants rows written after it)", **common)
-    vwrite(rows, results_dir)
+    try:
+        vwrite(variant_rows(ctx), results_dir)
+    except Exception as e:
+        exc.add_note(f"the variants rows could not be written: {type(e).__name__}: {e}")
+    try:
+        common = _common(ctx, dict(params, counts=ctx.ledger.counts(), failed=type(exc).__name__), results_dir)
+        df = pd.DataFrame([{"exception": type(exc).__name__, "message": str(exc)[:2000],
+                            "counts": json.dumps(ctx.ledger.counts(), sort_keys=True),
+                            "candidates": _records_frame(ctx).to_json(orient="records")}])
+        write(df, f"{name}_failure", description=f"{ctx.spec.prereg_id}: the survey refused after its first cell; "
+              "its record and the counts (its variants rows written before it)", **common)
+    except Exception as e:
+        exc.add_note(f"the failure record could not be written: {type(e).__name__}: {e}")
 
 
 # ------------------------------------------------------------------------------------------------ the driver
@@ -900,9 +1096,11 @@ class Outcome:
     bindings: dict[str, Any]
 
 
-def run_survey(declaration: Path | str, parts: Parts, *, results_dir: Path | str, name: str,
-               pin_fixture: str | None = None) -> Outcome:
-    """The whole loop (the module docstring): refusals first, then steps 2-8."""
+def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, pin_fixture: str | None = None,
+               engine: Engine | None = None, writer: Callable[..., Any] | None = None,
+               variants_writer: Callable[..., Path] | None = None) -> Outcome:
+    """The whole loop (the module docstring): refusals first, then steps 2-8. `engine` and the writers are honoured
+    only under a fixture pin (and the engine is still bound)."""
     path, out_dir = Path(declaration), Path(results_dir)
     if not path.is_file():
         raise NotPinned(f"REFUSED: the declaration {path} does not exist")
@@ -910,59 +1108,72 @@ def run_survey(declaration: Path | str, parts: Parts, *, results_dir: Path | str
     sha = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
     spec = load_spec(raw)
     pin_row = check_pinned(path, sha, spec, results_dir=out_dir, pin_fixture=pin_fixture)
-    if pin_fixture is None and any(x is not None for x in (parts.engine, parts.writer, parts.variants_writer)):
+    fixture = pin_fixture is not None
+    if not fixture and any(x is not None for x in (engine, writer, variants_writer)):
         raise PartRefused("REFUSED: under a pin the engine and the writers are this repository's own; an injected "
                           "one is honoured only under a fixture pin")
-    if parts.gate is None or not callable(parts.gate):
-        raise PartRefused("REFUSED: the gate is required (supply, resolution, realised risk; O-4's floor follows)")
-    E = parts.engine or Engine.default()
+    commit = "fixture"
+    if not fixture:
+        dirty = R._dirty(ROOT)
+        if dirty:
+            raise PartRefused(f"REFUSED: under a pin the tree is clean (its commit binds the code); dirty: {dirty[:5]}")
+        commit = R._commit(ROOT, "the survey")
+    E = engine or Engine.default()
     E.check()
-    bound = bindings(parts, E)
-    off = [k for k in PART_NAMES if bound[k] != spec.parts[k]]
-    if off:
-        raise PartRefused(f"REFUSED: the part(s) {off} differ from the declaration's binding (S-3): "
-                          + "; ".join(f"{k} declared {spec.parts[k]}, given {bound[k]}" for k in off))
-    sides = side_levers(parts.space)
-    if sides:
-        raise PartRefused(f"REFUSED: the searched lever(s) {sides} set a side; the side is the trigger's (O-4)")
+    bound = check_bindings(spec, E)
+    obj = load_objective(spec.raw["objective"], fixture=fixture)
+    parts = {k: build_part(spec.parts[k], fixture=fixture) for k in PART_NAMES}
+    check_levers(parts["space"])
     protocol = E.SS.Protocol(spec.measure, spec.blocks, spec.seeds, spec.horizon)       # refuses held-out blocks
     bad = heldout_problems(_existing_rows(out_dir / "variants.jsonl"))
     if bad:
         raise HeldOutRow(f"REFUSED: the variants ledger in {out_dir} already holds a held-out row: {bad[:3]}")
-    limits = tuple(E.P.Limit(str(x["measure"]), float(x["bound"]), str(x["direction"])) for x in spec.limits)
-    ctx = Context(spec, parts, E, new_ledger(E), protocol, limits, sha)
-    params = {"declaration_sha256": sha, "pin_row": pin_row, "protocol_sha256": protocol_digest(protocol),
-              "spec": spec.raw, "bindings": bound, "round_spec": asdict(E.P.RoundSpec(**spec.round_kw)),
-              "task": TASK}
+    check_once(sha, out_dir, name)
+    limits = tuple(E.P.Limit(lim["name"], lim["bound"], lim["direction"]) for lim in obj.limits)
+    ctx = Context(spec, E, _wave42(), obj, parts["space"], parts["gate"], tuple(spec.parts["gate"]["keys"]),
+                  parts["schedule_builder"], parts["runner"], parts["playbook"], new_ledger(E), protocol, limits, sha,
+                  writer, variants_writer)
+    params = {"declaration_sha256": sha, "pin_row": pin_row, "commit": commit,
+              "protocol_sha256": protocol_digest(protocol), "spec": spec.raw, "bindings": bound,
+              "space_digest": space_digest(parts["space"]), "objective_sha256": spec.raw["objective"]["sha256"],
+              "round_spec": asdict(E.P.RoundSpec(**spec.round_kw)), "task": TASK}
     try:
         designs = draw_survey(ctx)
         if protocol_digest(ctx.ledger.protocol) != protocol_digest(protocol) or \
                 tuple(ctx.ledger.reread.seeds) != spec.reread_seeds:
             raise SurveyRefused("the ledger's protocol is not the pinned declaration's (rb2-a)")
+        check_engine_rereads(ctx)
         ctx.ledger.begin(BASELINE_ROLE, spec.baseline_seed)
         for b in spec.baselines:
-            ctx.ledger.record(parts.space, {"baseline": b}, role=BASELINE_ROLE, seed=spec.baseline_seed, refusal=None)
+            ctx.ledger.record(ctx.space, {"baseline": b}, role=BASELINE_ROLE, seed=spec.baseline_seed, refusal=None)
         read_all(ctx, designs, "survey")
         run_rounds(ctx)
         finalists = choose_finalists(ctx)
         em = emit(ctx, finalists, params=params, results_dir=out_dir, name=name)
     except Exception as exc:
         if ctx.ledger.rows:
-            try:
-                emit_failure(ctx, exc, params=params, results_dir=out_dir, name=name)
-            except Exception as e2:                                        # the original refusal is the one raised
-                exc.add_note(f"the failure record could not be written: {type(e2).__name__}: {e2}")
+            emit_failure(ctx, exc, params=params, results_dir=out_dir, name=name)
         raise
     return Outcome(sha, pin_row, finalists, list(ctx.records), em["token"], em["list"], em["list_sha256"],
                    em["readings"], em["candidates"], em["variants"], ctx.ledger.counts(), ctx.ledger, ctx.rounds,
                    bound)
 
 
-__all__ = ["TASK", "ENGINE_COMMIT", "DESIGN_ARM", "BASELINE_ROLE", "BASELINES", "MIN_REREAD_SEEDS", "AS_TRADED",
-           "REFLECTED", "TRIGGER", "FIXTURE_PREFIX", "PART_NAMES", "SurveyRefused", "NotPinned", "SpecRefused",
-           "PartRefused", "HeldOutRow", "RunOutput", "Engine", "Parts", "Spec", "Context", "Outcome",
-           "part_binding", "space_digest", "engine_binding", "bindings", "side_levers", "load_spec", "fixture_pin",
-           "check_pinned", "composite_score", "limit_values", "new_ledger", "protocol_digest", "book_check", "gate_check", "screen",
-           "read_design", "read_all", "draw_survey", "run_rounds", "finalist_candidates", "beats_baselines",
-           "limits_inside", "no_harm", "plateau_step", "choose_finalists", "heldout_problems",
-           "vendored_variants_writer", "variant_rows", "emit", "emit_failure", "run_survey"]
+def declare_parts(parts: Mapping[str, Mapping[str, Any]], engine: Engine | None = None) -> dict[str, Any]:
+    """The `parts` block of a declaration for these factory ids and parameters, each with its binding (a drafting
+    aid: the declaration's author runs it; the red team reads the result)."""
+    out = {k: dict(v, sha256=part_sha(v)) for k, v in parts.items()}
+    out["engine"] = {"id": f"wave34@{ENGINE_COMMIT}", "sha256": engine_sha(engine or Engine.default())}
+    return out
+
+
+__all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "DESIGN_ARM", "BASELINE_ROLE", "BASELINES", "MIN_REREAD_SEEDS",
+           "AS_TRADED", "REFLECTED", "TRIGGER", "SEARCH_TAG", "DELTA_STAR", "FIXTURE_PREFIX", "PART_NAMES",
+           "SurveyRefused", "NotPinned", "SpecRefused", "PartRefused", "RunRepeated", "HeldOutRow", "RunOutput",
+           "Engine", "Objective", "Spec", "Context", "Outcome", "code_closure", "part_sha", "engine_sha",
+           "w42_code_sha", "build_part", "check_bindings", "searched_levers", "check_levers", "space_digest",
+           "load_objective", "composite", "limit_value", "t_threshold", "crossing_check", "load_spec", "fixture_pin",
+           "check_pinned", "check_once", "new_ledger", "protocol_digest", "book_check", "gate_check", "screen",
+           "read_design", "read_all", "draw_survey", "check_engine_rereads", "run_rounds", "finalist_candidates",
+           "beats_baselines", "limits_inside", "no_harm", "plateau_step", "choose_finalists", "heldout_problems",
+           "vendored_variants_writer", "variant_rows", "emit", "emit_failure", "run_survey", "declare_parts"]
