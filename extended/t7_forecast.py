@@ -67,12 +67,20 @@ forecast alpha = 0, beta = 1.
 
 * **The calibration brackets** (an interpretation: F-R calibrated at one 150-tick stop; the lever space's stops vary
   with S1): every stop S = c sqrt(M) for c in `C_GRID` (the stop in units of the window's trailing typical move, so u =
-  exp(y_hat) / c^2 -- no price, no stop in points) and every w of S2's grid (`modes_terms.grid_w`, RD-05 2.6), both
-  sides pooled (the coin chooses the side), every bracket weighted one.
+  exp(y_hat) / c^2 -- no price, no stop in points) and every w of S2's grid (`W_GRID`, declared here and checked
+  against RD-05 2.6's `modes_terms.grid_w` by the loader and the tests), both sides pooled (the coin chooses the
+  side), every bracket weighted one. **A stop or a w outside the calibrated grid is refused, never extrapolated**
+  (`probability_open` gives NaN, which `admit` never admits).
 * **The label** (`open_counts`): with E the entry, a long is open at the walk's end iff no bar from the entry bar to
   15:07 traded at E - S (a stop fills on a touch) and none traded at E + w S + one tick (a limit target fills only on a
   trade through by a tick); the short mirrored. No breakeven move (the lever table drops S7). It reads the walk's
   excursions only -- never a side's P&L.
+* **Label: a market entry only.** The label models a market entry at the open of the mark's first bar, held to the
+  bar stamped 15:07. It does not model a limit entry (T5), the news-window flatten (E-202 (2)(a)), entries off the
+  five-minute grid (P-14's) or RL3's ticket timing; a T7 result is reported with this beside it.
+* **Label: q's provenance.** q = D-212's line as D-308 raised it (5 %): Stage 2 chose that number after D-306's result
+  was seen (on 2020-2021, inside the search years) and labels it so; it was a ceiling on a leg's share of trades
+  reaching the flatten, used here per mark, which is far stricter. Both facts are reported beside any T7 result.
 
 **The splits** (`fold_masks`; feature-rules section 4): test folds are the search years' calendar years `FOLD_YEARS`;
 a fold's training rows are every other search-year row at least `PURGE_SESSIONS` frame sessions before the fold's
@@ -80,8 +88,15 @@ first day, or at least `EMBARGO_SESSIONS` after its last **and** whose features 
 label resolves within its own session (one session is the longest trade), so 22 sessions -- the HAR's longest window --
 is longer than the longest trade and than the longest feature window. Out of fold: the HAR's R^2 per band and fold,
 and the calibration (mean p_hat, open share, log loss, Brier, a reliability table by `BIN_EDGES`, each bracket's
-shares, and at q the share admitted and the open share among the admitted). The final model is fitted on every
-search-year row.
+shares, and at q the share admitted and the open share among the admitted). **These are diagnostics, not a forward
+test:** the folds include backward ones (2020 is fitted on 2021-2023). The final model is fitted on every search-year
+row.
+
+**Which model applies where (the lead's ruling).** On the search years a mark of year Y is scored by **fold Y's model**
+(trained without year Y, purged and embargoed) -- never by the final model, which would be in-sample there
+(`model_for`). The final all-years model is only for a later held-out application, which stays refused here (it is a
+declared purpose of the joint held-out test, with its own feature builder holding to `feature_table` on the search
+years first).
 
 **The file** (`COLUMNS`, long format, one numeric column `value`; `SECTIONS`): `coef` and `calib` (each fold's and the
 final fit's), `count`, `oof`, `reliability`, `bracket`. Counts are never on a row with a share. No date, no clock time,
@@ -93,15 +108,22 @@ tests.
 (else `NotRead`, which the lever space reports as `NotComputed`); then it is refused (`ForecastRefused`) unless the
 manifest's sha256 is the file's, its script this reading's, its tree clean and its run a clean run, its task, purpose
 and read row this reading's, the whole search years, every identity held, its q equal to D-212's line now
-(`admission_line`), and every band has finite final coefficients with beta > 0 (admission then falls as w rises, F-R
-6.5).
+(`admission_line`), **every declared parameter of `manifest_parameters` equal to its value now** (the alert lag, the
+marks, the frozen alert, the walk's end, the bands, terms and void rules, the windows, the c and w grids, the folds,
+purge and embargo, the bins), `W_GRID` equal to RD-05's grid now, its `git_commit` a named commit of this repository
+(40 hexadecimal characters, not dirty, present in its history), the file's sections and folds exactly those `run_fit`
+writes with `output_problems` empty, and every band of every fold's model and of the final model finite with beta > 0
+(admission then falls as w rises, F-R 6.5). It returns each fold's model and the final model, labelled.
 """
 from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import math
+import re
+import subprocess
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -146,8 +168,10 @@ TERMS = {b: (("x1", "x2") if b == "evening" else ("x1", "x2", "x3")) for b in BA
 #: 08:29 bar; the opening bands' frozen x3 reads overnight bars (to 08:24); the day band reads the regular session only
 VOID_RULE = {"evening": (True, True), "asia": (True, True), "london": (True, True), "open": (True, False),
              "day1": (True, False), "day": (False, False)}
-#: the calibration brackets: stops in units of sqrt(M), and S2's w grid (RD-05 2.6), read at import
+#: the calibration brackets: stops in units of sqrt(M), and S2's w grid (RD-05 2.6), declared here (frozen) and
+#: checked against `modes_terms.grid_w()` by the loader
 C_GRID = (0.5, 0.75, 1.0, 1.5, 2.0)
+W_GRID = (1.0, 1.5, 2.0, 3.0)
 CLIP = 1e-6
 U_SWITCH = 1.0
 SERIES_TERMS = 50
@@ -168,12 +192,10 @@ Q_NOTE_KEY = ("selection", "feasibility", "flat_share_note")
 
 
 def w_grid() -> tuple[float, ...]:
+    """RD-05 2.6's w grid now (`modes_terms.grid_w`), which `W_GRID` must equal."""
     from extended import modes_terms as M                # light: declared values only
 
     return tuple(float(x) for x in M.grid_w())
-
-
-W_GRID = w_grid()
 
 
 class BeyondSearchYears(RuntimeError):
@@ -791,9 +813,50 @@ def manifest_path(path: Path | str) -> Path:
     return Path(str(path) + ".manifest.json")
 
 
-def load_forecast(path: Path | str, *, q: float) -> dict[str, Any]:
-    """The final model from the result file, after its manifest (the docstring's loader). `NotRead` when the file or
-    its manifest is absent; `ForecastRefused` for anything else that is not this reading's."""
+#: the manifest parameters the loader holds to their values now (all of `manifest_parameters` but these)
+NOT_COMPARED = ("identities", "span", "q_source")
+FOLD_LABEL = ("search years: applied to marks of this fold's year only (trained without it, purged and embargoed); "
+              "the backward folds make the out-of-fold numbers diagnostics, not a forward test")
+FINAL_LABEL = ("held-out application only (trained on every search-year row, in-sample on the search years); "
+               "applying T7 on the held-out years stays refused until the joint held-out test declares it")
+_SHA = re.compile(r"[0-9a-f]{40}")
+
+
+def _commit_problem(commit: Any, repo: Path = ROOT) -> str | None:
+    """Why `commit` is not a named, clean commit of this repository (None if it is)."""
+    c = str(commit or "")
+    if not _SHA.fullmatch(c):
+        return f"its git_commit {c!r} is not a named commit (40 hexadecimal characters, not dirty)"
+    try:
+        r = subprocess.run(["git", "-C", str(repo), "cat-file", "-e", c + "^{commit}"], capture_output=True,
+                           timeout=60)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"its git_commit cannot be checked ({exc!r})"
+    return None if r.returncode == 0 else f"its git_commit {c} is not a commit of this repository"
+
+
+def _model_from(rows: Sequence[Mapping[str, str]], fold: str, p: Path) -> dict[str, Any]:
+    har: dict[str, dict[str, float]] = {}
+    cal: dict[str, tuple[float, float]] = {}
+    for b in BANDS:
+        coef = {r["stat"]: float(r["value"]) for r in rows if r["fold"] == fold and r["section"] == "coef"
+                and r["band"] == b}
+        cc = {r["stat"]: float(r["value"]) for r in rows if r["fold"] == fold and r["section"] == "calib"
+              and r["band"] == b}
+        if set(coef) != {"const", *TERMS[b]} or set(cc) != {"alpha", "beta"}:
+            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s {fold} model is incomplete")
+        if not all(math.isfinite(v) for v in (*coef.values(), *cc.values())):
+            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s {fold} model is not finite")
+        if not cc["beta"] > 0:
+            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s {fold} beta is not positive (F-R 6.5)")
+        har[b], cal[b] = coef, (cc["alpha"], cc["beta"])
+    return {"har": har, "calibration": cal, "fold": fold, "label": FINAL_LABEL if fold == FINAL else FOLD_LABEL}
+
+
+def load_forecast(path: Path | str, *, q: float, repo: Path | str = ROOT) -> dict[str, Any]:
+    """Each fold's model and the final model from the result file, labelled, after its manifest (the docstring's
+    loader). `NotRead` when the file or its manifest is absent; `ForecastRefused` for anything else that is not this
+    reading's."""
     p = Path(path)
     mp = manifest_path(p)
     if not p.is_file() or not mp.is_file():
@@ -811,6 +874,10 @@ def load_forecast(path: Path | str, *, q: float) -> dict[str, Any]:
         why.append(f"its script is {m.get('script')!r}, not {SCRIPT}")
     if m.get("git_dirty") is not False or str(m.get("git_commit", "")).endswith("-dirty"):
         why.append("it was written from a dirty tree")
+    else:
+        cp = _commit_problem(m.get("git_commit"), Path(repo))
+        if cp:
+            why.append(cp)
     clean = (m.get("provenance") or {}).get("clean_run")
     if not (isinstance(clean, dict) and clean.get("name")):
         why.append("it is not a clean run's (no provenance.clean_run)")
@@ -824,32 +891,49 @@ def load_forecast(path: Path | str, *, q: float) -> dict[str, Any]:
         why.append(f"its identities {ids} did not all hold")
     if par.get("q") != float(q):
         why.append("its q is not D-212's line now")
+    want = json.loads(json.dumps(manifest_parameters(q, {}, identities={}, span=(SEARCH_START, SEARCH_END))))
+    differ = sorted(k for k in want if k not in NOT_COMPARED and par.get(k) != want[k])
+    if differ:
+        why.append(f"its declared parameters {differ} differ from the definitions now")
+    if W_GRID != w_grid():
+        why.append("W_GRID is not RD-05's w grid now")
     if why:
         raise ForecastRefused(f"REFUSED ({TASK}): {p} is not this reading's -- " + "; ".join(why))
-    rows = [r for r in csv.DictReader(raw.decode("utf-8").splitlines()) if r.get("fold") == FINAL]
-    har: dict[str, dict[str, float]] = {}
-    cal: dict[str, tuple[float, float]] = {}
-    for b in BANDS:
-        coef = {r["stat"]: float(r["value"]) for r in rows if r["section"] == "coef" and r["band"] == b}
-        cc = {r["stat"]: float(r["value"]) for r in rows if r["section"] == "calib" and r["band"] == b}
-        if set(coef) != {"const", *TERMS[b]} or set(cc) != {"alpha", "beta"}:
-            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s final model is incomplete")
-        if not all(math.isfinite(v) for v in (*coef.values(), *cc.values())):
-            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s final model is not finite")
-        if not cc["beta"] > 0:
-            raise ForecastRefused(f"REFUSED ({TASK}): {p}: band {b}'s beta is not positive (F-R 6.5)")
-        har[b], cal[b] = coef, (cc["alpha"], cc["beta"])
-    return {"har": har, "calibration": cal, "q": float(q), "sha256": sha, "git_commit": m.get("git_commit"),
-            "manifest": str(mp)}
+    frame = pd.read_csv(io.BytesIO(raw), keep_default_na=False, dtype={c: str for c in COLUMNS if c != "value"})
+    folds = {_fold(y) for y in FOLD_YEARS}
+    bad = output_problems(frame)
+    if set(frame["section"]) != set(SECTIONS):
+        bad.append(f"its sections {sorted(set(frame['section']))} are not {list(SECTIONS)}")
+    if set(frame["fold"]) != folds | {OOF, FINAL}:
+        bad.append(f"its folds {sorted(set(frame['fold']))} are not every search year's, {OOF!r} and {FINAL!r}")
+    if bad:
+        raise ForecastRefused(f"REFUSED ({TASK}): {p}: the file is not run_fit's -- " + "; ".join(bad[:4]))
+    rows = list(csv.DictReader(raw.decode("utf-8").splitlines()))
+    fold_models = {f: _model_from(rows, f, p) for f in sorted(folds)}
+    final = _model_from(rows, FINAL, p)
+    return {"fold_models": fold_models, "final_model": final, "q": float(q), "sha256": sha,
+            "git_commit": m.get("git_commit"), "manifest": str(mp)}
+
+
+def model_for(got: Mapping[str, Any], day: Any) -> dict[str, Any]:
+    """The model that scores a mark of `day`: on the search years, the fold model of its year (out of fold); after
+    them, refused (a held-out application is not declared here)."""
+    d = _day(day)
+    check_span(d, d)                                     # refuses any day after 2023-12-29
+    return got["fold_models"][_fold(d.year)]
 
 
 def probability_open(model: Mapping[str, Any], band: str, x: Mapping[str, float], m_var: float, stop: float,
                      w: float) -> float:
     """p_hat for one mark: the band's HAR at the features `x`, V_hat = m_var exp(y_hat) (m_var the mark's M, in the
-    stop's units squared), u = V_hat / stop^2, calibrated. NaN if a feature is missing."""
+    stop's units squared), u = V_hat / stop^2, calibrated. NaN -- never admitted -- if a feature is missing, or if the
+    stop in units of sqrt(M) or w lies outside the calibrated grid (`C_GRID`, `W_GRID`): never extrapolated."""
     c = model["har"][band]
     y = c["const"] + sum(c[term] * float(x[term]) for term in TERMS[band])
     if not (math.isfinite(y) and m_var > 0 and stop > 0):
+        return float("nan")
+    cs = stop / math.sqrt(m_var)
+    if not (min(C_GRID) <= cs <= max(C_GRID) and min(W_GRID) <= w <= max(W_GRID)):
         return float("nan")
     z = logit(psi(w, m_var * math.exp(y) / (stop * stop)))
     a, b = model["calibration"][band]
@@ -869,4 +953,5 @@ __all__ = ["TASK", "DECISIONS", "RESULT", "SCRIPT", "PURPOSE", "READ_ROW", "SEAR
            "sigmoid", "day_grid", "rv_at", "window_stats", "bands_for", "prior_means", "feature_table", "fold_masks",
            "fit_rows", "fit_har", "predict_y", "open_counts", "brackets", "bracket_label", "bracket_obs",
            "fit_logistic", "fit_calibration", "calibrated", "fit_model", "run_fit", "output_problems",
-           "manifest_parameters", "admission_line", "manifest_path", "load_forecast", "probability_open", "admit"]
+           "manifest_parameters", "admission_line", "manifest_path", "load_forecast", "model_for",
+           "probability_open", "admit", "w_grid", "NOT_COMPARED", "FOLD_LABEL", "FINAL_LABEL"]

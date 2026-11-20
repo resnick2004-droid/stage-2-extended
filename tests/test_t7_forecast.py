@@ -33,10 +33,21 @@ In this process (`extended.t7_forecast` imports no engine):
 * `test_admission_line_is_d212` -- q is Stage 2's `selection.feasibility.flat_share_max` read independently; a config
   without the key, or whose note does not cite D-212, is refused;
 * `test_the_loader_refuses_then_loads` -- `lever_space.bounds("T7")` is `NotComputed` while the file is absent; with
-  the file and its manifest it loads `off` / `admit`, q and the final model, opening no other data file; each defect
-  (a byte, no clean run, a dirty tree, another script, another q, a toy span, an identity not held, a non-positive
-  beta) refuses loudly, never as `NotComputed`;
-* `test_mutants_are_caught` -- source mutations of each core piece, each caught by its check.
+  the file and its manifest it loads `off` / `admit`, q, each fold's model and the final model, labelled, and the
+  two labels (q's provenance, market entry only), opening no other data file; `model_for` scores a search-year day by
+  its own year's fold model and refuses 2024; a stop or w outside the calibrated grid gives NaN, never admitted; each
+  defect (a byte, no clean run, a dirty tree or commit, an unnamed commit or one not in the repository, another
+  script, q, span or purpose, an identity not held, any declared parameter changed, a section or fold missing, only
+  the final rows, a non-positive beta in a fold or the final model) refuses loudly, never as `NotComputed`;
+* `test_w_grid_is_frozen_and_rd05s` -- `W_GRID` is a declared constant equal to RD-05's grid; a different one refuses;
+* `test_the_frame_and_the_void_filter` -- a non-walked day is out of the frame; a void day has no forecast in any
+  band and enters no trailing term (x1, x2 and reach checked by hand two days after it);
+* `test_the_computed_reach_purges_a_row_past_the_embargo` -- void days after a fold push a row's reach into the fold,
+  so the first row past the embargo leaves the training set (and stays in it without the voids);
+* `test_the_band_boundaries` -- evening / asia / london at the anchors, 08:30-09:00 `open`, 09:05-10:05 `day1`;
+* `test_mutants_are_caught` -- source mutations of each core piece (now including the void filter, the frame, reach
+  and the 09:00 band), each caught by its check; `test_mutant_loader_checks_are_caught` -- the loader's sha, beta,
+  parameter, commit and fold checks.
 
 In a child process (`tests/t7_synthetic.py`, synthetic bars, the reader stood in by recorders):
 
@@ -71,6 +82,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from extended import day_calendar as DCal  # noqa: E402
 from extended import features as FL  # noqa: E402
 from extended import lever_space as LS  # noqa: E402
 from extended import price_levels as pl  # noqa: E402
@@ -304,10 +316,16 @@ def check_span(mod) -> None:
         mod.check_days(["2023-12-29", "2024-01-02"])
 
 
+def _head() -> str:
+    r = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, r.stderr
+    return r.stdout.strip()
+
+
 def _manifest(csv_path: Path, frame: pd.DataFrame, q: float, **over) -> Path:
     raw = csv_path.read_bytes()
     _, qs = T.admission_line()
-    m = {"columns": list(frame.columns), "git_commit": "0" * 40, "git_dirty": False, "result_file": csv_path.name,
+    m = {"columns": list(frame.columns), "git_commit": _head(), "git_dirty": False, "result_file": csv_path.name,
          "rows": len(frame), "script": T.SCRIPT, "seed": None, "sha256": hashlib.sha256(raw).hexdigest(),
          "provenance": {"clean_run": {"name": "t7-forecast", "checkout": "x", "marker": "S2X_CLEAN_RUN"}},
          "parameters": T.manifest_parameters(q, qs, identities={"rv_tod": "HELD", "a1_days": "HELD"},
@@ -322,20 +340,28 @@ def _manifest(csv_path: Path, frame: pd.DataFrame, q: float, **over) -> Path:
     return mp
 
 
-def _final_frame(mod, beta: float = 0.9) -> pd.DataFrame:
+def _full_frame(mod, beta: float = 0.9, fold_beta: float = 0.9) -> pd.DataFrame:
+    """A frame with every section and fold `run_fit` writes: each fold's and the final model (the final's x3 for
+    `day` distinct, 0.5 + 0.01 x the fold's place), counts, oof, reliability and bracket rows."""
     rows = []
-    for i, b in enumerate(mod.BANDS):
-        for term, v in zip(("const",) + mod.TERMS[b], (-0.1 - 0.01 * i, 0.2, 0.3, 0.5)):
-            rows.append(mod._r("coef", term, v, band=b, fold=mod.FINAL))
-        rows += [mod._r("calib", "alpha", 0.1, band=b, fold=mod.FINAL),
-                 mod._r("calib", "beta", beta if b == "day" else 0.9, band=b, fold=mod.FINAL),
-                 mod._r("count", "rows_final", 1000, band=b, fold=mod.FINAL)]
+    folds = [mod._fold(y) for y in mod.FOLD_YEARS] + [mod.FINAL]
+    for j, f in enumerate(folds):
+        for i, b in enumerate(mod.BANDS):
+            for term, v in zip(("const",) + mod.TERMS[b], (-0.1 - 0.01 * i, 0.2, 0.3, 0.5 + 0.01 * j)):
+                rows.append(mod._r("coef", term, v, band=b, fold=f))
+            bt = (beta if f == mod.FINAL else fold_beta) if b == "day" else 0.9
+            rows += [mod._r("calib", "alpha", 0.1, band=b, fold=f), mod._r("calib", "beta", bt, band=b, fold=f),
+                     mod._r("count", "rows_train" if f != mod.FINAL else "rows_final", 1000, band=b, fold=f)]
+    for b in mod.BANDS:
+        rows += [mod._r("oof", "mean_p", 0.1, band=b, fold=mod.OOF),
+                 mod._r("reliability", "obs", 10, band=b, fold=mod.OOF, bin_="b0"),
+                 mod._r("bracket", "open_share", 0.1, band=b, fold=mod.OOF, bracket="c1w2")]
     return pd.DataFrame(rows, columns=list(mod.COLUMNS))
 
 
 def _written(folder: Path, frame: pd.DataFrame | None = None, **over) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
-    frame = _final_frame(T) if frame is None else frame
+    frame = _full_frame(T) if frame is None else frame
     p = folder / "t7_forecast.csv"
     frame.to_csv(p, index=False)
     _manifest(p, frame, T.admission_line()[0], **over)
@@ -348,13 +374,30 @@ def check_loader(mod, tmp_path: Path) -> None:
         mod.load_forecast(tmp_path / "absent" / "t7_forecast.csv", q=q)
     p = _written(tmp_path / "ok")
     got = mod.load_forecast(p, q=q)
-    assert set(got["har"]) == set(mod.BANDS)
+    assert set(got["final_model"]["har"]) == set(mod.BANDS)
+    assert set(got["fold_models"]) == {mod._fold(y) for y in mod.FOLD_YEARS}
     raw = p.read_bytes()
     assert raw.count(b",0.2") >= 1
     p.write_bytes(raw.replace(b",0.2", b",0.7", 1))          # still complete and parseable: only the sha differs
     with pytest.raises(mod.ForecastRefused):
         mod.load_forecast(p, q=q)
-    bad = _written(tmp_path / "beta", _final_frame(T, beta=-0.1))
+    for name, frame in (("beta", _full_frame(T, beta=-0.1)), ("fold_beta", _full_frame(T, fold_beta=-0.1))):
+        bad = _written(tmp_path / name, frame)
+        with pytest.raises(mod.ForecastRefused):
+            mod.load_forecast(bad, q=q)
+    for name, over in (("alert_lag", {"alert_lag": 0}), ("embargo", {"embargo_sessions": 0}),
+                       ("c_grid", {"c_grid": [9]})):
+        bad = _written(tmp_path / name, parameters=over)
+        with pytest.raises(mod.ForecastRefused):
+            mod.load_forecast(bad, q=q)
+    full = _full_frame(T)
+    no_oof = _written(tmp_path / "no_oof", full[full["fold"] != T.OOF].reset_index(drop=True))
+    with pytest.raises(mod.ForecastRefused):
+        mod.load_forecast(no_oof, q=q)
+    extra = pd.concat([full, full[full["fold"] == "y2020"].assign(fold="y2019")], ignore_index=True)
+    with pytest.raises(mod.ForecastRefused):
+        mod.load_forecast(_written(tmp_path / "extra_fold", extra), q=q)
+    bad = _written(tmp_path / "commit", git_commit="0" * 40)
     with pytest.raises(mod.ForecastRefused):
         mod.load_forecast(bad, q=q)
 
@@ -499,33 +542,155 @@ def test_the_loader_refuses_then_loads(tmp_path, monkeypatch):
     q = T.admission_line()[0]
     assert r.kind == "choices" and r.values == ("off", "admit") and r.detail["q"] == q
     assert r.detail["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()
+    assert len(r.detail["labels"]) == 2 and "D-306" in r.detail["labels"][0] and "market entry" in r.detail["labels"][1]
     frame = pd.read_csv(p)
-    want = frame[(frame["section"] == "coef") & (frame["band"] == "day") & (frame["stat"] == "x3")]["value"].iloc[0]
-    assert r.detail["model"]["har"]["day"]["x3"] == want
+    sel = (frame["section"] == "coef") & (frame["band"] == "day") & (frame["stat"] == "x3")
+    model = r.detail["model"]
+    assert model["final_model"]["har"]["day"]["x3"] == frame.loc[sel & (frame["fold"] == T.FINAL), "value"].iloc[0]
+    assert model["final_model"]["label"] == T.FINAL_LABEL and "held-out" in T.FINAL_LABEL
+    # on the search years a day is scored by its own year's fold model, never the final one; later days refused
+    for y in T.FOLD_YEARS:
+        fm = T.model_for(model, date(y, 6, 1))
+        assert fm["fold"] == f"y{y}" and fm["label"] == T.FOLD_LABEL
+        assert fm["har"]["day"]["x3"] == frame.loc[sel & (frame["fold"] == f"y{y}"), "value"].iloc[0]
+    with pytest.raises(T.BeyondSearchYears):
+        T.model_for(model, "2024-01-02")
     assert "T7" in LS.space() and "T7" not in LS.refusals()
-    pr = T.probability_open(r.detail["model"], "day", {"x1": 0.0, "x2": 0.0, "x3": 0.0}, 1.0, 1.0, 2.0)
+    fm = T.model_for(model, "2021-06-01")
+    pr = T.probability_open(fm, "day", {"x1": 0.0, "x2": 0.0, "x3": 0.0}, 1.0, 1.0, 2.0)
     assert 0 < pr < 1 and T.admit(pr, 1.0) and not T.admit(float("nan"), q)
+    # stops and w outside the calibrated grid: refused (NaN, never admitted), never extrapolated
+    for stop, w in ((min(T.C_GRID) * 0.99, 2.0), (max(T.C_GRID) * 1.01, 2.0), (1.0, max(T.W_GRID) * 1.01),
+                    (1.0, min(T.W_GRID) * 0.99), (0.1, 2.0)):
+        p_ = T.probability_open(fm, "day", {"x1": 0.0, "x2": 0.0, "x3": 0.0}, 1.0, stop, w)
+        assert np.isnan(p_) and not T.admit(p_, 1.0), (stop, w)
+    for stop in (min(T.C_GRID), max(T.C_GRID)):
+        assert np.isfinite(T.probability_open(fm, "day", {"x1": 0.0, "x2": 0.0, "x3": 0.0}, 4.0, 2.0 * stop, 2.0))
     cases = {
         "byte": None,
         "no clean run": {"provenance": {}},
         "dirty": {"git_dirty": True},
+        "a dirty commit": {"git_commit": _head() + "-dirty"},
+        "an unnamed commit": {"git_commit": "abc"},
+        "a commit not in the repository": {"git_commit": "0" * 40},
         "other script": {"script": "scripts/other.py"},
         "other q": {"parameters": {"q": q / 2}},
         "a toy span": {"parameters": {"span": ["2021-01-04", "2022-04-29"]}},
         "an identity not held": {"parameters": {"identities": {"rv_tod": "FAILED", "a1_days": "HELD"}}},
         "other purpose": {"parameters": {"purpose": "t7_other"}},
+        **{f"param {k}": {"parameters": {k: v}} for k, v in (
+            ("alert_lag", 0), ("purge_sessions", 0), ("embargo_sessions", 0), ("c_grid", [9]), ("w_grid", [99]),
+            ("bands", ["x"]), ("walk_last_stamp", 9999), ("frozen_alert", 945), ("marks", [0, 1325, 1]),
+            ("terms", {}), ("void_rule", {}), ("har_windows", [1, 5, 20]), ("tod", [20, 5]),
+            ("fold_years", [2021]), ("bin_edges", [0, 1]), ("walked_kinds", ["n"]), ("rv_window", 30),
+            ("clip", 0.01), ("tick", 0.5))},
     }
-    for why, over in cases.items():
-        q_ = _written(tmp_path / why.replace(" ", "_"), **(over or {}))
+    assert {k for k in T.manifest_parameters(q, {}, identities={}, span=(T.SEARCH_START, T.SEARCH_END))} - {
+        "task", "decisions", "span", "purpose", "read_row", "q", "q_source", "identities"} <= {
+        k[len("param "):] for k in cases if k.startswith("param ")} | {"decisions"}
+    full = _full_frame(T)
+    frames = {"no oof section": full[full["fold"] != T.OOF], "no y2021 fold": full[full["fold"] != "y2021"],
+              "no reliability section": full[full["section"] != "reliability"],
+              "only the final rows": full[full["fold"] == T.FINAL],
+              "a negative fold beta": _full_frame(T, fold_beta=-0.2), "a negative beta": _full_frame(T, beta=-0.2)}
+    for why, over in [*cases.items(), *((k, f) for k, f in frames.items())]:
+        d = tmp_path / why.replace(" ", "_")
+        if isinstance(over, pd.DataFrame):
+            q_ = _written(d, over.reset_index(drop=True))
+        else:
+            q_ = _written(d, **(over or {}))
         if over is None:
             q_.write_bytes(q_.read_bytes().replace(b",0.2", b",0.7", 1))
         monkeypatch.setattr(LS, "T7_PATH", q_)
         with pytest.raises(LS.LeverRefused) as e:
             LS.bounds("T7")
         assert not isinstance(e.value, LS.NotComputed), why
-    monkeypatch.setattr(LS, "T7_PATH", _written(tmp_path / "negative_beta", _final_frame(T, beta=-0.2)))
-    with pytest.raises(LS.LeverRefused):
-        LS.bounds("T7")
+
+
+def test_w_grid_is_frozen_and_rd05s(tmp_path, monkeypatch):
+    assert T.W_GRID == T.w_grid() and isinstance(T.W_GRID, tuple)
+    assert "W_GRID = w_grid()" not in MOD_SRC.read_text(encoding="utf-8")
+    p = _written(tmp_path / "w")
+    monkeypatch.setattr(T, "W_GRID", (1.0, 2.0))
+    with pytest.raises(T.ForecastRefused):
+        T.load_forecast(p, q=T.admission_line()[0])
+
+
+def _iv_matrix(mod, bars: pd.DataFrame):
+    days, O, H, L, C = mod.day_grid(bars)
+    return days, mod.window_stats(O, H, L, C)
+
+
+VOID_AT, NOT_WALKED_AT = 30, 35                         # indices into the 2021 toy's days
+
+
+def check_frame_and_voids(mod) -> None:
+    """A void day and a non-walked day: the non-walked day is out of the frame; the void day has no forecast in any
+    band and enters no trailing term; `reach` is the earliest frame day read, pushed back by the void day."""
+    days, st = _iv_matrix(mod, bars_2021())
+    kinds = {d: ("f" if i == NOT_WALKED_AT else "n") for i, d in enumerate(days)}
+    voids = {b: [i == VOID_AT for i in range(len(days))] for b in mod.BANDS}
+    t = mod.feature_table(days, st, kinds=kinds, voids=voids)
+    vday, nday = days[VOID_AT].isoformat(), days[NOT_WALKED_AT].isoformat()
+    assert nday not in set(t["date"]) and t["date"].nunique() == len(days) - 1
+    frame = [d for i, d in enumerate(days) if i != NOT_WALKED_AT]
+    assert list(t.drop_duplicates("date")["day_index"]) == list(range(len(frame)))
+    v = t[t["date"] == vday]
+    assert len(v) == len(mod.MARKS) and not v["has_forecast"].any() and v["y"].isna().all()
+    # the trailing terms by hand at one mark, two days after the void day: the void and non-walked days skipped
+    k = list(mod.MARKS).index(1100)
+    fi = frame.index(days[VOID_AT]) + 2
+    iv = np.array([st["iv"][days.index(d), k] for d in frame])
+    iv[frame.index(days[VOID_AT])] = np.nan
+    prior = [j for j in range(fi) if np.isfinite(iv[j])]
+    m22 = iv[prior[-22:]].mean()
+    row = t[(t["day_index"] == fi) & (t["mark"] == 1100)].iloc[0]
+    assert abs(row["x1"] - np.log(iv[prior[-1]] / m22)) < 1e-12
+    assert abs(row["x2"] - np.log(iv[prior[-5:]].mean() / m22)) < 1e-12
+    assert row["reach"] == min(prior[-22], fi - mod.TOD_DAYS) and row["reach"] == fi - 23
+
+
+def check_reach_purges(mod) -> None:
+    """The computed reach drops a training row past the embargo whose 22-day window reaches into the fold because
+    void days follow the fold."""
+    bars = pd.concat([toy("2021-01-04", "2021-04-30"), toy("2022-01-03", "2022-04-29")], ignore_index=True)
+    days, st = _iv_matrix(mod, bars)
+    first22 = next(i for i, d in enumerate(days) if d.year == 2022)
+    voided = set(range(first22, first22 + 3))
+    voids = {b: [i in voided for i in range(len(days))] for b in mod.BANDS}
+    t = mod.feature_table(days, st, voids=voids)
+    train, test = mod.fold_masks(t, 2021)
+    hi = int(t.loc[test, "day_index"].max())
+    after = t["day_index"] == hi + mod.EMBARGO_SESSIONS + 1
+    has = after & t["has_forecast"]
+    assert has.any()
+    assert (t.loc[has, "reach"] <= hi).all() and not (train & after).any()
+    t0 = mod.feature_table(days, st)
+    train0, _ = mod.fold_masks(t0, 2021)
+    assert (train0 & (t0["day_index"] == hi + mod.EMBARGO_SESSIONS + 1) & t0["has_forecast"]).any()
+
+
+def check_bands(mod) -> None:
+    d = date(2021, 3, 15)
+    a = DCal.anchored_starts(d)
+    b = dict(zip(mod.MARKS, mod.bands_for([d])[0]))
+    name = lambda s: mod.BANDS[b[s]]  # noqa: E731
+    assert name(a["asia"] - 5) == "evening" and name(a["asia"]) == "asia"
+    assert name(a["london"] - 5) == "asia" and name(a["london"]) == "london"
+    assert name(925) == "london" and name(930) == "open" and name(960) == "open"
+    assert name(965) == "day1" and name(1025) == "day1" and name(1030) == "day" and name(1325) == "day"
+
+
+def test_the_frame_and_the_void_filter():
+    check_frame_and_voids(T)
+
+
+def test_the_computed_reach_purges_a_row_past_the_embargo():
+    check_reach_purges(T)
+
+
+def test_the_band_boundaries():
+    check_bands(T)
 
 
 _SHIFT_FAST = [("2021-03-15", 600), ("2021-03-15", 1025)]
@@ -566,6 +731,21 @@ MUTANTS = {
         'parts["z"].append(logit(psi(w, eh / (c * c))))', 'parts["z"].append(logit(psi(w, eh / c)))',
         check_brownian),
     "the span guard": ("    if max(s, e) > SEARCH_END:\n", "    if False:\n", check_span),
+    "void days enter the trailing terms": (
+        "ivv = np.where(void | ~(iv > 0), np.nan, iv)", "ivv = np.where(~(iv > 0), np.nan, iv)",
+        check_frame_and_voids),
+    "void days get a forecast": (
+        "(~need3 | np.isfinite(x3)) & ~void", "(~need3 | np.isfinite(x3))", check_frame_and_voids),
+    "the kinds frame ignored": (
+        "keep = np.array([kinds is None or kinds.get(d) in WALKED_KINDS for d in days], dtype=bool)",
+        "keep = np.ones(len(days), dtype=bool)", check_frame_and_voids),
+    "reach is the day before": (
+        "reach = np.where(reach22 >= 0, np.minimum(reach22, di - TOD_DAYS), -1)", "reach = di - 1",
+        check_frame_and_voids),
+    "reach ignores the 22-day window": (
+        "reach = np.where(reach22 >= 0, np.minimum(reach22, di - TOD_DAYS), -1)",
+        "reach = np.where(reach22 >= 0, di - TOD_DAYS, -1)", check_reach_purges),
+    "the 09:00 mark in day1": ("MARKS <= OPEN_LAST,", "MARKS < OPEN_LAST,", check_bands),
 }
 
 
@@ -580,7 +760,13 @@ def test_mutants_are_caught(name):
 
 
 @pytest.mark.parametrize("old,new", [('if m.get("sha256") != sha:', "if False:"),
-                                     ('if not cc["beta"] > 0:', "if False:")])
+                                     ('if not cc["beta"] > 0:', "if False:"),
+                                     ("differ = sorted(k for k in want if k not in NOT_COMPARED and par.get(k) != want[k])",
+                                      "differ = []"),
+                                     ("        cp = _commit_problem(m.get(\"git_commit\"), Path(repo))\n",
+                                      "        cp = None\n"),
+                                     ("    if set(frame[\"fold\"]) != folds | {OOF, FINAL}:",
+                                      "    if False:")])
 def test_mutant_loader_checks_are_caught(tmp_path, old, new):
     check_loader(T, tmp_path / "real")
     m = mutant(old, new)
