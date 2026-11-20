@@ -54,7 +54,11 @@ older era is used (Stage 2 D-271's era rule) before any of it is read.
 
 ## Item 9 -- memory for heavy runs
 
-Nothing is required. If convenient, before leaving the machine for a while, close idle applications (spare editor
+**Needed now (2026-11-20, E-244):** the machine has under 1 GB of memory free, and every commit's test run needs 1.5 GB
+and every heavy run 1.5 to 3 GB, so the work is stalled. What holds it, none of it this project's: WSL / Docker (about
+3 GB), the Campaign Studio server (`scripts/serve.py` of "Stage 2C - Campaign Studio", about 2.8 GB), other Claude
+sessions and editor windows, Discord, Steam, the ChatGPT app and browser tabs. Closing whichever you are not using
+frees it; nothing of this project needs any of them. Otherwise, nothing is required. If convenient, before leaving the machine for a while, close idle applications (spare editor
 windows, games, WSL, browser tabs) or tell any session the hours the machine is usually idle; heavy runs are then
 scheduled into them. A heavy run never starts without the memory it needs.
 

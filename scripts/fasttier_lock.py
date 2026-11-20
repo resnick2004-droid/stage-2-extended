@@ -9,8 +9,13 @@ once committed at the same moment, their fast tiers ran side by side, free memor
 of `MemoryError`, OpenBLAS allocation errors and WinError 1455, forcing 30-40 minute reruns. The hook now runs its
 pytest through `run`, which:
 
-1. **takes the lock** -- the file `%LOCALAPPDATA%\\stage2-extended-fasttier.lock` (machine-wide, never on OneDrive),
-   created atomically (`O_CREAT | O_EXCL`), holding the holder's tree, pid, host, start and a random token;
+1. **takes a slot of the lock** -- the file `%LOCALAPPDATA%\\stage2-extended-fasttier.lock` (machine-wide, never on
+   OneDrive), created atomically (`O_CREAT | O_EXCL`), holding the holder's tree, pid, host, start, slot and a random
+   token. **Up to MAX_SLOTS fast tiers run at once** (Q-174; `S2X_FASTTIER_SLOTS`, default 2): slot 0 is that file
+   (the one a tree without Q-174 contends for), slot i is `<lock>.slot<i>`, each with its own record, heartbeat,
+   takeover and release. The head of the line takes a free slot when none is running, or when available memory is at
+   least 1.5 GB plus SLOT_RESERVE_GB (2.5 GB, a measured fast tier's peak with a margin; SLOT_RESERVE_SOURCE) for every
+   slot running -- otherwise it keeps its place and waits, so with one slot's worth of memory nothing changes;
 2. **waits for a live holder, first come first served** (Q-165), polling every 30 s and printing one line a minute
    with its place in line: on arrival a waiter takes a ticket -- a file created atomically in the queue directory
    beside the lock (`<lock>.queue/`), named by its arrival time, pid and token -- and takes the lock only while its
@@ -29,8 +34,12 @@ pytest through `run`, which:
 6. **releases on every exit path** -- success, failure, an exception, Ctrl+C, SIGTERM/SIGBREAK -- and only its own
    lock (the token must match). A hard kill leaves the file behind; the next hook sees the dead pid and takes over.
 
-The whole wait (lock and memory together) is bounded by 3 hours; at the bound `run` prints FAILED with the holder and
-exits 75, and the hook fails. It never passes silently. What the hook checks is unchanged: this only orders the runs.
+The wait is bounded by 3 hours **of a line that does not move** (Q-174): the waiter's timer restarts whenever the jobs
+holding the slots change (a holder leaves or a new one takes a slot; a heartbeat under the same token is the same job),
+so a waiter behind a long, advancing line waits as long as the line takes, while a stuck live holder still runs the cap
+out (and a dead or 2-hour-old one is taken over, as before). The memory wait, once a slot is held, has its own 3-hour
+bound. At a bound `run` prints FAILED with the holder and exits 75, and the hook fails. It never passes silently. What
+the hook checks is unchanged: this only orders the runs.
 
 Not the heavy lock: `scripts/run_lock.py` (`run.lock`, one heavy run at a time) is never stolen; this one guards a
 minutes-long test run whose holder can crash, so a dead or overdue holder is taken over.
@@ -67,6 +76,18 @@ GUARD_GRACE_S = 60               # a takeover guard older than this was left by 
 LOCK_NAME = "stage2-extended-fasttier.lock"
 ENV_TOKEN = "S2X_FASTTIER_TOKEN"
 ENV_TEE = "S2X_FASTTIER_TEE"     # Q-161: a file the command's output is copied into (the hook's verdict reads its pass line)
+ENV_SLOTS = "S2X_FASTTIER_SLOTS"  # Q-174: how many fast tiers may run at once (default DEFAULT_SLOTS, at least 1)
+DEFAULT_SLOTS = 2
+#: Q-174: a running fast tier's peak memory, and the reserve declared from it. A further slot opens only while available
+#: memory >= MIN_FREE_GB + SLOT_RESERVE_GB for every slot already running (so a second slot needs 4.0 GB beside one).
+MEASURED_PEAK_GB = 2.26
+SLOT_RESERVE_GB = 2.5
+SLOT_RESERVE_SOURCE = (
+    "scripts/tree_peak_memory.py --attach on the main tree's own pre-commit fast tier, 2026-11-20 11:07:54-11:45:55Z "
+    "(2230 samples at 1 s over the wrapper, pytest and every child): peak tree working set 2.257 GB (private commit "
+    "5.385 GB, up to 91 processes; machine-wide available memory fell to 0.018 GB). The reserve is that peak rounded up "
+    "with about 10 % for spikes between samples; one full run measured (a second, partial, peaked lower)."
+)
 EXIT_TIMEOUT = 75                # EX_TEMPFAIL: the wait ran out
 EXIT_LOST = 76                   # the lock was taken from this holder before pytest started
 
@@ -86,6 +107,36 @@ class LockLost(RuntimeError):
 class Holder:
     token: str
     record: dict
+    path: Path | None = None           # the slot file this holder holds (Q-174)
+
+
+# ------------------------------------------------------------------------------------------------ the slots (Q-174)
+
+def _slots_from_env() -> int:
+    raw = os.environ.get(ENV_SLOTS, "").strip()
+    try:
+        n = int(raw) if raw else DEFAULT_SLOTS
+    except ValueError:
+        n = DEFAULT_SLOTS
+    return max(1, n)
+
+
+MAX_SLOTS = _slots_from_env()
+
+
+def slot_path(lock: Path, i: int) -> Path:
+    """Slot 0 is the lock file itself -- the one a tree that has not merged Q-174 contends for; slot i is <lock>.slot<i>."""
+    return lock if i == 0 else Path(f"{lock}.slot{i}")
+
+
+def _slot_files(lock: Path, n: int) -> list[Path]:
+    """The first n slots, and any further slot file present (written under a larger setting)."""
+    paths = [slot_path(lock, i) for i in range(n)]
+    for p in sorted(lock.parent.glob(lock.name + ".slot*")):
+        suffix = p.name[len(lock.name) + len(".slot"):]
+        if suffix.isdigit() and p not in paths:
+            paths.append(p)
+    return paths
 
 
 def now() -> datetime:
@@ -296,11 +347,35 @@ def line(q: Path, mine: str, cap_s: float = TIMEOUT_S) -> list[str]:
     return live
 
 
+def _survey(slots: list[Path]) -> tuple[list[Path], dict[Path, str]]:
+    """The free slots (a stale holder taken over, said) and the live holders' raw records, in slot order."""
+    free, held = [], {}
+    for sp in slots:
+        raw = _read_raw(sp)
+        if raw is None:
+            free.append(sp)
+            continue
+        why = stale_reason(sp, raw)
+        if why is not None and _take_over(sp, raw):
+            _say(f"taking over a stale fast-tier lock {sp}: {why}")
+            free.append(sp)
+            continue
+        held[sp] = raw
+    return free, held
+
+
 def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float = POLL_S,
-            sleep: Sleep = time.sleep, monotonic: Clock = time.monotonic) -> Holder:
-    """Take the lock in arrival order (Q-165): wait for a live holder and for every live waiter that arrived earlier,
-    take over a stale holder; WaitTimeout after `timeout_s`. This waiter's ticket is removed on every exit."""
+            sleep: Sleep = time.sleep, monotonic: Clock = time.monotonic, free_gb: Callable = available_gb,
+            max_slots: int | None = None, reserve_gb: float | None = None, min_free_gb: float = MIN_FREE_GB) -> Holder:
+    """Take a slot in arrival order (Q-165, Q-174): wait for every live waiter that arrived earlier; at the head of the
+    line take a free slot when none is running, or when `free_gb()` is at least `min_free_gb` + `reserve_gb` for every
+    slot running; take over a stale holder. WaitTimeout after `timeout_s`. The ticket is removed on every exit."""
+    n_slots = max(1, MAX_SLOTS if max_slots is None else max_slots)
+    reserve = SLOT_RESERVE_GB if reserve_gb is None else reserve_gb
+    slots = [slot_path(path, i) for i in range(n_slots)]
     t0 = monotonic()
+    t_still = t0                                          # when the jobs holding the slots last changed
+    last_jobs: tuple | None = None
     last_print: float | None = None
     token = uuid.uuid4().hex
     q = queue_dir(path)
@@ -312,32 +387,55 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
                 ticket = _make_ticket(q, mine)            # removed under us: back in, at the same place
             ahead = line(q, mine)
             place = ahead.index(mine) + 1 if mine in ahead else 1
+            memory_note = ""
             if place == 1:
-                stamp = now().isoformat()
-                record = {"tree": tree, "pid": os.getpid(), "host": socket.gethostname(), "start": stamp,
-                          "updated": stamp, "phase": "waiting-for-memory", "token": token}
-                if try_create(path, record):
-                    return Holder(token, record)
-                raw = _read_raw(path)
-                if raw is None:
-                    continue                              # released between our create and our read: try again
-                why = stale_reason(path, raw)
-                if why is not None:
-                    if _take_over(path, raw):
-                        _say(f"taking over a stale fast-tier lock {path}: {why}")
-                        continue
+                free, held_raw = _survey(slots)
+                if free:
+                    running = len(held_raw)
+                    ok = running == 0                     # nothing running: today's rule, the memory wait follows
+                    if not ok:
+                        gb = free_gb()
+                        need = min_free_gb + reserve * running
+                        ok = gb is not None and gb >= need
+                        if not ok:
+                            memory_note = (f"; slot {slots.index(free[0]) + 1} of {n_slots} is free but needs "
+                                           f"{need:.1f} GB available beside {running} running "
+                                           f"({'memory unknown' if gb is None else f'{gb:.1f} GB now'})")
+                    if ok:
+                        for sp in free:
+                            stamp = now().isoformat()
+                            record = {"tree": tree, "pid": os.getpid(), "host": socket.gethostname(), "start": stamp,
+                                      "updated": stamp, "phase": "waiting-for-memory", "token": token,
+                                      "slot": slots.index(sp)}
+                            if try_create(sp, record):
+                                return Holder(token, record, sp)
+                        continue                          # every free slot was taken under us: look again
+                raws = [held_raw[sp] for sp in slots if sp in held_raw]
             else:
-                raw = _read_raw(path)
-            held = describe(_parse(raw)) if raw else "nobody (an earlier waiter is taking it)"
-            elapsed = monotonic() - t0
-            if elapsed >= timeout_s:
+                raws = [r for r in (_read_raw(sp) for sp in slots) if r]
+            held = "; ".join(describe(_parse(r)) for r in raws) if raws else "nobody (an earlier waiter is taking it)"
+            held += memory_note
+            # The cap counts only a line that does not move: the timer restarts whenever the set of jobs holding the
+            # slots changes (a holder leaves, a new one takes a slot -- each job has its own token). A holder's
+            # heartbeat under the same token is the same job; a stuck holder still runs the cap out, and a dead or
+            # 2-hour-old one is taken over as before.
+            jobs = tuple(sorted(((_parse(r) or {}).get("token") or r) for r in raws))
+            if jobs != last_jobs:
+                if last_jobs is not None:
+                    t_still = monotonic()
+                last_jobs = jobs
+            still = monotonic() - t_still
+            total = monotonic() - t0
+            if still >= timeout_s:
                 raise WaitTimeout(f"FAILED: the fast-tier lock {path} stayed held by {held} for the whole wait "
-                                  f"({timeout_s / 60:.0f} min; place {place} of {len(ahead)} in line); the fast tier "
-                                  f"did not run and the commit is refused. See `python scripts/fasttier_lock.py "
-                                  f"status`; commit again when it is free.")
+                                  f"({timeout_s / 60:.0f} min without the line moving, {total / 60:.0f} min in all; "
+                                  f"place {place} of {len(ahead)} in line); the fast tier did not run and the commit "
+                                  f"is refused. See `python scripts/fasttier_lock.py status`; commit again when it is "
+                                  f"free.")
             if last_print is None or monotonic() - last_print >= PRINT_EVERY_S:
                 _say(f"fast-tier lock held by {held}; waiting, place {place} of {len(ahead)} in line "
-                     f"({elapsed / 60:.0f} of {timeout_s / 60:.0f} min)")
+                     f"({total / 60:.0f} min in all; {still / 60:.0f} of {timeout_s / 60:.0f} min without the line "
+                     f"moving)")
                 last_print = monotonic()
             sleep(poll_s)
     finally:
@@ -419,46 +517,55 @@ def _subprocess_runner(cmd: list[str], env: dict, tee: str | None = None) -> int
 def run(cmd: list[str], lock: Path, tree: str, min_free_gb: float = MIN_FREE_GB, timeout_s: float = TIMEOUT_S,
         poll_s: float = POLL_S, free_gb: Callable = available_gb, sleep: Sleep = time.sleep,
         monotonic: Clock = time.monotonic, runner: Callable[[list[str], dict], int] = _subprocess_runner,
-        env: dict | None = None) -> int:
-    """Run `cmd` under the lock, after the memory wait; its exit code. Raises WaitTimeout / LockLost.
+        env: dict | None = None, max_slots: int | None = None, reserve_gb: float | None = None) -> int:
+    """Run `cmd` in a slot of the lock, after the memory wait; its exit code. Raises WaitTimeout / LockLost.
 
     `S2X_FASTTIER_TEE` in the environment names a file the command's output is copied into (Q-161); it is removed from
     the command's own environment, so a nested run never writes into the outer hook's file."""
     env = dict(os.environ if env is None else env)
     tee = env.pop(ENV_TEE, None) or None
+    n_slots = max(1, MAX_SLOTS if max_slots is None else max_slots)
 
     def _run(c: list[str], e: dict) -> int:
         return _subprocess_runner(c, e, tee) if runner is _subprocess_runner else runner(c, e)
 
     inherited = env.get(ENV_TOKEN)
     if inherited:
-        rec = _parse(_read_raw(lock) or "")
-        if rec is not None and rec.get("token") == inherited:
-            _say("the fast-tier lock is already held by the run this commit is nested in; running under it")
-            return _run(cmd, env)
-    t0 = monotonic()
-    holder = acquire(lock, tree, timeout_s=timeout_s, poll_s=poll_s, sleep=sleep, monotonic=monotonic)
+        for sp in _slot_files(lock, n_slots):
+            rec = _parse(_read_raw(sp) or "")
+            if rec is not None and rec.get("token") == inherited:
+                _say("the fast-tier lock is already held by the run this commit is nested in; running under it")
+                return _run(cmd, env)
+    holder = acquire(lock, tree, timeout_s=timeout_s, poll_s=poll_s, sleep=sleep, monotonic=monotonic,
+                     free_gb=free_gb, max_slots=n_slots, reserve_gb=reserve_gb, min_free_gb=min_free_gb)
+    sp = holder.path or lock
+    t0 = monotonic()                                      # the memory wait has its own cap, from the slot's taking
     try:
-        gb = wait_for_memory(lock, holder, min_free_gb, timeout_s, free_gb, poll_s, sleep, monotonic, t0)
-        if not refresh(lock, holder, "fast-tier"):
-            raise LockLost(f"FAILED: the fast-tier lock {lock} was taken from this hook before its fast tier started")
-        _say(f"fast-tier lock taken ({lock}; {'memory unknown' if gb is None else f'{gb:.1f} GB free'})")
+        gb = wait_for_memory(sp, holder, min_free_gb, timeout_s, free_gb, poll_s, sleep, monotonic, t0)
+        if not refresh(sp, holder, "fast-tier"):
+            raise LockLost(f"FAILED: the fast-tier lock {sp} was taken from this hook before its fast tier started")
+        _say(f"fast-tier lock taken ({sp}; slot {holder.record.get('slot', 0) + 1} of {n_slots}; "
+             f"{'memory unknown' if gb is None else f'{gb:.1f} GB free'})")
         env[ENV_TOKEN] = holder.token
         return _run(cmd, env)
     finally:
-        release(lock, holder)
+        release(sp, holder)
 
 
 def status(lock: Path) -> int:
-    raw = _read_raw(lock)
     gb = available_gb()
     mem = "memory unknown" if gb is None else f"{gb:.1f} GB available"
-    if raw is None:
-        print(f"{lock}: FREE  ({mem})")
-        return 0
-    why = stale_reason(lock, raw)
-    print(f"{lock}: HELD by {describe(_parse(raw))}" + (f"  ** STALE: {why}; the next hook takes it over **"
-                                                         if why else "") + f"  ({mem})")
+    slots = _slot_files(lock, MAX_SLOTS)
+    print(f"fast-tier lock: {MAX_SLOTS} slot(s) ({ENV_SLOTS}); a further slot opens at {MIN_FREE_GB:.1f} GB + "
+          f"{SLOT_RESERVE_GB:.1f} GB per running slot available  ({mem})")
+    for i, sp in enumerate(slots):
+        raw = _read_raw(sp)
+        if raw is None:
+            print(f"{sp}: slot {i + 1} of {len(slots)}: FREE")
+            continue
+        why = stale_reason(sp, raw)
+        print(f"{sp}: slot {i + 1} of {len(slots)}: HELD by {describe(_parse(raw))}"
+              + (f"  ** STALE: {why}; the next hook takes it over **" if why else ""))
     q = queue_dir(lock)
     names = sorted(t.name for t in q.iterdir()) if q.is_dir() else []
     place = 0
