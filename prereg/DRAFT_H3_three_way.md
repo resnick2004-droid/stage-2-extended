@@ -1,8 +1,9 @@
 # H3: the three-way test's calibration, power check and stress, declared (a draft)
 
-**Status: a draft, second text (corrective cycle 1), for the red team's re-read.** The first text (746a245) was read
-in `docs/reviews/BUILD_W32_H3_2026-11-19.md` (blocked: B-1 to B-3, seventeen minors, five notes); the lead's rulings
-on it are carried here, and Appendix D maps every finding to its answer. Copied from `prereg/TEMPLATE_family.md`'s form and
+**Status: a draft, third text (corrective cycle 2), for the red team's re-read.** The first text (746a245) was read
+in `docs/reviews/BUILD_W32_H3_2026-11-19.md` (blocked: B-1 to B-3, seventeen minors, five notes); the second (adedf7f)
+in `docs/reviews/REREADS_W32_W34_O7_2026-11-20.md` (blocked: RB-1; two minors, two notes). The lead's rulings on both are
+carried here, and Appendix D maps every finding of both reads to its answer. Copied from `prereg/TEMPLATE_family.md`'s form and
 adapted: H3 is a calibration of the deciding rule, not a family of trades, so it takes **no k**, names no cell that
 reaches a judgement of a design, and reads **no held-out session**. It is pinned (by the sha256 of its LF text, in the
 lead's row) only after the red team's read; nothing declared is edited after that -- a change is a new declaration.
@@ -122,9 +123,11 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 | pi\* | the power target | fixed | `family_stats.MDL_POWER` |
 | delta\* | the size that matters | fixed, the lead's (O-3, Wave 4.2) | a parameter of H3-D, set before it |
 | the race's loss barrier | the stop exit's own cost in the race (the third read's M-4) | fixed | L = min(l, c - x_stop), c the cushion after the entry cost, x_stop the stop exit's own cost (commission plus declared stop slippage); p = L / (L + g); +g less x_target, else -L less x_stop |
-| the race's barrier | fractional, never rounded (the lead's ruling on B-1) | fixed | L = min(l, c - x_stop) as a fraction of a tick, `adapter.BinaryDraw`'s form (CHARTER 3.2; the note's 1.1); a cushion-bound loss ends exactly on the floor and the account fails and is replaced; no trade where the room left is at most $1e-6 (`three_way_redraw.LATTICE` = None; inward rounding is N-4's rule for the shared path only) |
-| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | the search template's house form (wt/wt-lit, with its red team) with the lead's ruling on its residual: lattice step s dividing l and g; the floor-side barrier as the race's with the larger of x_stop and the flatten cost, **fractional**; **inside the last lattice step before that barrier the walk resolves by a driftless two-point race between the barrier and the lattice point one step up** (to the barrier with probability s / (s + rho), rho the residual), so no account is stranded below a tick and gross stays zero; n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost; read in chunks of 32 steps for the lanes still walking (`three_way_journey.WALK_CHUNK`; the same outcome on the same uniforms) |
-| the exit-state map | which terminal state takes which law | fixed | `three_way_redraw.EXIT_LAW` (R-10's table); any other state refused |
+| the race's barrier | fractional, never rounded (the lead's ruling on B-1) | fixed | L = min(l, c - x_stop) as a fraction of a tick, `adapter.BinaryDraw`'s form (CHARTER 3.2; the note's 1.1); a cushion-bound loss ends exactly on the floor and the account fails and is replaced (`three_way_redraw.LATTICE` = None; inward rounding is N-4's rule for the shared path only) |
+| the take | decided at the fill (the template's N-1; its read's m-1 on the runner) | fixed | a trade is taken when L_fill = min(l, c - max(x_stop, x_flat)), unrounded, is above $1e-6 of room, for every exit law: it reads the bracket, the room after the entry cost and both exit costs, never the run's exit (`three_way_journey._l_fill`) |
+| a lane that cannot take the trade | the lead's rulings on RB-1 and on the template read's B-2 | fixed | where the floor's room binds, the account **fails at the fill** -- its balance taken to the floor, a breach, replaced at that close, **counted apart** (`Records.fill_failures`, reported beside) -- the race's own limit as its barrier goes to zero, and the vendored engine's end for it (its losing branch, held equal lane for lane by the build's test; the engine's winning branch at a cost-sized room, of probability at most the costs over the costs and the target, is not kept); **a room between e + x_stop and e + max(x_stop, x_flat) is a certain failure, though a race at L_race > 0 exists there -- the conservative choice, as E-247 rules it**; where the daily loss limit's room binds, the day ends, and a declared daily limit at or below a trade's costs (at the arm's worse fill) is refused before any draw (`three_way_journey.check_costs`). No account is left alive with room it can never trade (`three_way_journey._classes`) |
+| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | the search template's house form (wt/wt-lit, with its red team) with the lead's ruling on its residual: lattice step s dividing l and g; the floor-side barrier **the race's own, L = min(l, c - x_stop)**, **fractional** (the lead's ruling on RB-1: the red team's remedy, first form, so a cushion-bound stop ends exactly on the floor and none is left x_flat - x_stop above it), at or above L_fill; its target the as-placed G = min(g, level) (fractional under a rule's profit level); **inside the last lattice step before either barrier the walk resolves by a driftless two-point race between the barrier and the lattice point one step back** (one uniform a step, up where u < p_up: s / (s + rho) below the target, rho / (s + rho) above the floor-side barrier, rho the residual), so each barrier is reached exactly and gross stays zero; **a flatten exit whose cost would pass the floor is clipped at the floor and fails the account, as the engine clips** (the time exit lies above -L, so the clip takes at most x_flat - x_stop); at most 1024 steps a walk (`three_way_journey.WALK_MAX`, the range the generator is admitted on; S1's lattice step the smallest common divisor of the bracket that keeps a walk within it); n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost; read in chunks of 32 steps for the lanes still walking (`three_way_journey.WALK_CHUNK`; the same outcome on the same uniforms) |
+| the exit-state map | which terminal state takes which law | fixed | `three_way_redraw.EXIT_LAW` (R-10's table) with **the profit-level row** (the template read's m-2): a rule's exit at a profit level races at the as-placed target G = min(g, (level + entry + x_target) / tick dollars), **the level booked as the vendored engine books its need: the net dollars the trade must make, every cost included** (`lockstep.CombineAccount.need_to_pass`, `vendor/stage2/propedge/campaign/lockstep.py` l.408-419; the need-aware draw "settles ... at exactly the need", `sizing.py` l.380-388), so a win at the level books exactly +level; never the walk; the walk only for a real time limit; any other state refused |
 | the stress arms | CHARTER 3.8 (c)'s fill and supply stress | fixed, declared and counted | measure 29's +1 and +2 ticks on every fill (the entry and each exit), and measure 28's 10 % of signals missed (the red team's m-7), each on the design and every baseline alike: 3 arms a compared design (`three_way_runner.stress_arms`, `stress_cells`) |
 | the coin generator | the declared law, computed on arrays (Q-170) | fixed | `three_way_fastkeys`: SeedSequence's hash and numpy's Philox (4x64, 10 rounds) vectorised, admitted because its tests hold it bit for bit equal to the scalar path on 10^5 random keys of every field's range, the boundary words, every draw kind and key kind, and every output a walk reads up to 1024 steps; nothing of the law changes |
 | the key guard | 2.3's refusal, at run-time cost (the lead's ruling on B-2) | fixed | N-2 checked on every key at construction, unstored; distinctness by the injective packing (one length a kind, distinct nonzero tags, every word below 2^32, the moment's fixed radices; `three_way_keys.packing_problems`), the chance two distinct keys share a 128-bit state at most n^2 / 2^129 (`collision_bound`, printed beside); the stored `generate_state` comparison on a declared sample: every key of a plan's first start under its first 64 seed indices across every arm (`KeyGuard.sampled`, `SAMPLE_SEEDS`), within 1.25 GB a worker at every declared size (tested); the disjoint null's exact check on its two seed-index sets |
@@ -165,8 +168,12 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 
 **The reading.** The martingale-outcome reading (CHARTER 3.2), identically for every arm: fills, timing and costs as
 run; each trade's outcome redrawn by the race (or R-10's walk), **the stop exit's own cost in the race** (section 7).
-Every trade's gross expectation is exactly zero and its net exactly minus its expected costs; a costed loss lands at
-most on the floor, so the engine's clip never binds (`three_way_redraw.race_net`, `walk_net`, exact-fraction tests).
+**Every trade taken has gross expectation exactly zero**, the failures at the fill counted apart and reported beside
+(`three_way_runner.fill_failures`; the exact program keeps their expected count). A race's net is exactly minus its
+expected costs and its costed loss lands at most on the floor. The engine's clip binds only where the engine's own
+would: at a walk's flatten whose cost would pass the floor or the daily limit (by at most x_flat - x_stop), and at an
+account failed at the fill, whose loss is its whole room, at most the entry and the larger exit cost
+(`three_way_redraw.race_net`, `walk_net`, exact-fraction tests).
 
 **The coin field.** Every random element of a journey is a fixed function of the coin field: the side, the race's
 uniform, the walk's steps, measure 28's missed signal, each its own draw kind of the coin key; the denial ladder's
@@ -456,8 +463,8 @@ COST = 2.12
 STOP_SLIP = 5.0
 FLAT_SLIP = 10.0
 TICK = 5.0
-A1_DESIGN = DesignSpec(name='a1_design', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=None, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.12, walk_step=2, latency=5, per_session=3)
-BASELINES = {naive_coin: DesignSpec(name='naive_coin', stream=None, marks=(960, 1080), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=40, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p14: DesignSpec(name='p14', stream=None, marks=(1000), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=50, rr=2.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p15: DesignSpec(name='p15', stream=None, marks=(1020), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=100, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p16: DesignSpec(name='p16', stream=None, marks=(1140), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=150, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3)}
+A1_DESIGN = DesignSpec(name='a1_design', stream='A', marks=(), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=None, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3)
+BASELINES = {naive_coin: DesignSpec(name='naive_coin', stream=None, marks=(960, 1080), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=40, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p14: DesignSpec(name='p14', stream=None, marks=(1000,), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=50, rr=2.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p15: DesignSpec(name='p15', stream=None, marks=(1020,), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=100, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3), p16: DesignSpec(name='p16', stream=None, marks=(1140,), k_stop=6.0, stop_lo=8, stop_hi=120, fixed_stop=150, rr=1.0, contracts=1, tick_value=5.0, entry_cost=2.12, x_target=2.12, x_stop=7.12, x_flat=12.120000000000001, walk_step=2, latency=5, per_session=3)}
 DISJOINT = ((0, 5000), (5000, 10000))
 J_PRIME = 100
 LEVELS = (0.05, 0.01, 0.001)
@@ -509,3 +516,36 @@ SMALLER_J_DRAWS = 2000
 | n-3 | H7's rows are one firm's; the joint held-out test across firms costs more and is its own declaration's | Appendix A's H7 rows, labelled |
 | n-4 | the vendored-equality test drives the journey's race step | section 16 |
 | n-5 | the as-walked reading labelled beside wherever printed, its stop-side cost on every exit | `three_way_journey._trade_mc` |
+
+`docs/reviews/REREADS_W32_W34_O7_2026-11-20.md` on adedf7f; the lead's rulings of corrective cycle 2.
+
+| finding | the answer | where |
+|---|---|---|
+| RB-1 | a lane that cannot take its trade (room above $1e-6 but L_fill at most zero) fails at the fill where its floor binds -- to the floor, breached, replaced, counted apart (the lead's ruling, with the template read's B-2) -- and ends its day where the daily limit binds; R-10's barrier the race's own (x_stop), the flatten clipped at the floor; the exact program shares the fix; the red team's toy at H3-A's costs leaves no unit in the window past a trade; the failed lane equals the engine's losing branch on the same uniforms | section 7; `three_way_journey._classes`, `three_way_redraw.walk_barriers`; `test_rb1_...`, `test_b2_...`, `tests/three_way_vendored_draw.py`; mutants RB1, RB1a to RB1d, FF |
+| rm-1 | the harness binds the real exception classes into each mutant and counts only an assertion, a pytest failure or the build's own refusal; every mutant has an identity control that must survive; R2, N8, N3 and M10 are killed by the real mutants | `tests/test_three_way_mutations.py` |
+| rm-2 | a one-element tuple printed as Python writes it | `three_way_h3a._show`; Appendix C |
+| rn-1 | A1's costs built by the baselines' own expression | `three_way_h3a.A1_DESIGN` |
+| rn-2 | a walk above 1024 steps refused; S1's step keeps every walk within it | `three_way_journey.WALK_MAX`, `three_way_s1.walk_step_for` |
+
+The template's read (`docs/reviews/TEMPLATE_AGENTS_v3_2026-11-20.md`, 81739db) on this runner; the lead's addition to
+corrective cycle 2 (the runner's form governs, E-237).
+
+| finding | the answer | where |
+|---|---|---|
+| TB-2 | an account that cannot take a trade fails at the fill where its floor binds (counted apart), its day ends where the daily limit binds; exact at e + max x - epsilon (fails) and + epsilon (races) | `three_way_journey._classes`; `test_b2_an_account_below_its_costs_...`; mutants RB1, FF |
+| Tm-1 | the take decided at the fill by L_fill, for every exit law | `three_way_journey._l_fill`; `test_m1_the_take_does_not_read_the_exit`; mutant TF |
+| Tm-2 | the profit-level row (the race at the level's as-placed target); the walk only for a real time limit; a fractional target allowed in the walk, raced exactly at its last step | `three_way_redraw.EXIT_LAW`, `walk_law`; `test_m2_a_profit_level_races_at_min_g_level`, `test_m2_a_fractional_target_in_the_walk_is_raced_exactly`; mutants PL, PLg |
+
+The third re-read (`docs/reviews/BUILD_W32_v3_2026-11-20.md`; stands with readings, no blocker); the lead's follow-up.
+
+| finding | the answer | where |
+|---|---|---|
+| v3 m-1 | the mutation harness patches each mutant through its own `MonkeyPatch`, so a check's own undo never undoes it; a walk-only reversion of the failure at the fill is killed | `tests/test_three_way_mutations.py`; mutant RB1w |
+| v3 m-2 | the forced-loss test reaches failures at the fill for both laws (a floor nine full losses and $10 deep) and asserts the clip | `test_rb1_forced_losses_...`; mutant RB1e |
+| v3 m-3 | the level booked as the engine books its need, net dollars of the trade (`lockstep.need_to_pass`; `sizing`'s "exactly the need"), in code and here | `three_way_journey.Trade.target`; `test_m2_a_profit_level_...` (a level at the need passes); mutant LVg |
+| v3 m-4 | the journey's walk with a level, and the walk's clip where the daily limit binds, each tested in the simulation and the exact program | `test_m4_...`; mutants WG, WGd, WD |
+| v3 m-5 | the stale sentences corrected: the take at the fill, the clip's two places; here, every trade *taken* has gross zero, the failures at the fill counted apart | `three_way_redraw`, `three_way_journey._settle`; section 9 |
+| v3 n-1 | a room between e + x_stop and e + max(x_stop, x_flat) is a certain failure, labelled the conservative choice (E-247) | section 7 |
+| v3 n-2 | a declared daily limit at or below a trade's costs refused before any draw | `three_way_journey.check_costs`; mutant N2c |
+| v3 n-3 | the failures at the fill printed beside each arm (`fill_failures`, `paired`'s `beside`) and kept in expectation through the exact program's merge | `three_way_runner.fill_failures`, `three_way_journey._merge`; mutant N3m |
+| v3 n-4 | the sliver of room at or below EPS fails at the fill too (the condition dropped) | `three_way_journey._classes` |

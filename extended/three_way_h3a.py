@@ -50,7 +50,7 @@ BUDGET = 1000.0
 #: costs a contract (stylised): a side's commission, the stop one tick and the flatten two ticks of slippage at $5
 COST, STOP_SLIP, FLAT_SLIP, TICK = 2.12, 5.0, 10.0, 5.0
 A1_DESIGN = S1.DesignSpec("a1_design", stream="A", k_stop=6.0, stop_lo=8, stop_hi=120, rr=1.0, contracts=1,
-                          tick_value=TICK, entry_cost=COST, x_target=COST, x_stop=7.12, x_flat=12.12, walk_step=2,
+                          tick_value=TICK, entry_cost=COST, x_target=COST, x_stop=COST + STOP_SLIP, x_flat=COST + FLAT_SLIP, walk_step=2,
                           latency=5, per_session=3)
 #: the baselines' toys on S1, under the design's cost convention (every side the commission, the stop one tick and the
 #: flatten two ticks of slippage)
@@ -90,6 +90,8 @@ def _show(v) -> str:
     if isinstance(v, dict):
         return "{" + ", ".join(f"{k}: {_show(x)}" for k, x in v.items()) + "}"
     if isinstance(v, tuple):
+        if len(v) == 1:
+            return "(" + _show(v[0]) + ",)"                  # a one-element tuple as Python writes it (rm-2)
         return "(" + ", ".join(_show(x) for x in v) + ")"
     return repr(v)
 

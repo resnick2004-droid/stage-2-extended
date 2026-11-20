@@ -129,6 +129,14 @@ def run(schedule: J.Schedule, rules: J.ToyRules, plan: Plan, arm: J.ArmSpec = J.
                        guard=guard) for s in plan.starts]
 
 
+def fill_failures(records: Sequence[J.Records]) -> dict[str, float]:
+    """The failures at the fill, reported beside every reading (n-3; the draft's row of a lane that cannot take its
+    trade): their mean a unit, the share of units with at least one, and the total."""
+    f = np.concatenate([np.asarray(r.fill_failures, float) for r in records])
+    return {"fill_failures_per_unit": float(f.mean()) if f.size else 0.0,
+            "share_of_units_with_one": float((f > 0).mean()) if f.size else 0.0, "fill_failures": float(f.sum())}
+
+
 def matrix(records: Sequence[J.Records], value: ValueFn) -> np.ndarray:
     """x[s, c]: one row a start (in the plan's order), one column a seed."""
     x = np.vstack([np.asarray(value(r), float) for r in records])
@@ -139,7 +147,7 @@ def matrix(records: Sequence[J.Records], value: ValueFn) -> np.ndarray:
 
 def paired(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.ToyRules, plan: Plan, value: ValueFn,
            *, design_arm: J.ArmSpec = J.ArmSpec(), base_arm: J.ArmSpec = J.ArmSpec(),
-           guard: K.KeyGuard | None = None) -> tuple[dict[str, np.ndarray], K.KeyGuard]:
+           guard: K.KeyGuard | None = None, beside: dict | None = None) -> tuple[dict[str, np.ndarray], K.KeyGuard]:
     """x[s, c] for the design and each baseline on the same units and keys. Refused: a baseline set other than the
     four, a design named as a baseline, and arms whose convention differs (twin, reading, worse fill, missed share or
     denial) -- only P3's plant, a design-arm device of the power check, may differ."""
@@ -153,9 +161,13 @@ def paired(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.Toy
     if base_arm.plant_eps:
         raise ValueError("a plant is the design's arm only")
     guard = guard if guard is not None else K.KeyGuard.sampled(plan.starts, plan.seed_indices)
-    out = {design.name: matrix(run(design, rules, plan, design_arm, guard), value)}
-    for name in BASELINES:
-        out[name] = matrix(run(baselines[name], rules, plan, base_arm, guard), value)
+    out = {}
+    for name, sch, arm in ((design.name, design, design_arm),
+                           *((b, baselines[b], base_arm) for b in BASELINES)):
+        recs = run(sch, rules, plan, arm, guard)
+        out[name] = matrix(recs, value)
+        if beside is not None:                              # n-3: the failures at the fill, beside each arm's matrix
+            beside[name] = fill_failures(recs)
     return out, guard
 
 
@@ -226,5 +238,5 @@ def seed_sets(n_seeds: int, m: int) -> list[np.ndarray]:
 
 
 __all__ = ["BASELINES", "HELD_OUT_FIRST", "CONFIRMATION_FIRST", "HeldOutRefused", "Plan", "ValueFn", "p_b", "run",
-           "matrix", "paired", "antithetic", "disjoint", "exact_centres", "MISSED_SHARE", "stress_arms",
+           "fill_failures", "matrix", "paired", "antithetic", "disjoint", "exact_centres", "MISSED_SHARE", "stress_arms",
            "stress_cells", "stress", "seed_sets"]

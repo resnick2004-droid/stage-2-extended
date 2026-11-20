@@ -75,7 +75,37 @@ def main() -> None:
         J._trade_mc(L, t, rules, J.ArmSpec(), coins)
         j_equal &= bool(np.allclose(L.bal - before, theirs, rtol=0, atol=1e-9))
         j_n += 400
-    print(json.dumps({"equal": equal, "n": n, "journey_equal": j_equal, "journey_n": j_n}))
+    # RB-1 and B-2: a lane whose room is above EPS but at most the trade's costs. The lead's ruling books it as failed at
+    # the fill (the race's limit as its barrier goes to zero). The engine races the room it is handed (`lockstep.py`:
+    # the draw is called with `room`), books the trade's costs on its exit, clips at the cushion (`max(pnl, -cushion)`)
+    # and fails the account at B <= F + EPS: on its losing branch (here forced: every uniform above the race's p) its
+    # booked change and breach are the journey's, lane for lane. Its winning branch, of probability c' / (c' + W) with
+    # c' at most the costs, is the one the ruling does not keep
+    c_equal, c_n = True, 0
+    e, xt, xs = 2.12, 2.12, 7.12
+    for j, (risk, rr) in enumerate(((200.0, 1.0), (40.0, 1.5), (500.0, 0.5))):
+        u = np.full(400, 1.0 - 2.0 ** -53)                          # the engine's losing branch
+        room = np.linspace(0.01, e + xs, 400)                       # every room in the window
+        draw = RandomDraw(Policy(rr=rr, risk=risk), 0.0, Given(u), "truncate", "drift")
+        raw = draw(400, 0, 0, room)
+        win = raw > 0
+        theirs = np.maximum(raw - e - np.where(win, xt, xs), -room)  # the costs, then the engine's clip
+        their_fail = (room + theirs) <= J.EPS
+        tick, l = 5.0, risk / 5.0
+        t = J.Trade(session=0, decision=900, entry=905, exit=950, exit_reason="target", g=int(round(rr * l)),
+                    l=int(round(l)), tick_value=tick, entry_cost=e, x_target=xt, x_stop=xs)
+        L = J.fresh(400, rules)
+        L.bal = room - rules.mll
+        L.day, L.dead, L.stopped = np.zeros(400), np.zeros(400, bool), np.zeros(400, bool)
+        coins = J.CoinLanes(unit.seed, unit.part, 0, 0, range(400), None, False)
+        coins.coin = lambda t_, kind, n_=1, lanes=None, first=0, record=True, _u=u: _u[:, None]
+        before = L.bal.copy()
+        J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+        c_equal &= bool(np.allclose(L.bal - before, theirs, rtol=0, atol=1e-9)) and bool(np.array_equal(L.dead,
+                                                                                                    their_fail))
+        c_n += 400
+    print(json.dumps({"equal": equal, "n": n, "journey_equal": j_equal, "journey_n": j_n, "clip_equal": c_equal,
+                      "clip_n": c_n}))
 
 
 if __name__ == "__main__":

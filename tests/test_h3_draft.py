@@ -38,7 +38,9 @@ DRAFT_MARKS = ("<!-- h3-admission: begin -->", "<!-- h3-admission: end -->")
 PLAN_MARKS = ("<!-- h3_plan: begin -->", "<!-- h3_plan: end -->")
 H3A = ROOT / "docs" / "plans" / "scripts" / "three_way" / "h3a_inputs.py"
 H3A_MARKS = ("<!-- h3a_inputs: begin -->", "<!-- h3a_inputs: end -->")
-REVIEW_FINDINGS = (("B-1", "B-2", "B-3") + tuple(f"m-{i}" for i in range(1, 18)) + tuple(f"n-{i}" for i in range(1, 6)))
+REVIEW_FINDINGS = (("B-1", "B-2", "B-3") + tuple(f"m-{i}" for i in range(1, 18)) + tuple(f"n-{i}" for i in range(1, 6))
+                   + ("RB-1", "rm-1", "rm-2", "rn-1", "rn-2", "TB-2", "Tm-1", "Tm-2")
+                   + tuple(f"v3 m-{i}" for i in range(1, 6)) + tuple(f"v3 n-{i}" for i in range(1, 5)))
 
 
 def _lf(p: Path) -> str:
@@ -141,8 +143,13 @@ def test_the_run_plan_is_the_scripts(text: str) -> None:
 
 def test_corrective_cycle_1s_rulings(text: str) -> None:
     flat = _flat(text)
-    for phrase in ("second text (corrective cycle 1)", "fractional, never rounded",
-                   "a driftless two-point race between the barrier and the lattice point one step up",
+    for phrase in ("third text (corrective cycle 2)", "fractional, never rounded",
+                   "**fails at the fill**", "**counted apart**", "L_fill = min(l, c - max(x_stop, x_flat))",
+                   "**the profit-level row**", "(level + entry + x_target) / tick dollars",
+                   "**Every trade taken has gross expectation exactly zero**", "the conservative choice, as E-247",
+                   "the race's own, L = min(l, c - x_stop)", "clipped at the floor and fails the account",
+                   "at most 1024 steps a walk",
+                   "a driftless two-point race between the barrier and the lattice point one step back",
                    "N-2 checked on every key at construction", "n^2 / 2^129", "first 64 seed indices",
                    "within 1.25 GB a worker", "the one-sided check (B-10's form", "never a second margin",
                    "25 % (`three_way_stats.GATE_DENIAL`", "10 % of signals missed", "SMALLER_J_GRID",
@@ -150,6 +157,9 @@ def test_corrective_cycle_1s_rulings(text: str) -> None:
                    "trigger-level", "re-declaring R-10's sampling"):
         assert phrase in flat, phrase
     assert "(c_L + z_pi)" not in flat and "whole ticks (`three_way_redraw.LATTICE` = 1)" not in flat
+    assert "no account is stranded" not in flat and "the larger of x_stop and the flatten cost" not in flat
+    assert "no trade where the room left is at most" not in flat
+    assert "in net ticks" not in flat and "Every trade's gross expectation is exactly zero" not in flat
 
 
 def test_appendix_c_is_the_declared_inputs(text: str) -> None:

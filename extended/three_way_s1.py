@@ -165,15 +165,29 @@ def schedule(spec: DesignSpec, hist: S1History) -> J.Schedule:
             ex = min(entry + max(dur, 1), SESSION_END)
             if ex <= entry:
                 continue
-            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), max(ex - entry, 1), spec.walk_step) if timed else 1
+            step = walk_step_for(spec.walk_step, l, g, v, max(ex - entry, 1)) if timed else spec.walk_step
+            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), max(ex - entry, 1), step) if timed else 1
             c = spec.contracts
             out.append(J.Trade(session=t, decision=a.slot, sub=sub, entry=entry, exit=ex,
                                exit_reason=reason, g=g, l=l, tick_value=spec.tick_value,
                                contracts=c, entry_cost=spec.entry_cost * c, x_target=spec.x_target * c,
-                               x_stop=spec.x_stop * c, x_flat=spec.x_flat * c, walk_step=spec.walk_step,
+                               x_stop=spec.x_stop * c, x_flat=spec.x_flat * c, walk_step=step,
                                walk_n=n_steps))
             busy_until, taken = ex, taken + 1
     return J.Schedule(spec.name, tuple(out))
+
+
+def walk_step_for(base: int, l: int, g: int, v: float, T: float) -> int:
+    """R-10's lattice step on S1 (corrective cycle 2, the red team's rn-2): the smallest common divisor of the stop and
+    the target, at least the design's `walk_step`, at which the walk takes at most `three_way_journey.WALK_MAX` steps
+    -- a rule of the toy generator, fixed here, read from the schedule's own fields."""
+    import math as _m
+
+    gcd = _m.gcd(int(l), int(g))
+    for s in range(int(base), gcd + 1):
+        if gcd % s == 0 and RD.walk_steps(v / _m.sqrt(MINUTE), T, s) <= J.WALK_MAX:
+            return s
+    return gcd
 
 
 def stream_pair(spec: DesignSpec) -> tuple[DesignSpec, DesignSpec]:
@@ -204,4 +218,4 @@ def toy_baselines(tick_value: float = 5.0, cost: float = 0.0, stop_slip: float =
 
 
 __all__ = ["STREAMS", "FIRST_SLOT", "LAST_SLOT", "S1Params", "Arrival", "S1History", "generate", "DesignSpec",
-           "schedule", "stream_pair", "toy_baselines", "SESSION_END", "FLAT_GAP"]
+           "schedule", "walk_step_for", "stream_pair", "toy_baselines", "SESSION_END", "FLAT_GAP"]

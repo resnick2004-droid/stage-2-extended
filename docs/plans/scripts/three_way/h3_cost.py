@@ -60,7 +60,7 @@ SCALAR_KEYS = 3000
 BATCH = 200_000
 LANES = 2000
 WALK_NS = (16, 256)
-CEIL_SHARE, CEIL_N = 0.25, 2048
+CEIL_SHARE, CEIL_N = 0.25, J.WALK_MAX            # a walk is refused above WALK_MAX steps (rn-2)
 MEM_LIMIT_GB = 2.0
 LANE_KEY_BYTES = 9 * 8 + 8 + 8
 

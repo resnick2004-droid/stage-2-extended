@@ -56,6 +56,9 @@ EPS = 1e-6              # a breach: the balance at or below the floor within thi
 #: R-10's walk is read this many steps at a time, only for the lanes still walking (`three_way_redraw.walk_run`): the
 #: same outcome as reading every step, at the cost of the steps walked
 WALK_CHUNK = 32
+#: the longest walk a trade may read: `tests/test_three_way_fastkeys.py` admits the vectorised generator on every output
+#: up to it; a longer walk is refused (the red team's rn-2)
+WALK_MAX = 1024
 
 
 # ------------------------------------------------------------------------------------------------ the schedule
@@ -83,6 +86,7 @@ class Trade:
     walk_n: int = 1
     underlying: str = "NQ"
     walked_ticks: float | None = None       # the run's gross ticks for a long (the as-walked reading beside)
+    level: float | None = None              # a rule's profit level: the net dollars the trade must make (m-2, m-3)
 
     def __post_init__(self) -> None:
         RD.law_of(self.exit_reason)
@@ -95,6 +99,13 @@ class Trade:
         if self.law == "walk" and (self.walk_n < 1 or self.walk_step < 1 or self.g % self.walk_step
                                    or self.l % self.walk_step):
             raise ValueError("a time-limited trade's lattice step divides its bracket and takes at least one step")
+        if self.level is not None and not self.level > 0:
+            raise ValueError("a profit level is positive")
+        if self.exit_reason == "profit_level" and self.level is None:
+            raise ValueError("a profit-level exit carries its level")
+        if self.law == "walk" and self.walk_n > WALK_MAX:
+            raise ValueError(f"REFUSED (rn-2): a walk of {self.walk_n} steps reads past the {WALK_MAX} outputs the "
+                             "vectorised generator is admitted on")
         K.moment(self.session, self.decision, self.sub)
 
     @property
@@ -104,6 +115,18 @@ class Trade:
     @property
     def moment(self) -> int:
         return K.moment(self.session, self.decision, self.sub)
+
+    def target(self, e: float, xt: float) -> float:
+        """The as-placed target in gross ticks, for every terminal state of the trade (the level is known at
+        placement; m-2). **A profit level is booked as the vendored engine books its need** (m-3): the net dollars
+        the trade must make, every cost of the trade included -- `lockstep.CombineAccount.need_to_pass` ("what the
+        account must net on its next trade to pass", `vendor/stage2/propedge/campaign/lockstep.py` l.408-419), which
+        the need-aware draw "settles ... at exactly the need" (`vendor/stage2/propedge/campaign/sizing.py` l.380-388,
+        `self._settle(float(need) if at_need ...)`). So G = min(g, (level + entry + x_target) / tick dollars), at the
+        trade's own costs (a worse-fill stress included), and a win at the level books exactly +level."""
+        if self.level is None:
+            return float(self.g)
+        return min(float(self.g), (float(self.level) + float(e) + float(xt)) / self.tvn)
 
     @property
     def tvn(self) -> float:
@@ -196,6 +219,7 @@ class Lanes:
     first_pass: np.ndarray
     first_pay: np.ndarray
     w: np.ndarray          # the exact program's probability (1 in a simulation)
+    ffail: np.ndarray = None  # accounts failed at the fill (the take refused at a floor-bound room), counted apart
     day: np.ndarray = None  # today's net
     dead: np.ndarray = None  # the account failed today (replaced at the close)
     stopped: np.ndarray = None  # no more trades today (the daily loss limit)
@@ -221,7 +245,7 @@ def fresh(n: int, rules: ToyRules) -> Lanes:
     return Lanes(phase=i.copy(), bal=f.copy(), floor=np.full(n, -float(rules.mll)), peak=f.copy(), age=i.copy(),
                  wins=i.copy(), cash=cash, minrel=cash.copy(), ahead=i.copy(),
                  pend=np.zeros((n, rules.payout_lag + 1)), acct=i.copy(), req=i.copy(), first_pass=i - 1,
-                 first_pay=i - 1, w=np.ones(n))
+                 first_pay=i - 1, w=np.ones(n), ffail=i.copy())
 
 
 def _room(L: Lanes, rules: ToyRules) -> np.ndarray:
@@ -232,19 +256,45 @@ def _room(L: Lanes, rules: ToyRules) -> np.ndarray:
 
 
 def _barrier(t: Trade, room: np.ndarray, extra: float) -> np.ndarray:
-    """The floor-side barrier in ticks, **fractional** (the lead's ruling on B-1): min(l, (room - entry - x) / tick
-    dollars), x the stop side's cost (a walk: the larger of the stop's and the flatten's); 0 where the room left is at
-    most `EPS` dollars (no trade). A cushion-bound loss then ends exactly on the floor and fails the account."""
+    """The floor-side barrier in ticks, **fractional** (the lead's ruling on B-1): min(l, (room - entry - x_stop) /
+    tick dollars) -- the race's and, since corrective cycle 2, R-10's walk's too (its flatten exit is clipped at the
+    floor instead; RB-1). A cushion-bound loss ends exactly on the floor and fails the account."""
+    e, xs = t.entry_cost + extra, t.x_stop + extra
+    return np.minimum(float(t.l), (room - e - xs) / t.tvn)
+
+
+def _l_fill(t: Trade, room: np.ndarray, extra: float) -> np.ndarray:
+    """The take, decided at the fill (the template's N-1; the red team's m-1): L_fill = min(l, (room - entry -
+    max(x_stop, x_flat)) / tick dollars), unrounded, for every exit law -- it reads the bracket, the room and both exit
+    costs, never the run's exit."""
     e, xs, xf = t.entry_cost + extra, t.x_stop + extra, t.x_flat + extra
-    x = xs if t.law == "race" else max(xs, xf)
-    Lt = np.minimum(float(t.l), (room - e - x) / t.tvn)
-    return np.where(Lt * t.tvn > EPS, Lt, 0.0)
+    return np.minimum(float(t.l), (room - e - max(xs, xf)) / t.tvn)
+
+
+def _classes(t: Trade, act: np.ndarray, room: np.ndarray, floor_room: np.ndarray, extra: float
+             ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """(the barrier, the lanes taking the trade, the lanes failed at the fill, the lanes whose day ends).
+
+    **The take** at the fill: L_fill above `EPS` dollars (`_l_fill`). **A lane that cannot take it** (the lead's
+    rulings on RB-1 and on the template read's B-2): where the floor's room binds, the account **fails at the fill** --
+    its balance taken to the floor, a breach, replaced at the close, counted apart (`Lanes.ffail`) -- the race's own
+    limit as its barrier goes to zero, and the vendored engine's end for such an account (it races the room and clips
+    at the cushion: `lockstep.py`, `max(pnl, -cushion)`, then `B <= F + EPS`); where the daily loss limit's room binds,
+    the day ends. So no account is left alive with room it can never trade."""
+    Lt = _barrier(t, room, extra)
+    take = act & (_l_fill(t, room, extra) * t.tvn > EPS)
+    floor_bound = floor_room <= room + EPS
+    fail = act & ~take & floor_bound
+    stop_day = act & ~take & ~floor_bound
+    return Lt, take, fail, stop_day
 
 
 def _settle(L: Lanes, act: np.ndarray, change: np.ndarray, rules: ToyRules) -> None:
     """Book each acting lane's change; a breach ends the account (replaced at the close); the daily loss limit stops
-    the day. **The clip never binds** (B-1, N-5, M-4): a change that takes a balance below its floor, or a day below
-    its loss limit, by more than `EPS` is refused -- the race's barrier would have been wrong."""
+    the day. **No booked change passes the floor or the daily limit** (B-1, N-5, M-4, RB-1): the race's barrier nets
+    the stop exit's cost, and where a cost would pass a barrier -- a walk's flatten, an account failed at the fill --
+    the caller has already clipped it there, as the engine clips; a change that still passes either by more than `EPS`
+    is refused."""
     L.bal = np.where(act, L.bal + change, L.bal)
     L.day = np.where(act, L.day + change, L.day)
     if (act & (L.bal < L.floor - EPS)).any() or (rules.dll is not None and (act & (L.day < -float(rules.dll) - EPS)).any()):
@@ -332,8 +382,12 @@ def _trade_mc(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec, coins: CoinLane
     e = t.entry_cost + extra
     xt, xs, xf = t.x_target + extra, t.x_stop + extra, t.x_flat + extra
     room = _room(L, rules)
-    Lt = _barrier(t, room, extra)
-    taken = act & (Lt > 0)
+    Lt, normal, fail, stop_day = _classes(t, act, room, L.bal - L.floor, extra)
+    L.stopped |= stop_day
+    if fail.any():                                          # failed at the fill: to the floor, breached, counted
+        L.ffail = L.ffail + fail.astype(np.int64)
+        _settle(L, fail, -room, rules)
+    taken = normal
     if not taken.any():
         return
     if arm.reading == "as_walked":
@@ -345,26 +399,29 @@ def _trade_mc(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec, coins: CoinLane
         pnl = np.maximum(pnl, -(room - e))                  # liquidated at the floor, as the engine clips
         _settle(L, taken, -e + pnl, rules)
         return
+    change = np.zeros(len(L))
+    G = t.target(e, xt)
     if t.law == "race":
-        p = Lt / (Lt + float(t.g))
         u = coins.coin(t, K.RACE)[:, 0]
+        p = Lt / (Lt + G)
         win = RD.race_outcome(u, p, arm.plant_eps)
-        pnl = np.where(win, t.g * t.tvn - xt, -Lt * t.tvn - xs)
+        change = np.where(normal, -e + np.where(win, G * t.tvn - xt, -Lt * t.tvn - xs), change)
     else:
         s = int(t.walk_step)
-        rows_all = np.flatnonzero(taken)
+        rows_all = np.flatnonzero(normal)
         coins.record(t, K.WALK, rows_all)
 
         def read(rows, first, count):
             return coins.coin(t, K.WALK, count, rows_all[rows], first=first, record=False)
 
-        v_t, k_t = RD.walk_run(read, rows_all.size, t.g // s, Lt[rows_all], s, int(t.walk_n), WALK_CHUNK)
+        v_t, k_t = RD.walk_run(read, rows_all.size, G, Lt[rows_all], s, int(t.walk_n), WALK_CHUNK)
         val = np.zeros(len(L))
         kind = np.zeros(len(L), np.int64)
         val[rows_all], kind[rows_all] = v_t, k_t
         cost = np.where(kind == 1, xt, np.where(kind == -1, xs, xf))
-        pnl = val * t.tvn - cost
-    _settle(L, taken, -e + pnl, rules)
+        # a flatten whose cost would pass the floor is clipped there (the engine's clip), and the account fails
+        change = np.where(normal, np.maximum(-e + val * t.tvn - cost, -room), change)
+    _settle(L, normal, change, rules)
 
 
 def _trade_dp(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec) -> Lanes:
@@ -378,33 +435,38 @@ def _trade_dp(L: Lanes, t: Trade, rules: ToyRules, arm: ArmSpec) -> Lanes:
     e = t.entry_cost + extra
     xt, xs, xf = t.x_target + extra, t.x_stop + extra, t.x_flat + extra
     room = _room(L, rules)
-    Lt = _barrier(t, room, extra)
-    taken = act & (Lt > 0)
-    if not taken.any():
+    Lt, normal, fail, stop_day = _classes(t, act, room, L.bal - L.floor, extra)
+    L.stopped = L.stopped | stop_day
+    if fail.any():                                          # failed at the fill (RB-1, B-2): one branch, certain
+        L.ffail = L.ffail + fail.astype(np.int64)
+        _settle(L, fail, -room, rules)
+    if not normal.any():
         return L
-    keep = L.take(np.flatnonzero(~taken))
-    go = L.take(np.flatnonzero(taken))
-    Lg = Lt[taken]
+    keep = L.take(np.flatnonzero(~normal))
     parts = [keep]
+    go = L.take(np.flatnonzero(normal))
+    Lg = Lt[normal]
+    rg = room[normal]
+    G = t.target(e, xt)
     if t.law == "race":
-        p = np.minimum(Lg / (Lg + float(t.g)) + arm.plant_eps, 1.0)
+        p = np.minimum(Lg / (Lg + G) + arm.plant_eps, 1.0)
         for win in (True, False):
             b = go.take(np.arange(len(go)))
             b.w = b.w * (p if win else 1.0 - p)
-            ch = (t.g * t.tvn - xt) if win else (-Lg * t.tvn - xs)
+            ch = (G * t.tvn - xt) if win else (-Lg * t.tvn - xs)
             _settle(b, np.ones(len(b), bool), -e + ch, rules)
             parts.append(b)
     else:
         s = int(t.walk_step)
-        up = t.g // s
         for Lv in np.unique(Lg):
             sel = np.flatnonzero(Lg == Lv)
-            law = RD.walk_law(int(up), float(Lv), s, int(t.walk_n))
+            law = RD.walk_law(G, float(Lv), s, int(t.walk_n))
             for (k, v), pr in law.items():
                 b = go.take(sel)
                 b.w = b.w * float(pr)
                 cost = {"target": xt, "stop": xs, "time": xf}[k]
-                _settle(b, np.ones(len(b), bool), np.full(len(b), -e + float(v) * t.tvn - cost), rules)
+                ch = np.maximum(np.full(len(b), -e + float(v) * t.tvn - cost), -rg[sel])   # the engine's clip
+                _settle(b, np.ones(len(b), bool), ch, rules)
                 parts.append(b)
     return Lanes.concat(parts)
 
@@ -531,6 +593,19 @@ class Records:
     accounts: np.ndarray
     budget: float | None = None
     balance: np.ndarray | None = None       # each lane's account balance at the last close (relative to its start)
+    fill_failures: np.ndarray | None = None  # accounts failed at the fill, counted apart (reported beside)
+
+
+def check_costs(schedule: Schedule, rules: ToyRules, arm: ArmSpec = ArmSpec()) -> None:
+    """n-2: refused when the declared daily loss limit is at or below a trade's costs (its entry and larger exit cost,
+    at the arm's worse fill): such a lane could never take a trade and never fail, its day ending at every offer."""
+    if rules.dll is None:
+        return
+    for t in schedule.trades:
+        extra = float(arm.worse_ticks) * t.tvn
+        if float(rules.dll) <= t.entry_cost + max(t.x_stop, t.x_flat) + 2 * extra + EPS:
+            raise ValueError(f"REFUSED (n-2): the daily loss limit ${rules.dll} is at or below a trade's costs "
+                             f"(session {t.session}, slot {t.entry})")
 
 
 def check_window(start: int, horizon: int, block_sessions: int) -> None:
@@ -546,6 +621,7 @@ def simulate(schedule: Schedule, rules: ToyRules, start: int, seed_indices: Sequ
     """The units (start, c) for c in `seed_indices`: the design's trades of sessions start .. start + horizon - 1,
     each outcome redrawn from the unit's own coin field; exactly `horizon` sessions run (closes 0 .. horizon)."""
     check_window(start, horizon, block_sessions)
+    check_costs(schedule, rules, arm)
     n = len(seed_indices)
     coins = CoinLanes(seed, part, history, start, seed_indices, guard, arm.twin)
     L = fresh(n, rules)
@@ -559,7 +635,7 @@ def simulate(schedule: Schedule, rules: ToyRules, start: int, seed_indices: Sequ
         for j in np.flatnonzero(before > 0):
             arrivals[j].append((k, float(before[j])))
     return Records(int(start), tuple(int(c) for c in seed_indices), rel, L.first_pass.copy(), L.first_pay.copy(),
-                   L.ahead.copy(), arrivals, L.acct.copy(), budget, L.bal.copy())
+                   L.ahead.copy(), arrivals, L.acct.copy(), budget, L.bal.copy(), L.ffail.copy())
 
 
 def _state_key(L: Lanes, rules: ToyRules, budget: float | None) -> np.ndarray:
@@ -575,15 +651,20 @@ def _state_key(L: Lanes, rules: ToyRules, budget: float | None) -> np.ndarray:
 
 
 def _merge(L: Lanes, rules: ToyRules, budget: float | None) -> Lanes:
-    """Identical states joined, their probabilities added (the enforcement ordinals carry no law at a fixed q)."""
+    """Identical states joined, their probabilities added (the enforcement ordinals carry no law at a fixed q); the
+    failures at the fill so far carried as the merged states' expected count (the w-weighted mean), so the program's
+    expected count is exact without splitting a state by it (n-3)."""
     if len(L) <= 1:
         return L
     M = _state_key(L, rules, budget)
     _, first, inv = np.unique(M, axis=0, return_index=True, return_inverse=True)
     w = np.zeros(len(first))
     np.add.at(w, inv.ravel(), L.w)
+    wf = np.zeros(len(first))
+    np.add.at(wf, inv.ravel(), L.w * np.asarray(L.ffail, float))
     out = L.take(first)
     out.w = w
+    out.ffail = np.where(w > 0, wf / np.where(w > 0, w, 1.0), 0.0)
     return out
 
 
@@ -591,9 +672,11 @@ def expect(schedule: Schedule, rules: ToyRules, start: int, horizon: int, *, blo
            arm: ArmSpec = ArmSpec(), budget: float | None = None) -> dict[str, float]:
     """The exact expectation over the coin field of one start's journey (the design note's 2.4): a forward dynamic
     program over the states, each trade's outcomes branched with the race's (or R-10's walk's) exact probabilities.
-    Returns E[P_B's per-unit value] (months ahead under B over 3), the probability of a first pass by the horizon, and
-    the total probability (1 within rounding) and the largest number of states held."""
+    Returns E[P_B's per-unit value] (months ahead under B over 3), the probability of a first pass by the horizon, the
+    expected number of failures at the fill (n-3), and the total probability (1 within rounding) and the largest
+    number of states held."""
     check_window(start, horizon, block_sessions)
+    check_costs(schedule, rules, arm)
     L = fresh(1, rules)
     biggest = 1
     for k in range(1, horizon + 1):
@@ -603,7 +686,7 @@ def expect(schedule: Schedule, rules: ToyRules, start: int, horizon: int, *, blo
         biggest = max(biggest, len(L))
     tot = float(L.w.sum())
     return {"p_b": float((L.w * L.ahead).sum() / 3.0), "passed": float((L.w * (L.first_pass > 0)).sum()),
-            "total": tot, "states": biggest}
+            "fill_failures": float((L.w * np.asarray(L.ffail, float)).sum()), "total": tot, "states": biggest}
 
 
 # ------------------------------------------------------------------------------------------------ per-unit values
@@ -631,6 +714,6 @@ def days_to_first_payout(rec: Records, window: int) -> np.ndarray:
     return np.where((f > 0) & (f <= window), f, float(window + 1))
 
 
-__all__ = ["MONTH", "TOL", "EPS", "Trade", "Schedule", "ToyRules", "Lanes", "fresh", "ArmSpec", "CoinLanes",
+__all__ = ["MONTH", "TOL", "EPS", "WALK_CHUNK", "WALK_MAX", "check_costs", "Trade", "Schedule", "ToyRules", "Lanes", "fresh", "ArmSpec", "CoinLanes",
            "Records", "check_window", "simulate", "expect", "p_b_values", "share_ahead_values",
            "days_to_first_payout"]

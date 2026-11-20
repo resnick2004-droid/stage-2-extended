@@ -90,10 +90,13 @@ def _brute(schedule: J.Schedule, rules: J.ToyRules, start: int, horizon: int, bu
             for t, win in zip(trades, pattern):
                 if t.session != start + k - 1:
                     continue
-                if L.dead[0] or L.stopped[0] or not J._barrier(t, J._room(L, rules), 0.0)[0] > 0:
-                    w *= 1.0 if win else 0.0                    # a trade not taken: one pattern carries the weight
+                room = J._room(L, rules)
+                if L.dead[0] or L.stopped[0] or not J._l_fill(t, room, 0.0)[0] * t.tvn > J.EPS:
+                    w *= 1.0 if win else 0.0                    # a trade not raced: one pattern carries the weight
+                    if not (L.dead[0] or L.stopped[0]) and room[0] > J.EPS:
+                        J._settle(L, np.ones(1, bool), -room, rules)   # failed at the fill (floor-bound: no limit here)
                     continue
-                Lt = J._barrier(t, J._room(L, rules), 0.0)
+                Lt = J._barrier(t, room, 0.0)
                 p = float(Lt[0] / (Lt[0] + t.g))
                 w *= p if win else 1 - p
                 ch = (t.g * t.tvn - t.x_target) if win else (-Lt[0] * t.tvn - t.x_stop)
@@ -367,8 +370,13 @@ def test_m1_the_journeys_race_books_race_net_on_a_fractional_grid(monkeypatch) -
                     entry_cost=e, x_target=xt, x_stop=xs)
         L0 = J.fresh(1, rules)
         L0.bal = np.array([room - rules.mll])
-        if r is None:
-            assert J._barrier(t, J._room(L0, rules), 0.0)[0] == 0.0
+        if r is None:                                                    # no take at the fill: failed there (B-2)
+            L0.day, L0.dead, L0.stopped = np.zeros(1), np.zeros(1, bool), np.zeros(1, bool)
+            coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+            J._trade_mc(L0, t, rules, J.ArmSpec(), coins)
+            if room > J.EPS:
+                assert L0.bal[0] - (room - rules.mll) == pytest.approx(-room, abs=1e-9) and bool(L0.dead[0])
+                assert L0.ffail[0] == 1
             continue
         p = float(RD.race(l, g, Fraction(room4 - e4, 4), Fraction(xs4, 4), None)[0])
         for u, change in ((np.nextafter(p, 0), float(-Fraction(e4, 4) + g - Fraction(xt4, 4)) * tv),
@@ -435,11 +443,16 @@ def test_m2_the_simulations_walk_step_books_the_walks_outcome() -> None:
                       _U[np.arange(n_l) if lanes is None else lanes][:, first:first + n_])
         J._trade_mc(L, t, rules, J.ArmSpec(), coins)
         ch = L.bal - (room - rules.mll)
-        Lt = min(t.l, (room - t.entry_cost - max(t.x_stop, t.x_flat)) / t.tvn)
+        l_fill = min(t.l, (room - t.entry_cost - max(t.x_stop, t.x_flat)) / t.tvn)
+        Lt = min(t.l, (room - t.entry_cost - t.x_stop) / t.tvn)
         for k in range(0, n_l, 37):
-            v, kind = RD.walk_outcome(U[k], t.g // t.walk_step, Lt, t.walk_step)
+            if not l_fill * t.tvn > J.EPS:
+                assert ch[k] == pytest.approx(-room, abs=1e-9)          # failed at the fill
+                continue
+            v, kind = RD.walk_outcome(U[k], t.g, Lt, t.walk_step)
             cost = {"target": t.x_target, "stop": t.x_stop, "time": t.x_flat}[kind]
-            assert ch[k] == pytest.approx(-t.entry_cost + float(v) * t.tvn - cost, abs=1e-9), (room4, k)
+            want = max(-t.entry_cost + float(v) * t.tvn - cost, -room)  # the flatten clipped at the floor
+            assert ch[k] == pytest.approx(want, abs=1e-9), (room4, k)
         r = RD.walk_net(t.l, t.g, Fraction(room4, 4), t.walk_n, t.walk_step, Fraction(1, 10), Fraction(1, 20),
                         Fraction(3, 10), Fraction(3, 20))
         assert abs(ch.mean() - float(r[1]) * t.tvn) < 4 * ch.std() / np.sqrt(n_l) + 1e-9, room4
@@ -467,8 +480,9 @@ def test_m2_the_exact_programs_walk_step_is_walk_net() -> None:
 
     rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=1e6, dll=None, activation_fee=1, funded_mll=1e6,
                        win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
-    for room4, n_steps in itertools.product((9, 23, 47, 81, 300), (1, 4, 9)):
-        t = replace(_walk_toy(3, 1).trades[0], walk_n=n_steps, tick_value=1.0)
+    for room4, n_steps, xf4 in itertools.product((9, 23, 47, 81, 300), (1, 4, 9), (3, 13)):
+        # x_flat 0.75 below x_stop 1.5, and 3.25 above it (H3-A's order): the barrier is the stop's in both (RB-1)
+        t = replace(_walk_toy(3, 1).trades[0], walk_n=n_steps, tick_value=1.0, x_flat=xf4 / 4)
         room = room4 / 4
         L = J.fresh(1, rules)
         L.bal = np.array([room - rules.mll])
@@ -476,9 +490,11 @@ def test_m2_the_exact_programs_walk_step_is_walk_net() -> None:
         out = J._trade_dp(L, t, rules, J.ArmSpec())
         ch = out.bal - (room - rules.mll)
         r = RD.walk_net(t.l, t.g, Fraction(room4, 4), n_steps, t.walk_step, Fraction(1, 2), Fraction(1, 4),
-                        Fraction(3, 2), Fraction(3, 4))
-        assert float((out.w * ch).sum()) == pytest.approx(float(r[1]), abs=1e-9), (room4, n_steps)
-        assert float(ch.min()) == pytest.approx(float(r[2]), abs=1e-9), (room4, n_steps)
+                        Fraction(3, 2), Fraction(xf4, 4))
+        if r is None:
+            continue
+        assert float((out.w * ch).sum()) == pytest.approx(float(r[1]), abs=1e-9), (room4, n_steps, xf4)
+        assert float(ch.min()) == pytest.approx(float(r[2]), abs=1e-9), (room4, n_steps, xf4)
 
 
 def test_m11_the_exact_programs_passed_survives_its_merges() -> None:
@@ -603,3 +619,337 @@ def check_chunk_invariance(monkeypatch, module) -> None:
         recs = R.run(sch, rules, p)
         out.append(np.concatenate([r.rel for r in recs]))
     assert np.array_equal(out[0], out[1]) and np.array_equal(out[1], out[2])
+
+
+
+# ------------------------------------------------------------------------------------------------ corrective cycle 2 (RB-1)
+
+#: the red team's re-read (docs/reviews/REREADS_W32_W34_O7_2026-11-20.md, RB-1): H3-A's declared costs a contract
+H3A_COST, H3A_STOP, H3A_FLAT = 2.12, 2.12 + 5.0, 2.12 + 10.0
+
+
+def _rb1_rules() -> J.ToyRules:
+    return J.ToyRules(combine_fee=50, billing=21, target=3000, mll=2000, dll=1000.0, activation_fee=50, funded_mll=2000,
+                      win_day=150, payout_days=5, payout_share=0.5, payout_cap=2000, split=0.9, payout_lag=1)
+
+
+def _rb1_toy(walk: bool, l: int = 40, g: int = 40, per: int = 3, h: int = 63) -> J.Schedule:
+    tr = []
+    for sess in range(h):
+        for j in range(per):
+            d = 600 + 60 * j
+            kw = (dict(exit_reason="max_hold", walk_step=4, walk_n=40) if walk else dict(exit_reason="target"))
+            tr.append(J.Trade(session=sess, decision=d, entry=d + 5, exit=d + 50, g=g, l=l, tick_value=5.0,
+                              entry_cost=H3A_COST, x_target=H3A_COST, x_stop=H3A_STOP, x_flat=H3A_FLAT, **kw))
+    return J.Schedule("rb1", tuple(tr))
+
+
+def _stranded_at_closes(monkeypatch, sch: J.Schedule, rules: J.ToyRules, seeds: int, forced: float | None = None):
+    """Run the simulation; at every close record each lane's account and whether its room to the floor is inside the
+    window (above EPS, at most the entry and the larger exit cost: no trade is taken there). Returns, per close after the
+    first, the lanes that were inside the window at the previous close and still hold the same account -- under the
+    first cycle's rule a state with no exit; under the ruling the next offered trade takes them at the engine's clip --
+    and the records. Every session of the toys offers a trade."""
+    if forced is not None:
+        _forced(monkeypatch, forced)
+    snaps = []
+    orig = J._session
+
+    def watch(L, trades, *a, **k):
+        out = orig(L, trades, *a, **k)
+        gap = out.bal - out.floor
+        snaps.append((out.acct.copy(), (gap > J.EPS) & (gap <= H3A_COST + max(H3A_STOP, H3A_FLAT) + J.EPS)))
+        return out
+
+    monkeypatch.setattr(J, "_session", watch)
+    p_ = plan(starts=(0,), seed_indices=tuple(range(seeds)), horizon=63, block_sessions=63, budget=None)
+    rec = R.run(sch, rules, p_)[0]
+    kept = [int((w0 & (a1 == a0)).sum()) for (a0, w0), (a1, _) in zip(snaps, snaps[1:])]
+    return kept, rec, snaps
+
+
+def test_rb1_no_unit_is_stranded_at_h3as_costs(monkeypatch) -> None:
+    """The red team's toy at H3-A's costs (x_stop 7.12, x_flat 12.12), race and walk: at no close is any lane alive with
+    room above EPS but at most the costs -- the share the re-read measured at 0.150 (race) and 0.838 (walk) is 0 -- and
+    accounts fail and are replaced."""
+    for walk in (False, True):
+        kept, rec, snaps = _stranded_at_closes(monkeypatch, _rb1_toy(walk), _rb1_rules(), 400)
+        assert max(kept) == 0, (walk, max(kept))                      # nobody stays in the window past a trade
+        last_share = float(snaps[-1][1].mean())
+        assert last_share < 0.02, (walk, last_share)                    # the re-read measured 0.150 and 0.838
+        assert rec.accounts.mean() > 1.0, (walk, rec.accounts.mean())
+        monkeypatch.undo()
+
+
+def test_rb1_forced_losses_breach_and_replace_every_account(monkeypatch) -> None:
+    """The third re-read's m-2: every outcome forced to lose, at H3-A's costs, on a floor nine full losses
+    ($209.24 each) and $10 deep, no daily limit: each account takes nine full losses, sits $10 above its floor --
+    inside the window, where no trade can be taken -- and fails at the fill on its next trade, its change the whole
+    room (the clip), a breach, replaced at that close. For the race and the walk alike: failures at the fill, all
+    replaced, every account's end one of them, nobody kept in the window past a trade."""
+    rules = J.ToyRules(combine_fee=50, billing=21, target=3000, mll=9 * 209.24 + 10, dll=None, activation_fee=50,
+                       funded_mll=2000, win_day=150, payout_days=5, payout_share=0.5, payout_cap=2000, split=0.9,
+                       payout_lag=1)
+    for walk in (False, True):
+        kept, rec, snaps = _stranded_at_closes(monkeypatch, _rb1_toy(walk), rules, 4, forced=1.0 - 2.0 ** -53)
+        assert max(kept) == 0, walk
+        assert rec.fill_failures[0] >= 10, (walk, rec.fill_failures)
+        assert np.array_equal(rec.accounts, rec.fill_failures), (walk, rec.accounts, rec.fill_failures)
+        assert rec.first_pass[0] == -1
+        monkeypatch.undo()
+    # the clip itself, on one lane $10 above its floor: the change is exactly -$10 and the account is breached
+    t = _rb1_toy(True).trades[0]
+    L = _one_lane(rules, 10.0)
+    coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+    J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+    assert L.bal[0] - (10.0 - rules.mll) == pytest.approx(-10.0, abs=1e-12) and bool(L.dead[0]) and L.ffail[0] == 1
+
+
+def test_rb1_the_exact_program_shares_the_fix() -> None:
+    """The exact program against the simulation on a toy where the clip binds often (H3-A's costs, a small floor, a
+    daily limit): on the first cycle's code in either one alone (the clipped lane left untaken) they disagree, so the
+    cross-check sees this class of error (`test_three_way_mutations`' RB1a and RB1b)."""
+    # one full loss (8 ticks, $40, and $9.24 of costs) leaves $2.76 of a $52 floor: every losing account then sits in
+    # the clipped window, where the first cycle's rule stranded it and the ruling races it at the engine's clip
+    rules = J.ToyRules(combine_fee=20, billing=21, target=30, mll=52, dll=None, activation_fee=20, funded_mll=52,
+                       win_day=1e9, payout_days=99, payout_share=0.5, payout_cap=400, split=1.0, payout_lag=1)
+    sch = J.Schedule("rb1dp", tuple(J.Trade(session=sess, decision=600, entry=605, exit=650, exit_reason="target",
+                                            g=6, l=8, tick_value=5.0, entry_cost=H3A_COST, x_target=H3A_COST,
+                                            x_stop=H3A_STOP) for sess in range(0, 40, 2)))
+    p_ = plan(starts=(0,), seed_indices=tuple(range(3000)), horizon=21, block_sessions=40, budget=None)
+    recs = R.run(sch, rules, p_)
+    dp = J.expect(sch, rules, 0, 21, block_sessions=40)
+    fp = (recs[0].first_pass > 0)
+    q = dp["passed"]
+    assert 0.05 < q < 0.95 and abs(fp.mean() - q) < 4 * np.sqrt(q * (1 - q) / fp.size), (fp.mean(), q)
+    ahead = (recs[0].rel[:, 21] > J.TOL).mean()
+    assert 0.0 <= ahead <= 1.0
+
+
+
+def test_rb1_the_walks_flatten_is_clipped_at_the_floor_and_fails_the_account() -> None:
+    """A walk whose barrier sits a fifth of a tick below the last lattice point, its uniforms forced to step up there
+    and down elsewhere, ends at the time limit one residual above the barrier; its flatten cost (x_flat above x_stop)
+    would pass the floor, so the change is clipped at the floor, exactly -room, and the account is breached -- the
+    engine's clip, in the simulation and the exact program alike."""
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=1e6, dll=None, activation_fee=1, funded_mll=1e6,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    t = J.Trade(session=0, decision=700, entry=705, exit=790, exit_reason="max_hold", g=40, l=40, tick_value=5.0,
+                entry_cost=H3A_COST, x_target=H3A_COST, x_stop=H3A_STOP, x_flat=H3A_FLAT, walk_step=4, walk_n=12)
+    room = H3A_COST + H3A_STOP + (8 + 0.2) * 5.0                        # L = 8.2 ticks: d = 2 steps, rho = 0.2 tick
+    L = J.fresh(1, rules)
+    L.bal = np.array([room - rules.mll])
+    L.day, L.dead, L.stopped = np.zeros(1), np.zeros(1, bool), np.zeros(1, bool)
+    coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+    # down, down to the bottom point, then up there (u below its p_up) and down again, ten times: a time exit at -8
+    U = np.array([[0.9, 0.9] + [0.01, 0.9] * 5])
+    from extended import three_way_redraw as RD
+
+    v, kind = RD.walk_outcome(U[0], t.g, 8.2, t.walk_step)
+    assert (kind, v) == ("time", -8.0)                                 # the flatten is what is clipped here
+    coins.coin = lambda t_, kind, n_=1, lanes=None, first=0, record=True, _U=U: _U[:, first:first + n_]
+    J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+    assert L.bal[0] - (room - rules.mll) == pytest.approx(-room, abs=1e-9) and bool(L.dead[0])
+    L2 = J.fresh(1, rules)
+    L2.bal = np.array([room - rules.mll])
+    L2.day, L2.dead, L2.stopped = np.zeros(1), np.zeros(1, bool), np.zeros(1, bool)
+    out = J._trade_dp(L2, t, rules, J.ArmSpec())
+    assert float((out.bal - (room - rules.mll)).min()) == pytest.approx(-room, abs=1e-9)
+    assert (out.bal >= out.floor - J.EPS).all()
+
+
+
+# ------------------------------------------------------------------------------------------------ the take at the fill
+
+
+def _one_lane(rules, room):
+    L = J.fresh(1, rules)
+    L.bal = np.array([room - rules.mll])
+    L.day, L.dead, L.stopped = np.zeros(1), np.zeros(1, bool), np.zeros(1, bool)
+    return L
+
+
+def test_b2_an_account_below_its_costs_fails_at_the_fill_and_one_above_takes_the_race() -> None:
+    """The template read's B-2 on the runner side, exact: at a floor room of e + max(x_stop, x_flat) - epsilon the
+    account fails at the fill -- its change the whole room, a breach, one failure at the fill counted apart -- in the
+    simulation and the exact program; at e + max x + epsilon it takes the race, its outcomes the race's own. A
+    limit-bound lane below its costs ends its day instead."""
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=500, dll=None, activation_fee=1, funded_mll=500,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    eps = 1e-4
+    for reason in ("target", "flatten"):
+        t = J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason=reason, g=10, l=10, tick_value=5.0,
+                    entry_cost=H3A_COST, x_target=H3A_COST, x_stop=H3A_STOP, x_flat=H3A_FLAT, walk_step=2, walk_n=5)
+        edge = H3A_COST + max(H3A_STOP, H3A_FLAT)
+        L = _one_lane(rules, edge - eps)
+        J._trade_mc(L, t, rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, (0,), None, False))
+        assert L.bal[0] == pytest.approx(-rules.mll, abs=1e-9) and bool(L.dead[0]) and L.ffail[0] == 1, reason
+        out = J._trade_dp(_one_lane(rules, edge - eps), t, rules, J.ArmSpec())
+        assert len(out) == 1 and bool(out.dead[0]) and out.w[0] == 1.0 and out.ffail[0] == 1, reason
+        L = _one_lane(rules, edge + eps)
+        J._trade_mc(L, t, rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, (0,), None, False))
+        assert L.ffail[0] == 0, reason                                 # taken: raced, not failed at the fill
+        out = J._trade_dp(_one_lane(rules, edge + eps), t, rules, J.ArmSpec())
+        assert len(out) >= 2 and abs(float(out.w.sum()) - 1.0) < 1e-12 and (out.ffail == 0).all(), reason
+    dll_rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=500, dll=5.0, activation_fee=1, funded_mll=500,
+                           win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    L = _one_lane(dll_rules, 300.0)
+    J._trade_mc(L, t, dll_rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, (0,), None, False))
+    assert bool(L.stopped[0]) and not bool(L.dead[0]) and L.bal[0] == 300.0 - 500           # the day ends, no trade
+
+
+def test_m1_the_take_does_not_read_the_exit() -> None:
+    """The template read's m-1 (its probe 1): two trades identical at the fill, one ending at its stop in the run, one
+    at the flatten, at a room between e + x_stop and e + x_flat: both are refused alike (failed at the fill), never the
+    stop taken and the flatten not; above e + x_flat both are taken."""
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=500, dll=None, activation_fee=1, funded_mll=500,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    e, xs, xf = 2.0, 2.0, 6.0
+    mk = lambda reason: J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason=reason, g=10, l=10,  # noqa
+                                tick_value=5.0, entry_cost=e, x_target=e, x_stop=xs, x_flat=xf, walk_step=2, walk_n=5)
+    for room in (e + xs + 2.5, e + xf + 2.5):                          # the probe's room, and one above both
+        got = []
+        for reason in ("stop", "flatten"):
+            L = _one_lane(rules, room)
+            J._trade_mc(L, mk(reason), rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, (0,), None, False))
+            got.append(int(L.ffail[0]))
+        assert got[0] == got[1], (room, got)
+    assert got == [0, 0]
+
+
+def test_m2_a_profit_level_races_at_min_g_level() -> None:
+    """The template read's m-2 and the third re-read's m-3: a rule's exit at a profit level races at the as-placed
+    target, never the walk; **the level is booked as the vendored engine books its need, net dollars of the trade**
+    (`lockstep.need_to_pass`; `sizing`'s "settles ... at exactly the need"): G = min(g, (level + e + x_target) / tick
+    dollars), a forced win books exactly +level, the exact program's win weight is L / (L + G); a level above what g
+    nets leaves g; and a level at the account's need to pass passes it."""
+    from extended import three_way_redraw as RD
+
+    assert RD.law_of("profit_level") == "race"
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=500, dll=None, activation_fee=1, funded_mll=500,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    for level, G, booked in ((16.0, 3.5, 16.0), (200.0, 10.0, -1.0 + 10.0 * 5.0 - 0.5)):
+        t = J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason="profit_level", g=10, l=10,
+                    tick_value=5.0, entry_cost=1.0, x_target=0.5, x_stop=1.5, level=level)
+        assert t.law == "race" and t.target(1.0, 0.5) == pytest.approx(G, abs=1e-12)
+        L = _one_lane(rules, 400.0)
+        coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+        coins.coin = lambda t_, kind, n_=1, lanes=None, first=0, record=True: np.array([[2.0 ** -53]])
+        J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+        assert L.bal[0] - (400.0 - 500) == pytest.approx(booked, abs=1e-12)
+        out = J._trade_dp(_one_lane(rules, 400.0), t, rules, J.ArmSpec())
+        wins = out.w[out.bal > 400.0 - 500]
+        assert float(wins.sum()) == pytest.approx(10.0 / (10.0 + G), abs=1e-12)
+    with pytest.raises(ValueError, match="carries its level"):
+        J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason="profit_level", g=10, l=10, tick_value=5.0)
+    # a level at the need to pass (target 100 from a fresh account): a win nets exactly the need and the account passes
+    pass_rules = J.ToyRules(combine_fee=1, billing=21, target=100, mll=500, dll=None, activation_fee=1,
+                            funded_mll=500, win_day=1e9, payout_days=99, payout_share=0.5, payout_cap=1, split=1,
+                            payout_lag=1)
+    t = J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason="profit_level", g=40, l=10, tick_value=5.0,
+                entry_cost=1.0, x_target=0.5, x_stop=1.5, level=100.0)
+    L = J.fresh(1, pass_rules)
+    coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+    coins.coin = lambda t_, kind, n_=1, lanes=None, first=0, record=True: np.array([[2.0 ** -53]])
+    L.day, L.dead, L.stopped = np.zeros(1), np.zeros(1, bool), np.zeros(1, bool)
+    J._trade_mc(L, t, pass_rules, J.ArmSpec(), coins)
+    assert L.bal[0] == pytest.approx(100.0, abs=1e-12)
+    L = J._close(L, 1, pass_rules, J.ArmSpec(), None, coins, dp=False)
+    assert L.first_pass[0] == 1
+
+
+def test_m4_the_journeys_walk_with_a_profit_level() -> None:
+    """The third re-read's m-4 (a): a walk trade carrying a level walks to its fractional target G = (level + e +
+    x_target) / tick dollars, in the simulation (each lane's change from `walk_outcome` at G on the same uniforms) and
+    in the exact program (its law `walk_net` at that G, net and worst change, exactly)."""
+    from fractions import Fraction
+
+    from extended import three_way_redraw as RD
+
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=1e6, dll=None, activation_fee=1, funded_mll=1e6,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    t = replace(_walk_toy(3, 1).trades[0], level=13.0, walk_n=9)       # G = (13 + 0.5 + 0.25) / 5 = 2.75 ticks
+    G = t.target(t.entry_cost, t.x_target)
+    assert G == pytest.approx(2.75, abs=1e-12) and t.g == 8
+    rng = np.random.default_rng(K.seed_key(SEED, "test", test=S.TEST_IDS["walk_oracle"], replicate=2))
+    n_l = 2000
+    for room4 in (23, 47, 300):
+        room = room4 / 4 * t.tvn
+        U = rng.random((n_l, t.walk_n))
+        L = J.fresh(n_l, rules)
+        L.bal = np.full(n_l, room - rules.mll)
+        L.day, L.dead, L.stopped = np.zeros(n_l), np.zeros(n_l, bool), np.zeros(n_l, bool)
+        coins = J.CoinLanes(SEED, PART, 0, 0, range(n_l), None, False)
+        coins.coin = (lambda t_, kind, n_=1, lanes=None, first=0, record=True, _U=U:
+                      _U[np.arange(n_l) if lanes is None else lanes][:, first:first + n_])
+        J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+        ch = L.bal - (room - rules.mll)
+        Lt = min(t.l, (room - t.entry_cost - t.x_stop) / t.tvn)
+        for k in range(0, n_l, 41):
+            v, kind = RD.walk_outcome(U[k], G, Lt, t.walk_step)
+            cost = {"target": t.x_target, "stop": t.x_stop, "time": t.x_flat}[kind]
+            assert ch[k] == pytest.approx(max(-t.entry_cost + float(v) * t.tvn - cost, -room), abs=1e-9), (room4, k)
+        out = J._trade_dp(_one_lane(rules, room), t, rules, J.ArmSpec())
+        chd = out.bal - (room - rules.mll)
+        r = RD.walk_net(t.l, t.g, Fraction(room4, 4), t.walk_n, t.walk_step, Fraction(1, 10), Fraction(1, 20),
+                        Fraction(3, 10), Fraction(3, 20), g_cap=Fraction(11, 4))
+        assert float((out.w * chd).sum()) == pytest.approx(float(r[1]) * t.tvn, abs=1e-9), room4
+        assert float(chd.min()) == pytest.approx(float(r[2]) * t.tvn, abs=1e-9), room4
+
+
+def test_m4_the_walks_clip_where_the_daily_limit_binds() -> None:
+    """The third re-read's m-4 (b): a walk whose flatten cost would pass the daily limit's room -- the limit, not the
+    floor, the nearer barrier -- is clipped at that room: the day ends at the limit, the account lives (the engine's
+    `max(pnl, -(dll + day_pnl))`), in the simulation and the exact program."""
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=1000, dll=50.24, activation_fee=1, funded_mll=1000,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    t = J.Trade(session=0, decision=700, entry=705, exit=790, exit_reason="max_hold", g=40, l=40, tick_value=5.0,
+                entry_cost=H3A_COST, x_target=H3A_COST, x_stop=H3A_STOP, x_flat=H3A_FLAT, walk_step=4, walk_n=12)
+    L = _one_lane(rules, 900.0)                                        # the floor $900 away, the limit $50.24
+    coins = J.CoinLanes(SEED, PART, 0, 0, (0,), None, False)
+    U = np.array([[0.9, 0.9] + [0.01, 0.9] * 5])                       # to the bottom point and back: a time exit
+    coins.coin = lambda t_, kind, n_=1, lanes=None, first=0, record=True, _U=U: _U[:, first:first + n_]
+    J._trade_mc(L, t, rules, J.ArmSpec(), coins)
+    assert L.day[0] == pytest.approx(-50.24, abs=1e-9) and bool(L.stopped[0]) and not bool(L.dead[0])
+    out = J._trade_dp(_one_lane(rules, 900.0), t, rules, J.ArmSpec())
+    assert float(out.day.min()) == pytest.approx(-50.24, abs=1e-9) and (out.day >= -50.24 - J.EPS).all()
+    assert not out.dead.any()
+
+
+def test_n3_the_failures_at_the_fill_are_reported_and_kept_exactly() -> None:
+    """n-3: the failures at the fill are printed beside each arm's matrix (`three_way_runner.fill_failures`, through
+    `paired`'s `beside`), and the exact program keeps their expected count through its state merge: its expectation
+    equals the simulation's mean on a toy where they are common."""
+    rules = J.ToyRules(combine_fee=20, billing=21, target=30, mll=52, dll=None, activation_fee=20, funded_mll=52,
+                       win_day=1e9, payout_days=99, payout_share=0.5, payout_cap=400, split=1.0, payout_lag=1)
+    sch = J.Schedule("rb1dp", tuple(J.Trade(session=sess, decision=600, entry=605, exit=650, exit_reason="target",
+                                            g=6, l=8, tick_value=5.0, entry_cost=H3A_COST, x_target=H3A_COST,
+                                            x_stop=H3A_STOP) for sess in range(0, 40, 2)))
+    p_ = plan(starts=(0,), seed_indices=tuple(range(3000)), horizon=21, block_sessions=40, budget=None)
+    recs = R.run(sch, rules, p_)
+    beside = R.fill_failures(recs)
+    f = recs[0].fill_failures.astype(float)
+    assert beside["fill_failures_per_unit"] == pytest.approx(f.mean()) and beside["fill_failures"] > 0
+    dp = J.expect(sch, rules, 0, 21, block_sessions=40)
+    assert abs(f.mean() - dp["fill_failures"]) < 4 * f.std() / np.sqrt(f.size), (f.mean(), dp["fill_failures"])
+    shown = {}
+    R.paired(J.Schedule("design", sch.trades), {k: J.Schedule(k, sch.trades) for k in R.BASELINES}, rules,
+             plan(starts=(0,), seed_indices=tuple(range(8)), horizon=21, block_sessions=40, budget=None),
+             lambda r: r.balance, beside=shown)
+    assert set(shown) == {"design", *R.BASELINES} and all("fill_failures_per_unit" in v for v in shown.values())
+
+
+def test_n2_a_daily_limit_below_a_trades_costs_is_refused() -> None:
+    """n-2: a declared daily limit at or below a trade's costs (entry and the larger exit, at the arm's worse fill)
+    is refused before any draw -- such a lane could never trade and never fail."""
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=500, dll=14.0, activation_fee=1, funded_mll=500,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    sch = _rb1_toy(True, h=5)                                          # costs 2.12 + 12.12 = 14.24 > 14
+    with pytest.raises(ValueError, match="n-2"):
+        J.simulate(sch, rules, 0, (0,), 3, seed=SEED, part=PART, history=0, block_sessions=5)
+    with pytest.raises(ValueError, match="n-2"):
+        J.expect(sch, rules, 0, 3, block_sessions=5)
+    ok = replace(rules, dll=20.0)
+    J.check_costs(sch, ok)
+    with pytest.raises(ValueError, match="n-2"):
+        J.check_costs(sch, ok, J.ArmSpec(worse_ticks=1))              # +1 tick a fill: 14.24 + 10 > 20

@@ -9,27 +9,35 @@ allowed). The loss barrier is
 
     L = min(l, c - x_stop), fractional, never rounded (`adapter.BinaryDraw`'s form; the note's 1.1)
 
-and the driftless first exit wins with p = L / (L + g): +g less x_target, else -L less x_stop. A trade with no room
-(L <= 0) is not taken. Every trade's gross expectation is exactly zero; its net is exactly -(entry + p x_target +
-(1 - p) x_stop); **a cushion-bound loss ends exactly on the floor, so the account fails and is replaced**, as the
-vendored lockstep does, and the engine's clip never binds (`race_net` is the exact-fraction oracle;
-`three_way_arith.race_redraw` the reference law it reduces to at one exit cost).
+and the driftless first exit wins with p = L / (L + g): +g less x_target, else -L less x_stop. **The take** is
+decided at the fill (below): a lane that cannot take its trade fails at the fill where its floor binds, or ends its day
+where the daily limit binds (`three_way_journey._classes`). Every trade taken has gross expectation exactly zero; a
+race's net is exactly -(entry + p x_target + (1 - p) x_stop); **a cushion-bound loss ends exactly on the floor, so the
+account fails and is replaced**, as the vendored lockstep does. The engine's clip binds only where the engine's own
+would: at a walk's flatten whose cost would pass the floor, and at an account failed at the fill (`race_net` is the
+exact-fraction oracle; `three_way_arith.race_redraw` the reference law it reduces to at one exit cost).
 
 **No rounding (the lead's ruling on Wave 3.2's red-team B-1).** The first build rounded L down to whole ticks: a
 cushion-bound loss then left every failing account a fraction of a tick above its floor, never breached, never
 replaced, still billed. The race is fractional; inward rounding was N-4's rule for the shared path of overlapping
 positions only, deferred to the template. `inward` and `race`'s `lattice` argument stay for that use.
 
-**R-10's stopped walk** (the search template's house form, adopted with the lead's ruling on its residual step). A
-symmetric walk from the fill on a lattice of step s ticks, s dividing l and g; its floor-side barrier the race's L
-with x_stop replaced by the larger of x_stop and the flatten-side cost, **fractional**; its target g. **Inside the last
-lattice step before the floor-side barrier** -- at the last lattice point above -L, rho = L - d s below it -- a step is
-a driftless two-point race between the barrier and the lattice point one step up (to the barrier with probability
-s / (s + rho)), so no account is stranded below a step and every step is a martingale move. It stops at the first
-barrier or after n steps, n = round(sigma^2 T / s^2) (halves up, at least one) from the trade's causal volatility at the
-alert and its time to the limit -- both the schedule's fields, never a later bar. Its outcome: +g (target cost), -L
-(stop cost) or the walk's value at n (flatten cost). Gross zero exactly (optional stopping), and no exit passes the
-floor (`walk_law` and `walk_net` are the exact oracles).
+**The take, at the fill** (the template's N-1; the red team's m-1 on the runner): a trade is taken when
+L_fill = min(l, c - max(x_stop, x_flat)) is above zero -- both exit costs, never the run's exit -- for every law.
+
+**R-10's stopped walk** (the search template's house form, with the lead's rulings on its residual step and, in
+corrective cycle 2, on its barrier). A symmetric walk from the fill on a lattice of step s ticks, s dividing l and g;
+its floor-side barrier **the race's own, L = min(l, c - x_stop), fractional** (the red team's RB-1 remedy, first form:
+a cushion-bound stop then ends exactly on the floor, never x_flat - x_stop above it); its target g. **Inside the last
+lattice step before a barrier** -- the floor side's -L, and a target +G made fractional by a rule's profit level
+(m-2) -- a step is a driftless two-point race between the barrier and the lattice point one step back (`_p_up`), so
+either barrier is reached exactly and every step is a martingale move. It stops at the first barrier or
+after n steps, n = round(sigma^2 T / s^2) (halves up, at least one) from the trade's causal volatility at the alert and
+its time to the limit -- both the schedule's fields, never a later bar. Its outcome: +g (target cost), -L (stop cost)
+or the walk's value at n (flatten cost). **A flatten exit whose cost would take the account below its floor is clipped
+at the floor and fails the account, as the engine clips** (`lockstep.py`: `max(pnl, -cushion)`); the time exit lies
+above -L, so the clip takes at most x_flat - x_stop. Gross zero exactly (optional stopping); the net is minus the
+expected costs less that clip; no exit passes the floor (`walk_law` and `walk_net` are the exact oracles).
 
 **The exit-state map** (R-10's table): `EXIT_LAW` maps every terminal state of the run to its law; an exit reason it
 does not name is refused.
@@ -60,7 +68,8 @@ EXIT_LAW: dict[str, str] = {
     "flatten": "walk",         # the 15:10 CT flatten
     "news": "walk",            # a news window's start (E-202 (2)(a))
     "max_hold": "walk",        # its max hold
-    "other": "walk",           # an unscheduled release's flatten, a rule's exit
+    "profit_level": "race",    # a rule's exit at a profit level: the race at the as-placed target min(g, level) (m-2)
+    "other": "walk",           # an unscheduled release's flatten, or another exit at a real time limit
 }
 #: measure 29's stress arms, declared and counted: every fill this many ticks worse
 WORSE_FILL_TICKS = (1, 2)
@@ -89,7 +98,8 @@ def inward(L: Fraction, lattice: int | Fraction | None) -> Fraction:
 
 def race(l, g, c, x_stop=0, lattice: int | Fraction | None = LATTICE) -> tuple[Fraction, Fraction, Fraction] | None:
     """(p, win, loss) in ticks for stop l, target g, cushion c after the entry cost, stop-side cost x_stop: the race of
-    the nearer barrier at L = min(l, c - x_stop) rounded inward; None when L <= 0 (the trade is not taken)."""
+    the nearer barrier at L = min(l, c - x_stop) (rounded inward only at a declared `lattice`); None when L <= 0 (no
+    race: the journey's take at the fill then fails the lane or ends its day)."""
     l, g, c, x = (_frac(v) for v in (l, g, c, x_stop))
     if l <= 0 or g <= 0 or x < 0:
         raise ValueError("stop and target are positive, the exit cost non-negative")
@@ -102,7 +112,7 @@ def race(l, g, c, x_stop=0, lattice: int | Fraction | None = LATTICE) -> tuple[F
 def race_net(l, g, c_before, entry=0, x_target=0, x_stop=0, lattice: int | Fraction | None = LATTICE
              ) -> tuple[Fraction, Fraction, Fraction] | None:
     """The exact oracle from a cushion measured before the entry cost: (gross expectation, net expectation, the worst
-    balance change); None when the trade is not taken."""
+    balance change); None when there is no race (L <= 0)."""
     e, xt, xs = _frac(entry), _frac(x_target), _frac(x_stop)
     r = race(l, g, _frac(c_before) - e, xs, lattice)
     if r is None:
@@ -122,7 +132,7 @@ def race_dollars(u: np.ndarray, risk: float, win: float, cushion: np.ndarray, x_
                  x_target: float = 0.0, lattice: float | None = None) -> np.ndarray:
     """The race in dollars, vectorised (`adapter.BinaryDraw`'s form at no cost and no lattice): the loss barrier
     min(risk, cushion - x_stop) rounded down to `lattice` dollars, p = L / (L + win); +win - x_target where u < p,
-    else -L - x_stop; 0 where L <= 0 (not taken)."""
+    else -L - x_stop; 0 where L <= 0 (no race; the journey's take at the fill decides that lane)."""
     cush = np.asarray(cushion, float)
     L = np.minimum(float(risk), cush - float(x_stop))
     if lattice is not None:
@@ -147,8 +157,9 @@ def walk_steps(sigma: float, T: float, s: float) -> int:
 
 
 def _bottom(L, s):
-    """The walk's floor side: (d, rho) with -d the last lattice index above the barrier -L and rho = L - d s in (0, s]
-    the residual below it. Exact for fractions; for floats an exact multiple of s read with `SNAP` of slack."""
+    """An end of the walk: (d, rho) with d the last lattice index strictly inside the barrier at distance L (in ticks)
+    and rho = L - d s in (0, s] the residual beyond it. Exact for fractions; for floats an exact multiple of s read with
+    `SNAP` of slack. The same function serves the floor side (-L) and the target side (+G)."""
     if isinstance(L, Fraction):
         d = math.ceil(L / s) - 1
     else:
@@ -160,36 +171,58 @@ def _bottom(L, s):
 SNAP = 1e-9
 
 
-def walk_barriers(l: int, g: int, c, x_stop=0, x_flat=0, s: int = 1) -> tuple[int, Fraction] | None:
-    """(up, L): the target g / s in steps and the floor-side barrier L = min(l, c - max(x_stop, x_flat)) in ticks,
-    **fractional, never rounded** (the lead's ruling on B-1); None when L <= 0 (not taken). Refused unless s divides l
-    and g."""
+def walk_barriers(l: int, g: int, c, x_stop=0, x_flat=0, s: int = 1, g_cap=None) -> tuple[Fraction, Fraction] | None:
+    """(G, L) in ticks: the as-placed target G = min(g, g_cap) -- `g_cap` the target a rule's profit level sets, in
+    gross ticks (the journey converts the engine's net need into it: `three_way_journey.Trade.target`; m-3) -- and
+    the floor-side barrier L = min(l, c - x_stop) -- the race's own (corrective cycle 2, RB-1),
+    **fractional, never rounded** (B-1); None when the take at the fill fails, L_fill = min(l, c - max(x_stop, x_flat))
+    <= 0 (the template's N-1; the red team's m-1: the take reads both exit costs, never the exit). Refused unless s
+    divides l and g; G may be fractional (a level)."""
     if not (isinstance(l, (int, np.integer)) and isinstance(g, (int, np.integer)) and isinstance(s, (int, np.integer))):
         raise ValueError("the walk's stop, target and step are whole ticks")
     if s <= 0 or l <= 0 or g <= 0 or l % s or g % s:
         raise ValueError("the lattice step divides the stop and the target")
-    xw = max(_frac(x_stop), _frac(x_flat))
-    L = min(_frac(l), _frac(c) - xw)
-    if L <= 0:
+    c, xs, xf = _frac(c), _frac(x_stop), _frac(x_flat)
+    if min(_frac(l), c - max(xs, xf)) <= 0:
         return None
-    return int(g // s), L
+    G = _frac(g) if g_cap is None else min(_frac(g), _frac(g_cap))
+    if G <= 0:
+        raise ValueError("a target cap is positive")
+    return G, min(_frac(l), c - xs)
 
 
-def walk_law(up: int, L, s, n: int) -> dict[tuple[str, object], object]:
-    """The exact law of the stopped walk's outcome: {(kind, value in ticks): probability}, kind "target" (+g), "stop"
+def _p_up(top: bool, bot: bool, s, rho_u, rho_d):
+    """The chance a step goes up: one half on a plain step; at the last lattice point below the target (rho_u from
+    it) s / (s + rho_u); at the last point above the floor-side barrier (rho_d from it) rho_d / (s + rho_d); at a point
+    that is both, rho_d / (rho_u + rho_d) -- each a driftless move to its two neighbours (the barrier itself where it
+    lies within a step)."""
+    if top and bot:
+        return rho_d / (rho_u + rho_d)
+    if top:
+        return s / (s + rho_u)
+    if bot:
+        return rho_d / (s + rho_d)
+    return (Fraction(1, 2) if isinstance(s, Fraction) or isinstance(rho_d, Fraction) else 0.5)
+
+
+def walk_law(G, L, s, n: int) -> dict[tuple[str, object], object]:
+    """The exact law of the stopped walk's outcome: {(kind, value in ticks): probability}, kind "target" (+G), "stop"
     (-L) or "time" (the walk's value after n steps). The walk moves on the lattice of step s from the fill, one step a
-    draw, +s or -s with probability 1/2 each; **at the last lattice point above the floor-side barrier** (index -d,
-    rho = L - d s below it) a step is a driftless two-point race between the barrier and the lattice point one step up:
-    to -L with probability s / (s + rho), else up one step -- so no account is stranded below a step, and the gross
-    expectation stays exactly zero (each step is a martingale move; optional stopping at a bounded time). Fractions in,
-    fractions out (the oracle); floats in, floats out (the exact program's, the simulation's own arithmetic)."""
-    if up <= 0 or n <= 0 or not L > 0:
+    draw (`_p_up`): a plain step +s or -s at one half; **inside the last lattice step before a barrier** a driftless
+    two-point race between the barrier and the lattice point one step back, so either barrier -- the floor side's L,
+    and a target G made fractional by a profit level -- is reached exactly, and the gross expectation stays exactly
+    zero (each step a martingale move; optional stopping at a bounded time). Fractions in, fractions out (the oracle);
+    floats in, floats out (the exact program's, the simulation's own arithmetic)."""
+    if n <= 0 or not L > 0 or not G > 0:
         raise ValueError("barriers and steps are positive")
-    exact = isinstance(L, Fraction)
+    exact = isinstance(L, Fraction) and isinstance(G, Fraction)
+    if exact:
+        s = Fraction(s)
+    else:
+        s, L, G = float(s), float(L), float(G)
     one = Fraction(1) if exact else 1.0
-    half = one / 2
-    d, rho = _bottom(L, s)
-    q_bar = (s / (s + rho)) if exact else float(s) / (float(s) + float(rho))
+    d, rho_d = _bottom(L, s)
+    u, rho_u = _bottom(G, s)
     live = {0: one}
     done: dict[tuple[str, object], object] = {}
 
@@ -199,99 +232,109 @@ def walk_law(up: int, L, s, n: int) -> dict[tuple[str, object], object]:
     for _ in range(int(n)):
         nxt: dict[int, object] = {}
         for i, pr in live.items():
-            if i == -d:
-                moves = (("bar", pr * q_bar), (i + 1, pr * (one - q_bar)))
+            top, bot = i == u, i == -d
+            q = _p_up(top, bot, s, rho_u, rho_d)
+            if top:
+                add(("target", G), pr * q)
             else:
-                moves = ((i + 1, pr * half), (i - 1, pr * half))
-            for y, w in moves:
-                if y == "bar":
-                    add(("stop", -L), w)
-                elif y >= up:
-                    add(("target", up * s), w)
-                else:
-                    nxt[y] = nxt.get(y, 0) + w
+                nxt[i + 1] = nxt.get(i + 1, 0) + pr * q
+            if bot:
+                add(("stop", -L), pr * (one - q))
+            else:
+                nxt[i - 1] = nxt.get(i - 1, 0) + pr * (one - q)
         live = nxt
     for i, pr in live.items():
         add(("time", i * s), pr)
     return done
 
 
-def walk_net(l: int, g: int, c_before, n: int, s: int = 1, entry=0, x_target=0, x_stop=0, x_flat=0
+def walk_net(l: int, g: int, c_before, n: int, s: int = 1, entry=0, x_target=0, x_stop=0, x_flat=0, g_cap=None
              ) -> tuple[Fraction, Fraction, Fraction] | None:
     """The stopped walk's exact oracle from a cushion measured before the entry cost: (gross expectation, net
-    expectation, the worst balance change); None when not taken."""
+    expectation, the worst balance change), every exit's change clipped at the floor (-c_before) as the engine clips;
+    None when the take at the fill fails."""
     e, xt, xs, xf = (_frac(v) for v in (entry, x_target, x_stop, x_flat))
-    b = walk_barriers(l, g, _frac(c_before) - e, xs, xf, s)
+    c0 = _frac(c_before)
+    b = walk_barriers(l, g, c0 - e, xs, xf, s, g_cap)
     if b is None:
         return None
-    up, L = b
-    law = walk_law(up, L, s, n)
+    G, L = b
+    law = walk_law(G, L, Fraction(s), n)
     gross = sum(pr * v for (k, v), pr in law.items())
-    net, worst = -e, None
+    net, worst = Fraction(0), None
     for (k, v), pr in law.items():
         cost = {"target": xt, "stop": xs, "time": xf}[k]
-        net += pr * (v - cost)
-        worst = v - cost if worst is None else min(worst, v - cost)
-    return gross, net, -e + worst
+        ch = max(-e + v - cost, -c0)
+        net += pr * ch
+        worst = ch if worst is None else min(worst, ch)
+    return gross, net, worst
 
 
-def walk_outcome(us: Sequence[float], up: int, L, s) -> tuple[object, str]:
-    """The stopped walk on the uniforms `us` (one a step): (its value in ticks, its exit kind -- "target", "stop" or
-    "time"). A plain step is +s where u < 1/2; at the last lattice point above the barrier the step goes to the barrier
-    where u < s / (s + rho), else up one."""
-    d, rho = _bottom(L, s)
-    q_bar = float(s) / (float(s) + float(rho))
+def walk_outcome(us: Sequence[float], G, L, s) -> tuple[object, str]:
+    """The stopped walk on the uniforms `us` (one a step, up where u < `_p_up`): (its value in ticks, its exit kind --
+    "target", "stop" or "time")."""
+    d, rho_d = _bottom(float(L), float(s))
+    u_, rho_u = _bottom(float(G), float(s))
     i = 0
     for u in us:
-        if i == -d:
-            if u < q_bar:
-                return -L, "stop"
+        top, bot = i == u_, i == -d
+        q = _p_up(top, bot, float(s), rho_u, rho_d)
+        if u < q:
+            if top:
+                return float(G), "target"
             i += 1
         else:
-            i += 1 if u < 0.5 else -1
-        if i >= up:
-            return up * s, "target"
-    return i * s, "time"
+            if bot:
+                return -float(L), "stop"
+            i -= 1
+    return i * float(s), "time"
 
 
-def walk_outcomes(U: np.ndarray, up: np.ndarray, L: np.ndarray, s: int) -> tuple[np.ndarray, np.ndarray]:
-    """`walk_outcome` over lanes (U one row a lane, one column a step; L each lane's barrier in ticks, a float):
+def _walk_lanes(U, i, kind, alive, u_, d, q_top, q_bot, q_both, n_steps):
+    """Advance lanes by `n_steps` columns of U (in place on copies; returns the new i, kind, alive)."""
+    for j in range(n_steps):
+        u = U[:, j]
+        top, bot = i == u_, i == -d
+        q = np.where(top & bot, q_both, np.where(top, q_top, np.where(bot, q_bot, 0.5)))
+        up = u < q
+        hit_t = alive & up & top
+        hit_b = alive & ~up & bot
+        i = np.where(alive & up & ~top, i + 1, np.where(alive & ~up & ~bot, i - 1, i))
+        kind = np.where(hit_t, 1, np.where(hit_b, -1, kind))
+        alive = alive & ~(hit_t | hit_b)
+        if not alive.any():
+            break
+    return i, kind, alive
+
+
+def _ends_lanes(G, L, s, lanes):
+    L = np.broadcast_to(np.asarray(L, float), (lanes,))
+    G = np.broadcast_to(np.asarray(G, float), (lanes,))
+    d = np.maximum(np.ceil(L / s - SNAP).astype(np.int64) - 1, 0)
+    rho_d = L - d * s
+    u_ = np.maximum(np.ceil(G / s - SNAP).astype(np.int64) - 1, 0)
+    rho_u = G - u_ * s
+    return G, L, u_, d, s / (s + rho_u), rho_d / (s + rho_d), rho_d / (rho_u + rho_d)
+
+
+def walk_outcomes(U: np.ndarray, G, L: np.ndarray, s: int) -> tuple[np.ndarray, np.ndarray]:
+    """`walk_outcome` over lanes (U one row a lane, one column a step; G and L each lane's barriers in ticks):
     (values in ticks, kinds as 1 target, -1 stop, 0 time)."""
     U = np.asarray(U, float)
     lanes, n = U.shape
-    L = np.asarray(L, float)
-    up = np.broadcast_to(np.asarray(up), (lanes,))
-    d = np.maximum(np.ceil(L / s - SNAP).astype(np.int64) - 1, 0)
-    rho = L - d * s
-    q_bar = s / (s + rho)
-    i = np.zeros(lanes, np.int64)
-    kind = np.zeros(lanes, np.int64)
-    alive = np.ones(lanes, bool)
-    for j in range(n):
-        u = U[:, j]
-        at_bottom = i == -d
-        to_bar = alive & at_bottom & (u < q_bar)
-        step = np.where(at_bottom, 1, np.where(u < 0.5, 1, -1))
-        i = np.where(alive & ~to_bar, i + step, i)
-        kind[to_bar] = -1
-        alive &= ~to_bar
-        hit_up = alive & (i >= up)
-        kind[hit_up] = 1
-        alive &= ~hit_up
-        if not alive.any():
-            break
-    val = np.where(kind == -1, -L, np.where(kind == 1, up * s, i * s)).astype(float)
+    G, L, u_, d, qt, qb, qbb = _ends_lanes(G, L, float(s), lanes)
+    i, kind, alive = _walk_lanes(U, np.zeros(lanes, np.int64), np.zeros(lanes, np.int64), np.ones(lanes, bool), u_, d,
+                                 qt, qb, qbb, n)
+    val = np.where(kind == -1, -L, np.where(kind == 1, G, i * float(s))).astype(float)
     return val, kind
 
 
-def walk_run(read, lanes: int, up: int, L: np.ndarray, s: int, n: int, chunk: int) -> tuple[np.ndarray, np.ndarray]:
+def walk_run(read, lanes: int, G, L: np.ndarray, s: int, n: int, chunk: int) -> tuple[np.ndarray, np.ndarray]:
     """`walk_outcomes` read `chunk` steps at a time: `read(rows, first, count)` gives the uniforms of steps first ..
     first + count - 1 of the lanes `rows` (indices into 0 .. lanes - 1). Only lanes still walking are read, and the
     walk stops when every lane is absorbed: the same outcome on the same uniforms as reading all n at once (the
     generator is counter-based), at the cost of the steps actually walked."""
-    L = np.asarray(L, float)
-    d = np.maximum(np.ceil(L / s - SNAP).astype(np.int64) - 1, 0)
-    q_bar = s / (s + (L - d * s))
+    G, L, u_, d, qt, qb, qbb = _ends_lanes(G, L, float(s), lanes)
     i = np.zeros(lanes, np.int64)
     kind = np.zeros(lanes, np.int64)
     alive = np.ones(lanes, bool)
@@ -300,24 +343,11 @@ def walk_run(read, lanes: int, up: int, L: np.ndarray, s: int, n: int, chunk: in
         c = min(int(chunk), n - pos)
         rows = np.flatnonzero(alive)
         U = read(rows, pos, c)
-        ii, kk, al = i[rows], kind[rows], alive[rows]
-        dd, qq = d[rows], q_bar[rows]
-        for j in range(c):
-            u = U[:, j]
-            at_bottom = ii == -dd
-            to_bar = al & at_bottom & (u < qq)
-            step = np.where(at_bottom, 1, np.where(u < 0.5, 1, -1))
-            ii = np.where(al & ~to_bar, ii + step, ii)
-            kk[to_bar] = -1
-            al &= ~to_bar
-            hit = al & (ii >= up)
-            kk[hit] = 1
-            al &= ~hit
-            if not al.any():
-                break
+        ii, kk, al = _walk_lanes(U, i[rows], kind[rows], alive[rows], u_[rows], d[rows], qt[rows], qb[rows],
+                                 qbb[rows], c)
         i[rows], kind[rows], alive[rows] = ii, kk, al
         pos += c
-    val = np.where(kind == -1, -L, np.where(kind == 1, up * s, i * s)).astype(float)
+    val = np.where(kind == -1, -L, np.where(kind == 1, G, i * float(s))).astype(float)
     return val, kind
 
 

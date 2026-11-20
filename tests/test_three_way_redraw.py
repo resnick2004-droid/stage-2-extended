@@ -91,15 +91,23 @@ def check_walk_oracles() -> int:
             r = RD.walk_net(l, g, c, n_steps, s, e, xt, xs, xf)
             if r is None:
                 continue
-            up, L = RD.walk_barriers(l, g, c - e, xs, xf, s)
-            assert L == min(Fraction(l), c - e - max(xs, xf))          # fractional, never rounded
-            law = RD.walk_law(up, L, s, n_steps)
+            G, L = RD.walk_barriers(l, g, c - e, xs, xf, s)
+            assert L == min(Fraction(l), c - e - xs) and G == g          # the race's barrier, fractional (RB-1)
+            assert min(Fraction(l), c - e - max(xs, xf)) > 0             # taken only when L_fill > 0 (m-1)
+            law = RD.walk_law(G, L, Fraction(s), n_steps)
             assert sum(law.values()) == 1
-            assert all(v == -L for (k, v) in law if k == "stop")       # the barrier reached exactly: no stranding
+            assert all(v == -L for (k, v) in law if k == "stop")       # the barrier reached exactly
             gross, net, worst = r
             assert gross == 0, (s, l, g, c, n_steps)
             cost = sum(pr * {"target": xt, "stop": xs, "time": xf}[k] for (k, v), pr in law.items())
-            assert net == -(e + cost), (s, l, g, c, n_steps, e, xt, xs, xf)
+            # every exit's change clipped at the floor; only a flatten can reach it, by at most x_flat - x_stop
+            clip = sum(pr * max(Fraction(0), -c - (-e + v - {"target": xt, "stop": xs, "time": xf}[k]))
+                       for (k, v), pr in law.items())
+            assert net == -(e + cost) + clip, (s, l, g, c, n_steps, e, xt, xs, xf)
+            p_time = sum(pr for (k, v), pr in law.items() if k == "time")
+            assert clip <= p_time * max(Fraction(0), xf - xs)
+            if L < l:                                                  # a cushion-bound stop ends on the floor
+                assert -e - L - xs == -c
             assert worst >= -c, (s, l, g, c, n_steps, e, xt, xs, xf)
             n += 1
     return n
@@ -115,12 +123,31 @@ def test_the_residual_step_is_a_driftless_two_point_race() -> None:
     for s, L in ((2, Fraction(7, 2)), (2, Fraction(1, 3)), (4, Fraction(9)), (2, Fraction(4))):
         d, rho = RD._bottom(L, s)
         assert 0 < rho <= s and L == d * s + rho
-        law = RD.walk_law(10, L, s, 1)
+        law = RD.walk_law(Fraction(10 * s), L, Fraction(s), 1)
         assert sum(pr * v for (k, v), pr in law.items()) == 0
         if d == 0:
             assert law[("stop", -L)] == Fraction(s) / (s + rho)
-    law = RD.walk_law(10, Fraction(1, 3), 2, 1)                         # room below one step: still raced
+    law = RD.walk_law(Fraction(20), Fraction(1, 3), Fraction(2), 1)       # room below one step: still raced
     assert set(law) == {("stop", Fraction(-1, 3)), ("time", 2)}
+
+
+def test_m2_a_fractional_target_in_the_walk_is_raced_exactly() -> None:
+    """A rule's profit level makes the walk's target fractional (G = min(g, level)): its last lattice step below G is a
+    two-point race to G, so gross stays exactly zero at every G, L, step and length, and the target is reached at G;
+    both ends within one step of the fill make the walk the race itself (p = L / (L + G))."""
+    for G, L, s, n in itertools.product((Fraction(7, 2), Fraction(9), Fraction(1, 3), Fraction(25, 4)),
+                                        (Fraction(37, 3), Fraction(5, 2), Fraction(1, 5)), (Fraction(2), Fraction(4)),
+                                        (1, 3, 9)):
+        law = RD.walk_law(G, L, s, n)
+        assert sum(law.values()) == 1 and sum(pr * v for (k, v), pr in law.items()) == 0, (G, L, s, n)
+        assert all(v == G for (k, v) in law if k == "target") and all(v == -L for (k, v) in law if k == "stop")
+    one = RD.walk_law(Fraction(1, 3), Fraction(1, 5), Fraction(2), 1)
+    assert one == {("target", Fraction(1, 3)): Fraction(3, 8), ("stop", Fraction(-1, 5)): Fraction(5, 8)}
+    G, L = RD.walk_barriers(8, 8, Fraction(40), Fraction(1, 2), Fraction(3, 4), 2, g_cap=Fraction(7, 2))
+    assert G == Fraction(7, 2) and L == 8
+    r = RD.walk_net(8, 8, Fraction(40), 5, 2, Fraction(1, 4), Fraction(1, 4), Fraction(1, 2), Fraction(3, 4),
+                    g_cap=Fraction(7, 2))
+    assert r[0] == 0
 
 
 def test_the_walk_on_lanes_is_the_scalar_walk_and_the_law() -> None:
@@ -130,17 +157,17 @@ def test_the_walk_on_lanes_is_the_scalar_walk_and_the_law() -> None:
     unit = K.Unit(S.issue("tests"), 1, 0, 0, 0)
     U = np.array([K.uniforms(unit.coin_key(m, K.WALK), 12) for m in range(400)])
     Ut = np.array([K.uniforms(unit.coin_key(m, K.WALK), 12, twin=True) for m in range(400)])
-    for L in (7.0, 6.5, 0.4):
-        val, kind = RD.walk_outcomes(U, 3, np.full(400, L), 2)
+    for G, L in ((6.0, 7.0), (6.0, 6.5), (6.0, 0.4), (3.5, 6.5), (0.3, 0.4)):
+        val, kind = RD.walk_outcomes(U, G, np.full(400, L), 2)
         for j in range(400):
-            v, k = RD.walk_outcome(U[j], 3, L, 2)
+            v, k = RD.walk_outcome(U[j], G, L, 2)
             assert v == val[j] and {"target": 1, "stop": -1, "time": 0}[k] == kind[j]
     steps, steps_t = np.where(U < 0.5, 1, -1), np.where(Ut < 0.5, 1, -1)
     assert np.array_equal(steps, -steps_t)                            # every plain step reversed: the mirror
     rng = np.random.default_rng(K.seed_key(S.issue("tests"), "test", test=S.TEST_IDS["walk_oracle"], replicate=0))
     Ur = rng.random((40000, 6))
-    val, kind = RD.walk_outcomes(Ur, 2, np.full(40000, 2.5), 1)
-    law = RD.walk_law(2, 2.5, 1, 6)
+    val, kind = RD.walk_outcomes(Ur, 2.0, np.full(40000, 2.5), 1)
+    law = RD.walk_law(2.0, 2.5, 1, 6)
     for (k, v), pr in law.items():
         code = {"target": 1, "stop": -1, "time": 0}[k]
         f = float(np.mean((kind == code) & np.isclose(val, float(v))))
@@ -149,8 +176,9 @@ def test_the_walk_on_lanes_is_the_scalar_walk_and_the_law() -> None:
 
 
 def test_the_exit_state_map_is_r10s_and_refuses_any_other() -> None:
-    assert set(RD.EXIT_LAW) == {"target", "stop", "stop_gap", "floor", "flatten", "news", "max_hold", "other"}
-    assert {k for k, v in RD.EXIT_LAW.items() if v == "race"} == {"target", "stop", "stop_gap", "floor"}
+    assert set(RD.EXIT_LAW) == {"target", "stop", "stop_gap", "floor", "flatten", "news", "max_hold",
+                                "profit_level", "other"}
+    assert {k for k, v in RD.EXIT_LAW.items() if v == "race"} == {"target", "stop", "stop_gap", "floor", "profit_level"}
     with pytest.raises(ValueError):
         RD.law_of("expired")
 
@@ -175,3 +203,4 @@ def test_the_race_and_the_journeys_race_are_the_vendored_draw_at_no_cost() -> No
     got = json.loads(out.stdout.strip().splitlines()[-1])
     assert got["equal"] and got["n"] >= 1000, got
     assert got["journey_equal"] and got["journey_n"] >= 1000, got
+    assert got["clip_equal"] and got["clip_n"] >= 1000, got              # RB-1: the failed lane is the engine's loss
