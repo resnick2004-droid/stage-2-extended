@@ -76,6 +76,23 @@ each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins wit
 * **rule 4, a described reading after the verdict.** A described reading (RD-) reads a market's held-out window only
   once a verdict token for that market exists in a row newer than the window's opening row.
 
+**Q-173's closures** (the red team's read of the O-7 drafts, `docs/reviews/O7_SEARCH_YEARS_2026-11-19.md`):
+
+* **rule 3, a described reading's replay waits for the verdict (M-3).** A `registered_design` read of the held-out
+  years made for a described reading -- its admitting row names an `RD-NN`, or a `prereg/RD-*.md` names the token's
+  script -- is refused (under rule 3) until a verdict row for its market, newer than its window's opening row, exists,
+  as rule 4 holds for the reading's own reads. Only the joint held-out test's family declaration reads a market's
+  held-out window before its verdict;
+* **the supersession rule (N-1).** `SUPERSEDED` lists each superseded declaration as (its path, its LF sha256); a read
+  whose declaration is one of them -- by path, or by bytes under any other path -- is refused (`SupersededRefused`),
+  on the search years as on the judged block, whatever later rows exist; so is a `registered_design` read made for a
+  superseded described reading. The lead fills the list at the O-7 pins (RD-01, RD-02, RD-03, RD-05's part F, RD-04);
+* **the identity rule (N-2).** An identity writes nothing to `results/`: an `identity` read of the judged block is
+  refused when the identity's script, read as source (`identity_write_problems`), calls `write_result` or writes
+  (`open` in a write mode, `write_text`, `write_bytes`, `to_csv`, `to_parquet`, `to_json`) to a path whose literal
+  parts name `results`. A static check of the script's own text: a write through a helper in another module, or to a
+  path built in a variable elsewhere, is not seen -- the reader's own ledger append is not the script's write.
+
 **The held-out tokens** (`HELDOUT_TOKENS`; `extended/identity_tokens.py`'s positional form): exactly the first text of
 a decision row's third cell, the row beginning exactly `| E-NNN | YYYY-MM-DD | `, unquoted, ending ` -- ` and the
 row's text; that shape anywhere else is never a token (`heldout_token_problems` lists a row whose third cell begins
@@ -226,6 +243,22 @@ class JudgedBlockReadTwice(JudgedBlockSealed):
 
 class LedgerError(ReadRefused):
     """The read ledger does not verify or cannot be written, or the commit cannot be named: no judged read."""
+
+
+#: Q-173 (N-1): each superseded declaration as (its path, its LF sha256); filled by the lead's row at the O-7 pins
+SUPERSEDED: tuple[tuple[str, str], ...] = ()
+SUPERSESSION_RULE = "the supersession rule, a superseded declaration authorises no read (N-1)"
+IDENTITY_WRITE_RULE = "the identity rule, an identity writes nothing to results/ (N-2)"
+RD_ID = re.compile(r"(?<![\w-])RD-\d+(?!\d)")
+#: the calls that write a file (N-2's static check)
+WRITE_CALLS = frozenset({"write_text", "write_bytes", "to_csv", "to_parquet", "to_json"})
+
+
+class SupersededRefused(JudgedBlockSealed):
+    """A read authorised by a superseded declaration (`SUPERSEDED`); refused whatever later rows exist."""
+
+    def __init__(self, what: str, why: str):
+        super().__init__(f"REFUSED ({SUPERSESSION_RULE}): {what}: {why}")
 
 
 class HeldOutRefused(JudgedBlockSealed):
@@ -490,6 +523,7 @@ def _identity(declaration: Any, repo: Path, what: str) -> str:
         raise JudgedBlockSealed(f"REFUSED: {what}: {declaration} is no decision row of {repo / 'DECISIONS.md'}")
     if "identit" not in row.lower():
         raise JudgedBlockSealed(f"REFUSED: {what}: {declaration}'s row does not mention an identity")
+    _identity_writes(script, what)
     return str(declaration)
 
 
@@ -789,6 +823,118 @@ def _registered_heldout_once(repo: Path, declaration: str, what: str) -> None:
                                       "one run")
 
 
+def _declaration_files(declaration: Any, repo: Path) -> list[Path]:
+    """The files a declaration names: an F- or RD-id's `prereg/<id>_*.md`, a path; none for a decision row."""
+    s = str(declaration).replace("\\", "/")
+    if E_ID.fullmatch(s):
+        return []
+    if F_ID.fullmatch(s):
+        return sorted(repo.glob(f"prereg/{s}_*.md")) + [x for x in [repo / "prereg" / f"{s}.md"] if x.is_file()]
+    q = Path(s) if Path(s).is_absolute() else repo / s
+    return [q] if q.is_file() else []
+
+
+def superseded_entry(path: Path, repo: Path) -> tuple[str, str] | None:
+    """The `SUPERSEDED` entry a file is, by its path or by its bytes (LF sha256), else None."""
+    rel = _rel(path, repo)
+    sha = sha256_lf(path) if path.is_file() else None
+    for entry in SUPERSEDED:
+        if entry[0] == rel or (sha is not None and entry[1] == sha):
+            return entry
+    return None
+
+
+def _refuse_superseded(declaration: Any, repo: Path, what: str) -> None:
+    """The supersession rule (N-1): a read whose declaration is superseded is refused, whatever later rows exist."""
+    if not SUPERSEDED or declaration is None:
+        return
+    for f in _declaration_files(declaration, repo):
+        hit = superseded_entry(f, repo)
+        if hit is not None:
+            raise SupersededRefused(what, f"{_rel(f, repo) or f} is superseded ({hit[0]}, sha256 {hit[1][:12]}); a "
+                                          "superseded declaration authorises no read, whatever later rows say")
+
+
+def registered_for_readings(row: str, script: str | None, repo: Path) -> tuple[str, ...]:
+    """The described readings (RD-NN) a registered_design read is made for: those its admitting row names, and those
+    whose `prereg/RD-*.md` names the read's script."""
+    ids = set(RD_ID.findall(row))
+    if script:
+        for f in sorted((repo / "prereg").glob("RD-*.md")):
+            if script in f.read_text(encoding="utf-8"):
+                m = DECLARATION_ID.search(f"prereg/{f.name}")
+                if m:
+                    ids.add(m.group(1))
+    return tuple(sorted(ids))
+
+
+def _registered_reading_verdict(text: str, row_id: str, script: str | None, repo: Path, market: str, window: str,
+                                what: str) -> tuple[str, ...]:
+    """Rule 3 closed (M-3): a registered_design held-out read made for a described reading waits for the market's
+    verdict row (newer than the window's opening row), as rule 4 holds for the reading's own reads; a superseded
+    reading's is refused outright. Returns the readings it was made for."""
+    rds = registered_for_readings(decision_row(text, row_id) or "", script, repo)
+    if not rds:
+        return ()
+    for rd in rds:
+        _refuse_superseded(rd, repo, what)
+    ok = [t for t in heldout_tokens(text, "verdict") if t.get("market") == market and t.number > _row_number(window)]
+    if not ok:
+        raise HeldOutRefused(3, what, f"{row_id}'s held-out read is made for the described reading(s) "
+                                      f"{', '.join(rds)}, and no verdict row for {market}'s held-out window opened by "
+                                      f"{window} exists (`heldout-verdict: {market} F-NN -- ...`): a described "
+                                      "reading's registered-design replay waits for the verdict, as its own reads do "
+                                      "(rule 4); only the joint held-out test reads the window before it")
+    return rds
+
+
+def _call_name(node: Any) -> str | None:
+    import ast
+    f = node.func
+    return f.id if isinstance(f, ast.Name) else f.attr if isinstance(f, ast.Attribute) else None
+
+
+def _strings(node: Any) -> list[str]:
+    import ast
+    return [n.value for n in ast.walk(node) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+
+
+def _names_results(parts: Iterable[str]) -> bool:
+    return any(re.search(r"(?:^|[\\/])results(?:$|[\\/])", s) for s in parts)
+
+
+def identity_write_problems(source: str) -> list[str]:
+    """N-2's static check of an identity script's own text: each call that writes a result (`write_result`) or writes
+    a file to a path whose literal parts name `results` -- `open` (or `.open`) in a write mode, `write_text`,
+    `write_bytes`, `to_csv`, `to_parquet`, `to_json` -- as `line N: <what>`."""
+    import ast
+    out = []
+    for node in ast.walk(ast.parse(source)):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node)
+        if name == "write_result":
+            out.append(f"line {node.lineno}: calls write_result")
+        elif name in WRITE_CALLS and _names_results(_strings(node)):
+            out.append(f"line {node.lineno}: {name} to a path under results/")
+        elif name == "open":
+            mode = [k.value for k in node.keywords if k.arg == "mode"] + [a for a in node.args[1:2]]
+            texts = [m.value for m in mode if isinstance(m, ast.Constant) and isinstance(m.value, str)]
+            if any(c in m for m in texts for c in "wax+") and _names_results(_strings(node)):
+                out.append(f"line {node.lineno}: open for writing under results/")
+    return out
+
+
+def _identity_writes(script: Path | None, what: str) -> None:
+    """The identity rule (N-2): refuse an identity whose script writes to results/."""
+    if script is None or not script.is_file():
+        return
+    probs = identity_write_problems(script.read_text(encoding="utf-8"))
+    if probs:
+        raise JudgedBlockSealed(f"REFUSED ({IDENTITY_WRITE_RULE}): {what}: {script.name} writes to results/ "
+                                f"({'; '.join(probs)}); an identity writes pass or fail lines and nothing else")
+
+
 def _exists(declaration: Any, repo: Path) -> bool:
     """A choice-block read's declaration, if it names one, exists: a decision row, an F- or RD-id, or a file of the
     tree."""
@@ -821,6 +967,7 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     if "judged" not in blocks:
         if declaration is not None and not _exists(declaration, tree):
             raise ReadRefused(f"REFUSED: {what}: the declaration {declaration!r} does not exist in {tree}")
+        _refuse_superseded(declaration, tree, what)
         return Authorisation(s, e, blocks, False, None, None, purpose,
                              str(declaration) if declaration is not None else None, None, None, repeat, False,
                              designs, market)
@@ -839,10 +986,15 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     if purpose == REGISTERED_DESIGN:
         ref = _registered(declaration, designs, tree, head)
         tok = _registered_heldout(ref, designs, tree, head)     # rule 3: a row naming this read, in a clean run
+        text = _decisions(tree)
+        window = heldout_window(text, market, first, e)[0]
+        rds = _registered_reading_verdict(text, ref, tok.get("script"), tree, market, window, head)   # M-3
         _clean_run(tree, head)
         _registered_heldout_once(tree, ref, head)
+        held = (("read_row", tok.row),) + ((("readings", ",".join(rds)),) if rds else ())
         return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, REGISTERED_DESIGN, repeat, True,
-                             designs, market, (("read_row", tok.row),))
+                             designs, market, held)
+    _refuse_superseded(declaration, tree, head)             # N-1, before the pin is even looked at
     ref, sha = _family(declaration, purpose, tree, head)
     text = _decisions(tree)
     window = heldout_window(text, market, first, e)[0]
