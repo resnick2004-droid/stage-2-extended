@@ -62,17 +62,18 @@ leans on it is a finding.
    decided at the fill by L_fill = min(l, c - max(x_stop, x_flat)), never by its later exit (N-1), with
    no "not taken" state -- L_fill <= 0 failing the account at the fill where the floor binds (B-2), and a trade sized
    to zero contracts at a positive room ending the account out of room (C-1, Stage 2 D-318, D-335), counted apart? Is
-   the lattice step per trade, the largest whole number of ticks dividing the stop and the target within `WALK_MAX`
-   (M-3)? Does the walk book its floor side at L_race with the flatten clip counted (m-1)? Does a rule's exit
-   at a profit level take the race at the as-placed target, never the walk (N-2)? (Racing the full cushion and then
-   booking the stop's cost lets the clip credit costs back to near-floor trades: an edge a search will find.
-   `BinaryDraw` is only the cost-free case.) Is the gross expectation zero and the net exactly minus the costs at
-   every cushion, for time-limited trades too (R-10, every terminal state mapped to a law, the walk's fractional
-   barrier resolved by a two-point last sub-step)? Are trades open at once on one underlying redrawn jointly from one
-   driftless path, or is an overlapping design run at all before that is defined (m-2)? Does a redrawn loss carry the
-   run's stop-fill convention (m-3)? Are the no-harm and as-traded floors read on the real path (N-1), with the
-   pair rule's settlement (a pair touching either leg's stop or target on the fill bar contributes zero lift)? Is an
-   as-walked result credited?
+   the lattice step per trade, s = max(1, ceil(sigma sqrt(T) / sqrt(`WALK_MAX`))) ticks, from sigma, T and `WALK_MAX`
+   and nothing else, never required to divide the stop or the target, a trade never refused for its step (S-1)? Does
+   the walk book its floor side at L_race with the flatten clip counted (m-1)? Does a rule's exit at a profit level
+   take the race at the as-placed target, never the walk (N-2)? (Racing the full cushion and then booking the stop's
+   cost lets the clip credit costs back to near-floor trades: an edge a search will find. `BinaryDraw` is only the
+   cost-free case.) Is the gross expectation zero and the net exactly minus the costs at every cushion, for
+   time-limited trades too (R-10, every terminal state mapped to a law, the walk's fractional barrier resolved by a
+   two-point last sub-step)? Are trades open at once on one underlying redrawn jointly from one driftless path, or is
+   an overlapping design run at all before that is defined (m-2)? Does a redrawn loss carry the run's
+   stop-fill convention (m-3)? Are the no-harm and as-traded floors read on the real path (N-1), with the pair rule's
+   settlement (a pair touching either leg's stop or target on the fill bar contributes zero lift)? Is an as-walked
+   result credited?
 9. **Multiple testing and calibration.** Is every design tried counted (survey, rounds, every L, every failed gate)?
    Is the level 0.05 / (k (k + 1)) applied to the test that decides, with k assigned at the held-out row (E-204)? Can
    a check fail -- does a calibration's null differ from the alternative, does an oracle read something other than the

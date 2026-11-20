@@ -89,9 +89,11 @@ cd $W && python scripts/vendor_stage2.py --verify
   flatten clip counted, and every terminal state mapped; L_fill = min(l, c - max(x_stop, x_flat)), the fill's decision
   (x_flat the flatten-side exit cost): L_fill <= 0 where the floor binds fails the account at the fill,
   where the daily loss limit binds the day stops; a trade sized to zero contracts at a positive room ends the account
-  out of room, failed and counted apart (C-1, Stage 2 D-318, D-335); the lattice step per trade within `WALK_MAX`
-  (M-3); a redrawn loss with the run's stop-fill convention (m-3); overlapping positions refused until defined (m-2);
-  the pair rule's settlement where a resting entry meets its reflection
+  out of room, failed and counted apart (C-1, Stage 2 D-318, D-335); the lattice step per trade,
+  s = max(1, ceil(sigma sqrt(T) / sqrt(`WALK_MAX`))) ticks, from sigma, T and `WALK_MAX` and nothing else, never
+  required to divide the stop or the target, a trade never refused for its step (M-3); a redrawn loss with the run's
+  stop-fill convention (m-3); overlapping positions refused until defined (m-2); the pair rule's settlement where a
+  resting entry meets its reflection
 
 ## 5. Results that matter (a reading, after `/collect`)
 
