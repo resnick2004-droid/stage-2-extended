@@ -4,6 +4,12 @@ version = "0.1.0"
 description = "Execution models for a prop-firm user's journey, on Stage 2's vendored engine (read-only)."
 requires-python = ">=3.12"
 
+[project.optional-dependencies]
+# The test runner's own plugins, pinned (Q-193): pytest-xdist runs the pre-commit fast tier in parallel inside its slot
+# (scripts/fasttier_xdist.py); installed from PyPI with `python -m pip install pytest-xdist==3.6.1` (it brings execnet).
+# Without it the fast tier runs serially, as before.
+test = ["pytest-xdist==3.6.1"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
