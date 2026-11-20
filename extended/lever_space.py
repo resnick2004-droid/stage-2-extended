@@ -18,6 +18,11 @@ While that file (or its manifest) does not exist S1 stays `NotComputed`, as befo
 after its manifest is checked (`s1_range.load_range`: its sha256, a clean run of `scripts/s1_range.py` on a clean tree,
 the whole search years, both identities held, the caps equal to `stop_caps()` now, the declared share), and any defect
 refuses loudly (`LeverRefused`), never as `NotComputed`. T7 has no reading and stays refused.
+
+**The four rows once 'to declare'** (E-NNN pending) load as declared: T2b, the NY AM / NY PM boundary at noon New
+York (`ny_boundary`, checked on every search-year weekday); A15, the router's rotations; A16, `by_component`'s pools
+dealt in turn (`deal_pools`), the shares derived from the components; A17, the state rule on the mode's dollar risk
+(`state_risk`). No lever is 'to declare' now; the kind stays for a later row. A9 and A19 stay refused by key.
 """
 from __future__ import annotations
 
@@ -109,6 +114,23 @@ DECLARED: dict[str, Declared] = {
     "payout_cadence": Declared(("every_eligible_close",), "RD-02 6.1: after the first payout, every eligible close"),
     "payout_method": Declared(("aeropay",), "RD-02 7.1; Stage 2 D-24: Aeropay, the US baseline"),
     "payout_amounts": Declared(("max", "half"), "RD-02 6.1 L2: the maximum, or half of it (`payout_frac` 0.5)"),
+    # -- the four rows that were 'to declare' (T2b, A15, A16, A17; E-NNN pending), each fixed before any outcome
+    "ny_split_local": Declared(("America/New_York", 12, 0),
+                               "T2b: noon on the NY session's own clock. Its open is 09:30 New York (E-231 (3), "
+                               "`day_calendar.LOCAL_ANCHORS`), so NY AM runs from the cash open to New York's noon, "
+                               "where the conventional lunch lull begins, and NY PM holds the lull, the afternoon and "
+                               "the close to the firm's flat. Session structure only; nothing read"),
+    "rotations": Declared(("longest_waiting", "round_robin", "by_component"),
+                          "A15: the mix router's rotations (Q-169, `router.ROTATIONS`), the base first (Stage 2 "
+                          "D-429's longest-waiting account); E-221 O-4: accounts alternate, the rotation a lever, "
+                          "one account per trade, never opposite positions at once"),
+    "assignment": Declared(("dealt",),
+                           "A16: `by_component`'s pools dealt in turn (`deal_pools`); a source's share of the mix is "
+                           "its components' (T1 per component, CHARTER 3.4, 3.5), never a separate parameter"),
+    "state_rules": Declared(("none", "floor", "target", "floor_target"),
+                            "A17: the triage (Q-46's buffer idea enters as a state rule) and the restart plan's lever "
+                            "'any state rule (sizing by distance to drawdown or target)': the mode's r, cut by the "
+                            "room's share of the start room, by the goal still to make, or by both (`state_risk`)"),
 }
 
 
@@ -435,6 +457,141 @@ def _hold_expiry() -> Range:
                  read=_read("hold_expiry_days"))
 
 
+# ---------------------------------------------- the four rows once 'to declare' (T2b, A15, A16, A17; E-NNN pending)
+
+
+def _search_weekdays() -> list[Any]:
+    """The weekdays of the search years (`day_calendar.SEARCH_START` to `SEARCH_END`, E-208): calendar dates only."""
+    import calendar
+    from datetime import timedelta
+
+    from extended import day_calendar as DC
+
+    out, d = [], DC.SEARCH_START
+    while d <= DC.SEARCH_END:
+        if d.weekday() < calendar.SATURDAY:
+            out.append(d)
+        d += timedelta(days=1)
+    return out
+
+
+def ny_boundary(day: Any) -> int:
+    """T2b's boundary on trading day `day` (a date), in minutes after the reopen of the evening before it: the
+    declared local time (`ny_split_local`, noon New York) converted for that date by zoneinfo, as the session anchors
+    are (`day_calendar.anchored_starts`)."""
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    from extended import day_calendar as DC
+
+    td = trading_day()
+    if td["reopen"] != DC.REOPEN_MIN:
+        raise LeverRefused("the anchored times are minutes after a 17:00 CT reopen; this firm reopens at another time")
+    tz, h, m = declared("ny_split_local")
+    reopen = datetime(day.year, day.month, day.day, tzinfo=DC.CHICAGO) - timedelta(days=1) \
+        + timedelta(minutes=td["reopen"])
+    t = datetime(day.year, day.month, day.day, int(h), int(m), tzinfo=ZoneInfo(tz))
+    return int((t - reopen) // timedelta(minutes=1))
+
+
+def _ny_split() -> Range:
+    """T2b: the boundary on every weekday of the search years; refused unless it is one value there, strictly inside
+    `ny` (after its anchored start, before the last new entry) and on the mark grid."""
+    from extended import day_calendar as DC
+
+    td = trading_day()
+    step = int(declared("mark_step_min"))
+    days = _search_weekdays()
+    seen: set[int] = set()
+    starts: set[int] = set()
+    for d in days:
+        b, ny = ny_boundary(d), int(DC.anchored_starts(d)["ny"])
+        if not ny < b < td["last_entry_offset"]:
+            raise LeverRefused(f"T2b's boundary {b} is not inside NY [{ny}, {td['last_entry_offset']}] on {d}")
+        seen.add(b)
+        starts.add(ny)
+    if len(seen) != 1:
+        raise LeverRefused(f"T2b's boundary takes {len(seen)} values over the search years, not one")
+    b = seen.pop()
+    if b % step:
+        raise LeverRefused(f"T2b's boundary {b} lies off the {step}-minute mark grid")
+    clock = (td["reopen"] + b) % MINUTES_PER_DAY
+    return Range("T2b", "fixed", values=(b,), unit="minutes after the reopen: NY AM is [ny's start, b), NY PM [b, "
+                 "the flat)", read={"trading_hours": rule("trading_hours")},
+                 detail={"local": tuple(declared("ny_split_local")), "ct_clock": f"{clock // 60:02d}:{clock % 60:02d}",
+                         "ny_am": (min(starts), b), "ny_pm": (b, td["length"]), "days_checked": len(days),
+                         "span": (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())})
+
+
+def _routing() -> Range:
+    vals = tuple(declared("rotations"))
+    return Range("A15", "choices", values=vals, unit="rotation: which of a firm's accounts takes its next trade",
+                 detail={"base": vals[0], "pools": "by_component's, A16's `deal_pools`",
+                         "guards": ("one account per trade (never copied)", "opposite positions refused, tier 1",
+                                    "one position at a time across the firm (D-429)")})
+
+
+def deal_pools(components: Any, accounts: Any) -> dict[str, tuple[str, ...]]:
+    """A16's assignment: `by_component`'s pools for one day. `components` are the design's components in the order of
+    their windows' first slots, `accounts` the firm's accounts that day in the caller's order. With at least as many
+    accounts as components, account j goes to component j mod m (a partition; pool sizes differ by at most one);
+    with fewer, component i takes account i mod n alone. Reads nothing but the two lists."""
+    comps, accs = tuple(components), tuple(accounts)
+    if not comps or not accs:
+        raise LeverRefused("A16 deals at least one account to at least one component")
+    if len(set(comps)) != len(comps) or len(set(accs)) != len(accs):
+        raise LeverRefused("A16: a component or an account repeats")
+    m, n = len(comps), len(accs)
+    if n >= m:
+        return {c: tuple(accs[j] for j in range(i, n, m)) for i, c in enumerate(comps)}
+    return {c: (accs[i % n],) for i, c in enumerate(comps)}
+
+
+def _assignment() -> Range:
+    return Range("A16", "fixed", values=tuple(declared("assignment")), unit="account assignment of by_component's pools",
+                 detail={"shares": "derived: a source's share is its components' (T1 per component); no parameter",
+                         "rule": "deal_pools"})
+
+
+def state_risk(rule_name: str, r: float, *, room: float, start_room: float, to_goal: float, stop_ticks: int,
+               target_ticks: int, tick_value: float) -> float:
+    """A17: a trade's intended dollar risk under the state rule, before the base's cuts (the room cap D-313, the
+    allowance and the headroom D-117, D-212's stand-aside -- `modes_rules.size`, unchanged). `r` is the mode's dollar
+    risk (S3 or S4; A1's or A2's r where a flip trade); `room` the balance less the floor in force; `start_room` the
+    mode's (`modes_rules.start_room`); `to_goal` what is left to the mode's goal (the evaluation's profit target, the
+    funded payout path's b*); one micro's risk is `stop_ticks` x `tick_value`, its win `target_ticks` x `tick_value`.
+
+    * `none` -- r in every state;
+    * `floor` -- r x the room's share of the start room, capped at one (sizing by distance to the floor);
+    * `target` -- the fewest whole micros whose win reaches the goal, where that is below r (by distance to the goal);
+    * `floor_target` -- the smaller of the two.
+    Never above r, so never more size into news than the mode's own; never below one micro at the stop where r is not
+    (the rule itself never stands an account aside; the base's caps still may)."""
+    if rule_name not in declared("state_rules"):
+        raise ValueError(f"state rule {rule_name!r} is not one of {declared('state_rules')} (A17)")
+    if not (r > 0 and start_room > 0 and stop_ticks > 0 and target_ticks > 0 and tick_value > 0):
+        raise ValueError("A17 reads a positive r, start room, stop, target and tick value")
+    one = float(stop_ticks) * float(tick_value)
+    out = float(r)
+    if rule_name in ("floor", "floor_target"):
+        out = min(out, float(r) * max(0.0, min(1.0, float(room) / float(start_room))))
+    if rule_name in ("target", "floor_target") and to_goal > 0:
+        n = math.ceil(float(to_goal) / (float(target_ticks) * float(tick_value)) - 1e-9)
+        out = min(out, n * one)
+    return max(out, min(one, float(r)))
+
+
+def _state_rule() -> Range:
+    t = M.eval_terms("TS-S")
+    det: dict[str, Any] = {"eval": {"goal": float(t.target), "start_room": MR.start_room(M.EVAL, t)}}
+    for mode in ("TS/std", "TS/con"):
+        f = M.funded_terms(mode)
+        det[mode] = {"goal": MR.b_star(f)["b_star"], "start_room": MR.start_room(M.FUNDED, f)}
+    return Range("A17", "choices", values=tuple(declared("state_rules")),
+                 unit="state rule on the mode's dollar risk (both modes, each its own goal and room)",
+                 read=_read("combine_profit_target", "combine_mll", "xfa_mll_start"), detail=det)
+
+
 # ------------------------------------------------------------------------------------------------ the levers
 
 
@@ -458,7 +615,7 @@ def _L(i, layer, name, cls, source, keys="", depends="", resolver=None) -> Lever
 LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
     _L("T1", TRIGGER, "signal source", SEARCHED, DECL, "", "T2 T3 T4 T5 A16", _sources),
     _L("T2", TRIGGER, "session", SEARCHED, ARITH, "trading_hours", "T1 T2b T3", _session),
-    _L("T2b", TRIGGER, "NY AM / NY PM boundary", FIXED, TODECL, "", "T2"),
+    _L("T2b", TRIGGER, "NY AM / NY PM boundary", FIXED, DECL, "trading_hours", "T2", _ny_split),
     _L("T3", TRIGGER, "entry window (offer marks)", SEARCHED, ARITH, "trading_hours", "T2 T4 A3", _entry_window),
     _L("T4", TRIGGER, "latency L", SEARCHED, DECL, "", "T1 T3 T5", _latency),
     _L("T5", TRIGGER, "entry type", SEARCHED, DECL, "", "T1 T4 T6", _entry_type),
@@ -501,9 +658,10 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
        "back2funded_eligibility back2funded_seat_count", "A4 A6 A18", _back2funded),
     _L("A13", POLICY, "resets", DROPPED, DECL, "reset_rebill_push", "A4"),
     _L("A14", POLICY, "daily-loss-limit election", DROPPED, DECL, "dll_offer_status", "S3 S4"),
-    _L("A15", POLICY, "routing (which account takes a trade)", SEARCHED, TODECL, "", "A6 A7 A16 T8"),
-    _L("A16", POLICY, "signal mix: shares and account assignment", SEARCHED, TODECL, "", "T1 A15"),
-    _L("A17", POLICY, "state rule (sizing by distance to floor or target)", SEARCHED, TODECL, "", "S3 S4 A1 A2"),
+    _L("A15", POLICY, "routing (which account takes a trade)", SEARCHED, DECL, "", "A6 A7 A16 T8", _routing),
+    _L("A16", POLICY, "signal mix: shares and account assignment", FIXED, DECL, "", "T1 A15", _assignment),
+    _L("A17", POLICY, "state rule (sizing by distance to floor or target)", SEARCHED, DECL,
+       "combine_profit_target combine_mll xfa_mll_start", "S3 S4 A1 A2 A5", _state_rule),
     _L("A18", POLICY, "first payout request (RD-02 L1)", SEARCHED, DECL,
        "xfa_lock_at payout_min xfa_std_winning_days xfa_std_winning_day_min", "A5 A19", _payout_first),
     _L("A19", POLICY, "request amount (RD-02 L2)", SEARCHED, DECL,
@@ -587,4 +745,4 @@ def counts() -> dict[str, dict[str, int]]:
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
            "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts",
-           "S1_RESULT", "S1_PATH", "stop_width"]
+           "S1_RESULT", "S1_PATH", "stop_width", "ny_boundary", "deal_pools", "state_risk"]

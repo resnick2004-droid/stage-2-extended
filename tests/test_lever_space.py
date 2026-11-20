@@ -253,7 +253,8 @@ def test_latency_and_the_operators_dimensions() -> None:
 def test_space_and_refusals_partition_the_levers(no_s1_reading) -> None:
     sp, rf = LS.space(), LS.refusals()
     assert set(sp) | set(rf) == set(LS.LEVERS) and not set(sp) & set(rf)
-    assert {"T7", "S1", "T2b", "A15", "A16", "A17", "A9", "A19"} <= set(rf)
+    assert {"T7", "S1", "A9", "A19"} <= set(rf)
+    assert {"T2b", "A15", "A16", "A17"} <= set(sp)                    # declared (E-NNN pending)
 
 
 # ------------------------------------------------------------------------------------------------ the loader's hygiene
