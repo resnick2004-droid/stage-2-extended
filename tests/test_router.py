@@ -13,7 +13,7 @@ What is held:
   deleted (the router reads no bar; it reads the schedule's earlier exits);
 * **the calendar per component**: a design's components each get their own context (what each source reads), the
   day-wide one beside, and a calendar-void day schedules nothing; the session windows are read through the one
-  function `components.session_windows_of` (to repoint to per-date windows when Wave 3.4's change lands).
+  function `components.session_windows_of`, repointed by Wave 3.4 to the per-date windows (E-231 (3)).
 
 Seeds fixed for this file (the test's own, used nowhere else): 20261527 (the synthetic series), 20261528 (the coin
 unit's role seed), 20261529 (the shift test's replacement walks, each cut a child `SeedSequence(20261529,
@@ -261,4 +261,8 @@ def test_calendar_contexts_per_component_and_a_void_day_schedules_nothing(hist):
         assert rl3_refused and set(rl3_refused) == {"calendar"}
         assert not [o for o, _ in s.unfilled if o.source == "rl3"]
         assert bool([t for t in s.trades if t.component == "coin"]) == (not coin_void)
-    assert C.session_windows_of() == C.session_windows_of(date(2021, 3, 15))   # one function, date-free until 3.4
+    # one function, repointed by Wave 3.4 to the per-date windows (E-231 (3)): asia moves with US daylight time
+    winter, summer = date(2021, 1, 15), date(2021, 7, 15)
+    assert C.session_windows_of(winter) == C.LS.session_windows(winter)
+    assert C.session_windows_of(winter)["asia"][0] != C.session_windows_of(summer)["asia"][0]
+    assert C.session_windows_of(winter)["asia"][0] == DC.anchored_starts(winter)["asia"]
