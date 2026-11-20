@@ -42,6 +42,14 @@ class Clock:
         self.t += s
 
 
+@pytest.fixture(autouse=True)
+def single_slot(monkeypatch):
+    """These are the single-slot lock's tests (Q-155, Q-165): one slot, in this process and in every CLI child. The
+    slots of Q-174 have their own tests (tests/test_fasttier_slots.py), including one-slot behaviour at two slots."""
+    monkeypatch.setattr(F, "MAX_SLOTS", 1)
+    monkeypatch.setenv(F.ENV_SLOTS, "1")
+
+
 @pytest.fixture()
 def lock(tmp_path) -> Path:
     return tmp_path / "fasttier.lock"
