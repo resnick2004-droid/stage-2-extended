@@ -16,7 +16,8 @@ What is asserted (the brief's item 4, and what the mechanism needs to be one):
   the history check, here on a temporary repository and on this repository's own history;
 * Q-158 (`tests/test_reader_heldout.py` holds the held-out rules' own cases): the synthetic log's E-906 and E-907
   carry read tokens naming `scripts/probe.py`, and E-913 a verdict token for NQ, so the reads below that touch the
-  held-out years are the ones those rules admit; outside a clean run a registered design's held-out read is refused;
+  held-out years are the ones those rules admit (E-914 to E-916 the families' finalists' tokens, Q-194); outside a
+  clean run a registered design's held-out read is refused;
 * Q-58 (E-037, E-038): the purpose `registered_design` re-reads only P-14, P-15 and P-16, from `scripts/` only, under
   a decision row naming each design (never a family's or a reading's file), ledgered only inside a clean run; a pinned
   described reading (`prereg/RD-nn_<slug>.md`) declares judged-block reads on exactly the rules a family file does;
@@ -113,7 +114,12 @@ def decisions(h90: str, h92: str, h94: str) -> str:
             f"| E-911 | 2026-11-16 | **RD-04 declared**, `{RD_FITTER}` sha256 `{sha_lf(RD_FITTER_TEXT)}` | test |\n"
             "| E-912 | 2026-11-16 | **A second stage-D read of RD-01** after its run 1 crashed | test |\n"
             "| E-913 | 2026-11-16 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict (Q-158: a "
-            "described reading reads the held-out years only after it) | test |\n")
+            "described reading reads the held-out years only after it) | test |\n"
+            # Q-194: rule 1 binds every family purpose, so each family read here has its finalists' row after its pin
+            f"| E-914 | 2026-11-16 | heldout-finalists: F-90 @ {h90} list {'a' * 64} -- F-90's finalists | test |\n"
+            f"| E-915 | 2026-11-16 | heldout-finalists: F-94 @ {h94} list {'b' * 64} -- F-94's finalists | test |\n"
+            f"| E-916 | 2026-11-16 | heldout-finalists: F-95 @ {sha_lf(RIDER_TEXT)} list {'c' * 64} -- F-95's "
+            "finalists | test |\n")
 
 
 def bars_frame() -> pd.DataFrame:

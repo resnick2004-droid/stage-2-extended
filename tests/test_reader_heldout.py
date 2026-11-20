@@ -7,7 +7,7 @@ the rule's name at the start of its message):
 * **rule 1** -- `heldout_test` and `heldout_stress` are honoured only under a finalists' token for exactly the pinned
   declaration (its id and its sha256), in a row newer than the pin; refused with no such row, a row for another
   declaration, another sha, a row older than the pin, a malformed or misplaced token; a described reading never takes a
-  held-out purpose; a family's other purposes are not gated by it (unchanged);
+  held-out purpose; a family's other purposes are gated by it too (Q-194, `tests/test_reader_q194.py`);
 * **rule 2** -- a market's held-out window is read by one declaration: once one family's judged read of it is
   ledgered, another family's (a near-copy, other bytes, its own finalists' row) is refused under every purpose, also
   when the earlier line is in the old format or names no market; another market, or a row opening a new window that
@@ -245,10 +245,16 @@ def test_rule1_a_described_reading_never_takes_a_held_out_purpose(tree):
         "the control: after the verdict its other purpose is admitted"
 
 
-def test_rule1_does_not_gate_a_familys_other_purposes(tree):
+def test_rule1_gates_a_familys_other_purposes_too(tree):
+    """Q-194 (the red team's M-2): this test asserted the hole before -- a family's other purpose read the held-out
+    years with no finalists' row; now it is refused, and admitted with the row."""
+    assert "for F-13" in str(refused(1, read, tree, purpose="stage_C_judgement"))
+    assert lines(tree) == []
+    add_rows(tree, finalists(920, "F-13", F13_TEXT, LIST13))
     a = read(tree, purpose="stage_C_judgement")
-    assert a.kind == "family" and dict(a.heldout) == {"market": "NQ", "window": "E-208"}
-    assert lines(tree)[0]["heldout"] == {"market": "NQ", "window": "E-208"}
+    want = {"market": "NQ", "window": "E-208", "finalists": "E-920", "finalists_list_sha256": LIST13}
+    assert a.kind == "family" and dict(a.heldout) == want
+    assert lines(tree)[0]["heldout"] == want
 
 
 def test_the_existing_rules_still_come_first(tree):

@@ -139,7 +139,9 @@ TEXTS = {
 def tree(tmp_path, monkeypatch) -> Path:
     """A temporary git tree at `<tmp>/runs/<RUN>`: RD-04, RD-03 and F-90 (synthetic) each naming
     `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it. Q-158: E-960 carries NQ's
-    held-out verdict token, so a described reading's judged read is admitted (the reader's held-out rule 4)."""
+    held-out verdict token, so a described reading's judged read is admitted (the reader's held-out rule 4). Q-194:
+    E-961 carries F-90's finalists' token, so the family's judged read below is the reader's to make (held-out rule 1
+    binds every family purpose) and stays this module's to refuse."""
     t = tmp_path / "runs" / RUN
     (t / "prereg").mkdir(parents=True)
     rows = []
@@ -147,6 +149,8 @@ def tree(tmp_path, monkeypatch) -> Path:
         (t / rel).write_bytes(text.encode("utf-8"))
         rows.append(f"| E-{950 + i} | 2026-11-17 | **{rel} declared**, `{rel}` sha256 `{sha_lf(text)}` | test |")
     rows.append("| E-960 | 2026-11-17 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict | test |")
+    rows.append(f"| E-961 | 2026-11-17 | heldout-finalists: F-90 @ {sha_lf(TEXTS[F90])} list {'9' * 64} -- F-90's "
+                "finalists | test |")
     (t / "DECISIONS.md").write_bytes(("# Decisions (synthetic)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
                                       + "\n".join(rows) + "\n").encode("utf-8"))
     git(t, "init", "-q", "-b", "master")

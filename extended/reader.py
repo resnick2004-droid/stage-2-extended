@@ -63,9 +63,15 @@ before 2020-01-02. Stage 2's own guard runs as well: bars come through the vendo
 `docs/reviews/TEMPLATE_AGENTS_2026-11-18.md`). The judged block is E-208's held-out years. On top of the rules above,
 each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins with its rule's name (`RULES`):
 
-* **rule 1, the finalists' row first.** A held-out purpose (`heldout_test`, `heldout_stress`) is honoured only once a
-  decision row carries a finalists' token for exactly this pinned declaration, in a row newer than the pin's first
-  row; a described reading (RD-) never takes a held-out purpose;
+* **rule 1, the finalists' row first.** A family's (F-) judged read -- **every purpose** that reads any held-out
+  date, `heldout_test` and `heldout_stress` as any other a family's line names (Q-194, the red team's M-2 of
+  `docs/reviews/TEMPLATE_V2_FULL_2026-11-20.md`) -- is honoured only once a decision row carries a finalists' token
+  for exactly this pinned declaration (its id and its own sha256), in a row newer than the pin's first row; so no
+  family reads a held-out day before its finalists are pinned, and a refused read writes no ledger line and spends no
+  market's window (rule 2). A described reading (RD-) never takes a held-out purpose; its other purposes are rule 4's.
+  Each refusal names the purpose and the declaration. Outside this rule, as E-247's rm-4 rules: the registered
+  reproduction identities (purpose `identity`, declared by their decision row, rule-free here) and a registered
+  design's re-read (`registered_design`, rule 3) keep their documented form;
 * **rule 2, once per market.** A market's held-out window is read for a test by one declaration: the first family (F-)
   whose judged read of it is ledgered, under any purpose. Any other family's judged read of that window is refused,
   whatever its bytes or purpose, unless a row opens a new window (a window token) that holds the read's days;
@@ -312,8 +318,9 @@ class Authorisation:
     market: str = "NQ"
     #: what the held-out rules checked (Q-158), written to the ledger line as its `heldout` field: for a family's or a
     #: described reading's judged read the market and the window (`window`, the row that opened it), with the
-    #: finalists' row (`finalists`, `finalists_list_sha256`) for a held-out purpose and the verdict row (`verdict`) for
-    #: a described reading; for a registered design's held-out read the row naming it (`read_row`). None otherwise
+    #: finalists' row (`finalists`, `finalists_list_sha256`) for a family's read under any purpose (Q-194) and the
+    #: verdict row (`verdict`) for a described reading; for a registered design's held-out read the row naming it
+    #: (`read_row`). None otherwise
     heldout: tuple[tuple[str, Any], ...] | None = None
 
 
@@ -722,32 +729,41 @@ def _line_market(rec: dict[str, Any]) -> str | None:
     return None
 
 
-def _finalists(ref: str, sha: str, text: str, what: str) -> HeldOutToken:
-    """Rule 1: a held-out purpose is honoured only under a finalists' row for exactly this pinned declaration, newer
-    than its pin."""
+def _rule1_binds(ref: str, purpose: str) -> bool:
+    """Whether rule 1 binds a judged read of the family branch: every family's (F-) purpose (Q-194, M-2) and a held-out
+    purpose of a described reading (refused there). The registered reproduction identities (`identity`) and a
+    registered design's re-read (`registered_design`) never reach this branch (E-247's rm-4; rule 3)."""
+    return ref.startswith("prereg/F-") or purpose in HELDOUT_PURPOSES
+
+
+def _finalists(ref: str, sha: str, text: str, what: str, purpose: str) -> HeldOutToken:
+    """Rule 1: a family's judged read, under any purpose, is honoured only under a finalists' row for exactly this
+    pinned declaration, newer than its pin; a described reading never takes a held-out purpose. Each refusal names the
+    purpose and the declaration."""
     fid = DECLARATION_ID.match(ref).group(1)
+    who = f"the purpose {purpose!r} of {ref}"
     if not fid.startswith("F-"):
-        raise HeldOutRefused(1, what, f"{ref} is a described reading; the held-out purposes {HELDOUT_PURPOSES} belong "
-                                      "to a search's held-out test, after its finalists' row (a token names an F- "
-                                      "declaration only)")
+        raise HeldOutRefused(1, what, f"{who}: {ref} is a described reading; the held-out purposes "
+                                      f"{HELDOUT_PURPOSES} belong to a search's held-out test, after its finalists' "
+                                      "row (a token names an F- declaration only)")
     mine = [t for t in heldout_tokens(text, "finalists") if t.get("decl") == fid]
     if not mine:
-        raise HeldOutRefused(1, what, f"no decision row carries a finalists' token for {fid} (`heldout-finalists: {fid} "
-                                      "@ <its sha256> list <the finalists' sha256> -- ...`, the first text of the "
-                                      "row's third cell); the held-out years are read only after the ordered finalists "
-                                      "are pinned")
+        raise HeldOutRefused(1, what, f"{who}: no decision row carries a finalists' token for {fid} "
+                                      f"(`heldout-finalists: {fid} @ <its sha256> list <the finalists' sha256> -- ...`, "
+                                      "the first text of the row's third cell); a family reads the held-out years, "
+                                      "under any purpose, only after its ordered finalists are pinned")
     same = [t for t in mine if t.get("sha") == sha]
     if not same:
-        raise HeldOutRefused(1, what, f"the finalists' row(s) {[t.row for t in mine]} for {fid} carry "
+        raise HeldOutRefused(1, what, f"{who}: the finalists' row(s) {[t.row for t in mine]} for {fid} carry "
                                       f"{sorted({t.get('sha')[:12] for t in mine})}, not {ref}'s sha256 {sha[:12]}")
     pin = _pin_row(text, ref, sha)
     if pin is None:
-        raise HeldOutRefused(1, what, f"no decision row carries {ref}'s pin at {sha[:12]}, so the finalists' row "
-                                      "cannot be shown to follow it")
+        raise HeldOutRefused(1, what, f"{who}: no decision row carries {ref}'s pin at {sha[:12]}, so the finalists' "
+                                      "row cannot be shown to follow it")
     after = [t for t in same if t.number > pin]
     if not after:
-        raise HeldOutRefused(1, what, f"the finalists' row(s) {[t.row for t in same]} for {fid} precede its pin "
-                                      f"(E-{pin}); the finalists are chosen on the search years after the pin")
+        raise HeldOutRefused(1, what, f"{who}: the finalists' row(s) {[t.row for t in same]} for {fid} precede its "
+                                      f"pin (E-{pin}); the finalists are chosen on the search years after the pin")
     return max(after, key=lambda t: t.number)
 
 
@@ -996,11 +1012,12 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
                              designs, market, held)
     _refuse_superseded(declaration, tree, head)             # N-1, before the pin is even looked at
     ref, sha = _family(declaration, purpose, tree, head)
+    head = f"{head}, for {purpose!r} under {ref}"        # Q-194: every later refusal names the purpose, the declaration
     text = _decisions(tree)
     window = heldout_window(text, market, first, e)[0]
     held: dict[str, Any] = {"market": market, "window": window}
-    if purpose in HELDOUT_PURPOSES:                     # rule 1: after the finalists' row (an RD never: rule 1 too)
-        fin = _finalists(ref, sha, text, head)
+    if _rule1_binds(ref, purpose):                      # rule 1: every family purpose after its finalists' row
+        fin = _finalists(ref, sha, text, head, purpose)  # (Q-194, M-2); an RD's held-out purpose refused there
         held.update(finalists=fin.row, finalists_list_sha256=fin.get("list"))
     kind = "described_reading" if ref.startswith("prereg/RD-") else "family"
     if kind == "described_reading":                     # rule 4: only after the market's verdict row
