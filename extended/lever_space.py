@@ -584,7 +584,17 @@ def counts() -> dict[str, dict[str, int]]:
     return out
 
 
+def load(firm: str = "topstep") -> dict[str, Range]:
+    """The lever space of one firm (Q-151b): Topstep's is `space()`, unchanged; another firm's is its own table's
+    (`extended.lever_space_firms`: `mffu`, `lucid`), never Topstep's carried over."""
+    if firm == "topstep":
+        return space()
+    from extended import lever_space_firms as LF          # imported here: it imports this module
+
+    return LF.load(firm)
+
+
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
            "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts",
-           "S1_RESULT", "S1_PATH", "stop_width"]
+           "S1_RESULT", "S1_PATH", "stop_width", "load"]
