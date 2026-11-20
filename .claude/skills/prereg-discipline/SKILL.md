@@ -71,7 +71,8 @@ after seeing a result is a variant.
 **The pass line (CHARTER 3.8, in force from E-210).** A finalist passes, in its place in the fixed sequence, on the
 **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against the
 nearer barrier net of the stop-side exit cost -- the loss barrier min(l, c - x_stop), fractional, never rounded,
-everything decided at the fill, no "not taken" state (the template's section 5) -- the same seed keying for the design
+everything decided at the fill by L_fill, no "not taken" state, a trade sized to zero contracts ending the account
+out of room (C-1) (the template's section 5) -- the same seed keying for the design
 and every baseline), when (a) the point estimate governs each limit -- inside it passes, outside it fails,
 never a second margin, the one-sided check reported beside (E-221, E-230, O-5); (b) its composite (or the pinned
 fallback, P under the bankroll stop) is above **each** baseline's -- naive coin, P-14, P-15, P-16, each under the

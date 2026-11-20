@@ -73,24 +73,28 @@ are checking is not.
    - the **pass line** against CHARTER 3.8 and the declaration, unchanged: every deciding reading on the
      **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against
      the nearer barrier net of the stop-side exit cost, the loss barrier min(l, c - x_stop) fractional, never rounded,
-     and the take decided at the fill (no "not taken" state: L_fill <= 0 where the floor binds fails the account), so
-     the engine's clip never binds -- recheck from the trade rows that no redrawn loss plus its cost passes the floor
-     and that net equals minus the costs in expectation -- the same seed keying for the design and every baseline);
-     (a) the limits in the form in force (E-221, E-230, O-5: the point estimate governs -- inside passes, outside
-     fails, never a second margin -- the one-sided check reported beside each limit, never deciding); (b) each
-     baseline beaten on the pinned composite (or the pinned fallback, never both) by the calibrated coin-seed leg at
-     the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the time leg's conditions met; (c)
-     every floor -- the zero-edge long-run gate at its pinned quantile on its pinned minimum of complete starts, the
-     +1 tick and 10 %-missed stresses, the no-harm and as-traded floors read on the real path (N-1). **Every clause
-     required.** A design reported CARRIED on the as-walked reading, at a looser level, on the search years, against a
-     baseline under another convention, or with a clause skipped is a failed audit;
+     and the take decided at the fill (no "not taken" state: L_fill <= 0 where the floor binds fails the account, the
+     daily limit's case stops the day, a trade sized to zero contracts ends the account out of room (C-1), each
+     counted apart), so the engine's clip never binds -- recheck from the trade rows that no redrawn loss plus its
+     cost passes the floor and that net equals minus the costs in expectation -- the same seed keying for the design
+     and every baseline); (a) the limits in the form in force (E-221, E-230, O-5: the point estimate governs -- inside
+     passes, outside fails, never a second margin -- the one-sided check reported beside each limit, never deciding);
+     (b) each baseline beaten on the pinned composite (or the pinned fallback, never both) by the calibrated
+     coin-seed leg at the full level 0.05 / (k (k + 1)), an intersection-union over the baselines, the time leg's
+     conditions met; (c) every floor -- the zero-edge long-run gate at its pinned quantile on its pinned minimum of
+     complete starts, the +1 tick and 10 %-missed stresses, the no-harm and as-traded floors read on the real path
+     (N-1), and no finalist on the finalists' list whose playbook trigger side
+     failed its no-harm floor before the finalists' row (that design not carried). **Every clause required.** A design
+     reported CARRIED on the as-walked reading, at a looser level, on the search years, against a baseline under
+     another convention, or with a clause skipped is a failed audit;
    - **the three-way test as declared** (the declaration's section 8, and the design note it adopts): the seeds and
      start days **paired** between the finalist and each baseline (the same keys, the same `E_h`); the replicates
      disjoint seed sets of the declared J and m, never extended after the read; the statistic the declaration fixed
      for the composite's form, recomputed from the per-unit or per-seed-set rows; the time leg's year groups and
      regimes as written, each condition's stated size printed; the held-out leg's scope (no start or outcome session
-     outside it); the finalists in the pinned order, stopping at the first failure; the level printed nominal while
-     the ledger is not empty, and the history-level false-pass rate beside;
+     outside it); the finalists in the joint order the held-out test's declaration fixed by its template's rule
+     (Topstep, My Funded Futures, Lucid; each firm's pinned order), stopping at the first failure; the level printed
+     nominal while the ledger is not empty, and the history-level false-pass rate beside;
    - the **kill lines** (supply, resolution, realised risk) read before any outcome, as the file orders them;
    - every **seed** against the declared seed.
 5. **Post-hoc choices not labelled exploratory.** The one that needs real scepticism. Look for a parameter, threshold,
@@ -102,8 +106,8 @@ are checking is not.
    result or its inputs made, each in the leak-clause form ("written after this reading; no figure cited"), with what
    it read and for which comparator or trigger, so the lead can enter it in the held-out read ledger (CHARTER 3.6 (b));
    and check, in `results/read_ledger.jsonl`:
-   - every `heldout_*` line's time is after the commits of the search's finalists' row and its held-out row (both
-     citing the declaration's one hash);
+   - every `heldout_*` line is the held-out test's declaration's (F-HT, the one declaration that reads them), and its
+     time is after F-HT's finalists' token row and held-out row, and after every firm's finalists' or closing row;
    - **single use per market** (3.6 (c)): no `heldout_*` line on the same market's bars by another declaration;
    - no `registered_design` judged read, and no RD read of the held-out years, between the search's pin and its
      verdict row unless a decision row names it;

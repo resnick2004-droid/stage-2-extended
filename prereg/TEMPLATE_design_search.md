@@ -10,7 +10,12 @@ for new work; that file is kept for the record.
 **Text v2 (2026-11-20).** Re-declared as a new version after the red team's third read
 (`docs/reviews/TEMPLATE_AGENTS_v3_2026-11-20.md`: B-1 to B-4 blocking, the two corrective cycles spent) by the lead's
 ruling; the first text is kept in git history (wt/wt-lit 1a9be8c). Every finding is answered here and the red team
-reads this text in full.
+reads this text in full. Corrective cycle 1 of text v2 answers the full read
+(`TEMPLATE_V2_FULL_2026-11-20.md`: C-1, M-1 to M-5, m-1 to m-8) by the lead's rulings.
+
+**Declaration kind: design search.** A declaration drafted on this template keeps this line. It never carries a
+`Judged-block reads:` line; the held-out test's declaration, drafted on `prereg/TEMPLATE_heldout_test.md`, does
+(`tests/test_design_search_template.py` scans every `prereg/*.md` for it).
 
 **To use it:** copy it to `prereg/DRAFT_F-XX_<slug>.md` (a search is declared as a family: `F-` and a number at the
 pin, its k assigned at its held-out row, E-204), replace every `<...>` with the search's own text, delete nothing but
@@ -121,6 +126,10 @@ named here is explained in a phrase and classed fixed / searched / dropped in th
 - **Signal sources are a lever** (CHARTER 3.4): <which models and the coin, their shares, their account assignment>.
   A signal source is judged by what it adds to the mix. **Hard rule:** never opposing positions at once across accounts
   or firms (conduct tier 1); one position at a time across a firm (Stage 2 D-429).
+- **Room cuts and the out-of-room rule (C-1).** A lever that cuts contracts to the floor's room -- S3's and S4's
+  whole-micro room cut (Stage 2 D-313), A1's flip cut to `combine_mll`'s room, A17's sizing by distance to the floor
+  -- can size a trade to zero contracts at a positive room. Section 5's out-of-room rule ends that account; a draft
+  that searches such a lever names it here.
 - **Combinations refused** (the table's section 4, `check_design`): <...>.
 - **Fixed for every design** (the table's section 5: floors, not levers): restated by reference, never searched.
 
@@ -150,7 +159,9 @@ shape.*
   playbook's** (section 5). In the playbook each design's side comes from **its own trigger**, held by **the
   no-harm floor** against the coin on the real path (CHARTER 3.5; E-221, E-230):
   its composite on the search years is not below the coin side's by more than the margin pinned in section 7
-  (the no-harm margin); its held-out reading is reported beside, never judged. **A trigger whose side fails the
+  (the no-harm margin), decided at the point estimate over `<S1>`'s seeds, paired on the same fills, as O-5 rules for
+  limits (E-230) -- never by a test that fails only on evidence of harm; its held-out reading is reported beside,
+  never judged. **A trigger whose side fails the
   no-harm floor offers no playbook side; that design is not carried.** The floor is read on the search years,
   before the finalists' row; a failing design is removed from the finalists' list then, so the fixed sequence's order
   is never set after a held-out read (section 10 (c)). A resting trigger traded as its real order clears the same
@@ -196,10 +207,11 @@ shape.*
   - l is the stop, g the target -- **g is always the target as placed**, the nearer of the bracket's target and any
     profit level a rule set at placement (R-10's table; the level is converted to
     **net ticks after the target-side cost**, g' = min(g, level / (tick value x contracts) + x_target), fractional
-    allowed); c is the room the engine hands the draw -- the nearer of the floor and, where it binds first, the daily
-    loss limit -- read after the entry cost is booked; x_stop is the **stop-side exit cost** (the per-contract
-    commission at the stop plus `stop_slippage_ticks` of `vendor/stage2/config/fills.yaml`'s profile in use), and
-    x_target the target-side one (commission plus `target_slippage_ticks`).
+    allowed, and the runner receives g' in these gross ticks); c is the room the engine hands the draw -- the nearer
+    of the floor and, where it binds first, the daily loss limit -- read after the entry cost is booked; x_stop is the
+    **stop-side exit cost** (the per-contract commission at the stop plus `stop_slippage_ticks` of
+    `vendor/stage2/config/fills.yaml`'s profile in use), and x_target the target-side one (commission plus
+    `target_slippage_ticks`).
   - **The loss barrier is L = min(l, c - x_stop), fractional, never rounded** (E-237): a cushion-bound loss ends
     exactly on the floor and breaches it, as the vendored engine's race does; rounding inward would leave every such
     loss a fraction of a tick above the floor, never breached and still billed. **p = L / (L + g).** A win gains g
@@ -254,23 +266,42 @@ shape.*
     flatten-side exit cost (commission plus `flatten_slippage_ticks`); the comparison L_fill > 0 is made to the
     runner's declared tolerance `EPS` (in dollars). The decision never reads the run's exit,
     **whatever its later exit**: two trades identical at the fill fare alike.
-    - **L_fill > 0:** the trade is raced or walked by the table below; its race uses L = min(l, c - x_stop) >= L_fill,
-      its walk uses L_fill; neither can pass the floor.
+    - **L_fill > 0:** the trade is raced or walked by the table below. Both laws use the floor-side barrier
+      **L_race = min(l, c - x_stop) >= L_fill**, as the runner books it (m-1): a barrier loss with its stop-side cost
+      ends exactly on the floor; a walk's time exit pays the flatten-side cost, clipped at the floor's room where
+      x_flat > x_stop -- that clip's credit, at most x_flat - x_stop a trade, is counted and printed beside (zero while
+      the profile's stop and flatten costs are equal, as in every vendored profile).
     - **L_fill <= 0 where the floor's room binds (B-2): the account is booked as failed at the fill** -- its balance
       taken to the floor, a breach, replaced at the close as the engine does. This is the race's own limit as L goes
       to 0 (a loss of L with its cost lands on the floor), so it needs no new law. These failures are
       **counted apart** and their share reported beside the verdict.
     - **L_fill <= 0 where the daily loss limit's room binds:** the day stops (`stopped`), as the engine does.
-    - So no account is ever left alive, billed and unable to trade. An exact test holds the boundary: an account at
-      floor room e + max(x_stop, x_flat) - epsilon (e the entry cost) is failed; one at e + max(x_stop, x_flat) +
-      epsilon takes the race.
-    - **Its size is to be read** before any search pins, by the light synthetic experiment the red team's third read
-      specifies (the runner's `_trade_mc` on the H3-A toy and on a Topstep-shaped toy -- MLL, DLL, fractional costs
-      from `fills.yaml`'s `assumed` profile, brackets over S1's and S3's ranges -- counting the accounts alive with room
-      in (EPS, e + max x] at the horizon with and without this rule, and reading `P_B` and replacements; minutes on
-      one worker): the lead's queue item.
-  - **The lattice step s is one tick**, unless the declaration states another fixed value here, classed fixed (<...>),
-    dividing l and g. The barriers are not moved to the lattice; the walk's last sub-step resolves them (below).
+    - **A daily loss limit at or below e + max(x_stop, x_flat)** (at the arm's stress) is refused at construction
+      (m-3): it would stop every day at its first offer, an account that never trades and never fails.
+    - **Zero contracts at a positive room (C-1): the account ends out of room.** A trade the sizing rule cuts to zero
+      contracts because the floor's room carries no contract at its stop (the room under one contract's risk at the
+      stop; section 3's room cuts) never reaches a fill. As Stage 2's engine rules it (D-318, D-335), the account ends
+      **out of room** at that slot: it is failed, **counted apart beside the at-the-fill failures**, its share printed
+      beside the verdict, and replaced as a breach is. Zero contracts from another cut (D-272's stand-aside, the
+      allowance) is a no-trade slot; the declaration shows that state is not absorbing, or the design is refused.
+    - So no account is ever left alive, billed and unable to trade, at a fill or at a slot. Exact tests hold both
+      boundaries: an account at floor room e + max(x_stop, x_flat) - epsilon (e the entry cost) is failed; one at
+      e + max(x_stop, x_flat) + epsilon takes the race; a room just above zero but under one micro's risk at the stop
+      ends out of room; one just over it trades one micro.
+    - **Their size is to be read** before any search pins, by the light synthetic experiment of the full read's m-8
+      (the lead's queue item): synthetic only, one worker, `OMP_NUM_THREADS=1`, under 500 MB, minutes; toy rules
+      shaped like Topstep's, cited by their keys (`combine_mll` with its trailing lock, the daily loss limit where the
+      account has one); costs from `fills.yaml`'s `assumed` profile with `round_turn_by_instrument`; brackets over S1's
+      search-year range and S3's whole-micro room cut. Three arms: (i) the B-2 rule only; (ii) (i) plus the
+      out-of-room rule; (iii) the vendored engine's handling (the race at the clip, and D-318). Read per offer the
+      share of lanes that take, fail at the fill, end their day, end out of room, or do none of these (the invariant,
+      zero in (ii)); read at the end `P_B`, replacements and the failure share by route, and the band of the n-1 note
+      at a stop-only stress. Its output is a result file with its manifest, or labelled exploratory; it chooses no
+      lever.
+  - **The lattice step s is per trade (M-3):** a declared, deterministic function of that trade's own stop l and
+    target g in ticks and nothing else -- the largest whole number of ticks that divides both and keeps the walk's
+    step count n at or under the runner's limit `WALK_MAX`. If no such s exists, the trade is refused and counted
+    apart. The barriers are not moved to the lattice; the walk's last sub-step resolves them (below).
   - **Which law applies** is read from the run's terminal state on the as-walked (reflected) path, every state mapped:
 
     | terminal state in the run | its law | booked at |
@@ -286,24 +317,28 @@ shape.*
     | any other exit before its barriers (an unscheduled release's flatten) | the stopped walk, T to the run's exit time, its share reported | `flatten_slippage_ticks` |
 
     A test of the build holds the mapping exhaustive: an exit reason the table does not name is refused.
-  - **The stopped walk:** a symmetric driftless walk from the fill on the lattice of step s; its loss barrier is the
-    fractional L_fill (the larger of the two exit costs netted out, never rounded, E-237); its target g as placed.
-    **Its last sub-step before a fractional barrier is a driftless two-point race** (E-237): at the last lattice point
-    above the floor-side barrier, rho below it, a step goes down to -L_fill with probability s / (s + rho), else up
-    one step s -- mean zero; a fractional g' is resolved the same way on its side. It stops at the first of the two
-    barriers or the time limit T, and its outcome is `+g`, `-L_fill`, or the walk's value at T, each paying its exit's
-    cost. Gross expectation is exactly zero (optional stopping: a bounded martingale at a bounded time), a
-    floor-side loss ends exactly on the floor, and no exit passes it, so the clip never binds.
+  - **The stopped walk:** a symmetric driftless walk from the fill on the lattice of step s; its floor-side barrier
+    is L_race = min(l, c - x_stop), fractional, never rounded (E-237), as the runner books it (m-1); its target g as
+    placed. **Its last sub-step before a fractional barrier is a driftless two-point race** (E-237): at the last
+    lattice point above the floor-side barrier, rho below it, a step goes down to -L_race with probability
+    s / (s + rho), else up one step s -- mean zero; a fractional g' is resolved the same way on its side. **Where one
+    lattice point is both the last above the floor-side barrier (rho_d below) and the last below the target (rho_u
+    above)** (m-2), the step goes up to the target with probability rho_d / (rho_u + rho_d), else down to -L_race --
+    mean zero, the runner's rule. It stops at the first of the two barriers or the time limit T, and its outcome is
+    `+g`, `-L_race`, or the walk's value at T, each paying its exit's cost. Gross expectation is exactly zero
+    (optional stopping: a bounded martingale at a bounded time); a floor-side barrier loss with its stop-side cost
+    ends exactly on the floor; a time exit's flatten-side cost is clipped at the floor's room, its credit counted and
+    printed beside.
   - **Its clock is fixed from the run's own causal bars:** T is the time from the fill to the limit, known at the fill
     except for the table's last row; the declared volatility estimator sigma (its window and unit: <...>) is read on
     bars closed at or before the alert, never the trade's later bars, so it is no choice made after a look. The
     estimator sets the walk's **number of steps**, n = round(sigma^2 T / s^2) (to the nearest integer, halves up, at
-    least one), s the declared step above. This at-the-alert reading **overrides** the design note
+    least one), s the per-trade step above. This at-the-alert reading **overrides** the design note
     1.7's "causal volatility per bar of the trade's holding window", being the stricter.
   - Exit time, costs and resolution stay as run (CHARTER 3.2). Its draws are keyed by the coin field under their own
     draw kind (section 12). The exact-fraction test runs over a grid of (g, l, c, x, s, n) with fractional cushions
-    and unequal exit costs: gross zero, net = -(costs), no exit past the floor, and E-237's forced-loss toy (a
-    floor-side loss lands exactly on the floor and breaches it).
+    and unequal exit costs: gross zero, net = -(costs), the floor-side barrier loss ending exactly on the floor and
+    breaching it (E-237's forced-loss toy), the time exit's clip counted, and the both-barriers-within-one-step case.
   - **What the split does and does not move.** Each law has zero gross expectation given its inputs, so no trade gains
     a mean. But which trades reach a time limit is the real path's resolution structure (momentum or mean reversion
     changes how often a barrier is hit within T), and through the contract's **convexity** a different spread of
@@ -427,7 +462,7 @@ the go row; they read only what this file fixed. H3's earlier runs are design ch
   per the design note's 2.7>); the whole rule's pass rate on them across synthetic and history-block-resampled
   histories is **the history-level false-pass rate**, printed beside every verdict. History blocks are at least as long
   as the composite's longest horizon.
-- **The power gate**, before the pin: the whole pass line's power at the search's level, on synthetic paths carrying
+- **The power gate**, before the go row: the whole pass line's power at the search's level, on synthetic paths carrying
   NQ's dependence, with design pairs drawn from H4's baselines and from synthetic plants, at a planted improvement of
   **the size that matters** (the lead's, from the baselines' search-year results; E-221, O-3), at the **power
   target**, under the horizon embargo; in the same run, a design equal
@@ -480,7 +515,8 @@ reading the martingale-outcome reading for the finalist and every baseline alike
   is printed beside the verdict, and a failure of it is reported with the verdict.
 
 - **The fixed sequence over finalists** (CHARTER 3.7; E-203 S-1; E-221, O-1): every firm's ordered finalists enter
-  the **one joint fixed-sequence test** of section 2 -- run under the held-out test's declaration, one declaration of
+  the **one joint fixed-sequence test** of section 2, in the joint order by the rule fixed in
+  `prereg/TEMPLATE_heldout_test.md` (M-1) -- run under the held-out test's declaration, one declaration of
   its own (E-238), which fixes the order across the firms before the held-out read -- each finalist at the full
   level of the one k, stopping at the first failure -- one k for the joint sequence.
 
@@ -568,8 +604,9 @@ reading the martingale-outcome reading for the finalist and every baseline alike
    `heldout-finalists: F-NN @ <sha> list <sha>` -- this file's LF sha256, then the list file's -- as the first text
    of its third cell; written before any held-out read; the scout's challenger brief and the red team on the
    finalists.
-8. **The held-out row** (k assigned, E-204), written when every firm's search has finalists (E-221, O-1), for
-   the held-out test's declaration -- one declaration of its own (E-238), with its own F-number, pin and hash. It
+8. **The held-out row** (k assigned, E-204), written when every firm's search has a finalists' row or a closing row
+   (E-221, O-1), for the held-out test's declaration -- one declaration of its own (E-238), drafted on
+   `prereg/TEMPLATE_heldout_test.md` (M-1), with its own F-number, pin and hash. It
    lists every firm's finalists by each search declaration's hash and finalists' row, in a joint list file that cites
    each search's finalists' list by its sha256; it fixes the joint order and takes the k; it carries the
    `Judged-block reads:` line; and it is the one family that reads NQ's held-out window. Its own finalists' row is

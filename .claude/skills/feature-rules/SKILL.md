@@ -97,12 +97,15 @@ half (direction removed); and the deciding reading is the **martingale-outcome r
 redrawn at its bracket's driftless first-exit odds against the nearer barrier net of the stop-side exit cost -- the
 loss barrier L = min(l, c - x_stop) -- c the room to the nearer of the floor and the daily loss limit after the entry
 cost, x_stop the stop-side exit cost (commission plus `stop_slippage_ticks`) -- fractional, never rounded (E-237),
-p = L / (L + g), an account with L_fill <= 0 failed at the fill where the floor binds (no "not taken" state) (the
-design-search template's section 5; `adapter.BinaryDraw` is its cost-free case) -- over seeds paired with every
-baseline's. What a feature can still change, and what the search rewards, is supply, timing, resolution speed for a
-given shape, clustering and how differently a component is timed from the others. The as-walked result's gap from the
-martingale-outcome result is the design's path-structure edge, reported beside, never credited. Rules read off a model
-afterwards (SHAP and the like) are exploratory and need their own declaration.
+p = L / (L + g), L_fill = min(l, c - max(x_stop, x_flat)), the fill's decision (x_flat the flatten-side exit
+cost): L_fill <= 0 where the floor binds fails the account at the fill, where the daily loss limit binds
+the day stops; a trade sized to zero contracts at a positive room ends the account out of room, failed and
+counted apart (C-1, Stage 2 D-318, D-335) (no "not taken" state) (the design-search template's section 5;
+`adapter.BinaryDraw` is its cost-free case) -- over seeds paired with every baseline's. What a feature can still
+change, and what the search rewards, is supply, timing, resolution speed for a given shape, clustering and how
+differently a component is timed from the others. The as-walked result's gap from the martingale-outcome result is the
+design's path-structure edge, reported beside, never credited. Rules read off a model afterwards (SHAP and the like)
+are exploratory and need their own declaration.
 
 ## Checklist for a reviewer
 

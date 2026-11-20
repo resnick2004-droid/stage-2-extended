@@ -531,9 +531,8 @@ def _fate(l, c, x_stop, x_flat, exit_, binds="floor"):
     lf = _l_fill(l, c, x_stop, x_flat)
     if lf <= 0:
         return ("failed at the fill" if binds == "floor" else "day stopped"), None
-    if any(w in exit_ for w in WALK_EXITS):
-        return "walk", lf
-    return "race", min(Fr(l), Fr(c) - Fr(x_stop))
+    # both laws race the floor side at L_race (m-1, the runner's booking); the fill's decision is L_fill's
+    return ("walk" if any(w in exit_ for w in WALK_EXITS) else "race"), min(Fr(l), Fr(c) - Fr(x_stop))
 
 
 def _fate_by_law(l, c, x_stop, x_flat, exit_):
@@ -547,7 +546,7 @@ def test_n1_everything_is_decided_at_the_fill_whatever_the_exit():
     sec = _r10_section()
     assert "L_fill = min(l, c - max(x_stop, x_flat))" in sec
     assert "at the fill" in sec and "whatever its later exit" in sec
-    assert "one tick" in sec and "classed fixed" in sec                         # the lattice step, declared
+    assert "per trade (M-3)" in sec and "`WALK_MAX`" in sec                    # the lattice step, declared
     assert "not taken" not in sec.replace('no "not taken" state', "")
     exits = [r.split("|")[1].strip() for r in sec[sec.index("| terminal state in the run |"):].split("\n\n")[0]
              .splitlines()[2:] if r.strip().startswith("|")]
@@ -560,7 +559,7 @@ def test_n1_everything_is_decided_at_the_fill_whatever_the_exit():
                 assert len(set(taken.values())) == 1, (l, c, xs, xf, fates)   # alike whatever the exit
                 for e, (kind, bar) in fates.items():
                     if bar is not None:
-                        x = max(xs, xf) if kind == "walk" else xs
+                        x = xs                                          # a barrier loss pays the stop's cost
                         assert bar > 0 and -bar - x >= -c                       # never past the floor
     # positive control: probe 1 of the third read (tick 5, e = x_stop = 2 dollars, x_flat = 6, room half a tick above
     # e + x_stop) -- the law-by-exit rule takes it as a race and fails it as a walk; the template's rule does not
@@ -586,21 +585,19 @@ def test_b2_no_account_is_left_alive_and_unable_to_trade():
 
 
 def _walk_mean_and_floor(g, L, n):
-    """E-237's walk on the unit lattice from 0: plain steps of +-1 at one half, except the last lattice point above
-    the fractional floor-side barrier -L (rho below it), which steps to -L with probability 1 / (1 + rho), else up
-    one; stopped at +g, at -L, or after n steps. Returns (the exact mean, the set of floor-side exits)."""
+    """The template's walk on the unit lattice from 0, its barriers +g and -L possibly fractional: from x the up move
+    goes du = min(1, g - x) and the down move dd = min(1, x + L), up with probability dd / (du + dd) -- so a plain
+    point steps +-1 at one half, the last point above -L (rho below) goes down to -L with probability 1 / (1 + rho),
+    and a point within one step of both barriers goes up with probability rho_d / (rho_u + rho_d) (m-2). Stopped at a
+    barrier or after n steps. Returns (the exact mean, the set of floor-side exits)."""
+    g, L = Fr(g), Fr(L)
     dist = {Fr(0): Fr(1)}
     mean, lows = Fr(0), set()
-    low_pt = -(L.numerator // L.denominator) if L.denominator > 1 else -(L - 1)   # the lowest lattice point above -L
     for _ in range(n):
         nxt = {}
         for x, pr in dist.items():
-            if x == low_pt:
-                rho = x + L
-                moves = ((-L, Fr(1) / (1 + rho)), (x + 1, rho / (1 + rho)))
-            else:
-                moves = ((x - 1, Fr(1, 2)), (x + 1, Fr(1, 2)))
-            for y, q in moves:
+            du, dd = min(Fr(1), g - x), min(Fr(1), x + L)
+            for y, q in ((x + du, dd / (du + dd)), (x - dd, du / (du + dd))):
                 if y >= g or y <= -L:
                     mean += pr * q * y
                     if y <= -L:
@@ -615,15 +612,16 @@ def _walk_mean_and_floor(g, L, n):
 def test_b1_the_walk_with_a_fractional_barrier_is_exactly_driftless_and_lands_on_the_floor():
     """E-237's forced-loss toy as the template's exact-fraction case: zero mean at a fractional barrier, and a
     floor-side loss ending exactly at -L_fill, so with the cost it lands on the floor (c - max x = L_fill)."""
-    for g in (3, 5, 8):
-        for L in (Fr(37, 3), Fr(7, 2), Fr(5, 4), Fr(4)):
+    for g in (Fr(1, 3), Fr(3, 4), 3, 5, 8):                         # a fractional g' under one step: m-2's case
+        for L in (Fr(37, 3), Fr(7, 2), Fr(5, 4), Fr(1, 2), Fr(4)):
             for n in (1, 4, 9, 15):
                 mean, lows = _walk_mean_and_floor(g, L, n)
                 assert mean == 0, (g, L, n, mean)
                 assert lows <= {-L}, lows
     xs, xf, c = Fr(2, 5), Fr(6, 5), Fr(77, 10)
-    lf = _l_fill(40, c, xs, xf)
-    assert -lf - max(xs, xf) == -c                                  # the floor-bound loss lands on the floor exactly
+    race_l = min(Fr(40), c - xs)                                    # m-1: the walk's floor side is L_race
+    assert -race_l - xs == -c                                       # a floor-bound barrier loss lands on the floor
+    assert -(race_l - Fr(1, 10)) - xf < -c                          # a time exit near it: the flatten clip binds
 
 
 def test_n2_a_rule_exit_at_a_profit_level_takes_the_race_at_the_as_placed_target():
@@ -789,3 +787,226 @@ def test_v2_minors():
     assert "decided at the fill" in rt and "profit level" in rt and "never rounded" in rt   # m-8
     for rel in ("commands/brief.md", "commands/status.md"):
         assert "E-230" in _text(CLAUDE_DIR / rel), rel                                # m-10
+
+
+# ============================================================================================ J. text v2, corrective
+# cycle 1 (the red team's full read TEMPLATE_V2_FULL_2026-11-20: C-1, M-1 to M-4, m-1 to m-8)
+
+HT = ROOT / "prereg" / "TEMPLATE_heldout_test.md"
+
+
+def _flat(s: str) -> str:
+    return " ".join(s.replace("**", "").split())
+
+
+def _section(text: str, start: str, end: str) -> str:
+    i = text.index(start)
+    return _flat(text[i:text.index(end, i + 1)])
+
+
+def _slot(room, risk_per_contract, max_contracts=20):
+    """C-1's rule: the whole-micro room cut sizes floor(room / risk) contracts; zero at a positive room ends the
+    account out of room (Stage 2 D-318, D-335)."""
+    n = min(max_contracts, int(Fr(room) // Fr(risk_per_contract)))
+    return "out of room" if n == 0 and room > 0 else n
+
+
+def test_c1_zero_contracts_at_a_positive_room_ends_out_of_room():
+    risk = Fr(40) * Fr(1, 2)                                     # one micro's risk at a 40-tick stop, toy units
+    for eps in (Fr(1, 10**6), Fr(1, 3)):
+        assert _slot(eps, risk) == "out of room"                 # just above zero
+        assert _slot(risk - eps, risk) == "out of room"          # just under one micro's risk
+        assert _slot(risk + eps, risk) == 1                      # just over it: one micro
+    text = _text(TEMPLATE)
+    sec5 = _section(text, "## 5. The zero-edge", "## 6. The survey")
+    for s in ("Zero contracts at a positive room (C-1): the account ends out of room", "D-318, D-335",
+              "counted apart beside the at-the-fill failures", "replaced as a breach is",
+              "a room just above zero but under one micro's risk at the stop ends out of room",
+              "So no account is ever left alive, billed and unable to trade, at a fill or at a slot"):
+        assert s in sec5, s
+    sec3 = _section(text, "## 3. The lever space", "## 4.")
+    for s in ("S3's and S4's whole-micro room cut", "A1's flip", "A17's sizing", "out-of-room rule"):
+        assert s in sec3, s
+    for rel in RACE_COPIES:
+        assert "out of room" in _flat(_text(ROOT / rel)), rel
+    assert "refuse a draft with a room cut (S3, S4, A1, A17) and no out-of-room rule" in _flat(
+        _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+
+
+def _step(l, g, sigma2_t, walk_max):
+    """M-3's rule: the largest whole number of ticks dividing both l and g whose step count n = round(sigma^2 T / s^2)
+    is at most walk_max; None (refused, counted) if none."""
+    from math import gcd
+
+    d = gcd(int(l), int(g))
+    for s in sorted((k for k in range(1, d + 1) if d % k == 0), reverse=True):
+        n = max(1, int(Fr(sigma2_t) / (s * s) + Fr(1, 2)))
+        if n <= walk_max:
+            return s
+    return None
+
+
+def test_m3_the_lattice_step_is_a_per_trade_function_of_stop_and_target():
+    assert _step(20, 40, 400, 1024) == 20 and _step(20, 30, 400, 1024) == 10
+    assert _step(7, 13, 400, 1024) == 1                          # coprime: one tick, n = 400
+    assert _step(7, 13, 5000, 1024) is None                      # coprime and too many steps: refused
+    sec = _flat(_r10_section())
+    for s in ("a declared, deterministic function of that trade's own stop l and target g in ticks and nothing else",
+              "the largest whole number of ticks that divides both and keeps the walk's step count n at or under the "
+              "runner's limit `WALK_MAX`", "If no such s exists, the trade is refused and counted apart"):
+        assert s in sec, s
+    assert "The lattice step s is one tick" not in sec
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    assert "the lattice step s per trade (M-3)" in gk and "refuse any other s" in gk
+
+
+def test_m1_the_held_out_test_has_its_own_form():
+    from extended import reader as RD
+
+    text = _text(HT)
+    f = _flat(text)
+    name = HT.name
+    assert not RD.F_ID.match(name) and not RD.DECLARATION_PATH.fullmatch(f"prereg/{name}")
+    matching = [g for g in _test_globs() if fnmatch.fnmatch(name, g) or fnmatch.fnmatch(f"prereg/{name}", g)]
+    assert set(matching) <= {"*.md", "*", "**/*.md"}, matching
+    assert "\r\n" not in text and not re.search(r"\b\d{6,8}\b", text) and not re.search(r"\$\s?\d", text)
+    for s in ("Declaration kind: held-out test",
+              "Its inputs come only from the pinned searches' finalists' lists, each by its sha256",
+              "Anything new -- a reading, a baseline, a floor relaxed, a statistic, a seed -- is refused",
+              "The rule: firms in the fixed order Topstep, My Funded Futures (MFFU), Lucid; within a firm, the search's "
+              "own pinned finalist order",
+              "before any search-year result exists", "A researcher's choice after a read is never the order",
+              "A firm whose search closes without finalists contributes none", "keeps its place",
+              "Only when every firm's search has a finalists' row or a closing row",
+              "`heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`",
+              "the pin and the token in one row are refused", "its power at this place", "Exit (B) cites this table",
+              "This declaration chooses nothing"):
+        assert s in f, s
+    rows = f[f.index("## 5. The rows, in order"):f.index("## 6.")]
+    order = [rows.find(s) for s in ("The pin row", "Its finalists' token row, newer than the pin row",
+                                    "The held-out row", "The held-out test", "The verdict row")]
+    assert all(i >= 0 for i in order) and order == sorted(order), order
+    lines = RD.DECLARED_LINE.findall(text)
+    assert len(lines) == 1 and RD.PURPOSE_TOKEN.findall(lines[0]) == ["heldout_test", "heldout_stress"], lines
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    for s in ("## The held-out test's declaration (`prereg/TEMPLATE_heldout_test.md`; M-1)", "Refuse anything new",
+              "firms in the order Topstep, My Funded Futures (MFFU), Lucid; within a firm, the search's own pinned "
+              "finalist order", "keeps its place", "Refuse a pin and a token in one row",
+              "Each finalist's power re-stated at its place"):
+        assert s in gk, s
+    assert "in the joint order by the rule fixed in `prereg/TEMPLATE_heldout_test.md` (M-1)" in _flat(_text(TEMPLATE))
+
+
+MARK_SEARCH, MARK_HT = "Declaration kind: design search", "Declaration kind: held-out test"
+
+
+def _line_problems(name: str, text: str) -> list:
+    """M-2's scan: a design search never carries a `Judged-block reads:` line; a new declaration (F-13 on, or any
+    draft) that carries one must be the held-out test's declaration."""
+    from extended import reader as RD
+
+    purposes = RD.declared_purposes(text)
+    out = []
+    if MARK_SEARCH in _flat(text) and purposes:
+        out.append(f"{name}: a design search carries a Judged-block reads line {sorted(purposes)}")
+    m = re.match(r"(?:DRAFT_)?F-(\d+|XX)", name)
+    new = bool(m) and (m.group(1) == "XX" or int(m.group(1)) >= 13)
+    if purposes and new and MARK_HT not in _flat(text):
+        out.append(f"{name}: a new declaration with a Judged-block reads line is not the held-out test's")
+    return out
+
+
+def test_m2_no_search_declaration_draft_or_pinned_carries_a_judged_block_line():
+    problems = []
+    for pth in sorted((ROOT / "prereg").glob("*.md")):
+        if pth.name.startswith("TEMPLATE_"):
+            continue
+        problems += _line_problems(pth.name, _text(pth))
+    assert not problems, problems
+    assert not _line_problems("DRAFT_F-XX_x.md", _text(TEMPLATE)) and not _line_problems("DRAFT_F-XX_h.md", _text(HT))
+    # positive controls: the scan refuses a search with a line, and a new unmarked declaration with one
+    bad = "**Declaration kind: design search.**\n\n- **Judged-block reads:** `stage_C_judgement`\n"
+    assert _line_problems("DRAFT_F-XX_bad.md", bad)
+    assert _line_problems("F-14_bad.md", "- **Judged-block reads:** `heldout_test`\n")
+    assert not _line_problems("F-03_old.md", "- **Judged-block reads:** `stage_C_judgement`\n")   # pinned before
+    # the gatekeeper's refusal, held (the full read's J2, J3)
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    item1 = gk[gk.index("1. Years and the held-out read ledger"):gk.index("2. The confirmation window")]
+    assert "A search declaration carries no `Judged-block reads:` line" in item1
+    assert "may carry a `Judged-block reads:` line" not in gk
+    refuse = item1[item1.index("Refuse:"):]
+    assert refuse.startswith("Refuse: - a search draft that carries a `Judged-block reads:` line"), refuse[:120]
+
+
+#: M-4: the rule-carrying phrases each mutant of the full read touched, each in its own section (flattened)
+RULE_NEEDLES = (
+    ("## 5.", "## 6.", "L_fill <= 0 where the floor's room binds (B-2): the account is booked as failed at the fill"),
+    ("## 5.", "## 6.", "L_fill <= 0 where the daily loss limit's room binds: the day stops"),
+    ("## 5.", "## 6.", "e + max(x_stop, x_flat) - epsilon (e the entry cost) is failed; one at e + max(x_stop, x_flat) "
+                       "+ epsilon takes the race"),
+    ("## 5.", "## 6.", "its floor-side barrier is L_race = min(l, c - x_stop)"),
+    ("## 5.", "## 6.", "a step goes down to -L_race with probability s / (s + rho), else up one step s"),
+    ("## 5.", "## 6.", "So a loss plus its exit cost never passes the floor and the clip never binds"),
+    ("## 4.", "## 5.", "The floor is read on the search years, before the finalists' row; a failing design is removed "
+                       "from the finalists' list then"),
+    ("## 4.", "## 5.", "is not below the coin side's by more than the margin pinned in section 7"),
+    ("## 10.", "## 11.", "the trigger side's composite on the search years not below the coin side's by more than the "
+                         "pinned margin, read before the finalists' row"),
+    ("## 9.", "## 10.", "If any fails, the search goes no further -- no go row, no survey"),
+    ("## 9.", "## 10.", "it is never re-run with another seed"),
+    ("## 6.", "## 7.", "The number of rounds is fixed here and never extended after a look"),
+    ("## 6.", "## 7.", "The gates read before any outcome"),
+    ("## 2.", "## 3.", "a start is read at horizon h only if h sessions remain in its own years"),
+    ("## 12.", "## 13.", "the held-out test's coin field -- disjoint from every seed drawn on the search years"),
+    ("## 13.", "## 14.", "One k per held-out test at 0.05 / (k (k + 1))"),
+    ("## 14.", "## 15.", "it carries the `Judged-block reads:` line"),
+    ("## 14.", "## 15.", "Nothing of this search reads the held-out years."),
+    ("## 10.", "## 11.", "which fixes the order across the firms before the held-out read"),
+)
+
+
+def test_m4_every_rule_carrying_phrase_is_held_in_its_section():
+    text = _text(TEMPLATE)
+    for a, b, needle in RULE_NEEDLES:
+        assert needle in _section(text, a, b), (a, needle)
+    flat = _flat(text)
+    for bad in ("not significantly below", "may be extended", "may reuse", "may be re-run", "after the outcomes",
+                "proceeds, its power", "after the held-out read", "reads the five-minute cell on the held-out"):
+        assert bad not in flat, bad
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    assert "L_fill <= 0 where the floor's room binds books the account as failed at the fill" in gk
+    assert "kept, the trade skipped" not in gk
+
+
+#: the rule values the templates cite (percentages, and the program's level); any other figure is a typed number
+ALLOWED_PCT = {"0 %", "5 %", "10 %", "20 %", "25 %", "90 %"}   # 90 %: CHARTER 4's realised-risk rule
+
+
+def test_m4_no_typed_figure_in_either_template():
+    for path in (TEMPLATE, HT):
+        text = _text(path)
+        pcts = {p.replace("%", " %").replace("  ", " ") for p in re.findall(r"\b\d+(?:\.\d+)? ?%", text)}
+        assert pcts <= ALLOWED_PCT, (path.name, pcts - ALLOWED_PCT)
+        assert set(re.findall(r"(?<![\w.])0\.\d+", text)) <= {"0.05"}, path.name
+        assert not re.search(r"\b\d{3,}\s*(?:USD|dollars)\b", text), path.name
+        assert not re.search(r"\$\s?\d", text), path.name
+
+
+def test_cycle1_minors():
+    f = _flat(_text(TEMPLATE))
+    assert "Where one lattice point is both the last above the floor-side barrier" in f                  # m-2
+    assert "rho_d / (rho_u + rho_d)" in f
+    assert "A daily loss limit at or below e + max(x_stop, x_flat)" in f and "refused at construction" in f  # m-3
+    assert "The power gate, before the go row" in f and "The power gate, before the pin" not in f      # m-4
+    assert "decided at the point estimate over `<S1>`'s seeds, paired on the same fills" in f           # m-5
+    assert "never by a test that fails only on evidence of harm" in f
+    for rel in (".claude/skills/feature-rules/SKILL.md", ".claude/skills/contract-engine/SKILL.md"):    # m-6
+        c = _flat(_text(ROOT / rel))
+        assert "L_fill = min(l, c - max(x_stop, x_flat))" in c and "where the daily loss limit binds" in c, rel
+    au = _flat(_text(CLAUDE_DIR / "agents" / "auditor.md"))
+    assert "F-HT, the one declaration that reads them" in au and "the joint order" in au
+    assert "failed its no-harm floor before the finalists' row" in au
+    for s in ("Three arms: (i) the B-2 rule only; (ii) (i) plus the out-of-room rule; (iii) the vendored engine's",
+              "the invariant, zero in (ii)", "it chooses no lever"):                                       # m-8
+        assert s in f, s
+    assert "the runner receives g' in these gross ticks" in f                                           # n-1

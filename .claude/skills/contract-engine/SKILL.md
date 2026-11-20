@@ -132,12 +132,15 @@ repository judges a design on the user's journey under zero edge (CHARTER sectio
 the martingale-outcome reading -- each trade's outcome redrawn at its bracket's driftless first-exit odds against the
 nearer barrier net of the stop-side exit cost: the loss barrier L = min(l, c - x_stop) -- c the room to the nearer of
 the floor and the daily loss limit after the entry cost, x_stop the stop-side exit cost (commission plus
-`stop_slippage_ticks`) -- fractional, never rounded (E-237), p = L / (L + g), an account with L_fill <= 0
-failed at the fill where the floor binds (no "not taken" state), so `lockstep`'s clip of the costed P&L at the cushion
-never binds and no cost is credited back (`adapter.BinaryDraw` at `edge = 0` is the cost-free case, x = 0; the
-design-search template's section 5) -- inside the operator's limits, each baseline beaten on the pinned composite by
-the calibrated paired test on the held-out years, with the zero-edge long-run gate as a floor. Stage 2 D-621 (3) and
-R\* = P-14 as the row to beat are on record and no longer decide (CHARTER 3.10).
+`stop_slippage_ticks`) -- fractional, never rounded (E-237), p = L / (L + g),
+L_fill = min(l, c - max(x_stop, x_flat)), the fill's decision (x_flat the flatten-side exit cost): L_fill <= 0 where
+the floor binds fails the account at the fill, where the daily loss limit binds the day stops; a trade sized to zero
+contracts at a positive room ends the account out of room, failed and counted apart (C-1, Stage 2 D-318, D-335)
+(no "not taken" state), so `lockstep`'s clip of the costed P&L at the cushion never binds and no cost is credited back
+(`adapter.BinaryDraw` at `edge = 0` is the cost-free case, x = 0; the design-search template's section 5) -- inside
+the operator's limits, each baseline beaten on the pinned composite by the calibrated paired test on the
+held-out years, with the zero-edge long-run gate as a floor. Stage 2 D-621 (3) and R\* = P-14 as the row to beat are
+on record and no longer decide (CHARTER 3.10).
 
 ### Sample size
 

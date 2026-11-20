@@ -60,7 +60,10 @@ leans on it is a finding.
    loss barrier L = min(l, c - x_stop), x_stop the commission plus `stop_slippage_ticks`, fractional and never rounded
    (E-237) -- so a cushion-bound loss ends on the floor and the engine's clip never binds? Is everything about a trade
    decided at the fill by L_fill = min(l, c - max(x_stop, x_flat)), never by its later exit (N-1), with
-   no "not taken" state -- L_fill <= 0 failing the account at the fill where the floor binds (B-2)? Does a rule's exit
+   no "not taken" state -- L_fill <= 0 failing the account at the fill where the floor binds (B-2), and a trade sized
+   to zero contracts at a positive room ending the account out of room (C-1, Stage 2 D-318, D-335), counted apart? Is
+   the lattice step per trade, the largest whole number of ticks dividing the stop and the target within `WALK_MAX`
+   (M-3)? Does the walk book its floor side at L_race with the flatten clip counted (m-1)? Does a rule's exit
    at a profit level take the race at the as-placed target, never the walk (N-2)? (Racing the full cushion and then
    booking the stop's cost lets the clip credit costs back to near-floor trades: an edge a search will find.
    `BinaryDraw` is only the cost-free case.) Is the gross expectation zero and the net exactly minus the costs at

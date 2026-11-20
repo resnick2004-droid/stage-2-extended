@@ -85,10 +85,13 @@ cd $W && python scripts/vendor_stage2.py --verify
   stop-side exit cost -- the loss barrier L = min(l, c - x_stop), fractional, never rounded (E-237), so a
   cushion-bound loss ends on the floor and the engine's clip never binds (`adapter.BinaryDraw` is only its cost-free
   case); an exact-fraction test over fractional cushions and unequal exit costs showing gross zero, net = -(costs) and
-  no exit past the floor; R-10's stopped walk on the fractional L_fill with its two-point last sub-step and every
-  terminal state mapped; no "not taken" state (an account with L_fill <= 0 where the floor binds failed at the fill);
-  a redrawn loss with the run's stop-fill convention (m-3); overlapping positions refused until defined (m-2); the
-  pair rule's settlement where a resting entry meets its reflection
+  no exit past the floor; R-10's stopped walk on the floor-side barrier L_race with its two-point last sub-step, the
+  flatten clip counted, and every terminal state mapped; L_fill = min(l, c - max(x_stop, x_flat)), the fill's decision
+  (x_flat the flatten-side exit cost): L_fill <= 0 where the floor binds fails the account at the fill,
+  where the daily loss limit binds the day stops; a trade sized to zero contracts at a positive room ends the account
+  out of room, failed and counted apart (C-1, Stage 2 D-318, D-335); the lattice step per trade within `WALK_MAX`
+  (M-3); a redrawn loss with the run's stop-fill convention (m-3); overlapping positions refused until defined (m-2);
+  the pair rule's settlement where a resting entry meets its reflection
 
 ## 5. Results that matter (a reading, after `/collect`)
 

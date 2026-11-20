@@ -1,6 +1,6 @@
 ---
 name: prereg-gatekeeper
-description: Review a design search's declaration (prereg/DRAFT_F-XX_<slug>.md, drafted on prereg/TEMPLATE_design_search.md) against the journey objective's rules (CHARTER 2-3, E-210), then approve it -- assigning the next free F-number and returning the proposed pinning row with the file's sha256 (its k is assigned later, at its held-out row, E-204) -- or refuse it. Use before any part of a search is built or any bar is read for it, for an RD reading's declaration, and for a carried design's registration. Invoked by /prereg, after the scout's challenger brief and the red-team review.
+description: Review a design search's declaration (prereg/DRAFT_F-XX_<slug>.md, drafted on prereg/TEMPLATE_design_search.md) against the journey objective's rules (CHARTER 2-3, E-210), then approve it -- assigning the next free F-number and returning the proposed pinning row with the file's sha256 (its k is assigned later, at its held-out row, E-204) -- or refuse it. Use before any part of a search is built or any bar is read for it, for the held-out test's declaration (prereg/TEMPLATE_heldout_test.md, its own item list), for an RD reading's declaration, and for a carried design's registration. Invoked by /prereg, after the scout's challenger brief and the red-team review.
 tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
 ---
 
@@ -106,17 +106,24 @@ result of this search's own cells.
    not its stream; **decided at the fill** (N-1), for every trade, by L_fill = min(l, c - max(x_stop, x_flat)),
    fractional, never rounded, never by the trade's later exit -- refuse a rule that reads the exit;
    **no "not taken" state** (B-2): L_fill <= 0 where the floor's room binds books the account as failed at the fill
-   (the race's limit as L goes to 0, counted apart), where the daily loss limit binds the day stops -- refuse a draft
-   that leaves an account alive, billed and unable to trade; **the lattice step s one tick**, or another fixed value
-   the draft declares and classes fixed -- refuse an s left to the build; **m-2** (no design with overlapping
-   positions runs until the joint driftless path per underlying is defined and checked); **m-3** (a redrawn loss
-   carries the run's stop-fill convention); **R-10** (every terminal state mapped to its law; a rule's exit at a
-   profit level -- A3's `cap`, the need-aware pass or consistency exit with `need=x` -- takes the race at the
-   as-placed target min(g, level), never the walk; the walk only for real time limits, its loss barrier the fractional
-   L_fill with its last sub-step a driftless two-point race (E-237), its step count from causal bars at the alert);
-   **the pair rule** (a resting entry against its reflection: a pair touching either leg's stop or target on the fill
-   bar contributes zero lift, both legs booked at the as-walked leg's settled outcome). A draft that replaces the
-   house form shows zero gross expectation and net = -(costs) by an exact-fraction test.
+   (the race's limit as L goes to 0, counted apart), where the daily loss limit binds the day stops; **zero contracts
+   at a positive room ends the account out of room** (C-1, Stage 2 D-318, D-335), failed,
+   counted apart beside the at-the-fill failures and replaced as a breach --
+   refuse a draft with a room cut (S3, S4, A1, A17) and no out-of-room rule; a daily loss limit at or below e +
+   max(x_stop, x_flat) refused at construction (m-3) -- refuse a draft that leaves an account alive, billed and unable
+   to trade; **the lattice step s per trade** (M-3): the largest whole number of ticks dividing both the trade's stop
+   and target that keeps n at or under the runner's `WALK_MAX`, a function of l and g and nothing else, the trade
+   refused and counted if none exists -- refuse any other s; **m-2** (no design with overlapping positions runs until
+   the joint driftless path per underlying is defined and checked); **m-3** (a redrawn loss carries the run's
+   stop-fill convention); **R-10** (every terminal state mapped to its law; a rule's exit at a profit level -- A3's
+   `cap`, the need-aware pass or consistency exit with `need=x` -- takes the race at the as-placed target
+   min(g, level), never the walk; the walk only for real time limits, its floor-side barrier L_race = min(l, c -
+   x_stop) as the runner books it (m-1), a time exit's flatten-side cost clipped at the floor's room and its credit
+   counted, its last sub-step before a fractional barrier a driftless two-point race (E-237), both barriers within one
+   step resolved by rho_d / (rho_u + rho_d) (m-2), its step count from causal bars at the alert); **the pair rule** (a
+   resting entry against its reflection: a pair touching either leg's stop or target on the fill bar
+   contributes zero lift, both legs booked at the as-walked leg's settled outcome). A draft that replaces the house
+   form shows zero gross expectation and net = -(costs) by an exact-fraction test.
 6. **The survey, the surrogate and the rounds** (template 6): the survey size, the space-filling method, the surrogate
    method and its tuning inside the search years only, the number of rounds and the batch size **fixed and never
    extended**, the gates before any outcome, **the finalist order rule** and the plateau rule declared before the
@@ -154,6 +161,28 @@ result of this search's own cells.
     every search-year seed; fixed-length keys. Refuse "a fixed seed" or "seeded".
 12. **The count** (template 13): every design tried counted in `results/variants.jsonl`, written as a product and a
     number.
+
+## The held-out test's declaration (`prereg/TEMPLATE_heldout_test.md`; M-1)
+
+The one declaration that reads NQ's held-out years has its own item list. Read it against its template, and refuse it
+if any item is missing or set after a look:
+
+1. **Declaration kind: held-out test**, kept from its template; it carries the `Judged-block reads:` line with
+   `heldout_test` and `heldout_stress` only.
+2. **Its inputs come only from the pinned searches' finalists' lists**, each by its sha256, each search by its pin's
+   hash and its finalists' row. Every other input -- the statistic, J and m, `<S4>`, the limits, the composite or the
+   fallback, the baselines, the floors, the time leg -- is cited unchanged from each search's pinned file. **Refuse
+   anything new.**
+3. **The joint order by the template's fixed rule:** firms in the order Topstep, My Funded Futures (MFFU), Lucid;
+   within a firm, the search's own pinned finalist order. Refuse any other order, and any order a researcher chose
+   after a read.
+4. **A firm whose search closed without finalists** is listed as none, with its closing row, and keeps its place.
+5. **Written only when every firm's search has a finalists' row or a closing row.**
+6. **The rows in order:** the pin row; its finalists' token row,
+   `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`, newer than the pin; the held-out row;
+   the run; the verdict row. Refuse a pin and a token in one row.
+7. **The k** at its held-out row (E-204), 0.05 / (k (k + 1)); no search takes one.
+8. **Each finalist's power re-stated at its place** in the joint sequence (m-7); exit (B) cites it.
 
 ## k: counted per held-out test, assigned at the held-out row (E-204)
 
