@@ -722,10 +722,10 @@ second margin and never deciding.
   This matches the level's scope, which is conditional on H, and keeps power.
   - The history-variation reading (3.1's per-horizon variance) is printed beside, with FPR_hist.
 - A design equal to the best baseline passes every limit together with probability at least pi\* only if each
-  limit's headroom L - M_best is at least about z_L se_test: se_test the coin-seed standard error of the best
-  baseline's estimate at the test's J and complete starts, and z_L the normal quantile at 1 - (1 - pi\*) / L over the
-  L limits set. W42-R1 sets each limit so (`docs/plans/WAVE42_SETTING_RULE.md` section 6). The gate prints the
-  headroom per limit and fails if a pinned limit lacks it.
+  limit's headroom L - M_best is at least about z_n se_test: L the limit's value, se_test the coin-seed standard error
+  of the best baseline's estimate at the test's J and complete starts, and z_n the normal quantile at
+  1 - (1 - pi\*) / n_L, n_L the number of limits set. W42-R1 sets each limit so (`docs/plans/WAVE42_SETTING_RULE.md`
+  section 6). The gate prints the headroom per limit and fails if a pinned limit lacks it.
 
 **The gate's quantile at H_g = 504 sessions.**
 - The held-out years hold at most W_H - 503 complete starts (Appendix A), and they overlap almost entirely. They hold
@@ -975,7 +975,7 @@ run plan (trades a session <= 4; 3 finalists + 4 baselines in H7; hours over 2 w
   D2 history null            R=200 arms=2 M=500    T=412 h=252 lane-trades=8.306e+10  h: 0.6  5.8  57.7
   D3 power gate plants       R=10  arms=6 M=2000   T=412 h=252 lane-trades=4.984e+10  h: 0.3  3.5  34.6
   D3 full-J check (EB)       R=5   arms=2 M=20752  T=412 h=252 lane-trades=8.618e+10  h: 0.6  6.0  59.8
-  H7 held-out, Hoeffding     R=1   arms=7 M=100    T=601 h=63  lane-trades=1.060e+08  h: 0.0  0.0  0.1
+  H7 held-out, Hoeffding     R=1   arms=7 M=1000   T=601 h=252 lane-trades=4.241e+09  h: 0.0  0.3  2.9
   H7 held-out, EB sets       R=1   arms=7 M=20752  T=412 h=252 lane-trades=6.033e+10  h: 0.4  4.2  41.9
 ```
 <!-- three_way_arith: end -->

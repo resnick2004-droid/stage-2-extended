@@ -36,34 +36,36 @@ NOTE = ROOT / "docs" / "plans" / "THREE_WAY_TEST_design.md"
 ARITH = ROOT / "docs" / "plans" / "scripts" / "three_way" / "three_way_arith.py"
 FEE = 50.0                                   # a synthetic fee unit (the real one is read from the verified ledger)
 J0 = R.H4_MIN_SEEDS                          # H4's synthetic seed count, at the declared minimum
-TEST_STARTS = {63: 580, 126: 520, 252: 390}  # synthetic counts (the real ones are the three-way test's arithmetic)
-SRC = {"function": "three_way_arith.complete_starts", "commit": "abc1234", "calendar_sha256": "0" * 64}
+NHO = 640                                    # a synthetic held-out session count (the real one: the pinned file's)
+TEST_STARTS = {h: R.complete_starts(NHO, h) for h in R.HORIZONS}   # V-2: derived, never typed
+SRC = {"file": R.HELD_OUT_CALENDAR, "sha256": R.HELD_OUT_CALENDAR_SHA256, "sessions": NHO}
 H4SHA = "1" * 64
 
 
-def _calendar() -> tuple[str, ...]:
+def _calendar(step: int = 2) -> tuple[str, ...]:
+    """A synthetic search calendar: every `step`-th weekday from SEARCH_FIRST, SEARCH_LAST appended."""
     d = np.arange(np.datetime64(R.SEARCH_FIRST), np.datetime64(R.SEARCH_LAST) + np.timedelta64(1, "D"))
-    return tuple(str(x) for x in d[np.is_busday(d)])
+    days = [str(x) for x in d[np.is_busday(d)]][::step]
+    return tuple(days if days[-1] == R.SEARCH_LAST else days + [R.SEARCH_LAST])
 
 
 CAL = _calendar()
 NC = len(CAL)
-# every fourth session, plus each horizon's boundary (exactly h sessions left, the start counted, and one fewer)
-_IDX = sorted(set(range(0, NC, 4)) | {NC - h for h in (252, 126, 63)} | {NC - h + 1 for h in (252, 126, 63)})
-STARTS = tuple(CAL[i] for i in _IDX)
+STARTS = CAL                                 # V-1: every session of the calendar is a start (H4's draft)
 N = len(STARTS)
 
 
-def _sl(starts=STARTS) -> np.ndarray:
-    pos = {d: i for i, d in enumerate(CAL)}
-    return np.asarray([NC - pos[d] for d in starts])
+def _sl(starts=STARTS, cal=CAL) -> np.ndarray:
+    pos = {d: i for i, d in enumerate(cal)}
+    return np.asarray([len(cal) - pos[d] for d in starts])
 
 
-def _reading(name: str, seed: int, *, pay: float, spend: float, J: int = J0, starts=STARTS) -> R.BaselineReading:
+def _reading(name: str, seed: int, *, pay: float, spend: float, J: int = J0, starts=STARTS,
+             cal=CAL) -> R.BaselineReading:
     """One synthetic baseline: `pay` moves the payout odds and the months ahead, `spend` the fee multiples."""
     rng = np.random.default_rng(seed)
     n = len(starts)
-    sl = _sl(starts)
+    sl = _sl(starts, cal)
     paid = rng.random((n, J)) < pay
     passed = paid | (rng.random((n, J)) < 0.25)
     pass_days = np.where(passed, rng.integers(5, 90, (n, J)), R.W + 1).astype(float)
@@ -81,10 +83,10 @@ def _reading(name: str, seed: int, *, pay: float, spend: float, J: int = J0, sta
     v["orders_max"] = rng.integers(1, 6, (n, J)).astype(float)
     v["accounts_max"] = rng.integers(1, 4, (n, J)).astype(float)
     v["taken_mean"] = rng.random((n, J)) * 3
-    for key, (h, _, _) in {**R.REQUIRED, **R.OPTIONAL}.items():  # blanks outside E_h are allowed (the blank rule)
+    for key, (h, _, _) in R.REQUIRED.items():                   # blanks outside E_h are allowed (the blank rule)
         v[key] = np.asarray(v[key], dtype=float).copy()
         v[key][sl < h] = np.nan
-    return R.BaselineReading(name, "search", R.READING, tuple(starts), tuple(range(1, J + 1)), v)
+    return R.BaselineReading(name, "search", R.READING, tuple(starts), tuple(range(J)), v)
 
 
 PARAMS = {"naive_coin": (11, 0.35, 0.9), "p14": (12, 0.6, 0.4), "p15": (13, 0.55, 0.5), "p16": (14, 0.7, 0.3)}
@@ -96,21 +98,24 @@ def _readings(J: int = J0, **over) -> dict[str, R.BaselineReading]:
     return {b: _reading(b, s, pay=a, spend=c, J=J) for b, (s, a, c) in p.items()}
 
 
-def _bind(rs, **over) -> R.H4Binding:
-    """H4's manifest as its runner would write it for these readings (B-1)."""
+def _manifest(rs, cal=CAL, **over) -> dict:
+    """H4's manifest fields as its collection's sidecar records them for these readings (B-1, V-1)."""
     ref = rs["naive_coin"]
-    man = {"sha256": H4SHA, "block": R.BLOCK, "reading": R.READING, "W": R.W, "baselines": list(R.BASELINES),
-           "starts": list(ref.starts), "seeds": list(ref.seeds),
-           "optional_measures": sorted(k for k in R.OPTIONAL if k in ref.values),
-           "calendar_sha256": R.calendar_digest(CAL), "readings_sha256": R.readings_digest(rs)}
+    man = {"sha256": H4SHA, "block": R.BLOCK, "reading": R.READING, "arm": R.ARM, **R.VERDICT, "W": R.W,
+           "baselines": list(R.BASELINES), "starts": list(ref.starts), "seeds": list(ref.seeds),
+           "calendar_sha256": R.calendar_digest(cal), "readings_sha256": R.readings_digest(rs)}
     man.update(over)
-    return R.H4Binding(H4SHA, man)
+    return man
 
 
-def _run(rs, *, h4=None, cal=CAL, starts=None, src=None, prior=(), fee=FEE, fee_source=R.FEE_SOURCE) -> R.Wave42Values:
+def _bind(rs, cal=CAL, **over) -> R.H4Binding:
+    return R.H4Binding(H4SHA, _manifest(rs, cal, **over))
+
+
+def _run(rs, *, h4=None, cal=CAL, starts=None, src=None, fee=FEE, fee_source=R.FEE_SOURCE) -> R.Wave42Values:
     return R.setting_rule(rs, h4=h4 if h4 is not None else _bind(rs), search_calendar=cal, fee_unit=fee,
-                          fee_source=fee_source, test_starts=starts or TEST_STARTS, test_starts_source=src or SRC,
-                          prior_applications=list(prior))
+                          fee_source=fee_source, test_starts=starts or TEST_STARTS,
+                          test_starts_source=SRC if src is None else src)
 
 
 def _with(rs, name, key, fn):
@@ -225,7 +230,7 @@ def _reference(rs, test_starts=TEST_STARTS, J=None) -> dict:
     out["conjoint"] = conj(out["Q"])
     out["conj_at"] = lambda JJ: conj(Q1 / JJ)                                        # noqa: E731
     lims = {}
-    present = [L for L in R.LIMITS if L.key in rs[BL[0]].values or L.key == "not_paid_within_B"]
+    present = list(R.LIMITS)                                   # every limit set (V-3 (a))
     zp = stats.norm.ppf(1 - 0.2 / len(present))
     for L in present:
         h = L.horizon
@@ -274,12 +279,10 @@ def test_deterministic_and_order_free(base) -> None:
 # ------------------------------------------------------------------------------------------- recomputed (B-6)
 def test_sessions_left_are_computed_from_the_calendar_with_the_start_counted(base) -> None:
     """B-2: E_h holds the starts with at least h calendar sessions from the start (counted as session 1) to
-    SEARCH_LAST; each boundary start (exactly h left) is in E_h, the next one is not."""
+    SEARCH_LAST; with every session a start, |E_h| is NC - h + 1 (the start exactly h from the end in, the next out)."""
     _, v = base
-    pos = {d: i for i, d in enumerate(CAL)}
     for h in (63, 126, 252):
-        assert v.values["search_starts"][str(h)] == sum(1 for d in STARTS if NC - pos[d] >= h)
-        assert CAL[NC - h] in STARTS and CAL[NC - h + 1] in STARTS
+        assert v.values["search_starts"][str(h)] == NC - h + 1
 
 
 def test_bankroll_states_on_hand_built_units() -> None:
@@ -425,8 +428,17 @@ def test_input_digest_moves_with_any_input(base) -> None:
     d0 = v.values["input_sha256"]
     assert _run(_with(rs, "p15", "net_month_2", lambda x: x + 1e-3)).values["input_sha256"] != d0
     assert _run(rs, fee=FEE + 1).values["input_sha256"] != d0
-    assert _run(rs, starts={63: 581, 126: 520, 252: 390}).values["input_sha256"] != d0
-    assert _run(rs, src={**SRC, "commit": "abc1235"}).values["input_sha256"] != d0
+    n2 = NHO + 1
+    assert _run(rs, starts={h: R.complete_starts(n2, h) for h in R.HORIZONS},
+                src={**SRC, "sessions": n2}).values["input_sha256"] != d0
+
+
+def test_input_digest_covers_h4s_manifest(base) -> None:
+    """V-1's audit chain (m2-4): a manifest field that no other check reads still moves input_sha256."""
+    rs, v = base
+    extra = _run(rs, h4=_bind(rs, writer_note="another sidecar")).values
+    assert extra["input_sha256"] != v.values["input_sha256"]
+    assert extra["budgets"] == v.values["budgets"] and extra["limits"] == v.values["limits"]
 
 
 # ------------------------------------------------------------------------------------------- bound (B-1, B-3)
@@ -435,23 +447,18 @@ def test_the_output_names_h4s_one_output_and_the_ledger(base) -> None:
     h = v.values["h4"]
     assert h["result_sha256"] == H4SHA and h["readings_sha256"] == R.readings_digest(rs)
     assert h["calendar_sha256"] == R.calendar_digest(CAL) and h["starts"] == N and h["seeds"] == J0
-    assert v.values["held_out_read_ledger"]["entry"] == "none" == R.HELD_OUT_LEDGER
+    assert v.values["held_out_read_ledger"]["entry"] == R.HELD_OUT_LEDGER
+    assert v.values["held_out_read_ledger"]["sha256"] == R.HELD_OUT_CALENDAR_SHA256
+    assert v.values["h4"]["arm"] == R.ARM and v.values["h4"]["verdict"] == R.VERDICT
     assert "nominal" in v.values["held_out_read_ledger"]["level"]
 
 
-def test_a_second_application_is_refused(base) -> None:
-    rs, _ = base
-    for rec in ({"rule_id": "W42-R1", "h4_result_sha256": H4SHA}, {"rule_id": "W42-R2"}):
-        with pytest.raises(R.Wave42Refused, match="applied once"):
-            _run(rs, prior=[rec])
-    with pytest.raises(R.Wave42Refused, match="no rule id"):
-        _run(rs, prior=[{}])
-    with pytest.raises(R.Wave42Refused, match="prior_applications"):
-        R.setting_rule(rs, h4=_bind(rs), search_calendar=CAL, fee_unit=FEE, fee_source=R.FEE_SOURCE,
-                       test_starts=TEST_STARTS, test_starts_source=SRC, prior_applications=None)
-    with pytest.raises(TypeError):                                     # no default: the caller must state them
-        R.setting_rule(rs, h4=_bind(rs), search_calendar=CAL, fee_unit=FEE, fee_source=R.FEE_SOURCE,
-                       test_starts=TEST_STARTS, test_starts_source=SRC)
+def test_the_function_takes_no_application_list() -> None:
+    """V-1: a second application is refused by the script's existing output file (`tests/test_wave42_apply.py`), not
+    by a list the caller passes: the function has no such parameter."""
+    params = set(inspect.signature(R.setting_rule).parameters)
+    assert "prior_applications" not in params
+    assert params == {"readings", "h4", "search_calendar", "fee_unit", "fee_source", "test_starts", "test_starts_source"}
 
 
 def _subset(rs, rows=None, cols=None):
@@ -477,7 +484,7 @@ def test_a_subset_of_h4s_output_is_refused(base) -> None:
         _run(_subset(rs, cols=slice(0, 2)), h4=h4)
     gone = {k: R.BaselineReading(b.name, b.block, b.reading, b.starts, b.seeds,
                                  {x: y for x, y in b.values.items() if x != "accounts_max"}) for k, b in rs.items()}
-    with pytest.raises(R.Wave42Refused, match="not those H4 declared"):
+    with pytest.raises(R.Wave42Refused, match="required"):
         _run(gone, h4=h4)
     with pytest.raises(R.Wave42Refused, match="readings_sha256"):
         _run(_with(rs, "p14", "net_month_1", lambda x: x + 1.0), h4=h4)
@@ -487,7 +494,17 @@ def test_a_subset_of_h4s_output_is_refused(base) -> None:
     ("sha256", "2" * 64, "another result file"),
     ("block", "held_out", "block's"),
     ("reading", "as_walked", "block's"),
-    ("W", 125, "W = 125"),
+    ("arm", "worse_1", "arm under the verdict"),
+    ("arm", "missed_0.1", "arm under the verdict"),
+    ("denial", 0.25, "arm under the verdict"),
+    ("placement", "on", "arm under the verdict"),
+    ("focused_trader", "on", "arm under the verdict"),
+    ("W", 125, "integer W"),
+    ("W", "126", "integer W"),
+    ("W", 126.9, "integer W"),
+    ("W", 126.0, "integer W"),
+    ("W", [126, 252], "integer W"),
+    ("W", True, "integer W"),
     ("baselines", ["naive_coin", "p14", "p15"], "declares the baselines"),
     ("calendar_sha256", "3" * 64, "calendar is not the one"),
 ])
@@ -525,20 +542,44 @@ def test_j_is_the_declared_constant_and_moves_only_the_headroom_and_the_power(ba
     assert v4.values["power"]["Q"] == pytest.approx(v.values["power"]["Q"] / 4)
 
 
-def test_the_declared_j_reaches_the_target_at_the_floor_under_the_bound_sigma() -> None:
-    """The reason TEST_SEEDS carries in the text: at delta* = DELTA_MIN against four baselines equal to the best, with
-    sigma at its bound 1 and the held-out complete starts' upper bounds (`three_way_arith`), the forecast meets the
-    power target at the declared equal weights -- so a failed gate is about the baselines' spread, never J."""
+def test_the_declared_j_covers_the_worst_case_with_margin() -> None:
+    """m2-2: TEST_SEEDS is the lead's choice; beside it, the worst case's need (delta* = DELTA_MIN against four
+    baselines equal to the best, sigma 1, the declared equal weights) at the held-out complete starts' upper bounds
+    (`three_way_arith`) and at 40 fewer sessions: TEST_SEEDS is at least 1.5 times the need at k = 13, and covers
+    the need at every k from 13 to 17."""
     spec = importlib.util.spec_from_file_location("three_way_arith_w42", ARITH)
     A = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(A)
     wh = A.weekdays(*A.HELD_OUT)
-    starts = {h: A.complete_starts(wh, h) for h in (63, 126, 252)}
     w = {d.name: 1 / len(R.DIMENSIONS) for d in R.DIMENSIONS}
     hz = {d.name: d.horizon for d in R.DIMENSIONS}
-    Q = R.q_factor(w, hz, starts, R.TEST_SEEDS)
+    floor = {b: R.DELTA_MIN for b in R.BASELINES}
     ones = {b: 1.0 for b in R.BASELINES}
-    assert R.conjoint_power({b: R.DELTA_MIN for b in R.BASELINES}, ones, Q, R.level(R.K_TEST)) >= R.POWER_TARGET
+    for n in (wh, wh - 40):
+        starts = {h: R.complete_starts(n, h) for h in (63, 126, 252)}
+        assert starts == {h: A.complete_starts(n, h) for h in (63, 126, 252)}
+        for k in range(13, 18):
+            need = R.j_needed(floor, ones, w, hz, starts, R.level(k))
+            assert need is not None and R.TEST_SEEDS >= (1.5 * need if k == 13 else need), (n, k, need)
+
+
+def test_the_output_prints_the_worst_case_beside_the_declared_j(base) -> None:
+    _, v = base
+    p = v.values["power"]
+    w = v.values["weights"]
+    hz = {d.name: d.horizon for d in R.DIMENSIONS}
+    assert p["J_worst_case"] == R.j_needed({b: R.DELTA_MIN for b in R.BASELINES}, {b: 1.0 for b in R.BASELINES},
+                                           w, {k: hz[k] for k in w}, TEST_STARTS, R.level(R.K_TEST))
+    assert p["J_worst_case"] <= R.TEST_SEEDS
+
+
+def test_appendix_as_h7_row_runs_the_declared_j() -> None:
+    """m2-2: the three-way note's Appendix A sizes the held-out test at W42-R1's TEST_SEEDS."""
+    spec = importlib.util.spec_from_file_location("three_way_arith_w42h", ARITH)
+    A = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(A)
+    h7 = [r for r in A.parts() if r[0] == "H7 held-out, Hoeffding"]
+    assert len(h7) == 1 and h7[0][3] == R.TEST_SEEDS == A.W42_TEST_SEEDS
 
 
 # --------------------------------------------------------------------------------------------------- refusing
@@ -555,7 +596,7 @@ def test_the_held_out_guard_comes_before_everything(base) -> None:
     bad = _retag(rs, "p16", block="held_out")
     with pytest.raises(R.Wave42Refused, match="only the search years"):
         R.setting_rule(bad, h4=None, search_calendar=(), fee_unit=-1, fee_source="", test_starts={},
-                       test_starts_source={}, prior_applications=[{"rule_id": "W42-R1"}])
+                       test_starts_source={})
 
 
 @pytest.mark.parametrize("day", ["2024-01-02", "2025-06-02", "2026-07-17", "2019-12-31"])
@@ -601,12 +642,28 @@ def test_refuses_a_start_not_on_the_calendar(base) -> None:
         _run(moved)
 
 
+def test_refuses_starts_that_are_not_every_session() -> None:
+    """V-1's hardening: a start set short of the whole calendar is refused whoever built the manifest."""
+    rs = _readings()
+    cut = _subset(rs, rows=slice(1, None))
+    with pytest.raises(R.Wave42Refused, match="every session of the search calendar"):
+        _run(cut)
+
+
+def test_refuses_seeds_that_are_not_the_indices() -> None:
+    rs = _readings()
+    shifted = {k: R.BaselineReading(b.name, b.block, b.reading, b.starts, tuple(s + 1 for s in b.seeds), b.values)
+               for k, b in rs.items()}
+    with pytest.raises(R.Wave42Refused, match="seed indices 0 to J - 1"):
+        _run(shifted)
+
+
 def test_refuses_unpaired_readings(base) -> None:
     rs, _ = base
     with pytest.raises(R.Wave42Refused, match="paired"):
         _run(_retag(rs, "p15", seeds=tuple(s + 100 for s in rs["p15"].seeds)))
     st = list(STARTS)
-    st[3] = CAL[_IDX[3] + 1]                               # one start day moved to the next session
+    st[3] = "2020-03-07"                                   # one start day moved to another date
     with pytest.raises(R.Wave42Refused, match="paired"):
         _run(_retag(rs, "p16", starts=tuple(st)))
 
@@ -638,19 +695,31 @@ def test_refuses_a_fee_unit_without_its_ledger_source(base, fee, source, match) 
         _run(rs, fee=fee, fee_source=source)
 
 
-@pytest.mark.parametrize("starts", [{63: 500, 126: 400}, {63: 500, 126: 520, 252: 300}, {63: 500, 126: 400, 252: 0}])
+@pytest.mark.parametrize("starts", [{63: 578, 126: 515}, {63: 578, 126: 515, 252: 390},
+                                    {63: 579, 126: 515, 252: 389}, {63: 578, 126: 515, 252: 0}])
 def test_refuses_bad_test_start_counts(base, starts) -> None:
+    """V-2: the counts are complete_starts of the held-out calendar's sessions, at every horizon."""
     rs, _ = base
-    with pytest.raises(R.Wave42Refused, match="complete-start count"):
+    with pytest.raises(R.Wave42Refused, match="complete-start count|complete_starts"):
         _run(rs, starts=starts)
 
 
-@pytest.mark.parametrize("src", [{}, {**SRC, "function": " "}, {**SRC, "commit": "not-a-commit"},
-                                 {**SRC, "calendar_sha256": "abc"}, {k: v for k, v in SRC.items() if k != "commit"}])
+def test_refuses_a_held_out_calendar_too_short_for_a_horizon(base) -> None:
+    """A held-out calendar of 200 sessions has no complete 252-session start: the counts, though complete_starts of
+    it, are refused for not being positive."""
+    rs, _ = base
+    n = 200
+    with pytest.raises(R.Wave42Refused, match="counts are positive"):
+        _run(rs, starts={h: R.complete_starts(n, h) for h in R.HORIZONS}, src={**SRC, "sessions": n})
+
+
+@pytest.mark.parametrize("src", [{}, {**SRC, "file": "another_calendar.csv"}, {**SRC, "sha256": "0" * 64},
+                                 {**SRC, "sessions": "640"}, {**SRC, "sessions": 0},
+                                 {k: v for k, v in SRC.items() if k != "sha256"}])
 def test_refuses_test_counts_without_their_source(base, src) -> None:
     rs, _ = base
-    with pytest.raises(R.Wave42Refused, match="name their source"):
-        _run(rs, src=src or {"function": ""})
+    with pytest.raises(R.Wave42Refused, match="pinned held-out calendar"):
+        _run(rs, src=src)
 
 
 def test_refuses_malformed_measures(base) -> None:
@@ -664,26 +733,19 @@ def test_refuses_malformed_measures(base) -> None:
     with pytest.raises(R.Wave42Refused, match="paid before its first pass"):
         _run(_with(rs, "p14", "first_pass_days", lambda x: np.where(np.isnan(x), np.nan, R.W + 1.0)))
     b = rs["p16"]
-    for key, match in (("cash_to_first_pass", "required"), ("first_pass_days", "required"),
-                       ("orders_max", "some baselines")):
+    for key in ("cash_to_first_pass", "first_pass_days", "orders_max", "accounts_max", "taken_mean"):
         part = {**rs, "p16": R.BaselineReading(b.name, b.block, b.reading, b.starts, b.seeds,
                                                {k: x for k, x in b.values.items() if k != key})}
-        with pytest.raises(R.Wave42Refused, match=match):
+        with pytest.raises(R.Wave42Refused, match="required"):
             _run(part)
 
 
 def test_refuses_an_empty_horizon() -> None:
-    """Every start day within the last 50 sessions: no start has 63 sessions left, so E_63 is empty."""
-    late = CAL[-50:]
-    rs = {b: _reading(b, s, pay=a, spend=c, starts=late) for b, (s, a, c) in PARAMS.items()}
+    """A search calendar of 50 sessions: no start has 63 sessions left, so E_63 is empty."""
+    short = CAL[:49] + (R.SEARCH_LAST,)
+    rs = {b: _reading(b, s, pay=a, spend=c, starts=short, cal=short) for b, (s, a, c) in PARAMS.items()}
     with pytest.raises(R.Wave42Refused, match="E_63 is empty"):
-        _run(rs)
-
-
-def test_refuses_optional_measures_h4_did_not_declare(base) -> None:
-    rs, _ = base
-    with pytest.raises(R.Wave42Refused, match="not those H4 declared"):
-        _run(rs, h4=_bind(rs, optional_measures=["orders_max", "taken_mean"]))
+        _run(rs, cal=short, h4=_bind(rs, cal=short))
 
 
 # --------------------------------------------------------------------------------------- moving as the text says
@@ -729,14 +791,32 @@ def test_equal_baselines_set_the_limit_at_the_headroom(base) -> None:
     assert L["value"] == pytest.approx(M - R.limit_z(6) * se)
 
 
-def test_an_absent_optional_measure_sets_no_limit_when_h4_declares_it_absent(base) -> None:
+def test_every_limit_is_set() -> None:
+    """V-3 (a): the three workload and supply measures are required, so all six limits are set."""
+    assert all(not L.optional for L in R.LIMITS)
+    assert {"orders_max", "accounts_max", "taken_mean"} <= set(R.REQUIRED)
+
+
+def test_cost_counts_a_pass_on_session_w(base) -> None:
+    """m2-4: a unit that passes on session W (first_pass_days = W) is passed; its cost z is its cash's, not zero."""
     rs, _ = base
-    gone = {k: R.BaselineReading(b.name, b.block, b.reading, b.starts, b.seeds,
-                                 {x: y for x, y in b.values.items() if x != "accounts_max"}) for k, b in rs.items()}
-    v = _run(gone)
-    L = {x["name"]: x for x in v.values["limits"]["values"]}["accounts_max_p90"]
-    assert L["status"] == "not set"
-    assert v.values["limits"]["limits_set"] == 5 and v.values["limits"]["headroom_z"] == pytest.approx(R.limit_z(5))
+    at_w = _with(rs, "p15", "first_pass_days", lambda x: np.where(np.isnan(x), np.nan, float(R.W)))
+    at_w = _with(at_w, "p15", "first_payout_days", lambda x: np.where(np.isnan(x), np.nan, R.W + 1.0))
+    d = {x["name"]: x for x in _run(at_w).values["dimensions"]}["cost"]
+    r = _sl() >= R.W
+    x = np.asarray(at_w["p15"].values["cash_to_first_pass"])[r]
+    z = 1 - np.clip((x - d["lo"]) / (d["hi"] - d["lo"]), 0, 1)
+    assert d["baseline_means"]["p15"] == pytest.approx(float(z.mean())) and z.mean() > 0
+
+
+def test_a_limit_beyond_every_baseline_unit_is_flagged_vacuous(base) -> None:
+    """m2-4: every unit's busiest day at three orders: the p90 ceiling sits on the last unit, flagged vacuous for it."""
+    rs, _ = base
+    same = rs
+    for b in R.BASELINES:
+        same = _with(same, b, "orders_max", lambda x: np.where(np.isnan(x), np.nan, 3.0))
+    L = {x["name"]: x for x in _run(same).values["limits"]["values"]}["orders_max_p90"]
+    assert L["value"] == 3.0 and L["vacuous"] and "beyond every baseline unit" in L["vacuous_reason"]
 
 
 def test_a_shifted_dollar_dimension_shifts_its_caps_and_nothing_else(base) -> None:
@@ -782,14 +862,15 @@ def _flat(seed: int, share_good: float) -> R.BaselineReading:
     good = rng.random((N, J0)) < share_good
     v = {"spent_before_first_payout": np.full((N, J0), 4 * FEE), "first_payout_days": np.full((N, J0), R.W + 1.0),
          "first_pass_days": np.full((N, J0), R.W + 1.0), "cash_to_first_pass": np.full((N, J0), 4 * FEE),
-         "peak_oop_12_months": np.full((N, J0), 4 * FEE), "share_months_positive": np.zeros((N, J0))}
+         "peak_oop_12_months": np.full((N, J0), 4 * FEE), "share_months_positive": np.zeros((N, J0)),
+         "orders_max": np.ones((N, J0)), "accounts_max": np.ones((N, J0)), "taken_mean": np.ones((N, J0))}
     for m in (1, 2, 3):
         v[f"net_month_{m}"] = np.where(good, 100.0, -100.0)
         v[f"peak_month_{m}"] = np.full((N, J0), FEE)
     for key, (h, _, _) in R.REQUIRED.items():
         v[key] = np.asarray(v[key], dtype=float).copy()
         v[key][sl < h] = np.nan
-    return R.BaselineReading("x", "search", R.READING, STARTS, tuple(range(1, J0 + 1)), v)
+    return R.BaselineReading("x", "search", R.READING, STARTS, tuple(range(J0)), v)
 
 
 def test_every_other_dimension_constant_gives_the_fallback() -> None:
@@ -800,7 +881,39 @@ def test_every_other_dimension_constant_gives_the_fallback() -> None:
     v = _run(rs)
     assert v.values["form"] == "fallback" and v.values["weights"] == {"money": 1.0}
     assert all(d["constant"] for d in v.values["dimensions"][1:]) and not v.values["dimensions"][0]["constant"]
-    assert {x["name"]: x for x in v.values["limits"]["values"]}["orders_max_p90"]["status"] == "not set"
+    assert v.values["null_journeys"]["composite"]["do_nothing"] == 0.0     # the fallback reads P_B alone
+
+
+def test_the_null_journeys_and_the_floor(base) -> None:
+    """V-4: beside the baselines, the do-nothing journey scores exactly bankroll's and ruin's weights (2/6: z = 1 on
+    both, 0 on the rest) and the one-evaluation quitter is recomputed from the caps; the do-nothing composite is the
+    declared floor, and the guards are named."""
+    rs, v = base
+    nj = v.values["null_journeys"]
+    assert nj["composite"]["do_nothing"] == pytest.approx(2 / 6)
+    assert nj["floor"]["value"] == nj["composite"]["do_nothing"] and "exceed" in nj["floor"]["rule"]
+    dims = {d["name"]: d for d in v.values["dimensions"]}
+    fee, Bs = FEE, v.values["budgets"]["primary"]
+    zb = 1 - min(1.0, max(0.0, (fee - dims["bankroll"]["lo"]) / (dims["bankroll"]["hi"] - dims["bankroll"]["lo"])))
+    zr = 0.0 if fee > Bs else 1.0
+    assert nj["composite"]["quit_at_first_failure"] == pytest.approx((zb + zr) / 6)
+    C = v.values["composite"]["value"]
+    assert nj["baselines_at_or_below_floor"] == [b for b in R.BASELINES if C[b] <= 2 / 6 + 1e-12]
+    g = v.values["inactivity_guards"]
+    lim = {x["name"]: x for x in v.values["limits"]["values"]}["not_paid_within_B"]
+    assert g["not_paid_within_B"] == ("live" if not lim["vacuous"] else g["not_paid_within_B"])
+    assert "3.8 (c)" in g["long_run_gate"]
+
+
+def test_a_vacuous_not_paid_limit_names_the_long_run_gate_alone(base) -> None:
+    """V-4: if no baseline is ever paid within B* by W, the limit is 1, vacuous, and the output says only the
+    long-run gate stops a quitter."""
+    rs, _ = base
+    never = rs
+    for b in R.BASELINES:
+        never = _with(never, b, "first_payout_days", lambda x: np.where(np.isnan(x), np.nan, R.W + 1.0))
+    g = _run(never).values["inactivity_guards"]
+    assert g["not_paid_within_B"].startswith("vacuous") and "long-run gate" in g["not_paid_within_B"]
 
 
 def test_one_varying_dimension_besides_money_keeps_the_composite() -> None:
@@ -886,9 +999,9 @@ def test_delta_star_is_held_at_its_declared_cap() -> None:
     assert d["value"] == R.DELTA_MAX and "cap" in d["how"]
 
 
-def test_the_cap_and_floor_are_the_three_way_notes_illustrated_sizes() -> None:
-    """The cap's stated source: the largest size the three-way note's power arithmetic prints (`three_way_arith`);
-    the floor is its smallest."""
+def test_the_floor_and_cap_sit_on_the_three_way_notes_illustration_grid() -> None:
+    """m2-1: DELTA_MIN and DELTA_MAX are the lead's choices; for context only, they are the ends of the grid the
+    three-way note illustrates its power arithmetic over (`three_way_arith.DELTA`)."""
     spec = importlib.util.spec_from_file_location("three_way_arith_w42c", ARITH)
     A = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(A)
@@ -950,11 +1063,12 @@ def _norm(s: str) -> str:
 
 
 def test_the_document_carries_its_held_out_read_ledger() -> None:
-    """B-8: the ledger section, this rule's own entry (none), the leak clause in RD-04's form, the nominal level, and
-    CHARTER 3.6 (b)'s entries that concern the four baselines."""
+    """B-8, V-2: the ledger section, this rule's own entry (the held-out calendar's dates only), the leak clause in
+    RD-04's form, the nominal level, and CHARTER 3.6 (b)'s entries that concern the four baselines."""
     t = _norm(DOC.read_text(encoding="utf-8"))
     assert "## 10. The held-out read ledger" in DOC.read_text(encoding="utf-8")
-    assert "W42-R1's own entry: none" in t
+    assert "W42-R1's own entry: the held-out session calendar's dates only" in t
+    assert R.HELD_OUT_CALENDAR in t and R.HELD_OUT_CALENDAR_SHA256 in t
     assert "written after these readings; no figure from them is cited as the reason for any constant" in t
     assert "printed nominal" in t
     for entry in ("Stage 2 D-626", "E-203 S-2", "Stage 2 D-554", "RD-04 (c)", "RD-05", "Q-17 and E-201", "RD-03",
@@ -962,14 +1076,26 @@ def test_the_document_carries_its_held_out_read_ledger() -> None:
         assert entry in t, entry
 
 
+def test_the_document_names_the_application_and_the_guards() -> None:
+    """V-1, V-3, V-4: the script, the collection result, the adapter, the calendar, the floor and the two guards."""
+    t = _norm(DOC.read_text(encoding="utf-8"))
+    for phrase in ("scripts/wave42_apply.py", R.COLLECTION_RESULT, "extended/h4_collect.py", "w42_readings",
+                   R.SEARCH_CALENDAR, "load_search_calendar", "standard_prices", R.OUTPUT_NAME,
+                   "The do-nothing journey's composite is a declared floor", "the not_paid_within_B limit",
+                   "CHARTER 3.8 (c)'s long-run gate"):
+        assert phrase in t, phrase
+
+
 def test_the_three_way_notes_limit_clause_is_e230s() -> None:
-    """B-7: the three-way note's 4.4 states the point-estimate form, with W42-R1's headroom, and no margin w."""
+    """B-7: the three-way note's 4.4 states the point-estimate form, with W42-R1's headroom, and no margin w; m2-6:
+    the count of limits has its own symbol."""
     raw = NOTE.read_text(encoding="utf-8")
     sec = raw[raw.index("### 4.4"):raw.index("## 5. The fixed sequence")]
     t = _norm(sec)
     assert "M-hat + w <= L" not in t and "(c_L + z_pi)" not in t and "w is the coin-seed half-width" not in t
     assert "the point estimate governs" in t.lower() and "E-230" in t and "W42-R1" in t
     assert "never as a second margin" in t
+    assert "/ L over the L limits" not in t and "n_L" in t
     m5 = _norm(raw[raw.index("### 2.2"):raw.index("### 2.3")])
     assert "No bound is ever estimated from data, on any years." not in m5
     assert "a declared clip under (ii) may take its endpoints from the search years" in m5

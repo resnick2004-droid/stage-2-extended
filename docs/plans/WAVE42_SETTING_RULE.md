@@ -4,20 +4,26 @@
 by a rule declared before H4 is read": the **limits**, the **bankroll budgets B** of measure (24), the **composite's
 weights**, and O-3's **size that matters** delta\*. This file is that rule. It is mechanical: given H4's one output it
 outputs each value, with no choice left. Its code is `extended/wave42.py`, `setting_rule`, a pure function (no file,
-no bar, no result, no randomness); `tests/test_wave42_rule.py` holds the code to this text (the tables below are
-machine-read) and recomputes every output from synthetic readings.
+no bar, no result, no randomness). **Its one declared application is `scripts/wave42_apply.py`** (section 9), which
+reads H4's collection result from disk and writes the values once. `tests/test_wave42_rule.py` holds the code to this
+text (the tables below are machine-read) and recomputes every output from synthetic readings;
+`tests/test_wave42_apply.py` runs the application on synthetic files.
 
-**Status.** Corrective cycle 1 of the red team's read `docs/reviews/WAVE42_RULE_2026-11-20.md` (blocked: B-1 to B-8,
-m-1 to m-9), under the lead's rulings on B-1, B-3, B-8, m-1 and m-2. A draft for the red team's second read. The lead pins it
-in one row before H4 is read, **by the sha256 of this file and of `extended/wave42.py`** (B-1: the code can no longer
-change under a pinned text). After that neither is edited: a change is a new rule id under a new row, made before H4
-is read, or a re-declaration of the search (CHARTER 3.9).
+**Status.** Corrective cycle 2 of 2. The first read `docs/reviews/WAVE42_RULE_2026-11-20.md` (B-1 to B-8, m-1 to
+m-9) was answered in cycle 1 (wt/wt-infra 357a339) under the lead's rulings on B-1, B-3, B-8, m-1 and m-2; the second
+read `WAVE42_RULE_v2_2026-11-20.md` (V-1 to V-4, m2-1 to m2-6) is answered here under the lead's rulings on V-1 to
+V-4 and the minors. The lead pins it in one row before H4 is read, **by the sha256 of this file, of
+`extended/wave42.py` and of `scripts/wave42_apply.py`** (B-1, V-1: neither the code nor its application can change
+under a pinned text), with `SEARCH_CALENDAR_SHA256` filled from Q-197's result before the pin (V-3). After that none
+is edited: a change is a new rule id under a new row, made before H4 is read, or a re-declaration of the search
+(CHARTER 3.9).
 
 **What it governs and what it does not.** It sets the four values above, the primary budget B\* that P under the
 bankroll stop reads, the composite's dimension definitions and normalisers (CHARTER 3.9 pins them with the weights),
 the composite-or-fallback choice, the level of the one-sided check printed beside each limit (3.8 (a)), and **the
-held-out test's seed count J** (`TEST_SEEDS`, B-3). It does not set the power target (it reads
-`family_stats.MDL_POWER`), the held-out start counts (H3's calendar arithmetic), the regimes, "most years", the
+held-out test's seed count J** (`TEST_SEEDS`, B-3), and the **floor** a finalist's composite must exceed (V-4). It
+does not set the power target (it reads `family_stats.MDL_POWER`), the held-out start counts (derived from the pinned
+held-out calendar, V-2), the regimes, "most years", the
 finalist order, the gate's quantile, the no-harm margin or the L values: those are the pinning row's other inputs.
 
 ---
@@ -33,7 +39,7 @@ finalist order, the gate's quantile, the no-harm margin or the L values: those a
 | B-5 cost rewards not passing | an unpassed unit scores at the upper cap on cost (z = 0); the caps come from the passed units; ruin's censored state stated | 4.2 |
 | B-6 tests that cannot catch the mechanisms | the tests recompute every output from the readings, with hand-built units for the bankroll stop and (24); a mutation check, each blocking mechanism's mutant killed | the tests; `scripts/wave42_mutants.py` |
 | B-7 the three-way note's 4.4 in the margin form | 4.4's limit clause rewritten to E-230's form, with this rule's headroom | the three-way note 4.4 |
-| B-8 no held-out read ledger | the ledger, this rule's own entry none, in RD-04's leak-clause form | 10 |
+| B-8 no held-out read ledger | the ledger, in RD-04's leak-clause form; this rule's own entry none in cycle 1, the held-out calendar's dates in cycle 2 (V-2) | 10 |
 | m-1 the ROC order not CHARTER 2's | the lead's ruling: equal weights across the kept dimensions, since CHARTER 2 ranks none; the weight table printed; weights per dollar and per session in the output | 4.3 |
 | m-2 delta\* ill-conditioned and unbounded above | the lead's ruling: resolution at z = 2 only with at least `H4_MIN_SEEDS` seeds, the count at which a false resolution stays at most 0.05; a declared cap `DELTA_MAX` with its source; below the seed count, section 5's fallback, never relaxed; `DELTA_MIN` and `DELTA_MAX` translated into each dimension's units | 2, 5.1 |
 | m-3 the limits | a days limit at W + 1, or beyond every baseline unit, flagged vacuous; each baseline's estimate per search year beside; the headroom's z joint over the limits set | 6 |
@@ -47,57 +53,86 @@ finalist order, the gate's quantile, the no-harm margin or the L values: those a
 
 The notes n-1 to n-4 ask for no change.
 
+**Corrective cycle 2** (the second read; the lead's rulings):
+
+| finding | the change | where |
+|---|---|---|
+| V-1 the binding stops at the function | `scripts/wave42_apply.py`, pinned with the rule: it reads H4's collection result and its sidecar from disk and hashes both itself, builds the readings through the one named adapter, and writes once to a fixed name through `write_result`; a second application is refused by the existing output file; the manifest gains `arm` = `off` and the verdict settings; the start days must be every calendar session and the seeds 0 to J - 1 | 1.1, 1.2, 9 |
+| V-2 the fee and the counts free | the script derives the fee unit through `standard_prices` and the held-out counts from the pinned held-out calendar's dates (by sha256); the function refuses counts that are not `complete_starts` of that calendar; the read enters the ledger | 1.4, 10 |
+| V-3 the file and the calendar unnamed | the collection result `results/h4_w42_input.csv` by name, the adapter `extended/h4_collect.py::w42_readings`, Q-197's `results/search_calendar.csv` by sha256 through its loader; the three workload and supply measures required (H4's draft requires them), so every limit is set | 1.1, 1.2, 1.3, 6 |
+| V-4 a do-nothing journey's composite | the do-nothing and quit-at-first-failure composites printed beside the baselines; the do-nothing composite a declared floor a finalist must exceed; the two guards named | 4.5 |
+| m2-1 `DELTA_MAX`'s source | relabelled the lead's choice; the illustration grid as context only | 2 |
+| m2-2 `TEST_SEEDS`'s reason | relabelled the lead's choice, the worst case's need printed beside it and tested at two counts; Appendix A's H7 row at J = `TEST_SEEDS` | 2, 5.3; the three-way note Appendix A |
+| m2-3 W's refusal loose | only the integer 126 is accepted; anything else is refused, never a TypeError | 1.5 |
+| m2-4 three surviving mutants | tests for `input_sha256` over the manifest, cost at a pass on session W, and the "beyond every unit" vacuity | the tests |
+| m2-5 "oppose inactivity" | corrected: they score it zero, they do not oppose it | 4.2 |
+| m2-6 one letter for two things in 4.4 | the count of limits is n_L | the three-way note 4.4 |
+
 ---
 
 ## 1. The input, and what is refused
 
-### 1.1 H4's one output (B-1, m-6, m-9)
+### 1.1 H4's one output (B-1, V-1, V-3, m-9)
 
-The input is **H4's one output**: the result file H4's clean run wrote, named by its sha256, and its sidecar
-manifest. The rule takes the readings H4 wrote, the file's sha256 (`H4Binding.result_sha256`) and the manifest
-(`H4Binding.manifest`), which must carry these fields:
+The input is **H4's one output**: H4-C's collection result `results/h4_w42_input.csv` (`COLLECTION_RESULT`, H4's
+draft section 9) and its sidecar manifest, written once from a clean checkout. **`scripts/wave42_apply.py` reads both
+from disk**: it computes the file's sha256 itself, refuses a sidecar whose recorded sha256 is not the file's, records
+the sidecar's own sha256, and builds the four readings through the one named adapter, H4's
+`extended/h4_collect.py::w42_readings` (`ADAPTER`; its bit-for-bit round trip is H4's test). The binding's fields are
+the sidecar's parameters, the file's sha256 its `sha256`:
 
 <!-- wave42-h4-manifest:start -->
 | field | what it binds |
 |---|---|
-| sha256 | the result file's own sha256; equal to the binding's |
+| sha256 | the collection file's own sha256, as the script computes it |
 | block | `search`, the only block read |
 | reading | `martingale_outcome`, CHARTER 3.2's deciding reading |
-| W | the first-payout window H4's declaration pins; must be 126 (m-9) |
+| arm | `off`, H4's deciding arm (never a stress arm or the as-walked reading; V-1) |
+| denial | 0, the verdict's payout denial (CHARTER 3.8) |
+| placement | `off`, the Responsible Trading Program's placement |
+| focused_trader | `off`, the Focused Trader Program |
+| W | the integer 126, the first-payout window H4's declaration pins (m-9, m2-3) |
 | baselines | exactly `naive_coin`, `p14`, `p15`, `p16` |
-| starts | every start day H4 declared; the readings carry exactly these |
-| seeds | every coin seed H4 declared; the readings carry exactly these |
-| optional_measures | the optional measures H4 declared; the readings carry exactly these |
-| calendar_sha256 | the search calendar's sha256 (`calendar_digest`) |
-| readings_sha256 | the readings' content digest (`readings_digest`), recorded by H4's runner |
+| starts | every start day H4 declared, which must be every session of the search calendar (H4's draft section 4) |
+| seeds | every coin seed H4 declared, which must be the indices 0 to J - 1 (H4's draft section 7) |
+| calendar_sha256 | the search calendar's digest (`calendar_digest`) |
+| readings_sha256 | the readings' content digest (`readings_digest`), recorded by H4's collection |
 <!-- wave42-h4-manifest:end -->
 
-**H4's declaration must therefore** have its runner record `wave42.readings_digest` and `wave42.calendar_digest` in
-its manifest, and list its optional measures there. The pinning row cites H4's result file's sha256; the rule's
-output carries it beside its own digest, so an auditor checks one against the other.
+**What the auditor checks** (the pinning row cites each): the output's `h4_result_sha256` is the collection file's
+sha256 as H4's collection row records it; its `h4_sidecar_sha256` is the sidecar's; its `readings_sha256` and its
+start and seed counts are the sidecar's; its `search_calendar_file_sha256` is `SEARCH_CALENDAR_SHA256`; its
+`held_out_calendar_sha256` is `HELD_OUT_CALENDAR_SHA256`; and its `rule_text_sha256`, `rule_module_sha256` and
+`script_sha256` are the pinned ones.
 
-**Applied once.** The rule takes `prior_applications`, the manifests of every Wave 4.2 output already written under
-`results/`, with no default. Any record naming a rule id `W42-...` is refused: the rule, or a successor rule, has
-already been applied to H4's output. The one application runs from a clean checkout of a named commit
-(`scripts/run_clean.py`), and its output is written with a sidecar manifest (`write_result`). The pinning row cites
-that output's digest (`Wave42Values.digest`) and its `input_sha256`.
+**Applied once.** The script writes its values to one fixed name, `results/w42_r1_values.csv` (`OUTPUT_NAME`),
+through `write_result`, which refuses outside a clean run and never overwrites. Before reading anything, the script
+refuses if that file, its manifest, or any other `results/w42_*` file exists: a second application is refused by the
+existing file, never by a list a caller passes. The function `setting_rule` stays pure, but only the script is the
+declared way to apply it.
 
-### 1.2 The search calendar and sessions left (B-2)
+### 1.2 The search calendar and sessions left (B-2, V-3)
 
-The rule takes the pinned search calendar: the search years' session dates, from `SEARCH_FIRST` to `SEARCH_LAST`,
-strictly increasing. This is a date list, calendar arithmetic, not a result. **Sessions left are computed here,
-uncapped:** a start day's sessions left are the calendar sessions from the start to `SEARCH_LAST`, **the start session
-counted as session 1** (as `three_way_arith.complete_starts` counts it, and as the engine's day 1 is the start's first
-session). E_h is the start days with at least h sessions left. A start day not on the calendar is refused. The caller
-never supplies sessions left, so neither MEASURES 1.1's capped obs nor an overstated count can enter.
+The search calendar is Q-197's pinned result, `results/search_calendar.csv` (`SEARCH_CALENDAR`), read through its
+loader `extended.search_calendar.load_search_calendar`, and **bound by its file's sha256** `SEARCH_CALENDAR_SHA256`,
+filled in from Q-197's result manifest before this rule is pinned; while it is unset the script refuses. Its dates
+run strictly from `SEARCH_FIRST` to `SEARCH_LAST`; it is a date list, calendar arithmetic, not an outcome. **Sessions
+left are computed here, uncapped:** a start day's sessions left are the calendar sessions from the start to
+`SEARCH_LAST`, **the start session counted as session 1** (as `three_way_arith.complete_starts` counts it, and as the
+engine's day 1 is the start's first session). E_h is the start days with at least h sessions left. **Every session
+of the calendar is a start** (H4's draft section 4), so a start set short of the calendar is refused whoever built
+the manifest (V-1's hardening); a start day not on the calendar is refused. The caller never supplies sessions left.
 
 ### 1.3 The readings
 
 One reading per baseline of CHARTER 2's Topstep set, exactly `naive_coin`, `p14`, `p15`, `p16`. A reading carries:
 - its block tag, which must be `search`, and its reading tag, which must be `martingale_outcome`;
-- its start days (ISO dates on the calendar, increasing), the manifest's;
-- its coin seeds, the manifest's, distinct and at least two (below `H4_MIN_SEEDS` no gap may resolve, 5.1);
-- for each per-unit measure below, the matrix x[s, c] over start days by seeds, in MEASURES.md's never-blank form.
+- its start days, every session of the calendar, the manifest's;
+- its coin seeds, the manifest's, the indices 0 to J - 1, at least two (below `H4_MIN_SEEDS` no gap may resolve,
+  5.1);
+- for each per-unit measure below, **all required** (V-3 (a): H4's draft requires the firm path to emit the workload
+  and supply measures, so no limit is left to a build), the matrix x[s, c] over start days by seeds, in MEASURES.md's
+  never-blank form.
 
 | key | measure | horizon | per-unit form |
 |---|---|---|---|
@@ -109,20 +144,28 @@ One reading per baseline of CHARTER 2's Topstep set, exactly `naive_coin`, `p14`
 | `cash_to_first_pass` | (2) | W | the all-units form; read only on passed units (4.2) |
 | `peak_oop_12_months` | (25) | 252 | `PeakOOP_u` |
 | `share_months_positive` | (18) | 252 | the per-unit share |
-| `orders_max`, `accounts_max` (optional) | (30) | W | the per-unit maximum over observed sessions |
-| `taken_mean` (optional) | (37) | W | the per-unit mean of `taken_d` |
+| `orders_max`, `accounts_max` | (30) | W | the per-unit maximum over observed sessions |
+| `taken_mean` | (37) | W | the per-unit mean of `taken_d` |
 
-### 1.4 Beside the readings
+### 1.4 Beside the readings: derived by the script, never typed (V-2)
 
 - **The fee unit** (m-4): one month of the subscription of Topstep's 50K Standard path, the plan the four baselines
-  run, read from Stage 2's verified ledger, key `subscription_fee` (`extended/levers_terms.py`, `standard_prices`).
-  Its source must be named exactly `FEE_SOURCE`; any other source, or a typed figure, is refused.
-- **The held-out start counts** per horizon (63, 126 and 252): the complete held-out starts on the pinned calendar
-  (`three_way_arith`'s `complete_starts`), calendar arithmetic reading no outcome, with **their source**
-  (`test_starts_source`, m-7): the function's name, the commit it is read at, and the calendar file's sha256.
+  run, **read by the script through `extended/levers_terms.py`'s `standard_prices`** (Stage 2's verified
+  `subscription_fee`), with the ledger file's sha256 recorded. Its source must be named exactly `FEE_SOURCE`.
+- **The held-out start counts** per horizon (63, 126 and 252) are **derived by the script from the pinned held-out
+  session calendar** `results/q82_judged_sessions.csv` (`HELD_OUT_CALENDAR`, E-208): its bytes must hash to
+  `HELD_OUT_CALENDAR_SHA256`, only its `date` column is read, every date inside 2024-01-02..2026-07-16 and
+  increasing, and the counts are `complete_starts` of its session count (calendar arithmetic, no outcome). The
+  function refuses counts that are not exactly `complete_starts` of the session count it is told, or a source that
+  is not that file and sha256. This read is the rule's own held-out ledger entry (section 10).
 - **The seed count J is not an input** (B-3): it is `TEST_SEEDS`, section 2.
 
-### 1.5 Refused before any value is computed (`Wave42Refused`)
+### 1.5 Refused before any value is computed
+
+The script refuses (`ApplyRefused`) an existing Wave 4.2 output, a missing collection file or sidecar, a sidecar
+that is not the file's, an unpinned or other search calendar, a held-out calendar that is not the pinned one or
+holds a date outside the held-out years, and an adapter or loader not built on its commit. The rule refuses
+(`Wave42Refused`):
 
 **The held-out guard runs first**, before anything else is looked at:
 - a reading whose block tag is anything but `search` (a held-out, confirmation or untagged reading);
@@ -131,25 +174,24 @@ One reading per baseline of CHARTER 2's Topstep set, exactly `naive_coin`, `p14`
 
 Then:
 - a reading other than the martingale-outcome reading;
-- `prior_applications` not a list, a record in it with no rule id, or any record of a `W42-` rule (a second
-  application);
 - a baseline set other than the four, or a reading under another baseline's name;
 - a calendar not strictly increasing from `SEARCH_FIRST` to `SEARCH_LAST`;
 - a result sha256 that is not 64 hex digits; a manifest lacking a field of 1.1's table; a manifest naming another
-  file, block, reading, W or baseline set; a calendar whose sha256 is not the manifest's;
+  file, block, reading, arm, verdict setting or baseline set; a W that is not the integer 126 (a string, a float, a
+  list or a boolean included); a calendar whose sha256 is not the manifest's;
 - start days or seeds that are not exactly the manifest's (a subset, a superset or another list);
-- repeated seeds, or fewer than two; start days not strictly increasing; a start day not on the calendar;
+- repeated seeds, fewer than two, or seeds other than 0 to J - 1; start days not strictly increasing; a start day not
+  on the calendar; start days that are not every session of the calendar;
 - readings not paired (the same start days and seeds for every baseline);
 - a fee unit that is not a positive amount, or whose source is not `FEE_SOURCE`;
-- a held-out start count missing for a horizon, not positive, or increasing in the horizon; a `test_starts_source`
-  missing a field, with a blank field, a commit that is not 7 to 40 hex digits, or a calendar sha256 that is not 64;
+- a held-out start count missing for a horizon, not positive, or not `complete_starts` of
+  the held-out calendar's session count; a `test_starts_source` that is not the pinned file and sha256 with an
+  integer session count;
 - a horizon whose E_h is empty (no start day with h sessions left);
 - a required measure missing, a matrix of the wrong shape, a blank (or non-finite) value on E_h (MEASURES 1.3's
   blank rule), or a value outside its a priori range (a share outside [0, 1], days outside [0, W + 1], a negative
   dollar spend);
 - a unit paid by W before its first pass;
-- an optional measure given for some baselines and not others, or a set of optional measures other than the
-  manifest's;
 - readings whose content digest is not the manifest's `readings_sha256`.
 
 ## 2. The constants
@@ -163,14 +205,25 @@ value equal to `extended/wave42.py`'s.
 | RULE_ID | `"W42-R1"` | this rule's id; a change after the pin is a new id under a new row |
 | SEARCH_FIRST | `"2020-01-02"` | E-208's search years, first session |
 | SEARCH_LAST | `"2023-12-29"` | E-208's search years, last session |
+| HELD_OUT_FIRST | `"2024-01-02"` | E-208's held-out years, first session; only their calendar's dates are read |
+| HELD_OUT_LAST | `"2026-07-16"` | E-208's held-out years, last session |
 | BLOCK | `"search"` | the only block tag read (CHARTER 3.6 (e)) |
 | READING | `"martingale_outcome"` | CHARTER 3.2's deciding reading, the only one read (B-1) |
+| ARM | `"off"` | V-1: H4's deciding arm; a stress arm or the as-walked reading is refused |
+| VERDICT | `{"denial": 0.0, "placement": "off", "focused_trader": "off"}` | V-1: the verdict's settings (CHARTER 3.8; E-008 (2)), bound in H4's manifest |
+| COLLECTION_RESULT | `"h4_w42_input.csv"` | V-3: H4-C's one collection result, by name (H4's draft section 9) |
+| ADAPTER | `"extended.h4_collect:w42_readings"` | V-1: the one adapter from the collection to the readings (H4's) |
+| SEARCH_CALENDAR | `"search_calendar.csv"` | V-3: Q-197's pinned search calendar |
+| SEARCH_CALENDAR_SHA256 | `null` | V-3: that file's sha256, **filled from Q-197's result manifest before the pin**; the script refuses while it is unset |
+| HELD_OUT_CALENDAR | `"q82_judged_sessions.csv"` | V-2: the pinned held-out session calendar (E-208), its dates only |
+| HELD_OUT_CALENDAR_SHA256 | `"59a698623d951772c1ea19439200762026855eb696e859a544597041e0ffbdea"` | V-2: that file's sha256, as its sidecar manifest records it |
+| OUTPUT_NAME | `"w42_r1_values.csv"` | V-1: the one output, written once |
 | BASELINES | `["naive_coin", "p14", "p15", "p16"]` | CHARTER 2's Topstep baseline set; the order breaks ties |
 | W | `126` | the first-payout window of (1), (2), (5), (6) and (24): U1's and Q-44's ledger constant, half a year; H4's declaration must pin the same (m-9) |
 | MONTH | `21` | CHARTER 2: a month is 21 sessions |
 | AHEAD_TOL | `1e-06` | MEASURES 1.2 (m-11): ahead means above a millionth of a dollar |
 | H4_MIN_SEEDS | `62` | m-2, the lead's ruling: the fewest H4 seeds at which a gap may be called resolved. Two equal baselines, ranked so the larger is on top, have a gap whose ratio to its standard error is a Student t with nJ - 1 degrees of freedom in absolute value; this is the smallest nJ at which that ratio exceeds `RESOLVE_Z` with probability at most 0.05 (`test_the_minimum_seed_count_holds_a_false_resolution_at_z_2_to_005`). Below it no gap resolves (5.1); H4's declaration should run at least this many |
-| TEST_SEEDS | `1000` | B-3: the held-out test's seed count J, fixed here before H4 is read and copied by H3's declaration. Chosen so that the power target is reached at the floor `DELTA_MIN` with sigma at its bound of one, against four baselines equal to the best, at the declared weights and the held-out complete-start upper bounds (`test_the_declared_j_reaches_the_target_at_the_floor_under_the_bound_sigma`): a failed gate is then about the baselines' spread, never J |
+| TEST_SEEDS | `1000` | B-3, m2-2: **the lead's choice**, a round number fixed here before H4 is read and copied by H3's declaration. Beside it, the worst case's need (delta\* at `DELTA_MIN` against four baselines equal to the best, sigma at its bound of one, the declared weights): it is at least 1.5 times that need at k = 13 and covers it at every k up to 17, at the held-out complete starts' weekday upper bounds and at 40 fewer sessions (`test_the_declared_j_covers_the_worst_case_with_margin`); the output prints the need at the derived counts (`J_worst_case`). A failed gate is then about the baselines' spread, never J |
 | FEE_SOURCE | `"vendor/stage2/config/rules.yaml:subscription_fee"` | m-4: the fee unit is one month of the Standard path's subscription, Stage 2's verified key |
 | BUDGET_QUANTILES | `[0.5, 0.75, 0.9]` | the budgets of (24): a typical, a cautious and a deep bankroll among the baselines' users |
 | PRIMARY_BUDGET_QUANTILE | `0.75` | B\*: below the median the stop decides most units and P_B reads spending alone; at the 90th percentile it barely binds and P_B is P; the upper quartile is between |
@@ -178,13 +231,13 @@ value equal to `extended/wave42.py`'s.
 | CAP_MARGIN | `0.25` | the span is widened by a quarter each side, so a design better than every baseline is not clipped at once; wider caps would dilute the test's power (the three-way note 1.3 and 2.2 (a)) |
 | RESOLVE_Z | `2.0` | m-2, the lead's ruling: a gap is resolved when it exceeds twice its standard error, at H4's seed count of at least `H4_MIN_SEEDS` |
 | DELTA_FRACTION | `0.25` | when no gap is resolved: a quarter of the baselines' composite spread, one rank's share among four |
-| DELTA_MIN | `0.01` | **the lead's choice** (m-2): one hundredth of the composite's [0, 1] range, below which no user would change design; the smallest size the three-way note's power arithmetic prints (Appendix A, `three_way_arith.DELTA`); the output translates it into each dimension's own units (5.1) |
-| DELTA_MAX | `0.05` | m-2, the lead's ruling: delta\*'s declared cap. **Source:** the largest size the three-way note's power arithmetic prints at k = 13 (Appendix A, `three_way_arith.DELTA`), the top of the range the held-out test was sized over; a planted difference above it would size the gate for a difference no part of that arithmetic covers (`test_the_cap_and_floor_are_the_three_way_notes_illustrated_sizes`). Never relaxed |
+| DELTA_MIN | `0.01` | **the lead's choice** (m-2): one hundredth of the composite's [0, 1] range, below which no user would change design; for context, the bottom of the three-way note's illustration grid; the output translates it into each dimension's own units (5.1) |
+| DELTA_MAX | `0.05` | m-2, m2-1: **the lead's choice**, delta\*'s declared cap, a conservative one (a cap below the smallest resolved gap sizes the gate for a smaller difference, so stricter). For context only: it is the top of the grid the three-way note illustrates its power arithmetic over (Appendix A, `three_way_arith.DELTA`), whose formulas cover any size. Never relaxed |
 | POWER_TARGET | `0.8` | the power target, `family_stats.MDL_POWER` (the three-way note 4.1) |
 | K_TEST | `13` | the held-out test's k (CHARTER 3.7: next 13); alpha = 0.05 / (k (k + 1)); the power figures are recomputed at the assigned k if it differs (m-8) |
 | LIMIT_CHECK_LEVEL | `0.05` | the one-sided check of crossing printed beside each limit, never deciding (3.8 (a); E-230) |
 | J_MAX | `10000000` | the search bound for J_needed, the seed count the forecast needs; beyond it, "not reachable" |
-| HELD_OUT_LEDGER | `"none"` | B-8: this rule's own entry in the held-out read ledger (section 10; E-211's form) |
+| HELD_OUT_LEDGER | `"the held-out session calendar's dates only"` | B-8, V-2: this rule's own entry in the held-out read ledger (section 10; E-211's form) |
 <!-- wave42-constants:end -->
 
 ## 3. The bankroll budgets B
@@ -245,8 +298,9 @@ z = clip((x - lo) / (hi - lo), 0, 1) for a "higher" dimension, and 1 minus that 
   on ruin: it is (24)'s "censored" state, still paying fees and not yet paid. This is acceptable because the limit
   `not_paid_within_B` reads run out plus censored (section 6), so a design that rarely pays is held by the limit even
   where ruin does not see it. Speed scores an unpaid unit at W + 1, its worst.
-- **Bankroll (25)** scores a unit that spends little as better: that is what a user feels, and money (P_B), speed,
-  cost and steady oppose inactivity.
+- **Bankroll (25)** scores a unit that spends little as better: that is what a user feels. Money (P_B), speed, cost
+  and steady do not oppose inactivity: they score an inactive unit zero, while bankroll and ruin score it one, so the
+  net is a positive floor for a journey that buys nothing (4.5, V-4; m2-5).
 - **The caps and 2.2 (a) (m-5).** The clip is in the per-unit definition (the three-way note 2.2 (a), source (ii)):
   every z_d(u) lies in [0, 1] by construction, fixed before the held-out read. The caps' endpoints come from the
   search years, which are independent of the held-out coin field, so the bound is not estimated from the data it
@@ -290,6 +344,22 @@ z = clip((x - lo) / (hi - lo), 0, 1) for a "higher" dimension, and 1 minus that 
   Otherwise the form is the composite, with all six weights. The form is decided here, before the survey, and never
   after a look. The limits stand in both forms.
 
+### 4.5 The null journeys, the floor and the guards against inactivity (V-4)
+
+- **Printed beside the baselines' composites:** the composite of **the do-nothing journey** (it buys nothing and
+  trades nothing: no spend, never passed, never paid, no month ahead or positive) and of **the
+  quit-at-first-failure journey** (it buys one evaluation, one fee unit, never passes and stops). Each is computed
+  from the caps, B\* and the weights with no further data (`null_journeys`). In the composite form the do-nothing
+  journey scores exactly bankroll's and ruin's weights (z = 1 on both, 0 on the rest), 2/6; in the fallback, 0.
+- **The do-nothing journey's composite is a declared floor** (the lead's ruling, conservative): a finalist's
+  composite must exceed it at the point estimate. The floor can only remove designs, never add one. The output also
+  lists any baseline at or below it. Wave 5's finalist rule applies the floors before it ranks by the composite.
+- **The two guards that stop inactivity**, named: **the not_paid_within_B limit** (a do-nothing journey scores 1
+  there and fails it unless the worst baseline is never paid within B\* by W), and **CHARTER 3.8 (c)'s long-run
+  gate** (median log growth above zero), which stops a do-nothing or quit-early design at the held-out test. If the
+  limit comes out vacuous, the output says so (`inactivity_guards`), and the pinning row must state that only the
+  long-run gate stops a quitter.
+
 ## 5. The size that matters, delta\*, and the power at it
 
 ### 5.1 delta\*
@@ -323,7 +393,8 @@ difference is delta_b = delta\* + (C_best - C_b), so delta\* against the best an
   (m-8): if the held-out test is assigned another k (E-204's rule), they are recomputed at it by the same functions
   (`level`, `pair_power`, `conjoint_power`); k is never an input of the rule.
 - **The test's seed count J is `TEST_SEEDS`** (B-3, the lead's ruling), fixed in this text before H4 is read and
-  never set from this rule's output. H3's declaration copies it.
+  never set from this rule's output. H3's declaration copies it, and the three-way note's Appendix A sizes the
+  held-out test at it. Beside it the output prints `J_worst_case`, the need at the floor of delta\* with sigma 1.
 - The test's units are J seeds by the declared complete held-out starts n_h per horizon; the E_h nest (E_252 within
   E_126 within E_63). With every per-unit z in [0, 1], McDiarmid's bounded differences give the half-width
   c_h sqrt(Q), with
@@ -357,9 +428,9 @@ units (MEASURES 1.4, reading 1) of its E_h, by numpy's linear quantile.
 | not_paid_within_B | (24) | `not_paid_within_B` | ceiling | 126 | mean | no | the chance of not being paid within B\* by W (run out plus censored; MEASURES (24)'s limit reading) |
 | peak_oop_12_months_p90 | (25) | `peak_oop_12_months` | ceiling | 252 | p90 | no | the bankroll the unlucky tenth puts in over a year |
 | first_payout_days_p50 | (5) | `first_payout_days` | ceiling | 126 | p50 | no | the typical wait for the first cash |
-| orders_max_p90 | (30) | `orders_max` | ceiling | 126 | p90 | yes | the busiest day's hand-entered orders |
-| accounts_max_p90 | (30) | `accounts_max` | ceiling | 126 | p90 | yes | the most accounts live at once |
-| taken_mean_p10 | (37) | `taken_mean` | floor | 126 | p10 | yes | the trades on offer a session (supply) |
+| orders_max_p90 | (30) | `orders_max` | ceiling | 126 | p90 | no | the busiest day's hand-entered orders |
+| accounts_max_p90 | (30) | `accounts_max` | ceiling | 126 | p90 | no | the most accounts live at once |
+| taken_mean_p10 | (37) | `taken_mean` | floor | 126 | p10 | no | the trades on offer a session (supply) |
 <!-- wave42-limits:end -->
 
 **The value of each limit.**
@@ -385,8 +456,7 @@ units (MEASURES 1.4, reading 1) of its E_h, by numpy's linear quantile.
    below), is reported **vacuous** with its reason, and kept.
 5. **History beside (m-3 (b)).** Each baseline's estimate on each search year's start days (of E_h) is printed
    beside each limit, deciding nothing: a search-years-only reading of how far a change of history moves it.
-6. An optional limit whose measure H4's declared output does not carry (its manifest does not list it, 1.1) is **not
-   set**, reported with that reason; the pinning row then says so. A required one missing is refused (1.5).
+6. **Every limit is set** (V-3 (a)): each limit's measure is required, and a missing one is refused (1.5).
 
 **No limit on screen hours or trading hours:** the operator ruled no cap on trading hours, every session the firm
 allows in the search (the restart plan, section 9, item 6). The verdict's settings (0 % denial, placement off, the
@@ -400,7 +470,9 @@ Focused Trader Program off) are the reading's, not limits.
 | the worst baseline worsens on a limit's measure | that limit moves out to the new worst estimate | `test_a_worse_worst_baseline_moves_its_ceiling_and_a_better_best_does_not` |
 | the best baseline improves, the worst unchanged | the limit does not move | same test |
 | every baseline equal on a limit's measure | the limit is the headroom value, the best plus (a floor: minus) z_L se_test | `test_equal_baselines_set_the_limit_at_the_headroom` |
-| an optional measure absent from H4's declared output | its limit is not set; z_L counts one limit fewer | `test_an_absent_optional_measure_sets_no_limit_when_h4_declares_it_absent` |
+| a workload or supply measure missing | refused: every limit is set | `test_refuses_malformed_measures`, `test_every_limit_is_set` |
+| the composite's caps and B\* | the null journeys' composites move with them; the do-nothing composite is 2/6 in the composite form | `test_the_null_journeys_and_the_floor` |
+| no baseline ever paid within B\* by W | the limit is vacuous; the output names the long-run gate as the only guard | `test_a_vacuous_not_paid_limit_names_the_long_run_gate_alone` |
 | a dollar dimension shifted by a constant for every unit | its caps shift by it; weights, composites and delta\* do not move | `test_a_shifted_dollar_dimension_shifts_its_caps_and_nothing_else` |
 | a dimension made a monotone function of another | nothing is dropped; the six weights stand; rho is reported beside | `test_a_dimension_that_moves_with_another_is_kept_and_the_weights_stay` |
 | every dimension but money constant | the form is the fallback, P_B alone | `test_every_other_dimension_constant_gives_the_fallback` |
@@ -429,15 +501,19 @@ Focused Trader Program off) are the reading's, not limits.
 
 ## 9. What the rule never does, and how it is applied
 
-- **It never reads the held-out years.** Its readings are refused unless tagged `search` with every start day inside
-  2020-01-02 to 2023-12-29, checked before anything else; the held-out years enter only as declared counts of
-  calendar starts with their named source, never as an outcome. H4's runner refuses held-out sessions on its own
-  (CHARTER 3.6 (e)).
-- **It is applied once, to H4's one output** (B-1). Its input is bound to H4's result file by that file's sha256 and
-  manifest; a subset of the output, another reading, another calendar, or a second application is refused (1.5). The
-  one application runs from a clean checkout of a named commit and is written with a sidecar manifest; the pinning
-  row cites its digest and `input_sha256`, beside H4's result sha256.
-- **It never changes after H4 is read.** It is pinned by the sha256 of this file and of `extended/wave42.py` before
+- **It never reads a held-out outcome.** Its readings are refused unless tagged `search` with every start day inside
+  2020-01-02 to 2023-12-29, checked before anything else; the held-out years enter only through their pinned session
+  calendar's dates, counted into complete starts (section 10), never as an outcome. H4's runner refuses held-out
+  sessions on its own (CHARTER 3.6 (e)).
+- **It is applied once, to H4's one output, by `scripts/wave42_apply.py`** (B-1, V-1):
+  `python scripts/run_clean.py --name w42-r1 -- python scripts/wave42_apply.py`, from a clean checkout of a named
+  commit, with no argument. The script reads the collection result and its sidecar from disk and hashes both,
+  derives the calendars, the counts and the fee itself, builds the readings through the one adapter, refuses if any
+  Wave 4.2 output exists, and writes `results/w42_r1_values.csv` once through `write_result`, every hash in its
+  manifest (1.1's audit list). The pinning row cites that output's sha256, its `values_sha256` and its
+  `input_sha256`, beside H4's collection result's and sidecar's sha256.
+- **It never changes after H4 is read.** It is pinned by the sha256 of this file, of `extended/wave42.py` and of
+  `scripts/wave42_apply.py` before
   H4's read; its outputs are computed once from H4's search-year results and pinned in CHARTER 3.9's one row before
   the survey, never after a held-out read (E-221). A changed constant is a new rule id under a new row before H4's
   read, or a re-declaration of the search.
@@ -448,8 +524,11 @@ Focused Trader Program off) are the reading's, not limits.
 
 ## 10. The held-out read ledger
 
-**W42-R1's own entry: none** (E-211's form). The rule reads no held-out session, and refuses any reading not tagged
-`search` (1.5); its output carries the entry (`held_out_read_ledger`).
+**W42-R1's own entry: the held-out session calendar's dates only** (E-211's form; V-2). The script reads
+`results/q82_judged_sessions.csv` (sha256 `59a698623d951772c1ea19439200762026855eb696e859a544597041e0ffbdea`), its
+`date` column only, to count the held-out complete starts per horizon; no price, outcome or other column is read. The
+rule reads no held-out session, and refuses any reading not tagged `search` (1.5); its output carries the entry
+(`held_out_read_ledger`).
 
 **The prior reads that concern its comparators** (CHARTER 3.6 (b), the floor completed for the four baselines and
 the constants this rule borrows). Its constants were chosen by a researcher who could have read these:
@@ -476,20 +555,16 @@ the reason for any constant**. Each constant's reason in section 2 is an arithme
 a reading. Because the ledger is not empty, the held-out test's level is **printed nominal** beside its verdict
 (CHARTER 3.6 (b), E-203 S-2's form): for Stage 2's baselines "held out" means unread by this search only (E-208).
 
-## 11. Choices the red team should attack (cycle 2)
+## 11. The choices on record for the pin
 
-1. B\* at the pooled upper quartile of (24)'s per-unit spending, the naive coin included (n-3), against the best
-   baseline's median or a fee multiple fixed in advance.
+1. B\* at the pooled upper quartile of (24)'s per-unit spending, the naive coin included (n-3).
 2. The fixed six dimensions with no drop, at equal weights (the lead's ruling): bankroll, cost and ruin together
-   carry half the weight, and each scores a design that spends little as better; money, speed and steady oppose it.
-3. Cost's unpassed units at z = 0 with caps from the passed units: a design that passes rarely but cheaply when it
-   does gains on its passed units only.
+   carry half the weight, and bankroll and ruin score a design that spends little as better; money, speed and steady
+   score an inactive journey zero. The do-nothing floor and the two guards of 4.5 hold that.
+3. Cost's unpassed units at z = 0 with caps from the passed units.
 4. The fallback's trigger: every other dimension constant over the pooled units.
-5. `TEST_SEEDS` = 1000, and its reason (the floor reachable at the bound sigma): the compute it costs H7, and whether
-   a smaller J with the gate failing honestly is preferable.
-6. `H4_MIN_SEEDS` = 62 at z = 2 (the false resolution counted two-sided, since the ranking puts the larger on top),
-   and `DELTA_MAX` = 0.05 from the three-way note's arithmetic: the cap's source, and the fallback below the count.
-7. The joint z over the limits set (Bonferroni), against a per-limit z with the joint power reported; the limits at
-   the worst baseline.
-8. The binding: `readings_digest` recorded by H4's runner, and `prior_applications` supplied by the caller from the
-   results folder's Wave 4.2 manifests.
+5. `TEST_SEEDS` = 1000, the lead's choice, with the worst case's need beside it.
+6. `H4_MIN_SEEDS` = 62 at z = 2 (the false resolution counted two-sided), and `DELTA_MAX` = 0.05, the lead's choice.
+7. The joint z over the limits set (Bonferroni).
+8. The binding's two outside pieces: H4's collection result and adapter (H4's, to build), and Q-197's calendar
+   sha256, filled in before the pin.

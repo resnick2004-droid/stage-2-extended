@@ -16,8 +16,12 @@ only as the declared count of complete starts per horizon on the pinned calendar
 with its named source). An input tagged anything but the search block, or carrying a start day outside the search
 years, is refused before any value is computed (`Wave42Refused`); so is an input that is not the whole of H4's one
 output (its start days, its seeds and its optional measures exactly the manifest's, its content the manifest's
-digest), and a second application. Sessions left are computed here from the pinned search calendar, never taken from
-the caller. Every constant is the document's, which `tests/test_wave42_rule.py` machine-reads.
+digest, its arm `off` under the verdict settings). Sessions left are computed here from the pinned search calendar,
+never taken from the caller, and the held-out start counts must be the complete starts of the pinned held-out
+session calendar. **The declared way to apply the rule is `scripts/wave42_apply.py`** (V-1, the lead's ruling): it
+reads H4's collection result and its sidecar from disk, derives the fee unit, the calendars and the counts itself,
+builds the readings through the one named adapter, and writes once, to a fixed name. Every constant is the
+document's, which `tests/test_wave42_rule.py` machine-reads.
 """
 from __future__ import annotations
 
@@ -36,9 +40,18 @@ from extended.family_stats import MDL_POWER
 # ---------------------------------------------------------------------------------------------- the constants (doc 2)
 RULE_ID = "W42-R1"
 SEARCH_FIRST, SEARCH_LAST = "2020-01-02", "2023-12-29"        # E-208's search years
-HELD_OUT_FIRST = "2024-01-02"                                  # E-208's held-out years begin; never read
+HELD_OUT_FIRST, HELD_OUT_LAST = "2024-01-02", "2026-07-16"    # E-208's held-out years: only their dates are read
 BLOCK = "search"
 READING = "martingale_outcome"                                 # CHARTER 3.2's deciding reading
+ARM = "off"                                                    # V-1: H4's deciding arm
+VERDICT = {"denial": 0.0, "placement": "off", "focused_trader": "off"}   # V-1: the verdict's settings (CHARTER 3.8)
+COLLECTION_RESULT = "h4_w42_input.csv"                         # V-3: H4-C's one collection result, by name
+ADAPTER = "extended.h4_collect:w42_readings"                   # V-1: the one adapter from it to the readings
+SEARCH_CALENDAR = "search_calendar.csv"                        # V-3: Q-197's pinned search calendar
+SEARCH_CALENDAR_SHA256 = None                                  # V-3: its file's sha256, filled before the pin
+HELD_OUT_CALENDAR = "q82_judged_sessions.csv"                  # V-2: the pinned held-out session calendar (E-208)
+HELD_OUT_CALENDAR_SHA256 = "59a698623d951772c1ea19439200762026855eb696e859a544597041e0ffbdea"
+OUTPUT_NAME = "w42_r1_values.csv"                              # V-1: the one output, written once
 BASELINES = ("naive_coin", "p14", "p15", "p16")                # CHARTER 2: Topstep's baseline set, in this order
 W = 126                                                        # the first-payout window (U1, Q-44: a ledger constant)
 MONTH = 21
@@ -58,10 +71,14 @@ POWER_TARGET = MDL_POWER
 K_TEST = 13
 LIMIT_CHECK_LEVEL = 0.05
 J_MAX = 10 ** 7
-HELD_OUT_LEDGER = "none"                                       # B-8: this rule's own held-out reads (E-211's form)
+HELD_OUT_LEDGER = "the held-out session calendar's dates only"  # B-8, V-2: this rule's own held-out read
 
 CONSTANTS: dict[str, Any] = {
-    "RULE_ID": RULE_ID, "SEARCH_FIRST": SEARCH_FIRST, "SEARCH_LAST": SEARCH_LAST, "BLOCK": BLOCK, "READING": READING,
+    "RULE_ID": RULE_ID, "SEARCH_FIRST": SEARCH_FIRST, "SEARCH_LAST": SEARCH_LAST, "HELD_OUT_FIRST": HELD_OUT_FIRST,
+    "HELD_OUT_LAST": HELD_OUT_LAST, "BLOCK": BLOCK, "READING": READING, "ARM": ARM, "VERDICT": VERDICT,
+    "COLLECTION_RESULT": COLLECTION_RESULT, "ADAPTER": ADAPTER, "SEARCH_CALENDAR": SEARCH_CALENDAR,
+    "SEARCH_CALENDAR_SHA256": SEARCH_CALENDAR_SHA256, "HELD_OUT_CALENDAR": HELD_OUT_CALENDAR,
+    "HELD_OUT_CALENDAR_SHA256": HELD_OUT_CALENDAR_SHA256, "OUTPUT_NAME": OUTPUT_NAME,
     "BASELINES": list(BASELINES), "W": W, "MONTH": MONTH, "AHEAD_TOL": AHEAD_TOL, "H4_MIN_SEEDS": H4_MIN_SEEDS,
     "TEST_SEEDS": TEST_SEEDS, "FEE_SOURCE": FEE_SOURCE,
     "BUDGET_QUANTILES": list(BUDGET_QUANTILES), "PRIMARY_BUDGET_QUANTILE": PRIMARY_BUDGET_QUANTILE,
@@ -70,13 +87,12 @@ CONSTANTS: dict[str, Any] = {
     "K_TEST": K_TEST, "LIMIT_CHECK_LEVEL": LIMIT_CHECK_LEVEL, "J_MAX": J_MAX, "HELD_OUT_LEDGER": HELD_OUT_LEDGER,
 }
 
-#: the fields H4's manifest must carry for its output to be this rule's input (B-1, B-2, m-6, m-9)
-H4_MANIFEST_KEYS = ("sha256", "block", "reading", "W", "baselines", "starts", "seeds", "optional_measures",
-                    "calendar_sha256", "readings_sha256")
-#: the fields naming where the held-out start counts come from (m-7)
-TEST_STARTS_SOURCE_KEYS = ("function", "commit", "calendar_sha256")
+#: the fields H4's manifest must carry for its output to be this rule's input (B-1, B-2, m-9, V-1)
+H4_MANIFEST_KEYS = ("sha256", "block", "reading", "arm", "denial", "placement", "focused_trader", "W", "baselines",
+                    "starts", "seeds", "calendar_sha256", "readings_sha256")
+#: the fields naming where the held-out start counts come from (m-7, V-2)
+TEST_STARTS_SOURCE_KEYS = ("file", "sha256", "sessions")
 _HEX64 = re.compile(r"[0-9a-f]{64}")
-_COMMIT = re.compile(r"[0-9a-f]{7,40}")
 
 
 @dataclass(frozen=True)
@@ -119,9 +135,9 @@ LIMITS = (
     LimitSpec("not_paid_within_B", "(24)", "not_paid_within_B", "ceiling", W, "mean", False, "share"),
     LimitSpec("peak_oop_12_months_p90", "(25)", "peak_oop_12_months", "ceiling", 252, "p90", False, "dollars"),
     LimitSpec("first_payout_days_p50", "(5)", "first_payout_days", "ceiling", W, "p50", False, "days"),
-    LimitSpec("orders_max_p90", "(30)", "orders_max", "ceiling", W, "p90", True, "count"),
-    LimitSpec("accounts_max_p90", "(30)", "accounts_max", "ceiling", W, "p90", True, "count"),
-    LimitSpec("taken_mean_p10", "(37)", "taken_mean", "floor", W, "p10", True, "count"),
+    LimitSpec("orders_max_p90", "(30)", "orders_max", "ceiling", W, "p90", False, "count"),
+    LimitSpec("accounts_max_p90", "(30)", "accounts_max", "ceiling", W, "p90", False, "count"),
+    LimitSpec("taken_mean_p10", "(37)", "taken_mean", "floor", W, "p10", False, "count"),
 )
 
 # the per-unit measures H4 must hand in (each a start-days x seeds matrix), with their horizon and a priori range
@@ -134,8 +150,10 @@ REQUIRED = {
     "cash_to_first_pass": (W, 0.0, math.inf),
     "peak_oop_12_months": (252, 0.0, math.inf),
     "share_months_positive": (252, 0.0, 1.0),
+    "orders_max": (W, 0.0, math.inf),                          # V-3 (a): the three workload and supply measures,
+    "accounts_max": (W, 0.0, math.inf),                        # required (H4's draft requires the firm path to
+    "taken_mean": (W, 0.0, math.inf),                          # emit them), so every limit is set
 }
-OPTIONAL = {"orders_max": (W, 0.0, math.inf), "accounts_max": (W, 0.0, math.inf), "taken_mean": (W, 0.0, math.inf)}
 STATS = {"mean": None, "p10": 0.10, "p50": 0.50, "p90": 0.90}
 HORIZONS = tuple(sorted({d.horizon for d in DIMENSIONS} | {lim.horizon for lim in LIMITS}))
 
@@ -193,8 +211,8 @@ def _refuse(msg: str) -> Wave42Refused:
 
 
 def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: Sequence[str], fee_unit: float,
-              fee_source: str, test_starts: Mapping[int, int], test_starts_source: Mapping[str, str],
-              prior_applications: Sequence[Mapping[str, Any]]) -> tuple[dict[str, dict[str, np.ndarray]], np.ndarray]:
+              fee_source: str, test_starts: Mapping[int, int],
+              test_starts_source: Mapping[str, Any]) -> tuple[dict[str, dict[str, np.ndarray]], np.ndarray]:
     for b in readings.values():                                    # the held-out guard first, before anything else
         if b.block != BLOCK:
             raise _refuse(f"{b.name!r} is tagged block {b.block!r}; only the search years ({BLOCK!r}) are read")
@@ -205,14 +223,6 @@ def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: 
     for b in readings.values():
         if b.reading != READING:
             raise _refuse(f"{b.name!r} is the {b.reading!r} reading; only the {READING!r} reading is read")
-    if not isinstance(prior_applications, (list, tuple)):
-        raise _refuse("prior_applications lists every Wave 4.2 output already written (empty before the one run)")
-    for rec in prior_applications:
-        rid = str((rec or {}).get("rule_id", ""))
-        if not rid:
-            raise _refuse("a prior application's record names no rule id")
-        if rid.startswith("W42-"):
-            raise _refuse(f"Wave 4.2's rule is applied once: {rid!r} has already been applied to H4's output")
     if set(readings) != set(BASELINES) or any(readings[k].name != k for k in readings):
         raise _refuse(f"the baselines are exactly {BASELINES}, each under its own name; got {sorted(readings)}")
 
@@ -233,8 +243,10 @@ def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: 
         raise _refuse("H4's manifest names another result file (its sha256 differs)")
     if man["block"] != BLOCK or man["reading"] != READING:
         raise _refuse(f"H4's manifest is not the {BLOCK!r} block's {READING!r} reading")
-    if int(man["W"]) != W:
-        raise _refuse(f"H4's declaration pins W = {man['W']}; this rule is declared at W = {W} (m-9)")
+    if man["arm"] != ARM or any(man[k] != v for k, v in VERDICT.items()):
+        raise _refuse(f"H4's manifest is not the {ARM!r} arm under the verdict settings {VERDICT} (V-1)")
+    if type(man["W"]) is not int or man["W"] != W:
+        raise _refuse(f"H4's declaration pins W = {man['W']!r}; this rule is declared at the integer W = {W} (m-9)")
     if list(man["baselines"]) != list(BASELINES):
         raise _refuse(f"H4's manifest declares the baselines {man['baselines']}, not {list(BASELINES)}")
     if man["calendar_sha256"] != cal_sha:
@@ -247,12 +259,16 @@ def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: 
     n, J = len(ref.starts), len(ref.seeds)
     if n < 1 or J < 2 or len(set(ref.seeds)) != J:
         raise _refuse("at least one start day and at least two distinct coin seeds")
+    if [int(s) for s in ref.seeds] != list(range(J)):
+        raise _refuse(f"the coin seeds are H4's seed indices 0 to J - 1, here 0 to {J - 1} (V-1)")
     if list(ref.starts) != sorted(set(ref.starts)):
         raise _refuse("start days strictly increasing")
     pos = {d: i for i, d in enumerate(cal)}
     off = [d for d in ref.starts if str(d) not in pos]
     if off:
         raise _refuse(f"start day {off[0]!r} is not a session of the search calendar")
+    if [str(d) for d in ref.starts] != cal:
+        raise _refuse("the start days are every session of the search calendar (H4 starts on each one; V-1)")
     sl = np.asarray([len(cal) - pos[str(d)] for d in ref.starts])        # the start session is session 1
     for b in readings.values():
         if tuple(b.starts) != tuple(ref.starts) or tuple(b.seeds) != tuple(ref.seeds):
@@ -265,22 +281,23 @@ def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: 
     if any(h not in test_starts for h in HORIZONS):
         raise _refuse(f"the test's complete-start count is declared for every horizon {list(HORIZONS)}")
     counts = [int(test_starts[h]) for h in HORIZONS]
-    if any(c < 1 for c in counts) or any(b > a for a, b in zip(counts, counts[1:])):
-        raise _refuse("the test's complete-start counts are positive and non-increasing in the horizon")
+    if any(c < 1 for c in counts):                     # non-increasing follows from complete_starts (V-2)
+        raise _refuse("the test's complete-start counts are positive")
     src = test_starts_source if isinstance(test_starts_source, Mapping) else {}
-    if any(not (isinstance(src.get(k), str) and src[k].strip()) for k in TEST_STARTS_SOURCE_KEYS) \
-            or not _COMMIT.fullmatch(src["commit"]) or not _HEX64.fullmatch(src["calendar_sha256"]):
-        raise _refuse("the test's start counts name their source: the function, its commit and the calendar's sha256")
+    if src.get("file") != HELD_OUT_CALENDAR or src.get("sha256") != HELD_OUT_CALENDAR_SHA256 \
+            or type(src.get("sessions")) is not int or src["sessions"] < 1:
+        raise _refuse(f"the test's start counts come from the pinned held-out calendar {HELD_OUT_CALENDAR} "
+                      f"(sha256 {HELD_OUT_CALENDAR_SHA256[:12]}...) and its session count (V-2)")
+    if any(int(test_starts[h]) != complete_starts(src["sessions"], h) for h in HORIZONS):
+        raise _refuse("the test's complete-start counts are complete_starts on the held-out calendar's sessions (V-2)")
 
     out: dict[str, dict[str, np.ndarray]] = {}
     for name in BASELINES:
         b = readings[name]
         vals: dict[str, np.ndarray] = {}
-        for key, (h, lo, hi) in {**REQUIRED, **OPTIONAL}.items():
+        for key, (h, lo, hi) in REQUIRED.items():
             if key not in b.values:
-                if key in REQUIRED:
-                    raise _refuse(f"{name!r} lacks the required measure {key!r}")
-                continue
+                raise _refuse(f"{name!r} lacks the required measure {key!r}")
             x = np.asarray(b.values[key], dtype=float)
             if x.shape != (n, J):
                 raise _refuse(f"{name!r} {key!r} is {x.shape}, not start days x seeds {(n, J)}")
@@ -298,14 +315,6 @@ def _validate(readings: Mapping[str, BaselineReading], h4: H4Binding, calendar: 
         if (vals["first_pass_days"][rW][paid] > vals["first_payout_days"][rW][paid]).any():
             raise _refuse(f"{name!r} has a unit paid before its first pass")
         out[name] = vals
-    for key in OPTIONAL:
-        have = [key in out[name] for name in BASELINES]
-        if any(have) and not all(have):
-            raise _refuse(f"the optional measure {key!r} is given for some baselines and not others")
-    present = {k for k in OPTIONAL if k in out[BASELINES[0]]}
-    if present != set(man["optional_measures"]):
-        raise _refuse(f"the optional measures present {sorted(present)} are not those H4 declared "
-                      f"{sorted(man['optional_measures'])}")
     if readings_digest(readings) != man["readings_sha256"]:
         raise _refuse("the readings are not H4's output: their digest is not the manifest's readings_sha256")
     return out, sl
@@ -406,6 +415,38 @@ def conjoint_power(deltas: Mapping[str, float], sigmas: Mapping[str, float], Q: 
     return max(0.0, 1.0 - sum(1.0 - pair_power(deltas[b], Q, sigmas[b], alpha) for b in deltas))
 
 
+def complete_starts(n: int, h: int) -> int:
+    """Starts complete at horizon h in n sessions, the start and the next h - 1 inside (`three_way_arith`'s)."""
+    return max(0, int(n) - int(h) + 1)
+
+
+def j_needed(deltas: Mapping[str, float], sigmas: Mapping[str, float], weights: Mapping[str, float],
+             horizons: Mapping[str, int], test_starts: Mapping[int, int], alpha: float) -> int | None:
+    """The smallest J up to J_MAX at which the conjoint lower bound reaches POWER_TARGET; None if not reachable."""
+    if conjoint_power(deltas, sigmas, q_factor(weights, horizons, test_starts, J_MAX), alpha) < POWER_TARGET:
+        return None
+    lo_j, hi_j = 1, J_MAX
+    while lo_j < hi_j:
+        mid = (lo_j + hi_j) // 2
+        if conjoint_power(deltas, sigmas, q_factor(weights, horizons, test_starts, mid), alpha) >= POWER_TARGET:
+            hi_j = mid
+        else:
+            lo_j = mid + 1
+    return lo_j
+
+
+#: V-4: two journeys printed beside the baselines -- one that buys nothing and trades nothing, and one that buys one
+#: evaluation (one fee unit) and quits at its first failure; each the same on every unit
+def null_journeys(fee_unit: float) -> dict[str, dict[str, float]]:
+    f = float(fee_unit)
+    base = {"first_payout_days": W + 1.0, "first_pass_days": W + 1.0, "share_months_positive": 0.0}
+    nothing = {**base, "spent_before_first_payout": 0.0, "cash_to_first_pass": 0.0, "peak_oop_12_months": 0.0,
+               **{f"net_month_{m}": 0.0 for m in (1, 2, 3)}, **{f"peak_month_{m}": 0.0 for m in (1, 2, 3)}}
+    quitter = {**base, "spent_before_first_payout": f, "cash_to_first_pass": f, "peak_oop_12_months": f,
+               **{f"net_month_{m}": -f for m in (1, 2, 3)}, **{f"peak_month_{m}": f for m in (1, 2, 3)}}
+    return {"do_nothing": nothing, "quit_at_first_failure": quitter}
+
+
 def limit_z(n_limits: int) -> float:
     """m-3 (c): the normal quantile that gives every one of n limits its headroom jointly at the power target
     (Bonferroni: each at 1 - (1 - pi*) / n)."""
@@ -456,14 +497,13 @@ def _year_estimates(x: np.ndarray, starts: Sequence[str], rows: np.ndarray, stat
 # ------------------------------------------------------------------------------------------------------- the rule
 def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineReading], *, h4: H4Binding,
                  search_calendar: Sequence[str], fee_unit: float, fee_source: str, test_starts: Mapping[int, int],
-                 test_starts_source: Mapping[str, str],
-                 prior_applications: Sequence[Mapping[str, Any]]) -> Wave42Values:
+                 test_starts_source: Mapping[str, Any]) -> Wave42Values:
     """The whole rule (sections 3-6), in its fixed order: budgets, dimensions and weights, delta\\* and power, limits.
-    Applied once to H4's one output (B-1); the seed count J is the declared `TEST_SEEDS`, never an input (B-3)."""
+    Applied once to H4's one output (B-1), by `scripts/wave42_apply.py` (V-1); the seed count J is the declared
+    `TEST_SEEDS`, never an input (B-3)."""
     if not isinstance(readings, Mapping):
         readings = {b.name: b for b in readings}
-    vals, sl = _validate(readings, h4, search_calendar, fee_unit, fee_source, test_starts, test_starts_source,
-                         prior_applications)
+    vals, sl = _validate(readings, h4, search_calendar, fee_unit, fee_source, test_starts, test_starts_source)
     ref = readings[BASELINES[0]]
     nJ = len(ref.seeds)
     J = TEST_SEEDS
@@ -474,12 +514,15 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                                      test_starts_source),
         "h4": {"result_sha256": h4.result_sha256, "readings_sha256": h4.manifest["readings_sha256"],
                "calendar_sha256": calendar_digest([str(d) for d in search_calendar]),
-               "starts": len(ref.starts), "seeds": nJ, "optional_measures": sorted(h4.manifest["optional_measures"])},
-        "held_out_read_ledger": {"entry": HELD_OUT_LEDGER, "refuses": f"any reading not tagged {BLOCK!r}",
+               "starts": len(ref.starts), "seeds": nJ, "arm": h4.manifest["arm"],
+               "verdict": {k: h4.manifest[k] for k in VERDICT}},
+        "held_out_read_ledger": {"entry": HELD_OUT_LEDGER, "file": HELD_OUT_CALENDAR,
+                                 "sha256": HELD_OUT_CALENDAR_SHA256, "refuses": f"any reading not tagged {BLOCK!r}",
                                  "level": "nominal (CHARTER 3.6 (b): the baselines' ledger is not empty)"},
-        "application": {"prior_applications": 0, "rule": "applied once to H4's one output"},
+        "application": {"script": "scripts/wave42_apply.py", "output": OUTPUT_NAME,
+                        "rule": "applied once: the script refuses when its output exists"},
         "search_starts": {str(h): n_search[h] for h in HORIZONS}, "seeds": nJ,
-        "test_starts_source": {k: str(test_starts_source[k]) for k in TEST_STARTS_SOURCE_KEYS},
+        "test_starts_source": {k: test_starts_source[k] for k in TEST_STARTS_SOURCE_KEYS},
     }
 
     # ---- 3. budgets
@@ -548,6 +591,22 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
     C = {b: float(np.mean(Cs[b])) for b in BASELINES}
     order = sorted(BASELINES, key=lambda b: (-C[b], BASELINES.index(b)))
     out["composite"] = {"value": C, "ranking": order}
+    caps = {rec["name"]: (rec["lo"], rec["hi"]) for rec in dims_out}
+    nulls = {}
+    for jname, v in null_journeys(fee_unit).items():
+        vv = {**{k: np.asarray([[x]]) for k, x in v.items()}}
+        vv.update(bankroll_states(vv, Bstar))
+        zz = {}
+        for d in DIMENSIONS:
+            lo, hi = caps[d.name]
+            x = _z(d, vv[d.key], lo, hi)
+            zz[d.name] = float(0.0 if (d.name == "cost" and vv["first_pass_days"][0, 0] > W) else x[0, 0])
+        nulls[jname] = float(sum(w[k] * zz[k] for k in kept))
+    out["null_journeys"] = {
+        "composite": nulls, "baselines": C,
+        "floor": {"name": "do_nothing", "value": nulls["do_nothing"],
+                  "rule": "a finalist's composite must exceed it at the point estimate (the lead's ruling, V-4)"},
+        "baselines_at_or_below_floor": [b for b in BASELINES if C[b] <= nulls["do_nothing"]]}
 
     # ---- 5. delta* and the power
     resolvable = nJ >= H4_MIN_SEEDS               # m-2: below the declared seed count no gap may resolve
@@ -594,16 +653,8 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
     Q = q_factor(w, hk, test_starts, J)
     pw = conjoint_power(deltas, sig, Q, alpha)
     pw1 = conjoint_power(deltas, {b: 1.0 for b in BASELINES}, Q, alpha)
-    Jn = None
-    if conjoint_power(deltas, sig, q_factor(w, hk, test_starts, J_MAX), alpha) >= POWER_TARGET:
-        lo_j, hi_j = 1, J_MAX
-        while lo_j < hi_j:
-            mid = (lo_j + hi_j) // 2
-            if conjoint_power(deltas, sig, q_factor(w, hk, test_starts, mid), alpha) >= POWER_TARGET:
-                hi_j = mid
-            else:
-                lo_j = mid + 1
-        Jn = lo_j
+    Jn = j_needed(deltas, sig, w, hk, test_starts, alpha)
+    J_worst = j_needed({b: DELTA_MIN for b in BASELINES}, {b: 1.0 for b in BASELINES}, w, hk, test_starts, alpha)
     out["delta_star"] = {"value": delta, "raw": raw, "how": how, "gaps": gaps, "spread": spread,
                          "resolvable": resolvable, "min_seeds": H4_MIN_SEEDS, "resolve_z": RESOLVE_Z,
                          "floor": DELTA_MIN, "cap": DELTA_MAX, "fraction": DELTA_FRACTION, "in_units": in_units}
@@ -614,6 +665,8 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                     "conjoint_lower": pw, "conjoint_lower_sigma1": pw1, "J_needed": Jn,
                     "meets_target": bool(pw >= POWER_TARGET),
                     "J_needed_within_declared": bool(Jn is not None and Jn <= J),
+                    "J_worst_case": J_worst,
+                    "J_worst_case_reads": "delta* at DELTA_MIN against four baselines equal to the best, sigma 1",
                     "at_level": f"k = {K_TEST}; recomputed at the assigned k if it differs (m-8)"}
 
     # ---- 6. limits
@@ -653,12 +706,18 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                      "headroom_z": zp, "vacuous": vac is not None, "vacuous_reason": vac,
                      "by_search_year": {b: _year_estimates(per[b][L.key], ref.starts, r, L.stat) for b in BASELINES},
                      "budget": Bstar if L.key == "not_paid_within_B" else None})
+    npw = next(x for x in lims if x["name"] == "not_paid_within_B")
     out["limits"] = {"values": lims, "check_level": LIMIT_CHECK_LEVEL, "headroom_z": zp, "limits_set": len(present),
                      "form": "the point estimate governs; the one-sided check beside, never deciding (E-230)"}
+    out["inactivity_guards"] = {
+        "not_paid_within_B": "vacuous: only CHARTER 3.8 (c)'s long-run gate stops a quitter"
+        if npw["vacuous"] else "live", "long_run_gate": "CHARTER 3.8 (c), at the held-out test",
+        "do_nothing_floor": nulls["do_nothing"]}
     return Wave42Values(out)
 
 
 __all__ = ["RULE_ID", "CONSTANTS", "DIMENSIONS", "LIMITS", "BASELINES", "Dim", "LimitSpec", "BaselineReading",
            "H4Binding", "H4_MANIFEST_KEYS", "TEST_STARTS_SOURCE_KEYS", "Wave42Refused", "Wave42Values",
            "setting_rule", "fee_lattice", "equal_weights", "spearman", "bankroll_states", "q_factor", "pair_power",
-           "conjoint_power", "limit_z", "level", "input_digest", "readings_digest", "calendar_digest"]
+           "conjoint_power", "limit_z", "level", "input_digest", "readings_digest", "calendar_digest", "complete_starts",
+           "j_needed", "null_journeys"]
