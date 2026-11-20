@@ -59,15 +59,14 @@ result of this search's own cells.
    `docs/MEASURES.md` section 7 and the lever table's section 6 for more. The horizon embargo stated with the longest
    horizon. O-1 as E-221 ruled it: the draft's finalists enter the one joint fixed-sequence test across Topstep, My
    Funded Futures and Lucid, held until each has finalists, run under the held-out test's declaration -- one
-   declaration of its own (E-230), listing every firm's finalists by each search declaration's hash and finalists'
+   declaration of its own (E-238), listing every firm's finalists by each search declaration's hash and finalists'
    row, fixing the joint order, taking the k, the one family that reads NQ's held-out window, so Q-158's rule holds
-   unchanged. Refuse a search draft that spends the held-out years alone or names a `heldout_*` purpose of its own;
-   the held-out test's declaration carries the line. The
-   `Judged-block reads:` line (template 14)
-   names only the held-out test's purposes, none with a choice or fitting word (`extended/reader.py` refuses those and
-   any purpose not on the line), and the draft binds its `heldout_*` reads to after its finalists' row and its
-   held-out row. **Refuse:**
-   - a draft that does not spend the market's held-out years but carries a `Judged-block reads:` line;
+   unchanged. **A search declaration carries no `Judged-block reads:` line**; the held-out test's declaration carries
+   it, naming only the held-out test's purposes, none with a choice or fitting word (`extended/reader.py` refuses
+   those and any purpose not on the line), and its own finalists' row
+   `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`. **Refuse:**
+   - a search draft that carries a `Judged-block reads:` line, names a `heldout_*` purpose of its own, or spends the
+     held-out years alone;
    - a design-search draft whose market already has a `heldout_*` read by another declaration in
      `results/read_ledger.jsonl` -- the held-out years are used once per market, across declarations (CHARTER 3.6 (c));
      a re-declared search gets no fresh read;
@@ -75,11 +74,12 @@ result of this search's own cells.
    - a draft that plans a new `registered_design` read of the held-out years (P-14, P-15, P-16) without a decision row
      naming it.
 
-   **Q-158** (built, E-220; wt/wt-verify 6ce8e6a) makes the reader enforce the order and the market from the
-   finalists' token row, `heldout-finalists: F-NN @ <sha> list <sha>` (the declaration's LF sha256, then the
-   finalists' list file's): refuse a draft whose finalists' row is not in that form. Q-158 does not check the held-out
-   row, so that condition is held by the declaration and the auditor. Refuse to approve any design search for a pin
-   before Q-158 merges. Refuse a held-out year read by any choice.
+   **Q-158** (merged, E-222) makes the reader enforce the order and the market from the finalists' token row,
+   `heldout-finalists: F-NN @ <sha> list <sha>` (the declaration's LF sha256, then the finalists' list file's):
+   refuse a draft whose finalists' row is not in that form. Q-158 does not check the held-out row, so that condition
+   is held by the declaration and the auditor. Refuse to approve any design search for a pin before the lead's
+   reading row of CHARTER 3.7 (the go row as CHARTER 3.7's "pin", template 14 step 4) exists. Refuse a held-out year
+   read by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -93,24 +93,30 @@ result of this search's own cells.
 4. **The component schedule** (template 4): every session the firm allows; each component's trigger known L minutes
    ahead; windows that do not collide; `feature-rules` for any bar-reading trigger; overnight triggers only after H2;
    **the side rule** (E-221, O-4: the coin the evaluation's device; the playbook's side from each design's own
-   trigger behind the no-harm floor; accounts alternate; no opposite positions at once; the per-start keying kept);
-   the contract
+   trigger behind the no-harm floor -- its composite on the search years not below the coin side's by more than the
+   pinned margin, read before the finalists' row, and **a trigger whose side fails it offers no playbook side; that
+   design is not carried** (CHARTER 3.5; E-221, E-230); accounts alternate; no opposite positions at once; the
+   per-start keying kept); the contract
    fit item by item; conduct tier 1 true of the specification.
-5. **The zero-edge convention** (template 5): the reflection; the martingale-outcome reading with the race against
-   the nearer barrier **net of the stop-side exit cost** -- the loss barrier L = min(l, c - x_stop), rounded inward to
-   the tick lattice for a fractional cushion, p = L / (L + g), g always the target as placed, so the engine's clip
-   never binds and net = -(costs); `BinaryDraw` is only its cost-free special case, and the draw is keyed by the coin
-   field, not its stream; **taken or not taken at the fill** (N-1), for every trade, by
-   L_fill = min(l, c - max(x_stop, x_flat)) rounded inward, never by the trade's later exit -- refuse a take rule
-   that reads the exit; **the lattice step s one tick**, or another fixed value the draft declares and classes fixed
-   -- refuse an s left to the build; **m-2** (no design with overlapping positions runs until the joint driftless path
-   per underlying is defined and checked); **m-3** (a redrawn loss carries the run's stop-fill convention); **R-10**
-   (every terminal state mapped to its law; a rule's exit at a profit level -- A3's `cap`, the need-aware pass or
-   consistency exit with `need=x` -- takes the race at the as-placed target min(g, level), never the walk; the walk
-   only for real time limits, its loss barrier L_fill, its step count from causal bars at the alert); **the pair
-   rule** (a resting entry against its reflection: a pair touching either leg's stop or target on the fill bar
-   contributes zero lift, both legs booked at the as-walked leg's settled outcome). A draft that replaces the house
-   form shows zero gross expectation and net = -(costs) by an exact-fraction test.
+5. **The zero-edge convention** (template 5): the reflection; the martingale-outcome reading with the race against the
+   nearer barrier **net of the stop-side exit cost** -- the loss barrier L = min(l, c - x_stop), fractional,
+   never rounded (E-237), p = L / (L + g), g always the target as placed (a rule's level converted to
+   net ticks after the target-side cost), so a cushion-bound loss ends exactly on the floor, the engine's clip never
+   binds and net = -(costs); `BinaryDraw` is only its cost-free special case, and the draw is keyed by the coin field,
+   not its stream; **decided at the fill** (N-1), for every trade, by L_fill = min(l, c - max(x_stop, x_flat)),
+   fractional, never rounded, never by the trade's later exit -- refuse a rule that reads the exit;
+   **no "not taken" state** (B-2): L_fill <= 0 where the floor's room binds books the account as failed at the fill
+   (the race's limit as L goes to 0, counted apart), where the daily loss limit binds the day stops -- refuse a draft
+   that leaves an account alive, billed and unable to trade; **the lattice step s one tick**, or another fixed value
+   the draft declares and classes fixed -- refuse an s left to the build; **m-2** (no design with overlapping
+   positions runs until the joint driftless path per underlying is defined and checked); **m-3** (a redrawn loss
+   carries the run's stop-fill convention); **R-10** (every terminal state mapped to its law; a rule's exit at a
+   profit level -- A3's `cap`, the need-aware pass or consistency exit with `need=x` -- takes the race at the
+   as-placed target min(g, level), never the walk; the walk only for real time limits, its loss barrier the fractional
+   L_fill with its last sub-step a driftless two-point race (E-237), its step count from causal bars at the alert);
+   **the pair rule** (a resting entry against its reflection: a pair touching either leg's stop or target on the fill
+   bar contributes zero lift, both legs booked at the as-walked leg's settled outcome). A draft that replaces the
+   house form shows zero gross expectation and net = -(costs) by an exact-fraction test.
 6. **The survey, the surrogate and the rounds** (template 6): the survey size, the space-filling method, the surrogate
    method and its tuning inside the search years only, the number of rounds and the batch size **fixed and never
    extended**, the gates before any outcome, **the finalist order rule** and the plateau rule declared before the
@@ -189,13 +195,13 @@ result of this search's own cells.
 2. **Rename** `prereg/DRAFT_F-XX_<slug>.md` to `prereg/F-NN_<slug>.md` and replace `F-XX` in its text with `F-NN`.
    Change nothing else: the author's words are the declaration.
 3. **Hash the final file's LF text** -- the bytes with CRLF replaced by LF, exactly as
-   `tests/test_declarations_fixed.py` reads it:
-   `python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" prereg/F-NN_<slug>.md`
-   The rename comes first and the hash second, so the hash is the renamed file's. From here the
-   file is frozen: nothing declared is edited; a change is a new declaration. **One hash for the life of the
-   declaration:** the pin, the go row, the finalists' row and the held-out row all cite this one hash; a second hash
-   for the same path is what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7
-   is never pinned alone.
+   `tests/test_declarations_fixed.py` reads
+   it: `python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" prereg/F-NN_<slug>.md`
+   The rename comes first and the hash second, so the hash is the renamed file's. From here the file is
+   frozen: nothing declared is edited; a change is a new declaration. **One hash for the life of the declaration:**
+   the pin, the go row, the finalists' row and the held-out row all cite this one hash; a second hash for the same
+   path is what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7 is
+   never pinned alone.
 4. **Return the proposed pinning row as one finished line**, which must contain the exact pattern the hash test parses
    -- the path in backticks, the word `sha256`, the hash in backticks:
 

@@ -70,18 +70,18 @@ after seeing a result is a variant.
 
 **The pass line (CHARTER 3.8, in force from E-210).** A finalist passes, in its place in the fixed sequence, on the
 **martingale-outcome reading** (each trade's outcome redrawn at its bracket's driftless first-exit odds against the
-nearer barrier net of the stop-side exit cost -- the loss barrier min(l, c - x_stop), rounded inward, taken or not
-taken at the fill (the template's section 5) -- the same seed keying for the design and every baseline), when (a) the
-point estimate governs each limit -- inside it passes, outside it fails, never a second margin, the one-sided check
-reported beside (E-221, E-230, O-5); (b) its composite (or the pinned fallback, P under the bankroll stop) is above
-**each** baseline's -- naive coin, P-14, P-15, P-16, each under the design's convention -- by the calibrated paired
-coin-seed leg on the held-out years at the full level, the time leg's conditions met; and (c) the floors
-hold: verified rules, conduct tier 1, CHARTER section 4, hand entry at least L minutes, the zero-edge long-run gate,
-the +1 tick and 10 %-missed stresses, and the no-harm and as-traded floors read on the real path. The verdict at
-0 % payout denial, the placement off and the Focused Trader Program off; the level printed nominal while the ledger is
-not empty, the history-level false-pass rate beside. **The level bounds coin luck given the held-out history, not a
-favourable history.** The trades' lift over the coin twin, its value-map bar, R\* = P-14 and Stage 2 D-621 (3) are on
-record and no longer decide (CHARTER 3.10).
+nearer barrier net of the stop-side exit cost -- the loss barrier min(l, c - x_stop), fractional, never rounded,
+everything decided at the fill, no "not taken" state (the template's section 5) -- the same seed keying for the design
+and every baseline), when (a) the point estimate governs each limit -- inside it passes, outside it fails,
+never a second margin, the one-sided check reported beside (E-221, E-230, O-5); (b) its composite (or the pinned
+fallback, P under the bankroll stop) is above **each** baseline's -- naive coin, P-14, P-15, P-16, each under the
+design's convention -- by the calibrated paired coin-seed leg on the held-out years at the full level, the time leg's
+conditions met; and (c) the floors hold: verified rules, conduct tier 1, CHARTER section 4, hand entry at least L
+minutes, the zero-edge long-run gate, the +1 tick and 10 %-missed stresses, and the no-harm and as-traded floors read
+on the real path. The verdict at 0 % payout denial, the placement off and the Focused Trader Program off; the level
+printed nominal while the ledger is not empty, the history-level false-pass rate beside. **The level bounds coin luck
+given the held-out history, not a favourable history.** The trades' lift over the coin twin, its value-map bar, R\* =
+P-14 and Stage 2 D-621 (3) are on record and no longer decide (CHARTER 3.10).
 
 Weakening the line -- a looser level, a dropped floor, a limit loosened, the fallback tried after the composite, a
 judgement on the search years -- needs the operator (the objective changes only with them, DIRECTIVE Part 1); a

@@ -46,7 +46,7 @@ an earlier brief.
    nominal while the held-out read ledger is not empty, that the money comes from the firm's rules (a funded loss
    costs only fees), not from predicting the market, and what is not modelled (the user's time, taxes).
 6. **What is the operator's** -- any NEEDS_OPERATOR on the board, each in one sentence with its consequence (O-1 and
-   O-3 to O-7 were ruled at E-221, the data purchase held); any purchase stated with its cost, **never authorised
+   O-3 to O-7 were ruled at E-221, O-5's governing form at E-230, the data purchase held); any purchase stated with its cost, **never authorised
    here**.
 7. **The next round** -- the next three to five items in the queue, one line each.
 
