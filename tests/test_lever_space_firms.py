@@ -350,19 +350,23 @@ def test_mffus_trading_day_loads_from_its_key() -> None:
     t2, t3 = LF.bounds("mffu", "T2"), LF.bounds("mffu", "T3")
     assert t2.values == tuple(LS.declared("sessions")) and t2.read["mffu.trading_hours"] == v
     td = LF.mffu_trading_day()
-    w = t2.detail["windows"]
-    assert w == LF.mffu_session_windows()
-    assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
-    assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
-    assert w["ny_am"][1] is None and w["ny_pm"][0] is None
-    for name, t in LS.declared("windows_ct"):
-        key = "ny_am" if name == "ny" else name
-        assert w[key][0] == (LS._clock(t) - td["reopen"]) % (24 * 60)
-    for d in (date(2021, 1, 15), date(2021, 3, 15), date(2021, 7, 15)):
-        wd, a = LF.mffu_session_windows(d), DC.anchored_starts(d)
-        shift = DC.REOPEN_MIN - LF.mffu_trading_day(d)["reopen"]
-        assert (wd["asia"][0], wd["london"][0], wd["ny_am"][0]) == tuple((a[n] + shift) % (24 * 60)
-                                                                        for n in ("asia", "london", "ny"))
+    assert t2.detail["windows"] == LF.mffu_session_window_range(DC.SEARCH_START, DC.SEARCH_END)
+    assert t2.detail["windows"]["span"] == (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())
+    for d in (date(2021, 1, 15), date(2021, 3, 15), date(2021, 7, 15), date(2022, 11, 3)):
+        w, a = LF.mffu_session_windows(d), DC.anchored_starts(d)
+        tdd = LF.mffu_trading_day(d)
+        assert w["evening"][0] == 0 and w["ny_pm"][1] == tdd["length"]
+        assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
+        assert w["ny_am"][1] is None and w["ny_pm"][0] is None
+        shift = DC.REOPEN_MIN - tdd["reopen"]
+        assert (w["asia"][0], w["london"][0], w["ny_am"][0]) == tuple((a[n] + shift) % (24 * 60)
+                                                                       for n in ("asia", "london", "ny"))
+        ts = LS.session_windows(d)              # MFFU's own keys give Topstep's day here: the same reopen and flat;
+        for n in ("evening", "asia", "london"):  # the NY split (T2b) is to declare for this firm, so it is not compared
+            assert w[n] == ts[n], (d, n)
+        assert w["ny_am"][0] == ts["ny_am"][0] and w["ny_pm"][1] == ts["ny_pm"][1]
+    with pytest.raises(TypeError):
+        LF.mffu_session_windows(None)
     assert (t3.lo, t3.hi, t3.step) == (0.0, float(td["last_entry_offset"]), float(LS.declared("mark_step_min")))
     assert LF.compare("mffu")["T2"] == LF.compare("mffu")["T3"] == LF.DIFFERS
 
@@ -373,6 +377,29 @@ def test_mffus_day_refuses_a_failed_time_zone_reading(monkeypatch) -> None:
     monkeypatch.setattr(FT, "_record", lambda: rec)
     with pytest.raises(LS.LeverRefused):
         LF.bounds("mffu", "T2")
+
+
+@pytest.mark.parametrize("firm", OTHER)
+def test_to_declare_for_this_firm_is_never_topsteps(monkeypatch, firm: str) -> None:
+    """The lead's ruling: T2b, A15, A16 and A17 are to declare for each firm -- refused (`NotDeclared`) and never
+    'identical', whether Topstep's rows are still to declare (master) or declared (wt/wt-levels, simulated here by
+    Topstep's bounds loading)."""
+    ids = ("T2b", "A15", "A16", "A17")
+    assert {i for i, lv in LF.levers(firm).items() if lv.source == LS.TODECL} == set(ids)
+    for i in ids:
+        with pytest.raises(LS.NotDeclared):
+            LF.bounds(firm, i)
+        assert LF.vs_topstep(firm, i) == LF.DIFFERS
+    real = LS.bounds
+
+    def declared_at_topstep(i: str):
+        return LS.Range(i, "fixed", values=("declared",)) if i in ids else real(i)
+
+    monkeypatch.setattr(LS, "bounds", declared_at_topstep)
+    for i in ids:
+        assert LF.vs_topstep(firm, i) == LF.DIFFERS
+        with pytest.raises(LS.NotDeclared):
+            LF.bounds(firm, i)
 
 
 def test_the_record_wins_over_stage_twos_lucid_ledger(monkeypatch) -> None:

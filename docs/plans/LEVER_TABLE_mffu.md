@@ -46,7 +46,8 @@ because its caps are MFFU's and its sessions come from MFFU's day (T2). **To dec
 
 The last column compares each lever with Topstep's, mechanically (`lever_space_firms.vs_topstep`, under no S1 reading):
 **identical** means the same outcome as Topstep's (the same range, or the same refusal), read from no MFFU rule, or
-dropped in both tables; **differs** means MFFU's own rules enter, or the outcome is not Topstep's (the reason follows);
+dropped in both tables; **differs** means MFFU's own rules enter, the outcome is not Topstep's, or the lever is to declare for this firm
+(T2b, A15, A16, A17: declared per firm, never carried over from Topstep's rows; the reason follows);
 **refused** means the lever is refused for want of a verified MFFU rule. `tests/test_lever_space_firms.py` checks that
 this column matches the code.
 
@@ -60,8 +61,8 @@ full.
 | id | layer | lever | range and step | source | unit; what its estimate reads | depends on | class | vs Topstep |
 |---|---|---|---|---|---|---|---|---|
 | T1 | trigger | signal source of a component | Topstep's T1 (`coin`, `p14`, `p16`, `rl3`) | declared: E-208's dispositions | categorical; reads nothing | T2, T3, T4, T5, A16 | searched | identical |
-| T2 | trigger | session of a component | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, covering MFFU's whole day from its reopen at the Globex open to its automatic close (`mffu.trading_hours`, printed as EST and read as New York local time, converted to CT by zoneinfo); day-free, the boundaries are Topstep's declared window starts; for a trading day, the day calendar's local-time anchors (`day_calendar.anchored_starts`), shifted to MFFU's reopen (`lever_space_firms.mffu_session_windows`) | arithmetic: `mffu.trading_hours`, with the declared window starts or the day calendar's anchors | a session; reads nothing | T1, T2b, T3 | searched | differs -- the same sessions, on MFFU's own day (Q-181b): its reopen and close read from `mffu.trading_hours`; the reopen is checked against the exchange's open in the same entry |
-| T2b | trigger | the NY AM / NY PM boundary | to declare (Wave 3.3) | to declare | a wall-clock time | T2 | declared | identical |
+| T2 | trigger | session of a component | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, covering MFFU's whole day from its reopen at the Globex open to its automatic close (`mffu.trading_hours`, printed as EST and read as New York local time, converted to CT by zoneinfo); each trading day's boundaries are the day calendar's local-time anchors (`day_calendar.anchored_starts`, E-231 (3)), shifted to MFFU's reopen (`lever_space_firms.mffu_session_windows(day)`), with their range over the search years beside (`mffu_session_window_range`) | arithmetic: `mffu.trading_hours`, with the day calendar's anchors | a session; reads nothing | T1, T2b, T3 | searched | differs -- the same sessions, on MFFU's own day (Q-181b): its reopen and close read from `mffu.trading_hours`; the reopen is checked against the exchange's open in the same entry |
+| T2b | trigger | the NY AM / NY PM boundary | **to declare for this firm**: refused until a per-firm declaration exists, whatever Topstep's row declares | to declare | a wall-clock time | T2 | declared | differs -- to declare for this firm; Topstep's value is never carried over |
 | T3 | trigger | entry window: a component's offer marks | from MFFU's reopen to its last new entry, in Topstep's mark step. MFFU states no last-entry time apart from its automatic close (`mffu.trading_hours`), so the last new entry is the close; on a holiday there is no automatic close and the user flattens before the early close | arithmetic: `mffu.trading_hours`; the declared mark step | minutes after the reopen | T2, T4, A3 | searched | differs -- the last new entry is MFFU's close, where Topstep's page sets one before its flat |
 | T4 | trigger | latency L, alert to order | Topstep's T4: the three declared cells, `p16` and `rl3` one cell | declared: E-202 (2)(c); CHARTER 3.3 (g) | clock minutes | T1, T3, T5 | searched | identical |
 | T5 | trigger | entry type | `market`, `limit`: one limit per entry. Several limit orders at one price are prohibited (`mffu.automation_and_sim_fills`), and a design that places them is refused as tier 1 | declared: E-202 (2)(d); F-04 6.1 R-4 | order type | T1, T4, T6 | searched | differs -- the same choices, held against MFFU's simulator-fill rule (`mffu.automation_and_sim_fills`) |
@@ -101,9 +102,9 @@ full.
 | A12 | account policy | Back2Funded reactivations | **dropped**: Topstep's product; no reactivation product of MFFU is on the record | declared | -- | A4, A6, A18 | dropped | differs -- Topstep's lever loads; MFFU has none on the record |
 | A13 | account policy | resets | **dropped**, as Topstep's: an adapter is owed, and the reset's price is unverified (`mffu.reset_fee`) | declared: RD-03 2.5 | -- | A4 | dropped | identical |
 | A14 | account policy | daily-loss-limit election at checkout | **dropped**: a different account (`mffu.rapideod50k.eval_daily_loss_limit`) | declared: RD-05 2.3 | -- | S3, S4 | dropped | identical |
-| A15 | account policy | routing | to declare (Wave 3.3), with the no-opposing-positions guard | to declare | rule | A6, A7, A16, T8 | searched | identical |
-| A16 | account policy | signal mix | to declare (the restart plan 4.4) | to declare | shares | T1, A15 | searched | identical |
-| A17 | account policy | state rule | to declare (the triage) | to declare | rule | S3, S4, A1, A2 | searched | identical |
+| A15 | account policy | routing | **to declare for this firm**, with the no-opposing-positions guard; refused until a per-firm declaration exists | to declare | rule | A6, A7, A16, T8 | searched | differs -- to declare for this firm; Topstep's routing is never carried over |
+| A16 | account policy | signal mix | **to declare for this firm** (the restart plan 4.4); refused until a per-firm declaration exists | to declare | shares | T1, A15 | searched | differs -- to declare for this firm; Topstep's mix is never carried over |
+| A17 | account policy | state rule | **to declare for this firm** (the triage); refused until a per-firm declaration exists | to declare | rule | S3, S4, A1, A2 | searched | differs -- to declare for this firm; Topstep's state rule is never carried over |
 | A18 | account policy | the first payout request (RD-02 L1) | `elig` (the first close at which `mffu.rapideod50k.payout_gate` opens and a request reaches `mffu.rapideod50k.payout_min`), `lock` (once the floor has locked, `mffu.rapideod50k.funded_drawdown_lock`); `elig` rests on the amount a request may take (`mffu.rapideod50k.payout_request_amount`) | declared: RD-02 6.1 | rule | A5, A19 | searched | refused -- `mffu.rapideod50k.payout_request_amount` is unstated |
 | A19 | account policy | the request amount (RD-02 L2) | `max`, `half`, once the amount a request may take is on the record (`mffu.rapideod50k.payout_request_amount`; `mffu.rapideod50k.payout_cap`, `mffu.rapideod50k.payout_min`) | declared: RD-02 6.1 | share of the maximum | A5, A18 | searched | refused -- `mffu.rapideod50k.payout_request_amount` is unstated |
 | A20 | account policy | request cadence after the first payout | every eligible close: MFFU's gate allows a request each day once profit since the last reaches its floor (`mffu.rapideod50k.payout_gate`) | declared: RD-02 6.1 | -- | A18 | declared | differs -- MFFU's daily gate, not Topstep's winning-day cycle |
@@ -111,9 +112,9 @@ full.
 
 ## 4. The comparison with Topstep
 
-**identical** (15): T1, T2b, T4, T6, T7, S2, S6, S7, S8, S9, A13, A14, A15, A16, A17.
+**identical** (11): T1, T4, T6, T7, S2, S6, S7, S8, S9, A13, A14.
 
-**differs** (16): T2, T3, T5, T8, S1, S3, S4, S5, A1, A3, A5, A6, A7, A10, A12, A20.
+**differs** (20): T2, T2b, T3, T5, T8, S1, S3, S4, S5, A1, A3, A5, A6, A7, A10, A12, A15, A16, A17, A20.
 
 **refused** (8): A2, A4, A8, A9, A11, A18, A19, A21.
 
@@ -133,6 +134,9 @@ Why the differing levers differ, in short:
 - **The day (T2, T3).** MFFU's reopen and close are read from `mffu.trading_hours` (Q-181b). The sessions are
   Topstep's, on MFFU's day. The last new entry is MFFU's close, because the firm states no earlier one.
 - **S1** needs MFFU's own search-year reading, because the caps and the sessions are MFFU's.
+- **To declare for this firm (T2b, A15, A16, A17)** (the lead's ruling): the NY split, the routing, the mix and the
+  state rule are declared per firm, never carried over from Topstep's rows. They are refused (`NotDeclared`) until
+  MFFU's own declaration exists.
 
 ## 5. Combinations refused and floors fixed
 

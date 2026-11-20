@@ -295,18 +295,17 @@ def mffu_trading_day(day: date | None = None) -> dict[str, Any]:
             "holiday": hol.group(0), "day": day}
 
 
-def mffu_session_windows(day: date | None = None) -> dict[str, tuple[int, int | None]]:
-    """MFFU's sessions as [start, end) in minutes after its reopen. Day-free: the declared window starts in CT
-    (`lever_space.DECLARED['windows_ct']`, as `lever_space.session_windows`); for a trading day: the day calendar's
-    local-time anchors (`day_calendar.anchored_starts`, minutes after the 17:00 CT reopen), shifted to MFFU's reopen.
-    `ny` is split at T2b's boundary (to declare). Every boundary must fall inside MFFU's day."""
+def mffu_session_windows(day: date) -> dict[str, tuple[int, int | None]]:
+    """Trading day `day`'s MFFU sessions as [start, end) in minutes after MFFU's reopen: each start its local market
+    time converted for that date (`day_calendar.anchored_starts`, E-231 (3); minutes after the 17:00 CT reopen, shifted
+    to MFFU's reopen on that date), as `lever_space.session_windows(day)` does for Topstep. `ny` is split at T2b's
+    boundary (to declare for this firm). Every boundary must fall inside MFFU's day."""
+    if not isinstance(day, date):
+        raise TypeError(f"mffu_session_windows reads one trading day's date, not {type(day).__name__}")
     td = mffu_trading_day(day)
-    if day is None:
-        starts = [(n, (LS._clock(t) - td["reopen"]) % LS.MINUTES_PER_DAY) for n, t in declared("windows_ct")]
-    else:
-        shift = DC.REOPEN_MIN - td["reopen"]
-        a = DC.anchored_starts(day)
-        starts = [(n, (a[n] + shift) % LS.MINUTES_PER_DAY) for n in ("asia", "london", "ny")]
+    shift = DC.REOPEN_MIN - td["reopen"]
+    a = DC.anchored_starts(day)
+    starts = [(n, (int(a[n]) + shift) % LS.MINUTES_PER_DAY) for n in ("asia", "london", "ny")]
     for name, off in starts:
         if not 0 < off < td["length"]:
             raise LeverRefused(f"session boundary {name!r} lies outside MFFU's trading day ({_MFFU_HOURS})")
@@ -319,9 +318,31 @@ def mffu_session_windows(day: date | None = None) -> dict[str, tuple[int, int | 
     return out
 
 
+def mffu_session_window_range(start: date, end: date) -> dict[str, Any]:
+    """MFFU's sessions over the weekdays from `start` to `end` (`lever_space.trading_dates`), in the form of
+    `lever_space.session_window_range`: each session's earliest and latest start and end (None where T2b leaves a
+    boundary undeclared), and every distinct set of windows with its first date and day count."""
+    rng: dict[str, dict[str, Any]] = {}
+    distinct: dict[tuple, dict[str, Any]] = {}
+    for d in LS.trading_dates(start, end):
+        w = mffu_session_windows(d)
+        e = distinct.setdefault(tuple(sorted(w.items())), {"first": d.isoformat(), "days": 0, "windows": w})
+        e["days"] += 1
+        for name, (a, b) in w.items():
+            r = rng.setdefault(name, {"start": [a, a], "end": [b, b]})
+            for k, v in (("start", a), ("end", b)):
+                if v is not None:
+                    lo, hi = r[k]
+                    r[k] = [v if lo is None else min(lo, v), v if hi is None else max(hi, v)]
+    return {"span": (start.isoformat(), end.isoformat()),
+            "range": {k: {"start": tuple(v["start"]), "end": tuple(v["end"])} for k, v in rng.items()},
+            "distinct": list(distinct.values())}
+
+
 def _mffu_session() -> Range:
     return Range("T2", "choices", values=tuple(declared("sessions")), unit="session of MFFU's day",
-                 detail={"windows": mffu_session_windows(), "day": mffu_trading_day()})
+                 detail={"windows": mffu_session_window_range(DC.SEARCH_START, DC.SEARCH_END),
+                         "day": mffu_trading_day()})
 
 
 def _mffu_entry_window() -> Range:
@@ -884,11 +905,15 @@ def _outcome(firm: str, lever_id: str) -> tuple[str, Any]:
 def vs_topstep(firm: str, lever_id: str) -> str:
     """`refused`: refused for want of a verified rule; `identical`: the same outcome as Topstep's (the same refusal,
     or the same range) without any rule of the firm's (a dropped lever is identical when Topstep's is dropped too);
-    `differs` otherwise -- the firm's own rules enter, or the outcome is not Topstep's."""
+    `differs` otherwise -- the firm's own rules enter, the outcome is not Topstep's, or the lever is **to declare for
+    this firm** (T2b, A15, A16, A17: a per-firm declaration, never Topstep's values carried over, whatever Topstep's
+    row declares; refused `NotDeclared` until it exists)."""
     mine, ts = _outcome(firm, lever_id), _outcome("topstep", lever_id)
     if mine[0] == "UnverifiedTerm":
         return REFUSED
     lv = levers(firm)[lever_id]
+    if lv.source == TODECL:                 # to declare for this firm: never Topstep's carried over (the lead's ruling)
+        return DIFFERS
     if mine[0] == ts[0] == "DroppedLever":
         return IDENTICAL
     if mine == ts and not lv.keys:
@@ -988,6 +1013,6 @@ def sample(firm: str, *, seed: int, n: int = 1) -> list[dict[str, Any]]:
 
 __all__ = ["TASK", "FIRMS", "TABLES", "PLANS", "MFFU_P", "LUCID_P", "LUCID_CONFIGS", "IDENTICAL", "DIFFERS", "REFUSED",
            "NotVerified", "TierOneRefused", "HardLimitRefused", "FIRM_DECLARED", "TIER1_MARKERS", "TIER1_VALUES",
-           "conduct_check", "rule", "note", "rule_status", "mffu_trading_day", "mffu_session_windows", "stop_caps", "levers", "PREREQUISITES", "prerequisites",
+           "conduct_check", "rule", "note", "rule_status", "mffu_trading_day", "mffu_session_windows", "mffu_session_window_range", "stop_caps", "levers", "PREREQUISITES", "prerequisites",
            "ready", "bounds", "load", "space", "refusals", "unverified_keys", "vs_topstep", "compare", "counts",
            "check_design", "sample"]
