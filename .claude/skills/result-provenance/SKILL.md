@@ -74,14 +74,15 @@ artefacts (`.png`, `.parquet`, `results/scratch/`) and `results/.last_test_run.j
 Compute the number from the file at build time; never transcribe it. Where a number appears, the document also
 carries:
 
-- **P never alone** (CHARTER sections 2-3): the guarded measures beside it, the frontier on P, S1, S3a and S5a, the
-  menu under limits fixed before the read, and Stage 2's long-run gate (growth on the required bankroll at the bound)
-  beside, so a design that helps users but cannot grow is visible.
+- **No measure alone** (CHARTER 3.8): each baseline beside it, the frontier over the measures and the menu under the
+  limits pinned before the survey, and the zero-edge long-run gate beside, so a design that helps users but cannot
+  grow is visible; the as-walked result and the path-structure edge beside, never credited.
 - **Any growth or return figure** beside ruin probability, bankroll drawdown and payout latency (Stage 2 D-145) -- beside
   it, not in an appendix.
-- **The bound, not the point**, for any money decision -- sizing, bankroll, account count: the `verdict` arm. Point
-  figures may appear alongside, labelled.
-- **The count**: the family's cells and the program's running family count (Stage 2 D-621 (5)).
+- **The bound, not the point**, for any money decision -- sizing, bankroll, account count: the coin-seed bound on the
+  martingale-outcome reading (Stage 2's `verdict` arm is retired, CHARTER 3.10). Point figures may appear alongside,
+  labelled.
+- **The count**: every design tried (`results/variants.jsonl`) and the program's running k (one per held-out test).
 - **The exploratory label**, where the manifest says `exploratory=True`, at the number, reported apart from the
   declared set.
 - **The assumptions**: an `assumed` fill profile, a rule not verified, the payout lag, the payout-spacing model, the
@@ -96,9 +97,9 @@ separators, currency symbols, percentages, a decimal place either way). Its entr
 
 ```python
 TracedNumber(
-    label="F-01 pick: P difference from P-14 on the judged block",
-    source_csv="f01_stage_d.csv",
-    recompute=lambda df: df.loc[df["section"] == "paired", "difference"].iloc[0],
+    label="F-NN finalist 1: composite difference from the naive coin, held-out years (after its verdict row)",
+    source_csv="fnn_heldout.csv",
+    recompute=lambda df: df.loc[(df["section"] == "paired") & (df["baseline"] == "coin"), "difference"].iloc[0],
     documents=("STATUS.md",),
     decimals=3,
 )

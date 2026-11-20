@@ -48,14 +48,16 @@ pattern: a label, a function that recomputes the number from the CSV, the docume
 6. **`exploratory` labelling.** For each cited result, read its manifest. If `exploratory=True`, the document must say
    so where the number appears and report it apart from the declared set. An exploratory number presented as
    confirmatory is a finding, even when the number is right.
-7. **The accompaniments this charter requires** (CHARTER sections 2-3, DIRECTIVE Part 3). **P is never one number
-   alone**: the guarded measures beside it, the frontier on P, S1, S3a and S5a, and Stage 2's long-run gate (growth on
-   the required bankroll at the bound) beside it so a design that helps users but cannot grow is visible. Any growth or
-   return figure with ruin probability, bankroll drawdown and payout latency beside it (Stage 2 D-145). Any money,
-   sizing or bankroll figure from the bound -- the `verdict` arm -- not the point. A missing accompaniment is a charter
-   violation, not a formatting nit.
-8. **The count.** Any reported reading carries its family's cell count and the program's running family count (Stage 2
-   D-621 (5)), and `results/variants.jsonl` where it exists.
+7. **The accompaniments this charter requires** (CHARTER 3.8's verdict and its "beside" list, DIRECTIVE Part 3).
+   **No measure is one number alone**: each baseline's row beside it, the frontier over the measures and a menu under
+   the limits, the zero-edge long-run gate beside so a design that helps users but cannot grow is visible, the
+   as-walked result and the path-structure edge beside and never credited, the level printed nominal while the
+   held-out read ledger is not empty, and the history-level false-pass rate beside a verdict. Any growth or return
+   figure with ruin probability, bankroll drawdown and payout latency beside it (Stage 2 D-145). Deciding figures are
+   on the martingale-outcome reading; Stage 2's `verdict` arm is retired (CHARTER 3.10). A held-out figure cited
+   before its verdict row is a finding. A missing accompaniment is a charter violation, not a formatting nit.
+8. **The count.** Any reported reading carries every design tried (its search's count in `results/variants.jsonl`) and
+   the program's k (one per held-out test, CHARTER 3.7; k = 13 next).
 
 ## Output
 

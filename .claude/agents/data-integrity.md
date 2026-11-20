@@ -33,10 +33,11 @@ one BLAS thread.
 
 ## First, the question that can end the family
 
-**Is there enough data?** For this repository's objective the question is power at the family's level: a family k is
-judged one-sided at 0.05 / (k (k + 1)) (CHARTER section 3; this repository's first family is k = 10) on the judged
-block of start days, read over 63-session blocks. Count the judged block's sessions and blocks and say what difference
-in P (or in the screen's statistic) could be detected at that level. For a signal's own edge, stage one's sample-size
+**Is there enough data?** For this repository's objective the question is the power gate's (CHARTER 3.7): a design
+search's held-out test is read at 0.05 / (k (k + 1)), k = 13 next, on the held-out years (2024-01-02 to 2026-07-16)
+under the horizon embargo. Count the held-out sessions, the starts complete at each horizon the composite reads (and
+over D-145's horizon for the long-run gate), and the disjoint history blocks, and say whether the size that matters
+could be detected at that level -- the input to the operator's data question (E-007 (2)). For a signal's own edge, stage one's sample-size
 table (`vendor/stage2/vendor/propsim/edge/results_sample_size.csv`) gives the trades a demonstrated e needs at each R:
 read it from the file, cite it, and compare with the trades this data can supply.
 
@@ -75,9 +76,10 @@ Run `propedge.outcomes.tradelog.validate_tradelog` (vendored) first: the schema,
 vocabularies, `contracts >= 1`, timestamp ordering, stop-side correctness, `pnl_net <= pnl_gross`. Then what it cannot
 know:
 
-- **Entry latency.** Every market entry at least five minutes after its alert; every resting order live no earlier than
-  five minutes after its ticket and filled only at its level (a limit only on a trade-through by a tick). An entry
-  inside the five minutes is a design the operator cannot trade by hand.
+- **Entry latency.** Every market entry at least L minutes after its alert (L declared: five the reference, three and
+  two counted variants, E-202 (2)(c)); every resting order live no earlier than L minutes after its ticket and filled
+  only at its level (a limit only on a trade-through by a tick). An entry inside L minutes is a design the operator
+  cannot trade by hand.
 - **The `flatten` share.** A trade closed by the 15:10 CT flatten must be `exit_reason = flatten` with its **actual**
   P&L, never `stop` or `target` (`vendor/stage2/vendor/propsim/HANDOFF.md` section 3). Zero flattened trades on an
   intraday bracket design is suspicious, not clean. More than 5 % flattened breaks the resolution constraint.

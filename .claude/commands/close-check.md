@@ -12,9 +12,10 @@ report `TRUE` / `FALSE` / `UNCHECKED` with the evidence.
    `-p no:cacheprovider`). Report every count, and whether the closing decision row records them.
 2. **Every queue item closed or parked with a reason.** Read `TASK_QUEUE.md`: list any item not `done`, and any
    `NEEDS_OPERATOR` without the operator's answer recorded.
-3. **Every declared family has a recorded outcome.** For each `prereg/F-*.md` pinned in `DECISIONS.md`: a later row
-   reading it CARRIED, CLOSED (with the kill line or clause that closed it) or withdrawn. A family with no outcome row is
-   an unreported result. Count the program's families and cells and check the count is reported with the last reading.
+3. **Every declared search and family has a recorded outcome.** For each `prereg/F-*.md` pinned in `DECISIONS.md`: a
+   later row reading it CARRIED, CLOSED (with the clause that closed it) or withdrawn. One with no outcome row is an
+   unreported result. Count the program's k and every design tried (`results/variants.jsonl`) and check the count is
+   reported with the last reading.
 4. **Every declaration still matches its pin.** `python -m pytest -q tests/test_declarations_fixed.py`.
 5. **No unverified rule in use.** Every rule this repository's code loads is `verified` in
    `vendor/stage2/config/rules.yaml`, or `verified` in `config/rules_extended.yaml` with its decision row; list every
@@ -29,10 +30,12 @@ report `TRUE` / `FALSE` / `UNCHECKED` with the evidence.
 9. **`vendor/stage2/` unedited and its identity holding.** `python scripts/vendor_stage2.py --verify` and
    `tests/test_vendor_integrity.py`; the identity rows on the board (P-14 and P-16's gate rows, U1's start rows) all
    holding.
-10. **The exit criterion is met** (CHARTER section 5). Which outcome: **(A)** a design CARRIED under section 3, its
-    registered development test passed and audited, and its one confirmation on unread data read and reported, with
-    the frontier, the sizing at the edge's lower bound and the rules verified; or **(B)** a documented negative result --
-    no declared family carries a design, with every family's evidence and count. Name it and say where it is written.
+10. **The exit criterion is met** (CHARTER section 5). Which outcome: **(A)** a design CARRIED under section 3.8 -- its
+    held-out test passed (its level printed nominal if its ledger is not empty, the history-level false-pass rate
+    beside) and audited, its playbook written, and its one confirmation read against the criterion declared at its
+    registration and reported, with the frontier, every measure of `docs/MEASURES.md` and the rules ledger verified; or
+    **(B)** a documented negative result -- no declared search yields a design that passes, with every search's
+    evidence, its count and the pass line's power from its power gate. Name it and say where it is written.
     **(B) is a valid close** -- do not report it as incomplete.
 
 Finish with a count, `N of 10 true`, then the list of what is not yet true and what each needs.
