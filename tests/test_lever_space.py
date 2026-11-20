@@ -98,8 +98,9 @@ def test_the_counts_by_layer() -> None:
 
 @pytest.fixture
 def no_s1_reading(tmp_path, monkeypatch):
-    """S1's reading absent (Q-171): the loader pointed at a file that does not exist."""
+    """S1's and T7's readings absent (Q-171, T7): the loader pointed at files that do not exist."""
     monkeypatch.setattr(LS, "S1_PATH", tmp_path / "absent" / "s1_range.csv")
+    monkeypatch.setattr(LS, "T7_PATH", tmp_path / "absent" / "t7_forecast.csv")
 
 
 def test_to_compute_and_to_declare_and_dropped_are_refused(no_s1_reading) -> None:

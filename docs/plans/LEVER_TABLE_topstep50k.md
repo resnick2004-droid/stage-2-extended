@@ -156,6 +156,10 @@ These hold in every design and are never searched. Each is stated by its rule ke
   that file and its manifest exist, then loads each session's k range after checking the manifest.
 - **T7, the admission forecast.** F-R's HAR coefficients and calibration, refitted on the search years only. F-R's own
   fit was to the choice block, which is the same span (F-R 6.3), but it was never run, so nothing exists to reuse.
+  **Built, not yet run (T7):** `scripts/t7_fit.py` (definitions, bands, calibration brackets, folds and the loader's
+  checks in `extended/t7_forecast.py`'s docstring) writes `results/t7_forecast.csv` from a clean run under the lock;
+  `lever_space.bounds("T7")` stays `NotComputed` until that file and its manifest exist, then loads `off` / `admit`
+  with q, D-212's line read from Stage 2's config, after checking the manifest.
 
 **Four rows are to declare** before their ranges load: T2b (the NY AM / NY PM boundary), A15 (routing), A16 (the
 mix's shares and assignment), and A17 (the state rule). **Two rows lean on unstated rules** and are refused by key: A9
