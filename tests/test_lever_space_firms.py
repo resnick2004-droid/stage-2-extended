@@ -26,10 +26,13 @@ import io
 import json
 import math
 import re
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 
+from extended import day_calendar as DC
 from extended import firm_terms as FT
 from extended import lever_space as LS
 from extended import lever_space_firms as LF
@@ -303,8 +306,7 @@ def test_identity_lucid_against_stage_twos_adapter() -> None:
 
 
 def test_unverified_keys_on_the_real_record_refuse() -> None:
-    assert LF.rule_status("mffu", "mffu.trading_hours") == ("absent", "absent")
-    for lever, key in (("T2", "mffu.trading_hours"), ("A4", LF.MFFU_P + "eval_fee"),
+    for lever, key in (("A4", LF.MFFU_P + "eval_fee"),
                        ("A2", LF.MFFU_P + "payout_request_amount"), ("A8", "mffu.hold_queue_behaviour"),
                        ("A21", "mffu.payout_fee")):
         with pytest.raises(LF.NotVerified, match=re.escape(key)):
@@ -313,11 +315,64 @@ def test_unverified_keys_on_the_real_record_refuse() -> None:
                        ("A21", LF.LUCID_P + "payout_fee")):
         with pytest.raises(LF.NotVerified, match=re.escape(key)):
             LF.bounds("lucid", lever)
-    with pytest.raises(LF.NotVerified):
+    with pytest.raises(LF.NotVerified) as exc:
         LF.ready("mffu")
+    bad = {k for k, v in LF.prerequisites("mffu").items() if v != "verified"}
+    assert bad == {"mffu.eval_consistency_base", "mffu.news_all_releases_protocol", LF.MFFU_P + "commissions",
+                   LF.MFFU_P + "eval_fee", LF.MFFU_P + "funded_news"}   # Q-181b: four, and funded_news held
+    assert "RD-05's pin" in FT.record_entry(LF.MFFU_P + "funded_news")["note"]   # read 2026-11-20, held (RD-05 4.1)
+    assert all(FT.record_entry(k)["status"] == "unverified" for k in bad) and all(k in str(exc.value) for k in bad)
     with pytest.raises(LF.NotVerified):
         LF.ready("lucid")
     LF.ready("topstep")
+
+
+def test_mffus_trading_day_loads_from_its_key() -> None:
+    """Q-181b: T2 and T3 load from `mffu.trading_hours` -- the reopen at the Globex open and the automatic close, read
+    as New York time and converted to CT; the windows day-free (the declared starts) and per trading day (the day
+    calendar's anchors, shifted to MFFU's reopen)."""
+    v = FT.record_value("mffu.trading_hours")
+    assert FT.record_entry("mffu.trading_hours")["status"] == "verified"
+    oh, om = re.search(r"from (\d{1,2}):(\d\d) PM \(the Globex open\)", v).groups()
+    ch, cm = re.search(r"closed automatically at (\d{1,2}):(\d\d) PM", v).groups()
+    for d in (date(2021, 1, 15), date(2021, 7, 15), None):
+        td = LF.mffu_trading_day(d)
+        on = d or LF.fdeclared("clock.reference_days")[0]
+        ny = ZoneInfo("America/New_York")
+        r = datetime(on.year, on.month, on.day, int(oh) + 12, int(om), tzinfo=ny) - timedelta(days=1)
+        f = datetime(on.year, on.month, on.day, int(ch) + 12, int(cm), tzinfo=ny)
+        r, f = r.astimezone(DC.CHICAGO), f.astimezone(DC.CHICAGO)
+        assert (td["reopen"], td["flat"]) == (r.hour * 60 + r.minute, f.hour * 60 + f.minute)
+        ex = re.search(r"Sunday - Friday (\d\d):(\d\d) - ", v).groups()
+        assert td["reopen"] == int(ex[0]) * 60 + int(ex[1])     # the reopen is the exchange's open
+        assert td["last_entry"] == td["flat"] and td["last_entry_offset"] == td["length"]
+        assert td["length"] == (td["flat"] - td["reopen"]) % (24 * 60)
+    t2, t3 = LF.bounds("mffu", "T2"), LF.bounds("mffu", "T3")
+    assert t2.values == tuple(LS.declared("sessions")) and t2.read["mffu.trading_hours"] == v
+    td = LF.mffu_trading_day()
+    w = t2.detail["windows"]
+    assert w == LF.mffu_session_windows()
+    assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
+    assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
+    assert w["ny_am"][1] is None and w["ny_pm"][0] is None
+    for name, t in LS.declared("windows_ct"):
+        key = "ny_am" if name == "ny" else name
+        assert w[key][0] == (LS._clock(t) - td["reopen"]) % (24 * 60)
+    for d in (date(2021, 1, 15), date(2021, 3, 15), date(2021, 7, 15)):
+        wd, a = LF.mffu_session_windows(d), DC.anchored_starts(d)
+        shift = DC.REOPEN_MIN - LF.mffu_trading_day(d)["reopen"]
+        assert (wd["asia"][0], wd["london"][0], wd["ny_am"][0]) == tuple((a[n] + shift) % (24 * 60)
+                                                                        for n in ("asia", "london", "ny"))
+    assert (t3.lo, t3.hi, t3.step) == (0.0, float(td["last_entry_offset"]), float(LS.declared("mark_step_min")))
+    assert LF.compare("mffu")["T2"] == LF.compare("mffu")["T3"] == LF.DIFFERS
+
+
+def test_mffus_day_refuses_a_failed_time_zone_reading(monkeypatch) -> None:
+    rec = copy.deepcopy(FT._record())
+    rec["mffu.trading_hours"]["value"] = rec["mffu.trading_hours"]["value"].replace("Friday 17:00", "Friday 18:00")
+    monkeypatch.setattr(FT, "_record", lambda: rec)
+    with pytest.raises(LS.LeverRefused):
+        LF.bounds("mffu", "T2")
 
 
 def test_the_record_wins_over_stage_twos_lucid_ledger(monkeypatch) -> None:

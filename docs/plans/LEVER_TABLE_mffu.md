@@ -60,9 +60,9 @@ full.
 | id | layer | lever | range and step | source | unit; what its estimate reads | depends on | class | vs Topstep |
 |---|---|---|---|---|---|---|---|---|
 | T1 | trigger | signal source of a component | Topstep's T1 (`coin`, `p14`, `p16`, `rl3`) | declared: E-208's dispositions | categorical; reads nothing | T2, T3, T4, T5, A16 | searched | identical |
-| T2 | trigger | session of a component | every session of MFFU's day, as Topstep's T2, once the day is on the record | arithmetic: `mffu.trading_hours` (absent), with Stage 2's window starts | a session; reads nothing | T1, T2b, T3 | searched | refused -- `mffu.trading_hours` is not on the record: MFFU's reopen, any flat-by time and its last entry |
+| T2 | trigger | session of a component | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, covering MFFU's whole day from its reopen at the Globex open to its automatic close (`mffu.trading_hours`, printed as EST and read as New York local time, converted to CT by zoneinfo); day-free, the boundaries are Topstep's declared window starts; for a trading day, the day calendar's local-time anchors (`day_calendar.anchored_starts`), shifted to MFFU's reopen (`lever_space_firms.mffu_session_windows`) | arithmetic: `mffu.trading_hours`, with the declared window starts or the day calendar's anchors | a session; reads nothing | T1, T2b, T3 | searched | differs -- the same sessions, on MFFU's own day (Q-181b): its reopen and close read from `mffu.trading_hours`; the reopen is checked against the exchange's open in the same entry |
 | T2b | trigger | the NY AM / NY PM boundary | to declare (Wave 3.3) | to declare | a wall-clock time | T2 | declared | identical |
-| T3 | trigger | entry window: a component's offer marks | from MFFU's reopen to its last new entry, in Topstep's mark step | arithmetic: `mffu.trading_hours` (absent) | minutes after the reopen | T2, T4, A3 | searched | refused -- `mffu.trading_hours` |
+| T3 | trigger | entry window: a component's offer marks | from MFFU's reopen to its last new entry, in Topstep's mark step. MFFU states no last-entry time apart from its automatic close (`mffu.trading_hours`), so the last new entry is the close; on a holiday there is no automatic close and the user flattens before the early close | arithmetic: `mffu.trading_hours`; the declared mark step | minutes after the reopen | T2, T4, A3 | searched | differs -- the last new entry is MFFU's close, where Topstep's page sets one before its flat |
 | T4 | trigger | latency L, alert to order | Topstep's T4: the three declared cells, `p16` and `rl3` one cell | declared: E-202 (2)(c); CHARTER 3.3 (g) | clock minutes | T1, T3, T5 | searched | identical |
 | T5 | trigger | entry type | `market`, `limit`: one limit per entry. Several limit orders at one price are prohibited (`mffu.automation_and_sim_fills`), and a design that places them is refused as tier 1 | declared: E-202 (2)(d); F-04 6.1 R-4 | order type | T1, T4, T6 | searched | differs -- the same choices, held against MFFU's simulator-fill rule (`mffu.automation_and_sim_fills`) |
 | T6 | trigger | how long a limit works | Topstep's T6 | declared: F-04 6.1 | minutes | T5 | declared | identical |
@@ -95,9 +95,9 @@ full.
 | A6 | account policy | funded seats held at once | 1 to the Rapid EOD clause of `mffu.max_funded_accounts`, step 1; one account per trade | rule | accounts | A7, A8, A15 | searched | differs -- MFFU's Rapid EOD seat limit |
 | A7 | account policy | evaluations running at once (C) | 1 to the lesser of Topstep's declared upper end and `mffu.max_eval_accounts`, step 1 | declared: RD-03 2.2, cut by `mffu.max_eval_accounts` | accounts | A6, A8, A11 | searched | differs -- MFFU states a cap, Topstep none |
 | A8 | account policy | banking: buy evaluations while a pass waits | `on`, `off`, once the record says what a pass at the seat limit does | declared: RD-03 2.2; `mffu.hold_queue_behaviour` | categorical | A6, A7, A9 | searched | refused -- `mffu.hold_queue_behaviour` is unstated |
-| A9 | account policy | the hold's expiry | refused, as Topstep's | declared (readings of an unstated rule): `mffu.hold_queue_behaviour`, `mffu.hold_expiry_days` | reading | A8, A10 | declared | refused -- `mffu.hold_queue_behaviour` unstated, `mffu.hold_expiry_days` absent |
+| A9 | account policy | the hold's expiry | refused, as Topstep's | declared (readings of an unstated rule): `mffu.hold_queue_behaviour`, `mffu.hold_expiry_days` | reading | A8, A10 | declared | refused -- `mffu.hold_queue_behaviour` and `mffu.hold_expiry_days` are unstated |
 | A10 | account policy | evaluation-purchase rule | Topstep's A10 (`replace`, `house_stop`, `house_zero`); one-time purchases, nothing to cancel (`mffu.billing_basis`) | declared: RD-03 2.3 | categorical | A9, A11 | searched | differs -- the same choices on MFFU's one-time billing |
-| A11 | account policy | evaluation-purchase budget | Topstep's A11, once the record says that no rule limits starts | declared: Stage 2 D-501; `mffu.account_start_rate_limit` | purchases a month | A7, A10 | searched | refused -- `mffu.account_start_rate_limit` is not on the record |
+| A11 | account policy | evaluation-purchase budget | Topstep's A11, once the record says that no rule limits starts | declared: Stage 2 D-501; `mffu.account_start_rate_limit` | purchases a month | A7, A10 | searched | refused -- `mffu.account_start_rate_limit` is unstated |
 | A12 | account policy | Back2Funded reactivations | **dropped**: Topstep's product; no reactivation product of MFFU is on the record | declared | -- | A4, A6, A18 | dropped | differs -- Topstep's lever loads; MFFU has none on the record |
 | A13 | account policy | resets | **dropped**, as Topstep's: an adapter is owed, and the reset's price is unverified (`mffu.reset_fee`) | declared: RD-03 2.5 | -- | A4 | dropped | identical |
 | A14 | account policy | daily-loss-limit election at checkout | **dropped**: a different account (`mffu.rapideod50k.eval_daily_loss_limit`) | declared: RD-05 2.3 | -- | S3, S4 | dropped | identical |
@@ -113,9 +113,9 @@ full.
 
 **identical** (15): T1, T2b, T4, T6, T7, S2, S6, S7, S8, S9, A13, A14, A15, A16, A17.
 
-**differs** (14): T5, T8, S1, S3, S4, S5, A1, A3, A5, A6, A7, A10, A12, A20.
+**differs** (16): T2, T3, T5, T8, S1, S3, S4, S5, A1, A3, A5, A6, A7, A10, A12, A20.
 
-**refused** (10): T2, T3, A2, A4, A8, A9, A11, A18, A19, A21.
+**refused** (8): A2, A4, A8, A9, A11, A18, A19, A21.
 
 Why the differing levers differ, in short:
 
@@ -130,6 +130,8 @@ Why the differing levers differ, in short:
   one-time, so nothing is cancelled. It has no Back2Funded.
 - **Conduct floors read from MFFU's pages (T5, T8).** The ranges are Topstep's, held against MFFU's simulator-fill and
   hedging rules.
+- **The day (T2, T3).** MFFU's reopen and close are read from `mffu.trading_hours` (Q-181b). The sessions are
+  Topstep's, on MFFU's day. The last new entry is MFFU's close, because the firm states no earlier one.
 - **S1** needs MFFU's own search-year reading, because the caps and the sessions are MFFU's.
 
 ## 5. Combinations refused and floors fixed
@@ -143,7 +145,12 @@ loaded range. The floors MFFU's own rules add are listed below. Each is read in 
 - **Inactivity** (`mffu.inactivity_rule`): every account trades inside the rule's calendar window, or it can be closed
   and its profits forfeited. Seats and routing (A6, A15) must keep each account active.
 - **News**: Tier 1 releases are closed on MFFU's window around each release (`mffu.news_tier1_rule`), on top of
-  CHARTER 4's. Whether that holds on Rapid EOD's funded account is unverified (`mffu.rapideod50k.funded_news`).
+  CHARTER 4's. On Rapid EOD's funded account, Tier 1 news trading was read on 2026-11-20 as not allowed
+  (`mffu.rapideod50k.funded_news`; 16158363, 18337038). That reading is **held**: the key stays unverified under
+  RD-05's pin (RD-05 4.1) and enters at RD-05's next declaration, so the engine does not load it yet. The evaluation
+  allows Tier 1 news. CHARTER 4's news exclusions bind either way.
+- **Holidays** (`mffu.trading_hours`): no automatic close at an early close; the user must be flat before it, or the
+  account is breached.
 - **The single-day profit ceiling** on the funded account (`mffu.rapideod50k.funded_single_day_profit_ceiling`): a day
   above it moves the account to Live.
 - **Coordinated trading** (`mffu.coordinated_trading_rule`): one user's own accounts only, as CHARTER 4 already requires.
@@ -151,20 +158,21 @@ loaded range. The floors MFFU's own rules add are listed below. Each is read in 
 ## 6. The work list: rules to verify (`/verify-rule`)
 
 Each key below refuses the levers named, or (`engine`) must be verified before the engine can run any MFFU design
-(`lever_space_firms.prerequisites`, `ready('mffu')`). Its status is this commit's. This worker verified none of them.
+(`lever_space_firms.prerequisites`, `ready('mffu')`). Its status is this commit's, after the lead's read of the twelve keys (Q-181b): `mffu.trading_hours` is now verified and
+leaves the list. `mffu.rapideod50k.funded_news` was read, but it is held unverified under RD-05's pin until RD-05's next
+declaration. The rest stay. No worker verified any of them.
 
 | key | status | refuses |
 |---|---|---|
-| `mffu.trading_hours` | absent | T2, T3, engine |
 | `mffu.rapideod50k.payout_request_amount` | unstated | A2, A18, A19 |
 | `mffu.rapideod50k.eval_fee` | unverified | A4, engine |
 | `mffu.hold_queue_behaviour` | unstated | A8, A9 |
-| `mffu.hold_expiry_days` | absent | A9 |
-| `mffu.account_start_rate_limit` | absent | A11 |
+| `mffu.hold_expiry_days` | unstated | A9 |
+| `mffu.account_start_rate_limit` | unstated | A11 |
 | `mffu.payout_fee` | unstated | A21 |
 | `mffu.payout_processing_time` | unverified | A21 |
 | `mffu.eval_consistency_base` | unverified | engine (RD-05 U-15: whether a flip or a losing day passes) |
-| `mffu.rapideod50k.funded_news` | unverified | engine |
+| `mffu.rapideod50k.funded_news` | unverified: read 2026-11-20 (not allowed), held under RD-05's pin (RD-05 4.1) | engine |
 | `mffu.news_all_releases_protocol` | unverified | engine |
 | `mffu.rapideod50k.commissions` | unverified | engine (the firm-wide `mffu.commissions` names no plan) |
 
@@ -188,3 +196,7 @@ Each key below refuses the levers named, or (`engine`) must be verified before t
    name. The search finds MFFU's own design inside them.
 7. **The conduct floors** read from MFFU's pages (T5, T8, S7) are checked as keys. Whatever a page permits, tier 1 is
    refused by `check_design` for every firm.
+8. **MFFU's clock** (Q-181b): `mffu.trading_hours` prints "EST"; the verifier read it as New York local time (labelled
+   in the entry). The loader converts it to CT by zoneinfo, on the trading day or, day-free, on two declared
+   search-year days (winter and summer) that must agree. It refuses if the reopen is not the exchange's open in the
+   same entry. The last new entry is the close itself, since no earlier one is stated.
