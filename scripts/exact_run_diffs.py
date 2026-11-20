@@ -26,8 +26,9 @@ record equal to the adapter's on every start.
 **Writes** `results/exact_run_diffs.csv` (sections `checked`, `moved`; no date, no money, no measure) with its
 manifest through `extended.results`: seed the runner's (`user_beside.DENIAL_SEED`, each start's path seed
 `lockstep.child_seed(20261920, 0, start_day)`), the record read (m-8: each start's exact h-session run against its
-long run cut at the block's end), the cut's files and the vendored checks switched off (none), the identities, the
-timing and peak memory. Prints counts of starts and timings only -- no difference count.
+long run cut at the block's end), the `off` records reused from the u1_point identity's runs (`record_reuse`, the
+Q-172 audit's C3), the read's ruling (E-248, its C4), the cut's files and the vendored checks switched off (none), the
+identities, the timing and peak memory. Prints counts of starts and timings only -- no difference count.
 """
 from __future__ import annotations
 
@@ -166,10 +167,13 @@ def main(argv: list[str] | None = None) -> int:
         return 4
     rows: list[dict] = []
     per_start: dict[str, float] = {}
+    reuse_off: list[int] = []
     for rname in X.RESPONSES:
         t2 = time.time()
         resp = B.BY_NAME[rname]
         reuse = {int(x["rec"]["start_day"]): x for x in u1_outs} if rname == "off" else {}
+        if rname == "off":
+            reuse_off = sorted(s for s in starts if s in reuse)
         todo = [s for s in starts if s not in reuse]
         outs = B.run_starts(DESIGN, ARM, resp, job, todo, a.workers, journey=True, journey_block="search")
         outs = sorted([*outs, *(reuse[s] for s in starts if s in reuse)], key=lambda x: int(x["rec"]["start_day"]))
@@ -192,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
         return 5
     timing["total_s"] = round(time.time() - t0, 1)
     params = {
-        "task": TASK, "decisions": ["E-208", "E-232", "MEASURES section 6"], "design": "P-14", "arm": ARM,
+        "task": TASK, "decisions": ["E-208", "E-232", "E-248", "MEASURES section 6"], "design": "P-14", "arm": ARM,
         "responses": list(X.RESPONSES), "horizons": list(X.HORIZONS), "purpose": PURPOSE, "read_row": READ_ROW,
         "starts": {"cut": f"the last {X.CUT_STARTS} search starts", "control": f"every {X.CONTROL_EVERY}th earlier",
                    "n_sessions": n, "chosen": len(starts),
@@ -202,6 +206,13 @@ def main(argv: list[str] | None = None) -> int:
         "record_read": "each start's exact h-session run's event days against its long run cut at the search block's "
                        "end (user_beside.run_starts journey=True, exact_every 1); classified against the long "
                        "record's days (exact_run_diffs.classify)",
+        "record_reuse": f"under `off`, the records of the chosen starts inside the u1_point identity's set (s + "
+                        f"{X.LONG} <= n: {len(reuse_off)} starts) are "
+                        "the identity's own runs -- the same run_starts call (response off, journey=True, "
+                        "journey_block='search') -- not run again; denial_25 runs every chosen start "
+                        "(the Q-172 audit's C3)",
+        "read_ruling": "E-248: the point arm only, inputs cut at the read, no held-out read row (narrowing MEASURES "
+                       "section 6's 'both of U1's arms'; the Q-172 audit's C4)",
         "cut": {"last": SC.LAST_DAY.isoformat(), "files": log.files_read("cut"),
                 "passthrough": log.files_read("passthrough"), "switched_off": SC.switched_off(),
                 "day_list": "the bars manifest's day_list read whole, never cut"},
