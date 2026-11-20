@@ -29,7 +29,9 @@ counted and the round's seed recorded. It proposes; it never reads, and it never
    its own predicted mean there (`Surrogate.believe`), the acquisition recomputed, and so on until `spec.batch`
    designs are taken. A pool holding fewer valid candidates than the batch refuses the round (the budget is declared,
    never shrunk after a look).
-5. **Counted**: every proposal enters the cell ledger as ``round-<i>`` with the round seed.
+5. **Counted**: every proposal enters the cell ledger as ``round-<i>`` with the round seed, by the round's own pen
+   (`CellLedger.begin`), and the role closes when the batch returns (the red team's n-2); the round's `RoundSpec` and
+   its limits are the role's meta (n-3), so a spec changed between rounds is on the record.
 The number of rounds is the declaration's, never extended after a look; nothing here decides to stop or continue.
 
 **One protocol** (the red team's m-10 and RB-2): every reading -- the composite's and each limit's -- passes the one
@@ -44,7 +46,7 @@ protocol.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from typing import Any, Mapping, Sequence
 
 import numpy as np
@@ -186,7 +188,17 @@ def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_
             raise ProposerRefused(f"a limit on {lim.measure!r} needs that measure's readings")
     for lim in limits:
         ledger.protocol_for(lim.measure)                      # a limit the survey did not declare is refused
-    ledger.begin(f"round-{round_index}", int(seed))
+    pen = ledger.begin(f"round-{round_index}", int(seed), spec=asdict(spec),          # n-3: the round's spec and
+                       limits=[asdict(lim) for lim in limits])                       # limits, in its role's meta
+    try:
+        return _round(space, readings, spec, int(round_index), int(seed), ledger, pen, limits, limit_readings)
+    finally:
+        pen.close()                                           # n-2: the round's role closes when its batch returns
+
+
+def _round(space: SS.Space, readings: Sequence[Any], spec: RoundSpec, round_index: int, seed: int,
+           ledger: SS.CellLedger, pen: SS.RolePen, limits: Sequence[Limit],
+           limit_readings: Mapping[str, Sequence[Any]] | None) -> Round:
     sg = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=ledger.protocol.measure,
                       key=(int(round_index), 0))
     fit = sg.fit(readings, ledger=ledger)
@@ -228,8 +240,7 @@ def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_
         pf_v.append(float(p[j]))
         cur = cur.believe([cands[i]])
     for d in chosen:
-        ledger.record(space, d, role=f"round-{int(round_index)}", seed=int(seed), refusal=None,
-                      round_index=int(round_index))
+        pen.record(space, d, refusal=None, round_index=int(round_index))
     return Round(int(round_index), int(seed), spec, chosen, acq_v, mu_v, sd_v, pf_v, incumbent, stats, fit,
                  limit_fits, SS.LIBS)
 

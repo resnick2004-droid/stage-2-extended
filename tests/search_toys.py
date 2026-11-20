@@ -8,7 +8,8 @@
 * `seed_noise(design, seed)`: a standard normal fixed by the design's id and one coin seed: what changes when a design
   is re-read on other seeds.
 * `PROTOCOL`: the tests' declared protocol (the composite on two search-year blocks, three seeds, horizon 0);
-  `REREAD`: the same with fresh seeds; `SV`: what a survey declares to its ledger; `reading(...)`: a reading on it,
+  `REREAD`: the same with fresh seeds; `sv(...)` and `SV`: what a survey declares to its ledger, the declaration's
+  sha256 included; `reading(...)`: a reading on it,
   any field overridden; `evaluator(fn, sd)`: the caller's runner, `fn(design)` plus `sd` times the seed noise under
   each of the protocol's seeds.
 * `slot_space()`: two sessions of component slots (windows on a five-minute grid), a dependent latency (a timed source
@@ -34,8 +35,17 @@ SEEDS = (101, 102, 103)
 REREAD_SEEDS = tuple(range(201, 265))                 # 64 fresh seeds
 PROTOCOL = SS.Protocol("composite", BLOCKS, SEEDS, 0)
 REREAD = PROTOCOL.with_seeds(REREAD_SEEDS)
-#: what every survey of these tests declares to its ledger (RB-2): the protocol and the plateau's re-read seeds
-SV = {"protocol": PROTOCOL, "reread_seeds": REREAD_SEEDS}
+
+
+def sv(protocol: SS.Protocol = PROTOCOL, reread_seeds=REREAD_SEEDS, measures=()) -> dict[str, Any]:
+    """What a survey of these tests declares to its ledger (RB-2): the protocol, the plateau's re-read seeds, the limit
+    measures, and the declaration's sha256 of them (rb2-a: the tests' own declaration states its protocol's figure)."""
+    return {"protocol": protocol, "reread_seeds": tuple(reread_seeds), "measures": tuple(measures),
+            "declaration_sha256": SS.protocol_sha256(protocol, tuple(reread_seeds), tuple(measures))}
+
+
+#: what every survey of these tests declares by default
+SV = sv()
 SMOOTH_ARGMIN = {"x1": 0.62, "x2": 0.27, "x3": 0.5, "n": 5, "c": "b"}
 SMOOTH_MIN = 0.0
 CAT_COST = {"a": 0.3, "b": 0.0, "c": 0.15}
@@ -107,7 +117,7 @@ def run_search(space: SS.Space, fn, *, survey_n: int, rounds: int, spec: P.Round
                sd: float = 0.0, protocol: SS.Protocol = PROTOCOL):
     ev = evaluator(fn, sd)
     designs = SS.Sampler(space, seed=survey_seed, method=method).survey(
-        survey_n, ledger=ledger, protocol=protocol, reread_seeds=REREAD_SEEDS, measures=tuple(limit_fns or ()))
+        survey_n, ledger=ledger, **sv(protocol, REREAD_SEEDS, tuple(limit_fns or ())))
     readings = [ev(d, protocol=protocol) for d in designs]
     lim_ev = {m: evaluator(f) for m, f in (limit_fns or {}).items()}
     lim_r = {m: [e(d, protocol=protocol.with_measure(m)) for d in designs] for m, e in lim_ev.items()}

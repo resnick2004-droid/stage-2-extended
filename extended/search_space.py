@@ -5,7 +5,8 @@ reaches the surrogate (`extended.surrogate`) or the plateau check (`extended.pla
     from extended import search_space as SS
     space = SS.from_lever_space(slots={"ny": 2})            # the Topstep $50K lever table, through its loader
     ledger = SS.CellLedger()
-    designs = SS.Sampler(space, seed=S0, method="sobol").survey(256, ledger=ledger)
+    designs = SS.Sampler(space, seed=S0, method="sobol").survey(256, ledger=ledger, protocol=PROTOCOL,
+                                                                reread_seeds=REREAD, declaration_sha256=SHA)
     ledger.counts()                                           # every cell proposed, the refused ones included
 
 Synthetic objectives only at this commit: nothing here reads a bar, a walk, a trade or a result file, and nothing
@@ -66,16 +67,28 @@ reason, the latency of every active component (every L tried counted, CHARTER 3.
 a plateau row, and the numpy and scipy versions (`LIBS`). It holds designs only, never a reading. **A role is begun
 once** (`begin`), with its seed: a second survey, a second round ``i`` (under any seed), a round before the one before
 it, a row under a seed other than its role's, and a second plateau check of one finalist are all refused (the red
-team's B-1 and m-2). `variant_rows` gives the rows for the variants ledger (`results/variants.jsonl`), which only a
-clean run writes.
+team's B-1 and m-2). **A role closes** (the red team's n-2, the lead's ruling): `begin` returns the role's `RolePen`
+to the drawer that opened it -- the sampler, the proposer or the plateau check -- the only writer of its cells, and the
+drawer closes it when its batch returns; a cell recorded without the pen (`NotTheDrawer`) or after the close
+(`RoleClosed`) is refused, so no design is slipped into a role after a look. A round's `RoundSpec` and limits are its
+role's meta (n-3). **Everything recorded is frozen** (n-1): a row, its design, its latencies and library versions, and
+a role's meta are read-only (`FrozenMap`, tuples), so an edit after recording raises. `variant_rows` gives the rows for
+the variants ledger (`results/variants.jsonl`), which only a clean run writes, each carrying the full declared protocol
+and its sha256 (rb2-a).
 
 **Readings and the one door** (`Protocol`, `Reading`, `admit`; the red team's B-1 and RB-2, the lead's rulings). A
 `Protocol` is the declaration's reading protocol: the measure, the history blocks, the coin seeds, the outcome horizon
 in sessions, and the library versions. **The survey declares it to the ledger** (`Sampler.survey(..., protocol=,
-reread_seeds=, measures=)`), with the plateau's re-read seeds and the limit measures, once; **every door takes it from
-the ledger, never from a caller**. A `Reading` is one design's measure read on it, frozen (its design a read-only
-mapping, m-4); the last session any outcome read is derived from its blocks and horizon on Q-40's session calendar
-(`reads_through`, m-3 and rn-3). `admit(readings, ledger=, measure=, reread=, roles=)` is the one door. It refuses:
+reread_seeds=, measures=, declaration_sha256=)`), with the plateau's re-read seeds (at least `MIN_REREAD_SEEDS`,
+rm3-b) and the limit measures, once; **every door takes it from the ledger, never from a caller**. **The declaration
+binds it** (the red team's rb2-a, the lead's ruling): `protocol_sha256` hashes the full declared protocol (the measure,
+blocks, seeds, horizon and library versions, the re-read seeds and the limit measures); the search declaration states
+that figure, the runner passes it as `declaration_sha256`, and the survey's `begin` refuses a protocol whose sha256
+differs (`DeclarationMismatch`). Every plateau verdict and variant row carries the full protocol and its sha256, so a
+second ledger opened on another protocol is visible in what it produces. A `Reading` is one design's measure read on
+it, frozen (its design a read-only mapping, m-4); the last session any outcome read is derived from its blocks and
+horizon on Q-40's session calendar (`reads_through`, m-3 and rn-3). `admit(readings, ledger=, measure=, reread=,
+roles=)` is the one door. It refuses:
 - anything that is not exactly a `Reading` (a subclass or a prediction never is);
 - a tag other than ``search``; a held-out tag names the held-out years in its refusal;
 - a block or an outcome session past 2023-12-29 (CHARTER 3.6 (a), (d); E-208), the confirmation window, or a day before
@@ -83,8 +96,11 @@ mapping, m-4); the last session any outcome read is derived from its blocks and 
 - a reading off the ledger's protocol (another measure, blocks, seeds, horizon or library versions), on the
   declared re-read seeds only where the plateau asks for them, under a measure the survey did not declare;
 - **a design that is not a counted ``proposed`` cell of the ledger in one of the allowed roles**.
-Every reading the surrogate, the proposer or the plateau check sees comes through this door, so a design read outside
-the count, or on a protocol picked after a look, never reaches a fit or a finalist. The held-out years are never read
+Every reading the surrogate, the proposer or the plateau check sees comes through this door, so **within one ledger** a
+design read outside the count, or on a protocol picked after a look, never reaches a fit or a finalist. Across ledgers
+(a runner opening a second `CellLedger` on another protocol, rb2-a) the guard is the declaration's sha256 at the
+survey's `begin` and the protocol each verdict carries; that a run builds exactly one ledger, from the pinned text, is
+Wave 5's runner review's to check. The held-out years are never read
 by a search (CHARTER 3.6 (a), E-221 O-1).
 
 **Wave 5's hooks** (the red team's m-9 and m-10, Wave 5's declaration by the lead's ruling): the finalist order rule
@@ -102,6 +118,7 @@ import math
 import re
 import warnings
 from collections import Counter
+from collections import abc as _abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from types import MappingProxyType
@@ -139,6 +156,9 @@ _INACTIVE_U = 0.5
 LIBS: tuple[tuple[str, str], ...] = (("numpy", np.__version__), ("scipy", scipy.__version__))
 _TIER_ONE_FOLDED = frozenset(x.casefold() for x in TIER_ONE)
 _ROUND = re.compile(r"round-(\d+)")
+#: the fewest re-read seeds a survey may declare (the red team's rm3-b, the lead's ruling): below it the exact law's
+#: quadrature is off at many neighbours and the paired se too noisy to stand behind
+MIN_REREAD_SEEDS = 5
 
 
 class SpaceRefused(ValueError):
@@ -164,6 +184,72 @@ class OffProtocol(ReadingRefused):
 
 class Uncounted(ReadingRefused):
     """A reading of a design that is not a counted cell of the ledger in an allowed role."""
+
+
+class TooFewRereadSeeds(LedgerRefused):
+    """A survey declaring fewer than `MIN_REREAD_SEEDS` re-read seeds (the red team's rm3-b, the lead's ruling)."""
+
+
+class DeclarationMismatch(LedgerRefused):
+    """A survey whose declared protocol does not hash to the declaration's sha256 (the red team's rb2-a)."""
+
+
+class RoleClosed(LedgerRefused):
+    """A cell recorded into a role after its batch returned (the red team's n-2)."""
+
+
+class NotTheDrawer(LedgerRefused):
+    """A cell recorded by anyone but the drawer that opened its role (the red team's n-2)."""
+
+
+class FrozenMap(_abc.Mapping):
+    """A read-only mapping of a copy (the red team's n-1): no item assignment, no attribute assignment; deep-copyable
+    and comparable with a dict. The ledger's rows, their designs and library versions, and every role's meta are
+    these, so an edit after recording raises."""
+
+    __slots__ = ("_d",)
+
+    def __init__(self, d: Mapping[str, Any] | Iterable[tuple[str, Any]] = ()) -> None:
+        object.__setattr__(self, "_d", dict(d))
+
+    def __getitem__(self, k: str) -> Any:
+        return self._d[k]
+
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self) -> int:
+        return len(self._d)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("a FrozenMap is read-only")
+
+    def __delattr__(self, name: str) -> None:
+        raise AttributeError("a FrozenMap is read-only")
+
+    def __reduce__(self):
+        return (FrozenMap, (self._d,))
+
+    def __repr__(self) -> str:
+        return f"FrozenMap({self._d!r})"
+
+
+def freeze(x: Any) -> Any:
+    """A deep read-only copy: a mapping a `FrozenMap`, a list or tuple a tuple, each member frozen."""
+    if isinstance(x, _abc.Mapping):
+        return FrozenMap((k, freeze(v)) for k, v in x.items())
+    if isinstance(x, (list, tuple)):
+        return tuple(freeze(v) for v in x)
+    return x
+
+
+def thaw(x: Any) -> Any:
+    """A plain copy of a frozen value for JSON (a mapping a dict, a tuple a list)."""
+    if isinstance(x, _abc.Mapping):
+        return {k: thaw(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [thaw(v) for v in x]
+    return x
 
 
 def searched(role: str) -> bool:
@@ -511,28 +597,66 @@ class Space:
 # ------------------------------------------------------------------------------------------------ the cell ledger
 
 
+def protocol_record(protocol: "Protocol", reread_seeds: Sequence[int], measures: Sequence[str] = ()) -> dict[str, Any]:
+    """The full declared protocol as plain JSON values (the red team's rb2-a): the measure, the search-year blocks, the
+    selection seeds, the outcome horizon, the library versions, the plateau's re-read seeds and the limit measures."""
+    return {"measure": protocol.measure, "blocks": [list(b) for b in protocol.blocks], "seeds": list(protocol.seeds),
+            "horizon": int(protocol.horizon), "libs": [list(x) for x in protocol.libs],
+            "reread_seeds": [int(x) for x in reread_seeds], "measures": list(measures)}
+
+
+def protocol_sha256(protocol: "Protocol", reread_seeds: Sequence[int], measures: Sequence[str] = ()) -> str:
+    """The sha256 of `protocol_record`'s canonical JSON (sorted keys, no spaces): the figure a search declaration states
+    for its protocol and the survey's `begin` checks (rb2-a)."""
+    blob = json.dumps(protocol_record(protocol, reread_seeds, measures), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+class RolePen:
+    """The capability to record cells of one role (the red team's n-2): `CellLedger.begin` returns it to the drawer that
+    opened the role -- the sampler (the survey), the proposer (a round), the plateau check (its neighbours) -- and the
+    drawer closes it when its batch returns. A cell recorded without it, or after it closed, is refused."""
+
+    def __init__(self, ledger: "CellLedger", role: str, seed: int) -> None:
+        self._ledger, self.role, self.seed = ledger, role, int(seed)
+
+    def record(self, space: "Space", design: Mapping[str, Any], *, refusal: tuple[str, str] | None,
+               round_index: int | None = None) -> Mapping[str, Any]:
+        return self._ledger.record(space, design, role=self.role, seed=self.seed, refusal=refusal,
+                                   round_index=round_index, pen=self)
+
+    def close(self) -> None:
+        self._ledger._close(self.role, self)
+
+
 class CellLedger:
     """Every cell proposed -- by the survey, a round or a plateau check -- refused ones included (CHARTER 3.3 (f),
     (g); the template's section 13). Designs only: a reading never enters it. **The survey declares the protocol**
-    (the red team's RB-2, the lead's ruling): `begin("survey", seed, protocol=, reread_seeds=, measures=)` stores the
-    declared `Protocol`, the plateau's re-read seeds and the declared limit measures, once; every door takes them from
-    here (`protocol_for`), never from a caller. `rows`, `roles` and the stored protocol are read-only views."""
+    (the red team's RB-2, the lead's ruling): `begin("survey", seed, protocol=, reread_seeds=, measures=,
+    declaration_sha256=)` stores the declared `Protocol`, the plateau's re-read seeds (at least `MIN_REREAD_SEEDS`) and
+    the declared limit measures, once, and refuses them unless they hash to the declaration's sha256
+    (`protocol_sha256`, rb2-a); every door takes them from here (`protocol_for`), never from a caller. **A role closes**
+    (n-2): `begin` returns the role's `RolePen` to its drawer, the only writer of its cells, which closes it when its
+    batch returns. `rows`, `roles`, every row's design, latencies and library versions, every role's meta and the
+    stored protocol are read-only (rn-4, n-1)."""
 
     def __init__(self) -> None:
-        self._rows: list[dict[str, Any]] = []
+        self._rows: list[FrozenMap] = []
         self._roles: dict[str, dict[str, Any]] = {}
+        self._pens: dict[str, RolePen] = {}
+        self._closed: set[str] = set()
         self._protocol: Protocol | None = None
         self._reread_seeds: tuple[int, ...] = ()
         self._measures: tuple[str, ...] = ()
 
-    # -- read-only views (rn-4)
+    # -- read-only views (rn-4, n-1)
     @property
     def rows(self) -> tuple[Mapping[str, Any], ...]:
-        return tuple(MappingProxyType(r) for r in self._rows)
+        return tuple(self._rows)
 
     @property
     def roles(self) -> Mapping[str, Mapping[str, Any]]:
-        return MappingProxyType({k: MappingProxyType({"seed": v["seed"], "meta": MappingProxyType(v["meta"])})
+        return MappingProxyType({k: FrozenMap({"seed": v["seed"], "meta": v["meta"], "closed": k in self._closed})
                                  for k, v in self._roles.items()})
 
     @property
@@ -551,6 +675,16 @@ class CellLedger:
         """The declared limit measures, read on the protocol's blocks, seeds and horizon."""
         return self._measures
 
+    @property
+    def declared(self) -> Mapping[str, Any]:
+        """The full declared protocol (`protocol_record`), read-only: what every verdict and variant row carries."""
+        return freeze(protocol_record(self.protocol, self._reread_seeds, self._measures))
+
+    @property
+    def protocol_sha256(self) -> str:
+        """The declared protocol's sha256 (`protocol_sha256`), checked at the survey's `begin`."""
+        return protocol_sha256(self.protocol, self._reread_seeds, self._measures)
+
     def protocol_for(self, measure: str | None = None, *, reread: bool = False) -> "Protocol":
         """The declared protocol for `measure` (its own measure, or a declared limit's), on the re-read seeds when
         `reread`; anything else is refused."""
@@ -563,9 +697,11 @@ class CellLedger:
         return base.with_measure(measure)
 
     def begin(self, role: str, seed: int, *, protocol: "Protocol | None" = None,
-              reread_seeds: Sequence[int] | None = None, measures: Sequence[str] = (), **meta: Any) -> None:
-        """Open `role` under `seed`, once (the module docstring): a role begun before is refused, and a round needs the
-        one before it (the survey before round one). The survey, and only the survey, declares the protocol."""
+              reread_seeds: Sequence[int] | None = None, measures: Sequence[str] = (),
+              declaration_sha256: str | None = None, **meta: Any) -> RolePen:
+        """Open `role` under `seed`, once (the module docstring), and return its pen: a role begun before is refused,
+        and a round needs the one before it (the survey before round one). The survey, and only the survey, declares
+        the protocol, checked against the declaration's sha256."""
         if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
             raise LedgerRefused("a role's seed is an explicit integer")
         if not role:
@@ -577,16 +713,23 @@ class CellLedger:
             if type(protocol) is not Protocol:
                 raise LedgerRefused("the survey declares the protocol (a `Protocol`), and the re-read seeds")
             rr = tuple(reread_seeds) if reread_seeds is not None else ()
-            if len(rr) < 2 or len(set(rr)) != len(rr) or not all(
+            if len(set(rr)) != len(rr) or not all(
                     isinstance(x, (int, np.integer)) and not isinstance(x, bool) for x in rr):
-                raise LedgerRefused("the plateau's re-read seeds are at least two distinct integers, declared now")
+                raise LedgerRefused("the plateau's re-read seeds are distinct integers, declared now")
+            if len(rr) < MIN_REREAD_SEEDS:
+                raise TooFewRereadSeeds(f"{len(rr)} re-read seeds declared: the floor is {MIN_REREAD_SEEDS} (rm3-b)")
             if set(rr) & set(protocol.seeds):
                 raise LedgerRefused("the re-read seeds are fresh: disjoint from the protocol's")
             ms = tuple(measures)
             if len(set(ms)) != len(ms) or protocol.measure in ms or not all(isinstance(x, str) and x for x in ms):
                 raise LedgerRefused(f"the limit measures are distinct names other than {protocol.measure!r}")
+            got = protocol_sha256(protocol, rr, ms)
+            if not isinstance(declaration_sha256, str) or declaration_sha256 != got:
+                raise DeclarationMismatch(f"the survey's protocol hashes to {got}; the declaration's sha256 is "
+                                          f"{declaration_sha256!r} (rb2-a): a protocol other than the declared one is "
+                                          "refused")
             self._protocol, self._reread_seeds, self._measures = protocol, tuple(int(x) for x in rr), ms
-        elif protocol is not None or reread_seeds is not None or measures:
+        elif protocol is not None or reread_seeds is not None or measures or declaration_sha256 is not None:
             raise LedgerRefused(f"only the survey declares a protocol; {role!r} reads the survey's")
         else:
             m = _ROUND.fullmatch(role)
@@ -595,24 +738,42 @@ class CellLedger:
                 before = "survey" if i == 1 else f"round-{i - 1}"
                 if i < 1 or before not in self._roles:
                     raise LedgerRefused(f"{role} before {before}: rounds are recorded in order, from the survey")
-        self._roles[role] = {"seed": int(seed), "meta": dict(meta)}
+        self._roles[role] = {"seed": int(seed), "meta": freeze(meta)}
+        pen = RolePen(self, role, int(seed))
+        self._pens[role] = pen
+        return pen
+
+    def _close(self, role: str, pen: RolePen) -> None:
+        if self._pens.get(role) is not pen:
+            raise NotTheDrawer(f"role {role!r} is closed by the drawer that opened it")
+        self._closed.add(role)
+
+    def closed(self, role: str) -> bool:
+        return role in self._closed
 
     def record(self, space: Space, design: Mapping[str, Any], *, role: str, seed: int,
-               refusal: tuple[str, str] | None, round_index: int | None = None) -> Mapping[str, Any]:
+               refusal: tuple[str, str] | None, round_index: int | None = None,
+               pen: RolePen | None = None) -> Mapping[str, Any]:
+        """One cell of `role`, by its drawer (`pen`, the role's `RolePen`) while the role is open (n-2)."""
         if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
             raise LedgerRefused("a cell's seed is an explicit integer")
         if role not in self._roles:
             raise LedgerRefused(f"role {role!r} was not begun: a cell is recorded under a begun role")
+        if role in self._closed:
+            raise RoleClosed(f"role {role!r} is closed: its batch has returned, and a cell recorded after it would be "
+                             "a choice made after a look (n-2)")
+        if pen is None or self._pens.get(role) is not pen:
+            raise NotTheDrawer(f"a {role} cell is recorded only by the drawer that opened the role (its pen; n-2)")
         if int(seed) != self._roles[role]["seed"]:
             raise LedgerRefused(f"a {role} cell under seed {seed}, its role's seed is {self._roles[role]['seed']}")
         meta = self._roles[role]["meta"]
-        row = {"cell": len(self._rows), "id": design_id(design), "role": role, "seed": int(seed),
-               "round": round_index, "status": "refused" if refusal else "proposed",
-               "class": refusal[0] if refusal else "", "reason": refusal[1] if refusal else "",
-               "latencies": [str(x) for x in space.latencies(design)], "design": dict(design),
-               "rule": meta.get("rule", ""), "libs": dict(LIBS)}
+        row = FrozenMap({"cell": len(self._rows), "id": design_id(design), "role": role, "seed": int(seed),
+                         "round": round_index, "status": "refused" if refusal else "proposed",
+                         "class": refusal[0] if refusal else "", "reason": refusal[1] if refusal else "",
+                         "latencies": tuple(str(x) for x in space.latencies(design)), "design": freeze(dict(design)),
+                         "rule": meta.get("rule", ""), "libs": FrozenMap(LIBS)})
         self._rows.append(row)
-        return MappingProxyType(row)
+        return row
 
     def proposed_ids(self, roles: Callable[[str], bool]) -> frozenset[str]:
         """The ids of the cells proposed (not refused) under the roles `roles` accepts."""
@@ -629,9 +790,12 @@ class CellLedger:
                 "latency": dict(Counter(x for r in rows for x in r["latencies"]))}
 
     def variant_rows(self, prereg_id: str) -> list[dict[str, Any]]:
-        """The rows for `VariantCounter.record` (prereg id, params, seed, label): written only by a clean run."""
-        return [{"prereg_id": prereg_id, "params": dict(r["design"], _libs=r["libs"]), "seed": r["seed"],
-                 "label": f"{r['role']}:{r['status']}" + (f":{r['class']}" if r["class"] else "")}
+        """The rows for `VariantCounter.record` (prereg id, params, seed, label): written only by a clean run. Each
+        row's params carry the design, the library versions, the full declared protocol and its sha256 (rb2-a)."""
+        declared, sha = thaw(self.declared), self.protocol_sha256
+        return [{"prereg_id": prereg_id,
+                 "params": dict(thaw(r["design"]), _libs=thaw(r["libs"]), _protocol=declared, _protocol_sha256=sha),
+                 "seed": r["seed"], "label": f"{r['role']}:{r['status']}" + (f":{r['class']}" if r["class"] else "")}
                 for r in self._rows]
 
 
@@ -676,7 +840,7 @@ class Sampler:
         child_rng(seed)                                                   # refuses a seed that is not an integer
         self.space, self.seed, self.method = space, int(seed), method
 
-    def _stream(self, combo: int, fixed: Mapping[int, float], n: int, ledger: CellLedger, role: str,
+    def _stream(self, combo: int, fixed: Mapping[int, float], n: int, pen: RolePen,
                 max_proposals: int, round_index: int | None) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
         tried = 0
@@ -695,19 +859,20 @@ class Sampler:
                         u[j] = x
                     design = self.space.decode(u)
                     refusal = self.space.check(design)
-                    ledger.record(self.space, design, role=role, seed=self.seed, refusal=refusal,
-                                  round_index=round_index)
+                    pen.record(self.space, design, refusal=refusal, round_index=round_index)
                     tried += 1
                     if refusal is None:
                         out.append(design)
         return out
 
     def survey(self, n: int, *, ledger: CellLedger, protocol: "Protocol", reread_seeds: Sequence[int],
-               measures: Sequence[str] = (), role: str = "survey", max_proposals: int | None = None,
-               cross: Sequence[str] = (), round_index: int | None = None) -> list[dict[str, Any]]:
+               measures: Sequence[str] = (), declaration_sha256: str | None = None, role: str = "survey",
+               max_proposals: int | None = None, cross: Sequence[str] = (),
+               round_index: int | None = None) -> list[dict[str, Any]]:
         """`n` designs that pass every check (per combination of `cross`'s categoricals, crossed in full, when given),
         every cell proposed recorded in `ledger`, whose survey role declares the protocol, the plateau's re-read seeds
-        and the limit measures (`CellLedger.begin`)."""
+        and the limit measures, checked against the declaration's sha256 (`CellLedger.begin`). The survey role closes
+        when the batch returns (n-2): no cell enters it after."""
         if int(n) <= 0:
             raise SpaceRefused("a survey has at least one design")
         cap = int(max_proposals) if max_proposals is not None else 64 * int(n)
@@ -717,14 +882,18 @@ class Sampler:
             if d.kind != CAT or d.cells is not None or d.active_if is not None:
                 raise SpaceRefused(f"{name}: only a static, always-active categorical is enumerated")
             idx.append((self.space.names().index(name), d.values))
-        ledger.begin(role, self.seed, protocol=protocol, reread_seeds=reread_seeds, measures=measures)
-        if not cross:
-            return self._stream(0, {}, int(n), ledger, role, cap, round_index)
-        out: list[dict[str, Any]] = []
-        for c, combo in enumerate(itertools.product(*[vals for _, vals in idx])):
-            fixed = {j: (vals.index(v) + 0.5) / len(vals) for (j, vals), v in zip(idx, combo)}
-            out += self._stream(c + 1, fixed, int(n), ledger, role, cap, round_index)
-        return out
+        pen = ledger.begin(role, self.seed, protocol=protocol, reread_seeds=reread_seeds, measures=measures,
+                           declaration_sha256=declaration_sha256)
+        try:
+            if not cross:
+                return self._stream(0, {}, int(n), pen, cap, round_index)
+            out: list[dict[str, Any]] = []
+            for c, combo in enumerate(itertools.product(*[vals for _, vals in idx])):
+                fixed = {j: (vals.index(v) + 0.5) / len(vals) for (j, vals), v in zip(idx, combo)}
+                out += self._stream(c + 1, fixed, int(n), pen, cap, round_index)
+            return out
+        finally:
+            pen.close()
 
 
 # ------------------------------------------------------------------------------------------------ the lever space
@@ -1128,8 +1297,10 @@ def to_components(space: Space, design: Mapping[str, Any], day: date, *, firm: s
 
 __all__ = ["TASK", "REAL", "INT", "CAT", "OFF", "ON", "METHODS", "SEARCH_TAG", "REFUSAL_CLASSES", "TIER_ONE",
            "SLOT_LEVERS", "TICKET", "LIBS", "SpaceRefused", "LedgerRefused", "ReadingRefused", "HeldOutInput",
-           "OffProtocol", "Uncounted", "searched", "Dim", "Slot", "slot_dim", "Constraint",
-           "design_id", "Space", "CellLedger", "child_rng", "STREAM_SURVEY", "STREAM_POOL", "STREAM_LOCAL",
+           "OffProtocol", "Uncounted", "TooFewRereadSeeds", "DeclarationMismatch", "RoleClosed", "NotTheDrawer",
+           "FrozenMap", "freeze", "thaw", "MIN_REREAD_SEEDS", "searched", "Dim", "Slot", "slot_dim", "Constraint",
+           "design_id", "Space", "protocol_record", "protocol_sha256", "RolePen", "CellLedger", "child_rng",
+           "STREAM_SURVEY", "STREAM_POOL", "STREAM_LOCAL",
            "STREAM_FIT", "STREAM_PLATEAU", "UnitPoints", "Sampler", "session_spans", "search_days", "session_slots",
            "from_lever_space", "is_session", "session_after", "reads_through", "Protocol", "Reading", "admit_one",
            "admit", "to_components"]
