@@ -69,16 +69,19 @@ it, a row under a seed other than its role's, and a second plateau check of one 
 team's B-1 and m-2). `variant_rows` gives the rows for the variants ledger (`results/variants.jsonl`), which only a
 clean run writes.
 
-**Readings and the one door** (`Protocol`, `Reading`, `admit`; the red team's B-1, the lead's ruling). A `Protocol`
-is the declaration's reading protocol: the measure, the history blocks, the coin seeds, the outcome horizon in
-sessions, and the library versions. A `Reading` is one design's measure read on it, frozen (its design a read-only
-mapping, m-4) and carrying the last session any outcome read (`reads_through`, m-3). `admit(readings, ledger=,
-protocol=, roles=)` is the one door. It refuses:
+**Readings and the one door** (`Protocol`, `Reading`, `admit`; the red team's B-1 and RB-2, the lead's rulings). A
+`Protocol` is the declaration's reading protocol: the measure, the history blocks, the coin seeds, the outcome horizon
+in sessions, and the library versions. **The survey declares it to the ledger** (`Sampler.survey(..., protocol=,
+reread_seeds=, measures=)`), with the plateau's re-read seeds and the limit measures, once; **every door takes it from
+the ledger, never from a caller**. A `Reading` is one design's measure read on it, frozen (its design a read-only
+mapping, m-4); the last session any outcome read is derived from its blocks and horizon on Q-40's session calendar
+(`reads_through`, m-3 and rn-3). `admit(readings, ledger=, measure=, reread=, roles=)` is the one door. It refuses:
 - anything that is not exactly a `Reading` (a subclass or a prediction never is);
 - a tag other than ``search``; a held-out tag names the held-out years in its refusal;
 - a block or an outcome session past 2023-12-29 (CHARTER 3.6 (a), (d); E-208), the confirmation window, or a day before
   2020-01-02;
-- a reading off the protocol (another measure, blocks, seeds, horizon or library versions);
+- a reading off the ledger's protocol (another measure, blocks, seeds, horizon or library versions), on the
+  declared re-read seeds only where the plateau asks for them, under a measure the survey did not declare;
 - **a design that is not a counted ``proposed`` cell of the ledger in one of the allowed roles**.
 Every reading the surrogate, the proposer or the plateau check sees comes through this door, so a design read outside
 the count, or on a protocol picked after a look, never reaches a fit or a finalist. The held-out years are never read
@@ -91,6 +94,7 @@ from a design's offsets to `extended.components.Design(day=...)` per date (m-11)
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import itertools
 import json
@@ -99,7 +103,7 @@ import re
 import warnings
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -507,55 +511,115 @@ class Space:
 # ------------------------------------------------------------------------------------------------ the cell ledger
 
 
-@dataclass
 class CellLedger:
     """Every cell proposed -- by the survey, a round or a plateau check -- refused ones included (CHARTER 3.3 (f),
-    (g); the template's section 13). Designs only: a reading never enters it."""
+    (g); the template's section 13). Designs only: a reading never enters it. **The survey declares the protocol**
+    (the red team's RB-2, the lead's ruling): `begin("survey", seed, protocol=, reread_seeds=, measures=)` stores the
+    declared `Protocol`, the plateau's re-read seeds and the declared limit measures, once; every door takes them from
+    here (`protocol_for`), never from a caller. `rows`, `roles` and the stored protocol are read-only views."""
 
-    rows: list[dict[str, Any]] = field(default_factory=list)
-    roles: dict[str, dict[str, Any]] = field(default_factory=dict)
+    def __init__(self) -> None:
+        self._rows: list[dict[str, Any]] = []
+        self._roles: dict[str, dict[str, Any]] = {}
+        self._protocol: Protocol | None = None
+        self._reread_seeds: tuple[int, ...] = ()
+        self._measures: tuple[str, ...] = ()
 
-    def begin(self, role: str, seed: int, **meta: Any) -> None:
+    # -- read-only views (rn-4)
+    @property
+    def rows(self) -> tuple[Mapping[str, Any], ...]:
+        return tuple(MappingProxyType(r) for r in self._rows)
+
+    @property
+    def roles(self) -> Mapping[str, Mapping[str, Any]]:
+        return MappingProxyType({k: MappingProxyType({"seed": v["seed"], "meta": MappingProxyType(v["meta"])})
+                                 for k, v in self._roles.items()})
+
+    @property
+    def protocol(self) -> "Protocol":
+        if self._protocol is None:
+            raise LedgerRefused("no protocol is declared: the survey declares it (begin('survey', ..., protocol=))")
+        return self._protocol
+
+    @property
+    def reread(self) -> "Protocol":
+        """The plateau's re-read protocol: the declared protocol on the declared re-read seeds."""
+        return self.protocol.with_seeds(self._reread_seeds)
+
+    @property
+    def measures(self) -> tuple[str, ...]:
+        """The declared limit measures, read on the protocol's blocks, seeds and horizon."""
+        return self._measures
+
+    def protocol_for(self, measure: str | None = None, *, reread: bool = False) -> "Protocol":
+        """The declared protocol for `measure` (its own measure, or a declared limit's), on the re-read seeds when
+        `reread`; anything else is refused."""
+        base = self.reread if reread else self.protocol
+        if measure is None or measure == base.measure:
+            return base
+        if reread or measure not in self._measures:
+            raise OffProtocol(f"REFUSED: measure {measure!r} is not declared on this ledger's protocol (the survey "
+                              f"declared {base.measure!r} and limits {self._measures})")
+        return base.with_measure(measure)
+
+    def begin(self, role: str, seed: int, *, protocol: "Protocol | None" = None,
+              reread_seeds: Sequence[int] | None = None, measures: Sequence[str] = (), **meta: Any) -> None:
         """Open `role` under `seed`, once (the module docstring): a role begun before is refused, and a round needs the
-        one before it (the survey before round one)."""
+        one before it (the survey before round one). The survey, and only the survey, declares the protocol."""
         if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
             raise LedgerRefused("a role's seed is an explicit integer")
         if not role:
             raise LedgerRefused("a cell has a role")
-        if role in self.roles:
-            raise LedgerRefused(f"role {role!r} is already recorded (seed {self.roles[role]['seed']}): a second "
+        if role in self._roles:
+            raise LedgerRefused(f"role {role!r} is already recorded (seed {self._roles[role]['seed']}): a second "
                                 f"{role} under seed {seed} would let the reader choose between them")
-        m = _ROUND.fullmatch(role)
-        if m:
-            i = int(m.group(1))
-            before = "survey" if i == 1 else f"round-{i - 1}"
-            if i < 1 or before not in self.roles:
-                raise LedgerRefused(f"{role} before {before}: rounds are recorded in order, from the survey")
-        self.roles[role] = {"seed": int(seed), "meta": dict(meta)}
+        if role == "survey":
+            if type(protocol) is not Protocol:
+                raise LedgerRefused("the survey declares the protocol (a `Protocol`), and the re-read seeds")
+            rr = tuple(reread_seeds) if reread_seeds is not None else ()
+            if len(rr) < 2 or len(set(rr)) != len(rr) or not all(
+                    isinstance(x, (int, np.integer)) and not isinstance(x, bool) for x in rr):
+                raise LedgerRefused("the plateau's re-read seeds are at least two distinct integers, declared now")
+            if set(rr) & set(protocol.seeds):
+                raise LedgerRefused("the re-read seeds are fresh: disjoint from the protocol's")
+            ms = tuple(measures)
+            if len(set(ms)) != len(ms) or protocol.measure in ms or not all(isinstance(x, str) and x for x in ms):
+                raise LedgerRefused(f"the limit measures are distinct names other than {protocol.measure!r}")
+            self._protocol, self._reread_seeds, self._measures = protocol, tuple(int(x) for x in rr), ms
+        elif protocol is not None or reread_seeds is not None or measures:
+            raise LedgerRefused(f"only the survey declares a protocol; {role!r} reads the survey's")
+        else:
+            m = _ROUND.fullmatch(role)
+            if m:
+                i = int(m.group(1))
+                before = "survey" if i == 1 else f"round-{i - 1}"
+                if i < 1 or before not in self._roles:
+                    raise LedgerRefused(f"{role} before {before}: rounds are recorded in order, from the survey")
+        self._roles[role] = {"seed": int(seed), "meta": dict(meta)}
 
     def record(self, space: Space, design: Mapping[str, Any], *, role: str, seed: int,
-               refusal: tuple[str, str] | None, round_index: int | None = None) -> dict[str, Any]:
+               refusal: tuple[str, str] | None, round_index: int | None = None) -> Mapping[str, Any]:
         if not isinstance(seed, (int, np.integer)) or isinstance(seed, bool):
             raise LedgerRefused("a cell's seed is an explicit integer")
-        if role not in self.roles:
+        if role not in self._roles:
             raise LedgerRefused(f"role {role!r} was not begun: a cell is recorded under a begun role")
-        if int(seed) != self.roles[role]["seed"]:
-            raise LedgerRefused(f"a {role} cell under seed {seed}, its role's seed is {self.roles[role]['seed']}")
-        meta = self.roles[role]["meta"]
-        row = {"cell": len(self.rows), "id": design_id(design), "role": role, "seed": int(seed),
+        if int(seed) != self._roles[role]["seed"]:
+            raise LedgerRefused(f"a {role} cell under seed {seed}, its role's seed is {self._roles[role]['seed']}")
+        meta = self._roles[role]["meta"]
+        row = {"cell": len(self._rows), "id": design_id(design), "role": role, "seed": int(seed),
                "round": round_index, "status": "refused" if refusal else "proposed",
                "class": refusal[0] if refusal else "", "reason": refusal[1] if refusal else "",
                "latencies": [str(x) for x in space.latencies(design)], "design": dict(design),
                "rule": meta.get("rule", ""), "libs": dict(LIBS)}
-        self.rows.append(row)
-        return row
+        self._rows.append(row)
+        return MappingProxyType(row)
 
     def proposed_ids(self, roles: Callable[[str], bool]) -> frozenset[str]:
         """The ids of the cells proposed (not refused) under the roles `roles` accepts."""
-        return frozenset(r["id"] for r in self.rows if r["status"] == "proposed" and roles(r["role"]))
+        return frozenset(r["id"] for r in self._rows if r["status"] == "proposed" and roles(r["role"]))
 
     def counts(self) -> dict[str, Any]:
-        rows = self.rows
+        rows = self._rows
         return {"cells": len(rows),
                 "proposed": sum(r["status"] == "proposed" for r in rows),
                 "refused": sum(r["status"] == "refused" for r in rows),
@@ -567,7 +631,8 @@ class CellLedger:
     def variant_rows(self, prereg_id: str) -> list[dict[str, Any]]:
         """The rows for `VariantCounter.record` (prereg id, params, seed, label): written only by a clean run."""
         return [{"prereg_id": prereg_id, "params": dict(r["design"], _libs=r["libs"]), "seed": r["seed"],
-                 "label": f"{r['role']}:{r['status']}" + (f":{r['class']}" if r["class"] else "")} for r in self.rows]
+                 "label": f"{r['role']}:{r['status']}" + (f":{r['class']}" if r["class"] else "")}
+                for r in self._rows]
 
 
 # ------------------------------------------------------------------------------------------------ the sampler
@@ -637,10 +702,12 @@ class Sampler:
                         out.append(design)
         return out
 
-    def survey(self, n: int, *, ledger: CellLedger, role: str = "survey", max_proposals: int | None = None,
+    def survey(self, n: int, *, ledger: CellLedger, protocol: "Protocol", reread_seeds: Sequence[int],
+               measures: Sequence[str] = (), role: str = "survey", max_proposals: int | None = None,
                cross: Sequence[str] = (), round_index: int | None = None) -> list[dict[str, Any]]:
         """`n` designs that pass every check (per combination of `cross`'s categoricals, crossed in full, when given),
-        every cell proposed recorded in `ledger`."""
+        every cell proposed recorded in `ledger`, whose survey role declares the protocol, the plateau's re-read seeds
+        and the limit measures (`CellLedger.begin`)."""
         if int(n) <= 0:
             raise SpaceRefused("a survey has at least one design")
         cap = int(max_proposals) if max_proposals is not None else 64 * int(n)
@@ -650,7 +717,7 @@ class Sampler:
             if d.kind != CAT or d.cells is not None or d.active_if is not None:
                 raise SpaceRefused(f"{name}: only a static, always-active categorical is enumerated")
             idx.append((self.space.names().index(name), d.values))
-        ledger.begin(role, self.seed)
+        ledger.begin(role, self.seed, protocol=protocol, reread_seeds=reread_seeds, measures=measures)
         if not cross:
             return self._stream(0, {}, int(n), ledger, role, cap, round_index)
         out: list[dict[str, Any]] = []
@@ -827,6 +894,10 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
                             slot=sn))
             dims.append(Dim(slot_dim(sn, "last"), INT, lo=first, hi=last, step=step, after=slot_dim(sn, "first"),
                             active_if=act, lever="T3", slot=sn))
+            if "S1" in loaded:                                 # Q-171: k x the session's trailing range
+                r1 = LS.stop_width("ny_am" if name == "ny" else name)
+                dims.append(Dim(slot_dim(sn, "S1"), REAL, lo=float(r1.lo), hi=float(r1.hi), active_if=act,
+                                lever="S1", slot=sn))
             if "S2" in loaded:
                 r = loaded["S2"]
                 dims.append(Dim(slot_dim(sn, "S2"), REAL, lo=float(r.lo), hi=float(r.hi), active_if=act,
@@ -848,18 +919,6 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
 # ------------------------------------------------------------------------------------------------ readings
 
 
-def _search_day(x: Any, what: str) -> date:
-    """A day inside the search years, or `HeldOutInput` (the confirmation window and days before 2020-01-02 too)."""
-    try:
-        d0, _ = R.span(x, x, what)
-    except (R.ReadRefused, ValueError, TypeError) as e:
-        raise HeldOutInput(f"REFUSED: {what} {x!r}: {e}") from e
-    if d0 > R.CHOICE_END:
-        raise HeldOutInput(f"REFUSED: {what} {d0} is after the search years end on {R.CHOICE_END} (E-208; CHARTER "
-                           "3.6 (a), (d)): a search reads the search years only")
-    return d0
-
-
 def _check_blocks(blocks: Any) -> tuple[tuple[str, str], ...]:
     if not blocks:
         raise HeldOutInput("REFUSED: a reading names the search-year blocks it was read on")
@@ -876,6 +935,47 @@ def _check_blocks(blocks: Any) -> tuple[tuple[str, str], ...]:
                                "reads the search years only")
         out.append((str(b[0]), str(b[1])))
     return tuple(out)
+
+
+@functools.lru_cache(maxsize=1)
+def _closures() -> frozenset[date]:
+    """Q-40's full closures (`config/calendar_early_closes.csv`: a holiday with no close): weekdays without a session.
+    A verified calendar file, not a bar."""
+    from extended import calendar_early_closes as CE
+
+    return frozenset(date.fromisoformat(r["date"]) for r in CE.read_calendar()
+                     if r["kind"] == "holiday" and not r["close_ct"])
+
+
+def is_session(d: date) -> bool:
+    return d.weekday() < 5 and d not in _closures()
+
+
+def session_after(day: date, horizon: int) -> date:
+    """The session `horizon` sessions after `day` (0: the last session at or before `day`), counting weekdays that are
+    not a full closure in Q-40's calendar (the red team's rn-3)."""
+    d = day
+    while not is_session(d):
+        d -= timedelta(days=1)
+    for _ in range(int(horizon)):
+        d += timedelta(days=1)
+        while not is_session(d):
+            d += timedelta(days=1)
+    return d
+
+
+def reads_through(blocks: Sequence[tuple[str, str]], horizon: int) -> date:
+    """The last session any outcome of a reading on `blocks` at `horizon` reads: the last block's end advanced by
+    `horizon` sessions (derived, never reported by the caller; CHARTER 3.6 (d))."""
+    return session_after(max(date.fromisoformat(str(b[1])[:10]) for b in blocks), horizon)
+
+
+def _check_through(blocks: Sequence[tuple[str, str]], horizon: int) -> date:
+    t = reads_through(blocks, horizon)
+    if t > R.CHOICE_END:
+        raise HeldOutInput(f"REFUSED: outcomes read through {t}, after the search years end on {R.CHOICE_END} "
+                           f"(horizon {horizon} sessions past the last block; CHARTER 3.6 (d), E-208)")
+    return t
 
 
 def _int_seeds(seeds: Any) -> tuple[int, ...]:
@@ -905,6 +1005,7 @@ class Protocol:
         object.__setattr__(self, "seeds", seeds)
         if type(self.horizon) is not int or self.horizon < 0:
             raise OffProtocol(f"a protocol's horizon is a whole number of sessions, got {self.horizon!r}")
+        _check_through(self.blocks, self.horizon)
         object.__setattr__(self, "libs", tuple(tuple(x) for x in self.libs))
         if self.libs != LIBS:
             raise OffProtocol(f"the protocol pins {self.libs}; this run has {LIBS} -- a seed reproduces only under the "
@@ -919,8 +1020,9 @@ class Protocol:
 
 @dataclass(frozen=True)
 class Reading:
-    """A design's measure read on a protocol: its blocks ((start, end) ISO days), coin seeds, outcome horizon in
-    sessions, and the last session any outcome read (`reads_through`, ISO). `tag` 'search' is the only one admitted;
+    """A design's measure read on a protocol: its blocks ((start, end) ISO days), coin seeds and outcome horizon in
+    sessions; the last session any outcome read is derived from them (`reads_through`, never the caller's: rn-3).
+    `tag` 'search' is the only one admitted;
     `se` the value's standard error over its seeds, `per_seed` its value under each seed (in the protocol's order),
     when known. Frozen: the design becomes a read-only mapping of a copy, the sequences tuples (m-4)."""
 
@@ -931,7 +1033,6 @@ class Reading:
     tag: str
     measure: str
     horizon: int
-    reads_through: str
     se: float | None = None
     per_seed: tuple[float, ...] | None = None
     libs: tuple[tuple[str, str], ...] = LIBS
@@ -948,15 +1049,20 @@ class Reading:
     def id(self) -> str:
         return design_id(self.design)
 
+    @property
+    def reads_through(self) -> date:
+        return reads_through(self.blocks, self.horizon)
 
-def admit_one(r: Any, *, ledger: CellLedger, protocol: Protocol,
+
+def admit_one(r: Any, *, ledger: CellLedger, measure: str | None = None, reread: bool = False,
               roles: Callable[[str], bool] = searched) -> Reading:
-    """The one door (the module docstring): the reading, or a `ReadingRefused` naming why."""
+    """The one door (the module docstring): the reading, or a `ReadingRefused` naming why. **The protocol is the
+    ledger's** (`CellLedger.protocol_for(measure, reread=)`), never the caller's (RB-2)."""
     if type(r) is not Reading:
         raise HeldOutInput(f"REFUSED: {type(r).__name__} is not exactly a search-year Reading (a prediction or a "
                            "subclass never is one)")
-    if type(ledger) is not CellLedger or type(protocol) is not Protocol:
-        raise ReadingRefused("the door takes the cell ledger and the declared protocol")
+    if type(ledger) is not CellLedger:
+        raise ReadingRefused("the door takes the cell ledger, which holds the declared protocol")
     tag = str(r.tag)
     low = tag.lower().replace("-", "").replace("_", "").replace(" ", "")
     if any(w in low for w in ("heldout", "judged", "holdout", "confirm")):
@@ -966,11 +1072,10 @@ def admit_one(r: Any, *, ledger: CellLedger, protocol: Protocol,
         raise HeldOutInput(f"REFUSED: a reading tagged {tag!r}; only {SEARCH_TAG!r} is admitted")
     blocks = _check_blocks(r.blocks)
     seeds = _int_seeds(r.seeds)
-    last_block = max(_search_day(b[1], "a block's end") for b in blocks)
-    through = _search_day(r.reads_through, "an outcome's last session (reads_through)")
-    if through < last_block:
-        raise HeldOutInput(f"REFUSED: reads_through {through} is before the last block's end {last_block}: it names "
-                           "the last session any outcome read")
+    if type(r.horizon) is not int or r.horizon < 0:
+        raise OffProtocol(f"REFUSED: a reading's horizon is a whole number of sessions, got {r.horizon!r}")
+    _check_through(blocks, r.horizon)
+    protocol = ledger.protocol_for(measure, reread=reread)
     if not math.isfinite(float(r.value)):
         raise HeldOutInput(f"REFUSED: a reading's value is finite, got {r.value!r}")
     if r.se is not None and not (math.isfinite(float(r.se)) and float(r.se) >= 0):
@@ -989,10 +1094,10 @@ def admit_one(r: Any, *, ledger: CellLedger, protocol: Protocol,
     return r
 
 
-def admit(readings: Iterable[Any], *, ledger: CellLedger, protocol: Protocol,
+def admit(readings: Iterable[Any], *, ledger: CellLedger, measure: str | None = None, reread: bool = False,
           roles: Callable[[str], bool] = searched) -> list[Reading]:
     """Every reading through the one door, or the first refusal (nothing admitted)."""
-    return [admit_one(r, ledger=ledger, protocol=protocol, roles=roles) for r in readings]
+    return [admit_one(r, ledger=ledger, measure=measure, reread=reread, roles=roles) for r in readings]
 
 
 # ------------------------------------------------------------------------------------------------ to the scheduler
@@ -1026,4 +1131,5 @@ __all__ = ["TASK", "REAL", "INT", "CAT", "OFF", "ON", "METHODS", "SEARCH_TAG", "
            "OffProtocol", "Uncounted", "searched", "Dim", "Slot", "slot_dim", "Constraint",
            "design_id", "Space", "CellLedger", "child_rng", "STREAM_SURVEY", "STREAM_POOL", "STREAM_LOCAL",
            "STREAM_FIT", "STREAM_PLATEAU", "UnitPoints", "Sampler", "session_spans", "search_days", "session_slots",
-           "from_lever_space", "Protocol", "Reading", "admit_one", "admit", "to_components"]
+           "from_lever_space", "is_session", "session_after", "reads_through", "Protocol", "Reading", "admit_one",
+           "admit", "to_components"]

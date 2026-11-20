@@ -5,17 +5,17 @@ only ever a design that was read (`extended.plateau` refuses anything but a `Rea
 
     from extended import search_space as SS, surrogate as SG
     sg = SG.Surrogate(space, seed=S2, restarts=4)
-    record = sg.fit(readings, ledger=ledger, protocol=protocol)   # the one door (SS.admit): counted cells only
+    record = sg.fit(readings, ledger=ledger)        # the one door (SS.admit): the ledger's protocol, counted cells
     pred = sg.predict(designs)                      # pred.mean, pred.sd (the latent measure's), in its own units
 
 **The one door.** `Surrogate.fit` is the only way data reaches the model. It passes every reading through
-`search_space.admit` with the cell ledger and the declared `Protocol` (the red team's B-1): tagged ``search``, every
-block and every outcome session inside the search years 2020-01-02 to 2023-12-29 (E-208, CHARTER 3.6 (d)), exactly
-the protocol's measure, blocks, seeds, horizon and library versions, and **a design that is a counted survey or round
-cell of the ledger**. It refuses a protocol of another measure than the surrogate's and a design the space refuses. A
-refused fit leaves the surrogate as it was. The model's arrays are private (`_GP`); `believe` adds the surrogate's
-**own** predicted means at designs it is asked about (the kriging-believer batch, `extended.proposer`), never an
-outside value.
+`search_space.admit` with the cell ledger, whose survey declared the protocol (the red team's B-1 and RB-2): tagged
+``search``, every block and every outcome session inside the search years 2020-01-02 to 2023-12-29 (E-208, CHARTER 3.6
+(d)), exactly the ledger's protocol under the surrogate's measure (the protocol's own or a declared limit's), and **a
+design that is a counted survey or round cell of the ledger**. No caller hands it a protocol. It refuses a design the
+space refuses. A refused fit leaves the surrogate as it was. The model's arrays are private (`_GP`); `believe` adds the
+surrogate's **own** predicted means at designs it is asked about (the kriging-believer batch, `extended.proposer`),
+never an outside value.
 
 **The model.** Each design is encoded by the space: a real or integer lever scaled to [0, 1] by its bounds (a window's
 marks by its slot's), a categorical as its cell's code (an inactive lever holds a code of its own, and 0 on the
@@ -297,11 +297,10 @@ class Surrogate:
         self._gp: _GP | None = None
         self.record: FitRecord | None = None
 
-    def fit(self, readings: Sequence[Any], *, ledger: SS.CellLedger, protocol: SS.Protocol) -> FitRecord:
-        """The one door (the module docstring): admit (ledger and protocol), check, encode, fit."""
-        if type(protocol) is not SS.Protocol or protocol.measure != self.measure:
-            raise SurrogateRefused(f"the surrogate of {self.measure!r} fits readings on a protocol of that measure")
-        rs = SS.admit(readings, ledger=ledger, protocol=protocol, roles=SS.searched)
+    def fit(self, readings: Sequence[Any], *, ledger: SS.CellLedger) -> FitRecord:
+        """The one door (the module docstring): admit (the ledger's protocol), check, encode, fit."""
+        rs = SS.admit(readings, ledger=ledger, measure=self.measure, roles=SS.searched)
+        protocol = ledger.protocol_for(self.measure)
         if len(rs) < 2:
             raise SurrogateRefused("a fit needs at least two readings")
         for r in rs:

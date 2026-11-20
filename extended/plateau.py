@@ -4,38 +4,47 @@ declared seed set beside **a re-read of the finalist on those same seeds**, and 
 a declared number of its own standard errors; a finalist that fails is refused, with the reason.
 
     from extended import plateau as PL
-    rule = PL.PlateauRule(steps=..., radius=1, tolerance_se=PL.critical_z(0.05, 10), margin=0.0, side="worse",
-                          min_share=1.0, min_neighbours=4, min_per_lever=1)
-    verdict = PL.check(finalist, space, rule, evaluate, ledger=ledger, protocol=protocol, reread=reread,
-                       ledger_seed=S3)
+    n = len(ledger.reread.seeds)                 # the re-read seeds the survey declared
+    rule = PL.PlateauRule(steps=..., radius=1, tolerance_se=PL.critical_value(0.05, 10, n), margin=0.0,
+                          side="worse", min_share=1.0, min_neighbours=4, min_per_lever=1)
+    verdict = PL.check(finalist, space, rule, evaluate, ledger=ledger, ledger_seed=S3)
     verdict.accepted, verdict.reason
 
-**The finalist** is a `search_space.Reading` that passes the one door on the declared protocol and is a counted
-survey or round cell of the ledger (`search_space.admit`, the red team's B-1). A surrogate's prediction is never a
-finalist. The composite is minimised. **The finalist order rule** (which counted cells are finalists, in what order) is
-the search declaration's (Wave 5, the red team's m-9); this check takes one finalist.
+**The finalist** is a `search_space.Reading` that passes the one door on **the ledger's declared protocol** and is a
+counted survey or round cell of the ledger (`search_space.admit`, the red team's B-1 and RB-2). No caller hands the
+check a protocol: the selection protocol and the re-read seeds are the ones the survey declared to the ledger. A
+surrogate's prediction is never a finalist. The composite is minimised. **The finalist order rule** (which counted cells
+are finalists, in what order) is the search declaration's (Wave 5, the red team's m-9); this check takes one finalist.
 
 **The comparison (the red team's B-2, the lead's ruling).** The finalist's own selection reading is the luckiest of
 many, so a neighbour compared with it is worse on average even on an exactly flat surface (the winner's curse). So:
-- the finalist is **re-read on a fresh declared seed set** (`reread`: the protocol with other seeds, disjoint from the
-  selection seeds; its seeds the declaration's, under its own role seed), and never compared through its selection
-  reading;
-- every neighbour is read on the same `reread` protocol, so each comparison is paired over the same seeds;
+- the finalist is **re-read on the fresh seed set the survey declared** (`CellLedger.reread`: the protocol on other
+  seeds, disjoint from the selection seeds), and never compared through its selection reading;
+- every neighbour is read on the same re-read protocol, so each comparison is paired over the same seeds;
 - d = neighbour - re-read, its standard error se from the per-seed paired differences (sd / sqrt(seeds)), and
   z = (d - margin) / se (`side="worse"`: only a worse neighbour counts against the finalist) or (|d| - margin) / se
   (`"two_sided"`). A neighbour **holds** when z <= `tolerance_se`.
 The tolerance is in standard-error units of that comparison. **The margin** is the composite's material difference
 in its own units (declared; zero allowed): stepping every lever, a categorical's cells included, would otherwise refuse
 any finalist whose neighbours differ at all once the re-read has seeds enough to see it. A natural margin is the size
-that matters (O-3, the lead's in Wave 4.2). `critical_z(size, k)` gives the tolerance at which a true
-plateau with k neighbours (each difference at most the margin) is accepted with probability at least 1 - size under
-`"worse"` and `min_share=1`, exactly 1 - size when every difference equals the margin: the k differences
-share the one re-read, so they are equicorrelated at one half (a seed effect common to the designs cancels in each
-pair). **The re-read's seed count is part of the rule: it decides the power.** Take a spike twice the selection
-readings' sd deep, k = 10 and size 0.05. With as many re-read seeds as the selection used, the power is about one
-half; with four times as many it is above nine in ten (`tests/test_plateau.py`'s size-and-power test declares its own
-setup). A design-specific effect that does not change with the coin seeds (a fixed history's luck) is not removed by a
-re-read: that is the history null's to bound (CHARTER 3.7).
+that matters (O-3, the lead's in Wave 4.2).
+
+**The critical value** (the red team's rm-3, the lead's ruling). `critical_value(size, k, n)` is the tolerance at which
+a true plateau with k neighbours (each difference at most the margin) is accepted with probability at least 1 - size
+under `"worse"` and `min_share=1` -- exactly 1 - size when every difference equals the margin -- for **the statistic as
+computed here**: each z a t-statistic on n - 1 degrees of freedom (n the re-read seeds), its se estimated from its own
+paired differences, all k sharing the one re-read (so equicorrelated at one half; a seed effect common to the designs
+cancels in each pair). Conditional on the re-read's per-seed vector the k statistics are independent; each is (Z +
+delta) / sqrt(X / (n - 1)) with delta ~ N(0, 1) from the re-read's mean and X noncentral chi-square on n - 1 degrees of
+freedom whose noncentrality is chi-square on n - 1, so P(all hold) = E[G^k] is a quadrature, exact under exchangeable
+Gaussian seed noise (`p_all_hold(c, k, n)`). The textbook multivariate t, with one shared denominator, under-covers here
+(it does not see k separate se's), and a normal value much more so at small n. `critical_z(size, k)` is the normal limit
+(n infinite), kept for reference only. The verdict records the size its tolerance implies at the neighbours actually
+read (`size_at`). **The re-read's seed count is part of the rule: it decides the power.** Take a spike twice the
+selection readings' sd deep, k = 10 and size 0.05. With as many re-read seeds as the selection used, the power is about
+one half; with four times as many it is above nine in ten (`tests/test_plateau.py`'s size-and-power test declares its
+own setup). A design-specific effect that does not change with the coin seeds (a fixed history's luck) is not removed by
+a re-read: that is the history null's to bound (CHARTER 3.7).
 
 **The neighbourhood** (`neighbours`), every step a declared number of the lever's own units (`PlateauRule.steps`):
 - **every lever active in the finalist is stepped** (the red team's m-1), and a rule that leaves one out is refused. A
@@ -61,6 +70,7 @@ sha256, the re-read seeds, and every neighbour's d, se and z.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import itertools
 import json
@@ -70,7 +80,7 @@ from typing import Any, Callable, Mapping
 
 import numpy as np
 from scipy.optimize import brentq
-from scipy.stats import norm
+from scipy.stats import chi2, ncx2, norm
 
 from extended import search_space as SS
 
@@ -82,22 +92,58 @@ FORM = "reread-paired-se"
 #: the correlation between two neighbours' differences from one shared re-read, equal variances (exactly one half)
 RHO = 0.5
 _GH = np.polynomial.hermite_e.hermegauss(96)
+#: probability midpoints a level of the exact law's quadrature (checked against a simulation of the statistic)
+_QM = 128
 
 
 class PlateauRefused(ValueError):
     """A rule, a finalist or a neighbour's reading this module cannot stand behind (not a verdict: an error)."""
 
 
-def p_all_hold(c: float, k: int, shift: float = 0.0) -> float:
-    """P(every one of k equicorrelated (RHO) standard normals, shifted by `shift`, is at most c)."""
-    z, w = _GH
-    w = w / w.sum()
-    return float(np.sum(w * norm.cdf((c - shift - math.sqrt(RHO) * z) / math.sqrt(1 - RHO)) ** int(k)))
+@functools.lru_cache(maxsize=32)
+def _t_grid(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """The quadrature of the exact law (the module docstring): Gauss-Hermite nodes for delta, and probability midpoints
+    of the noncentrality (chi-square, n - 1) and of X given it (noncentral chi-square, n - 1), as sqrt(X / (n - 1))."""
+    nu = int(n) - 1
+    d, w = np.polynomial.hermite_e.hermegauss(64)
+    q = (np.arange(_QM) + 0.5) / _QM
+    lam = chi2.ppf(q, nu)
+    x = ncx2.ppf(q[None, :], nu, lam[:, None])
+    return d, w / w.sum(), np.sqrt(x / nu)
+
+
+def p_all_hold(c: float, k: int, n: int | None = None, shift: float = 0.0) -> float:
+    """P(every one of k neighbours holds at tolerance c) on a true plateau at the margin: with `n` re-read seeds, the
+    exact law of the paired t-statistics (the module docstring); with `n` None, the normal limit (k equicorrelated
+    standard normals, shifted by `shift`)."""
+    if n is None:
+        z, w = _GH
+        w = w / w.sum()
+        return float(np.sum(w * norm.cdf((c - shift - math.sqrt(RHO) * z) / math.sqrt(1 - RHO)) ** int(k)))
+    if shift:
+        raise PlateauRefused("the exact law is the plateau's (shift 0); a shifted rate is the normal limit's")
+    if int(n) < 2:
+        raise PlateauRefused("a paired se needs at least two re-read seeds")
+    return _p_exact(float(c), int(k), int(n))
+
+
+@functools.lru_cache(maxsize=4096)
+def _p_exact(c: float, k: int, n: int) -> float:
+    d, w, sx = _t_grid(n)
+    g = norm.cdf(c * sx[None, :, :] - d[:, None, None]).mean(axis=2)
+    return float(np.sum(w * (g ** k).mean(axis=1)))
+
+
+def critical_value(size: float, k: int, n: int) -> float:
+    """The tolerance in standard errors at which a true plateau with k neighbours, compared on n re-read seeds, is
+    accepted with probability 1 - size (side 'worse', min_share 1; the module docstring's exact law)."""
+    if not 0.0 < size < 1.0 or int(k) < 1:
+        raise PlateauRefused("a size in (0, 1) and at least one neighbour")
+    return float(brentq(lambda c: p_all_hold(c, k, n) - (1.0 - size), -10.0, 60.0))
 
 
 def critical_z(size: float, k: int) -> float:
-    """The tolerance in standard errors at which a true plateau with k neighbours is accepted with probability
-    1 - size (side 'worse', min_share 1, the module docstring)."""
+    """The normal limit of `critical_value` (n infinite): for reference, never a rule's tolerance at a finite n."""
     if not 0.0 < size < 1.0 or int(k) < 1:
         raise PlateauRefused("a size in (0, 1) and at least one neighbour")
     return float(brentq(lambda c: p_all_hold(c, k) - (1.0 - size), -10.0, 20.0))
@@ -170,6 +216,7 @@ class PlateauVerdict:
     form: str
     rule: str
     reread_seeds: tuple[int, ...]
+    size_at: float
     evaluated: int
     held: int
     share: float
@@ -298,24 +345,19 @@ def paired(got: SS.Reading, base: SS.Reading) -> tuple[float, float]:
 
 
 def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[..., Any], *,
-          ledger: SS.CellLedger, protocol: SS.Protocol, reread: SS.Protocol, ledger_seed: int,
-          seed: int | None = None) -> PlateauVerdict:
-    """The plateau check (the module docstring). `evaluate(design, protocol=...)` is the caller's runner; `reread` the
-    declared fresh seed set's protocol; `ledger_seed` the plateau role's seed; `seed` the box stream's."""
-    f = SS.admit_one(finalist, ledger=ledger, protocol=protocol, roles=SS.searched)
-    if type(reread) is not SS.Protocol or reread.with_seeds(protocol.seeds) != protocol:
-        raise PlateauRefused("the re-read is the declared protocol with other seeds: the same measure, blocks, "
-                             "horizon and versions")
-    if set(reread.seeds) & set(protocol.seeds):
-        raise PlateauRefused("the re-read's seeds are fresh: disjoint from the selection reading's")
+          ledger: SS.CellLedger, ledger_seed: int, seed: int | None = None) -> PlateauVerdict:
+    """The plateau check (the module docstring). `evaluate(design, protocol=...)` is the caller's runner, handed the
+    ledger's re-read protocol; `ledger_seed` the plateau role's seed; `seed` the box stream's. The selection protocol
+    and the re-read seeds are the ledger's (declared by the survey), never the caller's."""
+    f = SS.admit_one(finalist, ledger=ledger, roles=SS.searched)
+    reread = ledger.reread
     why = space.check(f.design)
     if why is not None:
         raise PlateauRefused(f"the finalist is a design the space refuses ({why[0]}: {why[1]})")
     rule.validate(space, f.design)
     role = f"plateau:{f.id}"
     ledger.begin(role, int(ledger_seed), rule=rule.sha256(), reread=list(reread.seeds))
-    base = SS.admit_one(evaluate(dict(f.design), protocol=reread), ledger=ledger, protocol=reread,
-                        roles=SS.searched)
+    base = SS.admit_one(evaluate(dict(f.design), protocol=reread), ledger=ledger, reread=True, roles=SS.searched)
     if not echoes(base, f.design, reread):
         raise PlateauRefused("the finalist's re-read was not read as asked: its design on the re-read protocol")
     nbs, outside, unsteppable = neighbours(space, f.design, rule, seed=seed)
@@ -327,8 +369,7 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
         if r is not None:
             refused.append({"moved": moved, "levers": list(levers), "class": r[0], "reason": r[1]})
             continue
-        got = SS.admit_one(evaluate(nb, protocol=reread), ledger=ledger, protocol=reread,
-                           roles=lambda x: x == role)
+        got = SS.admit_one(evaluate(nb, protocol=reread), ledger=ledger, reread=True, roles=lambda x: x == role)
         if not echoes(got, nb, reread):
             raise PlateauRefused(f"the neighbour ({moved}) was not read as asked: its design on the re-read protocol")
         d, se = paired(got, base)
@@ -340,8 +381,11 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
     n = len(rows)
     held = sum(r["holds"] for r in rows)
     share = held / n if n else 0.0
+    size_at = (1.0 - p_all_hold(rule.tolerance_se, n, len(reread.seeds))) if n and rule.side == "worse" \
+        else float("nan")
     out = dict(finalist=f.id, selection_value=float(f.value), reread_value=float(base.value), form=FORM,
-               rule=rule.sha256(), reread_seeds=tuple(reread.seeds), evaluated=n, held=held, share=share,
+               rule=rule.sha256(), reread_seeds=tuple(reread.seeds), size_at=size_at, evaluated=n, held=held,
+               share=share,
                neighbours=rows, refused=refused, outside=outside, per_lever=per_lever, unsteppable=unsteppable)
     thin = {k: v for k, v in per_lever.items() if v < int(rule.min_per_lever)}
     if n < int(rule.min_neighbours) or thin:
@@ -360,5 +404,6 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
     return PlateauVerdict(True, reason, **out)
 
 
-__all__ = ["TASK", "SIDES", "NEIGHBOURHOODS", "CELLS", "FORM", "RHO", "PlateauRefused", "p_all_hold", "critical_z",
+__all__ = ["TASK", "SIDES", "NEIGHBOURHOODS", "CELLS", "FORM", "RHO", "PlateauRefused", "p_all_hold",
+           "critical_value", "critical_z",
            "PlateauRule", "PlateauVerdict", "neighbours", "holds", "zscore", "echoes", "paired", "check"]

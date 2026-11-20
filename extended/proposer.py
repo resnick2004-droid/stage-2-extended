@@ -4,7 +4,7 @@ counted and the round's seed recorded. It proposes; it never reads, and it never
 
     from extended import proposer as P
     spec = P.RoundSpec(batch=8, pool=1024, acquisition="ei")
-    rnd = P.propose(space, readings, spec=spec, round_index=1, seed=S2, ledger=ledger, protocol=protocol)
+    rnd = P.propose(space, readings, spec=spec, round_index=1, seed=S2, ledger=ledger)
     rnd.designs                                    # exactly `spec.batch` designs, each recorded as `round-1`
 
 **One round** (`propose`):
@@ -32,8 +32,9 @@ counted and the round's seed recorded. It proposes; it never reads, and it never
 5. **Counted**: every proposal enters the cell ledger as ``round-<i>`` with the round seed.
 The number of rounds is the declaration's, never extended after a look; nothing here decides to stop or continue.
 
-**One protocol** (the red team's m-10): every reading -- the composite's and each limit's -- passes the one door on the
-declared protocol (`search_space.admit`), a limit's on the same blocks, seeds and horizon under its own measure.
+**One protocol** (the red team's m-10 and RB-2): every reading -- the composite's and each limit's -- passes the one
+door on the ledger's declared protocol (`search_space.admit`), a limit's on the same blocks, seeds and horizon under
+its own measure, which the survey must have declared; no caller hands a round a protocol.
 **Single objective under limits** is this engine's reading of CHARTER 3.3 (d)'s "constrained, multi-objective"
 optimisation: the composite is the objective and the limits are constraints by probability of feasibility. The
 multi-objective frontier and the finalist order rule are the search declaration's (Wave 5, the lead's ruling); `limits`
@@ -174,7 +175,7 @@ def _candidates(space: SS.Space, sg: SG.Surrogate, read: Sequence[Mapping[str, A
 
 
 def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_index: int, seed: int,
-            ledger: SS.CellLedger, protocol: SS.Protocol, limits: Sequence[Limit] = (),
+            ledger: SS.CellLedger, limits: Sequence[Limit] = (),
             limit_readings: Mapping[str, Sequence[Any]] | None = None) -> Round:
     """One round (the module docstring)."""
     SS.child_rng(seed)
@@ -183,19 +184,21 @@ def propose(space: SS.Space, readings: Sequence[Any], *, spec: RoundSpec, round_
     for lim in limits:
         if not (limit_readings or {}).get(lim.measure):
             raise ProposerRefused(f"a limit on {lim.measure!r} needs that measure's readings")
+    for lim in limits:
+        ledger.protocol_for(lim.measure)                      # a limit the survey did not declare is refused
     ledger.begin(f"round-{round_index}", int(seed))
-    sg = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=protocol.measure,
+    sg = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=ledger.protocol.measure,
                       key=(int(round_index), 0))
-    fit = sg.fit(readings, ledger=ledger, protocol=protocol)
+    fit = sg.fit(readings, ledger=ledger)
     fits: list[tuple[Limit, SG.Surrogate]] = []
     limit_fits: dict[str, SG.FitRecord] = {}
     for li, lim in enumerate(limits):
         rs = (limit_readings or {})[lim.measure]
         ls = SG.Surrogate(space, seed=seed, restarts=spec.restarts, measure=lim.measure,
                           key=(int(round_index), li + 1))
-        limit_fits[lim.measure] = ls.fit(rs, ledger=ledger, protocol=protocol.with_measure(lim.measure))
+        limit_fits[lim.measure] = ls.fit(rs, ledger=ledger)
         fits.append((lim, ls))
-    read = [r.design for r in SS.admit(readings, ledger=ledger, protocol=protocol)]
+    read = [r.design for r in SS.admit(readings, ledger=ledger)]
     cands, stats = _candidates(space, sg, read, spec, seed, int(round_index))
     if len(cands) < spec.batch:
         raise ProposerRefused(f"{len(cands)} valid candidates for a batch of {spec.batch}: the round is refused, "

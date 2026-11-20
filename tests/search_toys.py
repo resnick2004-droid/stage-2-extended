@@ -8,8 +8,9 @@
 * `seed_noise(design, seed)`: a standard normal fixed by the design's id and one coin seed: what changes when a design
   is re-read on other seeds.
 * `PROTOCOL`: the tests' declared protocol (the composite on two search-year blocks, three seeds, horizon 0);
-  `REREAD`: the same with fresh seeds; `reading(...)`: a reading on it, any field overridden; `evaluator(fn, sd)`: the
-  caller's runner, `fn(design)` plus `sd` times the seed noise under each of the protocol's seeds.
+  `REREAD`: the same with fresh seeds; `SV`: what a survey declares to its ledger; `reading(...)`: a reading on it,
+  any field overridden; `evaluator(fn, sd)`: the caller's runner, `fn(design)` plus `sd` times the seed noise under
+  each of the protocol's seeds.
 * `slot_space()`: two sessions of component slots (windows on a five-minute grid), a dependent latency (a timed source
   `a` with cells 5, 3, 2 and a latency-free `b` with one cell `None`), and a routing lever one of whose cells is a
   tier-1 practice.
@@ -33,6 +34,8 @@ SEEDS = (101, 102, 103)
 REREAD_SEEDS = tuple(range(201, 265))                 # 64 fresh seeds
 PROTOCOL = SS.Protocol("composite", BLOCKS, SEEDS, 0)
 REREAD = PROTOCOL.with_seeds(REREAD_SEEDS)
+#: what every survey of these tests declares to its ledger (RB-2): the protocol and the plateau's re-read seeds
+SV = {"protocol": PROTOCOL, "reread_seeds": REREAD_SEEDS}
 SMOOTH_ARGMIN = {"x1": 0.62, "x2": 0.27, "x3": 0.5, "n": 5, "c": "b"}
 SMOOTH_MIN = 0.0
 CAT_COST = {"a": 0.3, "b": 0.0, "c": 0.15}
@@ -62,12 +65,11 @@ def seed_noise(d: Mapping[str, Any], seed: int) -> float:
 
 
 def reading(design: Mapping[str, Any], value: float, *, protocol: SS.Protocol = PROTOCOL, tag: str = "search",
-            per_seed=None, se: float | None = None, reads_through: str | None = None, **over) -> SS.Reading:
-    f = dict(blocks=protocol.blocks, seeds=protocol.seeds, measure=protocol.measure, horizon=protocol.horizon,
-             reads_through=reads_through or max(b[1] for b in protocol.blocks))
+            per_seed=None, se: float | None = None, **over) -> SS.Reading:
+    f = dict(blocks=protocol.blocks, seeds=protocol.seeds, measure=protocol.measure, horizon=protocol.horizon)
     f.update(over)
     return SS.Reading(dict(design), float(value), tuple(f["blocks"]), tuple(f["seeds"]), tag, f["measure"],
-                      f["horizon"], f["reads_through"], se, per_seed)
+                      f["horizon"], se, per_seed)
 
 
 def evaluator(fn: Callable[[Mapping[str, Any]], float], sd: float = 0.0):
@@ -104,14 +106,15 @@ def run_search(space: SS.Space, fn, *, survey_n: int, rounds: int, spec: P.Round
                round_seed: int, ledger: SS.CellLedger, method: str = "sobol", limits=(), limit_fns=None,
                sd: float = 0.0, protocol: SS.Protocol = PROTOCOL):
     ev = evaluator(fn, sd)
-    designs = SS.Sampler(space, seed=survey_seed, method=method).survey(survey_n, ledger=ledger)
+    designs = SS.Sampler(space, seed=survey_seed, method=method).survey(
+        survey_n, ledger=ledger, protocol=protocol, reread_seeds=REREAD_SEEDS, measures=tuple(limit_fns or ()))
     readings = [ev(d, protocol=protocol) for d in designs]
     lim_ev = {m: evaluator(f) for m, f in (limit_fns or {}).items()}
     lim_r = {m: [e(d, protocol=protocol.with_measure(m)) for d in designs] for m, e in lim_ev.items()}
     out = []
     for i in range(1, rounds + 1):
-        rnd = P.propose(space, readings, spec=spec, round_index=i, seed=round_seed, ledger=ledger, protocol=protocol,
-                        limits=limits, limit_readings=lim_r or None)
+        rnd = P.propose(space, readings, spec=spec, round_index=i, seed=round_seed, ledger=ledger, limits=limits,
+                        limit_readings=lim_r or None)
         out.append(rnd)
         readings += [ev(d, protocol=protocol) for d in rnd.designs]
         for m, e in lim_ev.items():

@@ -40,7 +40,8 @@ SD = 0.2                                              # per-seed noise of the pl
 
 
 def rule(**kw):
-    base = dict(steps=STEPS, radius=1, tolerance_se=PL.critical_z(0.05, 10), margin=0.0, side="worse",
+    base = dict(steps=STEPS, radius=1, tolerance_se=PL.critical_value(0.05, 10, len(TY.REREAD_SEEDS)), margin=0.0,
+                side="worse",
                 min_share=1.0, min_neighbours=4, min_per_lever=1)
     base.update(kw)
     return PL.PlateauRule(**base)
@@ -61,10 +62,13 @@ def slope_fn(d):
     return 10.0 * d["x1"]
 
 
-def counted(design, space=None, role="survey"):
-    """A ledger holding `design` as a counted cell of `role` (the test's own survey of one)."""
+def counted(design, space=None, role="survey", protocol=TY.PROTOCOL, reread_seeds=TY.REREAD_SEEDS):
+    """A ledger holding `design` as a counted cell of `role` (the test's own survey of one, which declares the
+    protocol and the re-read seeds)."""
     led = SS.CellLedger()
-    led.begin(role, SURVEY_SEED)
+    led.begin("survey", SURVEY_SEED, protocol=protocol, reread_seeds=reread_seeds)
+    if role != "survey":
+        led.begin(role, SURVEY_SEED)
     led.record(space or TY.toy_space(), design, role=role, seed=SURVEY_SEED, refusal=None)
     return led
 
@@ -74,7 +78,7 @@ def run(fn, design=CENTRE, r=None, evaluate=None, sd=SD, space=None, **kw):
     led = counted(design, space)
     ev = evaluate or TY.evaluator(fn, sd)
     f = TY.evaluator(fn, sd)(design, protocol=TY.PROTOCOL)
-    v = PL.check(f, space, r or rule(), ev, ledger=led, protocol=TY.PROTOCOL, reread=TY.REREAD, ledger_seed=LSEED,
+    v = PL.check(f, space, r or rule(), ev, ledger=led, ledger_seed=LSEED,
                  **kw)
     return v, led
 
@@ -105,12 +109,12 @@ def _fast(fn):
 
 def size_and_power():
     sel = TY.PROTOCOL.with_seeds(SEL_SEEDS)
-    rer = TY.PROTOCOL.with_seeds(POWER_REREAD)
-    r = rule(tolerance_se=PL.critical_z(SIZE, 10))
+    r = rule(tolerance_se=PL.critical_value(SIZE, 10, len(POWER_REREAD)))
     flat_ok = spike_refused = 0
     for s in np.random.SeedSequence(POWER_SEED).generate_state(REPS):
         led = SS.CellLedger()
-        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led)
+        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led, protocol=sel,
+                                                                            reread_seeds=POWER_REREAD)
         rs = [_fast(lambda d: 0.0)(d, protocol=sel) for d in ds]
         fin = min(rs, key=lambda x: x.value)
         spike_id = fin.id
@@ -119,11 +123,12 @@ def size_and_power():
             return -SPIKE if SS.design_id(d) == spike_id else 0.0
 
         led2 = SS.CellLedger()
-        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2)
-        flat = PL.check(fin, TY.toy_space(), r, _fast(lambda d: 0.0), ledger=led, protocol=sel, reread=rer,
+        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2, protocol=sel,
+                                                                       reread_seeds=POWER_REREAD)
+        flat = PL.check(fin, TY.toy_space(), r, _fast(lambda d: 0.0), ledger=led,
                         ledger_seed=LSEED)
         fin_s = _fast(spiky)(fin.design, protocol=sel)
-        spike = PL.check(fin_s, TY.toy_space(), r, _fast(spiky), ledger=led2, protocol=sel, reread=rer,
+        spike = PL.check(fin_s, TY.toy_space(), r, _fast(spiky), ledger=led2,
                          ledger_seed=LSEED)
         flat_ok += flat.accepted
         spike_refused += not spike.accepted
@@ -133,21 +138,69 @@ def size_and_power():
 def test_size_and_power_on_noisy_surfaces():
     """The red team's B-2 probe, rerun under the re-read: a true plateau is accepted at about 1 - SIZE and a spike
     0.6 deep (twice the selection readings' sd) refused at least at POWER (the module docstring's arithmetic: the
-    re-read's 64 seeds give about 0.96 against this spike). The band on the size is three binomial standard errors."""
+    re-read's 64 seeds give about 0.96 against this spike). The band on the size here is three binomial standard
+    errors at REPS; the tight size test is `test_size_at_the_smallest_reread_count`."""
     accept, power = size_and_power()
     se = (SIZE * (1 - SIZE) / REPS) ** 0.5
     assert abs(accept - (1 - SIZE)) <= 3 * se, accept
     assert power >= POWER, power
 
 
-def test_critical_z_holds_its_size():
+#: the tight size test's declared setup (rm-3, the lead's ruling): the smallest re-read seed count a declaration may
+#: take here, 16; the band (three binomial standard errors at SIZE_REPS) must exclude 0.93 against 0.95
+SIZE_N, SIZE_REPS, SIZE_SEED = 16, 3000, 6174
+
+
+def _salted(salt: int):
+    """A flat surface's runner whose seed noise is keyed by (design, replication, seed set): replications
+    independent."""
+    def evaluate(design, *, protocol):
+        h = int(SS.design_id(design), 16) % (2 ** 63)
+        e = np.random.default_rng([h, salt, protocol.seeds[0]]).standard_normal(len(protocol.seeds))
+        return TY.reading(design, float(np.mean(e)), protocol=protocol, per_seed=list(e))
+    return evaluate
+
+
+def test_size_at_the_smallest_reread_count():
+    """A true plateau, read through `plateau.check` itself, at 16 re-read seeds: accepted at 1 - 0.05 within three
+    binomial standard errors at 3000 replications (about +-0.012, so a 0.93 would fail). The normal value would
+    accept about 0.91 here (`test_the_exact_law_matches_the_statistic`)."""
+    assert 3 * (0.05 * 0.95 / SIZE_REPS) ** 0.5 < 0.02
+    reread = tuple(range(501, 501 + SIZE_N))
+    r = rule(tolerance_se=PL.critical_value(0.05, 10, SIZE_N))
+    ok = 0
+    for salt in np.random.SeedSequence(SIZE_SEED).generate_state(SIZE_REPS):
+        led = counted(CENTRE, reread_seeds=reread)
+        ev = _salted(int(salt))
+        ok += PL.check(ev(CENTRE, protocol=TY.PROTOCOL), TY.toy_space(), r, ev, ledger=led,
+                       ledger_seed=LSEED).accepted
+    rate = ok / SIZE_REPS
+    assert abs(rate - 0.95) <= 3 * (0.05 * 0.95 / SIZE_REPS) ** 0.5, rate
+
+
+def test_the_exact_law_matches_the_statistic():
+    """rm-3: the critical value is the exact law of the paired t-statistics as computed (k = 10, each on its own se,
+    sharing one re-read): a vectorised simulation of that statistic accepts at 0.95 within 0.002 at 8, 16, 32 and 64
+    re-read seeds, where the normal value accepts visibly less."""
+    rng = np.random.default_rng(7)
+    for n in (8, 16, 32, 64):
+        c = PL.critical_value(0.05, 10, n)
+        assert PL.p_all_hold(c, 10, n) == pytest.approx(0.95, abs=1e-6)
+        f = rng.standard_normal((60000, n))
+        diff = rng.standard_normal((60000, 10, n)) - f[:, None, :]
+        z = (diff.mean(2) / (diff.std(2, ddof=1) / np.sqrt(n))).max(1)
+        assert abs(float(np.mean(z <= c)) - 0.95) < 0.004, n
+        if n <= 32:
+            assert float(np.mean(z <= PL.critical_z(0.05, 10))) < 0.94, n
+    assert PL.critical_value(0.05, 10, 8) > PL.critical_value(0.05, 10, 64) > PL.critical_z(0.05, 10)
+
+
+def test_critical_z_is_the_normal_limit():
     for k in (1, 4, 10):
         c = PL.critical_z(0.05, k)
         assert PL.p_all_hold(c, k) == pytest.approx(0.95, abs=1e-6)
     assert PL.critical_z(0.05, 10) < 2.5679                              # below Sidak's, the shared re-read
-    rng = np.random.default_rng(3)
-    z = rng.standard_normal((40000, 1)) * np.sqrt(0.5) + rng.standard_normal((40000, 10)) * np.sqrt(0.5)
-    assert abs(float(np.mean(z.max(axis=1) <= PL.critical_z(0.05, 10))) - 0.95) < 0.006
+    assert PL.critical_value(0.05, 10, 4000) == pytest.approx(PL.critical_z(0.05, 10), abs=0.01)
 
 
 # ------------------------------------------------------------------------------------------------ the verdicts
@@ -161,6 +214,7 @@ def test_a_planted_plateau_is_accepted():
     assert {r["seed"] for r in led.rows if r["role"] == role} == {LSEED}
     assert {r["rule"] for r in led.rows if r["role"] == role} == {rule().sha256()}
     assert v.form == PL.FORM and v.reread_seeds == TY.REREAD_SEEDS and v.rule == rule().sha256()
+    assert v.size_at == pytest.approx(0.05, abs=1e-6)                   # ten neighbours read at the declared count
     assert v.per_lever == {"x1": 2, "x2": 2, "x3": 2, "n": 2, "c": 2} and v.libs == SS.LIBS
 
 
@@ -308,20 +362,42 @@ def test_the_re_read_and_the_neighbours_are_read_on_the_fresh_seeds():
         run(plateau_fn, evaluate=no_per_seed)
 
 
-def test_the_re_read_protocol_is_fresh_and_the_declared_one():
+def test_the_re_read_is_the_ledgers_declared_one():
+    """RB-2: the re-read seeds are declared by the survey, fresh and at least two; the check takes them from the ledger
+    and hands the runner that protocol; no caller passes a protocol or a re-read."""
+    for rr in ((TY.SEEDS[0], 999), (5,), (5, 5), ()):
+        with pytest.raises(SS.LedgerRefused):
+            counted(CENTRE, reread_seeds=rr)
     led = counted(CENTRE)
+    assert led.reread == TY.REREAD and led.protocol == TY.PROTOCOL
     f = TY.evaluator(plateau_fn, SD)(CENTRE, protocol=TY.PROTOCOL)
-    for bad in (TY.PROTOCOL, TY.PROTOCOL.with_seeds((TY.SEEDS[0], 999)),
-                SS.Protocol("composite", TY.OTHER_BLOCKS, TY.REREAD_SEEDS, 0)):
-        with pytest.raises(PL.PlateauRefused):
-            PL.check(f, TY.toy_space(), rule(), TY.evaluator(plateau_fn, SD), ledger=led, protocol=TY.PROTOCOL,
-                     reread=bad, ledger_seed=LSEED)
+    for kw in (dict(protocol=TY.PROTOCOL), dict(reread=TY.REREAD)):
+        with pytest.raises(TypeError):
+            PL.check(f, TY.toy_space(), rule(), TY.evaluator(plateau_fn, SD), ledger=led, ledger_seed=LSEED, **kw)
+
+
+def test_rb2_a_finalist_read_on_a_protocol_of_the_callers_choosing_is_refused():
+    """The red team's failing input 2 (`probe_protocol.py`): a counted finalist read on one month and other seeds,
+    handed to the plateau check -- refused, as is a re-read on other seeds."""
+    led = counted(CENTRE)
+    month = SS.Protocol("composite", (("2021-03-01", "2021-03-31"),), (7, 8, 9), 0)
+    ev = TY.evaluator(plateau_fn, SD)
+    with pytest.raises(SS.OffProtocol):
+        PL.check(ev(CENTRE, protocol=month), TY.toy_space(), rule(), ev, ledger=led, ledger_seed=LSEED)
+
+    def on_four_other_seeds(design, *, protocol):
+        return ev(design, protocol=protocol.with_seeds((11, 12, 13, 14)))
+
+    led2 = counted(CENTRE)
+    with pytest.raises(SS.OffProtocol):
+        PL.check(ev(CENTRE, protocol=TY.PROTOCOL), TY.toy_space(), rule(), on_four_other_seeds, ledger=led2,
+                 ledger_seed=LSEED)
 
 
 def test_a_second_check_of_one_finalist_is_refused_under_any_rule():
     led = counted(CENTRE)
     f = TY.evaluator(plateau_fn, SD)(CENTRE, protocol=TY.PROTOCOL)
-    kw = dict(ledger=led, protocol=TY.PROTOCOL, reread=TY.REREAD, ledger_seed=LSEED)
+    kw = dict(ledger=led, ledger_seed=LSEED)
     assert PL.check(f, TY.toy_space(), rule(), TY.evaluator(plateau_fn, SD), **kw).accepted
     for r in (rule(), rule(tolerance_se=9.0)):
         with pytest.raises(SS.LedgerRefused):
@@ -330,12 +406,13 @@ def test_a_second_check_of_one_finalist_is_refused_under_any_rule():
 
 def test_finalists_held_out_uncounted_off_protocol_or_predictions_are_refused():
     ev = TY.evaluator(plateau_fn, SD)
-    kw = dict(protocol=TY.PROTOCOL, reread=TY.REREAD, ledger_seed=LSEED)
+    kw = dict(ledger_seed=LSEED)
     for tag in ("held_out", "judged"):
         with pytest.raises(SS.HeldOutInput):
             PL.check(TY.reading(CENTRE, 0.0, tag=tag), TY.toy_space(), rule(), ev, ledger=counted(CENTRE), **kw)
     with pytest.raises(SS.Uncounted):                                     # the red team's B-1 (1)
-        PL.check(ev(TY.SMOOTH_ARGMIN, protocol=TY.PROTOCOL), TY.toy_space(), rule(), ev, ledger=counted(CENTRE), **kw)
+        PL.check(ev(TY.SMOOTH_ARGMIN, protocol=TY.PROTOCOL), TY.toy_space(), rule(), ev, ledger=counted(CENTRE),
+                 **kw)
     with pytest.raises(SS.Uncounted):                                     # a plateau cell is never a finalist
         PL.check(ev(CENTRE, protocol=TY.PROTOCOL), TY.toy_space(), rule(), ev,
                  ledger=counted(CENTRE, role="plateau:x"), **kw)
@@ -378,9 +455,21 @@ def test_mutation_echo_check_removed_is_caught(monkeypatch):
     led.begin("round-1", 1)
     led.record(TY.toy_space(), dict(CENTRE, x1=0.55), role="round-1", seed=1, refusal=None)
     f = TY.evaluator(plateau_fn, SD)(dict(CENTRE, x1=0.55), protocol=TY.PROTOCOL)
-    v = PL.check(f, TY.toy_space(), rule(), other_design, ledger=led, protocol=TY.PROTOCOL, reread=TY.REREAD,
+    v = PL.check(f, TY.toy_space(), rule(), other_design, ledger=led,
                  ledger_seed=LSEED)                         # the re-read of another design passes: the test would fail
     assert v.reread_value == TY.evaluator(plateau_fn, SD)(CENTRE, protocol=TY.REREAD).value
+
+
+def test_mutation_ledger_protocol_check_dropped_is_caught(monkeypatch):
+    """RB-2's mutation: the door takes the protocol a reading claims instead of the ledger's -- the month passes."""
+    month = SS.Protocol("composite", (("2021-03-01", "2021-03-31"),), (7, 8, 9), 0)
+    real = SS.CellLedger.protocol_for
+    monkeypatch.setattr(SS.CellLedger, "protocol_for",
+                        lambda self, measure=None, *, reread=False: real(self, measure, reread=True) if reread
+                        else month)                    # the selection protocol the caller's, the re-read declared
+    ev = TY.evaluator(plateau_fn, SD)
+    v = PL.check(ev(CENTRE, protocol=month), TY.toy_space(), rule(), ev, ledger=counted(CENTRE), ledger_seed=LSEED)
+    assert v.evaluated > 0                                # admitted: the RB-2 test would fail
 
 
 def test_mutation_inclusive_made_strict_is_caught(monkeypatch):

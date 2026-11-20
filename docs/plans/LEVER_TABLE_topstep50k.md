@@ -150,7 +150,10 @@ These hold in every design and are never searched. Each is stated by its rule ke
   (RD-04 holds its 2020-2023 L_y equal to them), which CHARTER 3.3 (a) admits. Q-121's `block` rows and RD-04's (a2)
   span the whole window and are not admitted; any range drawn from them is redrawn and entered in the ledger. RD-04
   (a2) gives no per-session trailing range for the overnight sessions, so those sessions need their own reading. Q-121's
-  file is a licensed-price derivative (E-179), read in place only.
+  file is a licensed-price derivative (E-179), read in place only. **Built, not yet run (Q-171):**
+  `scripts/s1_range.py` (definitions, the declared share and the quantile rule in `extended/s1_range.py`'s docstring)
+  writes `results/s1_range.csv` from a clean run under the lock; `lever_space.bounds("S1")` stays `NotComputed` until
+  that file and its manifest exist, then loads each session's k range after checking the manifest.
 - **T7, the admission forecast.** F-R's HAR coefficients and calibration, refitted on the search years only. F-R's own
   fit was to the choice block, which is the same span (F-R 6.3), but it was never run, so nothing exists to reuse.
 

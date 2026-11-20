@@ -43,9 +43,10 @@ def search(fn, spec=SPEC, rounds=6, **kw):
     return readings, rounds_, led
 
 
-def survey_ledger(n=16, seed=SURVEY_SEED, space=None):
+def survey_ledger(n=16, seed=SURVEY_SEED, space=None, measures=()):
     led = SS.CellLedger()
-    ds = SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led)
+    ds = SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led, measures=measures,
+                                                                             **TY.SV)
     return ds, led
 
 
@@ -68,7 +69,7 @@ def test_it_finds_the_known_optimum_within_its_budget(smooth_run):
     assert b.value - TY.SMOOTH_MIN <= 0.02
     assert b.design["c"] == TY.SMOOTH_ARGMIN["c"] and b.design["n"] == TY.SMOOTH_ARGMIN["n"]
     assert b.value < best(readings[:16]).value
-    sobol40 = SS.Sampler(TY.toy_space(), seed=SURVEY_SEED, method="sobol").survey(40, ledger=SS.CellLedger())
+    sobol40 = SS.Sampler(TY.toy_space(), seed=SURVEY_SEED, method="sobol").survey(40, ledger=SS.CellLedger(), **TY.SV)
     assert b.value < min(TY.smooth(d) for d in sobol40)
 
 
@@ -91,14 +92,26 @@ def test_under_a_limit_it_proposes_inside_the_limit():
     assert rounds[0].limit_fits["reach"].blocks == TY.PROTOCOL.blocks          # one protocol across the measures
 
 
-def test_a_limit_read_on_another_protocol_is_refused(smooth_run):
-    readings, _, _ = smooth_run
+def test_a_limit_or_a_round_on_another_protocol_is_refused():
+    """m-10 and RB-2: a limit the survey did not declare, a declared limit read on other seeds, and a round whose
+    readings are on a second protocol are each refused -- no caller hands a round a protocol."""
     ds, led = survey_ledger()
     rs = [TY.reading(d, TY.smooth(d)) for d in ds]
+    on = [TY.reading(d, d["x1"], measure="reach") for d in ds]
+    with pytest.raises(SS.OffProtocol):                                   # not declared by the survey
+        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led,
+                  limits=(P.Limit("reach", 0.4, "<="),), limit_readings={"reach": on})
+    ds, led = survey_ledger(measures=("reach",))
     off = [TY.reading(d, d["x1"], measure="reach", seeds=(7, 8, 9)) for d in ds]
     with pytest.raises(SS.OffProtocol):
-        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL,
+        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led,
                   limits=(P.Limit("reach", 0.4, "<="),), limit_readings={"reach": off})
+    ds, led = survey_ledger()
+    second = [TY.reading(d, TY.smooth(d), seeds=(7, 8, 9)) for d in ds]
+    with pytest.raises(SS.OffProtocol):
+        P.propose(TY.toy_space(), second, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led)
+    with pytest.raises(TypeError):
+        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL)
 
 
 # ------------------------------------------------------------------------------------------------ noise and plateaus
@@ -107,11 +120,11 @@ def test_a_limit_read_on_another_protocol_is_refused(smooth_run):
 def test_a_rugged_surface_gives_no_plateau_and_the_smooth_optimum_is_one(smooth_run):
     noisy, _, led = search(TY.noise, sd=SEED_SD)
     v = PL.check(best(noisy), TY.toy_space(), RULE, TY.evaluator(TY.noise, SEED_SD), ledger=led,
-                 protocol=TY.PROTOCOL, reread=TY.REREAD, ledger_seed=PLATEAU_SEED)
+                 ledger_seed=PLATEAU_SEED)
     assert not v.accepted and v.reason.startswith("refused: a spike"), v.reason
     readings, _, led2 = smooth_run
     v2 = PL.check(best(readings), TY.toy_space(), RULE, TY.evaluator(TY.smooth, SEED_SD), ledger=copy.deepcopy(led2),
-                  protocol=TY.PROTOCOL, reread=TY.REREAD, ledger_seed=PLATEAU_SEED)
+                  ledger_seed=PLATEAU_SEED)
     assert v2.accepted, v2.reason
     assert v2.form == PL.FORM and v2.reread_seeds == TY.REREAD_SEEDS and v2.rule == RULE.sha256()
 
@@ -139,11 +152,11 @@ def test_a_round_is_drawn_once_and_in_order():
     ds, led = survey_ledger()
     rs = [TY.reading(d, TY.smooth(d)) for d in ds]
     with pytest.raises(SS.LedgerRefused):
-        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=2, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL)
-    P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=11, ledger=led, protocol=TY.PROTOCOL)
+        P.propose(TY.toy_space(), rs, spec=SPEC, round_index=2, seed=ROUND_SEED, ledger=led)
+    P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=11, ledger=led)
     for seed in (12, 11):
         with pytest.raises(SS.LedgerRefused):
-            P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=seed, ledger=led, protocol=TY.PROTOCOL)
+            P.propose(TY.toy_space(), rs, spec=SPEC, round_index=1, seed=seed, ledger=led)
     assert led.counts()["by_role"] == {"survey": 16, "round-1": 4}
     with pytest.raises(SS.LedgerRefused):
         led.record(TY.toy_space(), ds[0], role="round-1", seed=12, refusal=None, round_index=1)
@@ -154,10 +167,10 @@ def test_a_read_design_is_never_proposed_again():
     is proposed (the red team's m-7, survivor 1)."""
     sp = SS.Space((SS.Dim("n", SS.INT, lo=1, hi=4, step=1), SS.Dim("c", SS.CAT, values=("a", "b", "c"))))
     led = SS.CellLedger()
-    ds = SS.Sampler(sp, seed=SURVEY_SEED, method="sobol").survey(8, ledger=led)
+    ds = SS.Sampler(sp, seed=SURVEY_SEED, method="sobol").survey(8, ledger=led, **TY.SV)
     rs = [TY.reading(d, float(d["n"]) + {"a": 0.0, "b": 0.5, "c": 1.0}[d["c"]]) for d in ds]
     r = P.propose(sp, rs, spec=P.RoundSpec(batch=2, pool=64, acquisition="ei"), round_index=1, seed=ROUND_SEED,
-                  ledger=led, protocol=TY.PROTOCOL)
+                  ledger=led)
     read = {SS.design_id(d) for d in ds}
     assert r.candidates["repeats"] > 0 and not read & {SS.design_id(d) for d in r.designs}
 
@@ -168,7 +181,7 @@ def test_the_incumbent_is_the_lowest_predicted_mean(smooth_run):
     readings, rounds, led = smooth_run
     base = readings[:16]
     sg = SG.Surrogate(TY.toy_space(), seed=ROUND_SEED, restarts=SPEC.restarts, key=(1, 0))
-    sg.fit(base, ledger=led, protocol=TY.PROTOCOL)
+    sg.fit(base, ledger=led)
     mu = sg.predict([r.design for r in base]).mean
     assert rounds[0].incumbent == pytest.approx(float(np.min(mu))) and rounds[0].incumbent < float(np.max(mu))
 
@@ -177,30 +190,27 @@ def test_a_round_is_reproducible_and_refuses_what_it_must(smooth_run):
     readings, rounds, _ = smooth_run
     base = readings[:16]
     _, led_a = survey_ledger()
-    a = P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led_a,
-                  protocol=TY.PROTOCOL)
+    a = P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led_a)
     assert a.designs == rounds[0].designs and a.acquisition == rounds[0].acquisition
     _, led_b = survey_ledger()
-    b = P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED + 1, ledger=led_b,
-                  protocol=TY.PROTOCOL)
+    b = P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED + 1, ledger=led_b)
     assert b.designs != a.designs
     for bad, cls in (([TY.reading(base[0].design, 0.0, tag="held_out")], SS.HeldOutInput),
                      ([TY.reading(TY.SMOOTH_ARGMIN, 0.0)], SS.Uncounted)):
         _, led = survey_ledger()
         with pytest.raises(cls):
-            P.propose(TY.toy_space(), base + bad, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led,
-                      protocol=TY.PROTOCOL)
+            P.propose(TY.toy_space(), base + bad, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led)
     _, led = survey_ledger()
     with pytest.raises(P.ProposerRefused):
-        P.propose(TY.toy_space(), base, spec=SPEC, round_index=0, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL)
+        P.propose(TY.toy_space(), base, spec=SPEC, round_index=0, seed=ROUND_SEED, ledger=led)
     with pytest.raises(P.ProposerRefused):
         P.propose(TY.toy_space(), base, spec=P.RoundSpec(batch=40, pool=16, acquisition="ei", local=0),
-                  round_index=1, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL)
+                  round_index=1, seed=ROUND_SEED, ledger=led)
     with pytest.raises(SS.LedgerRefused):                                # that refused round one was still drawn
-        P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL)
+        P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led)
     _, led = survey_ledger()
     with pytest.raises(P.ProposerRefused):
-        P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led, protocol=TY.PROTOCOL,
+        P.propose(TY.toy_space(), base, spec=SPEC, round_index=1, seed=ROUND_SEED, ledger=led,
                   limits=(P.Limit("reach", 0.4, "<="),))
     for bad in ({"batch": 4, "pool": 500, "acquisition": "ei"}, {"batch": 4, "pool": 512, "acquisition": "pi"},
                 {"batch": 0, "pool": 512, "acquisition": "ei"}):
@@ -213,7 +223,7 @@ def test_round_candidates_respect_the_space_and_slot_rounds_work():
     ds, led = survey_ledger(space=sp)
     f = [d["risk"] / 900.0 + sum(d[f"{s.name}.on"] == SS.ON for s in sp.slots) for d in ds]
     r = P.propose(sp, [TY.reading(d, v) for d, v in zip(ds, f)], spec=SPEC, round_index=1, seed=ROUND_SEED,
-                  ledger=led, protocol=TY.PROTOCOL)
+                  ledger=led)
     assert all(sp.check(d) is None for d in r.designs)
     assert all(d["routing"] != "copy_trade_across_accounts" for d in r.designs)
     assert r.candidates["pool_refused"] > 0

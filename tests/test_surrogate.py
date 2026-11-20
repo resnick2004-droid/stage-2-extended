@@ -30,7 +30,7 @@ NOISE_SEEDS = (21, 22, 23, 24, 25)
 
 def survey(n: int, seed: int, space=None):
     led = SS.CellLedger()
-    return SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led), led
+    return SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led, **TY.SV), led
 
 
 def designs(n: int, seed: int, space=None):
@@ -39,7 +39,7 @@ def designs(n: int, seed: int, space=None):
 
 def fitted(train, led, fn, seed=SEED, restarts=2, **kw):
     sg = SG.Surrogate(TY.toy_space(), seed=seed, restarts=restarts)
-    sg.fit([TY.reading(d, fn(d), **kw) for d in train], ledger=led, protocol=TY.PROTOCOL)
+    sg.fit([TY.reading(d, fn(d), **kw) for d in train], ledger=led)
     return sg
 
 
@@ -169,7 +169,7 @@ def test_slot_designs_encode_and_fit():
     ds, led = survey(40, 61, space=sp)
     f = [d["risk"] / 900.0 + sum(d[f"{s.name}.on"] == SS.ON for s in sp.slots) for d in ds]
     sg = SG.Surrogate(sp, seed=SEED, restarts=1)
-    sg.fit([TY.reading(d, v) for d, v in zip(ds, f)], ledger=led, protocol=TY.PROTOCOL)
+    sg.fit([TY.reading(d, v) for d, v in zip(ds, f)], ledger=led)
     xc, xk = sg.encoder.encode(ds)
     assert xc.shape[0] == xk.shape[0] == 40 and np.all((0 <= xc) & (xc <= 1))
     lat = sg.encoder.cat.index(sp.dim("s1.0.T4"))
@@ -188,25 +188,27 @@ def test_the_one_door_refuses_held_out_off_protocol_and_uncounted_inputs():
     refusals = {
         SS.HeldOutInput: [TY.reading(tr[-1], 0.0, tag="held_out"), TY.reading(tr[-1], 0.0, tag="judged"),
                           TY.reading(tr[-1], 0.0, blocks=(("2023-01-03", "2024-03-01"),)),
-                          TY.reading(tr[-1], 0.0, reads_through="2024-02-01"), sg],
+                          TY.reading(tr[-1], 0.0, horizon=1), TY.reading(tr[-1], 0.0, horizon=21), sg],
         SS.OffProtocol: [TY.reading(tr[-1], 0.0, measure="ruin"), TY.reading(tr[-1], 0.0, blocks=TY.OTHER_BLOCKS),
-                         TY.reading(tr[-1], 0.0, seeds=(1, 2, 3)), TY.reading(tr[-1], 0.0, horizon=21)],
+                         TY.reading(tr[-1], 0.0, seeds=(1, 2, 3))],
         SS.Uncounted: [TY.reading(TY.SMOOTH_ARGMIN, 0.0)],
     }
     for cls, bad in refusals.items():
         for b in bad:
             with pytest.raises(cls):
-                sg.fit(good[:-1] + [b], ledger=led, protocol=TY.PROTOCOL)
+                sg.fit(good[:-1] + [b], ledger=led)
             assert not sg.fitted, (cls, b)
-    for rs, proto in ((good[:1], TY.PROTOCOL), (good, TY.PROTOCOL.with_measure("ruin"))):
-        with pytest.raises(SG.SurrogateRefused):
-            sg.fit(rs, ledger=led, protocol=proto)
-        assert not sg.fitted
+    with pytest.raises(SG.SurrogateRefused):
+        sg.fit(good[:1], ledger=led)
+    assert not sg.fitted
+    with pytest.raises(SS.OffProtocol):                                  # a measure the survey never declared
+        SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1, measure="ruin").fit(
+            [TY.reading(d, 0.0, measure="ruin") for d in tr], ledger=led)
     with pytest.raises(SS.Uncounted):                                     # a design off the space was never a cell
-        sg.fit(good[:-1] + [TY.reading(dict(tr[-1], n=99), 0.0)], ledger=led, protocol=TY.PROTOCOL)
-    rec = sg.fit(good, ledger=led, protocol=TY.PROTOCOL)
+        sg.fit(good[:-1] + [TY.reading(dict(tr[-1], n=99), 0.0)], ledger=led)
+    rec = sg.fit(good, ledger=led)
     with pytest.raises(SS.HeldOutInput):
-        sg.fit(good[:-1] + [TY.reading(tr[-1], 0.0, tag="heldout")], ledger=led, protocol=TY.PROTOCOL)
+        sg.fit(good[:-1] + [TY.reading(tr[-1], 0.0, tag="heldout")], ledger=led)
     assert sg.record is rec                                              # a refused fit leaves the last one
 
 
@@ -250,10 +252,10 @@ def test_mutation_door_left_open_is_caught(monkeypatch):
     tr, led = survey(16, 81)
     rs = [TY.reading(d, TY.smooth(d)) for d in tr[:-1]] + [TY.reading(tr[-1], 0.0, tag="held_out")]
     with pytest.raises(SS.HeldOutInput):
-        SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1).fit(rs, ledger=led, protocol=TY.PROTOCOL)
+        SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1).fit(rs, ledger=led)
     monkeypatch.setattr(SS, "admit", lambda readings, **kw: list(readings))
     sg = SG.Surrogate(TY.toy_space(), seed=SEED, restarts=1)
-    sg.fit(rs, ledger=led, protocol=TY.PROTOCOL)
+    sg.fit(rs, ledger=led)
     assert sg.fitted and sg.record.n == 16                               # the mutant fits it: the door test fails
 
 
@@ -272,4 +274,4 @@ def test_the_surrogate_and_the_proposer_name_no_finalist():
     names = dir(SG) + dir(SG.Surrogate) + dir(P) + dir(P.Round)
     assert not [n for n in names if not n.startswith("__") and any(w in n.lower() for w in words)]
     with pytest.raises(SS.HeldOutInput):
-        SS.admit_one(SG.Prediction(np.zeros(1), np.ones(1)), ledger=SS.CellLedger(), protocol=TY.PROTOCOL)
+        SS.admit_one(SG.Prediction(np.zeros(1), np.ones(1)), ledger=SS.CellLedger())
