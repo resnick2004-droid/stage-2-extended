@@ -61,9 +61,9 @@ DECLARED_PATTERNS = (re.compile(r"^results/h4_[A-Za-z0-9_]+\.csv(\.manifest\.jso
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
-PROVISIONAL_W42, RUNNER_COMMIT = "2bde318", "adedf7f"
+PROVISIONAL_W42, RUNNER_COMMIT = "357a339", "adedf7f"
 SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", ".h4_dev", "node_modules"}
-W42_PLACEHOLDER = "`<W42-R1's pinning row and its rule text's LF sha256, filled at W42-R1's pin>`"
+W42_PLACEHOLDER = "`<W42-R1's pinning row and the LF sha256 of its two files, filled at W42-R1's pin>`"
 NESTED_CUTS = ("2022-12-30", "2023-06-30", "2023-09-29")
 
 #: the numbers the text may hold outside the stripped forms, each a declared value or a rule cited by its source
@@ -603,16 +603,39 @@ def test_b4_one_collection_result(text: str, w42) -> None:
     s9 = _flat(_section(text, 9))
     assert "**To W42-R1: one collection result**" in s9 and "`results/h4_w42_input.csv`" in s9
     assert "**The adapter** `extended/h4_collect.py::w42_readings`" in s9
-    assert "each start's **uncapped** sessions left" in s9 and "`extended/day_calendar.py` at ebd5a05" in s9
+    assert "each start's **uncapped** sessions left" in s9
     assert "**`orders_max`, `accounts_max` (measure (30)) and `taken_mean` (measure (37)), required now**" in s9
     assert "the run is refused without them" in s9
     s4 = _flat(_section(text, 4))
-    assert "**Sessions left, uncapped**" in s4 and "never capped" in s4
-    assert _git("cat-file", "-e", "ebd5a05:extended/day_calendar.py", check=False).returncode == 0
-    from extended import day_calendar
-
-    assert callable(day_calendar.load_sources) and "days" in day_calendar.Sources.__dataclass_fields__
+    assert "**The search calendar and sessions left, uncapped**" in s4 and "never capped" in s4
+    assert "**the pinned search-year calendar H4 and W42-R1 both bind**, Q-197's result and its loader" in s4
+    assert "**the start session counted as session 1**" in s4
+    assert "ebd5a05" not in text, "the calendar is Q-197's, not the void calendar's day list"
     assert set(w42.OPTIONAL) == {"orders_max", "accounts_max", "taken_mean"}
+
+
+def test_w42r1_second_texts_obligations(text: str, plan, w42) -> None:
+    """W42-R1's second text (wt/wt-infra 357a339): its manifest fields, W, the reading tag, first_pass_days, the seed
+    floor and the test's J, each held to its code."""
+    s9 = _flat(_section(text, 9))
+    assert "**Its manifest carries every field of W42-R1's `H4_MANIFEST_KEYS`**" in s9
+    for key in w42.H4_MANIFEST_KEYS:
+        assert f"`{key}`" in s9, key
+    assert "`readings_sha256` (`wave42.readings_digest` of the four readings, recorded by H4's runner)" in s9
+    assert "`calendar_sha256` (`wave42.calendar_digest`" in s9
+    assert "`optional_measures` (exactly `orders_max`, `accounts_max` and `taken_mean`)" in s9
+    assert w42.READING == "martingale_outcome" and f"`reading` (`{w42.READING}`)" in s9
+    assert w42.W == 126 and "`W` (126)" in s9
+    assert "**126, pinned**" in _section(text, 7)
+    assert "first_pass_days" in w42.REQUIRED and "`first_pass_days` (measure (1)" in s9
+    assert (plan.H4_MIN_SEEDS, plan.TEST_SEEDS) == (w42.H4_MIN_SEEDS, w42.TEST_SEEDS)
+    assert plan.j_provisional() >= w42.H4_MIN_SEEDS, "H4's J meets W42-R1's floor"
+    assert f"H4_MIN_SEEDS = {w42.H4_MIN_SEEDS}: J (provisional) = {plan.j_provisional()} meets it" in plan.report()
+    assert "**at least W42-R1's `H4_MIN_SEEDS`**" in _section(text, 7)
+    assert "W42-R1's own declared `TEST_SEEDS`, not H4's" in _flat(_section(text, 10))
+    dep = _deps(text)
+    assert "**to build** (Q-197)" in dep["the search calendar"]
+    assert "cited by the LF sha256 of both files" in dep["W42-R1"] and "357a339" in dep["W42-R1"]
 
 
 def test_b5_the_coins_identity(text: str) -> None:
@@ -630,14 +653,15 @@ def test_b6_j_refused_until_w42r1_is_pinned(text: str, plan) -> None:
         assert "J_H4: REFUSED until W42-R1 is pinned (B-6)" in plan.report()
     else:                                                     # once pinned: the row, the commit and the hash agree
         pin = plan.W42_PIN
-        assert W42_PLACEHOLDER not in text and pin["sha256"] in text
-        dec = _lf(ROOT / "DECISIONS.md")
-        row = next(ln for ln in dec.splitlines() if ln.startswith(f"| {pin['row']} |"))
-        assert pin["sha256"] in row
         import hashlib
 
-        rule = _show(pin["commit"], "docs/plans/WAVE42_SETTING_RULE.md").replace("\r\n", "\n")
-        assert hashlib.sha256(rule.encode("utf-8")).hexdigest() == pin["sha256"]
+        dec = _lf(ROOT / "DECISIONS.md")
+        row = next(ln for ln in dec.splitlines() if ln.startswith(f"| {pin['row']} |"))
+        assert W42_PLACEHOLDER not in text
+        for key, path in (("rule_sha256", "docs/plans/WAVE42_SETTING_RULE.md"), ("code_sha256", "extended/wave42.py")):
+            assert pin[key] in text and pin[key] in row, key                  # both files, cited (W42-R1's second text)
+            lf = _show(pin["commit"], path).replace("\r\n", "\n")
+            assert hashlib.sha256(lf.encode("utf-8")).hexdigest() == pin[key], path
         assert plan.j_h4() == plan.j_provisional()
     assert "H4 pins after W42-R1" in plan.__doc__
 
@@ -686,7 +710,7 @@ def test_the_dependencies_are_named(text: str) -> None:
     by = _deps(text)
     want = ("the seed-paired runner", "the firm path", "the cut, in its pass-through mode", "the registered-constants file",
             "the `trade_problems` switch-off", "the collection and its adapter", "the seed module's H4 block", "W42-R1",
-            "the session calendar", "the starts and the as-traded replays", "the measures", "the naive coin's source",
+            "the search calendar", "the starts and the as-traded replays", "the measures", "the naive coin's source",
             "the reader")
     assert tuple(by) == want, tuple(by)
     for r in by.values():

@@ -24,7 +24,7 @@ reads line). Checked against v2 at 68436c9 in this text.
 |---|---|
 | declaration | H4 (the heavy queue's H4, the restart plan's Wave 4); no family number, **no k** |
 | what it reads | the four baselines -- the naive coin, P-14, P-15, P-16 -- on Topstep's $50K, under the zero-edge convention, over J coin seeds, on NQ's search years (2020-01-02 to 2023-12-29) only |
-| what it feeds | W42-R1 (`docs/plans/WAVE42_SETTING_RULE.md`, **as pinned**: `<W42-R1's pinning row and its rule text's LF sha256, filled at W42-R1's pin>`), through one collection result; Wave 4.1's measure-structure analysis; H3-D's power gate (the three-way note's 4.3) |
+| what it feeds | W42-R1 (`docs/plans/WAVE42_SETTING_RULE.md`, **as pinned**: `<W42-R1's pinning row and the LF sha256 of its two files, filled at W42-R1's pin>`), through one collection result; Wave 4.1's measure-structure analysis; H3-D's power gate (the three-way note's 4.3) |
 | never read | the held-out years (2024-01-02 to 2026-07-16); the confirmation window (NQ from 2026-07-17) |
 | parts | H4-0 (the probe), H4-S (the schedules, gates and identities), H4-A (the as-traded replays), H4-B (the seed-paired readings, one part a baseline), H4-C (the collection); Appendix A |
 | seeds | section 15: a block of its own, by role |
@@ -128,11 +128,12 @@ zero-edge check): the run stops and is diagnosed, never re-run until it passes.
   units are paired, MEASURES 1.1). Each start's journey stays inside its block: `user_beside.run_starts(journey=True,
   journey_block="search")` (Wave 3.1, M-3) refuses a start of another block before the pool is reached, and the
   runner's `Plan` refuses any unit whose window holds a session from 2024-01-02 (`HeldOutRefused`; CHARTER 3.6 (e)).
-- **Sessions left, uncapped** (the lead's ruling on B-4): each start's sessions left in its block are counted on the
-  search-year session list of `extended/day_calendar.py` at ebd5a05 (`load_sources().days`: the bar store manifest's
-  day list, search years only, its file's sha256 recorded), **the start session counted** (as
-  `user_beside.journey_length` counts before its cap), never capped. `obs` (the run's length) is that count capped at
-  252; `E_h` is the starts with at least h sessions left.
+- **The search calendar and sessions left, uncapped** (the lead's ruling on B-4; W42-R1's second text, its 1.2):
+  the starts and every session count are read from **the pinned search-year calendar H4 and W42-R1 both bind**, Q-197's
+  result and its loader (wt/wt-cal, Appendix C), its digest `wave42.calendar_digest` recorded in H4's manifest as
+  `calendar_sha256`. Each start's sessions left are the calendar sessions from the start to 2023-12-29, **the start
+  session counted as session 1**, never capped; W42-R1 recomputes them from the same calendar and is never handed
+  them. `obs` (the run's length) is that count capped at 252; `E_h` is the starts with at least h sessions left.
 - **The windows W = 126 and 252** (the brief): the W-window measures of MEASURES (measures (1) to (3), (5) to (7), (9)
   and (24)) are read at W = 126, W42-R1's window, and at W = 252 beside; the horizon measures at their own horizons
   (Appendix B).
@@ -200,10 +201,11 @@ declared constant with its reason.
 | the stress arms | CHARTER 3.8 (c)'s fill and supply stress | fixed | `worse_1` (measure (29)'s +1 tick on every fill: the entry and each exit) and `missed_0.1` (measure (28)'s 10 % of signals missed), each on every baseline alike, on the deciding reading, on the same keys as `off` (`three_way_runner.stress_arms`, selected by name) |
 | the +2 tick and 20 % missed arms | measures (28) and (29)'s other levels | **dropped** | the template's pass line reads +1 tick and 10 % only (its section 10 (c)); the runner's `worse_2` arm is not run by H4 (cost); measures (28) and (29) are read at the levels run |
 | the denial ladder | measure (33)'s responses | **dropped** | H4's responses are `off` only (the brief); measure (33) is not read (Appendix B) |
-| W | the first-payout window | fixed | 126 (W42-R1's `W`; U1's and Q-44's ledger constant) and 252 beside |
+| W | the first-payout window | fixed | **126, pinned** (W42-R1's `W`, which its second text requires of H4's manifest, m-9; U1's and Q-44's ledger constant); the readings at W = 252 are beside, in H4's other files, never in W42-R1's input |
+| the reading tag | what W42-R1 accepts | fixed | `martingale_outcome` (W42-R1's `READING`), on every reading of the collection result; the block tag `search` |
 | the horizons | where each measure is read | fixed | each measure's own (MEASURES section 4); a month is 21 sessions (CHARTER 2) |
 | the exact-length runs | U1's identity on the cut runs (MEASURES 1.1, m-8) | fixed | U1's `EXACT` horizons (the vendored `user_journey.EXACT`, D-620 (3)(f)) on every start of the `off` arm-runs (W3.1's M-2) and on every `user_beside.EXACT_EVERY`-th start of the stress arms; the record each reading read and its differing count in its manifest |
-| J | H4's coin seeds | fixed | **`J_H4` of Appendix A**: the smallest power of two at or above the J at which a true gap of W42-R1's `DELTA_MIN` between two baselines clears W42-R1's `RESOLVE_Z` coin standard errors with probability `family_stats.MDL_POWER`, at W42-R1 5.3's worst-case variance (Q = 1 / (J n) at the twelve-month horizon's complete starts, every per-unit difference in [-1, 1]), n from a lower bound of the sessions (the three-way note's 2.5 form with W42-R1's resolution line). **Read at the pinned W42-R1's constants only**: until W42-R1 is pinned the script's `j_h4` refuses and Appendix A prints a provisional reading at 2bde318's constants, for sizing only |
+| J | H4's coin seeds | fixed | **`J_H4` of Appendix A**: the smallest power of two at or above the J at which a true gap of W42-R1's `DELTA_MIN` between two baselines clears W42-R1's `RESOLVE_Z` coin standard errors with probability `family_stats.MDL_POWER`, at W42-R1 5.3's worst-case variance (Q = 1 / (J n) at the twelve-month horizon's complete starts, every per-unit difference in [-1, 1]), n from a lower bound of the sessions (the three-way note's 2.5 form with W42-R1's resolution line). **at least W42-R1's `H4_MIN_SEEDS`** (the fewest seeds at which W42-R1 lets a gap resolve; Appendix A prints the comparison); **read at the pinned W42-R1's constants only**: until W42-R1 is pinned the script's `j_h4` refuses and Appendix A prints a provisional reading at the second text's constants (wt/wt-infra 357a339), for sizing only |
 | the seed indices | the coin seeds' indices | fixed | 0 to J - 1 (`three_way_runner.Plan`'s `seed_indices`), the same for every baseline and arm |
 | the holiday allowance | the sessions' lower bound for J | fixed | `HOLIDAYS_A_YEAR` of the script: at most that many weekdays a year are not sessions (exchange holidays fall below it), so J is not short |
 | the batch | starts run at once in lockstep | fixed | a batch of 21 starts (a month of starts; the script's `BATCH_STARTS`), its lanes against the memory cap in Appendix A |
@@ -230,19 +232,26 @@ declared constant with its reason.
 
 H4 has no deciding line. What it hands on, and the checks that must hold before anything of it is believed:
 
-- **To W42-R1: one collection result** (the lead's ruling on B-4), H4-C, written once from a clean checkout by
-  `scripts/h4_collect.py` through `extended.results.write_result`: `results/h4_w42_input.csv` and its manifest, one row
-  a baseline, start and seed, every key below a column, on the deciding `off` reading. Its manifest carries the four
-  units files' sha256, the declared start list (its count and sha256), each start's **uncapped** sessions left (section
-  4, `extended/day_calendar.py` at ebd5a05, the start session counted), the seed indices 0 to J - 1, and the fixed key
-  set. **The adapter** `extended/h4_collect.py::w42_readings` builds the four `wave42.BaselineReading`s from that one
-  file, block tag `search`, refusing a file whose sha256 differs from its manifest's, any declared start, seed or key
-  missing, or readings not paired; its test runs on a synthetic file. The pinning row of CHARTER 3.9 cites the
-  collection result's sha256. **The keys**, each the per-unit matrix x[s, c] in MEASURES' never-blank form:
+- **To W42-R1: one collection result** (the lead's ruling on B-4; W42-R1's second text, its 1.1: H4's one output),
+  H4-C, written once from a clean checkout by `scripts/h4_collect.py` through `extended.results.write_result`:
+  `results/h4_w42_input.csv` and its manifest, one row a baseline, start and seed, every key below a column, on the
+  deciding `off` reading. **Its manifest carries every field of W42-R1's `H4_MANIFEST_KEYS`**: `sha256` (the file's
+  own), `block` (`search`), `reading` (`martingale_outcome`), `W` (126), `baselines` (the four, in W42-R1's order),
+  `starts` (every declared start day), `seeds` (the seed indices 0 to J - 1), `optional_measures` (exactly
+  `orders_max`, `accounts_max` and `taken_mean`), `calendar_sha256` (`wave42.calendar_digest` of the search calendar
+  of section 4) and `readings_sha256` (`wave42.readings_digest` of the four readings, recorded by H4's runner); beside
+  them the four units files' sha256 and each start's **uncapped** sessions left (section 4, for the auditor; W42-R1
+  recomputes its own). **The adapter** `extended/h4_collect.py::w42_readings` builds the four
+  `wave42.BaselineReading`s (name, block, reading, starts, seeds, values) from that one file, refusing a file whose
+  sha256 differs from its manifest's, any declared start, seed or key missing, readings not paired, or a
+  `readings_sha256` its readings do not reproduce; its test runs on a synthetic file. The pinning row of CHARTER 3.9
+  cites the collection result's sha256. **The keys**, each the per-unit matrix x[s, c] in MEASURES' never-blank
+  form:
   - `net_month_1` to `net_month_3` and `peak_month_1` to `peak_month_3` (P_B's inputs, measure (13) and MEASURES
     section 2; W42-R1 computes P_B, `run_out` and `not_paid_within_B` at the budgets it sets);
   - **`spent_before_first_payout`** (the per-unit spending before the first
-    payout, measures (6) and (24)), `first_payout_days` (measure (5)), `cash_to_first_pass` (measure (2)),
+    payout, measures (6) and (24)), `first_payout_days` (measure (5)), `first_pass_days` (measure (1), censored at
+    W + 1: W42-R1's second text, its B-5), `cash_to_first_pass` (measure (2)),
     `peak_oop_12_months` (measure (25)), `share_months_positive` (measure (18));
   - **`orders_max`, `accounts_max` (measure (30)) and `taken_mean` (measure (37)), required now**: the firm path must
     emit them (a build requirement, Appendix C), and the run is refused without them, so W42-R1's three optional
@@ -272,7 +281,8 @@ H4 has no deciding line. What it hands on, and the checks that must hold before 
   matters, is not starved by coin noise, at the twelve-month horizon's complete starts (the strictest, W42-R1's
   dimensions sitting at months 1-3, W and twelve months).
 - **What J does not set:** the held-out test's J and m (H3-D's, at delta\* and H4's sigma, the three-way note's 2.2
-  (b) and its 2.5), and W42-R1's power forecast (its 5.3 reads the test's J, not H4's).
+  (b) and its 2.5), and W42-R1's power forecast (its 5.3 reads the held-out test's seed count, W42-R1's own declared
+  `TEST_SEEDS`, not H4's).
 - **What J's choice moves** (the red team's m-2): W42-R1's delta\* is the smallest *resolved* adjacent gap, and when
   none is resolved a fixed share of the baselines' spread. More of H4's seeds can therefore move delta\* **either
   way**: resolving a small gap lowers it, but resolving one large gap where none was resolved can raise it from the
@@ -476,7 +486,7 @@ pinned, J is provisional and the plan is sized at it.
 <!-- h4_plan: begin -->
 ```text
 H4's seed count J (section 7): a true gap of DELTA_MIN resolved at RESOLVE_Z standard errors with probability POWER, at W42-R1's worst-case variance Q = 1 / (J n)
-  J_H4: REFUSED until W42-R1 is pinned (B-6); the lines below are PROVISIONAL, at W42-R1 2bde318's constants, for sizing only
+  J_H4: REFUSED until W42-R1 is pinned (B-6); the lines below are PROVISIONAL, at W42-R1 357a339's constants, for sizing only
   W42-R1's constants: RESOLVE_Z=2 DELTA_MIN=0.01 POWER=0.8 (z=0.8416); units needed n = ((RESOLVE_Z + z) / DELTA_MIN)^2 = 80749
   search-year sessions: at most 1042 (weekdays 2020-01-02 to 2023-12-29), at least 994 (less 12 a year)
   complete starts at h=63: 932 to 980
@@ -487,6 +497,7 @@ H4's seed count J (section 7): a true gap of DELTA_MIN resolved at RESOLVE_Z sta
   at J (provisional), h=126: gap resolved with probability POWER from 0.0083 to 0.0085
   at J (provisional), h=252: gap resolved with probability POWER from 0.0089 to 0.0092
   sigma's relative standard error at J (provisional) (a normal sd from J seeds, per start day): 0.0627
+  W42-R1's floor H4_MIN_SEEDS = 62: J (provisional) = 128 meets it; the held-out test's J is W42-R1's TEST_SEEDS = 1000, not H4's
 H4's heavy slots (at J (provisional)): part | reads | work | hours over 2 workers at the assumed costs 0.05 us, 0.5 us, 5.0 us a lane-trade | c_max (fits 8 h)
   H4-0 probe        | synthetic toys; and P-14's first 21 real search-year starts replayed on the point arm, written sealed (hash recorded, unopened) | 6.451e+05 lane-trades | 0.0  0.0  0.0 | c_max=89285.71 us
   H4-S schedules    | the search years' bars and the registered constants through the cut; the nested cuts 2022-12-30, 2023-06-30, 2023-09-29 against 2023-12-29 | not lane-trades: timed in its log, under the 8 h cap
@@ -511,7 +522,7 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 <!-- h4_measures: begin -->
 | # | measure | H4 | where | W42-R1 key |
 |---|---|---|---|---|
-| 1 | Sessions to the first evaluation pass | read | W | — |
+| 1 | Sessions to the first evaluation pass | read | W | `first_pass_days` |
 | 2 | Cash to the first pass | read | W | `cash_to_first_pass` |
 | 3 | Evaluations bought before the first pass | read | W | — |
 | 4 | Share of starts passed by session 21 | read | 21 | — |
@@ -564,8 +575,8 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 | the `trade_problems` switch-off | `rc_dev_test.trade_problems`' screen-row and whole-window hash check, for cut rows | **to record** under its own row (the lead's), entered in the cut's `SWITCHED_OFF` | the check replaced, on cut rows only, by I-1's sub-hash comparison; whole-window builds keep it |
 | the collection and its adapter | `scripts/h4_collect.py`, `extended/h4_collect.py::w42_readings` | **to build** | section 9's one result from the four units files by their sha256, and the four `wave42.BaselineReading`s from it, with its refusals and its synthetic test |
 | the seed module's H4 block | `extended/three_way_seeds.py` (wt/wt-three) | **to build** | section 15's block with its roles, statuses and `ROLE_USE`, the parts `H4-0` and `H4-B`, `issue` refusing the spares; `tests/test_h4_draft.py`'s allowed files include it |
-| W42-R1 | `docs/plans/WAVE42_SETTING_RULE.md` and `extended/wave42.py`, **as pinned** (its first text at wt/wt-infra 2bde318 is in its corrective cycle) | built; to pin before H4 | its pinning row and its rule text's sha256 (this file's placeholder); its input form (`BaselineReading`, the keys of `REQUIRED` and `OPTIONAL`, the block tag `search`); its constants `RESOLVE_Z`, `DELTA_MIN`, `POWER_TARGET` and `W`, which H4's J reads |
-| the session calendar | `extended/day_calendar.py` at ebd5a05 (Q-166), `load_sources().days` | built | the search-year session list, from which each start's uncapped sessions left are counted, its source file's sha256 |
+| W42-R1 | `docs/plans/WAVE42_SETTING_RULE.md` and `extended/wave42.py`, **as pinned**, cited by the LF sha256 of both files (its first text at wt/wt-infra 2bde318; its second, under its second read, at 357a339) | built; to pin before H4 | its pinning row and its two files' sha256 (this file's placeholder); its input form (`BaselineReading` with its `reading` tag, `H4Binding`, `H4_MANIFEST_KEYS`, the keys of `REQUIRED`, `first_pass_days` among them, and `OPTIONAL`); `calendar_digest` and `readings_digest`, which H4's runner records; its constants `RESOLVE_Z`, `DELTA_MIN`, `POWER_TARGET`, `W`, `READING` and `H4_MIN_SEEDS`, which H4's J and manifest read; its `TEST_SEEDS`, the held-out test's J, not H4's |
+| the search calendar | Q-197's pinned search-year calendar and its loader (wt/wt-cal), the one calendar H4 and W42-R1 both bind | **to build** (Q-197) | the search years' session dates, 2020-01-02 to 2023-12-29, strictly increasing, by its loader; its result file's sha256 under its row; H4's starts, every session count and `calendar_sha256` read from it, never from another list |
 | the starts and the as-traded replays | `extended/user_beside.py`, `run_starts(design, "point", BY_NAME["off"], ..., journey=True, journey_block="search")` | built (Wave 3.1) | the search-year starts, the block refusal, the exact runs on every start, the as-traded journey records (H4-A) and identity (I-4)'s reference, on the point arm only |
 | the measures | `extended/journey_measures.py`, `extended/journey_readings.py` | built (Wave 3.1) | every function `docs/MEASURES.md`'s index names; `coin_readings`, `design_coin_readings`, `variance_decomposition` on x[s, c]; `journey_readings.summary` on the as-traded replays |
 | the naive coin's source | `extended/triggers.py` (`CoinMarks`), `extended/components.py` (`coin_component`, `schedule_day`), `extended/router.py` | built (Q-169) | the clock-only schedule over P-16's window, one position at a time, the void calendar, the news convention; an admission restricted to a given mark list, for I-5 |
@@ -580,7 +591,7 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 | B-1 | the strict rule, one open position across all accounts, each trade on one account; the H3-A4 condition dropped; a refusing overlap count | section 3's one-position and conduct rows; section 7's overlap row; section 12; section 18; sections 5, 9, 11 (the count) |
 | B-2 | registered marks inherited by a named file and sha256; I-1 by a search-year sub-hash from the whole-window identity run; the `trade_problems` switch-off under its own row; the cut's pass-through interface | section 2; section 16 (I-1); Appendix C (the cut, the registered-constants file, the switch-off) |
 | B-3 | `arm="point"`, asserted in T-0 | section 7's arm row; section 11 (H4-0, H4-A); section 16 (I-4); Appendix C |
-| B-4 | one collection result by a named adapter; sessions left uncapped from the day calendar; the three optional keys required | section 4; section 9; section 16's outputs; Appendix C (the firm path, the collection, the calendar) |
+| B-4 | one collection result by a named adapter; sessions left uncapped from the pinned search calendar (Q-197); the three optional keys required | section 4; section 9; section 16's outputs; Appendix C (the firm path, the collection, the calendar) |
 | B-5 | I-5: the coin's source at P-16's marks equals P-16's schedule | section 16 (I-5); section 7's coin rows |
 | B-6 | H4 cites the pinned W42-R1 by sha256 and pins after it; J refused until then | the header table; section 7's J row; section 16; section 18; the script's `W42_PIN` and `j_h4` |
 | B-7 | the held-out read ledger; P-16's shape for the coin labelled the lead's choice | section 2's ledger; section 7's coin row |
@@ -592,5 +603,6 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 | m-6 | MEASURES (35) amended | `docs/MEASURES.md` (35); section 7's coin row |
 | m-7 | the scans widened; the runtime guard named the real defence | section 15; T-0 |
 | n-1 to n-6 | notes; n-2's law and n-3's print taken | section 7's overlap row (n-2); section 3 and section 12 (n-3) |
+| W42-R1's second text (357a339) | its obligations on H4: the manifest's `readings_sha256`, `calendar_sha256` and optional measures; W pinned at 126; `first_pass_days`; the reading tagged `martingale_outcome`; at least `H4_MIN_SEEDS` seeds; `TEST_SEEDS` W42-R1's; cited by its two files' sha256 once pinned; Q-197's calendar | the header table; section 4; section 7's W, reading-tag and J rows; section 9; section 10; Appendix A; Appendix B row 1; Appendix C |
 | template v2 | the lead's ruling: the family form, v2 wherever it governs | the status paragraph; section 7's deciding row (v2's section 5); section 9's oracle; section 12 (the failed-at-fill count); section 13 (v2's section 14) |
 <!-- h4_findings: end -->

@@ -15,9 +15,10 @@ not short when holidays thin the calendar; J is then rounded up to a power of tw
 disjoint seed sets of any power-of-two size m.
 
 **Bound to the pinned W42-R1 (the red team's B-6).** The constants J reads are W42-R1's *as pinned*: `W42_PIN` holds the
-pinning row, the commit and the rule text's LF sha256, filled only when the lead pins W42-R1, and until then
-`j_h4()` refuses (`W42NotPinned`). The report prints the derivation at W42-R1 2bde318's constants as a **provisional**
-reading for sizing only, labelled so; H4 pins after W42-R1, with J recomputed at the pinned constants.
+pinning row, the commit and the LF sha256 of its two files, filled only when the lead pins W42-R1, and until then
+`j_h4()` refuses (`W42NotPinned`). The report prints the derivation at the provisional W42-R1 commit's constants as a
+**provisional** reading for sizing only, labelled so; H4 pins after W42-R1, with J recomputed at the pinned constants,
+and J is refused below W42-R1's `H4_MIN_SEEDS`.
 
 **The work** is lane-trades (arm-runs x seeds x starts x horizon x trades a session, `three_way_arith.lane_trades`),
 with U1's exact-length runs (`EXACT`, read from the vendored `user_journey.py`) on every start of the `off` arm-runs and
@@ -64,11 +65,17 @@ class W42NotPinned(RuntimeError):
     """J_H4 is read only at the pinned W42-R1's constants."""
 
 
-#: the pinned W42-R1: {"row": "E-NNN", "commit": "<sha>", "sha256": "<the rule text's LF sha256>"} -- None until the
-#: lead's pinning row exists (B-6); `tests/test_h4_draft.py` then reads the constants from that commit
+#: the pinned W42-R1: {"row": "E-NNN", "commit": "<sha>", "rule_sha256": "<WAVE42_SETTING_RULE.md's LF sha256>",
+#: "code_sha256": "<extended/wave42.py's LF sha256>"} -- None until the lead's pinning row exists (B-6; W42-R1's second
+#: text cites both files); `tests/test_h4_draft.py` then reads the constants from that commit
 W42_PIN: dict | None = None
-#: the commit whose constants the provisional derivation reads (sizing only, never J_H4)
-PROVISIONAL_W42_COMMIT = "2bde318"
+#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's second text,
+#: under its second read
+PROVISIONAL_W42_COMMIT = "357a339"
+#: W42-R1's floor on H4's seeds (its `H4_MIN_SEEDS`, m-2: below it no gap resolves) and the held-out test's J (its
+#: `TEST_SEEDS`, B-3), printed beside H4's J; the test holds both to `extended/wave42.py` at the provisional commit
+H4_MIN_SEEDS = 62
+TEST_SEEDS = 1000
 #: W42-R1's constants H4's J reads, at `PROVISIONAL_W42_COMMIT` until the pin (the test holds them to that commit's
 #: `extended/wave42.py`, or to the pinned commit's once `W42_PIN` is set)
 RESOLVE_Z = 2.0
@@ -127,7 +134,10 @@ def j_h4() -> int:
     """H4's declared J: refused until W42-R1 is pinned (B-6)."""
     if W42_PIN is None:
         raise W42NotPinned("REFUSED (B-6): J_H4 is read at the pinned W42-R1's constants; W42-R1 is not pinned yet")
-    return j_provisional()
+    J = j_provisional()
+    if J < H4_MIN_SEEDS:
+        raise W42NotPinned(f"REFUSED: J = {J} is below W42-R1's H4_MIN_SEEDS = {H4_MIN_SEEDS}")
+    return J
 
 
 def resolvable_gap(J: int, n: int) -> float:
@@ -166,7 +176,8 @@ def report() -> str:
         out.append(f"  J_H4: REFUSED until W42-R1 is pinned (B-6); the lines below are PROVISIONAL, at W42-R1 "
                    f"{PROVISIONAL_W42_COMMIT}'s constants, for sizing only")
     else:
-        out.append(f"  W42-R1 pinned in {W42_PIN['row']} at {W42_PIN['commit']} (rule text sha256 {W42_PIN['sha256']})")
+        out.append(f"  W42-R1 pinned in {W42_PIN['row']} at {W42_PIN['commit']} (rule text sha256 "
+                   f"{W42_PIN['rule_sha256']}, code sha256 {W42_PIN['code_sha256']})")
     out.append(f"  W42-R1's constants: RESOLVE_Z={RESOLVE_Z:g} DELTA_MIN={DELTA_MIN:g} POWER={POWER:g} "
                f"(z={A.z(POWER):.4f}); units needed n = ((RESOLVE_Z + z) / DELTA_MIN)^2 = {units_needed()}")
     out.append(f"  search-year sessions: at most {up} (weekdays {A.SEARCH[0]} to {A.SEARCH[1]}), at least {lo} "
@@ -182,6 +193,9 @@ def report() -> str:
                    f"{resolvable_gap(J, A.complete_starts(lo, h)):.4f}")
     out.append(f"  sigma's relative standard error at {label} (a normal sd from J seeds, per start day): "
                f"{1.0 / math.sqrt(2.0 * (J - 1)):.4f}")
+    out.append(f"  W42-R1's floor H4_MIN_SEEDS = {H4_MIN_SEEDS}: {label} = {J} "
+               f"{'meets it' if J >= H4_MIN_SEEDS else 'IS BELOW IT (refused)'}; the held-out test's J is W42-R1's "
+               f"TEST_SEEDS = {TEST_SEEDS}, not H4's")
     out.append(f"H4's heavy slots (at {label}): part | reads | work | hours over {A.WORKERS} workers at the assumed "
                "costs " + ", ".join(f"{c} us" for c in A.COSTS_US) + f" a lane-trade | c_max (fits {A.PART_CAP_H:g} h)")
     probe = A.lane_trades(1, 1, 64, 40, 63)
