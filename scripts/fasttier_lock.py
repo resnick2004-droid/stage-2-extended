@@ -34,8 +34,12 @@ pytest through `run`, which:
 6. **releases on every exit path** -- success, failure, an exception, Ctrl+C, SIGTERM/SIGBREAK -- and only its own
    lock (the token must match). A hard kill leaves the file behind; the next hook sees the dead pid and takes over.
 
-The whole wait (lock and memory together) is bounded by 3 hours; at the bound `run` prints FAILED with the holder and
-exits 75, and the hook fails. It never passes silently. What the hook checks is unchanged: this only orders the runs.
+The wait is bounded by 3 hours **of a line that does not move** (Q-174): the waiter's timer restarts whenever the jobs
+holding the slots change (a holder leaves or a new one takes a slot; a heartbeat under the same token is the same job),
+so a waiter behind a long, advancing line waits as long as the line takes, while a stuck live holder still runs the cap
+out (and a dead or 2-hour-old one is taken over, as before). The memory wait, once a slot is held, has its own 3-hour
+bound. At a bound `run` prints FAILED with the holder and exits 75, and the hook fails. It never passes silently. What
+the hook checks is unchanged: this only orders the runs.
 
 Not the heavy lock: `scripts/run_lock.py` (`run.lock`, one heavy run at a time) is never stolen; this one guards a
 minutes-long test run whose holder can crash, so a dead or overdue holder is taken over.
@@ -370,6 +374,8 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
     reserve = SLOT_RESERVE_GB if reserve_gb is None else reserve_gb
     slots = [slot_path(path, i) for i in range(n_slots)]
     t0 = monotonic()
+    t_still = t0                                          # when the jobs holding the slots last changed
+    last_jobs: tuple | None = None
     last_print: float | None = None
     token = uuid.uuid4().hex
     q = queue_dir(path)
@@ -409,15 +415,27 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
                 raws = [r for r in (_read_raw(sp) for sp in slots) if r]
             held = "; ".join(describe(_parse(r)) for r in raws) if raws else "nobody (an earlier waiter is taking it)"
             held += memory_note
-            elapsed = monotonic() - t0
-            if elapsed >= timeout_s:
+            # The cap counts only a line that does not move: the timer restarts whenever the set of jobs holding the
+            # slots changes (a holder leaves, a new one takes a slot -- each job has its own token). A holder's
+            # heartbeat under the same token is the same job; a stuck holder still runs the cap out, and a dead or
+            # 2-hour-old one is taken over as before.
+            jobs = tuple(sorted(((_parse(r) or {}).get("token") or r) for r in raws))
+            if jobs != last_jobs:
+                if last_jobs is not None:
+                    t_still = monotonic()
+                last_jobs = jobs
+            still = monotonic() - t_still
+            total = monotonic() - t0
+            if still >= timeout_s:
                 raise WaitTimeout(f"FAILED: the fast-tier lock {path} stayed held by {held} for the whole wait "
-                                  f"({timeout_s / 60:.0f} min; place {place} of {len(ahead)} in line); the fast tier "
-                                  f"did not run and the commit is refused. See `python scripts/fasttier_lock.py "
-                                  f"status`; commit again when it is free.")
+                                  f"({timeout_s / 60:.0f} min without the line moving, {total / 60:.0f} min in all; "
+                                  f"place {place} of {len(ahead)} in line); the fast tier did not run and the commit "
+                                  f"is refused. See `python scripts/fasttier_lock.py status`; commit again when it is "
+                                  f"free.")
             if last_print is None or monotonic() - last_print >= PRINT_EVERY_S:
                 _say(f"fast-tier lock held by {held}; waiting, place {place} of {len(ahead)} in line "
-                     f"({elapsed / 60:.0f} of {timeout_s / 60:.0f} min)")
+                     f"({total / 60:.0f} min in all; {still / 60:.0f} of {timeout_s / 60:.0f} min without the line "
+                     f"moving)")
                 last_print = monotonic()
             sleep(poll_s)
     finally:
@@ -518,10 +536,10 @@ def run(cmd: list[str], lock: Path, tree: str, min_free_gb: float = MIN_FREE_GB,
             if rec is not None and rec.get("token") == inherited:
                 _say("the fast-tier lock is already held by the run this commit is nested in; running under it")
                 return _run(cmd, env)
-    t0 = monotonic()
     holder = acquire(lock, tree, timeout_s=timeout_s, poll_s=poll_s, sleep=sleep, monotonic=monotonic,
                      free_gb=free_gb, max_slots=n_slots, reserve_gb=reserve_gb, min_free_gb=min_free_gb)
     sp = holder.path or lock
+    t0 = monotonic()                                      # the memory wait has its own cap, from the slot's taking
     try:
         gb = wait_for_memory(sp, holder, min_free_gb, timeout_s, free_gb, poll_s, sleep, monotonic, t0)
         if not refresh(sp, holder, "fast-tier"):

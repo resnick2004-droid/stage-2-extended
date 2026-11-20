@@ -477,3 +477,80 @@ def test_the_waiting_line_names_the_place(lock, clock, capsys):
     with pytest.raises(F.WaitTimeout):
         acquire(lock, clock, timeout_s=90)
     assert "place 1 of 1" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------------------------------------ the cap counts a line that does not move (Q-174)
+
+def test_a_long_line_of_short_holders_never_times_out_the_waiter(lock, clock):
+    """Twelve holders of 60 s each (each a different job) ahead of a waiter whose cap is 100 s: the line keeps moving,
+    so the waiter waits the whole 720 s and then takes the lock."""
+    plant(lock, os.getpid(), token="job-0")
+    jobs = [0]
+
+    def sleep(s):
+        clock.sleep(s)
+        if clock.t >= 60 * (jobs[0] + 1):
+            jobs[0] += 1
+            if jobs[0] < 12:
+                plant(lock, os.getpid(), token=f"job-{jobs[0]}", tree=f"C:/other/wt-{jobs[0]}")
+            else:
+                lock.unlink(missing_ok=True)
+
+    h = F.acquire(lock, tree="last", timeout_s=100, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert h.record["tree"] == "last" and clock.t >= 720
+    F.release(lock, h)
+
+
+def test_a_stuck_live_holder_still_times_out_the_waiter_at_the_cap(lock, clock):
+    plant(lock, os.getpid(), token="stuck")
+    with pytest.raises(F.WaitTimeout) as e:
+        acquire(lock, clock, timeout_s=100, poll_s=5)
+    assert 100 <= clock.t < 110
+    assert "without the line moving" in str(e.value)
+
+
+def test_a_holder_heartbeat_of_the_same_job_is_not_progress(lock, clock):
+    """A holder refreshing its own record (its token unchanged) is the same job: the cap still runs."""
+    plant(lock, os.getpid(), token="same")
+
+    def sleep(s):
+        clock.sleep(s)
+        plant(lock, os.getpid(), token="same")                  # a fresh `updated`, the same job
+
+    with pytest.raises(F.WaitTimeout):
+        F.acquire(lock, tree="T", timeout_s=100, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert clock.t < 110
+
+
+def test_the_cap_restarts_at_each_new_holder_and_counts_from_the_last(lock, clock):
+    """One change of job at 80 s, then the new holder sticks: the cap runs out 100 s after the change."""
+    plant(lock, os.getpid(), token="first")
+
+    def sleep(s):
+        clock.sleep(s)
+        if clock.t == 80:
+            plant(lock, os.getpid(), token="second")
+
+    with pytest.raises(F.WaitTimeout):
+        F.acquire(lock, tree="T", timeout_s=100, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert 180 <= clock.t < 190
+
+
+def test_the_memory_wait_has_its_own_cap_from_the_moment_the_lock_is_taken(lock, clock):
+    """A long but moving line does not use up the memory wait's bound."""
+    plant(lock, os.getpid(), token="job-0")
+    jobs = [0]
+
+    def sleep(s):
+        clock.sleep(s)
+        if lock.exists() and clock.t >= 60 * (jobs[0] + 1) and jobs[0] < 3:
+            jobs[0] += 1
+            if jobs[0] < 3:
+                plant(lock, os.getpid(), token=f"job-{jobs[0]}")
+            else:
+                lock.unlink()
+
+    free = iter([0.5, 0.5] + [9.0] * 1000)
+    rc = F.run(["x"], lock=lock, tree="T", min_free_gb=1.5, timeout_s=100, poll_s=5, free_gb=lambda: next(free),
+               sleep=sleep, monotonic=clock.monotonic, runner=lambda c, e: 0)
+    assert rc == 0 and clock.t >= 180
