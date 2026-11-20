@@ -93,8 +93,17 @@ def test_design_refusals():
         C.UserBook(overlap="shared_path")
     d = C.Design("ts", (a, marks_component("b", 1001, 1100, (1005,))))
     assert [c.name for c in d.components] == ["a", "b"]
-    b = C.session_bounds()
-    assert b["ny_am"] == b["ny_pm"] == (930, 1330) and b["asia"] == (60, 540) and b["_last_entry"][1] == 1328
+    b = C.session_bounds()                                  # every search-year weekday at once (E-231 (3))
+    assert b["ny_am"] == b["ny_pm"] == (930, 1330) and b["asia"] == (120, 540) and b["_last_entry"][1] == 1328
+    assert b["evening"] == (0, 60) and b["london"] == (600, 930)
+    winter, summer, mismatch = (C.session_bounds(date(2021, 1, 15)), C.session_bounds(date(2021, 7, 15)),
+                                C.session_bounds(date(2021, 3, 17)))   # Tokyo 09:00 at 18:00 / 19:00 CT; London 03:00
+    assert winter["asia"] == (60, 540) and summer["asia"] == (120, 540) and mismatch["london"] == (600, 930)
+    early = marks_component("x", 60, 100, (960,), session="asia")      # the window is what is checked
+    assert C.Design("ts", (early,), day=date(2021, 1, 15)).day == date(2021, 1, 15)
+    for day in (None, date(2021, 7, 15)):                   # 18:00 CT is not Tokyo's open under US daylight time
+        with pytest.raises(C.DesignRefused, match="outside session"):
+            C.Design("ts", (early,), day=day)
 
 
 # ------------------------------------------------------------------------------------------------ the chain
