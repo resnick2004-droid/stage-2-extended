@@ -210,3 +210,10 @@ Append-only: a row is never edited here; a correction is made in the decision lo
 |---|---|---|---|---|---|---|---|
 | Q-162 | The identity block re-held once at E-222's commit (heavy queue part 11): Q-05, Q-80, Q-89, Q-93, Q-101, t10w2, then RD-01's, RD-02's, RD-03's, F-03's A0 | lead | done (E-243) | E-222 | heavy | 0 | E-222 |
 | Q-171 | S1's range on the search years (`scripts/s1_range.py`), run clean and loaded | wt-user | done (E-240) | E-232 | heavy | 0 | E-240 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-20
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-180 | The lever tables for My Funded Futures and Lucid (each firm its own protocol) | wt-payout | done (E-249) | E-221 | light | 0 | E-246 |
+| Q-181 | /verify-rule for every MFFU and Lucid rule Q-180 lists as unverified | rules-verifier | done for MFFU (E-249); Lucid by the operator | Q-180 | light | 0 | E-246 |
