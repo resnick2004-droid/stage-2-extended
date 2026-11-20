@@ -45,9 +45,9 @@ an earlier brief.
 5. **What the data cannot show** -- the held-out years' size, the test's power from its power gate, that the level is
    nominal while the held-out read ledger is not empty, that the money comes from the firm's rules (a funded loss
    costs only fees), not from predicting the market, and what is not modelled (the user's time, taxes).
-6. **What is the operator's** -- the open items (O-1, O-3, O-4, O-5, the data question, any NEEDS_OPERATOR on the
-   board), each in one sentence with its consequence; any purchase stated with its cost, **never authorised here**.
-   Until O-4 is ruled, no playbook goes to a user: say so if a finalist exists.
+6. **What is the operator's** -- any NEEDS_OPERATOR on the board, each in one sentence with its consequence (O-1 and
+   O-3 to O-7 were ruled at E-221, the data purchase held); any purchase stated with its cost, **never authorised
+   here**.
 7. **The next round** -- the next three to five items in the queue, one line each.
 
 ## Limits

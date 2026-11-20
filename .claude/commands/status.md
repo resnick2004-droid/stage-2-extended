@@ -29,7 +29,8 @@ Run `python scripts/status.py` (TASK_QUEUE Q-04 builds it). It reports:
 - **Result files** of `results/` with their manifest verification status (`extended.results.list_results`); any `-dirty`
   commit.
 - **The identity** -- the board's state (`STATUS.md`) for P-14's and P-16's gate rows and U1's start rows.
-- **The operator's open items** -- O-1, O-3, O-4, O-5 and the data question (E-210), each with its state.
+- **The operator's open items** -- any NEEDS_OPERATOR on the board, each with its state (O-1 and O-3 to O-7 ruled at
+  E-221; the data purchase held).
 - **The run lock** -- `run.lock` at the repository root: free, or its holder, job, start and expected end (stale if older
   than its expected end plus an hour: investigated, never stolen).
 - **Last test run** from `results/.last_test_run.json`, written by the post-edit test hook (the edited file's tests and the two foundation checks, Q-147; not the fast tier).

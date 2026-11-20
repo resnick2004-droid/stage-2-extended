@@ -39,13 +39,13 @@ review at all: refuse, unless the caller's brief records why it was skipped.
 
 `CHARTER.md` sections 2-3 as E-210 put them in force (the operator, E-207). A design is judged on **the user's
 journey** under zero edge: on the **martingale-outcome reading** (each trade's outcome redrawn at its bracket's
-driftless first-exit odds, identically for designs and baselines), inside every operator limit with a margin wider
-than its noise (O-5's alternative computed beside), ahead of **each baseline** (for Topstep: naive coin, P-14, P-15,
-P-16, each under the design's convention) on the composite pinned with every input before the survey (fallback: P
-under the bankroll stop), by the calibrated paired coin-seed test at 0.05 / (k (k + 1)) on the held-out years, read
-once, with the time leg a consistency condition and the floors holding. The trades' lift over the coin twin, its
-value-map bar, R\* = P-14 and Stage 2 D-621 (3) are on record and no longer decide (CHARTER 3.10): a draft that judges
-by any of them is refused.
+driftless first-exit odds, identically for designs and baselines), the point estimate governing each limit -- inside
+it passes, outside it fails, never a second margin, the one-sided check reported beside (E-221, E-230, O-5), ahead of
+**each baseline** (for Topstep: naive coin, P-14, P-15, P-16, each under the design's convention) on the composite
+pinned with every input before the survey (fallback: P under the bankroll stop), by the calibrated paired coin-seed
+test at 0.05 / (k (k + 1)) on the held-out years, read once, with the time leg a consistency condition and the floors
+holding. The trades' lift over the coin twin, its value-map bar, R\* = P-14 and Stage 2 D-621 (3) are on record and no
+longer decide (CHARTER 3.10): a draft that judges by any of them is refused.
 
 ## Mandatory -- refuse if any is missing, vague or set after a look
 
@@ -57,7 +57,13 @@ result of this search's own cells.
    ledger** complete: CHARTER 3.6 (b)'s floor and E-211's additions at least, each entry in the leak-clause form, and
    every read of the draft's own comparators and trigger families -- grep `DECISIONS.md`, `docs/plans/`,
    `docs/MEASURES.md` section 7 and the lever table's section 6 for more. The horizon embargo stated with the longest
-   horizon. O-1 ruled, or the draft says it does not pin until it is. The `Judged-block reads:` line (template 14)
+   horizon. O-1 as E-221 ruled it: the draft's finalists enter the one joint fixed-sequence test across Topstep, My
+   Funded Futures and Lucid, held until each has finalists, run under the held-out test's declaration -- one
+   declaration of its own (E-230), listing every firm's finalists by each search declaration's hash and finalists'
+   row, fixing the joint order, taking the k, the one family that reads NQ's held-out window, so Q-158's rule holds
+   unchanged. Refuse a search draft that spends the held-out years alone or names a `heldout_*` purpose of its own;
+   the held-out test's declaration carries the line. The
+   `Judged-block reads:` line (template 14)
    names only the held-out test's purposes, none with a choice or fitting word (`extended/reader.py` refuses those and
    any purpose not on the line), and the draft binds its `heldout_*` reads to after its finalists' row and its
    held-out row. **Refuse:**
@@ -69,8 +75,11 @@ result of this search's own cells.
    - a draft that plans a new `registered_design` read of the held-out years (P-14, P-15, P-16) without a decision row
      naming it.
 
-   The reader does not yet enforce the order or the market; **Q-158** (queued for wt-verify) is the guard to come, and
-   until it lands these refusals are the guard. Refuse a held-out year read by any choice.
+   **Q-158** (built, E-220; wt/wt-verify 6ce8e6a) makes the reader enforce the order and the market from the
+   finalists' token row, `heldout-finalists: F-NN @ <sha> list <sha>` (the declaration's LF sha256, then the
+   finalists' list file's): refuse a draft whose finalists' row is not in that form. Q-158 does not check the held-out
+   row, so that condition is held by the declaration and the auditor. Refuse to approve any design search for a pin
+   before Q-158 merges. Refuse a held-out year read by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -83,32 +92,40 @@ result of this search's own cells.
    (`extended/lever_space.py`). L declared as a searched lever with its values, the five-minute cell beside.
 4. **The component schedule** (template 4): every session the firm allows; each component's trigger known L minutes
    ahead; windows that do not collide; `feature-rules` for any bar-reading trigger; overnight triggers only after H2;
-   **the side rule** (O-4 pending: the coin side evaluated, model sides only behind the no-harm floor); the contract
+   **the side rule** (E-221, O-4: the coin the evaluation's device; the playbook's side from each design's own
+   trigger behind the no-harm floor; accounts alternate; no opposite positions at once; the per-start keying kept);
+   the contract
    fit item by item; conduct tier 1 true of the specification.
 5. **The zero-edge convention** (template 5): the reflection; the martingale-outcome reading with the race against
    the nearer barrier **net of the stop-side exit cost** -- the loss barrier L = min(l, c - x_stop), rounded inward to
-   the tick lattice for a fractional cushion, p = L / (L + g), L <= 0 not taken (the runner's rule), so the engine's
-   clip never binds and net = -(costs); `BinaryDraw` is only its cost-free special case, and the draw is keyed by the
-   coin field, not its stream; **m-2** (no design with overlapping positions runs until the joint driftless path per
-   underlying is defined and checked); **m-3** (a redrawn loss carries the run's stop-fill convention); **R-10** (the
-   time-limit redraw: every terminal state mapped to its law, the stopped walk's loss barrier the same inward-rounded
-   min(l, c - x_stop) with the larger of the stop- and flatten-side costs, its step count from causal bars at the
-   alert); **the pair rule** (a resting entry against its reflection: a pair touching either leg's stop or target on
-   the fill bar contributes zero lift). A draft that replaces the house form shows zero gross expectation and
-   net = -(costs) by an exact-fraction test.
+   the tick lattice for a fractional cushion, p = L / (L + g), g always the target as placed, so the engine's clip
+   never binds and net = -(costs); `BinaryDraw` is only its cost-free special case, and the draw is keyed by the coin
+   field, not its stream; **taken or not taken at the fill** (N-1), for every trade, by
+   L_fill = min(l, c - max(x_stop, x_flat)) rounded inward, never by the trade's later exit -- refuse a take rule
+   that reads the exit; **the lattice step s one tick**, or another fixed value the draft declares and classes fixed
+   -- refuse an s left to the build; **m-2** (no design with overlapping positions runs until the joint driftless path
+   per underlying is defined and checked); **m-3** (a redrawn loss carries the run's stop-fill convention); **R-10**
+   (every terminal state mapped to its law; a rule's exit at a profit level -- A3's `cap`, the need-aware pass or
+   consistency exit with `need=x` -- takes the race at the as-placed target min(g, level), never the walk; the walk
+   only for real time limits, its loss barrier L_fill, its step count from causal bars at the alert); **the pair
+   rule** (a resting entry against its reflection: a pair touching either leg's stop or target on the fill bar
+   contributes zero lift, both legs booked at the as-walked leg's settled outcome). A draft that replaces the house
+   form shows zero gross expectation and net = -(costs) by an exact-fraction test.
 6. **The survey, the surrogate and the rounds** (template 6): the survey size, the space-filling method, the surrogate
    method and its tuning inside the search years only, the number of rounds and the batch size **fixed and never
    extended**, the gates before any outcome, **the finalist order rule** and the plateau rule declared before the
    survey.
 7. **The pinning row** (template 7; CHARTER 3.9): every input listed -- the limits (both forms' parameters), the
    bankroll budgets, the dimensions with their normalisers and caps, the weights, the composite **or** the fallback
-   (one, never both), the size that matters (O-3) and the power target, the regimes and "most years", the finalist
+   (one, never both), the size that matters (the lead's, from the baselines' search-year results; E-221, O-3) and the
+   power target, the regimes and "most years", the finalist
    order and plateau rules, the gate's quantile and the minimum complete held-out starts, the no-harm margin(s), the L
    values, J and m -- each from the search years only, written in the file before its pin, and so **before the
    survey**. A value "to be set" after the pin is refused. Section 7 is never pinned alone: the whole file is frozen by
-   one hash (On approving). The gate's quantile reads coin seeds and history-block resamples (CHARTER 3.8 (c)); **O-6**
-   (how the history part is formed on the held-out years) is the operator's: refuse to approve for a pin until O-6 is
-   ruled, and refuse a draft that chooses either option itself.
+   one hash (On approving). The limits, budgets, weights and the size that matters are the lead's, set from H4's
+   search-year results by a rule declared before H4 is read (E-221): refuse one set any other way. The gate's
+   quantile is over coin seeds on the held-out years, the search years' history-block reading beside as a consistency
+   condition (CHARTER 3.8 (c); E-221, **O-6** option (a)): refuse a draft that reads it otherwise.
 8. **The three-way test** (template 8): the design note it adopts (`docs/plans/THREE_WAY_TEST_design.md`, the commit
    cited) and every departure; the coin-seed leg's statistic by the composite's form (no t decides); the time leg's
    conditions written exactly; the held-out leg's scope; **paired** seeds and start days for design and baselines.
@@ -117,8 +134,10 @@ result of this search's own cells.
    (`docs/calibration/<F-NN>_calibration.md` by its sha256); the antithetic twin and disjoint seed sets; the history
    null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
    complete-start count; "if any fails, the search goes no further" (no go row, no survey); the data question put to
-   the operator before the go row.
-10. **The pass line** (template 10): (a) the limits in the form in force, O-5's beside; (b) each baseline beaten,
+   the operator before the go row. A draft that follows one closed by a failed calibration or power gate cites that
+   record, reports it beside, and uses a fresh seed block -- refuse a failed block reused.
+10. **The pass line** (template 10): (a) the limits -- the point estimate governs, never a second margin (E-221,
+    E-230, O-5), each limit's one-sided check reported beside and never deciding; (b) each baseline beaten,
     intersection-union, every comparison at the full level; (c) every floor, the stress floors (+1 tick, 10 % missed)
     and the as-traded floors read on the real path (N-1); the verdict at 0 % denial, the placement off, the Focused
     Trader Program off; the level printed nominal while the ledger is not empty; the history-level false-pass rate
@@ -172,11 +191,11 @@ result of this search's own cells.
 3. **Hash the final file's LF text** -- the bytes with CRLF replaced by LF, exactly as
    `tests/test_declarations_fixed.py` reads it:
    `python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" prereg/F-NN_<slug>.md`
-   The rename comes first and the hash second, so the hash is the renamed file's. From here the file is frozen:
-   nothing declared is edited; a change is a new declaration. **One hash for the life of the declaration:** the pin,
-   the go row, the finalists' row and the held-out row all cite this one hash; a second hash for the same path is
-   what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7 is never pinned
-   alone.
+   The rename comes first and the hash second, so the hash is the renamed file's. From here the
+   file is frozen: nothing declared is edited; a change is a new declaration. **One hash for the life of the
+   declaration:** the pin, the go row, the finalists' row and the held-out row all cite this one hash; a second hash
+   for the same path is what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7
+   is never pinned alone.
 4. **Return the proposed pinning row as one finished line**, which must contain the exact pattern the hash test parses
    -- the path in backticks, the word `sha256`, the hash in backticks:
 

@@ -301,6 +301,8 @@ RACE_COPIES = (
     ".claude/skills/merge-checklist/SKILL.md",
     ".claude/skills/feature-rules/SKILL.md",
     ".claude/skills/contract-engine/SKILL.md",
+    ".claude/skills/prereg-discipline/SKILL.md",       # cycle 2, n-4
+    ".claude/agents/auditor.md",                       # cycle 2, n-4 (its description line too)
 )
 
 
@@ -311,6 +313,12 @@ def test_every_copy_of_the_race_law_uses_the_cushion_less_the_stop_side_cost():
         assert "inward" in text, rel
         assert not re.search(r"min\(l, c\)", text), rel          # the full-cushion form B-1 rules out
         assert "uses BinaryDraw's law" not in text, rel
+        for line in text.splitlines():                  # n-4: no paraphrase of the law without its cost
+            if "nearer barrier" in line and not re.search(r"x_stop|exit cost|net of|cost-free", line):
+                nxt = text[text.index(line):][:400]
+                assert re.search(r"x_stop|exit cost|net of|cost-free", nxt), (rel, line)
+    desc = _text(CLAUDE_DIR / "agents" / "auditor.md").split("\n")[2]
+    assert desc.startswith("description:") and "stop-side exit cost" in desc
 
 
 def test_the_template_states_the_costed_race_and_r10_walk_exactly():
@@ -325,8 +333,8 @@ def test_the_template_states_the_costed_race_and_r10_walk_exactly():
 
 
 #: m-1 (ii): every terminal state of a run trade has its law, in one table.
-TERMINAL_STATES = ("target", "stop", "stop gapped through", "the floor or the daily loss limit", "15:10 CT flatten",
-                   "news window", "max hold", "any other exit")
+TERMINAL_STATES = ("target", "stop", "stop gapped through", "the floor or the daily loss limit",
+                   "a profit level set by a rule", "15:10 CT flatten", "news window", "max hold", "any other exit")
 
 
 def test_r10_maps_every_terminal_state_to_a_law():
@@ -415,7 +423,7 @@ def test_held_out_reads_are_tied_to_the_run_order_and_the_market():
     run = text[text.index("## 14. The run order"):text.index("## 15.")]
     for s in ("after the finalists' row and the held-out row", "once per market", "Q-158",
               "no `Judged-block reads:` line", "registered_design", "five-minute cell", "path-structure edge",
-              "denial ladder", "model-side"):
+              "denial ladder", "trigger-side"):              # E-221: the model side is the playbook's trigger side
         assert s in run, s
     gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
     for s in ("results/read_ledger.jsonl", "an RD declaration naming any held-out purpose", "Q-158",
@@ -426,16 +434,22 @@ def test_held_out_reads_are_tied_to_the_run_order_and_the_market():
         assert s in au, s
 
 
-def test_the_long_run_gate_keeps_the_charter_quantile_and_o6_is_open():
-    """B-4: CHARTER 3.8 (c)'s 'over coin seeds and history-block resamples' kept; O-6 states both options; no pin."""
+def test_the_long_run_gate_reads_as_e221_ruled_o6():
+    """B-4, then E-221 (O-6, option (a)): the gate's quantile over coin seeds on the held-out years, the search years'
+    history-block reading beside as a consistency condition -- in section 7's row, in 10 (c) and in O-6's line, as
+    CHARTER 3.8 (c) now reads (wt/wt-infra f52c1f3)."""
     text = _text(TEMPLATE)
-    assert text.count("coin seeds and history-block resamples") >= 2
+    flat = " ".join(text.replace("**", "").split())                  # the phrase may wrap or carry bold
+    assert flat.count("over coin seeds on the held-out years") >= 3
+    assert flat.count("consistency condition") >= 3
     assert "over coin seeds, given the history" not in text
+    assert "coin seeds and history-block resamples" not in text      # the pre-E-221 charter wording, now replaced
     o6 = text[text.index("**O-6"):]
     o6 = o6[:o6.index("\n\n")]
-    for s in ("(a)", "(b)", "coin seeds only on the held-out years", "search years only", "No search pins"):
+    for s in ("ruled (E-221)", "option (a)", "consistency condition"):
         assert s in o6, s
-    assert "O-6" in _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    assert "O-6" in gk and "refuse to approve for a pin until O-6 is ruled" not in gk
 
 
 def test_the_pair_rule_settlement_is_restored():
@@ -476,3 +490,172 @@ def test_the_minor_findings_are_carried():
     assert (ROOT / "docs" / "plans" / "THREE_WAY_TEST_design.md").is_file()
     tr = _text(CLAUDE_DIR / "agents" / "results-tracer.md")
     assert "D-621 (5)" not in tr and "cell count" not in tr and "every design tried" in tr     # m-8
+
+
+# ============================================================================================ F. corrective cycle 2
+# (docs/reviews/TEMPLATE_AGENTS_v2_2026-11-18.md: N-1, N-2, n-1 to n-6, under the coordinator's rulings)
+
+from fractions import Fraction as Fr
+
+
+def _r10_section() -> str:
+    text = _text(TEMPLATE)
+    return text[text.index("- **R-10:"):text.index("- **The pair rule**")]
+
+
+def _l_fill(l, c, x_stop, x_flat, s=Fr(1)):
+    """The template's take rule (N-1), as its R-10 writes it: L_fill = min(l, c - max(x_stop, x_flat)), rounded inward
+    to the lattice of step s; taken iff L_fill > 0. It reads the fill's state only -- no exit enters it."""
+    raw = min(Fr(l), Fr(c) - max(Fr(x_stop), Fr(x_flat)))
+    return (raw // s) * s if raw > 0 else raw
+
+
+def test_n1_the_take_decision_is_made_at_the_fill_whatever_the_exit():
+    sec = _r10_section()
+    assert "L_fill = min(l, c - max(x_stop, x_flat))" in sec
+    assert "at the fill" in sec and "whatever its later exit" in sec
+    assert "one tick" in sec and "classed fixed" in sec                         # the lattice step, declared
+    assert "A trade with L <= 0 on the lattice is not taken" not in sec           # the exit-dependent rule is gone
+    exits = [r.split("|")[1].strip() for r in sec[sec.index("| terminal state in the run |"):].split("\n\n")[0]
+             .splitlines()[2:] if r.strip().startswith("|")]
+    assert len(exits) == len(TERMINAL_STATES)
+    # two trades identical at the fill are taken alike whatever their exit; a taken trade's race and walk barriers
+    # are both positive and never pass the floor
+    for l in (8, 20, 40):
+        for c in (Fr(1, 3), Fr(5, 2), Fr(19, 1), Fr(77, 4), Fr(60)):
+            for xs, xf in ((Fr(1), Fr(1)), (Fr(3, 2), Fr(1)), (Fr(1), Fr(5, 2))):
+                decisions = {exit_: _l_fill(l, c, xs, xf) > 0 for exit_ in exits}
+                assert len(set(decisions.values())) == 1, (l, c, xs, xf, decisions)
+                lf = _l_fill(l, c, xs, xf)
+                if lf > 0:
+                    race_l = min(Fr(l), c - xs)
+                    assert race_l >= lf > 0                                   # the race's barrier is never below it
+                    assert -lf - max(xs, xf) >= -c and -race_l - xs >= -c     # no exit past the floor
+
+
+def test_n2_a_rule_exit_at_a_profit_level_takes_the_race_at_the_as_placed_target():
+    sec = _r10_section()
+    table = sec[sec.index("| terminal state in the run |"):].split("\n\n")[0]
+    row = next(r for r in table.splitlines() if "a profit level set by a rule" in r)
+    assert "the race" in row and "min(g, level)" in row and "`cap`" in row and "need=x" in row
+    other = next(r for r in table.splitlines() if "any other exit" in r)
+    assert "a rule's exit" not in other
+    text = _text(TEMPLATE)
+    assert "g is always the target as placed" in text
+
+
+def test_cycle2_minors_are_carried():
+    text = _text(TEMPLATE)
+    run = text[text.index("## 14. The run order"):text.index("## 15.")]
+    assert "CHARTER 3.7" in run and "the lead's reading row" in run                                    # n-1
+    assert "the final text with section 7's values filled in" in run                                   # n-2
+    assert "E-220" in run and "heldout-finalists: F-NN @ <sha> list <sha>" in run                       # n-3
+    assert "held by the declaration and the auditor" in run
+    assert "No design search pins before Q-158 merges" in run
+    assert "queued" not in run.split("Q-158")[1][:40]
+    gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
+    assert "heldout-finalists: F-NN @ <sha> list <sha>" in gk and "before Q-158 merges" in gk
+    assert "(queued for wt-verify)" not in gk
+    sec5 = text[text.index("## 5. The zero-edge convention"):text.index("## 6. The survey")]
+    pair = sec5[sec5.index("- **The pair rule**"):]
+    fr = _text(CLAUDE_DIR / "skills" / "feature-rules" / "SKILL.md")
+    for s in ("as-walked leg's settled outcome", "difference is exactly zero"):                      # n-5
+        assert s in pair and s in fr, s
+    sec9 = text[text.index("## 9. Calibration"):text.index("## 10. The pass line")]
+    assert "cites that record" in sec9 and "fresh seed block" in sec9                                  # n-6
+    assert "fresh seed block" in gk
+
+
+# ============================================================================================ G. E-221 (the operator's
+# open items ruled; the constitution aligned on wt/wt-infra f52c1f3) and E-223's M-4 news-flatten convention
+
+#: wording the rulings retired: none may remain as the template's rule
+E221_RETIRED = (
+    "pending the operator, O-4", "Until O-4 is", "the operator's (Wave 4.2)", "the operator's trade-off answers",
+    "a margin wider than its noise", "O-5**'s pending form", "O-5's pending form", "only if the operator sets one",
+    "Which firm's\n  search spends them", "the operator's, open", "Wave 4.2's operator inputs", "and O-1 and O-6 ruled",
+    "the model-side reading",
+)
+
+
+def test_e221_rulings_are_in_the_template_each_marked():
+    text = _text(TEMPLATE)
+    left = [s for s in E221_RETIRED if s in text]
+    assert not left, left
+    for needle in (
+        "one joint fixed-sequence test",                                   # O-1
+        "Topstep, My Funded Futures and Lucid",
+        "built, tuned and chosen on the search years only",
+        "sets one as a limit, E-221",                                       # the workload ceiling
+        "The coin is the evaluation's device, not the",                     # O-4
+        "Accounts alternate:", "The one hard rule", "the per-start keying is kept",
+        "the lead's, from H4's search-year results by a rule declared before H4 is read (E-221)",   # Wave 4.2
+        "The point estimate governs",                                       # O-5 (E-230)
+        "the lead's, from the baselines' search-year results (E-221)",     # O-3
+        "O-6, ruled (E-221): option (a)",                                   # O-6
+        "The playbook's trigger-side reading (E-221, O-4)",                 # the verdict's beside line
+    ):
+        assert needle in text, needle
+    # each paragraph carrying a ruling names E-221
+    for para in text.split("\n- "):
+        if any(s in para for s in ("one joint fixed-sequence test", "Accounts alternate", "O-6, ruled",
+                                   "The point estimate governs")):
+            assert "E-221" in para, para[:120]
+
+
+def test_e223_m4_one_news_flatten_convention():
+    text = _text(TEMPLATE)
+    row = next(r for r in text.splitlines() if r.strip().startswith("| no entry and no fill inside a verified news"))
+    for s in ("E-223 M-4", "every source", "adverse extreme of the window's first bar less two ticks",
+              "resting stop instead if that extreme reaches it", "E-223 M-8"):
+        assert s in row, s
+
+
+# ============================================================================================ H. the lead's rulings on
+# the two open points (E-230: O-5, the point estimate governs; the joint held-out test its own declaration)
+
+#: the pre-E-230 O-5 wording -- a one-sided check that decides -- gone from every copy
+O5_RETIRED = ("failing one only when the evidence shows it crosses", "fails a limit only when the evidence shows",
+              "failing only when the one-sided check shows", "the single margin, applied once",
+              "the single margin applied once")
+O5_COPIES = ("prereg/TEMPLATE_design_search.md", ".claude/agents/prereg-gatekeeper.md", ".claude/agents/auditor.md",
+             ".claude/skills/prereg-discipline/SKILL.md")
+
+
+def test_e230_the_point_estimate_governs_every_limit():
+    for rel in O5_COPIES:
+        text = _text(ROOT / rel)
+        flat = " ".join(text.replace("**", "").split())
+        left = [s for s in O5_RETIRED if s in flat]
+        assert not left, (rel, left)
+        assert "point estimate governs" in flat, rel
+        assert "never a second margin" in flat, rel
+    text = _text(TEMPLATE)
+    sec10 = text[text.index("## 10. The pass line"):text.index("## 11.")]
+    a = sec10[sec10.index("- **(a) Limits"):sec10.index("- **(b)")]
+    for s in ("E-230", "passes a limit when its point estimate is inside it", "fails it when the estimate is outside",
+              "reported beside each limit"):
+        assert s in " ".join(a.replace("**", "").split()), s
+    row = next(r for r in text.splitlines() if r.startswith("| **the limits**"))
+    assert "E-230" in row and "point estimate governs" in row and "reported beside" in row
+
+
+def test_e230_the_joint_held_out_test_is_one_declaration_of_its_own():
+    text = _text(TEMPLATE)
+    flat = lambda s: " ".join(s.replace("**", "").split())
+    sec = {
+        "2": text[text.index("## 2. Years"):text.index("## 3. The lever space")],
+        "10": text[text.index("## 10. The pass line"):text.index("## 11.")],
+        "13": text[text.index("## 13. The count"):text.index("## 14.")],
+        "14.8": text[text.index("8. **The held-out row**"):text.index("9. **The verdict row**")],
+    }
+    for name, body in sec.items():
+        f = flat(body)
+        assert "the held-out test's declaration" in f, name
+        assert "E-230" in f, name
+    for s in ("one declaration of its own", "lists every firm's finalists", "fixes the joint order", "takes the k",
+              "the one family that reads NQ's held-out window", "Q-158's rule"):
+        assert s in flat(sec["2"]), s
+    gk = flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    for s in ("the held-out test's declaration", "one declaration of its own", "the one family that reads NQ's held-out window"):
+        assert s in gk, s

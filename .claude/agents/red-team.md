@@ -72,8 +72,8 @@ leans on it is a finding.
    output it checks? Is the deciding bound valid for the replicate structure (no t deciding)? Is the history null's
    false-pass rate printed? Does the power gate show power at the size that matters before the go row, on inputs the
    pinned file fixed? Is **each** baseline beaten, an **intersection-union** test with every comparison at the full
-   level, not the best baseline only (3.8 (b))? Is the long-run gate read at its pinned quantile over coin seeds and
-   history-block resamples (O-6 ruled), on its **complete-start minimum**, with D-145's **tier-3 denial** applied
+   level, not the best baseline only (3.8 (b))? Is the long-run gate read at its pinned quantile over coin seeds on the
+   held-out years, the search years' history-block reading beside as a consistency condition (E-221, O-6), on its **complete-start minimum**, with D-145's **tier-3 denial** applied
    (3.8 (c))? Are the verdict's settings 0 % payout denial, the placement off and the **Focused Trader Program off**?
 10. **Fill and execution realism.** At least L minutes from alert to order (L declared: 5, or a counted 3 or 2); stop
     and limit fills on 1-minute bars (a limit only on a trade-through by a tick; stop first on a bar that touches both;

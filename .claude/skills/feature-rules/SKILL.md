@@ -63,8 +63,9 @@ For each candidate alert `t`:
   reading compares a resting entry with its reflection or mirror** -- the **no-harm floor** (the real resting side
   against the reflected one, search years) and the **as-traded floor** (held-out years), both deciding and read on the
   real path (CHARTER 3.8), and the path-structure gap -- the **pair rule** settles the fill bar: a pair whose fill bar
-  touches either trade's stop or target **contributes zero lift** (both legs settled alike), is counted, and its share
-  reported and capped; both sides are booked symmetrically about the trigger. The as-walked and as-traded readings
+  touches either trade's stop or target **contributes zero lift** -- both legs are booked at the
+  as-walked leg's settled outcome for that pair, each with its own (equal) costs, so the pair's
+  difference is exactly zero by construction -- is counted, and its share reported and capped; both sides are booked symmetrically about the trigger. The as-walked and as-traded readings
   use this label; the deciding reading redraws it (section 5).
 - **Costs:** Stage 2's per-contract costs at the stop (`atlas_a3.fee_by_stop`; `vendor/stage2/config/fills.yaml`),
   the stop exit at `stop_slippage_ticks`, a limit target at `target_slippage_ticks` (the profile in use).
