@@ -215,7 +215,7 @@ def test_the_firms_day_and_its_sessions() -> None:
     w = LS.session_windows()
     assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
     assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
-    assert w["ny_am"][1] is None and w["ny_pm"][0] is None          # T2b, to declare
+    assert w["ny_am"][1] == w["ny_pm"][0] == LS.bounds("T2b").values[0]          # T2b, declared (L-M2)
     e = LS.bounds("T3")
     assert e.lo == 0.0 and e.hi == float(td["last_entry_offset"]) and e.step == float(LS.declared("mark_step_min"))
     assert LS.bounds("T2").values == tuple(LS.declared("sessions"))

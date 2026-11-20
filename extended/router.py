@@ -21,23 +21,32 @@ never a reason to drop the day.
 |---|---|
 | `longest_waiting` | the base (Stage 2 D-429): the account whose last trade ended longest ago (never-used first; ties in the account order) |
 | `round_robin` | the account after the one that took the firm's last trade, in the account order (the first when that one is gone) |
-| `by_component` | A16's assignment: each component's trades go to its declared pool of the firm's accounts (`Routing.pools`; a component without a pool uses every account), longest-waiting inside the pool |
+| `by_component` | A16's assignment: each component's trades go to its pool of the firm's accounts, **dealt by the router each day** (`lever_space.deal_pools` over `Routing.components`, the design's components in window order, and the firm's accounts in opening order), longest-waiting inside the pool |
+
+**A16's pools are the router's, never the caller's** (the red team's L-M2, the lead's order): `Routing` takes no pools,
+only `by_component`'s component names; a mapping of hand-built pools is refused, and so is `by_component` without
+components (it would route exactly as `longest_waiting`, a second cell of the base under another name). A trade of a
+component not named is refused. **The opening order** (L-m1): an account's index is the route call (the day) on which
+the router first sees it among its firm's accounts, ties broken by account id; the pools are dealt over the accounts
+sorted by that index, so the caller's order on a later day changes no pool. The caller passes each day every account
+it holds, an account first on the day it is opened.
 
 An account's last trade "ends" at the trade's busy time (`ScheduledTrade.busy_until`: its exit, or a tie's later exit),
 on the absolute clock (session x 1440 + minute). **The router reads no bar:** an assignment depends on the order of
 the scheduled trades and the busy times of earlier ones, each known before the trade goes live (the chain's five
 minutes flat), so it inherits the schedule's causality (`tests/test_router.py`'s shift test).
 
-**Not here:** A16's shares on the simplex over the sources (a design's components fix which source trades when; a
-share rule is the search template's to declare), and which accounts exist on a day (the journey engine's: evaluations
+**Not here:** A16's shares on the simplex over the sources (declared derived: a source's share is its components',
+T1 per component, so no share parameter exists), and which accounts exist on a day (the journey engine's: evaluations
 bought, passed, failed -- the caller passes each day's accounts).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Mapping, Sequence
 
 from extended import components as C
+from extended import lever_space as LS
 from extended import triggers as T
 
 TASK = "Q-169"
@@ -52,19 +61,25 @@ class RoutingRefused(ValueError):
 
 @dataclass(frozen=True)
 class Routing:
-    """A15's rotation and, for `by_component`, A16's pools: component name -> the accounts its trades may take."""
+    """A15's rotation and, for `by_component`, the design's components in the order of their windows' first slots,
+    over which the router deals A16's pools each day (`lever_space.deal_pools`)."""
 
     rotation: str = "longest_waiting"
-    pools: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    components: Any = ()
 
     def __post_init__(self) -> None:
         if self.rotation not in ROTATIONS:
             raise RoutingRefused(f"rotation {self.rotation!r} is not one of the declared values {ROTATIONS} (A15)")
-        if self.pools and self.rotation != "by_component":
-            raise RoutingRefused("pools are `by_component`'s assignment (A16); another rotation takes none")
-        for name, pool in self.pools.items():
-            if not pool or len(set(pool)) != len(pool):
-                raise RoutingRefused(f"component {name}'s pool is empty or repeats an account")
+        if isinstance(self.components, Mapping):
+            raise RoutingRefused("hand-built pools are refused: the router deals A16's pools itself (deal_pools)")
+        comps = tuple(self.components)
+        if any(not isinstance(c, str) or not c for c in comps) or len(set(comps)) != len(comps):
+            raise RoutingRefused(f"by_component's components are distinct names, got {comps}")
+        if self.rotation == "by_component" and not comps:
+            raise RoutingRefused("by_component without components would route as longest_waiting: refused (A15, A16)")
+        if comps and self.rotation != "by_component":
+            raise RoutingRefused("components are `by_component`'s (A16); another rotation takes none")
+        object.__setattr__(self, "components", comps)
 
 
 @dataclass(frozen=True)
@@ -83,6 +98,26 @@ class Router:
         self.book = book if book is not None else C.UserBook()
         self.last_busy: dict[tuple[str, str], int] = {}
         self.last_account: dict[str, str] = {}
+        self.opened: dict[tuple[str, str], int] = {}      # (firm, account) -> the route call it was first seen on
+        self.day_no = 0
+
+    def _see(self, accounts: Mapping[str, Sequence[str]]) -> None:
+        for firm, accs in accounts.items():
+            for a in accs:
+                self.opened.setdefault((firm, a), self.day_no)
+
+    def dealt_pools(self, firm: str, accounts: Sequence[str]) -> dict[str, tuple[str, ...]]:
+        """A16: `by_component`'s pools of `firm` over `accounts`, dealt in opening order (index, then account id)."""
+        if self.routing.rotation != "by_component":
+            raise RoutingRefused("pools are by_component's")
+        unseen = [a for a in accounts if (firm, a) not in self.opened]
+        if unseen:
+            raise RoutingRefused(f"accounts {unseen} of {firm} were never passed to route: no opening index")
+        try:
+            return LS.deal_pools(self.routing.components, accounts,
+                                 opened={a: self.opened[(firm, a)] for a in accounts})
+        except LS.LeverRefused as exc:
+            raise RoutingRefused(str(exc)) from None
 
     def _pick(self, tr: C.ScheduledTrade, accounts: Sequence[str]) -> str:
         rot = self.routing.rotation
@@ -92,11 +127,11 @@ class Router:
                 return accounts[(list(accounts).index(prev) + 1) % len(accounts)]
             return accounts[0]
         pool = list(accounts)
-        if rot == "by_component" and tr.component in self.routing.pools:
-            pool = list(self.routing.pools[tr.component])
-            missing = [a for a in pool if a not in accounts]
-            if missing:
-                raise RoutingRefused(f"component {tr.component}'s pool names {missing}, not accounts of {tr.firm} today")
+        if rot == "by_component":
+            pools = self.dealt_pools(tr.firm, accounts)
+            if tr.component not in pools:
+                raise RoutingRefused(f"component {tr.component} is not one of by_component's {self.routing.components}")
+            pool = list(pools[tr.component])
         order = {a: k for k, a in enumerate(accounts)}
         return min(pool, key=lambda a: (self.last_busy.get((tr.firm, a), -1), order[a]))
 
@@ -104,6 +139,7 @@ class Router:
         """Route one day's schedules (one per firm) to the firms' accounts today, in time order; each trade's possible
         positions go to the user's book under its account (refusing opposite positions as tier 1, any other overlap
         as undefined)."""
+        self._see(accounts)
         firm_order = {d.firm: k for k, d in enumerate(days)}
         trades = sorted((t for d in days for t in d.trades),
                         key=lambda t: (int(t.session), int(t.fill_slot), firm_order[t.firm]))
@@ -119,6 +155,7 @@ class Router:
             self.last_busy[(tr.firm, acct)] = int(tr.session) * T.DAY_SLOTS + int(tr.busy_until)
             self.last_account[tr.firm] = acct
             out.append(RoutedTrade(tr, acct))
+        self.day_no += 1
         return out
 
 

@@ -15,8 +15,8 @@ inside the window.
 **A design** (`Design`) is one firm's components. It refuses, at construction:
 * two components whose windows collide (CHARTER 3.5: "Components' windows are scheduled not to collide");
 * a window outside its session or outside the firm's day (from `trading_hours`' reopen to its last new entry,
-  `lever_space.trading_day`). NY AM and NY PM are checked only against the whole `ny` session: their boundary (T2b) is
-  still to declare;
+  `lever_space.trading_day`). NY AM and NY PM are checked only against the whole `ny` session: their boundary (T2b)
+  is declared (noon New York, `lever_space.session_windows` splits at it), but this check does not yet apply it;
 * any overlap mode but `refused`: a design holding two positions of the user at once is refused until the search
   template defines overlap (`docs/plans/THREE_WAY_TEST_design.md` 1.6).
 
@@ -137,8 +137,8 @@ def session_windows_of(day=None) -> dict[str, tuple[int, int | None]]:
 
 def session_bounds(day=None) -> dict[str, tuple[int, int]]:
     """Each session's [start, end) in trading-day slots from the firm's day (`session_windows_of`, minutes after the
-    reopen), the NY sessions both bounded by the whole `ny` session (T2b to declare); and the day's last new entry. The
-    clock is 17:00-based: a firm reopening at another time is refused."""
+    reopen), the NY sessions both bounded by the whole `ny` session (T2b's split not yet applied here); and the day's
+    last new entry. The clock is 17:00-based: a firm reopening at another time is refused."""
     td = LS.trading_day()
     if int(td["reopen"]) != 17 * 60:
         raise DesignRefused("the trading-day clock starts at 17:00 CT; this firm reopens at another time")

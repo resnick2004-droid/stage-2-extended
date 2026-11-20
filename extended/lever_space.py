@@ -23,9 +23,12 @@ refuses loudly (`LeverRefused`), never as `NotComputed`. T7 has no reading and s
 York (`ny_boundary`, checked on every search-year weekday); A15, the router's rotations; A16, `by_component`'s pools
 dealt in turn (`deal_pools`), the shares derived from the components; A17, the state rule on the mode's dollar risk
 (`state_risk`). No lever is 'to declare' now; the kind stays for a later row. A9 and A19 stay refused by key.
+T2b's one value is enforced where NY is split: `session_windows()` splits at it, and `check_ny_boundary` (also in
+`check_design`) refuses any other boundary a caller passes (the red team's L-M2).
 """
 from __future__ import annotations
 
+import functools
 import math
 import re
 from dataclasses import dataclass, field
@@ -119,7 +122,9 @@ DECLARED: dict[str, Declared] = {
                                "T2b: noon on the NY session's own clock. Its open is 09:30 New York (E-231 (3), "
                                "`day_calendar.LOCAL_ANCHORS`), so NY AM runs from the cash open to New York's noon, "
                                "where the conventional lunch lull begins, and NY PM holds the lull, the afternoon and "
-                               "the close to the firm's flat. Session structure only; nothing read"),
+                               "the close to the firm's flat. Session structure only; nothing read. The same boundary, "
+                               "11:00 CT, starts Stage 2's `late_morning` window (`config/session_setups.yaml`, D-244, "
+                               "D-245: fixed before any of its data was read)"),
     "rotations": Declared(("longest_waiting", "round_robin", "by_component"),
                           "A15: the mix router's rotations (Q-169, `router.ROTATIONS`), the base first (Stage 2 "
                           "D-429's longest-waiting account); E-221 O-4: accounts alternate, the rotation a lever, "
@@ -183,8 +188,9 @@ def trading_day() -> dict[str, int]:
 
 
 def session_windows() -> dict[str, tuple[int, int | None]]:
-    """The sessions as [start, end) in minutes after the reopen; `ny` is split at T2b's boundary (to declare), so
-    `ny_am` ends and `ny_pm` starts at None. Every boundary must fall inside the firm's day."""
+    """The sessions as [start, end) in minutes after the reopen; `ny` is split at T2b's declared boundary
+    (`bounds("T2b")`, the one value it takes; the red team's L-M2), which must lie strictly inside it. Every boundary
+    must fall inside the firm's day."""
     td = trading_day()
     starts = [(name, (_clock(t) - td["reopen"]) % MINUTES_PER_DAY) for name, t in declared("windows_ct")]
     for name, off in starts:
@@ -196,7 +202,10 @@ def session_windows() -> dict[str, tuple[int, int | None]]:
     names = ("evening", "asia", "london", "ny")
     out: dict[str, tuple[int, int | None]] = dict(zip(names, zip(edges, edges[1:])))
     ny_start, ny_end = out.pop("ny")
-    out["ny_am"], out["ny_pm"] = (ny_start, None), (None, ny_end)
+    b = int(bounds("T2b").values[0])
+    if not ny_start < b < ny_end:
+        raise LeverRefused(f"T2b's boundary {b} is not inside ny [{ny_start}, {ny_end})")
+    out["ny_am"], out["ny_pm"] = (ny_start, b), (b, ny_end)
     return out
 
 
@@ -494,6 +503,25 @@ def ny_boundary(day: Any) -> int:
     return int((t - reopen) // timedelta(minutes=1))
 
 
+@functools.cache
+def _ny_split_days(local: tuple, reopen: int, last_entry: int) -> tuple[frozenset, frozenset, int, str | None]:
+    """T2b's boundary and ny's anchored start on every weekday of the search years, for one declared local time and
+    one firm's day (cached by both: calendar arithmetic over a thousand days): (boundaries, starts, days, the first
+    refusal or None). `reopen` is in the key so that a changed firm's day is never served a stale answer."""
+    from extended import day_calendar as DC
+
+    days = _search_weekdays()
+    seen: set[int] = set()
+    starts: set[int] = set()
+    for d in days:
+        b, ny = ny_boundary(d), int(DC.anchored_starts(d)["ny"])
+        if not ny < b < last_entry:
+            return frozenset(), frozenset(), len(days), f"T2b's boundary {b} is not inside NY [{ny}, {last_entry}] on {d}"
+        seen.add(b)
+        starts.add(ny)
+    return frozenset(seen), frozenset(starts), len(days), None
+
+
 def _ny_split() -> Range:
     """T2b: the boundary on every weekday of the search years; refused unless it is one value there, strictly inside
     `ny` (after its anchored start, before the last new entry) and on the mark grid."""
@@ -501,15 +529,11 @@ def _ny_split() -> Range:
 
     td = trading_day()
     step = int(declared("mark_step_min"))
-    days = _search_weekdays()
-    seen: set[int] = set()
-    starts: set[int] = set()
-    for d in days:
-        b, ny = ny_boundary(d), int(DC.anchored_starts(d)["ny"])
-        if not ny < b < td["last_entry_offset"]:
-            raise LeverRefused(f"T2b's boundary {b} is not inside NY [{ny}, {td['last_entry_offset']}] on {d}")
-        seen.add(b)
-        starts.add(ny)
+    seen_f, starts, n_days, why = _ny_split_days(tuple(declared("ny_split_local")), int(td["reopen"]),
+                                                 int(td["last_entry_offset"]))
+    if why:
+        raise LeverRefused(why)
+    seen = set(seen_f)
     if len(seen) != 1:
         raise LeverRefused(f"T2b's boundary takes {len(seen)} values over the search years, not one")
     b = seen.pop()
@@ -519,8 +543,17 @@ def _ny_split() -> Range:
     return Range("T2b", "fixed", values=(b,), unit="minutes after the reopen: NY AM is [ny's start, b), NY PM [b, "
                  "the flat)", read={"trading_hours": rule("trading_hours")},
                  detail={"local": tuple(declared("ny_split_local")), "ct_clock": f"{clock // 60:02d}:{clock % 60:02d}",
-                         "ny_am": (min(starts), b), "ny_pm": (b, td["length"]), "days_checked": len(days),
+                         "ny_am": (min(starts), b), "ny_pm": (b, td["length"]), "days_checked": n_days,
                          "span": (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())})
+
+
+def check_ny_boundary(boundary: Any) -> int:
+    """Refuse any NY AM / NY PM boundary but T2b's declared one (the red team's L-M2): a caller splitting NY (the
+    sampler's `ny_boundary`) passes its value here. Returns it."""
+    b = int(bounds("T2b").values[0])
+    if isinstance(boundary, bool) or not isinstance(boundary, (int, float)) or boundary != b:
+        raise LeverRefused(f"NY boundary {boundary!r} is not T2b's declared {b} (noon New York)")
+    return b
 
 
 def _routing() -> Range:
@@ -531,16 +564,23 @@ def _routing() -> Range:
                                     "one position at a time across the firm (D-429)")})
 
 
-def deal_pools(components: Any, accounts: Any) -> dict[str, tuple[str, ...]]:
+def deal_pools(components: Any, accounts: Any, *, opened: Any = None) -> dict[str, tuple[str, ...]]:
     """A16's assignment: `by_component`'s pools for one day. `components` are the design's components in the order of
-    their windows' first slots, `accounts` the firm's accounts that day in the caller's order. With at least as many
-    accounts as components, account j goes to component j mod m (a partition; pool sizes differ by at most one);
-    with fewer, component i takes account i mod n alone. Reads nothing but the two lists."""
+    their windows' first slots; `accounts` the firm's accounts that day, **dealt in opening order** (the red team's
+    L-m1): with `opened` (account -> its opening index), sorted by (index, account id), whatever order they come in;
+    without it, the sequence's own order is declared to be the opening order. With at least as many accounts as
+    components, the j-th account goes to component j mod m (a partition; pool sizes differ by at most one); with
+    fewer, component i takes account i mod n alone. Reads nothing but the lists."""
     comps, accs = tuple(components), tuple(accounts)
     if not comps or not accs:
         raise LeverRefused("A16 deals at least one account to at least one component")
     if len(set(comps)) != len(comps) or len(set(accs)) != len(accs):
         raise LeverRefused("A16: a component or an account repeats")
+    if opened is not None:
+        missing = [a for a in accs if a not in opened]
+        if missing:
+            raise LeverRefused(f"A16: no opening index for {missing}")
+        accs = tuple(sorted(accs, key=lambda a: (int(opened[a]), str(a))))
     m, n = len(comps), len(accs)
     if n >= m:
         return {c: tuple(accs[j] for j in range(i, n, m)) for i, c in enumerate(comps)}
@@ -728,6 +768,8 @@ def check_design(settings: dict[str, Any]) -> None:
     (`back2funded_fee_by_pricing_path`, RD-03 2.5) is loaded only once that key is verified."""
     if settings.get("A4") == "naf" and float(settings.get("A12", 0) or 0) > 0:
         rule("back2funded_fee_by_pricing_path")
+    if settings.get("T2b") is not None:
+        check_ny_boundary(settings["T2b"])
     lat = settings.get("T4")
     src = settings.get("T1")
     if src is not None and lat is not None and lat not in latency_cells(src):
@@ -745,4 +787,4 @@ def counts() -> dict[str, dict[str, int]]:
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
            "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts",
-           "S1_RESULT", "S1_PATH", "stop_width", "ny_boundary", "deal_pools", "state_risk"]
+           "S1_RESULT", "S1_PATH", "stop_width", "ny_boundary", "check_ny_boundary", "deal_pools", "state_risk"]

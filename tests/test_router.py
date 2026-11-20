@@ -5,9 +5,9 @@ What is held:
 * **alternation** (E-221 O-4: different accounts take different trades at different moments): every trade goes to one
   account, never copied; under `longest_waiting` (the base, Stage 2 D-429) and `round_robin` a firm's consecutive
   trades go to different accounts; the two differ when an account joins; `by_component` keeps a component's trades in
-  its declared pool (A16's assignment);
-* **refusals**: a rotation outside the declared values, a pool naming an account the firm does not hold, a firm with no
-  account; opposite positions across accounts or firms through `UserBook` as conduct tier 1 (with m-1's tie positions),
+  the pool the router deals it (A16's assignment, `lever_space.deal_pools`, in opening order);
+* **refusals**: a rotation outside the declared values, hand-built pools, `by_component` without components, a trade
+  of a component not named, a firm with no account; opposite positions across accounts or firms through `UserBook` as conduct tier 1 (with m-1's tie positions),
   the same side at once as an undefined overlap;
 * **shift-invariance**: each routed trade's account is unchanged when the bars from its moment on are replaced or
   deleted (the router reads no bar; it reads the schedule's earlier exits);
@@ -107,19 +107,35 @@ def test_longest_waiting_and_round_robin_differ_when_an_account_joins():
     assert got["round_robin"] == ["a", "b", "a", "b", "c", "a"]
 
 
-def test_by_component_keeps_each_components_trades_in_its_pool():
-    """A16's assignment: a component's trades go only to its declared pool, longest-waiting inside it; a component
-    without a pool uses every account of its firm. Catches: a pool ignored, a pool leaking to other accounts."""
+def test_by_component_keeps_each_components_trades_in_its_dealt_pool():
+    """A16's assignment: the router deals the pools itself (`deal_pools` over the components in window order and the
+    accounts in opening order: a, b, c all opened today, ties by id, so am takes a and c, pm takes b), longest-waiting
+    inside each pool; the caller's account order changes no pool. Catches: a pool ignored, a pool leaking to other
+    accounts, the deal following the caller's order."""
     am, pm = (960, 980, 1000), (1100, 1120, 1140)
     h = quick_day(am + pm)
     d = C.Design("ts", (C.Component("am", "ny_am", 960, 1050, T.P16Marks(am), 40, 1.0),
                         C.Component("pm", "ny_pm", 1051, 1200, T.P16Marks(pm), 40, 1.0)))
     day = C.schedule_day(d, h, 0, T.DayContext(0, h.days[0]), UNIT)
-    routed = R.Router(R.Routing("by_component", {"am": ("a",), "pm": ("b", "c")})).route([day], {"ts": ("a", "b", "c")})
-    assert [(r.trade.component, r.account) for r in routed] == [("am", "a")] * 3 + [("pm", "b"), ("pm", "c"),
-                                                                                     ("pm", "b")]
-    free = R.Router(R.Routing("by_component", {"am": ("a",)})).route([day], {"ts": ("a", "b", "c")})
-    assert [r.account for r in free][3:] == ["b", "c", "a"]                    # pm: every account, longest-waiting
+    routed = R.Router(R.Routing("by_component", ("am", "pm"))).route([day], {"ts": ("a", "b", "c")})
+    assert [(r.trade.component, r.account) for r in routed] == [("am", "a"), ("am", "c"), ("am", "a")] + \
+        [("pm", "b")] * 3
+    rev = R.Router(R.Routing("by_component", ("am", "pm"))).route([day], {"ts": ("c", "b", "a")})
+    assert {r.account for r in rev if r.trade.component == "am"} == {"a", "c"}
+    assert {r.account for r in rev if r.trade.component == "pm"} == {"b"}
+
+
+def test_the_opening_order_is_the_routers_not_the_callers():
+    """L-m1: an account's opening index is the day the router first sees it (ties by id); an account opened later is
+    dealt after the older ones whatever its id or the caller's order. Catches: a deal by the caller's order or by id."""
+    r = R.Router(R.Routing("by_component", ("x", "y")))
+    r.route([], {"ts": ("c", "b")})                                           # day 0: b and c open (ties by id)
+    r.route([], {"ts": ("a", "c", "b")})                                      # day 1: a opens
+    assert r.opened == {("ts", "b"): 0, ("ts", "c"): 0, ("ts", "a"): 1}
+    assert r.dealt_pools("ts", ("a", "c", "b")) == {"x": ("b", "a"), "y": ("c",)}
+    assert r.dealt_pools("ts", ("b", "a", "c")) == {"x": ("b", "a"), "y": ("c",)}
+    with pytest.raises(R.RoutingRefused):
+        r.dealt_pools("ts", ("a", "z"))                                       # z never passed: no opening index
 
 
 # ------------------------------------------------------------------------------------------------ refusals
@@ -129,11 +145,17 @@ def test_router_refusals():
     with pytest.raises(R.RoutingRefused):
         R.Routing("random")
     with pytest.raises(R.RoutingRefused):
-        R.Routing("longest_waiting", {"am": ("a",)})                          # a pool is by_component's only
+        R.Routing("longest_waiting", ("am",))                                 # components are by_component's only
+    with pytest.raises(R.RoutingRefused):
+        R.Routing("by_component")                                             # would route as longest_waiting (L-M2)
+    with pytest.raises(R.RoutingRefused):
+        R.Routing("by_component", {"am": ("a",)})                             # hand-built pools (L-M2)
+    with pytest.raises(R.RoutingRefused):
+        R.Routing("by_component", ("am", "am"))
     h = quick_day((960,))
     day = C.schedule_day(marks_design("ts", "m", 960, 1000, (960,)), h, 0, T.DayContext(0, h.days[0]), UNIT)
     with pytest.raises(R.RoutingRefused):
-        R.Router(R.Routing("by_component", {"m": ("z",)})).route([day], {"ts": ("a", "b")})
+        R.Router(R.Routing("by_component", ("x",))).route([day], {"ts": ("a", "b")})   # m is not a named component
     with pytest.raises(R.RoutingRefused):
         R.Router(R.Routing()).route([day], {"ts": ()})
     with pytest.raises(R.RoutingRefused):
