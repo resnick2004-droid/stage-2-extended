@@ -12,15 +12,22 @@ Stage 2's vendored ledger), and has no range for a dropped lever (`DroppedLever`
 
 **No rule value is typed here**: every number of a rule-derived bound is read from its key (`rule`) or from the RD-05
 build's term loaders (`extended.modes_terms`, `extended.modes_rules`); `tests/test_lever_space.py` scans this file for
-the read values outside `DECLARED`. It reads rules and configuration only -- never a bar, a trade or a result file.
+the read values outside `DECLARED`. It reads rules and configuration only -- never a bar or a trade -- and one result
+file: **S1's search-year reading** (Q-171, `extended.s1_range`), `results/s1_range.csv` with its sidecar manifest.
+While that file (or its manifest) does not exist S1 stays `NotComputed`, as before; once it does, it is loaded only
+after its manifest is checked (`s1_range.load_range`: its sha256, a clean run of `scripts/s1_range.py` on a clean tree,
+the whole search years, both identities held, the caps equal to `stop_caps()` now, the declared share), and any defect
+refuses loudly (`LeverRefused`), never as `NotComputed`. T7 has no reading and stays refused.
 """
 from __future__ import annotations
 
 import math
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable
 
+from extended import ROOT
 from extended import firm_terms as FT
 from extended import modes_rules as MR
 from extended import modes_terms as M
@@ -207,6 +214,54 @@ def stop_caps() -> dict[str, Any]:
         raise LeverRefused("the stop's cap is not above its floor")
     return {"floor_ticks": floor_ticks, "cap_ticks": cap_ticks, "tick_value_mnq": tv, "room": room,
             "source": sa["source"]}
+
+
+#: S1's search-year reading (Q-171): the result file the lever space loads S1's range from, once it exists
+S1_RESULT = "results/s1_range.csv"
+S1_PATH = ROOT / S1_RESULT
+
+
+def _s1_computed() -> bool:
+    """Whether S1's reading exists: its file and its sidecar manifest (checked, not read, here)."""
+    p = Path(S1_PATH)
+    return p.is_file() and Path(str(p) + ".manifest.json").is_file()
+
+
+def _s1_reading() -> tuple[dict[str, Any], dict[str, Any]]:
+    from extended import s1_range as S1R                 # light; imported only once a reading exists
+
+    caps = stop_caps()
+    try:
+        got = S1R.load_range(S1_PATH, caps=caps)
+    except S1R.NotRead as exc:
+        raise NotComputed(f"S1 (stop width): {exc}") from None
+    except S1R.RangeRefused as exc:
+        raise LeverRefused(f"S1 (stop width): {exc}") from None
+    missing = [s for s in declared("sessions") if s not in S1R.LEVER_SESSIONS]
+    if missing:
+        raise LeverRefused(f"S1 (stop width): no reading maps the session(s) {missing}")
+    by = {s: got["by_session"][S1R.LEVER_SESSIONS[s]] for s in declared("sessions")}
+    return got, {"by_session": by, "share": got["share"], "n_days": got["n_days"], "result": S1_RESULT,
+                 "sha256": got["sha256"], "git_commit": got["git_commit"], "caps": caps,
+                 "unit": "k x the session's trailing range (ny: trail20_range_pts; an overnight session its own)"}
+
+
+def _stop_width() -> Range:
+    _, det = _s1_reading()
+    by = det["by_session"]
+    return Range("S1", "interval", lo=min(v[0] for v in by.values()), hi=max(v[1] for v in by.values()), step=None,
+                 unit="multiple k of the trailing range (per session in detail['by_session']); continuous",
+                 read=_read("combine_mll", "xfa_mll_start"), detail=det)
+
+
+def stop_width(session: str) -> Range:
+    """S1's range for one T2 session (`ny_am` and `ny_pm` take `ny`'s), after `bounds('S1')`'s checks."""
+    if session not in declared("sessions"):
+        raise ValueError(f"unknown session {session!r}")
+    whole = bounds("S1")
+    lo, hi = whole.detail["by_session"][session]
+    return Range("S1", "interval", lo=lo, hi=hi, step=None, unit=f"multiple k of {session}'s trailing range",
+                 read=whole.read, detail={**whole.detail, "session": session})
 
 
 def _sources() -> Range:
@@ -410,7 +465,7 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
     _L("T6", TRIGGER, "limit working window", FIXED, DECL, "", "T5", _limit_window),
     _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2"),
     _L("T8", TRIGGER, "side rule", FIXED, DECL, "", "T1 T5 A15", _side),
-    _L("S1", SHAPE, "stop width", SEARCHED, COMPUTE, "combine_mll xfa_mll_start", "T2 S2 S3 S4 S5"),
+    _L("S1", SHAPE, "stop width", SEARCHED, COMPUTE, "combine_mll xfa_mll_start", "T2 S2 S3 S4 S5", _stop_width),
     _L("S2", SHAPE, "reward-to-risk w", SEARCHED, DECL, "", "S1 A1 A2", _ratio),
     _L("S3", SHAPE, "dollar risk, evaluation", SEARCHED, ARITH, "combine_mll combine_position_size_limit",
        "S1 S5 A1", lambda: _risk(M.EVAL)),
@@ -459,13 +514,17 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
 )}
 
 
+#: a 'to compute' lever whose reading can exist, and how to tell that it does
+_COMPUTED: dict[str, Callable[[], bool]] = {"S1": _s1_computed}
+
+
 def bounds(lever_id: str) -> Range:
     """The lever's range, or a refusal: dropped (`DroppedLever`), 'to compute' (`NotComputed`), 'to declare'
     (`NotDeclared`), or any key not verified (`UnverifiedTerm`)."""
     lv = LEVERS[lever_id]
     if lv.cls == DROPPED:
         raise DroppedLever(f"{lever_id} ({lv.name}) is dropped: no range ({TABLE})")
-    if lv.source == COMPUTE:
+    if lv.source == COMPUTE and (lv.resolver is None or not _COMPUTED.get(lever_id, lambda: False)()):
         raise NotComputed(f"{lever_id} ({lv.name}): its range is a search-year reading, to compute -- refused until "
                           f"it exists (CHARTER 3.3 (a); E-208)")
     if lv.source == TODECL:
@@ -525,6 +584,17 @@ def counts() -> dict[str, dict[str, int]]:
     return out
 
 
+def load(firm: str = "topstep") -> dict[str, Range]:
+    """The lever space of one firm (Q-151b): Topstep's is `space()`, unchanged; another firm's is its own table's
+    (`extended.lever_space_firms`: `mffu`, `lucid`), never Topstep's carried over."""
+    if firm == "topstep":
+        return space()
+    from extended import lever_space_firms as LF          # imported here: it imports this module
+
+    return LF.load(firm)
+
+
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
-           "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts"]
+           "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts",
+           "S1_RESULT", "S1_PATH", "stop_width", "load"]

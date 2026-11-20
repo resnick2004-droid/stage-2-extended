@@ -189,3 +189,24 @@ Append-only: a row is never edited here; a correction is made in the decision lo
 | Q-154 | H2: data integrity on the overnight bars (17:00 to 08:30 CT): gaps, session boundaries, daylight-saving transitions, thin bars -- before any overnight trigger enters a search | data-integrity | done (E-231) | E-208 | heavy | 0 | E-208 |
 | Q-163 | The red team's re-read of B-1's and B-2's fixes in full and the minors' by diff (E-207), Wave 3.1's and Q-152's corrective cycles | red-team | done (E-229) | E-223 | light | 0 | E-223 |
 | Q-164 | `scripts/install_hooks.py` installs each hook by a temporary file and `os.replace`, never in place | wt-report | done (E-230) | E-224 | light | 0 | E-224 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-19
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-166 | The void calendar as code (`extended/day_calendar.py`): H2's voids and rules, the walker's day-end rule, verified calendars; local-time anchoring for asia and london | wt-verify | done (E-232) | E-231 | light | 0 | E-231 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-19
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-160 | E-221's texts: CHARTER, DIRECTIVE, CLAUDE.md's objective paragraph and MEASURES.md for O-1, O-3 to O-6 and Wave 4.2's ownership; the template's lines after Wave 2 merges | wt-infra | done (E-238) | E-221 | light | 0 | E-221 |
+| Q-165 | The fast-tier lock served first come first served (tickets by arrival, dead tickets skipped) | wt-report | done (E-238) | E-230 | light | 0 | E-230 |
+| Q-169 | Wave 3.3's rest: overnight admitted on the search years, every source's days from the calendar, the naive coin source, the mix router | wt-levels | done (E-238) | E-231 | light | 0 | E-232 |
+
+## Phase 1 -- research tracks (bootstrap Part 6; families start only after Q-08) -- moved 2026-11-19
+
+| id | task | owner | state | depends on | weight | retries | row |
+|---|---|---|---|---|---|---|---|
+| Q-162 | The identity block re-held once at E-222's commit (heavy queue part 11): Q-05, Q-80, Q-89, Q-93, Q-101, t10w2, then RD-01's, RD-02's, RD-03's, F-03's A0 | lead | done (E-243) | E-222 | heavy | 0 | E-222 |
+| Q-171 | S1's range on the search years (`scripts/s1_range.py`), run clean and loaded | wt-user | done (E-240) | E-232 | heavy | 0 | E-240 |
