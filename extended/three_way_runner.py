@@ -161,14 +161,34 @@ def paired(design: J.Schedule, baselines: Mapping[str, J.Schedule], rules: J.Toy
     if base_arm.plant_eps:
         raise ValueError("a plant is the design's arm only")
     guard = guard if guard is not None else K.KeyGuard.sampled(plan.starts, plan.seed_indices)
+    out = _arms(((design.name, design, design_arm),), rules, plan, value, guard, beside)
+    out.update(_arms(((b, baselines[b], base_arm) for b in BASELINES), rules, plan, value, guard, beside))
+    return out, guard
+
+
+def _arms(arms, rules: J.ToyRules, plan: Plan, value: ValueFn, guard: K.KeyGuard, beside: dict | None
+          ) -> dict[str, np.ndarray]:
     out = {}
-    for name, sch, arm in ((design.name, design, design_arm),
-                           *((b, baselines[b], base_arm) for b in BASELINES)):
+    for name, sch, arm in arms:
         recs = run(sch, rules, plan, arm, guard)
         out[name] = matrix(recs, value)
         if beside is not None:                              # n-3: the failures at the fill, beside each arm's matrix
             beside[name] = fill_failures(recs)
-    return out, guard
+    return out
+
+
+def baselines_only(baselines: Mapping[str, J.Schedule], rules: J.ToyRules, plan: Plan, value: ValueFn, *,
+                   base_arm: J.ArmSpec = J.ArmSpec(), guard: K.KeyGuard | None = None, beside: dict | None = None
+                   ) -> tuple[dict[str, np.ndarray], K.KeyGuard]:
+    """The four baselines alone (H4's re-baseline, wt/wt-h4 f897cd7): `paired`'s pairing, seeds and refusals with no
+    design arm -- exactly the four, one plan's keys for all, no plant on a baseline. Each baseline's matrix equals the
+    one a call with a design gives it, key for key (`tests/test_three_way_runner.py`)."""
+    if set(baselines) != set(BASELINES):
+        raise ValueError(f"REFUSED (CHARTER 3.8 (b)): the baselines are exactly {BASELINES}, got {sorted(baselines)}")
+    if base_arm.plant_eps:
+        raise ValueError("a plant is the design's arm only")
+    guard = guard if guard is not None else K.KeyGuard.sampled(plan.starts, plan.seed_indices)
+    return _arms(((b, baselines[b], base_arm) for b in BASELINES), rules, plan, value, guard, beside), guard
 
 
 def antithetic(schedule: J.Schedule, rules: J.ToyRules, plan: Plan, value: ValueFn, arm: J.ArmSpec = J.ArmSpec()
@@ -238,5 +258,6 @@ def seed_sets(n_seeds: int, m: int) -> list[np.ndarray]:
 
 
 __all__ = ["BASELINES", "HELD_OUT_FIRST", "CONFIRMATION_FIRST", "HeldOutRefused", "Plan", "ValueFn", "p_b", "run",
-           "fill_failures", "matrix", "paired", "antithetic", "disjoint", "exact_centres", "MISSED_SHARE", "stress_arms",
+           "fill_failures", "matrix", "paired", "baselines_only", "antithetic", "disjoint", "exact_centres",
+           "MISSED_SHARE", "stress_arms",
            "stress_cells", "stress", "seed_sets"]

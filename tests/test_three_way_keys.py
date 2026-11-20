@@ -157,7 +157,8 @@ def test_m9_each_seed_draws_only_its_role() -> None:
     K.seed_key(S.issue("h3d_coins"), "coin", part=S.PARTS["D1"], **u)
     K.seed_key(S.issue("h3a_histories"), "history", part=S.PARTS["A2"], history=3)
     K.seed_key(S.issue("h3_0_probe"), "coin", part=S.PARTS["H3-0"], **u)
-    assert set(S.ROLE_USE) == set(S.ROLES) - {"spare"}
+    issued_h4 = {r for r, st in S.H4_STATUS.items() if not st.startswith("spare")}
+    assert set(S.ROLE_USE) == (set(S.ROLES) - {"spare"}) | issued_h4           # H3's roles and H4's issued ones
     used = [p for r, v in S.ROLE_USE.items() if v is not None for p in v[1]]
     assert set(used) <= set(S.PARTS) and "tests" not in used
 
@@ -173,3 +174,26 @@ def test_b2_the_packing_is_injective_and_the_collision_bound_is_stated() -> None
     assert g.checked == 1 and not g.states
     with pytest.raises(ValueError, match="N-2"):
         g.add(u.coin_key(3, K.RACE), 5, 100)
+
+
+
+def test_h4s_block_and_parts_are_issued_and_role_checked() -> None:
+    """For H4 (wt/wt-h4 f897cd7, its section 15): the seed module knows H4's block of ten -- its tests', probe's and
+    coin roles issued, its seven spares drawn by nothing -- and the parts H4-0 and H4-B; a literal of the block is
+    refused, and each role draws only its kinds in its parts. H3's block and tables are unchanged."""
+    assert sorted(S.H4_BLOCK) == list(range(min(S.H4_BLOCK), min(S.H4_BLOCK) + 10))
+    assert not S.H4_BLOCK & S.BLOCK and len(S.BLOCK) == 10 and set(S.ROLES) == set(S.STATUS)
+    assert {"H4-0", "H4-B"} <= set(S.PARTS) and len(set(S.PARTS.values())) == len(S.PARTS)
+    coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
+    K.seed_key(S.issue("h4b_coins"), "coin", part=S.PARTS["H4-B"], **coin)
+    K.seed_key(S.issue("h4_0_probe"), "coin", part=S.PARTS["H4-0"], **coin)
+    K.seed_key(S.issue("h4_tests"), "test", test=1, replicate=0)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h4b_coins"), "coin", part=S.PARTS["H4-0"], **coin)
+    with pytest.raises(S.ProvenanceRefused):
+        K.seed_key(int(S.issue("h4b_coins")), "coin", part=S.PARTS["H4-B"], **coin)   # the literal, not the issued
+    for role, status in S.H4_STATUS.items():
+        if status.startswith("spare"):
+            with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
+                S.issue(role)
+    assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins")] == ["tests", "design check", "reading"]

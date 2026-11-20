@@ -953,3 +953,26 @@ def test_n2_a_daily_limit_below_a_trades_costs_is_refused() -> None:
     J.check_costs(sch, ok)
     with pytest.raises(ValueError, match="n-2"):
         J.check_costs(sch, ok, J.ArmSpec(worse_ticks=1))              # +1 tick a fill: 14.24 + 10 > 20
+
+
+
+def test_h4_the_baselines_alone_equal_their_place_in_a_paired_call() -> None:
+    """For H4 (wt/wt-h4 f897cd7): the four baselines alone, on one plan -- the same refusals as `paired` (exactly the
+    four, no plant), and each baseline's matrix, its failures at the fill and its keys equal those of a call with a
+    design, key for key."""
+    design = toy("design", 3, 90, decision=1200)                      # its moments shared with no baseline
+    p_ = plan(seed_indices=tuple(range(16)))
+    g_p, g_b, g_d = K.KeyGuard(), K.KeyGuard(), K.KeyGuard()
+    side_p, side_b = {}, {}
+    xs, _ = R.paired(design, baselines(), RULES, p_, R.p_b, guard=g_p, beside=side_p)
+    xb, _ = R.baselines_only(baselines(), RULES, p_, R.p_b, guard=g_b, beside=side_b)
+    R.run(design, RULES, p_, J.ArmSpec(), g_d)
+    assert set(xb) == set(R.BASELINES)
+    for name in R.BASELINES:
+        assert np.array_equal(xb[name], xs[name]), name
+        assert side_b[name] == side_p[name], name
+    assert g_b.keys() == g_p.keys() - g_d.keys() and g_b.keys() and g_d.keys()
+    with pytest.raises(ValueError, match="exactly"):
+        R.baselines_only({k: v for k, v in baselines().items() if k != "p16"}, RULES, p_, R.p_b)
+    with pytest.raises(ValueError, match="plant"):
+        R.baselines_only(baselines(), RULES, p_, R.p_b, base_arm=J.ArmSpec(plant_eps=0.1))
