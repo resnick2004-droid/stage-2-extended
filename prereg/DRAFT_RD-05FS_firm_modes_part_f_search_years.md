@@ -16,7 +16,7 @@ under it (section 0.3). The lead assigns this file's id at the pin (section 0.2)
 | reading | FM part F, search years: P-16's registered trades (the headline) and P-14's beside on the parent's 13 configurations beside `TS`, every cell, run and reading of the parent's part F (0.1), on the search years |
 | kind | a **described reading** (E-023 (1), E-134 (1)): never carried; no program family number, no level, no pass line, no pick |
 | development data | NQ 1-minute bars, 2020-01-02 to 2023-12-29 (the search years, E-208), read only inside Stage 2's engine by P-14's and P-16's registered builders, through RD-01's runner as RD-06 cuts it (S-2) |
-| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose (S-1, S-11) |
+| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose, the parent's registered reproduction identities excepted (S-1, S-8, S-11) |
 | blocks | all search-year starts (the headline); the search years' first half and second half beside, each per measure at its h (S-7) |
 | judged-block purposes | none (S-11) |
 | parts A to E | not this file's: RD-05's, as pinned |
@@ -109,6 +109,9 @@ changes: the configurations, corners, flips, counts, uncertainty method and chec
   runs, gates, checks, or beside readings; NQ from 2026-07-17 is never read. Wherever part F says "the development
   window", "2020 to 2026", "2020-2026" or "the whole window" of what it reads, read the search years. A pinned calendar
   (E-029, E-050) is used only on days inside the search years.
+  **The one exception (the re-read's rm-4):** the parent's registered reproduction identities (S-8) take the whole
+  window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
+  are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read.** Part F runs through RD-01's runner (`extended/firms.py`'s `run_plan`) as RD-06 (the
   search-years delta of RD-01) cuts it, its S-2 word for word in effect: no bar or atlas row after 2023-12-29 reaches
   any builder, replay, gate or reading; the guard is the wrapper and the runner's refusal, not the reader's no-op
@@ -129,7 +132,8 @@ changes: the configurations, corners, flips, counts, uncertainty method and chec
   built twice on the cut, with S-3's marks: on 2020-01-02 to 2022-12-30 and on 2020-01-02 to 2023-12-29. Their
   **point-arm** day blocks must be equal up to 2022-12-30, block for block, every field, the per-R outcomes included. It
   reads the search years only, needs no purpose, writes its pass or fail lines to the run's log and manifest, and a
-  failure stops part F. **No new identity reads 2024 or later**; the registered reproduction identities are untouched
+  failure stops part F. **No identity these deltas introduce reads 2024 or later** (the lead's ruling rn-5); the parent's declared identities keep
+  their declared whole-window form, labelled so (S-8); the registered reproduction identities are untouched
   (S-8).
 - **S-5. The verdict arm's constants, re-estimated on the search years, with the halves as eras** (the lead's ruling on
   M-1). The parent's "the bound was estimated on the whole development window, so an early-block reading on the verdict

@@ -15,7 +15,7 @@ assigns its id at the pin (section 0.2).
 | reading | FC-S: the parent's reading FC, every cell, run and reading as the parent declares them, on the search years |
 | kind | a **described reading** (E-023 (1)): never carried; no program family number, no level, no pass line, no pick |
 | development data | NQ 1-minute bars, 2020-01-02 to 2023-12-29 (the search years, E-208), read only inside Stage 2's engine by P-16's and P-14's registered builders, cut at the read (S-2) |
-| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose (S-1, S-11) |
+| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose, the parent's registered reproduction identities excepted (S-1, S-8, S-11) |
 | blocks | all search-year starts (the headline); the search years' first half and second half beside (S-7) |
 | judged-block purposes | none (S-11) |
 | confirmation | none; NQ from 2026-07-17 never read |
@@ -100,6 +100,9 @@ plans, the cells, the corners, the counts, the uncertainty method and the oracle
   runs, gates, checks, or beside readings; NQ from 2026-07-17 is never read. Wherever the parent says "the development
   window", "2020 to 2026", "2020-2026" or "the whole window" of what this reading reads, read the search years. A pinned
   calendar (E-029, E-050) or a release file of section 5.5 is used only on days inside the search years.
+  **The one exception (the re-read's rm-4):** the parent's registered reproduction identities (S-8) take the whole
+  window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
+  are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read.** No bar or atlas row dated after 2023-12-29 reaches any function of the registered
   builders, the replay, the gate or the reading. **The guard is the wrapper and the refusal below**: the reader's
   `authorise_engine_read` on 2020-01-02 to 2023-12-29 with no purpose checks the dates only and writes nothing, and the
@@ -139,8 +142,8 @@ plans, the cells, the corners, the counts, the uncertainty method and the oracle
   block, every field, the per-R outcomes included: a causal build with fixed marks gives exactly this, so it tests the
   wrapper and the build's causality without a held-out day. It reads the search years only, needs no purpose, and
   writes its pass or fail lines to the run's log and manifest. A failure stops the reading. With S-8's point-arm
-  equality it is the whole check that the cut stream is the registered design's. **No new identity reads 2024 or
-  later**; the registered reproduction identities are untouched (S-8).
+  equality it is the whole check that the cut stream is the registered design's. **No identity these deltas introduce reads 2024 or later** (the lead's ruling rn-5); the parent's declared identities keep
+  their declared whole-window form, labelled so (S-8); the registered reproduction identities are untouched (S-8).
 - **S-5. The verdict arm's constants, re-estimated on the search years, with the halves as eras** (the lead's ruling on
   M-1). The parent's verdict arm shifts every R to the bound "estimated on the whole development window". Here `e`,
   `lb`, `e_by_rr` and `lb_by_rr` are `atlas_a3.bounds`'s, as the registered builder calls it, on the search-year trades

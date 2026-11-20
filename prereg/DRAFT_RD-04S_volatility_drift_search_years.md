@@ -16,7 +16,7 @@ siblings' rules (RD-06 to RD-09), as the lead ruled on the red team's findings; 
 | reading | VD-S: (a0) the two registered gate files' `period` and `drift` rows of the search years (S-17); (a2) Q-121's choice-block descriptive, read as it stands (S-18); (c) the parent's calm-regime replay of P-14 and P-16, every cell, on the search years (S-19) |
 | kind | a **described reading** (E-023 (1), as E-157 (c) classes the parent): never carried; no program family number, no level, no pass line, no pick, no menu |
 | development data | NQ 1-minute bars, 2020-01-02 to 2023-12-29 (the search years, E-208), read only inside Stage 2's engine by P-14's and P-16's registered builders for (c), cut at the read (S-2); (a2) reads no bar (S-18) |
-| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose (S-1, S-11) |
+| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose, the parent's registered reproduction identities excepted (S-1, S-8, S-11) |
 | blocks | (a2): Q-121's, by calendar year and quarter, 2020 to 2023; (c): all search-year starts the headline, the search years' first half and second half beside, each per measure at its h (S-7) |
 | judged-block purposes | none (S-11); (c) reads the search years under the purpose `registered_design` (S-19) |
 | confirmation | none; NQ from 2026-07-17 never read |
@@ -87,6 +87,9 @@ a source.
   (a2), (c), its gates, checks or beside readings; NQ from 2026-07-17 is never read. Wherever the parent says "the
   development window", "the whole window", "2020-2026" or "2020 to 2026" of what this reading reads, read the search
   years.
+  **The one exception (the re-read's rm-4):** the parent's registered reproduction identities (S-8) take the whole
+  window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
+  are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read** (for (c); RD-06's S-2 in effect). No bar or atlas row dated after 2023-12-29 reaches any
   function of the registered builders, the re-composed builders of the parent's A-2, the replay, the gate or the
   reading. **The guard is the wrapper and the refusal below**, not the reader's authorisation (the reader cannot see
@@ -110,8 +113,8 @@ a source.
 - **S-4. The nested cut, refusing** (the lead's ruling on B-2). Before any cell of (c), each design's k = 1 stream is
   built twice on the cut, with S-3's marks: on 2020-01-02 to 2022-12-30 and on 2020-01-02 to 2023-12-29. Their
   point-arm day blocks must be equal up to 2022-12-30, block for block, every field. It reads the search years only,
-  writes its pass or fail lines to the run's log and manifest, and a failure stops (c). **No new identity reads 2024 or
-  later** (S-8 says which of the parent's identity items stay whole-window).
+  writes its pass or fail lines to the run's log and manifest, and a failure stops (c). **No identity these deltas introduce reads 2024 or later** (the lead's ruling rn-5); the parent's declared identities keep
+  their declared whole-window form, labelled so (S-8 says which of the parent's identity items they are).
 - **S-5. The frozen shift, re-estimated on the search years with the halves as eras** (the lead's ruling on M-1). The
   parent freezes "each R's `lb - e` from the k = 1 build (`atlas_a3.bounds`, the era rule at its registered seed)"; on
   the cut that build is the search years', and its eras are **declared now as the two calendar halves, 2020-2021 and
@@ -132,7 +135,7 @@ a source.
 - **S-8. The identities, the comparisons and the citations** (the lead's ruling on B-1). The shared reproduction
   identities (Q-05, Q-80, Q-93 with Q-100, Q-101) are untouched. Of the parent's own `rd04_identity` (8.1): **items 2
   to 5, which reproduce Stage 2's registered files** (the A3 cache, the registered trades and their hash, the registered
-  gate paths, U1's start rows), **run as the parent states them**, whole window, the purpose `identity`, their own row,
+  gate paths, U1's start rows), **run as the parent states them**, in their declared whole-window form, labelled so (the lead's ruling rn-5), the purpose `identity`, their own row,
   writing pass or fail only; **items 1 and 6, which reproduce no registered file** (the wrapper's arrays equal the
   vendored callable's; `sc` at k = 1 equals `act`), **run on the search years only**. Inside (c)'s own run, every
   comparison with U1's or Q-44's per-start rows is **on the point arm only**, on the starts whose 252-session replay ends
@@ -427,7 +430,6 @@ To re-run: `python -m pytest -q -o addopts= tests/test_rd_search_years_drafts.py
    superseded, never run, and records that no `heldout-read` row is written for `scripts/rd04_replay.py` before NQ's
    verdict (the red team's M-3); CHARTER 3.6 (b)'s entry "RD-04 (c): P-14 and P-16 replayed on the late block" then
    reads "declared, not run".
-4. **`rd04_identity`'s items 2 to 5** (S-8) are read here as reproduction identities of the kind the lead left
-   untouched. If the lead reads them as new identities, they move to the search years' point-arm form (S-4, S-8) and
-   nothing else changes.
+4. **`rd04_identity`'s items 2 to 5** (S-8) keep their declared whole-window form, labelled so: the lead's ruling rn-5 reads
+   "no new identity" as only the identities these deltas introduce.
 5. **S-2's feasibility** is a build question (RD-06's); its stop-and-report clause is declared now.

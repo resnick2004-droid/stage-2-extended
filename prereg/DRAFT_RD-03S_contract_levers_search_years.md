@@ -16,7 +16,7 @@ own.
 | reading | CL-S: the parent's reading CL, stage 0 and every cell, run and reading as the parent declares them, on the search years |
 | kind | a **described reading** (E-023 (1), E-134 (1)): never carried; no program family number, no level, no pass line, no pick |
 | development data | NQ 1-minute bars, 2020-01-02 to 2023-12-29 (the search years, E-208), read only inside Stage 2's engine by P-14's and P-16's registered builders, cut at the read (S-2) |
-| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose (S-1, S-11) |
+| held-out years | 2024-01-02 to 2026-07-16: never read by this reading, under any purpose, the parent's registered reproduction identities excepted (S-1, S-8, S-11) |
 | blocks | all search-year starts (the headline); the search years' first half and second half beside, each per measure at its h (S-7) |
 | judged-block purposes | none (S-11) |
 | stage 0 | on the search years' bound edges and rungs (S-17); the zero edge set unchanged |
@@ -95,6 +95,9 @@ fewer windows resolve least. The stability flag compares two halves of four year
   any of its runs, gates, checks, or beside readings; NQ from 2026-07-17 is never read. Wherever the parent says "the
   development window", "2020-2026" or "the whole window" of what this reading reads, read the search years. A pinned
   calendar (E-029, E-050) is used only on days inside the search years.
+  **The one exception (the re-read's rm-4):** the parent's registered reproduction identities (S-8) take the whole
+  window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
+  are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read.** No bar or atlas row dated after 2023-12-29 reaches any function of the registered
   builders, stage 0, the replay, the gate or the reading. **The guard is the wrapper and the refusal below**: the
   reader's `authorise_engine_read` on 2020-01-02 to 2023-12-29 with no purpose checks the dates only and writes
@@ -131,7 +134,8 @@ fewer windows resolve least. The stability flag compares two halves of four year
   2020-01-02 to 2023-12-29. Their **point-arm** day blocks must be equal up to 2022-12-30, block for block, every field,
   the per-R outcomes included. It reads the search years only, needs no purpose, writes its pass or fail lines to the
   run's log and manifest, and a failure stops the step. With S-8's point-arm equality it is the whole check that the cut
-  stream is the registered design's. **No new identity reads 2024 or later**; the registered reproduction identities
+  stream is the registered design's. **No identity these deltas introduce reads 2024 or later** (the lead's ruling rn-5); the parent's declared identities keep
+  their declared whole-window form, labelled so (S-8); the registered reproduction identities
   are untouched (S-8).
 - **S-5. The verdict arm's constants, re-estimated on the search years, with the halves as eras** (the lead's ruling on
   M-1). The parent's "estimated on the whole development window ... a function of 2024-2026 through that one constant"
@@ -167,7 +171,7 @@ fewer windows resolve least. The stability flag compares two halves of four year
   halves are a function of this repository (B-3). Nothing is chosen on any block. **Considered and not taken:** no
   blocks (it loses the flag); halves by start count (a cut that moves with the data).
 - **S-8. The identities, the comparisons and the citations** (the lead's ruling on B-1). The parent's registered
-  reproduction identities (`cl_identity`, 9.1; `cl_fit_identity`, 6.4) and the shared ones it waits for (Q-05, Q-80,
+  reproduction identities (`cl_identity`, 9.1; `cl_fit_identity`, 6.4, the parent's declared identities, in their declared whole-window and registered-file form, labelled so, rn-5) and the shared ones it waits for (Q-05, Q-80,
   Q-93 with Q-100, Q-101) are untouched: whole window or registered files, the purpose `identity`, their own rows,
   Stage 2's files reproduced, no outcome of any cell written, ledgered in a clean run. Inside the reading's own run:
   - **every comparison with U1's or Q-44's per-start rows is on the point arm only**, on the starts whose 252-session
@@ -228,7 +232,7 @@ fewer windows resolve least. The stability flag compares two halves of four year
   m-8). Stage 0 therefore builds the streams on the cut (S-2), with S-4's nested cut first, in its own process, reading
   bars on the search years only, and runs no replay. 6.4's identity is unchanged (it holds the solver machinery to
   registered files at the registered edges, a reproduction identity, no outcome); the search-year rung computation is
-  held by a synthetic test (B-5), since no new identity reads 2024 or later. **Reason:** the solver's view is printed
+  held by a synthetic test (B-5), since no identity these deltas introduce reads 2024 or later (rn-5). **Reason:** the solver's view is printed
   beside the replay's rows; on whole-window edges it would be a function of the held-out years beside rows that are
   not. **If the rung computation cannot be composed without editing the vendored code, stage 0's `bound` edge set is
   not run** and its `zero` edge set alone is printed, labelled; stage 0 decides nothing either way (E-146).
