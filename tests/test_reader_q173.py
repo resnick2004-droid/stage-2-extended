@@ -18,11 +18,19 @@ from pathlib import Path
 import pytest
 
 from extended import reader as R
+import heldout_verdict_rows as VR
 import test_reader_heldout as H
 from test_reader_heldout import scripted, tree  # noqa: F401 -- the fixtures
 
 ROOT = Path(__file__).resolve().parent.parent
-VERDICT = "| E-930 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13's held-out verdict | x |"
+
+
+@pytest.fixture
+def unsettled(tree, monkeypatch):
+    """The tree with a readings script as the process's and no verdict yet (Q-194b, Q-194c: every registered held-out
+    read waits for it)."""
+    monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "replay.py")
+    return tree
 
 
 def commit_file(t: Path, rel: str, text: str) -> None:
@@ -35,40 +43,52 @@ def commit_file(t: Path, rel: str, text: str) -> None:
 # ------------------------------------------------------------------------------------------------------ rule 3 (M-3)
 
 
-def test_rule3_a_described_readings_replay_waits_for_the_verdict(scripted):
-    H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- RD-04 (c)'s replay "
-                         "of P-14 and P-16 | x |")
-    e = H.refused(3, H.rd_read, scripted, "E-940", ("P-14", "P-16"))
+def test_rule3_a_described_readings_replay_waits_for_the_verdict(unsettled):
+    H.add_rows(unsettled, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- RD-04 (c)'s replay "
+                          "of P-14 and P-16 | x |")
+    e = H.refused(3, H.rd_read, unsettled, "E-940", ("P-14", "P-16"))
     assert "RD-04" in str(e) and "verdict" in str(e)
-    assert H.lines(scripted) == []
-    H.add_rows(scripted, VERDICT)
-    a = H.rd_read(scripted, "E-940", ("P-14", "P-16"))
+    assert H.lines(unsettled) == []
+    VR.settle(unsettled, [unsettled / H.BARS])
+    a = H.rd_read(unsettled, "E-940", ("P-14", "P-16"))
     assert a.ledgered and dict(a.heldout) == {"read_row": "E-940", "readings": "RD-04", "test_verdict": "E-982"}
 
 
-def test_rule3_a_reading_that_names_the_script_is_linked_without_the_row_saying_so(scripted):
-    commit_file(scripted, "prereg/RD-08_replay.md", "# RD-08\n\nThe replay runs `scripts/replay.py` under "
-                                                    "`registered_design`.\n")
-    H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- P-14 replayed | x |")
-    assert "RD-08" in str(H.refused(3, H.rd_read, scripted, "E-940", "P-14"))
-    assert R.registered_for_readings("no reading named", "scripts/replay.py", scripted) == ("RD-08",)
-    assert R.registered_for_readings("no reading named", "scripts/other.py", scripted) == ()
+def test_rule3_a_reading_that_names_the_script_is_linked_without_the_row_saying_so(unsettled):
+    commit_file(unsettled, "prereg/RD-08_replay.md", "# RD-08\n\nThe replay runs `scripts/replay.py` under "
+                                                     "`registered_design`.\n")
+    H.add_rows(unsettled, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- P-14 replayed | x |")
+    assert "RD-08" in str(H.refused(3, H.rd_read, unsettled, "E-940", "P-14"))
+    assert R.registered_for_readings("no reading named", "scripts/replay.py", unsettled) == ("RD-08",)
+    assert R.registered_for_readings("no reading named", "scripts/other.py", unsettled) == ()
+    VR.settle(unsettled, [unsettled / H.BARS])
+    assert dict(H.rd_read(unsettled, "E-940", "P-14").heldout)["readings"] == "RD-08"
 
 
-def test_rule3_a_replay_for_no_reading_is_unchanged_and_the_joint_test_is_admitted(scripted):
-    H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- P-14 and P-16 | x |",
+def test_rule3_the_joint_test_reads_before_its_verdict_and_a_replay_only_after_it(unsettled, monkeypatch):
+    """Only the joint held-out test's family reads NQ's window before its verdict (Q-194c, the red team's MINOR-1 and
+    NOTE-5): F-98's own read is admitted with no verdict row; a replay for no reading waits for F-98's verdict row,
+    which then counts because F-98's read is in the ledger; another family is then refused the window (rule 2)."""
+    H.add_rows(unsettled, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- P-14 and P-16 | x |",
                H.finalists(920, "F-13", H.F13_TEXT, H.LIST13))
-    a = H.rd_read(scripted, "E-940", "P-14")
+    seed = VR.settle(unsettled, [unsettled / H.BARS], verdict=False)    # the joint test, before any verdict row
+    assert seed["purpose"] == "heldout_test" and seed["declaration"]["kind"] == "family"
+    assert "verdict" in str(H.refused(3, H.rd_read, unsettled, "E-940", "P-14"))
+    VR.append_rows(unsettled, VR.VERDICT_ROW)
+    a = H.rd_read(unsettled, "E-940", "P-14")
     assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
-    j = H.read(scripted)                                       # the joint held-out test, before any verdict row
-    assert j.judged and j.ledgered and j.kind == "family"
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
+    assert VR.HT_PATH in str(H.refused(2, H.read, unsettled))           # F-13: the window is F-98's
 
 
-def test_rule3_mutation_is_killed(scripted, monkeypatch):
-    H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- RD-04 (c) | x |")
-    H.refused(3, H.rd_read, scripted, "E-940", "P-14")
-    monkeypatch.setattr(R, "_registered_reading_verdict", lambda *a, **k: ())
-    assert H.rd_read(scripted, "E-940", "P-14").ledgered       # without the guard the replay would go through
+def test_rule3_mutation_is_killed(unsettled, monkeypatch):
+    """A verdict row with no held-out read behind it (Q-194c, MINOR-1) does not open the replay; with the binding
+    check replaced by a yes, it would."""
+    H.add_rows(unsettled, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- RD-04 (c) | x |",
+               VR.PIN_ROW, VR.FINALISTS_ROW, VR.VERDICT_ROW)
+    H.refused(3, H.rd_read, unsettled, "E-940", "P-14")
+    monkeypatch.setattr(R, "_verdict_backed", lambda *a, **k: True)
+    assert H.rd_read(unsettled, "E-940", "P-14").ledgered       # without the guard the replay would go through
 
 
 # ------------------------------------------------------------------------------------------- the supersession rule
@@ -86,7 +106,7 @@ def refused_superseded(fn, *a, **kw) -> R.SupersededRefused:
 
 
 def test_a_superseded_declaration_authorises_no_read_whatever_later_rows_say(tree, monkeypatch):
-    H.add_rows(tree, VERDICT)
+    H.verdict13(tree)
     a = H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard")      # control: after the verdict, admitted
     assert a.ledgered and a.kind == "described_reading"
     monkeypatch.setattr(R, "SUPERSEDED", superseded(tree))
@@ -108,8 +128,7 @@ def test_a_superseded_declarations_bytes_under_another_path_are_refused(tree, mo
 
 
 def test_a_replay_made_for_a_superseded_reading_is_refused(scripted, monkeypatch):
-    H.add_rows(scripted, VERDICT, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- RD-07's replay "
-                                  "| x |")
+    H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14 by scripts/replay.py -- RD-07's replay | x |")
     assert H.rd_read(scripted, "E-940", "P-14").ledgered                 # control
     monkeypatch.setattr(R, "SUPERSEDED", superseded(scripted))
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-1")
@@ -118,7 +137,7 @@ def test_a_replay_made_for_a_superseded_reading_is_refused(scripted, monkeypatch
 
 def test_the_supersession_list_is_empty_until_the_lead_fills_it_and_its_mutation_is_killed(tree, monkeypatch):
     assert R.SUPERSEDED == ()
-    H.add_rows(tree, VERDICT)
+    H.verdict13(tree)
     monkeypatch.setattr(R, "SUPERSEDED", superseded(tree))
     refused_superseded(H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")
     monkeypatch.setattr(R, "_refuse_superseded", lambda *a, **k: None)

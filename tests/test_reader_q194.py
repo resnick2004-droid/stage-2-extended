@@ -93,7 +93,6 @@ def test_any_held_out_date_binds_rule1(t16, start, end):
 @pytest.mark.parametrize("row,why", [
     (H.finalists(920, "F-13", H.F13_TEXT, H.LIST13), "no decision row carries a finalists' token for F-16"),
     (H.finalists(920, "F-16", H.F13_TEXT, LIST16), "not prereg/F-16_other.md's sha256"),
-    (H.finalists(909, "F-16", F16_TEXT, LIST16), "precede its pin"),
     ("| E-920 | 2026-11-18 | `heldout-finalists: F-16 @ " + H.sha_lf(F16_TEXT) + " list " + LIST16
      + "` -- quoted | x |",
      "no decision row carries"),
@@ -105,6 +104,23 @@ def test_an_arbitrary_purpose_needs_its_own_token_for_its_own_hash(t16, row, why
         assert why in str(e)
         names_both(e, purpose, F16)
     assert H.lines(t16) == []
+
+
+def test_a_token_placed_before_its_pin_or_in_its_row_is_refused(t16):
+    """Q-194c (NOTE-2, MINOR-4's M10): "after the pin" is a later place in DECISIONS.md -- a token placed before the
+    pin (whatever its number) or in the pin's own row is refused."""
+    H.prepend_rows(t16, H.finalists(999, "F-16", F16_TEXT, LIST16))
+    for purpose in OTHER:
+        assert "precede its pin" in str(H.refused(1, H.read, t16, declaration=F16, purpose=purpose))
+    # F-18's only pin is the row that also carries its finalists' token
+    f18, text18 = "prereg/F-18_same_row.md", F16_TEXT.replace("F-16", "F-18")
+    commit_file(t16, f18, text18)
+    H.add_rows(t16, f"| E-912 | 2026-11-18 | heldout-finalists: F-18 @ {H.sha_lf(text18)} list {LIST16} -- and "
+                    f"`{f18}` sha256 `{H.sha_lf(text18)}` pinned in the same row | x |")
+    e = H.refused(1, H.read, t16, declaration=f18, purpose="stage_Z_anything")
+    assert "sit in its row" in str(e)
+    H.add_rows(t16, H.finalists(913, "F-18", text18, LIST16))                 # a row after the pin: admitted
+    assert dict(H.read(t16, declaration=f18, purpose="stage_Z_anything").heldout)["finalists"] == "E-913"
 
 
 def test_the_same_declaration_with_its_token_is_honoured(t16):
@@ -137,7 +153,7 @@ def test_the_held_out_purposes_behave_as_before(tree, purpose):
 def test_a_described_readings_other_purpose_stays_rule_4s(tree):
     """Rule 1 binds an RD's held-out purposes only; its other purposes wait for the verdict (rule 4), then pass."""
     H.refused(4, H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")
-    H.add_rows(tree, "| E-920 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13's verdict | x |")
+    H.verdict13(tree)
     a = H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard")
     assert a.kind == "described_reading" and "finalists" not in dict(a.heldout)
 

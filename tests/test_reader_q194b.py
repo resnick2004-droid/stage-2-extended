@@ -1,21 +1,20 @@
-"""Q-194b (the lead's ruling on O-7's RD-10 C3 and the red team's L-1 of template v3): a `registered_design` read of
-any held-out date waits for the joint held-out test's verdict row, on Q-158's synthetic tree
-(`tests/test_reader_heldout.py`'s helpers; `tests/heldout_verdict_rows.py`'s rows; nothing real is read).
+"""Q-194b (the lead's ruling on O-7's RD-10 C3 and the red team's L-1 of template v3), in Q-194c's form: a
+`registered_design` read of any held-out date waits for the joint held-out test's verdict row, on Q-158's synthetic
+tree (`tests/test_reader_heldout.py`'s helpers; `tests/heldout_verdict_rows.py`'s seeded joint test; nothing real is
+read).
 
 * **before the verdict, refused** -- whatever row declares the read (a `heldout-read` token naming the designs and
   the script): the whole seal (the holiday gap alone, a span crossing into 2024, the last day alone), under rule 3,
-  naming the purpose and the declaration, before rule 3's own checks, writing no ledger line;
-* **the verdict token** is `heldout-verdict: F-NN @ <its LF sha256> -- ...` at the start of a row's third cell (the
-  held-out template names the verdict row and no token form, so the lead's form); it counts only for a declaration
-  pinned at that sha256, newer than that declaration's finalists' token at the same sha256 (itself newer than the
-  pin), and newer than the read's window's opening row. A quoted, emphasised or misplaced token, one older than the
-  finalists' row or than a window opened after it, one for an unpinned sha, one with no finalists' row or a
-  finalists' row of other bytes, and the market's `heldout-verdict: NQ F-NN` form (rule 4's) do not count;
+  naming the purpose and the declaration, before rule 3's own checks, writing no ledger line; also with the joint
+  test's pin and finalists' row and its read ledgered but no verdict row yet;
+* **the one verdict form** (Q-194c) is `heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- ...`; the old unbound
+  forms (`heldout-verdict: NQ F-NN -- ...`, `heldout-verdict: F-NN @ <sha> -- ...`) and a quoted, emphasised or
+  misplaced token count for nothing; the binding itself (the read behind the verdict, places, windows, fences) is
+  `tests/test_reader_q194c.py`'s;
 * **after the verdict, admitted** -- rule 3 then stands as before (its token, its script, a clean run, one run a
   row), and the ledger line records the verdict row (`test_verdict`);
 * **untouched**: a registered design's search-year read (RD-10's (c), 2020-01-02 to 2023-12-29) needs no verdict, no
-  token, no clean run; E-247 rm-4's `identity` reads need no verdict;
-* the token's grammar: the form is a held-out token (not flagged as malformed); a near-form is flagged.
+  token, no clean run; E-247 rm-4's `identity` reads need no verdict.
 """
 from __future__ import annotations
 
@@ -50,14 +49,10 @@ def declared(tree, monkeypatch):
 def before_verdict(t: Path, **kw) -> R.HeldOutRefused:
     e = H.refused(3, H.rd_read, t, "E-940", ("P-14", "P-16"), **kw)
     msg = str(e)
-    assert "held-out test's verdict" in msg and "Q-194b" in msg, msg
+    assert "no verdict row counts" in msg and "Q-194b" in msg, msg
     assert "'registered_design'" in msg and "E-940" in msg, "the refusal names the purpose and the declaration"
     assert H.lines(t) == [], "a refused read writes no ledger line"
     return e
-
-
-def verdict(row: int, fid: str = VR.HT_ID, sha: str = VR.HT_SHA) -> str:
-    return f"| E-{row} | 2026-11-19 | heldout-verdict: {fid} @ {sha} -- the joint held-out test's verdict | x |"
 
 
 # ------------------------------------------------------------------------------------------- before the verdict
@@ -71,24 +66,32 @@ def test_a_declared_held_out_read_is_refused_before_the_verdict(declared, start,
     before_verdict(declared, start=start, end=end)
 
 
-def test_the_held_out_tests_pin_and_finalists_alone_are_not_its_verdict(declared):
-    H.add_rows(declared, VR.PIN_ROW, VR.FINALISTS_ROW)
+def test_the_joint_tests_read_without_its_verdict_row_is_not_its_verdict(declared):
+    VR.settle(declared, [declared / H.BARS], verdict=False)
     before_verdict(declared)
 
 
-def test_the_markets_verdict_form_is_rule_4s_not_this(declared):
-    H.add_rows(declared, VR.PIN_ROW, VR.FINALISTS_ROW,
-               f"| E-982 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} -- the market's form | x |")
+@pytest.mark.parametrize("row", [
+    f"| E-982 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} -- the market form without the sha | x |",
+    f"| E-982 | 2026-11-19 | heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA} -- Q-194b's form without the market | x |",
+    f"| E-982 | 2026-11-19 | `heldout-verdict: NQ {VR.HT_ID} @ {VR.HT_SHA}` -- quoted | x |",
+    f"| E-982 | 2026-11-19 | **heldout-verdict: NQ {VR.HT_ID} @ {VR.HT_SHA} -- bold** | x |",
+    f"| E-982 | 2026-11-19 | the verdict; heldout-verdict: NQ {VR.HT_ID} @ {VR.HT_SHA} -- later | x |",
+])
+def test_an_old_quoted_or_misplaced_verdict_form_does_not_count(declared, row):
+    VR.settle(declared, [declared / H.BARS], verdict=False)
+    VR.append_rows(declared, row)
     before_verdict(declared)
+    assert not R.heldout_tokens(row), "never a token"
 
 
 def test_the_verdict_gate_comes_before_rule_3s_own_checks(tree, monkeypatch):
     """A row without a read token, outside a clean run: still the verdict's refusal first."""
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "replay.py")
     e = H.refused(3, H.rd_read, tree, "E-904", "P-14")
-    assert "held-out test's verdict" in str(e) and "E-904" in str(e)
+    assert "no verdict row counts" in str(e) and "E-904" in str(e)
     monkeypatch.delenv("S2X_CLEAN_RUN")
-    assert "held-out test's verdict" in str(H.refused(3, H.rd_read, tree, "E-904", "P-14"))
+    assert "no verdict row counts" in str(H.refused(3, H.rd_read, tree, "E-904", "P-14"))
     assert H.lines(tree) == []
 
 
@@ -101,52 +104,11 @@ def test_the_registered_checks_still_come_first(declared):
     assert not isinstance(info.value, R.HeldOutRefused)
 
 
-# ---------------------------------------------------------------------------------------------- what counts
-
-
-@pytest.mark.parametrize("rows", [
-    # quoted, emphasised, later in the cell
-    (VR.PIN_ROW, VR.FINALISTS_ROW,
-     f"| E-982 | 2026-11-19 | `heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA}` -- quoted | x |"),
-    (VR.PIN_ROW, VR.FINALISTS_ROW,
-     f"| E-982 | 2026-11-19 | **heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA} -- bold** | x |"),
-    (VR.PIN_ROW, VR.FINALISTS_ROW,
-     f"| E-982 | 2026-11-19 | the verdict; heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA} -- later | x |"),
-    # older than the finalists' row; older than the pin (with its finalists' row after both)
-    (VR.PIN_ROW, verdict(980), VR.FINALISTS_ROW),
-    (verdict(979), VR.PIN_ROW, VR.FINALISTS_ROW),
-    # for a sha not pinned; with no finalists' row; with a finalists' row of other bytes; for another declaration
-    (VR.PIN_ROW, VR.FINALISTS_ROW, verdict(982, sha="5" * 64)),
-    (VR.PIN_ROW, verdict(982)),
-    (VR.PIN_ROW, f"| E-981 | 2026-11-19 | heldout-finalists: {VR.HT_ID} @ {'5' * 64} list {VR.HT_LIST} -- other | x |",
-     verdict(982)),
-    (VR.PIN_ROW, VR.FINALISTS_ROW, verdict(982, fid="F-97")),
-    # a finalists' row older than the pin
-    (f"| E-979 | 2026-11-19 | heldout-finalists: {VR.HT_ID} @ {VR.HT_SHA} list {VR.HT_LIST} -- early | x |",
-     VR.PIN_ROW, verdict(982)),
-])
-def test_a_quoted_older_or_unbacked_token_does_not_count(declared, rows):
-    H.add_rows(declared, *rows)
-    before_verdict(declared)
-
-
-def test_a_verdict_older_than_its_reads_window_does_not_count(declared):
-    H.add_rows(declared, *VR.VERDICT_ROWS,
-               "| E-990 | 2026-11-20 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- a window re-opened | x |")
-    before_verdict(declared)
-    a = H.rd_read(declared, "E-940", "P-14", end="2023-12-29")          # the search years: untouched
-    assert not a.judged
-    H.add_rows(declared, f"| E-991 | 2026-11-20 | heldout-finalists: {VR.HT_ID} @ {VR.HT_SHA} list {VR.HT_LIST} -- "
-                         "the next joint list | x |", verdict(992))
-    a = H.rd_read(declared, "E-940", ("P-14", "P-16"))
-    assert dict(a.heldout)["test_verdict"] == "E-992"
-
-
 # ------------------------------------------------------------------------------------------- after the verdict
 
 
 def test_after_the_verdict_the_declared_read_is_admitted_and_ledgered(declared, monkeypatch):
-    H.add_rows(declared, *VR.VERDICT_ROWS)
+    VR.settle(declared, [declared / H.BARS])
     a = H.rd_read(declared, "E-940", ("P-14", "P-16"))
     assert a.judged and a.ledgered and a.kind == "registered_design"
     assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
@@ -157,7 +119,7 @@ def test_after_the_verdict_the_declared_read_is_admitted_and_ledgered(declared, 
 
 def test_after_the_verdict_rule_3_stands_as_before(tree, monkeypatch):
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "replay.py")
-    H.add_rows(tree, *VR.VERDICT_ROWS)
+    VR.settle(tree, [tree / H.BARS])
     assert "earlier reads stay valid" in str(H.refused(3, H.rd_read, tree, "E-904", "P-14"))   # no read token
     H.add_rows(tree, READ_ROW)
     monkeypatch.delenv("S2X_CLEAN_RUN")
@@ -181,7 +143,7 @@ def test_a_search_year_registered_read_needs_no_verdict(declared, monkeypatch):
 def test_rm4s_identity_reads_need_no_verdict(tree, monkeypatch):
     commit_file(tree, "identity/repro_id.py", "print('identity HOLDS')\n")
     monkeypatch.setattr(R, "_main_script", lambda: tree / "identity" / "repro_id.py")
-    assert not R.heldout_tokens((tree / "DECISIONS.md").read_text(encoding="utf-8"), "test_verdict")
+    assert not R.heldout_tokens((tree / "DECISIONS.md").read_text(encoding="utf-8"), "verdict")
     a = R.authorise_engine_read("2020-01-02", "2026-07-16", purpose="identity", declaration="E-905",
                                 files=[tree / H.BARS], what="q194b identity", repo=tree)
     assert a.judged and a.kind == "identity" and a.ledgered and a.heldout is None
@@ -191,12 +153,14 @@ def test_rm4s_identity_reads_need_no_verdict(tree, monkeypatch):
 
 
 def test_the_verdict_tokens_grammar():
-    text = "\n".join((*VR.VERDICT_ROWS,
-                      f"| E-983 | 2026-11-19 | heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA[:63]} -- short sha | x |",
-                      f"| E-984 | 2026-11-19 | heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA} --  | x |"))
-    toks = R.heldout_tokens(text, "test_verdict")
-    assert [(t.row, t.get("decl"), t.get("sha")) for t in toks] == [("E-982", VR.HT_ID, VR.HT_SHA)]
-    assert not R.heldout_tokens(text, "verdict"), "the market's form is another kind"
+    text = "\n".join((VR.PIN_ROW, VR.FINALISTS_ROW, VR.VERDICT_ROW,
+                      f"| E-983 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} @ {VR.HT_SHA[:63]} -- short sha | x |",
+                      f"| E-984 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} @ {VR.HT_SHA} --  | x |",
+                      f"| E-985 | 2026-11-19 | heldout-verdict: {VR.HT_ID} @ {VR.HT_SHA} -- no market | x |",
+                      f"| E-986 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} -- no sha | x |"))
+    toks = R.heldout_tokens(text, "verdict")
+    assert [(t.row, t.get("market"), t.get("decl"), t.get("sha"), t.pos) for t in toks] == [
+        ("E-982", "NQ", VR.HT_ID, VR.HT_SHA, 2)]
     flagged = sorted({p.split(" ")[0] for p in R.heldout_token_problems(text)})
-    assert flagged == ["E-983", "E-984"]
-    assert R.heldout_token_problems("\n".join(VR.VERDICT_ROWS)) == []
+    assert flagged == ["E-983", "E-984", "E-985", "E-986"]
+    assert R.heldout_token_problems("\n".join((VR.PIN_ROW, VR.FINALISTS_ROW, VR.VERDICT_ROW))) == []

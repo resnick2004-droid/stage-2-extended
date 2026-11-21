@@ -488,7 +488,8 @@ for phase in cfg["phases"]:
             rec["error"] = type(e).__name__ + ": " + str(e)[:600]
         after = lines()
         rec.update(stdout=buf.getvalue()[-3000:], events=list(events), ledger_exists=LEDGER.exists(),
-                   new=[json.loads(x) for x in after[len(before):]], prefix_kept=after[:len(before)] == before)
+                   new=[json.loads(x) for x in after[len(before):]], prefix_kept=after[:len(before)] == before,
+                   ledger_refs=[(json.loads(x).get('declaration') or {}).get('ref') for x in after])
         out.append(rec)
 print(json.dumps(out))
 '''
@@ -508,8 +509,9 @@ def real_row() -> str | None:
 
 def log(rows: list[str]) -> str:
     head = "# Decisions (a temporary tree, Q-35's tests)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
-    # Q-194b: after the joint held-out test's verdict, so the reader's rule 3 decides each read here
-    return head + "".join(line + "\n" for line in [*rows, *VR.VERDICT_ROWS])
+    # Q-194c: F-98's pin, finalists' and verdict rows end every log a phase writes, so the verdict stays; the
+    # tree's first log is written without them and `VR.settle` adds them around F-98's ledgered read
+    return head + "".join(line + "\n" for line in [*rows, *VR.ROWS])
 
 
 def tokened(line: str, designs: str) -> str:
@@ -524,7 +526,7 @@ def make_tree(base: Path, name: str, decisions: str) -> Path:
     t = base / "runs" / name
     (t / "scripts").mkdir(parents=True)
     (t / "scripts" / "q35_driver.py").write_text(DRIVER, encoding="utf-8")
-    (t / "DECISIONS.md").write_bytes(decisions.encode("utf-8"))
+    (t / "DECISIONS.md").write_bytes(VR.without_rows(decisions).encode("utf-8"))
     manifest = []
     for rel in ALL4:
         p = t / rel
@@ -539,6 +541,9 @@ def make_tree(base: Path, name: str, decisions: str) -> Path:
     git(t, "config", "core.autocrlf", "false")
     git(t, "add", "-A")
     git(t, "commit", "-q", "-m", "the temporary tree")
+    # Q-194b, Q-194c: NQ's joint held-out test read (ledgered) and its verdict row, so the reader's rule 3
+    # decides each registered read here
+    VR.settle(t, [t / BARS])
     return t
 
 
@@ -604,7 +609,7 @@ def test_outside_a_clean_run_the_check_authorises_once_is_refused_before_any_wor
         assert len(a) == 1 and r["events"].index(a[0]) == 0 and _work(r) == [], _explain(r)
         assert a[0]["purpose"] == "registered_design" and a[0]["declaration"] == ROW and a[0]["design"] == designs
         assert (a[0]["start"], a[0]["end"]) == ("2020-01-02", "2026-07-16")
-        assert not r["ledger_exists"] and r["new"] == []
+        assert r["new"] == [] and VR.only_seed(r), "no line written (the seeded joint test's alone)"
 
 
 def test_the_declared_run_and_a_wrong_argument_are_refused_before_the_read(reads):
@@ -636,7 +641,8 @@ def test_inside_a_clean_run_one_ledger_line_a_run(reads):
         assert who["script"] == "scripts/q35_driver.py" and who["clean_run"] == tree.name and who["dirty"] is False
         assert "scripts/q35_openings.py:" in who["caller"].replace("\\", "/") and who["caller"].endswith(":main")
     # the inside phase's two lines and no_p16_p14_only's one (Q-158: that phase runs inside the clean run too)
-    assert len(R.read_ledger(tree / R.LEDGER_REL)) == 3
+    led = R.read_ledger(tree / R.LEDGER_REL)                     # Q-194c: the seeded joint test's line first
+    assert led[0]["declaration"]["ref"] == VR.HT_PATH and len(led) == 1 + 3
 
 
 def test_a_row_that_does_not_admit_the_reading_is_refused_and_nothing_starts(reads):

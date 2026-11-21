@@ -15,7 +15,8 @@ What is asserted (the brief's item 4, and what the mechanism needs to be one):
   a ledger that was tampered with refuses the next read; a committed line removed or rewritten later is reported by
   the history check, here on a temporary repository and on this repository's own history;
 * Q-158 (`tests/test_reader_heldout.py` holds the held-out rules' own cases): the synthetic log's E-906 and E-907
-  carry read tokens naming `scripts/probe.py`, and E-913 a verdict token for NQ, so the reads below that touch the
+  carry read tokens naming `scripts/probe.py`, and the `settled` fixture NQ's joint test with its verdict (Q-194c),
+  so the reads below that touch the
   held-out years are the ones those rules admit (E-914 to E-916 the families' finalists' tokens, Q-194); outside a
   clean run a registered design's held-out read is refused;
 * Q-58 (E-037, E-038): the purpose `registered_design` re-reads only P-14, P-15 and P-16, from `scripts/` only, under
@@ -114,14 +115,11 @@ def decisions(h90: str, h92: str, h94: str) -> str:
             f"| E-910 | 2026-11-16 | **RD-03 declared**, `{RD_EDITED}` sha256 `{sha_lf(RD_EDITED_PINNED_TEXT)}` | test |\n"
             f"| E-911 | 2026-11-16 | **RD-04 declared**, `{RD_FITTER}` sha256 `{sha_lf(RD_FITTER_TEXT)}` | test |\n"
             "| E-912 | 2026-11-16 | **A second stage-D read of RD-01** after its run 1 crashed | test |\n"
-            "| E-913 | 2026-11-16 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict (Q-158: a "
-            "described reading reads the held-out years only after it) | test |\n"
             # Q-194: rule 1 binds every family purpose, so each family read here has its finalists' row after its pin
             f"| E-914 | 2026-11-16 | heldout-finalists: F-90 @ {h90} list {'a' * 64} -- F-90's finalists | test |\n"
             f"| E-915 | 2026-11-16 | heldout-finalists: F-94 @ {h94} list {'b' * 64} -- F-94's finalists | test |\n"
             f"| E-916 | 2026-11-16 | heldout-finalists: F-95 @ {sha_lf(RIDER_TEXT)} list {'c' * 64} -- F-95's "
-            "finalists | test |\n"
-            + "".join(r + "\n" for r in VR.VERDICT_ROWS))   # Q-194b: after the held-out test's verdict
+            "finalists | test |\n")
 
 
 def bars_frame() -> pd.DataFrame:
@@ -187,8 +185,20 @@ def tree(tmp_path, monkeypatch) -> Path:
 
 
 def ledger_lines(t: Path) -> list[str]:
+    """The ledger's lines, the seeded joint test's read (`heldout_verdict_rows.settle`, F-98) left out."""
     p = t / "results" / "read_ledger.jsonl"
-    return p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    lines = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    return [x for x in lines if json.loads(x).get("declaration", {}).get("ref") != VR.HT_PATH]
+
+
+@pytest.fixture
+def settled(tree) -> Path:
+    """The tree after NQ's joint held-out test and its verdict (Q-158, Q-194b, Q-194c: a described reading's and a
+    registered design's held-out reads come only after a verdict row backed by that test's ledgered read; the seed's
+    line is left out of `ledger_lines`). Its window is then the joint test's: another family reads only another
+    market (rule 2)."""
+    VR.settle(tree, [tree / BARS])
+    return tree
 
 
 def judged(t: Path, **kw):
@@ -364,9 +374,10 @@ def test_identity_reads_are_allowed_from_identity_scripts(tree, monkeypatch):
 DESIGN = dict(purpose="registered_design", declaration="E-906", what="registered design")
 
 
-def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clean_run(tree, monkeypatch):
+def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clean_run(settled, monkeypatch):
     """E-037: `registered_design` re-reads Stage 2's own judged designs from this repository's `scripts/`, under a
     decision row naming them; checked everywhere, ledgered only inside a clean run, as an identity's read is."""
+    tree = settled
     led = tree / "results" / "read_ledger.jsonl"
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "probe.py")
     monkeypatch.delenv("S2X_CLEAN_RUN")
@@ -381,7 +392,7 @@ def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clea
         with pytest.raises(R.HeldOutRefused, match="clean run"):
             R.authorise_engine_read("2020-01-02", "2026-07-16", design=design, files=[tree / BARS, tree / WALKS],
                                     repo=tree, **DESIGN)
-    assert not led.exists(), "outside a clean run no ledger file appears"
+    assert not led.exists() or ledger_lines(tree) == [], "outside a clean run no line is written"
     monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
     monkeypatch.setenv("S2X_RUN_ID", "q58-sim@run-1")
     for i in range(2):                                            # one run reads as often as it needs
@@ -426,7 +437,8 @@ def test_a_registered_design_is_refused_for_any_other_design(tree, monkeypatch, 
     assert ledger_lines(tree) == []
 
 
-def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, monkeypatch):
+def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(settled, monkeypatch):
+    tree = settled
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "probe.py")
     kw = dict(files=[tree / BARS], repo=tree, what="registered design")
     # a family -- even a pinned one naming the purpose on its line -- never declares a registered design's re-read
@@ -435,7 +447,8 @@ def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, 
             R.authorise_engine_read("2020-01-02", "2026-07-16", purpose="registered_design", declaration=declaration,
                                     design="P-14", **kw)
     assert R.authorise_engine_read("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=RIDER,
-                                   **kw).kind == "family", "the control: F-95 is a valid family for its judgement"
+                                   market="ES", **kw).kind == "family", \
+        "the control: F-95 is a valid family for its judgement (ES's window: NQ's is the joint test's, rule 2)"
     for declaration, design, why in (("E-999", "P-14", "no decision row"), ("E-904", "P-14", "does not name"),
                                      ("E-907", "P-16", "does not name"), ("E-907", ("P-14", "P-15"), "does not name")):
         with pytest.raises(R.JudgedBlockSealed, match=why):
@@ -456,10 +469,11 @@ def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, 
 # --------------------------------------------------------------- Q-58: described readings (RD- files, E-023 (1))
 
 
-def test_a_pinned_described_reading_authorises_its_judged_reads_on_the_family_rules(tree, monkeypatch):
+def test_a_pinned_described_reading_authorises_its_judged_reads_on_the_family_rules(settled, monkeypatch):
     """A pinned `prereg/RD-nn_<slug>.md` declares judged-block reads exactly as a family file does: pinned in a row and
     unedited since, naming the purpose on its `Judged-block reads:` line, no choosing or fitting purpose, inside a
     clean run of committed code, once per purpose unless a row names another read."""
+    tree = settled
     for declaration in (READING, "RD-01"):
         a = R.authorise("2024-01-02", "2026-07-16", purpose="stage_D_scorecard", declaration=declaration, repo=tree)
         assert a.judged and a.ledgered and a.declaration == READING and a.kind == "described_reading"
@@ -497,7 +511,8 @@ def test_a_described_reading_that_does_not_authorise_is_refused(tree, declaratio
     assert ledger_lines(tree) == []
 
 
-def test_a_described_readings_judged_read_needs_a_clean_run_of_a_committed_tree(tree, monkeypatch):
+def test_a_described_readings_judged_read_needs_a_clean_run_of_a_committed_tree(settled, monkeypatch):
+    tree = settled
     ok = {"purpose": "stage_D_scorecard", "declaration": READING, "repo": tree}
     assert R.authorise("2024-01-02", "2026-07-16", **ok).judged
     assert R.authorise("2024-01-02", "2026-07-16", purpose="stage_D_scorecard", declaration=RD_FITTER,
