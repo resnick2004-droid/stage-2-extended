@@ -13,8 +13,8 @@
 - The tables and the code list the same levers (layer, class, source kind, keys, the comparison with Topstep), the work
   lists name every unverified key, and no rule value is typed in the loader or in a rule row.
 
-Pure Python on the rules; reads no bar, atlas, trade or result file. S1's Topstep reading is pointed at an absent file
-(`no_s1_reading`), so the comparison with Topstep is the one before that reading exists.
+Pure Python on the rules; reads no bar, atlas, trade or result file. Every result reading (S1's, and T7's where the loader has one) is pointed at an absent file
+(`pinned_results`, the golden script's `PINNED_RESULTS`), so no outcome depends on the result files a tree holds.
 """
 from __future__ import annotations
 
@@ -26,10 +26,13 @@ import io
 import json
 import math
 import re
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 
+from extended import day_calendar as DC
 from extended import firm_terms as FT
 from extended import lever_space as LS
 from extended import lever_space_firms as LF
@@ -47,14 +50,6 @@ _KIND = {"rule": LS.RULE, "arithmetic": LS.ARITH, "declared": LS.DECL,
 SEEDS = (20261120, 20261121, 20261122)          # Q-151b's test draws (synthetic designs; no outcome is read)
 
 
-@pytest.fixture(autouse=True)
-def no_s1_reading(tmp_path, monkeypatch):
-    monkeypatch.setattr(LS, "S1_PATH", tmp_path / "absent" / "s1_range.csv")
-
-
-# ------------------------------------------------------------------------------------------------ Topstep, unchanged
-
-
 def _golden_module():
     spec = importlib.util.spec_from_file_location("lever_space_golden", ROOT / "scripts" / "lever_space_golden.py")
     mod = importlib.util.module_from_spec(spec)
@@ -62,11 +57,58 @@ def _golden_module():
     return mod
 
 
+def _pin(monkeypatch) -> None:
+    """The declared result-file state (`scripts/lever_space_golden.py`'s `PINNED_RESULTS`): every reading the loader
+    can load pointed at an absent file -- S1's, and T7's where the loader has one (`raising=False` holds either way)."""
+    g = _golden_module()
+    for name, fname in g.PINNED_RESULTS.items():
+        monkeypatch.setattr(LS, name, g.ABSENT / fname, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def pinned_results(monkeypatch):
+    _pin(monkeypatch)
+
+
 def test_topsteps_loader_output_is_unchanged_bit_for_bit() -> None:
     old = json.loads(GOLDEN.read_text(encoding="utf-8"))
     new = _golden_module().snapshot()
     assert json.loads(json.dumps(new)) == old
     assert list(LS.LEVERS) == [k for k in old if not k.startswith("__")]
+
+
+def _outcomes() -> dict:
+    out = {"golden": _golden_module().snapshot()}
+    for firm in OTHER:
+        out[firm] = {"compare": LF.compare(firm), "refusals": LF.refusals(firm), "load": repr(LF.load(firm))}
+    return out
+
+
+def test_the_outcome_is_the_same_with_the_result_files_present_or_absent(tmp_path, monkeypatch) -> None:
+    """A tree holding both result files (here, files of junk, with junk manifests) and a tree holding neither give the
+    same outcome under the pin -- the golden snapshot and every firm's comparison, refusals and space."""
+    g = _golden_module()
+    present = tmp_path / "results"
+    present.mkdir()
+    for fname in g.PINNED_RESULTS.values():
+        (present / fname).write_text("not,a,reading" + chr(10) + "1,2,3" + chr(10), encoding="utf-8")
+        (present / (fname + ".manifest.json")).write_text("{}", encoding="utf-8")
+    got = []
+    for where in (present, tmp_path / "absent"):
+        with monkeypatch.context() as m:
+            for name, fname in g.PINNED_RESULTS.items():
+                m.setattr(LS, name, where / fname, raising=False)      # the tree's state
+            _pin(m)                                                    # the tests' declared state
+            got.append(json.loads(json.dumps(_outcomes(), default=repr)))
+    assert got[0] == got[1]
+    assert got[0]["golden"] == json.loads(GOLDEN.read_text(encoding="utf-8"))
+    with monkeypatch.context() as m:                                   # the script pins by itself, whatever is set
+        for name, fname in g.PINNED_RESULTS.items():
+            m.setattr(LS, name, present / fname, raising=False)
+        assert json.loads(json.dumps(g.snapshot())) == got[0]["golden"]
+        for name, fname in g.PINNED_RESULTS.items():
+            if hasattr(LS, name):
+                assert getattr(LS, name) == present / fname           # and restores what it found
 
 
 def test_topsteps_load_is_its_space() -> None:
@@ -303,8 +345,7 @@ def test_identity_lucid_against_stage_twos_adapter() -> None:
 
 
 def test_unverified_keys_on_the_real_record_refuse() -> None:
-    assert LF.rule_status("mffu", "mffu.trading_hours") == ("absent", "absent")
-    for lever, key in (("T2", "mffu.trading_hours"), ("A4", LF.MFFU_P + "eval_fee"),
+    for lever, key in (("A4", LF.MFFU_P + "eval_fee"),
                        ("A2", LF.MFFU_P + "payout_request_amount"), ("A8", "mffu.hold_queue_behaviour"),
                        ("A21", "mffu.payout_fee")):
         with pytest.raises(LF.NotVerified, match=re.escape(key)):
@@ -313,11 +354,91 @@ def test_unverified_keys_on_the_real_record_refuse() -> None:
                        ("A21", LF.LUCID_P + "payout_fee")):
         with pytest.raises(LF.NotVerified, match=re.escape(key)):
             LF.bounds("lucid", lever)
-    with pytest.raises(LF.NotVerified):
+    with pytest.raises(LF.NotVerified) as exc:
         LF.ready("mffu")
+    bad = {k for k, v in LF.prerequisites("mffu").items() if v != "verified"}
+    assert bad == {"mffu.eval_consistency_base", "mffu.news_all_releases_protocol", LF.MFFU_P + "commissions",
+                   LF.MFFU_P + "eval_fee", LF.MFFU_P + "funded_news"}   # Q-181b: four, and funded_news held
+    assert "RD-05's pin" in FT.record_entry(LF.MFFU_P + "funded_news")["note"]   # read 2026-11-20, held (RD-05 4.1)
+    assert all(FT.record_entry(k)["status"] == "unverified" for k in bad) and all(k in str(exc.value) for k in bad)
     with pytest.raises(LF.NotVerified):
         LF.ready("lucid")
     LF.ready("topstep")
+
+
+def test_mffus_trading_day_loads_from_its_key() -> None:
+    """Q-181b: T2 and T3 load from `mffu.trading_hours` -- the reopen at the Globex open and the automatic close, read
+    as New York time and converted to CT; the windows day-free (the declared starts) and per trading day (the day
+    calendar's anchors, shifted to MFFU's reopen)."""
+    v = FT.record_value("mffu.trading_hours")
+    assert FT.record_entry("mffu.trading_hours")["status"] == "verified"
+    oh, om = re.search(r"from (\d{1,2}):(\d\d) PM \(the Globex open\)", v).groups()
+    ch, cm = re.search(r"closed automatically at (\d{1,2}):(\d\d) PM", v).groups()
+    for d in (date(2021, 1, 15), date(2021, 7, 15), None):
+        td = LF.mffu_trading_day(d)
+        on = d or LF.fdeclared("clock.reference_days")[0]
+        ny = ZoneInfo("America/New_York")
+        r = datetime(on.year, on.month, on.day, int(oh) + 12, int(om), tzinfo=ny) - timedelta(days=1)
+        f = datetime(on.year, on.month, on.day, int(ch) + 12, int(cm), tzinfo=ny)
+        r, f = r.astimezone(DC.CHICAGO), f.astimezone(DC.CHICAGO)
+        assert (td["reopen"], td["flat"]) == (r.hour * 60 + r.minute, f.hour * 60 + f.minute)
+        ex = re.search(r"Sunday - Friday (\d\d):(\d\d) - ", v).groups()
+        assert td["reopen"] == int(ex[0]) * 60 + int(ex[1])     # the reopen is the exchange's open
+        assert td["last_entry"] == td["flat"] and td["last_entry_offset"] == td["length"]
+        assert td["length"] == (td["flat"] - td["reopen"]) % (24 * 60)
+    t2, t3 = LF.bounds("mffu", "T2"), LF.bounds("mffu", "T3")
+    assert t2.values == tuple(LS.declared("sessions")) and t2.read["mffu.trading_hours"] == v
+    td = LF.mffu_trading_day()
+    assert t2.detail["windows"] == LF.mffu_session_window_range(DC.SEARCH_START, DC.SEARCH_END)
+    assert t2.detail["windows"]["span"] == (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())
+    for d in (date(2021, 1, 15), date(2021, 3, 15), date(2021, 7, 15), date(2022, 11, 3)):
+        w, a = LF.mffu_session_windows(d), DC.anchored_starts(d)
+        tdd = LF.mffu_trading_day(d)
+        assert w["evening"][0] == 0 and w["ny_pm"][1] == tdd["length"]
+        assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
+        assert w["ny_am"][1] is None and w["ny_pm"][0] is None
+        shift = DC.REOPEN_MIN - tdd["reopen"]
+        assert (w["asia"][0], w["london"][0], w["ny_am"][0]) == tuple((a[n] + shift) % (24 * 60)
+                                                                       for n in ("asia", "london", "ny"))
+        ts = LS.session_windows(d)              # MFFU's own keys give Topstep's day here: the same reopen and flat;
+        for n in ("evening", "asia", "london"):  # the NY split (T2b) is to declare for this firm, so it is not compared
+            assert w[n] == ts[n], (d, n)
+        assert w["ny_am"][0] == ts["ny_am"][0] and w["ny_pm"][1] == ts["ny_pm"][1]
+    with pytest.raises(TypeError):
+        LF.mffu_session_windows(None)
+    assert (t3.lo, t3.hi, t3.step) == (0.0, float(td["last_entry_offset"]), float(LS.declared("mark_step_min")))
+    assert LF.compare("mffu")["T2"] == LF.compare("mffu")["T3"] == LF.DIFFERS
+
+
+def test_mffus_day_refuses_a_failed_time_zone_reading(monkeypatch) -> None:
+    rec = copy.deepcopy(FT._record())
+    rec["mffu.trading_hours"]["value"] = rec["mffu.trading_hours"]["value"].replace("Friday 17:00", "Friday 18:00")
+    monkeypatch.setattr(FT, "_record", lambda: rec)
+    with pytest.raises(LS.LeverRefused):
+        LF.bounds("mffu", "T2")
+
+
+@pytest.mark.parametrize("firm", OTHER)
+def test_to_declare_for_this_firm_is_never_topsteps(monkeypatch, firm: str) -> None:
+    """The lead's ruling: T2b, A15, A16 and A17 are to declare for each firm -- refused (`NotDeclared`) and never
+    'identical', whether Topstep's rows are still to declare (master) or declared (wt/wt-levels, simulated here by
+    Topstep's bounds loading)."""
+    ids = ("T2b", "A15", "A16", "A17")
+    assert {i for i, lv in LF.levers(firm).items() if lv.source == LS.TODECL} == set(ids)
+    for i in ids:
+        with pytest.raises(LS.NotDeclared):
+            LF.bounds(firm, i)
+        assert LF.vs_topstep(firm, i) == LF.DIFFERS
+    real = LS.bounds
+
+    def declared_at_topstep(i: str):
+        return LS.Range(i, "fixed", values=("declared",)) if i in ids else real(i)
+
+    monkeypatch.setattr(LS, "bounds", declared_at_topstep)
+    for i in ids:
+        assert LF.vs_topstep(firm, i) == LF.DIFFERS
+        with pytest.raises(LS.NotDeclared):
+            LF.bounds(firm, i)
 
 
 def test_the_record_wins_over_stage_twos_lucid_ledger(monkeypatch) -> None:

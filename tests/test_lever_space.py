@@ -221,7 +221,7 @@ def test_the_firms_day_and_its_sessions() -> None:
         assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
         assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
         assert (w["asia"][0], w["london"][0], w["ny_am"][0]) == (a["asia"], a["london"], a["ny"])
-        assert w["ny_am"][1] is None and w["ny_pm"][0] is None      # T2b, to declare
+        assert w["ny_am"][1] == w["ny_pm"][0] == LS.ny_boundary(day) == LS.bounds("T2b").values[0]   # T2b (L-M2)
     assert LS.session_windows(date(2021, 1, 15))["asia"][0] != LS.session_windows(date(2021, 7, 15))["asia"][0]
     with pytest.raises(TypeError):
         LS.session_windows()                                          # a trading day's date is required
@@ -265,7 +265,8 @@ def test_latency_and_the_operators_dimensions() -> None:
 def test_space_and_refusals_partition_the_levers(no_s1_reading) -> None:
     sp, rf = LS.space(), LS.refusals()
     assert set(sp) | set(rf) == set(LS.LEVERS) and not set(sp) & set(rf)
-    assert {"T7", "S1", "T2b", "A15", "A16", "A17", "A9", "A19"} <= set(rf)
+    assert {"T7", "S1", "A9", "A19"} <= set(rf)
+    assert {"T2b", "A15", "A16", "A17"} <= set(sp)                    # declared (E-NNN pending)
 
 
 # ------------------------------------------------------------------------------------------------ the loader's hygiene

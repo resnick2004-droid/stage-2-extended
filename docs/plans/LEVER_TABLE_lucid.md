@@ -55,7 +55,7 @@ In the prose, `P.` stands for `lucid.flex50k.`. Every key in the rows is written
 |---|---|---|---|---|---|---|---|---|
 | T1 | trigger | signal source of a component | Topstep's T1 (`coin`, `p14`, `p16`, `rl3`) | declared: E-208's dispositions | categorical; reads nothing | T2, T3, T4, T5, A16 | searched | identical |
 | T2 | trigger | session of a component | every session of Lucid's day, as Topstep's T2, once the day is on a record | arithmetic: `lucid.flex50k.trading_hours` (absent) | a session | T1, T2b, T3 | searched | refused -- `lucid.flex50k.trading_hours` is on neither record: Lucid's reopen, any flat-by time and its last entry |
-| T2b | trigger | the NY AM / NY PM boundary | to declare (Wave 3.3) | to declare | a wall-clock time | T2 | declared | identical |
+| T2b | trigger | the NY AM / NY PM boundary | **to declare for this firm**: refused until a per-firm declaration exists, whatever Topstep's row declares | to declare | a wall-clock time | T2 | declared | differs -- to declare for this firm; Topstep's value is never carried over |
 | T3 | trigger | entry window: a component's offer marks | from Lucid's reopen to its last new entry, in Topstep's mark step | arithmetic: `lucid.flex50k.trading_hours` (absent) | minutes after the reopen | T2, T4, A3 | searched | refused -- `lucid.flex50k.trading_hours` |
 | T4 | trigger | latency L, alert to order | Topstep's T4 | declared: E-202 (2)(c); CHARTER 3.3 (g) | clock minutes | T1, T3, T5 | searched | identical |
 | T5 | trigger | entry type | `market`, `limit`, held against Lucid's prohibition of exploiting platform or simulator mechanics (`lucid.flex50k.prohibited_conduct`) | declared: E-202 (2)(d); F-04 6.1 R-4 | order type | T1, T4, T6 | searched | differs -- the same choices, held against Lucid's conduct rule |
@@ -95,9 +95,9 @@ In the prose, `P.` stands for `lucid.flex50k.`. Every key in the rows is written
 | A12 | account policy | Back2Funded reactivations | **dropped**: Topstep's product (Stage 2's Lucid adapter sets it off) | declared | -- | A4, A6, A18 | dropped | differs -- Topstep's lever loads; Lucid has none |
 | A13 | account policy | resets | **dropped**: Stage 2's Lucid engine repurchases a failed evaluation; a reset (`lucid.flex50k.eval_reset_fee`) needs an adapter | declared: RD-03 2.5 | -- | A4 | dropped | identical |
 | A14 | account policy | daily-loss-limit election at checkout | **dropped**: a different account (`lucid.flex50k.eval_daily_loss_limit`) | declared: RD-05 2.3 | -- | S3, S4 | dropped | identical |
-| A15 | account policy | routing | to declare (Wave 3.3), with the no-opposing-positions guard | to declare | rule | A6, A7, A16, T8 | searched | identical |
-| A16 | account policy | signal mix | to declare | to declare | shares | T1, A15 | searched | identical |
-| A17 | account policy | state rule | to declare | to declare | rule | S3, S4, A1, A2 | searched | identical |
+| A15 | account policy | routing | **to declare for this firm**, with the no-opposing-positions guard; refused until a per-firm declaration exists | to declare | rule | A6, A7, A16, T8 | searched | differs -- to declare for this firm; Topstep's routing is never carried over |
+| A16 | account policy | signal mix | **to declare for this firm**; refused until a per-firm declaration exists | to declare | shares | T1, A15 | searched | differs -- to declare for this firm; Topstep's mix is never carried over |
+| A17 | account policy | state rule | **to declare for this firm**; refused until a per-firm declaration exists | to declare | rule | S3, S4, A1, A2 | searched | differs -- to declare for this firm; Topstep's state rule is never carried over |
 | A18 | account policy | the first payout request (RD-02 L1) | `elig` (the first close at which `lucid.flex50k.payout_frequency_gate` opens and the request reaches `lucid.flex50k.payout_min`), `lock` (once the floor has locked by reach, `lucid.flex50k.eval_drawdown_lock`). A request itself locks the floor (`lucid.flex50k.payout_balance_consequence`) | declared: RD-02 6.1 | rule | A5, A19 | searched | differs -- Lucid's gate, and the request that locks the floor |
 | A19 | account policy | the request amount (RD-02 L2) | `max`, `half`, once a record says a request may be below the cap's maximum (`lucid.flex50k.payout_request_amount_choice`; `lucid.flex50k.payout_cap`, `lucid.flex50k.payout_min`) | declared: RD-02 6.1 | share of the maximum | A5, A18 | searched | refused -- `lucid.flex50k.payout_request_amount_choice` is on neither record |
 | A20 | account policy | request cadence after the first payout | every eligible close: a new cycle's winning days after each payout (`lucid.flex50k.payout_frequency_gate`) | declared: RD-02 6.1 | -- | A18 | declared | differs -- Lucid's cycle |
@@ -105,9 +105,9 @@ In the prose, `P.` stands for `lucid.flex50k.`. Every key in the rows is written
 
 ## 4. The comparison with Topstep
 
-**identical** (15): T1, T2b, T4, T6, T7, S2, S6, S7, S8, S9, A13, A14, A15, A16, A17.
+**identical** (11): T1, T4, T6, T7, S2, S6, S7, S8, S9, A13, A14.
 
-**differs** (18): T5, T8, S1, S3, S4, S5, A1, A2, A3, A4, A5, A6, A7, A8, A10, A12, A18, A20.
+**differs** (22): T2b, T5, T8, S1, S3, S4, S5, A1, A2, A3, A4, A5, A6, A7, A8, A10, A12, A15, A16, A17, A18, A20.
 
 **refused** (6): T2, T3, A9, A11, A19, A21.
 
@@ -122,6 +122,9 @@ Why the differing levers differ, in short:
 - **Accounts (A6, A7, A8, A10, A12).** The caps are per household, with a shared total (A6 with A7 is refused beyond it).
   Evaluations may wait in reserve. Purchases are one-time. There is no Back2Funded.
 - **Conduct floors read from Lucid's record (T5, T8)**, and S1 needs Lucid's own reading.
+- **To declare for this firm (T2b, A15, A16, A17)** (the lead's ruling): the NY split, the routing, the mix and the
+  state rule are declared per firm, never carried over from Topstep's rows. They are refused (`NotDeclared`) until
+  Lucid's own declaration exists.
 
 ## 5. Combinations refused and floors fixed
 
