@@ -76,6 +76,8 @@ LIGHT: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
         (("--synthetic", "!--smoke-days"), "synthetic days only; no bar or walk read"),
         (("--substitution", "!--smoke-days"),
          "probes only; reads A3's manifest.json (the cache key, metadata) when present, no bar or walk table"),),
+    "identity/t7_label_identity.py": (
+        (("--synthetic",), "T7's label identity on synthetic days only; no bar read"),),
     "identity/place_records_identity.py": (
         (("--synthetic",), "synthetic campaigns only"),
         (("--row", "E-99999"), "refused before any engine work: no such decision row"),),
@@ -123,6 +125,11 @@ LIGHT: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
         (("--pairs",), "the pairs and days supplied (synthetic): nothing extracted from the bars"),),
     "scripts/q16_calibrate.py": (
         (("--synthetic-only",), "synthetic nulls only"),),
+    "scripts/search_calendar.py": (
+        (("--manifest", "--calendar", "--flags", "--out-dir"),
+         "every input supplied (a synthetic bar manifest, Q-40 calendar and H2 flags under tmp_path) into a temporary "
+         "--out-dir: nothing under the data read (by default the script reads the bar manifest's metadata, never a "
+         "bar)"),),
 }
 
 #: tests that reach the data and are deliberately not `heavy`: id -> reason (a legitimate exception, kept short)
