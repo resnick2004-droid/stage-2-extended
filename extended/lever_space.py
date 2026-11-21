@@ -297,13 +297,6 @@ def _s1_reading() -> tuple[dict[str, Any], dict[str, Any]]:
 #: T7's search-year reading: the admission forecast's coefficients and calibration
 T7_RESULT = "results/t7_forecast.csv"
 T7_PATH = ROOT / T7_RESULT
-#: reported beside any T7 result (the red team's H-n1 and H-n2; the lead's labels)
-T7_LABELS = (
-    "q = D-212's line as D-308 raised it: Stage 2 chose the number after D-306's result was seen (2020-2021, inside "
-    "the search years), labelled so; a ceiling on a leg's share of trades reaching the flatten, used here per mark",
-    "the label models a market entry only (the mark's first bar's open, held to 15:07): no limit entry (T5), no "
-    "news-window flatten, no entry off the five-minute grid",
-)
 
 
 def _t7_computed() -> bool:
@@ -324,14 +317,14 @@ def _admission() -> Range:
         raise NotComputed(f"T7 (admission): {exc}") from None
     except T7F.ForecastRefused as exc:
         raise LeverRefused(f"T7 (admission): {exc}") from None
-    return Range("T7", "choices", values=("off", "admit"),
+    return Range("T7", "choices", values=("off", "admit"), read={"D-212's line (q)": q},
                  unit="admission rule: admit a mark iff p_hat (the chance of reaching the flatten open) <= q",
                  detail={"q": q, "q_source": q_source, "model": got, "result": T7_RESULT, "sha256": got["sha256"],
                          "git_commit": got["git_commit"],
                          "use": "search years: t7_forecast.model_for(model, day) -- the fold model of the day's "
                                 "year, out of fold; model['final_model'] only for a held-out application, refused "
                                 "here",
-                         "labels": T7_LABELS})
+                         "labels": got["labels"]})
 
 
 def _stop_width() -> Range:
