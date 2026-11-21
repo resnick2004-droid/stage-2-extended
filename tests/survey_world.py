@@ -20,7 +20,8 @@ builds itself from their declared parameters (F-2). A test fixture pin only: und
     on the fresh seeds only: lucky on the selection seeds, the note's winner's curse), ``harm`` (its as-traded
     `share_months_positive` lowered there by `harm` / the steady weight), ``coin_side``, ``hedge`` (opposite
     positions on two accounts, k = b only, the bump on k = b only), ``overlap`` (two same-side positions at once),
-    ``gated`` (its supply 0 there), ``unpaired`` (the baselines on one start fewer), ``realkeys`` (a third real-path
+    ``gated`` (its supply 0 there), ``nothing`` (the region buys nothing: `nothing_values`), ``mixed`` (the bump on
+    both cells of k, half again higher on k = b, whose as-traded side harms), ``unpaired`` (the baselines on one start fewer), ``realkeys`` (a third real-path
     reading).
   `tag`, `blocks`, `horizon` override the report (held-out); `shift` adds to every design's q (a runner setting).
 * `spec(...)`, `declaration(spec)`: the tests' declared numbers with the parts bound.
@@ -112,22 +113,49 @@ def unit_values(name: str, q: float, seeds, starts: int, *, extra: Mapping[str, 
     return v
 
 
-def baseline_values(seeds, starts: int, spread: float = 0.0) -> dict[str, dict[str, np.ndarray]]:
-    return {b: unit_values(b, spread * i, seeds, starts) for i, b in enumerate(BASELINES)}
+def baseline_values(seeds, starts: int, spread: float = 0.0, base_q: float = 0.0) -> dict[str, dict[str, np.ndarray]]:
+    return {b: unit_values(b, base_q + spread * i, seeds, starts) for i, b in enumerate(BASELINES)}
 
 
-def w42_fixture(path: Path, spread: float = 0.0) -> dict[str, Any]:
+def nothing_values(seeds, starts: int) -> dict[str, np.ndarray]:
+    """The design that buys nothing: no evaluation, no spend, no payout, every month flat (V-4)."""
+    z = np.zeros((starts, len(seeds)))
+    v = {f"net_month_{m}": z.copy() for m in (1, 2, 3)}
+    v.update({f"peak_month_{m}": z.copy() for m in (1, 2, 3)})
+    v.update(spent_before_first_payout=z.copy(), first_payout_days=np.full_like(z, 127.0), cash_to_first_pass=z.copy(),
+             peak_oop_12_months=z.copy(), share_months_positive=z.copy(), taken_mean=z.copy(), accounts_max=z.copy())
+    return v
+
+
+def do_nothing_composite(W, v: Mapping[str, Any], sl) -> float:
+    """W42-R1's composite of the do-nothing design, by its own pieces (`_derived`, `_rows`, `_z`), on `sl`."""
+    seeds = range(2)
+    arm = nothing_values(seeds, len(sl))
+    per = dict(arm)
+    per.update(W._derived(arm, v["budgets"]["primary"]))
+    by = {d.name: d for d in W.DIMENSIONS}
+    c = 0.0
+    for d in v["dimensions"]:
+        if d["name"] in v["weights"]:
+            rows = W._rows(np.asarray(sl), by[d["name"]].horizon)
+            c += v["weights"][d["name"]] * float(W._z(by[d["name"]], per[d["key"]][rows], d["lo"], d["hi"]).mean())
+    return c
+
+
+def w42_fixture(path: Path, spread: float = 0.0, base_q: float = 0.0) -> dict[str, Any]:
     """H4's shape on the toy baselines, W42-R1's own rule on it, the no-harm margin beside; canonical JSON at path."""
     W = load_wave42()
     n, seeds = 40, list(range(901, 917))
     sl = tuple(range(420, 420 - 10 * n, -10))
     days = [str(np.datetime64("2020-01-06") + np.timedelta64(7 * i, "D")) for i in range(n)]
-    vals = baseline_values(seeds, n, spread)
+    vals = baseline_values(seeds, n, spread, base_q)
     rs = {b: W.BaselineReading(b, "search", tuple(days), sl, tuple(seeds), vals[b]) for b in BASELINES}
     v = dict(W.setting_rule(rs, fee_unit=50.0, fee_source="the tests' fixture", test_starts={63: 100, 126: 80,
                                                                                                252: 50},
                             test_seeds=64).values)
     v["no_harm"] = {"margin": NO_HARM_MARGIN, "source": "the tests' fixture (the assumed W42-R1 interface)"}
+    v["do_nothing"] = {"composite": do_nothing_composite(W, v, sl),
+                       "source": "the tests' fixture: W42-R1's pieces on the design that buys nothing (V-4)"}
     path.write_bytes(json.dumps(v, sort_keys=True, separators=(",", ":"), default=float).encode("utf-8"))
     return v
 
@@ -187,7 +215,8 @@ def q_of(kind: str, d: Mapping[str, Any]) -> float:
 
 
 def make_runner(kind: str = "plateau", tag: str = "search", blocks: list | None = None, horizon: int | None = None,
-                shift: float = 0.0, harm: float = 0.0, steady_weight: float = 1.0, hot_tag: str | None = None):
+                shift: float = 0.0, harm: float = 0.0, steady_weight: float = 1.0, hot_tag: str | None = None,
+                base_q: float = 0.0):
     def runner(schedule, protocol):
         from extended import components as C
         from extended import search_space as SS
@@ -198,6 +227,8 @@ def make_runner(kind: str = "plateau", tag: str = "search", blocks: list | None 
         CALLS.append(did)
         seeds = protocol.seeds
         hot = (design["k"] == "b") if kind == "hedge" else bump(design) >= 0.1 * A
+        if kind == "mixed":
+            hot = hot and design["k"] == "b"
         fresh = min(seeds) >= 200
         extra = {}
         if kind == "ceiling" and hot:
@@ -205,15 +236,19 @@ def make_runner(kind: str = "plateau", tag: str = "search", blocks: list | None 
         if kind == "floor" and hot or kind == "risky" and hot and fresh:
             extra["taken"] = 6.0
         n = len(SESSIONS_LEFT)
-        q = q_of(kind, design) + float(shift)
-        arms = {SV.DESIGN_ARM: unit_values(did, q, seeds, n, extra=extra)}
+        q = q_of(kind, design) + float(shift) + float(base_q)
+        if kind == "mixed" and design["k"] == "b":
+            q += 0.5 * bump(design)
+        arms = {SV.DESIGN_ARM: nothing_values(seeds, n) if (kind == "nothing" and hot)
+                else unit_values(did, q, seeds, n, extra=extra)}
         arms[SV.DESIGN_ARM]["supply"] = np.full((n, len(seeds)), 0.0 if (kind == "gated" and hot) else 1.0)
         nb = n - 1 if kind == "unpaired" else n
         for b in SV.BASELINES:
-            arms[b] = unit_values(b, (A + 1.0) if (kind == "strong" and b == "p16") else 0.0, seeds, nb)
+            arms[b] = unit_values(b, ((A + 1.0) if (kind == "strong" and b == "p16") else 0.0) + float(base_q),
+                                  seeds, nb)
         refl = arms[SV.DESIGN_ARM]
         traded = dict(refl)
-        if kind == "harm" and hot:
+        if kind in ("harm", "mixed") and hot:
             traded["share_months_positive"] = np.clip(refl["share_months_positive"] - harm / steady_weight, 0.0, 1.0)
         real = {SV.AS_TRADED: traded, SV.REFLECTED: refl}
         if kind == "realkeys":

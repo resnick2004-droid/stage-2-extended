@@ -37,12 +37,16 @@ declaration, no finalists' token for it in the decision log); the protocol refus
    gate on **only its declared keys** of the design's arm (F-10) -- refuses a design before any measure; then the
    composite and each limit through the door;
 6. `run_rounds`: exactly the declared rounds;
-7. `choose_finalists` (the finalist order rule): the read searched cells by selection reading, the first `candidates`;
+7. `choose_finalists` (the finalist order rule): **the floors before ranking** (V-4, in order: the no-harm floor, the
+   `not_paid_within_B` limit, the do-nothing floor -- the composite strictly above W42-R1's `do_nothing` composite,
+   the design that buys nothing; a cell failing one is recorded with its candidates as rank 0, never ranked), then the
+   cells left by selection reading, the first `candidates`;
    each re-read on the fresh seeds and kept only if (a) it beats **each** baseline by more than delta* at the declared z,
    read as a one-sided level and compared on the t law with n - 1 degrees of freedom (F-7); (b) **every limit's
    re-read point estimate** is inside its bound (F-3, E-230), the selection reading and the one-sided check (t law,
    W42's check level) beside; (c) the no-harm floor (the trigger's side; the as-traded composite no worse than the
-   coin-side as-walked one, `REFLECTED`, by more than the margin); (d) the plateau (side ``worse`` only, n-c);
+   coin-side as-walked one, `REFLECTED`, by more than the margin); (d) the do-nothing floor again on the re-read;
+   (e) the plateau (side ``worse`` only, n-c);
 8. `emit`: the readings (the baselines' included, n-e), the candidates, the finalists' list (each with its bound
    playbook's text and sha256), then the variants rows (each carrying the declaration's and protocol's sha256); the
    token in Q-158's form. A refusal after the first cell writes the variants rows, then the failure record, each
@@ -352,6 +356,7 @@ class Objective:
     limits: tuple[Mapping[str, Any], ...]                      # name, key, direction <= / >=, horizon, stat, bound
     check_level: float
     no_harm_margin: float
+    do_nothing: float                                          # the composite of the design that buys nothing (V-4)
 
 
 def _wave42() -> Any:
@@ -381,10 +386,11 @@ def load_objective(raw: Mapping[str, Any], *, fixture: bool) -> Objective:
                       "horizon": int(lim_by[x["name"]].horizon), "stat": lim_by[x["name"]].stat,
                       "bound": float(x["value"])} for x in v["limits"]["values"] if x.get("status") == "set")
         ob = Objective(v, dims, float(v["budgets"]["primary"]), float(v["delta_star"]["value"]), lims,
-                       float(v["limits"]["check_level"]), float(v["no_harm"]["margin"]))
+                       float(v["limits"]["check_level"]), float(v["no_harm"]["margin"]),
+                       float(v["do_nothing"]["composite"]))
     except (KeyError, TypeError, ValueError) as e:
         raise SpecRefused(f"REFUSED: W42-R1's result lacks {e} (dimensions, weights, budgets, delta*, limits, the "
-                          "no-harm margin)") from e
+                          "no-harm margin, the do-nothing composite)") from e
     if not dims or abs(sum(w for *_, w in dims) - 1.0) > 1e-9 or not ob.delta > 0 or not ob.no_harm_margin >= 0:
         raise SpecRefused("REFUSED: W42-R1's weights sum to one, delta* is above zero, the no-harm margin is not "
                           "negative")
@@ -638,6 +644,7 @@ class Context:
     selection: dict[str, dict[str, Any]] = field(default_factory=dict)
     rounds: list[Any] = field(default_factory=list)
     records: list[dict[str, Any]] = field(default_factory=list)
+    floored: list[dict[str, Any]] = field(default_factory=list)
     memo: dict[tuple[str, tuple[int, ...]], dict[str, Any]] = field(default_factory=dict)
 
     @property
@@ -842,13 +849,57 @@ def run_rounds(ctx: Context) -> None:
         read_all(ctx, rnd.designs, f"round-{i}")
 
 
+NOT_PAID = "not_paid_within_B"
+
+
+def do_nothing_floor(ctx: Context, r: Any) -> tuple[bool, dict[str, Any]]:
+    """V-4: the composite (the reading's minimised value, negated) strictly above the do-nothing design's, on the point
+    estimate: a design that buys nothing scores W42-R1's `do_nothing` composite and is never a finalist."""
+    c = -float(r.value)
+    return c > ctx.obj.do_nothing, {"do_nothing": {"composite": c, "do_nothing": ctx.obj.do_nothing,
+                                                   "held": bool(c > ctx.obj.do_nothing)}}
+
+
+def not_paid_floor(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
+    """V-4: the `not_paid_within_B` limit's point estimate inside its bound (when W42-R1 sets it)."""
+    lim = next((x for x in ctx.obj.limits if x["name"] == NOT_PAID), None)
+    if lim is None:
+        return True, {"not_paid": {"set": False}}
+    v = float(got[NOT_PAID].value)
+    ok = v <= lim["bound"] if lim["direction"] == "<=" else v >= lim["bound"]
+    return ok, {"not_paid": {"set": True, "value": v, "bound": lim["bound"], "held": bool(ok)}}
+
+
+def passes_floors(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, str, dict[str, Any]]:
+    """V-4's floors, in their order -- the no-harm floor, the `not_paid_within_B` limit, the do-nothing floor: (passes,
+    the first floor failed, every floor's reading)."""
+    info: dict[str, Any] = {}
+    first = ""
+    for name, (ok, part) in (("the no-harm floor", no_harm(ctx, got["out"])),
+                             ("the not_paid_within_B limit", not_paid_floor(ctx, got)),
+                             ("the do-nothing floor", do_nothing_floor(ctx, got[ctx.spec.measure]))):
+        info.update(part)
+        if not ok and not first:
+            first = name
+    return not first, first, info
+
+
 def finalist_candidates(ctx: Context) -> list[Any]:
-    """The finalist order rule: the read searched cells by selection reading, lowest first (ties by id), the first
-    `candidates`."""
+    """The finalist order rule: **the floors first** (V-4: `passes_floors` on each cell's selection run; a cell that
+    fails one is recorded, never ranked), then the cells left by selection reading, lowest first (ties by id), the
+    first `candidates`."""
     seen: dict[str, Any] = {}
     for r in ctx.readings:
         seen.setdefault(r.id, r)
-    return sorted(seen.values(), key=lambda r: (float(r.value), r.id))[:ctx.spec.candidates]
+    kept = []
+    for r in sorted(seen.values(), key=lambda r: (float(r.value), r.id)):
+        ok, first, info = passes_floors(ctx, ctx.selection[r.id])
+        if ok:
+            kept.append(r)
+        else:
+            ctx.floored.append({"id": r.id, "selection_value": float(r.value), "design": dict(r.design),
+                                "reason": f"before ranking, fails {first}", **info})
+    return kept[:ctx.spec.candidates]
 
 
 def beats_baselines(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
@@ -922,7 +973,8 @@ def choose_finalists(ctx: Context) -> list[dict[str, Any]]:
         rec["reread_value"] = float(got[ctx.spec.measure].value)
         steps = (("beats each baseline", beats_baselines(ctx, got)),
                  ("every limit inside", limits_inside(ctx, got, ctx.selection.get(cand.id, {}))),
-                 ("the no-harm floor", no_harm(ctx, got["out"])))
+                 ("the no-harm floor", no_harm(ctx, got["out"])),
+                 ("the do-nothing floor", do_nothing_floor(ctx, got[ctx.spec.measure])))
         for _, (_, info) in steps:
             rec.update(info)
         failed = [name for name, (ok, _) in steps if not ok]
@@ -1012,8 +1064,12 @@ def _records_frame(ctx: Context) -> Any:
     rows = [{"rank": r["rank"], "id": r["id"], "kept": bool(r.get("kept", False)), "reason": r.get("reason", ""),
              "selection_value": r["selection_value"], "reread_value": r.get("reread_value"),
              "design": json.dumps(r["design"], sort_keys=True, default=str),
-             "detail": json.dumps({k: r[k] for k in ("gaps", "limits", "no_harm", "plateau") if k in r},
+             "detail": json.dumps({k: r[k] for k in ("gaps", "limits", "no_harm", "do_nothing", "plateau") if k in r},
                                   sort_keys=True, default=str)} for r in ctx.records]
+    rows += [{"rank": 0, "id": r["id"], "kept": False, "reason": r["reason"], "selection_value": r["selection_value"],
+              "reread_value": None, "design": json.dumps(r["design"], sort_keys=True, default=str),
+              "detail": json.dumps({k: r[k] for k in ("no_harm", "not_paid", "do_nothing") if k in r},
+                                   sort_keys=True, default=str)} for r in ctx.floored]
     return pd.DataFrame(rows, columns=cols)
 
 
@@ -1084,6 +1140,7 @@ class Outcome:
     pin_row: str
     finalists: list[dict[str, Any]]
     candidates: list[dict[str, Any]]
+    floored: list[dict[str, Any]]
     token: str | None
     list_path: Path
     list_sha256: str
@@ -1154,7 +1211,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
         if ctx.ledger.rows:
             emit_failure(ctx, exc, params=params, results_dir=out_dir, name=name)
         raise
-    return Outcome(sha, pin_row, finalists, list(ctx.records), em["token"], em["list"], em["list_sha256"],
+    return Outcome(sha, pin_row, finalists, list(ctx.records), list(ctx.floored), em["token"], em["list"], em["list_sha256"],
                    em["readings"], em["candidates"], em["variants"], ctx.ledger.counts(), ctx.ledger, ctx.rounds,
                    bound)
 
@@ -1175,5 +1232,6 @@ __all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "DESIGN_ARM", "BASELINE_ROLE", "
            "load_objective", "composite", "limit_value", "t_threshold", "crossing_check", "load_spec", "fixture_pin",
            "check_pinned", "check_once", "new_ledger", "protocol_digest", "book_check", "gate_check", "screen",
            "read_design", "read_all", "draw_survey", "check_engine_rereads", "run_rounds", "finalist_candidates",
-           "beats_baselines", "limits_inside", "no_harm", "plateau_step", "choose_finalists", "heldout_problems",
+           "beats_baselines", "limits_inside", "no_harm", "do_nothing_floor", "not_paid_floor",
+           "passes_floors", "NOT_PAID", "plateau_step", "choose_finalists", "heldout_problems",
            "vendored_variants_writer", "variant_rows", "emit", "emit_failure", "run_survey", "declare_parts"]

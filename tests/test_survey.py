@@ -53,13 +53,16 @@ def q192(eng, monkeypatch):
 @pytest.fixture(scope="module")
 def w42(tmp_path_factory):
     out = {}
-    for tag, spread in (("", 0.0), ("_wide", 0.2)):
+    for tag, spread, base in (("", 0.0, 0.0), ("_wide", 0.2, 0.0), ("_rare", 0.0, RARE_Q)):
         p = tmp_path_factory.mktemp("w42") / f"w42_r1{tag}.json"
-        values = W.w42_fixture(p, spread)
+        values = W.w42_fixture(p, spread, base)
         out[tag] = {"rule_id": "W42-R1", "file": str(p), "sha256": R.sha256_lf(p), "code_sha256": SV.w42_code_sha(),
                     "_values": values}
-    out[""]["_wide"] = out["_wide"]
+    out[""]["_wide"], out[""]["_rare"] = out["_wide"], out["_rare"]
     return out[""]
+
+
+RARE_Q = -2.5      # baselines and designs whose payouts are rare: the do-nothing design outranks a baseline (V-4)
 
 
 def objective(w42):
@@ -164,7 +167,7 @@ def audit(out, spec=W.SPEC) -> list[str]:
                 probs.append(f"finalist {f['id']} is outside a limit, the no-harm floor or a plateau")
     elif out.token is not None or len(lst):
         probs.append("no finalist, but a token or a list row")
-    if len(lst) != len(out.finalists) or len(csv(out.candidates_path)) != len(out.candidates):
+    if len(lst) != len(out.finalists) or len(csv(out.candidates_path)) != len(out.candidates) + len(out.floored):
         probs.append("the list or the candidates file does not hold the run's")
     return probs
 
@@ -174,7 +177,7 @@ def in_region(design) -> bool:
 
 
 def reasons(out) -> str:
-    return " | ".join(str(c.get("reason", "")) for c in out.candidates)
+    return " | ".join(str(c.get("reason", "")) for c in out.candidates + out.floored)
 
 
 # ------------------------------------------------------------------------------------------------ the scenarios
@@ -303,6 +306,35 @@ def sc_identity(eng, tmp, w42):
     return ok and np.allclose(SV.composite(ctx, arm, sl), want, rtol=0, atol=1e-12)
 
 
+def sc_nothing(eng, tmp, w42):
+    """V-4: with rare payouts the do-nothing design outranks a baseline (W42-R1's own values); a region of designs that
+    buy nothing is floored before ranking and never a finalist."""
+    rare = w42["_rare"]
+    dn = rare["_values"]["do_nothing"]["composite"]
+    outranks = dn > min(rare["_values"]["composite"]["value"].values())
+    out = survey(eng, tmp, rare, "nothing", runner={"kind": "nothing", "base_q": RARE_Q})
+    hit = [f for f in out.floored if abs(f["do_nothing"]["composite"] - dn) < 1e-9]
+    return outranks and out.finalists == [] and bool(hit) and audit(out) == [] and         all(abs(-c["selection_value"] - dn) > 1e-9 for c in out.candidates)
+
+
+def sc_mixed(eng, tmp, w42):
+    """V-4's order: designs failing the no-harm floor outrank the good ones; floored first, the good ones are ranked."""
+    out = survey(eng, tmp, w42, "mixed", runner={"kind": "mixed", "harm": 1.5 * W.NO_HARM_MARGIN,
+                                                  "steady_weight": w42["_values"]["weights"]["steady"]})
+    harmed = [f for f in out.floored if "no-harm" in f["reason"]]
+    best = min((f["selection_value"] for f in out.finalists), default=None)
+    return bool(out.finalists) and all(f["design"]["k"] == "a" for f in out.finalists) and         best is not None and any(h["selection_value"] < best for h in harmed) and audit(out) == []
+
+
+def sc_do_nothing_unit(eng, tmp, w42):
+    """The do-nothing floor is strict: a composite equal to the do-nothing design's is refused, one above it kept."""
+    ctx = type("C", (), {})()
+    ctx.obj = SV.load_objective(objective(w42), fixture=True)
+    at = type("Rd", (), {"value": -ctx.obj.do_nothing})()
+    above = type("Rd", (), {"value": -(ctx.obj.do_nothing + 1e-6)})()
+    return SV.do_nothing_floor(ctx, at)[0] is False and SV.do_nothing_floor(ctx, above)[0] is True
+
+
 def sc_crossing(eng, tmp, w42):
     """The one-sided check beside a limit: a small excess within the t critical value is not shown; a large one is."""
     return SV.crossing_check(0.5, 1.0, 0.05, 32)[1] is False and SV.crossing_check(3.0, 1.0, 0.05, 32)[1] is True
@@ -329,6 +361,9 @@ SCENARIOS = {
     "engine_swap": sc_engine_swap,
     "identity": sc_identity,
     "crossing": sc_crossing,
+    "nothing": sc_nothing,
+    "mixed": sc_mixed,
+    "do_nothing_unit": sc_do_nothing_unit,
 }
 
 
@@ -444,6 +479,9 @@ MUTANTS = {
     "book-skipped": ("book_check", lambda o: (lambda out: None), "hedge", ()),
     "overlap-admitted": ("book_check", _overlap_admitted, "overlap", ()),
     "gate-skipped": ("gate_check", lambda o: (lambda ctx, out: None), "gated", ()),
+    "do-nothing-floor-skipped": ("do_nothing_floor", lambda o: (lambda ctx, r: (True, o(ctx, r)[1])),
+                                 "do_nothing_unit", ()),
+    "floors-after-ranking": ("passes_floors", lambda o: (lambda ctx, got: (True, "", o(ctx, got)[2])), "mixed", ()),
     "plateau-skipped": ("plateau_step", lambda o: (lambda ctx, f: _ACCEPT()), "spike", ()),
     "check-output-dropped": ("_check_output", lambda o: (lambda ctx, out, p: None), "realkeys", ()),
     "real-path-unchecked": ("_check_real_path", lambda o: (lambda out, keys: None), "realkeys", ()),
