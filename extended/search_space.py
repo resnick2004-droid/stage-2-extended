@@ -104,6 +104,26 @@ survey's `begin` and the protocol each verdict carries; that a run builds exactl
 Wave 5's runner review's to check. The held-out years are never read
 by a search (CHARTER 3.6 (a), E-221 O-1).
 
+**What a caller does since Q-192** (the survey runner's port, BUILD_SURVEY_c2 M-1):
+1. **The survey step takes the declaration's sha256**: `Sampler.survey(n, ledger=, protocol=, reread_seeds=,
+   measures=, declaration_sha256=)`, where `declaration_sha256` is the figure the pinned declaration states,
+   `protocol_sha256(protocol, reread_seeds, measures)`; absent or different, `begin` raises `DeclarationMismatch`.
+   Fewer than `MIN_REREAD_SEEDS` re-read seeds raise `TooFewRereadSeeds`; seeds shared with the protocol's,
+   `LedgerRefused`.
+2. **Cells are recorded with the role's pen**: `pen = ledger.begin(role, seed, **meta)`, then
+   `pen.record(space, design, refusal=..., round_index=...)`, then `pen.close()` when the batch returns.
+   `ledger.record` without the role's pen raises `NotTheDrawer`, and after the close `RoleClosed`. `Sampler.survey`,
+   `proposer.propose` and `plateau.check` open and close their own roles; a runner's own role (a baseline's) goes
+   through the three steps above.
+3. **The protocol's sha256 is the engine's**: `ledger.protocol_sha256` (and `ledger.declared`, the full record) is what
+   every `PlateauVerdict` (`protocol_sha256`, `protocol`) and every variant row (`params["_protocol_sha256"]`,
+   `params["_protocol"]`) carries; a runner records that figure, or checks its own digest against it.
+And **a limit is read on the re-read seeds** (F-3; the lead's ruling, RB-2, E-247/E-251):
+`ledger.protocol_for(limit, reread=True)` is `ledger.reread.with_measure(limit)` for exactly the limit measures the
+survey declared; anything else is refused (`OffProtocol`), and no door takes seeds from the caller. `plateau.check`
+reads every declared limit of the finalist there and reports it as `PlateauVerdict.reread_limits`, the point
+estimate a limit decides on, the selection reading beside it.
+
 **Wave 5's hooks** (the red team's m-9 and m-10, Wave 5's declaration by the lead's ruling): the finalist order rule
 and the multi-objective frontier are not built here. A finalist reaches `extended.plateau.check` only as a counted
 survey or round cell on the protocol; the order rule that names it is the declaration's. `to_components` is the bridge

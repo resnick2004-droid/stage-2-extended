@@ -19,6 +19,9 @@ What is asserted:
 - **n-3**: a round's `RoundSpec` and limits are its role's meta;
 - **F-3** (BUILD_SURVEY_v2, the lead's ruling): a declared limit is read on the fresh re-read seeds, and the
   plateau's verdict exposes the finalist's re-read limits; a finalist lucky on its selection seeds reads outside there.
+- **Q-192b** (BUILD_SURVEY_c2 M-1): `protocol_for(limit, reread=True)` is the ledger's re-read under the limit's
+  measure for exactly the declared limits; an undeclared measure, stale re-read seeds and a caller's seeds are refused;
+  the protocol's sha256, limits included, is what the verdict and the variant rows carry.
 Each guard's mutant is run on a scratch copy of the module (the hand-back lists them); every one fails a test here.
 """
 from __future__ import annotations
@@ -313,3 +316,62 @@ def test_f3_a_limit_is_read_on_the_reread_seeds_and_the_reread_value_is_exposed(
     v0 = PL.check(lucky_risk(fin, protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led0,
                   ledger_seed=LSEED)
     assert v0.reread_limits == {}                                        # no limit declared, none reported
+
+
+# ------------------------------------------------------------------------------------------------ Q-192b (M-1)
+
+
+def test_q192b_a_declared_limit_is_read_on_the_ledgers_reread_seeds():
+    """BUILD_SURVEY_c2 M-1, the lead's ruling (RB-2, E-247/E-251): `protocol_for(limit, reread=True)` is exactly the
+    ledger's re-read protocol under the limit's measure (the survey's stand-in), and a reading on it passes the door."""
+    ds, led = survey(**TY.sv(measures=("risk", "ruin")))
+    for m in ("risk", "ruin"):
+        lp = led.protocol_for(m, reread=True)
+        assert lp == led.reread.with_measure(m) and lp.seeds == TY.REREAD_SEEDS and lp.measure == m
+        assert lp.blocks == TY.PROTOCOL.blocks and lp.horizon == TY.PROTOCOL.horizon
+        r = TY.reading(ds[0], 0.1, protocol=lp, per_seed=[0.1] * len(lp.seeds))
+        assert SS.admit_one(r, ledger=led, measure=m, reread=True) is r
+    assert led.protocol_for(None, reread=True) == led.protocol_for("composite", reread=True) == led.reread
+
+
+def test_q192b_an_undeclared_measure_is_refused_on_either_seed_set():
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    for reread in (False, True):
+        with pytest.raises(SS.OffProtocol, match="not declared"):
+            led.protocol_for("ruin", reread=reread)
+        base = led.reread if reread else led.protocol
+        with pytest.raises(SS.OffProtocol):
+            SS.admit_one(TY.reading(ds[0], 0.1, protocol=base.with_measure("ruin")), ledger=led, measure="ruin",
+                         reread=reread)
+    _, bare = survey()                                                    # no limit declared at all
+    with pytest.raises(SS.OffProtocol):
+        bare.protocol_for("risk", reread=True)
+
+
+def test_q192b_the_reread_seeds_are_the_ledgers_fresh_ones_never_the_callers():
+    """Re-read seeds that are not fresh are refused at the declaration (not by the floor: five of them, one shared
+    with the selection seeds); a limit reading offered as the re-read on the selection seeds, or on fresh seeds of the
+    caller's choosing, is refused by the door."""
+    stale = (TY.SEEDS[0],) + tuple(range(901, 905))
+    assert len(stale) >= SS.MIN_REREAD_SEEDS
+    with pytest.raises(SS.LedgerRefused, match="fresh") as e:
+        survey(**TY.sv(reread_seeds=stale, measures=("risk",)))
+    assert type(e.value) is SS.LedgerRefused
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    for seeds in (TY.SEEDS, tuple(range(901, 906))):
+        p = TY.PROTOCOL.with_measure("risk").with_seeds(seeds)
+        with pytest.raises(SS.OffProtocol):
+            SS.admit_one(TY.reading(ds[0], 0.1, protocol=p, per_seed=[0.1] * len(seeds)), ledger=led,
+                         measure="risk", reread=True)
+    with pytest.raises(TypeError):
+        led.protocol_for("risk", reread=True, seeds=(901, 902, 903, 904, 905))   # no door takes the caller's seeds
+
+
+def test_q192b_the_protocol_sha256_with_its_limits_is_recorded():
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    want = SS.protocol_sha256(TY.PROTOCOL, TY.REREAD_SEEDS, ("risk",))
+    assert led.protocol_sha256 == want != SS.protocol_sha256(TY.PROTOCOL, TY.REREAD_SEEDS)
+    v = PL.check(lucky_risk(ds[0], protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led,
+                 ledger_seed=LSEED)
+    assert v.protocol_sha256 == want and v.protocol["measures"] == ["risk"] and set(v.reread_limits) == {"risk"}
+    assert {r["params"]["_protocol_sha256"] for r in led.variant_rows("F-XX")} == {want}
