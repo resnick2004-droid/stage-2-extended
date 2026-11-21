@@ -32,6 +32,10 @@ differing date, never a value):
 **Writes** `results/t7_forecast.csv` with its manifest through `extended.results` (no seed: nothing is drawn; variant
 count 1): every fold's and the final fit's coefficients and calibration, the counts, and the out-of-fold calibration.
 Nothing in it inverts to a price range in points (coefficients on log ratios, probabilities, shares, losses, counts).
+The manifest's description and `notes` name the out-of-fold rows as "diagnostics, not a forward test" and carry
+`t7_forecast.LABELS`; its parameters carry `data_manifest`, the data manifest's sha256 of the bars, the bar store's
+manifest and A1's day table (the audit's C3, C4, C7). `--name` writes under another name (a re-run never overwrites;
+the name must start `t7_forecast`); the CSV's bytes do not depend on the manifest.
 Prints the identity lines, the row counts, the timing and the peak working set -- no coefficient, no share.
 """
 from __future__ import annotations
@@ -66,8 +70,34 @@ SCRIPT = T.SCRIPT
 BAR_COLUMNS = ["ts", "day", "contract", "open", "high", "low", "close", "volume"]
 DAYS_FAMILY, DAYS_TABLE = "A1", "days"
 RV_TOL = 1e-12
+#: the inputs whose sha256 the manifest records (`vendor/DATA_MANIFEST_stage2.sha256`; the audit's C4, as S1's and
+#: Q-121's manifests do): the bars, the bar store's manifest (the void calendar's source) and A1's day table
+DATA_FILES = ("data/bars/NQ/bars.parquet", "data/bars/NQ/manifest.json", "data/atlas/A1/days.parquet")
+DESCRIPTION = ("T7 (E-208, E-221 O-1): the admission forecast -- F-R's HAR form of the chance a mark's bracket reaches "
+               "the flatten open -- fitted on the search years 2020-01-02 to 2023-12-29 only, purged and embargoed "
+               "yearly folds; each fold's and the final fit's coefficients and calibration, the counts, and "
+               "out-of-fold diagnostics (sections oof, reliability, bracket and the per-fold rows): diagnostics, not a "
+               "forward test")
 RUN_COMMAND = (f"python scripts/run_clean.py --name t7-forecast --task {TASK} --hours 1 --mem-gb 2 -- "
                f"python {SCRIPT}")
+
+
+def data_manifest() -> dict[str, str]:
+    """The data manifest's sha256 of the files read (`vendor/DATA_MANIFEST_stage2.sha256`; not re-hashed here)."""
+    p = ROOT / "vendor" / "DATA_MANIFEST_stage2.sha256"
+    out = {}
+    if p.is_file():
+        for line in p.read_text(encoding="utf-8").splitlines():
+            parts = line.split(None, 1)
+            if len(parts) == 2 and parts[1].strip().lstrip("*") in DATA_FILES:
+                out[parts[1].strip().lstrip("*")] = parts[0]
+    return out
+
+
+def manifest_notes() -> dict[str, object]:
+    """The manifest's notes (the audit's C3, C7): which rows are diagnostics; the labels every consumer carries."""
+    return {"diagnostics": T.DIAGNOSTICS, "diagnostics_label": "diagnostics, not a forward test",
+            "labels": list(T.LABELS)}
 
 
 def refused(msg: str) -> str:
@@ -141,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--start", default=T.SEARCH_START.isoformat())
     ap.add_argument("--end", default=T.SEARCH_END.isoformat())
     ap.add_argument("--results-dir", default=None, help="default: results/ (only from a clean checkout)")
+    ap.add_argument("--name", default=RESULT, help=f"the result file's name (default {RESULT}); a re-run takes a new "
+                    "name, never an overwrite")
     a = ap.parse_args(argv)
     try:
         start, end = T.check_span(a.start, a.end)
@@ -155,7 +187,11 @@ def main(argv: list[str] | None = None) -> int:
         if why:
             print(refused(f"{target} is written only from a clean checkout -- {why}. {RUN_COMMAND}"))
             return 2
-    out_csv = target / f"{RESULT}.csv"
+    name = a.name
+    if not name.replace("_", "").isalnum() or name != name.lower() or not name.startswith(RESULT):
+        print(refused(f"--name {name!r}: a lower-case name starting {RESULT!r} (letters, digits, underscores)"))
+        return 2
+    out_csv = target / f"{name}.csv"
     if out_csv.exists() or XR.manifest_path_for(out_csv).exists():
         print(refused(f"{out_csv} exists; a result file is never overwritten"))
         return 2
@@ -219,13 +255,11 @@ def main(argv: list[str] | None = None) -> int:
     params = T.manifest_parameters(q, q_source, identities={"rv_tod": "HELD", "a1_days": "HELD"}, span=(start, end))
     params.update({"frame_days": len(frame_days), "rows": int(len(t)),
                    "rows_with_forecast": int(t["has_forecast"].sum()),
-                   "calendar": {"flags_sha256": src.flags_sha256, "days": len(src.days)}})
-    paths = XR.write_result(frame, RESULT, script=SCRIPT, seed=None, require_seed=False, parameters=params,
-                            results_dir=target, exploratory=False, variant_count=1,
-                            description=("T7 (E-208, E-221 O-1): the admission forecast -- F-R's HAR form of the chance "
-                                         "a mark's bracket reaches the flatten open -- fitted on the search years "
-                                         "2020-01-02 to 2023-12-29 only, purged and embargoed yearly folds; "
-                                         "coefficients, calibration and counts only"))
+                   "calendar": {"flags_sha256": src.flags_sha256, "days": len(src.days)},
+                   "data_manifest": data_manifest()})
+    paths = XR.write_result(frame, name, script=SCRIPT, seed=None, require_seed=False, parameters=params,
+                            results_dir=target, exploratory=False, variant_count=1, description=DESCRIPTION,
+                            notes=manifest_notes())
     counts = frame["section"].value_counts()
     print("  rows: " + ", ".join(f"{s} {int(counts.get(s, 0))}" for s in T.SECTIONS))
     print(f"  wrote {paths[0].name}; read {t_read:.0f} s, total {time.time() - t0:.0f} s, peak working set "

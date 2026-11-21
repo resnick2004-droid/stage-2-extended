@@ -372,7 +372,8 @@ def rv_at(dC: np.ndarray, alerts: Sequence[int], window: int = RV_WINDOW) -> np.
 def window_stats(O: np.ndarray, H: np.ndarray, L: np.ndarray, C: np.ndarray) -> dict[str, np.ndarray]:
     """Per (day, mark of `MARKS`): `iv`, `up`, `dn` of the window from the entry bar (the first bar stamped at or
     after the mark) to the bar stamped `WALK_LAST_STAMP` (NaN with no entry bar), and `rv_live` (rv_60 at the alert
-    m - 5); per day, `rv_frozen` (rv_60 at 08:25)."""
+    m - 5), `entry_slot` (the entry bar's stamp, -1 with none: for the label identity, never a feature); per day,
+    `rv_frozen` (rv_60 at 08:25)."""
     n = O.shape[0]
     E = WALK_LAST_STAMP
     Cw, Ow, Hw, Lw = C[:, :E + 1], O[:, :E + 1], H[:, :E + 1], L[:, :E + 1]
@@ -394,7 +395,8 @@ def window_stats(O: np.ndarray, H: np.ndarray, L: np.ndarray, C: np.ndarray) -> 
     dn = entry - Ls[rows, ec]
     for a in (iv, up, dn):
         a[~valid] = np.nan
-    return {"iv": iv, "up": up, "dn": dn, "rv_live": rv_at(dC, MARKS - ALERT_LAG),
+    return {"iv": iv, "up": up, "dn": dn, "entry_slot": np.where(valid, e, -1),
+            "rv_live": rv_at(dC, MARKS - ALERT_LAG),
             "rv_frozen": rv_at(dC, [FROZEN_ALERT])[:, 0]}
 
 
@@ -813,6 +815,23 @@ def manifest_path(path: Path | str) -> Path:
     return Path(str(path) + ".manifest.json")
 
 
+#: the assumptions every consumer of T7 carries (the audit's C7; the red team's H-n1, H-n2, H-m3): returned by the
+#: loader as `labels` and put into the lever's detail
+LABELS = (
+    "q is D-212's line as D-308 raised it: Stage 2 chose the number after D-306's result was seen (on 2020-2021, "
+    "inside the search years) and labels it so; it was a ceiling on a leg's share of trades reaching the flatten, used "
+    "here as a per-mark threshold, which is far stricter",
+    "the label models a market entry only (the open of the mark's first bar, held to the bar stamped 15:07): no limit "
+    "entry (T5), no news-window flatten, no entry off the five-minute grid, no breakeven move",
+    "the calibration's stops are c sqrt(M) on a continuous grid, not rounded to the tick",
+    "a stop outside the calibrated c grid (0.5 to 2 sqrt(M)) or a w outside S2's grid is never admitted (NaN), never "
+    "extrapolated",
+)
+#: the out-of-fold rows, named in the manifest (the audit's C3)
+DIAGNOSTICS = ("the sections oof, reliability and bracket, and the per-fold coef, calib and count rows (folds y2020 to "
+               "y2023): out-of-fold diagnostics, not a forward test (the folds include backward ones); the loader "
+               "decides on none of them")
+
 #: the manifest parameters the loader holds to their values now (all of `manifest_parameters` but these)
 NOT_COMPARED = ("identities", "span", "q_source")
 FOLD_LABEL = ("search years: applied to marks of this fold's year only (trained without it, purged and embargoed); "
@@ -912,7 +931,7 @@ def load_forecast(path: Path | str, *, q: float, repo: Path | str = ROOT) -> dic
     fold_models = {f: _model_from(rows, f, p) for f in sorted(folds)}
     final = _model_from(rows, FINAL, p)
     return {"fold_models": fold_models, "final_model": final, "q": float(q), "sha256": sha,
-            "git_commit": m.get("git_commit"), "manifest": str(mp)}
+            "git_commit": m.get("git_commit"), "manifest": str(mp), "labels": LABELS}
 
 
 def model_for(got: Mapping[str, Any], day: Any) -> dict[str, Any]:
@@ -954,4 +973,5 @@ __all__ = ["TASK", "DECISIONS", "RESULT", "SCRIPT", "PURPOSE", "READ_ROW", "SEAR
            "fit_rows", "fit_har", "predict_y", "open_counts", "brackets", "bracket_label", "bracket_obs",
            "fit_logistic", "fit_calibration", "calibrated", "fit_model", "run_fit", "output_problems",
            "manifest_parameters", "admission_line", "manifest_path", "load_forecast", "model_for",
-           "probability_open", "admit", "w_grid", "NOT_COMPARED", "FOLD_LABEL", "FINAL_LABEL"]
+           "probability_open", "admit", "w_grid", "NOT_COMPARED", "FOLD_LABEL", "FINAL_LABEL", "LABELS",
+           "DIAGNOSTICS"]
