@@ -83,7 +83,7 @@ def seed_key(seed: int, kind: str, **fields: int) -> list[int]:
             raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in a block of the seed module (H3's or "
                                       f"H4's) but was not issued by "
                                       "extended.three_way_seeds (a literal or a derived value)")
-        S.check_use(seed, kind, fields.get("part"))                    # m-9: each seed draws only its role
+        S.check_use(seed, kind, fields.get("part"), fields)            # m-9: each seed draws only its role
     return [int(seed), tag, *vals]
 
 

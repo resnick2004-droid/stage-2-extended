@@ -199,11 +199,16 @@ def key_matrix(seed: int, kind: str, **fields) -> np.ndarray:
         raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in a block of the seed module (H3's or "
                                   f"H4's) but was not issued by "
                                   "extended.three_way_seeds")
-    if S.in_block(seed):                                               # m-9: each seed draws only its role
-        parts = np.unique(np.asarray(fields["part"])) if "part" in fields else [None]
-        for pt in parts:
-            S.check_use(seed, kind, None if pt is None else int(pt))
     cols = np.broadcast_arrays(*[np.asarray(fields[nm], dtype=np.int64) for nm in names])
+    if S.in_block(seed):                                               # m-9: each seed draws only its role
+        if "part" in fields:
+            part_col = cols[names.index("part")].ravel()
+            for pt in np.unique(part_col):
+                rows = part_col == pt
+                S.check_use(seed, kind, int(pt), {nm: set(np.unique(c.ravel()[rows]).tolist())
+                                                  for nm, c in zip(names, cols)})
+        else:
+            S.check_use(seed, kind, None, {nm: set(np.unique(c).tolist()) for nm, c in zip(names, cols)})
     n = cols[0].size
     M = np.empty((n, 2 + len(names)), np.int64)
     M[:, 0], M[:, 1] = int(seed), tag

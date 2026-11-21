@@ -481,7 +481,8 @@ P4_A = (0.0, 0.5, 1.0)
 P4_SWITCH = 0.02
 SIZE_GRID = (0.0025, 0.005, 0.01, 0.02, 0.04)
 CENTRING_Z = 4.0
-SMALLER_J_MODEL = "normal at each pool's own sd (H3-A); H3-D: three_way_stats.bootstrap_draw of H4's replicates"
+SMALLER_J_MODEL = "normal at each pool's own sd (H3-A); H3-D's model is H3-D's text's"
+SMALLER_J_KEY = ('h3a_histories', 'plant', 'A1', (('history', 0), ('plant', 0), ('replicate', 0)))
 SMALLER_J_GRID = (16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768)
 SMALLER_J_DRAWS = 2000
 ```

@@ -1,5 +1,5 @@
 """H3-A's inputs, every one fixed here before the run (the lead's ruling on the red team's B-3: nothing chosen or written
-at run time). `prereg/DRAFT_H3_three_way.md` Appendix C prints this module (through
+at run time). `prereg/H3_three_way.md` Appendix C prints this module (through
 `docs/plans/scripts/three_way/h3a_inputs.py`) and `tests/test_h3_draft.py` holds the two equal, so the declaration's
 text and the values the run reads are one. **No value here is a firm's**: the toy rules and the S1 parameters are
 stylised, chosen without any outcome read, for design checks only (CHARTER 3.7: H3-A chooses no rule).
@@ -19,14 +19,20 @@ What is fixed, per part:
 - **the kill rule's centring test** (`CENTRING_Z`): a null pool is not centred when |its mean| exceeds `CENTRING_Z`
   standard errors (two-sided);
 - **the smaller-J rule's report in H3-A** (`SMALLER_J_MODEL`): both bounds' J on `three_way_stats.SMALLER_J_GRID` with
-  `SMALLER_J_DRAWS` draws, the normal model at each pool's own sd (H3-D's model is the bootstrap of H4's replicates).
+  `SMALLER_J_DRAWS` draws, the normal model at each pool's own sd (H3-D's model is H3-D's text's); its rng the one key
+  `three_way_seeds.SMALLER_J_REPORT` (the H3-A histories' role, the `plant` kind in part A1, every field fixed), refused
+  under any other seed or field (`smaller_j_rng`; the gatekeeper's item 5).
 """
 from __future__ import annotations
 
 from dataclasses import asdict, fields, is_dataclass
 
+import numpy as np
+
 from extended import three_way_journey as J
+from extended import three_way_keys as K
 from extended import three_way_s1 as S1
+from extended import three_way_seeds as S
 from extended import three_way_stats as ST
 
 #: the toy account (stylised; no firm's)
@@ -80,7 +86,18 @@ P4_A = (0.0, 0.5, 1.0)
 P4_SWITCH = 0.02
 SIZE_GRID = (0.0025, 0.005, 0.01, 0.02, 0.04)
 CENTRING_Z = 4.0
-SMALLER_J_MODEL = "normal at each pool's own sd (H3-A); H3-D: three_way_stats.bootstrap_draw of H4's replicates"
+SMALLER_J_MODEL = "normal at each pool's own sd (H3-A); H3-D's model is H3-D's text's"
+#: the report's rng key, as `three_way_seeds.SMALLER_J_REPORT` fixes it
+SMALLER_J_KEY = (S.SMALLER_J_REPORT["role"], S.SMALLER_J_REPORT["kind"], S.SMALLER_J_REPORT["part"],
+                 tuple(sorted(S.SMALLER_J_REPORT["fields"].items())))
+
+
+def smaller_j_rng() -> np.random.Generator:
+    """H3-A's smaller-J report's one generator: `default_rng` of its declared key (`SMALLER_J_KEY`), drawn through
+    the seed module's role check, which holds every field."""
+    rep = S.SMALLER_J_REPORT
+    return np.random.default_rng(K.seed_key(S.issue(rep["role"]), rep["kind"], part=S.PARTS[rep["part"]],
+                                            **rep["fields"]))
 
 
 def _show(v) -> str:
@@ -102,7 +119,7 @@ def declared() -> list[tuple[str, str]]:
     for name in ("TOY_RULES", "TOY_RULES_EXACT", "S1_PARAMS", "S1_PARAMS_EXACT", "STARTS", "HORIZON", "SEEDS",
                  "BUDGET", "COST", "STOP_SLIP", "FLAT_SLIP", "TICK", "A1_DESIGN", "BASELINES", "DISJOINT", "J_PRIME",
                  "LEVELS", "TOY_COMPOSITE", "A2_PAIR", "A3_PAIR", "A3_HISTORIES", "SHORTCUT_HISTORIES", "P2_LEVERS",
-                 "P3_EPS", "P4_A", "P4_SWITCH", "SIZE_GRID", "CENTRING_Z", "SMALLER_J_MODEL"):
+                 "P3_EPS", "P4_A", "P4_SWITCH", "SIZE_GRID", "CENTRING_Z", "SMALLER_J_MODEL", "SMALLER_J_KEY"):
         v = globals()[name]
         if name == "STARTS":
             out.append((name, f"range({STARTS[0]}, {STARTS[-1] + 1})"))
@@ -116,4 +133,4 @@ def declared() -> list[tuple[str, str]]:
 __all__ = ["TOY_RULES", "TOY_RULES_EXACT", "S1_PARAMS", "S1_PARAMS_EXACT", "STARTS", "HORIZON", "SEEDS", "BUDGET",
            "A1_DESIGN", "BASELINES", "DISJOINT", "J_PRIME", "LEVELS", "TOY_COMPOSITE", "A2_PAIR", "A3_PAIR",
            "A3_HISTORIES", "SHORTCUT_HISTORIES", "P2_LEVERS", "P3_EPS", "P4_A", "P4_SWITCH", "SIZE_GRID",
-           "CENTRING_Z", "SMALLER_J_MODEL", "declared", "asdict"]
+           "CENTRING_Z", "SMALLER_J_MODEL", "SMALLER_J_KEY", "smaller_j_rng", "declared", "asdict"]

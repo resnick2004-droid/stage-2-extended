@@ -78,6 +78,9 @@ through the same harness and check, must pass).
 | SCt | S1's s and n from the time limit, not the limit capped at the flatten (MINOR-1) | `test_minor1_a_flatten_bound_walks_t_is_the_minutes_to_the_flatten` |
 | HT | H4's tests seed drawing in H4-0's and H4-B's fields again (MINOR-3) | `test_minor3_h4s_tests_seed_draws_only_in_its_own_part` |
 | HS | the coin's schedule-side seed drawing in H4-B's field too (wt/wt-h4 0727615) | `test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s` |
+| TN | the tests' seed unrestricted again (the gatekeeper's item 5) | `test_gk5_the_tests_seed_draws_in_the_tests_part_only` |
+| FR | the field rules not applied (H4-S, H4-U, the smaller-J report) | `test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report` |
+| FM | `key_matrix` checking a part's fields on its first row only | `test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report` |
 
 The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
 by `_replace_accounts` whatever their flag, so no test can kill it; U here is the law-changing form.
@@ -318,6 +321,16 @@ MUTANTS = {
            '    "h4s_schedule_side": (frozenset({"coin"}), frozenset({"H4-S", "H4-B"})),',
            ("ROLE_USE",),
            ("tests.test_three_way_keys", "test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s"), ""),
+    "TN": (SE, '    if part is None or names.get(int(part)) not in parts:',
+           '    if seed.role == "tests":\n        return\n    if part is None or names.get(int(part)) not in parts:',
+           ("check_use",),
+           ("tests.test_three_way_keys", "test_gk5_the_tests_seed_draws_in_the_tests_part_only"), ""),
+    "FR": (SE, "    rule = FIELD_RULES.get(seed.role, {}).get((kind, names[int(part)]))",
+           "    rule = None", ("check_use",),
+           ("tests.test_three_way_keys", "test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report"), ""),
+    "FM": (F, "                S.check_use(seed, kind, int(pt), {nm: set(np.unique(c.ravel()[rows]).tolist())",
+           "                S.check_use(seed, kind, int(pt), {nm: {int(c.ravel()[rows][0])}", ("key_matrix",),
+           ("tests.test_three_way_keys", "test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report"), ""),
 }
 
 

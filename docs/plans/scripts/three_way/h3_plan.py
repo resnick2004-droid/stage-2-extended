@@ -1,6 +1,6 @@
 """Wave 3.2: H3's run plan, printed from declared constants only -- no bar, no outcome, no result file, no random
 number, no seed value (seeds are named by role; their values are the draft's section 15 and
-`extended/three_way_seeds.py`). `prereg/DRAFT_H3_three_way.md` holds this script's output between its markers, line
+`extended/three_way_seeds.py`). `prereg/H3_three_way.md` holds this script's output between its markers, line
 for line (`tests/test_h3_draft.py`).
 
 Every part's sizes are the design note's proposals (`three_way_arith.parts()`, the note's Appendix A), with H3-0's probe

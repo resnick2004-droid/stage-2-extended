@@ -41,6 +41,8 @@ def test_the_five_kinds_are_the_notes() -> None:
         assert K.KEY_KINDS[kind] == (tag, names)
         for vals in itertools.product((0, 1, 7), repeat=len(names)):
             f = dict(zip(names, vals))
+            if f.get("part") == 7:
+                f["part"] = 70                              # the tests' seed never draws in a run's part (D1 is 7)
             assert K.seed_key(SEED, kind, **f) == arith.seed_key(int(SEED), kind, **f)
     assert K.KEY_KINDS["enforce"][0] not in {t for t, _ in arith.KEY_KINDS.values()}
 
@@ -73,7 +75,7 @@ def test_the_antithetic_complement_is_exact() -> None:
 def test_keys_collide_nowhere_across_starts_seeds_moments_and_kinds() -> None:
     g = K.KeyGuard()
     n = 0
-    for part, hist, c, start in itertools.product((1, 2), (0, 1), range(4), range(5)):
+    for part, hist, c, start in itertools.product((1, 0), (0, 1), range(4), range(5)):     # no run's part
         u = K.Unit(SEED, part, hist, c, start)
         for m, kind in itertools.product((0, 1, K.moment(3, 930, 0), K.moment(3, 930, 1)), K.DRAW_KINDS.values()):
             g.add(u.coin_key(m, kind), start)
@@ -144,7 +146,8 @@ def test_the_guard_refuses_the_traps_and_a_key_without_its_start() -> None:
 
 def test_m9_each_seed_draws_only_its_role() -> None:
     """The red team's m-9: a deciding seed in a design-check part, a history seed as a coin, a coin seed as a history
-    are refused; each role's own use passes; the tests' role is unrestricted."""
+    are refused; each role's own use passes; the tests' role draws every kind in the tests' part only (the
+    gatekeeper's item 5)."""
     u = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
     with pytest.raises(S.ProvenanceRefused, match="m-9"):
         K.seed_key(S.issue("h3d_coins"), "coin", part=S.PARTS["A1"], **u)
@@ -159,8 +162,11 @@ def test_m9_each_seed_draws_only_its_role() -> None:
     K.seed_key(S.issue("h3_0_probe"), "coin", part=S.PARTS["H3-0"], **u)
     issued_h4 = {r for r, st in S.H4_STATUS.items() if not st.startswith("spare")}
     assert set(S.ROLE_USE) == (set(S.ROLES) - {"spare"}) | issued_h4           # H3's roles and H4's issued ones
-    used = [p for r, v in S.ROLE_USE.items() if v is not None for p in v[1]]
-    assert set(used) <= set(S.PARTS) and "tests" not in used
+    used = {r: v[1] for r, v in S.ROLE_USE.items()}
+    assert all(v is not None for v in S.ROLE_USE.values())
+    assert set().union(*used.values()) <= set(S.PARTS)
+    assert [r for r, parts in used.items() if "tests" in parts] == ["tests"] and used["tests"] == {"tests"}
+    assert S.ROLE_USE["tests"][0] == S.ALL_KINDS == set(K.KEY_KINDS)
 
 
 def test_b2_the_packing_is_injective_and_the_collision_bound_is_stated() -> None:
@@ -196,9 +202,9 @@ def test_h4s_block_and_parts_are_issued_and_role_checked() -> None:
         if status.startswith("spare"):
             with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
                 S.issue(role)
-    assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins", "h4s_schedule_side")] == [
-        "tests", "design check", "reading", "schedule"]
-    assert sorted(r for r, st in S.H4_STATUS.items() if st.startswith("spare")) == [f"h4_spare_{i}" for i in range(4, 10)]
+    assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins", "h4s_schedule_side", "h4_sample")] == [
+        "tests", "design check", "reading", "schedule", "audit sample"]
+    assert sorted(r for r, st in S.H4_STATUS.items() if st.startswith("spare")) == [f"h4_spare_{i}" for i in range(5, 10)]
 
 
 
@@ -250,6 +256,75 @@ def test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s() -> None:
         K.seed_key(20264403, "coin", part=S.PARTS["H4-S"], **coin)          # the literal, not the issued seed
     with pytest.raises(S.ProvenanceRefused, match="no role"):
         S.issue("h4_spare_3")                                                # the old spare's name is gone
-    for i in range(4, 10):
+    for i in range(5, 10):
         with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
             S.issue(f"h4_spare_{i}")
+
+
+
+def test_gk5_the_tests_seed_draws_in_the_tests_part_only() -> None:
+    """The gatekeeper's item 5 on H3: the tests' seed draws every kind in the tests' part and at an index no part
+    declares (0, the last word), and the `test` kind; it is refused in every declared run's part, H3-A's, H3-D's and
+    H4's included, through `seed_key` and `key_matrix` alike."""
+    from extended import three_way_fastkeys as F
+
+    coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
+    K.seed_key(SEED, "coin", part=S.PARTS["tests"], **coin)
+    K.seed_key(SEED, "plant", part=S.PARTS["tests"], history=0, plant=3, replicate=1)
+    K.seed_key(SEED, "test", test=1, replicate=0)
+    for free in (0, max(S.PARTS.values()) + 1, 2 ** 32 - 1):
+        assert free not in S.PARTS.values()
+        K.seed_key(SEED, "coin", part=free, **coin)
+    for part in sorted(set(S.PARTS) - {"tests"}):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(SEED, "coin", part=S.PARTS[part], **coin)
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(SEED, "plant", part=S.PARTS[part], history=0, plant=0, replicate=0)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        F.key_matrix(SEED, "coin", part=np.array([S.PARTS["tests"], S.PARTS["A1"]]), **coin)
+
+
+def test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report() -> None:
+    """The lead's ruling on the gatekeeper's item 5: H4-S's schedule side draws only at history 0, seed index 0 and
+    start 0; H4's audit sample (20264404, part H4-U = 14) only at history 0; H3-A's smaller-J report's one key is its
+    declared key -- any other value refused, through `seed_key` and `key_matrix` (one bad row refuses the matrix)."""
+    from extended import three_way_fastkeys as F
+    from extended import three_way_h3a as H
+
+    side = S.issue("h4s_schedule_side")
+    ok = dict(history=0, seed_index=0, start=0, underlying=1, moment=7, draw_kind=K.SIDE)
+    K.seed_key(side, "coin", part=S.PARTS["H4-S"], **ok)
+    F.key_matrix(side, "coin", part=S.PARTS["H4-S"], history=0, seed_index=0, start=0, underlying=1,
+                 moment=np.arange(5), draw_kind=K.SIDE)
+    for name in ("history", "seed_index", "start"):
+        with pytest.raises(S.ProvenanceRefused, match=f"only at {name} = 0"):
+            K.seed_key(side, "coin", part=S.PARTS["H4-S"], **{**ok, name: 1})
+        with pytest.raises(S.ProvenanceRefused, match=f"only at {name} = 0"):
+            F.key_matrix(side, "coin", part=S.PARTS["H4-S"], **{**ok, name: np.array([0, 0, 1])})
+
+    sample = S.issue("h4_sample")
+    assert int(sample) == 20264404 and S.PARTS["H4-U"] == 14 and S.H4_STATUS["h4_sample"] == "audit sample"
+    K.seed_key(sample, "plant", part=S.PARTS["H4-U"], history=0, plant=11, replicate=5)   # start 11, seed index 5
+    with pytest.raises(S.ProvenanceRefused, match="only at history = 0"):
+        K.seed_key(sample, "plant", part=S.PARTS["H4-U"], history=1, plant=11, replicate=5)
+    for part in ("H4-B", "H4-T", "H4-S", "H4-0"):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(sample, "plant", part=S.PARTS[part], history=0, plant=0, replicate=0)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(sample, "coin", part=S.PARTS["H4-U"], **ok)
+    for role in ("h4_tests", "h4_0_probe", "h4b_coins", "h4s_schedule_side"):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(S.issue(role), "plant", part=S.PARTS["H4-U"], history=0, plant=0, replicate=0)
+
+    rep = S.SMALLER_J_REPORT
+    assert (rep["role"], rep["kind"], rep["part"]) == ("h3a_histories", "plant", "A1")
+    a, b = H.smaller_j_rng().random(4), H.smaller_j_rng().random(4)
+    want = np.random.default_rng(K.seed_key(S.issue("h3a_histories"), "plant", part=S.PARTS["A1"], history=0,
+                                            plant=0, replicate=0)).random(4)
+    assert np.array_equal(a, b) and np.array_equal(a, want)
+    for name in ("history", "plant", "replicate"):
+        with pytest.raises(S.ProvenanceRefused, match=f"only at {name} = 0"):
+            K.seed_key(S.issue("h3a_histories"), "plant", part=S.PARTS["A1"], **{**rep["fields"], name: 2})
+    K.seed_key(S.issue("h3a_histories"), "plant", part=S.PARTS["A4"], history=0, plant=5, replicate=2)  # A4's plants
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3a_coins"), "plant", part=S.PARTS["A1"], **rep["fields"])

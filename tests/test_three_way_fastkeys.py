@@ -124,14 +124,14 @@ def test_the_wrappers_and_the_refusals() -> None:
     s = rng.integers(0, 5000, 500)
     m = rng.integers(0, W, 500)
     for dk in K.DRAW_KINDS.values():
-        u = F.coin_uniforms(SEED, 3, 2, c, s, m, dk, n=3)
+        u = F.coin_uniforms(SEED, 30, 2, c, s, m, dk, n=3)
         for j in range(0, 500, 13):
-            key = K.Unit(SEED, 3, 2, int(c[j]), int(s[j])).coin_key(int(m[j]), dk)
+            key = K.Unit(SEED, 30, 2, int(c[j]), int(s[j])).coin_key(int(m[j]), dk)
             assert np.array_equal(u[j], K.uniforms(key, 3))
             assert u[j, 0] == T.coin_uniform(key)
-    e = F.enforce_uniforms(SEED, 3, 2, c, s, c % 7, s % 5)
+    e = F.enforce_uniforms(SEED, 30, 2, c, s, c % 7, s % 5)
     for j in range(0, 500, 17):
-        assert e[j] == K.uniforms(K.Unit(SEED, 3, 2, int(c[j]), int(s[j])).enforce_key(int(c[j] % 7),
+        assert e[j] == K.uniforms(K.Unit(SEED, 30, 2, int(c[j]), int(s[j])).enforce_key(int(c[j] % 7),
                                                                                    int(s[j] % 5)))[0]
     with pytest.raises(ValueError):
         F.key_matrix(SEED, "test", test=[1, W], replicate=0)          # a word of 2^32
