@@ -94,7 +94,8 @@ roles=)` is the one door. It refuses:
 - a block or an outcome session past 2023-12-29 (CHARTER 3.6 (a), (d); E-208), the confirmation window, or a day before
   2020-01-02;
 - a reading off the ledger's protocol (another measure, blocks, seeds, horizon or library versions), on the
-  declared re-read seeds only where the plateau asks for them, under a measure the survey did not declare;
+  declared re-read seeds only where the plateau asks for them (the composite and every declared limit, F-3), under a
+  measure the survey did not declare;
 - **a design that is not a counted ``proposed`` cell of the ledger in one of the allowed roles**.
 Every reading the surrogate, the proposer or the plateau check sees comes through this door, so **within one ledger** a
 design read outside the count, or on a protocol picked after a look, never reaches a fit or a finalist. Across ledgers
@@ -102,6 +103,26 @@ design read outside the count, or on a protocol picked after a look, never reach
 survey's `begin` and the protocol each verdict carries; that a run builds exactly one ledger, from the pinned text, is
 Wave 5's runner review's to check. The held-out years are never read
 by a search (CHARTER 3.6 (a), E-221 O-1).
+
+**What a caller does since Q-192** (the survey runner's port, BUILD_SURVEY_c2 M-1):
+1. **The survey step takes the declaration's sha256**: `Sampler.survey(n, ledger=, protocol=, reread_seeds=,
+   measures=, declaration_sha256=)`, where `declaration_sha256` is the figure the pinned declaration states,
+   `protocol_sha256(protocol, reread_seeds, measures)`; absent or different, `begin` raises `DeclarationMismatch`.
+   Fewer than `MIN_REREAD_SEEDS` re-read seeds raise `TooFewRereadSeeds`; seeds shared with the protocol's,
+   `LedgerRefused`.
+2. **Cells are recorded with the role's pen**: `pen = ledger.begin(role, seed, **meta)`, then
+   `pen.record(space, design, refusal=..., round_index=...)`, then `pen.close()` when the batch returns.
+   `ledger.record` without the role's pen raises `NotTheDrawer`, and after the close `RoleClosed`. `Sampler.survey`,
+   `proposer.propose` and `plateau.check` open and close their own roles; a runner's own role (a baseline's) goes
+   through the three steps above.
+3. **The protocol's sha256 is the engine's**: `ledger.protocol_sha256` (and `ledger.declared`, the full record) is what
+   every `PlateauVerdict` (`protocol_sha256`, `protocol`) and every variant row (`params["_protocol_sha256"]`,
+   `params["_protocol"]`) carries; a runner records that figure, or checks its own digest against it.
+And **a limit is read on the re-read seeds** (F-3; the lead's ruling, RB-2, E-247/E-251):
+`ledger.protocol_for(limit, reread=True)` is `ledger.reread.with_measure(limit)` for exactly the limit measures the
+survey declared; anything else is refused (`OffProtocol`), and no door takes seeds from the caller. `plateau.check`
+reads every declared limit of the finalist there and reports it as `PlateauVerdict.reread_limits`, the point
+estimate a limit decides on, the selection reading beside it.
 
 **Wave 5's hooks** (the red team's m-9 and m-10, Wave 5's declaration by the lead's ruling): the finalist order rule
 and the multi-objective frontier are not built here. A finalist reaches `extended.plateau.check` only as a counted
@@ -687,11 +708,12 @@ class CellLedger:
 
     def protocol_for(self, measure: str | None = None, *, reread: bool = False) -> "Protocol":
         """The declared protocol for `measure` (its own measure, or a declared limit's), on the re-read seeds when
-        `reread`; anything else is refused."""
+        `reread` -- a declared limit included (BUILD_SURVEY_v2 F-3, the lead's ruling: a limit decided on the
+        selection reading, the luckiest, is biased toward inside); anything else is refused."""
         base = self.reread if reread else self.protocol
         if measure is None or measure == base.measure:
             return base
-        if reread or measure not in self._measures:
+        if measure not in self._measures:
             raise OffProtocol(f"REFUSED: measure {measure!r} is not declared on this ledger's protocol (the survey "
                               f"declared {base.measure!r} and limits {self._measures})")
         return base.with_measure(measure)

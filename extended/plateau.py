@@ -78,7 +78,9 @@ team's m-2), and **a second check of one finalist in one ledger is refused**, un
 - the share holding is at least `min_share`.
 Otherwise it is **refused**, and the reason names what failed. The verdict records the form (`FORM`), the rule's
 sha256, the re-read seeds, **the full declared protocol and its sha256** (the ledger's, the red team's rb2-a: a verdict
-from a second ledger on a weaker protocol shows it), the size figures, and every neighbour's d, se and z. The plateau
+from a second ledger on a weaker protocol shows it), **every declared limit of the finalist read on the re-read seeds**
+(`reread_limits`, BUILD_SURVEY_v2 F-3: the unselected point estimate a limit is decided on, where the selection
+reading is the luckiest), the size figures, and every neighbour's d, se and z. The plateau
 role is the check's alone: its cells are recorded by its pen and the role closes when the check returns (n-2).
 """
 from __future__ import annotations
@@ -285,6 +287,9 @@ class PlateauVerdict:
     #: the full declared protocol the check read on (the ledger's `protocol_record`) and its sha256 (rb2-a)
     protocol: dict[str, Any]
     protocol_sha256: str
+    #: every declared limit measure of the finalist read on the re-read seeds, {measure: {"value", "se"}} (F-3): the
+    #: unselected point estimate a limit is decided on; the selection reading is left as it is
+    reread_limits: dict[str, dict[str, float | None]]
     #: the size the tolerance implies at the neighbours read, exact under exchangeable Gaussian seed noise across
     #: designs
     size_at: float
@@ -443,6 +448,14 @@ def _check(f: SS.Reading, space: SS.Space, rule: PlateauRule, evaluate: Callable
     base = SS.admit_one(evaluate(dict(f.design), protocol=reread), ledger=ledger, reread=True, roles=SS.searched)
     if not echoes(base, f.design, reread):
         raise PlateauRefused("the finalist's re-read was not read as asked: its design on the re-read protocol")
+    limits: dict[str, dict[str, float | None]] = {}
+    for m in ledger.measures:                  # F-3: every declared limit, on the same fresh seeds
+        lp = ledger.protocol_for(m, reread=True)
+        got = SS.admit_one(evaluate(dict(f.design), protocol=lp), ledger=ledger, measure=m, reread=True,
+                           roles=SS.searched)
+        if not echoes(got, f.design, lp):
+            raise PlateauRefused(f"the finalist's re-read of the limit {m!r} was not read as asked")
+        limits[m] = {"value": float(got.value), "se": None if got.se is None else float(got.se)}
     nbs, outside, unsteppable = neighbours(space, f.design, rule, seed=seed)
     rows: list[dict[str, Any]] = []
     refused: list[dict[str, Any]] = []
@@ -478,7 +491,8 @@ def _check(f: SS.Reading, space: SS.Space, rule: PlateauRule, evaluate: Callable
         label = "no size figure: the exact law and its bound are the side 'worse''s, with at least one neighbour read"
     out = dict(finalist=f.id, selection_value=float(f.value), reread_value=float(base.value), form=FORM,
                rule=rule.sha256(), reread_seeds=tuple(reread.seeds), protocol=SS.thaw(ledger.declared),
-               protocol_sha256=ledger.protocol_sha256, size_at=size_at, size_bound=bound, size_label=label,
+               protocol_sha256=ledger.protocol_sha256, reread_limits=limits, size_at=size_at, size_bound=bound,
+               size_label=label,
                evaluated=n, held=held, share=share,
                neighbours=rows, refused=refused, outside=outside, per_lever=per_lever, unsteppable=unsteppable)
     thin = {k: v for k, v in per_lever.items() if v < int(rule.min_per_lever)}

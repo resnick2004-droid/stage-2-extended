@@ -506,8 +506,9 @@ def test_the_survey_declares_the_protocol_and_the_ledger_holds_it_read_only():
     assert led.protocol_for("reach") == TY.PROTOCOL.with_measure("reach")
     with pytest.raises(SS.OffProtocol):
         led.protocol_for("ruin")
+    assert led.protocol_for("reach", reread=True) == TY.REREAD.with_measure("reach")   # F-3: a declared limit
     with pytest.raises(SS.OffProtocol):
-        led.protocol_for("reach", reread=True)
+        led.protocol_for("ruin", reread=True)                                             # an undeclared one
     with pytest.raises(SS.LedgerRefused):
         led.begin("round-1", 5, protocol=TY.PROTOCOL.with_seeds((7, 8)))  # only the survey declares
     with pytest.raises(TypeError):

@@ -16,7 +16,12 @@ What is asserted:
 - **n-2**: a role closes when its batch returns (the survey, a round, a plateau check), a cell recorded after it is
   refused (`RoleClosed`), and only the drawer that opened the role records into it (`NotTheDrawer`), the caller's
   runner inside a plateau check included;
-- **n-3**: a round's `RoundSpec` and limits are its role's meta.
+- **n-3**: a round's `RoundSpec` and limits are its role's meta;
+- **F-3** (BUILD_SURVEY_v2, the lead's ruling): a declared limit is read on the fresh re-read seeds, and the
+  plateau's verdict exposes the finalist's re-read limits; a finalist lucky on its selection seeds reads outside there.
+- **Q-192b** (BUILD_SURVEY_c2 M-1): `protocol_for(limit, reread=True)` is the ledger's re-read under the limit's
+  measure for exactly the declared limits; an undeclared measure, stale re-read seeds and a caller's seeds are refused;
+  the protocol's sha256, limits included, is what the verdict and the variant rows carry.
 Each guard's mutant is run on a scratch copy of the module (the hand-back lists them); every one fails a test here.
 """
 from __future__ import annotations
@@ -26,6 +31,7 @@ import dataclasses
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 from scipy.stats import t as student_t
 
@@ -269,3 +275,103 @@ def test_n3_a_rounds_spec_and_limits_are_in_its_role():
     P.propose(sp, rs, spec=spec2, round_index=2, seed=ROUND_SEED, ledger=led)
     m2 = led.roles["round-2"]["meta"]
     assert m2["spec"] == dataclasses.asdict(spec2) and m2["spec"] != meta["spec"] and m2["limits"] == ()
+
+
+# ------------------------------------------------------------------------------------------------ F-3
+
+
+TRUE_RISK, RISK_BOUND = 0.6, 0.5
+
+
+def lucky_risk(design, *, protocol):
+    """The caller's runner of F-3's toy: the composite flat with seed noise; the risk truly TRUE_RISK, above
+    RISK_BOUND, but 0.3 lower on each selection seed (the lucky draw that selected the design)."""
+    if protocol.measure == "risk":
+        ps = [TRUE_RISK - 0.3 if s in TY.SEEDS else TRUE_RISK + 0.05 * TY.seed_noise(design, s)
+              for s in protocol.seeds]
+    else:
+        ps = [0.2 * TY.seed_noise(design, s) for s in protocol.seeds]
+    return TY.reading(design, float(np.mean(ps)), protocol=protocol, per_seed=ps,
+                      se=float(np.std(ps, ddof=1) / np.sqrt(len(ps))))
+
+
+def test_f3_a_limit_is_read_on_the_reread_seeds_and_the_reread_value_is_exposed():
+    """BUILD_SURVEY_v2 F-3 (the lead's ruling): a toy finalist whose true risk sits above its bound reads inside on the
+    selection seeds and outside on the fresh re-read seeds, and the verdict exposes the re-read's value. The selection
+    reading is left as it was."""
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    fin = ds[0]
+    assert led.protocol_for("risk", reread=True) == TY.REREAD.with_measure("risk")
+    sel = SS.admit_one(lucky_risk(fin, protocol=led.protocol_for("risk")), ledger=led, measure="risk")
+    assert sel.value <= RISK_BOUND                                       # inside on the selection seeds
+    v = PL.check(lucky_risk(fin, protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led,
+                 ledger_seed=LSEED)
+    want = lucky_risk(fin, protocol=TY.REREAD.with_measure("risk"))
+    assert set(v.reread_limits) == {"risk"}
+    assert v.reread_limits["risk"]["value"] == want.value and want.value > RISK_BOUND     # outside on the re-read
+    assert v.reread_limits["risk"]["se"] == pytest.approx(want.se)
+    with pytest.raises(SS.OffProtocol):
+        led.protocol_for("ruin", reread=True)                            # an undeclared measure stays refused
+    _, led0 = survey()
+    v0 = PL.check(lucky_risk(fin, protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led0,
+                  ledger_seed=LSEED)
+    assert v0.reread_limits == {}                                        # no limit declared, none reported
+
+
+# ------------------------------------------------------------------------------------------------ Q-192b (M-1)
+
+
+def test_q192b_a_declared_limit_is_read_on_the_ledgers_reread_seeds():
+    """BUILD_SURVEY_c2 M-1, the lead's ruling (RB-2, E-247/E-251): `protocol_for(limit, reread=True)` is exactly the
+    ledger's re-read protocol under the limit's measure (the survey's stand-in), and a reading on it passes the door."""
+    ds, led = survey(**TY.sv(measures=("risk", "ruin")))
+    for m in ("risk", "ruin"):
+        lp = led.protocol_for(m, reread=True)
+        assert lp == led.reread.with_measure(m) and lp.seeds == TY.REREAD_SEEDS and lp.measure == m
+        assert lp.blocks == TY.PROTOCOL.blocks and lp.horizon == TY.PROTOCOL.horizon
+        r = TY.reading(ds[0], 0.1, protocol=lp, per_seed=[0.1] * len(lp.seeds))
+        assert SS.admit_one(r, ledger=led, measure=m, reread=True) is r
+    assert led.protocol_for(None, reread=True) == led.protocol_for("composite", reread=True) == led.reread
+
+
+def test_q192b_an_undeclared_measure_is_refused_on_either_seed_set():
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    for reread in (False, True):
+        with pytest.raises(SS.OffProtocol, match="not declared"):
+            led.protocol_for("ruin", reread=reread)
+        base = led.reread if reread else led.protocol
+        with pytest.raises(SS.OffProtocol):
+            SS.admit_one(TY.reading(ds[0], 0.1, protocol=base.with_measure("ruin")), ledger=led, measure="ruin",
+                         reread=reread)
+    _, bare = survey()                                                    # no limit declared at all
+    with pytest.raises(SS.OffProtocol):
+        bare.protocol_for("risk", reread=True)
+
+
+def test_q192b_the_reread_seeds_are_the_ledgers_fresh_ones_never_the_callers():
+    """Re-read seeds that are not fresh are refused at the declaration (not by the floor: five of them, one shared
+    with the selection seeds); a limit reading offered as the re-read on the selection seeds, or on fresh seeds of the
+    caller's choosing, is refused by the door."""
+    stale = (TY.SEEDS[0],) + tuple(range(901, 905))
+    assert len(stale) >= SS.MIN_REREAD_SEEDS
+    with pytest.raises(SS.LedgerRefused, match="fresh") as e:
+        survey(**TY.sv(reread_seeds=stale, measures=("risk",)))
+    assert type(e.value) is SS.LedgerRefused
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    for seeds in (TY.SEEDS, tuple(range(901, 906))):
+        p = TY.PROTOCOL.with_measure("risk").with_seeds(seeds)
+        with pytest.raises(SS.OffProtocol):
+            SS.admit_one(TY.reading(ds[0], 0.1, protocol=p, per_seed=[0.1] * len(seeds)), ledger=led,
+                         measure="risk", reread=True)
+    with pytest.raises(TypeError):
+        led.protocol_for("risk", reread=True, seeds=(901, 902, 903, 904, 905))   # no door takes the caller's seeds
+
+
+def test_q192b_the_protocol_sha256_with_its_limits_is_recorded():
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    want = SS.protocol_sha256(TY.PROTOCOL, TY.REREAD_SEEDS, ("risk",))
+    assert led.protocol_sha256 == want != SS.protocol_sha256(TY.PROTOCOL, TY.REREAD_SEEDS)
+    v = PL.check(lucky_risk(ds[0], protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led,
+                 ledger_seed=LSEED)
+    assert v.protocol_sha256 == want and v.protocol["measures"] == ["risk"] and set(v.reread_limits) == {"risk"}
+    assert {r["params"]["_protocol_sha256"] for r in led.variant_rows("F-XX")} == {want}
