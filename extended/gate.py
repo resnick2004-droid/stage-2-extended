@@ -103,7 +103,7 @@ from extended import campaign as _xc  # noqa: E402  (Q-71: the campaign re-compo
 
 #: the comment markers on every added line of `run_gate` (Q-47's class, Q-71's seams, Q-70's recorder, Q-105's
 #: counters' channel for RD-02, Q-119's levers for RD-03)
-GATE_MARKERS = ("Q-47", "Q-71", "Q-70", "Q-105", "Q-119", "Q-185")
+GATE_MARKERS = ("Q-47", "Q-71", "Q-70", "Q-105", "Q-119")
 
 #: sha256 of the vendored `propedge.campaign.gate.run_gate`'s source text (LF), from which `run_gate` below was composed
 #: (Stage 2 f1b42e2, vendored under E-002)
@@ -363,7 +363,6 @@ def run_gate(
     stop_buying_when_queued: bool | None = None,                                # Q-119
     subscription: float | None = None,                                          # Q-119
     activation: float | None = None,                                            # Q-119
-    path_fn: Any = None,                                                        # Q-185
 ) -> tuple[pd.DataFrame, bool]:
     """The vendored `propedge.campaign.gate.run_gate` (its docstring holds every argument's meaning), plus
     `funded_account_cls` (Q-47): the funded account's class on every path of every arm -- the vendored `FundedAccount`
@@ -373,10 +372,7 @@ def run_gate(
     through `extended.campaign`'s re-composed campaign, which with no evaluation class is the vendored campaign.
 
     `recorder` (Q-70): an `extended.place_records.PlaceRecorder`; the (shift, level) campaigns it asks for are recorded
-    into it (its `trades()`, `accounts()`, `per_year()`, `problems()` afterwards), every row and path unchanged.
-
-    `path_fn` (Q-185): a path runner passed to the campaign only when given (`extended.campaign.check_path_fn`); the
-    firm path's registered identity runs P-14's gate through it. None: the call as before."""
+    into it (its `trades()`, `accounts()`, `per_year()`, `problems()` afterwards), every row and path unchanged."""
     check_vendored_source()                                                     # Q-47
     _xc.check_vendored_source()                                                 # Q-71
     check_funded_account_cls(funded_account_cls, int(workers))                  # Q-47
@@ -480,7 +476,6 @@ def run_gate(
                     **seam_kw,                                                                          # Q-71
                     **rec_kw,                                                                           # Q-70
                     **lev_kw,                                                                           # Q-119
-                    **({} if path_fn is None else {"path_fn": path_fn}),                                # Q-185
                 )
                 if counters is not None:                 # Q-105: each path's counts, by its seed           # Q-105
                     counters.collect(shift, float(p), draws)                                            # Q-105

@@ -12,16 +12,19 @@ no result, a few engine paths per check (light). Every seed is the tests' role s
 - `zero_edge` -- under the race (three distinct exit costs, a rule's profit levels, races and walks of step 10,
   Topstep's rules): every trade's barrier, odds and booked value against this file's own arithmetic; the wins against
   the sum of the odds and the walks' target and stop exits against this file's own exact law of the stopped walk,
-  each within four standard errors; the mean gross within four standard errors of zero;
+  each within four standard errors; every walk replayed path for path, bit for bit, by this file's own scalar walker on
+  the same uniforms (the scalar key path); the mean gross within four standard errors of zero;
 - `rb1` -- the floor-bound lanes: a lane whose room is at most the costs fails at the fill (the room booked, the
   account breached and replaced, counted), on a race and on a walk whose flatten costs more than the room; a taken
   walk whose flatten passes the floor is clipped by the engine and fails;
 - `pairing` -- the firm path against the toy path, lane for lane: on a deep account (every arm: base, twin, missed,
   worse fill, plant, as-walked; profit levels; distinct costs) the balances and key sets; on accounts that reach the
   floor (Topstep's MLL, the target out of reach) the balances, the ordinals and the fill failures; on RB-1's fixture
-  the same; two starts read disjoint keys;
+  the same; under a daily loss limit whose room falls below a trade's costs (the day's end at the take) the same; two
+  starts read disjoint keys;
 - `seats` -- two seats: two live accounts, the router deals each trade to one of them, both trade, no moment twice;
-- `h4` -- H4's three outputs per lane against the engine's ledger and day recorder, on one seat and on two;
+- `h4` -- H4's outputs per lane, (30) and (37) in full, against the engine's ledger and day recorder: one seat,
+  two seats, and a fixture reaching funded breaches whose idle sessions count;
 - `cost` -- the measured cost per lane-trade on Topstep's rules.
 """
 from __future__ import annotations
@@ -232,19 +235,48 @@ def walk_exact(G: Fraction, L: Fraction, s: int, n: int) -> tuple[Fraction, Frac
     return pt, ps
 
 
+def walk_scalar(us, G: Fraction, L: Fraction, s: int) -> tuple[Fraction, int]:
+    """This file's own scalar walker of R-10's stopped walk on given uniforms, in exact fractions (the same statement as
+    `walk_exact`, one uniform a step, a step up where the uniform lies below the step's chance of going up): (the value
+    in ticks, the exit kind -- 1 the target, -1 the stop, 0 the time)."""
+    s = Fraction(s)
+    u = max(math.ceil(G / s) - 1, 0)
+    d = max(math.ceil(L / s) - 1, 0)
+    ru, rd = G - u * s, L - d * s
+    i = 0
+    for x in us:
+        top, bot = i == u, i == -d
+        q = rd / (ru + rd) if (top and bot) else s / (s + ru) if top else rd / (s + rd) if bot else Fraction(1, 2)
+        up = Fraction(float(x)) < q
+        if up and top:
+            return G, 1
+        if not up and bot:
+            return -L, -1
+        i += 1 if up else -1
+    return i * s, 0
+
+
 def zero_edge(firm: TF.Firm) -> dict:
     plan = TF.AccountPlan(trades_per_day=2)
     horizon, lanes = 63, 24
     sch = schedule("costs, levels, races and walks", horizon, g=60, l=40, tick=5.0, costs=COSTS, per_day=2,
                    walk_every=3, level_every=4, level=45.0)
-    rec = run(sch, firm, plan, 0, lanes, horizon, horizon, log=True)
+    # Topstep's rules, and a near-floor fixture (an MLL of $260 against $200 stops) whose cushions bind, so the walk's
+    # floor-side barrier falls between lattice points and its residual step is read
+    near = dataclasses.replace(firm, rules=dataclasses.replace(firm.rules, mll=260.0, profit_target=1e9),
+                               name="TS, near the floor (a test fixture)")
+    logs = list(run(sch, firm, plan, 0, lanes, horizon, horizon, log=True).logs)
+    logs += list(run(sch, near, plan, 0, lanes, horizon, horizon, log=True).logs)
     by_moment = {t.moment: t for t in sch.trades}
-    gross, kinds, bad = [], {}, 0
+    gross, kinds, bad, off_lattice = [], {}, 0, 0
     wins = p_sum = p_var = 0.0
     wt = ws = 0
     exp_t = exp_s = var_t = var_s = 0.0
     memo: dict = {}
-    for rows in rec.logs:
+    replayed = replay_bad = 0
+    for jj, rows in enumerate(logs):
+        j = jj % lanes                                      # lane j is seed index j of start 0 (on both firms)
+        unit = K.Unit(SEED, PART, 0, j, 0)
         for cal, slot, name, moment, room, froom, kind, L, p, G, g_, cost, out in rows:
             kinds[kind] = kinds.get(kind, 0) + 1
             if kind not in ("race", "walk"):
@@ -276,6 +308,12 @@ def zero_edge(firm: TF.Firm) -> dict:
                 else:
                     v = g_ / (t.walk_step * tv)
                     bad += int(abs(v - round(v)) > 1e-9 or not (-L0 < g_ < G0 * tv))
+                # C1-4: the walk replayed on its own uniforms (the scalar key path), path for path, bit for bit
+                v1, k1 = walk_scalar(K.uniforms(unit.coin_key(moment, K.WALK), int(t.walk_n)), Fraction(G0),
+                                     Fraction(L0 / tv), int(t.walk_step))
+                replayed += 1
+                off_lattice += int(Fraction(L0 / tv) % t.walk_step != 0)
+                replay_bad += int(k1 != ek or abs(float(v1) * tv - g_) > 1e-9)
                 key = (Fraction(G0), Fraction(L0 / tv).limit_denominator(10 ** 9), t.walk_step, t.walk_n)
                 if key not in memo:
                     memo[key] = tuple(float(x) for x in walk_exact(*key))
@@ -291,7 +329,8 @@ def zero_edge(firm: TF.Firm) -> dict:
     return {"trades": int(len(g)), "mean_gross": float(g.mean()), "se": se, "z": float(g.mean() / se), "bad": bad,
             "kinds": kinds, "race_z": float((wins - p_sum) / math.sqrt(p_var)),
             "walk_target_z": float((wt - exp_t) / math.sqrt(var_t)), "walk_stop_z": float((ws - exp_s) / math.sqrt(var_s)),
-            "walk_targets": int(wt), "walk_stops": int(ws), "walk_laws": len(memo)}
+            "walk_targets": int(wt), "walk_stops": int(ws), "walk_laws": len(memo), "walks_replayed": replayed,
+            "walk_replay_bad": replay_bad, "walks_off_lattice": off_lattice}
 
 
 # ------------------------------------------------------------------------------------------------ RB-1
@@ -374,6 +413,19 @@ def _pair(sch, firm, toy_rules, plan, start, lanes, horizon, block, arm=J.ArmSpe
             "spread": float(np.std(fp.balance)), "keys_equal": gt.keys() == gf.keys(), "n_keys": len(gf.keys())}
 
 
+DLL = 700.0          # the fixture's daily loss limit (dollars), above every trade's costs (the runner's n-2)
+
+
+class DllCombine(LS.CombineAccount):
+    """A test fixture's evaluation account with a daily loss limit (the engine's own `dll` machinery: the room handed
+    to the draw is min(cushion, dll + today's net), the day ends at the limit). Topstep's base has none; the path
+    passes `dll=None` without the placement, so the fixture sets it after construction."""
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self.dll = DLL
+
+
 def pairing(firm: TF.Firm) -> dict:
     plan = TF.AccountPlan(trades_per_day=2)
     deep = dataclasses.replace(firm, rules=dataclasses.replace(firm.rules, mll=1e9, profit_target=1e9),
@@ -396,6 +448,14 @@ def pairing(firm: TF.Firm) -> dict:
     one = TF.AccountPlan(trades_per_day=1)
     for name, rsch in _rb1_schedules(float(firm.rules.mll), 5.0).items():
         out[f"rb1_{name}"] = _pair(rsch, floor, _toy_rules(firm, float(firm.rules.mll)), one, 0, 32, 3, 3)
+    # C1-N4: the daily loss limit's day end through the engine, paired with the toy path's limit lane for lane
+    dll_firm = dataclasses.replace(floor, combine_account_cls=DllCombine, name="TS, a daily loss limit (a test fixture)")
+    dsch = schedule("dll", 42, g=60, l=100, tick=5.0, costs=dict(entry_cost=40.0, x_target=10.0, x_stop=60.0,
+                                                                   x_flat=120.0), per_day=3, walk_every=4)
+    toy_dll = dataclasses.replace(_toy_rules(firm, float(firm.rules.mll)), dll=DLL)
+    out["dll"] = _pair(dsch, dll_firm, toy_dll, TF.AccountPlan(trades_per_day=3), 0, 24, 42, 42)
+    rec = run(dsch, dll_firm, TF.AccountPlan(trades_per_day=3), 0, 24, 42, 42, log=True)
+    out["dll"]["day_ends"] = sum(1 for rows in rec.logs for r in rows if r[6] == "day_end")
     g0, g1 = K.KeyGuard(), K.KeyGuard()
     for st, g in ((0, g0), (5, g1)):
         run(sch, deep, plan, st, 4, 21, horizon + 10, guard=g)
@@ -428,26 +488,46 @@ def seats(firm: TF.Firm) -> dict:
 
 
 def h4(firm: TF.Firm) -> dict:
-    """H4's three outputs per lane (`orders_max`, `accounts_max`, `taken_mean`) against the engine's own records,
-    computed here independently: the trades of each calendar day from the engine's ledger, the accounts trading it
-    from its day recorder; on one seat and on two."""
-    out = {}
-    for name, plan, per_day in (("one_seat", TF.AccountPlan(trades_per_day=2), 2),
-                                ("two_seats", TF.AccountPlan(name="two seats", trades_per_day=2, max_total_accounts=2,
-                                                             max_concurrent_combines=2), 3)):
-        horizon, lanes = 42, 8
-        sch = schedule(f"h4 {name}", horizon, g=60, l=40, tick=5.0, costs=COSTS, per_day=per_day, walk_every=3)
-        rec = run(sch, firm, plan, 0, lanes, horizon, horizon, keep_paths=True, record_trades=True, record_days=True)
-        bad = 0
-        for j, path in enumerate(rec.paths):
-            orders = [sum(1 for t in path.trades if int(t["day"]) == k) for k in range(1, horizon + 1)]
-            accts = [sum(1 for r in path.account_days if int(r["day"]) == k) for k in range(1, horizon + 1)]
-            bad += int(rec.orders_max[j] != max(orders) or rec.accounts_max[j] != max(accts)
-                       or abs(rec.taken_mean[j] - sum(orders) / horizon) > 1e-12)
-        out[name] = {"bad": bad, "orders_max": float(rec.orders_max.max()), "accounts_max": float(rec.accounts_max.max()),
-                     "taken_mean": float(rec.taken_mean.mean()), "lanes": lanes}
-    return out
+    """H4's outputs per lane against the engine's own records, computed here independently: each calendar day's
+    accounts from the engine's day recorder (a day with none counted as zero), its trades from the engine's ledger,
+    and the schedule's offers. On one seat each booked trade is its session's trade at its slot, so (30) and (37) are
+    compared **in full** (`journey_measures.workload` and `supply`, every key); on two seats the router decides which
+    account takes which trade, so every key but the screen hours. The fixtures: two trades a session; three on two
+    seats; and one that reaches funded breaches, leaving sessions with no account trading ('idle', the red team's
+    `probe_idle`)."""
+    from extended import journey_measures as JM
 
+    out = {}
+    one, two = TF.AccountPlan(trades_per_day=2), TF.AccountPlan(name="two seats", trades_per_day=2,
+                                                                 max_total_accounts=2, max_concurrent_combines=2)
+    cases = (("one_seat", one, schedule("h4 one", 42, g=60, l=40, tick=5.0, costs=COSTS, per_day=2, walk_every=3),
+              42, 8, True),
+             ("two_seats", two, schedule("h4 two", 42, g=60, l=40, tick=5.0, costs=COSTS, per_day=3, walk_every=3),
+              42, 8, False),
+             ("idle", TF.AccountPlan(trades_per_day=1), schedule("h4 idle", 63, g=640, l=420, tick=5.0), 63, 16, True))
+    for name, plan, sch, horizon, lanes, full in cases:
+        rec = run(sch, firm, plan, 0, lanes, horizon, horizon, keep_paths=True, record_trades=True, record_days=True)
+        bad, idle, funded = 0, 0, 0
+        for j, path in enumerate(rec.paths):
+            days = []
+            for k in range(1, horizon + 1):
+                trades = sch.by_session.get(k - 1, ())
+                booked = sorted(int(t["slot"]) for t in path.trades if int(t["day"]) == k)
+                days.append({"accounts": sum(1 for r in path.account_days if int(r["day"]) == k),
+                             "taken": tuple((trades[sl].entry, trades[sl].exit) for sl in booked) if full
+                             else tuple((0, 0) for _ in booked),
+                             "offered": tuple(float(t.entry) for t in trades)})
+            w, sp = JM.workload(days, float(plan.latency)), JM.supply(days)
+            keys_w = [k for k in w if full or not k.startswith("screen_hours")]
+            bad += int(any(w[k] != rec.workload[j][k] for k in keys_w) or sp != rec.supply[j]
+                       or rec.orders_max[j] != w["orders_max"] or rec.accounts_max[j] != w["accounts_max"]
+                       or rec.taken_mean[j] != sp["taken_mean"])
+            idle += int(sp["sessions_without_account"])
+            funded += sum(1 for f in path.funded if f.closed)
+        out[name] = {"bad": bad, "orders_max": float(rec.orders_max.max()), "accounts_max": float(rec.accounts_max.max()),
+                     "taken_mean": float(rec.taken_mean.mean()), "lanes": lanes, "full": full,
+                     "sessions_without_account": idle, "funded_breached": funded}
+    return out
 
 def cost(firm: TF.Firm) -> dict:
     from extended import procmem

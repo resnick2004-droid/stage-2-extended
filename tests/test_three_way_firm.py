@@ -77,9 +77,14 @@ def test_search_years_only_the_dates_are_checked_against_the_calendar():
         TF.check_dates(days, 9, 21, 30, seed=SEED, calendar=cal)
     with pytest.raises(ValueError, match="past the search years"):
         _call(dates=days, start=9, calendar=cal)
-    early = _weekdays(date(2021, 1, 4), 30)
-    with pytest.raises(ValueError, match="no session of the search years"):
-        TF.check_dates(early, 0, 21, 30, seed=SEED, calendar=frozenset(early[:20]))
+    early = _weekdays(date(2021, 1, 4), 31)
+    with pytest.raises(ValueError, match="do not equal the search years' calendar"):
+        TF.check_dates(early[:30], 0, 21, 30, seed=SEED, calendar=frozenset(early[:20]))   # dates off the calendar
+    with pytest.raises(ValueError, match="do not equal the search years' calendar"):
+        TF.check_dates(early[1:], 0, 21, 30, seed=SEED, calendar=frozenset(early))   # real sessions, shifted by one
+    with pytest.raises(ValueError, match="schedule's own dates"):
+        TF.check_dates(early[:30], 0, 21, 30, seed=SEED, calendar=frozenset(early), schedule_dates=early[1:])
+    early = early[:30]
     with pytest.raises(ValueError, match="not in order"):
         TF.check_dates(early[::-1], 0, 21, 30, seed=SEED, calendar=frozenset(early))
     with pytest.raises(ValueError, match="sessions but"):
@@ -126,8 +131,13 @@ def test_refusals_before_the_engine():
 
 def test_every_money_carrying_choice_is_labelled():
     ch = TF.AccountPlan().choices()
-    for k in ("seat_frees", "initial_bankroll", "payout_path", "payout_frac", "keep_balance", "rotation", "seats"):
+    for k in ("seat_frees", "initial_bankroll", "payout_path", "payout_frac", "keep_balance", "rotation", "seats",
+              "strict_gap", "latency"):
         assert ch[k]["class"] == "fixed" and ch[k]["source"], k
+    firm = TF.Firm(name="TS", rules=None, subscription=0.0, billing_days=21, activation=0.0, payout_lag_days=1,
+                   max_concurrent_accounts=5, payout_method="aeropay", source="the verified ledger")
+    assert TF.AccountPlan().choices(firm)["payout_method"] == {"value": "aeropay", "class": "fixed",
+                                                                "source": "the verified ledger"}
 
 
 def _lane(schedule: J.Schedule, plan: TF.AccountPlan) -> TF.Lane:
@@ -210,6 +220,31 @@ def test_one_open_position_across_all_accounts_the_strict_gap_is_refused():
     assert lane.days(1) == [{"accounts": 1, "taken": ((605, 650),), "offered": (605.0, 652.0)}]
 
 
+def test_the_strict_gap_admits_an_entry_exactly_the_gap_after_a_close():
+    """C1-N1: the boundary is the vendored D-429's (`open_until + gap > t` refuses): an entry exactly `strict_gap`
+    minutes after a close is admitted, one minute sooner is refused, on one account and across two."""
+    for entry, ok in ((655, True), (654, False)):
+        sch = J.Schedule("edge", (
+            J.Trade(session=0, decision=600, entry=605, exit=650, exit_reason="target", g=20, l=10, tick_value=5.0),
+            J.Trade(session=0, decision=entry - 5, entry=entry, exit=700, exit_reason="target", g=20, l=10,
+                    tick_value=5.0)))
+        for seats in (1, 2):
+            lane = _lane(sch, TF.AccountPlan(trades_per_day=2, max_total_accounts=seats))
+            keys = [("combine", i) for i in range(seats)]
+            lane.day_hook(1, keys)
+            draws = {TF._name(k): TF.LaneDraw(lane, k, 0) for k in keys}
+            for d in draws.values():
+                d.begin_session(balance=0.0, floor=-2000.0)
+            order = [(n, i) for n, v in lane.dealt[1].items() for i, _ in enumerate(v)]
+            order.sort(key=lambda x: lane.dealt[1][x[0]][x[1]].entry)
+            draws[order[0][0]](1, 0, order[0][1], np.array([2000.0]))
+            if ok:
+                assert not math.isnan(draws[order[1][0]](1, 0, order[1][1], np.array([2000.0]))[0])
+            else:
+                with pytest.raises(RuntimeError, match="D-429"):
+                    draws[order[1][0]](1, 0, order[1][1], np.array([2000.0]))
+
+
 def test_the_baselines_ran_under_stage_2s_strict_rule_at_the_plans_gap():
     """P-14, P-15 and P-16's registered gate manifests record `one_at_a_time` (D-429's gap) as the plan's default."""
     res = ROOT / "vendor" / "stage2" / "results"
@@ -249,6 +284,8 @@ def test_zero_edge_under_the_race(checks):
     c = checks["zero_edge"]
     assert c["trades"] > 1000 and c["bad"] == 0, c
     assert c["kinds"].get("walk", 0) > 500 and c["walk_laws"] > 1
+    assert c["walks_replayed"] == c["kinds"]["walk"] and c["walk_replay_bad"] == 0, c    # C1-4: path for path
+    assert c["walks_off_lattice"] > 100, c                  # the floor-side residual step is read
     for z in ("z", "race_z", "walk_target_z", "walk_stop_z"):
         assert abs(c[z]) < 4.0, (z, c)
 
@@ -265,13 +302,14 @@ def test_rb1_a_floor_bound_lane_fails_at_the_fill(checks):
 def test_the_keys_and_the_pairing_carry_over_from_the_toy_path(checks):
     c = checks["pairing"]
     for arm in ("base", "twin", "missed", "worse", "plant", "as_walked", "floor", "rb1_race", "rb1_walk",
-                "rb1_flatten"):
+                "rb1_flatten", "dll"):
         a = c[arm]
         assert a["keys_equal"] and a["n_keys"] > 0, (arm, a)
         assert a["max_balance_diff"] < 1e-6 and a["spread"] > 0, (arm, a)
         assert a["accounts_equal"] and a["fill_failures_equal"], (arm, a)
     assert c["floor"]["fill_failures"] > 0 and c["floor"]["accounts"] > 0      # the floor is reached and replaced
     assert c["rb1_race"]["fill_failures"] > 0 and c["rb1_walk"]["fill_failures"] > 0
+    assert c["dll"]["day_ends"] > 0                                    # C1-N4: the limit's day end, through the engine
     assert c["starts_disjoint"] and c["keys_carry_start"]
 
 
@@ -283,9 +321,11 @@ def test_two_seats_alternate_one_account_a_trade(checks):
 
 def test_h4s_three_outputs_are_the_engines_own_counts(checks):
     c = checks["h4"]
-    for name, accounts in (("one_seat", 1.0), ("two_seats", 2.0)):
+    for name, accounts in (("one_seat", 1.0), ("two_seats", 2.0), ("idle", 1.0)):
         assert c[name]["bad"] == 0, (name, c[name])
-        assert c[name]["accounts_max"] == accounts and c[name]["orders_max"] >= 2 and c[name]["taken_mean"] > 0, c
+        assert c[name]["accounts_max"] == accounts and c[name]["orders_max"] >= 1 and c[name]["taken_mean"] > 0, c
+    assert c["one_seat"]["full"] and c["idle"]["full"]                       # (30) and (37) compared in full
+    assert c["idle"]["funded_breached"] > 0 and c["idle"]["sessions_without_account"] > 0   # idle sessions counted
 
 
 def test_the_cost_per_lane_trade_is_measured(checks):

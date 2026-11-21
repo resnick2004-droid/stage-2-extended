@@ -58,8 +58,9 @@ arrival close, `P_B`'s month count (a second code path, held by `three_way_journ
 (evaluations plus funded accounts, less one), the last close's live balance, the fill failures; the paths on request.
 
 **Search years only.** No bar is read: a history enters only through its schedule. A run names its sessions' dates,
-each of which must be a session of the search years' calendar (`search_calendar`, derived here from the bars
-manifest's `day_list`, metadata, cut at `extended.reader.CHOICE_END`), then passes `extended.search_cut.check_dates`
+which must equal the search years' calendar session for session (`search_calendar`, derived here from the bars
+manifest's `day_list`, metadata, cut at `extended.reader.CHOICE_END`) and the schedule's own dates where it carries
+them, then pass `extended.search_cut.check_dates`
 (Q-172; **a dependency**: until it is on this tree a local stub refuses every dated run). A run without dates is a
 synthetic history, admitted only under a seed whose declared role draws synthetic histories (`three_way_seeds.STATUS`
 "tests" or "design check"); a deciding role must name its dates.
@@ -270,10 +271,13 @@ def search_calendar() -> frozenset:
 
 
 def check_dates(dates: Any, start: int, horizon: int, block_sessions: int, *, seed: Any,
-                calendar: frozenset | None = None) -> None:
-    """The window's sessions in the search years. Undated: admitted only under a synthetic role's seed. Dated: the
-    block's dates in order, every window date a session of the search years' calendar (`search_calendar`, derived
-    here; `calendar` replaces it in the tests only), then `search_cut.check_dates`."""
+                calendar: frozenset | None = None, schedule_dates: Any = None) -> None:
+    """The window's sessions in the search years. Undated: admitted only under a synthetic role's seed. Dated (the red
+    team's C1-5): the block's dates in order, none past the search years, and **equal to the run's calendar** -- the
+    first `block_sessions` sessions of the search years' calendar (`search_calendar`, derived here; `calendar`
+    replaces it in the tests only), so session k of the schedule is the calendar's k-th session; and, where the
+    schedule carries its own dates (`schedule_dates`, a schedule's `dates`), equal to those too; then
+    `search_cut.check_dates`."""
     if dates is None:
         role = getattr(seed, "role", None)
         if not (S.is_issued(seed) and S.STATUS.get(role) in SYNTHETIC_STATUS):
@@ -295,11 +299,13 @@ def check_dates(dates: Any, start: int, horizon: int, block_sessions: int, *, se
     if late:
         raise ValueError(f"REFUSED (E-208): the window reads {len(late)} session(s) past the search years' last day "
                          f"{R.CHOICE_END} (first {late[0]})")
-    cal = search_calendar() if calendar is None else calendar
-    off = [d for d in window if d not in cal]
-    if off:
-        raise ValueError(f"REFUSED: {len(off)} of the window's dates are no session of the search years' calendar "
-                         f"(first {off[0]})")
+    cal = sorted(search_calendar() if calendar is None else calendar)
+    if len(cal) < block_sessions or ds != cal[:block_sessions]:
+        bad = next((k for k, (a, b) in enumerate(zip(ds, cal)) if a != b), min(len(ds), len(cal)))
+        raise ValueError(f"REFUSED (C1-5): the run's dates do not equal the search years' calendar (session {bad}: "
+                         f"{ds[bad] if bad < len(ds) else None} against {cal[bad] if bad < len(cal) else None})")
+    if schedule_dates is not None and [_as_date(d) for d in schedule_dates] != ds:
+        raise ValueError("REFUSED (C1-5): the schedule's own dates do not equal the run's dates")
     search_cut().check_dates(window, what="the firm path's window")
 
 
@@ -652,7 +658,8 @@ def simulate(schedule: J.Schedule, firm: Firm, plan: AccountPlan, start: int, se
     Exactly `horizon` sessions are traded (closes 0 .. horizon). `outcome="engine_binary"` (the identity's arm) puts
     the vendored binary draws in instead, from `binary_seed`, through the same router and slots."""
     J.check_window(start, horizon, block_sessions)
-    check_dates(dates, start, horizon, block_sessions, seed=seed, calendar=calendar)
+    check_dates(dates, start, horizon, block_sessions, seed=seed, calendar=calendar,
+                schedule_dates=getattr(schedule, "dates", None))
     idx = [int(c) for c in seed_indices]
     if len(set(idx)) != len(idx):
         raise ValueError("REFUSED: a seed index repeats (two lanes would read one coin field)")
