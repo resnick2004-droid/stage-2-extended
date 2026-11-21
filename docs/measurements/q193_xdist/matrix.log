@@ -1,0 +1,25 @@
+=== A_n2_loadfile 16:23:15
+rc=0 179 passed in 105.05s (0:01:45)
+=== A_n3_loadfile 16:25:02
+rc=0 179 passed in 81.91s (0:01:21)
+=== A_n4_loadfile 16:26:26
+rc=0 179 passed in 81.30s (0:01:21)
+=== A_n2_load 16:27:48
+rc=0 179 passed in 89.63s (0:01:29)
+=== A_n3_load 16:29:20
+rc=0 179 passed in 70.62s (0:01:10)
+=== A_n4_load 16:30:32
+rc=0 179 passed in 59.85s
+=== B_n2_loadfile 16:31:33
+rc=0 271 passed, 2 xfailed in 198.17s (0:03:18)
+=== B_n3_loadfile 16:34:52
+rc=0 271 passed, 2 xfailed in 142.43s (0:02:22)
+=== B_n4_loadfile 16:37:16
+rc=3 
+=== B_n2_load 16:37:52
+rc=0 271 passed, 2 xfailed in 263.30s (0:04:23)
+=== B_n3_load 16:42:17
+rc=3 
+=== B_n4_load 16:45:00
+rc=3 
+DONE
