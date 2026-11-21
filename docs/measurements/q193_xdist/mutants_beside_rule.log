@@ -1,0 +1,4 @@
+M27 beside ignored: killed ['1 failed, 88 passed in 29.96s']
+M28 own slot counted: killed ['1 failed, 89 passed in 28.51s']
+M29 stale counted: killed ['1 failed, 89 passed in 27.89s']
+3 of 3 killed; survivors: []

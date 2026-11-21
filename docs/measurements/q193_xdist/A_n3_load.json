@@ -1,0 +1,43 @@
+{
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-o",
+    "addopts=",
+    "-q",
+    "-m",
+    "not slow and not heavy",
+    "-p",
+    "no:cacheprovider",
+    "-n",
+    "3",
+    "--dist",
+    "load",
+    "tests/test_fasttier_lock.py",
+    "tests/test_heavy_marker_guard.py",
+    "tests/test_git_hook_verdicts.py",
+    "tests/test_hooks.py",
+    "tests/test_install_hooks.py",
+    "tests/test_run_lock.py",
+    "tests/test_run_clean.py",
+    "tests/test_heavy_guard.py"
+  ],
+  "exit": 0,
+  "aborted": null,
+  "seconds": 71.9,
+  "every_s": 1.0,
+  "floor_gb": 2.0,
+  "samples": 70,
+  "peak_tree_working_set_gb": 0.786,
+  "peak_controller_gb": 0.04,
+  "peak_tree_processes": 15,
+  "max_concurrent_children": 3,
+  "peak_per_child_gb": [
+    0.647,
+    0.11,
+    0.086
+  ],
+  "peak_worker_gb": 0.647,
+  "min_available_gb": 2.38
+}
