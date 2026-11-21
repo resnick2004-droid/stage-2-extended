@@ -34,13 +34,16 @@ import dataclasses
 import math
 import re
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from functools import lru_cache
 from types import SimpleNamespace
 from typing import Any, Callable
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import yaml
 
+from extended import day_calendar as DC
 from extended import firm_terms as FT
 from extended import lever_space as LS
 from extended import modes_rules as MR
@@ -85,6 +88,9 @@ FIRM_DECLARED: dict[str, LS.Declared] = {
                                     "only; every figure is read from the key"),
     "lucid.payout_path": LS.Declared(("lucid_cycle",), "LucidFlex has one payout path (`payout_frequency_gate`): the "
                                      "label only; every figure is read from the key"),
+    "clock.reference_days": LS.Declared((date(2023, 1, 17), date(2023, 7, 17)),
+                                        "Q-181b: the two search-year days (winter and summer time) on which a day-free "
+                                        "call converts a firm's New York clock to CT; both must agree, or it refuses"),
     "sample.max_redraws": LS.Declared(10_000, "Q-151b: a draw refused by a combination rule (never a tier-1 refusal) is "
                                       "redrawn at most this many times per design before sampling stops"),
 }
@@ -245,6 +251,104 @@ def _mffu_gate() -> dict[str, float]:
            r"the first trade; each later payout: net profit since the last payout of at least \$(?P<since>[\d,]+); "
            r"daily")
     return {"buffer": _num(m.group("buffer")), "wait_hours": _num(m.group("hours")), "since_min": _num(m.group("since"))}
+
+
+NEW_YORK = ZoneInfo("America/New_York")
+_MFFU_HOURS = "mffu.trading_hours"
+
+
+def _ny_pm_to_ct(h: int, m: int, d: date) -> int:
+    """A New York 12-hour PM clock time on day `d`, as wall-clock minutes CT (zoneinfo, DST-aware on both sides)."""
+    t = datetime(d.year, d.month, d.day, h + LS.PM // 60, m, tzinfo=NEW_YORK).astimezone(DC.CHICAGO)
+    return t.hour * 60 + t.minute
+
+
+def mffu_trading_day(day: date | None = None) -> dict[str, Any]:
+    """MFFU's trading day from `mffu.trading_hours` (H9558251, H9735811; Q-181b): the reopen at the Globex open and the
+    automatic close, both printed as "EST" and read as New York local time (the verifier's labelled reading), converted
+    to wall-clock minutes CT for `day` -- or, day-free, on both `clock.reference_days`, which must agree. No last-entry
+    time apart from the close is stated, so the last new entry is the close. The reopen must equal the exchange's open
+    in the same entry (H9735811), which checks the time-zone reading. Keys as `lever_space.trading_day`'s."""
+    v = rule("mffu", _MFFU_HOURS)
+    op = parse(r"from (?P<h>\d{1,2}):(?P<m>\d\d) PM \(the Globex open\)", v, _MFFU_HOURS)
+    cl = parse(r"closed automatically at (?P<h>\d{1,2}):(?P<m>\d\d) PM on regular \(non-holiday\) trading days", v,
+               _MFFU_HOURS)
+    parse(r"times printed as EST", v, _MFFU_HOURS)
+    parse(r"no last-entry time separate from the", v, _MFFU_HOURS)
+    hol = parse(r"on holidays there is no auto-liquidation at the early close", v, _MFFU_HOURS)
+    ex = parse(r"NQ and MNQ trade Sunday - Friday (?P<o>\d\d:\d\d) - (?P<c>\d\d:\d\d) CT", v, _MFFU_HOURS)
+    days = (day,) if day is not None else tuple(fdeclared("clock.reference_days"))
+    got = set()
+    for d in days:
+        reopen = _ny_pm_to_ct(int(op.group("h")), int(op.group("m")), d - timedelta(days=1))
+        flat = _ny_pm_to_ct(int(cl.group("h")), int(cl.group("m")), d)
+        got.add((reopen, flat))
+    if len(got) != 1:
+        raise LeverRefused("MFFU's New York clock converts to different CT times on the reference days")
+    reopen, flat = got.pop()
+    if reopen != LS._clock(ex.group("o")):
+        raise LeverRefused("MFFU's reopen, read as New York time, is not the exchange's open in the same entry -- "
+                           "the time-zone reading fails")
+    length = (flat - reopen) % LS.MINUTES_PER_DAY
+    return {"reopen": reopen, "flat": flat, "last_entry": flat, "length": length, "last_entry_offset": length,
+            "clock": "EST read as New York local time (the verifier's labelled reading)",
+            "holiday": hol.group(0), "day": day}
+
+
+def mffu_session_windows(day: date) -> dict[str, tuple[int, int | None]]:
+    """Trading day `day`'s MFFU sessions as [start, end) in minutes after MFFU's reopen: each start its local market
+    time converted for that date (`day_calendar.anchored_starts`, E-231 (3); minutes after the 17:00 CT reopen, shifted
+    to MFFU's reopen on that date), as `lever_space.session_windows(day)` does for Topstep. `ny` is split at T2b's
+    boundary (to declare for this firm). Every boundary must fall inside MFFU's day."""
+    if not isinstance(day, date):
+        raise TypeError(f"mffu_session_windows reads one trading day's date, not {type(day).__name__}")
+    td = mffu_trading_day(day)
+    shift = DC.REOPEN_MIN - td["reopen"]
+    a = DC.anchored_starts(day)
+    starts = [(n, (int(a[n]) + shift) % LS.MINUTES_PER_DAY) for n in ("asia", "london", "ny")]
+    for name, off in starts:
+        if not 0 < off < td["length"]:
+            raise LeverRefused(f"session boundary {name!r} lies outside MFFU's trading day ({_MFFU_HOURS})")
+    edges = [0] + [off for _, off in starts] + [td["length"]]
+    if edges != sorted(edges):
+        raise LeverRefused("the session boundaries are out of order against MFFU's day")
+    out: dict[str, tuple[int, int | None]] = dict(zip(("evening", "asia", "london", "ny"), zip(edges, edges[1:])))
+    ny_start, ny_end = out.pop("ny")
+    out["ny_am"], out["ny_pm"] = (ny_start, None), (None, ny_end)
+    return out
+
+
+def mffu_session_window_range(start: date, end: date) -> dict[str, Any]:
+    """MFFU's sessions over the weekdays from `start` to `end` (`lever_space.trading_dates`), in the form of
+    `lever_space.session_window_range`: each session's earliest and latest start and end (None where T2b leaves a
+    boundary undeclared), and every distinct set of windows with its first date and day count."""
+    rng: dict[str, dict[str, Any]] = {}
+    distinct: dict[tuple, dict[str, Any]] = {}
+    for d in LS.trading_dates(start, end):
+        w = mffu_session_windows(d)
+        e = distinct.setdefault(tuple(sorted(w.items())), {"first": d.isoformat(), "days": 0, "windows": w})
+        e["days"] += 1
+        for name, (a, b) in w.items():
+            r = rng.setdefault(name, {"start": [a, a], "end": [b, b]})
+            for k, v in (("start", a), ("end", b)):
+                if v is not None:
+                    lo, hi = r[k]
+                    r[k] = [v if lo is None else min(lo, v), v if hi is None else max(hi, v)]
+    return {"span": (start.isoformat(), end.isoformat()),
+            "range": {k: {"start": tuple(v["start"]), "end": tuple(v["end"])} for k, v in rng.items()},
+            "distinct": list(distinct.values())}
+
+
+def _mffu_session() -> Range:
+    return Range("T2", "choices", values=tuple(declared("sessions")), unit="session of MFFU's day",
+                 detail={"windows": mffu_session_window_range(DC.SEARCH_START, DC.SEARCH_END),
+                         "day": mffu_trading_day()})
+
+
+def _mffu_entry_window() -> Range:
+    td = mffu_trading_day()
+    return Range("T3", "interval", lo=0.0, hi=float(td["last_entry_offset"]), step=float(declared("mark_step_min")),
+                 unit="minutes after MFFU's reopen (an offer mark's time inside its session)", detail={"day": td})
 
 
 # ------------------------------------------------------------------------------------------------ Lucid's terms
@@ -532,10 +636,10 @@ def _mffu_levers() -> dict[str, Lever]:
     f = "mffu"
     return {lv.id: lv for lv in (
         _L("T1", TRIGGER, "signal source", SEARCHED, DECL, "", "T2 T3 T4 T5 A16", LS._sources),
-        _L("T2", TRIGGER, "session", SEARCHED, ARITH, "mffu.trading_hours", "T1 T2b T3", _owed("T2")),
+        _L("T2", TRIGGER, "session", SEARCHED, ARITH, "mffu.trading_hours", "T1 T2b T3", _mffu_session),
         _L("T2b", TRIGGER, "NY AM / NY PM boundary", FIXED, TODECL, "", "T2"),
         _L("T3", TRIGGER, "entry window (offer marks)", SEARCHED, ARITH, "mffu.trading_hours", "T2 T4 A3",
-           _owed("T3")),
+           _mffu_entry_window),
         _L("T4", TRIGGER, "latency L", SEARCHED, DECL, "", "T1 T3 T5", LS._latency),
         _L("T5", TRIGGER, "entry type", SEARCHED, DECL, "mffu.automation_and_sim_fills", "T1 T4 T6",
            lambda: _entry_type(f)),
@@ -801,11 +905,15 @@ def _outcome(firm: str, lever_id: str) -> tuple[str, Any]:
 def vs_topstep(firm: str, lever_id: str) -> str:
     """`refused`: refused for want of a verified rule; `identical`: the same outcome as Topstep's (the same refusal,
     or the same range) without any rule of the firm's (a dropped lever is identical when Topstep's is dropped too);
-    `differs` otherwise -- the firm's own rules enter, or the outcome is not Topstep's."""
+    `differs` otherwise -- the firm's own rules enter, the outcome is not Topstep's, or the lever is **to declare for
+    this firm** (T2b, A15, A16, A17: a per-firm declaration, never Topstep's values carried over, whatever Topstep's
+    row declares; refused `NotDeclared` until it exists)."""
     mine, ts = _outcome(firm, lever_id), _outcome("topstep", lever_id)
     if mine[0] == "UnverifiedTerm":
         return REFUSED
     lv = levers(firm)[lever_id]
+    if lv.source == TODECL:                 # to declare for this firm: never Topstep's carried over (the lead's ruling)
+        return DIFFERS
     if mine[0] == ts[0] == "DroppedLever":
         return IDENTICAL
     if mine == ts and not lv.keys:
@@ -878,15 +986,18 @@ def sample(firm: str, *, seed: int, n: int = 1) -> list[dict[str, Any]]:
     """`n` designs drawn uniformly from the firm's loaded space (searched levers drawn, fixed levers at their value;
     T4 one cell for a latency-free source), each passed through `check_design`. A conduct tier-1 or hard-limit refusal
     is raised, never redrawn (the space must not contain one); a combination refusal is redrawn, at most
-    `sample.max_redraws` times. The seed is the caller's, fixed in its declaration (CLAUDE.md)."""
+    `sample.max_redraws` times. The seed is the caller's, fixed in its declaration (CLAUDE.md). Topstep's A15 and A17
+    are **held until wired** (`lever_space.HELD_UNTIL_WIRED`, the red team's m4): set at their bases, never drawn."""
     rng = np.random.default_rng(int(seed))
     sp = load(firm)
     lv = levers(firm)
-    use = [i for i in lv if i in sp and lv[i].cls in (SEARCHED, FIXED)]
+    held = {i: sp[i].values[0] for i in LS.HELD_UNTIL_WIRED if firm == "topstep" and i in sp}  # m4: the base
+    use = [i for i in lv if i in sp and lv[i].cls in (SEARCHED, FIXED) and i not in held]
     out = []
     for _ in range(int(n)):
         for _attempt in range(int(fdeclared("sample.max_redraws"))):
             d = {i: _draw(sp[i], rng) for i in use if i != "T4"}
+            d.update(held)
             if "T4" in sp:
                 cells = LS.latency_cells(d["T1"]) if "T1" in d else tuple(sp["T4"].values)
                 d["T4"] = cells[int(rng.integers(len(cells)))]
@@ -905,6 +1016,6 @@ def sample(firm: str, *, seed: int, n: int = 1) -> list[dict[str, Any]]:
 
 __all__ = ["TASK", "FIRMS", "TABLES", "PLANS", "MFFU_P", "LUCID_P", "LUCID_CONFIGS", "IDENTICAL", "DIFFERS", "REFUSED",
            "NotVerified", "TierOneRefused", "HardLimitRefused", "FIRM_DECLARED", "TIER1_MARKERS", "TIER1_VALUES",
-           "conduct_check", "rule", "note", "rule_status", "stop_caps", "levers", "PREREQUISITES", "prerequisites",
+           "conduct_check", "rule", "note", "rule_status", "mffu_trading_day", "mffu_session_windows", "mffu_session_window_range", "stop_caps", "levers", "PREREQUISITES", "prerequisites",
            "ready", "bounds", "load", "space", "refusals", "unverified_keys", "vs_topstep", "compare", "counts",
            "check_design", "sample"]
