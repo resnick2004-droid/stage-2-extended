@@ -84,9 +84,7 @@ def test_the_race_is_the_notes_reference_law() -> None:
 
 def check_walk_oracles() -> int:
     n = 0
-    for s, l, g, c, n_steps in itertools.product((1, 2), (4, 6, 8), (2, 4, 6), CUSHIONS[::2], (1, 3, 8)):
-        if l % s or g % s:
-            continue
+    for s, l, g, c, n_steps in itertools.product((1, 2, 3), (4, 6, 8), (2, 4, 6), CUSHIONS[::2], (1, 3, 8)):
         for e, xt, xs, xf in itertools.product(COSTS[:3], COSTS[:2], COSTS[:3], COSTS[1:3]):
             r = RD.walk_net(l, g, c, n_steps, s, e, xt, xs, xf)
             if r is None:
@@ -204,3 +202,46 @@ def test_the_race_and_the_journeys_race_are_the_vendored_draw_at_no_cost() -> No
     assert got["equal"] and got["n"] >= 1000, got
     assert got["journey_equal"] and got["journey_n"] >= 1000, got
     assert got["clip_equal"] and got["clip_n"] >= 1000, got              # RB-1: the failed lane is the engine's loss
+
+
+
+def test_s_c_the_walks_step_by_the_governing_rule() -> None:
+    """s-c: s = max(1, ceil(sigma sqrt(T) / sqrt(1024))) ticks, so n = round(sigma^2 T / s^2) <= 1024, at the formula's
+    cases; never a refusal because of the step (a bracket the step does not divide is walked)."""
+    cases = ((1.0, 1.0, 1), (6.0, 90.0, 2), (8.0, 90.0, 3), (12.0, 90.0, 4), (32.0, 1.0, 1), (32.0, 1.0001, 2),
+             (20.0, 400.0, 13), (0.5, 4000.0, 1))
+    for sigma, T, want in cases:
+        s = RD.walk_step(sigma, T)
+        assert s == want, (sigma, T, s)
+        assert RD.walk_steps(sigma, T, s) <= 1024, (sigma, T)
+        if s > 1:
+            assert RD.walk_steps(sigma, T, s - 1) > 1024 or sigma * sigma * T / (s - 1) ** 2 > 1024
+    from extended import three_way_journey as J
+
+    try:                                                    # a step dividing neither barrier is walked, never refused
+        assert RD.walk_barriers(37, 55, Fraction(500), 0, 0, 3) == (Fraction(55), Fraction(37))
+        J.Trade(session=0, decision=700, entry=705, exit=760, exit_reason="max_hold", g=55, l=37, tick_value=5.0,
+                walk_step=3, walk_n=640)
+    except ValueError as exc:
+        pytest.fail(f"a trade refused because of its step: {exc}")
+
+
+def test_s_c_a_coprime_bracket_matches_the_one_tick_lattice() -> None:
+    """s-c: a 37 / 55 bracket at the coarse step its walk takes (sigma 8 ticks per sqrt minute; T 90: s = 3, n = 640;
+    T 30: s = 2, n = 480), its barriers off the lattice and reached by the two-point last sub-step: P(stop) agrees with
+    the one-tick lattice's (s = 1, n = sigma^2 T) within a tolerance of 1e-3, which is below the gap that rounding the
+    barriers to the nearest lattice points (36 / 54 at s = 3, 36 / 56 at s = 2) would cause."""
+    tol = 1e-3
+
+    def p_stop(G, L, step, steps):
+        law = RD.walk_law(float(G), float(L), step, steps)
+        return sum(pr for (k, v), pr in law.items() if k == "stop")
+
+    for T, want, rounded in ((90.0, (3, 640), (54, 36)), (30.0, (2, 480), (56, 36))):
+        s = RD.walk_step(8.0, T)
+        n = RD.walk_steps(8.0, T, s)
+        assert (s, n) == want
+        fine = p_stop(55, 37, 1, RD.walk_steps(8.0, T, 1))
+        coarse = p_stop(55, 37, s, n)
+        gap = abs(p_stop(*rounded, s, n) - fine)
+        assert abs(coarse - fine) < tol < gap, (T, coarse, fine, gap)

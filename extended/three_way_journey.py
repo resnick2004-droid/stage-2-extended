@@ -96,9 +96,9 @@ class Trade:
             raise ValueError("bracket, contracts and tick value are positive")
         if min(self.entry_cost, self.x_target, self.x_stop, self.x_flat) < 0:
             raise ValueError("costs are non-negative")
-        if self.law == "walk" and (self.walk_n < 1 or self.walk_step < 1 or self.g % self.walk_step
-                                   or self.l % self.walk_step):
-            raise ValueError("a time-limited trade's lattice step divides its bracket and takes at least one step")
+        if self.law == "walk" and (self.walk_n < 1 or self.walk_step < 1):
+            raise ValueError("a time-limited trade's lattice step and its steps are at least one (s-c: the step need not "
+                             "divide its bracket)")
         if self.level is not None and not self.level > 0:
             raise ValueError("a profit level is positive")
         if self.exit_reason == "profit_level" and self.level is None:

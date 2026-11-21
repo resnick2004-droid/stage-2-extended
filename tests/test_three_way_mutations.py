@@ -71,6 +71,10 @@ through the same harness and check, must pass).
 | N2c | a daily limit below a trade's costs admitted (n-2) | `test_n2_a_daily_limit_below_a_trades_costs_is_refused` |
 | N3m | the failures at the fill dropped by the exact program's merge (n-3) | `test_n3_the_failures_at_the_fill_are_reported_and_kept_exactly` |
 | FF | a failure at the fill not counted apart (B-2) | `test_b2_an_account_below_its_costs_fails_at_the_fill_and_one_above_takes_the_race` |
+| SCf | the walk's step rounded down, not up (s-c) | `test_s_c_the_walks_step_by_the_governing_rule` |
+| SCr | the walk refusing a step that does not divide the bracket (s-c) | `test_s_c_the_walks_step_by_the_governing_rule` |
+| SCx | S1's step from the realised exit, not the limit (s-c) | `test_s_c_the_walk_never_reads_the_realised_exit` |
+| SCn | S1's steps from the realised exit, not the limit (s-c) | `test_s_c_the_walk_never_reads_the_realised_exit` |
 
 The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
 by `_replace_accounts` whatever their flag, so no test can kill it; U here is the law-changing form.
@@ -88,6 +92,7 @@ from extended import three_way_journey as J
 from extended import three_way_keys as K
 from extended import three_way_redraw as RD
 from extended import three_way_runner as RU
+from extended import three_way_s1 as S1
 from extended import three_way_seeds as SE
 from extended import three_way_stats as ST
 
@@ -284,6 +289,18 @@ MUTANTS = {
            "        _settle(L, fail, -room, rules)\n    taken = normal", ("_trade_mc",),
            ("tests.test_three_way_runner",
             "test_b2_an_account_below_its_costs_fails_at_the_fill_and_one_above_takes_the_race"), ""),
+    "SCf": (RD, "    return max(1, int(math.ceil(sigma * math.sqrt(T) / math.sqrt(walk_max) - 1e-12)))",
+            "    return max(1, int(math.floor(sigma * math.sqrt(T) / math.sqrt(walk_max) - 1e-12)))", ("walk_step",),
+            ("tests.test_three_way_redraw", "test_s_c_the_walks_step_by_the_governing_rule"), ""),
+    "SCr": (RD, "    if s <= 0 or l <= 0 or g <= 0:\n        raise ValueError(\"the stop, the target and the lattice step",
+            "    if s <= 0 or l <= 0 or g <= 0 or l % s or g % s:\n        raise ValueError(\"the stop, the target and the lattice step",
+            ("walk_barriers",), ("tests.test_three_way_redraw", "test_s_c_the_walks_step_by_the_governing_rule"), ""),
+    "SCx": (S1, "            step = RD.walk_step(v / math.sqrt(MINUTE), limit, J.WALK_MAX) if timed else spec.walk_step",
+            "            step = RD.walk_step(v / math.sqrt(MINUTE), max(ex - entry, 1), J.WALK_MAX) if timed else spec.walk_step",
+            ("schedule",), ("tests.test_three_way_runner", "test_s_c_the_walk_never_reads_the_realised_exit"), ""),
+    "SCn": (S1, "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), limit, step) if timed else 1",
+            "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), max(ex - entry, 1), step) if timed else 1",
+            ("schedule",), ("tests.test_three_way_runner", "test_s_c_the_walk_never_reads_the_realised_exit"), ""),
 }
 
 
