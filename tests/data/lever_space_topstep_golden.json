@@ -33,7 +33,7 @@
     "T3"
    ]
   ],
-  "bounds": "Range(lever='T2', kind='choices', values=('evening', 'asia', 'london', 'ny_am', 'ny_pm'), lo=None, hi=None, step=None, unit=\"session of the firm's day\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'windows': {'span': ('2020-01-02', '2023-12-29'), 'range': {'evening': {'start': (0, 0), 'end': (60, 120)}, 'asia': {'start': (60, 120), 'end': (540, 600)}, 'london': {'start': (540, 600), 'end': (930, 930)}, 'ny_am': {'start': (930, 930), 'end': (None, None)}, 'ny_pm': {'start': (None, None), 'end': (1330, 1330)}}, 'distinct': [{'first': '2020-01-02', 'days': 362, 'windows': {'evening': (0, 60), 'asia': (60, 540), 'london': (540, 930), 'ny_am': (930, None), 'ny_pm': (None, 1330)}}, {'first': '2020-03-09', 'days': 65, 'windows': {'evening': (0, 120), 'asia': (120, 600), 'london': (600, 930), 'ny_am': (930, None), 'ny_pm': (None, 1330)}}, {'first': '2020-03-30', 'days': 615, 'windows': {'evening': (0, 120), 'asia': (120, 540), 'london': (540, 930), 'ny_am': (930, None), 'ny_pm': (None, 1330)}}]}, 'day': {'reopen': 1020, 'flat': 910, 'last_entry': 908, 'length': 1330, 'last_entry_offset': 1328}})"
+  "bounds": "Range(lever='T2', kind='choices', values=('evening', 'asia', 'london', 'ny_am', 'ny_pm'), lo=None, hi=None, step=None, unit=\"session of the firm's day\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'windows': {'span': ('2020-01-02', '2023-12-29'), 'range': {'evening': {'start': (0, 0), 'end': (60, 120)}, 'asia': {'start': (60, 120), 'end': (540, 600)}, 'london': {'start': (540, 600), 'end': (930, 930)}, 'ny_am': {'start': (930, 930), 'end': (1080, 1080)}, 'ny_pm': {'start': (1080, 1080), 'end': (1330, 1330)}}, 'distinct': [{'first': '2020-01-02', 'days': 362, 'windows': {'evening': (0, 60), 'asia': (60, 540), 'london': (540, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}, {'first': '2020-03-09', 'days': 65, 'windows': {'evening': (0, 120), 'asia': (120, 600), 'london': (600, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}, {'first': '2020-03-30', 'days': 615, 'windows': {'evening': (0, 120), 'asia': (120, 540), 'london': (540, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}]}, 'day': {'reopen': 1020, 'flat': 910, 'last_entry': 908, 'length': 1330, 'last_entry_offset': 1328}})"
  },
  "T2b": {
   "meta": [
@@ -41,13 +41,15 @@
    "trigger",
    "NY AM / NY PM boundary",
    "declared",
-   "to declare",
-   [],
+   "declared",
+   [
+    "trading_hours"
+   ],
    [
     "T2"
    ]
   ],
-  "bounds": "NotDeclared: T2b (NY AM / NY PM boundary): its range is to declare -- refused (docs/plans/LEVER_TABLE_topstep50k.md)"
+  "bounds": "Range(lever='T2b', kind='fixed', values=(1080,), lo=None, hi=None, step=None, unit=\"minutes after the reopen: NY AM is [ny's start, b), NY PM [b, the flat)\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'local': ('America/New_York', 12, 0), 'ct_clock': '11:00', 'ny_am': (930, 1080), 'ny_pm': (1080, 1330), 'days_checked': 1042, 'span': ('2020-01-02', '2023-12-29')})"
  },
  "T3": {
   "meta": [
@@ -571,7 +573,7 @@
    "account policy",
    "routing (which account takes a trade)",
    "searched",
-   "to declare",
+   "declared",
    [],
    [
     "A6",
@@ -580,22 +582,22 @@
     "T8"
    ]
   ],
-  "bounds": "NotDeclared: A15 (routing (which account takes a trade)): its range is to declare -- refused (docs/plans/LEVER_TABLE_topstep50k.md)"
+  "bounds": "Range(lever='A15', kind='choices', values=('longest_waiting', 'round_robin', 'by_component'), lo=None, hi=None, step=None, unit=\"rotation: which of a firm's accounts takes its next trade\", read={}, detail={'base': 'longest_waiting', 'pools': \"by_component's, A16's `deal_pools`\", 'guards': ('one account per trade (never copied)', 'opposite positions refused, tier 1', 'one position at a time across the firm (D-429)')})"
  },
  "A16": {
   "meta": [
    "A16",
    "account policy",
    "signal mix: shares and account assignment",
-   "searched",
-   "to declare",
+   "declared",
+   "declared",
    [],
    [
     "T1",
     "A15"
    ]
   ],
-  "bounds": "NotDeclared: A16 (signal mix: shares and account assignment): its range is to declare -- refused (docs/plans/LEVER_TABLE_topstep50k.md)"
+  "bounds": "Range(lever='A16', kind='fixed', values=('dealt',), lo=None, hi=None, step=None, unit=\"account assignment of by_component's pools\", read={}, detail={'shares': \"derived: a source's share is its components' (T1 per component); no parameter\", 'rule': 'deal_pools'})"
  },
  "A17": {
   "meta": [
@@ -603,16 +605,21 @@
    "account policy",
    "state rule (sizing by distance to floor or target)",
    "searched",
-   "to declare",
-   [],
+   "declared",
+   [
+    "combine_profit_target",
+    "combine_mll",
+    "xfa_mll_start"
+   ],
    [
     "S3",
     "S4",
     "A1",
-    "A2"
+    "A2",
+    "A5"
    ]
   ],
-  "bounds": "NotDeclared: A17 (state rule (sizing by distance to floor or target)): its range is to declare -- refused (docs/plans/LEVER_TABLE_topstep50k.md)"
+  "bounds": "Range(lever='A17', kind='choices', values=('none', 'floor', 'target', 'floor_target'), lo=None, hi=None, step=None, unit=\"state rule on the mode's dollar risk (both modes, each its own goal and room)\", read={'combine_profit_target': 3000.0, 'combine_mll': 2000.0, 'xfa_mll_start': -2000.0}, detail={'eval': {'goal': 3000.0, 'start_room': 2000.0}, 'TS/std': {'goal': 4000.0, 'start_room': 2000.0}, 'TS/con': {'goal': 6000.0, 'start_room': 2000.0}})"
  },
  "A18": {
   "meta": [
@@ -692,6 +699,9 @@
   "A10",
   "A11",
   "A12",
+  "A15",
+  "A16",
+  "A17",
   "A18",
   "A2",
   "A20",
@@ -708,6 +718,7 @@
   "S5",
   "T1",
   "T2",
+  "T2b",
   "T3",
   "T4",
   "T5",
@@ -715,7 +726,6 @@
   "T8"
  ],
  "__refusals__": {
-  "T2b": "NotDeclared",
   "T7": "NotComputed",
   "S1": "NotComputed",
   "S6": "DroppedLever",
@@ -725,9 +735,6 @@
   "A9": "UnverifiedTerm",
   "A13": "DroppedLever",
   "A14": "DroppedLever",
-  "A15": "NotDeclared",
-  "A16": "NotDeclared",
-  "A17": "NotDeclared",
   "A19": "UnverifiedTerm"
  },
  "__counts__": {
@@ -742,8 +749,8 @@
    "dropped": 4
   },
   "account policy": {
-   "searched": 16,
-   "declared": 3,
+   "searched": 15,
+   "declared": 4,
    "dropped": 2
   }
  }

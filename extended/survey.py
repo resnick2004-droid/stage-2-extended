@@ -41,7 +41,7 @@ by selection reading, each re-read on the fresh seeds and kept only if it beats 
 the t law (F-7), every limit's re-read point estimate inside (F-3), the no-harm and do-nothing floors hold again, and
 the plateau accepts it; `emit` (the readings, the candidates, the finalists' list, then the variants rows). **The
 do-nothing floor is strict and not passed by rounding** (M-2): the mean over seeds is taken exactly (`Fraction`) and
-must exceed the floor by more than `DO_NOTHING_EPS`. A refusal after the first cell writes the variants rows and then
+must exceed the floor by more than W42-R1's `DO_NOTHING_EPS`. A refusal after the first cell writes the variants rows and then
 the failure record, each attempted (F-6). A second run of one declaration is refused (F-5, m-1).
 """
 from __future__ import annotations
@@ -67,7 +67,7 @@ from extended import ROOT
 from extended import reader as R
 
 TASK = "Wave 5"
-ENGINE_COMMIT = "83160d4"                               # Wave 3.4 with Q-192 and Q-192b (the limits on the re-read)
+ENGINE_COMMIT = "3452952"                               # Wave 3.4 with Q-192, Q-192b and rm3-b (1024 midpoints)
 W42_RULE = "W42-R1"
 W42_SCRIPT = "scripts/wave42_apply.py"
 ENTRY_SCRIPT = "scripts/survey_run.py"
@@ -81,9 +81,9 @@ SEARCH_LAST = "2023-12-29"
 DELTA_STAR = "delta_star"
 NOT_PAID = "not_paid_within_B"
 DO_NOTHING = "do_nothing"
-DO_NOTHING_EPS = Fraction(1, 10 ** 9)                   # M-2: the declared epsilon, 1e-9 exactly
 FLOOR_SELF_CHECK = 1e-12                                 # C-1: the floor against the public composite of do_nothing
-W42_PUBLIC = ("composite_per_seed", "limit_estimate", "null_journeys", "bankroll_states", "calendar_digest")
+W42_PUBLIC = ("composite_per_seed", "limit_estimate", "null_journeys", "do_nothing_floor", "values_from_rows",
+              "calendar_digest")
 SPEC_FENCE = re.compile(rb"^```survey-spec[ \t]*\n(.*?)^```[ \t]*$", re.MULTILINE | re.DOTALL)
 FIXTURE_PREFIX = "survey-fixture-pin:"
 FIXTURE_ROW = "fixture"
@@ -685,24 +685,29 @@ def _wave42() -> Any:
     return wave42
 
 
-def read_values(path: Path) -> dict[str, Any]:
-    """W42-R1's output, `key` / `value_json` rows, into its values dict."""
+def read_values(path: Path, W: Any | None = None) -> dict[str, Any]:
+    """W42-R1's output, `key` / `value_json` rows (its section 9.1 row schema), into its values dict by W42-R1's own
+    `values_from_rows`."""
     import csv as _csv
     import io
 
+    W = W or _wave42()
     rows = list(_csv.DictReader(io.StringIO(path.read_bytes().decode("utf-8"))))
     if not rows or set(rows[0]) != {"key", "value_json"}:
         raise SpecRefused(f"REFUSED: {path.name} is not W42-R1's output: its columns are key and value_json")
     try:
-        return {r["key"]: json.loads(r["value_json"]) for r in rows}
+        return W.values_from_rows(rows)
     except ValueError as e:
-        raise SpecRefused(f"REFUSED: {path.name}: a value_json cell is not JSON ({e})") from e
+        raise SpecRefused(f"REFUSED: {path.name}: {e}") from e
 
 
 def load_objective(W: Any) -> Objective:
     """W42-R1's result file by name, its sidecar checked (C-1), its public functions required, its floor self-checked,
     every limit set (m-2)."""
     missing = [n for n in W42_PUBLIC if not callable(getattr(W, n, None))]
+    eps = getattr(W, "DO_NOTHING_EPS", None)
+    if isinstance(eps, bool) or not isinstance(eps, (int, float)) or not (math.isfinite(eps) and eps > 0):
+        missing.append("DO_NOTHING_EPS")
     if missing:
         raise PartRefused(f"REFUSED: W42-R1's public functions {missing} are not on this commit (the survey calls the "
                           "rule's own code, never a copy of it)")
@@ -712,7 +717,7 @@ def load_objective(W: Any) -> Objective:
         raise SpecRefused(f"REFUSED: W42-R1's output {p.name} and its sidecar are both required")
     man = json.loads(side.read_text(encoding="utf-8"))
     params = man.get("parameters") or {}
-    values = read_values(p)
+    values = read_values(p, W)
     rule_sha = _raw_sha(inspect.getsourcefile(W))
     for what, got, want in (("its file's sha256", man.get("sha256"), _raw_sha(p)),
                             ("its script", man.get("script"), W42_SCRIPT),
@@ -748,9 +753,11 @@ def load_objective(W: Any) -> Objective:
     for k in W.REQUIRED:
         arm.setdefault(k, np.zeros((1, 1)))
     got = float(np.asarray(W.composite_per_seed(values, [horizon], arm)).ravel()[0])
-    if abs(got - ob.floor) > FLOOR_SELF_CHECK:
-        raise SpecRefused(f"REFUSED: the public composite of the do-nothing journey is {got!r}, W42-R1's floor "
-                          f"{ob.floor!r}: the composite is not the one the values were set with (C-1)")
+    rule = float(W.do_nothing_floor(values, ob.fee_unit))
+    if abs(got - ob.floor) > FLOOR_SELF_CHECK or abs(rule - ob.floor) > FLOOR_SELF_CHECK:
+        raise SpecRefused(f"REFUSED: the public composite of the do-nothing journey is {got!r} (W42-R1's own "
+                          f"do_nothing_floor {rule!r}), the values' floor {ob.floor!r}: the composite is not the "
+                          "one the values were set with (C-1)")
     return ob
 
 
@@ -1139,12 +1146,14 @@ def no_harm(ctx: Context, out: RunOutput, sl: np.ndarray) -> tuple[bool, dict[st
 
 def do_nothing_floor(ctx: Context, r: Any) -> tuple[bool, dict[str, Any]]:
     """V-4, M-2: the composite strictly above W42-R1's do-nothing floor -- the mean over seeds taken exactly
-    (`Fraction` of each per-seed float), above the floor by more than `DO_NOTHING_EPS` -- never passed by rounding."""
+    (`Fraction` of each per-seed float), above the floor by more than W42-R1's `DO_NOTHING_EPS` (the one constant
+    of the screen and the rule) -- never passed by rounding."""
     per = r.per_seed if r.per_seed is not None else (r.value,)
     c = -sum(Fraction(float(x)) for x in per) / len(per)
     floor = Fraction(ctx.obj.floor)
-    ok = c > floor + DO_NOTHING_EPS
-    return ok, {"do_nothing": {"composite": float(c), "floor": ctx.obj.floor, "eps": float(DO_NOTHING_EPS),
+    eps = Fraction(float(ctx.W.DO_NOTHING_EPS))
+    ok = c > floor + eps
+    return ok, {"do_nothing": {"composite": float(c), "floor": ctx.obj.floor, "eps": float(eps),
                                "held": bool(ok)}}
 
 
@@ -1500,7 +1509,7 @@ def declare_parts(parts: Mapping[str, Mapping[str, Any]], engine: Engine | None 
 
 __all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "W42_SCRIPT", "ENTRY_SCRIPT", "DESIGN_ARM", "BASELINE_ROLE",
            "BASELINES", "AS_TRADED", "REFLECTED", "TRIGGER", "SEARCH_TAG", "SEARCH_LAST", "DELTA_STAR", "NOT_PAID",
-           "DO_NOTHING", "DO_NOTHING_EPS", "W42_PUBLIC", "FIXTURE_PREFIX", "FIXTURE_ROW", "PART_NAMES",
+           "DO_NOTHING", "W42_PUBLIC", "FIXTURE_PREFIX", "FIXTURE_ROW", "PART_NAMES",
            "OBJECTIVE_MODULES", "SurveyRefused", "NotPinned", "SpecRefused", "PartRefused", "RunRepeated",
            "HeldOutRow", "RunOutput", "Engine", "Objective", "Spec", "Context", "Outcome", "closure_files",
            "code_closure", "part_sha", "engine_sha", "objective_code_sha", "build_part", "check_data",

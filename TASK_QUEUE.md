@@ -73,7 +73,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-174 | The fast-tier lock serves two slots when memory allows (arrival order kept) | wt-report | done (E-252) | Q-165 | light | 0 | E-246 |
 | Q-175 | Wave 3.5: the playbook, the one-trade alert and /brief (restored to wt-play after the worktree collision) | wt-play | review (E-246) | E-221 | light | 0 | E-246 |
 | Q-176 | Wave 4.2's setting rule W42-R1 (budgets, composite, delta*, limits) -- red team, then pinned before H4 is read; the three-way note's 4.4 margin text aligned | wt-infra | review (E-246) | E-221, E-230 | light | 0 | E-246 |
-| Q-177 | Wave 2's template and agents -- the red team's final read, then pinned | wt-lit | re-declared v2 (E-247) | E-207 | light | 0 | E-246 |
+| Q-177 | Wave 2's template and agents -- the red team's final read, then pinned | wt-lit | re-declared v3 (E-257) | E-207 | light | 0 | E-246 |
 | Q-178 | O-7's five deltas RD-06 to RD-10 in pin-time form -- gatekeeper re-check, then pinned (parents superseded) | wt-firms | running (E-246) | Q-159 | light | 0 | E-246 |
 | Q-179 | Q-173 merged with the O-7 pins' SUPERSEDED fill; every shared identity re-held once at that commit | lead | queued (E-246) | Q-173, Q-178 | heavy | 0 | E-246 |
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | running (E-246) | E-232 | light | 0 | E-246 |
@@ -89,6 +89,11 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | running (E-251) | Q-168 | light | 0 | E-251 |
 | Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | running (E-251) | E-207 | light | 0 | E-251 |
 | Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | running (E-254) | Q-173 | light | 0 | E-254 |
+| Q-195 | T7's label identity (the audit's C1): the admission label re-derived from Stage 2's records on the search years, refusing | wt-har | running (E-255) | E-255 | light, then heavy | 0 | E-255 |
+| Q-196 | Q-172's planted check (the audit's C2): a known exact-run difference planted on synthetic and cut data is found by the count; then the heavy run | wt-user | running (E-256) | E-256 | light, then heavy | 0 | E-256 |
+| Q-197 | The pinned search-year calendar (`results/search_calendar.csv`), bound by sha256 in W42-R1 and H4 | wt-cal | running (E-255) | E-254 | light, then heavy | 0 | E-255 |
+| Q-198 | The sizing experiment on the three-way runner (after its follow-up) | wt-three | queued (E-255) | Q-187 | light | 0 | E-255 |
+| Q-199 | The commit line keeps a live waiter's ticket by heartbeat and pid, never drops it by age | wt-report | running (E-255) | Q-174 | light | 0 | E-255 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |

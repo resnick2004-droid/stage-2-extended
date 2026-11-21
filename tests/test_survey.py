@@ -1,10 +1,10 @@
 """Wave 5's survey runner (`extended/survey.py`), build v3, end to end on the synthetic worlds of
-`tests/survey_world.py`: Wave 3.4's engine with Q-192 and Q-192b (wt/wt-features 83160d4), W42-R1 as it
-stands (34ee968: its module, its application script, its real output file made by `wave42_apply.apply`; its public
-composite and limit estimate stood in until they land), Q-197's calendar and loader (wt/wt-cal 7b51144). No bar, no result file of
-the repository, no held-out calendar: every input and output is in a temporary folder (`SV.ROOT` pointed there).
+`tests/survey_world.py`: Wave 3.4's engine with Q-192, Q-192b and rm3-b (wt/wt-features 3452952), W42-R1 as it
+stands (c014d0a: its module and public scoring functions, its application script, its real output file made by
+`wave42_apply.apply`), Q-197's calendar loader (master 990d874). No bar, no result file of the repository, no held-out
+calendar: every input and output is in a temporary folder (`SV.ROOT` pointed there).
 
-* the stand-in public functions reproduce W42-R1's own `setting_rule` outputs (the identity);
+* W42-R1's public functions reproduce its own `setting_rule` outputs on its H4 reading (the identity);
 * the planted region is found within budget; in every other world there is no finalist, each world checked to bite;
 * every cell is counted (through Q-192's pens), the bytes repeat, one ledger a run;
 * the refusals (pins, rows, bindings, data, the space's digest, the allowlist, the spec's form, held-out first, the
@@ -399,6 +399,7 @@ def sc_do_nothing_exact(eng, tmp, roots):
     """M-2: a design scoring the floor (or one ulp over it) on every seed is refused at 10, 11, 25 and 43 seeds -- the
     counts at which a float mean rounds above it; one past the floor by twice the epsilon is kept."""
     ctx = type("C", (), {})()
+    ctx.W = W42                                          # the epsilon is W42-R1's DO_NOTHING_EPS
     with at(roots["default"]["root"]):
         ctx.obj = SV.load_objective(W42)
     f = ctx.obj.floor

@@ -3,15 +3,13 @@ imported by `tests/test_survey.py`, and named by its declarations as factory ids
 which the survey builds itself from their declared parameters (F-2). A test fixture pin only: under a real pin a part
 is `extended.`'s.
 
-**W42-R1 as it stands** (C-1): `load_w42()` reads `extended/wave42.py`, `scripts/wave42_apply.py` and the rule text
-unedited from `WAVE42_COMMIT` on `wt/wt-infra` (`git show`) into a temporary root whose `extended/` is put on
-`extended.__path__`. Its two calendar shas, not yet pinned there (`SEARCH_CALENDAR_SHA256` is None until Q-197; the
-held-out calendar is never read here), are set to this world's synthetic calendars. Q-197's loader (`extended/search_calendar.py`) is read
-unedited from `CALENDAR_COMMIT` on `wt/wt-cal` the same way. **One labelled stand-in** remains, removed when W42-R1's
-public functions land: `W42_PUBLIC_STANDIN`, `composite_per_seed(values, sessions_left, out)` and
-`limit_estimate(values, sessions_left, out, name)` (those `setting_rule` calls); attached only when the module lacks
-them, and checked by `tests/test_survey.py` to reproduce `setting_rule`'s own baseline composites, limit estimates
-and do-nothing floor on this world's H4 reading.
+**W42-R1 as it stands** (C-1): `load_w42()` reads `extended/wave42.py` (its public scoring functions
+`composite_per_seed`, `limit_estimate`, `do_nothing_floor`, `values_from_rows`), `scripts/wave42_apply.py` and the
+rule text unedited from `WAVE42_COMMIT` on `wt/wt-infra` (`git show`) into a temporary root whose `extended/` is put
+on `extended.__path__`, until W42-R1 merges. Q-197's loader is this tree's (`extended/search_calendar.py`, master
+990d874). The two calendar shas W42-R1 has not pinned yet (`SEARCH_CALENDAR_SHA256` until Q-197's file is pinned;
+the held-out calendar is never read here) are set to this world's synthetic calendars. **One labelled stand-in**:
+`DO_NOTHING_EPS_STANDIN`, W42-R1's `DO_NOTHING_EPS` (1e-9) until its next commit declares it.
 
 **The fixture** is W42-R1's own application: `w42_root(path, spread, base_q)` writes a synthetic H4 collection result
 and sidecar, the two synthetic calendars, and runs `wave42_apply.apply` with synthetic `Sources` (the adapter returns
@@ -51,8 +49,7 @@ import numpy as np
 
 from extended import ROOT
 
-WAVE42_COMMIT = "34ee968"          # wt/wt-infra: W42-R1 after its two corrective cycles (C-1)
-CALENDAR_COMMIT = "7b51144"        # wt/wt-cal: Q-197's search calendar and its loader
+WAVE42_COMMIT = "c014d0a"          # wt/wt-infra: W42-R1 with its public scoring functions
 A = 2.0
 A_NEAR = 0.45                      # on the spread fixture: a gap past delta*, short of delta* + t se
 A_NEAR6 = 1.1                      # at 6 re-read seeds: every t past the normal 3, one short of t(5)'s 5.51
@@ -115,8 +112,7 @@ def load_w42():
 
     root = Path(tempfile.mkdtemp(prefix="survey-w42-"))
     for rel, commit in (("extended/wave42.py", WAVE42_COMMIT), ("scripts/wave42_apply.py", WAVE42_COMMIT),
-                        ("docs/plans/WAVE42_SETTING_RULE.md", WAVE42_COMMIT),
-                        ("extended/search_calendar.py", CALENDAR_COMMIT)):
+                        ("docs/plans/WAVE42_SETTING_RULE.md", WAVE42_COMMIT)):
         mine = ROOT / rel
         if mine.is_file() and rel != "scripts/wave42_apply.py":
             data = mine.read_bytes()
@@ -128,14 +124,16 @@ def load_w42():
             data = r.stdout
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
         (root / rel).write_bytes(data)
-    if not (ROOT / "extended" / "wave42.py").is_file() or not (ROOT / "extended" / "search_calendar.py").is_file():
+    if not (ROOT / "extended" / "search_calendar.py").is_file():
+        import pytest
+        pytest.skip("Q-197's loader is not in this tree (master 990d874 carries it)")
+    if not (ROOT / "extended" / "wave42.py").is_file():
         extended.__path__.append(str(root / "extended"))
     W = importlib.import_module("extended.wave42")
     W.SEARCH_CALENDAR_SHA256 = calendar_file(root / "search_calendar.csv")
     W.HELD_OUT_CALENDAR_SHA256 = hashlib.sha256(_csv(held_out_calendar())).hexdigest()
-    for name, fn in W42_PUBLIC_STANDIN.items():
-        if not hasattr(W, name):
-            setattr(W, name, fn)
+    if not hasattr(W, "DO_NOTHING_EPS"):
+        W.DO_NOTHING_EPS = DO_NOTHING_EPS_STANDIN
     spec = importlib.util.spec_from_file_location("wave42_apply", root / "scripts" / "wave42_apply.py")
     apply = importlib.util.module_from_spec(spec)
     sys.modules["wave42_apply"] = apply
@@ -144,40 +142,12 @@ def load_w42():
     return _W42
 
 
-# ------------------------------------------------------------------------------------------------ the stand-ins
+# ------------------------------------------------------------------------------------------------ the stand-in
 
 
-def _composite_standin(values, sessions_left, out):
-    """STAND-IN for wave42.composite_per_seed (the W42-R1 worker's public function): setting_rule's composite, B-5 and
-    all, on one arm -- C(c) = sum_k w_k mean_{s in E_k} z_k(s, c), cost's z 0 for a unit not passed by W."""
-    W = _W42[0] if _W42 else importlib.import_module("extended.wave42")
-    sl = np.asarray(sessions_left)
-    per = {k: np.asarray(v, float) for k, v in out.items()}
-    per.update(W.bankroll_states(per, values["budgets"]["primary"]))
-    caps = {r["name"]: (r["lo"], r["hi"]) for r in values["dimensions"]}
-    c = 0.0
-    for d in W.DIMENSIONS:
-        if d.name not in values["weights"]:
-            continue
-        lo, hi = caps[d.name]
-        z = W._z(d, per[d.key], lo, hi)
-        if d.name == "cost":
-            z = np.where(per["first_pass_days"] <= W.W, z, 0.0)
-        c = c + values["weights"][d.name] * z[W._rows(sl, d.horizon)].mean(axis=0)
-    return np.asarray(c, float)
-
-
-def _limit_standin(values, sessions_left, out, name):
-    """STAND-IN for wave42.limit_estimate: setting_rule's estimate of a limit -- its statistic over its complete starts,
-    pooled over seeds."""
-    W = _W42[0] if _W42 else importlib.import_module("extended.wave42")
-    L = next(x for x in W.LIMITS if x.name == name)
-    per = {k: np.asarray(v, float) for k, v in out.items()}
-    per.update(W.bankroll_states(per, values["budgets"]["primary"]))
-    return W._stat(per[L.key][W._rows(np.asarray(sessions_left), L.horizon)], L.stat)
-
-
-W42_PUBLIC_STANDIN = {"composite_per_seed": _composite_standin, "limit_estimate": _limit_standin}
+#: STAND-IN for W42-R1's `DO_NOTHING_EPS` (its next commit after c014d0a declares it; the survey imports it
+#: from there): attached only when the module lacks it; removed when it lands.
+DO_NOTHING_EPS_STANDIN = 1e-9
 
 
 # ------------------------------------------------------------------------------------------------ the units
