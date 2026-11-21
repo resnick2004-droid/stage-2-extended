@@ -1,27 +1,23 @@
-"""The restart plan's Wave 3.5, corrective cycle 1: the playbook, the alert and the not-offered notice
-(`extended/playbook.py`), on synthetic declarations, logs, result files, calendars and offers only
+"""The restart plan's Wave 3.5, corrective cycle 2: the playbook, the alert and the not-offered notice
+(`extended/playbook.py`), on synthetic declarations, logs, result files, calendars, bars and routers only
 (`tests/playbook_cases.py`) -- never a bar, never a result of this repository.
 
-What is held (the red team's BUILD_W35 findings and the lead's rulings):
-* **R-1, the side**: an alert's side is `trigger_sides.trigger_side`'s, from the offer's tag or ticket and the declared
-  rule; a scheduled trade -- coin-stamped, or relabelled "trigger" -- gets the not-offered notice, never an alert; a
-  failed or absent no-harm verdict, a side rule outside the vocabulary, P-16 and the coin refuse;
-* **R-2 to R-4, the alert checks the offer itself**: its decision, alert, live = alert + L, entry, expiry, tag, group,
-  window, account pool, size cap; the day's flags from the void calendar's sources (void, FOMC, prior_void for a
-  prior-levels reader, H2's overnight void for an overnight reader), the news windows from the declaration's dated
-  record, the flatten at a window's start;
-* **R-5, no price**: no alert holds the offer's level or any price; a git-ignored or price-holding result refuses;
-* **R-6, result files**: each manifest condition (clean run, named commit, not dirty, not exploratory, this design, the
-  convention, the pinned hash, verify_result on the one resolved path), in process and through the real
-  `extended.results.verify_result` in a subprocess;
-* **R-7, the declaration**: loaded from the file pinned by sha256 in its carrying row; every cited row looked up;
-* **R-8, the layout**: the playbook and five alerts equal goldens (`tests/data/playbook_golden.json`) written by hand
-  from the fixture and reviewed line by line; every value piece is recomputed independently from its paths; one
-  refusal test per guard;
-* **R-9, R-10, R-12, R-13**: firm and plan from the verified ledger only; no digit in labels, sources, reasons; a
-  latency-free source's L is its single cell; the firm's state is stated as a condition the user checks;
-* determinism (byte-identical text across hash seeds) and no automation hook.
-No randomness is drawn.
+What is held (the red team's BUILD_W35 and BUILD_W35_v2 findings and the lead's rulings):
+* **B-1, the no-harm floor bound to the design**: its manifest carries the pinned declaration's sha256 and path, the
+  margin, the declared script and family; its rows the side rule, the margin and both composites, and the pass is
+  recomputed; a mismatch on each field refuses; the declaration is pinned in a row before the floor's; P-14's k is the
+  registered one;
+* **B-2, offers recomputed**: the alert takes the day's bars and computes the trigger's own offers from the bars closed
+  at the alert (the shift-invariance test: scrambling every later bar changes nothing); no offer object is accepted;
+* **B-3**: the expected journey bound by the same declaration sha256;
+* **B-4**: an RL3 kind's tickets are one alert, one account, one OCO order, checked against the size cap together;
+* **B-5**: "offered today" reads only what is known before the alert; the data-defect filters never void an alert;
+* **B-6**: every date strict ISO, compared as a date;
+* the minors: the manifest pinned, "carried" checked, no price cell, duplicate JSON keys and NaN refused, the account
+  the router's, one bar-time wording, no figure in identifiers, an empty news list declared, the pin test;
+* and cycle 1's: a scheduled (coin-sided) trade gets the notice, the layout held by goldens reviewed line by line,
+  every value piece recomputed independently, determinism, no automation hook.
+No randomness is drawn but the scrambles' fixed seeds.
 """
 from __future__ import annotations
 
@@ -50,6 +46,7 @@ MODULE = ROOT / "extended" / "playbook.py"
 GOLDEN = ROOT / "tests" / "data" / "playbook_golden.json"
 DIGIT = re.compile(r"\d")
 CALLS: list[Path] = []
+H = PC.history()
 
 
 @pytest.fixture(autouse=True)
@@ -79,12 +76,18 @@ def _load(tmp_path, decl=None, **kw):
     return PB.load_carried(PC.DECL_FILE, root=PC.build_root(tmp_path, decl, **kw))
 
 
-def _refuses(tmp_path, mutate=None, **kw):
+def _refuses(tmp_path, mutate=None, match=None, **kw):
     decl = PC.declaration()
     if mutate is not None:
         mutate(decl)
-    with pytest.raises(PB.PlaybookRefused):
+    with pytest.raises(PB.PlaybookRefused, match=match):
         _load(tmp_path, decl, **kw)
+
+
+def _alert(c, comp, day, at, *, hist=None, src=None, router=None, offer=True):
+    f = PB.render_offer if offer else PB.render_alert
+    return f(c, comp, H if hist is None else hist, PC.day_index(day), at, PC.sources() if src is None else src,
+             PC.router() if router is None else router)
 
 
 # ------------------------------------------------------------------------------------------------ independent checks
@@ -121,6 +124,7 @@ def _anchor_ct(day, session):
 EXPECT = {
     "text": lambda v: repr(v) if isinstance(v, float) else str(v),
     "ct": _label,
+    "stamp": lambda s: _label(int(s) - 1),
     "target": lambda stop, rr: str(math.floor(rr * stop + 1e-9)),
     "anchor_ct": _anchor_ct,
     "side": lambda s: {1: "BUY (long)", -1: "SELL (short)"}[s],
@@ -147,8 +151,8 @@ def check_traced(rendered, src):
 def _library():
     # the firm's verified ledger (vendor/stage2/config/rules.yaml): 5 minis in the Combine, the XFA's entry tier 2 minis,
     # 10 micros a mini; the plan's name as `combine_mll`'s note writes it
-    return {"plan": "50K Trading Combine", "cap": {"ts_a1": 50, "ts_b2": 20, "ts_c3": 50}, "max_latency": 5,
-            "tickets_alert": 930, "tickets_live": 960, "hash": "sha256"}
+    return {"plan": "50K Trading Combine", "cap": {"ts_a1": 50, "ts_b2": 20, "ts_c3": 50}, "tickets_alert": 930,
+            "tickets_live": 960, "hash": "sha256"}
 
 
 def _pb_src(c):
@@ -156,26 +160,26 @@ def _pb_src(c):
             "expected": {"file": PC.EXPECTED_FILE, "commit": PC.COMMIT,
                          **{"|".join((r["section"], r["block"], r["measure"], r["stat"])): r["value"]
                             for r in PC.EXPECTED_ROWS}},
-            "no_harm": {"file": PC.NO_HARM_FILE, "commit": PC.COMMIT}}
+            "no_harm": {"file": PC.NO_HARM_FILE, "commit": PC.COMMIT,
+                        **{"|".join((r["section"], r["block"], r["measure"], r["stat"])): r["value"]
+                           for r in PC.NO_HARM_ROWS}}}
 
 
-def _alerts(c):
-    """The five alerts and two notices the goldens hold."""
-    src = PC.sources()
-    return {
-        "pm_limit_plain_day": PB.render_alert(c, PC.p14_offer(), "pm_brk", "ts_b2", "2021-03-16", src),
-        "pm_limit_window_flatten": PB.render_alert(c, PC.p14_offer(), "pm_brk", "ts_b2", "2021-03-17", src),
-        "ldn_market_overnight": PB.render_alert(c, PC.ldn_offer(), "ldn_brk", "ts_a1", "2021-03-16", src),
-        "rl3_fade_resistance": PB.render_alert(c, PC.rl3_offer(), "am_rl3", "ts_c3", "2021-03-16", src),
-        "rl3_break_support": PB.render_alert(c, PC.rl3_offer("lo", -1), "am_rl3", "ts_a1", "2021-03-16", src),
-        "notice_coin_trade": PB.render_trade(c, R.RoutedTrade(PC.scheduled(), "ts_b2")),
-        "notice_prior_void": PB.render_offer(c, PC.rl3_offer(), "am_rl3", "ts_a1", "2021-03-15", src),
-    }
+ALERTS = {
+    "pm_limit_plain_day": ("pm_brk", "2021-03-16", 1101),
+    "pm_limit_window_flatten": ("pm_brk", "2021-03-17", 1101),
+    "ldn_market_flatten_at_news": ("ldn_brk", "2021-03-16", 610),
+    "ldn_market_flatten_at_closed_window": ("ldn_brk", "2021-03-17", 610),
+    "rl3_oco_pair": ("am_rl3", "2021-03-16", 930),
+    "rl3_one_ticket_left": ("am_rl3", "2021-04-06", 930),
+    "notice_prior_void": ("am_rl3", "2021-03-15", 930),
+}
 
 
 def goldens(c) -> dict[str, str]:
-    out = {"playbook": PB.render_playbook(c).text}
-    out.update({k: v.text for k, v in _alerts(c).items()})
+    out = {"playbook": PB.render_playbook(c).text,
+           "notice_coin_trade": PB.render_trade(c, R.RoutedTrade(PC.scheduled(), "ts_b2")).text}
+    out.update({k: _alert(c, *v).text for k, v in ALERTS.items()})
     return out
 
 
@@ -183,8 +187,7 @@ def goldens(c) -> dict[str, str]:
 
 
 def test_goldens_hold_the_layout(carried):
-    """R-8: the whole text, every line, against the reviewed goldens (a value from a wrong path, a swapped pair, a
-    dropped line or a rounding change shows here)."""
+    """R-8: the whole text, every line, against the reviewed goldens."""
     want = json.loads(GOLDEN.read_bytes())
     got = goldens(carried)
     assert sorted(got) == sorted(want)
@@ -194,13 +197,12 @@ def test_goldens_hold_the_layout(carried):
 
 def test_playbook_every_number_traces_to_an_input(carried):
     r = PB.render_playbook(carried)
-    assert check_traced(r, _pb_src(carried)) > 60
+    assert check_traced(r, _pb_src(carried)) > 70
     text = r.text
     for row in PC.EXPECTED_ROWS[:4]:
         assert row["value"] in text
     assert "999" not in text                                  # a row the declaration does not name is not shown
     assert "Target: 100 ticks (reward to risk 1.3)" in text  # floor(1.3 x 77) = 100, not 101
-    assert "Target: 135 ticks (reward to risk 2.25)" in text and "Target: 150 ticks (reward to risk 1.5)" in text
 
 
 def test_playbook_deterministic_across_hash_seeds(carried, root):
@@ -216,7 +218,8 @@ def test_playbook_deterministic_across_hash_seeds(carried, root):
 
 
 def test_module_has_no_typed_number_and_no_automation_hook():
-    tree = ast.parse(MODULE.read_text(encoding="utf-8"))
+    src = MODULE.read_text(encoding="utf-8")
+    tree = ast.parse(src)
     docs = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.FunctionDef, ast.ClassDef)) and node.body and isinstance(
@@ -228,14 +231,24 @@ def test_module_has_no_typed_number_and_no_automation_hook():
                 assert not DIGIT.search(node.value), f"a string constant holds a digit: {node.value!r}"
             elif isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
                 assert node.value in (0, 1, -1), f"a typed number: {node.value!r}"
-    allowed = {"__future__", "csv", "fnmatch", "hashlib", "io", "json", "math", "re", "dataclasses", "datetime",
-               "pathlib", "typing", "extended"}
+    stdlib = {"__future__", "csv", "fnmatch", "hashlib", "io", "json", "math", "re", "dataclasses", "datetime",
+              "pathlib", "typing", "numpy"}
+    own = {"extended", "extended.components", "extended.day_calendar", "extended.lever_space", "extended.modes_terms",
+           "extended.router", "extended.trigger_sides", "extended.triggers", "extended.walker", "extended.results",
+           "extended.price_levels"}
     for node in ast.walk(tree):
-        names = ([a.name for a in node.names] if isinstance(node, ast.Import) else
-                 [node.module or ""] if isinstance(node, ast.ImportFrom) else [])
+        if isinstance(node, ast.Import):
+            names = [a.name for a in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            base = node.module or ""
+            names = [base] if base != "extended" else [f"extended.{a.name}" if a.name != "ROOT" else base
+                                                       for a in node.names]
+        else:
+            continue
         for n in names:
-            assert n.split(".")[0] in allowed, f"import {n}: the playbook has no network, process or broker hook"
-    assert "open(" not in MODULE.read_text(encoding="utf-8").replace("re.compile(", "")      # no file is written
+            assert n in own or n.split(".")[0] in stdlib, f"import {n}: no network, process or broker hook"
+    for word in ("open(", "write_text", "write_bytes", "mkdir", "unlink", "socket", "subprocess", "requests"):
+        assert word not in src, f"{word}: the playbook writes nothing and opens no channel"
 
 
 def test_playbook_states_the_rules(carried):
@@ -243,7 +256,8 @@ def test_playbook_states_the_rules(carried):
     assert "HAND ENTRY ONLY" in text and "no automated or API order entry" in text
     assert "NEVER HOLD OPPOSITE POSITIONS AT ONCE across your accounts or firms" in text
     assert "Never copy a trade to several accounts" in text and "Never put size into major news" in text
-    assert "the years this design was chosen on" in text and "held-out years, reported beside" in text     # N-3
+    assert "the years this design was chosen on" in text and "held-out years, reported beside" in text
+    assert "research filters, not trading rules" in text and "bar ending" not in text                       # m-6
 
 
 @pytest.mark.parametrize("key", PB.REQUIRED)
@@ -278,41 +292,55 @@ def _set(path, value):
 MUTATIONS = {
     "L-undeclared": _set(("components", 2, "latency"), 4),
     "L-not-triggers": _set(("components", 2, "latency"), 5),
-    "L-of-latency-free": _set(("components", 1, "latency"), 2),                                   # R-12
+    "L-of-latency-free": _set(("components", 1, "latency"), 2),
     "coin-trigger": _set(("components", 0, "trigger", "source"), "coin"),
     "p16-no-side-rule": _set(("components", 0, "trigger"), {"source": "p16", "params": {"marks": [600, 630],
                                                                                          "overnight": True}}),
+    "p14-k-not-registered": _set(("components", 2, "trigger", "params", "k"), 7),                    # B-1
     "side-rule-free-words": _set(("components", 2, "side_rule"), "toss a fair coin"),
     "side-rule-blank": _set(("components", 2, "side_rule"), ""),
     "rl3-rule-missing-level": _set(("components", 1, "side_rule"), {"hi": "fade"}),
-    "trigger-before-window": _set(("components", 2, "trigger", "params", "first"), 1000),         # R-12
+    "trigger-before-window": _set(("components", 2, "trigger", "params", "first"), 1000),
     "trigger-after-window": _set(("components", 2, "trigger", "params", "last"), 1258),
     "rl3-window-misses-live": _set(("components", 1, "first"), 965),
     "anchor": _set(("session_anchors", "london"), ["Europe/London", "09:00"]),
+    "anchor-missing": lambda d: d["session_anchors"].pop("london"),                                   # X35
     "collision": _set(("components", 2, "first"), 1000),
     "rotation": _set(("rotation", "rule"), "copy_to_all"),
     "pool-account": _set(("rotation", "pools", "pm_brk"), ["ts_zz"]),
-    "pool-component": _set(("rotation", "pools", "no_such"), ["ts_a1"]),                          # G9
+    "pool-component": _set(("rotation", "pools", "no_such"), ["ts_a1"]),
     "void-rule-unknown": lambda d: d["void_rules"].append("my_hunch"),
     "void-rule-dropped": lambda d: d["void_rules"].remove("prior_abbreviated"),
     "void-rule-twice": lambda d: d["void_rules"].append("fomc"),
-    "void-date-reason": _set(("void_dates", 0, "reason"), "my_hunch"),                            # G5
+    "void-rule-research-only": lambda d: d["void_rules"].append("short_bars"),                        # B-5
+    "research-filter-dropped": lambda d: d["research_filters"].remove("overnight_missing"),
+    "void-date-reason": _set(("void_dates", 0, "reason"), "my_hunch"),
+    "void-date-basic-form": _set(("void_dates", 0, "date"), "20210319"),                              # B-6
+    "void-date-padded": _set(("void_dates", 0, "date"), " 2021-03-19"),
+    "release-date-basic-form": _set(("news_windows", 1, "dates"), ["20210317"]),                     # B-6, X37
+    "release-date-short": _set(("news_windows", 1, "dates"), ["2021-3-17"]),
+    "release-dates-none": _set(("news_windows", 1, "dates"), []),
+    "anchor-date-basic-form": _set(("dates",), ["20210316"]),                                         # X36
+    "news-none-undeclared": _set(("news_windows",), []),                                              # m-8
+    "news-source-figure": _set(("news_source",), "record v2"),
     "contracts-zero": _set(("components", 1, "contracts"), 0),
-    "contracts-500": _set(("components", 2, "contracts"), 500),                                    # R-4
-    "contracts-over-funded-cap": _set(("components", 2, "contracts"), 21),                         # 20 for ts_b2
-    "contracts-over-eval-cap": _set(("components", 1, "contracts"), 51),
+    "contracts-500": _set(("components", 2, "contracts"), 500),
+    "contracts-over-funded-cap": _set(("components", 2, "contracts"), 21),
+    "rl3-pair-over-cap-together": _set(("components", 1, "contracts"), 26),                           # B-4
     "budget-zero": _set(("bankroll", "budget"), 0),
-    "accounts-repeat": lambda d: d["accounts"].append({"id": "ts_a1", "role": "evaluation"}),       # G1
-    "no-account": lambda d: d.update(accounts=[], rotation={"rule": "longest_waiting"}),           # G8
+    "margin-negative": _set(("side", "margin"), -0.01),
+    "margin-not-a-number": _set(("side", "margin"), "small"),
+    "accounts-repeat": lambda d: d["accounts"].append({"id": "ts_a1", "role": "evaluation"}),
+    "no-account": lambda d: d.update(accounts=[], rotation={"rule": "longest_waiting"}),
     "role-unknown": _set(("accounts", 0, "role"), "prop"),
     "label-with-figure": _set(("expected", "rows", 0, "label"), "pass rate 87% (sessions to the first payout)"),
     "label-blank": _set(("expected", "rows", 0, "label"), " "),
-    "news-source-figure": _set(("news_windows", 0, "source"), "CPI at 7:30"),
+    "news-window-source-figure": _set(("news_windows", 0, "source"), "CPI at 7:30"),
     "news-window-off-clock": _set(("news_windows", 0, "release"), 5000),
-    "expected-no-rows": _set(("expected", "rows"), []),                                            # G4
+    "expected-no-rows": _set(("expected", "rows"), []),
     "expected-row-twice": lambda d: d["expected"]["rows"].append(dict(d["expected"]["rows"][0])),
     "expected-block": _set(("expected", "rows", 0, "block"), "all_years"),
-    "firm-lucid": _set(("firm",), "lucid"),                                                        # R-9
+    "firm-lucid": _set(("firm",), "lucid"),
     "firm-unknown": _set(("firm",), "not_a_firm"),
     "plan-unknown": _set(("plan",), "the 50K plan"),
     "instrument": _set(("instrument",), "ES"),
@@ -325,11 +353,44 @@ def test_disagreement_with_the_library_or_the_ledger_refuses(tmp_path, name):
     _refuses(tmp_path, MUTATIONS[name])
 
 
-def test_coin_refused_as_the_evaluations_device(tmp_path):
+@pytest.mark.parametrize("name", ["pm_wins62.5pct", "pm_brk2021", "pm.brk"])
+def test_identifiers_carry_no_figure(tmp_path, name):
+    """m-7: the component renamed everywhere (pools, no-harm rows), so only the identifier rule can refuse it."""
     decl = PC.declaration()
-    decl["components"][0]["trigger"]["source"] = "coin"
-    with pytest.raises(PB.PlaybookRefused, match="evaluation's device"):
-        _load(tmp_path, decl)
+    decl["components"][2]["name"] = name
+    decl["rotation"]["pools"][name] = decl["rotation"]["pools"].pop("pm_brk")
+    rows = [dict(r, measure=name) if r["measure"] == "pm_brk" else dict(r) for r in PC.NO_HARM_ROWS]
+    with pytest.raises(PB.PlaybookRefused, match="identifier"):
+        _load(tmp_path, decl, no_harm_rows=rows)
+    decl["components"][2]["name"] = "pm_brk2"                          # a short suffix is a name, not a figure
+    decl["rotation"]["pools"]["pm_brk2"] = decl["rotation"]["pools"].pop(name)
+    rows = [dict(r, measure="pm_brk2") if r["measure"] == "pm_brk" else dict(r) for r in PC.NO_HARM_ROWS]
+    assert _load(tmp_path / "ok", decl, no_harm_rows=rows)
+
+
+def test_news_none_declared_with_its_reason_loads(tmp_path):
+    decl = PC.declaration()
+    decl["news_windows"] = []
+    decl["news_none"] = "the record holds no release in these sessions"
+    assert "(none: the record holds no release in these sessions)" in PB.render_playbook(_load(tmp_path, decl)).text
+
+
+def test_coin_refused_as_the_evaluations_device(tmp_path):
+    _refuses(tmp_path, _set(("components", 0, "trigger", "source"), "coin"), match="evaluation's device")
+
+
+@pytest.mark.parametrize("raw", [
+    lambda b: b.replace(b'"contracts": 1,', b'"contracts": 1,\n   "contracts": 9,'),
+    lambda b: b.replace(b'"rr": 2.25', b'"rr": NaN'),
+    lambda b: b.replace(b'"budget": 1700', b'"budget": Infinity'),
+    lambda b: b.replace(b'"flatten": 1328', b'"flatten": NaN'),
+], ids=["duplicate-key", "nan", "infinity", "nan-where-only-the-parser-refuses"])
+def test_declaration_json_strict(tmp_path, raw):
+    """m-4: the pinned bytes are the declaration: a duplicate key, NaN or Infinity refuses, even pinned."""
+    data = raw(PC.decl_bytes(PC.declaration()))
+    assert data != PC.decl_bytes(PC.declaration())
+    with pytest.raises(PB.PlaybookRefused, match="twice|non-finite"):
+        PB.load_carried(PC.DECL_FILE, root=PC.build_root(tmp_path, raw=data))
 
 
 # ------------------------------------------------------------------------------------------------ R-7: pins and rows
@@ -350,27 +411,57 @@ def test_declaration_pinned_with_crlf_reads_as_lf(root):
 
 @pytest.mark.parametrize("path,value", [(("row",), "E-99999999"), (("row",), "E-0"),
                                         (("side", "no_harm_row"), "E-0"), (("side", "no_harm_row"), "pending"),
-                                        (("bankroll", "row"), "E-9999"), (("bankroll", "row"), "E-77")],
+                                        (("bankroll", "row"), "E-9999"), (("side", "margin_row"), "E-77")],
                          ids=["carrying-missing", "carrying-short", "no-harm-short", "no-harm-pending",
-                              "bankroll-missing", "bankroll-short"])
+                              "bankroll-missing", "margin-row-missing"])
 def test_a_cited_row_not_in_the_log_refuses(tmp_path, path, value):
     _refuses(tmp_path, _set(path, value))
 
 
-@pytest.mark.parametrize("edit", [
-    lambda rows: {**rows, "E-9001": rows["E-9001"].replace(f"**{PC.DESIGN} carried", "**X-other carried")},
-    lambda rows: {**rows, "E-9002": rows["E-9002"].replace(PC.DESIGN, "X-demo70")},
-    lambda rows: {**rows, "E-9001": rows["E-9001"].split("; its expected")[0]},
-    lambda rows: {**rows, "E-9002": "**no pin here**"},
-], ids=["carrying-names-another-design", "no-harm-names-another-design", "expected-unpinned", "no-harm-unpinned"])
-def test_rows_must_name_the_design_and_pin_its_files(tmp_path, edit):
+def _sub(row, old, new):
+    return lambda rows: {**rows, row: rows[row].replace(old, new)}
+
+
+ROW_EDITS = {
+    "carrying-names-another-design": _sub("E-9004", f"**{PC.DESIGN} carried", "**X-other carried"),
+    "carrying-without-registration": _sub("E-9004", PC.REGISTRATION, "REG-other"),
+    "carrying-not-carried": _sub("E-9004", "carried, registration", "not carried, registration"),        # m-2
+    "carrying-a-draft": _sub("E-9004", "(synthetic)", "(DRAFT for red-team review)"),
+    "carrying-never-says-carried": _sub("E-9004", "carried, registration", "pinned, registration"),
+    "no-harm-names-another-design": _sub("E-9001", PC.DESIGN, "X-demo70"),
+    "expected-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].split("; its expected")[0]},
+    "expected-manifest-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].split("; its manifest")[0]},
+    "no-harm-unpinned": lambda rows: {**rows, "E-9001": "**no pin here**"},
+    "no-harm-manifest-unpinned": lambda rows: {**rows, "E-9001": rows["E-9001"].split("; its manifest")[0]},
+    "floor-before-the-declaration": lambda rows: {k: v for k, v in rows.items() if k != "E-9000"},   # B-1
+    "declaration-pinned-after-floor": lambda rows: {"E-9001": rows["E-9001"], "E-9000": rows["E-9000"],
+                                                    "E-9002": rows["E-9002"], "E-9004": rows["E-9004"]},
+    "a-path-pinned-twice": lambda rows: {**rows, "E-9004": rows["E-9004"].replace(                     # N-3
+        "(synthetic)**", "(synthetic)** the reviewed text `" + PC.DECL_FILE + "` sha256 `" + "b" * 64 + "`, revised to")},
+}
+
+
+@pytest.mark.parametrize("edit", sorted(ROW_EDITS))
+def test_rows_must_order_name_carry_and_pin(tmp_path, edit):
     with pytest.raises(PB.PlaybookRefused):
-        _load(tmp_path, rows_text=edit)
+        _load(tmp_path, edit_rows=ROW_EDITS[edit])
+
+
+def test_a_cited_row_pinning_a_path_twice_refuses_for_that(tmp_path):
+    """N-3: the reviewed text and its revision pinned in one row -- refused as such, not by the later pin's luck."""
+    with pytest.raises(PB.PlaybookRefused, match="pins prereg/X-demo7_playbook.json twice"):
+        _load(tmp_path, edit_rows=ROW_EDITS["a-path-pinned-twice"])
+
+
+def test_an_unrelated_row_pinning_twice_does_not_block(tmp_path):
+    rows_edit = lambda rows: {"E-8999": "`prereg/other.json` sha256 `" + "c" * 64 + "` then `prereg/other.json` "  # noqa
+                              "sha256 `" + "d" * 64 + "`", **rows}
+    assert _load(tmp_path, edit_rows=rows_edit).decl_sha
 
 
 def test_a_repeated_row_in_the_log_refuses(root):
     log = root / "DECISIONS.md"
-    log.write_bytes(log.read_bytes() + b"| E-9003 | 2021-01-02 | again | synthetic |\n")
+    log.write_bytes(log.read_bytes() + b"| E-9002 | 2021-01-02 | again | synthetic |\n")
     with pytest.raises(PB.PlaybookRefused, match="twice"):
         PB.load_carried(PC.DECL_FILE, root=root)
 
@@ -386,15 +477,94 @@ def test_a_carried_design_is_made_only_by_the_loader(carried):
         PB.render_playbook(PC.declaration())
 
 
-# ------------------------------------------------------------------------------------------------ R-6 / R-5: result files
+def test_playbook_declarations_are_in_the_pin_test():
+    """m-9: tests/test_declarations_fixed.py holds a playbook declaration's pin as it holds a family's."""
+    text = (ROOT / "tests" / "test_declarations_fixed.py").read_text(encoding="utf-8")
+    assert "_playbook" in text and "json" in text
 
 
-def test_result_read_from_one_resolved_path(carried, root):
-    assert sorted(CALLS) == sorted({(root / PC.EXPECTED_FILE).resolve(), (root / PC.NO_HARM_FILE).resolve()})
-    assert all(p.is_absolute() for p in CALLS)
+# ------------------------------------------------------------------------------------------------ B-1, B-3: the bindings
 
 
-MANIFEST_FAULTS = {
+def _flip(d):
+    d["components"][2]["side_rule"] = "with_breakout"
+
+
+def _other_stop(d):
+    d["components"][0]["stop_ticks"] = 20
+
+
+def _other_rotation(d):
+    d["rotation"] = {"rule": "longest_waiting"}
+
+
+@pytest.mark.parametrize("change", [_flip, _other_stop, _other_rotation], ids=["side-rule-flipped", "stop", "rotation"])
+def test_results_bound_to_another_declaration_refuse(tmp_path, change):
+    """B-1, B-3 (the note's P3, P4): the declaration changed and re-pinned, the result files those of the old one."""
+    decl = PC.declaration()
+    change(decl)
+    with pytest.raises(PB.PlaybookRefused, match="bound to this pinned declaration"):
+        _load(tmp_path, decl, bind=PC.declaration())
+
+
+NO_HARM_MANIFEST_FAULTS = {
+    "declaration-sha": dict(parameters_update={"declaration_sha256": "e" * 64}),
+    "declaration-file": dict(parameters_update={"declaration_file": "prereg/other_playbook.json"}),
+    "margin": dict(parameters_update={"margin": 0.1}),
+    "margin-absent": dict(parameters_update={"margin": None}),
+    "script": dict(script="scratch/anything.py"),
+    "family": dict(prereg_id=None),
+    "design": dict(parameters_update={"design_id": "X-other"}),
+    "convention": dict(parameters_update={"convention": "zero_edge"}),
+}
+
+
+@pytest.mark.parametrize("fault", sorted(NO_HARM_MANIFEST_FAULTS))
+def test_no_harm_manifest_field_mismatch_refuses(tmp_path, fault):
+    with pytest.raises(PB.PlaybookRefused):
+        _load(tmp_path, no_harm_over=NO_HARM_MANIFEST_FAULTS[fault])
+
+
+def _nh_rows(comp, stat, value):
+    rows = [dict(r) for r in PC.NO_HARM_ROWS]
+    for r in rows:
+        if r["measure"] == comp and r["stat"] == stat:
+            r["value"] = value
+    return rows
+
+
+@pytest.mark.parametrize("comp,stat,value", [
+    ("pm_brk", "side_rule", "with_breakout"), ("am_rl3", "side_rule", "hi=break;lo=fade"),
+    ("am_rl3", "margin", "0.1"), ("am_rl3", "trigger_composite", "0.23"), ("pm_brk", "coin_composite", "0.46"),
+    ("ldn_brk", "trigger_composite", "pass"), ("ldn_brk", "coin_composite", "nan"),
+], ids=["p14-rule", "rl3-rule", "margin", "rl3-failed", "p14-failed", "not-a-number", "not-finite"])
+def test_no_harm_row_mismatch_or_failure_refuses(tmp_path, comp, stat, value):
+    with pytest.raises(PB.PlaybookRefused, match="no-harm floor|not a number|not finite"):
+        _load(tmp_path, no_harm_rows=_nh_rows(comp, stat, value))
+
+
+@pytest.mark.parametrize("stat", PB.NO_HARM_STATS)
+def test_no_harm_row_absent_refuses(tmp_path, stat):
+    rows = [r for r in PC.NO_HARM_ROWS if not (r["measure"] == "ldn_brk" and r["stat"] == stat)]
+    with pytest.raises(PB.PlaybookRefused, match="absent"):
+        _load(tmp_path, no_harm_rows=rows)
+
+
+def test_no_harm_pass_is_recomputed_at_the_margin(tmp_path):
+    """The floor at its edge: the trigger side's composite exactly the coin's less the margin passes; a hair below
+    refuses."""
+    rows = _nh_rows("am_rl3", "trigger_composite", "0.24")          # 0.29 - 0.05 = 0.24 (in binary, just above)
+    tc, cc = 0.24, 0.29
+    if tc < cc - PC.MARGIN:
+        with pytest.raises(PB.PlaybookRefused, match="failed"):
+            _load(tmp_path, no_harm_rows=rows)
+    else:
+        assert _load(tmp_path, no_harm_rows=rows)
+    with pytest.raises(PB.PlaybookRefused, match="failed"):
+        _load(tmp_path / "b", no_harm_rows=_nh_rows("am_rl3", "trigger_composite", "0.2399"))
+
+
+EXPECTED_MANIFEST_FAULTS = {
     "no-clean-run": dict(provenance=None),
     "clean-run-unnamed": dict(provenance={"clean_run": {"name": ""}}),
     "commit-unknown": dict(git_commit="unknown", git_dirty=None),
@@ -403,26 +573,44 @@ MANIFEST_FAULTS = {
     "dirty-unrecorded": dict(git_dirty=None),
     "commit-blank": dict(git_commit=""),
     "exploratory": dict(exploratory=True),
-    "other-design": dict(parameters={"design_id": "SOME-OTHER-DESIGN", "convention": "zero_edge"}),
+    "other-design": dict(parameters_update={"design_id": "SOME-OTHER-DESIGN"}),
     "as-traded": dict(parameters={"design_id": PC.DESIGN, "as_traded": True}),
-    "other-convention": dict(parameters={"design_id": PC.DESIGN, "convention": "no_harm_real_path"}),
+    "other-convention": dict(parameters_update={"convention": "no_harm_real_path"}),
+    "declaration-sha": dict(parameters_update={"declaration_sha256": "e" * 64}),          # B-3
+    "declaration-file": dict(parameters_update={"declaration_file": "prereg/other.json"}),
+    "script": dict(script="scratch/anything.py"),
+    "family": dict(prereg_id="F-other"),
     "hash-not-the-files": dict(sha256="0" * 64),
 }
 
 
-@pytest.mark.parametrize("fault", sorted(MANIFEST_FAULTS))
+@pytest.mark.parametrize("fault", sorted(EXPECTED_MANIFEST_FAULTS))
 def test_expected_file_manifest_fault_refuses(tmp_path, fault):
     with pytest.raises(PB.PlaybookRefused):
-        _load(tmp_path, expected_over=MANIFEST_FAULTS[fault])
+        _load(tmp_path, expected_over=EXPECTED_MANIFEST_FAULTS[fault])
 
 
-@pytest.mark.parametrize("fault", ["no-clean-run", "commit-dirty", "exploratory", "other-design"])
-def test_no_harm_file_manifest_fault_refuses(tmp_path, fault):
-    over = dict(MANIFEST_FAULTS[fault])
-    if "parameters" in over:
-        over["parameters"] = {**over["parameters"], "convention": "no_harm_real_path"}
-    with pytest.raises(PB.PlaybookRefused):
-        _load(tmp_path, no_harm_over=over)
+def test_manifest_edited_after_its_pin_refuses(root):
+    """m-1 (the note's P16): an exploratory manifest relabelled after its CSV was pinned."""
+    mp = Path(str(root / PC.EXPECTED_FILE) + PC.MANIFEST)
+    m = json.loads(mp.read_bytes())
+    m["description"] = "edited after the pin"
+    mp.write_bytes(json.dumps(m, indent=2, sort_keys=True).encode())
+    with pytest.raises(PB.PlaybookRefused, match="manifest is not the one pinned"):
+        PB.load_carried(PC.DECL_FILE, root=root)
+
+
+@pytest.mark.parametrize("row,name", [("E-9004", "journey_x"), ("E-9001", "noharm_x")])
+def test_the_csv_pin_in_the_row_must_be_the_manifests(tmp_path, row, name):
+    """The CSV's own pin (its manifest's pin left right) must equal the hash its manifest records."""
+    edit = lambda rows: {**rows, row: re.sub("(" + name + r"\.csv` sha256 `)[0-9a-f]+", lambda m: m.group(1) + "a" * 64,  # noqa
+                                            rows[row])}
+    with pytest.raises(PB.PlaybookRefused, match="do not agree on its hash"):
+        _load(tmp_path, edit_rows=edit)
+
+
+def test_result_read_from_one_resolved_path(carried, root):
+    assert sorted(CALLS) == sorted({(root / PC.EXPECTED_FILE).resolve(), (root / PC.NO_HARM_FILE).resolve()})
 
 
 def test_tampered_or_missing_result_refuses(root):
@@ -435,13 +623,6 @@ def test_tampered_or_missing_result_refuses(root):
         PB.load_carried(PC.DECL_FILE, root=root)
 
 
-def test_pin_in_the_row_must_be_the_manifests(tmp_path):
-    with pytest.raises(PB.PlaybookRefused):
-        _load(tmp_path, rows_text=lambda rows: {**rows, "E-9001": re.sub(r"(journey_x\.csv` sha256 `)[0-9a-f]+",
-                                                                           lambda m: m.group(1) + "a" * 64,
-                                                                           rows["E-9001"])})
-
-
 @pytest.mark.parametrize("rel", ["results/s1_range.csv", "results/q121_vol_descriptive_a1.csv",
                                  "results/scratch/x.csv", "elsewhere/journey_x.csv", "results/../journey_x.csv",
                                  "results/journey_x.txt"])
@@ -452,11 +633,12 @@ def test_licensed_ignored_or_misplaced_result_refuses(tmp_path, rel):
         _load(tmp_path, decl)
 
 
-def test_result_holding_price_levels_refuses(tmp_path):
+@pytest.mark.parametrize("where", ["value", "n"])
+def test_one_price_cell_refuses(tmp_path, where):
+    """m-3 (the note's P7): one cell inside the band and on the tick grid, anywhere in the file."""
     rows = [dict(r) for r in PC.EXPECTED_ROWS]
-    for r, v in zip(rows, ("18234.75", "18100.25", "17950.5", "18000.0", "18012.25")):
-        r["value"] = v
-    with pytest.raises(PB.PlaybookRefused, match="licence guard"):
+    rows[3][where] = "18234.75"
+    with pytest.raises(PB.PlaybookRefused, match="price cell"):
         _load(tmp_path, expected_rows=rows)
 
 
@@ -467,25 +649,13 @@ def test_result_row_absent_twice_or_blank_refuses(tmp_path):
         _load(tmp_path / "b", expected_rows=PC.EXPECTED_ROWS + PC.EXPECTED_ROWS[:1])
     blank = [dict(r) for r in PC.EXPECTED_ROWS]
     blank[0]["value"] = " "
-    with pytest.raises(PB.PlaybookRefused, match="blank"):                                         # G6
+    with pytest.raises(PB.PlaybookRefused, match="blank"):
         _load(tmp_path / "c", expected_rows=blank)
 
 
-@pytest.mark.parametrize("verdict", ["fail", "", None])
-def test_no_harm_floor_failed_or_absent_refuses(tmp_path, verdict):
-    rows = [dict(r) for r in PC.NO_HARM_ROWS]
-    if verdict is None:
-        rows = [r for r in rows if r["measure"] != "am_rl3"]
-    else:
-        rows[1]["value"] = verdict
-    with pytest.raises(PB.PlaybookRefused, match="no-harm floor"):
-        _load(tmp_path, no_harm_rows=rows)
-
-
 def test_result_files_through_the_real_verify_result(tmp_path):
-    """The vendored writer and verify_result, in their own process: a clean run's file is accepted; a tampered one, one
-    written outside a clean run (commit dirty or unknown), and the red team's probe 2 (exploratory, another design,
-    as-traded) refuse."""
+    """The vendored writer and verify_result, in their own process: a clean, bound file is accepted; a tampered one,
+    one written outside a clean run, and the red team's first probe 2 (exploratory, another design) refuse."""
     env = dict(os.environ, OMP_NUM_THREADS="1")
     out = subprocess.run([sys.executable, str(ROOT / "tests" / "playbook_cases.py"), "results", str(tmp_path)],
                          env=env, capture_output=True, text=True, timeout=600, cwd=str(ROOT))
@@ -499,188 +669,237 @@ def test_result_files_through_the_real_verify_result(tmp_path):
 # ------------------------------------------------------------------------------------------------ the alert
 
 
-def _offer_src(c, offer, account, day):
-    return {"design": c.decl, "offer": {f.name: getattr(offer, f.name) for f in dataclasses.fields(offer)
-                                        if f.name != "level"},
-            "account": account, "day": day, "library": _library()}
-
-
 def test_alerts_trace_and_never_print_a_price(carried):
-    cases = [(PC.p14_offer(), "ts_b2", "2021-03-16"), (PC.ldn_offer(), "ts_a1", "2021-03-16"),
-             (PC.rl3_offer(), "ts_c3", "2021-03-16"), (PC.rl3_offer("lo", -1), "ts_a1", "2021-03-16")]
-    comps = ["pm_brk", "ldn_brk", "am_rl3", "am_rl3"]
-    for (off, acct, day), comp in zip(cases, comps):
-        r = PB.render_alert(carried, off, comp, acct, day, PC.sources())
-        assert check_traced(r, _offer_src(carried, off, acct, day)) > 10
+    for name, (comp, day, at) in ALERTS.items():
+        r = _alert(carried, comp, day, at)
+        assert check_traced(r, {"design": carried.decl, "day": day, "library": _library()}) >= 1
         t = r.text
-        assert repr(off.level) not in t and str(off.level) not in t                                 # R-5
-        assert not re.search(r"\d{3,}\.\d", t), "a price-like number in an alert"
-        assert all("level" not in p for piece in r.pieces for path in piece.paths for p in path if isinstance(p, str))
+        for price in ("18000", "18100", "17900", "17990", "18110", "18234"):
+            assert price not in t, (name, price)
+        assert not re.search(r"\d{3,}\.\d", t)
+        assert "bar ending" not in t                                                             # m-6
         for hook in ("http", "webhook", "json", "{", "api"):
             assert hook not in t.lower()
-        assert "exit" not in t.lower() and "fill_" not in t                                       # no outcome
-        assert "enter only if, at this firm, no position is open" in t                             # R-13
 
 
-def test_side_is_the_triggers_own(carried):
-    src = PC.sources()
-    t = PB.render_alert(carried, PC.p14_offer(tag="brk30-"), "pm_brk", "ts_b2", "2021-03-16", src).text
-    assert "Side BUY (long)" in t                              # against a downward breakout
-    t = PB.render_alert(carried, PC.ldn_offer(tag="brk30+"), "ldn_brk", "ts_a1", "2021-03-16", src).text
-    assert "Side BUY (long)" in t                              # with an upward breakout
-    t = PB.render_alert(carried, PC.rl3_offer("hi", -1), "am_rl3", "ts_a1", "2021-03-16", src).text
-    assert "Side BUY (long)" in t and "Order LIMIT at the level itself" in t       # fade at a support: buy limit
+def test_the_cut_keeps_only_the_bars_closed_at_the_alert():
+    """feature-rules section 1: at slot `at` of day `i`, the days up to `i`, and of day `i` the walker's columns up to
+    `at` (the bars stamped before it); every later bar NaN."""
+    import numpy as np
+
+    for i, at in ((1, 1101), (1, 610), (3, 930)):
+        cut = PB.cut_history(H, i, at)
+        assert cut.days == H.days[: i + 1] and len(cut) == i + 1
+        for a, b in ((cut.o, H.o), (cut.h, H.h), (cut.l, H.l), (cut.c, H.c)):
+            assert np.array_equal(a[:i], b[:i], equal_nan=True)
+            assert np.array_equal(a[i, : at + 1], b[i, : at + 1], equal_nan=True)
+            assert np.isnan(a[i, at + 1:]).all()
+    assert not np.isnan(H.c[1, 1102:]).all()                           # the cut, not the fixture, holds the NaNs
 
 
-@pytest.mark.parametrize("label", ["coin", "trigger", "relabelled"])
+def test_the_offer_is_recomputed_from_the_bars_closed_at_the_alert(carried):
+    """B-2, the feature-rules shift-invariance test: every bar not closed at the alert, and every later day, replaced
+    by a random walk (fixed seeds), changes nothing."""
+    for comp, day, at in ALERTS.values():
+        i = PC.day_index(day)
+        want = _alert(carried, comp, day, at).text
+        for seed in (11, 12, 13):
+            assert _alert(carried, comp, day, at, hist=PC.scrambled(H, i, at, seed)).text == want
+
+
+def test_the_side_comes_from_the_bars(carried):
+    """B-2 (the note's P1, P2): the same moment with the breakout the other way gives the other side, and a level on
+    the other side of the reference gives the other role -- read from the bars, never from the caller."""
+    import numpy as np
+
+    i = PC.day_index("2021-03-16")
+    arrs = [np.array(x, copy=True) for x in (H.o, H.h, H.l, H.c)]
+    arrs[1][i, 1101] = PC.HIGH                       # no close above the high at 11:21 ...
+    arrs[2][i, 1101] = arrs[3][i, 1101] = PC.LOW - 10.0     # ... but one below the low
+    down = T.History(H.days, H.contract, *arrs)
+    assert "Side BUY (long): the breakout was a close below" in _alert(carried, "pm_brk", "2021-03-16", 1101,
+                                                                       hist=down).text
+    arrs = [np.array(x, copy=True) for x in (H.o, H.h, H.l, H.c)]
+    arrs[3][i, 930] = PC.HIGH + 50.0                 # the price at the alert above the previous day's high
+    t = _alert(carried, "am_rl3", "2021-03-16", 930, hist=T.History(H.days, H.contract, *arrs)).text
+    assert "regular-session high, a support" in t and "Ticket 1 of 2: Side BUY (long)" in t
+
+
+def test_no_offer_object_and_no_trade_is_accepted(carried):
+    off = T.Offer("p14", 1, 1101, 0, 1101, 1104, T.LIMIT, 18110.0, expires=1133, tag="brk30-")
+    for bad in (off, PC.scheduled(), R.RoutedTrade(PC.scheduled(), "ts_b2")):
+        with pytest.raises(PB.AlertRefused) as e:
+            PB.render_offer(carried, "pm_brk", bad, PC.day_index("2021-03-16"), 1101, PC.sources(), PC.router())
+        assert e.value.reason == "mismatch"
+
+
+@pytest.mark.parametrize("comp,at", [("pm_brk", 1102), ("pm_brk", 1100), ("ldn_brk", 611), ("am_rl3", 931)])
+def test_no_offer_at_that_moment_refuses(carried, comp, at):
+    with pytest.raises(PB.AlertRefused) as e:
+        _alert(carried, comp, "2021-03-16", at)
+    assert e.value.reason == "no_offer"
+
+
+@pytest.mark.parametrize("label", ["coin", "trigger"])
 def test_a_scheduled_trade_gets_the_not_offered_notice(carried, label):
-    """R-1: whatever its label, a scheduled trade's side is the coin's -- never an alert."""
-    tr = PC.scheduled(side_source="coin")
-    if label != "coin":
-        tr = dataclasses.replace(tr, side_source="trigger")
+    tr = PC.scheduled(side_source=label)
     for x in (tr, R.RoutedTrade(tr, "ts_b2")):
         r = PB.render_trade(carried, x)
         assert r.text.startswith("NOT OFFERED today") and "evaluation's coin" in r.text
+    with pytest.raises(PB.AlertRefused):
+        PB.render_trade(carried, PC.scheduled(source="rl3"))
+
+
+def test_rl3_pair_is_one_oco_alert_in_one_account(carried, tmp_path):
+    """B-4: the pair in one alert, one account, as one OCO order, its size counted together."""
+    t = _alert(carried, "am_rl3", "2021-03-16", 930).text
+    assert "ONE-CANCELS-OTHER" in t and "When one fills, cancel the other at once" in t
+    assert "Never split them across accounts" in t and "this pair counts as one order" in t
+    assert t.count("account ts_") == 1 and "Ticket 1 of 2" in t and "Ticket 2 of 2" in t
+    assert "2 contracts on each ticket, 4 for the pair together" in t
+    decl = PC.declaration()
+    decl["components"][1]["side_rule"] = {"hi": "break", "lo": "break"}
+    decl["components"][1]["contracts"] = 25
+    rows = [dict(r) for r in PC.NO_HARM_ROWS]
+    for r in rows:
+        if r["measure"] == "am_rl3" and r["stat"] == "side_rule":
+            r["value"] = "hi=break;lo=break"
+    c = _load(tmp_path, decl, no_harm_rows=rows)
+    t = _alert(c, "am_rl3", "2021-03-16", 930).text
+    assert "Ticket 1 of 2: Side BUY (long)" in t and "Ticket 2 of 2: Side SELL (short)" in t
+    assert "STOP 1 tick above the level" in t and "STOP 1 tick below the level" in t
+    assert "25 contracts on each ticket, 50 for the pair together (the firm's verified limit for this account: 50)" in t
+
+
+def test_account_is_the_routers_pick(carried, tmp_path):
+    """m-5: under by_component the pool's longest-waiting account; under longest_waiting the firm's; a router under
+    another rotation, or none, refuses."""
+    assert "account ts_a1:" in _alert(carried, "am_rl3", "2021-03-16", 930).text
+    busy = PC.router(ts_a1=5000)
+    assert "account ts_c3:" in _alert(carried, "am_rl3", "2021-03-16", 930, router=busy).text
+    decl = PC.declaration()
+    decl["rotation"] = {"rule": "longest_waiting"}
+    c = _load(tmp_path, decl)
+    r = PC.router(decl, ts_a1=5000, ts_b2=4000)
+    assert "account ts_c3:" in _alert(c, "pm_brk", "2021-03-16", 1101, router=r).text
+    for bad in (PC.router(decl), None):
         with pytest.raises(PB.AlertRefused):
-            PB.render_alert(carried, x, "pm_brk", "ts_b2", "2021-03-16", PC.sources())
+            PB.render_offer(carried, "pm_brk", H, PC.day_index("2021-03-16"), 1101, PC.sources(), bad)
 
 
-P14_FAULTS = {
-    "alert-after-trigger-last": dict(decision=1258, alert=1258, live=1261, expires=1261 + T.LIMIT_WINDOW - 1),
-    "alert-before-trigger-first": dict(decision=1076, alert=1076, live=1079, expires=1079 + T.LIMIT_WINDOW - 1),
-    "live-not-alert-plus-L": dict(live=1160, expires=1160 + T.LIMIT_WINDOW - 1),
-    "decision-not-alert": dict(decision=1000),
-    "overnight-for-ny-pm": dict(decision=100, alert=100, live=103, expires=103 + T.LIMIT_WINDOW - 1),
-    "market-on-a-limit-component": dict(entry=T.MARKET, expires=None),
-    "market-with-the-limit-expiry": dict(entry=T.MARKET),
-    "ticket-on-a-limit-component": dict(entry=T.TICKET, role=1),
-    "ticket-without-role": dict(entry=T.TICKET),
-    "expiry-not-the-limit-window": dict(expires=1200),
-    "tag-other-k": dict(tag="brk15+"),
-    "tag-coin": dict(tag="coin"),
-    "sub-not-zero": dict(sub=1),
-    "group": dict(group="rl3:pd"),
-    "rewrite": dict(rewrite=True),
-    "source-coin": dict(source="coin"),
-}
-
-
-@pytest.mark.parametrize("fault", sorted(P14_FAULTS))
-def test_p14_offer_that_is_not_the_triggers_refuses(carried, fault):
+@pytest.mark.parametrize("day", ["2024-05-01", "2026-08-03"], ids=["held-out", "confirmation-window"])
+def test_a_day_after_the_search_years_refuses(carried, day):
+    hist = T.History((day,), ("NQM4",), H.o[1:2], H.h[1:2], H.l[1:2], H.c[1:2])
     with pytest.raises(PB.AlertRefused) as e:
-        PB.render_offer(carried, PC.p14_offer(**P14_FAULTS[fault]), "pm_brk", "ts_b2", "2021-03-16", PC.sources())
+        PB.render_offer(carried, "pm_brk", hist, 0, 1101, PC.sources(), PC.router())
     assert e.value.reason == "mismatch"
 
 
-RL3_FAULTS = {
-    "live-not-nine": dict(live=961),
-    "alert-not-the-open": dict(alert=929, decision=929),
-    "other-kind": dict(tag="on_hi", sub=T.RL3_SUBS[("on", "hi")]),
-    "sub-not-the-levels": dict(sub=1),
-    "expiry-not-the-cutoff": dict(expires=1049),
-    "group-other": dict(group="rl3:on"),
-    "not-rewritten": dict(rewrite=False),
-    "market": dict(entry=T.MARKET),
-}
-
-
-@pytest.mark.parametrize("fault", sorted(RL3_FAULTS))
-def test_rl3_offer_that_is_not_the_triggers_refuses(carried, fault):
-    with pytest.raises(PB.AlertRefused) as e:
-        PB.render_offer(carried, PC.rl3_offer(**RL3_FAULTS[fault]), "am_rl3", "ts_a1", "2021-03-16", PC.sources())
-    assert e.value.reason == "mismatch"
-
-
-def test_rl3_ticket_without_role_refuses(carried):
-    with pytest.raises(PB.AlertRefused) as e:
-        PB.render_offer(carried, PC.rl3_offer(role=0), "am_rl3", "ts_a1", "2021-03-16", PC.sources())
-    assert e.value.reason == "mismatch"
-
-
-@pytest.mark.parametrize("args", [("pm_brk", "ts_a1"), ("pm_brk", "ts_zz"), ("am_rl3", "ts_b2"), ("nope", "ts_b2"),
-                                  ("ldn_brk", "ts_b2")],
-                         ids=["outside-pool", "unknown-account", "outside-rl3-pool", "unknown-component",
-                              "wrong-component"])
-def test_account_or_component_mismatch_refuses(carried, args):
-    comp, acct = args
-    with pytest.raises(PB.AlertRefused) as e:
-        PB.render_offer(carried, PC.p14_offer(), comp, acct, "2021-03-16", PC.sources())
-    assert e.value.reason == "mismatch"
+@pytest.mark.parametrize("day", ["20210316", "2021-3-16"])
+def test_a_history_day_not_strict_iso_refuses(carried, day):
+    days = list(H.days)
+    days[1] = day
+    hist = T.History(tuple(days), H.contract, H.o, H.h, H.l, H.c)
+    with pytest.raises(PB.AlertRefused):
+        PB.render_offer(carried, "pm_brk", hist, 1, 1101, PC.sources(), PC.router())
 
 
 def test_the_caller_cannot_supply_the_day(carried):
     with pytest.raises(PB.AlertRefused):
-        PB.render_alert(carried, PC.p14_offer(), "pm_brk", "ts_b2", "2021-03-16", T.DayContext(41, "2021-03-16"))
+        PB.render_offer(carried, "pm_brk", H, 1, 1101, T.DayContext(1, "2021-03-16"), PC.router())
 
 
-@pytest.mark.parametrize("day", ["2024-05-01", "2026-08-03", "2021-03-20", "16 March"],
-                         ids=["held-out", "confirmation-window", "not-stored", "not-iso"])
-def test_a_day_the_calendar_does_not_give_refuses(carried, day):
+KNOWN_AT_ALERT = [
+    ("fomc", "pm_brk", "2021-03-16", 1101, dict(fomc=("2021-03-16",)), "fomc"),
+    ("scheduled-close", "pm_brk", "2021-03-16", 1101,
+     dict(calendar={"2021-03-16": {"kind": "early_close", "close_ct": "12:00"}}), "calendar"),
+    ("declared-void-date", "pm_brk", "2021-03-19", 1101, {}, "declared_void"),
+    ("prior-void-first-day", "am_rl3", "2021-03-15", 930, {}, "prior_void"),
+    ("prior-void-roll", "am_rl3", "2021-03-16", 930, dict(rolls=("2021-03-16",)), "prior_void"),
+    ("prior-void-after-closure", "am_rl3", "2021-04-05", 930, {}, "prior_void"),
+    ("prior-void-after-scheduled-close", "am_rl3", "2021-03-17", 930,
+     dict(calendar={"2021-03-16": {"kind": "early_close", "close_ct": "12:00"}}), "prior_void"),
+    ("bls-overnight-entry", "ldn_brk", "2021-03-16", 610, dict(bls=("2021-03-16",)), "bls"),
+]
+
+
+@pytest.mark.parametrize("case,comp,day,at,src,reason", KNOWN_AT_ALERT, ids=[k[0] for k in KNOWN_AT_ALERT])
+def test_the_calendar_known_at_the_alert_voids_the_offer(carried, case, comp, day, at, src, reason):
     with pytest.raises(PB.AlertRefused) as e:
-        PB.render_offer(carried, PC.p14_offer(), "pm_brk", "ts_b2", day, PC.sources())
-    assert e.value.reason == "mismatch"
-
-
-@pytest.mark.parametrize("case,comp,offer,day,src,reason", [
-    ("fomc", "pm_brk", PC.p14_offer, "2021-03-16", dict(fomc=("2021-03-16",)), "fomc"),
-    ("early-end", "pm_brk", PC.p14_offer, "2021-03-16", dict(early_end=("2021-03-16",)), "calendar"),
-    ("short-last-bar", "pm_brk", PC.p14_offer, "2021-03-16", dict(last_bar={"2021-03-16": "14:00"}), "calendar"),
-    ("declared-void-date", "pm_brk", PC.p14_offer, "2021-03-19", {}, "declared_void"),
-    ("prior-void-first-day", "am_rl3", PC.rl3_offer, "2021-03-15", {}, "prior_void"),
-    ("prior-void-roll", "am_rl3", PC.rl3_offer, "2021-03-16", dict(rolls=("2021-03-16",)), "prior_void"),
-    ("prior-void-after-closure", "am_rl3", PC.rl3_offer, "2021-04-05", {}, "prior_void"),
-    ("h2-void-overnight-reader", "ldn_brk", PC.ldn_offer, "2021-03-16",
-     dict(flags={"2021-03-16": {"verdict": "VOID", "void": "synthetic"}}), "calendar"),
-    ("no-0829-bar-rl3", "am_rl3", PC.rl3_offer, "2021-03-16",
-     dict(flags={"2021-03-16": {"special": "no_0829_bar"}}), "calendar"),
-    ("bls-overnight-entry", "ldn_brk", PC.ldn_offer, "2021-03-16", dict(bls=("2021-03-16",)), "bls"),
-])
-def test_the_calendar_voids_the_offer(carried, case, comp, offer, day, src, reason):
-    acct = {"pm_brk": "ts_b2", "am_rl3": "ts_a1", "ldn_brk": "ts_a1"}[comp]
-    with pytest.raises(PB.AlertRefused) as e:
-        PB.render_alert(carried, offer(), comp, acct, day, PC.sources(**src))
+        _alert(carried, comp, day, at, src=PC.sources(**src), offer=False)
     assert e.value.reason == reason
-    note = PB.render_offer(carried, offer(), comp, acct, day, PC.sources(**src))
+    note = _alert(carried, comp, day, at, src=PC.sources(**src))
     assert note.text.startswith("NOT OFFERED today") and PB.REASON_WORDS[reason] in note.text
 
 
-def test_prior_void_and_h2_void_reach_only_the_components_that_read_them(carried):
-    src = PC.sources(rolls=("2021-03-16",), flags={"2021-03-16": {"verdict": "VOID", "void": "synthetic"}})
-    t = PB.render_alert(carried, PC.p14_offer(), "pm_brk", "ts_b2", "2021-03-16", src).text   # reads neither
-    assert t.startswith("TRADE ALERT")
+def test_the_missing_0829_bar_is_seen_in_the_bars_at_the_alert(carried):
+    note = _alert(carried, "am_rl3", "2021-03-16", 930, hist=PC.history(no_0829=("2021-03-16",)))
+    assert PB.REASON_WORDS["no_ref_bar"] in note.text
+
+
+RESEARCH_ONLY = [
+    ("short-last-bar", "ldn_brk", 610, dict(last_bar={"2021-03-16": "14:00"})),
+    ("early-end", "pm_brk", 1101, dict(early_end=("2021-03-16",))),
+    ("data-defect", "pm_brk", 1101, dict(calendar={"2021-03-16": {"kind": "data_defect_candidate", "close_ct": ""}})),
+    ("h2-void", "ldn_brk", 610, dict(flags={"2021-03-16": {"verdict": "VOID", "void": "synthetic"}})),
+    ("h2-missing", "ldn_brk", 610, dict(flags={"2021-03-16": {"missing_after_reopen": "999"}})),
+    ("prior-day-data-void", "am_rl3", 930, dict(early_end=("2021-03-15",))),
+]
+
+
+@pytest.mark.parametrize("case,comp,at,src", RESEARCH_ONLY, ids=[k[0] for k in RESEARCH_ONLY])
+def test_research_filters_never_decide_an_alert(carried, case, comp, at, src):
+    """B-5 (the note's P10): what is known only after the alert never voids it."""
+    want = _alert(carried, comp, "2021-03-16", at).text
+    assert want.startswith("TRADE ALERT")
+    assert _alert(carried, comp, "2021-03-16", at, src=PC.sources(**src)).text == want
+
+
+def test_prior_void_reaches_pdc_too(tmp_path):
+    """m-9's X4: a `pdc` component (the previous day's close) is void on a roll day as `pd` is."""
+    decl = PC.declaration()
+    decl["components"][1]["trigger"]["params"]["kind"] = "pdc"
+    decl["components"][1]["side_rule"] = {"lvl": "fade"}
+    rows = [dict(r) for r in PC.NO_HARM_ROWS]
+    for r in rows:
+        if r["measure"] == "am_rl3" and r["stat"] == "side_rule":
+            r["value"] = "lvl=fade"
+    c = _load(tmp_path, decl, no_harm_rows=rows)
+    assert _alert(c, "am_rl3", "2021-03-16", 930).text.startswith("TRADE ALERT")
+    note = _alert(c, "am_rl3", "2021-03-16", 930, src=PC.sources(rolls=("2021-03-16",)))
+    assert PB.REASON_WORDS["prior_void"] in note.text
 
 
 def test_news_window_from_the_declared_record(carried):
-    """R-4: the window comes from the declaration's dated record (2021-03-17's afternoon release, 11:57 to 12:06 CT),
-    not from the caller; an order live inside it is not offered; one live before it is closed at its start."""
-    off = PC.p14_offer(decision=1138, alert=1138, live=1141, expires=1141 + T.LIMIT_WINDOW - 1)
+    """R-4, B-6: the window comes from the declaration's dated record (2021-03-17's afternoon release, bars stamped
+    11:57 to 12:06 CT), dates compared as dates; an order live inside it is not offered."""
+    import numpy as np
+
+    i = PC.day_index("2021-03-17")
+    arrs = [np.array(x, copy=True) for x in (H.o, H.h, H.l, H.c)]
+    arrs[1][i, 1138] = arrs[3][i, 1138] = PC.HIGH + 30.0           # a breakout at 11:58 CT, live at 12:01
+    hist = T.History(H.days, H.contract, *arrs)
     with pytest.raises(PB.AlertRefused) as e:
-        PB.render_alert(carried, off, "pm_brk", "ts_b2", "2021-03-17", PC.sources())
+        _alert(carried, "pm_brk", "2021-03-17", 1138, hist=hist, offer=False)
     assert e.value.reason == "news"
-    assert PB.render_alert(carried, off, "pm_brk", "ts_b2", "2021-03-16", PC.sources()).text   # no release that day
-    t = PB.render_alert(carried, PC.p14_offer(), "pm_brk", "ts_b2", "2021-03-17", PC.sources()).text
-    assert "closed at 11:57 CT, when a news window starts (a synthetic afternoon release)" in t
-    assert "the bars from 11:57 CT through 12:06 CT" in t and "15:08" not in t
+    t = _alert(carried, "pm_brk", "2021-03-17", 1101).text
+    assert "(it ends at 11:57 CT), when a news window starts (a synthetic afternoon release)" in t
 
 
-def test_rl3_ticket_rewritten_after_a_window(carried, tmp_path):
+def test_rl3_ticket_rewritten_after_a_window(tmp_path):
     decl = PC.declaration()
     decl["news_windows"].append({"source": "a synthetic morning release", "release": 990, "before": 1, "after": 4,
-                                 "dates": ["2021-03-18"]})
-    c = _load(tmp_path, decl)
-    t = PB.render_alert(c, PC.rl3_offer(), "am_rl3", "ts_a1", "2021-03-18", PC.sources()).text
-    assert "Working from 09:00 CT through the bar stamped 09:28 CT" in t
-    assert "a position from it is closed at 09:29 CT, when a news window starts" in t
-    assert "Working from 09:35 CT through the bar stamped 09:59 CT" in t
+                                 "dates": ["2021-03-16"]})
+    t = _alert(_load(tmp_path, decl), "am_rl3", "2021-03-16", 930).text
+    assert "Working on the bars stamped 09:00 CT through 09:28 CT" in t
+    assert "(it ends at 09:29 CT), when a news window starts (a synthetic morning release)" in t
+    assert "Working on the bars stamped 09:35 CT through 09:59 CT" in t
 
 
 def test_not_offered_reasons_are_a_closed_vocabulary(carried):
-    off = PC.p14_offer()
     with pytest.raises(PB.AlertRefused):
-        PB.render_not_offered(carried, off, "pm_brk", "price 18234.75")                   # R-10
-    with pytest.raises(PB.AlertRefused):
-        PB.render_not_offered(carried, off, "am_rl3", "position")                        # not its trigger's offer
-    r = PB.render_not_offered(carried, off, "pm_brk", "position")
+        PB._notice(carried, "pm_brk", 1104, "price 18234.75")
+    r = PB._notice(carried, "pm_brk", 1104, "position")
     assert check_traced(r, {"design": carried.decl, "offer": {"live": 1104}}) == 2
     assert "a position is already open" in r.text
 

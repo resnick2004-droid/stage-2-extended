@@ -1,15 +1,23 @@
-"""Synthetic inputs for `tests/test_playbook.py` (the restart plan's Wave 3.5, corrective cycle 1): one carried-design
-declaration, a synthetic root (its own `DECISIONS.md`, the pinned declaration file, the two result files with their
-manifests), the void calendar's sources for a few search-year days, and the trigger's offers -- all invented: no bar,
-no atlas file and no result of this repository is read.
+"""Synthetic inputs for `tests/test_playbook.py` (the restart plan's Wave 3.5, corrective cycle 2): one carried-design
+declaration; a synthetic root (its own `DECISIONS.md` in the declared order -- the declaration pinned, then its no-harm
+floor, the 3.9 row, the carrying row --, the pinned declaration file, the two result files bound to it with their
+manifests); the void calendar's sources and a synthetic bar history (`History`) for a few search-year days; a router.
+All invented: no bar, no atlas file and no result of this repository is read.
 
     root = build_root(tmp_path)                         # -> the root; load_carried(DECL_FILE, root=root)
     python tests/playbook_cases.py render <root>        # prints the playbook's sha256 (the hash-seed test)
     python tests/playbook_cases.py results <tmp dir>    # the real verify_result: written by the vendored writer
 
-The fixture exercises rounding: every stop x R is a different product and one is not whole (77 x 1.3), and an alert's
-flatten differs from the last entry (a news window after the order goes live). Each component's values differ. No
-randomness is drawn here.
+**The bars** (`history`): every bar at 18000 (open, high, low and close), the regular session's bars (stamped 08:30
+to 14:59) ranging 17900 to 18100. On 2021-03-16 and 2021-03-17: a close at 17990 on the bar ending at 03:10 CT (slot
+610: P-14's breakout below the London reference bar's low, `brk30-`) and a close at 18110 on the bar ending at 11:21
+CT (slot 1101: above the reference high, `brk30+`); the same on 2021-03-19. Every day's bar stamped 14:59 closes at
+18050 (RL3's `pdc` level for the next day). On 2021-04-05 the regular session's low is 18000, so on 2021-04-06
+RL3's `pd` low sits at the 08:29 bar's close (`at_reference`). The prices exist only inside this file.
+
+The fixture exercises rounding (77 x 1.3 is not whole) and a flatten other than the last entry (a news window after the
+order goes live; the closed window for an overnight order); each component's values differ. No randomness is drawn
+except in `scrambled`, under an explicit seed.
 """
 from __future__ import annotations
 
@@ -26,10 +34,16 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 DESIGN = "X-demo7"
+FAMILY = "F-demo"
+REGISTRATION = "REG-demo"
 DECL_FILE = "prereg/X-demo7_playbook.json"
 EXPECTED_FILE = "results/journey_x.csv"
 NO_HARM_FILE = "results/noharm_x.csv"
+EXPECTED_SCRIPT = "scripts/journey_expected.py"
+NO_HARM_SCRIPT = "scripts/no_harm_floor.py"
+MANIFEST = ".manifest.json"
 COMMIT = "abc1234def"
+MARGIN = 0.05
 
 EXPECTED_ROWS = [
     {"section": "journey", "block": "search", "measure": "S3b", "stat": "median", "value": "37.5", "n": "812"},
@@ -39,21 +53,28 @@ EXPECTED_ROWS = [
     {"section": "journey", "block": "held_out", "measure": "S1", "stat": "p90", "value": "1611.5", "n": "40"},
     {"section": "journey", "block": "held_out", "measure": "S3b", "stat": "median", "value": "999", "n": "1"},
 ]
-NO_HARM_ROWS = [
-    {"section": "no_harm", "block": "search", "measure": "ldn_brk", "stat": "verdict", "value": "pass", "n": "300"},
-    {"section": "no_harm", "block": "search", "measure": "am_rl3", "stat": "verdict", "value": "pass", "n": "250"},
-    {"section": "no_harm", "block": "search", "measure": "pm_brk", "stat": "verdict", "value": "pass", "n": "410"},
-    {"section": "no_harm", "block": "search", "measure": "pm_brk", "stat": "margin_used", "value": "0.42", "n": "410"},
-]
+
+
+def _nh(comp: str, rule: str, tc: str, cc: str, n: str) -> list[dict]:
+    return [{"section": "no_harm", "block": "search", "measure": comp, "stat": s, "value": v, "n": n}
+            for s, v in (("side_rule", rule), ("margin", str(MARGIN)), ("trigger_composite", tc),
+                         ("coin_composite", cc))]
+
+
+NO_HARM_ROWS = (_nh("ldn_brk", "with_breakout", "0.31", "0.3", "300")
+                + _nh("am_rl3", "hi=fade;lo=break", "0.27", "0.29", "250")
+                + _nh("pm_brk", "against_breakout", "0.4", "0.33", "410"))
 COLUMNS = ("section", "block", "measure", "stat", "value", "n")
 
 
 def declaration() -> dict:
     return copy.deepcopy({
-        "design_id": DESIGN, "row": "E-9001", "firm": "topstep", "plan": "trading_combine", "instrument": "MNQ",
+        "design_id": DESIGN, "family": FAMILY, "registration": REGISTRATION, "row": "E-9004", "firm": "topstep",
+        "plan": "trading_combine", "instrument": "MNQ",
         "accounts": [{"id": "ts_a1", "role": "evaluation"}, {"id": "ts_b2", "role": "funded"},
                      {"id": "ts_c3", "role": "evaluation"}],
-        "side": {"no_harm_row": "E-9002", "no_harm_file": NO_HARM_FILE},
+        "side": {"no_harm_row": "E-9001", "no_harm_file": NO_HARM_FILE, "no_harm_script": NO_HARM_SCRIPT,
+                 "margin": MARGIN, "margin_row": "E-9002"},
         "components": [
             {"name": "ldn_brk", "session": "london", "first": 600, "last": 660, "stop_ticks": 77, "rr": 1.3,
              "contracts": 3, "latency": 5, "side_rule": "with_breakout",
@@ -68,19 +89,21 @@ def declaration() -> dict:
         "rotation": {"rule": "by_component", "pools": {"pm_brk": ["ts_b2"], "am_rl3": ["ts_a1", "ts_c3"]}},
         "execution": {"gap_minutes": 5, "closed_window": [930, 959], "bls_clear": 875, "limit_window_min": 30,
                       "flatten": 1328, "last_entry": 1328},
+        "news_source": "the synthetic release record",
         "news_windows": [
             {"source": "CPI (synthetic record key)", "release": 870, "before": 2, "after": 7,
              "dates": ["2021-03-16", "2021-04-07"]},
             {"source": "a synthetic afternoon release", "release": 1140, "before": 3, "after": 6,
              "dates": ["2021-03-17"]},
         ],
-        "void_rules": ["fomc", "holiday", "early_close", "short_overnight", "prior_abbreviated"],
+        "void_rules": ["fomc", "early_close", "prior_abbreviated"],
+        "research_filters": ["short_bars", "overnight_missing"],
         "void_dates": [{"date": "2021-03-19", "reason": "early_close"}],
         "session_anchors": {"london": ["Europe/London", "08:00"], "ny_am": ["America/New_York", "09:30"],
                             "ny_pm": ["America/New_York", "09:30"]},
         "dates": ["2021-03-16", "2021-04-06"],
-        "bankroll": {"budget": 1700, "row": "E-9003"},
-        "expected": {"file": EXPECTED_FILE, "rows": [
+        "bankroll": {"budget": 1700, "row": "E-9002"},
+        "expected": {"file": EXPECTED_FILE, "script": EXPECTED_SCRIPT, "rows": [
             {"label": "sessions to the first payout", "section": "journey", "block": "search", "measure": "S3b",
              "stat": "median"},
             {"label": "chance of running out at the budget", "section": "journey", "block": "search",
@@ -101,62 +124,93 @@ def csv_bytes(rows: list[dict]) -> bytes:
     return ("\n".join(lines) + "\n").encode()
 
 
-def manifest(name: str, data: bytes, rows: int, *, design: str = DESIGN, convention: str, **over: Any) -> dict:
-    """A manifest as a clean run of a named commit records it (`ResultManifest`'s fields)."""
-    m = {"result_file": name, "script": "tests/playbook_cases.py", "git_commit": COMMIT, "seed": None,
-         "parameters": {"design_id": design, "convention": convention}, "timestamp": "2021-01-01T00:00:00",
-         "sha256": hashlib.sha256(data).hexdigest(), "rows": rows, "columns": list(COLUMNS),
-         "description": "synthetic", "exploratory": False, "prereg_id": None, "variant_count": None, "notes": None,
-         "provenance": {"clean_run": {"name": "synthetic-run", "checkout": "x", "marker": "S2X_CLEAN_RUN"}},
-         "git_dirty": False}
-    m.update(over)
-    return m
-
-
-def write_result(root: Path, rel: str, rows: list[dict], *, convention: str, man: dict | None = None,
-                 **over: Any) -> str:
-    p = root / rel
-    p.parent.mkdir(parents=True, exist_ok=True)
-    data = csv_bytes(rows)
-    p.write_bytes(data)
-    m = man if man is not None else manifest(p.name, data, len(rows), convention=convention, **over)
-    Path(str(p) + ".manifest.json").write_bytes(json.dumps(m, indent=2, sort_keys=True).encode())
-    return m["sha256"]
-
-
 def decl_bytes(decl: dict) -> bytes:
     return json.dumps(decl, indent=1, sort_keys=True).encode()
 
 
-def build_root(root: Path, decl: dict | None = None, *, expected_rows: list[dict] | None = None,
-               no_harm_rows: list[dict] | None = None, expected_over: dict | None = None,
-               no_harm_over: dict | None = None, rows_text: Callable[[dict], dict] | None = None) -> Path:
-    """The synthetic root: the declaration pinned in E-9001 with the expected journey's file, the no-harm file pinned
-    in E-9002, E-9003 the budget's row. `rows_text` may edit the rows' texts (a test's mutation of the log)."""
-    root = Path(root)
-    decl = declaration() if decl is None else decl
-    data = decl_bytes(decl)
-    (root / "prereg").mkdir(parents=True, exist_ok=True)
-    (root / DECL_FILE).write_bytes(data)
-    exp_rel = decl.get("expected", {}).get("file", EXPECTED_FILE) if isinstance(decl.get("expected"), dict) \
-        else EXPECTED_FILE
-    nh_rel = decl.get("side", {}).get("no_harm_file", NO_HARM_FILE) if isinstance(decl.get("side"), dict) \
-        else NO_HARM_FILE
-    h_exp = write_result(root, exp_rel, EXPECTED_ROWS if expected_rows is None else expected_rows,
-                         convention="zero_edge", **(expected_over or {}))
-    h_nh = write_result(root, nh_rel, NO_HARM_ROWS if no_harm_rows is None else no_harm_rows,
-                        convention="no_harm_real_path", **(no_harm_over or {}))
-    rows = {
-        "E-9001": f"**{DESIGN} carried (synthetic)** `{DECL_FILE}` sha256 `{hashlib.sha256(data).hexdigest()}`; its "
-                  f"expected journey `{exp_rel}` sha256 `{h_exp}`.",
-        "E-9002": f"**{DESIGN}'s no-harm floor (synthetic)** `{nh_rel}` sha256 `{h_nh}`.",
-        "E-9003": "**The bankroll budget (synthetic).**",
+def decl_sha(decl: dict) -> str:
+    return hashlib.sha256(decl_bytes(decl)).hexdigest()
+
+
+def manifest(name: str, data: bytes, rows: int, *, convention: str, sha_decl: str, script: str, **over: Any) -> dict:
+    """A manifest as a clean run of a named commit records it (`ResultManifest`'s fields), bound to the declaration.
+    `over`: fields replaced; `parameters_update`: parameters changed."""
+    params = {"design_id": DESIGN, "convention": convention, "declaration_file": DECL_FILE,
+              "declaration_sha256": sha_decl}
+    if convention == "no_harm_real_path":
+        params["margin"] = MARGIN
+    m = {"result_file": name, "script": script, "git_commit": COMMIT, "seed": None, "parameters": params,
+         "timestamp": "2021-01-01T00:00:00", "sha256": hashlib.sha256(data).hexdigest(), "rows": rows,
+         "columns": list(COLUMNS), "description": "synthetic", "exploratory": False, "prereg_id": FAMILY,
+         "variant_count": None, "notes": None,
+         "provenance": {"clean_run": {"name": "synthetic-run", "checkout": "x", "marker": "S2X_CLEAN_RUN"}},
+         "git_dirty": False}
+    for k, v in over.items():
+        if k == "parameters_update":
+            m["parameters"] = {**m["parameters"], **v}
+        else:
+            m[k] = v
+    return m
+
+
+def write_result(root: Path, rel: str, rows: list[dict], **kw: Any) -> tuple[str, str]:
+    """The CSV and its manifest; returns (the CSV's sha256, the manifest's)."""
+    p = root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    data = csv_bytes(rows)
+    p.write_bytes(data)
+    m = manifest(p.name, data, len(rows), **kw)
+    mb = json.dumps(m, indent=2, sort_keys=True).encode()
+    Path(str(p) + MANIFEST).write_bytes(mb)
+    return m["sha256"], hashlib.sha256(mb).hexdigest()
+
+
+def rows_text(decl_rel: str, h_decl: str, exp_rel: str, h_exp: tuple[str, str], nh_rel: str,
+              h_nh: tuple[str, str]) -> dict[str, str]:
+    return {
+        "E-9000": f"**{DESIGN}'s playbook declaration, pinned before its floor is read (synthetic)** `{decl_rel}` "
+                  f"sha256 `{h_decl}`.",
+        "E-9001": f"**{DESIGN}'s no-harm floor (synthetic)** `{nh_rel}` sha256 `{h_nh[0]}`; its manifest "
+                  f"`{nh_rel}{MANIFEST}` sha256 `{h_nh[1]}`.",
+        "E-9002": "**The 3.9 pinning row (synthetic): the bankroll budget and the no-harm margin.**",
+        "E-9004": f"**{DESIGN} carried, registration {REGISTRATION} (synthetic)** `{decl_rel}` sha256 `{h_decl}`; its "
+                  f"expected journey `{exp_rel}` sha256 `{h_exp[0]}`; its manifest `{exp_rel}{MANIFEST}` sha256 "
+                  f"`{h_exp[1]}`.",
     }
-    if rows_text is not None:
-        rows = rows_text(rows)
+
+
+def write_log(root: Path, rows: dict[str, str]) -> None:
     log = "# Decisions (synthetic)\n\n| id | date | decision | basis |\n|---|---|---|---|\n" + "".join(
         f"| {k} | 2021-01-01 | {v} | synthetic |\n" for k, v in rows.items())
     (root / "DECISIONS.md").write_bytes(log.encode())
+
+
+def build_root(root: Path, decl: dict | None = None, *, expected_rows: list[dict] | None = None,
+               no_harm_rows: list[dict] | None = None, expected_over: dict | None = None,
+               no_harm_over: dict | None = None, bind: dict | None = None,
+               edit_rows: Callable[[dict], dict] | None = None, raw: bytes | None = None) -> Path:
+    """The synthetic root (the module docstring). `bind`: the declaration the result files are bound to (default the
+    declaration itself); `edit_rows` may edit the log's rows; `raw`: the declaration's bytes as written instead."""
+    root = Path(root)
+    decl = declaration() if decl is None else decl
+    data = decl_bytes(decl) if raw is None else raw
+    (root / "prereg").mkdir(parents=True, exist_ok=True)
+    (root / DECL_FILE).write_bytes(data)
+    exp_rel = decl["expected"]["file"] if isinstance(decl.get("expected"), dict) and "file" in decl["expected"] \
+        else EXPECTED_FILE
+    nh_rel = decl["side"]["no_harm_file"] if isinstance(decl.get("side"), dict) and "no_harm_file" in decl["side"] \
+        else NO_HARM_FILE
+    sha_bound = hashlib.sha256(data).hexdigest() if bind is None else decl_sha(bind)
+    h_exp = write_result(root, exp_rel, EXPECTED_ROWS if expected_rows is None else expected_rows,
+                         **{"convention": "zero_edge", "sha_decl": sha_bound, "script": EXPECTED_SCRIPT,
+                            **(expected_over or {})})
+    h_nh = write_result(root, nh_rel, NO_HARM_ROWS if no_harm_rows is None else no_harm_rows,
+                        **{"convention": "no_harm_real_path", "sha_decl": sha_bound, "script": NO_HARM_SCRIPT,
+                           **(no_harm_over or {})})
+    rows = rows_text(DECL_FILE, hashlib.sha256(data).hexdigest(), exp_rel, h_exp, nh_rel, h_nh)
+    if edit_rows is not None:
+        rows = edit_rows(rows)
+    write_log(root, rows)
     return root
 
 
@@ -165,7 +219,7 @@ def verify_standin(path):
     exist and the file's plain sha256 is the manifest's), for the in-process tests, which must not put the vendored
     tree on `sys.path`; the subprocess test (`results`) runs the real one."""
     p = Path(path)
-    mp = Path(str(p) + ".manifest.json")
+    mp = Path(str(p) + MANIFEST)
     if not p.is_file() or not mp.is_file():
         return False, "missing"
     want = json.loads(mp.read_bytes())["sha256"]
@@ -173,10 +227,16 @@ def verify_standin(path):
     return (got == want), ("verified" if got == want else "modified")
 
 
-# ------------------------------------------------------------------------------------------------ the day and the offers
+# ------------------------------------------------------------------------------------------------ the day: calendar, bars, router
 
 DAYS = ("2021-03-15", "2021-03-16", "2021-03-17", "2021-03-18", "2021-03-19", "2021-04-05", "2021-04-06",
         "2021-04-07")
+BASE, HIGH, LOW = 18000.0, 18100.0, 17900.0
+RTH = (931, 1320)                     # the walker's columns of the bars stamped 08:30 .. 14:59
+
+
+def day_index(day: str) -> int:
+    return DAYS.index(day)
 
 
 def sources(*, bls=(), fomc=(), rolls=(), early_end=(), calendar=None, flags=None, last_bar=None):
@@ -196,34 +256,57 @@ def sources(*, bls=(), fomc=(), rolls=(), early_end=(), calendar=None, flags=Non
                       iso(early_end), lb, iso(bls), iso(fomc), fl, None)
 
 
-def p14_offer(**kw):
-    """pm_brk's offer: P-14 limit, L = 3, the event at 11:21 CT (slot 1101) a close above the high."""
+def history(*, no_0829=()):
+    """The synthetic bars (the module docstring); `no_0829`: days without their bar stamped 08:29."""
+    import numpy as np
+
     from extended import triggers as T
 
-    f = dict(source="p14", session=41, decision=1101, sub=0, alert=1101, live=1104, entry=T.LIMIT, level=18234.75,
-             expires=1104 + T.LIMIT_WINDOW - 1, tag="brk30+")
-    f.update(kw)
-    return T.Offer(**f)
+    n = len(DAYS)
+    o, h, l, c = (np.full((n, 1441), BASE) for _ in range(4))
+    for x in (o, h, l, c):
+        x[:, 0] = np.nan
+    h[:, RTH[0]:RTH[1] + 1] = HIGH
+    l[:, RTH[0]:RTH[1] + 1] = LOW
+    c[:, RTH[1]] = HIGH - 50.0                                   # the previous day's close (pdc) above the reference
+    for d in ("2021-03-16", "2021-03-17", "2021-03-19"):
+        i = day_index(d)
+        l[i, 610] = c[i, 610] = BASE - 10.0                      # brk30- at 03:10 CT
+        h[i, 1101] = c[i, 1101] = HIGH + 10.0                    # brk30+ at 11:21 CT
+    l[day_index("2021-04-05"), RTH[0]:RTH[1] + 1] = BASE         # 2021-04-06's pd low at the reference
+    for d in no_0829:
+        i = day_index(d)
+        for x in (o, h, l, c):
+            x[i, 930] = np.nan
+    return T.History.from_arrays(DAYS, ["NQM1"] * n, o, h, l, c)
 
 
-def ldn_offer(**kw):
-    """ldn_brk's offer: P-14 market, L = 5, the event at 03:10 CT (slot 610) a close below the low."""
+def scrambled(hist, i: int, at: int, seed: int):
+    """`hist` with every bar not closed at `at` on day `i`, and every later day, replaced by a random walk (explicit
+    seed): the feature-rules shift-invariance test's input."""
+    import numpy as np
+
     from extended import triggers as T
 
-    f = dict(source="p14", session=41, decision=610, sub=0, alert=610, live=615, entry=T.MARKET, tag="brk30-")
-    f.update(kw)
-    return T.Offer(**f)
+    rng = np.random.default_rng(seed)
+    arrs = [np.array(x, copy=True) for x in (hist.o, hist.h, hist.l, hist.c)]
+    walk = BASE + np.cumsum(rng.normal(0.0, 5.0, size=arrs[0].shape), axis=1)
+    for x in arrs:
+        x[i, at + 1:] = walk[i, at + 1:]
+        x[i + 1:, 1:] = walk[i + 1:, 1:]
+    return T.History(hist.days, hist.contract, *arrs)
 
 
-def rl3_offer(name="hi", role=1, **kw):
-    """am_rl3's ticket at the previous day's high (or low), alert 08:30, live 09:00, cutoff 11:00 CT."""
-    from extended import triggers as T
+def router(decl: dict | None = None, **busy: int):
+    """The user's router under the declaration's rotation; `busy`: account -> its last busy minute."""
+    from extended import router as R
 
-    f = dict(source="rl3", session=41, decision=T.RTH_OPEN, sub=T.RL3_SUBS[("pd", name)], alert=T.RTH_OPEN,
-             live=T.LIVE_0900, entry=T.TICKET, level=18100.0 if name == "hi" else 17950.0, role=role,
-             expires=1020 - 1, group="rl3:pd", rewrite=True, tag=f"pd_{name}")
-    f.update(kw)
-    return T.Offer(**f)
+    decl = declaration() if decl is None else decl
+    rot = decl["rotation"]
+    r = R.Router(R.Routing(rot["rule"], {k: tuple(v) for k, v in rot.get("pools", {}).items()}))
+    for acct, t in busy.items():
+        r.last_busy[("topstep", acct)] = int(t)
+    return r
 
 
 def scheduled(**kw):
@@ -254,6 +337,7 @@ def _main(argv: list[str]) -> int:
 
         out: dict[str, str] = {}
         base = Path(argv[1])
+        sha = decl_sha(declaration())
 
         def attempt(name: str, root: Path) -> None:
             try:
@@ -266,19 +350,21 @@ def _main(argv: list[str]) -> int:
                       tamper: bool = False) -> Path:
             root = base / name
             build_root(root)                                     # the log and the declaration, then real files
-            hashes = {}
-            for rel, rows, conv in ((EXPECTED_FILE, EXPECTED_ROWS, "zero_edge"),
-                                    (NO_HARM_FILE, NO_HARM_ROWS, "no_harm_real_path")):
+            hashes: dict[str, tuple[str, str]] = {}
+            for rel, rows, conv, script in ((EXPECTED_FILE, EXPECTED_ROWS, "zero_edge", EXPECTED_SCRIPT),
+                                            (NO_HARM_FILE, NO_HARM_ROWS, "no_harm_real_path", NO_HARM_SCRIPT)):
                 p = root / rel
                 p.unlink()
-                Path(str(p) + ".manifest.json").unlink()
-                params = {"design_id": DESIGN, "convention": conv}
+                Path(str(p) + MANIFEST).unlink()
+                params = {"design_id": DESIGN, "convention": conv, "declaration_file": DECL_FILE,
+                          "declaration_sha256": sha}
+                if conv == "no_harm_real_path":
+                    params["margin"] = MARGIN
                 if rel == EXPECTED_FILE and exp_params is not None:
                     params = exp_params
-                csv, mp = vendored_write(pd.DataFrame(rows, columns=list(COLUMNS)), p.stem,
-                                         script="tests/playbook_cases.py", seed=None, parameters=params,
-                                         results_dir=p.parent, require_seed=False,
-                                         exploratory=exploratory and rel == EXPECTED_FILE,
+                csv, mp = vendored_write(pd.DataFrame(rows, columns=list(COLUMNS)), p.stem, script=script,
+                                         seed=None, parameters=params, results_dir=p.parent, require_seed=False,
+                                         exploratory=exploratory and rel == EXPECTED_FILE, prereg_id=FAMILY,
                                          description="synthetic test rows; no randomness")
                 if clean:                                   # as a clean run of a named commit records it
                     m = json.loads(mp.read_bytes())
@@ -286,15 +372,11 @@ def _main(argv: list[str]) -> int:
                              provenance={"clean_run": {"name": "synthetic-run", "checkout": "x",
                                                        "marker": "S2X_CLEAN_RUN"}})
                     mp.write_bytes(json.dumps(m, indent=2, sort_keys=True).encode())
-                hashes[rel] = json.loads(mp.read_bytes())["sha256"]
+                hashes[rel] = (json.loads(mp.read_bytes())["sha256"], hashlib.sha256(mp.read_bytes()).hexdigest())
                 if tamper and rel == EXPECTED_FILE:
                     csv.write_bytes(csv.read_bytes().replace(b"37.5", b"12.5"))
-            log = (root / "DECISIONS.md").read_bytes().decode()
-            for rel, h in hashes.items():
-                import re
-                log = re.sub(r"(`" + re.escape(rel) + r"` sha256 `)[0-9a-f]+(`)", lambda m: m.group(1) + h + m.group(2),
-                             log)
-            (root / "DECISIONS.md").write_bytes(log.encode())
+            write_log(root, rows_text(DECL_FILE, sha, EXPECTED_FILE, hashes[EXPECTED_FILE], NO_HARM_FILE,
+                                      hashes[NO_HARM_FILE]))
             return root
 
         attempt("clean", real_root("clean", clean=True))

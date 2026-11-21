@@ -35,6 +35,7 @@ bought, passed, failed -- the caller passes each day's accounts).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Mapping, Sequence
 
 from extended import components as C
@@ -99,6 +100,15 @@ class Router:
                 raise RoutingRefused(f"component {tr.component}'s pool names {missing}, not accounts of {tr.firm} today")
         order = {a: k for k, a in enumerate(accounts)}
         return min(pool, key=lambda a: (self.last_busy.get((tr.firm, a), -1), order[a]))
+
+    def peek(self, firm: str, component: str, accounts: Sequence[str]) -> str:
+        """The account the next trade of `component` at `firm` would take now, by the rotation and this router's state
+        (each account's last busy minute, the firm's last account), changing nothing -- the account a hand-traded
+        alert names (the lead's m-5 ruling on Wave 3.5); the trade is routed (`route`) once it exists."""
+        accs = tuple(accounts)
+        if not accs or len(set(accs)) != len(accs):
+            raise RoutingRefused(f"{firm}'s accounts are empty or repeat: {accs}")
+        return self._pick(SimpleNamespace(firm=firm, component=component), accs)
 
     def route(self, days: Sequence[C.DaySchedule], accounts: Mapping[str, Sequence[str]]) -> list[RoutedTrade]:
         """Route one day's schedules (one per firm) to the firms' accounts today, in time order; each trade's possible
