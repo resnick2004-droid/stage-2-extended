@@ -976,3 +976,36 @@ def test_h4_the_baselines_alone_equal_their_place_in_a_paired_call() -> None:
         R.baselines_only({k: v for k, v in baselines().items() if k != "p16"}, RULES, p_, R.p_b)
     with pytest.raises(ValueError, match="plant"):
         R.baselines_only(baselines(), RULES, p_, R.p_b, base_arm=J.ArmSpec(plant_eps=0.1))
+
+
+
+def test_s_c_the_walk_never_reads_the_realised_exit() -> None:
+    """s-c: S1's walk step and steps come from the volatility at the alert and the limit known at the fill, never
+    the realised exit. At a fractional limit (90.5 minutes) the realised exit is the next whole minute (91), and the
+    volatility 6.72 sits where the two differ in both the step (2 at 90.5, 3 at 91) and the steps: the schedule's are the
+    limit's; histories differing only in the realised hold give the same; and the journey's walk outcome does not read
+    a trade's realised exit slot."""
+    from extended import three_way_redraw as RD
+
+    params = S1.S1Params(n_sessions=3, time_limit=90.5, rate=0.0)
+    vol = np.full(3, 6.72)
+    def hist(hold):
+        day = (S1.Arrival(1000, hold, "A"),)
+        return S1.S1History(params, vol, np.zeros(3), {"A": (day, (), ()), "B": ((), (), ())})
+    spec = S1.DesignSpec("sc", stream="A", fixed_stop=37, rr=55 / 37, walk_step=1, per_session=1)
+    a, b = S1.schedule(spec, hist(500.0)).trades[0], S1.schedule(spec, hist(9000.0)).trades[0]
+    assert a.law == "walk" and (a.walk_step, a.walk_n) == (b.walk_step, b.walk_n)
+    assert a.exit - a.entry == 91 and (RD.walk_step(6.72, 90.5), RD.walk_step(6.72, 91.0)) == (2, 3)
+    assert a.walk_step == 2 and a.walk_n == RD.walk_steps(6.72, 90.5, 2) != RD.walk_steps(6.72, 91.0, 2)
+    t1 = J.Trade(session=0, decision=700, entry=705, exit=760, exit_reason="max_hold", g=55, l=37, tick_value=5.0,
+                 walk_step=3, walk_n=40)
+    t2 = replace(t1, exit=1100)                                         # another realised exit, nothing else changed
+    rules = J.ToyRules(combine_fee=1, billing=21, target=1e9, mll=1e6, dll=None, activation_fee=1, funded_mll=1e6,
+                       win_day=1e9, payout_days=1, payout_share=0.5, payout_cap=1, split=1, payout_lag=1)
+    outs = []
+    for t in (t1, t2):
+        L = J.fresh(64, rules)
+        L.day, L.dead, L.stopped = np.zeros(64), np.zeros(64, bool), np.zeros(64, bool)
+        J._trade_mc(L, t, rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, range(64), None, False))
+        outs.append(L.bal.copy())
+    assert np.array_equal(outs[0], outs[1])

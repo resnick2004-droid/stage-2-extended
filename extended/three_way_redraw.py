@@ -26,7 +26,10 @@ positions only, deferred to the template. `inward` and `race`'s `lattice` argume
 L_fill = min(l, c - max(x_stop, x_flat)) is above zero -- both exit costs, never the run's exit -- for every law.
 
 **R-10's stopped walk** (the search template's house form, with the lead's rulings on its residual step and, in
-corrective cycle 2, on its barrier). A symmetric walk from the fill on a lattice of step s ticks, s dividing l and g;
+corrective cycle 2, on its barrier and, by s-c, its step). A symmetric walk from the fill on a lattice of step s
+ticks, **s = max(1, ceil(sigma sqrt(T) / sqrt(WALK_MAX)))** from the volatility at the alert and T the time limit known at
+the fill (never the realised exit; the same T for s and n: `walk_step`), **s need not divide the stop or the target** --
+a barrier off the lattice is reached by the two-point last sub-step below;
 its floor-side barrier **the race's own, L = min(l, c - x_stop), fractional** (the red team's RB-1 remedy, first form:
 a cushion-bound stop then ends exactly on the floor, never x_flat - x_stop above it); its target g. **Inside the last
 lattice step before a barrier** -- the floor side's -L, and a target +G made fractional by a rule's profit level
@@ -147,6 +150,16 @@ def race_dollars(u: np.ndarray, risk: float, win: float, cushion: np.ndarray, x_
 # ------------------------------------------------------------------------------------------------ R-10's stopped walk
 
 
+def walk_step(sigma: float, T: float, walk_max: int = 1024) -> int:
+    """The walk's lattice step (the lead's governing rule, s-c): s = max(1, ceil(sigma sqrt(T) /
+    sqrt(walk_max))) ticks, sigma the volatility at the alert in ticks per sqrt of T's unit, T the time limit known at
+    the fill -- never the realised exit -- so that n = round(sigma^2 T / s^2) <= walk_max. A trade is never refused
+    because of its step."""
+    if not (sigma > 0 and T > 0 and walk_max >= 1):
+        raise ValueError("sigma, T and the cap are positive")
+    return max(1, int(math.ceil(sigma * math.sqrt(T) / math.sqrt(walk_max) - 1e-12)))
+
+
 def walk_steps(sigma: float, T: float, s: float) -> int:
     """R-10's number of steps n = round(sigma^2 T / s^2), halves up, at least one (sigma in ticks per sqrt of T's unit,
     T the time from the fill to the limit, s the lattice step in ticks)."""
@@ -176,12 +189,12 @@ def walk_barriers(l: int, g: int, c, x_stop=0, x_flat=0, s: int = 1, g_cap=None)
     gross ticks (the journey converts the engine's net need into it: `three_way_journey.Trade.target`; m-3) -- and
     the floor-side barrier L = min(l, c - x_stop) -- the race's own (corrective cycle 2, RB-1),
     **fractional, never rounded** (B-1); None when the take at the fill fails, L_fill = min(l, c - max(x_stop, x_flat))
-    <= 0 (the template's N-1; the red team's m-1: the take reads both exit costs, never the exit). Refused unless s
-    divides l and g; G may be fractional (a level)."""
+    <= 0 (the template's N-1; the red team's m-1: the take reads both exit costs, never the exit). The step s need not
+    divide l or g (s-c): a barrier off the lattice is reached by the two-point last sub-step; G may be fractional."""
     if not (isinstance(l, (int, np.integer)) and isinstance(g, (int, np.integer)) and isinstance(s, (int, np.integer))):
         raise ValueError("the walk's stop, target and step are whole ticks")
-    if s <= 0 or l <= 0 or g <= 0 or l % s or g % s:
-        raise ValueError("the lattice step divides the stop and the target")
+    if s <= 0 or l <= 0 or g <= 0:
+        raise ValueError("the stop, the target and the lattice step are positive")
     c, xs, xf = _frac(c), _frac(x_stop), _frac(x_flat)
     if min(_frac(l), c - max(xs, xf)) <= 0:
         return None
@@ -367,5 +380,5 @@ def stress_cells(n_arms: int) -> int:
 
 
 __all__ = ["LATTICE", "EXIT_LAW", "WORSE_FILL_TICKS", "law_of", "inward", "race", "race_net", "race_outcome",
-           "race_dollars", "walk_steps", "walk_barriers", "walk_law", "walk_net", "walk_outcome", "walk_outcomes", "walk_run",
+           "race_dollars", "walk_step", "walk_steps", "walk_barriers", "walk_law", "walk_net", "walk_outcome", "walk_outcomes", "walk_run",
            "worse_fill", "stress_cells"]

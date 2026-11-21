@@ -138,8 +138,9 @@ def schedule(spec: DesignSpec, hist: S1History) -> J.Schedule:
     """The design's trades on the history: each arrival (or mark) in time order, skipped while a position is open
     and for five minutes after it (`FLAT_GAP`); none entering at or after the 15:10 CT flatten; the hold scaled by the
     stop over the volatility; a hold past the time limit ends there (`max_hold`), and one reaching 15:10 CT first is
-    flattened there (`flatten`) -- both R-10's walk, its steps from the day's volatility (S1's latent value, known at
-    the alert in the toy; H3-D's is causal, from bars closed before the alert) and the time to the limit."""
+    flattened there (`flatten`) -- both R-10's walk, its step s = max(1, ceil(sigma sqrt(T) / sqrt(1024))) and its
+    steps n = round(sigma^2 T / s^2) from the day's volatility (S1's latent value, known at the alert in the toy;
+    H3-D's is causal, from bars closed before the alert) and T the limit known at the fill (s-c)."""
     p = hist.params
     out: list[J.Trade] = []
     for t in range(p.n_sessions):
@@ -165,8 +166,10 @@ def schedule(spec: DesignSpec, hist: S1History) -> J.Schedule:
             ex = min(entry + max(dur, 1), SESSION_END)
             if ex <= entry:
                 continue
-            step = walk_step_for(spec.walk_step, l, g, v, max(ex - entry, 1)) if timed else spec.walk_step
-            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), max(ex - entry, 1), step) if timed else 1
+            # s-c: the step and n from the volatility at the alert and the limit known at the fill (never the
+            # realised exit), the same T for both
+            step = RD.walk_step(v / math.sqrt(MINUTE), limit, J.WALK_MAX) if timed else spec.walk_step
+            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), limit, step) if timed else 1
             c = spec.contracts
             out.append(J.Trade(session=t, decision=a.slot, sub=sub, entry=entry, exit=ex,
                                exit_reason=reason, g=g, l=l, tick_value=spec.tick_value,
@@ -175,19 +178,6 @@ def schedule(spec: DesignSpec, hist: S1History) -> J.Schedule:
                                walk_n=n_steps))
             busy_until, taken = ex, taken + 1
     return J.Schedule(spec.name, tuple(out))
-
-
-def walk_step_for(base: int, l: int, g: int, v: float, T: float) -> int:
-    """R-10's lattice step on S1 (corrective cycle 2, the red team's rn-2): the smallest common divisor of the stop and
-    the target, at least the design's `walk_step`, at which the walk takes at most `three_way_journey.WALK_MAX` steps
-    -- a rule of the toy generator, fixed here, read from the schedule's own fields."""
-    import math as _m
-
-    gcd = _m.gcd(int(l), int(g))
-    for s in range(int(base), gcd + 1):
-        if gcd % s == 0 and RD.walk_steps(v / _m.sqrt(MINUTE), T, s) <= J.WALK_MAX:
-            return s
-    return gcd
 
 
 def stream_pair(spec: DesignSpec) -> tuple[DesignSpec, DesignSpec]:
@@ -218,4 +208,4 @@ def toy_baselines(tick_value: float = 5.0, cost: float = 0.0, stop_slip: float =
 
 
 __all__ = ["STREAMS", "FIRST_SLOT", "LAST_SLOT", "S1Params", "Arrival", "S1History", "generate", "DesignSpec",
-           "schedule", "walk_step_for", "stream_pair", "toy_baselines", "SESSION_END", "FLAT_GAP"]
+           "schedule", "stream_pair", "toy_baselines", "SESSION_END", "FLAT_GAP"]
