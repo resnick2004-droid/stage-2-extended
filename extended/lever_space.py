@@ -17,7 +17,11 @@ file: **S1's search-year reading** (Q-171, `extended.s1_range`), `results/s1_ran
 While that file (or its manifest) does not exist S1 stays `NotComputed`, as before; once it does, it is loaded only
 after its manifest is checked (`s1_range.load_range`: its sha256, a clean run of `scripts/s1_range.py` on a clean tree,
 the whole search years, both identities held, the caps equal to `stop_caps()` now, the declared share), and any defect
-refuses loudly (`LeverRefused`), never as `NotComputed`. T7 has no reading and stays refused.
+refuses loudly (`LeverRefused`), never as `NotComputed`. **T7's admission forecast** (`extended.t7_forecast`) is
+loaded the same way from `results/t7_forecast.csv` with its manifest (`t7_forecast.load_forecast`: its sha256, a clean
+run of `scripts/t7_fit.py`, the whole search years, its identities held, its q equal to D-212's line now, every band's
+final model complete with beta > 0); its threshold q is D-212's line, read from Stage 2's vendored config
+(`t7_forecast.admission_line`), never typed. Absent, T7 is `NotComputed`; defective, `LeverRefused`.
 """
 from __future__ import annotations
 
@@ -290,6 +294,46 @@ def _s1_reading() -> tuple[dict[str, Any], dict[str, Any]]:
                  "unit": "k x the session's trailing range (ny: trail20_range_pts; an overnight session its own)"}
 
 
+#: T7's search-year reading: the admission forecast's coefficients and calibration
+T7_RESULT = "results/t7_forecast.csv"
+T7_PATH = ROOT / T7_RESULT
+#: reported beside any T7 result (the red team's H-n1 and H-n2; the lead's labels)
+T7_LABELS = (
+    "q = D-212's line as D-308 raised it: Stage 2 chose the number after D-306's result was seen (2020-2021, inside "
+    "the search years), labelled so; a ceiling on a leg's share of trades reaching the flatten, used here per mark",
+    "the label models a market entry only (the mark's first bar's open, held to 15:07): no limit entry (T5), no "
+    "news-window flatten, no entry off the five-minute grid",
+)
+
+
+def _t7_computed() -> bool:
+    """Whether T7's reading exists: its file and its sidecar manifest (checked, not read, here)."""
+    p = Path(T7_PATH)
+    return p.is_file() and Path(str(p) + ".manifest.json").is_file()
+
+
+def _admission() -> Range:
+    """T7: `off`, or admit a mark iff its forecast chance of reaching the flatten open is at most q (D-212's line);
+    the model in `detail['model']`, loaded only after its manifest's checks."""
+    from extended import t7_forecast as T7F              # light; imported only once a reading exists
+
+    try:
+        q, q_source = T7F.admission_line()
+        got = T7F.load_forecast(T7_PATH, q=q)
+    except T7F.NotRead as exc:
+        raise NotComputed(f"T7 (admission): {exc}") from None
+    except T7F.ForecastRefused as exc:
+        raise LeverRefused(f"T7 (admission): {exc}") from None
+    return Range("T7", "choices", values=("off", "admit"),
+                 unit="admission rule: admit a mark iff p_hat (the chance of reaching the flatten open) <= q",
+                 detail={"q": q, "q_source": q_source, "model": got, "result": T7_RESULT, "sha256": got["sha256"],
+                         "git_commit": got["git_commit"],
+                         "use": "search years: t7_forecast.model_for(model, day) -- the fold model of the day's "
+                                "year, out of fold; model['final_model'] only for a held-out application, refused "
+                                "here",
+                         "labels": T7_LABELS})
+
+
 def _stop_width() -> Range:
     _, det = _s1_reading()
     by = det["by_session"]
@@ -507,7 +551,7 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
     _L("T4", TRIGGER, "latency L", SEARCHED, DECL, "", "T1 T3 T5", _latency),
     _L("T5", TRIGGER, "entry type", SEARCHED, DECL, "", "T1 T4 T6", _entry_type),
     _L("T6", TRIGGER, "limit working window", FIXED, DECL, "", "T5", _limit_window),
-    _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2"),
+    _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2", _admission),
     _L("T8", TRIGGER, "side rule", FIXED, DECL, "", "T1 T5 A15", _side),
     _L("S1", SHAPE, "stop width", SEARCHED, COMPUTE, "combine_mll xfa_mll_start", "T2 S2 S3 S4 S5", _stop_width),
     _L("S2", SHAPE, "reward-to-risk w", SEARCHED, DECL, "", "S1 A1 A2", _ratio),
@@ -559,7 +603,7 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
 
 
 #: a 'to compute' lever whose reading can exist, and how to tell that it does
-_COMPUTED: dict[str, Callable[[], bool]] = {"S1": _s1_computed}
+_COMPUTED: dict[str, Callable[[], bool]] = {"S1": _s1_computed, "T7": _t7_computed}
 
 
 def bounds(lever_id: str) -> Range:
@@ -641,4 +685,5 @@ def load(firm: str = "topstep") -> dict[str, Range]:
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows",
            "trading_dates", "session_window_range", "Range", "stop_caps", "Lever", "LEVERS", "bounds", "space",
-           "refusals", "latency_cells", "check_design", "counts", "S1_RESULT", "S1_PATH", "stop_width", "load"]
+           "refusals", "latency_cells", "check_design", "counts", "S1_RESULT", "S1_PATH", "stop_width", "load",
+           "T7_RESULT", "T7_PATH"]
