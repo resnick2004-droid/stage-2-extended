@@ -1,11 +1,13 @@
 """The lever table's four rows that were "to declare" -- T2b (the NY AM / NY PM boundary), A15 (routing), A16 (the
 mix's shares and assignment), A17 (the state rule) -- declared and loading (`extended/lever_space.py`,
 `docs/plans/LEVER_TABLE_topstep50k.md`). Each loads with its source kind; every other lever's output is the one it
-had before (master 89be4b3, loaded from git; compared with the readings S1 and T7 absent), save the NY split that T2b
-now puts into `session_windows()`; A9 and A19 stay refused by their unstated keys; the router takes A15's values and
-deals A16's pools in opening order. The sampler test (`extended.search_space`) is **skipped until Q-186 merges**; at
-that merge it must run, not skip, and the sampler must refuse any `ny_boundary` but T2b's. Pure Python on the record,
-the calendar and one Stage 2 config only (no bar, no result file); fast.
+had before (master 3cf17d4, Wave 3.4's per-date sessions and T7's loader, loaded from git; compared with the readings
+S1 and T7 absent), save the NY split that T2b now puts into `session_windows(day)` on each date; A9 and A19 stay
+refused by their unstated keys; the router takes A15's values and deals A16's pools in opening order. The sampler
+(`extended.search_space`, merged with Wave 3.4) runs, and refuses any `ny_boundary` but T2b's (L-M2). T2b follows
+both daylight-saving changes of a year (March and November) per date; MFFU and Lucid keep T2b, A15, A16 and A17 "to
+declare for this firm" (Q-181c). Pure Python on the record, the calendar and one Stage 2 config only (no bar, no
+result file); fast.
 """
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ from extended import router as R
 from extended.firm_terms import UnverifiedTerm
 
 ROOT = Path(__file__).resolve().parent.parent
-BASE = "89be4b3"                                        # master before this item: the levers' outputs to keep
+BASE = "3cf17d4"                                        # master before this item: the levers' outputs to keep
 NEW = ("T2b", "A15", "A16", "A17")
 
 
@@ -119,10 +121,12 @@ def test_t2b_refuses_a_boundary_off_ny_or_off_the_mark_grid(monkeypatch, local) 
 
 
 def test_t2b_is_enforced_where_ny_is_split() -> None:
-    """L-M2: `session_windows()` splits NY at T2b's value, and any other boundary a caller passes is refused."""
+    """L-M2: `session_windows(day)` splits NY at T2b's value on each date, and any other boundary a caller passes is
+    refused."""
     b = LS.bounds("T2b").values[0]
-    w = LS.session_windows()
-    assert w["ny_am"] == (w["ny_am"][0], b) and w["ny_pm"] == (b, LS.trading_day()["length"])
+    for d in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 3, 17)):
+        w = LS.session_windows(d)
+        assert w["ny_am"] == (DC.anchored_starts(d)["ny"], b) and w["ny_pm"] == (b, LS.trading_day()["length"])
     assert LS.check_ny_boundary(b) == b
     step = int(LS.declared("mark_step_min"))
     for bad in (b + step, b - step, None, True, str(b), b + 0.5):
@@ -131,6 +135,92 @@ def test_t2b_is_enforced_where_ny_is_split() -> None:
     LS.check_design({"T2b": b})
     with pytest.raises(LS.LeverRefused):
         LS.check_design({"T2b": b + step})
+
+
+def _us_changes(year: int) -> tuple[date, date]:
+    """The US clock changes of `year` (the second Sunday of March, the first Sunday of November), by the calendar rule
+    alone -- independent of zoneinfo and of the loader."""
+    mar = [date(year, 3, d) for d in range(1, 15) if date(year, 3, d).weekday() == calendar.SUNDAY][1]
+    nov = [date(year, 11, d) for d in range(1, 8) if date(year, 11, d).weekday() == calendar.SUNDAY][0]
+    return mar, nov
+
+
+@pytest.mark.parametrize("year", [2020, 2021, 2022, 2023])
+def test_t2b_splits_ny_per_date_across_both_daylight_saving_changes(year: int) -> None:
+    """Q-188b: `session_windows(day)` splits NY at noon New York **on that date**: across March's and November's
+    changes the split stays at 12:00 New York and 11:00 CT while its UTC instant moves an hour, as the anchors do."""
+    utc, ny_tz, chi = ZoneInfo("UTC"), ZoneInfo("America/New_York"), ZoneInfo("America/Chicago")
+    for change in _us_changes(year):
+        before, after = change - timedelta(days=2), change + timedelta(days=1)      # the Friday before, the Monday after
+        hours = {}
+        for d in (before, after):
+            w = LS.session_windows(d)
+            b = w["ny_am"][1]
+            assert w["ny_pm"][0] == b == LS.ny_boundary(d) == _ny_noon_offset(d), d
+            assert w["ny_am"][0] == DC.anchored_starts(d)["ny"] < b < w["ny_pm"][1] == LS.trading_day()["length"], d
+            reopen = datetime(d.year, d.month, d.day, 17, 0, tzinfo=chi) - timedelta(days=1)
+            at = (reopen.astimezone(utc) + timedelta(minutes=b)).astimezone(ny_tz)   # the boundary's instant
+            assert (at.date(), at.hour, at.minute) == (d, 12, 0), d                   # noon New York, that date
+            assert (at.astimezone(chi).hour, at.astimezone(chi).minute) == (11, 0), d
+            hours[d] = at.astimezone(utc).hour
+        assert abs(hours[before] - hours[after]) == 1, (change, hours)                # the clock changed between them
+        assert hours[after] == (16 if change.month == 3 else 17), (change, hours)
+
+
+def test_t2b_is_converted_on_each_date_not_fixed_on_the_ct_clock(monkeypatch) -> None:
+    """The split is the declared local time converted per date (zoneinfo), never one CT minute carried over: declared
+    on London's clock (a test value only), `session_windows(day)` moves it in the weeks when the UK and US clocks
+    disagree -- in March and in November -- and not on the other dates checked."""
+    bad = dict(LS.DECLARED)
+    bad["ny_split_local"] = LS.Declared(("Europe/London", 16, 0), "test: a clock that changes on other dates")
+    monkeypatch.setattr(LS, "DECLARED", bad)
+    same = {d: LS.session_windows(d)["ny_am"][1] for d in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 11, 10))}
+    moved = {d: LS.session_windows(d)["ny_am"][1] for d in (date(2021, 3, 17), date(2021, 11, 3))}
+    assert set(same.values()) == {10 * 60 - 17 * 60 + 24 * 60}                       # 16:00 London = 10:00 CT
+    assert set(moved.values()) == {11 * 60 - 17 * 60 + 24 * 60}                      # the mismatch weeks: 11:00 CT
+    with pytest.raises(LS.LeverRefused):                                              # and T2b's own check refuses it
+        LS.bounds("T2b")
+
+
+@pytest.mark.parametrize("firm", ["mffu", "lucid"])
+def test_the_split_is_refused_for_mffu_and_lucid(no_s1_reading, firm: str) -> None:
+    """Q-181c (wt/wt-payout): T2b, A15, A16 and A17 are **to declare for this firm** -- refused (`NotDeclared`), never
+    Topstep's declared values carried over, now that Topstep's rows load for real (not simulated)."""
+    from extended import lever_space_firms as LF
+
+    ids = ("T2b", "A15", "A16", "A17")
+    for i in ids:
+        assert LS.bounds(i).lever == i                                                # Topstep's: declared, loading
+        assert LF.levers(firm)[i].source == LS.TODECL
+        with pytest.raises(LS.NotDeclared, match="to declare"):
+            LF.bounds(firm, i)
+        assert LF.vs_topstep(firm, i) == LF.DIFFERS
+        assert LF.refusals(firm)[i] == "NotDeclared" and i not in LF.load(firm)
+    table = (ROOT / LF.TABLES[firm]).read_text(encoding="utf-8")
+    for i in ids:
+        row = [ln for ln in table.splitlines() if ln.startswith(f"| {i} |")]
+        assert len(row) == 1 and "**to declare for this firm**" in row[0], i
+    if firm == "mffu":                       # MFFU's own sessions: NY left whole on every date, DST changes included
+        for d in (date(2021, 3, 12), date(2021, 3, 15), date(2021, 11, 5), date(2021, 11, 8), date(2021, 7, 15)):
+            w = LF.mffu_session_windows(d)
+            assert w["ny_am"][1] is None and w["ny_pm"][0] is None, d
+            assert LS.session_windows(d)["ny_am"][1] == LS.ny_boundary(d)              # Topstep's splits, MFFU's not
+
+
+def test_topsteps_lever_space_loads_complete(no_s1_reading) -> None:
+    """Q-188b: Topstep's space loads every lever but the refusals declared to stand -- the two readings absent under
+    the pin (S1, T7), the two unstated keys (A9, A19) and the six dropped levers; nothing is to declare, and `load`
+    is `space()`."""
+    sp, rf = LS.space(), LS.refusals()
+    assert set(sp) | set(rf) == set(LS.LEVERS) and not set(sp) & set(rf)
+    assert rf == {"T7": "NotComputed", "S1": "NotComputed", "S6": "DroppedLever", "S7": "DroppedLever",
+                  "S8": "DroppedLever", "S9": "DroppedLever", "A9": "UnverifiedTerm", "A13": "DroppedLever",
+                  "A14": "DroppedLever", "A19": "UnverifiedTerm"}
+    assert set(NEW) <= set(sp)
+    assert not [i for i, lv in LS.LEVERS.items() if lv.source == LS.TODECL]
+    assert {i for i, lv in LS.LEVERS.items() if lv.cls == LS.DROPPED} == {k for k, v in rf.items() if v == "DroppedLever"}
+    assert list(LS.load("topstep")) == list(sp)
+    assert all(repr(LS.load("topstep")[k]) == repr(v) for k, v in sp.items())
 
 
 def test_t2b_matches_stage_twos_late_morning_window() -> None:
@@ -280,10 +370,16 @@ def test_every_other_lever_is_bit_for_bit_the_one_before(tmp_path, monkeypatch, 
     monkeypatch.setattr(old, "T7_PATH", tmp_path / "absent" / "t7_forecast.csv", raising=False)
     b = LS.bounds("T2b").values[0]
 
-    def split(w):                                         # 89be4b3's windows with T2b's split put in (L-M2)
+    def split(w):                                         # the base's windows with T2b's split put in (L-M2)
         w = dict(w)
         w["ny_am"], w["ny_pm"] = (w["ny_am"][0], b), (b, w["ny_pm"][1])
         return w
+
+    def split_range(r):                                   # `session_window_range`'s output, split the same way
+        rng = {k: dict(v) for k, v in r["range"].items()}
+        rng["ny_am"]["end"], rng["ny_pm"]["start"] = (b, b), (b, b)
+        return {"span": r["span"], "range": rng,
+                "distinct": [dict(e, windows=split(e["windows"])) for e in r["distinct"]]}
     try:
         assert list(old.LEVERS) == list(LS.LEVERS)
         for i, lv in old.LEVERS.items():
@@ -294,7 +390,7 @@ def test_every_other_lever_is_bit_for_bit_the_one_before(tmp_path, monkeypatch, 
                 (nv.layer, nv.name, nv.cls, nv.source, nv.keys, nv.depends), i
             if i == "T2":                                 # its detail carries the windows: T2b's split, nothing else
                 o, n = old.bounds(i), LS.bounds(i)
-                assert repr(split(o.detail["windows"])) == repr(n.detail["windows"])
+                assert repr(split_range(o.detail["windows"])) == repr(n.detail["windows"])
                 assert repr(o.__class__.__name__) == repr(n.__class__.__name__)
                 assert (o.lever, o.kind, o.values, o.lo, o.hi, o.step, o.unit, repr(o.read)) == \
                     (n.lever, n.kind, n.values, n.lo, n.hi, n.step, n.unit, repr(n.read))
@@ -304,7 +400,9 @@ def test_every_other_lever_is_bit_for_bit_the_one_before(tmp_path, monkeypatch, 
             assert _outcome(old, i) == _outcome(LS, i), i
         for k, d in old.DECLARED.items():
             assert LS.DECLARED[k].value == d.value and LS.DECLARED[k].cite == d.cite, k
-        assert repr(split(old.session_windows())) == repr(LS.session_windows())
+        for d in (date(2021, 1, 15), date(2021, 3, 12), date(2021, 3, 15), date(2021, 3, 17), date(2021, 7, 15),
+                  date(2021, 11, 5), date(2021, 11, 8)):
+            assert repr(split(old.session_windows(d))) == repr(LS.session_windows(d)), d
         assert repr(old.trading_day()) == repr(LS.trading_day()) and repr(old.stop_caps()) == repr(LS.stop_caps())
         for s in LS.declared("sources"):
             assert old.latency_cells(s) == LS.latency_cells(s)
@@ -316,17 +414,29 @@ def test_every_other_lever_is_bit_for_bit_the_one_before(tmp_path, monkeypatch, 
 
 
 def test_the_sampler_draws_the_new_rows() -> None:
-    SS = pytest.importorskip("extended.search_space")
+    """Q-186 (Wave 3.4's `extended.search_space`) has merged: this runs, never skips. The sampler draws A15 and A17,
+    holds T2b and A16 fixed, and refuses any NY boundary but T2b's (L-M2), in `session_spans` itself."""
+    from extended import search_space as SS
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import search_toys as TY
+
     days = (date(2021, 3, 12), date(2021, 3, 15), date(2022, 6, 1))
     b = int(LS.bounds("T2b").values[0])
     space = SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1}, ny_boundary=b, days=days)
-    assert {"A15", "A17"} <= set(space.names)
+    assert {"A15", "A17"} <= set(space.names())
     assert space.fixed["T2b"] == (b,) and space.fixed["A16"] == ("dealt",)
-    with pytest.raises(Exception):                         # L-M2: no boundary but T2b's
-        SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1}, ny_boundary=b + int(LS.declared("mark_step_min")),
-                            days=days)
+    step = int(LS.declared("mark_step_min"))
+    for bad in (b + step, b - step, b + 0.5, str(b), True):
+        with pytest.raises(SS.SpaceRefused):
+            SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1}, ny_boundary=bad, days=days)
+        with pytest.raises(SS.SpaceRefused):
+            SS.session_spans(days[0], bad)
+    for d in days:
+        sp = SS.session_spans(d, b)
+        assert sp["ny_am"][1] == sp["ny_pm"][0] == b == LS.session_windows(d)["ny_am"][1]
     ledger = SS.CellLedger()
-    designs = SS.Sampler(space, seed=20261120, method="sobol").survey(16, ledger=ledger)
+    designs = SS.Sampler(space, seed=20261120, method="sobol").survey(16, ledger=ledger, **TY.SV)
     assert designs
     for d in designs:
         assert d["A15"] in R.ROTATIONS and d["A17"] in LS.declared("state_rules")

@@ -17,25 +17,34 @@ file: **S1's search-year reading** (Q-171, `extended.s1_range`), `results/s1_ran
 While that file (or its manifest) does not exist S1 stays `NotComputed`, as before; once it does, it is loaded only
 after its manifest is checked (`s1_range.load_range`: its sha256, a clean run of `scripts/s1_range.py` on a clean tree,
 the whole search years, both identities held, the caps equal to `stop_caps()` now, the declared share), and any defect
-refuses loudly (`LeverRefused`), never as `NotComputed`. T7 has no reading and stays refused.
+refuses loudly (`LeverRefused`), never as `NotComputed`. **T7's admission forecast** (`extended.t7_forecast`) is
+loaded the same way from `results/t7_forecast.csv` with its manifest (`t7_forecast.load_forecast`: its sha256, a clean
+run of `scripts/t7_fit.py`, the whole search years, its identities held, its q equal to D-212's line now, every band's
+final model complete with beta > 0); its threshold q is D-212's line, read from Stage 2's vendored config
+(`t7_forecast.admission_line`), never typed. Absent, T7 is `NotComputed`; defective, `LeverRefused`.
 
 **The four rows once 'to declare'** (E-NNN pending) load as declared: T2b, the NY AM / NY PM boundary at noon New
 York (`ny_boundary`, checked on every search-year weekday); A15, the router's rotations; A16, `by_component`'s pools
 dealt in turn (`deal_pools`), the shares derived from the components; A17, the state rule on the mode's dollar risk
 (`state_risk`). No lever is 'to declare' now; the kind stays for a later row. A9 and A19 stay refused by key.
-T2b's one value is enforced where NY is split: `session_windows()` splits at it, and `check_ny_boundary` (also in
-`check_design`) refuses any other boundary a caller passes (the red team's L-M2).
+T2b's value is enforced where NY is split: `session_windows(day)` splits at it on each date (noon New York converted
+for that date, as the session anchors are), and `check_ny_boundary` (also in `check_design`, and the sampler's
+`search_space.session_spans`) refuses any other boundary a caller passes (the red team's L-M2).
 """
 from __future__ import annotations
 
+import calendar
 import functools
 import math
 import re
 from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
+from zoneinfo import ZoneInfo
 
 from extended import ROOT
+from extended import day_calendar as DC
 from extended import firm_terms as FT
 from extended import modes_rules as MR
 from extended import modes_terms as M
@@ -93,9 +102,11 @@ DECLARED: dict[str, Declared] = {
     "limit_window_min": Declared(30, "F-04 6.1: a limit works from its live time to 30 minutes later, a news "
                                  "window's start, or the walk's last entry bar, the earliest"),
     "side_rule": Declared(("coin",), "CHARTER 3.2 and 3.5 as amended: the coin side; the traded side pending O-4"),
-    "windows_ct": Declared((("asia", "18:00"), ("london", "02:00"), ("ny", "08:30")),
-                           "Stage 2 resolved_coin.WINDOWS (D-525 (3)): asia from 18:00, london from 02:00, us from "
-                           "08:30 CT; the hour before 18:00 is 'evening' here (an interpretation, Q-151)"),
+    "session_anchors": Declared(tuple((k,) + tuple(v) for k, v in DC.LOCAL_ANCHORS.items()),
+                                "E-231 (3), Q-166: each session starts at its local market time -- asia 09:00 Tokyo, "
+                                "london 08:00 London, ny 09:30 New York -- converted per date by zoneinfo "
+                                "(`day_calendar.anchored_starts`), never a fixed CT clock (H2 found the fixed ones off "
+                                "on many days); the time before asia's start is 'evening' here (Q-151)"),
     "sessions": Declared(("evening", "asia", "london", "ny_am", "ny_pm"),
                          "the restart plan 4.4b (Asia, London, NY AM, NY PM) and the evening hour the firm allows"),
     "mark_step_min": Declared(5, "Stage 2 D-525 (2), resolved_coin.MARK_STEP: an offer mark every five minutes"),
@@ -187,12 +198,19 @@ def trading_day() -> dict[str, int]:
             "last_entry_offset": (last_entry - reopen) % day}
 
 
-def session_windows() -> dict[str, tuple[int, int | None]]:
-    """The sessions as [start, end) in minutes after the reopen; `ny` is split at T2b's declared boundary
-    (`bounds("T2b")`, the one value it takes; the red team's L-M2), which must lie strictly inside it. Every boundary
-    must fall inside the firm's day."""
+def session_windows(day: date) -> dict[str, tuple[int, int | None]]:
+    """Trading day `day`'s sessions as [start, end) in minutes after the reopen, each start its local market time
+    converted for that date (`day_calendar.anchored_starts`, E-231 (3)); `ny` is split at T2b's declared boundary
+    converted for the same date (`ny_boundary(day)`: noon New York, so it follows daylight saving as the anchors do;
+    the red team's L-M2), which must lie strictly inside it. Every boundary must fall inside the firm's day."""
+    if not isinstance(day, date):
+        raise TypeError(f"session_windows reads one trading day's date, not {type(day).__name__}")
     td = trading_day()
-    starts = [(name, (_clock(t) - td["reopen"]) % MINUTES_PER_DAY) for name, t in declared("windows_ct")]
+    if td["reopen"] != DC.REOPEN_MIN:
+        raise LeverRefused("the anchored starts are minutes after a 17:00 CT reopen; this firm reopens at another "
+                           "time")
+    anchored = DC.anchored_starts(day)
+    starts = [(name, int(anchored[name])) for name in ("asia", "london", "ny")]
     for name, off in starts:
         if not 0 < off < td["length"]:
             raise LeverRefused(f"session boundary {name!r} lies outside the firm's trading day (trading_hours)")
@@ -202,11 +220,44 @@ def session_windows() -> dict[str, tuple[int, int | None]]:
     names = ("evening", "asia", "london", "ny")
     out: dict[str, tuple[int, int | None]] = dict(zip(names, zip(edges, edges[1:])))
     ny_start, ny_end = out.pop("ny")
-    b = int(bounds("T2b").values[0])
+    b = ny_boundary(day)
     if not ny_start < b < ny_end:
-        raise LeverRefused(f"T2b's boundary {b} is not inside ny [{ny_start}, {ny_end})")
+        raise LeverRefused(f"T2b's boundary {b} is not inside ny [{ny_start}, {ny_end}) on {day}")
     out["ny_am"], out["ny_pm"] = (ny_start, b), (b, ny_end)
     return out
+
+
+def trading_dates(start: date, end: date) -> list[date]:
+    """The weekdays from `start` to `end` (a trading day carries its weekday's date; the Sunday-evening open is
+    Monday's): calendar arithmetic only, no bar or calendar file read."""
+    out, d = [], start
+    while d <= end:
+        if d.weekday() < calendar.SATURDAY:
+            out.append(d)
+        d += timedelta(days=1)
+    return out
+
+
+def session_window_range(start: date, end: date) -> dict[str, Any]:
+    """Each session's windows over the weekdays from `start` to `end`: the earliest and latest start and end (NY AM's
+    end and NY PM's start are T2b's per-date boundary), and every distinct set of windows with its first date and day
+    count."""
+    rng: dict[str, dict[str, Any]] = {}
+    distinct: dict[tuple, dict[str, Any]] = {}
+    for d in trading_dates(start, end):
+        w = session_windows(d)
+        key = tuple(sorted(w.items()))
+        e = distinct.setdefault(key, {"first": d.isoformat(), "days": 0, "windows": w})
+        e["days"] += 1
+        for name, (a, b) in w.items():
+            r = rng.setdefault(name, {"start": [a, a], "end": [b, b]})
+            for k, v in (("start", a), ("end", b)):
+                if v is not None:
+                    lo, hi = r[k]
+                    r[k] = [v if lo is None else min(lo, v), v if hi is None else max(hi, v)]
+    return {"span": (start.isoformat(), end.isoformat()),
+            "range": {k: {"start": tuple(v["start"]), "end": tuple(v["end"])} for k, v in rng.items()},
+            "distinct": list(distinct.values())}
 
 
 # ------------------------------------------------------------------------------------------------ ranges
@@ -277,6 +328,46 @@ def _s1_reading() -> tuple[dict[str, Any], dict[str, Any]]:
                  "unit": "k x the session's trailing range (ny: trail20_range_pts; an overnight session its own)"}
 
 
+#: T7's search-year reading: the admission forecast's coefficients and calibration
+T7_RESULT = "results/t7_forecast.csv"
+T7_PATH = ROOT / T7_RESULT
+#: reported beside any T7 result (the red team's H-n1 and H-n2; the lead's labels)
+T7_LABELS = (
+    "q = D-212's line as D-308 raised it: Stage 2 chose the number after D-306's result was seen (2020-2021, inside "
+    "the search years), labelled so; a ceiling on a leg's share of trades reaching the flatten, used here per mark",
+    "the label models a market entry only (the mark's first bar's open, held to 15:07): no limit entry (T5), no "
+    "news-window flatten, no entry off the five-minute grid",
+)
+
+
+def _t7_computed() -> bool:
+    """Whether T7's reading exists: its file and its sidecar manifest (checked, not read, here)."""
+    p = Path(T7_PATH)
+    return p.is_file() and Path(str(p) + ".manifest.json").is_file()
+
+
+def _admission() -> Range:
+    """T7: `off`, or admit a mark iff its forecast chance of reaching the flatten open is at most q (D-212's line);
+    the model in `detail['model']`, loaded only after its manifest's checks."""
+    from extended import t7_forecast as T7F              # light; imported only once a reading exists
+
+    try:
+        q, q_source = T7F.admission_line()
+        got = T7F.load_forecast(T7_PATH, q=q)
+    except T7F.NotRead as exc:
+        raise NotComputed(f"T7 (admission): {exc}") from None
+    except T7F.ForecastRefused as exc:
+        raise LeverRefused(f"T7 (admission): {exc}") from None
+    return Range("T7", "choices", values=("off", "admit"),
+                 unit="admission rule: admit a mark iff p_hat (the chance of reaching the flatten open) <= q",
+                 detail={"q": q, "q_source": q_source, "model": got, "result": T7_RESULT, "sha256": got["sha256"],
+                         "git_commit": got["git_commit"],
+                         "use": "search years: t7_forecast.model_for(model, day) -- the fold model of the day's "
+                                "year, out of fold; model['final_model'] only for a held-out application, refused "
+                                "here",
+                         "labels": T7_LABELS})
+
+
 def _stop_width() -> Range:
     _, det = _s1_reading()
     by = det["by_session"]
@@ -303,7 +394,7 @@ def _session() -> Range:
     td = trading_day()
     return Range("T2", "choices", values=tuple(declared("sessions")), unit="session of the firm's day",
                  read={"trading_hours": rule("trading_hours")},
-                 detail={"windows": session_windows(), "day": td})
+                 detail={"windows": session_window_range(DC.SEARCH_START, DC.SEARCH_END), "day": td})
 
 
 def _entry_window() -> Range:
@@ -469,30 +560,12 @@ def _hold_expiry() -> Range:
 # ---------------------------------------------- the four rows once 'to declare' (T2b, A15, A16, A17; E-NNN pending)
 
 
-def _search_weekdays() -> list[Any]:
-    """The weekdays of the search years (`day_calendar.SEARCH_START` to `SEARCH_END`, E-208): calendar dates only."""
-    import calendar
-    from datetime import timedelta
-
-    from extended import day_calendar as DC
-
-    out, d = [], DC.SEARCH_START
-    while d <= DC.SEARCH_END:
-        if d.weekday() < calendar.SATURDAY:
-            out.append(d)
-        d += timedelta(days=1)
-    return out
-
-
-def ny_boundary(day: Any) -> int:
+def ny_boundary(day: date) -> int:
     """T2b's boundary on trading day `day` (a date), in minutes after the reopen of the evening before it: the
     declared local time (`ny_split_local`, noon New York) converted for that date by zoneinfo, as the session anchors
-    are (`day_calendar.anchored_starts`)."""
-    from datetime import datetime, timedelta
-    from zoneinfo import ZoneInfo
-
-    from extended import day_calendar as DC
-
+    are (`day_calendar.anchored_starts`), so it follows each daylight-saving change on the date the zone makes it."""
+    if not isinstance(day, date):
+        raise TypeError(f"ny_boundary reads one trading day's date, not {type(day).__name__}")
     td = trading_day()
     if td["reopen"] != DC.REOPEN_MIN:
         raise LeverRefused("the anchored times are minutes after a 17:00 CT reopen; this firm reopens at another time")
@@ -508,9 +581,7 @@ def _ny_split_days(local: tuple, reopen: int, last_entry: int) -> tuple[frozense
     """T2b's boundary and ny's anchored start on every weekday of the search years, for one declared local time and
     one firm's day (cached by both: calendar arithmetic over a thousand days): (boundaries, starts, days, the first
     refusal or None). `reopen` is in the key so that a changed firm's day is never served a stale answer."""
-    from extended import day_calendar as DC
-
-    days = _search_weekdays()
+    days = trading_dates(DC.SEARCH_START, DC.SEARCH_END)
     seen: set[int] = set()
     starts: set[int] = set()
     for d in days:
@@ -525,8 +596,6 @@ def _ny_split_days(local: tuple, reopen: int, last_entry: int) -> tuple[frozense
 def _ny_split() -> Range:
     """T2b: the boundary on every weekday of the search years; refused unless it is one value there, strictly inside
     `ny` (after its anchored start, before the last new entry) and on the mark grid."""
-    from extended import day_calendar as DC
-
     td = trading_day()
     step = int(declared("mark_step_min"))
     seen_f, starts, n_days, why = _ny_split_days(tuple(declared("ny_split_local")), int(td["reopen"]),
@@ -660,7 +729,7 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
     _L("T4", TRIGGER, "latency L", SEARCHED, DECL, "", "T1 T3 T5", _latency),
     _L("T5", TRIGGER, "entry type", SEARCHED, DECL, "", "T1 T4 T6", _entry_type),
     _L("T6", TRIGGER, "limit working window", FIXED, DECL, "", "T5", _limit_window),
-    _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2"),
+    _L("T7", TRIGGER, "admission by forecast resolution", SEARCHED, COMPUTE, "", "T1 T3 S1 S2", _admission),
     _L("T8", TRIGGER, "side rule", FIXED, DECL, "", "T1 T5 A15", _side),
     _L("S1", SHAPE, "stop width", SEARCHED, COMPUTE, "combine_mll xfa_mll_start", "T2 S2 S3 S4 S5", _stop_width),
     _L("S2", SHAPE, "reward-to-risk w", SEARCHED, DECL, "", "S1 A1 A2", _ratio),
@@ -713,7 +782,7 @@ LEVERS: dict[str, Lever] = {lv.id: lv for lv in (
 
 
 #: a 'to compute' lever whose reading can exist, and how to tell that it does
-_COMPUTED: dict[str, Callable[[], bool]] = {"S1": _s1_computed}
+_COMPUTED: dict[str, Callable[[], bool]] = {"S1": _s1_computed, "T7": _t7_computed}
 
 
 def bounds(lever_id: str) -> Range:
@@ -784,7 +853,18 @@ def counts() -> dict[str, dict[str, int]]:
     return out
 
 
+def load(firm: str = "topstep") -> dict[str, Range]:
+    """The lever space of one firm (Q-151b): Topstep's is `space()`, unchanged; another firm's is its own table's
+    (`extended.lever_space_firms`: `mffu`, `lucid`), never Topstep's carried over."""
+    if firm == "topstep":
+        return space()
+    from extended import lever_space_firms as LF          # imported here: it imports this module
+
+    return LF.load(firm)
+
+
 __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed", "NotDeclared", "DroppedLever",
-           "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows", "Range",
-           "stop_caps", "Lever", "LEVERS", "bounds", "space", "refusals", "latency_cells", "check_design", "counts",
-           "S1_RESULT", "S1_PATH", "stop_width", "ny_boundary", "check_ny_boundary", "deal_pools", "state_risk"]
+           "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows",
+           "trading_dates", "session_window_range", "Range", "stop_caps", "Lever", "LEVERS", "bounds", "space",
+           "refusals", "latency_cells", "check_design", "counts", "S1_RESULT", "S1_PATH", "stop_width", "load",
+           "T7_RESULT", "T7_PATH", "ny_boundary", "check_ny_boundary", "deal_pools", "state_risk"]

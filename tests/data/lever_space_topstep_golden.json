@@ -1,0 +1,757 @@
+{
+ "T1": {
+  "meta": [
+   "T1",
+   "trigger",
+   "signal source",
+   "searched",
+   "declared",
+   [],
+   [
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "A16"
+   ]
+  ],
+  "bounds": "Range(lever='T1', kind='choices', values=('coin', 'p14', 'p16', 'rl3'), lo=None, hi=None, step=None, unit='trigger source', read={}, detail={})"
+ },
+ "T2": {
+  "meta": [
+   "T2",
+   "trigger",
+   "session",
+   "searched",
+   "arithmetic",
+   [
+    "trading_hours"
+   ],
+   [
+    "T1",
+    "T2b",
+    "T3"
+   ]
+  ],
+  "bounds": "Range(lever='T2', kind='choices', values=('evening', 'asia', 'london', 'ny_am', 'ny_pm'), lo=None, hi=None, step=None, unit=\"session of the firm's day\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'windows': {'span': ('2020-01-02', '2023-12-29'), 'range': {'evening': {'start': (0, 0), 'end': (60, 120)}, 'asia': {'start': (60, 120), 'end': (540, 600)}, 'london': {'start': (540, 600), 'end': (930, 930)}, 'ny_am': {'start': (930, 930), 'end': (1080, 1080)}, 'ny_pm': {'start': (1080, 1080), 'end': (1330, 1330)}}, 'distinct': [{'first': '2020-01-02', 'days': 362, 'windows': {'evening': (0, 60), 'asia': (60, 540), 'london': (540, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}, {'first': '2020-03-09', 'days': 65, 'windows': {'evening': (0, 120), 'asia': (120, 600), 'london': (600, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}, {'first': '2020-03-30', 'days': 615, 'windows': {'evening': (0, 120), 'asia': (120, 540), 'london': (540, 930), 'ny_am': (930, 1080), 'ny_pm': (1080, 1330)}}]}, 'day': {'reopen': 1020, 'flat': 910, 'last_entry': 908, 'length': 1330, 'last_entry_offset': 1328}})"
+ },
+ "T2b": {
+  "meta": [
+   "T2b",
+   "trigger",
+   "NY AM / NY PM boundary",
+   "declared",
+   "declared",
+   [
+    "trading_hours"
+   ],
+   [
+    "T2"
+   ]
+  ],
+  "bounds": "Range(lever='T2b', kind='fixed', values=(1080,), lo=None, hi=None, step=None, unit=\"minutes after the reopen: NY AM is [ny's start, b), NY PM [b, the flat)\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'local': ('America/New_York', 12, 0), 'ct_clock': '11:00', 'ny_am': (930, 1080), 'ny_pm': (1080, 1330), 'days_checked': 1042, 'span': ('2020-01-02', '2023-12-29')})"
+ },
+ "T3": {
+  "meta": [
+   "T3",
+   "trigger",
+   "entry window (offer marks)",
+   "searched",
+   "arithmetic",
+   [
+    "trading_hours"
+   ],
+   [
+    "T2",
+    "T4",
+    "A3"
+   ]
+  ],
+  "bounds": "Range(lever='T3', kind='interval', values=None, lo=0.0, hi=1328.0, step=5.0, unit=\"minutes after the reopen (an offer mark's time inside its session)\", read={'trading_hours': 'flat_by_15:10_ct; reopen_17:00_ct; sunday_open_17:00_ct; friday_close_15:10_ct; holiday_flat_15_min_before_early_close'}, detail={'day': {'reopen': 1020, 'flat': 910, 'last_entry': 908, 'length': 1330, 'last_entry_offset': 1328}})"
+ },
+ "T4": {
+  "meta": [
+   "T4",
+   "trigger",
+   "latency L",
+   "searched",
+   "declared",
+   [],
+   [
+    "T1",
+    "T3",
+    "T5"
+   ]
+  ],
+  "bounds": "Range(lever='T4', kind='choices', values=(5, 3, 2), lo=None, hi=None, step=None, unit='clock minutes from alert to order', read={}, detail={'reference': 5, 'latency_free': ('p16', 'rl3')})"
+ },
+ "T5": {
+  "meta": [
+   "T5",
+   "trigger",
+   "entry type",
+   "searched",
+   "declared",
+   [],
+   [
+    "T1",
+    "T4",
+    "T6"
+   ]
+  ],
+  "bounds": "Range(lever='T5', kind='choices', values=('market', 'limit'), lo=None, hi=None, step=None, unit='order type', read={}, detail={})"
+ },
+ "T6": {
+  "meta": [
+   "T6",
+   "trigger",
+   "limit working window",
+   "declared",
+   "declared",
+   [],
+   [
+    "T5"
+   ]
+  ],
+  "bounds": "Range(lever='T6', kind='fixed', values=(30,), lo=None, hi=None, step=None, unit='minutes a limit works', read={}, detail={})"
+ },
+ "T7": {
+  "meta": [
+   "T7",
+   "trigger",
+   "admission by forecast resolution",
+   "searched",
+   "to compute",
+   [],
+   [
+    "T1",
+    "T3",
+    "S1",
+    "S2"
+   ]
+  ],
+  "bounds": "NotComputed: T7 (admission by forecast resolution): its range is a search-year reading, to compute -- refused until it exists (CHARTER 3.3 (a); E-208)"
+ },
+ "T8": {
+  "meta": [
+   "T8",
+   "trigger",
+   "side rule",
+   "declared",
+   "declared",
+   [],
+   [
+    "T1",
+    "T5",
+    "A15"
+   ]
+  ],
+  "bounds": "Range(lever='T8', kind='fixed', values=('coin',), lo=None, hi=None, step=None, unit='side rule', read={}, detail={})"
+ },
+ "S1": {
+  "meta": [
+   "S1",
+   "trade shape",
+   "stop width",
+   "searched",
+   "to compute",
+   [
+    "combine_mll",
+    "xfa_mll_start"
+   ],
+   [
+    "T2",
+    "S2",
+    "S3",
+    "S4",
+    "S5"
+   ]
+  ],
+  "bounds": "NotComputed: S1 (stop width): its range is a search-year reading, to compute -- refused until it exists (CHARTER 3.3 (a); E-208)"
+ },
+ "S2": {
+  "meta": [
+   "S2",
+   "trade shape",
+   "reward-to-risk w",
+   "searched",
+   "declared",
+   [],
+   [
+    "S1",
+    "A1",
+    "A2"
+   ]
+  ],
+  "bounds": "Range(lever='S2', kind='interval', values=None, lo=1.0, hi=3.0, step=None, unit='target / stop (target floor(w s) ticks)', read={}, detail={'rd05_grid': (1.0, 1.5, 2.0, 3.0)})"
+ },
+ "S3": {
+  "meta": [
+   "S3",
+   "trade shape",
+   "dollar risk, evaluation",
+   "searched",
+   "arithmetic",
+   [
+    "combine_mll",
+    "combine_position_size_limit"
+   ],
+   [
+    "S1",
+    "S5",
+    "A1"
+   ]
+  ],
+  "bounds": "Range(lever='S3', kind='interval', values=None, lo=22.5, hi=2000.0, step=None, unit=\"dollars at the stop (share of the start room beside); whole micros at the trade's stop\", read={'combine_mll': 2000.0}, detail={'lo_share': 0.01125, 'hi_share': 1.0, 'caps': {'floor_ticks': 45, 'cap_ticks': 4000, 'tick_value_mnq': 0.5, 'room': 2000.0, 'source': 'vendor/stage2/config/fv3_corrected_portfolio.yaml state_policy.stand_aside, gate.campaign'}})"
+ },
+ "S4": {
+  "meta": [
+   "S4",
+   "trade shape",
+   "dollar risk, funded",
+   "searched",
+   "arithmetic",
+   [
+    "xfa_mll_start",
+    "funded_scaling_plan"
+   ],
+   [
+    "S1",
+    "S5",
+    "A2",
+    "A5"
+   ]
+  ],
+  "bounds": "Range(lever='S4', kind='interval', values=None, lo=22.5, hi=2000.0, step=None, unit=\"dollars at the stop (share of the start room beside); whole micros at the trade's stop\", read={'xfa_mll_start': -2000.0}, detail={'lo_share': 0.01125, 'hi_share': 1.0, 'caps': {'floor_ticks': 45, 'cap_ticks': 4000, 'tick_value_mnq': 0.5, 'room': 2000.0, 'source': 'vendor/stage2/config/fv3_corrected_portfolio.yaml state_policy.stand_aside, gate.campaign'}})"
+ },
+ "S5": {
+  "meta": [
+   "S5",
+   "trade shape",
+   "instrument mix",
+   "searched",
+   "declared",
+   [
+    "combine_position_size_limit",
+    "funded_scaling_plan"
+   ],
+   [
+    "S3",
+    "S4"
+   ]
+  ],
+  "bounds": "Range(lever='S5', kind='choices', values=('MNQ', 'mixed'), lo=None, hi=None, step=None, unit='instrument mix', read={'combine_position_size_limit': 5, 'funded_scaling_plan': '0:2,1500:3,2000:5'}, detail={'micros_per_mini': 10})"
+ },
+ "S6": {
+  "meta": [
+   "S6",
+   "trade shape",
+   "maximum hold (time stop)",
+   "dropped",
+   "declared",
+   [
+    "trading_hours"
+   ],
+   []
+  ],
+  "bounds": "DroppedLever: S6 (maximum hold (time stop)) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "S7": {
+  "meta": [
+   "S7",
+   "trade shape",
+   "breakeven stop move",
+   "dropped",
+   "declared",
+   [
+    "prohibited_strategy_auto_breakeven_sim_fills"
+   ],
+   [
+    "T1"
+   ]
+  ],
+  "bounds": "DroppedLever: S7 (breakeven stop move) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "S8": {
+  "meta": [
+   "S8",
+   "trade shape",
+   "partial exits, scaling in",
+   "dropped",
+   "declared",
+   [],
+   []
+  ],
+  "bounds": "DroppedLever: S8 (partial exits, scaling in) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "S9": {
+  "meta": [
+   "S9",
+   "trade shape",
+   "contracts",
+   "dropped",
+   "arithmetic",
+   [],
+   [
+    "S1",
+    "S3",
+    "S4",
+    "S5"
+   ]
+  ],
+  "bounds": "DroppedLever: S9 (contracts) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "A1": {
+  "meta": [
+   "A1",
+   "account policy",
+   "steady or flip, evaluation",
+   "searched",
+   "arithmetic",
+   [
+    "combine_profit_target",
+    "combine_consistency_max_day_frac",
+    "combine_mll"
+   ],
+   [
+    "S2",
+    "S3"
+   ]
+  ],
+  "bounds": "Range(lever='A1', kind='choices', values=('steady', 'flip'), lo=None, hi=None, step=None, unit='evaluation sizing policy', read={'combine_profit_target': 3000.0, 'combine_consistency_max_day_frac': 0.55, 'combine_mll': 2000.0}, detail={'k_E': 2, 'r_flip_by_w': {1.0: {'k': 2, 'r_flip': 1500.0, 'cut_at_start': 1500.0, 'cut_by': 'none'}, 1.5: {'k': 2, 'r_flip': 1000.0, 'cut_at_start': 1000.0, 'cut_by': 'none'}, 2.0: {'k': 2, 'r_flip': 750.0, 'cut_at_start': 750.0, 'cut_by': 'none'}, 3.0: {'k': 2, 'r_flip': 500.0, 'cut_at_start': 500.0, 'cut_by': 'none'}}})"
+ },
+ "A2": {
+  "meta": [
+   "A2",
+   "account policy",
+   "steady or flip, funded",
+   "searched",
+   "arithmetic",
+   [
+    "xfa_std_winning_days",
+    "xfa_cons_min_days",
+    "xfa_cons_max_day_frac",
+    "xfa_std_cap",
+    "xfa_cons_cap",
+    "payout_max_frac_of_balance",
+    "xfa_mll_start"
+   ],
+   [
+    "S2",
+    "S4",
+    "A5"
+   ]
+  ],
+  "bounds": "Range(lever='A2', kind='choices', values=('steady', 'flip'), lo=None, hi=None, step=None, unit='funded sizing policy', read={'xfa_std_winning_days': 5, 'xfa_cons_min_days': 3, 'xfa_cons_max_day_frac': 0.4, 'xfa_std_cap': 2000.0, 'xfa_cons_cap': 3000.0, 'payout_max_frac_of_balance': 0.5, 'xfa_mll_start': -2000.0}, detail={'TS/std': {'k_F': 5, 'b_star': 4000.0, 'r_flip_by_w': {1.0: {'k': 5, 'r_flip': 800.0, 'cut_at_start': 800.0, 'cut_by': 'none'}, 1.5: {'k': 5, 'r_flip': 533.3333333333334, 'cut_at_start': 533.3333333333334, 'cut_by': 'none'}, 2.0: {'k': 5, 'r_flip': 400.0, 'cut_at_start': 400.0, 'cut_by': 'none'}, 3.0: {'k': 5, 'r_flip': 266.6666666666667, 'cut_at_start': 266.6666666666667, 'cut_by': 'none'}}}, 'TS/con': {'k_F': 3, 'b_star': 6000.0, 'r_flip_by_w': {1.0: {'k': 3, 'r_flip': 2000.0, 'cut_at_start': 2000.0, 'cut_by': 'none'}, 1.5: {'k': 3, 'r_flip': 1333.3333333333333, 'cut_at_start': 1333.3333333333333, 'cut_by': 'none'}, 2.0: {'k': 3, 'r_flip': 1000.0, 'cut_at_start': 1000.0, 'cut_by': 'none'}, 3.0: {'k': 3, 'r_flip': 666.6666666666666, 'cut_at_start': 666.6666666666666, 'cut_by': 'none'}}}})"
+ },
+ "A3": {
+  "meta": [
+   "A3",
+   "account policy",
+   "session rule q (when to stop)",
+   "searched",
+   "declared",
+   [
+    "combine_consistency_max_day_frac",
+    "xfa_cons_max_day_frac",
+    "combine_profit_target"
+   ],
+   [
+    "T3",
+    "A5"
+   ]
+  ],
+  "bounds": "Range(lever='A3', kind='choices', values=('one', 'all', 'cap'), lo=None, hi=None, step=None, unit='trades a session', read={'combine_consistency_max_day_frac': 0.55, 'xfa_cons_max_day_frac': 0.4, 'combine_profit_target': 3000.0}, detail={})"
+ },
+ "A4": {
+  "meta": [
+   "A4",
+   "account policy",
+   "price path",
+   "searched",
+   "rule",
+   [
+    "subscription_fee",
+    "activation_fee",
+    "subscription_fee_naf_50k",
+    "activation_fee_naf_50k"
+   ],
+   [
+    "A12"
+   ]
+  ],
+  "bounds": "Range(lever='A4', kind='choices', values=('standard', 'naf'), lo=None, hi=None, step=None, unit='evaluation price path', read={'subscription_fee': 49.0, 'activation_fee': 149.0, 'subscription_fee_naf_50k': 95.0, 'activation_fee_naf_50k': 0.0}, detail={'standard': (49.0, 149.0), 'naf': (95.0, 0.0)})"
+ },
+ "A5": {
+  "meta": [
+   "A5",
+   "account policy",
+   "payout path",
+   "searched",
+   "rule",
+   [
+    "xfa_payout_path_choice",
+    "xfa_std_cap",
+    "xfa_cons_cap",
+    "xfa_std_winning_days",
+    "xfa_std_winning_day_min",
+    "xfa_cons_min_days",
+    "xfa_cons_max_day_frac"
+   ],
+   [
+    "A2",
+    "A3",
+    "A18",
+    "A19"
+   ]
+  ],
+  "bounds": "Range(lever='A5', kind='choices', values=('standard', 'consistency'), lo=None, hi=None, step=None, unit='funded payout path', read={'xfa_payout_path_choice': 'chosen_at_activation; cannot_be_changed; rtp_new_xfas_consistency_only', 'xfa_std_cap': 2000.0, 'xfa_cons_cap': 3000.0, 'xfa_std_winning_days': 5, 'xfa_std_winning_day_min': 150.0, 'xfa_cons_min_days': 3, 'xfa_cons_max_day_frac': 0.4}, detail={})"
+ },
+ "A6": {
+  "meta": [
+   "A6",
+   "account policy",
+   "funded seats",
+   "searched",
+   "rule",
+   [
+    "max_active_funded_accounts"
+   ],
+   [
+    "A7",
+    "A8",
+    "A15"
+   ]
+  ],
+  "bounds": "Range(lever='A6', kind='interval', values=None, lo=1.0, hi=5.0, step=1.0, unit='funded accounts at once', read={'max_active_funded_accounts': 5}, detail={})"
+ },
+ "A7": {
+  "meta": [
+   "A7",
+   "account policy",
+   "evaluations at once",
+   "searched",
+   "declared",
+   [
+    "combine_count_limit"
+   ],
+   [
+    "A6",
+    "A8",
+    "A11"
+   ]
+  ],
+  "bounds": "Range(lever='A7', kind='interval', values=None, lo=1.0, hi=7.0, step=1.0, unit='evaluations running at once', read={'combine_count_limit': 'unlimited'}, detail={})"
+ },
+ "A8": {
+  "meta": [
+   "A8",
+   "account policy",
+   "banking while a pass waits",
+   "searched",
+   "declared",
+   [
+    "hold_queue_behaviour"
+   ],
+   [
+    "A6",
+    "A7",
+    "A9"
+   ]
+  ],
+  "bounds": "Range(lever='A8', kind='choices', values=('on', 'off'), lo=None, hi=None, step=None, unit='banking rule', read={'hold_queue_behaviour': 'hold_until_slot_frees'}, detail={})"
+ },
+ "A9": {
+  "meta": [
+   "A9",
+   "account policy",
+   "the hold's expiry (two readings)",
+   "declared",
+   "declared",
+   [
+    "hold_expiry_days"
+   ],
+   [
+    "A8",
+    "A10"
+   ]
+  ],
+  "bounds": "UnverifiedTerm: hold_expiry_days: status 'unstated', not 'verified' -- it may not be loaded; section 5 of prereg/RD-01_firm_contracts.md reads it by a declared rule (`firm_terms.DECLARED`)"
+ },
+ "A10": {
+  "meta": [
+   "A10",
+   "account policy",
+   "evaluation-purchase rule",
+   "searched",
+   "declared",
+   [
+    "combine_cancellation"
+   ],
+   [
+    "A9",
+    "A11"
+   ]
+  ],
+  "bounds": "Range(lever='A10', kind='choices', values=('replace', 'house_stop', 'house_zero'), lo=None, hi=None, step=None, unit='evaluation-purchase rule', read={'combine_cancellation': \"by the Billing page ('X' next to the subscription, confirm); final: no undo, no resubscribe, no Reset on that subscription afterwards; an active Combine keeps rebilling every 30 days until it is cancelled (or passes); Reset Credits stay on the profile for a future Combine of the same size and type; a refund only within 28 days of the charge with no trading activity, and a refund cancels the subscription and closes the Combine at once\"}, detail={})"
+ },
+ "A11": {
+  "meta": [
+   "A11",
+   "account policy",
+   "evaluation-purchase budget",
+   "searched",
+   "declared",
+   [
+    "account_start_rate_limit"
+   ],
+   [
+    "A7",
+    "A10"
+   ]
+  ],
+  "bounds": "Range(lever='A11', kind='interval', values=None, lo=1.0, hi=20.0, step=1.0, unit='evaluation purchases a month', read={'account_start_rate_limit': 'none_stated'}, detail={'month_sessions': 21})"
+ },
+ "A12": {
+  "meta": [
+   "A12",
+   "account policy",
+   "Back2Funded reactivations",
+   "searched",
+   "rule",
+   [
+    "back2funded_max_reactivations",
+    "back2funded_reactivation_fee_50k",
+    "back2funded_window_days",
+    "back2funded_eligibility",
+    "back2funded_seat_count"
+   ],
+   [
+    "A4",
+    "A6",
+    "A18"
+   ]
+  ],
+  "bounds": "Range(lever='A12', kind='interval', values=None, lo=0.0, hi=2.0, step=1.0, unit='reactivations per funded account', read={'back2funded_max_reactivations': 2, 'back2funded_reactivation_fee_50k': 599.0, 'back2funded_window_days': 30, 'back2funded_eligibility': 'an XFA earned through the Trading Combine, closed due to a rule violation before taking a Payout, on TopstepX in the new Topstep Dashboard, the trader in good standing; not after any Payout; not for traders on the Focused Trader Plan', 'back2funded_seat_count': 'an eligible (closed) XFA does not count toward the 5-account limit during the 30-day window, until the Reactivation fee is paid'}, detail={'window_sessions': 21})"
+ },
+ "A13": {
+  "meta": [
+   "A13",
+   "account policy",
+   "resets",
+   "dropped",
+   "declared",
+   [
+    "reset_rebill_push"
+   ],
+   [
+    "A4"
+   ]
+  ],
+  "bounds": "DroppedLever: A13 (resets) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "A14": {
+  "meta": [
+   "A14",
+   "account policy",
+   "daily-loss-limit election",
+   "dropped",
+   "declared",
+   [
+    "dll_offer_status"
+   ],
+   [
+    "S3",
+    "S4"
+   ]
+  ],
+  "bounds": "DroppedLever: A14 (daily-loss-limit election) is dropped: no range (docs/plans/LEVER_TABLE_topstep50k.md)"
+ },
+ "A15": {
+  "meta": [
+   "A15",
+   "account policy",
+   "routing (which account takes a trade)",
+   "searched",
+   "declared",
+   [],
+   [
+    "A6",
+    "A7",
+    "A16",
+    "T8"
+   ]
+  ],
+  "bounds": "Range(lever='A15', kind='choices', values=('longest_waiting', 'round_robin', 'by_component'), lo=None, hi=None, step=None, unit=\"rotation: which of a firm's accounts takes its next trade\", read={}, detail={'base': 'longest_waiting', 'pools': \"by_component's, A16's `deal_pools`\", 'guards': ('one account per trade (never copied)', 'opposite positions refused, tier 1', 'one position at a time across the firm (D-429)')})"
+ },
+ "A16": {
+  "meta": [
+   "A16",
+   "account policy",
+   "signal mix: shares and account assignment",
+   "declared",
+   "declared",
+   [],
+   [
+    "T1",
+    "A15"
+   ]
+  ],
+  "bounds": "Range(lever='A16', kind='fixed', values=('dealt',), lo=None, hi=None, step=None, unit=\"account assignment of by_component's pools\", read={}, detail={'shares': \"derived: a source's share is its components' (T1 per component); no parameter\", 'rule': 'deal_pools'})"
+ },
+ "A17": {
+  "meta": [
+   "A17",
+   "account policy",
+   "state rule (sizing by distance to floor or target)",
+   "searched",
+   "declared",
+   [
+    "combine_profit_target",
+    "combine_mll",
+    "xfa_mll_start"
+   ],
+   [
+    "S3",
+    "S4",
+    "A1",
+    "A2",
+    "A5"
+   ]
+  ],
+  "bounds": "Range(lever='A17', kind='choices', values=('none', 'floor', 'target', 'floor_target'), lo=None, hi=None, step=None, unit=\"state rule on the mode's dollar risk (both modes, each its own goal and room)\", read={'combine_profit_target': 3000.0, 'combine_mll': 2000.0, 'xfa_mll_start': -2000.0}, detail={'eval': {'goal': 3000.0, 'start_room': 2000.0}, 'TS/std': {'goal': 4000.0, 'start_room': 2000.0}, 'TS/con': {'goal': 6000.0, 'start_room': 2000.0}})"
+ },
+ "A18": {
+  "meta": [
+   "A18",
+   "account policy",
+   "first payout request (RD-02 L1)",
+   "searched",
+   "declared",
+   [
+    "xfa_lock_at",
+    "payout_min",
+    "xfa_std_winning_days",
+    "xfa_std_winning_day_min"
+   ],
+   [
+    "A5",
+    "A19"
+   ]
+  ],
+  "bounds": "Range(lever='A18', kind='choices', values=('elig', 'lock'), lo=None, hi=None, step=None, unit='first-request rule', read={'xfa_lock_at': 0.0, 'payout_min': 125.0, 'xfa_std_winning_days': 5, 'xfa_std_winning_day_min': 150.0}, detail={})"
+ },
+ "A19": {
+  "meta": [
+   "A19",
+   "account policy",
+   "request amount (RD-02 L2)",
+   "searched",
+   "declared",
+   [
+    "payout_max_frac_of_balance",
+    "xfa_std_cap",
+    "payout_min",
+    "payout_request_amount_choice"
+   ],
+   [
+    "A5",
+    "A18"
+   ]
+  ],
+  "bounds": "UnverifiedTerm: payout_request_amount_choice: status 'unstated', not 'verified' -- it may not be loaded; section 5 of prereg/RD-01_firm_contracts.md reads it by a declared rule (`firm_terms.DECLARED`)"
+ },
+ "A20": {
+  "meta": [
+   "A20",
+   "account policy",
+   "request cadence",
+   "declared",
+   "declared",
+   [
+    "require_profit_since_payout"
+   ],
+   [
+    "A18"
+   ]
+  ],
+  "bounds": "Range(lever='A20', kind='fixed', values=('every_eligible_close',), lo=None, hi=None, step=None, unit='request cadence', read={'require_profit_since_payout': True}, detail={})"
+ },
+ "A21": {
+  "meta": [
+   "A21",
+   "account policy",
+   "payout method",
+   "declared",
+   "declared",
+   [
+    "payout_lag_days_aeropay",
+    "payout_fee",
+    "payout_lag_days_ach",
+    "payout_fee_ach"
+   ],
+   []
+  ],
+  "bounds": "Range(lever='A21', kind='fixed', values=('aeropay',), lo=None, hi=None, step=None, unit='payout method', read={'payout_lag_days_aeropay': 3, 'payout_fee': 0.0, 'payout_lag_days_ach': 6, 'payout_fee_ach': 30.0}, detail={})"
+ },
+ "__space__": [
+  "A1",
+  "A10",
+  "A11",
+  "A12",
+  "A15",
+  "A16",
+  "A17",
+  "A18",
+  "A2",
+  "A20",
+  "A21",
+  "A3",
+  "A4",
+  "A5",
+  "A6",
+  "A7",
+  "A8",
+  "S2",
+  "S3",
+  "S4",
+  "S5",
+  "T1",
+  "T2",
+  "T2b",
+  "T3",
+  "T4",
+  "T5",
+  "T6",
+  "T8"
+ ],
+ "__refusals__": {
+  "T7": "NotComputed",
+  "S1": "NotComputed",
+  "S6": "DroppedLever",
+  "S7": "DroppedLever",
+  "S8": "DroppedLever",
+  "S9": "DroppedLever",
+  "A9": "UnverifiedTerm",
+  "A13": "DroppedLever",
+  "A14": "DroppedLever",
+  "A19": "UnverifiedTerm"
+ },
+ "__counts__": {
+  "trigger": {
+   "searched": 6,
+   "declared": 3,
+   "dropped": 0
+  },
+  "trade shape": {
+   "searched": 5,
+   "declared": 0,
+   "dropped": 4
+  },
+  "account policy": {
+   "searched": 15,
+   "declared": 4,
+   "dropped": 2
+  }
+ }
+}
