@@ -67,6 +67,8 @@ E194_BREACH = ("tests/test_breakeven.py::test_p14s_substitution_reaches_its_trad
 LIGHT: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
     "identity/breakeven_identity.py": (
         (("--synthetic", "!--substitution", "!--smoke-days"), "E-011's synthetic days only; no bar or walk read"),),
+    "identity/three_way_firm_identity.py": (
+        (("--synthetic", "!--paths"), "gate_identity's synthetic blocks only; no bar or walk read (Q-185)"),),
     "identity/gate_identity.py": (
         (("--synthetic",), "synthetic blocks only; no bar or walk read"),
         (("--cls", "everything"), "argparse refuses the unknown arm before anything runs"),),

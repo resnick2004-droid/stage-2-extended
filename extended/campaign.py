@@ -44,6 +44,12 @@ path is recorded and read where it ran. The proof strips both markers (`MARKERS`
 `extended.levers_path`'s copy of the vendored path runner and path (`lever_runner`); the summary's provenance names it.
 None: every call as before. The proof strips the three markers.
 
+**Q-185 (the three-way runner's firm path)** adds, on lines marked Q-185, the keyword `path_fn` (default None, last
+in the signature): a path runner with the vendored `_run_paths`'s signature that makes the paths in its place
+(`extended.three_way_firm.registered_runner`, so P-14's registered gate paths are reproduced through the firm path's
+own engine call); refused beside a recorder or levers (`check_path_fn`); named in the provenance only when given.
+None: every call as before. The proof strips the four markers.
+
 **The identities** (`identity/gate_identity.py`, through `extended.gate.run_gate`, which calls this campaign):
 synthetic in the fast tier; P-14's and P-16's registered gate paths at 4 paths (slow) and at 500 (heavy, the lead's).
 """
@@ -86,7 +92,7 @@ VENDORED_CAMPAIGN_SHA256 = "0bb321f521e99dfcf560ea128de7cf9df2bf621c1878482cb986
 #: the comment marker on every added line of this module's re-composed function
 MARKER = "Q-71"
 #: every marker the re-composition proof strips: Q-71's evaluation class, Q-70's place recorder, Q-119's levers
-MARKERS = (MARKER, "Q-70", "Q-119")
+MARKERS = (MARKER, "Q-70", "Q-119", "Q-185")
 
 
 def source_sha256(fn: Callable) -> str:
@@ -186,6 +192,16 @@ def path_runner(path_reducer: Any, *, record_trades: bool, record_days: bool) ->
     return path_reducer.runner(keep_trades=record_trades, keep_days=record_days)
 
 
+def check_path_fn(path_fn: Any, path_reducer: Any, levers: Any) -> Callable:
+    """Q-185: the caller's path runner (the vendored `_run_paths`'s signature), refused beside Q-70's recorder or
+    Q-119's levers (each of which chooses its own runner) and unless callable."""
+    if not callable(path_fn):
+        raise TypeError(f"path_fn must be a path runner with the vendored _run_paths's signature, got {path_fn!r}")
+    if path_reducer is not None or levers is not None:
+        raise ValueError("path_fn chooses the paths' runner: refused beside a path reducer (Q-70) or levers (Q-119)")
+    return path_fn
+
+
 def simulate_lockstep_campaign(
     protocol: Protocol,
     *,
@@ -235,6 +251,7 @@ def simulate_lockstep_campaign(
     combine_account_cls: type | None = None,                                    # Q-71
     path_reducer: Any = None,                                                   # Q-70
     levers: Any = None,                                                         # Q-119
+    path_fn: Any = None,                                                        # Q-185
 ) -> tuple[CampaignSummary, list[LockstepPath]]:
     """The vendored `propedge.campaign.lockstep.simulate_lockstep_campaign` (its docstring holds every argument's
     meaning), plus `combine_account_cls`: the evaluation account's class on every path -- the vendored `CombineAccount`
@@ -318,6 +335,8 @@ def simulate_lockstep_campaign(
     _run_paths = path_runner(path_reducer, record_trades=record_trades, record_days=record_days)  # noqa: F811  # Q-70
     if levers is not None:                                                      # Q-119: the paths through A-1's path
         _run_paths = _lp.lever_runner(levers, _run_paths, path_reducer)         # noqa: F811  # Q-119
+    if path_fn is not None:                               # Q-185: the paths through the caller's path runner
+        _run_paths = check_path_fn(path_fn, path_reducer, levers)               # noqa: F811  # Q-185
     results = _run_paths(protocol, path_kwargs, seeds, draw_factories_for_path, flip_for_path, wallet_for_path,
                          workers=workers, pool=pool, memory_per_worker_gb=memory_per_worker_gb)
 
@@ -338,6 +357,8 @@ def simulate_lockstep_campaign(
             f"{combine_account_cls.__module__}.{combine_account_cls.__qualname__}")                 # Q-71
     if levers is not None:                                # Q-119: named only when given                # Q-119
         provenance_extra["levers"] = {"decision": "RD-03 A-1", **levers.as_dict()}                  # Q-119
+    if path_fn is not None:                               # Q-185: named only when given
+        provenance_extra["path_fn"] = f"{path_fn.__module__}.{path_fn.__qualname__}"              # Q-185
     summary = summarise_paths(
         [r.path for r in results],
         protocol=protocol, edge=edge, seed=seed, initial_bankroll=initial_bankroll,
@@ -380,4 +401,5 @@ def simulate_lockstep_campaign(
 
 __all__ = ["VENDORED_CAMPAIGN_SHA256", "MARKER", "MARKERS", "source_sha256", "vendored_campaign_sha256",
            "check_vendored_source", "recomposition_problems", "campaign_recomposition_problems", "path_runner",
+           "check_path_fn",
            "simulate_lockstep_campaign"]
