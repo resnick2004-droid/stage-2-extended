@@ -15,7 +15,10 @@ pytest through `run`, which:
    (the one a tree without Q-174 contends for), slot i is `<lock>.slot<i>`, each with its own record, heartbeat,
    takeover and release. The head of the line takes a free slot when none is running, or when available memory is at
    least 1.5 GB plus SLOT_RESERVE_GB (2.5 GB, a measured fast tier's peak with a margin; SLOT_RESERVE_SOURCE) for every
-   slot running -- otherwise it keeps its place and waits, so with one slot's worth of memory nothing changes;
+   slot running -- otherwise it keeps its place and waits, so with one slot's worth of memory nothing changes. **A
+   slot running n xdist workers** (Q-193, scripts/fasttier_xdist.py, which writes its n into its record as `workers`)
+   **counts at its own reserve**, slot_reserve_gb(n) = SLOT_RESERVE_GB + (n - 1) * PER_WORKER_GB: slots and workers
+   share one memory and are never counted apart;
 2. **waits for a live holder, first come first served** (Q-165), polling every 30 s and printing one line a minute
    with its place in line: on arrival a waiter takes a ticket -- a file created atomically in the queue directory
    beside the lock (`<lock>.queue/`), named by its arrival time, pid and token -- and takes the lock only while its
@@ -88,6 +91,12 @@ SLOT_RESERVE_SOURCE = (
     "5.385 GB, up to 91 processes; machine-wide available memory fell to 0.018 GB). The reserve is that peak rounded up "
     "with about 10 % for spikes between samples; one full run measured (a second, partial, peaked lower)."
 )
+#: Q-193: a further xdist worker's peak inside a slot -- the largest worker subtree measured on the fast tier's slices,
+#: with its margin (scripts/fasttier_xdist.py's MEASURE_SOURCE; tests/test_fasttier_xdist.py traces it to the records in
+#: docs/measurements/q193_xdist). Slots and workers share one memory, so a slot's reserve grows with its workers and is
+#: never counted apart from them: slot_reserve_gb is the one accounting, used both by the slot admission below and by
+#: the runner's choice of n (fasttier_xdist.choose_workers), and a running slot records its n ("workers").
+PER_WORKER_GB = 1.2
 EXIT_TIMEOUT = 75                # EX_TEMPFAIL: the wait ran out
 EXIT_LOST = 76                   # the lock was taken from this holder before pytest started
 
@@ -261,7 +270,8 @@ def describe(rec: dict | None) -> str:
     if not rec:
         return "an unreadable record"
     return (f"tree={rec.get('tree')}, pid={rec.get('pid')}, since {rec.get('start')}"
-            f" (phase {rec.get('phase')}, updated {rec.get('updated')})")
+            f" (phase {rec.get('phase')}, updated {rec.get('updated')}"
+            + (f", {rec['workers']} xdist workers" if workers_of(rec) > 1 else "") + ")")
 
 
 def stale_reason(path: Path, raw: str) -> str | None:
@@ -347,6 +357,42 @@ def line(q: Path, mine: str, cap_s: float = TIMEOUT_S) -> list[str]:
     return live
 
 
+def slot_reserve_gb(workers: int = 1, reserve_gb: float | None = None, per_worker_gb: float = PER_WORKER_GB) -> float:
+    """One slot's memory reserve at `workers` xdist workers (Q-193): the serial fast tier's reserve (SLOT_RESERVE_GB,
+    or `reserve_gb`) plus one worker's peak for each worker beyond the first. A serial slot's is SLOT_RESERVE_GB, as
+    Q-174 declared it."""
+    base = SLOT_RESERVE_GB if reserve_gb is None else reserve_gb
+    return base + max(0, int(workers) - 1) * per_worker_gb
+
+
+def workers_of(rec: dict | None) -> int:
+    """The xdist workers a slot's record says it runs (Q-193): an integer >= 1, else 1 (a serial tier, or a record
+    written before its runner chose n, or by a tree without Q-193)."""
+    w = (rec or {}).get("workers")
+    return w if isinstance(w, int) and not isinstance(w, bool) and w >= 1 else 1
+
+
+def record_workers(lock: Path, token: str, workers: int, n_slots: int | None = None) -> Path | None:
+    """Write `workers` into the record of the slot this token holds (the runner calls it, inside the slot, before its
+    workers start), so a later slot's admission counts this slot's reserve at its n. The slot's path, or None if no
+    slot holds the token."""
+    for sp in _slot_files(lock, MAX_SLOTS if n_slots is None else n_slots):
+        rec = _parse(_read_raw(sp) or "")
+        if rec is None or rec.get("token") != token:
+            continue
+        rec["workers"] = int(workers)
+        rec["updated"] = now().isoformat()
+        data = json.dumps(rec, indent=2)
+        for _ in range(20):
+            try:
+                sp.write_text(data, encoding="utf-8")
+                return sp
+            except PermissionError:
+                time.sleep(0.05)
+        return None
+    return None
+
+
 def _survey(slots: list[Path]) -> tuple[list[Path], dict[Path, str]]:
     """The free slots (a stale holder taken over, said) and the live holders' raw records, in slot order."""
     free, held = [], {}
@@ -395,7 +441,9 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
                     ok = running == 0                     # nothing running: today's rule, the memory wait follows
                     if not ok:
                         gb = free_gb()
-                        need = min_free_gb + reserve * running
+                        # each running slot at its own workers' reserve (Q-193); a serial slot's is `reserve`
+                        need = min_free_gb + sum(slot_reserve_gb(workers_of(_parse(r)), reserve)
+                                                 for r in held_raw.values())
                         ok = gb is not None and gb >= need
                         if not ok:
                             memory_note = (f"; slot {slots.index(free[0]) + 1} of {n_slots} is free but needs "
@@ -557,7 +605,8 @@ def status(lock: Path) -> int:
     mem = "memory unknown" if gb is None else f"{gb:.1f} GB available"
     slots = _slot_files(lock, MAX_SLOTS)
     print(f"fast-tier lock: {MAX_SLOTS} slot(s) ({ENV_SLOTS}); a further slot opens at {MIN_FREE_GB:.1f} GB + "
-          f"{SLOT_RESERVE_GB:.1f} GB per running slot available  ({mem})")
+          f"{SLOT_RESERVE_GB:.1f} GB per running slot, + {PER_WORKER_GB:.1f} GB per further xdist worker in it, "
+          f"available  ({mem})")
     for i, sp in enumerate(slots):
         raw = _read_raw(sp)
         if raw is None:

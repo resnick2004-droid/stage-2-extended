@@ -13,6 +13,12 @@
 # hook after 3 hours of waiting -- never a silent pass. The identity (`slow`), anything `heavy` and the vendored stage-one suite run in
 # /validate, never here.
 #
+# IN PARALLEL (Q-193). Inside its slot the fast tier runs through `scripts/fasttier_xdist.py`: pytest-xdist with n
+# workers, n chosen from the memory free when the slot is taken (1 to 4; n = 1 is the serial command, unchanged). The
+# parallel run must hold exactly the serial collection's tests; the tests that failed in parallel, and only those, are
+# rerun serially; the commit passes only if each passed in one or the other, and the verdict line names every test
+# that passed only serially (an isolation defect to fix). Same selection, same markers.
+#
 # THE VERDICT (Q-161). A commit is written only when the fast tier itself returned 0.
 #   * Git for Windows reads a hook's exit status as the LOW BYTE of its Windows exit code, and the MSYS runtime gives a
 #     shell killed by signal N the exit code N << 8 (SIGTERM 0xF00, SIGKILL 0x900, SIGPIPE 0xD00): a killed hook reads
@@ -218,8 +224,18 @@ FT_OUT="$GITDIR/fasttier-last.log"
 rm -f "$FT_OUT"
 S2X_FASTTIER_TEE=$FT_OUT
 export S2X_FASTTIER_TEE
+# Q-193: inside its slot the fast tier runs in parallel (pytest-xdist), with n workers chosen from the memory free at
+# the moment the slot is taken: scripts/fasttier_xdist.py. n = 1 runs the very command below; n >= 2 checks that the
+# parallel run held exactly the serial collection's tests, reruns only the tests that failed in parallel, serially, and
+# passes only if each passed in one or the other (a test that passed only serially is named in the verdict as an
+# isolation defect). The selection is the same either way. A tree without the script runs the serial command, as
+# before (not checked by less: it is the command that tree always ran).
 set +e
-run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+if [ -f scripts/fasttier_xdist.py ]; then
+    run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" scripts/fasttier_xdist.py --work "$GITDIR/fasttier-xdist" -m "$FAST_TIER"
+else
+    run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
+fi
 FT_RC=$?
 set -e
 unset S2X_FASTTIER_TEE
@@ -227,8 +243,10 @@ if [ "$FT_RC" -ne 0 ]; then
     refuse "the fast tier FAILED (exit $FT_RC); the commit is refused. Its output: $FT_OUT"
 fi
 
-# The verdict: written only here, after the fast tier itself returned 0.
-SUMMARY=$(grep -E '[0-9]+ passed' "$FT_OUT" 2>/dev/null | tail -n 1 | tr -d '\r') || SUMMARY=
+# The verdict: written only here, after the fast tier itself returned 0. Its pass line is the last line holding
+# "<k> passed": pytest's own when the run was serial, scripts/fasttier_xdist.py's verdict line when parallel (the count
+# over both runs, n, and every test that passed only in the serial rerun). A tab would split the log's record: none.
+SUMMARY=$(grep -E '[0-9]+ passed' "$FT_OUT" 2>/dev/null | tail -n 1 | tr -d '\r' | tr '\t' ' ') || SUMMARY=
 [ -n "$SUMMARY" ] || SUMMARY="-"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 printf '%s\t%s\t%s\t%s\n' "$TREE" "$NOW" "$REPO_ROOT" "$SUMMARY" >> "$COMMON/fasttier-verdicts.log" ||
