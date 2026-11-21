@@ -22,7 +22,8 @@ pytest through `run`, which:
    ticket is the oldest live one. The waiter touches its ticket on every poll (its heartbeat, Q-199); a ticket whose
    process is not running, or whose heartbeat is older than TICKET_STALE_S (10 min), is skipped and removed, never
    honoured -- never for its arrival's age, since a live waiter may wait past the cap in all. A ticket without the
-   heartbeat mark (a tree without Q-199) keeps that tree's rule: removed once its arrival is older than the 3-hour cap.
+   heartbeat mark (a tree without Q-199) is kept while its pid lives within the 3-hour cap by arrival (that tree's rule)
+   and past it only while it was recreated within TICKET_STALE_S (its owner puts it back after each age prune).
    A waiter whose ticket was removed under it puts it back on its next poll under the same name, so at the same place.
    The ticket is removed on every exit path; a hard kill leaves it with a dead pid;
 3. **takes over a stale holder**, saying so: its pid is not running (a hook that crashed or was killed), or its record
@@ -374,7 +375,8 @@ def line(q: Path, mine: str, cap_s: float = TIMEOUT_S, stale_s: float = TICKET_S
     place, even while its file is missing (its owner puts it back). Another's ticket is removed here, never honoured,
     when its process is not running, or (Q-199) when it beats and its heartbeat is older than `stale_s` -- never for its
     arrival's age, since a live waiter may wait past the cap in all. A ticket that does not beat was written by a tree
-    without Q-199 and keeps that tree's rule: removed once its arrival is older than `cap_s`."""
+    without Q-199: kept while its pid lives and its arrival is within `cap_s` (that tree's rule), and past `cap_s` only
+    while it was (re)created within `stale_s` -- its owner recreates it whenever an old tree's age prune removes it."""
     names = sorted(t.name for t in q.iterdir()) if q.is_dir() else []
     live = []
     now_ns = time.time_ns()
@@ -387,16 +389,16 @@ def line(q: Path, mine: str, cap_s: float = TIMEOUT_S, stale_s: float = TICKET_S
             if not pid_alive(pid):
                 _unlink(q / name)
                 continue
-            if is_heartbeat_ticket(name):
+            if is_heartbeat_ticket(name) or (now_ns - arrival_ns) / 1e9 > cap_s:
+                # A beating ticket is judged by its heartbeat. A ticket of a tree without Q-199, past the cap, by its
+                # last (re)creation: a live owner puts it back each time an old tree's age prune removes it, a dead
+                # owner (its pid reused) never does.
                 age = _beat_age_s(q / name)
                 if age is None:
                     continue                              # removed a moment ago
                 if age > stale_s:
                     _unlink(q / name)
                     continue
-            elif (now_ns - arrival_ns) / 1e9 > cap_s:
-                _unlink(q / name)
-                continue
         live.append(name)
     if mine not in live and parse_ticket(mine) is not None:
         live = sorted(live + [mine])

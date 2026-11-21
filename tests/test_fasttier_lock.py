@@ -430,12 +430,16 @@ def test_a_dead_waiters_ticket_does_not_block_the_line_and_is_removed(lock, caps
     F.release(lock, h)
 
 
-def test_a_live_ticket_older_than_the_cap_is_skipped_and_removed(lock):
+def test_a_live_ticket_older_than_the_cap_and_not_recreated_lately_is_skipped_and_removed(lock):
+    """Q-199 narrowed this (it was: any live ticket past the cap by arrival): an old-code ticket past the cap whose file
+    is older than TICKET_STALE_S -- a pid reused after its owner died -- is removed."""
     q = F.queue_dir(lock)
     q.mkdir()
     old_ns = time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9)
     old = q / F.ticket_name(old_ns, os.getpid(), "0ld0ld")
     old.write_text("", encoding="utf-8")
+    then = time.time() - F.TICKET_STALE_S - 60
+    os.utime(old, (then, then))
     h = F.acquire(lock, tree="T", timeout_s=30, poll_s=0.05)
     assert not old.exists()
     F.release(lock, h)
@@ -615,20 +619,43 @@ def test_a_live_pid_with_a_stale_heartbeat_is_removed_however_young_its_arrival(
     assert F.line(q, mine) == [fresh.name, mine] and not stale.exists()
 
 
-def test_an_old_code_ticket_keeps_the_old_codes_rule(tmp_path):
-    """Mixed trees: a ticket without the mark is never touched by its owner, so its mtime says nothing -- it is kept
-    while its pid lives and its arrival is within the cap (an old mtime does not remove it), as old code keeps it."""
+def test_an_old_code_ticket_is_kept_within_the_cap_and_past_it_only_while_recreated(tmp_path):
+    """Mixed trees: a ticket without the mark is never touched by its owner. Within the cap by arrival it is kept while
+    its pid lives, whatever its mtime (old code's rule). Past the cap it is kept while it was (re)created within
+    TICKET_STALE_S -- its live owner puts it back after every old tree's age prune -- and removed once older: a dead
+    owner whose pid was reused never recreates it."""
     q = tmp_path / "q"
     q.mkdir()
+    past_cap = time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9)
+    expired = q / F.ticket_name(past_cap, os.getpid(), "expired")
+    recreated = q / F.ticket_name(past_cap + 1, os.getpid(), "recreated")
     legacy = q / F.ticket_name(time.time_ns() - 10**9, os.getpid(), "legacy")
-    legacy.write_text("", encoding="utf-8")
-    then = time.time() - 3600
-    os.utime(legacy, (then, then))
-    expired = q / F.ticket_name(time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9), os.getpid(), "expired")
-    expired.write_text("", encoding="utf-8")
+    for t, beat_age in ((expired, F.TICKET_STALE_S + 60), (recreated, 30), (legacy, 3600)):
+        t.write_text("", encoding="utf-8")
+        then = time.time() - beat_age
+        os.utime(t, (then, then))
     mine = _hb_ticket(q, time.time_ns(), os.getpid(), "me").name
-    assert F.line(q, mine) == [legacy.name, mine]
-    assert legacy.exists() and not expired.exists()
+    assert F.line(q, mine) == [recreated.name, legacy.name, mine]
+    assert legacy.exists() and recreated.exists() and not expired.exists()
+
+
+def test_a_live_old_code_waiter_past_the_cap_holds_its_place_before_a_new_code_waiter(lock, clock):
+    """The waiter seen on 2026-11-20 (an old-code tree, 4.6 h by arrival): old trees' age prune removes its ticket every
+    poll and it puts it back every poll; a new-code waiter keeps it in line and takes no free slot ahead of it."""
+    q = F.queue_dir(lock)
+    q.mkdir()
+    old = q / F.ticket_name(time.time_ns() - H4, os.getpid(), "oldtree")         # no heartbeat mark
+    old.write_text("", encoding="utf-8")
+
+    def sleep(s):
+        clock.sleep(s)
+        old.unlink()                                           # an old tree's line() prunes it by arrival ...
+        old.write_text("", encoding="utf-8")                   # ... and its owner's next poll puts it back
+
+    with pytest.raises(F.WaitTimeout) as e:
+        F.acquire(lock, tree="new", timeout_s=90, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert not lock.exists() and old.exists()
+    assert "place 2 of 2" in str(e.value)
 
 
 def test_the_line_always_holds_mine_at_its_arrival_place_even_while_its_file_is_missing(tmp_path):
