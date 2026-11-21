@@ -6,15 +6,12 @@ is `extended.`'s.
 **W42-R1 as it stands** (C-1): `load_w42()` reads `extended/wave42.py`, `scripts/wave42_apply.py` and the rule text
 unedited from `WAVE42_COMMIT` on `wt/wt-infra` (`git show`) into a temporary root whose `extended/` is put on
 `extended.__path__`. Its two calendar shas, not yet pinned there (`SEARCH_CALENDAR_SHA256` is None until Q-197; the
-held-out calendar is never read here), are set to this world's synthetic calendars. Three **labelled stand-ins**, each
-removed when its item lands:
-* `W42_PUBLIC_STANDIN`: `composite_per_seed(values, sessions_left, out)` and `limit_estimate(values, sessions_left,
-  out, name)`, the public functions the W42-R1 worker is adding (those `setting_rule` calls); attached only when the
-  module lacks them, and checked by `tests/test_survey.py` to reproduce `setting_rule`'s own baseline composites,
-  limit estimates and do-nothing floor on this world's H4 reading;
-* `extended/search_calendar.py` (Q-197's loader, `load_search_calendar(path)`), written into the temporary root;
-* `q192b_protocol_for`: Q-192b's change (the ledger reads a declared limit measure on the re-read seeds), asserting
-  the real `protocol_for`'s signature first.
+held-out calendar is never read here), are set to this world's synthetic calendars. Q-197's loader (`extended/search_calendar.py`) is read
+unedited from `CALENDAR_COMMIT` on `wt/wt-cal` the same way. **One labelled stand-in** remains, removed when W42-R1's
+public functions land: `W42_PUBLIC_STANDIN`, `composite_per_seed(values, sessions_left, out)` and
+`limit_estimate(values, sessions_left, out, name)` (those `setting_rule` calls); attached only when the module lacks
+them, and checked by `tests/test_survey.py` to reproduce `setting_rule`'s own baseline composites, limit estimates
+and do-nothing floor on this world's H4 reading.
 
 **The fixture** is W42-R1's own application: `w42_root(path, spread, base_q)` writes a synthetic H4 collection result
 and sidecar, the two synthetic calendars, and runs `wave42_apply.apply` with synthetic `Sources` (the adapter returns
@@ -55,6 +52,7 @@ import numpy as np
 from extended import ROOT
 
 WAVE42_COMMIT = "34ee968"          # wt/wt-infra: W42-R1 after its two corrective cycles (C-1)
+CALENDAR_COMMIT = "7b51144"        # wt/wt-cal: Q-197's search calendar and its loader
 A = 2.0
 A_NEAR = 0.45                      # on the spread fixture: a gap past delta*, short of delta* + t se
 A_NEAR6 = 1.1                      # at 6 re-read seeds: every t past the normal 3, one short of t(5)'s 5.51
@@ -89,22 +87,26 @@ def _csv(dates) -> bytes:
 CAL = calendar()
 STARTS = tuple(CAL[N_CAL - s] for s in STARTS_LEFT)
 
-_CAL_LOADER = '''"""STAND-IN for Q-197's search calendar loader (tests/survey_world.py writes it; removed when Q-197 lands)."""
-import csv, hashlib, io
-from pathlib import Path
-from types import SimpleNamespace
-
-
-def load_search_calendar(path):
-    raw = Path(path).read_bytes()
-    dates = tuple(r["date"] for r in csv.DictReader(io.StringIO(raw.decode("utf-8"))))
-    return SimpleNamespace(dates=dates, file_sha256=hashlib.sha256(raw).hexdigest(),
-                           calendar_sha256=hashlib.sha256("".join(f"{d}\\n" for d in dates).encode()).hexdigest())
-'''
+def calendar_file(path: Path) -> str:
+    """This world's search calendar in Q-197's form (`search_calendar.to_csv_text`, every column, regular days, no
+    void), with the sidecar its loader requires (the file's sha256, the calendar's digest). Returns the file's
+    sha256."""
+    SC = importlib.import_module("extended.search_calendar")
+    from datetime import date
+    n = len(CAL)
+    rows = [{"date": d, "weekday": SC.WEEKDAYS[date.fromisoformat(d).weekday()], "session": i + 1,
+             "sessions_left": n - i, "day_kind": "regular", **{k: 0 for k in SC.FLAG_COLUMNS},
+             **{k: "" for k in SC.LABEL_COLUMNS if k not in ("weekday", "day_kind")}} for i, d in enumerate(CAL)]
+    rows = [{k: r[k] for k in SC.COLUMNS} for r in rows]
+    path.write_bytes(SC.to_csv_text(rows).encode("utf-8"))
+    sha = hashlib.sha256(path.read_bytes()).hexdigest()
+    Path(f"{path}.manifest.json").write_text(json.dumps({"sha256": sha, "parameters": {
+        "calendar_sha256": SC.calendar_digest(CAL)}}), encoding="utf-8")
+    return sha
 
 
 def load_w42():
-    """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), the stand-ins
+    """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), the stand-in
     attached (the module docstring). Returns (wave42, wave42_apply)."""
     global _W42
     if _W42 is not None:
@@ -112,24 +114,24 @@ def load_w42():
     import extended
 
     root = Path(tempfile.mkdtemp(prefix="survey-w42-"))
-    for rel in ("extended/wave42.py", "scripts/wave42_apply.py", "docs/plans/WAVE42_SETTING_RULE.md"):
+    for rel, commit in (("extended/wave42.py", WAVE42_COMMIT), ("scripts/wave42_apply.py", WAVE42_COMMIT),
+                        ("docs/plans/WAVE42_SETTING_RULE.md", WAVE42_COMMIT),
+                        ("extended/search_calendar.py", CALENDAR_COMMIT)):
         mine = ROOT / rel
         if mine.is_file() and rel != "scripts/wave42_apply.py":
             data = mine.read_bytes()
         else:
-            r = subprocess.run(["git", "show", f"{WAVE42_COMMIT}:{rel}"], cwd=ROOT, capture_output=True)
+            r = subprocess.run(["git", "show", f"{commit}:{rel}"], cwd=ROOT, capture_output=True)
             if r.returncode != 0:
                 import pytest
-                pytest.skip(f"W42-R1's {rel} is neither in this tree nor at {WAVE42_COMMIT}")
+                pytest.skip(f"{rel} is neither in this tree nor at {commit}")
             data = r.stdout
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
         (root / rel).write_bytes(data)
-    if not (ROOT / "extended" / "search_calendar.py").is_file():
-        (root / "extended" / "search_calendar.py").write_text(_CAL_LOADER, encoding="utf-8")
     if not (ROOT / "extended" / "wave42.py").is_file() or not (ROOT / "extended" / "search_calendar.py").is_file():
         extended.__path__.append(str(root / "extended"))
     W = importlib.import_module("extended.wave42")
-    W.SEARCH_CALENDAR_SHA256 = hashlib.sha256(_csv(CAL)).hexdigest()
+    W.SEARCH_CALENDAR_SHA256 = calendar_file(root / "search_calendar.csv")
     W.HELD_OUT_CALENDAR_SHA256 = hashlib.sha256(_csv(held_out_calendar())).hexdigest()
     for name, fn in W42_PUBLIC_STANDIN.items():
         if not hasattr(W, name):
@@ -176,20 +178,6 @@ def _limit_standin(values, sessions_left, out, name):
 
 
 W42_PUBLIC_STANDIN = {"composite_per_seed": _composite_standin, "limit_estimate": _limit_standin}
-
-
-def q192b_protocol_for(orig):
-    """STAND-IN for Q-192b: `protocol_for(measure, reread=True)` admits a declared limit measure on the re-read seeds.
-    It asserts the real method's signature first, so a changed API fails here, not silently."""
-    sig = inspect.signature(orig)
-    assert list(sig.parameters) == ["self", "measure", "reread"] and \
-        sig.parameters["reread"].kind is inspect.Parameter.KEYWORD_ONLY, f"protocol_for's API changed: {sig}"
-
-    def protocol_for(self, measure=None, *, reread=False):
-        if reread and measure is not None and measure in self.measures:
-            return self.reread.with_measure(measure)
-        return orig(self, measure, reread=reread)
-    return protocol_for
 
 
 # ------------------------------------------------------------------------------------------------ the units
@@ -258,7 +246,7 @@ def w42_root(root: Path, spread: float = 0.0, base_q: float = 0.0) -> dict[str, 
     W, apply = load_w42()
     res = root / "results"
     res.mkdir(parents=True, exist_ok=True)
-    (res / W.SEARCH_CALENDAR).write_bytes(_csv(CAL))
+    calendar_file(res / W.SEARCH_CALENDAR)
     (res / W.HELD_OUT_CALENDAR).write_bytes(_csv(held_out_calendar()))
     seeds = tuple(range(H4_SEEDS))
     vals = baseline_values(seeds, N_CAL, spread, base_q)

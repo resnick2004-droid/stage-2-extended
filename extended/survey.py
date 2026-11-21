@@ -67,7 +67,7 @@ from extended import ROOT
 from extended import reader as R
 
 TASK = "Wave 5"
-ENGINE_COMMIT = "f2cc64b"                               # Wave 3.4 with Q-192 (Q-192b's re-read of the limits pending)
+ENGINE_COMMIT = "83160d4"                               # Wave 3.4 with Q-192 and Q-192b (the limits on the re-read)
 W42_RULE = "W42-R1"
 W42_SCRIPT = "scripts/wave42_apply.py"
 ENTRY_SCRIPT = "scripts/survey_run.py"
@@ -754,7 +754,7 @@ def load_objective(W: Any) -> Objective:
     return ob
 
 
-def load_calendar(W: Any, values: Mapping[str, Any]) -> tuple[str, ...]:
+def load_calendar(W: Any, values: Mapping[str, Any]) -> Any:
     """The pinned search calendar (Q-197), through its loader, by `wave42.SEARCH_CALENDAR_SHA256`, its dates the ones
     W42-R1 was set on (M-3)."""
     try:
@@ -771,7 +771,9 @@ def load_calendar(W: Any, values: Mapping[str, Any]) -> tuple[str, ...]:
         raise SpecRefused("REFUSED: the search calendar is not the one W42-R1's values were set on")
     if not dates or dates[-1] != SEARCH_LAST:
         raise SpecRefused(f"REFUSED: the search calendar ends on {SEARCH_LAST}")
-    return dates
+    if [int(cal.sessions_left(d)) for d in dates[:1] + dates[-1:]] != [len(dates), 1]:
+        raise SpecRefused("REFUSED: the calendar's sessions left are not W42-R1's (len - position, the start counted)")
+    return cal
 
 
 def composite(ctx: "Context", arm: Mapping[str, Any], sl: Sequence[int]) -> np.ndarray:
@@ -814,6 +816,7 @@ class Context:
     W: Any
     obj: Objective
     calendar: tuple[str, ...]
+    cal: Any
     space: Any
     gate: Callable[[Mapping[str, Any]], str | None]
     gate_keys: tuple[str, ...]
@@ -881,8 +884,7 @@ def sessions_left(ctx: Context, starts: Sequence[str]) -> np.ndarray:
     out = [d for d in s if not any(b0 <= d <= b1 for b0, b1 in ctx.protocol.blocks)]
     if out:
         raise SurveyRefused(f"the runner's start {out[0]} lies outside the protocol's blocks")
-    n = len(ctx.calendar)
-    return np.array([n - ctx._pos[d] for d in s])
+    return np.array([int(ctx.cal.sessions_left(d)) for d in s])                    # Q-197's own definition
 
 
 def _check_real_path(out: RunOutput, keys: set[str]) -> None:
@@ -1193,7 +1195,7 @@ def plateau_step(ctx: Context, finalist: Any) -> Any:
     rule = PL.PlateauRule(**dict(ctx.spec.plateau_rule, margin=ctx.obj.delta))
 
     def evaluate(design: Mapping[str, Any], *, protocol: Any) -> Any:
-        return read_design(ctx, design, protocol, "plateau")[ctx.spec.measure]
+        return read_design(ctx, design, protocol, "plateau")[protocol.measure]      # the composite or a limit
 
     return PL.check(finalist, ctx.space, rule, evaluate, ledger=ctx.ledger, ledger_seed=ctx.spec.plateau_seed,
                     seed=ctx.spec.plateau_box_seed)
@@ -1228,8 +1230,15 @@ def choose_finalists(ctx: Context) -> list[dict[str, Any]]:
         except _Refused as g:
             rec.update(kept=False, reason=f"a plateau neighbour is refused ({g.cls}): {g.reason}")
             continue
+        if v.protocol_sha256 != ctx.spec.protocol_sha256:
+            raise SurveyRefused("the plateau's verdict is on another protocol than the declaration's (rb2-a)")
+        off = [m for m, x in v.reread_limits.items() if abs(x["value"] - float(got[m].value)) > 0.0]
+        if off or set(v.reread_limits) != set(ctx.limit_names):
+            raise SurveyRefused(f"the plateau's re-read limits are not the survey's ({off or 'another set'})")
         rec.update(plateau={"accepted": bool(v.accepted), "reason": v.reason, "rule": v.rule,
-                            "evaluated": v.evaluated, "held": v.held}, kept=bool(v.accepted), reason=v.reason)
+                            "evaluated": v.evaluated, "held": v.held, "protocol_sha256": v.protocol_sha256,
+                            "reread_limits": v.reread_limits, "size_at": v.size_at, "size_bound": v.size_bound,
+                            "size_label": v.size_label}, kept=bool(v.accepted), reason=v.reason)
         if v.accepted:
             finalists.append(rec)
     return finalists
@@ -1430,7 +1439,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
     W = _wave42()
     obj = load_objective(W)
     check_rows(spec, pin_row, _raw_sha(ROOT / "results" / W.OUTPUT_NAME), fixture)
-    calendar = load_calendar(W, obj.values)
+    cal = load_calendar(W, obj.values)
     parts = {k: build_part(spec.parts[k], fixture=fixture) for k in PART_NAMES}
     if space_digest(parts["space"]) != spec.parts["space"]["digest"]:
         raise PartRefused("REFUSED: the built space's digest is not the declared one (M-4)")
@@ -1445,7 +1454,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
         raise HeldOutRow(f"REFUSED: the variants ledger in {out_dir} already holds a held-out row: {bad[:3]}")
     check_once(sha, out_dir, name)
     limits = tuple(E.P.Limit(lim["name"], lim["bound"], lim["direction"]) for lim in obj.limits)
-    ctx = Context(spec, E, W, obj, calendar, parts["space"], parts["gate"], tuple(spec.parts["gate"]["keys"]),
+    ctx = Context(spec, E, W, obj, tuple(str(d) for d in cal.dates), cal, parts["space"], parts["gate"], tuple(spec.parts["gate"]["keys"]),
                   parts["schedule_builder"], parts["runner"], parts["playbook"], new_ledger(E), protocol, limits, sha,
                   writer, variants_writer)
     params = {"declaration_sha256": sha, "pin_row": pin_row, **process, "protocol_sha256": spec.protocol_sha256,
@@ -1458,6 +1467,8 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
         designs = draw_survey(ctx)
         if ctx.ledger.protocol_sha256 != spec.protocol_sha256:
             raise SurveyRefused("the ledger's protocol is not the pinned declaration's (rb2-a)")
+        params["ledger"] = {"protocol_sha256": ctx.ledger.protocol_sha256,
+                            "declared": json.loads(json.dumps(E.SS.thaw(ctx.ledger.declared), default=str))}
         check_engine_rereads(ctx)
         record_baselines(ctx)
         read_all(ctx, designs, "survey")

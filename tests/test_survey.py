@@ -1,10 +1,10 @@
 """Wave 5's survey runner (`extended/survey.py`), build v3, end to end on the synthetic worlds of
-`tests/survey_world.py`: Wave 3.4's engine with Q-192 (f2cc64b; Q-192b's re-read of the limits stood in), W42-R1 as it
+`tests/survey_world.py`: Wave 3.4's engine with Q-192 and Q-192b (wt/wt-features 83160d4), W42-R1 as it
 stands (34ee968: its module, its application script, its real output file made by `wave42_apply.apply`; its public
-composite and limit estimate stood in until they land), Q-197's calendar loader stood in. No bar, no result file of
+composite and limit estimate stood in until they land), Q-197's calendar and loader (wt/wt-cal 7b51144). No bar, no result file of
 the repository, no held-out calendar: every input and output is in a temporary folder (`SV.ROOT` pointed there).
 
-* the stand-ins reproduce W42-R1's own `setting_rule` outputs (the identity);
+* the stand-in public functions reproduce W42-R1's own `setting_rule` outputs (the identity);
 * the planted region is found within budget; in every other world there is no finalist, each world checked to bite;
 * every cell is counted (through Q-192's pens), the bytes repeat, one ledger a run;
 * the refusals (pins, rows, bindings, data, the space's digest, the allowlist, the spec's form, held-out first, the
@@ -46,11 +46,6 @@ def eng():
     E = SV.Engine.default()
     E.check()
     return E
-
-
-@pytest.fixture(autouse=True)
-def q192b(eng, monkeypatch):
-    monkeypatch.setattr(eng.SS.CellLedger, "protocol_for", W.q192b_protocol_for(eng.SS.CellLedger.protocol_for))
 
 
 @pytest.fixture(scope="module")
@@ -566,7 +561,17 @@ def _no_b5(orig):
     return m
 
 
-_ACCEPT = type("V", (), dict(accepted=True, reason="mutant", rule="m", evaluated=0, held=0))
+def _accept_all(orig):
+    """The plateau check skipped: a well-formed verdict accepting every candidate (its protocol and re-read limits the
+    survey's own, so only the check itself is missing)."""
+    def m(ctx, f):
+        got = SV.read_design(ctx, f.design, ctx.ledger.reread, "reread")
+        return type("V", (), dict(accepted=True, reason="mutant", rule="m", evaluated=0, held=0,
+                                  protocol_sha256=ctx.spec.protocol_sha256, size_at=0.0, size_bound=0.0,
+                                  size_label="mutant",
+                                  reread_limits={n: {"value": float(got[n].value), "se": float(got[n].se)}
+                                                 for n in ctx.limit_names}))()
+    return m
 _ALL_COMPLETE = (lambda o: (lambda ctx, starts: np.full(len(starts), len(ctx.calendar))))
 
 #: name: (module, function mutated, how, the scenario that must catch it, the refusals it may raise)
@@ -628,7 +633,7 @@ MUTANTS = {
     "book-skipped": (SV, "book_check", lambda o: (lambda out: None), "hedge", ()),
     "overlap-admitted": (SV, "book_check", _overlap_admitted, "overlap", ()),
     "gate-skipped": (SV, "gate_check", lambda o: (lambda ctx, out: None), "gated", ()),
-    "plateau-skipped": (SV, "plateau_step", lambda o: (lambda ctx, f: _ACCEPT()), "spike", ()),
+    "plateau-skipped": (SV, "plateau_step", _accept_all, "spike", ()),
     "check-output-dropped": (SV, "_check_output", lambda o: (lambda ctx, out, p: SV.sessions_left(ctx, out.starts)),
                              "realkeys", ()),
     "real-path-unchecked": (SV, "_check_real_path", lambda o: (lambda out, keys: None), "realkeys", ()),
@@ -684,6 +689,10 @@ def test_every_cell_is_counted_and_carries_its_protocol(eng, tmp_path, roots):
     assert "inactivity_guards" in detail and "vacuous_limits" in detail                                   # m-2
     lim = json.loads(csv(out.list_path)["limits"][0])
     assert {"check_t", "check_level", "crossing_shown", "selection_value", "vacuous"} <= set(lim["taken_mean_p10"])
+    pl = [c["plateau"] for c in out.candidates if "plateau" in c]                   # Q-192b's verdict, recorded
+    assert pl and all(x["protocol_sha256"] == protocol_sha(eng) and set(x["reread_limits"]) ==
+                      {lm.name for lm in W42.LIMITS} and {"size_at", "size_bound", "size_label"} <= set(x) for x in pl)
+    assert p["ledger"]["protocol_sha256"] == protocol_sha(eng) and p["ledger"]["declared"]
     assert audit(out) == []
 
 
@@ -1016,7 +1025,14 @@ def test_a_refusal_after_the_first_cell_writes_variants_first(eng, tmp_path, roo
 
 
 def test_an_engine_without_q192b_refuses(eng, tmp_path, roots, monkeypatch):
-    monkeypatch.undo()
+    """An engine whose ledger refuses a limit on the re-read seeds (Q-192 before Q-192b, stood in here) refuses."""
+    real = eng.SS.CellLedger.protocol_for
+
+    def before_q192b(self, measure=None, *, reread=False):
+        if reread and measure is not None and measure != self.protocol.measure:
+            raise eng.SS.OffProtocol("a limit on the re-read seeds (the engine before Q-192b)")
+        return real(self, measure, reread=reread)
+    monkeypatch.setattr(eng.SS.CellLedger, "protocol_for", before_q192b)
     with pytest.raises(SV.PartRefused, match="Q-192b"):
         survey(eng, tmp_path, roots)
     assert W.CALLS == []
@@ -1054,7 +1070,6 @@ def test_the_default_writers_in_a_process_of_their_own(tmp_path):
         W42, APPLY = W.load_w42()
         from extended import survey as SV
         E = SV.Engine.default()
-        E.SS.CellLedger.protocol_for = W.q192b_protocol_for(E.SS.CellLedger.protocol_for)
         tmp = Path({str(tmp_path)!r})
         root = tmp / "root"; W.w42_root(root)
         p = E.SS.Protocol("composite", tuple(tuple(b) for b in W.SPEC["protocol"]["blocks"]),
