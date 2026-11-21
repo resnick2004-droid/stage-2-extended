@@ -225,3 +225,65 @@ def test_the_declared_fee_is_the_ledgers_standard_subscription() -> None:
 def test_main_takes_no_argument() -> None:
     with pytest.raises(SystemExit, match="takes no argument"):
         A.main(["--results", "elsewhere"])
+
+
+# ------------------------------------------------------------------------------------- the pre-pin fixes (R3-2, R3-4)
+def test_the_sidecar_hash_is_line_ending_free_and_nothing_else(env) -> None:
+    """R3-2: the sidecar's sha256 is over its bytes with CRLF normalised to LF, so an LF and a CRLF checkout hash the
+    same; any other difference changes it, and a changed recorded sha256 is refused."""
+    side = env.d / f"{R.COLLECTION_RESULT}.manifest.json"
+    lf = side.read_bytes().replace(b"\r\n", b"\n")
+    lf = json.dumps(json.loads(lf), indent=2).encode("utf-8")              # several lines, so CRLF has work to do
+    side.write_bytes(lf)
+    s_lf = A.read_collection(env.d)[3]
+    side.write_bytes(lf.replace(b"\n", b"\r\n"))
+    assert A.read_collection(env.d)[3] == s_lf == A.sha256_bytes(lf)
+    side.write_bytes(lf.replace(b'"block"', b'"block" '))                   # one byte more, same JSON
+    assert A.read_collection(env.d)[3] != s_lf
+    man = json.loads(lf)
+    man["sha256"] = "e" * 64
+    side.write_bytes(json.dumps(man, indent=2).encode("utf-8"))
+    with pytest.raises(A.ApplyRefused, match="not its sidecar's"):
+        A.read_collection(env.d)
+
+
+def test_the_held_out_calendar_refuses_a_confirmation_date_and_a_repeat(env, monkeypatch) -> None:
+    """R3-4: a held-out calendar ending 2026-07-17 (re-hashed), or repeating a date, is refused."""
+    rows = _held_out_csv(T.NHO).decode("utf-8").rstrip("\n").split("\n")
+    late = "\n".join(rows + [f"{T.NHO},2026-07-17"]) + "\n"
+    rep = "\n".join(rows + [rows[-1].replace(rows[-1].split(",")[0], str(T.NHO))]) + "\n"
+    for text in (late, rep):
+        b = text.encode("utf-8")
+        (env.d / R.HELD_OUT_CALENDAR).write_bytes(b)
+        monkeypatch.setattr(R, "HELD_OUT_CALENDAR_SHA256", A.sha256_bytes(b))
+        with pytest.raises(A.ApplyRefused, match="strictly increasing inside"):
+            A.held_out_sessions(env.d)
+
+
+def test_any_wave42_output_name_refuses(env) -> None:
+    """R3-4: the glob is `w42_*`: a stray `w42_x.csv` refuses the application."""
+    (env.d / "w42_x.csv").write_text("x\n", encoding="utf-8")
+    with pytest.raises(A.ApplyRefused, match="Wave 4.2 output already exists"):
+        A.apply(env.d, env.src)
+
+
+def test_the_refusal_comes_before_any_input_is_read(env, monkeypatch) -> None:
+    """R3-4: with an output present, the script refuses before it reads the collection, either calendar, the fee or
+    the adapter (each reader replaced by one that records a call)."""
+    (env.d / R.OUTPUT_NAME).write_text("x\n", encoding="utf-8")
+    calls = []
+    for name in ("read_collection", "search_calendar", "held_out_sessions"):
+        monkeypatch.setattr(A, name, lambda *a, _n=name, **k: calls.append(_n))
+    src = A.Sources(adapter=lambda *a: calls.append("adapter"), calendar_loader=lambda *a: calls.append("loader"),
+                    fee=lambda: calls.append("fee"), writer=lambda *a, **k: calls.append("writer"))
+    with pytest.raises(A.ApplyRefused, match="applied once"):
+        A.apply(env.d, src)
+    assert calls == []
+
+
+def test_the_output_records_the_fee_path_and_the_power_target(env) -> None:
+    """R3-1: the audit list's fee path and MDL_POWER's value at the run's commit are in the output's parameters."""
+    params = A.apply(env.d, env.src)
+    assert params["fee_via"] == "extended.levers_terms.standard_prices"
+    from extended.family_stats import MDL_POWER
+    assert params["power_target"] == MDL_POWER

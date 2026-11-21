@@ -433,6 +433,38 @@ def test_input_digest_moves_with_any_input(base) -> None:
                 src={**SRC, "sessions": n2}).values["input_sha256"] != d0
 
 
+def _digest_by_hand(rs) -> str:
+    """The readings' digest from its declared byte layout, written here apart from `readings_digest` (R3-4): per
+    baseline in name order, the JSON of [name, block, reading, starts, seeds, sorted keys], then per key in order its
+    name, the JSON of its shape, and its little-endian float64 bytes with every blank one canonical NaN."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for name in sorted(rs):
+        b = rs[name]
+        h.update(json.dumps([b.name, b.block, b.reading, list(map(str, b.starts)), list(map(int, b.seeds)),
+                             sorted(b.values)]).encode("utf-8"))
+        for key in sorted(b.values):
+            x = np.array(b.values[key], dtype="<f8", copy=True)
+            x[np.isnan(x)] = float("nan")
+            h.update(key.encode("utf-8") + json.dumps(list(x.shape)).encode("utf-8") + x.tobytes(order="C"))
+    return h.hexdigest()
+
+
+def test_the_readings_digest_is_its_declared_layout_and_sees_every_matrix_and_seed(base) -> None:
+    """R3-4: the digest equals the hand-written layout, and a one-cell change to any required matrix, or a one-seed
+    change, moves it."""
+    rs, _ = base
+    d0 = R.readings_digest(rs)
+    assert d0 == _digest_by_hand(rs)
+    for key in R.REQUIRED:
+        h = int(np.argmax(_sl() >= R.REQUIRED[key][0]))
+        moved = _with(rs, "p15", key, lambda x, h=h: np.where((np.arange(N) == h)[:, None] & (np.arange(J0) == 0)[None, :],
+                                                             x + 1.0, x))
+        assert R.readings_digest(moved) != d0, key
+    assert R.readings_digest(_retag(rs, "p16", seeds=(J0,) + rs["p16"].seeds[1:])) != d0
+
+
 def test_input_digest_covers_h4s_manifest(base) -> None:
     """V-1's audit chain (m2-4): a manifest field that no other check reads still moves input_sha256."""
     rs, v = base
@@ -1084,6 +1116,18 @@ def test_the_document_names_the_application_and_the_guards() -> None:
                    "The do-nothing journey's composite is a declared floor", "the not_paid_within_B limit",
                    "CHARTER 3.8 (c)'s long-run gate"):
         assert phrase in t, phrase
+
+
+def test_the_document_states_the_pre_pin_fixes() -> None:
+    """R3-1, R3-2, R3-3, n3-1, n3-3: the audit list's three items, write-once inside a checkout, the sidecar's bytes,
+    the floor at both readings, the collection row pinned first, and the H7 row's wording."""
+    t = _norm(DOC.read_text(encoding="utf-8"))
+    for phrase in ("extended.levers_terms.standard_prices", "extended.family_stats.MDL_POWER", "git_commit", "-dirty",
+                   "write-once inside a checkout", "voids both", "CRLF normalised to LF", "at the held-out verdict",
+                   "at the search-year screen", "H4's collection row is pinned before W42-R1 is applied"):
+        assert phrase in t, phrase
+    note = _norm(NOTE.read_text(encoding="utf-8"))
+    assert "each start run to 252 sessions or the block's last session, whichever comes first" in note
 
 
 def test_the_three_way_notes_limit_clause_is_e230s() -> None:

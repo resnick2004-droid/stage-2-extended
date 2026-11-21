@@ -68,6 +68,17 @@ The notes n-1 to n-4 ask for no change.
 | m2-5 "oppose inactivity" | corrected: they score it zero, they do not oppose it | 4.2 |
 | m2-6 one letter for two things in 4.4 | the count of limits is n_L | the three-way note 4.4 |
 
+**Pre-pin fixes** (the final read `WAVE42_RULE_c2_2026-11-21.md`, pass with minors; not a cycle; the lead's rulings):
+
+| finding | the change | where |
+|---|---|---|
+| R3-1 the audit's perimeter | the audit list gains the fee path with the ledger's sha256, `MDL_POWER`'s value at the run's commit, and the output manifest's `git_commit` (the clean checkout's, not `-dirty`); "applied once" is write-once inside a checkout, refused once the first output is committed, and any second output anywhere voids both | 1.1 |
+| R3-2 the sidecar hash and line endings | the sidecar is hashed with CRLF normalised to LF, the text saying which bytes | 1.1 |
+| R3-3 the floor's reading | the do-nothing floor applies at the search-year screen and again at the held-out verdict | 4.5 |
+| R3-4 four untested checks | tests for the digest against a hand-written layout and per matrix and seed, the held-out calendar's upper bound and a repeated date, the `w42_*` glob, and the refusal before any input is read | the tests |
+| n3-1 the chain's root | H4's collection row is pinned before W42-R1 is applied, and the auditor checks the file's sha256 against it | 1.1 |
+| n3-3 the H7 row's wording | each start run to 252 sessions or the block's last session, whichever comes first | the three-way note 6.3; `three_way_arith.parts` |
+
 ---
 
 ## 1. The input, and what is refused
@@ -75,9 +86,12 @@ The notes n-1 to n-4 ask for no change.
 ### 1.1 H4's one output (B-1, V-1, V-3, m-9)
 
 The input is **H4's one output**: H4-C's collection result `results/h4_w42_input.csv` (`COLLECTION_RESULT`, H4's
-draft section 9) and its sidecar manifest, written once from a clean checkout. **`scripts/wave42_apply.py` reads both
+draft section 9) and its sidecar manifest, written once from a clean checkout. **H4's collection row is pinned before
+W42-R1 is applied** (n3-1): the chain from H4's run to this rule's values rests on that row's sha256. **`scripts/wave42_apply.py` reads both
 from disk**: it computes the file's sha256 itself, refuses a sidecar whose recorded sha256 is not the file's, records
-the sidecar's own sha256, and builds the four readings through the one named adapter, H4's
+the sidecar's own sha256 (**over the sidecar's bytes with every CRLF normalised to LF**, R3-2: the bytes the writer
+wrote and git stores, so the hash is the same on any checkout under `core.autocrlf`; any other difference changes
+it), and builds the four readings through the one named adapter, H4's
 `extended/h4_collect.py::w42_readings` (`ADAPTER`; its bit-for-bit round trip is H4's test). The binding's fields are
 the sidecar's parameters, the file's sha256 its `sha256`:
 
@@ -99,17 +113,28 @@ the sidecar's parameters, the file's sha256 its `sha256`:
 | readings_sha256 | the readings' content digest (`readings_digest`), recorded by H4's collection |
 <!-- wave42-h4-manifest:end -->
 
-**What the auditor checks** (the pinning row cites each): the output's `h4_result_sha256` is the collection file's
-sha256 as H4's collection row records it; its `h4_sidecar_sha256` is the sidecar's; its `readings_sha256` and its
-start and seed counts are the sidecar's; its `search_calendar_file_sha256` is `SEARCH_CALENDAR_SHA256`; its
-`held_out_calendar_sha256` is `HELD_OUT_CALENDAR_SHA256`; and its `rule_text_sha256`, `rule_module_sha256` and
-`script_sha256` are the pinned ones.
+**What the auditor checks** (the pinning row cites each):
+- the output's `h4_result_sha256` is the collection file's sha256 **as H4's pinned collection row records it**
+  (n3-1);
+- its `h4_sidecar_sha256` is the sidecar's, over its bytes with CRLF normalised to LF (R3-2);
+- its `readings_sha256` and its start and seed counts are the sidecar's;
+- its `search_calendar_file_sha256` is `SEARCH_CALENDAR_SHA256`, and its `held_out_calendar_sha256` is
+  `HELD_OUT_CALENDAR_SHA256`;
+- its `rule_text_sha256`, `rule_module_sha256` and `script_sha256` are the pinned ones;
+- **the fee unit** (`fee_unit`, `fee_via`) is the one `extended.levers_terms.standard_prices` returns, the ledger's
+  `subscription_fee` at the recorded `ledger_sha256` (R3-1);
+- **the power target** (`power_target`, and `constants.POWER_TARGET`) is `extended.family_stats.MDL_POWER`'s value at
+  the run's commit (R3-1);
+- **the output manifest's `git_commit`** is the clean checkout's commit, the one the pinning row names, and is not
+  `-dirty` (R3-1).
 
 **Applied once.** The script writes its values to one fixed name, `results/w42_r1_values.csv` (`OUTPUT_NAME`),
 through `write_result`, which refuses outside a clean run and never overwrites. Before reading anything, the script
-refuses if that file, its manifest, or any other `results/w42_*` file exists: a second application is refused by the
-existing file, never by a list a caller passes. The function `setting_rule` stays pure, but only the script is the
-declared way to apply it.
+refuses if that file, its manifest, or any other `results/w42_*` file exists. **That refusal is write-once inside a
+checkout** (R3-1): a clean run is its own checkout, so a second application is refused once the first output is
+committed, and **any second W42-R1 output found anywhere -- another checkout, another commit, another folder -- voids
+both**, under the failure protocol (diagnosed, never chosen between). Never a list a caller passes. The function
+`setting_rule` stays pure, but only the script is the declared way to apply it.
 
 ### 1.2 The search calendar and sessions left (B-2, V-3)
 
@@ -352,8 +377,11 @@ z = clip((x - lo) / (hi - lo), 0, 1) for a "higher" dimension, and 1 minus that 
   from the caps, B\* and the weights with no further data (`null_journeys`). In the composite form the do-nothing
   journey scores exactly bankroll's and ruin's weights (z = 1 on both, 0 on the rest), 2/6; in the fallback, 0.
 - **The do-nothing journey's composite is a declared floor** (the lead's ruling, conservative): a finalist's
-  composite must exceed it at the point estimate. The floor can only remove designs, never add one. The output also
-  lists any baseline at or below it. Wave 5's finalist rule applies the floors before it ranks by the composite.
+  composite must exceed it at the point estimate, **twice** (R3-3): at the search-year screen, where Wave 5's
+  finalist rule applies the floors before it ranks by the composite, and again **at the held-out verdict**, where a
+  finalist's held-out composite must exceed the floor (the floor's value is the one this rule pins, from the caps,
+  B\* and the weights). The floor can only remove designs, never add one. The output also lists any baseline at or
+  below it.
 - **The two guards that stop inactivity**, named: **the not_paid_within_B limit** (a do-nothing journey scores 1
   there and fails it unless the worst baseline is never paid within B\* by W), and **CHARTER 3.8 (c)'s long-run
   gate** (median log growth above zero), which stops a do-nothing or quit-early design at the held-out test. If the

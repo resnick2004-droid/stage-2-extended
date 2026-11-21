@@ -810,8 +810,9 @@ Otherwise the search does not pin, and the data question (E-007 (2)) goes to the
 - **A part's work** is R x arms x M x |T| x h x tau lane-trades. **Its wall time** is that work x c / 2, where c is the
   cost of one lane-trade, which **H3-0 measures**.
 - Appendix A prints each part's work, and its hours at three assumed costs. The rows include:
-  - **H7, the held-out test**, under (a) Hoeffding at Appendix A's J and under (b) the empirical-Bernstein range term's
-    J, with three finalists assumed and four baselines;
+  - **H7, the held-out test**, under (a) Hoeffding at Appendix A's J (W42-R1's `TEST_SEEDS`, each start run to 252
+    sessions or the block's last session, whichever comes first, never past 2026-07-16) and under (b) the
+    empirical-Bernstein range term's J, with three finalists assumed and four baselines;
   - **D3's full-J check.**
 
   The gap between the two H7 rows is the compute that choice 3 and 2.2 (a) save (m-1).

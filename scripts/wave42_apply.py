@@ -9,8 +9,8 @@ It takes no argument: every path is a declared name in this repository's `result
 1. **Applied once.** `results/w42_r1_values.csv` (`OUTPUT_NAME`) or its manifest exists, or any other `results/w42_*`
    file: refused. `extended.results.write_result` refuses to overwrite as well, and refuses outside a clean run.
 2. **H4's collection result** (`results/h4_w42_input.csv`, `COLLECTION_RESULT`) and its sidecar are read from disk.
-   The script computes the file's sha256 and the sidecar's own sha256, and refuses a sidecar whose recorded sha256
-   is not the file's. The binding's fields are the sidecar's parameters (`H4_MANIFEST_KEYS`), the file's sha256 its
+   The script computes the file's sha256 and the sidecar's own sha256 (its bytes with CRLF normalised to LF, R3-2),
+   and refuses a sidecar whose recorded sha256 is not the file's. The binding's fields are the sidecar's parameters (`H4_MANIFEST_KEYS`), the file's sha256 its
    `sha256`.
 3. **The search calendar** is Q-197's pinned result (`results/search_calendar.csv`), read through its loader
    (`extended.search_calendar.load_search_calendar`). Its file's sha256 must be `SEARCH_CALENDAR_SHA256`, which is
@@ -73,6 +73,12 @@ def sha256_file(p: Path | str) -> str:
     return sha256_bytes(Path(p).read_bytes())
 
 
+def sidecar_sha256(b: bytes) -> str:
+    """R3-2: the sidecar's sha256 over its bytes with every CRLF normalised to LF -- the bytes the writer wrote and git
+    stores, the same on any checkout under `core.autocrlf`; any other difference changes it."""
+    return sha256_bytes(b.replace(b"\r\n", b"\n"))
+
+
 @dataclass(frozen=True)
 class Sources:
     """Where the application's inputs come from: the adapter (collection csv path, sidecar dict) -> readings; the
@@ -133,7 +139,7 @@ def read_collection(results_dir: Path) -> tuple[Path, dict[str, Any], str, str, 
         raise _refuse(f"H4's collection result {csv_path.name} and its sidecar are both required")
     file_sha = sha256_file(csv_path)
     side_bytes = side.read_bytes()
-    side_sha = sha256_bytes(side_bytes)
+    side_sha = sidecar_sha256(side_bytes)
     man = json.loads(side_bytes.decode("utf-8"))
     if man.get("sha256") != file_sha:
         raise _refuse(f"{csv_path.name}'s bytes hash to {file_sha[:12]}..., not its sidecar's {str(man.get('sha256'))[:12]}")
@@ -201,7 +207,8 @@ def apply(results_dir: Path | str, sources: Sources) -> dict[str, Any]:
               "search_calendar_file_sha256": cal_file_sha, "search_calendar_sha256": cal_digest,
               "held_out_calendar": R.HELD_OUT_CALENDAR, "held_out_calendar_sha256": ho_sha,
               "held_out_sessions": n_ho, "test_starts": {str(h): c for h, c in counts.items()},
-              "fee_unit": fee, "fee_source": fee_source, "ledger_sha256": ledger_sha,
+              "fee_unit": fee, "fee_source": fee_source, "fee_via": "extended.levers_terms.standard_prices",
+              "ledger_sha256": ledger_sha, "power_target": R.POWER_TARGET,
               "rule_text_sha256": sha256_file(ROOT / RULE_TEXT), "rule_module_sha256": sha256_file(ROOT / RULE_MODULE),
               "script_sha256": sha256_file(ROOT / SCRIPT)}
     sources.writer(df, R.OUTPUT_NAME, script=SCRIPT, seed=None, require_seed=False, parameters=params,

@@ -412,8 +412,9 @@ def max_lanes(cap_gb: float = MEM_CAP_GB, workers: int = WORKERS, base_gb: float
 def parts() -> tuple[tuple[str, int, int, int, int, int], ...]:
     """H3's parts and the held-out test, proposed sizes for H3's declaration: (part, histories R, arm-runs per history,
     seed replicates per arm M, starts per history |T|, horizon in sessions). The held-out test's J under Hoeffding is
-    W42-R1's declared TEST_SEEDS, each start run to the composite's longest horizon (252); the empirical-Bernstein
-    range term's J at delta = 0.02 is shown for a quantile-type composite."""
+    W42-R1's declared TEST_SEEDS, each start run to 252 sessions or the block's last session, whichever comes first
+    (never past 2026-07-16; the row's work is an upper bound); the empirical-Bernstein range term's J at delta = 0.02
+    is shown for a quantile-type composite."""
     wh = weekdays(*HELD_OUT)
     t63, t252 = complete_starts(wh, 63), complete_starts(wh, 252)
     a = level(13)
