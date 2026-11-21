@@ -1691,3 +1691,98 @@ def test_e259_every_ruling_is_held_where_it_lives():
               "naming the runner commit the calibration ran on, the survey and every round run on it (G-1, U-1; "
               "E-259)"):
         assert s in gk, s
+
+
+# ============================================================================================ N. the held-out test's
+# one verdict token (Q-194b and the red team's review of the reader): `heldout-verdict: <MARKET> F-NN @ <sha> -- ...`
+
+VERDICT_FORM = "`heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- <text>`"
+VERDICT_NQ = "`heldout-verdict: NQ F-NN @ <its LF sha256> -- <text>`"
+
+
+def _verdict_rx():
+    """The one verdict grammar, built from the reader's own head, market and tail; once the reader carries a verdict
+    pattern with a sha256, that pattern must be this one exactly."""
+    from extended import reader as RD
+
+    rx = re.compile(RD._HO_HEAD + rf"heldout-verdict: (?P<market>{RD._HO_MARKET}) (?P<decl>F-\d+) "
+                    r"@ (?P<sha>[0-9a-f]{64})" + RD._HO_TAIL)
+    for kind, pat in RD.HELDOUT_TOKENS.items():
+        if "heldout-verdict:" in pat.pattern and "(?P<market>" in pat.pattern and " @ " in pat.pattern:
+            assert pat.pattern == rx.pattern, kind
+    return rx
+
+
+def _verdict_counts(log: str, ledger: list, market: str, decl: str, sha: str, window: str) -> list:
+    """The verdict rows that count: the token at a line's start for `market`, `decl` at `sha`, one row, newer by
+    position than a finalists' token for the same declaration and sha256 (itself newer than the pin), and only if the
+    ledger holds that family's `heldout_test` read of the same window, sha256 and market."""
+    from extended import reader as RD
+
+    rx = _verdict_rx()
+    rows = [line for line in log.splitlines() if LOG_ROW.match(line)]
+    pin = next((i for i, line in enumerate(rows) if sha in line and f"`prereg/{decl}_" in line), None)
+    fins = [i for i, line in enumerate(rows) if (m := RD.HELDOUT_TOKENS["finalists"].match(line))
+            and m.group("decl") == decl and m.group("sha") == sha]
+    read = any(e.get("purpose") == "heldout_test" and e.get("declaration") == decl and e.get("sha256") == sha
+               and e.get("market") == market and e.get("window") == window for e in ledger)
+    out = []
+    for i, line in enumerate(rows):
+        m = rx.match(line)
+        if m and (m.group("market"), m.group("decl"), m.group("sha")) == (market, decl, sha) and read \
+                and pin is not None and any(pin < f < i for f in fins):
+            out.append(m.group("row"))
+    return out
+
+
+def test_q194b_the_one_verdict_token_is_declared_in_the_readers_grammar():
+    a, b = "a" * 64, "b" * 64
+    rx = _verdict_rx()
+    ok = "| E-950 | 2027-01-02 | heldout-verdict: NQ F-20 @ " + a + " -- the joint held-out test's verdict | b |"
+    m = rx.match(ok)
+    assert m and (m.group("market"), m.group("decl"), m.group("sha")) == ("NQ", "F-20", a)
+    tok = "heldout-verdict: NQ F-20 @ " + a
+    for bad in (ok.replace(a, a[:63]),                                                   # a short sha
+                ok.replace(a, a.upper()),
+                ok.replace(" -- the joint held-out test's verdict |", " -- |"),          # empty text
+                ok.replace(" -- the joint held-out test's verdict |", " |"),
+                ok.replace(tok, "`" + tok + "`"), ok.replace(tok, "**" + tok + "**"),  # quoted, bold
+                ok.replace("| heldout-verdict:", "| the row: heldout-verdict:"),         # not the cell's first text
+                ok.replace("NQ F-20 @", "F-20 @"),                                       # no market
+                "| E-951 | 2027-01-02 | heldout-verdict: NQ F-20 -- the retired form | b |"):
+        assert not rx.match(bad), bad
+    # the order and the ledger
+    pin = "| E-940 | 2026-12-20 | **F-20 pinned.** `prereg/F-20_heldout_test_NQ.md` sha256 `" + a + "` | b |"
+    fin = "| E-945 | 2026-12-28 | heldout-finalists: F-20 @ " + a + " list " + b + " -- the joint list | b |"
+    led = [{"purpose": "heldout_test", "declaration": "F-20", "sha256": a, "market": "NQ", "window": "E-930"}]
+    args = ("NQ", "F-20", a, "E-930")
+    assert _verdict_counts("\n".join([pin, fin, ok]), led, *args) == ["E-950"]
+    assert _verdict_counts("\n".join([pin, ok, fin]), led, *args) == []                  # before its finalists
+    assert _verdict_counts("\n".join([fin, pin, ok]), led, *args) == []                  # finalists before the pin
+    assert _verdict_counts("\n".join([pin, fin, ok]), [], *args) == []                   # no heldout_test read
+    for k, v in (("window", "E-931"), ("sha256", b), ("market", "ES"), ("purpose", "heldout_stress")):
+        assert _verdict_counts("\n".join([pin, fin, ok]), [dict(led[0], **{k: v})], *args) == [], k
+    assert _verdict_counts("\n".join([pin, fin, ok.replace("NQ F-20", "ES F-20")]), led, *args) == []
+    # the declaration's text, in every copy, and no other verdict form
+    ht = _text(HT)
+    s5 = _section(ht, "## 5. The rows, in order", "## 6. Power")
+    for s in ("4. The verdict row: " + VERDICT_FORM + " (here " + VERDICT_NQ + ") as the first text of the row's "
+              "third cell, F-NN this declaration's F-number and the sha256 its pin's. It is the only verdict form, "
+              "written in one row, newer by position in `DECISIONS.md` than this declaration's finalists' token, and "
+              "it counts only if the read ledger already holds this declaration's `heldout_test` read of the same "
+              "window, sha256 and market. The older form without the sha256 is retired.",):
+        assert s in s5, s
+    s7 = _section(ht, "## 7. The held-out reads", "## 8.")
+    assert ("A `registered_design` read of any held-out date (P-14, P-15, P-16) is refused by the reader until this "
+            "declaration's verdict row exists: " + VERDICT_NQ + ", the first text of its row's third cell, newer by "
+            "position than this declaration's finalists' token, which is itself newer than its pin, and counted only "
+            "once the ledger holds this declaration's `heldout_test` read of the same window, sha256 and market "
+            "(section 5).") in s7
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    assert ("the verdict row, " + VERDICT_FORM + ", the only verdict form, as the first text of its third cell, one "
+            "row, newer by position than the finalists' token, counted only once the ledger holds that family's "
+            "`heldout_test` read of the same window, sha256 and market.") in gk
+    for path in (TEMPLATE, HT, CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"):
+        forms = set(re.findall(r"`heldout-verdict:[^`]*`", _flat(_text(path))))
+        assert forms <= {VERDICT_FORM, VERDICT_NQ}, (path.name, forms)                  # the retired form nowhere
+    assert VERDICT_FORM in _flat(ht) and VERDICT_FORM in gk

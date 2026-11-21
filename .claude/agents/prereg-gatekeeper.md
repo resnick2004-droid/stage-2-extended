@@ -212,7 +212,10 @@ if any item is missing or set after a look:
    out by choice.
 6. **The rows in order:** the pin row; the held-out row, which is its finalists' token row (m-3),
    `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`, newer than the pin; the run; the
-   verdict row. Refuse a pin and a token in one row, and any repeat row for F-HT.
+   verdict row, `heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- <text>`, the only verdict form, as the first text
+   of its third cell, one row, newer by position than the finalists' token, counted only once the ledger holds that
+   family's `heldout_test` read of the same window, sha256 and market.
+   Refuse a pin and a token in one row, and any repeat row for F-HT.
 7. **The k** at its held-out row (E-204), 0.05 / (k (k + 1)); no search takes one.
 8. **Each finalist's power re-stated at its place** in the joint sequence by the template's declared formula (H-2:
    the product of the earlier and its own powers at the full level, under independence, the Frechet lower bound

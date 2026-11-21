@@ -120,7 +120,12 @@ and states the resulting order. **A researcher's choice after a read is never th
    the pin and the token in one row are refused.
 3. **The held-out test**, once, from a clean checkout of the held-out row's commit (`scripts/run_clean.py`), under
    `run.lock`; the auditor on its result. **No repeat row** (`repeat="E-NNN"`) is ever written for F-HT.
-4. **The verdict row.**
+4. **The verdict row:** `heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- <text>` (here
+   `heldout-verdict: NQ F-NN @ <its LF sha256> -- <text>`) as the first text of the row's third cell, F-NN this
+   declaration's F-number and the sha256 its pin's. **It is the only verdict form**, written in one row, newer by
+   position in `DECISIONS.md` than this declaration's finalists' token, and it counts only if the read ledger already
+   holds this declaration's `heldout_test` read of the same window, sha256 and market. The older form without the
+   sha256 is retired.
 
 ## 6. Power at each place in the joint sequence
 
@@ -148,7 +153,11 @@ purposes and nothing else:
 long-run gate, and the held-out readings each search puts beside -- the five-minute cell, the as-walked result and the
 path-structure edge, the denial ladder, the playbook trigger side's held-out reading and the fill-time law;
 `heldout_stress` reads the +1 tick and 10 %-missed stresses and the as-traded floor. Each read is made once, after the
-held-out row; the held-out years are read once per market (CHARTER 3.6 (c)).
+held-out row; the held-out years are read once per market (CHARTER 3.6 (c)). **A `registered_design` read of any
+held-out date (P-14, P-15, P-16) is refused by the reader until this declaration's verdict row exists:**
+`heldout-verdict: NQ F-NN @ <its LF sha256> -- <text>`, the first text of its row's third cell, newer by position than
+this declaration's finalists' token, which is itself newer than its pin, and counted only once the ledger holds this
+declaration's `heldout_test` read of the same window, sha256 and market (section 5).
 
 ## 8. What a pass and what a fail mean
 
