@@ -1,9 +1,12 @@
 # H4: the re-baseline -- the four baselines on the journey scorecard, search years only (a draft)
 
-**Status: a draft, third text (corrective cycle 2, the last), for the red team's re-read.** The first text (wt/wt-h4
-f897cd7) was read in `docs/reviews/H4_DECL_2026-11-20.md` (blocked: B-1 to B-7, seven minors, six notes), Appendix D
-mapping its findings; the second (228f972) in `docs/reviews/H4_DECL_c1_2026-11-21.md` (blocked: RB-1 and RB-2, six
-minors, four notes), Appendix E mapping those. The lead's rulings on both are carried here. Copied from `prereg/TEMPLATE_family.md`'s form
+**Status: a draft, text 4 -- a re-declaration, for the red team's full read, with its own two corrective cycles.**
+H4's first declaration spent its cycles: its first text (wt/wt-h4 f897cd7) was read in
+`docs/reviews/H4_DECL_2026-11-20.md` (blocked: B-1 to B-7, seven minors, six notes; Appendix D), its second (228f972) in
+`docs/reviews/H4_DECL_c1_2026-11-21.md` (blocked: RB-1 and RB-2, six minors, four notes; Appendix E), its third
+(0727615) in `docs/reviews/H4_DECL_c2_2026-11-21.md` (blocked: RC-1 and RC-2, four material and seven minor findings,
+five notes; Appendix F). Under the failure protocol this text is a new declaration; the lead's rulings on all three
+reads are carried here. Copied from `prereg/TEMPLATE_family.md`'s form
 (sections 0 to 19) and adapted as H3's draft was (`prereg/DRAFT_H3_three_way.md` on wt/wt-three): H4 is a **described
 reading** of the baselines, not a family of trades and not a search, so it takes **no k** (CHARTER 3.7: one k per
 held-out test; H4 reads no held-out session and judges no design), names no cell that reaches a judgement, and reads
@@ -20,9 +23,12 @@ F-number, a k at its held-out row, a survey, a pass line. H4 has none of these, 
 section 5 (the race, L_fill, R-10's stopped walk and its exit map, m-2 and m-3) for the deciding reading, and its
 section 14's held-out line (a declaration that does not spend the market's held-out years carries no judged-block
 reads line). Checked against v2 at 68436c9 in this text; **re-checked against the template's third text when v3 is
-pinned** (rn-2). **Membership** (rn-2): H4's readings are search-year readings only while the held-out membership a
-later go row fixes is disjoint from 2020-01-02 to 2023-12-29; if a go row's membership reaches into those dates, H4's
-values are void for that search.
+pinned** (rn-2); v3's section 5 changes (wt/wt-lit 13df998) are adopted now (section 7, rc-13). **Membership**
+(rc-7): H4 is not a search and enters no membership (template v3's membership is the set of firms' searches in the
+one joint held-out test, fixed at the first go row of any firm's search). H4's values are search-year readings under
+E-208's fixed dates; they serve a member search only if that search's hash row cites H4's pin row. H4 completes before
+the membership event, since that first go row needs W42-R1's values; v3's own sentence on the re-baseline ("reads the
+search years only") matches this text.
 
 | field | value |
 |---|---|
@@ -108,6 +114,7 @@ zero-edge check): the run stops and is diagnosed, never re-run until it passes.
   | RD-01's late-block reads | its firm-contract readings of the registered designs | P-14, P-15, P-16 | RD-01's pinning row |
   | **the ledger constants H4 uses** | W = 126 and the 252-session window, set with the held-out years visible; U1's `EXACT` horizons | every baseline (H4's windows and exact runs) | Stage 2 D-518, D-620 (3)(f); Q-44 |
   | **P-16's window `all`** | a cell of the whole-window screen that fixed it | P-16; **the coin's window** (inherited) | Stage 2 D-525 (3) |
+  | the bar store manifest's held-out metadata | its `day_list`, `early_end_days` and `day_bounds` entries after 2023-12-29, dropped before they are parsed (rn-d); no figure | the search calendar; the void calendar | Q-166; Q-197 |
   | **the registered-constants run itself** | the on-record whole-window identity run's existing read (`identity/stage2_identity.py`'s U1 path rebuilding P-14, P-15 and P-16); it copies the registered marks and capacities by sha256 and computes only the search-year sub-hash, no new statistic of the held-out years | P-14, P-15, P-16 | E-247 rm-4; its own row |
 
   While this ledger is not empty **the level is nominal** (CHARTER 3.6 (b)): H4 spends none, and the held-out test's
@@ -124,7 +131,7 @@ zero-edge check): the run stops and is diagnosed, never re-run until it passes.
 | realised risk within 10 % on at least 90 % of trades | H4-S's realised-risk gate (D-212; E-022 (1), E-032's allowance-capped form), reported the same way |
 | no entry before 07:35:00 CT on a BLS 08:30 day; FOMC days out | as registered; the naive coin through the void calendar (`extended/day_calendar.py`, Q-166) |
 | no entry or fill inside a verified news window; the news-flatten convention | as registered for P-14, P-15, P-16 (P-16's `_nr` cell's news rule); the naive coin under E-223's one convention through the trigger library |
-| **conduct tier 1** (no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into major news, no trade copied across accounts, nothing that conceals a pattern) | **held by every baseline**: one open position across all accounts, each trade on one account, so **no trade is copied across accounts** and no two positions are open at once (the strict rule above); no hedging, no opposite positions (one position at a time admits none), one firm |
+| **conduct tier 1** (no hedging across accounts or firms, no simulator-fill exploitation, no maximum size into major news, no trade copied across accounts, nothing that conceals a pattern) | **held by every baseline**: one open position across all accounts, each trade on one account, so **no trade is copied across accounts** and no two positions are open at once (the strict rule above); no hedging, no opposite positions (one position at a time admits none), one firm. **The breakeven move** (FV3's, part of P-14's, P-15's and P-16's registered protocols and so of the coin's): Topstep's article 10305426 ("auto-breakeven to take advantage of favorable SIM fills") was read against the designs' move by E-012 as a reading, not a ruling, and the lever table's S7 makes the move tier 1 for new designs; H4's comparators keep it as registered (rn-e) |
 | conduct tier 2 modelled and off in the base case; tier 3 priced, 0 % denial in the verdict | the response `off` only (`user_beside.BY_NAME["off"]`): 0 % payout denial, the placement off, the Focused Trader Program off -- the verdict's settings (CHARTER 2) |
 | firm rules only from Stage 2's verified ledger or a row verifying them | Topstep's $50K from `vendor/stage2/config/rules.yaml` through the vendored loader, as the registered jobs load it; no other firm |
 | no automated or API order entry | H4 is a reading of history; it places no order |
@@ -177,17 +184,19 @@ zero-edge check): the run stops and is diagnosed, never re-run until it passes.
     `resolved_coin.marks()`'s five-minute grid (`resolved_coin.MARK_STEP`), admission T7 off, at L = 5, through
     Q-166's void calendar and E-223's news convention, **unchained** -- an offer every five minutes, re-entering when
     flat, as P-16's are; never `components.schedule_day`'s chain at one R, never Q-169's router -- each offer **walked
-    at every R of P-16's table**, as `resolved_coin.cell_trades` writes P-16's; each offer's as-run side drawn **once
+    at every R of P-16's table**, as `resolved_coin.cell_trades` writes P-16's, **by P-16's walk**, `walker.STAGE2`,
+    FV3's breakeven move on (the lead's ruling on RC-1), never `triggers.JOURNEY`'s move-off walk; each offer's as-run side drawn **once
     per (session, moment) from the coin's schedule-side seed** (section 15), independent of the seed index, so the
     coin's schedule is **one schedule, built once**, as P-16's is with `resolved_coin.coin_table`; the J seeds move
     only the redraw and the as-walked reading's side; held by I-5. The strict rule is applied once, in routing, by
     the vendored routing the registered designs use (section 3).
 - **Counted from the schedules alone, before any outcome**, per baseline and per search year: trades a session (the
   supply), the share of trades reaching a time limit (the 15:10 flatten, a news window, a max hold) and their mean
-  R-10 steps, the trades outside the stop band, the realised-risk share. These are H4-S's gates (section 11) and the
-  cost model's inputs (Appendix A's cut rule).
+  R-10 steps, the trades outside the stop band, the realised-risk share, **the breakeven exits** (`o_R` of kind `b`,
+  at each R) and **the same-bar exits** (an exit bar equal to the fill bar), each share by year. These are H4-S's
+  gates (section 11) and the cost model's inputs (Appendix A's cut rule).
 - **The schedule-level overlap, beside, never a kill** (the lead's ruling on RB-2): the trigger-level offers falling
-  inside another offer's interval [entry, exit at the largest R + 5 min) -- the supply the strict rule prunes in
+  inside another offer's span [fill bar end, exit bar end at the largest R + 5 min) -- the supply the strict rule prunes in
   routing (D-525, D-429) -- counted per baseline and search year and reported. The refusing count is per unit, on the
   taken trades (section 7's overlap row).
 - **The supply's one look-ahead, labelled** (rn-3): on a data-defect day whose bars end before the walk's end, the
@@ -204,6 +213,10 @@ zero-edge check): the run stops and is diagnosed, never re-run until it passes.
   the barriers with direction removed); it is drawn for the as-walked reading beside. For a market entry it is the
   coin choosing the side; every baseline enters at market or at a registered mark, so no resting entry and **no pair
   rule** arises (the template's section 5); were one found in a schedule, H4-S refuses it.
+- **The coin's schedule side** (rn-c) is another draw: each of the coin's offers takes its as-run side once per
+  (session, moment) from 20264403 (section 15), independent of every seed index and every bar, as P-16's sides come
+  from `resolved_coin.coin_table`. It fixes which offers the coin takes and how they resolve; the J seeds then redraw
+  the outcomes and the as-walked side.
 - **The fill intensity:** the schedules' supply as counted (section 5); a missed signal (measure (28)) is the arm
   `missed_0.1`'s draw, keyed apart.
 
@@ -219,9 +232,12 @@ declared constant with its reason.
 | the arm | which of U1's arms carries the journey | fixed | **`arm="point"`** for H4-A and for I-4's reference (E-248; CHARTER 3.10 retires the verdict arm): **the verdict arm is never run** |
 | the naive coin's signal | when it trades | fixed | the lever table's T1 `coin`: an offer at every moment of `resolved_coin.marks()`'s grid, every `resolved_coin.MARK_STEP` minutes on the clock alone (no bar read to choose one), **unchained** (re-entering when flat), market entry (T5 `market`), L = 5 (T4's reference), admission T7 `off`, the as-run side drawn once per (session, moment) from the coin's schedule-side seed (section 15) |
 | the naive coin's sessions | where its moments lie | fixed | P-16's registered window `all` (`resolved_coin.WINDOWS`, 17:00 CT to the cutoff), inherited and ledgered (section 2): every session the firm allows; overlong offers whose order would go live after the firm's last new entry dropped; overnight admitted on the search years (E-231) |
-| the naive coin's trade shape and account policy | stop, target, size, accounts, budget | fixed, **the lead's fixed choice** | **P-16's registered job's**: its stop (`rc150_dev_test.STOP`), its target and sizing rule, its account policy (the strict rule at each account's own R, with `can_take`, applied by the vendored routing, `shared_days.TradeRouter`), its purchase budget (`a3_brk30_cb20.BUDGET`) and its protocol; each offer carries every R of P-16's table, the account taking it trading at its own R. The reason: P-16 is a coin design already (Stage 2's family RC), so the comparison isolates timing. The alternatives were P-14's shape (the rung map and its table) or P-15's; the choice was made by a reader of those designs' whole-window journeys, so it is in the held-out read ledger (section 2). The coin differs from P-16 in its schedule (every clock moment against P-16's resolved marks), its latency (L = 5 against P-16's scheduled marks), its news convention (E-223's through the trigger library, against P-16's `_nr` cell) and its void calendar (Q-166); I-5 holds its offer list against P-16's, and I-4 the routing. CHARTER 2 fixes the coin's levers "in the declaration": **this is that declaration**; MEASURES (35) says so, and Wave 5's search declaration restates them by citing this file's pinned sha256 |
-| the reading that decides | what W42-R1 reads | fixed | the martingale-outcome reading, as the design-search template v2's section 5 declares it: each trade's outcome redrawn at its bracket's driftless first-exit odds by the race, L = min(l, c - x_stop) **fractional, never rounded** (E-237), p = L / (L + g), g the target as placed (a rule's profit level converted to net ticks after the target-side cost), a win +g less x_target, a loss -L less x_stop, a cushion-bound loss ending exactly on the floor and breaching it; **what happens at the fill decided at the fill** by L_fill = min(l, c - max(x_stop, x_flat)), fractional, against the runner's tolerance `EPS`: L_fill above it, the trade is raced or walked; at or below it where the floor's room binds, **the account is failed at the fill** (taken to the floor, replaced at the close as the engine does); where the daily loss limit's room binds, **the day stops** -- there is no "not taken" state; R-10's stopped walk for a trade ending at a time limit (its last sub-step a driftless two-point race to the fractional barrier; the exit map `three_way_redraw.EXIT_LAW`, any other state refused) |
-| the readings beside | never deciding | fixed | the **as-walked** reading (the real path reflected about the fill by the side coin, **at the run's own exit times** -- the real path's exits at each trade's taken R -- so the occupancy and the routing are the deciding reading's on every seed and only the reflected outcome differs, rn-4; the path-structure edge is its gap from the deciding reading) and the **as-traded** reading of P-14, P-15, P-16 (their registered sides, unreflected, H4-A, point arm); the naive coin has no as-traded reading (it has no real side) |
+| the naive coin's trade shape and account policy | stop, target, size, accounts, budget | fixed, **the lead's fixed choice** | **P-16's registered job's**: its stop (`rc150_dev_test.STOP`), its target and sizing rule, its account policy (the strict rule at each account's own R, with `can_take`, applied by the vendored routing, `shared_days.TradeRouter`), its purchase budget (`a3_brk30_cb20.BUDGET`) and its protocol; each offer carries every R of P-16's table, the account taking it trading at its own R. The reason: P-16 is a coin design already (Stage 2's family RC), so the comparison isolates timing. The alternatives were P-14's shape (the rung map and its table) or P-15's; the choice was made by a reader of those designs' whole-window journeys, so it is in the held-out read ledger (section 2). The coin differs from P-16 in its schedule (every clock moment against P-16's resolved marks), its latency (L = 5 against P-16's scheduled marks), its news convention (E-223's through the trigger library, against P-16's `_nr` cell) and its void calendar (Q-166); it walks as P-16 does (`walker.STAGE2`, the breakeven move on); I-5 holds its offer list against P-16's, and I-4 the routing. CHARTER 2 fixes the coin's levers "in the declaration": **this is that declaration**; MEASURES (35) says so, and Wave 5's search declaration restates them by citing this file's pinned sha256 |
+| the coin's walk | how the coin's offers are walked | fixed | **`walker.STAGE2`, P-16's walk, FV3's breakeven move on** (the lead's ruling on RC-1): the coin is P-16's shape with a coin side, so it keeps P-16's protocol; `triggers.JOURNEY`'s move-off walk is never used for it. **The lever table's S7 (the move dropped) governs designs, and does not apply to H4's coin** |
+| the reading that decides | what W42-R1 reads | fixed | the martingale-outcome reading, as the design-search template v2's section 5 declares it: each trade's outcome redrawn at its bracket's driftless first-exit odds by the race, L = min(l, c - x_stop) **fractional, never rounded** (E-237), p = L / (L + g), g the target as placed (a rule's profit level converted to net ticks after the target-side cost), a win +g less x_target, a loss -L less x_stop, a cushion-bound loss ending exactly on the floor and breaching it; **what happens at the fill decided at the fill** by L_fill = min(l, c - max(x_stop, x_flat)), fractional, against the runner's tolerance `EPS`: L_fill above it, the trade is raced or walked; at or below it where the floor's room binds, **the account is failed at the fill** (taken to the floor, replaced at the close as the engine does); where the daily loss limit's room binds, **the day stops** -- there is no "not taken" state; R-10's stopped walk for a trade ending at a time limit (its last sub-step a driftless two-point race to the fractional barrier; the exit map `three_way_redraw.EXIT_LAW`, any other state refused), the map gaining the breakeven state below |
+| **the breakeven exit's law** | a trade whose run ends at the breakeven move's stop (`o_R` of kind `b`) | fixed | **the move-aware sequential race, the exact law** (the lead's ruling on RC-1), on one driftless path from the fill, its states: **(1) to the move bar**: R-10's stopped walk from the fill to the open of the move bar (the walk's `be_open`, the next FV3 session open after the entry bar: 17:00, 19:00, 08:30 or 13:00 CT, carried in the schedule) between -L and +g; ending at +g it is a target, at -L a stop; **(2) the move arms** at that open if the walked position x is at least one tick in the trade's favour, and **the stop becomes the entry** (zero gross); otherwise the stop stays at -L; **(3) from x**: armed, the race between the entry and +g, p = x / g, a loss booked at zero gross less the breakeven exit's own cost (the registered walk's `EXIT_TICKS` for kind `b`); not armed, the race between -L and +g, p = (x + L) / (L + g). Its gross expectation is exactly zero (optional stopping at each stage); the take rule at the fill nets the breakeven exit's cost too, L_fill = min(l, c - max(x_stop, x_flat, x_b)). A trade whose move bar opens before a non-`b` exit keeps its exit's law (the terminal-state map), and the share of such trades is printed beside, a declared channel as R-10's split is |
+| template v3's section 5 | the changes the third text makes (wt/wt-lit 13df998), adopted now (rc-13) | fixed | the walk's floor-side barrier **L_race** = min(l, c - x_stop), not L_fill; a new terminal state, **zero contracts at a positive room: the account ends out of room**, counted apart beside the at-the-fill failures; **the lattice step s per trade** (S-1); **T known at the fill for every row**, `other` included; **the both-barriers-in-one-step rule**; **the time exit's clip credit printed beside**; **a daily loss limit at or below e + max(x_stop, x_flat) refused** at construction; re-checked against v3's pinned text |
+| the readings beside | never deciding | fixed | the **as-walked** reading (the real path reflected about the fill by the side coin, **at the run's own exit times** -- the real path's exits at each trade's taken R -- so the occupancy and the routing are the deciding reading's on every seed and only the reflected outcome differs, rn-4; **no booked value lies outside the trade's [-(stop + costs), +(target - costs)]** (rc-11): a flipped trade is booked as the walker's mirror walk's terminal state at the run's exit, held within those bounds, a flipped target never booked as -g, labelled "the as-walked reading at the run's exits, bounded"; the path-structure edge is its gap from the deciding reading) and the **as-traded** reading of P-14, P-15, P-16 (their registered sides, unreflected, H4-A, point arm); the naive coin has no as-traded reading (it has no real side) |
 | the responses | the firm's responses switched on | fixed | `off` only (0 % denial, the placement off, the Focused Trader Program off) |
 | the stress arms | CHARTER 3.8 (c)'s fill and supply stress | fixed | `worse_1` (measure (29)'s +1 tick on every fill: the entry and each exit) and `missed_0.1` (measure (28)'s 10 % of signals missed), each on every baseline alike, on the deciding reading, on the same keys as `off` (`three_way_runner.stress_arms`, selected by name) |
 | the +2 tick and 20 % missed arms | measures (28) and (29)'s other levels | **dropped** | the template's pass line reads +1 tick and 10 % only (its section 10 (c)); the runner's `worse_2` arm is not run by H4 (cost); measures (28) and (29) are read at the levels run |
@@ -233,9 +249,10 @@ declared constant with its reason.
 | J | H4's coin seeds | fixed | **`J_H4` of Appendix A**: the smallest power of two at or above the J at which a true gap of W42-R1's `DELTA_MIN` between two baselines clears W42-R1's `RESOLVE_Z` coin standard errors with probability `family_stats.MDL_POWER`, at W42-R1 5.3's worst-case variance (Q = 1 / (J n) at the twelve-month horizon's complete starts, every per-unit difference in [-1, 1]), n from a lower bound of the sessions (the three-way note's 2.5 form with W42-R1's resolution line). **at least W42-R1's `H4_MIN_SEEDS`** (the fewest seeds at which W42-R1 lets a gap resolve; Appendix A prints the comparison); **read at the pinned W42-R1's constants only**: until W42-R1 is pinned the script's `j_h4` refuses and Appendix A prints a provisional reading at its constants at wt/wt-infra 34ee968, for sizing only |
 | the seed indices | the coin seeds' indices | fixed | 0 to J - 1 (`three_way_runner.Plan`'s `seed_indices`), the same for every baseline and arm |
 | the holiday allowance | the sessions' lower bound for J | fixed | `HOLIDAYS_A_YEAR` of the script: at most that many weekdays a year are not sessions (exchange holidays fall below it), so J is not short |
+| the audit sample | the units whose full taken-trade log is written (rc-3) | fixed | 1 % of units (start, seed index), every arm, drawn by 20264404 (section 15), one uniform a unit, a unit sampled when it is below the share; its log's rows and bytes printed in Appendix A, the run refused unless twice that size is free on disk |
 | the batch | starts run at once in lockstep | fixed | a batch of 21 starts (a month of starts; the script's `BATCH_STARTS`), its lanes against the memory cap in Appendix A |
 | the part cap | the cut rule | fixed | 8 hours a part at H4-0's measured cost (`three_way_arith.PART_CAP_H`); at most 2 workers, one BLAS thread |
-| positions open at once | overlap | fixed, **none** | every baseline holds one open position across all accounts, each trade on one account, five minutes flat between (D-409, D-429): no copying, no overlap. **The refusing count is per unit** (start, seed) and per arm, **on the taken-trade log**: any two taken trades of the user whose spans [fill bar open, exit bar end at the taken R + 5 min) intersect; it must be 0, and **the auditor recomputes it from the log alone, without the enforcing code** (section 16); the schedule-level count is beside, never a kill (section 5); the firm path refuses any overlap. No joint law is declared here; if Wave 5's designs need one, it is the sequential driftless race on one path (the strong Markov property: exact joint outcomes for any set of intervals containing the fill), never the one-uniform form, which is exact only for nested losses with a common target (the red team's n-2) |
+| positions open at once | overlap | fixed, **none** | every baseline holds one open position across all accounts, each trade on one account, five minutes flat between (D-409, D-429): no copying, no overlap. **The refusing count is per unit** (start, seed) and per arm, **on the taken trades**: any two taken trades of the user whose spans **[fill bar end, exit bar end at the taken R + 5 min)** intersect, **on Stage 2's bar-end clock** (the trading day and the bar's end minute after 17:00 CT) -- exactly D-429 and the vendored router's rule (`shared_days.py:357-359`: refused while `open_until + one_at_a_time > entry_t`), so a second fill bar ending exactly five minutes after the first's exit bar ends is admitted and counts 0 (RC-2); counted on each trade's own exit at its taken R, never the router's hold to the latest exit at any R (`latest_exit`), so it is laxer than the router and never a false kill, both exits logged (rc-12); D-429's five minutes are four to five minutes of real flat time, the exit falling inside its bar and the fill at its bar's open (rn-a); it must be 0, **written for every unit**, and **the auditor recomputes it from the sampled units' logs, without the enforcing code**, equal to the code's count on every sampled unit (section 16; rc-3); the schedule-level count is beside, never a kill (section 5); the firm path refuses any overlap. No joint law is declared here; if Wave 5's designs need one, it is the sequential driftless race on one path (the strong Markov property: exact joint outcomes for any set of intervals containing the fill), never the one-uniform form, which is exact only for nested losses with a common target (the red team's n-2) |
 | a t-test | any t as a decision | **dropped** | H4 decides nothing; no t is computed as a line |
 
 - **Fitted values:** none. Nothing is fitted, chosen or tuned on any years; the inherited constants of section 2 are
@@ -297,8 +314,9 @@ H4 has no deciding line. What it hands on, and the checks that must hold before 
     and x; R-10's walked trades by the walk law's exact terminal distribution; no exit passes the floor (the
     engine's clip never binds), and a floor-side loss lands exactly on the floor and breaches it (E-237's forced-loss
     form). An output outside the oracle is an engine error (the template v2's section 5);
-  - **the overlap count, per unit, on the taken-trade log** is 0 for every baseline and arm (section 7's overlap row),
-    recomputed by the auditor from the log alone;
+  - **the overlap count, per unit, on the taken trades** is 0 for every baseline and arm (section 7's overlap row),
+    written for every unit, and recomputed by the auditor from the sampled units' logs alone, equal to the code's count
+    on every sampled unit;
   - **the blank rule:** every per-unit value handed on is finite on its E_h (MEASURES 1.3); a blank refuses the
     reading;
   - **the pairing:** every baseline and arm on one plan's keys (the same role seed, part, starts and seed indices), the
@@ -351,8 +369,9 @@ drops.*
   as-traded) and arm; the record each horizon read (the exact h run or the long run cut at the block's end) and the
   count of starts where they differ (m-8); |E_h| per horizon; MEASURES 1.4's three readings with the two `n_eff`
   values; the share passed and the share paid by W, the censored counts and the strict rule's "at least" flags
-  (MEASURES 1.3); the accounts failed at the fill and the days stopped at the fill (L_fill at most `EPS`), counted
-  apart, their share beside (v2's section 5); per baseline the time-limited share and mean steps (R-10), the
+  (MEASURES 1.3); the accounts failed at the fill, the days stopped at the fill (L_fill at most `EPS`) and **the
+  accounts ended out of room** (v3's section 5), each counted apart, their shares beside; per baseline the breakeven
+  exits' share, the share of trades whose move bar opens before another exit, and the same-bar exits' share; per baseline the time-limited share and mean steps (R-10), the
   news-flatten share and its gap to the as-walked cost (v2's m-4), and the **fill-time law** reading's gap from the
   deciding reading; the **path-structure edge**
   (as-walked less deciding); the share of window sessions after the last nested cut on every twelve-month and W = 252
@@ -398,7 +417,7 @@ rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this b
 | 20264401 | H4-0, the probe's synthetic toys (the firm path's cost) | design check |
 | 20264402 | H4-B: the coin field on the search years -- every baseline, every arm, every reading; draw kinds the side and reflection coin, the race, R-10's stopped walk, the missed-signal draw (measure (28)); the enforcement kind keyed apart, drawing nothing at `off` | reading |
 | 20264403 | H4-S: the coin's schedule side -- one draw a (session, moment) of the coin's offers, the coin kind's fixed fields with the part H4-S, history 0, seed index 0 and start 0 (the schedule is no user's), so independent of every seed index | schedule |
-| 20264404 | spare | spare, drawn by nothing |
+| 20264404 | H4-B: the audit sample of units -- one draw a unit (start, seed index), the `plant` kind's fixed fields with the part H4-B, history 0, the start as the plant and the seed index as the replicate, a unit sampled when its draw is below 1 % (section 7) | audit sample |
 | 20264405 | spare | spare, drawn by nothing |
 | 20264406 | spare | spare, drawn by nothing |
 | 20264407 | spare | spare, drawn by nothing |
@@ -440,12 +459,12 @@ rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this b
    and P-16 reproduced); the registered-constants file on record by its sha256; every dependency of Appendix C merged
    at the commits the go row names; Q-197's calendar equal to the cut's A1 day list (section 4); every job's calendar
    ending on 2023-12-29; a clean checkout of a named commit (`scripts/run_clean.py`); the run lock held, one heavy job
-   on the machine; memory checked.
+   on the machine; memory checked; free disk at least twice the audit sample's log size Appendix A prints (rc-3).
 2. **H4-0**, one heavy slot.
 3. **H4-S**, with **the identities**, each before any outcome of the runner is believed:
    - **(I-1) the schedules:** each registered baseline's schedule through the cut's pass-through mode equals its
-     registered trigger-level trades whose **trading day** (A1's `date` column, never the clock date: the 17:00 CT
-     evening of 2023-12-29 belongs to the trading day 2024-01-02 and is excluded) is on or before 2023-12-29 -- times
+     registered trigger-level trades whose **trading day** (A1's `date` column, never the clock date: the evening session
+     opening the trading day 2024-01-02 belongs to it and is excluded) is on or before 2023-12-29 -- times
      and brackets, path for path -- by the
      **search-year sub-hash** of the registered trades, computed once in the on-record whole-window identity run (E-247
      rm-4's exception), never by H4, and recorded in the registered-constants file: one form for P-14, P-15 and P-16
@@ -458,11 +477,16 @@ rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this b
      search-year start of P-14 (and P-15, P-16 in H4-A): every event day equal and each close's `rel` within a
      millionth of a dollar (MEASURES 1.2's tolerance), path for path; **its two start sets compared** first -- the
      firm path's (Q-197's calendar) and H4-A's (the cut's A1 day list) -- equal date for date (rm-6);
-   - **(I-5) the coin's source** (the lead's ruling on RB-1): its unchained offer list, built at P-16's registered
-     offered marks (the registered-constants file), latency 0, with P-16's `coin_table` sides and its `_nr` news rule,
-     **equals P-16's trigger-level trades by `rc_dev_test.trades_hash`** on the search years; with admission off, its
-     offers equal the clock grid less the void calendar. The routing needs no identity of its own: I-4 holds the firm
-     path's routing to the vendored replay's.
+   - **(I-5) the coin's source** (the lead's ruling on RB-1), **in P-16's mode** (RC-1, rc-6): its unchained offer
+     list, built on A1's walked days (kinds `n` and `b`) with Q-166's void calendar off, D-533's cut, at P-16's
+     registered offered marks (the registered-constants file), latency 0, with P-16's `coin_table` sides and its `_nr`
+     news rule, walked by `walker.STAGE2` (the breakeven move on), and produced by the vendored
+     `resolved_coin.cell_trades` -- its columns `date`, `year`, `decision_ct`, `day_kind`, `decision_slot_minutes`, `S`,
+     `stop_ticks`, `entry_t`, `side`, `fee_micro_eq`, then at each of `fv3_rung_walk.RR_GRID`'s twelve Rs `r_R`,
+     `g_R`, `c_R`, `mae_R`, `exit_t_R` and `o_R`, then `exit_t` and `flat` at `fresh_rr` -- **equals P-16's
+     trigger-level trades by `rc_dev_test.trades_hash`** on the search years; with admission off, in the run's mode,
+     its offers equal the clock grid less the void calendar (a separate check). The routing needs no identity of its
+     own: I-4 holds the firm path's routing to the vendored replay's.
 4. **The lead's sizing row** (section 11).
 5. **H4-A**, then **H4-B**'s parts, then **H4-C**, each one heavy slot, each watched to its exit, each written with its
    manifest (`extended.results.write_result`, `prereg_id` H4, every seed role and parameter, the key kinds, the commit
@@ -471,8 +495,9 @@ rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this b
    files; the collection result rebuilt from the units files by the adapter; a declared sample of units -- every
    search year's first start under the first `three_way_keys.SAMPLE_SEEDS` seed indices, every baseline and arm --
    recomputed from the schedules and keys through the firm path, equal bit for bit; the oracle re-checked on the trade
-   logs from the logged inputs alone, for every taken trade; **the per-unit overlap count recomputed from the trade
-   logs alone, without the enforcing code**; H4-0's sealed hash against H4-A's same starts; the results' price-level
+   logs from the logged inputs alone, for every taken trade of every sampled unit; **the per-unit overlap count
+   recomputed from the sampled units' logs alone, without the enforcing code**, equal to the code's count on every
+   sampled unit; H4-0's sealed hash against H4-A's same starts; the results' price-level
    guard
    (`tests/test_results_no_price_levels.py`) on every file.
 7. **The collection row** (`/collect`), then W42-R1's application in the pinning row (Wave 4.2), citing the collection
@@ -485,9 +510,11 @@ rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this b
 - `results/h4_readings_<baseline>.csv`: every reading's rows (`journey_readings`' and MEASURES 1.4's), per arm and
   reading, with section 12's beside fields;
 - `results/h4_supply.csv`: H4-S's counts and gates, the schedule-level overlap beside, per baseline and search year;
-- `results/h4_trades_<baseline>.csv`: the per-trade log of the taken trades (unit, arm, account, fill and exit bars,
-  the R taken, l, g, c, the exit costs, the law, the outcome) -- the oracle's and the overlap count's input, ticks and
-  times only, no price;
+- the per-unit overlap counts, every unit and arm, a column of `results/h4_units_<baseline>.csv`;
+- `results/h4_trades_<baseline>.csv`: the full taken-trade log **of the audit sample's units only** (rc-3): unit,
+  arm, account, the fill and exit bars on Stage 2's bar-end clock with the trading day, the R taken, the exit at the
+  taken R and the router's latest exit (rc-12), l, g, c, the exit costs, the law and its states, the outcome -- the
+  oracle's and the overlap count's audit input, ticks and times only, no price;
 - `results/h4_as_traded.csv`: H4-A's rows (`journey_readings.summary` of the replays);
 - `results/h4_identities.csv`: each identity's comparison, its counts, its tolerance and its verdict;
 - H4-0's sealed file: its hash in the part ledger, the file unopened.
@@ -500,9 +527,11 @@ H4's runner script (`scripts/h4_rebaseline.py`, its parts by name), the collecti
 (`three_way_runner.paired` refuses a design-less call: H4 needs the four baselines on one plan and one guard with no
 design), the stress arms by name, and the output writers. Tests, on synthetic data with known answers, each written
 before its code: the parts' refusals (a held-out start, a confirmation-window session, a reader span past
-2023-12-29); the oracle on planted trade logs (a forced-loss toy that must fail it); the per-unit overlap count on a toy log with two taken
-trades whose spans intersect, and on one whose second trade fills inside the first's five minutes flat (each must
-refuse); the adapter on a synthetic collection file (a missing seed, a missing key, a
+2023-12-29); the oracle on planted trade logs (a forced-loss toy that must fail it); the per-unit overlap count on toy logs in Stage 2's
+bar-end clock: a second trade whose fill bar ends exactly five minutes after the first's exit bar ends (admitted,
+count 0) and one whose fill bar ends four minutes after (count 1, refused), and the vendored router's admitted
+boundary pair counting 0 (RC-2); the breakeven law's exact-fraction test (its three states, gross zero, net minus its
+costs); the adapter on a synthetic collection file (a missing seed, a missing key, a
 changed byte, each refused); the baselines' pairing (every arm on one key set); the outputs' never-blank form; a
 held-out row refused before any write.
 
@@ -516,7 +545,8 @@ the refusals, the deciding reading, the arm, the nested cuts and the pairing, ea
 - The red team's read answered; the gatekeeper's approval; the seed search repeated at the pin over every worktree.
 - **W42-R1 pinned first**, and this file's placeholder for its pinning row and its three files' sha256 filled (with
   J_H4 then printed at its constants).
-- The three-way runner's correction for RB-1 merged, and the firm path, the cut's pass-through mode, the
+- The three-way runner's correction for RB-1 merged, **the firm path (Q-185) corrected for H4's baseline mode at a named
+  commit** (Appendix C), and the cut's pass-through mode, the
   registered-constants file, the `trade_problems` switch-off's row, the collection adapter and the seed module's H4
   block built and merged (Appendix C) -- or this text's interfaces kept as written with any departure re-declared.
 - The template's second text (E-247) pinned as read by its red team; any change to its sections 5 or 14 re-checked here;
@@ -536,7 +566,7 @@ pinned, J is provisional and the plan is sized at it.
 <!-- h4_plan: begin -->
 ```text
 H4's seed count J (section 7): a true gap of DELTA_MIN resolved at RESOLVE_Z standard errors with probability POWER, at W42-R1's worst-case variance Q = 1 / (J n)
-  J_H4: REFUSED until W42-R1 is pinned (B-6); the lines below are PROVISIONAL, at W42-R1 34ee968's constants, for sizing only
+  J_H4: REFUSED until W42-R1 is pinned (B-6); the lines below are PROVISIONAL, at W42-R1 c72526d's constants, for sizing only
   W42-R1's constants: RESOLVE_Z=2 DELTA_MIN=0.01 POWER=0.8 (z=0.8416); units needed n = ((RESOLVE_Z + z) / DELTA_MIN)^2 = 80749
   search-year sessions: at most 1042 (weekdays 2020-01-02 to 2023-12-29), at least 994 (less 12 a year)
   complete starts at h=63: 932 to 980
@@ -557,6 +587,7 @@ H4's heavy slots (at J (provisional)): part | reads | work | hours over 2 worker
   H4-B p15          | the firm path, J=128 seeds, 4 arm-runs (off deciding; off as-walked, beside; worse_1 deciding; missed_0.1 deciding) | 8.731e+08 lane-trades | 0.0  0.1  0.6 | c_max=65.97 us
   H4-B p16          | the firm path, J=128 seeds, 4 arm-runs (off deciding; off as-walked, beside; worse_1 deciding; missed_0.1 deciding) | 8.731e+08 lane-trades | 0.0  0.1  0.6 | c_max=65.97 us
   H4-C collection   | the four units files by sha256 into one result for W42-R1 | no lane-trades
+the audit sample's log (rc-3): 1% of units, every arm-run, at most 5377720 rows a baseline at 128 B a row: 2.75 GB over the four baselines; the run is refused unless 2 x that, 5.51 GB, is free on disk
 memory: cap 2.5 GB over 2 workers, base 0.4 GB assumed (H4-0 measures it), lane 1344 B: at most 632440 lanes a worker; a batch of 21 starts x J = 2688 lanes
 the cut rule: a part runs only if H4-0's measured cost (the race's and the walks' terms at H4-S's time-limited share and mean steps) times H4-S's counted supply fits 8 h; otherwise it is split by disjoint start ranges, never by seeds, in the lead's sizing row before it starts
 the crash rule: no reading is made until every part completes; a crashed part is re-run whole from its declared seeds, never resumed; each crash is recorded in the part ledger (E-195)
@@ -618,18 +649,19 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 <!-- h4_dependencies: begin -->
 | dependency | where | status | what H4 needs from it |
 |---|---|---|---|
-| the seed-paired runner | `extended/three_way_runner.py` on wt/wt-three adedf7f, in its last correction for RB-1 | built; its RB-1 correction to merge | `Plan` (role seed, part, history, starts, seed indices, horizon, the block's sessions, dates, its held-out refusal); one `KeyGuard` over every arm; `stress_arms` selected by name (`worse_1`, `missed_0.1`); a baselines-only call (no design); `matrix`'s never-blank refusal; the redraw's `EXIT_LAW` and R-10's walk (`three_way_redraw`, `three_way_journey`) |
-| the firm path | the vendored lockstep with the race as its draw (`vendor/stage2/propedge/campaign/lockstep.py`, imported, never edited) -- the build item after Q-170 | **to build** | a draw class with the engine's draw interface (`settlement = "race"`, called per day and slot with the lanes' cushions, like `adapter.BinaryDraw`), one lane a seed, a batch of starts in lockstep, reading its uniforms from the coin field keyed per user and moment (`three_way_fastkeys`), never a sequential stream; the race L = min(l, c - x_stop) fractional and the take rule L_fill at the fill, so the engine's clip never binds; R-10's walk by `EXIT_LAW`; the strict rule kept (one open position across all accounts, each trade on one account), applied by **the vendored routing the registered designs use** (`shared_days.TradeRouter`, `one_at_a_time` at the account's R, `can_take`, P-16's cap and rule), for the coin's unchained offers too, and **any overlap refused**; the as-walked draw (the reflected path's walked outcome) and the as-traded draw (no reflection) on the same code; the run stopping at the block's last session; per unit (s, c) a journey record of `user_beside.journey_record`'s form (`rel`, `peak_month`, the exact runs' peaks, purchases, accounts' endings and payout closes) so that `journey_measures` reads it unchanged; **required**: the orders a session, the accounts live at once and `taken_d` (measures (30), (37)), so `orders_max`, `accounts_max` and `taken_mean` are emitted for every unit; the per-trade log of every taken trade (unit, arm, account, fill and exit bars, the R taken, l, g, c, x, the law, the outcome) for the oracle and the per-unit overlap count, which the auditor recomputes without this code; its identities (I-3) and (I-4); its cost a lane-trade and its memory a lane for H4-0 |
+| the seed-paired runner | `extended/three_way_runner.py` on wt/wt-three adedf7f, in its last correction for RB-1 | built; its RB-1 correction to merge; **the `b` state to build** (RC-1) | `Plan` (role seed, part, history, starts, seed indices, horizon, the block's sessions, dates, its held-out refusal); one `KeyGuard` over every arm; `stress_arms` selected by name (`worse_1`, `missed_0.1`); a baselines-only call (no design); `matrix`'s never-blank refusal; the redraw's `EXIT_LAW` and R-10's walk (`three_way_redraw`, `three_way_journey`); **the breakeven state carried** -- `EXIT_LAW` gains `b` with the move-aware sequential race (section 7), its move bar in each trade, its exact-fraction test |
+| the firm path | **Q-185**, `extended/three_way_firm.py` on wt/wt-firmpath de1049e or later (merged as b318b5f), the vendored lockstep with the race as its draw (`vendor/stage2/propedge/campaign/lockstep.py`, imported, never edited) | **built; to correct for H4** (rc-4): **a baseline mode** with routing through the vendored `TradeRouter` (the strict rule at each account's R, `can_take`), never Q-169's router plus refusal; same-bar exits allowed, `entry <= exit` on Stage 2's clock; the `b` state; every R of P-16's table carried; the per-unit overlap counts and the audit sample's log; both exits logged; the bounded as-walked booking -- the lead sends these to its worker | a draw class with the engine's draw interface (`settlement = "race"`, called per day and slot with the lanes' cushions, like `adapter.BinaryDraw`), one lane a seed, a batch of starts in lockstep, reading its uniforms from the coin field keyed per user and moment (`three_way_fastkeys`), never a sequential stream; the race L = min(l, c - x_stop) fractional and the take rule L_fill at the fill, so the engine's clip never binds; R-10's walk by `EXIT_LAW`; the strict rule kept (one open position across all accounts, each trade on one account), applied by **the vendored routing the registered designs use** (`shared_days.TradeRouter`, `one_at_a_time` at the account's R, `can_take`, P-16's cap and rule), for the coin's unchained offers too, and **any overlap refused**; the as-walked draw (the reflected path's walked outcome) and the as-traded draw (no reflection) on the same code; the run stopping at the block's last session; per unit (s, c) a journey record of `user_beside.journey_record`'s form (`rel`, `peak_month`, the exact runs' peaks, purchases, accounts' endings and payout closes) so that `journey_measures` reads it unchanged; **required**: the orders a session, the accounts live at once and `taken_d` (measures (30), (37)), so `orders_max`, `accounts_max` and `taken_mean` are emitted for every unit; the per-trade log of every taken trade (unit, arm, account, fill and exit bars, the R taken, l, g, c, x, the law, the outcome) for the oracle and the per-unit overlap count, which the auditor recomputes without this code; its identities (I-3) and (I-4); its cost a lane-trade and its memory a lane for H4-0 |
 | the cut, in its pass-through mode | `extended/search_cut.py` (E-248, built on wt/wt-user); the pass-through mode is **to build**; Q-172's count on P-14 is unaffected | built; pass-through **to build** | for every vendored builder that opens whole-window files (the bars, the atlas, the walk rows): a view cut at a named last day (2023-12-29, and 2022-12-30, 2023-06-30 and 2023-09-29 for the nested cuts), read through the reader under `h4_search_years`, refusing any session from 2024-01-02; **the pass-through mode**: given the registered-constants file (path and sha256, refused on a mismatch), it replaces the statistics a registered builder would compute from the cut rows -- P-15's and P-16's offered marks (`resolved_coin.offered_marks`' result) and each registered design's busiest-day capacity -- by the registered values, wrapping the calls (nothing vendored edited), never re-resolving them; its manifest names every statistic passed through and every one computed from cut rows; the files it opened and their sha256; **H4-0's and H4-A's jobs built inside it**, each job's calendar ending on 2023-12-29 (rm-5); **its A1 day list equal to Q-197's calendar**, refused otherwise (rm-6) |
-| the registered-constants file | `results/h4_registered_constants.csv` (a name proposed), written once by a script under `identity/` in the on-record whole-window identity run (E-247 rm-4's exception for the parents' registered reproductions), its read the identity run's existing one, its own ledger line (section 2) | **to build**, its sha256 cited under the lead's row | **copied, by sha256, from the registered result files**: P-15's and P-16's offered-mark lists (slots, by rung) and each registered design's busiest-day capacity (the screen rows' `capacity` and `busiest_day`, `rc_dev_test.trade_problems`' fields, from `rc_reentry_screen.csv` and `rc_width_screen.csv` at their registered `SCREEN_SHA256`); **computed: only** the search-year sub-hash of each registered design's trades whose trading day (A1's `date`) is on or before 2023-12-29 (`rc_dev_test.trades_hash`'s form, the same for P-14); slots, counts and hashes only, no price |
+| the registered-constants file | `results/h4_registered_constants.csv` (a name proposed), written once by a script under `identity/` in the on-record whole-window identity run (E-247 rm-4's exception for the parents' registered reproductions), its read the identity run's existing one, its own ledger line (section 2) | **to build**, its sha256 cited under the lead's row | **copied, by sha256, from the registered result files**: P-15's and P-16's offered-mark lists (slots, by rung) and each registered design's busiest-day capacity (P-15's and P-16's: the screen rows' `capacity` and `busiest_day`, `rc_dev_test.trade_problems`' fields, from `rc_reentry_screen.csv` and `rc_width_screen.csv` at their registered `SCREEN_SHA256`; **P-14's**: the field `trades_per_day_capacity` of `vendor/stage2/results/a3_brk30_cb20_gate.csv.manifest.json`, sha256 `c9c3356760f33fa3bb5aaff8e59175bff5fd9824d004086398ed529993d003e1`, as `a3_brk30.capacity` recorded it, rc-10); **computed: only** the search-year sub-hash of each registered design's trades whose trading day (A1's `date`) is on or before 2023-12-29 (`rc_dev_test.trades_hash`'s form, the same for P-14); slots, counts and hashes only, no price |
 | the `trade_problems` switch-off | `rc_dev_test.trade_problems`' screen-row and whole-window hash check, for cut rows | **to record** under its own row (the lead's), entered in the cut's `SWITCHED_OFF` | the check replaced, on cut rows only, by I-1's sub-hash comparison; whole-window builds keep it |
 | the collection and its adapter | `scripts/h4_collect.py`, `extended/h4_collect.py::w42_readings(path, sidecar)` (W42-R1's `ADAPTER`) | **to build** | section 9's one result from the four units files by their sha256, its sidecar with `sha256` at the top level and the binding fields under `parameters`, the sidecar's own sha256 on its LF-normalised bytes, and the four `wave42.BaselineReading`s from it, with its refusals and its synthetic test |
 | the seed module's H4 block | `extended/three_way_seeds.py` (wt/wt-three) | **to build** | section 15's block with its roles, statuses and `ROLE_USE`, the parts `H4-0`, `H4-S` and `H4-B`, `issue` refusing the spares; `tests/test_h4_draft.py`'s allowed files include it |
-| W42-R1 | `docs/plans/WAVE42_SETTING_RULE.md`, `extended/wave42.py` and `scripts/wave42_apply.py`, **as pinned**, cited by the LF sha256 of all three files (its first text at wt/wt-infra 2bde318; its second at 357a339; its third at 34ee968, and its pre-pin fix when that lands) | built; to pin before H4 | its pinning row and its three files' sha256 (this file's placeholder); its input form (`BaselineReading` with its `reading` tag, `H4Binding`, `H4_MANIFEST_KEYS` with `arm` and the verdict settings, the keys of `REQUIRED`, `first_pass_days` and the three workload and supply measures among them); `ARM`, `VERDICT`, `COLLECTION_RESULT` and `ADAPTER`; `calendar_digest` and `readings_digest`, which H4's collection records; its constants `RESOLVE_Z`, `DELTA_MIN`, `POWER_TARGET`, `W`, `READING` and `H4_MIN_SEEDS`, which H4's J and manifest read; its `TEST_SEEDS`, the held-out test's J, not H4's |
-| the search calendar | Q-197's pinned search-year calendar (`search_calendar.csv`, W42-R1's `SEARCH_CALENDAR`) and its loader (wt/wt-cal), the one calendar H4 and W42-R1 both bind | **to build** (Q-197) | the search years' session dates, 2020-01-02 to 2023-12-29, strictly increasing, by its loader; its result file's sha256 under its row; H4's starts, every session count and `calendar_sha256` read from it, never from another list; **equal to the cut's A1 day list date for date, refused otherwise** (rm-6) |
+| W42-R1 | `docs/plans/WAVE42_SETTING_RULE.md`, `extended/wave42.py` and `scripts/wave42_apply.py`, **as pinned**, cited by the LF sha256 of all three files (its first text at wt/wt-infra 2bde318; its second at 357a339; its third at 34ee968; **its pre-pin fix at c72526d**, merged as 75ff709, `wave42.py` unchanged; its public composite, limit and floor functions are still to come, their commit cited when they land, rc-9) | built; to pin before H4 | its pinning row and its three files' sha256 (this file's placeholder); its input form (`BaselineReading` with its `reading` tag, `H4Binding`, `H4_MANIFEST_KEYS` with `arm` and the verdict settings, the keys of `REQUIRED`, `first_pass_days` and the three workload and supply measures among them); `ARM`, `VERDICT`, `COLLECTION_RESULT` and `ADAPTER`; `calendar_digest` and `readings_digest`, which H4's collection records; its constants `RESOLVE_Z`, `DELTA_MIN`, `POWER_TARGET`, `W`, `READING` and `H4_MIN_SEEDS`, which H4's J and manifest read; its `TEST_SEEDS`, the held-out test's J, not H4's |
+| the search calendar | Q-197's pinned search-year calendar (`search_calendar.csv`, W42-R1's `SEARCH_CALENDAR`) and its loader (wt/wt-cal), the one calendar H4 and W42-R1 both bind | **to build** (Q-197) | the search years' session dates, 2020-01-02 to 2023-12-29, strictly increasing, by its loader; its result file's sha256 under its row; H4's starts, every session count and `calendar_sha256` read from it, never from another list; **equal to the cut's A1 day list date for date, refused otherwise** (rm-6); **the held-out manifest entries dropped before they are parsed** (rn-d) |
 | the starts and the as-traded replays | `extended/user_beside.py`, `run_starts(design, "point", BY_NAME["off"], ..., journey=True, journey_block="search")` | built (Wave 3.1) | the search-year starts, the block refusal, the exact runs on every start, the as-traded journey records (H4-A) and identity (I-4)'s reference, on the point arm only |
 | the measures | `extended/journey_measures.py`, `extended/journey_readings.py` | built (Wave 3.1) | every function `docs/MEASURES.md`'s index names; `coin_readings`, `design_coin_readings`, `variance_decomposition` on x[s, c]; `journey_readings.summary` on the as-traded replays |
-| the naive coin's source | the trigger library's offers (`extended/triggers.py`, `extended/components.py`), **re-built as an unchained offer list** -- not `schedule_day`'s chain, not `extended/router.py` | **to build** (its unchained form) | every moment of `resolved_coin.marks()`'s grid in P-16's window `all`, unchained, admission T7 off at L = 5, the void calendar and E-223's news convention, each offer walked at every R of P-16's table in `resolved_coin.cell_trades`' columns, its as-run side from the coin's schedule-side seed once per (session, moment); an admission restricted to a given mark list at latency 0 with given sides and news rule, for I-5; the list handed to the firm path's vendored routing |
+| the naive coin's source | the trigger library's offers (`extended/triggers.py`, `extended/components.py`), **re-built as an unchained offer list** -- not `schedule_day`'s chain, not `extended/router.py` | **to build** (its unchained form) | every moment of `resolved_coin.marks()`'s grid in P-16's window `all`, unchained, admission T7 off at L = 5, the void calendar and E-223's news convention, each offer walked **by `walker.STAGE2` (the breakeven move on), never `triggers.JOURNEY`**, at every R of P-16's table in `resolved_coin.cell_trades`' columns, its as-run side from the coin's schedule-side seed once per (session, moment); an admission restricted to a given mark list at latency 0 with given sides and news rule, for I-5; the list handed to the firm path's vendored routing |
+| the walk | `extended/walker.py`'s `STAGE2` preset (P-16's walk, FV3's breakeven move on, held to `fv3_rung_walk` and P-16's pinned trades by its own identity) | built | the coin's walk and I-5's; the move bar (`be_open`) of every trade carried into the schedule |
 | the reader | `extended/reader.py` | built | `read_bars` and `authorise_engine_read` under `h4_search_years`, refusing any span reaching 2024-01-02; the ledger lines of a clean run |
 <!-- h4_dependencies: end -->
 
@@ -675,3 +707,24 @@ coin readings (the design-level measures readings 1 and 3). "W" is read at W = 1
 | rn-3 | the data-defect void's same-day look-ahead labelled | section 5; section 12 |
 | rn-4 | the as-walked reading at the run's own exit times | section 7's readings-beside row |
 <!-- h4_findings_c2: end -->
+
+## Appendix F. The red team's last read of the third text, answered
+
+<!-- h4_findings_c3: begin -->
+| finding | the lead's ruling | where it is answered |
+|---|---|---|
+| RC-1 | the registered protocols with FV3's breakeven move; a `b` exit's law the move-aware sequential race; the coin on P-16's protocol, move on; I-5 in `STAGE2` mode; S7 governs designs, not H4's coin; the `b` state a runner build item | section 5; section 7's coin-walk and breakeven rows; section 16 (I-5); Appendix C (the runner, the firm path, the coin's source, the walk) |
+| RC-2 | the span [fill bar end, exit bar end + 5 min) on Stage 2's bar-end clock, D-429 and the vendored router exactly; the toy test fixed; the router's boundary pair counts 0 | section 7's overlap row; section 17; T-0 |
+| rc-3 | per-unit counts for every unit; the full log for a seeded 1 % sample (20264404); the auditor equal on every sampled unit; the sample log's size printed and a disk refusal at twice it | section 7's audit-sample row; section 9; section 15; section 16; Appendix A |
+| rc-4 | Q-185 named at de1049e or later, built, to correct for H4's baseline mode | Appendix C; section 18 |
+| rc-5 | the eleven survivors killed | T-0's exact sentences |
+| rc-6 | I-5 on A1's walked days with Q-166 off; `cell_trades`' columns, twelve Rs | section 16 (I-5) |
+| rc-7 | H4 enters no membership; its values serve a member search only by a hash row citing H4's pin row | the status paragraph |
+| rc-8 | I-1's example: the evening session opening the trading day 2024-01-02 is excluded | section 16 (I-1) |
+| rc-9 | W42-R1 at c72526d; its public functions cited when they land | Appendix C; the script's provisional commit |
+| rc-10 | P-14's capacity source file by path and sha256 | Appendix C (the registered-constants file) |
+| rc-11 | the as-walked reading bounded within the trade's bracket, labelled | section 7's readings-beside row |
+| rc-12 | both the exit at the taken R and the router's latest exit logged | section 7's overlap row; section 16's outputs |
+| rc-13 | v3's section 5 changes adopted, "out of room" among them | section 7's v3 row; section 12 |
+| rn-a to rn-e | D-429's real flat time; the schedule side in section 6; the metadata dropped before parsing; the breakeven move against conduct tier 1 | section 7's overlap row; section 6; section 2's ledger and Appendix C; section 3 |
+<!-- h4_findings_c3: end -->

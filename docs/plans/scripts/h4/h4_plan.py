@@ -70,9 +70,9 @@ class W42NotPinned(RuntimeError):
 #: until the lead's pinning row exists (B-6; W42-R1 at 34ee968 pins all three files); `tests/test_h4_draft.py` then
 #: reads the constants from that commit
 W42_PIN: dict | None = None
-#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1 at 34ee968 (its
-#: constants are 357a339's; its pre-pin fix replaces it when that lands on wt/wt-infra)
-PROVISIONAL_W42_COMMIT = "34ee968"
+#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's pre-pin fix at
+#: c72526d (merged as 75ff709; `wave42.py` byte-identical to 34ee968's, so the constants and J are unchanged)
+PROVISIONAL_W42_COMMIT = "c72526d"
 #: W42-R1's floor on H4's seeds (its `H4_MIN_SEEDS`, m-2: below it no gap resolves) and the held-out test's J (its
 #: `TEST_SEEDS`, B-3), printed beside H4's J; the test holds both to `extended/wave42.py` at the provisional commit
 H4_MIN_SEEDS = 62
@@ -105,6 +105,12 @@ AS_TRADED_ARM = "point"
 NESTED_CUTS = ("2022-12-30", "2023-06-30", "2023-09-29")
 #: starts in one lockstep batch (a month of starts): the lanes a batch are J x this
 BATCH_STARTS = 21
+#: the audit sample (rc-3): the share of units (start, seed index) whose full taken-trade log is written, every arm;
+#: the log's row at an assumed 16 typed fields of 8 bytes (H4-0 measures the real size); the run refuses unless this
+#: many times the printed total is free on disk
+SAMPLE_SHARE = 0.01
+LOG_ROW_BYTES = 16 * 8
+DISK_FACTOR = 2
 
 
 def sessions_upper() -> int:
@@ -161,6 +167,12 @@ def part_work(J: int) -> int:
 def replays_a() -> int:
     """H4-A's vendored replays, in long-run units: every start of every registered design, with every exact run."""
     return int(round(len(AS_TRADED) * sessions_upper() * exact_factor(True)))
+
+
+def sample_log_rows(J: int) -> int:
+    """One baseline's audit-sample log: the sampled share of its units, every arm-run, at the toys' supply over the
+    largest window (an upper bound: a unit takes at most `TAU` trades a session)."""
+    return int(round(SAMPLE_SHARE * J * sessions_upper() * len(ARM_RUNS) * max(WINDOWS) * A.TAU))
 
 
 def c_max_us(work: int) -> float:
@@ -220,6 +232,11 @@ def report() -> str:
                    f"({'; '.join(f'{n} {r}' for n, r, _ in ARM_RUNS)}) | {w:.3e} lane-trades | "
                    + "  ".join(f"{A.hours(w, c):.1f}" for c in A.COSTS_US) + f" | c_max={c_max_us(w):.2f} us")
     out.append("  H4-C collection   | the four units files by sha256 into one result for W42-R1 | no lane-trades")
+    rows = sample_log_rows(J)
+    total = rows * LOG_ROW_BYTES * len(BASELINES)
+    out.append(f"the audit sample's log (rc-3): {SAMPLE_SHARE:.0%} of units, every arm-run, at most {rows} rows a "
+               f"baseline at {LOG_ROW_BYTES} B a row: {total / 1e9:.2f} GB over the four baselines; the run is "
+               f"refused unless {DISK_FACTOR} x that, {DISK_FACTOR * total / 1e9:.2f} GB, is free on disk")
     lanes = J * BATCH_STARTS
     out.append(f"memory: cap {A.MEM_CAP_GB} GB over {A.WORKERS} workers, base {A.BASE_GB} GB assumed (H4-0 measures "
                f"it), lane {A.LANE_BYTES} B: at most {A.max_lanes()} lanes a worker; a batch of {BATCH_STARTS} starts "
