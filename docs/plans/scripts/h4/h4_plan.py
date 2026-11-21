@@ -15,7 +15,7 @@ not short when holidays thin the calendar; J is then rounded up to a power of tw
 disjoint seed sets of any power-of-two size m.
 
 **Bound to the pinned W42-R1 (the red team's B-6).** The constants J reads are W42-R1's *as pinned*: `W42_PIN` holds the
-pinning row, the commit and the LF sha256 of its two files, filled only when the lead pins W42-R1, and until then
+pinning row, the commit and the LF sha256 of its three files, filled only when the lead pins W42-R1, and until then
 `j_h4()` refuses (`W42NotPinned`). The report prints the derivation at the provisional W42-R1 commit's constants as a
 **provisional** reading for sizing only, labelled so; H4 pins after W42-R1, with J recomputed at the pinned constants,
 and J is refused below W42-R1's `H4_MIN_SEEDS`.
@@ -66,12 +66,13 @@ class W42NotPinned(RuntimeError):
 
 
 #: the pinned W42-R1: {"row": "E-NNN", "commit": "<sha>", "rule_sha256": "<WAVE42_SETTING_RULE.md's LF sha256>",
-#: "code_sha256": "<extended/wave42.py's LF sha256>"} -- None until the lead's pinning row exists (B-6; W42-R1's second
-#: text cites both files); `tests/test_h4_draft.py` then reads the constants from that commit
+#: "code_sha256": "<extended/wave42.py's LF sha256>", "script_sha256": "<scripts/wave42_apply.py's LF sha256>"} -- None
+#: until the lead's pinning row exists (B-6; W42-R1 at 34ee968 pins all three files); `tests/test_h4_draft.py` then
+#: reads the constants from that commit
 W42_PIN: dict | None = None
-#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's second text,
-#: under its second read
-PROVISIONAL_W42_COMMIT = "357a339"
+#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1 at 34ee968 (its
+#: constants are 357a339's; its pre-pin fix replaces it when that lands on wt/wt-infra)
+PROVISIONAL_W42_COMMIT = "34ee968"
 #: W42-R1's floor on H4's seeds (its `H4_MIN_SEEDS`, m-2: below it no gap resolves) and the held-out test's J (its
 #: `TEST_SEEDS`, B-3), printed beside H4's J; the test holds both to `extended/wave42.py` at the provisional commit
 H4_MIN_SEEDS = 62
@@ -177,7 +178,8 @@ def report() -> str:
                    f"{PROVISIONAL_W42_COMMIT}'s constants, for sizing only")
     else:
         out.append(f"  W42-R1 pinned in {W42_PIN['row']} at {W42_PIN['commit']} (rule text sha256 "
-                   f"{W42_PIN['rule_sha256']}, code sha256 {W42_PIN['code_sha256']})")
+                   f"{W42_PIN['rule_sha256']}, code sha256 {W42_PIN['code_sha256']}, application sha256 "
+                   f"{W42_PIN['script_sha256']})")
     out.append(f"  W42-R1's constants: RESOLVE_Z={RESOLVE_Z:g} DELTA_MIN={DELTA_MIN:g} POWER={POWER:g} "
                f"(z={A.z(POWER):.4f}); units needed n = ((RESOLVE_Z + z) / DELTA_MIN)^2 = {units_needed()}")
     out.append(f"  search-year sessions: at most {up} (weekdays {A.SEARCH[0]} to {A.SEARCH[1]}), at least {lo} "
@@ -200,11 +202,13 @@ def report() -> str:
                "costs " + ", ".join(f"{c} us" for c in A.COSTS_US) + f" a lane-trade | c_max (fits {A.PART_CAP_H:g} h)")
     probe = A.lane_trades(1, 1, 64, 40, 63)
     out.append(f"  H4-0 probe        | synthetic toys; and P-14's first {EXACT_EVERY} real search-year starts "
-               f"replayed on the {AS_TRADED_ARM} arm, written sealed (hash recorded, unopened) | {probe:.3e} "
+               f"replayed on the {AS_TRADED_ARM} arm, built through the cut, written sealed (hash recorded, unopened) "
+               f"| {probe:.3e} "
                "lane-trades | " + "  ".join(f"{A.hours(probe, c):.1f}" for c in A.COSTS_US)
                + f" | c_max={c_max_us(probe):.2f} us")
-    out.append(f"  H4-S schedules    | the search years' bars and the registered constants through the cut; the nested "
-               f"cuts {', '.join(NESTED_CUTS)} against {A.SEARCH[1]} | not lane-trades: timed in its log, under the "
+    out.append(f"  H4-S schedules    | the search years' bars and the registered constants through the cut; the coin's "
+               f"unchained offers at every R of P-16's table, one schedule side a (session, moment); the nested cuts "
+               f"{', '.join(NESTED_CUTS)} against {A.SEARCH[1]} | not lane-trades: timed in its log, under the "
                f"{A.PART_CAP_H:g} h cap")
     ra = replays_a()
     out.append(f"  H4-A as traded    | {', '.join(AS_TRADED)} by user_beside.run_starts, arm {AS_TRADED_ARM}, "

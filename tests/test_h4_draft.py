@@ -22,7 +22,12 @@ here (m-1).
 - **the dependencies named** -- Appendix C, each with where, its status and what H4 needs; the cited commits and files
   exist; the built ones hold the names H4 uses;
 - **the measures and W42-R1's inputs** -- every measure of `docs/MEASURES.md`'s index placed in Appendix B; every key of
-  W42-R1's `REQUIRED` and `OPTIONAL` named, the optional three required; MEASURES (35) amended (m-6);
+  W42-R1's `REQUIRED` named, the three workload and supply measures among them; MEASURES (35) amended (m-6);
+- **cycle 2** -- RB-1 (the coin's unchained offers, its schedule-side seed, the vendored routing, I-5 by `trades_hash`),
+  RB-2 (the per-unit overlap count on the taken-trade log, recomputed by the auditor), W42-R1 at 34ee968 (rm-1), the
+  surviving mutants' sentences (rm-2, E1 to E28), the ledger (rm-3), the constants copied (rm-4), the jobs through the
+  cut (rm-5), the calendar against the cut (rm-6), the scratch git-ignored (rn-1), v3 (rn-2), the look-ahead (rn-3),
+  the as-walked exit times (rn-4); Appendix E maps them;
 - **the plan is the script's** -- Appendix A equals `docs/plans/scripts/h4/h4_plan.py`'s output line for line; its
   figures (J, the gaps, the work) recomputed here from the formulas; its constants equal W42-R1's at the provisional
   commit (or the pinned one), `family_stats.MDL_POWER` and `user_beside.EXACT_EVERY`.
@@ -57,13 +62,16 @@ H4_BLOCK = tuple(_PREFIX * 10 + i for i in range(10))
 #: the files allowed to hold a literal of the block: this draft, the seed module once it is given the block, and H4's
 #: own result manifests (a manifest records its seeds)
 DECLARED_USES = ("prereg/DRAFT_H4_rebaseline.md", "extended/three_way_seeds.py")
-DECLARED_PATTERNS = (re.compile(r"^results/h4_[A-Za-z0-9_]+\.csv(\.manifest\.json)?$"),)
+#: H4's declared result files (section 16's outputs): only their sidecar manifests, whose seed maps record the block
+_B = r"(naive_coin|p14|p15|p16)"
+DECLARED_PATTERNS = (re.compile(rf"^results/h4_(units_{_B}|readings_{_B}|trades_{_B}|w42_input|supply|as_traded|identities)"
+                                r"\.csv\.manifest\.json$"),)
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
-PROVISIONAL_W42, RUNNER_COMMIT = "357a339", "adedf7f"
-SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", ".h4_dev", "node_modules"}
-W42_PLACEHOLDER = "`<W42-R1's pinning row and the LF sha256 of its two files, filled at W42-R1's pin>`"
+PROVISIONAL_W42, RUNNER_COMMIT = "34ee968", "adedf7f"
+SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", "node_modules"}
+W42_PLACEHOLDER = "`<W42-R1's pinning row and the LF sha256 of its three files, filled at W42-R1's pin>`"
 NESTED_CUTS = ("2022-12-30", "2023-06-30", "2023-09-29")
 
 #: the numbers the text may hold outside the stripped forms, each a declared value or a rule cited by its source
@@ -90,8 +98,9 @@ HELD_DATES = {"2024-01-02": "the held-out years' first day", "2026-07-16": "the 
 #: dates from here on are the record's (this program's documents, from its start in 2026-11), never a market session:
 #: the development bars end 2026-07-16
 RECORD_DATES_FROM = "2026-11-01"
-UNREAD_WORDS = ("never read", "refus", "unread", "held-out years", "confirmation window", "held-out read")
+UNREAD_WORDS = ("never read", "refus", "unread", "held-out years", "confirmation window", "held-out read", "is excluded")
 FINDINGS = tuple(f"B-{i}" for i in range(1, 8)) + tuple(f"m-{i}" for i in range(1, 8))
+FINDINGS_C2 = ("RB-1", "RB-2") + tuple(f"rm-{i}" for i in range(1, 7)) + tuple(f"rn-{i}" for i in range(1, 5))
 
 
 def _lf(p: Path) -> str:
@@ -156,9 +165,9 @@ def w42(plan):
 
 
 def test_the_form(text: str) -> None:
-    assert text.startswith("# H4: ") and "**Status: a draft, second text" in text
+    assert text.startswith("# H4: ") and "**Status: a draft, third text (corrective cycle 2, the last)" in text
     assert "`prereg/TEMPLATE_family.md`'s form\n(sections 0 to 19)" in text
-    heads = [f"\n## {n}. " for n in range(20)] + [f"\n## Appendix {a}. " for a in "ABCD"]
+    heads = [f"\n## {n}. " for n in range(20)] + [f"\n## Appendix {a}. " for a in "ABCDE"]
     pos = [text.find(h) for h in heads]
     assert all(p >= 0 for p in pos), [h for h, p in zip(heads, pos) if p < 0]
     assert pos == sorted(pos)
@@ -196,15 +205,17 @@ def test_the_seed_table(text: str) -> None:
     assert [int(r[0]) for r in rows] == list(H4_BLOCK), "ten consecutive seeds, once each, in order"
     roles = [r[1].strip() for r in rows]
     status = [r[2].strip() for r in rows]
-    assert status[:3] == ["tests", "design check", "reading"]
-    assert roles[3:] == ["spare"] * 7 and status[3:] == ["spare, drawn by nothing"] * 7
-    assert len(set(roles[:3])) == 3, "one role each"
+    assert status[:4] == ["tests", "design check", "reading", "schedule"]
+    assert roles[4:] == ["spare"] * 6 and status[4:] == ["spare, drawn by nothing"] * 6
+    assert len(set(roles[:4])) == 4, "one role each"
+    assert roles[3].startswith("H4-S: the coin's schedule side -- one draw a (session, moment)")
+    assert "so independent of every seed index" in roles[3]
     toks = set(re.findall(r"\b2026\d{4}\b", text))
     assert toks <= {str(s) for s in H4_BLOCK}, f"another block's seed in the text: {sorted(toks - set(map(str, H4_BLOCK)))}"
     assert not re.search(r"\b2026587\d\b", text), "H3's block is named by role only"
     flat = _flat(sec)
     assert "never the seed plus an offset (E-171)" in flat
-    assert "`three_way_seeds.PARTS` gains `H4-0` and `H4-B`" in flat
+    assert "`three_way_seeds.PARTS` gains `H4-0`, `H4-S` and `H4-B`" in flat
     assert "**The scans are a guard, not the defence** (m-7)" in flat and "`ProvenanceRefused`" in flat
 
 
@@ -240,10 +251,13 @@ def _file_hit(p: Path, chunk: int = 1 << 24) -> bool:
 
 
 def _working_hits(base: Path) -> set[str]:
-    """Every working file of any suffix (m-7), the licensed data, caches and this test's scratch excluded."""
+    """Every file git can commit (m-7, rn-1): tracked, and untracked files not git-ignored, of any suffix -- a git-ignored
+    file (the worker's scratch `.h4_dev/`, the licensed data) cannot be staged by any `git add`; binaries skipped."""
+    out = _git("ls-files", "-z", "--cached", "--others", "--exclude-standard", cwd=base).stdout
     found = set()
-    for p in base.rglob("*"):
-        rel = p.relative_to(base)
+    for rel_s in sorted({r for r in out.split("\0") if r}):
+        p = base / rel_s
+        rel = Path(rel_s)
         if not p.is_file() or SKIP_DIRS & set(rel.parts[:-1]) or VENDOR_DATA in p.parents:
             continue
         try:
@@ -271,6 +285,9 @@ def test_the_scans_find_a_planted_seed(tmp_path: Path) -> None:
     (tmp_path / "y.txt").write_text(f"not a seed: {H4_BLOCK[7]}1 nor 1{H4_BLOCK[7]}\n", encoding="utf-8")
     (tmp_path / "run.log").write_text(f"an untracked log naming {H4_BLOCK[4]}\n", encoding="utf-8")   # any suffix
     (tmp_path / "blob.bin").write_bytes(b"\0" + str(H4_BLOCK[4]).encode())                          # a binary, skipped
+    (tmp_path / ".gitignore").write_text("scratch/\n", encoding="utf-8")
+    (tmp_path / "scratch").mkdir()
+    (tmp_path / "scratch" / "backup.md").write_text(f"ignored {H4_BLOCK[2]}\n", encoding="utf-8")  # git-ignored
     _git("add", "x.md", "y.txt", cwd=tmp_path)
     assert _git_hits(tmp_path) == {"x.md"}
     assert _working_hits(tmp_path) == {"x.md", "run.log"}
@@ -438,7 +455,8 @@ def _stripped(t: str) -> str:
     words' bound."""
     t = re.sub(r"```.*?```", " ", t, flags=re.S)
     for a, b in (("<!-- h4_measures: begin -->", "<!-- h4_measures: end -->"),
-                 ("<!-- h4_findings: begin -->", "<!-- h4_findings: end -->")):
+                 ("<!-- h4_findings: begin -->", "<!-- h4_findings: end -->"),
+                 ("<!-- h4_findings_c2: begin -->", "<!-- h4_findings_c2: end -->")):
         t = t.replace(_between(t, a, b), " ")
     t = re.sub(r"`([^`\n]*)`", _code_span, t)
     t = re.sub(r"^\| \d{8} \|.*$", " ", t, flags=re.M)
@@ -522,11 +540,14 @@ def test_the_refusals_and_kills_are_held_exactly(text: str) -> None:
     assert "**W42-R1 pinned before H4 is read** (CHARTER 3.9; E-221)" in first
     assert "this file's W42-R1 placeholder filled with that pin" in first
     assert "**never re-run until it passes**" in s14
-    assert "**Kill:** an identity or a nested check failing stops H4; so does an overlap count above 0." in s11
-    assert "**Kill:** the oracle, the blank rule, or the pairing failing stops H4." in s11
+    assert "kept and labelled; the schedule-level overlap reported beside. **Kill:** an identity or a nested check " \
+        "failing stops H4." in s11
+    assert ("**Kill:** the oracle, the blank rule, the pairing, or an overlap count above 0 on any unit failing stops "
+            "H4.") in s11
     assert "**The floors, each refusing" in s9, "the oracle and the overlap count are floors, not beside"
     floors = s9[s9.index("**The floors, each refusing"):]
-    assert "**the zero-edge oracle, exactly, per trade:**" in floors and "**the overlap count** is 0" in floors
+    assert "**the zero-edge oracle, exactly, per trade:**" in floors
+    assert "**the overlap count, per unit, on the taken-trade log** is 0 for every baseline and arm" in floors
     bullets = [ln for ln in _section(text, 13).splitlines() if ln.startswith("- ")]
     assert bullets == [], "section 13 holds no bullet: no judged-block reads line"
 
@@ -570,9 +591,9 @@ def test_b1_the_strict_rule_and_the_overlap_count(text: str) -> None:
     flat = _flat(text)
     assert "**Stage 2's strict rule for every baseline** (D-409, D-429): one open position across all accounts" in flat
     assert "**no trade is copied across accounts**" in flat
-    assert "H4-S's overlap count must be 0 (refusing)" in flat and "**the positions open at once**" in flat
+    assert "**the per-unit overlap count on the taken-trade log must be 0** (section 7)" in flat
     assert "H3-A4" not in text.replace("the H3-A4 condition dropped", ""), "the copy check is dropped for H4"
-    assert "seats" not in text and "copies" not in text
+    assert "seats" not in text and "copies of one trade" not in text and "copy one trade" not in text
     assert "never the one-uniform form" in flat
 
 
@@ -588,6 +609,8 @@ def test_b2_the_registered_constants_pass_through(text: str) -> None:
     assert "Q-172's count on P-14 is unaffected" in dep["the cut, in its pass-through mode"]
     assert "**to record** under its own row" in dep["the `trade_problems` switch-off"]
     assert "`SWITCHED_OFF`" in dep["the `trade_problems` switch-off"]
+    assert "the check replaced, on cut rows only, by I-1's sub-hash comparison; whole-window builds keep it" \
+        in dep["the `trade_problems` switch-off"]                                                     # E18
 
 
 def test_b3_the_point_arm(text: str, plan) -> None:
@@ -602,7 +625,7 @@ def test_b3_the_point_arm(text: str, plan) -> None:
 def test_b4_one_collection_result(text: str, w42) -> None:
     s9 = _flat(_section(text, 9))
     assert "**To W42-R1: one collection result**" in s9 and "`results/h4_w42_input.csv`" in s9
-    assert "**The adapter** `extended/h4_collect.py::w42_readings`" in s9
+    assert "**The adapter** is `extended/h4_collect.py::w42_readings(path, sidecar) -> {name: BaselineReading}`" in s9
     assert "each start's **uncapped** sessions left" in s9
     assert "**`orders_max`, `accounts_max` (measure (30)) and `taken_mean` (measure (37)), required now**" in s9
     assert "the run is refused without them" in s9
@@ -611,21 +634,30 @@ def test_b4_one_collection_result(text: str, w42) -> None:
     assert "**the pinned search-year calendar H4 and W42-R1 both bind**, Q-197's result and its loader" in s4
     assert "**the start session counted as session 1**" in s4
     assert "ebd5a05" not in text, "the calendar is Q-197's, not the void calendar's day list"
-    assert set(w42.OPTIONAL) == {"orders_max", "accounts_max", "taken_mean"}
+    assert not getattr(w42, "OPTIONAL", None), "W42-R1 at 34ee968 has no optional measures"
+    assert {"orders_max", "accounts_max", "taken_mean"} <= set(w42.REQUIRED)
 
 
 def test_w42r1_second_texts_obligations(text: str, plan, w42) -> None:
-    """W42-R1's second text (wt/wt-infra 357a339): its manifest fields, W, the reading tag, first_pass_days, the seed
+    """W42-R1 (wt/wt-infra 34ee968, rm-1): its manifest fields with `arm` and the verdict settings, W an integer, the
+    reading tag, first_pass_days, no optional measures, the collection's digest, the adapter's signature, the seed
     floor and the test's J, each held to its code."""
     s9 = _flat(_section(text, 9))
-    assert "**Its manifest carries every field of W42-R1's `H4_MANIFEST_KEYS`**" in s9
+    assert "**Its sidecar carries every field of W42-R1's `H4_MANIFEST_KEYS`**" in s9
     for key in w42.H4_MANIFEST_KEYS:
         assert f"`{key}`" in s9, key
-    assert "`readings_sha256` (`wave42.readings_digest` of the four readings, recorded by H4's runner)" in s9
+    assert "optional_measures" not in _section(text, 9), "W42-R1 at 34ee968 has no such field"
+    assert "`readings_sha256` (`wave42.readings_digest` of the four readings, recorded by H4's collection, H4-C)" in s9
     assert "`calendar_sha256` (`wave42.calendar_digest`" in s9
-    assert "`optional_measures` (exactly `orders_max`, `accounts_max` and `taken_mean`)" in s9
+    assert w42.ARM == "off" and "`arm` (`off`)" in s9
+    assert w42.VERDICT == {"denial": 0.0, "placement": "off", "focused_trader": "off"}
+    assert "`denial` (0), `placement` (`off`), `focused_trader` (`off`)" in s9
+    assert w42.ADAPTER == "extended.h4_collect:w42_readings" and w42.COLLECTION_RESULT == "h4_w42_input.csv"
+    assert "**H4 carries no held-out counts:** `wave42_apply` reads the pinned held-out calendar itself." in s9
+    assert "taken on its bytes with CRLF normalised to LF" in s9
+    assert "`sha256` at the sidecar's top level" in s9 and "under `write_result`'s `parameters`" in s9
     assert w42.READING == "martingale_outcome" and f"`reading` (`{w42.READING}`)" in s9
-    assert w42.W == 126 and "`W` (126)" in s9
+    assert w42.W == 126 and "`W` (126, an integer)" in s9
     assert "**126, pinned**" in _section(text, 7)
     assert "first_pass_days" in w42.REQUIRED and "`first_pass_days` (measure (1)" in s9
     assert (plan.H4_MIN_SEEDS, plan.TEST_SEEDS) == (w42.H4_MIN_SEEDS, w42.TEST_SEEDS)
@@ -635,14 +667,20 @@ def test_w42r1_second_texts_obligations(text: str, plan, w42) -> None:
     assert "W42-R1's own declared `TEST_SEEDS`, not H4's" in _flat(_section(text, 10))
     dep = _deps(text)
     assert "**to build** (Q-197)" in dep["the search calendar"]
-    assert "cited by the LF sha256 of both files" in dep["W42-R1"] and "357a339" in dep["W42-R1"]
+    assert "cited by the LF sha256 of all three files" in dep["W42-R1"] and "34ee968" in dep["W42-R1"]
+    assert "`scripts/wave42_apply.py`" in dep["W42-R1"]
+    assert "`search_calendar.csv`, W42-R1's `SEARCH_CALENDAR`" in dep["the search calendar"]
+    assert w42.SEARCH_CALENDAR == "search_calendar.csv"
 
 
 def test_b5_the_coins_identity(text: str) -> None:
     s16 = _flat(_section(text, 16))
-    assert "**(I-5) the coin's source**" in s16
-    assert "it equals P-16's schedule path for path on the search years" in s16
+    assert "**(I-5) the coin's source** (the lead's ruling on RB-1)" in s16
+    assert ("built at P-16's registered offered marks (the registered-constants file), latency 0, with P-16's "
+            "`coin_table` sides and its `_nr` news rule, **equals P-16's trigger-level trades by "
+            "`rc_dev_test.trades_hash`** on the search years") in s16
     assert "with admission off, its offers equal the clock grid less the void calendar" in s16
+    assert "I-4 holds the firm path's routing to the vendored replay's" in s16
 
 
 def test_b6_j_refused_until_w42r1_is_pinned(text: str, plan) -> None:
@@ -658,8 +696,9 @@ def test_b6_j_refused_until_w42r1_is_pinned(text: str, plan) -> None:
         dec = _lf(ROOT / "DECISIONS.md")
         row = next(ln for ln in dec.splitlines() if ln.startswith(f"| {pin['row']} |"))
         assert W42_PLACEHOLDER not in text
-        for key, path in (("rule_sha256", "docs/plans/WAVE42_SETTING_RULE.md"), ("code_sha256", "extended/wave42.py")):
-            assert pin[key] in text and pin[key] in row, key                  # both files, cited (W42-R1's second text)
+        for key, path in (("rule_sha256", "docs/plans/WAVE42_SETTING_RULE.md"), ("code_sha256", "extended/wave42.py"),
+                          ("script_sha256", "scripts/wave42_apply.py")):
+            assert pin[key] in text and pin[key] in row, key                  # all three files, cited (rm-1)
             lf = _show(pin["commit"], path).replace("\r\n", "\n")
             assert hashlib.sha256(lf.encode("utf-8")).hexdigest() == pin[key], path
         assert plan.j_h4() == plan.j_provisional()
@@ -678,6 +717,9 @@ def test_b7_the_held_out_read_ledger(text: str) -> None:
     assert '"written after this reading; no figure cited"' in flat
     assert "**the level is nominal** (CHARTER 3.6 (b))" in flat
     assert "fixed, **the lead's fixed choice**" in _section(text, 7)
+    for need in ("D-626", "Stage 2's signal search", "RD-01", "D-518", "D-620 (3)(f)", "Q-44", "`EXACT`",
+                 "**P-16's window `all`**", "D-525 (3)", "**the registered-constants run itself**"):   # rm-3
+        assert need in joined, need
 
 
 def test_the_minors(text: str) -> None:
@@ -695,6 +737,8 @@ def test_every_finding_is_answered_once(text: str) -> None:
     ids = re.findall(r"^\| (B-\d|m-\d) \|", table, re.MULTILINE)
     assert tuple(ids) == FINDINGS
     assert "| template v2 |" in table
+    table2 = _between(text, "<!-- h4_findings_c2: begin -->", "<!-- h4_findings_c2: end -->")
+    assert tuple(re.findall(r"^\| (RB-\d|rm-\d|rn-\d) \|", table2, re.MULTILINE)) == FINDINGS_C2
 
 
 # -------------------------------------------------------------------------------------------- the dependencies
@@ -778,7 +822,7 @@ def test_every_measure_is_placed(text: str) -> None:
 
 
 def test_every_w42_input_is_named(text: str, w42) -> None:
-    keys = set(w42.REQUIRED) | set(w42.OPTIONAL)
+    keys = set(w42.REQUIRED) | set(getattr(w42, "OPTIONAL", {}) or {})
     sec = _flat(_section(text, 9))
     table = _between(text, "<!-- h4_measures: begin -->", "<!-- h4_measures: end -->")
     for k in sorted(keys):
@@ -875,3 +919,114 @@ def test_the_responses_and_the_stress_arms(text: str) -> None:
     for phrase in ("`off` only", "`worse_1`", "`missed_0.1`", "the runner's `worse_2` arm is not run by H4",
                    "0 % payout denial, the placement off, the Focused Trader Program off"):
         assert phrase in flat, phrase
+
+
+# ------------------------------------------------------------------------------------------- cycle 2: RB-1 to rn-4
+
+
+def test_rb1_the_coins_unchained_offers(text: str) -> None:
+    s5 = _flat(_section(text, 5))
+    for phrase in ("**the naive coin's offers** (the lead's ruling on RB-1)", "**unchained**",
+                   "never `components.schedule_day`'s chain at one R, never Q-169's router",
+                   "**walked at every R of P-16's table**", "`resolved_coin.cell_trades`",
+                   "drawn **once per (session, moment) from the coin's schedule-side seed** (section 15), independent of "
+                   "the seed index", "**one schedule, built once**",
+                   "the vendored routing the registered designs use"):
+        assert phrase in s5, phrase
+    s3 = _flat(_section(text, 3))
+    assert "**the naive coin's unchained offers through the same vendored routing** (`shared_days.TradeRouter`" in s3
+    assert "mix router" not in text and "Q-169's router" in text
+    dep = _deps(text)
+    assert "**re-built as an unchained offer list**" in dep["the naive coin's source"]
+    assert "`shared_days.TradeRouter`" in dep["the firm path"] and "`can_take`" in dep["the firm path"]
+    vend = (ROOT / "vendor" / "stage2" / "propedge" / "research" / "resolved_coin.py").read_text("utf-8")
+    for name in ("def marks(", "def coin_table(", "def cell_trades(", "MARK_STEP = 5", 'WINDOWS = {"all"'):
+        assert name in vend, name
+    sd = (ROOT / "vendor" / "stage2" / "propedge" / "campaign" / "shared_days.py").read_text("utf-8")
+    assert "class TradeRouter" in sd and "can_take" in sd
+
+
+def test_rb2_the_per_unit_overlap_count(text: str) -> None:
+    s7 = _flat(_section(text, 7))
+    assert ("**The refusing count is per unit** (start, seed) and per arm, **on the taken-trade log**: any two taken "
+            "trades of the user whose spans [fill bar open, exit bar end at the taken R + 5 min) intersect; it must be "
+            "0, and **the auditor recomputes it from the log alone, without the enforcing code**") in s7
+    s5 = _flat(_section(text, 5))
+    assert "**The schedule-level overlap, beside, never a kill**" in s5
+    assert "**the positions open at once**" not in text
+    s16 = _flat(_section(text, 16))
+    assert "**the per-unit overlap count recomputed from the trade logs alone, without the enforcing code**" in s16
+    assert "`results/h4_trades_<baseline>.csv`: the per-trade log of the taken trades" in s16
+    assert "the schedule-level overlap beside, per baseline and search year" in s16
+    s17 = _flat(_section(text, 17))
+    assert "whose second trade fills inside the first's five minutes flat (each must refuse)" in s17
+
+
+def test_rm2_the_surviving_mutants_sentences(text: str, plan) -> None:
+    """E1 to E28 of the re-read, each held by its sentence."""
+    flat = _flat(text)
+    s = {n: _flat(_section(text, n)) for n in range(20)}
+    checks = {
+        "E4": (s[2], "passed in **as registered**, never re-resolved on the search years"),
+        "E5": (s[16], "each close's `rel` within a millionth of a dollar (MEASURES 1.2's tolerance)"),
+        "E6": (s[11], "H4-A's replays of the same starts must reproduce that hash"),
+        "E7": (s[14], "nothing of H4 is read by W42-R1 until every part is complete"),
+        "E8": (s[3], "one open position across all accounts, five minutes flat, each trade to one account"),
+        "E9": (s[2], "H4 does not read them"),
+        "E10": (s[9], "**on the deciding `off` reading** (never the as-walked or as-traded reading)"),
+        "E11": (s[16], "the registered-constants file on record by its sha256"),
+        "E13": (s[16], "computed once in the on-record whole-window identity run (E-247 rm-4's exception), never by H4"),
+        "E14": (s[9], "it refuses a file whose sha256 differs from its sidecar's, any declared start, seed or key "
+                      "missing, readings not paired, or a `readings_sha256` its readings do not reproduce"),
+        "E15": (s[12], "the share of window sessions after the last nested cut on every twelve-month and W = 252 reading"),
+        "E16": (s[7], "each on every baseline alike, on the deciding reading, on the same keys as `off`"),
+        "E17": (s[7], "P-16's registered window `all` (`resolved_coin.WINDOWS`, 17:00 CT to the cutoff)"),
+        "E20": (s[16], "recomputed from the schedules and keys through the firm path, equal bit for bit"),
+        "E21": (s[9], "for every taken trade, the race's p g - (1 - p) L is zero"),
+        "E21b": (s[16], "the oracle re-checked on the trade logs from the logged inputs alone, for every taken trade"),
+        "E22": (s[9], "the key guard's sample holding (`three_way_keys.KeyGuard.sampled`)"),
+        "E24": (s[18], "**W42-R1 pinned first**"),
+        "E25": (s[4], "every session of the search years is a start, the same set for every baseline, arm and seed"),
+        "E26": (s[11], "each baseline's schedule and the identities I-1 and I-5"),
+        "E27": (s[7], "its stop (`rc150_dev_test.STOP`)"),
+        "E28": (s[8], "the held-out test's level stays nominal while the held-out read ledger is not empty"),
+    }
+    for name, (sec, phrase) in checks.items():
+        assert phrase in sec, (name, phrase)
+    assert "recomputed by H4" not in flat                                                              # E13
+    assert "for a sample of taken trades" not in flat                                                  # E21
+    body19 = [ln for ln in _section(text, 19).strip().splitlines()[1:] if ln.strip() and ln.strip() != "---"]
+    assert body19 == ["*(Empty at the pin.)*"]                                                        # E12
+    assert ("the crash rule: no reading is made until every part completes; a crashed part is re-run whole from its "
+            "declared seeds, never resumed; each crash is recorded in the part ledger (E-195)") in plan.report()  # E23
+    vend = (ROOT / "vendor" / "stage2" / "scripts" / "rc150_dev_test.py").read_text("utf-8")
+    assert re.search(r"^STOP = \d+", vend, re.MULTILINE), "the coin's stop is the vendored P-16 cell's"     # E27
+    s9 = s[9]
+    collection = s9[s9.index("**To W42-R1: one collection result**"):s9.index("**The keys**")]
+    assert "as-walked reading" not in collection.replace("never the as-walked or as-traded reading", ""), "E10"
+
+
+def test_rm4_to_rm6_and_the_notes(text: str) -> None:
+    flat = _flat(text)
+    dep = _deps(text)
+    reg = dep["the registered-constants file"]
+    assert "**copied, by sha256, from the registered result files**" in reg and "**computed: only** the search-year " \
+        "sub-hash" in reg                                                                                   # rm-4
+    s16 = _flat(_section(text, 16))
+    assert ("whose **trading day** (A1's `date` column, never the clock date: the 17:00 CT evening of 2023-12-29 belongs "
+            "to the trading day 2024-01-02 and is excluded)") in s16                                       # rm-4
+    s11 = _flat(_section(text, 11))
+    assert "its job **built through the cut in its pass-through mode** (rm-5)" in s11
+    assert "the runner **refuses a job whose calendar does not end on 2023-12-29**" in s11                  # rm-5
+    assert "every job's calendar ending on 2023-12-29" in s16
+    s4 = _flat(_section(text, 4))
+    assert "**It must equal the cut's A1 day list date for date, or it is refused** (rm-6)" in s4
+    assert "**its two start sets compared** first" in s16                                                   # rm-6
+    assert "**equal to the cut's A1 day list date for date, refused otherwise** (rm-6)" in dep["the search calendar"]
+    gi = _lf(ROOT / ".gitignore")
+    assert re.search(r"^\.h4_dev/$", gi, re.MULTILINE), "the worker's scratch is git-ignored (rn-1)"
+    assert ".h4_dev" not in SKIP_DIRS
+    assert "**re-checked against the template's third text when v3 is pinned** (rn-2)" in flat
+    assert "H4's values are void for that search" in flat                                                    # rn-2
+    assert "a same-day look-ahead on supply, small, printed beside the coin's supply count" in flat          # rn-3
+    assert "**at the run's own exit times** -- the real path's exits at each trade's taken R" in flat        # rn-4
