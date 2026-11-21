@@ -987,6 +987,8 @@ def test_m1_the_held_out_test_has_its_own_form():
 
 MARK_SEARCH, MARK_HT = "Declaration kind: design search", "Declaration kind: held-out test"
 DS_HEADINGS = ("## 5. The zero-edge convention", "## 6. The survey", "## 7. The pinning row")
+#: Q-194d: the held-out declaration's file name (the reader's `HELDOUT_PATH`)
+HT_PATH = re.compile(r"prereg/F-\d+_heldout_test_(?P<market>[A-Z][A-Z0-9]{0,7})\.md")
 HT_HEADINGS = ("## 1. Its inputs", "## 2. The joint order", "## 3. The firms' states", "## 5. The rows, in order",
                "## 6. Power at each place")
 
@@ -1008,6 +1010,8 @@ def _line_problems(name: str, text: str) -> list:
     if purposes and new and MARK_HT not in f:
         out.append(f"{name}: a new declaration with a Judged-block reads line is not the held-out test's")
     if MARK_HT in f:
+        if name.startswith("F-") and not HT_PATH.fullmatch(f"prereg/{name}"):
+            out.append(f"{name}: held-out-marked but not named prereg/F-NN_heldout_test_<MARKET>.md (Q-194d)")
         if set(purposes) != {"heldout_test", "heldout_stress"}:
             out.append(f"{name}: a held-out-marked file names {sorted(purposes)}")
         if MARK_SEARCH in f:
@@ -1799,3 +1803,60 @@ def test_e255_the_do_nothing_floor_decides_the_held_out_verdict():
     assert s8.index("The do-nothing floor") < s8.index("A pass at a place")
     for bad in ("at least the do-nothing", "by at least `DO_NOTHING_EPS`", "unless its test statistic"):
         assert bad not in s8, bad
+
+
+# ============================================================================================ O. Q-194d: the reader and
+# the held-out template agree on the file, the marker, the headings and the verdict's proven order
+
+#: HT's ten section headings as written at 13df998 (the reader's `HELDOUT_HEADINGS`); a change here is the reader's too
+HT_HEADINGS_13DF998 = (
+    "## 0. In plain words (for the operator)",
+    "## 1. Its inputs: only the pinned searches' finalists' lists",
+    "## 2. The joint order: a rule fixed now, before any search is declared",
+    "## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)",
+    "## 4. The k and the level",
+    "## 5. The rows, in order",
+    "## 6. Power at each place in the joint sequence",
+    "## 7. The held-out reads",
+    "## 8. What a pass and what a fail mean",
+    "## 9. Anything chosen after seeing results",
+)
+HT_MARKER_LINE = "**Declaration kind: held-out test.**"
+
+
+def test_q194d_the_held_out_file_its_marker_and_headings_match_the_reader():
+    from extended import reader as RD
+
+    text = _text(HT)
+    lines = text.splitlines()
+    assert [ln for ln in lines if ln.startswith("## ")] == list(HT_HEADINGS_13DF998)     # unchanged, in order
+    assert any(ln.startswith(HT_MARKER_LINE) for ln in lines)                           # at the start of a line
+    assert not any(ln.startswith("**Declaration kind: design search.**") for ln in lines)
+    if hasattr(RD, "HELDOUT_HEADINGS"):                                                  # Q-194d on this tree
+        assert tuple(RD.HELDOUT_HEADINGS) == HT_HEADINGS_13DF998
+        assert RD.HELDOUT_MARKER == HT_MARKER_LINE and RD.HELDOUT_PATH.pattern == HT_PATH.pattern
+    # the file-name form
+    for good in ("prereg/F-20_heldout_test_NQ.md", "prereg/F-131_heldout_test_ES.md"):
+        assert HT_PATH.fullmatch(good), good
+    for bad in ("prereg/F-20_heldout_test_nq.md", "prereg/F-20_heldout_test.md", "prereg/F-XX_heldout_test_NQ.md",
+                "prereg/DRAFT_F-20_heldout_test_NQ.md", "prereg/F-20_heldout_NQ.md", "prereg/F-20_heldout_test_NQ.txt"):
+        assert not HT_PATH.fullmatch(bad), bad
+    draft = re.search(r"copy it to `prereg/(DRAFT_F-XX_heldout_test_NQ\.md)`", _flat(text)).group(1)
+    assert HT_PATH.fullmatch("prereg/" + draft.replace("DRAFT_", "").replace("F-XX", "F-20"))
+    # the scan refuses a held-out-marked F- file of another name, and admits the form
+    assert any("Q-194d" in p for p in _line_problems("F-20_joint.md", text))
+    assert not any("Q-194d" in p for p in _line_problems("F-20_heldout_test_NQ.md", text))
+    # the sentences
+    f = _flat(text)
+    assert ("Its file and its marker (Q-194d). It is pinned as `prereg/F-NN_heldout_test_<MARKET>.md` (here "
+            "`prereg/F-NN_heldout_test_NQ.md`), the only held-out-marked `prereg/F-*.md` for its market; it carries "
+            "`Declaration kind: held-out test.` at the start of a line, every one of this template's ten section "
+            "headings word for word (sections 0 to 9, as written at 13df998), and not the design-search marker. The "
+            "reader honours `heldout_test` and `heldout_stress` reads only for such a file.") in f
+    s5 = _section(text, "## 5. The rows, in order", "## 6. Power")
+    for s in ("The lead tags that clean run's commit `heldout-read/<run id>`, so the read's commit can always be "
+              "found.",
+              "The order is proven (Q-194d): the joint test's ledger lines are committed with or before the verdict "
+              "row, and the read's commit is a proper ancestor of the commit that adds the verdict row; a read whose "
+              "commit cannot be found backs nothing."):
+        assert s in s5, s

@@ -23,6 +23,12 @@ own item list, `.claude/agents/prereg-gatekeeper.md`, "The held-out test's decla
 sha256 of its LF text; nothing declared is edited. *This declaration chooses nothing.* Every input is cited from the
 pinned searches; anything it would add is refused.
 
+**Its file and its marker (Q-194d).** It is pinned as `prereg/F-NN_heldout_test_<MARKET>.md` (here
+`prereg/F-NN_heldout_test_NQ.md`), the only held-out-marked `prereg/F-*.md` for its market; it carries
+`**Declaration kind: held-out test.**` at the start of a line, every one of this template's ten section headings word
+for word (sections 0 to 9, as written at 13df998), and not the design-search marker. The reader honours `heldout_test`
+and `heldout_stress` reads only for such a file.
+
 ## 0. In plain words (for the operator)
 
 <Which firms' searches it tests, how many finalists each brings, the order they are tested in (fixed by section 2's
@@ -119,13 +125,16 @@ and states the resulting order. **A researcher's choice after a read is never th
    this declaration's own hash in a row newer than its pin, so the reader itself enforces "after the held-out row";
    the pin and the token in one row are refused.
 3. **The held-out test**, once, from a clean checkout of the held-out row's commit (`scripts/run_clean.py`), under
-   `run.lock`; the auditor on its result. **No repeat row** (`repeat="E-NNN"`) is ever written for F-HT.
+   `run.lock`; the auditor on its result. The lead tags that clean run's commit `heldout-read/<run id>`, so the
+   read's commit can always be found. **No repeat row** (`repeat="E-NNN"`) is ever written for F-HT.
 4. **The verdict row:** `heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- <text>` (here
    `heldout-verdict: NQ F-NN @ <its LF sha256> -- <text>`) as the first text of the row's third cell, F-NN this
    declaration's F-number and the sha256 its pin's. **It is the only verdict form**, written in one row, newer by
    position in `DECISIONS.md` than this declaration's finalists' token, and it counts only if the read ledger already
    holds this declaration's `heldout_test` read of the same window, sha256 and market. The older form without the
-   sha256 is retired.
+   sha256 is retired. **The order is proven (Q-194d):** the joint test's ledger lines are committed with or before
+   the verdict row, and the read's commit is a proper ancestor of the commit that adds the verdict row; a read whose
+   commit cannot be found backs nothing.
 
 ## 6. Power at each place in the joint sequence
 
