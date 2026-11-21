@@ -167,6 +167,9 @@ def main() -> int:
     print(f"  the verdict: tree, time, worktree and pass line in {gd / 'fasttier-verdicts.log'}, written only when the "
           f"fast tier returned 0; commit-msg refuses a tree whose pre-commit was killed; post-commit logs NO VERDICT; "
           f"`python scripts/check_verdicts.py <range>` lists commits without one")
+    print("  inside its slot the fast tier runs in parallel (scripts/fasttier_xdist.py, Q-193): 1 to 4 pytest-xdist "
+          "workers from the memory free at that moment, the count checked against the serial collection, the tests "
+          "that failed in parallel rerun serially; S2X_FASTTIER_WORKERS=1 runs it serially")
     print(f"  after every commit on a branch: a background push to `origin` (log: {gd / 'push.log'})")
     print("bypass with `git commit --no-verify` only when you know why, and say so in the message")
     return 0
