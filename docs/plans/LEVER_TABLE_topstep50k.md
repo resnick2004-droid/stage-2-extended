@@ -52,7 +52,7 @@ Notation. `key` is a rule key. "One micro at the floor stop" is the floor of row
 | id | layer | lever | range and step | source | unit; what its estimate reads | depends on | class |
 |---|---|---|---|---|---|---|---|
 | T1 | trigger | signal source of a component | `coin` (naive, at scheduled marks), `p14` (P-14's breakout timing, coin-sided), `p16` (P-16's marks, coin-sided), `rl3` (RL3's pre-session tickets, NY AM); P-16's overnight marks join only after H2 | declared: E-208's dispositions; the trigger library (Wave 3.3) builds them | categorical; reads nothing | T2, T3, T4, T5, A16 | searched |
-| T2 | trigger | session of a component (the schedule covers every session the firm allows) | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, which together cover the firm's whole day from `trading_hours`' reopen to its flat. The boundaries are Stage 2's windows (asia from 18:00, london from 02:00, us from 08:30 CT), and each is checked to lie inside the day | arithmetic: `trading_hours`, with the declared window starts (Stage 2 `resolved_coin.WINDOWS`, D-525 (3)) | a session; reads nothing | T1, T2b, T3 | searched |
+| T2 | trigger | session of a component (the schedule covers every session the firm allows) | `evening`, `asia`, `london`, `ny_am`, `ny_pm`, which together cover the firm's whole day from `trading_hours`' reopen to its flat. The boundaries are each session's local market open converted per date (asia 09:00 Tokyo, london 08:00 London, ny 09:30 New York; `day_calendar.anchored_starts`, E-231 (3), replacing Stage 2's fixed CT windows), and each is checked to lie inside the day. A component's window is an offset from its session's anchored start, bounded by the session's shortest span over the search years' weekdays, so an absolute CT window inside its session on only part of the year is excluded from a fixed design by construction (the red team's m-6, kept by the lead) | arithmetic: `trading_hours`, with the anchored starts per date (E-231 (3); `session_windows(day)`) | a session; reads nothing | T1, T2b, T3 | searched |
 | T2b | trigger | the NY AM / NY PM boundary | **to declare** (the trigger library, Wave 3.3); refused until declared | to declare | a wall-clock time inside `us`; reads nothing | T2 | declared |
 | T3 | trigger | entry window: a component's offer marks inside its session | from the reopen to the last new entry, the "Avoid opening new positions after ..." sentence of `trading_hours`' verified note (8284206), in steps of D-525 (2)'s five-minute mark | arithmetic: `trading_hours` and its note; the declared mark step | minutes after the reopen; reads nothing | T2, T4, A3; no two components' windows collide (one position at a time across the firm, Stage 2 D-429) | searched |
 | T4 | trigger | latency L, alert to order | 5 (the reference), 3, 2 minutes, **every cell counted** in the variants ledger and the multiplicity; the five-minute cell is reported beside every finalist; `p16` and `rl3` are latency-free and collapse to one cell (`lever_space.latency_cells`) | declared: E-202 (2)(c); CHARTER 3.3 (g) | clock minutes; reads nothing | T1, T3, T5 | searched |
@@ -156,6 +156,16 @@ These hold in every design and are never searched. Each is stated by its rule ke
   that file and its manifest exist, then loads each session's k range after checking the manifest.
 - **T7, the admission forecast.** F-R's HAR coefficients and calibration, refitted on the search years only. F-R's own
   fit was to the choice block, which is the same span (F-R 6.3), but it was never run, so nothing exists to reuse.
+  **Built, not yet run (T7):** `scripts/t7_fit.py` (definitions, bands, calibration brackets, folds and the loader's
+  checks in `extended/t7_forecast.py`'s docstring) writes `results/t7_forecast.csv` from a clean run under the lock;
+  `lever_space.bounds("T7")` stays `NotComputed` until that file and its manifest exist, then loads `off` / `admit`
+  with q, D-212's line read from Stage 2's config, after checking the manifest.
+  On the search years each mark is scored by the fold model of its year (trained without that year); the final
+  all-years model is for a later held-out application only, which stays refused. A stop or w outside the
+  calibrated grid is refused, never extrapolated. **Labels, reported beside any T7 result:** (1) q = 0.05 is D-212
+  as D-308 raised it, a number Stage 2 chose after D-306's result was seen (on 2020-2021, inside the search years),
+  and a ceiling on a leg's share used here per mark; (2) the label models a market entry only (no limit entry, no
+  news-window flatten, no entry off the five-minute grid).
 
 **Four rows are to declare** before their ranges load: T2b (the NY AM / NY PM boundary), A15 (routing), A16 (the
 mix's shares and assignment), and A17 (the state rule). **Two rows lean on unstated rules** and are refused by key: A9
@@ -173,8 +183,8 @@ whole-window reading. Three sources are entered so that the search declaration c
 
 ## 7. Interpretations made in this table (Q-151)
 
-1. **The hour from the reopen to 18:00 CT** is a fifth window, `evening`. Stage 2's windows start Asia at 18:00, and the
-   operator asked for every session the firm allows.
+1. **The time from the reopen to Asia's start** (18:00 or 19:00 CT by the date, E-231 (3)) is a fifth window,
+   `evening`; the operator asked for every session the firm allows.
 2. **The NY AM / NY PM boundary** is left to the trigger library (T2b, refused), not chosen here.
 3. **The last new entry** is the "Avoid opening new positions after ..." sentence of `trading_hours`' verified note,
    not the flat itself.

@@ -430,12 +430,16 @@ def test_a_dead_waiters_ticket_does_not_block_the_line_and_is_removed(lock, caps
     F.release(lock, h)
 
 
-def test_a_live_ticket_older_than_the_cap_is_skipped_and_removed(lock):
+def test_a_live_ticket_older_than_the_cap_and_not_recreated_lately_is_skipped_and_removed(lock):
+    """Q-199 narrowed this (it was: any live ticket past the cap by arrival): an old-code ticket past the cap whose file
+    is older than TICKET_STALE_S -- a pid reused after its owner died -- is removed."""
     q = F.queue_dir(lock)
     q.mkdir()
     old_ns = time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9)
     old = q / F.ticket_name(old_ns, os.getpid(), "0ld0ld")
     old.write_text("", encoding="utf-8")
+    then = time.time() - F.TICKET_STALE_S - 60
+    os.utime(old, (then, then))
     h = F.acquire(lock, tree="T", timeout_s=30, poll_s=0.05)
     assert not old.exists()
     F.release(lock, h)
@@ -554,3 +558,204 @@ def test_the_memory_wait_has_its_own_cap_from_the_moment_the_lock_is_taken(lock,
     rc = F.run(["x"], lock=lock, tree="T", min_free_gb=1.5, timeout_s=100, poll_s=5, free_gb=lambda: next(free),
                sleep=sleep, monotonic=clock.monotonic, runner=lambda c, e: 0)
     assert rc == 0 and clock.t >= 180
+
+
+# ------------------------------------------------------------------------------------ a live waiter's ticket is never dropped by age (Q-199)
+#
+# Since Q-174 a waiter's cap counts only a line that does not move, so a live waiter may wait longer than TIMEOUT_S in
+# all. A ticket's staleness is therefore its pid and its heartbeat (the owner touches it on every poll), never its
+# arrival. A ticket without the heartbeat mark was written by a tree that has not merged Q-199 (it never touches its
+# ticket), and is judged exactly as that tree judges it: pid alive and arrival within the cap.
+
+H4 = int(4 * 3600 * 1e9)                                       # four hours, in ns: past TIMEOUT_S by arrival
+
+
+def _hb_ticket(q: Path, arrival_ns: int, pid: int, token: str, beat_age_s: float = 0.0) -> Path:
+    q.mkdir(parents=True, exist_ok=True)
+    t = q / F.ticket_name(arrival_ns, pid, token, heartbeat=True)
+    t.write_text("", encoding="utf-8")
+    if beat_age_s:
+        then = time.time() - beat_age_s
+        os.utime(t, (then, then))
+    return t
+
+
+def test_the_heartbeat_bound_is_declared_from_the_poll():
+    """Several polls' and printed lines' worth, far under the cap: a live waiter beats every POLL_S."""
+    assert F.TICKET_STALE_S == 10 * 60
+    assert F.TICKET_STALE_S >= 10 * F.POLL_S and F.TICKET_STALE_S >= 5 * F.PRINT_EVERY_S
+    assert F.TICKET_STALE_S < F.STALE_AFTER.total_seconds() < F.TIMEOUT_S
+
+
+def test_a_heartbeat_ticket_is_marked_in_its_name_and_still_parses_as_the_old_code_parses_it():
+    name = F.ticket_name(123, 456, "abc", heartbeat=True)
+    assert F.is_heartbeat_ticket(name) and not F.is_heartbeat_ticket(F.ticket_name(123, 456, "abc"))
+    arrival, pid, _ = F.parse_ticket(name)                    # the three fields an old-code tree reads
+    assert (arrival, pid) == (123, 456)
+    assert sorted([F.ticket_name(200, 1, "a"), name]) == [name, F.ticket_name(200, 1, "a")]   # arrival still orders
+
+
+def test_a_live_waiter_older_than_the_cap_by_arrival_is_kept_and_keeps_its_place(tmp_path):
+    q = tmp_path / "q"
+    old = _hb_ticket(q, time.time_ns() - H4, os.getpid(), "old")
+    mine = _hb_ticket(q, time.time_ns(), os.getpid(), "young").name
+    assert F.line(q, mine) == [old.name, mine]
+    assert old.exists()
+
+
+def test_a_dead_pid_heartbeat_ticket_is_removed_however_fresh(tmp_path):
+    q = tmp_path / "q"
+    dead = _hb_ticket(q, time.time_ns() - 10**9, dead_pid(), "dead")
+    mine = _hb_ticket(q, time.time_ns(), os.getpid(), "me").name
+    assert F.line(q, mine) == [mine] and not dead.exists()
+
+
+def test_a_live_pid_with_a_stale_heartbeat_is_removed_however_young_its_arrival(tmp_path):
+    """A pid that is running but has not beaten for TICKET_STALE_S: a reused pid, or a waiter hung outside its loop."""
+    q = tmp_path / "q"
+    stale = _hb_ticket(q, time.time_ns() - 10**9, os.getpid(), "stale", beat_age_s=F.TICKET_STALE_S + 60)
+    fresh = _hb_ticket(q, time.time_ns() - 10**9 + 1, os.getpid(), "fresh", beat_age_s=F.TICKET_STALE_S - 60)
+    mine = _hb_ticket(q, time.time_ns(), os.getpid(), "me").name
+    assert F.line(q, mine) == [fresh.name, mine] and not stale.exists()
+
+
+def test_an_old_code_ticket_is_kept_within_the_cap_and_past_it_only_while_recreated(tmp_path):
+    """Mixed trees: a ticket without the mark is never touched by its owner. Within the cap by arrival it is kept while
+    its pid lives, whatever its mtime (old code's rule). Past the cap it is kept while it was (re)created within
+    TICKET_STALE_S -- its live owner puts it back after every old tree's age prune -- and removed once older: a dead
+    owner whose pid was reused never recreates it."""
+    q = tmp_path / "q"
+    q.mkdir()
+    past_cap = time.time_ns() - int((F.TIMEOUT_S + 60) * 1e9)
+    expired = q / F.ticket_name(past_cap, os.getpid(), "expired")
+    recreated = q / F.ticket_name(past_cap + 1, os.getpid(), "recreated")
+    legacy = q / F.ticket_name(time.time_ns() - 10**9, os.getpid(), "legacy")
+    for t, beat_age in ((expired, F.TICKET_STALE_S + 60), (recreated, 30), (legacy, 3600)):
+        t.write_text("", encoding="utf-8")
+        then = time.time() - beat_age
+        os.utime(t, (then, then))
+    mine = _hb_ticket(q, time.time_ns(), os.getpid(), "me").name
+    assert F.line(q, mine) == [recreated.name, legacy.name, mine]
+    assert legacy.exists() and recreated.exists() and not expired.exists()
+
+
+def test_a_live_old_code_waiter_past_the_cap_holds_its_place_before_a_new_code_waiter(lock, clock):
+    """The waiter seen on 2026-11-20 (an old-code tree, 4.6 h by arrival): old trees' age prune removes its ticket every
+    poll and it puts it back every poll; a new-code waiter keeps it in line and takes no free slot ahead of it."""
+    q = F.queue_dir(lock)
+    q.mkdir()
+    old = q / F.ticket_name(time.time_ns() - H4, os.getpid(), "oldtree")         # no heartbeat mark
+    old.write_text("", encoding="utf-8")
+
+    def sleep(s):
+        clock.sleep(s)
+        old.unlink()                                           # an old tree's line() prunes it by arrival ...
+        old.write_text("", encoding="utf-8")                   # ... and its owner's next poll puts it back
+
+    with pytest.raises(F.WaitTimeout) as e:
+        F.acquire(lock, tree="new", timeout_s=90, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert not lock.exists() and old.exists()
+    assert "place 2 of 2" in str(e.value)
+
+
+def test_the_line_always_holds_mine_at_its_arrival_place_even_while_its_file_is_missing(tmp_path):
+    q = tmp_path / "q"
+    first = _hb_ticket(q, 1_000, os.getpid(), "first")
+    last = _hb_ticket(q, 3_000, os.getpid(), "last")
+    mine = F.ticket_name(2_000, os.getpid(), "me", heartbeat=True)      # removed under its owner a moment ago
+    assert F.line(q, mine) == [first.name, mine, last.name]
+
+
+def test_a_younger_waiter_cannot_take_a_free_slot_ahead_of_an_older_live_waiter(lock, clock):
+    """The defect seen on 2026-11-20: a live waiter past the cap by arrival was dropped by every later waiter."""
+    old = _hb_ticket(F.queue_dir(lock), time.time_ns() - H4, os.getpid(), "old")
+
+    def sleep(s):
+        clock.sleep(s)
+        os.utime(old, None)                                    # the old waiter is alive and polling
+
+    with pytest.raises(F.WaitTimeout) as e:
+        F.acquire(lock, tree="young", timeout_s=90, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert not lock.exists() and old.exists()
+    assert "place 2 of 2" in str(e.value)
+
+
+def test_the_poll_touches_the_waiters_ticket(lock, clock):
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    q = F.queue_dir(lock)
+    beats = []
+
+    def sleep(s):
+        clock.sleep(s)
+        (t,) = list(q.glob("*.ticket"))
+        assert F.is_heartbeat_ticket(t.name)
+        beats.append(time.time() - t.stat().st_mtime)
+        then = time.time() - 3600
+        os.utime(t, (then, then))                              # make the next beat visible
+
+    with pytest.raises(F.WaitTimeout):
+        F.acquire(lock, tree="T", timeout_s=60, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert len(beats) >= 10
+    assert all(age < 60 for age in beats[1:]), beats           # every poll after the first found a fresh beat
+
+
+def test_a_ticket_dropped_by_an_old_code_tree_is_recreated_under_its_old_name(lock, clock):
+    """An old-code tree's line() removes a ticket older than the cap by arrival; the owner puts it back at once, under
+    the same name (the same arrival, so the same place), heartbeat mark included."""
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    q = F.queue_dir(lock)
+    names = []
+
+    def sleep(s):
+        clock.sleep(s)
+        (t,) = list(q.glob("*.ticket"))
+        names.append(t.name)
+        t.unlink()                                             # what an old-code waiter's line() does
+
+    with pytest.raises(F.WaitTimeout):
+        F.acquire(lock, tree="T", timeout_s=60, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert len(names) >= 10 and len(set(names)) == 1 and F.is_heartbeat_ticket(names[0])
+    assert list(q.glob("*.ticket")) == []                      # and removed on exit
+
+
+OLD_WAITER = r'''
+import sys, time
+sys.path.insert(0, {scripts!r})
+_real = time.time_ns
+time.time_ns = lambda: _real() - {offset}                      # this waiter "arrived" four hours ago
+import fasttier_lock as F
+sys.exit(F.main(["--lock", {lock!r}, "--poll-s", "0.2", "--min-free-gb", "0", "run", "--",
+                 sys.executable, "-c", "open(" + repr({served!r}) + ", 'a').write('OLD ')"]))
+'''
+
+
+def test_two_live_processes_an_old_waiter_past_the_cap_is_served_before_a_younger_faster_one(lock, tmp_path):
+    """End to end: a waiter whose arrival is four hours old, still polling, and a younger one polling four times as
+    fast. The holder leaves; the old waiter is served first (under the age prune the younger one dropped its ticket)."""
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    served = tmp_path / "served.txt"
+    script = tmp_path / "old_waiter.py"
+    script.write_text(OLD_WAITER.format(scripts=str(ROOT / "scripts"), offset=H4, lock=str(lock), served=str(served)),
+                      encoding="utf-8")
+    procs = []
+    outs = []
+    try:
+        procs.append(subprocess.Popen([sys.executable, str(script)], stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, text=True))
+        assert _wait_until(lambda: len(_tickets(lock)) == 1), "the old waiter took no ticket"
+        young = f"open(r'{served}', 'a').write('YOUNG ')"
+        procs.append(subprocess.Popen(_cli(lock, "--poll-s", "0.05", "--min-free-gb", "0", "run", "--",
+                                           sys.executable, "-c", young),
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
+        assert _wait_until(lambda: len(_tickets(lock)) == 2), "the young waiter took no ticket"
+        time.sleep(1.0)                                        # several of the young waiter's polls with both in line
+        assert len(_tickets(lock)) == 2, "a live waiter's ticket was dropped"
+        lock.unlink()                                          # the holder finishes
+        outs = [p.communicate(timeout=120)[0] for p in procs]
+        assert all(p.returncode == 0 for p in procs), outs
+    finally:
+        for p in procs:
+            if p.poll() is None:
+                p.kill()
+    assert served.read_text(encoding="utf-8").split() == ["OLD", "YOUNG"], outs
+    assert _tickets(lock) == [] and not lock.exists()
