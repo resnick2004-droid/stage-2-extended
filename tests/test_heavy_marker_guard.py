@@ -74,6 +74,8 @@ LIGHT: dict[str, tuple[tuple[tuple[str, ...], str], ...]] = {
         (("--synthetic", "!--smoke-days"), "synthetic days only; no bar or walk read"),
         (("--substitution", "!--smoke-days"),
          "probes only; reads A3's manifest.json (the cache key, metadata) when present, no bar or walk table"),),
+    "identity/t7_label_identity.py": (
+        (("--synthetic",), "T7's label identity on synthetic days only; no bar read"),),
     "identity/place_records_identity.py": (
         (("--synthetic",), "synthetic campaigns only"),
         (("--row", "E-99999"), "refused before any engine work: no such decision row"),),

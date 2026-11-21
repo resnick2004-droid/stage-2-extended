@@ -3,7 +3,7 @@
 returning the toys and a toy A1 day table, and the void calendar by a synthetic one (every overnight clean, the toys'
 own last bars). `extended.results` puts the vendored tree on the path, so this runs in a process of its own.
 
-    python tests/t7_synthetic.py script|refuse
+    python tests/t7_synthetic.py script|refuse|label
 
 Prints one JSON line last. Seeds (named by role, outside the 2026xxxx range): `SEED_TOY_BARS` 4735 (the toys' bars).
 """
@@ -124,8 +124,22 @@ def check_script() -> dict:
                                         ("sha", "sha256"), ("identity", "identities"), ("q", "q is not")) if w in msg]
         got["loader_refusals"] = refusals
         got["frame_rows"] = len(frame)
+        man = json.loads(XR.manifest_path_for(csv_path).read_text(encoding="utf-8"))
+        notes = man.get("notes") or {}
+        got["c3"] = ("diagnostics, not a forward test" in (man.get("description") or "")
+                     and notes.get("diagnostics_label") == "diagnostics, not a forward test"
+                     and notes.get("diagnostics") == T.DIAGNOSTICS and list(notes.get("labels") or []) == list(T.LABELS))
+        dm = (man.get("parameters") or {}).get("data_manifest") or {}
+        got["c4"] = (sorted(dm) == sorted(Sc.DATA_FILES)
+                     and all(len(v) == 64 and all(ch in "0123456789abcdef" for ch in v) for v in dm.values()))
+        # a re-run under a new name beside the first: written, never an overwrite, and the CSV's bytes identical
+        rec2 = Recorder(bars, days_table(bars))
+        rc2, _ = run_main(rec2, ["--start", SPANS[0][0], "--end", SPANS[1][1], "--results-dir", str(out),
+                                 "--name", f"{T.RESULT}_v2"], fake_sources(bars))
+        csv2 = out / f"{T.RESULT}_v2.csv"
+        got["rerun_identical"] = rc2 == 0 and csv2.is_file() and csv2.read_bytes() == csv_path.read_bytes()
     got["ok"] = (got["exit"] == 0 and got["verified"] and got["identities_held"] and got["reads_inside"]
-                 and rec.walk_reads == 1)
+                 and rec.walk_reads == 1 and got["c3"] and got["c4"] and got["rerun_identical"])
     return got
 
 
@@ -141,6 +155,9 @@ def check_refuse() -> dict:
         rec = Recorder(bars, days_table(bars))
         rc_, log = run_main(rec, ["--start", SPANS[0][0], "--end", SPANS[1][1]], src)
         res["results_dir"] = {"exit": rc_, "reads": len(rec.spans), "refused": "REFUSED" in log}
+        rec = Recorder(bars, days_table(bars))
+        rc_, log = run_main(rec, ["--name", "other", "--results-dir", str(Path(tmp) / "name")], src)
+        res["bad_name"] = {"exit": rc_, "reads": len(rec.spans), "refused": "REFUSED" in log}
         short = days_table(bars).iloc[5:]                   # A1's table missing five toy days: a1_days fails
         rec = Recorder(bars, short)
         out = Path(tmp) / "a1"
@@ -148,12 +165,60 @@ def check_refuse() -> dict:
         res["a1_identity"] = {"exit": rc_, "written": out.exists() and any(out.iterdir()),
                               "failed": "identity a1_days" in log and "FAILED" in log}
     ok = (all(res[k]["exit"] == 2 and res[k]["reads"] == 0 and res[k]["refused"]
-              for k in ("held_out", "confirmation", "results_dir"))
+              for k in ("held_out", "confirmation", "results_dir", "bad_name"))
           and res["a1_identity"]["exit"] == 4 and not res["a1_identity"]["written"] and res["a1_identity"]["failed"])
     return {"ok": ok, **res}
 
 
+#: T7 mutations the label identity must catch (old, new), each found once in `extended/t7_forecast.py`
+LABEL_MUTANTS = {
+    "the target fills on a touch": ("long_open = (dn_n < c) & (up_n < w * c + tick_n)",
+                                    "long_open = (dn_n < c) & (up_n < w * c)"),
+    "the short not mirrored": ("short_open = (up_n < c) & (dn_n < w * c + tick_n)",
+                               "short_open = (dn_n < c) & (up_n < w * c + tick_n)"),
+    "IV without the entry bar's own change": ("iv = (Cw[rows, ec] - entry) ** 2 + suf[rows, ec + 1]",
+                                              "iv = suf[rows, ec + 1]"),
+    "the window read past 15:07": ("Hs = np.fmax.accumulate(Hw[:, ::-1], axis=1)[:, ::-1]",
+                                   "Hs = np.fmax.accumulate(H[:, ::-1], axis=1)[:, ::-1][:, :E + 1]"),
+    "the entry a bar late": ("e = nxt[:, MARKS]\n    valid", "e = nxt[:, MARKS + 1]\n    valid"),
+}
+
+
+def _mutant(old: str, new: str):
+    import types
+
+    src = ROOT / "extended" / "t7_forecast.py"
+    text = src.read_text(encoding="utf-8")
+    assert text.count(old) == 1, old
+    m = types.ModuleType("t7_forecast_label_mutant")
+    m.__file__ = str(src)
+    sys.modules[m.__name__] = m
+    try:
+        exec(compile(text.replace(old, new), str(src), "exec"), m.__dict__)
+    finally:
+        sys.modules.pop(m.__name__, None)
+    return m
+
+
+def check_label() -> dict:
+    spec = importlib.util.spec_from_file_location("t7_label_identity", ROOT / "identity" / "t7_label_identity.py")
+    LI = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(LI)
+    frames, da = LI.synthetic_days(), LI.vendored_day_arrays()
+    real = LI.run(frames, da)
+    out: dict = {"days": len(real), "problems": [p for r in real for p in r["problems"]],
+                 "filled": sum(r.get("filled", 0) for r in real),
+                 "open_sides": sum(r.get("open_sides", 0) for r in real),
+                 "marks": sum(r["marks"] for r in real), "caught": {}}
+    for name, (old, new) in LABEL_MUTANTS.items():
+        res = LI.run(frames, da, _mutant(old, new))
+        out["caught"][name] = any(r["problems"] for r in res)
+    out["ok"] = (not out["problems"] and out["filled"] > 0 and 0 < out["open_sides"] < 2 * out["filled"] * 12
+                 and all(out["caught"].values()))
+    return out
+
+
 if __name__ == "__main__":
     which = sys.argv[1]
-    out = {"script": check_script, "refuse": check_refuse}[which]()
+    out = {"script": check_script, "refuse": check_refuse, "label": check_label}[which]()
     print(json.dumps(out, default=str))
