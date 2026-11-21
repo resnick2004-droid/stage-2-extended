@@ -1,0 +1,7 @@
+M07 lengths only: SURVIVED ['87 passed in 28.21s']
+M18 workers always agree: killed ['1 failed, 81 passed in 28.40s']
+M19 duplicates ignored: killed ['1 failed, 33 passed in 0.64s']
+M20 rerun under a broken exit: killed ['1 failed, 83 passed in 28.62s']
+3 of 4 killed; survivors: ['M07 lengths only']
+M07 lengths only: killed ['1 failed, 32 passed in 0.65s']
+1 of 1 killed; survivors: []

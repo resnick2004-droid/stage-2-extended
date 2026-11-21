@@ -1,0 +1,28 @@
+{
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-o",
+    "addopts=",
+    "-q",
+    "-m",
+    "not slow and not heavy",
+    "-p",
+    "no:cacheprovider",
+    "--collect-only"
+  ],
+  "exit": 0,
+  "aborted": null,
+  "seconds": 8.4,
+  "every_s": 0.5,
+  "floor_gb": 2.0,
+  "samples": 16,
+  "peak_tree_working_set_gb": 0.184,
+  "peak_controller_gb": 0.184,
+  "peak_tree_processes": 1,
+  "max_concurrent_children": 0,
+  "peak_per_child_gb": [],
+  "peak_worker_gb": null,
+  "min_available_gb": 3.309
+}
