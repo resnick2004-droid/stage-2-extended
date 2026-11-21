@@ -841,6 +841,22 @@ def test_cost_counts_a_pass_on_session_w(base) -> None:
     assert d["baseline_means"]["p15"] == pytest.approx(float(z.mean())) and z.mean() > 0
 
 
+def test_cost_caps_count_passes_on_session_w(base) -> None:
+    """m2-4, the caps' side: every unit of every baseline passes on session W, so cost's caps are the widened 5-95 %
+    quantiles of all their cash on E_W (not the degenerate caps of no unit passed)."""
+    rs, _ = base
+    at_w = rs
+    for b in R.BASELINES:
+        at_w = _with(at_w, b, "first_pass_days", lambda x: np.where(np.isnan(x), np.nan, float(R.W)))
+        at_w = _with(at_w, b, "first_payout_days", lambda x: np.where(np.isnan(x), np.nan, R.W + 1.0))
+    d = {x["name"]: x for x in _run(at_w).values["dimensions"]}["cost"]
+    r = _sl() >= R.W
+    pool = np.concatenate([np.asarray(at_w[b].values["cash_to_first_pass"])[r].ravel() for b in R.BASELINES])
+    ql, qh = np.quantile(pool, 0.05), np.quantile(pool, 0.95)
+    assert (d["lo"], d["hi"]) == pytest.approx((max(0.0, ql - 0.25 * (qh - ql)), qh + 0.25 * (qh - ql)))
+    assert d["share_passed_by_W"] == 1.0
+
+
 def test_a_limit_beyond_every_baseline_unit_is_flagged_vacuous(base) -> None:
     """m2-4: every unit's busiest day at three orders: the p90 ceiling sits on the last unit, flagged vacuous for it."""
     rs, _ = base
@@ -1155,3 +1171,119 @@ def test_the_module_reads_no_file_and_imports_no_engine() -> None:
     assert "open" not in calls
     assert "random" not in (ROOT / "extended" / "wave42.py").read_text(encoding="utf-8").replace(
         "draws randomness", "")
+
+
+# --------------------------------------------------------------- the public scoring path (the survey's; C-1)
+PUBLIC = ("unit_values", "unit_scores", "composite_by_seed", "null_composites", "limit_estimate", "limit_check")
+
+
+def test_setting_rule_scores_through_the_public_functions(base, monkeypatch) -> None:
+    """C-1: `setting_rule` calls each public function (each wrapped to count, passing through) and its output is
+    unchanged by the wrapping."""
+    rs, v = base
+    calls = {k: 0 for k in PUBLIC}
+    for name in PUBLIC:
+        f = getattr(R, name)
+
+        def wrapped(*a, _f=f, _n=name, **k):
+            calls[_n] += 1
+            return _f(*a, **k)
+        monkeypatch.setattr(R, name, wrapped)
+    again = _run(rs)
+    assert again.digest() == v.digest()
+    assert all(c > 0 for c in calls.values()), calls
+
+
+@pytest.mark.parametrize("name,where", [
+    ("composite_by_seed", lambda v: v["composite"]["value"]),
+    ("unit_scores", lambda v: [d["baseline_means"] for d in v["dimensions"]]),
+    ("null_composites", lambda v: v["null_journeys"]["floor"]["value"]),
+    ("limit_estimate", lambda v: [x["baseline_values"] for x in v["limits"]["values"]]),
+    ("limit_check", lambda v: [x["baseline_checks"] for x in v["limits"]["values"]]),
+])
+def test_a_change_to_a_public_function_shows_in_the_rules_output(base, monkeypatch, name, where) -> None:
+    """C-1: one code path: a public function changed changes `setting_rule`'s own output where it is used."""
+    rs, v = base
+    f = getattr(R, name)
+
+    def shifted(*a, **k):
+        out = f(*a, **k)
+        if isinstance(out, np.ndarray):
+            return out + 0.01
+        if name == "unit_scores":
+            return {d: np.clip(z + 0.01, 0, 1) for d, z in out.items()}
+        if name == "null_composites":
+            return {j: c + 0.01 for j, c in out.items()}
+        if name == "limit_estimate":
+            return {**out, "estimate": out["estimate"] + 0.5}
+        return {**out, "inside": not out["inside"]}
+    monkeypatch.setattr(R, name, shifted)
+    assert where(_run(rs).values) != where(v.values)
+
+
+def test_the_public_functions_reproduce_the_rules_values(base) -> None:
+    """The survey's view: from the output alone (`pinned_inputs`), `composite_by_seed` gives each baseline's composite,
+    `limit_estimate` each limit's baseline values, `do_nothing_floor` the floor, `limit_check` the checks."""
+    rs, v = base
+    P = R.pinned_inputs(json.loads(v.as_json()))
+    sl = _sl()
+    for b in R.BASELINES:
+        c = R.composite_by_seed(rs[b].values, sl, P["B"], P["caps"], P["weights"])
+        assert float(c.mean()) == pytest.approx(v.values["composite"]["value"][b], abs=1e-12)
+    for L in R.LIMITS:
+        got = P["limits"][L.name]
+        for b in R.BASELINES:
+            e = R.limit_estimate(rs[b].values, sl, P["B"], L)
+            assert e["estimate"] == pytest.approx(got["baseline_values"][b])
+            assert R.limit_check(rs[b].values, sl, P["B"], L, got["value"]) == got["baseline_checks"][b]
+    assert R.do_nothing_floor(FEE, P["B"], P["caps"], P["weights"]) == pytest.approx(P["floor"])
+    assert P["form"] == v.values["form"] and P["floor"] == v.values["null_journeys"]["floor"]["value"]
+
+
+def test_a_design_that_never_passes_scores_zero_on_cost_through_the_public_path(base) -> None:
+    """B-5 through `unit_scores`: a design set with no unit passed by W, however little it spends, has cost z = 0 on
+    every unit, so its composite carries no cost credit (the survey's C-1 defect)."""
+    rs, v = base
+    P = R.pinned_inputs(json.loads(v.as_json()))
+    d = {k: np.asarray(x, dtype=float).copy() for k, x in rs["p14"].values.items()}
+    d["first_pass_days"] = np.where(np.isnan(d["first_pass_days"]), np.nan, R.W + 1.0)
+    d["first_payout_days"] = np.where(np.isnan(d["first_payout_days"]), np.nan, R.W + 1.0)
+    d["cash_to_first_pass"] = np.where(np.isnan(d["cash_to_first_pass"]), np.nan, 0.0)
+    z = R.unit_scores(d, P["B"], P["caps"])
+    assert np.all(z["cost"][_sl() >= R.W] == 0.0)
+    no_cost = {k: w for k, w in P["weights"].items() if k != "cost"}
+    assert R.composite_by_seed(d, _sl(), P["B"], P["caps"], P["weights"]) == pytest.approx(
+        R.composite_by_seed(d, _sl(), P["B"], P["caps"], no_cost))
+
+
+def test_limit_check_decides_by_the_point_estimate_and_reports_the_crossing_beside() -> None:
+    """E-230: inside decides (a ceiling at or below its value); the one-sided check of crossing at LIMIT_CHECK_LEVEL is
+    beside -- an estimate just above the value is outside but not shown crossed; one far above is both."""
+    L = next(x for x in R.LIMITS if x.name == "first_payout_days_p50")
+    sl = np.full(10, 300)
+    rng = np.random.default_rng(3)
+    x = np.full((10, 40), 50.0) + rng.normal(0, 1.0, (10, 40))
+    vals = {"first_payout_days": x, "spent_before_first_payout": np.zeros((10, 40)),
+            **{f"net_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)},
+            **{f"peak_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)}}
+    e = R.limit_estimate(vals, sl, 100.0, L)["estimate"]
+    assert R.limit_check(vals, sl, 100.0, L, e)["inside"]                  # at the value is inside
+    assert R.limit_check(vals, sl, 100.0, L, e + 1e-9)["inside"]
+    near = R.limit_check(vals, sl, 100.0, L, e - 1e-6)
+    assert not near["inside"] and not near["crossed_at_level"]
+    far = R.limit_check(vals, sl, 100.0, L, e - 5.0)
+    assert not far["inside"] and far["crossed_at_level"]
+    F = next(x for x in R.LIMITS if x.direction == "floor")              # a floor, the mirror image
+    fv = {**vals, F.key: x}
+    ef = R.limit_estimate(fv, sl, 100.0, F)["estimate"]
+    assert R.limit_check(fv, sl, 100.0, F, ef - 1.0)["inside"]
+    below = R.limit_check(fv, sl, 100.0, F, ef + 5.0)
+    assert not below["inside"] and below["crossed_at_level"] and below["beyond"] == pytest.approx(5.0)
+
+
+def test_the_documents_output_row_schema_is_the_outputs(base) -> None:
+    """The row schema of `w42_r1_values.csv` (section 9): one row per top-level key of the values, `key` and
+    `value_json`; the document's table lists exactly those keys."""
+    _, v = base
+    rows = _table("wave42-output-rows")
+    assert [r[0] for r in rows] == sorted(v.values)

@@ -78,6 +78,7 @@ The notes n-1 to n-4 ask for no change.
 | R3-4 four untested checks | tests for the digest against a hand-written layout and per matrix and seed, the held-out calendar's upper bound and a repeated date, the `w42_*` glob, and the refusal before any input is read | the tests |
 | n3-1 the chain's root | H4's collection row is pinned before W42-R1 is applied, and the auditor checks the file's sha256 against it | 1.1 |
 | n3-3 the H7 row's wording | each start run to 252 sessions or the block's last session, whichever comes first | the three-way note 6.3; `three_way_arith.parts` |
+| C-1 (the survey's read) the survey re-implemented the composite | one public scoring path, which `setting_rule` itself uses and the survey imports; the output file's row schema documented | 9.1, 9.2 |
 
 ---
 
@@ -549,6 +550,57 @@ Focused Trader Program off) are the reading's, not limits.
   `setting_rule`, with every intermediate (the pooled quantiles, the caps, rho, the gaps and their standard errors,
   each limit's baseline estimates, per-year estimates and headroom) in its output, so each value traces.
 - It draws no randomness, so it takes no seed.
+
+### 9.1 The output file's row schema (`results/w42_r1_values.csv`)
+
+The values are written as **one row per top-level key** of `setting_rule`'s output, in sorted key order, with two
+columns: `key` (the name) and `value_json` (that value as JSON: keys sorted, separators `,` and `:`, every number
+finite). `values_from_rows` reads the rows back into the values; their canonical JSON's sha256 is the manifest's
+`values_sha256`. The file itself is bound by the sha256 its sidecar records. The rows:
+
+<!-- wave42-output-rows:start -->
+| key | JSON type | what it holds |
+|---|---|---|
+| application | object | the script, the output name and the applied-once rule |
+| budgets | object | (24)'s budgets in fee units, the primary budget B\* (`primary`), their trace |
+| composite | object | each baseline's composite (`value`) and their ranking |
+| constants | object | section 2's table, as the module holds it |
+| delta_star | object | delta\*, its gaps, its bounds and its translation into each dimension's units |
+| dimensions | array | per dimension: name, horizon, direction, kind, caps `lo` and `hi`, weight, baseline means |
+| form | string | `composite` or `fallback` (4.4) |
+| h4 | object | H4's binding: the result, readings and calendar sha256, the counts, the arm and the verdict settings |
+| held_out_read_ledger | object | this rule's own ledger entry, the held-out calendar and its sha256 |
+| inactivity_guards | object | the two guards' state and the floor (4.5) |
+| input_sha256 | string | the digest of every input |
+| limits | object | per limit (`values`): its value, direction, statistic, horizon, the baselines' estimates and checks |
+| null_journeys | object | the do-nothing and quitter composites, and the declared floor (`floor`, its `value`) |
+| power | object | the power forecast at `TEST_SEEDS`, J_needed and the worst case |
+| rho_beside | object | Spearman's rho between the dimensions, beside, deciding nothing |
+| rule_id | string | `W42-R1` |
+| search_starts | object | the start count of E_h per horizon |
+| seeds | integer | H4's seed count |
+| test_starts_source | object | the held-out calendar's file, sha256 and session count |
+| weights | object | the weight of each kept dimension |
+<!-- wave42-output-rows:end -->
+
+### 9.2 The public scoring path (the survey's; C-1)
+
+`setting_rule` scores every unit set through these functions of `extended/wave42.py`, and Wave 5's survey imports
+**only these** to score a design, so one code path serves both; the tests hold that the rule's output passes through
+each and moves with each. The pin covers them with the rest of the module.
+- `pinned_inputs(values) -> {"B", "caps", "weights", "form", "floor", "limits"}`: what a design is scored with, from
+  the output's values (`values_from_rows(rows)` parses the file's rows).
+- `unit_values(values, B)`: a unit set's raw measures with `bankroll_states` at budget B.
+- `unit_scores(values, B, caps) -> {dimension: z}`: every dimension's per-unit z in [0, 1], **B-5 included** (a unit
+  not passed by W scores z = 0 on cost).
+- `composite_by_seed(values, sessions_left, B, caps, weights) -> array`: the composite per seed; its mean is the
+  point estimate.
+- `null_composites(fee_unit, B, caps, weights)` and `do_nothing_floor(fee_unit, B, caps, weights)`: the null
+  journeys' composites and the declared floor (4.5).
+- `limit_estimate(values, sessions_left, B, spec)`: a limit's point estimate, per-seed sd and seed count;
+  `limit_check(values, sessions_left, B, spec, value, level_=LIMIT_CHECK_LEVEL)`: **inside** by the point estimate,
+  which decides (E-230), and the one-sided check of crossing beside it (B-10's form: beyond the value by more than
+  z_(1 - level) coin-seed standard errors), never deciding.
 
 ## 10. The held-out read ledger
 

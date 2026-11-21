@@ -287,3 +287,23 @@ def test_the_output_records_the_fee_path_and_the_power_target(env) -> None:
     assert params["fee_via"] == "extended.levers_terms.standard_prices"
     from extended.family_stats import MDL_POWER
     assert params["power_target"] == MDL_POWER
+
+
+def test_the_output_file_has_the_declared_row_schema_and_reads_back(env) -> None:
+    """Section 9's row schema: columns `key` and `value_json`, one row per top-level key in sorted order, the JSON
+    compact and finite; `values_from_rows` reads it back to the values, and `pinned_inputs` to the survey's inputs."""
+    import csv
+
+    params = A.apply(env.d, env.src)
+    with open(env.d / R.OUTPUT_NAME, encoding="utf-8", newline="") as fh:
+        rd = csv.DictReader(fh)
+        assert rd.fieldnames == ["key", "value_json"]
+        rows = list(rd)
+    keys = [r["key"] for r in rows]
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+    values = R.values_from_rows(rows)
+    digest = __import__("hashlib").sha256(json.dumps(values, sort_keys=True, separators=(",", ":"),
+                                                     allow_nan=False).encode("utf-8")).hexdigest()
+    assert digest == params["values_sha256"]
+    P = R.pinned_inputs(values)
+    assert set(P) == {"B", "caps", "weights", "form", "floor", "limits"} and P["floor"] == pytest.approx(2 / 6)

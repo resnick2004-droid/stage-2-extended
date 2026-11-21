@@ -447,6 +447,100 @@ def null_journeys(fee_unit: float) -> dict[str, dict[str, float]]:
     return {"do_nothing": nothing, "quit_at_first_failure": quitter}
 
 
+# --------------------------------------------------------------------- the public scoring path (the survey's, C-1)
+#: `setting_rule` scores every unit set through these functions, and Wave 5's survey imports them, so one code path
+#: serves both: a change to any of them changes the rule's own output (the tests hold that).
+def unit_values(values: Mapping[str, Any], B: float) -> dict[str, np.ndarray]:
+    """One unit set's per-unit values at budget B: its raw measures (a matrix of start days by seeds each) and
+    `bankroll_states` (P_B, run_out, not_paid_within_B)."""
+    v = {k: np.asarray(x, dtype=float) for k, x in values.items()}
+    return {**v, **bankroll_states(v, B)}
+
+
+def unit_scores(values: Mapping[str, Any], B: float, caps: Mapping[str, tuple[float, float]]) -> dict[str, np.ndarray]:
+    """The per-unit z in [0, 1] of every dimension for one unit set (a baseline's or a design's), from its raw measures
+    at budget B and the pinned caps (lo, hi) per dimension. B-5: a unit not passed by W scores z = 0 on cost."""
+    v = unit_values(values, B)
+    z: dict[str, np.ndarray] = {}
+    for d in DIMENSIONS:
+        lo, hi = caps[d.name][0], caps[d.name][1]
+        zd = _z(d, v[d.key], lo, hi)
+        if d.name == "cost":
+            zd = np.where(v["first_pass_days"] <= W, zd, 0.0)
+        z[d.name] = zd
+    return z
+
+
+def composite_by_seed(values: Mapping[str, Any], sessions_left: Sequence[int], B: float,
+                      caps: Mapping[str, tuple[float, float]], weights: Mapping[str, float]) -> np.ndarray:
+    """The composite of one unit set, one value per seed: C(c) = sum over the weighted dimensions of w_d x the mean of
+    z_d over the start days of E_{h_d} (sessions left at least h_d). Its mean over seeds is the point estimate."""
+    z = unit_scores(values, B, caps)
+    sl = np.asarray(sessions_left)
+    hz = {d.name: d.horizon for d in DIMENSIONS}
+    return sum(float(w) * z[k][sl >= hz[k]].mean(axis=0) for k, w in weights.items())
+
+
+def null_composites(fee_unit: float, B: float, caps: Mapping[str, tuple[float, float]],
+                    weights: Mapping[str, float]) -> dict[str, float]:
+    """V-4: the do-nothing and quit-at-first-failure journeys' composites, each one unit reaching every horizon,
+    through `composite_by_seed`. `null_composites(...)["do_nothing"]` is the declared floor."""
+    reach = [max(d.horizon for d in DIMENSIONS)]
+    return {name: float(composite_by_seed({k: np.full((1, 1), x) for k, x in v.items()}, reach, B, caps, weights)[0])
+            for name, v in null_journeys(fee_unit).items()}
+
+
+def do_nothing_floor(fee_unit: float, B: float, caps: Mapping[str, tuple[float, float]],
+                     weights: Mapping[str, float]) -> float:
+    """The declared floor (V-4, R3-3): the do-nothing journey's composite; a finalist's must exceed it."""
+    return null_composites(fee_unit, B, caps, weights)["do_nothing"]
+
+
+def limit_estimate(values: Mapping[str, Any], sessions_left: Sequence[int], B: float,
+                   spec: LimitSpec) -> dict[str, float]:
+    """One unit set's reading of a limit's measure: the point estimate over the pooled units of E_h (the limit's
+    statistic, numpy's linear rule), its per-seed statistics' standard deviation, and the seed count."""
+    x = unit_values(values, B)[spec.key]
+    r = np.asarray(sessions_left) >= spec.horizon
+    xe = x[r]
+    nJ = xe.shape[1]
+    sd = float(np.std([_stat(xe[:, c], spec.stat) for c in range(nJ)], ddof=1)) if nJ > 1 else 0.0
+    return {"estimate": _stat(xe, spec.stat), "per_seed_sd": sd, "seeds": nJ}
+
+
+def limit_check(values: Mapping[str, Any], sessions_left: Sequence[int], B: float, spec: LimitSpec, value: float,
+                level_: float = LIMIT_CHECK_LEVEL) -> dict[str, Any]:
+    """A unit set against a limit, in the form in force (E-230): **inside** when the point estimate is inside the value
+    (a ceiling: at or below; a floor: at or above), which decides. Beside it, never deciding, the one-sided check of
+    crossing (B-10's form): crossed at `level_` when the estimate is beyond the value by more than z_(1 - level_)
+    times its coin-seed standard error (the per-seed sd over the square root of the seed count)."""
+    e = limit_estimate(values, sessions_left, B, spec)
+    se = e["per_seed_sd"] / math.sqrt(e["seeds"])
+    beyond = (e["estimate"] - value) if spec.direction == "ceiling" else (value - e["estimate"])
+    zc = float(stats.norm.ppf(1.0 - level_))
+    return {"estimate": e["estimate"], "inside": bool(beyond <= 0.0), "se": se, "beyond": float(beyond),
+            "check_z": zc, "crossed_at_level": bool(beyond > zc * se), "level": level_,
+            "decides": "inside (the point estimate); the check is beside, never deciding"}
+
+
+def pinned_inputs(values: Mapping[str, Any]) -> dict[str, Any]:
+    """What a design is scored with, read from W42-R1's output values (the parsed `w42_r1_values.csv`): the primary
+    budget B*, the caps (lo, hi) per dimension, the weights, the form, the floor and the limits."""
+    return {"B": float(values["budgets"]["primary"]),
+            "caps": {d["name"]: (float(d["lo"]), float(d["hi"])) for d in values["dimensions"]},
+            "weights": {k: float(w) for k, w in values["weights"].items()}, "form": values["form"],
+            "floor": float(values["null_journeys"]["floor"]["value"]),
+            "limits": {x["name"]: x for x in values["limits"]["values"]}}
+
+
+def values_from_rows(rows: Sequence[Mapping[str, str]]) -> dict[str, Any]:
+    """W42-R1's output values from `w42_r1_values.csv`'s rows (`key`, `value_json`; section 9's row schema)."""
+    out = {str(r["key"]): json.loads(r["value_json"]) for r in rows}
+    if len(out) != len(rows):
+        raise ValueError("w42_r1_values.csv repeats a key")
+    return out
+
+
 def limit_z(n_limits: int) -> float:
     """m-3 (c): the normal quantile that gives every one of n limits its headroom jointly at the power target
     (Bonferroni: each at 1 - (1 - pi*) / n)."""
@@ -542,25 +636,26 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                       "fee_unit": float(fee_unit), "fee_source": fee_source}
 
     # ---- 4. dimensions, caps, weights (fixed: no data-driven drop, B-4)
-    per = {b: {**vals[b], **bankroll_states(vals[b], Bstar)} for b in BASELINES}
-    z: dict[str, dict[str, np.ndarray]] = {b: {} for b in BASELINES}
+    per = {b: unit_values(vals[b], Bstar) for b in BASELINES}
+    caps_how: dict[str, tuple[float, float, str]] = {}
+    passed: dict[str, float] = {}
+    for d in DIMENSIONS:                          # the caps from the baselines' pooled units
+        r = _rows(sl, d.horizon)
+        if d.name == "cost":                      # B-5: caps from the passed units (an unpassed unit scores z = 0)
+            ok = {b: per[b]["first_pass_days"] <= W for b in BASELINES}
+            pooled = np.concatenate([per[b][d.key][r][ok[b][r]] for b in BASELINES])
+            passed[d.name] = float(np.mean(np.concatenate([ok[b][r].ravel() for b in BASELINES])))
+        else:
+            pooled = np.concatenate([per[b][d.key][r].ravel() for b in BASELINES])
+        caps_how[d.name] = _caps(d, pooled, fee_unit)
+    caps = {k: (lo, hi) for k, (lo, hi, _) in caps_how.items()}
+    z = {b: unit_scores(vals[b], Bstar, caps) for b in BASELINES}       # the public path (C-1)
     dims_out = []
     for d in DIMENSIONS:
         r = _rows(sl, d.horizon)
-        rec: dict[str, Any] = {}
-        if d.name == "cost":                      # B-5: caps from the passed units; an unpassed unit scores z = 0
-            ok = {b: per[b]["first_pass_days"] <= W for b in BASELINES}
-            pooled = np.concatenate([per[b][d.key][r][ok[b][r]] for b in BASELINES])
-            lo, hi, how = _caps(d, pooled, fee_unit)
-            for b in BASELINES:
-                z[b][d.name] = np.where(ok[b], _z(d, per[b][d.key], lo, hi), 0.0)
-            rec["share_passed_by_W"] = float(np.mean(np.concatenate([ok[b][r].ravel() for b in BASELINES])))
-        else:
-            pooled = np.concatenate([per[b][d.key][r].ravel() for b in BASELINES])
-            lo, hi, how = _caps(d, pooled, fee_unit)
-            for b in BASELINES:
-                z[b][d.name] = _z(d, per[b][d.key], lo, hi)
+        lo, hi, how = caps_how[d.name]
         allz = np.concatenate([z[b][d.name][r].ravel() for b in BASELINES])
+        rec: dict[str, Any] = {"share_passed_by_W": passed[d.name]} if d.name in passed else {}
         rec.update({"name": d.name, "term": d.term, "measure": d.measure, "key": d.key, "horizon": d.horizon,
                     "direction": "higher" if d.direction > 0 else "lower", "kind": d.kind, "lo": _r(lo),
                     "hi": _r(hi), "caps": how, "constant": bool(np.ptp(allz) == 0),
@@ -587,21 +682,11 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
     out["rho_beside"] = rho
 
     # composite per baseline per seed: C_b(c) = sum_d w_d mean_{s in E_d} z_d(b, s, c)
-    Cs = {b: sum(w[k] * z[b][k][_rows(sl, hz[k])].mean(axis=0) for k in kept) for b in BASELINES}
+    Cs = {b: composite_by_seed(vals[b], sl, Bstar, caps, w) for b in BASELINES}      # the public path (C-1)
     C = {b: float(np.mean(Cs[b])) for b in BASELINES}
     order = sorted(BASELINES, key=lambda b: (-C[b], BASELINES.index(b)))
     out["composite"] = {"value": C, "ranking": order}
-    caps = {rec["name"]: (rec["lo"], rec["hi"]) for rec in dims_out}
-    nulls = {}
-    for jname, v in null_journeys(fee_unit).items():
-        vv = {**{k: np.asarray([[x]]) for k, x in v.items()}}
-        vv.update(bankroll_states(vv, Bstar))
-        zz = {}
-        for d in DIMENSIONS:
-            lo, hi = caps[d.name]
-            x = _z(d, vv[d.key], lo, hi)
-            zz[d.name] = float(0.0 if (d.name == "cost" and vv["first_pass_days"][0, 0] > W) else x[0, 0])
-        nulls[jname] = float(sum(w[k] * zz[k] for k in kept))
+    nulls = null_composites(fee_unit, Bstar, caps, w)                                 # the public path (C-1)
     out["null_journeys"] = {
         "composite": nulls, "baselines": C,
         "floor": {"name": "do_nothing", "value": nulls["do_nothing"],
@@ -679,9 +764,9 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                          "reason": "the measure is absent from H4's declared output (its manifest does not list it)"})
             continue
         r = _rows(sl, L.horizon)
-        M = {b: _stat(per[b][L.key][r], L.stat) for b in BASELINES}
-        sd = {b: float(np.std([_stat(per[b][L.key][r][:, c], L.stat) for c in range(nJ)], ddof=1))
-              for b in BASELINES}
+        est = {b: limit_estimate(vals[b], sl, Bstar, L) for b in BASELINES}          # the public path (C-1)
+        M = {b: est[b]["estimate"] for b in BASELINES}
+        sd = {b: est[b]["per_seed_sd"] for b in BASELINES}
         ceil_ = L.direction == "ceiling"
         key_best = (lambda b: (M[b], BASELINES.index(b))) if ceil_ else (lambda b: (-M[b], BASELINES.index(b)))
         key_worst = (lambda b: (-M[b], BASELINES.index(b))) if ceil_ else (lambda b: (M[b], BASELINES.index(b)))
@@ -705,6 +790,7 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
                      "best": bb, "worst": bw, "baseline_values": M, "best_se_test": se, "headroom_needed": _r(need),
                      "headroom_z": zp, "vacuous": vac is not None, "vacuous_reason": vac,
                      "by_search_year": {b: _year_estimates(per[b][L.key], ref.starts, r, L.stat) for b in BASELINES},
+                     "baseline_checks": {b: limit_check(vals[b], sl, Bstar, L, _r(val)) for b in BASELINES},
                      "budget": Bstar if L.key == "not_paid_within_B" else None})
     npw = next(x for x in lims if x["name"] == "not_paid_within_B")
     out["limits"] = {"values": lims, "check_level": LIMIT_CHECK_LEVEL, "headroom_z": zp, "limits_set": len(present),
@@ -720,4 +806,5 @@ __all__ = ["RULE_ID", "CONSTANTS", "DIMENSIONS", "LIMITS", "BASELINES", "Dim", "
            "H4Binding", "H4_MANIFEST_KEYS", "TEST_STARTS_SOURCE_KEYS", "Wave42Refused", "Wave42Values",
            "setting_rule", "fee_lattice", "equal_weights", "spearman", "bankroll_states", "q_factor", "pair_power",
            "conjoint_power", "limit_z", "level", "input_digest", "readings_digest", "calendar_digest", "complete_starts",
-           "j_needed", "null_journeys"]
+           "j_needed", "null_journeys", "unit_values", "unit_scores", "composite_by_seed", "null_composites",
+           "do_nothing_floor", "limit_estimate", "limit_check", "pinned_inputs", "values_from_rows"]
