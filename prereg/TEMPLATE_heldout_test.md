@@ -161,6 +161,9 @@ declaration's `heldout_test` read of the same window, sha256 and market (section
 
 ## 8. What a pass and what a fail mean
 
+- **The do-nothing floor** (the lead's ruling, E-255; W42-R1): a finalist's held-out composite must exceed W42-R1's
+  do-nothing composite by more than `DO_NOTHING_EPS`, which `extended/wave42.py` declares; otherwise the finalist
+  **fails the held-out verdict, whatever its test statistic** -- a fail at its place.
 - **A pass at a place:** that finalist is carried -- its registration, its playbook, the auditor, and its one
   confirmation against a criterion declared at registration (CHARTER 5 (A)); the sequence goes on to the next place.
 - **A fail at a place:** the sequence stops there; every later finalist is untested; nothing is rerun; the k is spent.

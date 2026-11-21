@@ -1786,3 +1786,16 @@ def test_q194b_the_one_verdict_token_is_declared_in_the_readers_grammar():
         forms = set(re.findall(r"`heldout-verdict:[^`]*`", _flat(_text(path))))
         assert forms <= {VERDICT_FORM, VERDICT_NQ}, (path.name, forms)                  # the retired form nowhere
     assert VERDICT_FORM in _flat(ht) and VERDICT_FORM in gk
+
+
+def test_e255_the_do_nothing_floor_decides_the_held_out_verdict():
+    """The lead's ruling recorded at E-255 (W42-R1 states it): a finalist whose held-out composite does not exceed
+    W42-R1's do-nothing composite by more than `DO_NOTHING_EPS` fails the held-out verdict, whatever its statistic."""
+    s8 = _section(_text(HT), "## 8. What a pass and what a fail mean", "## 9.")
+    assert ("The do-nothing floor (the lead's ruling, E-255; W42-R1): a finalist's held-out composite must exceed "
+            "W42-R1's do-nothing composite by more than `DO_NOTHING_EPS`, which `extended/wave42.py` declares; "
+            "otherwise the finalist fails the held-out verdict, whatever its test statistic -- a fail at its "
+            "place.") in s8
+    assert s8.index("The do-nothing floor") < s8.index("A pass at a place")
+    for bad in ("at least the do-nothing", "by at least `DO_NOTHING_EPS`", "unless its test statistic"):
+        assert bad not in s8, bad
