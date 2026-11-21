@@ -1174,7 +1174,8 @@ def test_the_module_reads_no_file_and_imports_no_engine() -> None:
 
 
 # --------------------------------------------------------------- the public scoring path (the survey's; C-1)
-PUBLIC = ("unit_values", "unit_scores", "composite_by_seed", "null_composites", "limit_estimate", "limit_check")
+PUBLIC = ("unit_values", "unit_scores", "composite_per_seed", "null_composites", "null_journeys", "limit_estimate",
+          "limit_per_seed_sd", "limit_check")
 
 
 def test_setting_rule_scores_through_the_public_functions(base, monkeypatch) -> None:
@@ -1195,7 +1196,7 @@ def test_setting_rule_scores_through_the_public_functions(base, monkeypatch) -> 
 
 
 @pytest.mark.parametrize("name,where", [
-    ("composite_by_seed", lambda v: v["composite"]["value"]),
+    ("composite_per_seed", lambda v: v["composite"]["value"]),
     ("unit_scores", lambda v: [d["baseline_means"] for d in v["dimensions"]]),
     ("null_composites", lambda v: v["null_journeys"]["floor"]["value"]),
     ("limit_estimate", lambda v: [x["baseline_values"] for x in v["limits"]["values"]]),
@@ -1215,28 +1216,34 @@ def test_a_change_to_a_public_function_shows_in_the_rules_output(base, monkeypat
         if name == "null_composites":
             return {j: c + 0.01 for j, c in out.items()}
         if name == "limit_estimate":
-            return {**out, "estimate": out["estimate"] + 0.5}
+            return out + 0.5
         return {**out, "inside": not out["inside"]}
     monkeypatch.setattr(R, name, shifted)
     assert where(_run(rs).values) != where(v.values)
 
 
 def test_the_public_functions_reproduce_the_rules_values(base) -> None:
-    """The survey's view: from the output alone (`pinned_inputs`), `composite_by_seed` gives each baseline's composite,
-    `limit_estimate` each limit's baseline values, `do_nothing_floor` the floor, `limit_check` the checks."""
+    """The survey's view (its signatures, wt/wt-survey d5fe8f0): from the output alone, `composite_per_seed` gives each
+    baseline's composite, `limit_estimate` each limit's baseline values, `do_nothing_floor` and
+    `null_journeys(fee)["do_nothing"]` through `composite_per_seed` the floor, `limit_check` the checks."""
     rs, v = base
-    P = R.pinned_inputs(json.loads(v.as_json()))
+    V = json.loads(v.as_json())
+    P = R.pinned_inputs(V)
     sl = _sl()
     for b in R.BASELINES:
-        c = R.composite_by_seed(rs[b].values, sl, P["B"], P["caps"], P["weights"])
+        c = R.composite_per_seed(V, sl, rs[b].values)
         assert float(c.mean()) == pytest.approx(v.values["composite"]["value"][b], abs=1e-12)
     for L in R.LIMITS:
         got = P["limits"][L.name]
         for b in R.BASELINES:
-            e = R.limit_estimate(rs[b].values, sl, P["B"], L)
-            assert e["estimate"] == pytest.approx(got["baseline_values"][b])
-            assert R.limit_check(rs[b].values, sl, P["B"], L, got["value"]) == got["baseline_checks"][b]
-    assert R.do_nothing_floor(FEE, P["B"], P["caps"], P["weights"]) == pytest.approx(P["floor"])
+            e = R.limit_estimate(V, sl, rs[b].values, L.name)
+            assert isinstance(e, float) and e == pytest.approx(got["baseline_values"][b])
+            assert R.limit_check(V, sl, rs[b].values, L.name, got["value"]) == got["baseline_checks"][b]
+    assert R.do_nothing_floor(V, FEE) == pytest.approx(P["floor"])
+    arm = {k: np.zeros((1, 1)) for k in R.REQUIRED}                 # the survey's own self-check, as it calls it
+    arm.update({k: np.asarray([[float(x)]]) for k, x in R.null_journeys(FEE)["do_nothing"].items()})
+    got = float(np.asarray(R.composite_per_seed(V, [max(R.HORIZONS)], arm)).ravel()[0])
+    assert got == pytest.approx(V["null_journeys"]["floor"]["value"], abs=1e-12)
     assert P["form"] == v.values["form"] and P["floor"] == v.values["null_journeys"]["floor"]["value"]
 
 
@@ -1244,16 +1251,16 @@ def test_a_design_that_never_passes_scores_zero_on_cost_through_the_public_path(
     """B-5 through `unit_scores`: a design set with no unit passed by W, however little it spends, has cost z = 0 on
     every unit, so its composite carries no cost credit (the survey's C-1 defect)."""
     rs, v = base
-    P = R.pinned_inputs(json.loads(v.as_json()))
+    V = json.loads(v.as_json())
+    P = R.pinned_inputs(V)
     d = {k: np.asarray(x, dtype=float).copy() for k, x in rs["p14"].values.items()}
     d["first_pass_days"] = np.where(np.isnan(d["first_pass_days"]), np.nan, R.W + 1.0)
     d["first_payout_days"] = np.where(np.isnan(d["first_payout_days"]), np.nan, R.W + 1.0)
     d["cash_to_first_pass"] = np.where(np.isnan(d["cash_to_first_pass"]), np.nan, 0.0)
     z = R.unit_scores(d, P["B"], P["caps"])
     assert np.all(z["cost"][_sl() >= R.W] == 0.0)
-    no_cost = {k: w for k, w in P["weights"].items() if k != "cost"}
-    assert R.composite_by_seed(d, _sl(), P["B"], P["caps"], P["weights"]) == pytest.approx(
-        R.composite_by_seed(d, _sl(), P["B"], P["caps"], no_cost))
+    no_cost = {**V, "weights": {k: w for k, w in V["weights"].items() if k != "cost"}}
+    assert R.composite_per_seed(V, _sl(), d) == pytest.approx(R.composite_per_seed(no_cost, _sl(), d))
 
 
 def test_limit_check_decides_by_the_point_estimate_and_reports_the_crossing_beside() -> None:
@@ -1266,18 +1273,20 @@ def test_limit_check_decides_by_the_point_estimate_and_reports_the_crossing_besi
     vals = {"first_payout_days": x, "spent_before_first_payout": np.zeros((10, 40)),
             **{f"net_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)},
             **{f"peak_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)}}
-    e = R.limit_estimate(vals, sl, 100.0, L)["estimate"]
-    assert R.limit_check(vals, sl, 100.0, L, e)["inside"]                  # at the value is inside
-    assert R.limit_check(vals, sl, 100.0, L, e + 1e-9)["inside"]
-    near = R.limit_check(vals, sl, 100.0, L, e - 1e-6)
+    V = {"budgets": {"primary": 100.0}}
+    e = R.limit_estimate(V, sl, vals, L.name)
+    assert e == pytest.approx(float(np.quantile(x, 0.5)))                 # the pooled point estimate
+    assert R.limit_check(V, sl, vals, L.name, e)["inside"]                # at the value is inside
+    assert R.limit_check(V, sl, vals, L.name, e + 1e-9)["inside"]
+    near = R.limit_check(V, sl, vals, L.name, e - 1e-6)
     assert not near["inside"] and not near["crossed_at_level"]
-    far = R.limit_check(vals, sl, 100.0, L, e - 5.0)
+    far = R.limit_check(V, sl, vals, L.name, e - 5.0)
     assert not far["inside"] and far["crossed_at_level"]
     F = next(x for x in R.LIMITS if x.direction == "floor")              # a floor, the mirror image
     fv = {**vals, F.key: x}
-    ef = R.limit_estimate(fv, sl, 100.0, F)["estimate"]
-    assert R.limit_check(fv, sl, 100.0, F, ef - 1.0)["inside"]
-    below = R.limit_check(fv, sl, 100.0, F, ef + 5.0)
+    ef = R.limit_estimate(V, sl, fv, F.name)
+    assert R.limit_check(V, sl, fv, F.name, ef - 1.0)["inside"]
+    below = R.limit_check(V, sl, fv, F.name, ef + 5.0)
     assert not below["inside"] and below["crossed_at_level"] and below["beyond"] == pytest.approx(5.0)
 
 
@@ -1287,3 +1296,12 @@ def test_the_documents_output_row_schema_is_the_outputs(base) -> None:
     _, v = base
     rows = _table("wave42-output-rows")
     assert [r[0] for r in rows] == sorted(v.values)
+
+
+def test_the_public_signatures_are_the_surveys() -> None:
+    """The survey (wt/wt-survey d5fe8f0) binds to these exact signatures."""
+    sig = lambda f: list(inspect.signature(f).parameters)                 # noqa: E731
+    assert sig(R.composite_per_seed) == ["values", "sessions_left", "out"]
+    assert sig(R.limit_estimate) == ["values", "sessions_left", "out", "name"]
+    assert sig(R.null_journeys) == ["fee_unit"] and "do_nothing" in R.null_journeys(1.0)
+    assert sig(R.limit_check) == ["values", "sessions_left", "out", "name", "value", "level_"]

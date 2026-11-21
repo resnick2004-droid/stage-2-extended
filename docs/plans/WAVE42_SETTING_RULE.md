@@ -593,14 +593,20 @@ each and moves with each. The pin covers them with the rest of the module.
 - `unit_values(values, B)`: a unit set's raw measures with `bankroll_states` at budget B.
 - `unit_scores(values, B, caps) -> {dimension: z}`: every dimension's per-unit z in [0, 1], **B-5 included** (a unit
   not passed by W scores z = 0 on cost).
-- `composite_by_seed(values, sessions_left, B, caps, weights) -> array`: the composite per seed; its mean is the
-  point estimate.
-- `null_composites(fee_unit, B, caps, weights)` and `do_nothing_floor(fee_unit, B, caps, weights)`: the null
-  journeys' composites and the declared floor (4.5).
-- `limit_estimate(values, sessions_left, B, spec)`: a limit's point estimate, per-seed sd and seed count;
-  `limit_check(values, sessions_left, B, spec, value, level_=LIMIT_CHECK_LEVEL)`: **inside** by the point estimate,
-  which decides (E-230), and the one-sided check of crossing beside it (B-10's form: beyond the value by more than
-  z_(1 - level) coin-seed standard errors), never deciding.
+- `composite_per_seed(values, sessions_left, out) -> array`: the composite of the unit set `out` (its raw measures),
+  one value per seed, scored with W42-R1's `values` (B\*, the caps, the weights); its mean is the point estimate.
+- `null_journeys(fee_unit)` (its `["do_nothing"]` journey), `null_composites(values, fee_unit)` and
+  `do_nothing_floor(values, fee_unit)`: the null journeys, their composites and the declared floor
+  (`null_journeys.floor` in the output; 4.5).
+- `limit_estimate(values, sessions_left, out, name) -> float`: a limit's point estimate for `out`, its statistic over
+  the units of E_h pooled over seeds (one seed's column gives that seed's estimate); `limit_per_seed_sd(values,
+  sessions_left, out, name)`; and `limit_check(values, sessions_left, out, name, value, level_=LIMIT_CHECK_LEVEL)`:
+  **inside** by the point estimate, which decides (E-230), and the one-sided check of crossing beside it (B-10's form:
+  beyond the value by more than z_(1 - level) coin-seed standard errors), never deciding.
+
+`setting_rule` calls `composite_per_seed`, `null_composites` (so `null_journeys`), `limit_estimate`,
+`limit_per_seed_sd` and `limit_check` on the part of its output it has built (B\*, the caps, the weights), the same
+signatures the survey binds to (wt/wt-survey d5fe8f0).
 
 ## 10. The held-out read ledger
 
