@@ -69,7 +69,13 @@ each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins wit
   for exactly this pinned declaration (its id and its own sha256), in a row placed after the pin's first row (never
   in the pin's own row); so no
   family reads a held-out day before its finalists are pinned, and a refused read writes no ledger line and spends no
-  market's window (rule 2). A described reading (RD-) never takes a held-out purpose; its other purposes are rule 4's.
+  market's window (rule 2). **The held-out purposes themselves** (`heldout_test`, `heldout_stress`) are read only by
+  the one held-out declaration of the read's market (Q-194d, NOTE-6): an F- file named
+  `prereg/F-NN_heldout_test_<MARKET>.md` that carries the held-out template's marker (`HELDOUT_MARKER`, at a line's
+  start) and every one of its section headings (`HELDOUT_HEADINGS`, as written at wt/wt-lit 13df998 until template v3
+  is pinned), not the design-search marker, and is the only held-out-marked `prereg/F-*.md` for the market; any other
+  pinned F- with a judged-read line and a finalists' token is refused them. A described reading (RD-) never takes a
+  held-out purpose; its other purposes are rule 4's.
   Each refusal names the purpose and the declaration. Outside this rule, as E-247's rm-4 rules: the registered
   reproduction identities (purpose `identity`, declared by their decision row, rule-free here) and a registered
   design's re-read (`registered_design`, rule 3) keep their documented form;
@@ -97,10 +103,32 @@ cell, counts for a window only when (a) it is placed after the window's opening 
 sha256 and a finalists' token for `F-NN` at that sha256 is placed after the pin and before the verdict; (c) the
 ledger of the checkout being run holds that family's `heldout_test` read of the window, of the verdict's market, at
 that sha256 under that finalists' row, made in a clean run from a commit whose DECISIONS.md did not yet hold the
-verdict row -- the held-out read the verdict reports, which really happened. The old unbound forms
+verdict row -- the held-out read the verdict reports, which really happened; and (d) **the order is proven**
+(Q-194d, MINOR-1): the ledger as committed in the first commit that adds the verdict row (`git log --reverse -S`)
+already holds that line byte for byte, and the read's commit is a proper ancestor of that commit, so a line the
+running process appended itself, or a read made after the verdict was committed, never counts; anything git cannot
+answer (a commit gone after a rebase, a shallow clone, an unfetched branch) fails closed. The old unbound forms
 (`heldout-verdict: NQ F-NN -- ...`, `heldout-verdict: F-NN @ <sha256> -- ...`) are malformed and count for nothing.
-**"Newer" is a place in DECISIONS.md** (a later line), never a higher E-number, and a row inside a fenced code block
-never counts (NOTE-2).
+**"Newer" is a place in DECISIONS.md** (a later line), never a higher E-number. **Fences** follow CommonMark (Q-194d):
+a fence opens on at most three spaces of indent and three or more backticks or tildes and closes only on the same
+character, at least as long; an indented line is never a fence; an unclosed fence runs to the end of the file; a line
+inside a fence is no row, no pin and no token anywhere in this module (`decision_row`, `pins`, the tokens). **Every
+judged read is refused while the log fails its own hygiene** (`LOG_RULE`): an unclosed fence, a malformed or fenced
+held-out token -- `heldout_token_problems` not empty -- the refusal naming the problem.
+
+What a counted verdict means, stated with the rule (the red team's NOTE-2, NOTE-3, NOTE-4 of
+`READER_Q194c_2026-11-21`):
+
+* **a read of part of a window backs the whole window** -- the verdict reports the joint test's read of the window,
+  whatever days of it the ledgered line spans; rule 2 already closes every day of that window to other families;
+* **a crashed run's written line still counts** -- the ledger line is written before any data is read, so a run that
+  authorised and then crashed is "the read" for the gate (the auditor reads the run's result and log beside it);
+* **a later window re-opens days already read** -- a `heldout-window` row lies inside the seal the joint test read, so
+  its days were read under the earlier window's verdict, by the joint test and by every registered or described read
+  admitted under that verdict; the later window's own test and verdict then govern those days;
+* **the joint test's clean run is tagged `heldout-read/<run id>` at its commit** (the lead tags it), so the read's
+  commit can always be found; a read whose commit cannot be found backs nothing, failing closed, and since the joint
+  test is never rerun its verdict would never count -- the tag is what keeps it reachable.
 
 **Q-173's closures** (the red team's read of the O-7 drafts, `docs/reviews/O7_SEARCH_YEARS_2026-11-19.md`):
 
@@ -133,10 +161,12 @@ row whose third cell begins token-like but is not exactly one, and a token insid
 joined by commas; the script one of `scripts/*.py`). Each held-out day belongs to the newest (latest-placed) window
 row for its market holding it, else to E-208's base window (`BASE_WINDOW_ROW`, the seal's first day to 2026-07-16,
 every market); the windows a read touches are its days' (`heldout_windows`), and the window it is recorded under is
-the newest window row holding all its days, else the base window (`heldout_window`); a window row cannot widen what
+the newest of them (Q-194d, NOTE-1; `heldout_window`, the newest window holding all its days, is kept as a query);
+a window row cannot widen what
 `span` allows (the confirmation window stays refused here). A family's or described reading's judged line, and a
-registered design's held-out line, carry a `heldout` field: the market and window (and `windows`, when the read
-touches others), the finalists' row and list sha256, the verdict row(s), or the read row and the verdict row(s)
+registered design's held-out line, carry a `heldout` field: the market and window (and `windows`, every window,
+when the read touches more than one), the finalists' row and list sha256, the verdict row(s), or the read row and the
+verdict row(s)
 (`test_verdict`).
 
 **The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every family's
@@ -254,8 +284,11 @@ HELDOUT_TOKENS = {
 HELDOUT_TOKEN_LIKE = re.compile(r"held[-_ ]?out[-_ ]?(?:finalists|window|verdict|read)\s*[:=]", re.IGNORECASE)
 _HO_THIRD_CELL = re.compile(r"\|\s*E-\d+\s*\|[^|]*\|")
 _HO_MARKS = re.compile(r"[\s`*_~]*")
-#: a fenced code block's opening or closing line (Q-194c, NOTE-2): rows inside one are never tokens
-_FENCE = re.compile(r"^[ \t>]*(?:```|~~~)")
+#: a fenced code block's opening line, CommonMark's rule (Q-194d): at most three spaces of indent, then three or more
+#: backticks or tildes; a backtick fence's info string holds no backtick. Rows inside one are never rows (Q-194c, -d)
+_FENCE_OPEN = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
+#: the log's own hygiene (Q-194d): every judged read is refused while `heldout_token_problems` is not empty
+LOG_RULE = "the decision log's held-out hygiene, every judged read refused while it fails (Q-194d)"
 
 
 class ReadRefused(RuntimeError):
@@ -417,18 +450,22 @@ def declared_purposes(text: str) -> frozenset[str]:
 
 def pins(decisions_text: str) -> dict[str, set[str]]:
     """{`prereg/F-..md` or `prereg/RD-..md`: {sha256, ...}} from the decision log, as
-    `tests/test_declarations_fixed.py` reads it."""
+    `tests/test_declarations_fixed.py` reads it -- except that a line inside a fenced code block pins nothing
+    (Q-194d; this repository's log holds no fence)."""
     out: dict[str, set[str]] = {}
-    for rel, h in PIN.findall(decisions_text):
-        out.setdefault(rel, set()).add(h)
+    for _, line, fenced in _log_lines(decisions_text):
+        if fenced:
+            continue
+        for rel, h in PIN.findall(line):
+            out.setdefault(rel, set()).add(h)
     return out
 
 
 def decision_row(decisions_text: str, row_id: str) -> str | None:
-    """The decision log's line for `row_id` (`E-NNN`), or None."""
-    for line in decisions_text.splitlines():
+    """The decision log's line for `row_id` (`E-NNN`) outside any fenced code block (Q-194d), or None."""
+    for _, line, fenced in _log_lines(decisions_text):
         m = ROW.match(line)
-        if m and m.group(1) == row_id:
+        if not fenced and m and m.group(1) == row_id:
             return line
     return None
 
@@ -677,16 +714,34 @@ def _once(repo: Path, ref: str, purpose: str, repeat: str | None, what: str) -> 
 # ----------------------------------------------------------------------------------- the held-out rules (Q-158)
 
 
+def _fences(decisions_text: str) -> tuple[list[bool], int | None]:
+    """CommonMark's fenced code blocks of the log (Q-194d): for each line whether it is fenced (the fence lines
+    themselves included), and the index of an opening fence never closed (None when every fence closes). A fence opens
+    on a line of at most three spaces of indent and three or more backticks or tildes (a backtick fence's info string
+    holds no backtick); it closes only on a line of at most three spaces of indent and at least as many of the **same**
+    character, then only spaces or tabs; a line indented four or more is indented code, never a fence; an unclosed
+    fence runs to the end of the file."""
+    lines = decisions_text.splitlines()
+    fenced, open_at, char, size = [False] * len(lines), None, "", 0
+    for i, line in enumerate(lines):
+        if open_at is None:
+            m = _FENCE_OPEN.match(line)
+            if m and not (m["fence"][0] == "`" and "`" in m["info"]):
+                open_at, char, size = i, m["fence"][0], len(m["fence"])
+                fenced[i] = True
+            continue
+        fenced[i] = True
+        if re.fullmatch(rf" {{0,3}}{re.escape(char)}{{{size},}}[ \t]*", line):
+            open_at = None
+    return fenced, open_at
+
+
 def _log_lines(decisions_text: str) -> Iterable[tuple[int, str, bool]]:
     """(position, line, fenced) for each line of the decision log: the position the line's index, `fenced` whether it
-    sits inside a fenced code block (``` or ~~~, the fence lines themselves counted as fenced)."""
-    fenced = False
+    sits inside a fenced code block by CommonMark's rule (`_fences`)."""
+    fenced, _ = _fences(decisions_text)
     for i, line in enumerate(decisions_text.splitlines()):
-        if _FENCE.match(line):
-            fenced = not fenced
-            yield i, line, True
-            continue
-        yield i, line, fenced
+        yield i, line, fenced[i]
 
 
 def heldout_tokens(decisions_text: str, kind: str | None = None) -> list[HeldOutToken]:
@@ -721,9 +776,14 @@ def heldout_tokens(decisions_text: str, kind: str | None = None) -> list[HeldOut
 
 def heldout_token_problems(decisions_text: str) -> list[str]:
     """The decision rows whose third cell begins (after spaces, backticks and emphasis marks) with a held-out
-    token-like string (`HELDOUT_TOKEN_LIKE`) that is not exactly a token, and every held-out token inside a fenced
-    code block (Q-194c): such a row authorises nothing, and the lead rewrites it in the next row. [] is clean."""
+    token-like string (`HELDOUT_TOKEN_LIKE`) that is not exactly a token, every held-out token inside a fenced code
+    block (Q-194c), and a fence never closed (Q-194d): such a row authorises nothing, and the lead rewrites it in the
+    next row. [] is clean; anything else refuses every judged read (`LOG_RULE`)."""
     out = []
+    _, unclosed = _fences(decisions_text)
+    if unclosed is not None:
+        out.append(f"line {unclosed + 1}: a fenced code block opened here is never closed, so every line after it is "
+                   "fenced (CommonMark); the log is refused for every judged read until the fence is closed")
     for i, line, fenced in _log_lines(decisions_text):
         n = i + 1
         r = ROW.match(line)
@@ -815,6 +875,58 @@ def _line_market(rec: dict[str, Any]) -> str | None:
     return None
 
 
+#: the held-out template's marker and headings (Q-194d, NOTE-6), as written at wt/wt-lit 13df998
+#: (`prereg/TEMPLATE_heldout_test.md`) until template v3 is pinned
+HELDOUT_MARKER = "**Declaration kind: held-out test.**"
+DESIGN_SEARCH_MARKER = "**Declaration kind: design search.**"
+HELDOUT_HEADINGS = (
+    "## 0. In plain words (for the operator)",
+    "## 1. Its inputs: only the pinned searches' finalists' lists",
+    "## 2. The joint order: a rule fixed now, before any search is declared",
+    "## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)",
+    "## 4. The k and the level",
+    "## 5. The rows, in order",
+    "## 6. Power at each place in the joint sequence",
+    "## 7. The held-out reads",
+    "## 8. What a pass and what a fail mean",
+    "## 9. Anything chosen after seeing results",
+)
+#: a held-out declaration's path names its market: `prereg/F-NN_heldout_test_<MARKET>.md` (the template's own name)
+HELDOUT_PATH = re.compile(r"prereg/F-\d+_heldout_test_(?P<market>[A-Z][A-Z0-9]{0,7})\.md")
+
+
+def _marked(text: str, marker: str) -> bool:
+    return any(line.startswith(marker) for line in text.splitlines())
+
+
+def heldout_declaration_problems(ref: str, repo: Path, market: str) -> list[str]:
+    """Why `ref` is not the one held-out declaration of `market` (Q-194d, NOTE-6) -- [] when it is: an F- file named
+    `prereg/F-NN_heldout_test_<market>.md`, carrying the held-out template's marker at a line's start and every one of
+    its section headings, not the design-search marker, and the only held-out-marked `prereg/F-*.md` for the market
+    (a marked file whose name names no market counts for every market)."""
+    text = (repo / ref).read_text(encoding="utf-8")
+    out = []
+    m = HELDOUT_PATH.fullmatch(ref)
+    if not m or m["market"] != market:
+        out.append(f"its path is not prereg/F-NN_heldout_test_{market}.md")
+    if not _marked(text, HELDOUT_MARKER):
+        out.append(f"it does not carry the held-out template's marker {HELDOUT_MARKER!r} at a line's start")
+    lines = set(text.splitlines())
+    missing = [h for h in HELDOUT_HEADINGS if h not in lines]
+    if missing:
+        out.append(f"it lacks the held-out template's heading(s) {missing[:3]}")
+    if _marked(text, DESIGN_SEARCH_MARKER):
+        out.append("it also carries the design-search marker")
+    for f in sorted((repo / "prereg").glob("F-*.md")):
+        rel = f"prereg/{f.name}"
+        if rel == ref or not _marked(f.read_text(encoding="utf-8"), HELDOUT_MARKER):
+            continue
+        fm = HELDOUT_PATH.fullmatch(rel)
+        if fm is None or fm["market"] == market:
+            out.append(f"another held-out-marked F- file exists for {market}: {rel} (one per market)")
+    return out
+
+
 def _rule1_binds(ref: str, purpose: str) -> bool:
     """Whether rule 1 binds a judged read of the family branch: every family's (F-) purpose (Q-194, M-2) and a held-out
     purpose of a described reading (refused there). The registered reproduction identities (`identity`) and a
@@ -822,7 +934,8 @@ def _rule1_binds(ref: str, purpose: str) -> bool:
     return ref.startswith("prereg/F-") or purpose in HELDOUT_PURPOSES
 
 
-def _finalists(ref: str, sha: str, text: str, what: str, purpose: str) -> HeldOutToken:
+def _finalists(ref: str, sha: str, text: str, what: str, purpose: str, repo: Path | None = None,
+               market: str = "NQ") -> HeldOutToken:
     """Rule 1: a family's judged read, under any purpose, is honoured only under a finalists' row for exactly this
     pinned declaration, newer than its pin; a described reading never takes a held-out purpose. Each refusal names the
     purpose and the declaration."""
@@ -832,6 +945,11 @@ def _finalists(ref: str, sha: str, text: str, what: str, purpose: str) -> HeldOu
         raise HeldOutRefused(1, what, f"{who}: {ref} is a described reading; the held-out purposes "
                                       f"{HELDOUT_PURPOSES} belong to a search's held-out test, after its finalists' "
                                       "row (a token names an F- declaration only)")
+    if purpose in HELDOUT_PURPOSES and repo is not None:
+        probs = heldout_declaration_problems(ref, repo, market)
+        if probs:
+            raise HeldOutRefused(1, what, f"{who}: the held-out purposes {HELDOUT_PURPOSES} are read only by the one "
+                                          f"held-out declaration of {market} (Q-194d, NOTE-6), and {'; '.join(probs)}")
     mine = [t for t in heldout_tokens(text, "finalists") if t.get("decl") == fid]
     if not mine:
         raise HeldOutRefused(1, what, f"{who}: no decision row carries a finalists' token for {fid} "
@@ -899,12 +1017,44 @@ def _commit_has_line(repo: Path, commit: Any, line: str) -> bool:
     return line in r.stdout.replace("\r\n", "\n").splitlines()
 
 
+def _verdict_commit(repo: Path, line: str) -> str | None:
+    """The first commit of HEAD's history whose DECISIONS.md gains `line` (`git log --reverse -S`), or None."""
+    r = _git(repo, "log", "--reverse", "--format=%H", f"-S{line}", "--", "DECISIONS.md")
+    hits = r.stdout.split() if r.returncode == 0 else []
+    return hits[0] if hits and re.fullmatch(r"[0-9a-f]{40}", hits[0]) else None
+
+
+def _committed_ledger(repo: Path, commit: str) -> set[str] | None:
+    """The ledger's lines as committed at `commit` (`git show <commit>:results/read_ledger.jsonl`), or None."""
+    r = _git(repo, "show", f"{commit}:{LEDGER_REL}")
+    return set(r.stdout.replace("\r\n", "\n").splitlines()) if r.returncode == 0 else None
+
+
+def _proper_ancestor(repo: Path, a: Any, b: str) -> bool:
+    """Whether commit `a` is an ancestor of `b` and not `b` itself (`git merge-base --is-ancestor`); False when git
+    cannot tell."""
+    if not isinstance(a, str) or not re.fullmatch(r"[0-9a-f]{40}", a) or a == b:
+        return False
+    return _git(repo, "merge-base", "--is-ancestor", a, b).returncode == 0
+
+
+def _ledger_raw(repo: Path) -> list[tuple[str, dict[str, Any]]]:
+    """(the raw line, its record) for each line of the checkout's ledger, verified as `read_ledger` verifies it."""
+    recs = read_ledger(ledger_path(repo))
+    p = ledger_path(repo)
+    raw = p.read_bytes().decode("utf-8").split("\n")[:-1] if recs else []
+    return list(zip((x.rstrip("\r") for x in raw), recs))
+
+
 def _verdict_backed(repo: Path, text: str, v: HeldOutToken, window: str, ledger: list[dict[str, Any]]) -> bool:
     """Whether a verdict token reports a held-out read that happened (Q-194c, MINOR-1): its declaration is pinned at
     its sha256, a finalists' token for the same declaration and sha256 sits after the pin and before the verdict (by
     place in DECISIONS.md), and the checkout's ledger holds that family's `heldout_test` read of `window`, of the
     verdict's market, at that sha256 under that finalists' row, in a clean run, made from a commit whose DECISIONS.md
-    did not yet hold the verdict row."""
+    did not yet hold the verdict row -- and **the order is proven** (Q-194d, MINOR-1): the ledger as committed in the
+    first commit that adds the verdict row already holds the line, byte for byte, and the read's commit is a proper
+    ancestor of that commit. A line the running process appended itself is in no commit, so it never counts; anything
+    git cannot answer fails closed. `ledger` is `_ledger_raw`'s (raw line, record) pairs."""
     fid, sha, market = v.get("decl"), v.get("sha"), v.get("market")
     pin_at = [p for ref, shas in pins(text).items() if sha in shas and (m := DECLARATION_ID.match(ref))
               and m.group(1) == fid for p, _ in _pin_rows(text, ref, sha)]
@@ -915,7 +1065,11 @@ def _verdict_backed(repo: Path, text: str, v: HeldOutToken, window: str, ledger:
     if not fins:
         return False
     vline = text.splitlines()[v.pos]
-    for r in ledger:
+    vcommit = _verdict_commit(repo, vline)
+    committed = _committed_ledger(repo, vcommit) if vcommit else None
+    if committed is None:
+        return False
+    for raw, r in ledger:
         d = r.get("declaration") if isinstance(r.get("declaration"), dict) else {}
         ho = r.get("heldout") if isinstance(r.get("heldout"), dict) else {}
         who = r.get("who") if isinstance(r.get("who"), dict) else {}
@@ -930,6 +1084,8 @@ def _verdict_backed(repo: Path, text: str, v: HeldOutToken, window: str, ledger:
             continue
         if _commit_has_line(repo, who.get("commit"), vline):
             continue
+        if raw not in committed or not _proper_ancestor(repo, who.get("commit"), vcommit):
+            continue
         return True
     return False
 
@@ -939,7 +1095,7 @@ def _counted_verdicts(repo: Path, text: str, market: str, windows: Sequence[tupl
     """Rule 4 and the registered gate (Q-194b, Q-194c): for every window a read touches, the newest verdict row of
     the read's market placed after the window's opening row and backed by its held-out read (`_verdict_backed`);
     refused (under `rule`) when a window has none."""
-    ledger = read_ledger(ledger_path(repo))
+    ledger = _ledger_raw(repo)
     verdicts = [v for v in heldout_tokens(text, "verdict") if v.get("market") == market]
     out, missing = {}, []
     for w, wpos in windows:
@@ -1147,6 +1303,10 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     if purpose is None:
         raise JudgedBlockSealed(f"REFUSED: {head} and declares no purpose. A choice-block read needs no tag; a "
                                 "judged read declares its purpose and the pinned declaration that names it")
+    log_probs = heldout_token_problems(_decisions(tree))
+    if log_probs:                                       # Q-194d: a flaw in the log fails every judged read closed
+        raise JudgedBlockSealed(f"REFUSED ({LOG_RULE}): {head}, for {purpose!r} under {declaration}: "
+                                f"{log_probs[0]}" + (f" (and {len(log_probs) - 1} more)" if len(log_probs) > 1 else ""))
     if purpose == IDENTITY:
         ref = _identity(declaration, tree, head)
         inside = bool(_run()[0])                        # E-026: an identity's read is ledgered only in a clean run,
@@ -1175,13 +1335,13 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     ref, sha = _family(declaration, purpose, tree, head)
     head = f"{head}, for {purpose!r} under {ref}"        # Q-194: every later refusal names the purpose, the declaration
     text = _decisions(tree)
-    window = heldout_window(text, market, first, e)[0]
     windows = heldout_windows(text, market, first, e)
+    window = windows[-1][0]                                     # Q-194d (NOTE-1): the newest window the read touches
     held: dict[str, Any] = {"market": market, "window": window}
-    if [w for w, _ in windows] != [window]:                     # Q-194c: a read touching more than its window
+    if len(windows) > 1:                                        # Q-194c: a read touching more than one window
         held["windows"] = [w for w, _ in windows]
     if _rule1_binds(ref, purpose):                      # rule 1: every family purpose after its finalists' row
-        fin = _finalists(ref, sha, text, head, purpose)  # (Q-194, M-2); an RD's held-out purpose refused there
+        fin = _finalists(ref, sha, text, head, purpose, tree, market)   # Q-194 (M-2); Q-194d (NOTE-6)
         held.update(finalists=fin.row, finalists_list_sha256=fin.get("list"))
     kind = "described_reading" if ref.startswith("prereg/RD-") else "family"
     if kind == "described_reading":                     # rule 4: only after the market's verdict row

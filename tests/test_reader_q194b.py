@@ -80,9 +80,14 @@ def test_the_joint_tests_read_without_its_verdict_row_is_not_its_verdict(declare
 ])
 def test_an_old_quoted_or_misplaced_verdict_form_does_not_count(declared, row):
     VR.settle(declared, [declared / H.BARS], verdict=False)
-    VR.append_rows(declared, row)
-    before_verdict(declared)
+    VR.commit_verdict(declared, row)
     assert not R.heldout_tokens(row), "never a token"
+    if R.heldout_token_problems(row):                       # Q-194d: a malformed token fails every judged read
+        with pytest.raises(R.JudgedBlockSealed, match="hygiene") as info:
+            H.rd_read(declared, "E-940", ("P-14", "P-16"))
+        assert not isinstance(info.value, R.HeldOutRefused) and "E-982" in str(info.value)
+    else:
+        before_verdict(declared)
 
 
 def test_the_verdict_gate_comes_before_rule_3s_own_checks(tree, monkeypatch):

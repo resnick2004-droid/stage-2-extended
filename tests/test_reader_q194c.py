@@ -130,10 +130,14 @@ def test_the_seeded_joint_tests_read_makes_its_verdict_count(declared):
 ])
 def test_the_verdicts_read_must_be_its_own_in_every_field(declared, over):
     c0 = pinned_with_finalists(declared)
-    VR.append_rows(declared, VR.VERDICT_ROW)
-    if over.get("who.commit") == "AFTER":
-        over = {"who.commit": head(declared)}
-    write_ledger(declared, [forged(c0, **over)])
+    if over.get("who.commit") == "AFTER":                               # a read from the verdict's own commit
+        v = VR.commit_verdict(declared, VR.VERDICT_ROW)
+        over = {"who.commit": v}
+        write_ledger(declared, [forged(c0, **over)])
+        VR.commit_verdict(declared, "| E-983 | 2026-11-19 | the run's lines collected | x |")
+    else:                                                               # Q-194d: committed with the verdict
+        write_ledger(declared, [forged(c0, **over)])
+        VR.commit_verdict(declared, VR.VERDICT_ROW)
     if not over:
         assert dict(reg(declared).heldout)["test_verdict"] == "E-982"
         return
@@ -169,21 +173,24 @@ def test_the_gate_wants_a_verdict_for_every_window_a_read_touches(declared):
     gate_refuses(declared, "E-990", start="2024-12-31", end="2025-01-03")
     gate_refuses(declared, "E-990", start="2025-01-02")
     assert dict(reg(declared, end="2024-12-31").heldout)["test_verdict"] == "E-982"     # E-208's days alone
-    # E-990's own joint test: F-13 reads it (its days only, so rule 2 leaves it alone), then its verdict
-    H.add_rows(declared, H.finalists(991, "F-13", H.F13_TEXT, H.LIST13))
-    a = H.read(declared, start="2025-01-02")
-    assert dict(a.heldout)["window"] == "E-990"
-    H.add_rows(declared, H.verdict_line(992))
-    assert dict(reg(declared).heldout)["test_verdict"] == "E-982,E-992"
+    # E-990's own joint read (NQ's one held-out declaration, F-98, read under a later run: a hand-made line, the
+    # once rule aside), committed with its verdict
+    put = forged(head(declared), **{"heldout.window": "E-990", "dates.start": "2025-01-02",
+                                     "dates.judged_first": "2025-01-02", "who.run_id": "joint@run-2"})
+    with (declared / "results" / "read_ledger.jsonl").open("a", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(put, sort_keys=True, separators=(",", ":")) + "\n")
+    VR.commit_verdict(declared, VR.verdict_row(992))
+    # E-992 is the newest verdict counted for both windows: F-98's E-208 line backs it as well
+    assert dict(reg(declared).heldout)["test_verdict"] == "E-992,E-992"
 
 
 def test_rule4_wants_a_verdict_for_every_window_a_read_touches(tree):
-    H.verdict13(tree)
+    H.settled_verdict(tree)
     H.add_rows(tree, WINDOW_2025)
     e = H.refused(4, H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")
     assert "E-990" in str(e)
     assert dict(H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard", end="2024-12-31").heldout)[
-        "verdict"] == "E-925"
+        "verdict"] == "E-982"
 
 
 def test_rule2_counts_every_window_a_read_touches(tree, monkeypatch):
@@ -204,7 +211,7 @@ def test_a_straddling_family_read_records_both_windows_and_spends_both(tree, mon
     H.add_rows(tree, WINDOW_2025, H.finalists(991, "F-13", H.F13_TEXT, H.LIST13),
                H.finalists(992, "F-14", H.F14_TEXT, H.LIST14))
     a = H.read(tree)                                                    # F-13 straddles E-208 and E-990
-    assert dict(a.heldout)["window"] == "E-208" and dict(a.heldout)["windows"] == ["E-208", "E-990"]
+    assert dict(a.heldout)["window"] == "E-990" and dict(a.heldout)["windows"] == ["E-208", "E-990"]   # NOTE-1
     assert H.lines(tree)[-1]["heldout"]["windows"] == ["E-208", "E-990"]
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
     H.refused(2, H.read, tree, declaration=H.F14, start="2025-01-02")   # E-990 alone: spent by F-13's straddle
@@ -230,9 +237,10 @@ def test_heldout_windows_gives_each_day_its_newest_window(tree):
 def test_a_verdict_counts_by_its_place_not_its_number(declared):
     c0 = pinned_with_finalists(declared)
     write_ledger(declared, [forged(c0)])
+    H.git(declared, "add", "-f", "results/read_ledger.jsonl")         # committed with the placed-first verdict
     H.prepend_rows(declared, VR.verdict_row(999))                       # a high number, placed before the finalists
     gate_refuses(declared)
-    VR.append_rows(declared, VR.verdict_row(100))                       # a low number, placed after them
+    VR.commit_verdict(declared, VR.verdict_row(100))                    # a low number, placed after them
     assert dict(reg(declared).heldout)["test_verdict"] == "E-100"
 
 
@@ -245,21 +253,21 @@ def test_a_verdict_placed_before_e208s_own_row_counts_for_nothing(declared):
 
 def test_a_fenced_verdict_counts_for_nothing_and_is_reported(declared):
     VR.settle(declared, [declared / H.BARS], verdict=False)
-    VR.append_rows(declared, "```", VR.VERDICT_ROW, "```")
-    gate_refuses(declared)
+    VR.commit_verdict(declared, "```", VR.VERDICT_ROW, "```")
     text = (declared / "DECISIONS.md").read_text(encoding="utf-8")
     assert not R.heldout_tokens(text, "verdict")
     assert any("fenced" in p and p.startswith("E-982") for p in R.heldout_token_problems(text))
-    VR.append_rows(declared, VR.VERDICT_ROW)                            # outside the fence: counts
-    assert dict(reg(declared).heldout)["test_verdict"] == "E-982"
+    with pytest.raises(R.JudgedBlockSealed, match="hygiene"):           # Q-194d: and the log fails every judged read
+        reg(declared)
 
 
 def test_a_fenced_finalists_or_pin_row_is_never_the_one_behind_a_verdict(declared):
     c0 = pinned_with_finalists(declared)
     write_ledger(declared, [forged(c0, **{"heldout.finalists": "E-983"})])
-    VR.append_rows(declared, "~~~", f"| E-983 | 2026-11-19 | heldout-finalists: {VR.HT_ID} @ {VR.HT_SHA} list "
-                                    f"{VR.HT_LIST} -- fenced | x |", "~~~", VR.VERDICT_ROW)
-    gate_refuses(declared)
+    VR.commit_verdict(declared, "~~~", f"| E-983 | 2026-11-19 | heldout-finalists: {VR.HT_ID} @ {VR.HT_SHA} list "
+                                       f"{VR.HT_LIST} -- fenced | x |", "~~~", VR.VERDICT_ROW)
+    with pytest.raises(R.JudgedBlockSealed, match="hygiene"):           # Q-194d: a fenced token fails every read
+        reg(declared)
 
 
 # ---------------------------------------------------------------------------------------------- MINOR-4
@@ -272,7 +280,7 @@ def test_m10_a_finalists_token_in_its_pins_own_row_backs_no_verdict(declared):
                 f"`{VR.HT_PATH}` sha256 `{VR.HT_SHA}` pinned in the same row | x |")
     VR.append_rows(declared, combined)
     write_ledger(declared, [forged(head(declared), **{"heldout.finalists": "E-985"})])
-    VR.append_rows(declared, VR.VERDICT_ROW)
+    VR.commit_verdict(declared, VR.VERDICT_ROW)
     gate_refuses(declared)
     H.prepend_rows(declared, VR.PIN_ROW)                                # a pin placed before it: then it counts
     assert dict(reg(declared).heldout)["test_verdict"] == "E-982"
@@ -285,7 +293,7 @@ def test_m6_the_verdicts_id_must_be_its_pins_id(declared):
                              "F-97's | x |")
     c1 = head(declared)
     write_ledger(declared, [forged(c1, **{"declaration.ref": "prereg/F-97_copy.md", "heldout.finalists": "E-983"})])
-    VR.append_rows(declared, VR.verdict_row(984, fid="F-97"))
+    VR.commit_verdict(declared, VR.verdict_row(984, fid="F-97"))
     gate_refuses(declared)
     assert c0 != c1
 

@@ -26,6 +26,7 @@ from pathlib import Path
 import pytest
 
 from extended import reader as R
+import heldout_verdict_rows as VR
 import test_reader_heldout as H
 from test_reader_heldout import scripted, tree  # noqa: F401 -- the fixtures
 
@@ -100,6 +101,10 @@ def test_any_held_out_date_binds_rule1(t16, start, end):
 def test_an_arbitrary_purpose_needs_its_own_token_for_its_own_hash(t16, row, why):
     H.add_rows(t16, row)
     for purpose in OTHER:
+        if R.heldout_token_problems(row):                   # Q-194d: a malformed token fails every judged read
+            with pytest.raises(R.JudgedBlockSealed, match="hygiene"):
+                H.read(t16, declaration=F16, purpose=purpose)
+            continue
         e = H.refused(1, H.read, t16, declaration=F16, purpose=purpose)
         assert why in str(e)
         names_both(e, purpose, F16)
@@ -139,13 +144,15 @@ def test_the_same_declaration_with_its_token_is_honoured(t16):
 
 @pytest.mark.parametrize("purpose", R.HELDOUT_PURPOSES)
 def test_the_held_out_purposes_behave_as_before(tree, purpose):
+    """For NQ's one held-out declaration (F-98, Q-194d's NOTE-6): refused without its finalists' row, admitted with."""
     assert R.HELDOUT_PURPOSES == ("heldout_test", "heldout_stress")
-    e = H.refused(1, H.read, tree, purpose=purpose)
-    assert "no decision row carries a finalists' token for F-13" in str(e)
-    H.add_rows(tree, H.finalists(920, "F-13", H.F13_TEXT, H.LIST13))
-    a = H.read(tree, purpose=purpose)
-    assert dict(a.heldout) == {"market": "NQ", "window": "E-208", "finalists": "E-920",
-                               "finalists_list_sha256": H.LIST13}
+    VR.declare(tree, finalists=False)
+    e = H.refused(1, H.read, tree, declaration=VR.HT_PATH, purpose=purpose)
+    assert "no decision row carries a finalists' token for F-98" in str(e)
+    H.add_rows(tree, VR.FINALISTS_ROW)
+    a = H.read(tree, declaration=VR.HT_PATH, purpose=purpose)
+    assert dict(a.heldout) == {"market": "NQ", "window": "E-208", "finalists": "E-981",
+                               "finalists_list_sha256": VR.HT_LIST}
     if purpose in R.declared_purposes(H.RD7_TEXT):                    # RD-07's line names heldout_test only
         assert "described reading" in str(H.refused(1, H.read, tree, declaration=H.RD7, purpose=purpose))
 
@@ -153,7 +160,7 @@ def test_the_held_out_purposes_behave_as_before(tree, purpose):
 def test_a_described_readings_other_purpose_stays_rule_4s(tree):
     """Rule 1 binds an RD's held-out purposes only; its other purposes wait for the verdict (rule 4), then pass."""
     H.refused(4, H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")
-    H.verdict13(tree)
+    H.settled_verdict(tree)
     a = H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard")
     assert a.kind == "described_reading" and "finalists" not in dict(a.heldout)
 

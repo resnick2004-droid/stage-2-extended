@@ -74,7 +74,7 @@ def test_rule3_the_joint_test_reads_before_its_verdict_and_a_replay_only_after_i
     seed = VR.settle(unsettled, [unsettled / H.BARS], verdict=False)    # the joint test, before any verdict row
     assert seed["purpose"] == "heldout_test" and seed["declaration"]["kind"] == "family"
     assert "verdict" in str(H.refused(3, H.rd_read, unsettled, "E-940", "P-14"))
-    VR.append_rows(unsettled, VR.VERDICT_ROW)
+    VR.commit_verdict(unsettled, VR.VERDICT_ROW)
     a = H.rd_read(unsettled, "E-940", "P-14")
     assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
@@ -106,7 +106,7 @@ def refused_superseded(fn, *a, **kw) -> R.SupersededRefused:
 
 
 def test_a_superseded_declaration_authorises_no_read_whatever_later_rows_say(tree, monkeypatch):
-    H.verdict13(tree)
+    H.settled_verdict(tree)
     a = H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard")      # control: after the verdict, admitted
     assert a.ledgered and a.kind == "described_reading"
     monkeypatch.setattr(R, "SUPERSEDED", superseded(tree))
@@ -137,7 +137,7 @@ def test_a_replay_made_for_a_superseded_reading_is_refused(scripted, monkeypatch
 
 def test_the_supersession_list_is_empty_until_the_lead_fills_it_and_its_mutation_is_killed(tree, monkeypatch):
     assert R.SUPERSEDED == ()
-    H.verdict13(tree)
+    H.settled_verdict(tree)
     monkeypatch.setattr(R, "SUPERSEDED", superseded(tree))
     refused_superseded(H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")
     monkeypatch.setattr(R, "_refuse_superseded", lambda *a, **k: None)
