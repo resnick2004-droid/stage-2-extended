@@ -40,7 +40,8 @@ H3A = ROOT / "docs" / "plans" / "scripts" / "three_way" / "h3a_inputs.py"
 H3A_MARKS = ("<!-- h3a_inputs: begin -->", "<!-- h3a_inputs: end -->")
 REVIEW_FINDINGS = (("B-1", "B-2", "B-3") + tuple(f"m-{i}" for i in range(1, 18)) + tuple(f"n-{i}" for i in range(1, 6))
                    + ("RB-1", "rm-1", "rm-2", "rn-1", "rn-2", "TB-2", "Tm-1", "Tm-2")
-                   + tuple(f"v3 m-{i}" for i in range(1, 6)) + tuple(f"v3 n-{i}" for i in range(1, 5)) + ("s-c",))
+                   + tuple(f"v3 m-{i}" for i in range(1, 6)) + tuple(f"v3 n-{i}" for i in range(1, 5)) + ("s-c",)
+                   + tuple(f"sc MINOR-{i}" for i in range(1, 4)) + tuple(f"sc NOTE-{i}" for i in range(1, 5)))
 
 
 def _lf(p: Path) -> str:
@@ -162,6 +163,8 @@ def test_corrective_cycle_1s_rulings(text: str) -> None:
     assert "in net ticks" not in flat and "Every trade's gross expectation is exactly zero" not in flat
     assert "lattice step s dividing l and g" not in flat and "smallest common divisor" not in flat
     assert "T the time limit known at the fill, never the realised exit" in flat
+    assert "2048 steps" not in flat and "Every walk is at most 1024 steps by construction" in flat
+    assert "the early exit only truncates the walk" in flat and "a known approximation of the walk" in flat
 
 
 def test_appendix_c_is_the_declared_inputs(text: str) -> None:

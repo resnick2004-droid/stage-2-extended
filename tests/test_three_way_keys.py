@@ -183,7 +183,7 @@ def test_h4s_block_and_parts_are_issued_and_role_checked() -> None:
     refused, and each role draws only its kinds in its parts. H3's block and tables are unchanged."""
     assert sorted(S.H4_BLOCK) == list(range(min(S.H4_BLOCK), min(S.H4_BLOCK) + 10))
     assert not S.H4_BLOCK & S.BLOCK and len(S.BLOCK) == 10 and set(S.ROLES) == set(S.STATUS)
-    assert {"H4-0", "H4-B"} <= set(S.PARTS) and len(set(S.PARTS.values())) == len(S.PARTS)
+    assert {"H4-0", "H4-B", "H4-T"} <= set(S.PARTS) and len(set(S.PARTS.values())) == len(S.PARTS)
     coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
     K.seed_key(S.issue("h4b_coins"), "coin", part=S.PARTS["H4-B"], **coin)
     K.seed_key(S.issue("h4_0_probe"), "coin", part=S.PARTS["H4-0"], **coin)
@@ -197,3 +197,28 @@ def test_h4s_block_and_parts_are_issued_and_role_checked() -> None:
             with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
                 S.issue(role)
     assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins")] == ["tests", "design check", "reading"]
+
+
+
+def test_minor3_h4s_tests_seed_draws_only_in_its_own_part() -> None:
+    """The red team's diff check MINOR-3: the `h4_tests` seed draws its toy keys (history, coin, enforce) only in its
+    own part H4-T, and is refused on H4-0's and H4-B's fields -- a tests-seed run of the probe's or the reading's field
+    cannot pass the role check; its `test` keys stay allowed."""
+    seed = S.issue("h4_tests")
+    coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.RACE)
+    enf = dict(history=0, seed_index=0, start=0, account=0, request=0)
+    K.seed_key(seed, "coin", part=S.PARTS["H4-T"], **coin)
+    K.seed_key(seed, "history", part=S.PARTS["H4-T"], history=0)
+    K.seed_key(seed, "enforce", part=S.PARTS["H4-T"], **enf)
+    K.seed_key(seed, "test", test=1, replicate=0)
+    for part in ("H4-0", "H4-B"):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(seed, "coin", part=S.PARTS[part], **coin)
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(seed, "history", part=S.PARTS[part], history=0)
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(seed, "enforce", part=S.PARTS[part], **enf)
+    for role in ("h4_0_probe", "h4b_coins"):                         # and no other role draws in H4-T
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(S.issue(role), "coin", part=S.PARTS["H4-T"], **coin)
+    assert S.PARTS["H4-T"] == 12

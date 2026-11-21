@@ -75,6 +75,8 @@ through the same harness and check, must pass).
 | SCr | the walk refusing a step that does not divide the bracket (s-c) | `test_s_c_the_walks_step_by_the_governing_rule` |
 | SCx | S1's step from the realised exit, not the limit (s-c) | `test_s_c_the_walk_never_reads_the_realised_exit` |
 | SCn | S1's steps from the realised exit, not the limit (s-c) | `test_s_c_the_walk_never_reads_the_realised_exit` |
+| SCt | S1's s and n from the time limit, not the limit capped at the flatten (MINOR-1) | `test_minor1_a_flatten_bound_walks_t_is_the_minutes_to_the_flatten` |
+| HT | H4's tests seed drawing in H4-0's and H4-B's fields again (MINOR-3) | `test_minor3_h4s_tests_seed_draws_only_in_its_own_part` |
 
 The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
 by `_replace_accounts` whatever their flag, so no test can kill it; U here is the law-changing form.
@@ -301,6 +303,16 @@ MUTANTS = {
     "SCn": (S1, "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), limit, step) if timed else 1",
             "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), max(ex - entry, 1), step) if timed else 1",
             ("schedule",), ("tests.test_three_way_runner", "test_s_c_the_walk_never_reads_the_realised_exit"), ""),
+    "SCt": (S1, "            step = RD.walk_step(v / math.sqrt(MINUTE), limit, J.WALK_MAX) if timed else spec.walk_step\n"
+                "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), limit, step) if timed else 1",
+            "            step = RD.walk_step(v / math.sqrt(MINUTE), float(p.time_limit), J.WALK_MAX) if timed else "
+            "spec.walk_step\n"
+            "            n_steps = RD.walk_steps(v / math.sqrt(MINUTE), float(p.time_limit), step) if timed else 1",
+            ("schedule",),
+            ("tests.test_three_way_runner", "test_minor1_a_flatten_bound_walks_t_is_the_minutes_to_the_flatten"), ""),
+    "HT": (SE, '    "h4_tests": (frozenset({"test", "history", "coin", "enforce"}), frozenset({"H4-T"})),',
+           '    "h4_tests": (frozenset({"test", "history", "coin", "enforce"}), frozenset({"H4-T", "H4-0", "H4-B"})),',
+           ("ROLE_USE",), ("tests.test_three_way_keys", "test_minor3_h4s_tests_seed_draws_only_in_its_own_part"), ""),
 }
 
 

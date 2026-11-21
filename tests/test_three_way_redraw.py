@@ -228,9 +228,11 @@ def test_s_c_the_walks_step_by_the_governing_rule() -> None:
 
 def test_s_c_a_coprime_bracket_matches_the_one_tick_lattice() -> None:
     """s-c: a 37 / 55 bracket at the coarse step its walk takes (sigma 8 ticks per sqrt minute; T 90: s = 3, n = 640;
-    T 30: s = 2, n = 480), its barriers off the lattice and reached by the two-point last sub-step: P(stop) agrees with
-    the one-tick lattice's (s = 1, n = sigma^2 T) within a tolerance of 1e-3, which is below the gap that rounding the
-    barriers to the nearest lattice points (36 / 54 at s = 3, 36 / 56 at s = 2) would cause."""
+    T 30: s = 2, n = 480), its barriers off the lattice and reached by the two-point last sub-step: **at these two
+    points** P(stop) agrees with the one-tick lattice's (s = 1, n = sigma^2 T) within a tolerance of 1e-3, which is
+    below the gap that rounding the barriers to the nearest lattice points (36 / 54 at s = 3, 36 / 56 at s = 2) would
+    cause. Not a general bound: at the coarsest n the step admits the lattice's own residual against Brownian motion is
+    of the same order, on the lattice or off it (the red team's diff check MINOR-2; the draft states it beside H3)."""
     tol = 1e-3
 
     def p_stop(G, L, step, steps):

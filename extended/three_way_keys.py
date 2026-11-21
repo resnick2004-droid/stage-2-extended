@@ -23,7 +23,7 @@ symmetric grid. **The antithetic twin** reads i' = 2^52 - 1 - i: the uniform 1 -
 u + u' == 1.0 bit for bit and no uniform is ever exactly one half.
 
 **Refusals.** `seed_key` refuses a missing or extra field, a non-positive seed, a negative field, any word at or above
-2^32 (N-8), a seed of H3's block that `extended.three_way_seeds.issue` did not make (`ProvenanceRefused`), and a block
+2^32 (N-8), a seed of H3's or H4's block that `extended.three_way_seeds.issue` did not make (`ProvenanceRefused`), and a block
 seed drawn outside its role's key kinds and parts (`three_way_seeds.check_use`; the red team's m-9). `Unit` checks every
 coin and enforce key's start word as it builds it (N-2, unstored). **The guard** (the lead's ruling on the red team's
 B-2): distinctness is proved by the packing (`packing_problems`), with the birthday bound on a 128-bit state printed
@@ -80,7 +80,8 @@ def seed_key(seed: int, kind: str, **fields: int) -> list[int]:
         raise ValueError("every word of a key is below 2^32: numpy splits larger integers into words")
     if S.in_block(seed):
         if not S.is_issued(seed):
-            raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in H3's block but was not issued by "
+            raise S.ProvenanceRefused(f"REFUSED: seed {int(seed)} lies in a block of the seed module (H3's or "
+                                      f"H4's) but was not issued by "
                                       "extended.three_way_seeds (a literal or a derived value)")
         S.check_use(seed, kind, fields.get("part"))                    # m-9: each seed draws only its role
     return [int(seed), tag, *vals]

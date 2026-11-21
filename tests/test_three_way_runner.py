@@ -1009,3 +1009,42 @@ def test_s_c_the_walk_never_reads_the_realised_exit() -> None:
         J._trade_mc(L, t, rules, J.ArmSpec(), J.CoinLanes(SEED, PART, 0, 0, range(64), None, False))
         outs.append(L.bal.copy())
     assert np.array_equal(outs[0], outs[1])
+
+
+
+def test_minor1_a_flatten_bound_walks_t_is_the_minutes_to_the_flatten() -> None:
+    """The red team's diff check MINOR-1: a trade entering less than `time_limit` before 15:10 CT (entry 1305, 25
+    minutes to `SESSION_END` under a 90-minute limit) is flatten-bound, and its walk's T is those 25 minutes, for s and
+    n alike -- never the time limit."""
+    from extended import three_way_redraw as RD
+
+    params = S1.S1Params(n_sessions=2, time_limit=90.0, rate=0.0)
+    vol = np.full(2, 6.72)
+    day = (S1.Arrival(1300, 9000.0, "A"),)
+    hist = S1.S1History(params, vol, np.zeros(2), {"A": (day, ()), "B": ((), ())})
+    spec = S1.DesignSpec("flat", stream="A", fixed_stop=37, rr=55 / 37, walk_step=1, per_session=1, latency=5)
+    t = S1.schedule(spec, hist).trades[0]
+    T = float(S1.SESSION_END - t.entry)
+    assert t.exit_reason == "flatten" and t.law == "walk" and T == 25.0 < params.time_limit
+    assert (t.walk_step, t.walk_n) == (RD.walk_step(6.72, T), RD.walk_steps(6.72, T, RD.walk_step(6.72, T)))
+    s90 = RD.walk_step(6.72, 90.0)
+    assert (t.walk_step, t.walk_n) != (s90, RD.walk_steps(6.72, 90.0, s90))
+
+
+def test_note4_baselines_alone_with_a_design_sharing_a_moment() -> None:
+    """The red team's diff check NOTE-4: with a design that shares its moments with a baseline (naive_coin's sessions
+    and decision), each baseline's matrix, failures at the fill and beside readings alone still equal its place in the
+    paired call, and the paired call's keys are the union of the baselines' and the design's, the shared moments' keys
+    in both."""
+    design = toy("design", 3, 90, decision=700)                       # naive_coin's moment on every 15th session
+    p_ = plan(seed_indices=tuple(range(16)))
+    g_p, g_b, g_d = K.KeyGuard(), K.KeyGuard(), K.KeyGuard()
+    side_p, side_b = {}, {}
+    xs, _ = R.paired(design, baselines(), RULES, p_, R.p_b, guard=g_p, beside=side_p)
+    xb, _ = R.baselines_only(baselines(), RULES, p_, R.p_b, guard=g_b, beside=side_b)
+    R.run(design, RULES, p_, J.ArmSpec(), g_d)
+    for name in R.BASELINES:
+        assert np.array_equal(xb[name], xs[name]), name
+        assert side_b[name] == side_p[name], name
+    assert g_p.keys() == g_b.keys() | g_d.keys()
+    assert g_b.keys() & g_d.keys()                                     # the shared moments drew the same keys
