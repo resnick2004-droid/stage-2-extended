@@ -1,29 +1,36 @@
-"""Synthetic inputs for `tests/test_playbook.py` (the restart plan's Wave 3.5, corrective cycle 2): one carried-design
-declaration; a synthetic root (its own `DECISIONS.md` in the declared order -- the declaration pinned, then its no-harm
-floor, the 3.9 row, the carrying row --, the pinned declaration file, the two result files bound to it with their
-manifests); the void calendar's sources and a synthetic bar history (`History`) for a few search-year days; a router.
-All invented: no bar, no atlas file and no result of this repository is read.
+"""Synthetic inputs for `tests/test_playbook.py` (the restart plan's Wave 3.5, corrective cycle 2 and the final
+read's fixes): one design's declaration and its carrying record; a synthetic root (its own `DECISIONS.md` in the
+declared order -- the declaration pinned, the no-harm floor, the 3.9 row stating the margin, the carrying row with its
+token --, the two pinned JSON files, the two result files bound to the declaration with their manifests); the void
+calendar's sources and a synthetic bar history for a few search-year days on both sides of the 2021 daylight-saving
+changes; a router; and a real git history for the pin-order check (`git_root`). All invented: no bar, no atlas file
+and no result of this repository is read.
 
-    root = build_root(tmp_path)                         # -> the root; load_carried(DECL_FILE, root=root)
+    root = build_root(tmp_path)                         # -> the root; load_carried(RECORD_FILE, root=root)
     python tests/playbook_cases.py render <root>        # prints the playbook's sha256 (the hash-seed test)
     python tests/playbook_cases.py results <tmp dir>    # the real verify_result: written by the vendored writer
 
-**The bars** (`history`): every bar at 18000 (open, high, low and close), the regular session's bars (stamped 08:30
-to 14:59) ranging 17900 to 18100. On 2021-03-16 and 2021-03-17: a close at 17990 on the bar ending at 03:10 CT (slot
-610: P-14's breakout below the London reference bar's low, `brk30-`) and a close at 18110 on the bar ending at 11:21
-CT (slot 1101: above the reference high, `brk30+`); the same on 2021-03-19. Every day's bar stamped 14:59 closes at
-18050 (RL3's `pdc` level for the next day). On 2021-04-05 the regular session's low is 18000, so on 2021-04-06
-RL3's `pd` low sits at the 08:29 bar's close (`at_reference`). The prices exist only inside this file.
+**The dates.** 2021-03-11 and 2021-03-12: Chicago and London on standard time (London 08:00 is 02:00 CT, Tokyo 09:00
+is 18:00 CT the evening before). 2021-03-15 to 2021-03-19: Chicago on daylight time, London not yet (London 08:00 is
+03:00 CT, Tokyo 09:00 is 19:00 CT). 2021-04-05 to 2021-04-07: both on summer time (London 08:00 is 02:00 CT).
 
-The fixture exercises rounding (77 x 1.3 is not whole) and a flatten other than the last entry (a news window after the
-order goes live; the closed window for an overnight order); each component's values differ. No randomness is drawn
-except in `scrambled`, under an explicit seed.
+**The bars** (`history`): every bar at 18000, the regular session's bars (stamped 08:30 to 14:59) ranging 17900 to
+18100, each day's bar stamped 14:59 closing at 18050 (the next day's `pdc` level). On 2021-03-12, 03-16 and 03-17 a
+close at 17990 ten minutes into London's and Asia's sessions (that date's start + 10: a `brk30-` breakout below the
+reference low), and on 03-16, 03-17 and 03-19 a close at 18110 on the bar ending at 11:21 CT (`brk30+`). On 2021-04-05
+the regular session's low is 18000, so on 2021-04-06 RL3's `pd` low sits at the reference (`at_reference`). The prices
+exist only inside this file.
+
+The fixture exercises rounding (77 x 1.3 is not whole), a flatten other than the last entry, windows that move in CT
+across the daylight-saving changes, and different values per component. No randomness is drawn except in `scrambled`,
+under an explicit seed.
 """
 from __future__ import annotations
 
 import copy
 import hashlib
 import json
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -33,10 +40,11 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-DESIGN = "X-demo7"
+DESIGN = "X-demo"
 FAMILY = "F-demo"
 REGISTRATION = "REG-demo"
-DECL_FILE = "prereg/X-demo7_playbook.json"
+DECL_FILE = "prereg/X-demo_playbook.json"
+RECORD_FILE = "prereg/X-demo_carried.json"
 EXPECTED_FILE = "results/journey_x.csv"
 NO_HARM_FILE = "results/noharm_x.csv"
 EXPECTED_SCRIPT = "scripts/journey_expected.py"
@@ -49,8 +57,8 @@ EXPECTED_ROWS = [
     {"section": "journey", "block": "search", "measure": "S3b", "stat": "median", "value": "37.5", "n": "812"},
     {"section": "journey", "block": "search", "measure": "bankroll_stop_1700/share_run_out", "stat": "value",
      "value": "0.1234", "n": "812"},
-    {"section": "journey", "block": "search", "measure": "S1", "stat": "p90", "value": "1543.25", "n": "812"},
-    {"section": "journey", "block": "held_out", "measure": "S1", "stat": "p90", "value": "1611.5", "n": "40"},
+    {"section": "journey", "block": "search", "measure": "S1", "stat": "p90", "value": "6250", "n": "812"},
+    {"section": "journey", "block": "held_out", "measure": "S1", "stat": "p90", "value": "6611.5", "n": "10000"},
     {"section": "journey", "block": "held_out", "measure": "S3b", "stat": "median", "value": "999", "n": "1"},
 ]
 
@@ -61,32 +69,35 @@ def _nh(comp: str, rule: str, tc: str, cc: str, n: str) -> list[dict]:
                          ("coin_composite", cc))]
 
 
-NO_HARM_ROWS = (_nh("ldn_brk", "with_breakout", "0.31", "0.3", "300")
-                + _nh("am_rl3", "hi=fade;lo=break", "0.27", "0.29", "250")
+NO_HARM_ROWS = (_nh("asia_brk", "with_breakout", "0.22", "0.2", "280")
+                + _nh("ldn_brk", "with_breakout", "0.31", "0.3", "300")
+                + _nh("am_tix", "hi=fade;lo=break", "0.27", "0.29", "250")
                 + _nh("pm_brk", "against_breakout", "0.4", "0.33", "410"))
 COLUMNS = ("section", "block", "measure", "stat", "value", "n")
 
 
 def declaration() -> dict:
     return copy.deepcopy({
-        "design_id": DESIGN, "family": FAMILY, "registration": REGISTRATION, "row": "E-9004", "firm": "topstep",
-        "plan": "trading_combine", "instrument": "MNQ",
-        "accounts": [{"id": "ts_a1", "role": "evaluation"}, {"id": "ts_b2", "role": "funded"},
-                     {"id": "ts_c3", "role": "evaluation"}],
+        "design_id": DESIGN, "family": FAMILY, "firm": "topstep", "plan": "trading_combine", "instrument": "MNQ",
+        "accounts": [{"id": "ts_a", "role": "evaluation"}, {"id": "ts_b", "role": "funded"},
+                     {"id": "ts_c", "role": "evaluation"}],
         "side": {"no_harm_row": "E-9001", "no_harm_file": NO_HARM_FILE, "no_harm_script": NO_HARM_SCRIPT,
                  "margin": MARGIN, "margin_row": "E-9002"},
         "components": [
-            {"name": "ldn_brk", "session": "london", "first": 600, "last": 660, "stop_ticks": 77, "rr": 1.3,
+            {"name": "asia_brk", "session": "asia", "first": 0, "last": 55, "stop_ticks": 50, "rr": 1.7,
+             "contracts": 2, "latency": 5, "side_rule": "with_breakout",
+             "trigger": {"source": "p14", "params": {"latency": 5, "entry": "market"}}},
+            {"name": "ldn_brk", "session": "london", "first": 0, "last": 60, "stop_ticks": 77, "rr": 1.3,
              "contracts": 3, "latency": 5, "side_rule": "with_breakout",
-             "trigger": {"source": "p14", "params": {"latency": 5, "entry": "market", "first": 595, "last": 655}}},
-            {"name": "am_rl3", "session": "ny_am", "first": 960, "last": 1015, "stop_ticks": 100, "rr": 1.5,
+             "trigger": {"source": "p14", "params": {"latency": 5, "entry": "market"}}},
+            {"name": "am_tix", "session": "ny_am", "first": 30, "last": 85, "stop_ticks": 100, "rr": 1.5,
              "contracts": 2, "latency": None, "side_rule": {"hi": "fade", "lo": "break"},
              "trigger": {"source": "rl3", "params": {"kind": "pd", "cutoff": 1020}}},
-            {"name": "pm_brk", "session": "ny_pm", "first": 1080, "last": 1260, "stop_ticks": 60, "rr": 2.25,
+            {"name": "pm_brk", "session": "ny_pm", "first": 150, "last": 330, "stop_ticks": 60, "rr": 2.25,
              "contracts": 1, "latency": 3, "side_rule": "against_breakout",
-             "trigger": {"source": "p14", "params": {"latency": 3, "entry": "limit", "first": 1077, "last": 1257}}},
+             "trigger": {"source": "p14", "params": {"latency": 3, "entry": "limit"}}},
         ],
-        "rotation": {"rule": "by_component", "pools": {"pm_brk": ["ts_b2"], "am_rl3": ["ts_a1", "ts_c3"]}},
+        "rotation": {"rule": "by_component", "pools": {"pm_brk": ["ts_b"], "am_tix": ["ts_a", "ts_c"]}},
         "execution": {"gap_minutes": 5, "closed_window": [930, 959], "bls_clear": 875, "limit_window_min": 30,
                       "flatten": 1328, "last_entry": 1328},
         "news_source": "the synthetic release record",
@@ -99,9 +110,9 @@ def declaration() -> dict:
         "void_rules": ["fomc", "early_close", "prior_abbreviated"],
         "research_filters": ["short_bars", "overnight_missing"],
         "void_dates": [{"date": "2021-03-19", "reason": "early_close"}],
-        "session_anchors": {"london": ["Europe/London", "08:00"], "ny_am": ["America/New_York", "09:30"],
-                            "ny_pm": ["America/New_York", "09:30"]},
-        "dates": ["2021-03-16", "2021-04-06"],
+        "session_anchors": {"asia": ["Asia/Tokyo", "09:00"], "london": ["Europe/London", "08:00"],
+                            "ny_am": ["America/New_York", "09:30"], "ny_pm": ["America/New_York", "09:30"]},
+        "dates": ["2021-03-12", "2021-03-16", "2021-04-06"],
         "bankroll": {"budget": 1700, "row": "E-9002"},
         "expected": {"file": EXPECTED_FILE, "script": EXPECTED_SCRIPT, "rows": [
             {"label": "sessions to the first payout", "section": "journey", "block": "search", "measure": "S3b",
@@ -116,20 +127,34 @@ def declaration() -> dict:
     })
 
 
+def record(decl_sha: str, **over: Any) -> dict:
+    r = {"design_id": DESIGN, "declaration": DECL_FILE, "declaration_sha256": decl_sha, "registration": REGISTRATION,
+         "row": "E-9004"}
+    r.update(over)
+    return r
+
+
 # ------------------------------------------------------------------------------------------------ the synthetic root
 
 
-def csv_bytes(rows: list[dict]) -> bytes:
-    lines = [",".join(COLUMNS)] + [",".join(str(r[c]) for c in COLUMNS) for r in rows]
-    return ("\n".join(lines) + "\n").encode()
+def csv_bytes(rows: list[dict], columns=COLUMNS) -> bytes:
+    import csv
+    import io
+
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(columns)
+    for r in rows:
+        w.writerow([str(r[c]) for c in columns])
+    return buf.getvalue().encode()
 
 
-def decl_bytes(decl: dict) -> bytes:
-    return json.dumps(decl, indent=1, sort_keys=True).encode()
+def json_bytes(obj: dict) -> bytes:
+    return json.dumps(obj, indent=1, sort_keys=True).encode()
 
 
 def decl_sha(decl: dict) -> str:
-    return hashlib.sha256(decl_bytes(decl)).hexdigest()
+    return hashlib.sha256(json_bytes(decl)).hexdigest()
 
 
 def manifest(name: str, data: bytes, rows: int, *, convention: str, sha_decl: str, script: str, **over: Any) -> dict:
@@ -153,11 +178,11 @@ def manifest(name: str, data: bytes, rows: int, *, convention: str, sha_decl: st
     return m
 
 
-def write_result(root: Path, rel: str, rows: list[dict], **kw: Any) -> tuple[str, str]:
+def write_result(root: Path, rel: str, rows: list[dict], columns=COLUMNS, **kw: Any) -> tuple[str, str]:
     """The CSV and its manifest; returns (the CSV's sha256, the manifest's)."""
     p = root / rel
     p.parent.mkdir(parents=True, exist_ok=True)
-    data = csv_bytes(rows)
+    data = csv_bytes(rows, columns)
     p.write_bytes(data)
     m = manifest(p.name, data, len(rows), **kw)
     mb = json.dumps(m, indent=2, sort_keys=True).encode()
@@ -165,17 +190,17 @@ def write_result(root: Path, rel: str, rows: list[dict], **kw: Any) -> tuple[str
     return m["sha256"], hashlib.sha256(mb).hexdigest()
 
 
-def rows_text(decl_rel: str, h_decl: str, exp_rel: str, h_exp: tuple[str, str], nh_rel: str,
-              h_nh: tuple[str, str]) -> dict[str, str]:
+def rows_text(h_decl: str, h_record: str, exp_rel: str, h_exp: tuple[str, str], nh_rel: str,
+              h_nh: tuple[str, str], *, margin: str = str(MARGIN)) -> dict[str, str]:
     return {
-        "E-9000": f"**{DESIGN}'s playbook declaration, pinned before its floor is read (synthetic)** `{decl_rel}` "
+        "E-9000": f"**{DESIGN}'s playbook declaration, pinned before its floor is read (synthetic)** `{DECL_FILE}` "
                   f"sha256 `{h_decl}`.",
         "E-9001": f"**{DESIGN}'s no-harm floor (synthetic)** `{nh_rel}` sha256 `{h_nh[0]}`; its manifest "
                   f"`{nh_rel}{MANIFEST}` sha256 `{h_nh[1]}`.",
-        "E-9002": "**The 3.9 pinning row (synthetic): the bankroll budget and the no-harm margin.**",
-        "E-9004": f"**{DESIGN} carried, registration {REGISTRATION} (synthetic)** `{decl_rel}` sha256 `{h_decl}`; its "
-                  f"expected journey `{exp_rel}` sha256 `{h_exp[0]}`; its manifest `{exp_rel}{MANIFEST}` sha256 "
-                  f"`{h_exp[1]}`.",
+        "E-9002": f"**The 3.9 pinning row (synthetic): the bankroll budget, and the no-harm margin `{margin}`.**",
+        "E-9004": f"**{DESIGN} (synthetic)** carried: {DESIGN} @ {h_decl} -- {REGISTRATION}; its carrying record "
+                  f"`{RECORD_FILE}` sha256 `{h_record}`; its expected journey `{exp_rel}` sha256 `{h_exp[0]}`; its "
+                  f"manifest `{exp_rel}{MANIFEST}` sha256 `{h_exp[1]}`.",
     }
 
 
@@ -188,29 +213,77 @@ def write_log(root: Path, rows: dict[str, str]) -> None:
 def build_root(root: Path, decl: dict | None = None, *, expected_rows: list[dict] | None = None,
                no_harm_rows: list[dict] | None = None, expected_over: dict | None = None,
                no_harm_over: dict | None = None, bind: dict | None = None,
-               edit_rows: Callable[[dict], dict] | None = None, raw: bytes | None = None) -> Path:
+               edit_rows: Callable[[dict], dict] | None = None, raw: bytes | None = None,
+               record_over: dict | None = None, raw_record: bytes | None = None, margin: str = str(MARGIN),
+               expected_columns=COLUMNS) -> Path:
     """The synthetic root (the module docstring). `bind`: the declaration the result files are bound to (default the
-    declaration itself); `edit_rows` may edit the log's rows; `raw`: the declaration's bytes as written instead."""
+    declaration itself); `edit_rows` may edit the log's rows; `raw`, `raw_record`: the files' bytes as written."""
     root = Path(root)
     decl = declaration() if decl is None else decl
-    data = decl_bytes(decl) if raw is None else raw
+    data = json_bytes(decl) if raw is None else raw
+    h_decl = hashlib.sha256(data).hexdigest()
     (root / "prereg").mkdir(parents=True, exist_ok=True)
     (root / DECL_FILE).write_bytes(data)
+    rec = json_bytes(record(h_decl, **(record_over or {}))) if raw_record is None else raw_record
+    (root / RECORD_FILE).write_bytes(rec)
     exp_rel = decl["expected"]["file"] if isinstance(decl.get("expected"), dict) and "file" in decl["expected"] \
         else EXPECTED_FILE
     nh_rel = decl["side"]["no_harm_file"] if isinstance(decl.get("side"), dict) and "no_harm_file" in decl["side"] \
         else NO_HARM_FILE
-    sha_bound = hashlib.sha256(data).hexdigest() if bind is None else decl_sha(bind)
+    sha_bound = h_decl if bind is None else decl_sha(bind)
     h_exp = write_result(root, exp_rel, EXPECTED_ROWS if expected_rows is None else expected_rows,
+                         columns=expected_columns,
                          **{"convention": "zero_edge", "sha_decl": sha_bound, "script": EXPECTED_SCRIPT,
                             **(expected_over or {})})
     h_nh = write_result(root, nh_rel, NO_HARM_ROWS if no_harm_rows is None else no_harm_rows,
                         **{"convention": "no_harm_real_path", "sha_decl": sha_bound, "script": NO_HARM_SCRIPT,
                            **(no_harm_over or {})})
-    rows = rows_text(DECL_FILE, hashlib.sha256(data).hexdigest(), exp_rel, h_exp, nh_rel, h_nh)
+    rows = rows_text(h_decl, hashlib.sha256(rec).hexdigest(), exp_rel, h_exp, nh_rel, h_nh, margin=margin)
     if edit_rows is not None:
         rows = edit_rows(rows)
     write_log(root, rows)
+    return root
+
+
+def _git(root: Path, *args: str) -> str:
+    p = subprocess.run(["git", *args], cwd=str(root), capture_output=True, text=True, timeout=120)
+    if p.returncode:
+        raise RuntimeError(f"git {args}: {p.stderr}")
+    return p.stdout.strip()
+
+
+def git_root(root: Path, *, floor_before_pin: bool = False) -> Path:
+    """The synthetic root as a git history (C2-2): a first commit with no pin; then the declaration and its pinning
+    row; then the floor's and journey's runs, whose manifests name the run's commit -- the pin's commit (or, with
+    `floor_before_pin`, the commit before it); then the rest of the log. Returns the root."""
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    _git(root, "init", "-q")
+    for k, v in (("user.email", "synthetic@example.invalid"), ("user.name", "synthetic"), ("core.autocrlf", "false"),
+                 ("commit.gpgsign", "false")):
+        _git(root, "config", k, v)
+    (root / "README").write_bytes(b"synthetic\n")
+    _git(root, "add", "README")
+    _git(root, "commit", "-q", "-m", "start")
+    before = _git(root, "rev-parse", "HEAD")
+    decl = declaration()
+    data = json_bytes(decl)
+    h_decl = hashlib.sha256(data).hexdigest()
+    (root / "prereg").mkdir(exist_ok=True)
+    (root / DECL_FILE).write_bytes(data)
+    write_log(root, {"E-9000": rows_text(h_decl, "", "", ("", ""), "", ("", ""))["E-9000"]})
+    _git(root, "add", "DECISIONS.md", DECL_FILE)
+    _git(root, "commit", "-q", "-m", "pin the declaration")
+    pinned = _git(root, "rev-parse", "HEAD")
+    build_root(root, expected_over={"git_commit": pinned},
+               no_harm_over={"git_commit": before if floor_before_pin else pinned})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "the floor, the journey and the carrying row")
+    log = (root / "DECISIONS.md").read_bytes().decode()           # a later row citing the pin again: the first
+    log += f"| E-9005 | 2021-01-02 | a later note citing `{DECL_FILE}` sha256 `{h_decl}` | synthetic |\n"  # pin counts
+    (root / "DECISIONS.md").write_bytes(log.encode())
+    _git(root, "add", "DECISIONS.md")
+    _git(root, "commit", "-q", "-m", "a later row citing the pin")
     return root
 
 
@@ -229,10 +302,11 @@ def verify_standin(path):
 
 # ------------------------------------------------------------------------------------------------ the day: calendar, bars, router
 
-DAYS = ("2021-03-15", "2021-03-16", "2021-03-17", "2021-03-18", "2021-03-19", "2021-04-05", "2021-04-06",
-        "2021-04-07")
+DAYS = ("2021-03-11", "2021-03-12", "2021-03-15", "2021-03-16", "2021-03-17", "2021-03-18", "2021-03-19",
+        "2021-04-05", "2021-04-06", "2021-04-07")
 BASE, HIGH, LOW = 18000.0, 18100.0, 17900.0
 RTH = (931, 1320)                     # the walker's columns of the bars stamped 08:30 .. 14:59
+ACCOUNTS = ("ts_a", "ts_b", "ts_c")
 
 
 def day_index(day: str) -> int:
@@ -256,6 +330,13 @@ def sources(*, bls=(), fomc=(), rolls=(), early_end=(), calendar=None, flags=Non
                       iso(early_end), lb, iso(bls), iso(fomc), fl, None)
 
 
+def event_slot(day: str, session: str) -> int:
+    """The slot of the fixture's breakout in `session` on `day`: ten minutes after that date's local open."""
+    from extended import day_calendar as DC
+
+    return DC.anchored_starts(date.fromisoformat(day))[session] + 10
+
+
 def history(*, no_0829=()):
     """The synthetic bars (the module docstring); `no_0829`: days without their bar stamped 08:29."""
     import numpy as np
@@ -269,9 +350,13 @@ def history(*, no_0829=()):
     h[:, RTH[0]:RTH[1] + 1] = HIGH
     l[:, RTH[0]:RTH[1] + 1] = LOW
     c[:, RTH[1]] = HIGH - 50.0                                   # the previous day's close (pdc) above the reference
+    for d in ("2021-03-12", "2021-03-16", "2021-03-17"):
+        i = day_index(d)
+        for sess in ("asia", "london"):
+            j = event_slot(d, sess)
+            l[i, j] = c[i, j] = BASE - 10.0                      # brk30- ten minutes into the session
     for d in ("2021-03-16", "2021-03-17", "2021-03-19"):
         i = day_index(d)
-        l[i, 610] = c[i, 610] = BASE - 10.0                      # brk30- at 03:10 CT
         h[i, 1101] = c[i, 1101] = HIGH + 10.0                    # brk30+ at 11:21 CT
     l[day_index("2021-04-05"), RTH[0]:RTH[1] + 1] = BASE         # 2021-04-06's pd low at the reference
     for d in no_0829:
@@ -326,8 +411,9 @@ def scheduled(**kw):
 
 def _main(argv: list[str]) -> int:
     from extended import playbook as PB
+    PB._run_after_pin = lambda root, text, commit: True       # the pin order has its own test (git_root)
     if argv[0] == "render":
-        print(hashlib.sha256(PB.render_playbook(PB.load_carried(DECL_FILE, root=Path(argv[1]))).text.encode())
+        print(hashlib.sha256(PB.render_playbook(PB.load_carried(RECORD_FILE, root=Path(argv[1]))).text.encode())
               .hexdigest())
         return 0
     if argv[0] == "results":
@@ -341,7 +427,7 @@ def _main(argv: list[str]) -> int:
 
         def attempt(name: str, root: Path) -> None:
             try:
-                c = PB.load_carried(DECL_FILE, root=root)
+                c = PB.load_carried(RECORD_FILE, root=root)
                 out[name] = "accepted:" + c.expected.commit
             except PB.PlaybookRefused as e:
                 out[name] = "refused:" + str(e)[:120]
@@ -349,7 +435,7 @@ def _main(argv: list[str]) -> int:
         def real_root(name: str, *, clean: bool, exp_params: dict | None = None, exploratory: bool = False,
                       tamper: bool = False) -> Path:
             root = base / name
-            build_root(root)                                     # the log and the declaration, then real files
+            build_root(root)                                     # the log and the two JSON files, then real results
             hashes: dict[str, tuple[str, str]] = {}
             for rel, rows, conv, script in ((EXPECTED_FILE, EXPECTED_ROWS, "zero_edge", EXPECTED_SCRIPT),
                                             (NO_HARM_FILE, NO_HARM_ROWS, "no_harm_real_path", NO_HARM_SCRIPT)):
@@ -375,8 +461,9 @@ def _main(argv: list[str]) -> int:
                 hashes[rel] = (json.loads(mp.read_bytes())["sha256"], hashlib.sha256(mp.read_bytes()).hexdigest())
                 if tamper and rel == EXPECTED_FILE:
                     csv.write_bytes(csv.read_bytes().replace(b"37.5", b"12.5"))
-            write_log(root, rows_text(DECL_FILE, sha, EXPECTED_FILE, hashes[EXPECTED_FILE], NO_HARM_FILE,
-                                      hashes[NO_HARM_FILE]))
+            rec = (root / RECORD_FILE).read_bytes()
+            write_log(root, rows_text(sha, hashlib.sha256(rec).hexdigest(), EXPECTED_FILE, hashes[EXPECTED_FILE],
+                                      NO_HARM_FILE, hashes[NO_HARM_FILE]))
             return root
 
         attempt("clean", real_root("clean", clean=True))

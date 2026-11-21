@@ -141,6 +141,8 @@ RL3_KINDS = ("pd", "on", "pdc", "rn100")
 RL3_CUTOFFS = tuple(W.slot(h, m) for h, m in ((10, 0), (10, 30), (11, 0), (11, 30), (12, 0), (12, 30), (13, 0),
                                                 (13, 30), (14, 0), (14, 30)))
 RL3_ROUND = 100.0
+#: the previous day's regular session RL3's `pd` and `pdc` read: the bars stamped 08:30 to 14:59 (slots, stamps)
+PRIOR_RTH = (RTH_OPEN, W.slot(15, 0) - 1)
 #: the order of RL3's tickets inside one decision (the coin key's sub-index)
 RL3_SUBS = {("pd", "hi"): 0, ("pd", "lo"): 1, ("on", "hi"): 2, ("on", "lo"): 3, ("pdc", "lvl"): 4,
             ("rn100", "up"): 5, ("rn100", "dn"): 6}
@@ -513,7 +515,7 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
         if why:
             return p_ref, [(n, float("nan"), 0, why) for n in names]
         po, ph, pl, pc = hist.day(i - 1)
-        rth = slice(RTH_OPEN + 1, W.slot(15, 0) + 1)    # bars stamped 08:30 .. 14:59
+        rth = slice(PRIOR_RTH[0] + 1, PRIOR_RTH[1] + 2)  # bars stamped 08:30 .. 14:59
         pres = ~np.isnan(po[rth])
         if kind == "pd":
             if not pres.any():
@@ -522,7 +524,7 @@ def rl3_levels(hist: History, i: int, kind: str, prior_void: bool = False) -> tu
             lo = float(np.nanmin(np.where(pres, pl[rth], np.nan)))
             out = [("hi", hi, 0, ""), ("lo", lo, 0, "")]
         else:
-            j = W.slot(15, 0)                           # the bar stamped 14:59 ends at 15:00
+            j = PRIOR_RTH[1] + 1                        # the bar stamped 14:59 ends at 15:00
             if math.isnan(po[j]):
                 return p_ref, [("lvl", float("nan"), 0, "no_prior_close")]
             out = [("lvl", float(pc[j]), 0, "")]
@@ -950,7 +952,7 @@ def coin_side(unit: CoinUnit, offer: Offer) -> int:
 
 __all__ = ["TASK", "LATENCIES", "REFERENCE_L", "LIMIT_WINDOW", "MARK_STEP", "ENTRIES", "MARKET", "LIMIT", "TICKET",
            "RTH_OPEN", "LIVE_0900", "CLOSED_FIRST", "CLOSED_LAST", "BLS_CLEAR", "SESSION_END", "GAP_MINUTES",
-           "JOURNEY", "P14_K", "P14_LAST", "RL3_KINDS", "RL3_CUTOFFS", "RL3_SUBS", "WINDOW_KINDS", "REWRITE_AFTER",
+           "JOURNEY", "P14_K", "P14_LAST", "RL3_KINDS", "RL3_CUTOFFS", "RL3_SUBS", "PRIOR_RTH", "WINDOW_KINDS", "REWRITE_AFTER",
            "H2_ROW", "OvernightRefused", "TriggerRefused", "decision_rows", "overnight_allowed", "require_overnight",
            "History", "Window", "release_window", "DayContext", "Offer", "check_latency", "breakout_events",
            "P14Breakout", "p16_grid", "P16Marks", "rl3_levels", "RL3Tickets", "CoinMarks", "SOURCES", "context_for", "admit", "segments",

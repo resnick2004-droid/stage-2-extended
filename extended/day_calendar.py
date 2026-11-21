@@ -287,10 +287,34 @@ def _prior_scheduled(src: Sources, d: date) -> list[str]:
     return prior
 
 
+def _prior_known(src: Sources, d: date) -> list[str]:
+    """The previous-day reasons known before the day's alert (the lead's N-c2-2 ruling on Wave 3.5): the store's first
+    day, a roll, the evening after a scheduled close, and the evening after a **scheduled closure** -- a weekday between
+    the two stored days that Q-40's calendar lists as a holiday without a close (the exchange shut all day). A gap in
+    the store's day list that the calendar does not schedule is a data defect: research-only, never an alert void."""
+    prior: list[str] = []
+    prev = src.previous(d)
+    if prev is None:
+        return ["first_day"]
+    if d in src.rolls:
+        prior.append("roll")
+    if _scheduled_close(src.calendar.get(prev)) is not None:
+        prior.append("after_abbreviated")
+    k = prev + timedelta(days=1)
+    while k < d:
+        row = src.calendar.get(k)
+        if k.weekday() < 5 and row is not None and row["kind"] == "holiday" and not row.get("close_ct"):
+            prior.append("after_closure")
+            break
+        k += timedelta(days=1)
+    return prior
+
+
 #: what `alert_context` leaves out: data-defect filters known only after the alert (research-only, the lead's B-5
 #: ruling on Wave 3.5): the day's own last bar, an early end of its bars, a data-defect candidate, H2's overnight
 #: counts, and the previous day's data voids
-RESEARCH_ONLY = ("no_bar_at_walk_end", "early_end", "data_defect", "h2_void", "h2_missing", "prior_day_void")
+RESEARCH_ONLY = ("no_bar_at_walk_end", "early_end", "data_defect", "h2_void", "h2_missing", "prior_day_void",
+                 "unscheduled_gap")
 
 
 def alert_context(src: Sources, market: str, d: date, session: int, *, windows: Sequence[Any] = (),
@@ -298,7 +322,7 @@ def alert_context(src: Sources, market: str, d: date, session: int, *, windows: 
     """**The day as known before its first alert** (the lead's B-5 ruling on Wave 3.5): the `DayContext` a hand-traded
     alert may read -- `bls` and `fomc` (published in advance), `void` for a scheduled close (Q-40's `holiday` or
     `early_close` with a close) at or before the walk's last bar, `prior_void` from the calendar's previous-day
-    reasons (`_prior_scheduled`), and the verified news `windows` the caller passes from its record. None of
+    reasons (`_prior_known`: a closure only when the calendar schedules it), and the verified news `windows` the caller passes from its record. None of
     `RESEARCH_ONLY` is read. Held-out and confirmation-window days refuse as in `day_flags`, until a live calendar is
     declared under its own row."""
     from extended import triggers as T
@@ -309,7 +333,7 @@ def alert_context(src: Sources, market: str, d: date, session: int, *, windows: 
     close = _scheduled_close(src.calendar.get(d))
     void = close is not None and close - 1 < _walk_last_stamp(rules)
     return T.DayContext(int(session), d.isoformat(), bls=d in src.bls, fomc=d in src.fomc, void=bool(void),
-                        prior_void=bool(_prior_scheduled(src, d)), windows=tuple(windows))
+                        prior_void=bool(_prior_known(src, d)), windows=tuple(windows))
 
 
 def day_context(src: Sources, market: str, d: date, session: int, *, reads_overnight: bool = False,

@@ -1,59 +1,63 @@
 """The restart plan's Wave 3.5: the playbook a user trades a carried design from by hand, the one-trade alert, and the
 "not offered" notice (CHARTER 3.5: "The output is a playbook ... plus the exact alert format, so that it can be traded
-by hand"; E-221, the operator's O-4 ruling). Corrective cycle 2 (the red team's BUILD_W35 and BUILD_W35_v2 notes, the
-lead's rulings).
+by hand"; E-221, the operator's O-4 ruling). Corrective cycle 2 and the final read's fixes (the red team's BUILD_W35,
+BUILD_W35_v2 and BUILD_W35_c2 notes, the lead's rulings).
 
     from extended import playbook as PB
-    carried = PB.load_carried("prereg/<design>_playbook.json")         # pinned; rows, results and bindings checked
+    carried = PB.load_carried("prereg/<design>_carried.json")          # the carrying record; everything checked
     page = PB.render_playbook(carried)                                  # -> Rendered: .text, .pieces
-    msg = PB.render_offer(carried, "pm_brk", hist, i, at, sources, router)   # the alert at slot `at`, or a notice
+    msg = PB.render_offer(carried, "pm_brk", hist, i, at, sources, router, accounts)  # the alert, or a notice
     note = PB.render_trade(carried, routed)                             # a scheduled (coin-sided) trade: not offered
 
 **Hand entry only** (CLAUDE.md; DIRECTIVE Part 1: no automated or API order entry, it gets prop accounts banned). The
 playbook and the alert are plain text for a person to read and act on by hand. Nothing here places, sends, schedules or
 formats an order for a machine: no network, no broker, no process, no file written. `Rendered.pieces` (where each
-value came from) is for the tests' tracing only and is never to be exported as an order record. An RL3 pair is one
-alert naming both tickets as one-cancels-other, placed by hand as the platform's OCO order type: a manual bracket.
+value came from) is for the tests' tracing only and is never to be exported as an order record. An RL3 kind's tickets
+are rested by hand as plain orders in one account, each with the platform's own bracket, the other cancelled by hand
+when one fills (C2-6: no Topstep page says TopstepX holds two entry orders as one-cancels-other).
 
-**The carried design** (`load_carried`). The declaration is a JSON file (duplicate keys, NaN and Infinity refused)
-whose sha256 (of its bytes, line ends as LF) is pinned as `` `<path>` sha256 `<hex>` `` in the decision log. Its
-**first** pinning row must come before the no-harm row (the side rules, P-14's with or against the breakout included,
-are fixed before the floor is read: B-1), and the carrying row pins it too, names the design and its registration id
-and says "carried" (never "not carried", never "draft"). Every cited row id is looked up; a row pinning one path twice
-refuses.
+**Two pinned files** (C2-5). The **declaration** (`prereg/<design>_playbook.json`: the design, its components, side
+rules, margin and account policy, no registration and no carrying row) is pinned as `` `<path>` sha256 `<hex>` `` in a
+row **before** the no-harm row, so the side rules are fixed before the floor is read; it needs no registration then.
+The **carrying record** (`prereg/<design>_carried.json`: the design id, the declaration's path and sha256, the
+registration id and the carrying row) is pinned in the carrying row, after the no-harm row, which also holds the
+structured token `carried: <design id> @ <declaration sha256> -- <registration>` (C2-7) and no negated or conditional
+wording. Both are JSON with duplicate keys, NaN and Infinity refused; every cited row id is looked up; a row pinning one
+path twice refuses.
 
-**The two result files** (B-1, B-3; R-6, m-1, m-3), each accepted only when all hold: its CSV and its manifest are both
-pinned in their row (the manifest by the sha256 of its bytes, LF); its manifest is from a clean run of a named commit,
-not exploratory, written by the declared script under the declaration's family (`prereg_id`), and its `parameters`
-carry this design's id, the convention, the declaration's path and **the sha256 of the whole pinned declaration** (so
-the file belongs to exactly these components, parameters, side rules, margin and account policy); it passes
-`extended.results.verify_result` on one resolved path; it is not git-ignored (the licence list) and holds no cell that
-is a price (inside `price_levels.BAND`, on the tick grid) by the licence guard's own test, cell by cell.
+**The two result files** (B-1, B-3; R-6, m-1), each accepted only when all hold: its CSV and its manifest are both
+pinned in their row; its manifest is from a clean run of a named commit, not exploratory, written by the declared
+script under the declaration's family (`prereg_id`), and its `parameters` carry this design's id, the convention, the
+declaration's path and sha256; it passes `extended.results.verify_result` on one resolved path; it is not git-ignored
+(the licence list); its columns are on the pinned list `RESULT_COLUMNS` (C2-8: a label column holding a number of the
+price band refuses, on the tick grid or off it, with a unit or without; a figure or count column may hold any figure;
+any other column refuses); every printed value is a bare finite number.
 * **The no-harm floor** (`side.no_harm_file`, convention `no_harm_real_path`; the format the floor's runner must
-  write): its `parameters.margin` is the declaration's `side.margin`, and for each component the rows
-  `no_harm|search|<component>|side_rule` (the declared rule, canonical text), `|margin`, `|trigger_composite` and
-  `|coin_composite`. The playbook **recomputes** the pass (the trigger side's composite not below the coin side's by
-  more than the margin, CHARTER 3.5) and refuses a component that fails or is absent: it offers no playbook side, and
-  the design is not carried.
+  write): `parameters.margin` is the declaration's `side.margin`, which must equal the margin its `margin_row` pins
+  (`` no-harm margin `<value>` ``, C2-1); for each component the rows `no_harm|search|<component>|side_rule`,
+  `|margin`, `|trigger_composite`, `|coin_composite`. The playbook **recomputes** the pass and refuses a component that
+  fails or is absent. Its run's commit must **descend from the commit that first pinned the declaration** (C2-2,
+  `extended.pin_order`): the floor read after the pin, in git, not only in the log's order.
 * **The expected journey** (`expected.file`, convention `zero_edge`).
 
+**The windows** (C2-3) are what the evaluated designs' are: offsets from each session's local open, read per date by
+`search_space.Space.windows_on` (the starts of `search_space.session_spans`, anchored to their local market times,
+E-231 (3)), checked by `Space.check` (bounds over the search years, collisions, RL3's live slot, the closed window), and
+built per date as `components.Design(day=...)`; a P-14 component's alerts are its window less L on each date.
+
 **The side** (R-1, B-2). The playbook offers a side only as `trigger_sides.trigger_side` computes it, from an offer the
-module **recomputes itself**: `render_offer` takes the day's bars (a `triggers.History`), cuts every bar not closed at
-the alert (feature-rules section 1: the bars stamped at or after it are dropped), and calls the trigger's own
-`offers()`; no caller-built offer is accepted. A scheduled trade is the evaluation's, coin-sided by construction, so
-`render_trade` gives it the not-offered notice. The live path (today's bars, a live calendar) is not built: dates
-after the search years refuse until a live calendar is declared under its own row.
+module **recomputes itself** from the day's bars cut at the alert, through the trigger's own `offers()`. A scheduled
+trade is the evaluation's, coin-sided by construction: `render_trade` gives it the not-offered notice.
 
-**The day** (B-5). The alert decides "offered today" only from what is known before the alert
-(`day_calendar.alert_context`): FOMC and BLS days, a scheduled close, the previous day's calendar state (a roll, a
-closure, a scheduled close the day before, the store's first day), the declaration's dated news record, and the bars
-closed by the alert. The data-defect filters known only later (the day's last bar, an early end of its bars, H2's
-overnight counts, the previous day's data voids) are research-only: applied to the backtests behind the expected
-journey, never a rule the user is shown, never part of an alert decision.
+**The day** (B-5, N-c2-2). "Offered today" reads only what is known before the alert (`day_calendar.alert_context`):
+FOMC and BLS days, a scheduled close, the previous day's calendar state (a roll, a scheduled closure, a scheduled close
+the day before, the store's first day), the declaration's dated news record, and the bars closed by the alert. The
+data-defect filters are research-only. The live path (a declared live calendar, today's bars) is not built: dates after
+the search years refuse.
 
-**The account** (m-5) is the router's pick (`router.Router.peek`, the declaration's rotation), never the caller's.
-**Dates** (B-6) are strict ISO `YYYY-MM-DD`, parsed to `date` and compared as dates. **Bar times** (m-6) are stated by
-the bar's stamp (its opening minute, as platforms label it), with its end beside where it matters.
+**The account** (m-5, N-c2-1) is the router's pick (`router.Router.peek`, the declaration's rotation) among the
+accounts alive that day. **Dates** (B-6) are strict ISO. **Bar times** (m-6) are stated by the bar's stamp; every level
+is defined by the bars it is made from (C2-9). A resting order's alert states the walker's void-at-live rule (C2-4).
 
 **Every number comes from an input, never from this file.** A rendered text is a sequence of pieces (`Piece`): a
 template literal, which holds no digit, or a value, which names its transform and the input paths it is computed from
@@ -63,6 +67,7 @@ from __future__ import annotations
 
 import csv
 import fnmatch
+import functools
 import hashlib
 import io
 import json
@@ -79,33 +84,46 @@ from extended import day_calendar as DC
 from extended import lever_space as LS
 from extended import modes_terms as M
 from extended import router as R
+from extended import search_space as SS
 from extended import trigger_sides as TS
 from extended import triggers as T
 from extended import walker as W
 
-REQUIRED = ("design_id", "family", "registration", "row", "firm", "plan", "instrument", "accounts", "side",
-            "components", "rotation", "execution", "news_source", "news_windows", "void_rules", "research_filters",
-            "void_dates", "session_anchors", "dates", "bankroll", "expected")
+REQUIRED = ("design_id", "family", "firm", "plan", "instrument", "accounts", "side", "components", "rotation",
+            "execution", "news_source", "news_windows", "void_rules", "research_filters", "void_dates",
+            "session_anchors", "dates", "bankroll", "expected")
 COMPONENT_KEYS = ("name", "session", "first", "last", "stop_ticks", "rr", "contracts", "latency", "side_rule", "trigger")
 EXECUTION_KEYS = ("gap_minutes", "closed_window", "bls_clear", "limit_window_min", "flatten", "last_entry")
 SIDE_KEYS = ("no_harm_row", "no_harm_file", "no_harm_script", "margin", "margin_row")
 EXPECTED_TOP = ("file", "script", "rows")
 EXPECTED_KEYS = ("label", "section", "block", "measure", "stat")
 NEWS_KEYS = ("source", "release", "before", "after", "dates")
-ROW_LINE = re.compile(r"^\| (E-\d\d\d+) \|.*$", re.M)
 HASH = hashlib.sha256().name                          # the pins' and manifests' hash, by its library name
+DECL_SHA_KEY = "declaration_" + HASH
+RECORD_KEYS = ("design_id", "declaration", DECL_SHA_KEY, "registration", "row")
+P14_PARAMS = ("latency", "entry", "k")
+ROW_LINE = re.compile(r"^\| (E-\d\d\d+) \|.*$", re.M)
 PIN = re.compile(r"`([^`]+)` " + HASH + r" `([a-f\d]+)`")
-#: an identifier carries no figure (m-7): letters, '_' and '-', with at most a short numeric suffix; no '.'
-IDENT = re.compile(r"[A-Za-z][A-Za-z_-]*\d?\d?$")
-ISO = re.compile(r"\d\d\d\d-\d\d-\d\d$")
+#: an identifier carries no figure (m-7, C2-10): letters, '_' and '-', a digit only in one trailing index `_v<d>`;
+#: matched in full (no trailing newline)
+IDENT = re.compile(r"[A-Za-z][A-Za-z_-]*(?:_v\d)?")
+ISO = re.compile(r"\d\d\d\d-\d\d-\d\d")
+BARE = re.compile(r"-?\d+(?:\.\d+)?")
+NUMBER_IN = re.compile(r"\d[\d,]*(?:\.\d+)?")
 DIGIT = re.compile(r"\d")
 SHA_LEN = len(hashlib.sha256().hexdigest())
-NOT_CARRIED = re.compile(r"not carried|draft", re.I)
+#: the carrying row's structured token (C2-7) and the wording it may not hold
+CARRIED_TOKEN = re.compile(r"carried: (\S+) @ ([a-f\d]+) -- (\S+?)(?=[\s;,.|)]|$)")
+NOT_CARRIED = re.compile(r"\bnot\s+(?:yet\s+)?carried\b|\bto be carried\b|\bcarried\s+only\b|\bcarried\s+if\b|\bif\b|"
+                         r"\bunless\b|\bpending\b|\bdraft\b|\bprovisional\b|\bconditional", re.I)
+#: the margin's row states it (C2-1)
+MARGIN_TOKEN = re.compile(r"no-harm margin `([^`]+)`")
 MANIFEST_SUFFIX = ".manifest.json"
+#: the result files' columns, classed (C2-8): a label column may hold no number of the price band; a figure or a
+#: count column holds figures; no other column is accepted
+LABEL, FIGURE, COUNT = "label", "figure", "count"
+RESULT_COLUMNS = {"section": LABEL, "block": LABEL, "measure": LABEL, "stat": LABEL, "value": FIGURE, "n": COUNT}
 
-#: the firms whose trading day the library loads: `lever_space.trading_day` reads Topstep's `trading_hours`, and the
-#: per-firm loader (`lever_space_firms`, E-249) gives no other firm's day yet (MFFU's T2 and T3 wait on its trading
-#: hours' parse; Lucid's hours on the operator's transcription); a firm string is refused unless it is one of these (R-9)
 FIRMS = ("topstep",)
 #: each firm's plans, from its verified ledger: the plan's name parsed from the rule that states it
 PLANS: dict[str, dict[str, tuple[str, str]]] = {
@@ -123,8 +141,12 @@ MICRO = ("MNQ",)
 
 TRIGGERS: dict[str, Callable[..., Any]] = {cls.__dataclass_fields__["source"].default: cls
                                            for cls in (T.P14Breakout, T.P16Marks, T.RL3Tickets)}
+P14, RL3 = (cls.__dataclass_fields__["source"].default for cls in (T.P14Breakout, T.RL3Tickets))
+SOURCE_LEVER = SS.SLOT_LEVERS[0]                       # the search space's source lever (T1)
 SLOT_PARAMS = ("first", "last", "cutoff", "marks")
 ANCHOR_OF = {"asia": "asia", "london": "london", "ny_am": "ny", "ny_pm": "ny"}
+#: the scheduler's session names -> the search space's (`search_space.session_spans`: one NY session until T2b)
+SPACE_SESSION = {"evening": "evening", "asia": "asia", "london": "london", "ny_am": "ny", "ny_pm": "ny"}
 BLOCKS = {"search": "search years: the years this design was chosen on, so likely better than what follows",
           "held_out": "held-out years, reported beside, never judged"}
 CONVENTIONS = {
@@ -140,7 +162,7 @@ TRIGGER_WORDS = {
     T.P14Breakout: "a breakout: the first one-minute close above the previous completed reference bar's high, or below "
                    "its low (the reference bar's length in minutes is the parameter k), at most once per reference bar",
     T.RL3Tickets: "pre-session tickets at the day's levels of one kind, fixed when the alert is sent, before the "
-                  "regular session's first fill; the tickets of a kind are one order, one-cancels-other, unfilled "
+                  "regular session's first fill; the tickets of a kind make one trade (the first to fill), unfilled "
                   "tickets cancelled at the cutoff",
 }
 ENTRY_WORDS = {
@@ -148,7 +170,8 @@ ENTRY_WORDS = {
     T.LIMIT: "a limit order at the price at the alert (the close of the last bar closed when the alert is sent), "
              "working the limit window from when it goes live, cancelled if unfilled",
     T.TICKET: "each level's ticket by its declared rule (a fade is a limit at the level, a break a stop one tick "
-              "beyond it), all the kind's tickets placed together in one account as one one-cancels-other order",
+              "beyond it), the kind's tickets rested together in one account as plain orders, each with its own "
+              "bracket, the others cancelled by hand the moment one fills",
 }
 SIDE_RULE_WORDS = {
     "with_breakout": "with the breakout: BUY after a close above the reference bar's high, SELL after a close below "
@@ -163,19 +186,27 @@ SIDE_RULE_WORDS = {
 SIGN_WORDS = {"+": "a close above the previous completed reference bar's high",
               "-": "a close below the previous completed reference bar's low"}
 _PD, _ON, _PDC, _RN = T.RL3_KINDS                       # the library's level kinds, never retyped here
-LEVEL_WORDS = {
-    (_PD, "hi"): "the previous day's regular-session high",
-    (_PD, "lo"): "the previous day's regular-session low",
-    (_ON, "hi"): "the overnight high (from the reopen to the regular open)",
-    (_ON, "lo"): "the overnight low (from the reopen to the regular open)",
-    (_PDC, "lvl"): "the previous day's regular-session close (its last bar before the regular close)",
-    (_RN, "up"): "the next round hundred above the price at the alert",
-    (_RN, "dn"): "the next round hundred below the price at the alert",
+_L = "library"
+#: each level, defined by the bars it is made from (C2-9; `triggers.rl3_levels`); parts as `_Doc.line` takes them
+LEVEL_PARTS: dict[tuple[str, str], tuple[Any, ...]] = {
+    (_PD, "hi"): ("the high of the previous day's bars stamped ", ("ct", (_L, "prior_first")), " CT to ",
+                  ("ct", (_L, "prior_last")), " CT"),
+    (_PD, "lo"): ("the low of the previous day's bars stamped ", ("ct", (_L, "prior_first")), " CT to ",
+                  ("ct", (_L, "prior_last")), " CT"),
+    (_ON, "hi"): ("the high of today's bars stamped ", ("ct", (_L, "reopen")), " CT to ", ("ct", (_L, "pre_open")),
+                  " CT (the overnight)"),
+    (_ON, "lo"): ("the low of today's bars stamped ", ("ct", (_L, "reopen")), " CT to ", ("ct", (_L, "pre_open")),
+                  " CT (the overnight)"),
+    (_PDC, "lvl"): ("the close of the previous day's bar stamped ", ("ct", (_L, "prior_last")), " CT"),
+    (_RN, "up"): ("the next round hundred above the close of the bar stamped ", ("ct", (_L, "pre_open")), " CT"),
+    (_RN, "dn"): ("the next round hundred below the close of the bar stamped ", ("ct", (_L, "pre_open")), " CT"),
 }
-ROLE_WORDS = {1: "a resistance: above the price at the alert (the close of the last bar before the regular open) -- "
-                 "check it on your chart",
-              -1: "a support: below the price at the alert (the close of the last bar before the regular open) -- "
-                  "check it on your chart"}
+ROLE_PARTS = {1: ("a resistance: above the price at the alert (the close of the bar stamped ", ("ct", (_L, "pre_open")),
+                  " CT) -- check it on your chart"),
+              -1: ("a support: below the price at the alert (the close of the bar stamped ", ("ct", (_L, "pre_open")),
+                   " CT) -- check it on your chart")}
+PLATFORM_LEVEL = ("Your platform's own \"previous day high\", \"low\" or \"close\" may be made from other bars: use the "
+                  "level made from exactly the bars named here.")
 ROTATION_WORDS = {
     "longest_waiting": "the next trade of a firm goes to the account whose last trade ended longest ago (an unused "
                        "account first; ties in the account order below)",
@@ -184,17 +215,15 @@ ROTATION_WORDS = {
     "by_component": "each component's trades go to its own pool of accounts below, the one waiting longest first (a "
                     "component without a pool uses every account)",
 }
-#: the void rules known before the alert (B-5): what decides "offered today" and what the user is shown
 VOID_WORDS = {
     "fomc": "an FOMC statement day: no trade at all that day",
     "early_close": "an exchange holiday or a scheduled early close before the day's flatten: no trade that day",
-    "prior_abbreviated": "the day after a scheduled early close, a closure (a weekday without a session) or a "
-                         "contract roll: no trade from a component that reads the previous day's levels",
+    "prior_abbreviated": "the day after a scheduled early close, a scheduled closure (a weekday the exchange is shut) "
+                         "or a contract roll: no trade from a component that reads the previous day's levels",
 }
-#: the data-defect filters known only later (B-5): research-only, applied to the backtests, never a user rule
 RESEARCH_WORDS = {
     "short_bars": "days whose stored bars end before the walk's last bar, end early or carry a data defect, and the "
-                  "day after one",
+                  "day after one, or after a gap in the stored days",
     "overnight_missing": "overnight sessions with too many stored minutes missing",
 }
 WINDOW_WORDS = {"news": "a news window", "closed": "the closed window after the regular open",
@@ -213,7 +242,7 @@ REASON_WORDS = {
     "unscheduled": "an unscheduled release has closed trading for this order",
     "expired": "nothing of the order's working window is left",
     "prior_void": "the previous day's levels are void today (the first stored day, or a scheduled early close, a "
-                  "closure or a roll before it)",
+                  "scheduled closure or a roll before it)",
     "coin_side": "this trade's side came from the evaluation's coin, not from the trigger: the playbook offers no side "
                  "for it",
     "no_reference": "the trigger had no price at its alert",
@@ -239,9 +268,15 @@ NO_NEWS_SIZE = ("Never put size into major news: no entry and no working order i
                 "when a window starts is closed at its start.")
 NO_PRICE = ("No price is printed here: every order is stated against what you read on your platform when the alert "
             "reaches you. Bars are named by their stamp, the minute they open, as platforms label them.")
-OCO_WORDS = ("ONE-CANCELS-OTHER: the tickets below are one order. Place them together, by hand, in this one account, "
-             "as the platform's OCO order type, each with its own bracket. When one fills, cancel the other at once. "
-             "Never split them across accounts.")
+#: RL3's tickets by hand (C2-6): Topstep documents OCO only as exit legs around a position and Auto-OCO brackets per
+#: entry, never two entry orders as one-cancels-other
+PAIR_WORDS = ("TWO ENTRY ORDERS, ONE TRADE: before you place them, turn the platform's Auto-OCO brackets on while you "
+              "are flat (and OCO on in the DOM), so each entry carries its own bracket. Rest both tickets below as "
+              "plain stop or limit orders, by hand, in this one account. The moment one fills, cancel the other by "
+              "hand. A fast move can fill both before you cancel: if it does, flatten the second fill at once. Never "
+              "split them across accounts.")
+VOID_AT_LIVE = ("compare the market with your order: if a BUY limit is at or above the market, a SELL limit at or "
+                "below it, a BUY stop at or below it or a SELL stop at or above it, do not place it: no trade today.")
 
 
 class PlaybookRefused(ValueError):
@@ -376,8 +411,9 @@ def _plain(v: Any, what: str) -> str:
 
 
 def _ident(v: Any, what: str) -> str:
-    if not isinstance(v, str) or not IDENT.match(v):
-        raise PlaybookRefused(f"{what} is an identifier (letters, '_', '-', at most a short numeric suffix), got {v!r}")
+    if not isinstance(v, str) or not IDENT.fullmatch(v):
+        raise PlaybookRefused(f"{what} is an identifier (letters, '_', '-', a digit only in a trailing index form), "
+                              f"got {v!r}")
     return v
 
 
@@ -393,9 +429,19 @@ def _num(v: Any, what: str) -> float:
     return float(v)
 
 
+def _bare(text: Any, what: str) -> float:
+    """A printed figure is a bare finite number (C2-8): no unit, no '$', no ','."""
+    if not isinstance(text, str) or not BARE.fullmatch(text):
+        raise PlaybookRefused(f"{what} is not a bare number")
+    x = float(text)
+    if not math.isfinite(x):
+        raise PlaybookRefused(f"{what} is not finite")
+    return x
+
+
 def parse_day(v: Any, what: str = "a date") -> date:
     """Strict ISO `YYYY-MM-DD` only (B-6): the basic form, a padded or a short date refuses."""
-    if not isinstance(v, str) or not ISO.match(v):
+    if not isinstance(v, str) or not ISO.fullmatch(v):
         raise PlaybookRefused(f"{what} is an ISO date YYYY-MM-DD, got {v!r}")
     try:
         d = date.fromisoformat(v)
@@ -505,6 +551,111 @@ def _names(row: str, word: str, what: str) -> None:
         raise PlaybookRefused(f"{what} does not name {word}")
 
 
+def _margin_of(row: str, what: str) -> float:
+    """The no-harm margin the 3.9 row pins (C2-1): `` no-harm margin `<value>` ``, stated once, a bare number."""
+    found = MARGIN_TOKEN.findall(row)
+    if len(found) != 1:
+        raise PlaybookRefused(f"{what} does not state the no-harm margin exactly once")
+    return _bare(found[0], f"{what}'s no-harm margin")
+
+
+def _run_after_pin(root: Path, pin_text: str, commit: str) -> bool:
+    """Whether `commit` descends from the commit that first pinned `pin_text` in the log (`extended.pin_order`)."""
+    from extended import pin_order as PO
+
+    try:
+        return PO.descends(root, PO.pin_commit(root, pin_text), commit)
+    except PO.PinOrderError:
+        return False
+
+
+# ------------------------------------------------------------------------------------------------ the windows (C2-3)
+
+
+@functools.lru_cache(maxsize=None)
+def _starts(day: date) -> dict[str, int]:
+    """The search space's session starts on `day` (`search_space.session_spans`), slots after the reopen."""
+    return {k: int(a) for k, (a, _) in SS.session_spans(day).items()}
+
+
+@functools.lru_cache(maxsize=1)
+def _bounds() -> dict[str, tuple[int, int, int]]:
+    """Each session's window offsets (first, last, step) valid on every search-year weekday
+    (`search_space.session_slots`)."""
+    return SS.session_slots()
+
+
+@functools.lru_cache(maxsize=1)
+def _start_dates() -> tuple[tuple[tuple[tuple[str, int], ...], date], ...]:
+    """One search-year weekday for each distinct set of session starts (the designs a window can make)."""
+    seen: dict[tuple[tuple[str, int], ...], date] = {}
+    for d in SS.search_days():
+        seen.setdefault(tuple(sorted(_starts(d).items())), d)
+    return tuple(seen.items())
+
+
+def _space_design(decl: Mapping[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for c in decl["components"]:
+        out[SS.slot_dim(c["name"], "on")] = SS.ON
+        out[SS.slot_dim(c["name"], SOURCE_LEVER)] = c["trigger"]["source"]
+        out[SS.slot_dim(c["name"], "first")] = c["first"]
+        out[SS.slot_dim(c["name"], "last")] = c["last"]
+    return out
+
+
+def window_space(decl: Mapping[str, Any]) -> SS.Space:
+    """The declaration's windows as the search space holds them: one slot per component, offsets from its session's
+    start (`search_space.Space`, `windows_on`), RL3's live slot and the closed window as the space's own constraints."""
+    b = _bounds()
+    slots, dims, cons = [], [], []
+    for c in decl["components"]:
+        sess = SPACE_SESSION.get(c["session"])
+        if sess is None or sess not in b:
+            raise PlaybookRefused(f"component {c['name']}: unknown session {c['session']!r}")
+        lo, hi, step = b[sess]
+        name = c["name"]
+        slots.append(SS.Slot(name, sess, lo, hi, step))
+        dims += [SS.Dim(SS.slot_dim(name, "on"), SS.CAT, values=(SS.ON,), slot=name),
+                 SS.Dim(SS.slot_dim(name, SOURCE_LEVER), SS.CAT, values=(c["trigger"]["source"],), slot=name),
+                 SS.Dim(SS.slot_dim(name, "first"), SS.INT, lo=lo, hi=hi, step=step, slot=name),
+                 SS.Dim(SS.slot_dim(name, "last"), SS.INT, lo=lo, hi=hi, step=step, after=SS.slot_dim(name, "first"),
+                        slot=name)]
+        session_starts = sorted({dict(st)[sess] for st, _ in _start_dates()})
+        if c["trigger"]["source"] == RL3:
+            cons.append(SS.Constraint(f"{name} tickets live", "session", SS._rl3_live(name, session_starts)))
+        cons.append(SS.Constraint(f"{name} closed window", "session", SS._closed_first(name, session_starts)))
+    return SS.Space(tuple(dims), slots=tuple(slots), constraints=tuple(cons), starts=_starts, days=SS.search_days())
+
+
+def _trigger_on(c: Mapping[str, Any], first: int, last: int) -> Any:
+    """The component's trigger on a date whose window is [first, last] (slots): P-14's alerts are the window less L."""
+    params = dict(c["trigger"]["params"])
+    if c["trigger"]["source"] == P14:
+        lat = int(c["latency"])
+        return T.P14Breakout(latency=lat, entry=params.get("entry", T.MARKET), first=int(first) - lat,
+                             last=int(last) - lat, k=int(params.get("k", T.P14_K)))
+    return TRIGGERS[c["trigger"]["source"]](**{k: (tuple(v) if isinstance(v, list) else v) for k, v in params.items()})
+
+
+def design_on(decl: Mapping[str, Any], space: SS.Space, day: date) -> C.Design:
+    """The design on trading day `day`, as the evaluation builds it: `Space.windows_on` per date, then
+    `components.Design(day=day)`."""
+    by = {c["name"]: c for c in decl["components"]}
+    comps = []
+    for name, _, a, b in space.windows_on(_space_design(decl), day):
+        c = by[name]
+        try:
+            comps.append(C.Component(name, c["session"], int(a), int(b), _trigger_on(c, a, b), int(c["stop_ticks"]),
+                                     float(c["rr"]), decl["instrument"]))
+        except (C.DesignRefused, T.TriggerRefused, ValueError, TypeError) as e:
+            raise PlaybookRefused(f"component {name} on {day}: {e}") from e
+    try:
+        return C.Design(decl["firm"], tuple(comps), day=day)
+    except C.DesignRefused as e:
+        raise PlaybookRefused(f"the design on {day}: {e}") from e
+
+
 # ------------------------------------------------------------------------------------------------ the declaration
 
 
@@ -528,7 +679,9 @@ def canonical_rule(rule: Any) -> str:
     return str(rule)
 
 
-def _trigger(comp: Mapping[str, Any]) -> Any:
+def _check_trigger(comp: Mapping[str, Any]) -> Any:
+    """The component's trigger, its side rule and its L held to the library (on a nominal window: the per-date
+    triggers are `design_on`'s)."""
     trig = comp["trigger"]
     _need(trig, ("source", "params"), f"component {comp['name']}'s trigger")
     src = trig["source"]
@@ -536,10 +689,22 @@ def _trigger(comp: Mapping[str, Any]) -> Any:
         raise PlaybookRefused(f"component {comp['name']}: {TS.NO_SIDE[src]}")
     if src not in TRIGGERS:
         raise PlaybookRefused(f"component {comp['name']}: trigger source {src!r} is not one of {sorted(TRIGGERS)}")
-    params = {k: (tuple(v) if isinstance(v, list) else v) for k, v in dict(trig["params"]).items()}
+    params = dict(trig["params"])
+    if src == P14 and any(k not in P14_PARAMS for k in params):
+        raise PlaybookRefused(f"component {comp['name']}: the breakout's parameters are {P14_PARAMS}; its alerts are "
+                              "the window less L on each date")
+    lat = comp["latency"]
+    if src == P14 and "latency" in params and params["latency"] != lat:
+        raise PlaybookRefused(f"component {comp['name']}: its L is not its timed trigger's own")
     try:
-        obj = TRIGGERS[src](**params)
+        if src == P14:
+            obj = T.P14Breakout(latency=_int(lat, f"component {comp['name']}'s L"), entry=params.get("entry", T.MARKET),
+                                first=T.RTH_OPEN, last=T.P14_LAST, k=int(params.get("k", T.P14_K)))
+        else:
+            obj = TRIGGERS[src](**{k: (tuple(v) if isinstance(v, list) else v) for k, v in params.items()})
     except (TypeError, ValueError, RuntimeError) as e:
+        if isinstance(e, PlaybookRefused):
+            raise
         raise PlaybookRefused(f"component {comp['name']}: the library refuses its trigger: {e}") from e
     if isinstance(obj, T.P14Breakout) and int(obj.k) != T.P14_K:
         raise PlaybookRefused(f"component {comp['name']}: the breakout's reference bar is the registered k")
@@ -547,18 +712,11 @@ def _trigger(comp: Mapping[str, Any]) -> Any:
         TS.check_rule(obj, comp["side_rule"])
     except TS.SideRefused as e:
         raise PlaybookRefused(f"component {comp['name']}: {e}") from e
-    lat = comp["latency"]
     if obj.latency_free:
         if lat is not None or LS.latency_cells(src) != (None,):
             raise PlaybookRefused(f"component {comp['name']}: a latency-free trigger's L is its single cell (null)")
-    else:
-        if _int(lat, f"component {comp['name']}'s L") not in LS.latency_cells(src) or int(obj.latency) != lat:
-            raise PlaybookRefused(f"component {comp['name']}: its L is not a declared L of its timed trigger's own")
-    first, last = _int(comp["first"], "a window's first"), _int(comp["last"], "a window's last")
-    if isinstance(obj, T.P14Breakout) and not (first - lat <= int(obj.first) <= int(obj.last) <= last - lat):
-        raise PlaybookRefused(f"component {comp['name']}: its trigger's alerts lie outside its window less L")
-    if isinstance(obj, T.RL3Tickets) and not first <= T.LIVE_0900 <= last:
-        raise PlaybookRefused(f"component {comp['name']}: its tickets' live slot lies outside its window")
+    elif lat not in LS.latency_cells(src) or int(obj.latency) != lat:
+        raise PlaybookRefused(f"component {comp['name']}: its L is not a declared L of its timed trigger's own")
     return obj
 
 
@@ -576,15 +734,15 @@ def _legs(trig: Any) -> int:
     return len(TS.rl3_names(trig)) if isinstance(trig, T.RL3Tickets) else 1
 
 
-def check_declaration(decl: Mapping[str, Any]) -> C.Design:
-    """Every required field present and every value held to the library and the firm's verified ledger; returns the
-    design as the scheduler's own object (refuses otherwise). The pins, rows and bindings are `load_carried`'s."""
+def check_declaration(decl: Mapping[str, Any]) -> SS.Space:
+    """Every required field present and every value held to the library, the search space and the firm's verified
+    ledger; returns the windows' space (refuses otherwise). The pins, rows and bindings are `load_carried`'s."""
     _need(decl, REQUIRED, "the declaration")
+    for k in ("row", "registration"):
+        if k in decl:
+            raise PlaybookRefused(f"the declaration holds no {k}: it is the carrying record's")
     _ident(decl["design_id"], "the design id")
     _ident(decl["family"], "the family")
-    _ident(decl["registration"], "the registration id")
-    if not isinstance(decl["row"], str):
-        raise PlaybookRefused("the carrying row is a row id")
     firm = decl["firm"]
     if firm not in FIRMS:
         raise PlaybookRefused(f"firm {firm!r} is not one whose verified trading day this tree loads ({FIRMS})")
@@ -617,31 +775,32 @@ def check_declaration(decl: Mapping[str, Any]) -> C.Design:
     for c in decl["components"]:
         _need(c, COMPONENT_KEYS, f"component {c.get('name') if isinstance(c, Mapping) else c!r}")
         names.append(c["name"])
+    if not names or len(set(names)) != len(names):
+        raise PlaybookRefused(f"component names are present and distinct: {names}")
     for name, pool in dict(rot.get("pools", {})).items():
         if name not in names or any(a not in ids for a in pool):
             raise PlaybookRefused(f"pool {name!r} names a component or an account the declaration does not hold")
     roles = {a["id"]: a["role"] for a in accounts}
-    comps = []
     for c in decl["components"]:
         _ident(c["name"], "a component name")
         n = _int(c["contracts"], f"component {c['name']}'s contracts")
         if n <= 0:
             raise PlaybookRefused(f"component {c['name']}: contracts are positive")
         _num(c["rr"], f"component {c['name']}'s R")
-        trig = _trigger(c)
+        _int(c["stop_ticks"], "a stop")
+        _int(c["first"], "a window's first offset")
+        _int(c["last"], "a window's last offset")
+        trig = _check_trigger(c)
         for acct in _routes(decl, c["name"]):
             if n * _legs(trig) > size_cap(firm, roles[acct], decl["instrument"]):
                 raise PlaybookRefused(f"component {c['name']}: its size (every ticket of one order together) exceeds "
                                       f"the firm's verified limit for account {acct}")
-        try:
-            comps.append(C.Component(c["name"], c["session"], int(c["first"]), int(c["last"]), trig,
-                                     _int(c["stop_ticks"], "a stop"), float(c["rr"]), decl["instrument"]))
-        except C.DesignRefused as e:
-            raise PlaybookRefused(str(e)) from e
-    try:
-        design = C.Design(firm, tuple(comps))
-    except C.DesignRefused as e:
-        raise PlaybookRefused(str(e)) from e
+    space = window_space(decl)
+    why = space.check(_space_design(decl))
+    if why is not None:
+        raise PlaybookRefused(f"the windows: the search space refuses them ({why[0]}: {why[1]})")
+    for _, d in _start_dates():                       # every distinct set of session starts of the search years
+        design_on(decl, space, d)
     ex = decl["execution"]
     _need(ex, EXECUTION_KEYS, "the execution rules")
     td = LS.trading_day()
@@ -683,7 +842,7 @@ def check_declaration(decl: Mapping[str, Any]) -> C.Design:
         if d["reason"] not in VOID_WORDS:
             raise PlaybookRefused(f"void date {d['date']}: its reason is not one of the void rules")
     anchors = decl["session_anchors"]
-    for sess in sorted({c.session for c in comps}):
+    for sess in sorted({c["session"] for c in decl["components"]}):
         key = ANCHOR_OF.get(sess)
         if key is None:
             continue
@@ -692,6 +851,8 @@ def check_declaration(decl: Mapping[str, Any]) -> C.Design:
         tz, hhmm = anchors[sess]
         if (tz, *_hhmm(hhmm)) != DC.LOCAL_ANCHORS[key]:
             raise PlaybookRefused(f"session {sess}'s anchor differs from the void calendar's")
+    if not list(decl["dates"]):
+        raise PlaybookRefused("the playbook names at least one date to show its windows on")
     for d in decl["dates"]:
         parse_day(d, "a session-anchor date")
     bank = decl["bankroll"]
@@ -713,7 +874,7 @@ def check_declaration(decl: Mapping[str, Any]) -> C.Design:
         keys.append(row_key(e))
     if len(set(keys)) != len(keys):
         raise PlaybookRefused("the expected journey names a result row twice")
-    return design
+    return space
 
 
 def row_key(e: Mapping[str, Any]) -> str:
@@ -725,7 +886,7 @@ def row_key(e: Mapping[str, Any]) -> str:
 
 @dataclass(frozen=True)
 class ResultFile:
-    """A result file accepted under R-6, B-1, B-3: its path relative to the root, its manifest's commit and
+    """A result file accepted under R-6, B-1, B-3, C2-8: its path relative to the root, its manifest's commit and
     convention, and its rows' cells as text, key 'section|block|measure|stat' -> the value's own text (each key once)."""
 
     file: str
@@ -760,23 +921,32 @@ def _ignored(rel: str, roots: Sequence[Path]) -> bool:
     return False
 
 
-def _price_cells(name: str, text: str, rows: Sequence[Mapping[str, str]]) -> bool:
-    """The licence guard on the file (`price_levels.scan_lines`) and on every cell alone (m-3): a cell that is a
-    number inside the guard's band and on its tick grid is a price."""
-    import numpy as np
-
+def _column_problem(fields: Sequence[str] | None, rows: Sequence[Mapping[str, str]]) -> str | None:
+    """C2-8: every column on the pinned list; no number of the price band in a label column (on the grid or off it,
+    with or without a unit); figures and counts allowed in their columns."""
     from extended import price_levels as PL
 
-    if PL.scan_lines(name, text.splitlines(), allow=()):
-        return True
-    cells = [PL._to_float(v) for r in rows for v in r.values() if isinstance(v, str)]
-    return bool(cells) and bool(PL.on_level(np.asarray(cells, dtype=float)).any())
+    if not fields:
+        return "it has no header"
+    off = [f for f in fields if f not in RESULT_COLUMNS]
+    if off:
+        return f"its columns {off} are not on the pinned list"
+    lo, hi = PL.BAND
+    for r in rows:
+        for f in fields:
+            if RESULT_COLUMNS[f] != LABEL:
+                continue
+            for tok in NUMBER_IN.findall(str(r.get(f, ""))):
+                x = float(tok.replace(",", ""))
+                if lo <= x <= hi:
+                    return f"its label column {f} holds a number of the price band"
+    return None
 
 
 def accept_result(root: Path | str, rel: Any, *, carried_pins: Mapping[str, str], design_id: str, convention: str,
                   decl_file: str, decl_sha: str, script: str, family: str,
                   extra: Mapping[str, Any] | None = None) -> ResultFile:
-    """A result file under the module docstring's conditions (R-5, R-6, B-1, B-3, m-1, m-3), or `PlaybookRefused`."""
+    """A result file under the module docstring's conditions, or `PlaybookRefused`."""
     root = Path(root).resolve()
     if not isinstance(rel, str) or not rel.startswith("results/") or not rel.endswith(".csv"):
         raise PlaybookRefused(f"a result file is named results/<name>.csv under the root, got {rel!r}")
@@ -811,14 +981,16 @@ def accept_result(root: Path | str, rel: Any, *, carried_pins: Mapping[str, str]
         raise PlaybookRefused(f"{rel} was not written by the declared script under the declaration's family")
     params = man.get("parameters") or {}
     want = {"design_id": design_id, "convention": convention, "declaration_file": decl_file,
-            "declaration_" + HASH: decl_sha, **dict(extra or {})}
+            DECL_SHA_KEY: decl_sha, **dict(extra or {})}
     bad = sorted(k for k, v in want.items() if params.get(k) != v)
     if bad:
         raise PlaybookRefused(f"{rel} is not bound to this pinned declaration ({', '.join(bad)} differ)")
     text = raw.decode()
-    rows = list(csv.DictReader(io.StringIO(text)))
-    if _price_cells(p.name, text, rows):
-        raise PlaybookRefused(f"{rel}: the licence guard finds a price cell in it: it is never printed")
+    reader = csv.DictReader(io.StringIO(text))
+    rows = list(reader)
+    why = _column_problem(reader.fieldnames, rows)
+    if why:
+        raise PlaybookRefused(f"{rel}: {why}: it is never printed")
     values: dict[str, str] = {}
     for r in rows:
         k = row_key(r)
@@ -835,18 +1007,9 @@ def _picked(res: ResultFile, keys: Sequence[str]) -> dict[str, str]:
             raise PlaybookRefused(f"{res.file} holds no row {k}")
         if not res.values[k].strip():
             raise PlaybookRefused(f"{res.file}'s value for {k} is blank")
+        _bare(res.values[k], f"{res.file}'s value for {k}")
         out[k] = res.values[k]
     return out
-
-
-def _finite(text: str, what: str) -> float:
-    try:
-        x = float(text)
-    except ValueError as e:
-        raise PlaybookRefused(f"{what} is not a number") from e
-    if not math.isfinite(x):
-        raise PlaybookRefused(f"{what} is not finite")
-    return x
 
 
 def _no_harm(res: ResultFile, decl: Mapping[str, Any]) -> dict[str, str]:
@@ -861,10 +1024,10 @@ def _no_harm(res: ResultFile, decl: Mapping[str, Any]) -> dict[str, str]:
                                   "playbook side, and the design is not carried")
         if res.values[k["side_rule"]] != canonical_rule(c["side_rule"]):
             raise PlaybookRefused(f"component {c['name']}: the no-harm floor was read on another side rule")
-        if _finite(res.values[k["margin"]], "the recorded margin") != margin:
+        if _bare(res.values[k["margin"]], "the recorded margin") != margin:
             raise PlaybookRefused(f"component {c['name']}: the no-harm floor was read with another margin")
-        tc = _finite(res.values[k["trigger_composite"]], "the trigger side's composite")
-        cc = _finite(res.values[k["coin_composite"]], "the coin side's composite")
+        tc = _bare(res.values[k["trigger_composite"]], "the trigger side's composite")
+        cc = _bare(res.values[k["coin_composite"]], "the coin side's composite")
         if tc < cc - margin:
             raise PlaybookRefused(f"component {c['name']}: its no-harm floor failed ({res.file}): it offers no "
                                   "playbook side, and the design is not carried")
@@ -879,63 +1042,93 @@ _MINT = object()
 
 @dataclass(frozen=True)
 class Carried:
-    """A carried design as `load_carried` accepted it: the declaration's bytes (re-read on every use), its path and
-    pinned sha256, the cited rows, the design, and the two result files' picked values."""
+    """A carried design as `load_carried` accepted it: the carrying record (its path, sha256, registration and row),
+    the declaration's bytes (re-read on every use), its path and pinned sha256, the cited rows, the windows' space,
+    and the two result files' picked values."""
 
+    record_file: str
+    record_sha: str
+    registration: str
+    row: str
     decl_file: str
     decl_sha: str
     decl_bytes: bytes
     rows: Mapping[str, str]
-    design: C.Design
+    space: SS.Space
     expected: ResultFile
     no_harm: ResultFile
     _mint: Any = field(default=None, repr=False, compare=False)
 
+    def _bound(self) -> tuple:
+        return (self.record_file, self.record_sha, self.registration, self.row, self.decl_file, self.decl_sha,
+                self.expected, self.no_harm)
+
     def __post_init__(self) -> None:
         if not (isinstance(self._mint, tuple) and self._mint and self._mint[0] is _MINT
-                and self._mint[-1] == (self.decl_file, self.decl_sha, self.expected, self.no_harm)
+                and self._mint[-1] == self._bound()
                 and hashlib.sha256(self.decl_bytes).hexdigest() == self.decl_sha):
-            raise PlaybookRefused("a carried design is made only by load_carried, from its pinned declaration")
+            raise PlaybookRefused("a carried design is made only by load_carried, from its pinned files")
 
     @property
     def decl(self) -> dict:
         return strict_json(self.decl_bytes)
 
 
-def load_carried(decl_file: str, *, root: Path | str = ROOT) -> Carried:
-    """The carried design from its pinned declaration (the module docstring), or `PlaybookRefused`."""
-    root = Path(root).resolve()
-    rows = decision_log(root)
-    order = list(rows)
-    p = (root / decl_file).resolve()
+def _rel(root: Path, f: str, what: str) -> tuple[Path, str]:
+    p = (root / f).resolve()
     try:
         rel = p.relative_to(root).as_posix()
     except ValueError as e:
-        raise PlaybookRefused(f"the declaration {decl_file} lies outside the root") from e
+        raise PlaybookRefused(f"{what} {f} lies outside the root") from e
     if not p.is_file():
-        raise PlaybookRefused(f"no declaration at {rel}")
+        raise PlaybookRefused(f"no {what} at {rel}")
+    return p, rel
+
+
+def load_carried(record_file: str, *, root: Path | str = ROOT) -> Carried:
+    """The carried design from its carrying record (the module docstring), or `PlaybookRefused`."""
+    root = Path(root).resolve()
+    rows = decision_log(root)
+    order = list(rows)
+    rp, rrel = _rel(root, record_file, "carrying record")
+    rdata = _lf(rp.read_bytes())
+    rsha = hashlib.sha256(rdata).hexdigest()
+    record = strict_json(rdata)
+    if not isinstance(record, Mapping) or sorted(record) != sorted(RECORD_KEYS):
+        raise PlaybookRefused(f"the carrying record holds exactly {RECORD_KEYS}")
+    did, reg, crow = record["design_id"], record["registration"], record["row"]
+    _ident(did, "the design id")
+    _ident(reg, "the registration id")
+    carrying = _cited(rows, crow, "the carrying row")
+    pins = _pins(carrying)
+    if pins.get(rrel) != rsha:
+        raise PlaybookRefused(f"the carrying record {rrel} is not the file pinned in {crow}")
+    p, rel = _rel(root, record["declaration"], "declaration")
     data = _lf(p.read_bytes())
     sha = hashlib.sha256(data).hexdigest()
+    if record[DECL_SHA_KEY] != sha:
+        raise PlaybookRefused(f"the declaration {rel} is not the one the carrying record binds (its hash {sha})")
+    tokens = CARRIED_TOKEN.findall(carrying)
+    if tokens != [(did, sha, reg)]:
+        raise PlaybookRefused(f"the carrying row {crow} does not hold the one token `carried: {did} @ <the declaration's "
+                              f"hash> -- {reg}`")
+    if NOT_CARRIED.search(carrying):
+        raise PlaybookRefused(f"the carrying row {crow} holds negated or conditional wording: the design is not carried")
     decl = strict_json(data)
     _need(decl, REQUIRED, "the declaration")
-    carrying = _cited(rows, decl["row"], "the carrying row")
-    pins = _pins(carrying)
-    if pins.get(rel) != sha:
-        raise PlaybookRefused(f"the declaration {rel} is not the file pinned in {decl['row']} (its hash {sha})")
-    design = check_declaration(decl)
-    did = decl["design_id"]
-    _names(carrying, did, f"the carrying row {decl['row']}")
-    _names(carrying, decl["registration"], f"the carrying row {decl['row']}")
-    if not re.search(r"\bcarried\b", carrying) or NOT_CARRIED.search(carrying):
-        raise PlaybookRefused(f"the carrying row {decl['row']} does not record the design as carried")
+    if decl["design_id"] != did:
+        raise PlaybookRefused("the carrying record names another design than its declaration")
+    space = check_declaration(decl)
     nh_id = decl["side"]["no_harm_row"]
     nh_row = _cited(rows, nh_id, "the side's no-harm row")
     _names(nh_row, did, f"the no-harm row {nh_id}")
     first = next((r for r in order if _pins(rows[r], strict=False).get(rel) == sha), None)
-    if first is None or not order.index(first) < order.index(nh_id) < order.index(decl["row"]):
+    if first is None or not order.index(first) < order.index(nh_id) < order.index(crow):
         raise PlaybookRefused("the declaration is pinned in a row before its no-harm row, and that before the carrying "
                               "row (the side rules fixed before the floor is read)")
-    _cited(rows, decl["side"]["margin_row"], "the no-harm margin's row")
+    m_row = _cited(rows, decl["side"]["margin_row"], "the no-harm margin's row")
+    if _margin_of(m_row, f"the margin row {decl['side']['margin_row']}") != float(decl["side"]["margin"]):
+        raise PlaybookRefused("the declaration's no-harm margin is not the one its margin row pins")
     _cited(rows, decl["bankroll"]["row"], "the bankroll budget's row")
     bind = dict(design_id=did, decl_file=rel, decl_sha=sha, family=decl["family"])
     exp_rel, nh_rel = decl["expected"]["file"], decl["side"]["no_harm_file"]
@@ -945,9 +1138,13 @@ def load_carried(decl_file: str, *, root: Path | str = ROOT) -> Carried:
                           _picked(expected, [row_key(e) for e in decl["expected"]["rows"]]))
     no_harm = accept_result(root, nh_rel, carried_pins=_pins(nh_row), convention=NO_HARM_CONVENTION,
                             script=decl["side"]["no_harm_script"], extra={"margin": decl["side"]["margin"]}, **bind)
+    if not _run_after_pin(root, "`" + rel + "` " + HASH + " `" + sha + "`", no_harm.commit):
+        raise PlaybookRefused(f"{nh_rel}'s run commit does not descend from the commit that pinned the declaration: "
+                              "the floor was not read after the pin")
     no_harm = ResultFile(no_harm.file, no_harm.commit, no_harm.convention, _no_harm(no_harm, decl))
-    cited = {r: rows[r] for r in (decl["row"], nh_id, decl["side"]["margin_row"], decl["bankroll"]["row"])}
-    return Carried(rel, sha, data, cited, design, expected, no_harm, _mint=(_MINT, (rel, sha, expected, no_harm)))
+    cited = {r: rows[r] for r in (crow, nh_id, decl["side"]["margin_row"], decl["bankroll"]["row"])}
+    bound = (rrel, rsha, reg, crow, rel, sha, expected, no_harm)
+    return Carried(rrel, rsha, reg, crow, rel, sha, data, cited, space, expected, no_harm, _mint=(_MINT, bound))
 
 
 def _carried(carried: Any) -> dict:
@@ -962,7 +1159,8 @@ def _library(decl: Mapping[str, Any]) -> dict[str, Any]:
     firm = decl["firm"]
     return {"plan": plan_name(firm, decl["plan"]),
             "cap": {a["id"]: size_cap(firm, a["role"], decl["instrument"]) for a in decl["accounts"]},
-            "tickets_alert": T.RTH_OPEN, "tickets_live": T.LIVE_0900, "hash": HASH}
+            "tickets_alert": T.RTH_OPEN, "tickets_live": T.LIVE_0900, "hash": HASH,
+            "prior_first": T.PRIOR_RTH[0], "prior_last": T.PRIOR_RTH[1], "reopen": 0, "pre_open": T.RTH_OPEN - 1}
 
 
 # ------------------------------------------------------------------------------------------------ the playbook
@@ -972,15 +1170,21 @@ def render_playbook(carried: Carried) -> Rendered:
     """The playbook's plain text (the module docstring); refuses anything but a carried design."""
     decl = _carried(carried)
     exp, nh = carried.expected, carried.no_harm
-    src = {"design": decl, "library": _library(decl), "file": {"decl": carried.decl_file, "sha": carried.decl_sha},
+    days = [parse_day(x) for x in decl["dates"]]
+    windows = [{c.name: (int(c.first), int(c.last)) for c in design_on(decl, carried.space, d).components}
+               for d in days]
+    src = {"design": decl, "library": _library(decl),
+           "file": {"decl": carried.decl_file, "sha": carried.decl_sha, "record": carried.record_file},
+           "carry": {"row": carried.row, "registration": carried.registration},
+           "calc": {"windows": windows},
            "expected": {"file": exp.file, "commit": exp.commit, **exp.values},
            "no_harm": {"file": nh.file, "commit": nh.commit, **nh.values}}
     d = _Doc(src)
     D, L = "design", "library"
-    d.line("PLAYBOOK -- design ", _v(D, "design_id"), " (carried under ", _v(D, "row"), ", registration ",
-           _v(D, "registration"), ")")
-    d.line("The declaration: ", _v("file", "decl"), ", ", _v(L, "hash"), " ", _v("file", "sha"), " (pinned in ",
-           _v(D, "row"), ").")
+    d.line("PLAYBOOK -- design ", _v(D, "design_id"), " (carried under ", _v("carry", "row"), ", registration ",
+           _v("carry", "registration"), ")")
+    d.line("The declaration: ", _v("file", "decl"), ", ", _v(L, "hash"), " ", _v("file", "sha"), "; its carrying "
+           "record: ", _v("file", "record"), " (pinned in ", _v("carry", "row"), ").")
     d.line("")
     d.line(HAND_ENTRY)
     d.line(OPPOSITE)
@@ -1000,19 +1204,23 @@ def render_playbook(carried: Carried) -> Rendered:
     d.line("COMPONENTS (one session window each; times in CT, Chicago)")
     for i, c in enumerate(decl["components"]):
         P = (D, "components", i)
-        trig = carried.design.components[i].trigger
-        cls = type(trig)
+        cls = TRIGGERS[c["trigger"]["source"]]
+        key = ANCHOR_OF.get(c["session"])
         d.line("Component ", _v(*P, "name"), " -- session ", _v(*P, "session"), ": orders go live on the bars stamped ",
-               _ct(*P, "first"), " CT to ", _ct(*P, "last"), " CT.")
+               _v(*P, "first"), " to ", _v(*P, "last"), " minutes after the session's start",
+               *((" (its local open, ", _v(D, "session_anchors", c["session"], 1), " ",
+                  _v(D, "session_anchors", c["session"], 0), ", converted on each date)") if key else
+                 (" (the reopen)",)), ":")
+        for j, _ in enumerate(decl["dates"]):
+            parts: list[Any] = ["    on ", _v(D, "dates", j)]
+            if key:
+                parts += [" (the open at ", ("anchor_ct", (D, "dates", j), P + ("session",)), " CT)"]
+            d.line(*parts, ": ", _ct("calc", "windows", j, c["name"], 0), " CT to ",
+                   _ct("calc", "windows", j, c["name"], 1), " CT")
         d.line("  Trigger (", _v(*P, "trigger", "source"), "): ", TRIGGER_WORDS[cls], ".")
         for k in sorted(c["trigger"]["params"]):
             v = c["trigger"]["params"][k]
-            if k in SLOT_PARAMS and isinstance(v, (list, tuple)):
-                parts: list[Any] = ["    ", k, ": "]
-                for j, _ in enumerate(v):
-                    parts += ([", "] if j else []) + [_ct(*P, "trigger", "params", k, j), " CT"]
-                d.line(*parts)
-            elif k in SLOT_PARAMS:
+            if k in SLOT_PARAMS:
                 d.line("    ", k, ": ", _ct(*P, "trigger", "params", k), " CT")
             elif isinstance(v, bool):
                 d.line("    ", k, ": ", ("yesno", (*P, "trigger", "params", k)))
@@ -1024,41 +1232,36 @@ def render_playbook(carried: Carried) -> Rendered:
                    " CT, when the alert is sent, and go live on the bar stamped ", _ct(L, "tickets_live"), " CT.")
         else:
             d.line("  Entry: ", ENTRY_WORDS[entry], ". The alert reaches you ", _v(*P, "latency"),
-                   " minutes before the order goes live.")
+                   " minutes before the order goes live; the alerts run from the window's start less that to its end "
+                   "less that, on each date.")
         d.line("  Side (the trigger's own, cleared by the no-harm floor under ", _v(D, "side", "no_harm_row"), "):")
         if cls is T.RL3Tickets:
             kind = c["trigger"]["params"]["kind"]
-            for name in TS.rl3_names(trig):
-                d.line("    at ", LEVEL_WORDS[(kind, name)], ": ", SIDE_RULE_WORDS[c["side_rule"][name]], ".")
+            for name in TS.rl3_names(T.RL3Tickets(kind, int(c["trigger"]["params"]["cutoff"]))):
+                d.line("    at ", *LEVEL_PARTS[(kind, name)], ": ", SIDE_RULE_WORDS[c["side_rule"][name]], ".")
+            d.line("    ", PLATFORM_LEVEL)
         else:
             d.line("    ", SIDE_RULE_WORDS[c["side_rule"]], ".")
-        NH = ("no_harm", "no_harm|search|" + c["name"] + "|")
+        NH = "no_harm|search|" + c["name"] + "|"
         d.line("    On the search years (the years this design was chosen on): the trigger side's composite ",
-               _v("no_harm", NH[1] + "trigger_composite"), ", the coin side's ", _v("no_harm", NH[1] + "coin_composite"),
-               ", the margin ", _v("no_harm", NH[1] + "margin"), ".")
+               _v("no_harm", NH + "trigger_composite"), ", the coin side's ", _v("no_harm", NH + "coin_composite"),
+               ", the margin ", _v("no_harm", NH + "margin"), ".")
         d.line("  Size: ", _v(*P, "contracts"), " contracts of ", _v(D, "instrument"),
                (" on each ticket." if cls is T.RL3Tickets else "."))
         d.line("  Stop: ", _v(*P, "stop_ticks"), " ticks from your fill. Target: ", ("target", P + ("stop_ticks",),
                P + ("rr",)), " ticks (reward to risk ", _v(*P, "rr"), "). Both are placed with the entry as a bracket.")
-        key = ANCHOR_OF.get(c["session"])
-        if key is None:
-            d.line("  The session opens at the reopen.")
-        else:
-            d.line("  The session's local open: ", _v(D, "session_anchors", c["session"], 1), " ",
-                   _v(D, "session_anchors", c["session"], 0), ".")
-            for j, _ in enumerate(decl["dates"]):
-                d.line("    on ", _v(D, "dates", j), " that is ", ("anchor_ct", (D, "dates", j), P + ("session",)),
-                       " CT")
     d.line("The no-harm floor's file: ", _v("no_harm", "file"), " (commit ", _v("no_harm", "commit"), "): ",
-           CONVENTIONS[NO_HARM_CONVENTION], "; the margin ", _v(D, "side", "margin"), " is set under ",
+           CONVENTIONS[NO_HARM_CONVENTION], "; the margin ", _v(D, "side", "margin"), " is the one pinned under ",
            _v(D, "side", "margin_row"), "; each component's side passed: its composite not below the coin's by more "
            "than the margin.")
     d.line("")
     d.line("EXECUTION RULES (every component)")
     E = (D, "execution")
-    d.line("- One position or working entry order at a time per firm (one level kind's tickets count as one order); after a "
-           "position closes, wait at least ", _v(*E, "gap_minutes"), " minutes before the next entry.")
+    d.line("- One position or working entry order at a time per firm (one level kind's tickets count as one order); "
+           "after a position closes, wait at least ", _v(*E, "gap_minutes"), " minutes before the next entry.")
     d.line("- Limit orders work ", _v(*E, "limit_window_min"), " minutes from going live, then are cancelled.")
+    d.line("- A limit or stop that would fill at once when it goes live (a BUY limit at or above the market, a SELL limit "
+           "at or below it, a BUY stop at or below it, a SELL stop at or above it) is not placed: no trade.")
     d.line("- Closed window: no entry and no fill on the bars stamped ", _ct(*E, "closed_window", 0), " CT through ",
            _ct(*E, "closed_window", 1), " CT, every day.")
     d.line("- On a jobs-report day: no fill on the bars stamped up to ", _ct(*E, "bls_clear"), " CT.")
@@ -1086,7 +1289,7 @@ def render_playbook(carried: Carried) -> Rendered:
     d.line("ACCOUNT ROTATION")
     rot = decl["rotation"]
     d.line("Rule ", _v(D, "rotation", "rule"), ": ", ROTATION_WORDS[rot["rule"]], ". Each alert names the account the "
-           "rule picks.")
+           "rule picks among the accounts you hold that day.")
     names = [c["name"] for c in decl["components"]]
     for name in sorted(dict(rot.get("pools", {}))):
         parts = ["  component ", _v(D, "components", names.index(name), "name"), ": "]
@@ -1148,11 +1351,21 @@ def _day_windows(decl: Mapping[str, Any], day: date) -> tuple[T.Window, ...]:
                  for w in decl["news_windows"] if day in {parse_day(x) for x in w["dates"]})
 
 
-def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources: Any, router: Any) -> Rendered:
+def _today(decl: Mapping[str, Any], accounts: Any) -> tuple[str, ...]:
+    """The accounts alive today (N-c2-1): a non-empty set of the declaration's, in the declaration's order."""
+    ids = [a["id"] for a in decl["accounts"]]
+    if isinstance(accounts, str) or not isinstance(accounts, (list, tuple)) or not accounts:
+        raise _mismatch("the accounts alive today are a non-empty list of the declaration's")
+    if len(set(accounts)) != len(accounts) or any(a not in ids for a in accounts):
+        raise _mismatch(f"the accounts alive today {list(accounts)} are not distinct accounts of the declaration's")
+    return tuple(a for a in ids if a in accounts)
+
+
+def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources: Any, router: Any,
+           accounts: Any) -> Rendered:
     decl = _carried(carried)
     ci, c = _comp(decl, component)
-    trig = carried.design.components[ci].trigger
-    if not isinstance(trig, (T.P14Breakout, T.RL3Tickets)):
+    if c["trigger"]["source"] not in (P14, RL3):
         raise _mismatch("the component's trigger offers no playbook side")
     if not isinstance(hist, T.History) or isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < len(hist):
         raise _mismatch("an alert is computed from the day's bars (a triggers.History and the day's index), never from "
@@ -1172,15 +1385,21 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
     want = R.Routing(rot["rule"], {k: tuple(v) for k, v in dict(rot.get("pools", {})).items()})
     if (router.routing.rotation, dict(router.routing.pools)) != (want.rotation, dict(want.pools)):
         raise _mismatch("the router's rotation is not the declaration's")
+    today = _today(decl, accounts)
     try:
         ctx = DC.alert_context(sources, UNDERLYING_OF[decl["instrument"]], day, i, windows=_day_windows(decl, day))
     except (DC.HeldOutDay, KeyError, ValueError) as e:
         raise _mismatch(f"the calendar known at the alert gives no context for {day}: {e}") from e
     try:
+        comp = next(x for x in design_on(decl, carried.space, day).components if x.name == c["name"])
+    except PlaybookRefused as e:
+        raise _mismatch(str(e)) from e
+    trig = comp.trigger
+    try:
         offers = trig.offers(cut_history(hist, i, at), i, ctx)
     except T.TriggerRefused as e:
         raise _mismatch(f"the trigger refuses the day: {e}") from e
-    group = [o for o in offers if int(o.alert) == int(at) and int(c["first"]) <= int(o.live) <= int(c["last"])]
+    group = [o for o in offers if int(o.alert) == int(at) and int(comp.first) <= int(o.live) <= int(comp.last)]
     if not group:
         raise AlertRefused("no_offer", f"component {c['name']}'s trigger makes no offer at {DC.label(at)} CT")
     live = int(group[0].live)
@@ -1190,12 +1409,11 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
     if not kept:
         why = refused[0][1]
         raise AlertRefused(why if why in REASON_WORDS else "calendar", f"the library refuses the offer: {why}")
-    accounts = tuple(a["id"] for a in decl["accounts"])
     try:
-        account = router.peek(decl["firm"], c["name"], accounts)
+        account = router.peek(decl["firm"], c["name"], today)
     except R.RoutingRefused as e:
         raise _mismatch(str(e)) from e
-    ai = accounts.index(account)
+    ai = [a["id"] for a in decl["accounts"]].index(account)
     cap = size_cap(decl["firm"], decl["accounts"][ai]["role"], decl["instrument"])
     if int(c["contracts"]) * len(kept) > cap:
         raise _mismatch("the order's size (every ticket together) exceeds the firm's verified limit for this account")
@@ -1232,16 +1450,16 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
     D, Cp, K = "design", ("design", "components", ci), "calc"
     pair = len(tickets) > 1
     d.line("TRADE ALERT -- enter by hand. This message is not an order and nothing sends it anywhere.")
-    d.line("Design ", _v(D, "design_id"), " (carried under ", _v(D, "row"), "). Date ", _v("day"), ". Alert ",
-           _ct(K, "alert"), " CT; the order goes live on the bar stamped ", _ct(K, "live"), " CT.")
+    d.line("Design ", _v(D, "design_id"), ". Date ", _v("day"), ". Alert ", _ct(K, "alert"),
+           " CT; the order goes live on the bar stamped ", _ct(K, "live"), " CT.")
     d.line("Firm ", _v(D, "firm"), " (", _v("library", "plan"), "), account ", _v(K, "account"), ": ",
            ROLES[decl["firm"]][decl["accounts"][ai]["role"]][1], " -- the rotation's pick (", _v(D, "rotation", "rule"),
-           ").")
+           ") among the accounts you hold today.")
     if pair:
         d.line("Instrument ", _v(D, "instrument"), ", ", _v(*Cp, "contracts"), " contracts on each ticket, ",
-               _v(K, "total"), " for the pair together (the firm's verified limit for this account: ", _v(K, "cap"),
+               _v(K, "total"), " for the tickets together (the firm's verified limit for this account: ", _v(K, "cap"),
                ").")
-        d.line(OCO_WORDS)
+        d.line(PAIR_WORDS)
     else:
         d.line("Instrument ", _v(D, "instrument"), ", ", _v(*Cp, "contracts"), " contracts (the firm's verified limit "
                "for this account: ", _v(K, "cap"), ").")
@@ -1253,19 +1471,21 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
                    "; the rule is ", SIDE_RULE_WORDS[c["side_rule"]], ".")
         else:
             kind_name = tuple(t["tag"].split("_", maxsplit=1))
-            d.line(*lead, "Side ", ("side", T_ + ("side",)), ": the level is ", LEVEL_WORDS[kind_name], ", ",
-                   ROLE_WORDS[t["role"]], "; the rule at this level is ", SIDE_RULE_WORDS[t["rule"]], ".")
+            d.line(*lead, "Side ", ("side", T_ + ("side",)), ": the level is ", *LEVEL_PARTS[kind_name], ", ",
+                   *ROLE_PARTS[t["role"]], "; the rule at this level is ", SIDE_RULE_WORDS[t["rule"]], ".")
         if t["kind"] == W.MARKET:
             d.line("  Order ", ("order", T_ + ("kind",)), " at the open of the bar stamped ", _ct(K, "live"), " CT.")
-        elif isinstance(trig, T.P14Breakout):
-            d.line("  Order ", ("order", T_ + ("kind",)), " at the price at the alert: the close of the bar stamped ",
-                   _st(K, "alert"), " CT (it ends at ", _ct(K, "alert"), " CT), as your platform shows it when this "
-                   "alert reaches you.")
-        elif t["kind"] == W.LIMIT_ENTRY:
-            d.line("  Order ", ("order", T_ + ("kind",)), " at the level itself, read on your chart.")
         else:
-            d.line("  Order ", ("order", T_ + ("kind",)), " ", _v(*T_, "beyond"), " tick ", BEYOND_WORDS[t["side"]],
-                   " the level, read on your chart.")
+            if isinstance(trig, T.P14Breakout):
+                d.line("  Order ", ("order", T_ + ("kind",)), " at the price at the alert: the close of the bar stamped ",
+                       _st(K, "alert"), " CT (it ends at ", _ct(K, "alert"), " CT), as your platform shows it when "
+                       "this alert reaches you.")
+            elif t["kind"] == W.LIMIT_ENTRY:
+                d.line("  Order ", ("order", T_ + ("kind",)), " at the level itself, read on your chart.")
+            else:
+                d.line("  Order ", ("order", T_ + ("kind",)), " ", _v(*T_, "beyond"), " tick ", BEYOND_WORDS[t["side"]],
+                       " the level, read on your chart.")
+            d.line("  When it goes live (the bar stamped ", _ct(K, "live"), " CT), ", VOID_AT_LIVE)
         for k, s in enumerate(t["stretches"]):
             S = T_ + ("stretches", k)
             if t["kind"] == W.MARKET:
@@ -1285,7 +1505,9 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
             d.line(*parts)
     for tag, why in dropped:
         kind_name = tuple(tag.split("_", maxsplit=1))
-        d.line("Not offered today: the ticket at ", LEVEL_WORDS[kind_name], " -- ", REASON_WORDS.get(why, why), ".")
+        d.line("Not offered today: the ticket at ", *LEVEL_PARTS[kind_name], " -- ", REASON_WORDS.get(why, why), ".")
+    if isinstance(trig, T.RL3Tickets):
+        d.line(PLATFORM_LEVEL)
     d.line("The trigger's own side, cleared by the no-harm floor under ", _v(D, "side", "no_harm_row"), ".")
     d.line("Stop ", _v(*Cp, "stop_ticks"), " ticks from your fill; target ", ("target", Cp + ("stop_ticks",),
            Cp + ("rr",)), " ticks (reward to risk ", _v(*Cp, "rr"), "); entered with the order as a bracket.")
@@ -1298,7 +1520,7 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
            _ct(K, "decision"), " CT, on the bars closed by then; the calendar known before the alert does not void the "
            "day for it; no window covers the bar stamped ", _ct(K, "live"), " CT.")
     d.line("Before you enter: enter only if, at this firm, no position is open, no entry order is working",
-           (" (this pair counts as one order)" if pair else ""), ", and the last position closed at least ",
+           (" (these tickets count as one order)" if pair else ""), ", and the last position closed at least ",
            _v(D, "execution", "gap_minutes"), " minutes ago -- the firm's state is yours to check.")
     d.line(OPPOSITE)
     d.line(NO_COPY)
@@ -1306,18 +1528,19 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
 
 
 def render_alert(carried: Carried, component: str, hist: T.History, i: int, at: int, sources: DC.Sources,
-                 router: R.Router) -> Rendered:
-    """The alert of `component`'s trigger at slot `at` of day `i` of `hist` (the module docstring); `AlertRefused`
-    otherwise (its `reason` says whether a not-offered notice is due)."""
-    return _alert(carried, component, hist, i, at, sources, router)
+                 router: R.Router, accounts: Sequence[str]) -> Rendered:
+    """The alert of `component`'s trigger at slot `at` of day `i` of `hist` (the module docstring), the account the
+    router's pick among `accounts` (those alive today); `AlertRefused` otherwise (its `reason` says whether a
+    not-offered notice is due)."""
+    return _alert(carried, component, hist, i, at, sources, router, accounts)
 
 
 def render_offer(carried: Carried, component: str, hist: T.History, i: int, at: int, sources: DC.Sources,
-                 router: R.Router) -> Rendered:
+                 router: R.Router, accounts: Sequence[str]) -> Rendered:
     """The alert, or the not-offered notice when the day or the trigger voids the offer; a mismatch, or no offer at
     that moment, still refuses."""
     try:
-        return _alert(carried, component, hist, i, at, sources, router)
+        return _alert(carried, component, hist, i, at, sources, router, accounts)
     except AlertRefused as e:
         if e.reason in ("mismatch", "no_offer"):
             raise
@@ -1326,9 +1549,9 @@ def render_offer(carried: Carried, component: str, hist: T.History, i: int, at: 
 
 def _live_of(carried: Carried, component: str, hist: T.History, i: int, at: int, sources: DC.Sources) -> int:
     decl = carried.decl
-    ci, c = _comp(decl, component)
-    trig = carried.design.components[ci].trigger
+    _, c = _comp(decl, component)
     day = parse_day(hist.days[i], "the day")
+    trig = next(x for x in design_on(decl, carried.space, day).components if x.name == c["name"]).trigger
     ctx = DC.alert_context(sources, UNDERLYING_OF[decl["instrument"]], day, i, windows=_day_windows(decl, day))
     offs = [o for o in trig.offers(cut_history(hist, i, at), i, ctx) if int(o.alert) == int(at)]
     return int(offs[0].live)
@@ -1361,7 +1584,8 @@ def render_trade(carried: Carried, trade: Any) -> Rendered:
 
 
 __all__ = ["REQUIRED", "TRANSFORMS", "FIRMS", "PLANS", "ROLES", "VOID_WORDS", "RESEARCH_WORDS", "REASON_WORDS",
-           "CONVENTIONS", "PlaybookRefused", "AlertRefused", "Piece", "Rendered", "ResultFile", "Carried", "resolve",
-           "parse_day", "strict_json", "plan_name", "micros_per_mini", "size_cap", "decision_log", "canonical_rule",
-           "check_declaration", "row_key", "accept_result", "load_carried", "cut_history", "render_playbook",
-           "render_alert", "render_offer", "render_trade"]
+           "CONVENTIONS", "RESULT_COLUMNS", "PlaybookRefused", "AlertRefused", "Piece", "Rendered", "ResultFile",
+           "Carried", "resolve", "parse_day", "strict_json", "plan_name", "micros_per_mini", "size_cap",
+           "decision_log", "canonical_rule", "window_space", "design_on", "check_declaration", "row_key",
+           "accept_result", "load_carried", "cut_history", "render_playbook", "render_alert", "render_offer",
+           "render_trade"]
