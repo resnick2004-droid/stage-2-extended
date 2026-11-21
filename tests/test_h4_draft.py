@@ -212,16 +212,19 @@ def test_the_seed_table(text: str) -> None:
     assert status[:5] == ["tests", "design check", "reading", "schedule", "audit sample"]
     assert roles[5:] == ["spare"] * 5 and status[5:] == ["spare, drawn by nothing"] * 5
     assert len(set(roles[:5])) == 5, "one role each"
-    assert roles[4].startswith("H4-B: the audit sample of units -- one draw a unit (start, seed index)")    # rc-3
+    assert roles[4].startswith("`h4b_audit_sample` (the spare `h4_spare_4`, to register): H4-B, the audit sample of "
+                               "units -- one draw a unit (start, seed index)")                              # rc-3
     assert "a unit sampled when its draw is below 1 % (section 7)" in roles[4]
-    assert roles[3].startswith("H4-S: the coin's schedule side -- one draw a (session, moment)")
+    assert roles[3].startswith("`h4s_schedule_side`: H4-S, the coin's schedule side -- one draw a (session, moment)")
     assert "so independent of every seed index" in roles[3]
     toks = set(re.findall(r"\b2026\d{4}\b", text))
     assert toks <= {str(s) for s in H4_BLOCK}, f"another block's seed in the text: {sorted(toks - set(map(str, H4_BLOCK)))}"
     assert not re.search(r"\b2026587\d\b", text), "H3's block is named by role only"
     flat = _flat(sec)
     assert "never the seed plus an offset (E-171)" in flat
-    assert "`three_way_seeds.PARTS` gains `H4-0`, `H4-S` and `H4-B`" in flat
+    assert ('`PARTS["H4-0"] == 10`, `PARTS["H4-B"] == 11`, `PARTS["H4-T"] == 12` (H4\'s tests) and '
+            '`PARTS["H4-S"] == 13`') in flat
+    assert "**The audit sample's seed takes the spare `h4_spare_4`** and is named here `h4b_audit_sample`" in flat
     assert "**The scans are a guard, not the defence** (m-7)" in flat and "`ProvenanceRefused`" in flat
 
 
@@ -1244,3 +1247,32 @@ def test_appendix_f_answers_every_finding(text: str) -> None:
     table = _between(text, "<!-- h4_findings_c3: begin -->", "<!-- h4_findings_c3: end -->")
     ids = tuple(re.findall(r"^\| (RC-\d|rc-\d+|rn-a to rn-e) \|", table, re.MULTILINE))
     assert ids == FINDINGS_C3
+
+
+SEED_MODULE_COMMIT = "cb1ff6c"
+
+
+def test_the_seed_block_is_the_seed_modules() -> None:
+    """The draft's parts and role names are the seed module's at wt/wt-three cb1ff6c, the block's values its
+    `H4_ROLES`; the audit sample's role is the spare `h4_spare_4`, still unregistered there."""
+    src = _show(SEED_MODULE_COMMIT, "extended/three_way_seeds.py")
+    tree = ast.parse(src)
+    env = {}
+    for node in tree.body:
+        if isinstance(node, (ast.Assign, ast.AnnAssign)):
+            target = node.targets[0] if isinstance(node, ast.Assign) else node.target
+            if isinstance(target, ast.Name) and target.id in ("H4_ROLES", "PARTS"):
+                env[target.id] = node.value
+    roles = ast.literal_eval(env["H4_ROLES"])
+    assert sorted(roles.values()) == list(H4_BLOCK), "the module's H4 block is this draft's"
+    parts_src = ast.get_source_segment(src, env["PARTS"])
+    for name, pid in (("H4-0", 10), ("H4-B", 11), ("H4-T", 12), ("H4-S", 13)):
+        assert f'"{name}": {pid}' in parts_src, name
+    assert roles["h4_tests"] == H4_BLOCK[0] and roles["h4_0_probe"] == H4_BLOCK[1]
+    assert roles["h4b_coins"] == H4_BLOCK[2] and roles["h4s_schedule_side"] == H4_BLOCK[3]
+    assert roles["h4_spare_4"] == H4_BLOCK[4] and "h4b_audit_sample" not in roles, "to register by wt-three"
+    text = _lf(DRAFT)
+    table = _section(text, 15)
+    for role, i in (("h4_tests", 0), ("h4_0_probe", 1), ("h4b_coins", 2), ("h4s_schedule_side", 3),
+                    ("h4b_audit_sample", 4)):
+        assert re.search(rf"^\| {H4_BLOCK[i]} \| `{role}`", table, re.MULTILINE), role

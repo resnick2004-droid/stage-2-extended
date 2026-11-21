@@ -406,18 +406,23 @@ unit whose window holds one.
 A block of its own: ten consecutive seeds, one role each. Each seed draws only its role; within a role every draw is a
 child keyed by the fixed-length key of its kind (`three_way_keys.seed_key`: the seed, a nonzero tag, exactly the
 kind's fields, every word below 2^32), never the seed plus an offset (E-171). **The part is in every key**: H4's parts
-take their own part ids in the seed module (`three_way_seeds.PARTS` gains `H4-0`, `H4-S` and `H4-B`, Appendix C). The runner
-reads its seeds from `extended/three_way_seeds.py` only, as `RoleSeed`s it issues (a literal typed elsewhere, or a value
-rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module gains this block with its roles, statuses and
-`ROLE_USE`, the spares issued to nothing.
+have their own part ids in the seed module, **as registered at wt/wt-three cb1ff6c**: `PARTS["H4-0"] == 10`,
+`PARTS["H4-B"] == 11`, `PARTS["H4-T"] == 12` (H4's tests) and `PARTS["H4-S"] == 13` (the coin's schedule side). The
+runner reads its seeds from `extended/three_way_seeds.py` only, as `RoleSeed`s it issues (a literal typed elsewhere, or
+a value rebuilt by arithmetic, is refused, `ProvenanceRefused`); the module holds this block in `H4_ROLES`, with its
+statuses and `ROLE_USE`, the spares refused by `issue`. Its role names at cb1ff6c: `h4_tests`, `h4_0_probe`,
+`h4b_coins`, `h4s_schedule_side` (status `schedule`) and the spares `h4_spare_4` to `h4_spare_9`. **The audit sample's
+seed takes the spare `h4_spare_4`** and is named here `h4b_audit_sample` (rc-3), for wt-three to register under that
+name with its `ROLE_USE` (the `plant` kind, the part H4-B); until it is registered, `issue` refuses it and no run
+draws it.
 
 | seed | role | status |
 |---|---|---|
-| 20264400 | the unit tests: this draft's T-0 and H4's build (synthetic toys only; the `test` kind) | tests |
-| 20264401 | H4-0, the probe's synthetic toys (the firm path's cost) | design check |
-| 20264402 | H4-B: the coin field on the search years -- every baseline, every arm, every reading; draw kinds the side and reflection coin, the race, R-10's stopped walk, the missed-signal draw (measure (28)); the enforcement kind keyed apart, drawing nothing at `off` | reading |
-| 20264403 | H4-S: the coin's schedule side -- one draw a (session, moment) of the coin's offers, the coin kind's fixed fields with the part H4-S, history 0, seed index 0 and start 0 (the schedule is no user's), so independent of every seed index | schedule |
-| 20264404 | H4-B: the audit sample of units -- one draw a unit (start, seed index), the `plant` kind's fixed fields with the part H4-B, history 0, the start as the plant and the seed index as the replicate, a unit sampled when its draw is below 1 % (section 7) | audit sample |
+| 20264400 | `h4_tests`: the unit tests, this draft's T-0 and H4's build (synthetic toys only; the part H4-T) | tests |
+| 20264401 | `h4_0_probe`: H4-0, the probe's synthetic toys (the firm path's cost; the part H4-0) | design check |
+| 20264402 | `h4b_coins`: H4-B, the coin field on the search years -- every baseline, every arm, every reading; draw kinds the side and reflection coin, the race, R-10's stopped walk, the missed-signal draw (measure (28)); the enforcement kind keyed apart, drawing nothing at `off` | reading |
+| 20264403 | `h4s_schedule_side`: H4-S, the coin's schedule side -- one draw a (session, moment) of the coin's offers, the coin kind's fixed fields with the part H4-S, history 0, seed index 0 and start 0 (the schedule is no user's), so independent of every seed index | schedule |
+| 20264404 | `h4b_audit_sample` (the spare `h4_spare_4`, to register): H4-B, the audit sample of units -- one draw a unit (start, seed index), the `plant` kind's fixed fields with the part H4-B, history 0, the start as the plant and the seed index as the replicate, a unit sampled when its draw is below 1 % (section 7) | audit sample |
 | 20264405 | spare | spare, drawn by nothing |
 | 20264406 | spare | spare, drawn by nothing |
 | 20264407 | spare | spare, drawn by nothing |
