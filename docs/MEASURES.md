@@ -1143,7 +1143,7 @@ changed line the test also checks that the text it replaced is gone.
 Under M-2 every exact-run difference refuses a journey reading, and no reason is declared. If the held-out runner met
 a difference, the held-out years would be replayed and then refused, and any reason written then would be written after
 seeing held-out records. So the rate is measured first, on the search years only:
-- **What runs:** P-14's search-year job (its registered latency and brackets, both of U1's arms), through
+- **What runs:** P-14's search-year job (its registered latency and brackets, U1's point arm only: E-248 narrows the count to the point arm, the journey's deciding readings using the point arm and the redraw; the verdict arm's count is not measured), through
   `extended/user_beside.py`, `run_starts(..., journey=True)` with its defaults: `journey_block` the search years (a
   held-out start is refused before the pool) and `exact_every` 1 (every start checked). Responses: `off`, and the denial
   ladder's `denial_25` (the response D-145's gate reads), so a difference that only a response produces is seen.
@@ -1153,6 +1153,10 @@ seeing held-out records. So the rate is measured first, on the search years only
   and the starts whose exact h-session run's event days differ from the cut long run's (`differs`); for each
   difference, which event moved (first pass, first payout, a pay day) and by how many sessions. Counts only: no
   measure's value is read or written.
+- **Which horizons:** an exact h-session run is made only when h < L, the start's long run (Stage 2's own rule: U1's
+  `compared` is the sum over h of the starts with L > h), so the count at a horizon covers fewer of the last starts;
+  when L = h the long run is itself the exact run. Every use of the count says how many starts each horizon covers
+  (the Q-172 audit's C5, E-256).
 - **Written:** one result file with its manifest, from a clean checkout of a named commit (`scripts/run_clean.py`),
   under `run.lock`; its manifest names the record read (m-8).
 - **What follows:** with no difference, no reason is needed and M-2's refusal stands as a guard. With any, each kind of
