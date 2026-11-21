@@ -15,8 +15,10 @@ inside the window.
 **A design** (`Design`) is one firm's components. It refuses, at construction:
 * two components whose windows collide (CHARTER 3.5: "Components' windows are scheduled not to collide");
 * a window outside its session or outside the firm's day (from `trading_hours`' reopen to its last new entry,
-  `lever_space.trading_day`). NY AM and NY PM are checked only against the whole `ny` session: their boundary (T2b)
-  is declared (noon New York, `lever_space.session_windows` splits at it), but this check does not yet apply it;
+  `lever_space.trading_day`). **NY has three names** (the red team's m1, the lead's ruling): `ny_am` and `ny_pm`
+  are strict at T2b's split (noon New York, `lever_space.session_windows` splits at it on each date), and `ny` is the
+  whole NY session, for a design whose window crosses noon -- the registered baselines' whole-NY windows name `ny`. A
+  searched design uses the split forms only (`search_space.from_lever_space` refuses `ny`, m2);
 * any overlap mode but `refused`: a design holding two positions of the user at once is refused until the search
   template defines overlap (`docs/plans/THREE_WAY_TEST_design.md` 1.6).
 
@@ -138,9 +140,9 @@ def session_windows_of(day: date) -> dict[str, tuple[int, int | None]]:
 
 def session_bounds(day: date | None = None) -> dict[str, tuple[int, int]]:
     """Each session's [start, end) in trading-day slots from the firm's day (`session_windows_of`, minutes after the
-    reopen), the NY sessions both bounded by the whole `ny` session (T2b's split, which `lever_space.session_windows`
-    makes on each date, is not yet applied here); and the day's last new entry. The clock is 17:00-based: a firm
-    reopening at another time is refused.
+    reopen): `ny_am` and `ny_pm` strict at T2b's split, `ny` the whole NY session (from `ny_am`'s start to `ny_pm`'s
+    end; the red team's m1); and the day's last new entry. The clock is 17:00-based: a firm reopening at another time is
+    refused.
 
     The session starts are anchored to their local market times per date (E-231 (3)). With `day`, that trading day's
     sessions; without, **the bounds that hold on every weekday of the search years** (`day_calendar.SEARCH_START` to
@@ -153,9 +155,8 @@ def session_bounds(day: date | None = None) -> dict[str, tuple[int, int]]:
     out: dict[str, tuple[int, int]] = {}
     for d in days:
         sw = session_windows_of(d)
-        ny = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))
-        cur = {k: (int(a), int(b)) for k, (a, b) in sw.items() if k not in ("ny_am", "ny_pm")}
-        cur["ny_am"] = cur["ny_pm"] = ny
+        cur = {k: (int(a), int(b)) for k, (a, b) in sw.items()}
+        cur["ny"] = (int(sw["ny_am"][0]), int(sw["ny_pm"][1]))     # the whole NY session (m1)
         for k, (a, b) in cur.items():
             a0, b0 = out.get(k, (a, b))
             out[k] = (max(a0, a), min(b0, b))

@@ -986,15 +986,18 @@ def sample(firm: str, *, seed: int, n: int = 1) -> list[dict[str, Any]]:
     """`n` designs drawn uniformly from the firm's loaded space (searched levers drawn, fixed levers at their value;
     T4 one cell for a latency-free source), each passed through `check_design`. A conduct tier-1 or hard-limit refusal
     is raised, never redrawn (the space must not contain one); a combination refusal is redrawn, at most
-    `sample.max_redraws` times. The seed is the caller's, fixed in its declaration (CLAUDE.md)."""
+    `sample.max_redraws` times. The seed is the caller's, fixed in its declaration (CLAUDE.md). Topstep's A15 and A17
+    are **held until wired** (`lever_space.HELD_UNTIL_WIRED`, the red team's m4): set at their bases, never drawn."""
     rng = np.random.default_rng(int(seed))
     sp = load(firm)
     lv = levers(firm)
-    use = [i for i in lv if i in sp and lv[i].cls in (SEARCHED, FIXED)]
+    held = {i: sp[i].values[0] for i in LS.HELD_UNTIL_WIRED if firm == "topstep" and i in sp}  # m4: the base
+    use = [i for i in lv if i in sp and lv[i].cls in (SEARCHED, FIXED) and i not in held]
     out = []
     for _ in range(int(n)):
         for _attempt in range(int(fdeclared("sample.max_redraws"))):
             d = {i: _draw(sp[i], rng) for i in use if i != "T4"}
+            d.update(held)
             if "T4" in sp:
                 cells = LS.latency_cells(d["T1"]) if "T1" in d else tuple(sp["T4"].values)
                 d["T4"] = cells[int(rng.integers(len(cells)))]

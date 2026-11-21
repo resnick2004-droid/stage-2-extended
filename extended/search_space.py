@@ -3,7 +3,7 @@ space-filling sampler, the cell ledger that counts every cell proposed, and the 
 reaches the surrogate (`extended.surrogate`) or the plateau check (`extended.plateau`).
 
     from extended import search_space as SS
-    space = SS.from_lever_space(slots={"ny": 2})            # the Topstep $50K lever table, through its loader
+    space = SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1})   # the Topstep $50K lever table, its loader
     ledger = SS.CellLedger()
     designs = SS.Sampler(space, seed=S0, method="sobol").survey(256, ledger=ledger)
     ledger.counts()                                           # every cell proposed, the refused ones included
@@ -18,7 +18,9 @@ latency cells of a component's source, `lever_space.latency_cells`: 5, 3 and 2 m
 latency-free source). An integer may run **after** another (a window's last mark is at or after its first). A
 dimension may be **active only if** another holds a value (a component slot's levers only when the slot is on);
 inactive, it holds `None`. Levers held fixed (`fixed`) and levers refused by the loader (`refused`, with the
-refusal's class) are carried beside the dimensions, never sampled.
+refusal's class) are carried beside the dimensions, never sampled; so are the searched rows **held until wired**
+(`held`, with the label `lever_space.HELD_UNTIL_WIRED` gives: A15 and A17 at their bases until an executor applies them,
+the red team's m4), whose base value sits in `fixed`.
 
 **A component slot** (`Slot`; CHARTER 2's component, lever table T1-T5, S2): an offer window [first, last] on the
 mark grid (T3's step) inside one session of the firm's day, with its source (T1), latency (T4), entry type (T5) and
@@ -139,6 +141,13 @@ _INACTIVE_U = 0.5
 LIBS: tuple[tuple[str, str], ...] = (("numpy", np.__version__), ("scipy", scipy.__version__))
 _TIER_ONE_FOLDED = frozenset(x.casefold() for x in TIER_ONE)
 _ROUND = re.compile(r"round-(\d+)")
+
+
+#: the whole NY session's name (`components.session_bounds`): a registered design's, never a searched one's (m2)
+WHOLE_NY = "ny"
+WHOLE_NY_REFUSED = ("a searched slot in `ny`, the whole NY session, is refused: T2 declares `ny_am` and `ny_pm`, split "
+                    "at T2b (the red team's m2, the lead's ruling); a registered design may still name `ny` through "
+                    "`components`")
 
 
 class SpaceRefused(ValueError):
@@ -273,6 +282,8 @@ class Space:
     starts: Callable[[date], Mapping[str, int]] | None = None
     #: the dates the offsets' bounds hold on (every window inside its session on each)
     days: tuple[date, ...] = ()
+    #: searched levers held at their base until an executor applies them (m4): lever -> its label
+    held: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         names = [d.name for d in self.dims]
@@ -291,6 +302,11 @@ class Space:
                 raise SpaceRefused(f"constraint {c.name}: unknown class {c.cls!r}")
         if self.fixed.get(OVERLAP_KEY, OVERLAP_REFUSED) != OVERLAP_REFUSED:
             raise SpaceRefused("overlap is refused until the template defines it (m-2, E-210)")
+        if self.lever_checks and any(sl.session == WHOLE_NY for sl in self.slots):
+            raise SpaceRefused(WHOLE_NY_REFUSED)
+        for k in self.held:
+            if k not in self.fixed or any(d.lever == k and d.slot is None for d in self.dims):
+                raise SpaceRefused(f"{k} is held until wired: its base is fixed, never a dimension (m4)")
         object.__setattr__(self, "_by_name", {d.name: d for d in self.dims})
 
     # -- access
@@ -674,6 +690,8 @@ class Sampler:
         if method not in METHODS:
             raise SpaceRefused(f"unknown method {method!r}; one of {METHODS}")
         child_rng(seed)                                                   # refuses a seed that is not an integer
+        if any(sl.session == WHOLE_NY for sl in space.slots):
+            raise SpaceRefused(WHOLE_NY_REFUSED)
         self.space, self.seed, self.method = space, int(seed), method
 
     def _stream(self, combo: int, fixed: Mapping[int, float], n: int, ledger: CellLedger, role: str,
@@ -739,9 +757,10 @@ def _overnight_allowed() -> bool:
 def session_spans(day: date, ny_boundary: int | None = None) -> dict[str, tuple[int, int]]:
     """Trading day `day`'s sessions as [start, end) in slots after the reopen (`components.session_windows_of(day)`, the
     one function every session window is read through, anchored per date, E-231 (3)), each end clipped to one past the
-    firm's last new entry. Without a boundary NY is one session, `ny`; given one (a slot), `ny_am` and `ny_pm`, and it
-    must be T2b's declared boundary (`lever_space.check_ny_boundary`: noon New York; any other value is refused, the
-    red team's L-M2)."""
+    firm's last new entry. Without a boundary NY is one session, `ny` (the whole session: a reading of windows, the
+    registered designs' form; a searched slot never takes it, m2); given one (a slot), `ny_am` and `ny_pm`, and it must
+    be T2b's declared boundary (`lever_space.check_ny_boundary`: noon New York; any other value is refused, the red
+    team's L-M2)."""
     from extended import components as C
     from extended import lever_space as LS
 
@@ -754,7 +773,7 @@ def session_spans(day: date, ny_boundary: int | None = None) -> dict[str, tuple[
         spans["ny"] = ny
     else:
         try:
-            b = LS.check_ny_boundary(ny_boundary)
+            b = LS.check_ny_boundary(ny_boundary, firm="topstep")
         except LS.LeverRefused as e:
             raise SpaceRefused(f"{e} (on {day})") from None
         if not ny[0] < b < ny[1] or b % step:
@@ -841,10 +860,16 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
     its session's start, read per date** (`Space.windows_on`; the starts anchored to local market times, E-231 (3)),
     bounded so the window stays inside its session on every one of `days` (default: the search years' weekdays). An
     overnight session's slot holds no source until H2's row (`triggers.overnight_allowed`), so it is always off and
-    carried as refused."""
+    carried as refused. **NY is split at T2b** (m2): `ny_boundary` defaults to T2b's loaded value and must be it, and a
+    slot in `ny`, the whole session, is refused. **A15 and A17 are held until wired** (m4): fixed at their declared
+    bases (`lever_space.held_value`) and labelled in `held`, never dimensions, until an executor applies them."""
     from extended import lever_space as LS
     from extended import triggers as T
 
+    if WHOLE_NY in slots:
+        raise SpaceRefused(WHOLE_NY_REFUSED)
+    if ny_boundary is None:
+        ny_boundary = int(LS.bounds("T2b").values[0])
     days = tuple(days) if days is not None else search_days()
     sess = session_slots(ny_boundary, days)
     spans_by_day = {d: session_spans(d, ny_boundary) for d in days}
@@ -856,10 +881,13 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
     fixed = {k: r.values for k, r in loaded.items() if LS.LEVERS[k].cls == LS.FIXED}
     fixed[OVERLAP_KEY] = OVERLAP_REFUSED
     fixed[FIRMS_KEY] = 1
+    held = {k: label for k, label in LS.HELD_UNTIL_WIRED.items() if k in loaded}
+    for k in held:
+        fixed[k] = (loaded[k].values[0],)                    # its base: the first declared value
     dims: list[Dim] = []
     for k, r in loaded.items():
         lv = LS.LEVERS[k]
-        if lv.cls != LS.SEARCHED or k in SLOT_LEVERS or k == "T2":
+        if lv.cls != LS.SEARCHED or k in SLOT_LEVERS or k == "T2" or k in held:
             continue
         if r.kind == "choices":
             dims.append(Dim(k, CAT, values=tuple(r.values), lever=k))
@@ -885,7 +913,7 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
             on_cells = (OFF,) if (night and overnight) else (OFF, ON)
             if night and overnight:
                 refused[sn] = "OvernightRefused"
-            srcs = tuple(s for s in sources if s != "rl3" or name in ("ny", "ny_am"))
+            srcs = tuple(s for s in sources if s != "rl3" or name == "ny_am")
             act = (slot_dim(sn, "on"), ON)
             dims.append(Dim(slot_dim(sn, "on"), CAT, values=on_cells, lever="T2", slot=sn))
             dims.append(Dim(slot_dim(sn, "T1"), CAT, values=srcs, active_if=act, lever="T1", slot=sn))
@@ -899,7 +927,7 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
             dims.append(Dim(slot_dim(sn, "last"), INT, lo=first, hi=last, step=step, after=slot_dim(sn, "first"),
                             active_if=act, lever="T3", slot=sn))
             if "S1" in loaded:                                 # Q-171: k x the session's trailing range
-                r1 = LS.stop_width("ny_am" if name == "ny" else name)
+                r1 = LS.stop_width(name)
                 dims.append(Dim(slot_dim(sn, "S1"), REAL, lo=float(r1.lo), hi=float(r1.hi), active_if=act,
                                 lever="S1", slot=sn))
             if "S2" in loaded:
@@ -917,7 +945,7 @@ def from_lever_space(*, slots: Mapping[str, int], ny_boundary: int | None = None
         return {k: a for k, (a, _) in session_spans(day, ny_boundary).items()}
 
     return Space(tuple(dims), fixed=fixed, refused=refused, slots=tuple(slot_objs), constraints=tuple(constraints),
-                 lever_checks=True, firm="topstep_50k", starts=starts, days=days)
+                 lever_checks=True, firm="topstep_50k", starts=starts, days=days, held=held)
 
 
 # ------------------------------------------------------------------------------------------------ readings
@@ -1110,8 +1138,9 @@ def admit(readings: Iterable[Any], *, ledger: CellLedger, measure: str | None = 
 def to_components(space: Space, design: Mapping[str, Any], day: date, *, firm: str,
                   build: Callable[[str, Mapping[str, Any]], tuple[Any, int]]) -> Any:
     """The design on trading day `day` as `extended.components.Design(day=day)` (the red team's m-11): each active
-    slot's offsets read from that date's session start (`Space.windows_on`), its session named as the scheduler
-    names it (`ny` is `ny_am`, whose bounds are the whole NY session until T2b), its reward-to-risk from S2.
+    slot's offsets read from that date's session start (`Space.windows_on`), its session the slot's own (`ny_am`
+    and `ny_pm` strict at T2b's split in `components.session_bounds`, the red team's m1; a whole-NY slot is `ny`
+    there too), its reward-to-risk from S2.
     `build(slot, levers)` gives the slot's trigger and stop in ticks (S1 and the sources' own parameters are not levers
     yet: the caller's, from its declaration)."""
     from extended import components as C
@@ -1125,13 +1154,13 @@ def to_components(space: Space, design: Mapping[str, Any], day: date, *, firm: s
         if levers.get("S2") is None:
             raise SpaceRefused(f"slot {name} has no reward-to-risk (S2)")
         trigger, stop = build(name, MappingProxyType(levers))
-        comps.append(C.Component(name, "ny_am" if sess == "ny" else sess, int(a), int(b), trigger, int(stop),
+        comps.append(C.Component(name, sess, int(a), int(b), trigger, int(stop),
                                  float(levers["S2"])))
     return C.Design(firm, tuple(comps), day=day)
 
 
 __all__ = ["TASK", "REAL", "INT", "CAT", "OFF", "ON", "METHODS", "SEARCH_TAG", "REFUSAL_CLASSES", "TIER_ONE",
-           "SLOT_LEVERS", "TICKET", "LIBS", "SpaceRefused", "LedgerRefused", "ReadingRefused", "HeldOutInput",
+           "SLOT_LEVERS", "TICKET", "LIBS", "WHOLE_NY", "SpaceRefused", "LedgerRefused", "ReadingRefused", "HeldOutInput",
            "OffProtocol", "Uncounted", "searched", "Dim", "Slot", "slot_dim", "Constraint",
            "design_id", "Space", "CellLedger", "child_rng", "STREAM_SURVEY", "STREAM_POOL", "STREAM_LOCAL",
            "STREAM_FIT", "STREAM_PLATEAU", "UnitPoints", "Sampler", "session_spans", "search_days", "session_slots",

@@ -29,7 +29,10 @@ dealt in turn (`deal_pools`), the shares derived from the components; A17, the s
 (`state_risk`). No lever is 'to declare' now; the kind stays for a later row. A9 and A19 stay refused by key.
 T2b's value is enforced where NY is split: `session_windows(day)` splits at it on each date (noon New York converted
 for that date, as the session anchors are), and `check_ny_boundary` (also in `check_design`, and the sampler's
-`search_space.session_spans`) refuses any other boundary a caller passes (the red team's L-M2).
+`search_space.session_spans`) refuses any other boundary a caller passes (the red team's L-M2); the split is
+made only where it equals the value `bounds("T2b")` loads (m3). **Q-188c**: the rows' helpers (`check_ny_boundary`,
+`deal_pools`, `state_risk`) name their firm and refuse one whose own row is still to declare (`require_declared`, n4);
+A15 and A17 are **held until wired** by every sampler (`HELD_UNTIL_WIRED`, m4).
 """
 from __future__ import annotations
 
@@ -202,7 +205,9 @@ def session_windows(day: date) -> dict[str, tuple[int, int | None]]:
     """Trading day `day`'s sessions as [start, end) in minutes after the reopen, each start its local market time
     converted for that date (`day_calendar.anchored_starts`, E-231 (3)); `ny` is split at T2b's declared boundary
     converted for the same date (`ny_boundary(day)`: noon New York, so it follows daylight saving as the anchors do;
-    the red team's L-M2), which must lie strictly inside it. Every boundary must fall inside the firm's day."""
+    the red team's L-M2), which must lie strictly inside it **and equal the value `bounds("T2b")` loads** (the red
+    team's m3: on a date outside the search years that equality is the check). Every boundary must fall inside the
+    firm's day."""
     if not isinstance(day, date):
         raise TypeError(f"session_windows reads one trading day's date, not {type(day).__name__}")
     td = trading_day()
@@ -221,6 +226,9 @@ def session_windows(day: date) -> dict[str, tuple[int, int | None]]:
     out: dict[str, tuple[int, int | None]] = dict(zip(names, zip(edges, edges[1:])))
     ny_start, ny_end = out.pop("ny")
     b = ny_boundary(day)
+    t2b = int(bounds("T2b").values[0])               # m3: the split is T2b's loaded value, or nothing is split
+    if b != t2b:
+        raise LeverRefused(f"NY's split on {day} is {b}, not T2b's loaded {t2b}: refused (the red team's m3)")
     if not ny_start < b < ny_end:
         raise LeverRefused(f"T2b's boundary {b} is not inside ny [{ny_start}, {ny_end}) on {day}")
     out["ny_am"], out["ny_pm"] = (ny_start, b), (b, ny_end)
@@ -616,13 +624,56 @@ def _ny_split() -> Range:
                          "span": (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())})
 
 
-def check_ny_boundary(boundary: Any) -> int:
+#: the firms whose lever tables this repository holds (`lever_space_firms.TABLES`): a firm argument names one of them
+FIRMS = ("topstep", "mffu", "lucid")
+
+
+def require_declared(firm: Any, rows: Any) -> None:
+    """The red team's n4 (the lead's ruling): refuse `firm` unless each of `rows` is declared in that firm's own lever
+    table -- an unknown firm, or a row still **to declare for this firm** (MFFU's and Lucid's T2b, A15, A16, A17,
+    Q-181c), is refused, so Topstep's declared values are never carried to another firm's accounts by the back door.
+    Reads the tables' kinds only (no rule, no range)."""
+    if firm not in FIRMS:
+        raise LeverRefused(f"firm {firm!r} is not one of {FIRMS}: a helper of the lever rows names its firm")
+    if firm == "topstep":
+        lv = LEVERS
+    else:
+        from extended import lever_space_firms as LF      # imported here: it imports this module
+        lv = LF.levers(firm)
+    for r in rows:
+        if lv[r].source == TODECL:
+            raise NotDeclared(f"{firm} {r} ({lv[r].name}): to declare for this firm -- refused, never Topstep's "
+                              "carried over (Q-181c; the red team's n4)")
+
+
+def check_ny_boundary(boundary: Any, *, firm: str) -> int:
     """Refuse any NY AM / NY PM boundary but T2b's declared one (the red team's L-M2): a caller splitting NY (the
-    sampler's `ny_boundary`) passes its value here. Returns it."""
+    sampler's `ny_boundary`) passes its value here, with its firm (n4: a firm whose T2b is to declare is refused).
+    Returns it."""
+    require_declared(firm, ("T2b",))
+    if firm != "topstep":
+        raise LeverRefused(f"{firm}'s T2b is its own table's (`lever_space_firms`), not this module's")
     b = int(bounds("T2b").values[0])
     if isinstance(boundary, bool) or not isinstance(boundary, (int, float)) or boundary != b:
         raise LeverRefused(f"NY boundary {boundary!r} is not T2b's declared {b} (noon New York)")
     return b
+
+
+#: the red team's m4 (the lead's ruling): searched rows that load but that no executor applies yet -- held at their
+#: declared base value by every sampler (`search_space.from_lever_space`, `lever_space_firms.sample`), each with this
+#: label, until the executor builds a `router.Routing` from a design's A15 and calls `state_risk` for its A17 (the
+#: wiring is a queued item, not built here); so no two designs differing only there are ever drawn
+HELD_UNTIL_WIRED = {
+    "A15": "held until wired: no executor builds a Routing from a design's A15 yet; the base `longest_waiting`",
+    "A17": "held until wired: no executor calls state_risk for a design's A17 yet; the base `none`",
+}
+
+
+def held_value(lever_id: str) -> Any:
+    """A held row's base: the first of its declared values (A15 `longest_waiting`, Stage 2 D-429; A17 `none`)."""
+    if lever_id not in HELD_UNTIL_WIRED:
+        raise KeyError(f"{lever_id} is not held")
+    return bounds(lever_id).values[0]
 
 
 def _routing() -> Range:
@@ -633,13 +684,15 @@ def _routing() -> Range:
                                     "one position at a time across the firm (D-429)")})
 
 
-def deal_pools(components: Any, accounts: Any, *, opened: Any = None) -> dict[str, tuple[str, ...]]:
-    """A16's assignment: `by_component`'s pools for one day. `components` are the design's components in the order of
+def deal_pools(components: Any, accounts: Any, *, firm: str, opened: Any = None) -> dict[str, tuple[str, ...]]:
+    """A16's assignment: `by_component`'s pools for one day, for `firm` (n4: refused where its A16 is to declare).
+    `components` are the design's components in the order of
     their windows' first slots; `accounts` the firm's accounts that day, **dealt in opening order** (the red team's
     L-m1): with `opened` (account -> its opening index), sorted by (index, account id), whatever order they come in;
     without it, the sequence's own order is declared to be the opening order. With at least as many accounts as
     components, the j-th account goes to component j mod m (a partition; pool sizes differ by at most one); with
     fewer, component i takes account i mod n alone. Reads nothing but the lists."""
+    require_declared(firm, ("A16",))
     comps, accs = tuple(components), tuple(accounts)
     if not comps or not accs:
         raise LeverRefused("A16 deals at least one account to at least one component")
@@ -662,9 +715,10 @@ def _assignment() -> Range:
                          "rule": "deal_pools"})
 
 
-def state_risk(rule_name: str, r: float, *, room: float, start_room: float, to_goal: float, stop_ticks: int,
-               target_ticks: int, tick_value: float) -> float:
-    """A17: a trade's intended dollar risk under the state rule, before the base's cuts (the room cap D-313, the
+def state_risk(rule_name: str, r: float, *, firm: str, room: float, start_room: float, to_goal: float,
+               stop_ticks: int, target_ticks: int, tick_value: float) -> float:
+    """A17: a trade's intended dollar risk under the state rule, for `firm` (n4: refused where its A17 is to
+    declare), before the base's cuts (the room cap D-313, the
     allowance and the headroom D-117, D-212's stand-aside -- `modes_rules.size`, unchanged). `r` is the mode's dollar
     risk (S3 or S4; A1's or A2's r where a flip trade); `room` the balance less the floor in force; `start_room` the
     mode's (`modes_rules.start_room`); `to_goal` what is left to the mode's goal (the evaluation's profit target, the
@@ -676,6 +730,7 @@ def state_risk(rule_name: str, r: float, *, room: float, start_room: float, to_g
     * `floor_target` -- the smaller of the two.
     Never above r, so never more size into news than the mode's own; never below one micro at the stop where r is not
     (the rule itself never stands an account aside; the base's caps still may)."""
+    require_declared(firm, ("A17",))
     if rule_name not in declared("state_rules"):
         raise ValueError(f"state rule {rule_name!r} is not one of {declared('state_rules')} (A17)")
     if not (r > 0 and start_room > 0 and stop_ticks > 0 and target_ticks > 0 and tick_value > 0):
@@ -838,7 +893,7 @@ def check_design(settings: dict[str, Any]) -> None:
     if settings.get("A4") == "naf" and float(settings.get("A12", 0) or 0) > 0:
         rule("back2funded_fee_by_pricing_path")
     if settings.get("T2b") is not None:
-        check_ny_boundary(settings["T2b"])
+        check_ny_boundary(settings["T2b"], firm="topstep")
     lat = settings.get("T4")
     src = settings.get("T1")
     if src is not None and lat is not None and lat not in latency_cells(src):
@@ -867,4 +922,5 @@ __all__ = ["TABLE", "LAYERS", "CLASSES", "SOURCES", "LeverRefused", "NotComputed
            "Declared", "DECLARED", "declared", "rule", "rule_status", "trading_day", "session_windows",
            "trading_dates", "session_window_range", "Range", "stop_caps", "Lever", "LEVERS", "bounds", "space",
            "refusals", "latency_cells", "check_design", "counts", "S1_RESULT", "S1_PATH", "stop_width", "load",
-           "T7_RESULT", "T7_PATH", "ny_boundary", "check_ny_boundary", "deal_pools", "state_risk"]
+           "T7_RESULT", "T7_PATH", "ny_boundary", "check_ny_boundary", "deal_pools", "state_risk", "FIRMS",
+           "require_declared", "HELD_UNTIL_WIRED", "held_value"]

@@ -127,11 +127,11 @@ def test_t2b_is_enforced_where_ny_is_split() -> None:
     for d in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 3, 17)):
         w = LS.session_windows(d)
         assert w["ny_am"] == (DC.anchored_starts(d)["ny"], b) and w["ny_pm"] == (b, LS.trading_day()["length"])
-    assert LS.check_ny_boundary(b) == b
+    assert LS.check_ny_boundary(b, firm="topstep") == b
     step = int(LS.declared("mark_step_min"))
     for bad in (b + step, b - step, None, True, str(b), b + 0.5):
         with pytest.raises(LS.LeverRefused):
-            LS.check_ny_boundary(bad)
+            LS.check_ny_boundary(bad, firm="topstep")
     LS.check_design({"T2b": b})
     with pytest.raises(LS.LeverRefused):
         LS.check_design({"T2b": b + step})
@@ -167,19 +167,40 @@ def test_t2b_splits_ny_per_date_across_both_daylight_saving_changes(year: int) -
         assert hours[after] == (16 if change.month == 3 else 17), (change, hours)
 
 
-def test_t2b_is_converted_on_each_date_not_fixed_on_the_ct_clock(monkeypatch) -> None:
-    """The split is the declared local time converted per date (zoneinfo), never one CT minute carried over: declared
-    on London's clock (a test value only), `session_windows(day)` moves it in the weeks when the UK and US clocks
-    disagree -- in March and in November -- and not on the other dates checked."""
+def test_t2b_is_converted_on_each_date_and_a_split_t2b_refuses_is_never_made(monkeypatch) -> None:
+    """The boundary is the declared local time converted per date (zoneinfo), never one CT minute carried over:
+    declared on London's clock (a test value only), `ny_boundary(day)` moves in the weeks when the UK and US clocks
+    disagree -- in March and in November -- and not on the other dates checked. T2b refuses such a value, so
+    `session_windows(day)` refuses to split at it on every date (the red team's m3: the split equals what
+    `bounds("T2b")` loads, or nothing is split)."""
     bad = dict(LS.DECLARED)
     bad["ny_split_local"] = LS.Declared(("Europe/London", 16, 0), "test: a clock that changes on other dates")
     monkeypatch.setattr(LS, "DECLARED", bad)
-    same = {d: LS.session_windows(d)["ny_am"][1] for d in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 11, 10))}
-    moved = {d: LS.session_windows(d)["ny_am"][1] for d in (date(2021, 3, 17), date(2021, 11, 3))}
+    same = {d: LS.ny_boundary(d) for d in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 11, 10))}
+    moved = {d: LS.ny_boundary(d) for d in (date(2021, 3, 17), date(2021, 11, 3))}
     assert set(same.values()) == {10 * 60 - 17 * 60 + 24 * 60}                       # 16:00 London = 10:00 CT
     assert set(moved.values()) == {11 * 60 - 17 * 60 + 24 * 60}                      # the mismatch weeks: 11:00 CT
-    with pytest.raises(LS.LeverRefused):                                              # and T2b's own check refuses it
+    with pytest.raises(LS.LeverRefused):                                              # T2b's own check refuses it
         LS.bounds("T2b")
+    for d in list(same) + list(moved):
+        with pytest.raises(LS.LeverRefused):
+            LS.session_windows(d)
+
+
+def test_the_split_equals_t2bs_loaded_value_or_refuses(monkeypatch) -> None:
+    """m3: a split that differs from `bounds("T2b")` on some date (here a date-dependent boundary standing in for a
+    later declaration's or a held-out date's) is refused on that date only; on the declared value they agree on every
+    search-year weekday and beyond (2024-2030, calendar arithmetic only)."""
+    b = LS.bounds("T2b").values[0]
+    for y in range(2020, 2031):
+        for d in (date(y, 1, 15), date(y, 3, 17), date(y, 7, 15), date(y, 11, 3)):
+            if d.weekday() < calendar.SATURDAY:
+                assert LS.session_windows(d)["ny_am"][1] == b == LS.ny_boundary(d), d
+    real = LS.ny_boundary
+    monkeypatch.setattr(LS, "ny_boundary", lambda d: real(d) + (5 if d == date(2021, 3, 17) else 0))
+    assert LS.session_windows(date(2021, 3, 16))["ny_am"][1] == b
+    with pytest.raises(LS.LeverRefused, match="not T2b's loaded"):
+        LS.session_windows(date(2021, 3, 17))
 
 
 @pytest.mark.parametrize("firm", ["mffu", "lucid"])
@@ -241,10 +262,14 @@ def test_a15_is_the_routers_rotations_with_the_base_first() -> None:
     r = LS.bounds("A15")
     assert r.values == R.ROTATIONS
     assert r.values[0] == "longest_waiting" == r.detail["base"]
+    from extended import components as C
+    from extended import triggers as T
+
+    d = C.Design("topstep", (C.Component("c", "ny_am", 960, 1000, T.P16Marks((960,)), 40, 1.0),))
     for rot in r.values:                                  # every value is one the router stands behind
-        R.Routing(rot, ("c",) if rot == "by_component" else ())
+        R.Routing(rot, design=d if rot == "by_component" else None, firm="topstep")
     with pytest.raises(R.RoutingRefused):                 # never a second cell of the base (L-M2)
-        R.Routing("by_component")
+        R.Routing("by_component", firm="topstep")
 
 
 def test_a16_deals_every_account_to_one_pool_and_every_component_a_pool() -> None:
@@ -252,7 +277,7 @@ def test_a16_deals_every_account_to_one_pool_and_every_component_a_pool() -> Non
     comps = ("am", "pm", "eve")
     for n in range(1, 8):
         accs = tuple(f"a{j}" for j in range(n))
-        pools = LS.deal_pools(comps, accs)
+        pools = LS.deal_pools(comps, accs, firm="topstep")
         assert list(pools) == list(comps) and all(pools[c] for c in comps)
         if n >= len(comps):                               # a partition of the accounts
             flat = [a for c in comps for a in pools[c]]
@@ -260,13 +285,13 @@ def test_a16_deals_every_account_to_one_pool_and_every_component_a_pool() -> Non
             assert max(map(len, pools.values())) - min(map(len, pools.values())) <= 1
         else:                                             # each component one account, dealt in turn
             assert [pools[c] for c in comps] == [(accs[i % n],) for i in range(len(comps))]
-        assert LS.deal_pools(comps, accs) == pools        # deterministic
+        assert LS.deal_pools(comps, accs, firm="topstep") == pools        # deterministic
         opened = {a: 0 for a in accs}                     # all opened together: ties by account id
-        assert LS.deal_pools(comps, tuple(reversed(accs)), opened=opened) == pools
-    assert LS.deal_pools(("x", "y"), ("a", "b", "c", "d", "e")) == {"x": ("a", "c", "e"), "y": ("b", "d")}
+        assert LS.deal_pools(comps, tuple(reversed(accs)), firm="topstep", opened=opened) == pools
+    assert LS.deal_pools(("x", "y"), ("a", "b", "c", "d", "e"), firm="topstep") == {"x": ("a", "c", "e"), "y": ("b", "d")}
     for bad in ((), ("a",)), (("x",), ()), (("x", "x"), ("a",)), (("x",), ("a", "a")):
         with pytest.raises(LS.LeverRefused):
-            LS.deal_pools(*bad)
+            LS.deal_pools(*bad, firm="topstep")
 
 
 def test_a16_deals_in_opening_order_whatever_the_order_given() -> None:
@@ -274,10 +299,10 @@ def test_a16_deals_in_opening_order_whatever_the_order_given() -> None:
     opened = {"z": 0, "b": 1, "a": 1, "c": 2}
     want = {"x": ("z", "c"), "y": ("a",), "w": ("b",)}
     for accs in (("a", "b", "c", "z"), ("c", "z", "b", "a"), ("z", "a", "b", "c")):
-        assert LS.deal_pools(("x", "y", "w"), accs, opened=opened) == want
-    assert LS.deal_pools(("x", "y", "w"), ("z", "a", "b", "c")) == want             # the sequence's order, declared
+        assert LS.deal_pools(("x", "y", "w"), accs, firm="topstep", opened=opened) == want
+    assert LS.deal_pools(("x", "y", "w"), ("z", "a", "b", "c"), firm="topstep") == want             # the sequence's order, declared
     with pytest.raises(LS.LeverRefused):
-        LS.deal_pools(("x",), ("a", "q"), opened=opened)                              # q has no opening index
+        LS.deal_pools(("x",), ("a", "q"), firm="topstep", opened=opened)                              # q has no opening index
 
 
 # ------------------------------------------------------------------------------------------------ A17
@@ -298,7 +323,7 @@ TV = 0.5                                                   # a synthetic tick va
 
 
 def _risk(rule, r, *, room, start, goal, s=40, tt=60):
-    return LS.state_risk(rule, r, room=room, start_room=start, to_goal=goal, stop_ticks=s, target_ticks=tt,
+    return LS.state_risk(rule, r, firm="topstep", room=room, start_room=start, to_goal=goal, stop_ticks=s, target_ticks=tt,
                          tick_value=TV)
 
 
@@ -413,9 +438,11 @@ def test_every_other_lever_is_bit_for_bit_the_one_before(tmp_path, monkeypatch, 
 # ------------------------------------------------------------------------------------------------ the sampler
 
 
-def test_the_sampler_draws_the_new_rows() -> None:
-    """Q-186 (Wave 3.4's `extended.search_space`) has merged: this runs, never skips. The sampler draws A15 and A17,
-    holds T2b and A16 fixed, and refuses any NY boundary but T2b's (L-M2), in `session_spans` itself."""
+def test_the_sampler_holds_the_new_rows() -> None:
+    """Q-186 (Wave 3.4's `extended.search_space`) has merged: this runs, never skips. The sampler holds T2b and A16
+    fixed, **holds A15 and A17 at their bases until wired** (m4: fixed, labelled, never dimensions, so no two designs
+    differing only there are drawn), refuses a slot in `ny` (m2), and refuses any NY boundary but T2b's (L-M2), in
+    `session_spans` itself."""
     from extended import search_space as SS
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -424,8 +451,18 @@ def test_the_sampler_draws_the_new_rows() -> None:
     days = (date(2021, 3, 12), date(2021, 3, 15), date(2022, 6, 1))
     b = int(LS.bounds("T2b").values[0])
     space = SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1}, ny_boundary=b, days=days)
-    assert {"A15", "A17"} <= set(space.names())
+    assert not {"A15", "A17"} & {d.lever for d in space.dims}
     assert space.fixed["T2b"] == (b,) and space.fixed["A16"] == ("dealt",)
+    assert space.fixed["A15"] == ("longest_waiting",) and space.fixed["A17"] == ("none",)
+    assert dict(space.held) == LS.HELD_UNTIL_WIRED and all(v.startswith("held until wired") for v in space.held.values())
+    def shape(sp):
+        return [(d.name, d.kind, d.lo, d.hi, d.step, d.values, d.labels, d.active_if) for d in sp.dims]
+    assert shape(SS.from_lever_space(slots={"ny_am": 1, "ny_pm": 1}, days=days)) == shape(space)   # T2b's, by default
+    assert all(space.fixed[k] == (LS.held_value(k),) for k in LS.HELD_UNTIL_WIRED)
+    with pytest.raises(SS.SpaceRefused, match="whole NY"):
+        SS.from_lever_space(slots={"ny": 1}, days=days)
+    with pytest.raises(SS.SpaceRefused, match="whole NY"):
+        SS.Sampler(SS.Space(space.dims, slots=(SS.Slot("ny.0", "ny", 0, 100, 5),)), seed=1, method="sobol")
     step = int(LS.declared("mark_step_min"))
     for bad in (b + step, b - step, b + 0.5, str(b), True):
         with pytest.raises(SS.SpaceRefused):
@@ -439,4 +476,4 @@ def test_the_sampler_draws_the_new_rows() -> None:
     designs = SS.Sampler(space, seed=20261120, method="sobol").survey(16, ledger=ledger, **TY.SV)
     assert designs
     for d in designs:
-        assert d["A15"] in R.ROTATIONS and d["A17"] in LS.declared("state_rules")
+        assert "A15" not in d and "A17" not in d
