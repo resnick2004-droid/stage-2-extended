@@ -759,3 +759,218 @@ def test_two_live_processes_an_old_waiter_past_the_cap_is_served_before_a_younge
                 p.kill()
     assert served.read_text(encoding="utf-8").split() == ["OLD", "YOUNG"], outs
     assert _tickets(lock) == [] and not lock.exists()
+
+
+
+# ------------------------------------------------------------------------------------ the main tree's tickets go first (Q-207)
+#
+# The lead's commits (records, merges, pins) are on every worker's critical path, so a waiter whose tree is the main
+# worktree -- the repository's own top-level worktree, whose `.git` is a directory -- carries TICKET_LEAD_MARK in its
+# ticket and line() puts it ahead of the workers' tickets, in arrival order among the leads. The mark comes from the
+# tree's own git (`--git-common-dir`, `--show-toplevel`), never from an argument or the environment. Nothing else moves:
+# slot admission, memory and xdist are as before, a running job is never pre-empted, and a ticket without a class mark
+# (a tree without Q-207, which orders by arrival only) keeps its arrival place against every ticket, so old and new
+# trees never disagree on who is at the head of the line.
+
+def _git(*args: str, cwd: Path) -> None:
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    subprocess.run(["git", *args], cwd=cwd, env=env, check=True, capture_output=True, timeout=120)
+
+
+@pytest.fixture(scope="module")
+def repo(tmp_path_factory) -> tuple[Path, Path]:
+    """A main worktree and one linked worktree of a throwaway repository (no commit needed: an orphan worktree)."""
+    base = tmp_path_factory.mktemp("q207repo")
+    main, wt = base / "main", base / "wt-worker"
+    main.mkdir()
+    _git("init", "-q", cwd=main)
+    _git("worktree", "add", "-q", "--orphan", "-b", "wt/worker", str(wt), cwd=main)
+    (main / "sub").mkdir()
+    (wt / "sub").mkdir()
+    return main, wt
+
+
+def _classed(q: Path, arrival_ns: int, token: str, lead: bool | None, pid: int | None = None) -> Path:
+    q.mkdir(parents=True, exist_ok=True)
+    t = q / F.ticket_name(arrival_ns, os.getpid() if pid is None else pid, token, heartbeat=True, lead=lead)
+    t.write_text("", encoding="utf-8")
+    return t
+
+
+def test_the_lead_mark_coexists_with_the_heartbeat_and_old_code_still_parses_the_name():
+    lead = F.ticket_name(123, 456, "abc", heartbeat=True, lead=True)
+    work = F.ticket_name(123, 456, "abc", heartbeat=True, lead=False)
+    plain = F.ticket_name(123, 456, "abc", heartbeat=True)
+    assert F.TICKET_LEAD_MARK in lead and F.TICKET_LEAD_MARK not in work and F.TICKET_LEAD_MARK not in plain
+    for name in (lead, work, plain):
+        assert F.is_heartbeat_ticket(name), name                 # Q-199's beat is still read from the name
+        assert F.parse_ticket(name)[:2] == (123, 456)
+        fields = name[: -len(".ticket")].split("-")             # exactly what pre-Q-199 code does with a name
+        assert len(fields) == 3 and fields[0].isdigit() and fields[1].isdigit()
+        assert fields[2].endswith(F.TICKET_HEARTBEAT_MARK)      # what Q-199 code checks
+    assert F.is_lead_ticket(lead) and not F.is_lead_ticket(work) and not F.is_lead_ticket(plain)
+    assert F.ticket_class(lead) == "lead" and F.ticket_class(work) == "worker" and F.ticket_class(plain) is None
+    assert F.is_lead_ticket(F.ticket_name(1, 2, "abc", lead=True))   # without the heartbeat too
+    assert not F.is_lead_ticket("not-a-ticket.lead.ticket") and F.ticket_class("x.txt") is None
+
+
+def test_a_younger_lead_ticket_goes_ahead_of_older_worker_tickets(tmp_path):
+    q = tmp_path / "q"
+    w1 = _classed(q, 1_000, "w1", lead=False)
+    w2 = _classed(q, 2_000, "w2", lead=False)
+    lead = _classed(q, 3_000, "lead", lead=True)
+    w3 = _classed(q, 4_000, "w3", lead=False)
+    expected = [lead.name, w1.name, w2.name, w3.name]
+    for mine in expected:                                        # every waiter sees the same line
+        assert F.line(q, mine) == expected
+
+
+def test_two_lead_tickets_keep_their_arrival_order(tmp_path):
+    q = tmp_path / "q"
+    w1 = _classed(q, 1_000, "w1", lead=False)
+    l1 = _classed(q, 2_000, "zzz", lead=True)                   # tokens sort against arrival: arrival must decide
+    w2 = _classed(q, 3_000, "w2", lead=False)
+    l2 = _classed(q, 4_000, "aaa", lead=True)
+    expected = [l1.name, l2.name, w1.name, w2.name]
+    for mine in expected:
+        assert F.line(q, mine) == expected
+    missing = F.ticket_name(3_500, os.getpid(), "back", heartbeat=True, lead=True)   # removed under its owner
+    assert F.line(q, missing) == [l1.name, missing, l2.name, w1.name, w2.name]
+
+
+def test_a_ticket_of_a_tree_without_q207_keeps_its_arrival_place_against_every_ticket(tmp_path):
+    """Mixed trees: an old-code tree orders by arrival alone, so a lead passing its ticket would give the line two
+    heads. Its ticket is a fixed point: the lead goes ahead of the workers on its own side of it, never past it."""
+    q = tmp_path / "q"
+    w1 = _classed(q, 1_000, "w1", lead=False)
+    l1 = _classed(q, 1_200, "zz", lead=True)                    # two leads before the old-code ticket: ahead of w1,
+    l2 = _classed(q, 1_500, "aa", lead=True)                    # in arrival order between themselves
+    old = _classed(q, 2_000, "old", lead=None)                   # a Q-199 tree's ticket: no class mark
+    w2 = _classed(q, 3_000, "w2", lead=False)
+    lead = _classed(q, 4_000, "lead", lead=True)
+    expected = [l1.name, l2.name, w1.name, old.name, lead.name, w2.name]
+    for mine in expected:
+        assert F.line(q, mine) == expected
+    oldest = _classed(q, 500, "oldest", lead=None)               # an old-code ticket at the front stays the head
+    assert F.line(q, lead.name)[0] == oldest.name
+
+
+def test_the_main_worktree_is_recognised_from_its_own_git(repo):
+    main, wt = repo
+    assert F.is_main_worktree(main) and F.is_main_worktree(main / "sub") and F.is_main_worktree(str(main))
+    assert not F.is_main_worktree(wt) and not F.is_main_worktree(wt / "sub")
+    assert (main / ".git").is_dir() and (wt / ".git").is_file()
+
+
+def test_this_repository_is_judged_by_its_own_git():
+    """The tree these tests run in: the mark exactly when its `.git` is a directory (the main tree, on OneDrive)."""
+    assert F.is_main_worktree(ROOT) == (ROOT / ".git").is_dir()
+
+
+def test_a_worker_tree_cannot_produce_the_mark(repo, tmp_path, monkeypatch, lock, clock):
+    main, wt = repo
+    # Whatever the environment says -- git's own variables pointed at the main tree, or a flag -- a worker tree is a
+    # worker tree: the judgement reads the tree's git only.
+    monkeypatch.setenv("GIT_DIR", str(main / ".git"))
+    monkeypatch.setenv("GIT_WORK_TREE", str(main))
+    monkeypatch.setenv("GIT_COMMON_DIR", str(main / ".git"))
+    monkeypatch.setenv("S2X_FASTTIER_LEAD", "1")
+    assert not F.is_main_worktree(wt) and F.is_main_worktree(main)
+    assert not F.is_main_worktree(tmp_path) and not F.is_main_worktree(tmp_path / "missing")
+    assert not F.is_main_worktree("") and not F.is_main_worktree(main / ".git")
+    import inspect
+    for fn in (F.acquire, F.run):                                # no parameter can ask for the mark
+        assert not any("lead" in p or "prior" in p for p in inspect.signature(fn).parameters), fn
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    seen = []
+
+    def sleep(s):
+        clock.sleep(s)
+        seen.extend(t.name for t in F.queue_dir(lock).glob("*.ticket"))
+
+    for tree in (wt, main):
+        with pytest.raises(F.WaitTimeout):
+            F.acquire(lock, tree=str(tree), timeout_s=30, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    worker_names = {n for n in seen if not F.is_lead_ticket(n)}
+    lead_names = {n for n in seen if F.is_lead_ticket(n)}
+    assert len(worker_names) == 1 and len(lead_names) == 1, seen
+    assert F.ticket_class(next(iter(worker_names))) == "worker"
+
+
+def test_a_lead_waiter_takes_the_next_free_slot_ahead_of_an_older_worker(repo, lock, clock):
+    main, _ = repo
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    older = _classed(F.queue_dir(lock), time.time_ns() - 10**9, "older", lead=False)
+
+    def sleep(s):
+        clock.sleep(s)
+        os.utime(older, None)                                    # the older worker is alive and polling
+        if clock.t >= 60:
+            lock.unlink(missing_ok=True)                         # the running job finishes
+
+    h = F.acquire(lock, tree=str(main), timeout_s=600, poll_s=5, sleep=sleep, monotonic=clock.monotonic)
+    assert h.record["tree"] == str(main) and older.exists()
+    assert clock.t >= 60, "the running job was never pre-empted"
+    F.release(lock, h)
+
+
+def test_a_lead_never_pre_empts_a_running_job(repo, lock, clock):
+    main, wt = repo
+    rec = plant(lock, os.getpid(), tree=str(wt))
+    with pytest.raises(F.WaitTimeout):
+        F.acquire(lock, tree=str(main), timeout_s=90, poll_s=5, sleep=clock.sleep, monotonic=clock.monotonic)
+    assert json.loads(lock.read_text(encoding="utf-8")) == rec
+
+
+def test_a_lead_at_the_head_still_needs_the_memory_for_a_further_slot(repo, lock, clock):
+    """Slot admission is unchanged: beside one running slot, a lead opens the second only with the memory for it."""
+    main, _ = repo
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    with pytest.raises(F.WaitTimeout) as e:
+        F.acquire(lock, tree=str(main), timeout_s=60, poll_s=5, sleep=clock.sleep, monotonic=clock.monotonic,
+                  free_gb=lambda: 1.0, max_slots=2)
+    assert not F.slot_path(lock, 1).exists() and "needs" in str(e.value)
+
+
+def test_two_live_processes_the_lead_is_served_first(repo, lock, tmp_path):
+    """End to end: a worker tree's waiter arrives first, the main tree's second; the holder leaves; the main tree's
+    command runs first. Each child's tree is its working directory, as the hook's is."""
+    main, wt = repo
+    plant(lock, os.getpid(), tree="C:/other/wt-busy")
+    served = tmp_path / "served.txt"
+    procs = []
+    outs = []
+    try:
+        for name, cwd in (("WORKER", wt), ("LEAD", main)):
+            child = f"open(r'{served}', 'a').write('{name} ')"
+            procs.append(subprocess.Popen(_cli(lock, "--poll-s", "0.1", "--min-free-gb", "0", "run", "--",
+                                               sys.executable, "-c", child),
+                                          cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True))
+            n = len(procs)
+            assert _wait_until(lambda: len(_tickets(lock)) == n), f"{name} took no ticket"
+        names = [t.name for t in _tickets(lock)]                 # by name: arrival order, the worker's first
+        assert not F.is_lead_ticket(names[0]) and F.is_lead_ticket(names[1])
+        assert F.line(F.queue_dir(lock), names[0]) == [names[1], names[0]]
+        lock.unlink()                                            # the holder finishes
+        outs = [p.communicate(timeout=120)[0] for p in procs]
+        assert all(p.returncode == 0 for p in procs), outs
+    finally:
+        for p in procs:
+            if p.poll() is None:
+                p.kill()
+    assert served.read_text(encoding="utf-8").split() == ["LEAD", "WORKER"], outs
+    assert _tickets(lock) == [] and not lock.exists()
+
+
+def test_status_shows_the_leads_tickets_as_such_in_their_place(lock):
+    plant(lock, os.getpid(), tree="C:/one/wt-a")
+    q = F.queue_dir(lock)
+    now_ns = time.time_ns()
+    _classed(q, now_ns - 3_000_000_000, "w1", lead=False)
+    _classed(q, now_ns - 2_000_000_000, "lead", lead=True)
+    _classed(q, now_ns - 1_000_000_000, "w2", lead=False)
+    out = subprocess.run(_cli(lock, "status"), capture_output=True, text=True, timeout=60).stdout
+    rows = [ln for ln in out.splitlines() if "waiting since" in ln]
+    assert len(rows) == 3, out
+    assert rows[0].strip().startswith("1.") and "lead" in rows[0] and "main tree" in rows[0], out
+    assert all("lead" not in r for r in rows[1:]), out
