@@ -66,10 +66,12 @@ def counted(design, space=None, role="survey", protocol=TY.PROTOCOL, reread_seed
     """A ledger holding `design` as a counted cell of `role` (the test's own survey of one, which declares the
     protocol and the re-read seeds)."""
     led = SS.CellLedger()
-    led.begin("survey", SURVEY_SEED, protocol=protocol, reread_seeds=reread_seeds)
+    pen = led.begin("survey", SURVEY_SEED, **TY.sv(protocol, reread_seeds))
     if role != "survey":
-        led.begin(role, SURVEY_SEED)
-    led.record(space or TY.toy_space(), design, role=role, seed=SURVEY_SEED, refusal=None)
+        pen.close()
+        pen = led.begin(role, SURVEY_SEED)
+    pen.record(space or TY.toy_space(), design, refusal=None)              # the test is this role's drawer
+    pen.close()
     return led
 
 
@@ -113,8 +115,8 @@ def size_and_power():
     flat_ok = spike_refused = 0
     for s in np.random.SeedSequence(POWER_SEED).generate_state(REPS):
         led = SS.CellLedger()
-        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led, protocol=sel,
-                                                                            reread_seeds=POWER_REREAD)
+        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led,
+                                                                            **TY.sv(sel, POWER_REREAD))
         rs = [_fast(lambda d: 0.0)(d, protocol=sel) for d in ds]
         fin = min(rs, key=lambda x: x.value)
         spike_id = fin.id
@@ -123,8 +125,8 @@ def size_and_power():
             return -SPIKE if SS.design_id(d) == spike_id else 0.0
 
         led2 = SS.CellLedger()
-        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2, protocol=sel,
-                                                                       reread_seeds=POWER_REREAD)
+        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2,
+                                                                       **TY.sv(sel, POWER_REREAD))
         flat = PL.check(fin, TY.toy_space(), r, _fast(lambda d: 0.0), ledger=led,
                         ledger_seed=LSEED)
         fin_s = _fast(spiky)(fin.design, protocol=sel)
@@ -452,8 +454,9 @@ def test_mutation_echo_check_removed_is_caught(monkeypatch):
         return TY.evaluator(plateau_fn, SD)(CENTRE, protocol=protocol)
 
     led = counted(CENTRE)
-    led.begin("round-1", 1)
-    led.record(TY.toy_space(), dict(CENTRE, x1=0.55), role="round-1", seed=1, refusal=None)
+    pen = led.begin("round-1", 1)
+    pen.record(TY.toy_space(), dict(CENTRE, x1=0.55), refusal=None)
+    pen.close()
     f = TY.evaluator(plateau_fn, SD)(dict(CENTRE, x1=0.55), protocol=TY.PROTOCOL)
     v = PL.check(f, TY.toy_space(), rule(), other_design, ledger=led,
                  ledger_seed=LSEED)                         # the re-read of another design passes: the test would fail

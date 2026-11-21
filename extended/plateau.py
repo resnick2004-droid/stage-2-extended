@@ -40,11 +40,22 @@ freedom whose noncentrality is chi-square on n - 1, so P(all hold) = E[G^k] is a
 Gaussian seed noise (`p_all_hold(c, k, n)`). The textbook multivariate t, with one shared denominator, under-covers here
 (it does not see k separate se's), and a normal value much more so at small n. `critical_z(size, k)` is the normal limit
 (n infinite), kept for reference only. The verdict records the size its tolerance implies at the neighbours actually
-read (`size_at`). **The re-read's seed count is part of the rule: it decides the power.** Take a spike twice the
-selection readings' sd deep, k = 10 and size 0.05. With as many re-read seeds as the selection used, the power is about
-one half; with four times as many it is above nine in ten (`tests/test_plateau.py`'s size-and-power test declares its
-own setup). A design-specific effect that does not change with the coin seeds (a fixed history's luck) is not removed by
-a re-read: that is the history null's to bound (CHARTER 3.7).
+read (`size_at`). **The exchangeability assumption and its bound** (the red team's rm3-a, the lead's ruling: the exact
+quadrature is kept as declared). "Exact" assumes every pair of designs' seed noise has equal variance and equal
+correlation. Common coin seeds across designs (a seed-keyed redraw) make the noise a field that decays with lever
+distance, so two neighbours on opposite sides of the finalist correlate below one half; the size then rises, at most to
+**k x P(t_{n-1} > c)** (Bonferroni, valid under any dependence: `size_bound`), which the verdict records beside
+`size_at` (`size_bound`, with `size_label` naming both). The read's figures: at n = 16 and k = 10, c is about 2.80
+(2.796 in the read) and the bound about 0.068 against the exact 0.05 (`tests/test_search_followups.py` computes both;
+the read's simulated field is in `docs/reviews/BUILD_W34_v3_2026-11-20.md`, rm3-a). The error is a true plateau refused
+too often (power lost), never a spike accepted. **The re-read seeds have a floor** of `search_space.MIN_REREAD_SEEDS`
+(5), refused at the survey's declaration (`TooFewRereadSeeds`); `critical_value` refuses, never raises a bare
+ValueError, when no tolerance in [-10, 60] standard errors reaches 1 - size. **The re-read's seed count is part of the
+rule: it decides the power.** Take a spike twice the selection readings' sd deep, k = 10 and size 0.05. With as
+many re-read seeds as the selection used, the power is about one half; with four times as many it is above nine in ten
+(`tests/test_plateau.py`'s size-and-power test declares its own setup). A design-specific effect that does not change
+with the coin seeds (a fixed history's luck) is not removed by a re-read: that is the history null's to bound (CHARTER
+3.7).
 
 **The neighbourhood** (`neighbours`), every step a declared number of the lever's own units (`PlateauRule.steps`):
 - **every lever active in the finalist is stepped** (the red team's m-1), and a rule that leaves one out is refused. A
@@ -66,7 +77,9 @@ team's m-2), and **a second check of one finalist in one ledger is refused**, un
 - every steppable lever has at least `min_per_lever` read neighbours;
 - the share holding is at least `min_share`.
 Otherwise it is **refused**, and the reason names what failed. The verdict records the form (`FORM`), the rule's
-sha256, the re-read seeds, and every neighbour's d, se and z.
+sha256, the re-read seeds, **the full declared protocol and its sha256** (the ledger's, the red team's rb2-a: a verdict
+from a second ledger on a weaker protocol shows it), the size figures, and every neighbour's d, se and z. The plateau
+role is the check's alone: its cells are recorded by its pen and the role closes when the check returns (n-2).
 """
 from __future__ import annotations
 
@@ -80,7 +93,8 @@ from typing import Any, Callable, Mapping
 
 import numpy as np
 from scipy.optimize import brentq
-from scipy.stats import chi2, ncx2, norm
+from scipy.special import ndtr
+from scipy.stats import chi2, ncx2, norm, t as student_t
 
 from extended import search_space as SS
 
@@ -94,22 +108,36 @@ RHO = 0.5
 _GH = np.polynomial.hermite_e.hermegauss(96)
 #: probability midpoints a level of the exact law's quadrature (checked against a simulation of the statistic)
 _QM = 128
+#: the coarse grid that only brackets `critical_value`'s root for the fine one (never a tolerance itself)
+_QM_BRACKET = 128
+#: Gauss-Hermite nodes for delta (64); a node whose normalised weight is below this is skipped -- the skipped weight is
+#: under 1e-15 in all, a bound on what it could add to a probability (`tests/test_search_followups.py`)
+_GH_FLOOR = 1e-17
 
 
 class PlateauRefused(ValueError):
     """A rule, a finalist or a neighbour's reading this module cannot stand behind (not a verdict: an error)."""
 
 
-@functools.lru_cache(maxsize=32)
-def _t_grid(n: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """The quadrature of the exact law (the module docstring): Gauss-Hermite nodes for delta, and probability midpoints
-    of the noncentrality (chi-square, n - 1) and of X given it (noncentral chi-square, n - 1), as sqrt(X / (n - 1))."""
-    nu = int(n) - 1
+def _gh_nodes() -> tuple[np.ndarray, np.ndarray, float]:
+    """The 64 Gauss-Hermite nodes and normalised weights for delta above `_GH_FLOOR`, and the weight skipped."""
     d, w = np.polynomial.hermite_e.hermegauss(64)
-    q = (np.arange(_QM) + 0.5) / _QM
+    w = w / w.sum()
+    keep = w >= _GH_FLOOR
+    return d[keep], w[keep], float(w[~keep].sum())
+
+
+@functools.lru_cache(maxsize=8)
+def _t_grid(n: int, qm: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """The quadrature of the exact law (the module docstring): Gauss-Hermite nodes for delta, and `qm` probability
+    midpoints of the noncentrality (chi-square, n - 1) and of X given it (noncentral chi-square, n - 1), as
+    sqrt(X / (n - 1))."""
+    nu = int(n) - 1
+    d, w, _ = _gh_nodes()
+    q = (np.arange(int(qm)) + 0.5) / int(qm)
     lam = chi2.ppf(q, nu)
     x = ncx2.ppf(q[None, :], nu, lam[:, None])
-    return d, w / w.sum(), np.sqrt(x / nu)
+    return d, w, np.sqrt(x / nu)
 
 
 def p_all_hold(c: float, k: int, n: int | None = None, shift: float = 0.0) -> float:
@@ -124,22 +152,60 @@ def p_all_hold(c: float, k: int, n: int | None = None, shift: float = 0.0) -> fl
         raise PlateauRefused("the exact law is the plateau's (shift 0); a shifted rate is the normal limit's")
     if int(n) < 2:
         raise PlateauRefused("a paired se needs at least two re-read seeds")
-    return _p_exact(float(c), int(k), int(n))
+    return _p_exact(float(c), int(k), int(n), int(_QM))
 
 
 @functools.lru_cache(maxsize=4096)
-def _p_exact(c: float, k: int, n: int) -> float:
-    d, w, sx = _t_grid(n)
-    g = norm.cdf(c * sx[None, :, :] - d[:, None, None]).mean(axis=2)
+def _p_exact(c: float, k: int, n: int, qm: int) -> float:
+    d, w, sx = _t_grid(n, qm)
+    g = np.empty((len(d), sx.shape[0]))
+    for i, di in enumerate(d):                      # one delta node at a time: a qm x qm slab, never qm x qm x 64
+        g[i] = ndtr(c * sx - di).mean(axis=1)
     return float(np.sum(w * (g ** k).mean(axis=1)))
+
+
+def _root(f: Callable[[float], float], lo: float, hi: float) -> float | None:
+    try:
+        return float(brentq(f, lo, hi))
+    except ValueError:
+        return None
 
 
 def critical_value(size: float, k: int, n: int) -> float:
     """The tolerance in standard errors at which a true plateau with k neighbours, compared on n re-read seeds, is
-    accepted with probability 1 - size (side 'worse', min_share 1; the module docstring's exact law)."""
+    accepted with probability 1 - size (side 'worse', min_share 1; the module docstring's exact law at `_QM`). The root
+    is bracketed from the coarse grid's and found on the fine one; no root in [-10, 60] standard errors is refused
+    (`PlateauRefused`, rm3-b), never a bare ValueError."""
     if not 0.0 < size < 1.0 or int(k) < 1:
         raise PlateauRefused("a size in (0, 1) and at least one neighbour")
-    return float(brentq(lambda c: p_all_hold(c, k, n) - (1.0 - size), -10.0, 60.0))
+    if int(n) < 2:
+        raise PlateauRefused("a paired se needs at least two re-read seeds")
+    k, n = int(k), int(n)
+
+    def fine(c: float) -> float:
+        return p_all_hold(c, k, n) - (1.0 - size)
+
+    c0 = _root(lambda c: _p_exact(float(c), k, n, int(_QM_BRACKET)) - (1.0 - size), -10.0, 60.0)
+    if c0 is not None:
+        for h in (0.02, 0.1, 0.5):
+            lo, hi = max(-10.0, c0 - h * max(1.0, abs(c0))), min(60.0, c0 + h * max(1.0, abs(c0)))
+            if fine(lo) < 0.0 < fine(hi):
+                got = _root(fine, lo, hi)
+                if got is not None:
+                    return got
+    got = _root(fine, -10.0, 60.0)
+    if got is None:
+        raise PlateauRefused(f"no tolerance in [-10, 60] standard errors accepts a plateau of {k} neighbours on {n} "
+                             f"re-read seeds at 1 - {size} (rm3-b): declare more re-read seeds or fewer neighbours")
+    return got
+
+
+def size_bound(c: float, k: int, n: int) -> float:
+    """The size bound under any dependence between the neighbours' differences (the red team's rm3-a): k times the
+    chance one paired t-statistic on n - 1 degrees of freedom exceeds c (Bonferroni), at most one."""
+    if int(n) < 2 or int(k) < 1:
+        raise PlateauRefused("a paired se needs at least two re-read seeds, and a bound at least one neighbour")
+    return float(min(1.0, int(k) * student_t.sf(float(c), int(n) - 1)))
 
 
 def critical_z(size: float, k: int) -> float:
@@ -216,7 +282,15 @@ class PlateauVerdict:
     form: str
     rule: str
     reread_seeds: tuple[int, ...]
+    #: the full declared protocol the check read on (the ledger's `protocol_record`) and its sha256 (rb2-a)
+    protocol: dict[str, Any]
+    protocol_sha256: str
+    #: the size the tolerance implies at the neighbours read, exact under exchangeable Gaussian seed noise across
+    #: designs
     size_at: float
+    #: the size bound under any dependence, k x P(t_{n-1} > tolerance) (rm3-a), and what the two figures are
+    size_bound: float
+    size_label: str
     evaluated: int
     held: int
     share: float
@@ -356,7 +430,16 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
         raise PlateauRefused(f"the finalist is a design the space refuses ({why[0]}: {why[1]})")
     rule.validate(space, f.design)
     role = f"plateau:{f.id}"
-    ledger.begin(role, int(ledger_seed), rule=rule.sha256(), reread=list(reread.seeds))
+    pen = ledger.begin(role, int(ledger_seed), rule=rule.sha256(), reread=tuple(reread.seeds))
+    try:
+        return _check(f, space, rule, evaluate, ledger, reread, pen, seed)
+    finally:
+        pen.close()                            # n-2: no neighbour enters the role after the check returns
+
+
+def _check(f: SS.Reading, space: SS.Space, rule: PlateauRule, evaluate: Callable[..., Any], ledger: SS.CellLedger,
+           reread: SS.Protocol, pen: SS.RolePen, seed: int | None) -> PlateauVerdict:
+    role = pen.role
     base = SS.admit_one(evaluate(dict(f.design), protocol=reread), ledger=ledger, reread=True, roles=SS.searched)
     if not echoes(base, f.design, reread):
         raise PlateauRefused("the finalist's re-read was not read as asked: its design on the re-read protocol")
@@ -365,7 +448,7 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
     refused: list[dict[str, Any]] = []
     for nb, moved, levers in nbs:
         r = space.check(nb)
-        ledger.record(space, nb, role=role, seed=int(ledger_seed), refusal=r)
+        pen.record(space, nb, refusal=r)
         if r is not None:
             refused.append({"moved": moved, "levers": list(levers), "class": r[0], "reason": r[1]})
             continue
@@ -381,11 +464,22 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
     n = len(rows)
     held = sum(r["holds"] for r in rows)
     share = held / n if n else 0.0
-    size_at = (1.0 - p_all_hold(rule.tolerance_se, n, len(reread.seeds))) if n and rule.side == "worse" \
-        else float("nan")
+    m = len(reread.seeds)
+    if n and rule.side == "worse":
+        size_at = 1.0 - p_all_hold(rule.tolerance_se, n, m)
+        bound = size_bound(rule.tolerance_se, n, m)
+        label = (f"size_at {size_at:.4g}: exact for {n} neighbours on {m} re-read seeds at tolerance "
+                 f"{rule.tolerance_se:.6g} under exchangeable Gaussian seed noise across designs; size_bound "
+                 f"{bound:.4g} = {n} x P(t_{m - 1} > {rule.tolerance_se:.6g}), under any dependence (rm3-a: "
+                 "common coin seeds across designs break exchangeability, and the true size lies at most at the "
+                 "bound)")
+    else:
+        size_at = bound = float("nan")
+        label = "no size figure: the exact law and its bound are the side 'worse''s, with at least one neighbour read"
     out = dict(finalist=f.id, selection_value=float(f.value), reread_value=float(base.value), form=FORM,
-               rule=rule.sha256(), reread_seeds=tuple(reread.seeds), size_at=size_at, evaluated=n, held=held,
-               share=share,
+               rule=rule.sha256(), reread_seeds=tuple(reread.seeds), protocol=SS.thaw(ledger.declared),
+               protocol_sha256=ledger.protocol_sha256, size_at=size_at, size_bound=bound, size_label=label,
+               evaluated=n, held=held, share=share,
                neighbours=rows, refused=refused, outside=outside, per_lever=per_lever, unsteppable=unsteppable)
     thin = {k: v for k, v in per_lever.items() if v < int(rule.min_per_lever)}
     if n < int(rule.min_neighbours) or thin:
@@ -405,5 +499,5 @@ def check(finalist: Any, space: SS.Space, rule: PlateauRule, evaluate: Callable[
 
 
 __all__ = ["TASK", "SIDES", "NEIGHBOURHOODS", "CELLS", "FORM", "RHO", "PlateauRefused", "p_all_hold",
-           "critical_value", "critical_z",
+           "critical_value", "critical_z", "size_bound",
            "PlateauRule", "PlateauVerdict", "neighbours", "holds", "zscore", "echoes", "paired", "check"]
