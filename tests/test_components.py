@@ -19,7 +19,10 @@ What is held:
   firms), the same side as an undefined overlap; touching intervals and other sessions accepted; `schedule_user`
   refuses two firms trading at once, on hand-built days whose overlap is certain (N-8);
 * the coin: one unit's draw shared by every firm, the schedule a function of the unit (same unit, same schedule);
-* the schedule's fields are the walker's trade.
+* the schedule's fields are the walker's trade;
+* **the names NY takes** (the red team's m1, Q-188c): `ny_am` and `ny_pm` strict at T2b's split, `ny` the whole NY
+  session; a whole-NY design named `ny` schedules every path exactly as it did named `ny_am` before (97ed1f5, loaded
+  from git): the naive coin, a P-16 mark component and the RL3 / P-16 / P-14 chain, on every synthetic day.
 
 Seeds fixed for this file (the test's own, used nowhere else): 20261524 (the synthetic series), 20261525 (the coin
 unit's role seed), 20261526 (the shift test's replacement walks; each cut a child `SeedSequence(20261526,
@@ -27,6 +30,7 @@ spawn_key=(day, cut))`). The red team's day uses its own unit, seed 1 (as `chk_r
 """
 from __future__ import annotations
 
+import sys
 from dataclasses import replace
 from datetime import date
 
@@ -78,7 +82,7 @@ def marks_component(name, first, last, marks, stop=40, rr=1.0, entry=T.MARKET, s
 def test_design_refusals():
     a = marks_component("a", 960, 1000, (960,))
     with pytest.raises(C.DesignRefused, match="collide"):
-        C.Design("ts", (a, marks_component("b", 1000, 1100, (1000,))))
+        C.Design("ts", (a, marks_component("b", 1000, 1100, (1000,), session="ny")))
     with pytest.raises(C.DesignRefused, match="outside session"):
         C.Design("ts", (marks_component("x", 960, 1000, (960,), session="asia"),))
     with pytest.raises(C.DesignRefused, match="last new entry"):
@@ -91,10 +95,11 @@ def test_design_refusals():
         C.Component("y", "ny_am", 960, 1000, object(), 40, 1.0)
     with pytest.raises(C.DesignRefused):
         C.UserBook(overlap="shared_path")
-    d = C.Design("ts", (a, marks_component("b", 1001, 1100, (1005,))))
+    d = C.Design("ts", (a, marks_component("b", 1001, 1100, (1005,), session="ny")))
     assert [c.name for c in d.components] == ["a", "b"]
     b = C.session_bounds()                                  # every search-year weekday at once (E-231 (3))
-    assert b["ny_am"] == b["ny_pm"] == (930, 1330) and b["asia"] == (120, 540) and b["_last_entry"][1] == 1328
+    assert b["ny"] == (930, 1330) and b["asia"] == (120, 540) and b["_last_entry"][1] == 1328
+    assert b["ny_am"] == (930, 1080) and b["ny_pm"] == (1080, 1330)          # strict at T2b's split (m1)
     assert b["evening"] == (0, 60) and b["london"] == (600, 930)
     winter, summer, mismatch = (C.session_bounds(date(2021, 1, 15)), C.session_bounds(date(2021, 7, 15)),
                                 C.session_bounds(date(2021, 3, 17)))   # Tokyo 09:00 at 18:00 / 19:00 CT; London 03:00
@@ -123,7 +128,7 @@ def test_one_position_at_a_time_with_five_minutes_flat():
             set_bar(day, s, P + 40 * TK, P + 40 * TK, P + 40 * TK, P + 40 * TK)
         set_bar(day, 1021, P, P + 40 * TK, P, P + 40 * TK)
         h = one_day(day)
-    comp = marks_component("m", 1000, 1100, (1000, 1010, 1020, 1025, 1030, 1035))
+    comp = marks_component("m", 1000, 1100, (1000, 1010, 1020, 1025, 1030, 1035), session="ny")
     s = C.schedule_day(C.Design("ts", (comp,)), h, 0, ctx0(h), UNIT)
     first = s.trades[0]
     assert (first.fill_slot, first.exit_slot, first.exit_kind) == (1000, 1022, "s")
@@ -135,7 +140,7 @@ def test_one_position_at_a_time_with_five_minutes_flat():
 
 def test_a_working_limit_blocks_other_offers():
     lim = C.Component("lim", "ny_am", 960, 965, T.P16Marks((960,), entry=T.LIMIT), 40, 1.0)
-    mk = marks_component("mkt", 966, 1100, (970, 985, 995))
+    mk = marks_component("mkt", 966, 1100, (970, 985, 995), session="ny")
     day = flat_day(P)                                          # the limit's level: the price at 09:55, P
     for s in range(955, 1439):                                 # then two ticks up: a buy limit at P never fills
         set_bar(day, s, P + 2 * TK, P + 2 * TK, P + 2 * TK, P + 2 * TK)
@@ -206,7 +211,7 @@ def test_a_same_bar_tie_books_the_worse_trade_and_stays_busy_to_the_later_exit()
     trade booked, the firm freed at the tie bar or at the booked trade's own exit."""
     stop, rr = TIE_STOP, TIE_RR
     rl3 = tie_component()
-    mk = marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0)
+    mk = marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0, session="ny")
     ctx = T.DayContext(1, "2021-03-03")
     earlier_booked = 0
     for kind in TIE_KINDS:
@@ -235,7 +240,7 @@ def test_m2_decisions_on_the_tie_days_are_shift_invariant():
     """m-2 (the re-read): the decision shift test on the three tie days. Catches: the firm kept busy only to the
     booked trade's exit (the M-6 wording before its amendment), which the red team's read found makes three decisions
     depend on later bars here."""
-    design = C.Design("ts", (tie_component(), marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0)))
+    design = C.Design("ts", (tie_component(), marks_component("mk", 1016, 1300, TIE_MK_MARKS, stop=40, rr=1.0, session="ny")))
     ctx = T.DayContext(1, "2021-03-03")
     total = 0
     for k, kind in enumerate(TIE_KINDS):
@@ -254,7 +259,7 @@ def test_m1_a_tie_counts_as_either_ticket_in_the_users_book(mfffu_mark, refused)
     10:20 CT; a mark at 11:30, after the later exit, is accepted. Catches: the book closing the tie at the booked
     ticket's exit, the book checking the booked side only."""
     ts = C.Design("ts", (tie_component(),))
-    mf = C.Design("mffu", (marks_component("m", 1016, 1300, (mfffu_mark,), stop=40),))
+    mf = C.Design("mffu", (marks_component("m", 1016, 1300, (mfffu_mark,), stop=40, session="ny"),))
     h, ctx = tie_history("down"), T.DayContext(1, "2021-03-03")
     row = C.schedule_day(ts, h, 1, ctx, UNIT).trades[0]
     assert row.oco_tie and row.exit_slot < row.busy_until and set(row.tie_sides) == {1, -1}
@@ -273,7 +278,7 @@ def test_m3_a_day_ending_before_the_walks_end_is_refused_unless_voided():
     """m-3 (the re-read): a day whose last bar is before `rules.walk_end` (under `JOURNEY`, no bar stamped 15:07 or
     later) is refused unless the caller voided it -- the walker's last fill bar would otherwise depend on whether later
     bars exist. Catches: the guard missing, a guard off by a bar (a day ending at 15:07 is accepted)."""
-    comp = marks_component("m", 1016, 1300, (1200,), stop=40)
+    comp = marks_component("m", 1016, 1300, (1200,), stop=40, session="ny")
     day = flat_day()
     for a in day:
         a[W.slot(15, 3) + 1:] = np.nan                                      # the last bar is stamped 15:02
@@ -371,7 +376,7 @@ def test_schedule_user_on_certain_overlap_and_certain_separation():
     gives the two moments opposite sides -- and on a day whose separation is certain it books both. Catches: the book
     not consulted (no refusal), the opposite-side check missing or swapped, a refusal of separated positions."""
     ts = C.Design("ts", (marks_component("a", 960, 1005, (1000,), stop=40),))
-    mf = C.Design("mffu", (marks_component("b", 1006, 1100, (1010,), stop=40),))
+    mf = C.Design("mffu", (marks_component("b", 1006, 1100, (1010,), stop=40, session="ny"),))
     h = one_day(flat_day())                                                    # flat: both held to the flatten
     s1 = T.coin_side(UNIT, T.Offer("p16", 0, 1000, 0, 995, 1000, T.MARKET))
     s2 = T.coin_side(UNIT, T.Offer("p16", 0, 1010, 0, 1005, 1010, T.MARKET))
@@ -550,8 +555,72 @@ def test_m7_skips_are_counted_by_the_state_at_their_live_minute():
     h = T.History.from_arrays(["2021-03-02", "2021-03-03"], ["NQH1", "NQH1"],
                               *[np.stack([a, b]) for a, b in zip(prev, day)])
     design = C.Design("ts", (C.Component("rl3", "ny_am", 960, 960, T.RL3Tickets("pdc", W.slot(14, 30)), 100, 1.0),
-                             C.Component("mk", "ny_am", 961, 1300, T.P16Marks((W.slot(10, 0), W.slot(11, 40))),
+                             C.Component("mk", "ny", 961, 1300, T.P16Marks((W.slot(10, 0), W.slot(11, 40))),
                                          100, 1.0)))
     s = C.schedule_day(design, h, 1, T.DayContext(1, "2021-03-03"), UNIT)
     assert [t.fill_slot for t in s.trades] == [W.slot(10, 40)]
     assert {o.live: r for o, r in s.skipped} == {W.slot(10, 0): "order", W.slot(11, 40): "position"}
+
+
+# ------------------------------------------------------------------------------------------------ m1: the names NY takes
+
+
+def _before_m1(tmp_path):
+    """`extended/components.py` as it was before Q-188c (97ed1f5: `ny_am` and `ny_pm` both bounded by the whole NY
+    session), loaded from git into its own module."""
+    import importlib.util
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    try:
+        text = subprocess.run(["git", "show", "97ed1f5:extended/components.py"], cwd=root, capture_output=True,
+                              check=True, text=True, encoding="utf-8").stdout
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("git or commit 97ed1f5 unavailable")
+    p = tmp_path / "components_97ed1f5.py"
+    p.write_text(text, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("components_97ed1f5", p)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_m1_whole_ny_named_ny_schedules_every_path_as_before(hist, tmp_path):
+    """The red team's m1, the lead's ruling: a window crossing noon New York now names `ny` (the whole session), and
+    `ny_am` / `ny_pm` are strict at T2b's split. **No path changes**: each design below -- the naive coin over the whole
+    NY session (`coin_component`, the registered baseline's form), a P-16 mark component crossing noon, and the chain
+    of RL3, P-16 marks and P-14's breakout -- schedules exactly as before on every synthetic day (every trade, skip,
+    refusal and unfilled offer), the old module naming the whole session `ny_am`, this one `ny`. Catches: a renamed
+    session that moves a window, an offer or a trade."""
+    old = _before_m1(tmp_path)
+    try:
+        new_coin = C.coin_component("coin", "ny", 5, stop_ticks=40, rr=1.0)
+        old_coin = old.coin_component("coin", "ny_am", 5, stop_ticks=40, rr=1.0)
+        assert (new_coin.first, new_coin.last) == (old_coin.first, old_coin.last)
+        assert C.coin_component("am", "ny_am", 5, stop_ticks=40, rr=1.0).last < 1080 <= \
+            C.coin_component("pm", "ny_pm", 5, stop_ticks=40, rr=1.0).first          # the split forms are strict
+        pairs = []
+        for mod, ny in ((old, "ny_am"), (C, "ny")):
+            coin = mod.coin_component("coin", ny, 5, stop_ticks=40, rr=1.0)
+            mk = mod.Component("mk", ny, 1016, 1300, T.P16Marks((1040, 1100, 1200)), 40, 1.0)
+            chain = (mod.Component("rl3", "ny_am", 960, 965, T.RL3Tickets("rn100", T.RL3_CUTOFFS[0]), 100, 1.5),
+                     mod.Component("p16", ny, 1020, 1100, T.P16Marks(T.p16_grid(1020, 1100)), 150, 1.0),
+                     mod.Component("brk", "ny_pm", 1105, 1260, T.P14Breakout(latency=3), 50, 2.0))
+            pairs.append([mod.Design("ts", (coin,)), mod.Design("ts", (mk,)), mod.Design("ts", chain)])
+        compared = 0
+        for d_old, d_new in zip(*pairs):
+            for i in range(len(hist)):
+                ctx = T.DayContext(i, hist.days[i], bls=(i % 5 == 4))
+                a, b = old.schedule_day(d_old, hist, i, ctx, UNIT), C.schedule_day(d_new, hist, i, ctx, UNIT)
+                assert repr((a.trades, a.skipped, a.refused, a.unfilled)) == \
+                    repr((b.trades, b.skipped, b.refused, b.unfilled)), (hist.days[i], d_new)
+                compared += len(b.trades)
+        assert compared > len(hist)
+        with pytest.raises(C.DesignRefused, match="outside session ny_am"):
+            C.Design("ts", (C.Component("mk", "ny_am", 1016, 1300, T.P16Marks((1040,)), 40, 1.0),))
+        with pytest.raises(C.DesignRefused, match="outside session ny_pm"):
+            C.Design("ts", (C.Component("mk", "ny_pm", 1016, 1300, T.P16Marks((1040,)), 40, 1.0),))
+    finally:
+        sys.modules.pop("components_97ed1f5", None)
