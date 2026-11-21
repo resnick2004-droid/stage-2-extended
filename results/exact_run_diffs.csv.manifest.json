@@ -1,0 +1,105 @@
+{
+  "columns": [
+    "section",
+    "design",
+    "arm",
+    "response",
+    "group",
+    "horizon",
+    "event",
+    "change",
+    "shift",
+    "starts",
+    "checked",
+    "differing",
+    "count"
+  ],
+  "description": "Q-172 (MEASURES section 6): exact-length-run differences on P-14's point arm, search years only (the job built inside the search cut), responses off and denial_25, horizons 21/63/90/126; counts only",
+  "exploratory": false,
+  "git_commit": "65f6817ebfca54125a2cf14016d7208c7e36830f",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "arm": "point",
+    "caveat": "an h-session exact run is made only when h < L = min(252, n - s): near the cut the 126 count shrinks over the last 126 starts (90, 63, 21 likewise); `checked` per horizon says how many",
+    "cut": {
+      "day_list": "the bars manifest's day_list read whole, never cut",
+      "files": [
+        "data/atlas/A1/days.parquet",
+        "data/atlas/A1/events.parquet",
+        "data/atlas/A3/walks.parquet"
+      ],
+      "last": "2023-12-29",
+      "passthrough": [
+        "data/atlas/A1/manifest.json",
+        "data/atlas/A3/manifest.json",
+        "data/bars/NQ/manifest.json"
+      ],
+      "switched_off": {}
+    },
+    "decisions": [
+      "E-208",
+      "E-232",
+      "MEASURES section 6"
+    ],
+    "design": "P-14",
+    "horizons": [
+      21,
+      63,
+      90,
+      126
+    ],
+    "identities": {
+      "nested": "HELD on 776 blocks to 2022-12-30",
+      "u1_point": "HELD on 783 start rows, every column of user_journey.csv"
+    },
+    "peak_working_set_mb": 491.0,
+    "purpose": "exact_run_count_search_years",
+    "read_row": "E-232",
+    "record_read": "each start's exact h-session run's event days against its long run cut at the search block's end (user_beside.run_starts journey=True, exact_every 1); classified against the long record's days (exact_run_diffs.classify)",
+    "responses": [
+      "off",
+      "denial_25"
+    ],
+    "seconds_per_start_run": {
+      "denial_25": 0.16,
+      "off": 0.15
+    },
+    "seed": {
+      "denial_seed": 20261920,
+      "start_seed": "lockstep.child_seed(20261920, 0, start_day)"
+    },
+    "starts": {
+      "check_sample": null,
+      "chosen": 290,
+      "control": "every 21th earlier",
+      "cut": "the last 252 search starts",
+      "n_sessions": 1034
+    },
+    "task": "Q-172",
+    "timing": {
+      "builds_s": 14.6,
+      "denial_25_s": 47.5,
+      "off_s": 38.8,
+      "total_s": 305.6,
+      "u1_point_s": 202.1
+    },
+    "workers": 1
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q172-exact-run-diffs",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q172-exact-run-diffs"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "exact_run_diffs.csv",
+  "rows": 16,
+  "script": "scripts/exact_run_diffs.py",
+  "seed": 20261920,
+  "sha256": "87e7eb8f344df9a6df66732288a4d2c3b15c89b0999d67ef61817b8d004b9124",
+  "timestamp": "2026-11-20T21:05:04+00:00",
+  "variant_count": 2
+}
