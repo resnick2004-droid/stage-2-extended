@@ -4647,20 +4647,22 @@ rules:
     value: null
     units: text
     status: unverified
-    article_id: "11994562"
-    url: https://help.myfundedfutures.com/en/articles/11994562
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "11994562; 16158363; 18337038; 11802636; 8528339; 11553890"
+    url: https://help.myfundedfutures.com/en/articles/11994562-consistency-rule-at-my-fundedfutures
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      NEW (one page, two bases): "This consistency rule means no single day's profit should exceed 30% or 50% of your total evaluation profits made."
-      Its example: "Total Profit Target on a 50k account: $3,000" / "Max Profit a Trader should achieve: $1,500" / "Calculation is: Total profit target / 2 = Max Daily Profit"
-      And: "...more than the listed percentage amount of their total profit target in one day simply need to trade additional days until consistency is met."
+      Still two bases on one page. H11994562 (September 25, 2026): "of your total evaluation profits made" against its example's "Total profit target / 2 = Max Daily Profit" and "of their total profit target in one day".
+      The page has no 30 % example. H16158363 and H18337038 give only "30% (Eval Only)"; H11802636, H8528339 and H11553890 state no base. No page says whether losing days reduce the base.
     stage2_key: null
     stage2_value: null
     note: >
-      Both fetches; the second said "The article doesn't reconcile these two". Total profits (the engine's
-      max(target, best day / share)) and the fixed target give different pass days once the best day exceeds the
-      share of the target; whether losing days net against the base is not stated either. Not chosen between.
+      2026-11-20: H11994562 twice (the second fetch: the statements "disagree on whether the cap is measured against
+      the fixed target or the running total"); H16158363 asked directly ("Not stated"); H18337038, H11802636, H8528339,
+      H11553890 once each. Not chosen between; RD-05 U-15 stays a declared reading.
+      EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unverified on the same two readings of H11994562
+      (the "total evaluation profits made" sentence against the "Total profit target / 2" example); the second fetch
+      then said the article does not reconcile them.
 
   - key: mffu.max_eval_accounts
     firm: mffu
@@ -4704,18 +4706,22 @@ rules:
     value: unstated
     units: text
     status: unstated
-    article_id: "16498635; 13523548 (not re-read)"
-    url: https://help.myfundedfutures.com/en/articles/16498635
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "16498635; 13523548; 8229980; 11802636; 8528339; 11553890; 11542523"
+    url: https://help.myfundedfutures.com/en/articles/16498635-moving-from-evaluation-to-sim-funded-account
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      H16498635 does not say what happens to a passed evaluation while the Sim-Funded limit is full (asked directly). It says only: "you'll be notified of the results via email and have the ability to insta-upgrade to a sim-funded account via your dashboard."
+      No page read says what happens to a passed evaluation while the Sim-Funded limit is full (waits, expires, is forfeited, or cannot upgrade). H16498635 (September 4, 2026) states the caps ("Rapid EOD $50K: Maximum of 3 Sim-Funded Accounts") and the upgrade ("insta-upgrade to a sim-funded account"), not the outcome at the cap.
+      H13523548 "Instant Sim Funded Upgrade" (August 24, 2026): the trader clicks "the Upgrade button"; no limit case, no hold, no deadline.
     stage2_key: null
     stage2_value: null
     note: >
-      Not a permission to bank passes. MFFU charges no activation fee, so no fee falls due at the upgrade; whether a
-      pass waits, expires or is forfeited when the seats are full is not stated. The evaluation's 7-day inactivity
-      rule (mffu.inactivity_rule) may close a passed evaluation that is left untraded -- a reading, not a sentence.
+      2026-11-20: H16498635 twice (the second asked the 3-seats-plus-one-pass case: "the page doesn't describe the
+      upgrade outcome"); H13523548 twice; H8229980, H11802636, H8528339, H11553890, H11542523 once each, all silent.
+      Not a permission to bank passes. No activation fee (mffu.activation_fee), so no fee falls due at the upgrade.
+      The 7-day inactivity rule (mffu.inactivity_rule) may close an untraded passed evaluation -- a reading, not a
+      sentence. EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unstated on H16498635 alone
+      (13523548 not re-read then).
 
   - key: mffu.inactivity_rule
     firm: mffu
@@ -4762,21 +4768,22 @@ rules:
     units: text
     status: unverified
     article_id: "8230009; 8444599"
-    url: https://help.myfundedfutures.com/en/articles/8230009
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    url: https://help.myfundedfutures.com/en/articles/8230009-news-trading-policy
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      CONFLICT (Q-135d C-9), within H8230009: under "Standard Trading Protocols": "Ensuring no open positions or orders are active in the order book 2 minutes before and after any data release." / "These protocols apply to all news releases."
-      Against the same page's Tier 1 section: "Trading on T1 News events is permitted for the following:" All evaluations; Builder Plans.
-      H8444599: "Engaging in trades during tier 1 economic data releases is restricted."
+      CONFLICT unchanged, within H8230009 (August 31, 2026): "Standard Trading Protocols": "2 minutes before and after any data release" / "These protocols apply to all news releases." (no account type named)
+      Against its Tier 1 lists: "Trading on T1 News events is permitted for the following:" / "All evaluations".
+      H8444599 ("Updated over 3 weeks ago"): "tier 1 economic data releases is restricted" (no window, no accounts).
     stage2_key: null
     stage2_value: null
     note: >
-      Both H8230009 fetches returned the protocol lines; the second read them as covering every release. On their
-      plain words they bar resting brackets around every data release on every account; the Tier 1 section confines
-      the hard rule to T1 on Rapid and Pro sim funded. Also on H8230009 (one fetch): "Utilizing strategies that exploit
-      immediate news bursts, such as straddles or strangles." / "Masking news trades as standard strategies." / "These
-      prohibitions are in effect for all news releases." Not chosen between.
+      2026-11-20: H8230009 twice (the second, asked to reconcile: "The page does not explicitly reconcile these
+      lines"; the reconciliation is "implied rather than stated"); H8444599 once. Not chosen between. A family that
+      needs it declares both readings: flat 2 minutes either side of every release on every account, or only T1 on
+      the restricted accounts. EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unverified on the same
+      conflict (Q-135d C-9); one fetch then also returned the straddle / masking prohibitions "in effect for all news
+      releases".
 
   - key: mffu.hedging_rule
     firm: mffu
@@ -4854,36 +4861,46 @@ rules:
     value: unstated
     units: usd
     status: unstated
-    article_id: "13745661"
-    url: https://help.myfundedfutures.com/en/articles/13745661
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "13745661; 11542406; 16158363; 18337038; 8528346; 8229980; 11542523; 17339138"
+    url: https://help.myfundedfutures.com/en/articles/11542406-guide-to-your-first-payout-quick-and-easy-process
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      H13745661 "Payout Policy Overview, Best and Fastest Prop-Firm Payouts" (August 25, 2026) names no fee on a payout and no per-method charge (asked in both fetches), and no payout method.
+      No page read names a fee on a payout or on any payout method. H11542406 "Guide to Your First Payout" (August 26, 2026) names the methods ("bank transfer or cryptocurrency"; "Plaid/ACH payouts are available for US traders"; receipt through a Riseworks account) and no fee for any.
+      H13745661 (August 25, 2026): no fee and no method named.
     stage2_key: null
     stage2_value: null
     note: >
-      H11542406 (First Payout) and the Simulated Trader Agreement (behind login, Terms s.29) were not read.
+      2026-11-20: H11542406 and H13745661 twice each (fee asked in both, "Not stated" / "Not on the page");
+      H16158363 twice, H18337038, H8528346, H8229980, H11542523, H17339138 once each, all silent. The 10 % profit
+      share is the split (mffu.rapideod50k.payout_split), not a fee. Whatever Riseworks or a bank charges is not on
+      MFFU's pages; the Simulated Trader Agreement (behind login) was not read. Never a zero: a family declares its
+      reading. EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unstated on H13745661 alone.
 
   - key: mffu.payout_processing_time
     firm: mffu
     value: null
     units: text
     status: unverified
-    article_id: "13745661; plans/rapid"
-    url: https://help.myfundedfutures.com/en/articles/13745661
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "13745661; 11542406; plans/rapid (2026-11-18, not re-read)"
+    url: https://help.myfundedfutures.com/en/articles/13745661-payout-policy-overview-best-and-fastest-prop-firm-payouts
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      CONFLICT (Q-135d C-8):
-      H13745661: "Most payouts are approved instantly." / "If a manual review is required, processing may take up to 6 to 12 business hours on weekdays."
-      P:rapid: "Most requests process in under a second." / "A subset routed for manual review may take up to 24 business hours."
+      CONFLICT (Q-135d C-8), now also within the help centre:
+      H13745661 (August 25, 2026): "Most payouts are approved instantly." / "up to 6 to 12 business hours on weekdays" (on manual review).
+      H11542406 (August 26, 2026): "All payouts are processed in 6-12 business hours excluding holidays."
+      The time from approval to cash is on neither page: H11542406 says only that the payout "is transferred to your Riseworks account".
     stage2_key: null
     stage2_value: null
     note: >
-      H13745661 twice (verbatim in one); P:rapid once. Q-135d also quotes H11542406 "All payouts are processed in 6-12
-      business hours excluding holidays." (not re-read). Either way, approval within the next session; the time to
-      cash is not stated.
+      2026-11-20: H13745661 and H11542406 twice each; neither states an arrival time. "Most ... instantly" against
+      "All ... in 6-12 business hours" differs at the lower end; the help centre's upper end is 12 business hours on
+      both pages, against the plan page's 24 business hours (P:rapid, read 2026-11-18; not re-read, this read was
+      confined to the help centre). Not chosen between. EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms):
+      unverified on H13745661 ("Most payouts are approved instantly." / up to 6 to 12 business hours on review)
+      against P:rapid ("Most requests process in under a second." / "up to 24 business hours"); H11542406 then
+      quoted from Q-135d, not re-read.
 
   # -- Rapid EOD 50K (H16158363 "Rapid EOD 50k – A Comprehensive Look", August 24, 2026; H18337038 "Rapid EOD with DLL - A Detailed Look", "Updated this week") --
   - key: mffu.rapideod50k.eval_fee
@@ -4891,18 +4908,24 @@ rules:
     value: null
     units: usd
     status: unverified
-    article_id: "plans/rapid-eod; 16158363; 18337038"
-    url: https://myfundedfutures.com/plans/rapid-eod
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "16158363; 18337038; 11802636; 8528339; 11553890; 11542523; 17339138; plans/rapid-eod (2026-11-18, not re-read)"
+    url: https://help.myfundedfutures.com/en/articles/16158363-rapid-eod-50k-a-comprehensive-look
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      P:rapid-eod's text shows no price for the 50K size: "One-time fee $97" and "Based on current promotions $162", tied to no size (the card's $1,000 drawdown is the 25K's). None of $275, $165, $200 or 27500 appears in the page text (asked directly).
-      H18337038 gives no figure: "The default is No DLL, at the updated price."
+      No help-centre page read states a price for Rapid EOD 50K, either version. H16158363 (August 24, 2026): no dollar price (its only fee line: "no activation fees on this plan"). H18337038 ("Updated this week") names "the updated price" without a figure.
+      H11802636 (September 24, 2026): "Our evaluation costs are among the lowest" (no figure). H8528339, H11553890, H11542523, H17339138: no price.
     stage2_key: null
     stage2_value: null
     note: >
-      Two fetches of P:rapid-eod. Q-135d's $275 (DLL version $200) is from embedded plan data this reader cannot see.
-      Settle in the lead's browser at myfundedfutures.com/challenge?id=93 and ?id=251 (stop before payment).
+      2026-11-20: H16158363 and H18337038 twice each (price asked in both); the others once. Kept `unverified`, not
+      `unstated`: the firm does sell the plan at a price, and the plan page (an official page) shows prices that its
+      text ties to no size; the help centre is silent. This read was confined to the help centre. One fetch of
+      myfundedfutures.com/plans/rapid-eod was attempted and refused by this session's permission check, and was not
+      retried. Settle in the lead's browser at the checkout (stop before payment).
+      EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unverified. P:rapid-eod's text showed "One-time fee
+      $97" and "Based on current promotions $162", tied to no size, and none of $275, $165, $200 or 27500. H18337038:
+      "The default is No DLL, at the updated price." Q-135d's $275 (DLL $200) is embedded plan data.
 
   - key: mffu.rapideod50k.eval_profit_target
     firm: mffu
@@ -5099,19 +5122,30 @@ rules:
     units: text
     status: unverified
     article_id: "16158363; 18337038; 8230009"
-    url: https://help.myfundedfutures.com/en/articles/16158363
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    url: https://help.myfundedfutures.com/en/articles/16158363-rapid-eod-50k-a-comprehensive-look
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      CONFLICT in wording (Q-135d C-11):
-      H16158363 sentence: "No T1 news trading is not allowed on this Sim Funded account." (a double negative)
-      H16158363 table: "T1 News Trading" | "No"; H18337038: "T1 news trading is not allowed on this Sim Funded account."
-      H8230009's restricted list names "Rapid Sim Funded" and does not name Rapid EOD separately.
+      H16158363 (August 24, 2026), Sim Funded table: "T1 News Trading" | "No" (the evaluation table: "Yes").
+      H18337038 ("Updated this week"), under "Rapid EOD Plan Sim Funded Stage Account Parameters", column "Rapid EOD - $50,000": "T1 News Trading" | "No"; and "T1 news trading is not allowed on this Sim Funded account."
+      H16158363's sentence, a double negative: "No T1 news trading is not allowed on this Sim Funded account."
     stage2_key: null
     stage2_value: null
     note: >
-      Recorded unverified only because the brief says every listed conflict is. Every reading but the double negative
-      says NOT ALLOWED, and the lead may settle it so.
+      HELD UNDER RD-05's PIN (the lead's ruling, Q-181b, 2026-11-20): a verified reading held under RD-05's pin (RD-05
+      4.1); it enters at RD-05's next declaration. RD-05 (E-200) declares this key unverified (Appendix R), and a change
+      after the pin is a new declaration, so the status stays unverified and no value is loaded. THE READING HELD:
+      "T1 news trading not allowed on the Rapid EOD 50K sim funded account (default and DLL versions); the T1 releases
+      and window are mffu.news_tier1_rule's" -- H16158363 and H18337038, "T1 News Trading" | "No".
+      2026-11-20: H16158363 twice (the "No" cell and the double-negative sentence in both); H18337038 twice (the
+      table cell and the plain sentence in both; once also "the same plan with the same rules, except that the DLL
+      version adds a Daily Loss Limit"); H8230009 twice (its restricted list is "Rapid Sim Funded" / "Pro Sim Funded";
+      Rapid EOD is not named, and the page does not say whether "Rapid Sim Funded" covers it). Verified on the two
+      plan pages' table cells and H18337038's plain sentence. The double negative is read as an editing slip, because
+      every other statement on the plan's two pages says not allowed; the lead may downgrade it. A wrong reading
+      here errs restrictive, and CHARTER 4's news exclusions stand either way.
+      EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unverified only because Q-135d listed it as a
+      conflict (C-11); "Every reading but the double negative says NOT ALLOWED".
 
   - key: mffu.rapideod50k.payout_gate
     firm: mffu
@@ -5169,17 +5203,22 @@ rules:
     value: unstated
     units: text
     status: unstated
-    article_id: "16158363; 13745661"
-    url: https://help.myfundedfutures.com/en/articles/16158363
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136, worktree wt-firms, branch wt/wt-firms)
+    article_id: "16158363; 18337038; 13745661; 11542406; 8528346"
+    url: https://help.myfundedfutures.com/en/articles/16158363-rapid-eod-50k-a-comprehensive-look
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      No page read says how much of the balance a request may take, or that the $2,100 buffer must stay in the account after a request. The nearest: "Minimum withdrawal after buffer: $500" (H13745661) and "There is no cap on how much you can request per payout cycle." (H16158363).
+      No page read says how much of the balance a request may take, or whether the $2,100 buffer must stay in the account after a request. The nearest: H16158363 "no cap on how much you can request per payout cycle"; H13745661 "Minimum withdrawal after buffer: $500"; H11542406 "Rapid Plans: Min of $500".
+      Pro has a within-buffer rule (H13745661: "withdraw up to 60% of your profits before fully clearing the buffer"); no equivalent for Rapid.
     stage2_key: null
     stage2_value: null
     note: >
-      Q-135d's "the whole profit above $2,100" rests on plan-data fields (within_buffer_split 0, requestable_pct 1),
-      not on words. A family needing it declares both ends.
+      2026-11-20: H16158363 three times (the buffer remaining and the balance after a payout "not stated"); H13745661
+      and H11542406 twice each; H18337038 and H8528346 once each (H8528346 only advises "leaving a buffer", no rule).
+      H16158363's "You must always keep at least $100 in the account" sits under "Max Loss Lock at $100" (the floor
+      lock, mffu.rapideod50k.funded_drawdown_lock), not under the payout rules: not read as a request rule. A family
+      needing the amount declares both ends. EARLIER RECORD 2026-11-18 (rules-verifier Q-136, wt-firms): unstated on
+      H16158363 and H13745661; Q-135d's "the whole profit above $2,100" rests on plan-data fields, not words.
 
   - key: mffu.rapideod50k.payout_split
     firm: mffu
@@ -6214,22 +6253,23 @@ rules:
     value: null
     units: text
     status: unverified
-    article_id: "16158363; 18337038; plans/rapid-eod; 9735811"
-    url: https://help.myfundedfutures.com/en/articles/16158363
-    date_read: 2026-11-18
-    verified_by: rules-verifier (Q-136b, worktree wt-firms, branch wt/wt-firms)
+    article_id: "9735811; 16158363; 18337038; 11802636; 8528339; 11553890; 8528346"
+    url: https://help.myfundedfutures.com/en/articles/9735811-futures-instrument-list
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
     quote: |
-      Not settled: the plan's pages state no commission for the evaluation or the sim funded account, and the only figure, H9735811's "Total Cost Round Trip" (NQ "$4.68", MNQ "$1.90"), names no account type or plan.
-      H16158363's only fee lines: "There are no activation fees on this plan." / "Our Rapid EOD account does not have an activation fee."
-      P:rapid-eod: "Recurring Costs" | "None"; "One-time purchase, nothing to cancel." (no commission, round-trip, per-side or P&L-deduction wording; asked).
-      H18337038 (DLL version): no commission, round-trip or trading-fee wording (asked).
+      Not settled: H9735811 (August 24, 2026), subtitle "Includes Contract Specifications, Commissions, and Trading Fees", column "Total Cost Round Trip": NQ "$4.68", MNQ "$1.90"; it names no plan, no account type (evaluation or sim funded) and no deduction from the balance.
+      The plan's pages state no commission: H16158363 and H18337038 (asked; "Not stated"); nor do H11802636, H8528339, H11553890 or H8528346.
     stage2_key: null
     stage2_value: null
     note: >
-      Both versions (default and DLL). Recorded unverified, not unstated, because a figure exists without an account
-      named (the precedent: lucid.flex50k.funded_monthly_fee). A family that needs the cost declares its reading of
-      the gap, e.g. both ends: none, and mffu.commissions' $4.68 / $1.90 round trip on every evaluation and sim funded
-      fill. Live accounts pay commissions from the Live balance (H10101257); Live terms are not recorded.
+      2026-11-20: H9735811 twice (both: which accounts the figure applies to "Not stated"); H16158363 twice;
+      H18337038 once; the rest once. Kept `unverified`, not `unstated`, because a figure exists without an account
+      named (the precedent: lucid.flex50k.funded_monthly_fee). A family that needs the cost declares both ends: none,
+      and the $4.68 / $1.90 round trip on every evaluation and sim funded fill.
+      EARLIER RECORD 2026-11-18 (rules-verifier Q-136b, wt-firms): unverified on the same pages, with P:rapid-eod
+      ("Recurring Costs" | "None"; no commission wording) and H10101257 (Live pays commissions from the Live balance;
+      Live terms not recorded).
 
   - key: mffu.builder50k.commissions
     firm: mffu
@@ -6490,3 +6530,78 @@ rules:
       as mffu.rapideod50k.funded_single_day_profit_ceiling (net of what, the day's start, where the excess goes).
       With Rapid's intraday equity trail (mffu.rapid50k.funded_drawdown), "net profit" may be realised or not:
       not stated.
+
+  # ---- 2026-11-20: the work list of docs/plans/LEVER_TABLE_mffu.md s.6 (Rapid EOD 50K, default version) ------------
+  # Read on help.myfundedfutures.com only (no other domain, no form, no login), each term from two differently worded
+  # fetches. Re-read in place above: mffu.eval_consistency_base, mffu.hold_queue_behaviour,
+  # mffu.news_all_releases_protocol, mffu.payout_fee, mffu.payout_processing_time, mffu.rapideod50k.eval_fee,
+  # mffu.rapideod50k.funded_news, mffu.rapideod50k.payout_request_amount, mffu.rapideod50k.commissions. NEW below: the
+  # three keys the lever table named that were absent from the record. Collections listed to find the pages: 5687009,
+  # 5808821, 5808827, 5811873, 17350372, 14650040, 5786939.
+  - key: mffu.trading_hours
+    firm: mffu
+    value: "trades may be placed from 6:00 PM (the Globex open) until the New York session close at 4:10 PM, times printed as EST; open positions are closed automatically at 4:10 PM on regular (non-holiday) trading days; on holidays there is no auto-liquidation at the early close and the trader must close positions before the market closes or the account is breached; no last-entry time separate from the 4:10 PM close is stated; NQ and MNQ trade Sunday - Friday 17:00 - 16:00 CT with a daily break 16:00 - 17:00 CT (9735811); every plan (the page names none)"
+    units: text
+    status: verified
+    article_id: "9558251; 9735811"
+    url: https://help.myfundedfutures.com/en/articles/9558251-permitted-times-to-trade
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
+    quote: |
+      H9558251 "Permitted Times to Trade" (August 24, 2026): "beginning at 6:00 PM EST when the Globex session opens" / "until the New York session closes at 4:10 PM EST" / "automatically closed at 4:10 PM EST on regular (non-holiday) trading days"
+      Holidays: "auto-liquidation will not occur at the half-time market close" / "the trader is responsible for closing the positions"
+      H9735811 (August 24, 2026), NQ and MNQ rows: "Sunday - Friday 17:00 - 16:00 CT" / "Daily Break: 16:00 - 17:00 CT"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      H9558251 twice: the open, the close and the 4:10 PM auto-close in both (verbatim in one, near-verbatim in the
+      other); the holiday lines verbatim in one and the same in substance in the other. It sits in the "Welcome
+      Aboard" collection's "Core Rules" group with H9735811, and names no plan, so it is read as firm-wide; H16158363
+      and the other plan pages state no hours. Also on it: placing a trade repeatedly "after 4:10 PM EST" can execute
+      and may disqualify the account; illiquid hours may be traded at the trader's discretion. TIME ZONE: the page
+      prints "EST" throughout. It ties 6:00 PM to the Globex open, which H9735811 gives as 17:00 CT; only New York
+      local time (ET) makes both hold all year (on literal EST in daylight-saving months the open would be an hour
+      after the Globex open, and the 4:10 PM close would fall after the 16:00 CT halt). So 4:10 PM is read as 16:10 ET
+      = 15:10 CT. That is this verifier's reading, not a sentence: the lead may downgrade it. The flat-by time sets
+      MFFU's sessions (T2, T3) and each session's last bar. H9735811's trading-hours cell is the exchange's session,
+      not MFFU's flat-by rule.
+
+  - key: mffu.hold_expiry_days
+    firm: mffu
+    value: unstated
+    units: days
+    status: unstated
+    article_id: "13523548; 16498635; 8229980; 11802636; 8528339; 11553890; 11542523"
+    url: https://help.myfundedfutures.com/en/articles/13523548-instant-sim-funded-upgrade
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
+    quote: |
+      No page read sets a deadline or a number of days within which a passed evaluation must be upgraded, or after which a pass lapses. H13523548 (August 24, 2026): the upgrade is "instantly" available through "the Upgrade button"; no deadline (asked twice). H16498635 (September 4, 2026): its only timing is the review, "typically in less than 24 hours".
+      H11553890 (March 2, 2026): "no fixed max number of trading days" (the evaluation's length, not a post-pass window).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW KEY (named by LEVER_TABLE_mffu.md, A9). H13523548 and H16498635 twice each; H8229980, H11802636, H8528339,
+      H11553890, H11542523 once each, all silent ("Not stated" / "Not on the page"). The 7-day inactivity rule
+      (mffu.inactivity_rule) may close an untraded account, a passed evaluation included -- a reading, not a sentence
+      about passes. Never a permission and never a number: A9's readings stay declared.
+
+  - key: mffu.account_start_rate_limit
+    firm: mffu
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "16498635; 8528339; 11802636; 11553890; 11542523; 17339138; 8229980; 8528346"
+    url: https://help.myfundedfutures.com/en/articles/16498635-moving-from-evaluation-to-sim-funded-account
+    date_read: 2026-11-20
+    verified_by: rules-verifier (stage2-extended; MFFU work list of LEVER_TABLE_mffu.md s.6, main tree working copy)
+    quote: |
+      No page read limits how many evaluations may be bought or started per day, week, month or transaction. The only limits are concurrent: H16498635 (September 4, 2026) "a maximum of 10 active Evaluation Accounts at any given time" (mffu.max_eval_accounts) and the Sim-Funded caps (mffu.max_funded_accounts).
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW KEY (named by LEVER_TABLE_mffu.md, A11). H16498635 twice (the second: other purchase limits "Not stated");
+      H8528339, H11802636, H11553890, H11542523, H17339138 ("Accepted Payment Methods", October 5, 2026), H8229980 and
+      H8528346 once each, all silent. Silence is not a permission: the record does not say that no rule limits
+      starts, which A11 needs. The Terms (myfundedfutures.com/terms) were not re-read (this read was confined to the
+      help centre).

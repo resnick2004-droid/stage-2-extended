@@ -121,8 +121,8 @@ def _label(s):
     return "%02d:%02d" % (m // 60, m % 60)
 
 
-_ANCHOR = {"london": ("Europe/London", 8, 0), "ny_am": ("America/New_York", 9, 30),
-           "ny_pm": ("America/New_York", 9, 30), "asia": ("Asia/Tokyo", 9, 0)}
+_ANCHOR = {"london": ("Europe/London", 8, 0), "ny_am": ("America/New_York", 9, 30), "ny": ("America/New_York", 9, 30),
+           "ny_pm": ("America/New_York", 12, 0), "asia": ("Asia/Tokyo", 9, 0)}      # NY PM opens at T2b's noon
 
 
 def _anchor_ct(day, session):
@@ -318,7 +318,8 @@ def test_windows_are_the_search_spaces_offsets_per_date(carried):
         want = {name: (a, b) for name, _, a, b in space.windows_on(design, d)}
         got = {c.name: (c.first, c.last) for c in PB.design_on(decl, space, d).components}
         assert got == want
-        starts = {k: a for k, (a, _) in SS.session_spans(d).items()}
+        starts = {k: a for k, (a, _) in SS.session_spans(d, PB._split()).items()}      # split at T2b (Q-188b)
+        starts["ny"] = SS.session_spans(d)["ny"][0]
         for c in decl["components"]:
             s = starts[PB.SPACE_SESSION[c["session"]]]
             assert got[c["name"]] == (s + c["first"], s + c["last"])
@@ -335,9 +336,9 @@ def test_windows_are_the_search_spaces_offsets_per_date(carried):
 def test_design_on_equals_the_evaluations_space(carried):
     """N-c3-1: the evaluation's own space (`search_space.from_lever_space`) puts the declaration's slots on the same
     windows on a date of each set of session starts in the search years, and `design_on` builds that day's design."""
-    sp = SS.from_lever_space(slots={"asia": 1, "london": 1, "ny": 2})
+    sp = SS.from_lever_space(slots={"asia": 1, "london": 1, "ny_am": 1, "ny_pm": 1})           # split at T2b
     decl = carried.decl
-    slot = {"asia_brk": "asia.0", "ldn_brk": "london.0", "am_tix": "ny.0", "pm_brk": "ny.1"}
+    slot = {"asia_brk": "asia.0", "ldn_brk": "london.0", "am_tix": "ny_am.0", "pm_brk": "ny_pm.0"}
     design = {}
     for c in decl["components"]:
         s = slot[c["name"]]
@@ -347,7 +348,7 @@ def test_design_on_equals_the_evaluations_space(carried):
         d = PB.design_on(decl, carried.space, day)
         assert d.day == day
         assert {slot[c.name]: (c.first, c.last) for c in d.components} == want
-        assert {c.session for c in d.components} <= {"asia", "london", "ny_am"}
+        assert {c.session for c in d.components} == {"asia", "london", "ny_am", "ny_pm"}
 
 
 @pytest.mark.parametrize("key", PB.REQUIRED)
@@ -395,16 +396,18 @@ MUTATIONS = {
     "offset-off-the-mark-grid": _set(("components", 1, "last"), 61),                              # C2-3
     "offset-beyond-the-session": _set(("components", 1, "last"), 400),
     "offset-negative": _set(("components", 1, "first"), -5),
-    "offset-last-before-first": _set(("components", 3, "last"), 145),
+    "offset-last-before-first": lambda d: d["components"][3].update(first=100, last=50),
     "rl3-window-misses-live": _set(("components", 2, "first"), 35),
     "closed-window-first": _set(("components", 2, "first"), 0),
     "unknown-session": _set(("components", 1, "session"), "sydney"),
     "anchor": _set(("session_anchors", "london"), ["Europe/London", "09:00"]),
+    "anchor-ny-pm-not-the-split": _set(("session_anchors", "ny_pm"), ["America/New_York", "09:30"]),  # Q-188b
     "anchor-missing": lambda d: d["session_anchors"].pop("asia"),
-    "collision": _set(("components", 3, "first"), 50),
+    "collision": lambda d: d["components"][3].update(session="ny_am", first=50, last=100),
     "rotation": _set(("rotation", "rule"), "copy_to_all"),
-    "pool-account": _set(("rotation", "pools", "pm_brk"), ["ts_z"]),
-    "pool-component": _set(("rotation", "pools", "no_such"), ["ts_a"]),
+    "hand-built-pools": _set(("rotation", "pools"), {"pm_brk": ["ts_b"]}),                         # L-M2
+    "ny-am-crossing-noon": _set(("components", 2, "last"), 200),                                     # Q-188b
+    "ny-pm-before-the-split": lambda d: d["components"][3].update(first=-30),
     "void-rule-unknown": lambda d: d["void_rules"].append("my_hunch"),
     "void-rule-dropped": lambda d: d["void_rules"].remove("prior_abbreviated"),
     "void-rule-twice": lambda d: d["void_rules"].append("fomc"),
@@ -423,7 +426,7 @@ MUTATIONS = {
     "contracts-zero": _set(("components", 2, "contracts"), 0),
     "contracts-500": _set(("components", 3, "contracts"), 500),
     "contracts-over-funded-cap": _set(("components", 3, "contracts"), 21),
-    "rl3-pair-over-cap-together": _set(("components", 2, "contracts"), 26),
+    "rl3-pair-over-cap-together": _set(("components", 2, "contracts"), 11),     # 22 together > the funded 20
     "budget-zero": _set(("bankroll", "budget"), 0),
     "margin-negative": _set(("side", "margin"), -0.01),
     "margin-not-a-number": _set(("side", "margin"), "small"),
@@ -442,7 +445,6 @@ MUTATIONS = {
     "plan-unknown": _set(("plan",), "the 50K plan"),
     "instrument": _set(("instrument",), "ES"),
     "design-id": _set(("design_id",), "two words"),
-    "ny-pm-until-the-boundary": _set(("components", 3, "session"), "ny_pm"),                     # N-c3-2
     "registration-in-the-declaration": _set(("registration",), PC.REGISTRATION),                  # C2-5
     "row-in-the-declaration": _set(("row",), "E-9004"),
 }
@@ -459,9 +461,6 @@ def _renamed(old, new):
     for c in decl["components"]:
         if c["name"] == old:
             c["name"] = new
-    pools = decl["rotation"]["pools"]
-    if old in pools:
-        pools[new] = pools.pop(old)
     rows = [dict(r, measure=new) if r["measure"] == old else dict(r) for r in PC.NO_HARM_ROWS]
     return decl, rows
 
@@ -488,8 +487,8 @@ def test_design_id_carries_no_figure(tmp_path, ident):
         _load(tmp_path, decl, record_over={"design_id": ident})
 
 
-@pytest.mark.parametrize("comp,session,first,last", [(3, "ny_am", 150, 395), (3, "ny_am", 330, 395),
-                                                     (3, "ny_am", 340, 395), (0, "asia", 0, 415),
+@pytest.mark.parametrize("comp,session,first,last", [(3, "ny_pm", 0, 245), (3, "ny_pm", 180, 245),
+                                                     (3, "ny_pm", 190, 245), (0, "asia", 0, 415),
                                                      (0, "evening", 0, 55)],
                          ids=["ny-to-its-end", "ny-from-the-last-event", "ny-wholly-past-the-last-event", "asia",
                               "evening-from-the-reopen"])
@@ -504,9 +503,24 @@ def test_a_breakout_window_past_its_span_is_clipped(tmp_path, comp, session, fir
     assert 0 <= trig.first <= trig.last <= T.P14_LAST
 
 
-def test_ny_pm_waits_for_its_boundary(tmp_path):
-    """N-c3-2: refused as such -- not counted from 08:30 CT, not merely unknown."""
-    _refuses(tmp_path, _set(("components", 3, "session"), "ny_pm"), match="boundary")
+def test_ny_is_split_at_noon_new_york(tmp_path, carried):
+    """N-c3-2 now the real split (Q-188b): NY PM counts from T2b's noon New York (11:00 CT), its windows read per date;
+    a window crossing noon is `ny`, the whole session from 08:30 CT, and as `ny_am` it refuses."""
+    assert PB._split() == 1080
+    for d in ("2021-03-12", "2021-03-16", "2021-04-06"):
+        pm = next(c for c in PB.design_on(carried.decl, carried.space, date.fromisoformat(d)).components
+                  if c.name == "pm_brk")
+        assert (pm.session, _label(pm.first), _label(pm.last)) == ("ny_pm", "11:00", "14:00")
+    decl = PC.declaration()
+    decl["components"][3].update(session="ny", first=150, last=330)
+    decl["session_anchors"]["ny"] = ["America/New_York", "09:30"]
+    c = _load(tmp_path, decl)
+    pm = next(x for x in PB.design_on(c.decl, c.space, date(2021, 3, 16)).components if x.name == "pm_brk")
+    assert (pm.session, _label(pm.first), _label(pm.last)) == ("ny", "11:00", "14:00")
+    decl["components"][3]["session"] = "ny_am"
+    decl["session_anchors"].pop("ny")
+    with pytest.raises(PB.PlaybookRefused, match="search space refuses"):
+        _load(tmp_path / "am", decl)
 
 
 def test_news_none_declared_with_its_reason_loads(tmp_path):
@@ -1095,19 +1109,21 @@ def test_rl3_pair_is_one_alert_in_one_account_placed_by_hand(carried, tmp_path):
     assert "2 contracts on each ticket, 4 for the tickets together" in t
     decl = PC.declaration()
     decl["components"][2]["side_rule"] = {"hi": "break", "lo": "break"}
-    decl["components"][2]["contracts"] = 25
+    decl["components"][2]["contracts"] = 10      # every account may be dealt the tickets: the funded cap binds
     c = _load(tmp_path, decl, no_harm_rows=_nh_rows("am_tix", "side_rule", "hi=break;lo=break"))
     t = _alert(c, "am_tix", "2021-03-16", 930).text
     assert "Ticket 1 of 2: Side BUY (long)" in t and "Ticket 2 of 2: Side SELL (short)" in t
     assert "STOP 1 tick above the level" in t and "STOP 1 tick below the level" in t
-    assert "25 contracts on each ticket, 50 for the tickets together (the firm's verified limit for this account: 50)" in t
+    assert "10 contracts on each ticket, 20 for the tickets together (the firm's verified limit for this account: 50)" in t
 
 
 def test_account_is_the_routers_pick_among_the_accounts_alive(carried, tmp_path):
-    """m-5, N-c2-1: the pool's (or the firm's) longest-waiting account among those alive today; a router under another
-    rotation, none, or accounts not the declaration's refuse."""
-    assert "account ts_a:" in _alert(carried, "am_tix", "2021-03-16", 930).text
-    assert "account ts_c:" in _alert(carried, "am_tix", "2021-03-16", 930, router=PC.router(ts_a=5000)).text
+    """m-5, N-c2-1, Q-188b: under by_component the router's own pools, dealt over the accounts alive today in opening
+    order and the components in window order (asia_brk, ldn_brk, am_tix, pm_brk); under longest_waiting the firm's
+    longest-waiting account; a router under another rotation, none, or accounts not the declaration's refuse."""
+    assert "account ts_c:" in _alert(carried, "am_tix", "2021-03-16", 930).text       # the third of three accounts
+    assert "account ts_a:" in _alert(carried, "pm_brk", "2021-03-16", 1101).text      # four components, three accounts
+    assert "account ts_a:" in _alert(carried, "am_tix", "2021-03-16", 930, accounts=("ts_a", "ts_b")).text
     decl = PC.declaration()
     decl["rotation"] = {"rule": "longest_waiting"}
     c = _load(tmp_path, decl)
@@ -1117,10 +1133,9 @@ def test_account_is_the_routers_pick_among_the_accounts_alive(carried, tmp_path)
     for bad in (("ts_a", "ts_z"), (), "ts_a", ("ts_a", "ts_a")):
         with pytest.raises(PB.AlertRefused):
             _alert(c, "pm_brk", "2021-03-16", 1101, accounts=bad)
-    with pytest.raises(PB.AlertRefused):                                # pm_brk's pool account is not alive today
-        _alert(carried, "pm_brk", "2021-03-16", 1101, accounts=("ts_a", "ts_c"))
-    for bad in (PC.router(decl), None):
-        with pytest.raises(PB.AlertRefused):
+    other, _ = _renamed("pm_brk", "pm_other")                         # by_component over another window order
+    for bad in (PC.router(decl), PC.router(other), None):
+        with pytest.raises(PB.AlertRefused, match="router"):
             PB.render_offer(carried, "pm_brk", H, PC.day_index("2021-03-16"), 1101, PC.sources(), bad, PC.ACCOUNTS)
 
 
@@ -1130,17 +1145,25 @@ def test_peek_writes_no_state_and_equals_routes_pick(rule):
     account `route` then gives the trade."""
     from extended import components as C
 
-    pools = {"pm_brk": ("ts_b", "ts_c")} if rule == "by_component" else {}
-    r = R.Router(R.Routing(rule, pools))
+    decl = PC.declaration()
+    decl["rotation"] = {"rule": rule}
+    r = PC.router(decl)
+    first = C.DaySchedule("topstep", 98, "2021-03-15", trades=[])
+    r.route([first], {"topstep": ("ts_c",)}, date="2021-03-15")        # ts_c opened a day before the others
     r.last_busy.update({("topstep", "ts_a"): 5000, ("topstep", "ts_b"): 100})
     r.last_account["topstep"] = "ts_a"
-    before = (dict(r.last_busy), dict(r.last_account), list(r.book.positions))
+
+    def state():
+        return (dict(r.last_busy), dict(r.last_account), list(r.book.positions), dict(r.opened), list(r.routed),
+                r.day_no)
+
+    before = state()
     picks = [r.peek("topstep", "pm_brk", PC.ACCOUNTS) for _ in range(3)]
-    assert (dict(r.last_busy), dict(r.last_account), list(r.book.positions)) == before
+    assert state() == before
     assert len(set(picks)) == 1
     tr = PC.scheduled(session=99, date="2021-03-16")
     day = C.DaySchedule("topstep", 99, "2021-03-16", trades=[tr])
-    assert r.route([day], {"topstep": PC.ACCOUNTS})[0].account == picks[0]
+    assert r.route([day], {"topstep": PC.ACCOUNTS}, date="2021-03-16")[0].account == picks[0]
 
 
 @pytest.mark.parametrize("day", ["2024-05-01", "2026-08-03"], ids=["held-out", "confirmation-window"])
@@ -1203,7 +1226,6 @@ RESEARCH_ONLY = [
      dict(calendar={"2021-03-16": {"kind": "data_defect_candidate", "close_ct": ""}})),
     ("h2-void", "ldn_brk", "2021-03-16", 610, dict(flags={"2021-03-16": {"verdict": "VOID", "void": "synthetic"}})),
     ("h2-missing", "ldn_brk", "2021-03-16", 610, dict(flags={"2021-03-16": {"missing_after_reopen": "999"}})),
-    ("prior-day-data-void", "am_tix", "2021-03-16", 930, dict(early_end=("2021-03-15",))),
 ]
 
 
@@ -1215,12 +1237,25 @@ def test_research_filters_never_decide_an_alert(carried, case, comp, day, at, sr
     assert _alert(carried, comp, day, at, src=PC.sources(**src)).text == want
 
 
+@pytest.mark.parametrize("src", [dict(early_end=("2021-03-15",)), dict(last_bar={"2021-03-15": "14:00"}),
+                                 dict(calendar={"2021-03-15": {"kind": "data_defect_candidate", "close_ct": ""}})],
+                         ids=["early-end", "short-last-bar", "data-defect"])
+def test_a_data_void_previous_day_refuses(carried, src):
+    """The lead's ruling on C3-1 (interpretation 1): a prior-level alert whose bars' previous day is itself data-void
+    refuses -- its levels would come from a defective day, which the evaluation voids; one reading no previous day
+    stands."""
+    with pytest.raises(PB.AlertRefused, match="data-void") as e:
+        _alert(carried, "am_tix", "2021-03-16", 930, src=PC.sources(**src))
+    assert e.value.reason == "mismatch"
+    assert _alert(carried, "pm_brk", "2021-03-16", 1101, src=PC.sources(**src)).text.startswith("TRADE ALERT")
+
+
 @pytest.mark.parametrize("comp,day,at", [("am_tix", "2021-04-05", 930)])
 def test_a_store_without_the_calendars_previous_session_refuses(carried, comp, day, at, tmp_path):
     """C3-1 (the lead's ruling, withdrawing N-c2-2): the calendar's previous session of 2021-04-05 is 2021-04-02; the
     store's previous day is 2021-03-19, so a component reading the previous day refuses as a data mismatch -- never a
     level, role or side from another day; one reading no previous day is offered."""
-    with pytest.raises(PB.AlertRefused, match="previous session") as e:
+    with pytest.raises(PB.AlertRefused, match="do not hold the previous session") as e:
         _alert(carried, comp, day, at)
     assert e.value.reason == "mismatch"
     decl = PC.declaration()

@@ -98,11 +98,11 @@ def declaration() -> dict:
             {"name": "am_tix", "session": "ny_am", "first": 30, "last": 85, "stop_ticks": 100, "rr": 1.5,
              "contracts": 2, "latency": None, "side_rule": {"hi": "fade", "lo": "break"},
              "trigger": {"source": "rl3", "params": {"kind": "pd", "cutoff": 1020}}},
-            {"name": "pm_brk", "session": "ny_am", "first": 150, "last": 330, "stop_ticks": 60, "rr": 2.25,
+            {"name": "pm_brk", "session": "ny_pm", "first": 0, "last": 180, "stop_ticks": 60, "rr": 2.25,
              "contracts": 1, "latency": 3, "side_rule": "against_breakout",
              "trigger": {"source": "p14", "params": {"latency": 3, "entry": "limit"}}},
         ],
-        "rotation": {"rule": "by_component", "pools": {"pm_brk": ["ts_b"], "am_tix": ["ts_a", "ts_c"]}},
+        "rotation": {"rule": "by_component"},
         "execution": {"gap_minutes": 5, "closed_window": [930, 959], "bls_clear": 875, "limit_window_min": 30,
                       "flatten": 1328, "last_entry": 1328},
         "news_source": "the synthetic release record",
@@ -116,7 +116,7 @@ def declaration() -> dict:
         "research_filters": ["short_bars", "overnight_missing"],
         "void_dates": [{"date": "2021-03-19", "reason": "early_close"}],
         "session_anchors": {"asia": ["Asia/Tokyo", "09:00"], "london": ["Europe/London", "08:00"],
-                            "ny_am": ["America/New_York", "09:30"]},
+                            "ny_am": ["America/New_York", "09:30"], "ny_pm": ["America/New_York", "12:00"]},
         "dates": ["2021-03-12", "2021-03-16", "2021-04-06"],
         "bankroll": {"budget": 1700, "row": "E-9000"},
         "expected": {"file": EXPECTED_FILE, "script": EXPECTED_SCRIPT, "rows": [
@@ -405,12 +405,15 @@ def scrambled(hist, i: int, at: int, seed: int):
 
 
 def router(decl: dict | None = None, **busy: int):
-    """The user's router under the declaration's rotation; `busy`: account -> its last busy minute."""
+    """The user's router under the declaration's rotation (`Routing(rule, firm=, design=)`: `by_component` deals over
+    the design's components in window order); `busy`: account -> its last busy minute."""
+    from extended import playbook as PB
     from extended import router as R
 
     decl = declaration() if decl is None else decl
-    rot = decl["rotation"]
-    r = R.Router(R.Routing(rot["rule"], {k: tuple(v) for k, v in rot.get("pools", {}).items()}))
+    rule = decl["rotation"]["rule"]
+    design = PB.design_on(decl, PB.window_space(decl), date(2021, 3, 16)) if rule == "by_component" else None
+    r = R.Router(R.Routing(rule, firm="topstep", design=design))
     for acct, t in busy.items():
         r.last_busy[("topstep", acct)] = int(t)
     return r

@@ -293,6 +293,16 @@ def _closed_all_day(src: Sources, k: date) -> bool:
     return row is not None and row["kind"] == "holiday" and not row.get("close_ct")
 
 
+def data_void(src: Sources, d: date, *, rules: Any = None) -> tuple[str, ...]:
+    """The data voids of a stored day (`_day_void`: a data-defect candidate, an early end of its bars, a scheduled close
+    before the walk's last bar, no bar at the walk's last stamp), for the playbook's check that a previous day's bars
+    can give levels (the lead's ruling on C3-1: a prior-level alert on a data-void previous day refuses)."""
+    if rules is None:
+        from extended import triggers as T
+        rules = T.JOURNEY
+    return tuple(_day_void(src, d, _walk_last_stamp(rules)))
+
+
 def prior_session(src: Sources, d: date) -> date | None:
     """**The previous session by the calendar** (the lead's C3-1 ruling on Wave 3.5, withdrawing N-c2-2): the last
     weekday before `d` that the calendar does not schedule shut all day, whether or not the store holds it; None when

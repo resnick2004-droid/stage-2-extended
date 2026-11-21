@@ -53,8 +53,9 @@ any other column refuses); every printed value is a bare finite number.
 `search_space.Space.windows_on` (the starts of `search_space.session_spans`, anchored to their local market times,
 E-231 (3)), checked by `Space.check` (bounds over the search years, collisions, RL3's live slot, the closed window), and
 built per date as `components.Design(day=...)`; a P-14 component's alerts are its window less L on each date,
-clipped to P-14's span (17:00 to 14:00 CT, C3-2). `ny_pm` refuses until T2b is declared (N-c3-2): the space has one
-NY session, and `ny_am` is counted from its 08:30 CT start.
+clipped to P-14's span (17:00 to 14:00 CT, C3-2). NY is split at T2b (Q-188b, noon New York, `lever_space.ny_boundary`):
+`ny_am` runs from the 08:30 CT open to the split, `ny_pm` from the split (its offsets count from it), and a component
+whose window crosses noon is `ny`, the whole session from 08:30 CT (`components.session_bounds`).
 
 **The side** (R-1, B-2). The playbook offers a side only as `trigger_sides.trigger_side` computes it, from an offer the
 module **recomputes itself** from the day's bars cut at the alert, through the trigger's own `offers()`. A scheduled
@@ -68,8 +69,9 @@ bars' previous day is not that session: no role, side or void is computed from a
 are research-only. The live path (a declared live calendar, today's bars) is not built: dates after
 the search years refuse.
 
-**The account** (m-5, N-c2-1) is the router's pick (`router.Router.peek`, the declaration's rotation) among the
-accounts alive that day. **Dates** (B-6) are strict ISO. **Bar times** (m-6) are stated by the bar's stamp; every level
+**The account** (m-5, N-c2-1) is the router's pick (`router.Router.peek`, the declaration's rotation, for `firm=`;
+under `by_component` the pools are the router's own, dealt each day over the design's components in window order,
+`router.window_order`: a declaration holds no pools) among the accounts alive that day. **Dates** (B-6) are strict ISO. **Bar times** (m-6) are stated by the bar's stamp; every level
 is defined by the bars it is made from (C2-9). A resting order's alert states the walker's void-at-live rule each
 time the order is placed, and under an RL3 pair per ticket (C2-4, C3-3).
 
@@ -167,11 +169,10 @@ TRIGGERS: dict[str, Callable[..., Any]] = {cls.__dataclass_fields__["source"].de
 P14, RL3 = (cls.__dataclass_fields__["source"].default for cls in (T.P14Breakout, T.RL3Tickets))
 SOURCE_LEVER = SS.SLOT_LEVERS[0]                       # the search space's source lever (T1)
 SLOT_PARAMS = ("first", "last", "cutoff", "marks")
-ANCHOR_OF = {"asia": "asia", "london": "london", "ny_am": "ny", "ny_pm": "ny"}
+ANCHOR_OF = {"asia": "asia", "london": "london", "ny_am": "ny", "ny": "ny", "ny_pm": "ny_pm"}
 #: the scheduler's session names -> the search space's (`search_space.session_spans`: one NY session until T2b)
-SPACE_SESSION = {"evening": "evening", "asia": "asia", "london": "london", "ny_am": "ny"}
-#: sessions refused until their boundary is declared (N-c3-2: T2b, the NY AM / NY PM boundary, is to declare)
-UNDECLARED_SESSIONS = ("ny_pm",)
+SPACE_SESSION = {"evening": "evening", "asia": "asia", "london": "london", "ny_am": "ny_am", "ny_pm": "ny_pm",
+                 "ny": "ny"}
 BLOCKS = {"search": "search years: the years this design was chosen on, so likely better than what follows",
           "held_out": "held-out years, reported beside, never judged"}
 CONVENTIONS = {
@@ -240,8 +241,10 @@ ROTATION_WORDS = {
                        "account first; ties in the account order below)",
     "round_robin": "the next trade of a firm goes to the account after the one that took the firm's last trade, in the "
                    "account order below",
-    "by_component": "each component's trades go to its own pool of accounts below, the one waiting longest first (a "
-                    "component without a pool uses every account)",
+    "by_component": "each day the router deals the accounts you hold, in the order you opened them, over the "
+                    "components in the order of their windows below (the first account to the first component, the "
+                    "next to the next, round again; with fewer accounts than components, each component takes one "
+                    "account in turn), and a component's trade goes to its pool's account waiting longest",
 }
 VOID_WORDS = {
     "fomc": "an FOMC statement day: no trade at all that day",
@@ -348,7 +351,18 @@ def _text(v: Any) -> str:
 
 
 def _anchor_ct(day: str, session: str) -> str:
-    return DC.label(DC.anchored_starts(date.fromisoformat(day))[ANCHOR_OF[session]])
+    d = date.fromisoformat(day)
+    if ANCHOR_OF[session] == "ny_pm":                 # NY PM opens at T2b's split (noon New York), per date
+        return DC.label(LS.ny_boundary(d))
+    return DC.label(DC.anchored_starts(d)[ANCHOR_OF[session]])
+
+
+def _local_anchor(session: str) -> tuple[str, int, int]:
+    """A session's local open: the void calendar's anchors; NY PM's is T2b's split (`ny_split_local`)."""
+    if ANCHOR_OF[session] == "ny_pm":
+        tz, h, m = LS.declared("ny_split_local")
+        return str(tz), int(h), int(m)
+    return DC.LOCAL_ANCHORS[ANCHOR_OF[session]]
 
 
 #: transform name -> function of the resolved input values (in path order)
@@ -608,17 +622,28 @@ def _run_after_pin(root: Path, pin_text: str, commit: str) -> bool:
 # ------------------------------------------------------------------------------------------------ the windows (C2-3)
 
 
+@functools.lru_cache(maxsize=1)
+def _split() -> int:
+    """T2b's declared NY boundary (`lever_space.bounds("T2b")`, noon New York), the evaluation's `ny_boundary`."""
+    return int(LS.ny_boundary(SS.search_days()[0]))     # T2b's declared value, equal on every date (Q-188b)
+
+
 @functools.lru_cache(maxsize=None)
 def _starts(day: date) -> dict[str, int]:
-    """The search space's session starts on `day` (`search_space.session_spans`), slots after the reopen."""
-    return {k: int(a) for k, (a, _) in SS.session_spans(day).items()}
+    """The search space's session starts on `day`, slots after the reopen: `search_space.session_spans` split at T2b
+    (`ny_am`, `ny_pm`), and its whole NY session (`ny`, for a window crossing noon)."""
+    out = {k: int(a) for k, (a, _) in SS.session_spans(day, _split()).items()}
+    out["ny"] = int(SS.session_spans(day)["ny"][0])
+    return out
 
 
 @functools.lru_cache(maxsize=1)
 def _bounds() -> dict[str, tuple[int, int, int]]:
     """Each session's window offsets (first, last, step) valid on every search-year weekday
-    (`search_space.session_slots`)."""
-    return SS.session_slots()
+    (`search_space.session_slots`, split at T2b; and the whole NY session's)."""
+    out = dict(SS.session_slots(_split()))
+    out["ny"] = SS.session_slots()["ny"]
+    return out
 
 
 @functools.lru_cache(maxsize=1)
@@ -646,9 +671,6 @@ def window_space(decl: Mapping[str, Any]) -> SS.Space:
     b = _bounds()
     slots, dims, cons = [], [], []
     for c in decl["components"]:
-        if c["session"] in UNDECLARED_SESSIONS:
-            raise PlaybookRefused(f"component {c['name']}: session {c['session']} waits for its boundary (the NY AM / "
-                                  "NY PM split) to be declared; until then the NY session is one, ny_am")
         sess = SPACE_SESSION.get(c["session"])
         if sess is None or sess not in b:
             raise PlaybookRefused(f"component {c['name']}: unknown session {c['session']!r}")
@@ -762,12 +784,19 @@ def _check_trigger(comp: Mapping[str, Any]) -> Any:
 
 
 def _routes(decl: Mapping[str, Any], name: str) -> list[str]:
-    """The accounts a component's trades may take (its pool under `by_component`, else every account)."""
-    rot = decl["rotation"]
-    pools = dict(rot.get("pools", {}))
-    if rot["rule"] == "by_component" and name in pools:
-        return list(pools[name])
+    """The accounts a component's trades may take: every account (under `by_component` the router deals the pools each
+    day over the accounts alive, so any account may take any component)."""
     return [a["id"] for a in decl["accounts"]]
+
+
+def _routing(decl: Mapping[str, Any], design: C.Design) -> R.Routing:
+    """The declaration's rotation as the router holds it: `Routing(rule, firm=, design=)` (`by_component` deals over the
+    design's components in window order; another rotation takes no design)."""
+    rule = decl["rotation"]["rule"]
+    try:
+        return R.Routing(rule, firm=decl["firm"], design=design if rule == "by_component" else None)
+    except R.RoutingRefused as e:
+        raise PlaybookRefused(str(e)) from e
 
 
 def _legs(trig: Any) -> int:
@@ -808,19 +837,16 @@ def check_declaration(decl: Mapping[str, Any]) -> SS.Space:
         raise PlaybookRefused(f"account ids repeat: {ids}")
     rot = decl["rotation"]
     _need(rot, ("rule",), "the rotation")
-    try:
-        R.Routing(rot["rule"], {k: tuple(v) for k, v in dict(rot.get("pools", {})).items()})
-    except R.RoutingRefused as e:
-        raise PlaybookRefused(str(e)) from e
+    if sorted(rot) != ["rule"]:
+        raise PlaybookRefused("the rotation is its rule alone: hand-built pools are refused (the router deals them)")
+    if rot["rule"] not in R.ROTATIONS:
+        raise PlaybookRefused(f"rotation {rot['rule']!r} is not one of the declared values {R.ROTATIONS}")
     names = []
     for c in decl["components"]:
         _need(c, COMPONENT_KEYS, f"component {c.get('name') if isinstance(c, Mapping) else c!r}")
         names.append(c["name"])
     if not names or len(set(names)) != len(names):
         raise PlaybookRefused(f"component names are present and distinct: {names}")
-    for name, pool in dict(rot.get("pools", {})).items():
-        if name not in names or any(a not in ids for a in pool):
-            raise PlaybookRefused(f"pool {name!r} names a component or an account the declaration does not hold")
     roles = {a["id"]: a["role"] for a in accounts}
     for c in decl["components"]:
         _ident(c["name"], "a component name")
@@ -841,7 +867,7 @@ def check_declaration(decl: Mapping[str, Any]) -> SS.Space:
     if why is not None:
         raise PlaybookRefused(f"the windows: the search space refuses them ({why[0]}: {why[1]})")
     for _, d in _start_dates():                       # every distinct set of session starts of the search years
-        design_on(decl, space, d)
+        _routing(decl, design_on(decl, space, d))
     ex = decl["execution"]
     _need(ex, EXECUTION_KEYS, "the execution rules")
     td = LS.trading_day()
@@ -890,7 +916,7 @@ def check_declaration(decl: Mapping[str, Any]) -> SS.Space:
         if not isinstance(anchors, Mapping) or sess not in anchors:
             raise PlaybookRefused(f"session {sess}'s local anchor is not declared")
         tz, hhmm = anchors[sess]
-        if (tz, *_hhmm(hhmm)) != DC.LOCAL_ANCHORS[key]:
+        if (tz, *_hhmm(hhmm)) != _local_anchor(sess):
             raise PlaybookRefused(f"session {sess}'s anchor differs from the void calendar's")
     if not list(decl["dates"]):
         raise PlaybookRefused("the playbook names at least one date to show its windows on")
@@ -1242,7 +1268,7 @@ def render_playbook(carried: Carried) -> Rendered:
            "file": {"decl": carried.decl_file, "sha": carried.decl_sha, "record": carried.record_file,
                     "heldout": carried.heldout.file, "heldout_commit": carried.heldout.commit},
            "carry": {"row": carried.row, "registration": carried.registration},
-           "calc": {"windows": windows},
+           "calc": {"windows": windows, "order": list(R.window_order(design_on(decl, carried.space, days[0])))},
            "expected": {"file": exp.file, "commit": exp.commit, **exp.values},
            "no_harm": {"file": nh.file, "commit": nh.commit, **nh.values}}
     d = _Doc(src)
@@ -1358,11 +1384,10 @@ def render_playbook(carried: Carried) -> Rendered:
     rot = decl["rotation"]
     d.line("Rule ", _v(D, "rotation", "rule"), ": ", ROTATION_WORDS[rot["rule"]], ". Each alert names the account the "
            "rule picks among the accounts you hold that day.")
-    names = [c["name"] for c in decl["components"]]
-    for name in sorted(dict(rot.get("pools", {}))):
-        parts = ["  component ", _v(D, "components", names.index(name), "name"), ": "]
-        for j, _ in enumerate(rot["pools"][name]):
-            parts += ([", "] if j else []) + [_v(D, "rotation", "pools", name, j)]
+    if rot["rule"] == "by_component":
+        parts = ["  the components in the order of their windows: "]
+        for j, _ in enumerate(src["calc"]["order"]):
+            parts += ([", "] if j else []) + [_v("calc", "order", j)]
         d.line(*parts)
     d.line(NO_COPY)
     d.line("")
@@ -1455,10 +1480,14 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
                         "caller's word")
     if not isinstance(router, R.Router):
         raise _mismatch("the account is the router's pick (router.Router), never the caller's")
-    rot = decl["rotation"]
-    want = R.Routing(rot["rule"], {k: tuple(v) for k, v in dict(rot.get("pools", {})).items()})
-    if (router.routing.rotation, dict(router.routing.pools)) != (want.rotation, dict(want.pools)):
-        raise _mismatch("the router's rotation is not the declaration's")
+    held = getattr(router, "routings", {}).get(decl["firm"])
+    try:
+        want = _routing(decl, design_on(decl, carried.space, day))
+    except PlaybookRefused as e:
+        raise _mismatch(str(e)) from e
+    if not isinstance(held, R.Routing) or (held.rotation, tuple(held.components)) != (want.rotation,
+                                                                                    tuple(want.components)):
+        raise _mismatch("the router's rotation for this firm is not the declaration's")
     today = _today(decl, accounts)
     try:
         ctx = DC.alert_context(sources, UNDERLYING_OF[decl["instrument"]], day, i, windows=_day_windows(decl, day))
@@ -1474,6 +1503,8 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
         if i == 0 or prev is None or parse_day(hist.days[i - 1], "the previous day") != prev:
             raise _mismatch(f"the bars do not hold the previous session ({prev}) by the calendar: no level, role or "
                             "side is computed from another day")
+        if DC.data_void(sources, prev):
+            raise _mismatch(f"the previous session ({prev}) is a data-void day: no level is taken from its bars")
     try:
         offers = trig.offers(cut_history(hist, i, at), i, ctx)
     except T.TriggerRefused as e:
