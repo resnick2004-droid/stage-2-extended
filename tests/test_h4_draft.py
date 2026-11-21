@@ -69,7 +69,7 @@ DECLARED_PATTERNS = (re.compile(rf"^results/h4_(units_{_B}|readings_{_B}|trades_
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
-PROVISIONAL_W42, RUNNER_COMMIT = "c72526d", "adedf7f"
+PROVISIONAL_W42, RUNNER_COMMIT = "c014d0a", "adedf7f"
 SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", "node_modules"}
 W42_PLACEHOLDER = "`<W42-R1's pinning row and the LF sha256 of its three files, filled at W42-R1's pin>`"
 NESTED_CUTS = ("2022-12-30", "2023-06-30", "2023-09-29")
@@ -1108,14 +1108,15 @@ def test_rc2_the_vendored_routers_boundary_pair_counts_0(tmp_path: Path) -> None
 
 def test_rc1_the_breakeven_law_and_the_coins_walk(text: str) -> None:
     s7 = _flat(_section(text, 7))
-    assert "| **the breakeven exit's law** |" in s7
-    for phrase in ("**the move-aware sequential race, the exact law** (the lead's ruling on RC-1)",
-                   "**(1) to the move bar**: R-10's stopped walk from the fill to the open of the move bar (the walk's "
-                   "`be_open`, the next FV3 session open after the entry bar: 17:00, 19:00, 08:30 or 13:00 CT",
+    assert "| **the breakeven move's law** |" in s7
+    for phrase in ("**every trade whose move bar comes before its time limit, whatever its historical kind**",
+                   "**the move-aware sequential race, time-limited, the exact law**",
+                   "**(1) to the move bar**: R-10's stopped walk from the fill to the move bar's open between -L and +g, "
+                   "**its step count taken from the time to the move bar**",
                    "**(2) the move arms** at that open if the walked position x is at least one tick in the trade's favour",
                    "**the stop becomes the entry** (zero gross)",
-                   "armed, the race between the entry and +g, p = x / g",
-                   "not armed, the race between -L and +g, p = (x + L) / (L + g)",
+                   "**(3) from x to the trade's time limit, bounded by it**: R-10's stopped walk from x between the entry "
+                   "(armed) or -L (not armed) and +g",
                    "Its gross expectation is exactly zero (optional stopping at each stage)",
                    "L_fill = min(l, c - max(x_stop, x_flat, x_b))"):
         assert phrase in s7, phrase
@@ -1209,9 +1210,12 @@ def test_rc9_to_rc13(text: str, plan) -> None:
 
     dep = _deps(text)
     assert "**its pre-pin fix at c72526d**, merged as 75ff709" in dep["W42-R1"]
-    assert "its public composite, limit and floor functions are still to come, their commit cited when they land" \
-        in dep["W42-R1"]
-    assert plan.PROVISIONAL_W42_COMMIT == "c72526d"
+    assert ("**its final commit c014d0a**, where the public `composite_per_seed`, `limit_estimate` and `null_journeys` "
+            "have landed and `DO_NOTHING_EPS` is to be declared") in dep["W42-R1"]
+    assert plan.PROVISIONAL_W42_COMMIT == "c014d0a"
+    w = _show("c014d0a", "extended/wave42.py")
+    for fn in ("def composite_per_seed(", "def limit_estimate(", "def null_journeys("):
+        assert fn in w, fn
     reg = dep["the registered-constants file"]
     cap = ROOT / "vendor" / "stage2" / "results" / "a3_brk30_cb20_gate.csv.manifest.json"
     sha = hashlib.sha256(cap.read_bytes()).hexdigest()
@@ -1276,3 +1280,30 @@ def test_the_seed_block_is_the_seed_modules() -> None:
     for role, i in (("h4_tests", 0), ("h4_0_probe", 1), ("h4b_coins", 2), ("h4s_schedule_side", 3),
                     ("h4b_audit_sample", 4)):
         assert re.search(rf"^\| {H4_BLOCK[i]} \| `{role}`", table, re.MULTILINE), role
+
+
+def test_the_firm_paths_baseline_laws(text: str) -> None:
+    """The laws the lead ruled for the firm path's baseline mode (BUILD_FIRMPATH_c2_2026-11-21), declared alike here."""
+    s7 = _flat(_section(text, 7))
+    for phrase in (
+            "**every trade whose move bar comes before its time limit, whatever its historical kind**",      # 1
+            "**(3) from x to the trade's time limit, bounded by it**",                                     # 1
+            "**Beside:** both breakeven shares, the redrawn one and FV3's historical one",                  # 1
+            "**its step count taken from the time to the move bar**",                                      # 2
+            "a need-aware exit drawn by the `profit_level` race at min(G, need), the consistency-cap exit by the "
+            "same race at its cap level, **both at R = the R the trade was read at** (`lt[\"rr\"]`), **never "
+            "`rr_used` on that path**",                                                                    # 3
+            "**at the contracts held, as the engine charges them** (D-324",                                # 4
+            "`be_open` is the move bar's **end** index, s + 1 on Stage 2's bar-end clock",                  # 5
+            "a missing bar is voided only by Q-197's pinned calendar, never by data",                       # 5
+            "the trades where the vendored bar differs from s + 1 are counted beside",                     # 5
+            "**a `be_open` at or after the limit means the trade has no move**",                           # 5
+            "**refused**: P-16's abandon leaves (risk 0) take no trade; **no `log_rr` fallback**",          # 6
+            "**read from bars closed at or before the alert only**"):                                      # 8
+        assert phrase in s7, phrase
+    assert "keeps its exit's law (the terminal-state map), and the share of such trades" not in s7
+    s16 = _flat(_section(text, 16))
+    assert "on the race arm **`u` and `mae` are not applicable**, never the historical trade's" in s16      # 7
+    fp = _deps(text)["the firm path"]
+    assert "**the firm path's baseline-mode laws as `BUILD_FIRMPATH_c2_2026-11-21` rules them**" in fp
+    assert "**both breakeven\n  shares**" in text or "**both breakeven shares**" in _flat(_section(text, 12))

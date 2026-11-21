@@ -70,9 +70,9 @@ class W42NotPinned(RuntimeError):
 #: until the lead's pinning row exists (B-6; W42-R1 at 34ee968 pins all three files); `tests/test_h4_draft.py` then
 #: reads the constants from that commit
 W42_PIN: dict | None = None
-#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's pre-pin fix at
-#: c72526d (merged as 75ff709; `wave42.py` byte-identical to 34ee968's, so the constants and J are unchanged)
-PROVISIONAL_W42_COMMIT = "c72526d"
+#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's final commit
+#: c014d0a on wt/wt-infra (its public functions landed; the constants J reads unchanged since 357a339)
+PROVISIONAL_W42_COMMIT = "c014d0a"
 #: W42-R1's floor on H4's seeds (its `H4_MIN_SEEDS`, m-2: below it no gap resolves) and the held-out test's J (its
 #: `TEST_SEEDS`, B-3), printed beside H4's J; the test holds both to `extended/wave42.py` at the provisional commit
 H4_MIN_SEEDS = 62
