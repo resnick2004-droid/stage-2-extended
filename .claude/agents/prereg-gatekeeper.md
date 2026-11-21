@@ -1,6 +1,6 @@
 ---
 name: prereg-gatekeeper
-description: Review a design search's declaration (prereg/DRAFT_F-XX_<slug>.md, drafted on prereg/TEMPLATE_design_search.md) against the journey objective's rules (CHARTER 2-3, E-210), then approve it -- assigning the next free F-number and returning the proposed pinning row with the file's sha256 (its k is assigned later, at its held-out row, E-204) -- or refuse it. Use before any part of a search is built or any bar is read for it, for the held-out test's declaration (prereg/TEMPLATE_heldout_test.md, its own item list), for an RD reading's declaration, and for a carried design's registration. Invoked by /prereg, after the scout's challenger brief and the red-team review.
+description: Review a design search's declaration (prereg/DRAFT_F-XX_<slug>.md, drafted on prereg/TEMPLATE_design_search.md) against the journey objective's rules (CHARTER 2-3, E-210), then approve it -- assigning the next free F-number and returning the proposed pinning row with the file's sha256 (a search assigns no k; F-HT's k is assigned at F-HT's held-out row, E-204) -- or refuse it. Use before any part of a search is built or any bar is read for it, for the held-out test's declaration (prereg/TEMPLATE_heldout_test.md, its own item list), for an RD reading's declaration, and for a carried design's registration. Invoked by /prereg, after the scout's challenger brief and the red-team review.
 tools: Read, Edit, Write, Grep, Glob, Bash, PowerShell
 ---
 
@@ -71,8 +71,8 @@ result of this search's own cells.
      `results/read_ledger.jsonl` -- the held-out years are used once per market, across declarations (CHARTER 3.6 (c));
      a re-declared search gets no fresh read;
    - an RD declaration naming any held-out purpose before the market's verdict row;
-   - a draft that plans a new `registered_design` read of the held-out years (P-14, P-15, P-16) without a decision row
-     naming it.
+   - a draft that plans a `registered_design` read of the held-out years (P-14, P-15, P-16) before F-HT's verdict
+     row (L-1; E-259).
 
    **Q-158** (merged, E-222) makes the reader enforce the order and the market from the finalists' token row,
    `heldout-finalists: F-NN @ <sha> list <sha>` (the declaration's LF sha256, then the finalists' list file's): refuse
@@ -81,12 +81,15 @@ result of this search's own cells.
    E-258 (the lead's CHARTER 3.7 reading row) exists in `DECISIONS.md`, its bolded title beginning `CHARTER's "pin" read`
    (the go row as CHARTER 3.7's "pin", template 14 step 4):
    a bare number, a deleted citation or any other row is refused. **Membership (H-1'; E-257):** this F-HT's members
-   are the design searches with a hash row by the membership event, the first go row of any firm's design search; a
-   firm with none by then is in state (c), fixed at that moment.
-   Refuse a search pinned after the membership event, or a successor of a closed search, offered as a member (its
-   candidates go to the confirmation window under its own k);
-   refuse a new search for a pin after every member search is in a terminal state until F-HT's held-out row is written.
-   Refuse a held-out year read by any choice.
+   are the design searches with a hash row before the membership event, the first go-row token
+   (`go: F-NN @ <its LF sha256>`) of an NQ design search of Topstep, My Funded Futures or Lucid, at most one per firm;
+   a firm with none before then is in state (c), fixed at that moment. **At most one member search per firm:** refuse
+   a design search for a pin before the membership event when its firm already has a hash row, closed or not (R-1;
+   E-259). Refuse a search pinned after the membership event, or a successor of a closed search, offered as a member
+   (its candidates are tested only on data this line has never read, a later purchase, under its own k;
+   the confirmation window is read once, only for this F-HT's carried designs, CW-1); refuse a new search for a pin
+   after every member search is in a terminal state until F-HT's held-out row is written. Refuse a held-out year read
+   by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -149,20 +152,23 @@ result of this search's own cells.
 8. **The three-way test** (template 8): the design note it adopts (`docs/plans/THREE_WAY_TEST_design.md`, the commit
    cited) and every departure; the coin-seed leg's statistic by the composite's form (no t decides); the time leg's
    conditions written exactly; the held-out leg's scope; **paired** seeds and start days for design and baselines.
-9. **Calibration and the power gate** (template 9): their inputs (seeds, the R-10 estimator, the statistic, J and m,
-   the plants, the generator) fixed in the file before the pin; their outputs pinned afterwards in E-115's form
+9. **Calibration and the power gate** (template 9): their inputs (seeds,
+   the R-10 estimator, `EPS` and `WALK_MAX`, the statistic, J and m, the plants, the generator) fixed in the file
+   before the pin; the go row's token `go: F-NN @ <its LF sha256>` naming the runner commit the calibration ran on,
+   the survey and every round run on it (G-1, U-1; E-259); their outputs pinned afterwards in E-115's form
    (`docs/calibration/<F-NN>_calibration.md` by its sha256); the antithetic twin and disjoint seed sets; the
    history null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
    complete-start count; "if any fails, the search goes no further" (no go row, no survey); the data question put to
    the operator before the go row. A draft that follows one closed by a failed calibration or power gate
    cites that record, reports it beside, and uses a fresh seed block -- refuse a failed block reused. **A failed limit
    clause or power gate is never a free retry** (M-5 (c); E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's
-   limits, bankroll budgets, weights and size that matters are never changed for any search of the line after any gate
-   that read them; a defect found in them goes through the failure protocol as a defect on record, and a corrected
-   rule is a new rule under a new row whose searches never enter this F-HT. A successor search inherits them
-   unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed block, and never
-   enters this F-HT (its candidates go to the confirmation window under its own k); every closed attempt of the line
-   is counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered as a member.
+   limits, bankroll budgets, weights and size that matters are never changed for any search of the line -- every
+   search, of any firm, whose section 7 applies W42-R1 -- after any calibration or gate that read them; a defect found
+   in them goes through the failure protocol as a defect on record, and a corrected rule is a new rule under a new row
+   whose searches never enter this F-HT. A successor search inherits them unchanged, changes only what the failure's
+   diagnosis names, citing the record, with a fresh seed block, and never enters this F-HT (its candidates are tested
+   only on data this line has never read, a later purchase, under its own k); every closed attempt of the line is
+   counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered as a member.
 10. **The pass line** (template 10): (a) the limits -- the point estimate governs, never a second margin (E-221,
     E-230, O-5), each limit's one-sided check reported beside and never deciding; (b) each baseline beaten,
     intersection-union, every comparison at the full level; (c) every floor, the stress floors (+1 tick, 10 % missed)
@@ -191,16 +197,16 @@ if any item is missing or set after a look:
    time leg -- is cited unchanged from each search's pinned file. **Refuse anything new.**
 3. **The joint order by the template's fixed rule (H-2; E-257):**
    alternating by rank across the firms in the order Topstep, My Funded Futures (MFFU), Lucid -- rank 1 of each, then
-   rank 2 of each, a firm whose list is exhausted skipped -- a firm's ranks its member searches' own pinned finalist
-   orders, search by search in the order of their hash rows. Refuse any other order, and any order a researcher chose
-   after a read.
+   rank 2 of each, a firm whose list is exhausted skipped --
+   a firm's ranks its one member search's own pinned finalist order. Refuse any other order, and any order a
+   researcher chose after a read.
 4. **Each firm's state by membership at the fixed event (H-1'; E-257):** the members are the design searches with a
-   hash row by the membership event, the first go row of any firm's design search; each member ends in (a)
-   finalists, its finalists' row, or (b) none, its closing row,
-   `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`, a cause from the template's closed list,
-   `withdrawn` only before that search's go row; a firm with no hash row by the event is in (c), fixed at that moment.
-   A firm's finalists are never voided; no successor and no search pinned after the event is a member. A firm in (b)
-   or (c) is listed as none and keeps its place.
+   hash row before the membership event, the first go-row token of an NQ design search of Topstep, My Funded Futures
+   or Lucid, at most one per firm; each member ends in (a) finalists, its finalists' row, or (b) none, its closing
+   row, `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`, a cause from the template's closed list,
+   `withdrawn` only before the membership event, `defect-on-record` citing its diagnosis row; a firm with no hash row
+   before the event is in (c), fixed at that moment. A firm's finalists are never voided; no successor and no search
+   pinned after the event is a member. A firm in (b) or (c) is listed as none and keeps its place.
 5. **Written only when, after the membership event, every member search is in a terminal state**, as soon as it
    is; before the event it is never due; a member search neither finalised nor closed blocks it and is never waited
    out by choice.
@@ -212,21 +218,20 @@ if any item is missing or set after a look:
    the product of the earlier and its own powers at the full level, under independence, the Frechet lower bound
    beside); exit (B) cites it.
 
-## k: counted per held-out test, assigned at the held-out row (E-204)
+## k: counted per held-out test, assigned at F-HT's held-out row (E-204; K-1)
 
-- One k per held-out test (CHARTER 3.7); the fixed sequence over finalists spends one; the confirmation spends none.
-  The program's numbering continues Stage 2's program U in declaration order across both repositories (E-001): F-01
-  (k = 10) withdrawn and spent (E-007), F-02's k = 11 retired unspent (E-094, E-095), F-03 spent k = 12 (E-192); the
-  next is k = 13.
-- **A search assigns its k at its held-out row** (E-204's rule, with "held-out test" in place of "stage B"): it is not
-  counted by this rule until that row exists. A pin spends no k; a held-out row does. On the template's order the
-  held-out row precedes the held-out run, so E-204's repeat clause (another declaration taking a k between a run and
-  its row) cannot arise; if a draft reverses the order, its held-out run is repeated at the new level under a repeat
-  row. At the pin, write "k assigned at the held-out row", state the k it would take if no other declaration takes a
-  k first, and check the level's arithmetic (k = 13: 0.05 / 182). If another declaration takes a k first, the
-  search must re-state its power gate's reading at the new level before its held-out run (exit (B) cites it).
-- **E-005 (d), restated:** a search withdrawn after its held-out row still spends its k, unless a decision row
-  releases it.
+- One k per held-out test (CHARTER 3.7); the joint fixed sequence over every member's finalists spends one; the
+  confirmation spends none. The program's numbering continues Stage 2's program U in declaration order across both
+  repositories (E-001): F-01 (k = 10) withdrawn and spent (E-007), F-02's k = 11 retired unspent (E-094, E-095), F-03
+  spent k = 12 (E-192); the next is k = 13.
+- **A search assigns no k.** Its pin row states "no k (F-HT's, k = 13 next)". **F-HT's k is assigned at its held-out
+  row**, which is its finalists' token row (E-204's rule, with "held-out test" in place of "stage B"); F-HT is not
+  counted by this rule until that row exists. Check the level's arithmetic (k = 13: 0.05 / 182). If another
+  declaration takes a k first, each finalist's place power is re-stated at the new level by a lookup in its gate's
+  output at k = 14 to 20 (K-2), never a new run; exit (B) cites it.
+- **No repeat row for F-HT, ever**: its held-out test runs once.
+- **E-005 (d), restated:** F-HT withdrawn after its held-out row still spends its k, unless a decision row releases
+  it; a search's withdrawal before F-HT's held-out row spends nothing.
 
 ## Also check
 
@@ -252,18 +257,18 @@ if any item is missing or set after a look:
 2. **Rename** `prereg/DRAFT_F-XX_<slug>.md` to `prereg/F-NN_<slug>.md` and replace `F-XX` in its text with `F-NN`.
    Change nothing else: the author's words are the declaration.
 3. **Hash the final file's LF text** -- the bytes with CRLF replaced by LF, exactly as
-   `tests/test_declarations_fixed.py` reads
-   it: `python -c "import hashlib,pathlib,sys; print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())" prereg/F-NN_<slug>.md`
-   The rename comes first and the hash second, so the hash is the renamed file's. From here the file is
-   frozen: nothing declared is edited; a change is a new declaration. **One hash for the life of the declaration:**
-   the pin, the go row, the finalists' row and the held-out row all cite this one hash; a second hash for the same
-   path is what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7 is
-   never pinned alone.
+   `tests/test_declarations_fixed.py` reads it: `python -c "import hashlib,pathlib,sys;
+   print(hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes().replace(b'\r\n', b'\n')).hexdigest())"
+   prereg/F-NN_<slug>.md` The rename comes first and the hash second, so the hash is the renamed file's. From here the
+   file is frozen: nothing declared is edited; a change is a new declaration. **One hash for the life of the
+   declaration:** the pin, the go row, the finalists' row and the held-out row all cite this one hash; a second hash
+   for the same path is what the reader refuses for good (`tests/test_design_search_template.py` holds it). Section 7
+   is never pinned alone.
 4. **Return the proposed pinning row as one finished line**, which must contain the exact pattern the hash test parses
    -- the path in backticks, the word `sha256`, the hash in backticks:
 
    ```
-   | E-NNN | <YYYY-MM-DD> | **Search F-NN declared before it is built or read: <title>, `prereg/F-NN_<slug>.md` sha256 `<64 hex>` (of its LF text).** k assigned at its held-out row (E-204); k = <k> if none takes a k first, level 0.05 / <k(k+1)>. The whole file frozen by this hash; the calibration and power gate follow under E-115's form, then the go row. O-1 and O-6 ruled: <rows>. Survey <N>, rounds <R> x <batch>, L values <...>. Held-out read ledger: <entries>. Confirmation declared now: ... Seeds by role: ... | <basis: the red-team review, the challenger brief, the template, the rows it rests on> |
+   | E-NNN | <YYYY-MM-DD> | **Search F-NN declared before it is built or read: <title>, `prereg/F-NN_<slug>.md` sha256 `<64 hex>` (of its LF text).** no k (F-HT's, k = 13 next). The whole file frozen by this hash; the calibration and power gate follow under E-115's form, then the go row. O-1 and O-6 ruled: <rows>. Survey <N>, rounds <R> x <batch>, L values <...>. Held-out read ledger: <entries>. Confirmation declared now: ... Seeds by role: ... | <basis: the red-team review, the challenger brief, the template, the rows it rests on> |
    ```
 
    Leave `E-NNN` for the lead to number. Report: APPROVED, the F-id, the k it would take and its level, the sha256,

@@ -480,9 +480,19 @@ def test_the_pair_rule_settlement_is_restored():
 
 def test_the_minor_findings_are_carried():
     gk = _text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md")
-    for s in ("takes a k first", "E-005 (d)", "re-state", "at most three a market", "P-05, P-06 and P-10",
-              "only by the operator's decision"):
+    for s in ("at most three a market", "P-05, P-06 and P-10", "only by the operator's decision"):
         assert s in gk, s                                                                   # m-2, m-3
+    gkf = _flat(gk)
+    for s in ("A search assigns no k. Its pin row states \"no k (F-HT's, k = 13 next)\". F-HT's k is assigned at its "
+              "held-out row, which is its finalists' token row",
+              "each finalist's place power is re-stated at the new level by a lookup in its gate's output at k = 14 to "
+              "20 (K-2), never a new run", "No repeat row for F-HT, ever: its held-out test runs once.",
+              "E-005 (d), restated: F-HT withdrawn after its held-out row still spends its k",
+              "(a search assigns no k; F-HT's k is assigned at F-HT's held-out row, E-204)"):
+        assert s in gkf, s                                                                  # K-1 (E-259)
+    for bad in ("A search assigns its k", "under a repeat row", "if none takes a k first", "its k is assigned later",
+                "the search must re-state", "a search withdrawn after its held-out row"):
+        assert bad not in gkf, bad
     rt = _text(CLAUDE_DIR / "agents" / "red-team.md")
     for s in ("sealed", "reverse reading", "intersection-union", "complete-start minimum", "tier-3 denial",
               "Focused Trader Program off"):
@@ -976,6 +986,7 @@ def test_m1_the_held_out_test_has_its_own_form():
 
 
 MARK_SEARCH, MARK_HT = "Declaration kind: design search", "Declaration kind: held-out test"
+DS_HEADINGS = ("## 5. The zero-edge convention", "## 6. The survey", "## 7. The pinning row")
 HT_HEADINGS = ("## 1. Its inputs", "## 2. The joint order", "## 3. The firms' states", "## 5. The rows, in order",
                "## 6. Power at each place")
 
@@ -990,6 +1001,8 @@ def _line_problems(name: str, text: str) -> list:
     out = []
     if MARK_SEARCH in f and purposes:
         out.append(f"{name}: a design search carries a Judged-block reads line {sorted(purposes)}")
+    if MARK_SEARCH not in f and MARK_HT not in f and any(h in f for h in DS_HEADINGS):
+        out.append(f"{name}: a design search's headings without the design-search marker (T-1)")
     m = re.match(r"(?:DRAFT_)?F-(\d+|XX)", name)
     new = bool(m) and (m.group(1) == "XX" or int(m.group(1)) >= 13)
     if purposes and new and MARK_HT not in f:
@@ -1030,6 +1043,10 @@ def test_m2_no_search_declaration_draft_or_pinned_carries_a_judged_block_line():
     assert _line_problems("F-17_w.md", "**Declaration kind: held-out test.**\n\n- **Judged-block reads:** "
                                        "`heldout_test`, `heldout_stress`\n")
     assert _line_problems("F-18_n.md", ht_ok + "\n## 6. The survey, the surrogate and the rounds\n")   # N-a
+    unmarked = _text(TEMPLATE).replace(MARK_SEARCH, "Declaration kind").replace(RR, "the lead's ruling")
+    assert MARK_SEARCH not in _flat(unmarked)
+    assert _line_problems("F-19_t1.md", unmarked) == ["F-19_t1.md: a design search's headings without the "
+                                                      "design-search marker (T-1)"]          # the review's T-1 probe
     # the gatekeeper's refusal, held (the full read's J2, J3)
     gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
     item1 = gk[gk.index("1. Years and the held-out read ledger"):gk.index("2. The confirmation window")]
@@ -1129,8 +1146,11 @@ def test_cycle1_minors():
 # cycle 2 (the red team's re-read TEMPLATE_V2_c1_2026-11-20: S-1, H-1, H-2, M-4, M-5, m-1 to m-6)
 
 FIRMS = ("Topstep", "MFFU", "Lucid")
+#: CW-1 (E-259): a non-member's route, word for word in the template's section 2 and the held-out template's section 3
+CW_SENTENCE = ("are tested only on data this line has never read (a later purchase), under its own k; the confirmation "
+               "window (NQ from 2026-07-17) is read once, only for this F-HT's carried designs (CW-1; E-259)")
 CAUSES = ("calibration-failed", "limit-clause-failed", "power-gate-failed", "every-design-failed-a-gate",
-          "empty-finalist-list", "every-finalist-failed-no-harm", "withdrawn")
+          "empty-finalist-list", "every-finalist-failed-no-harm", "withdrawn", "defect-on-record")
 
 
 class Refused(Exception):
@@ -1138,18 +1158,18 @@ class Refused(Exception):
 
 
 def _firm_states(events):
-    """H-1' (E-257) on synthetic rows, in row order: ("pin", firm, search), ("go", firm, search),
-    ("finalists", firm, search, ranks), ("closed", firm, search, cause), ("heldout", None, None).
-    The membership event is the first go row of any firm's design search; the members are the searches with a hash
-    row by then. Refuses: a pin after every member is terminal and before the held-out row (the no-new-pin bar);
-    `withdrawn` after that search's go row; an unlisted cause; a closing row after a finalists' row (finalists never
-    voided); a successor or a post-event search offered as a member. Returns (states, due, outside): states
-    {firm: (state, ranks)} with 'a', 'b', 'c' or 'open'; due whether F-HT is due; outside the non-member searches."""
-    pins, go, fin, closed, members, outside = [], set(), {}, {}, None, []
-    firm_of, held = {}, False
+    """H-1' (E-257) with E-259's R-1, W-1 and D-1, on synthetic rows in row order: ("pin", firm, search), ("go", firm,
+    search), ("finalists", firm, search, ranks), ("closed", firm, search, cause), ("join", firm, search),
+    ("heldout", None, None). The membership event is the first go row; each firm's one search with a hash row before
+    it is that firm's member. Refuses: a second pin for a firm before the event, closed or not (R-1); a pin after
+    every member is terminal and before the held-out row (the no-new-pin bar); `withdrawn` after the event (W-1); an
+    unlisted cause; a closing row after a finalists' row (finalists never voided); a non-member offered as a member.
+    Returns (states, due, outside): states {firm: (state, ranks)} with 'a', 'b', 'c' or 'open'; due whether F-HT is
+    due; outside the searches pinned after the event."""
+    pins, fin, closed, members, outside, held = {}, {}, {}, None, [], False
 
     def terminal():
-        return members is not None and all(s in fin or s in closed for s in members)
+        return members is not None and all(s in fin or s in closed for s in members.values())
 
     for ev in events:
         kind = ev[0]
@@ -1161,43 +1181,83 @@ def _firm_states(events):
         if kind == "pin":
             if members is not None and terminal() and not held:
                 raise Refused(f"{search}: no new search may be pinned until F-HT's held-out row is written")
-            firm_of[search] = firm
-            if members is None and not any(s in closed for s in pins if firm_of.get(s) == firm):
-                pins.append(search)
-            else:                                      # after the event, or a successor of a closed search
+            if members is None:
+                if firm in pins:
+                    raise Refused(f"{search}: a second hash row for {firm} before the membership event (R-1)")
+                pins[firm] = search
+            else:                                      # after the event: outside this F-HT
                 outside.append(search)
         elif kind == "go":
-            go.add(search)
             if members is None:
-                members = list(pins)                   # the membership event
+                members = dict(pins)                   # the membership event
         elif kind == "finalists":
             fin[search] = list(ev[3])
         elif kind == "closed":
             cause = ev[3]
             if cause not in CAUSES:
                 raise Refused(f"{search}: {cause!r} is not a listed cause")
-            if cause == "withdrawn" and search in go:
-                raise Refused(f"{search}: withdrawn after its go row")
+            if cause == "withdrawn" and members is not None:
+                raise Refused(f"{search}: withdrawn after the membership event (W-1)")
             if search in fin:
                 raise Refused(f"{search}: a closing row after its finalists' row (finalists are never voided)")
             closed[search] = cause
         elif kind == "join":                           # an attempt to add a search to F-HT's membership
-            if members is None or search not in members:
-                raise Refused(f"{search}: not a member of this F-HT (its candidates go to the confirmation window)")
+            if members is None or members.get(firm) != search:
+                raise Refused(f"{search}: not a member of this F-HT")
     states = {}
     for firm in FIRMS:
-        mine = [s for s in (members or pins) if firm_of.get(s) == firm]
-        if members is not None and not mine:
-            states[firm] = ("c", [])
-        elif not mine:
-            states[firm] = ("open", [])                # before the event, nothing is fixed
-        elif any(s in fin for s in mine) and all(s in fin or s in closed for s in mine):
-            states[firm] = ("a", [r for s in mine if s in fin for r in fin[s]])
-        elif all(s in closed for s in mine):
+        s = (members if members is not None else pins).get(firm)
+        if s is None:
+            states[firm] = ("c", []) if members is not None else ("open", [])
+        elif s in fin:
+            states[firm] = ("a", list(fin[s]))
+        elif s in closed:
             states[firm] = ("b", [])
         else:
             states[firm] = ("open", [])
     return states, terminal(), outside
+
+
+#: G-1: the go-row token, the exact first text of a decision row's third cell (the reader's positional form)
+GO_TOKEN = re.compile(r"^\| (?P<row>E-\d+) \| \d{4}-\d{2}-\d{2} \| go: (?P<decl>F-\d+) @ (?P<sha>[0-9a-f]{64})"
+                      r"(?= -- [^\s|]| \|)")
+PIN_ROW = re.compile(r"`prereg/(F-\d+)_[^`]*\.md` sha256 `([0-9a-f]{64})`")
+LOG_ROW = re.compile(r"^\| E-\d+ \|")
+
+
+def _log_membership(decisions: str, scope: dict) -> tuple:
+    """G-1 on a decision log: (the membership event's row id or None, {firm: its member search}). `scope` maps a
+    declaration to its firm when it is an NQ design search of Topstep, My Funded Futures or Lucid. The event is the
+    first go token of a declaration in scope; a member's first hash row comes strictly before the event's row (a hash
+    row in the event's own row is not before it); a second firm's hash row before the event is refused (R-1)."""
+    rows = [line for line in decisions.splitlines() if LOG_ROW.match(line)]
+    event = next(((i, m.group("row")) for i, line in enumerate(rows)
+                  if (m := GO_TOKEN.match(line)) and m.group("decl") in scope), None)
+    members, seen = {}, set()
+    for i, line in enumerate(rows):
+        if event is not None and i >= event[0]:
+            break
+        for decl, _sha in PIN_ROW.findall(line):
+            if decl not in scope or decl in seen:
+                continue
+            seen.add(decl)
+            if scope[decl] in members:
+                raise Refused(f"{decl}: a second hash row for {scope[decl]} before the membership event (R-1)")
+            members[scope[decl]] = decl
+    return (event[1] if event else None), members
+
+
+def _log_scope(root: Path) -> dict:
+    """The real scope: every pinned `prereg/F-NN_*.md` carrying the design-search marker, on NQ, its firm line naming
+    one of the three firms."""
+    names = {"Topstep": "Topstep", "My Funded Futures": "MFFU", "MFFU": "MFFU", "Lucid": "Lucid"}
+    out = {}
+    for pth in sorted((root / "prereg").glob("F-*.md")):
+        f = _flat(_text(pth))
+        m = re.search(r"The firm and account: ([A-Za-z ]+?)[,(<-]", f)
+        if MARK_SEARCH in f and "NQ" in f and m and m.group(1).strip() in names:
+            out[pth.name.split("_")[0]] = names[m.group(1).strip()]
+    return out
 
 
 def _joint_order(states):
@@ -1221,6 +1281,8 @@ def _place_power(pis):
 
 
 def test_h1_membership_is_fixed_by_an_event_and_states_by_rule():
+    import pytest
+
     # an empty history is never due: before the membership event nothing is "all terminal"
     st, due, _ = _firm_states([])
     assert not due and all(v[0] == "open" for v in st.values())
@@ -1241,8 +1303,8 @@ def test_h1_membership_is_fixed_by_an_event_and_states_by_rule():
     st, due, outside = _firm_states(ev[:4] + [("pin", "MFFU", "F-16")])
     assert outside == ["F-16"]
     for bad in (ev[:4] + [("pin", "MFFU", "F-16"), ("join", "MFFU", "F-16")],
-                [("pin", "MFFU", "F-14"), ("closed", "MFFU", "F-14", "calibration-failed"), ("pin", "MFFU", "F-16"),
-                 ("join", "MFFU", "F-16")]):
+                [("pin", "MFFU", "F-14"), ("go", "MFFU", "F-14"), ("closed", "MFFU", "F-14", "calibration-failed"),
+                 ("pin", "MFFU", "F-16"), ("join", "MFFU", "F-16")]):
         try:
             _firm_states(bad)
             raise AssertionError("a non-member was admitted")
@@ -1261,45 +1323,87 @@ def test_h1_membership_is_fixed_by_an_event_and_states_by_rule():
         except Refused:
             pass
     _firm_states(full + [("heldout", None, None), ("pin", "Lucid", "F-17")])  # after the held-out row: allowed
-    _firm_states([("pin", "Lucid", "F-17"), ("closed", "Lucid", "F-17", "withdrawn")])   # before its go row: allowed
+    _firm_states([("pin", "Lucid", "F-17"), ("closed", "Lucid", "F-17", "withdrawn")])   # before the event: allowed
+    # R-1 (E-259): at most one member search per firm; a second hash row before the event is refused, closed or not
+    for bad in ([("pin", "Topstep", "F-13"), ("pin", "Topstep", "F-14")],
+                [("pin", "Topstep", "F-13"), ("closed", "Topstep", "F-13", "calibration-failed"),
+                 ("pin", "Topstep", "F-14")],
+                [("pin", "Topstep", "F-13"), ("pin", "Topstep", "F-14"), ("pin", "MFFU", "F-15"),
+                 ("go", "Topstep", "F-13"), ("finalists", "Topstep", "F-13", ["a1", "a2"]),
+                 ("finalists", "Topstep", "F-14", ["b1"]), ("closed", "MFFU", "F-15", "power-gate-failed")]):
+        with pytest.raises(Refused, match="R-1"):
+            _firm_states(bad)
+    # the positive control: after the event a further search of the firm pins outside this F-HT ...
+    st, due, outside = _firm_states([("pin", "Topstep", "F-13"), ("go", "Topstep", "F-13"), ("pin", "Topstep", "F-14")])
+    assert outside == ["F-14"] and st["Topstep"] == ("open", []) and not due
+    st, _, _ = _firm_states([("pin", "Topstep", "F-13"), ("go", "Topstep", "F-13"), ("pin", "Topstep", "F-14"),
+                             ("finalists", "Topstep", "F-14", ["x"]), ("finalists", "Topstep", "F-13", ["t1"])])
+    assert st["Topstep"] == ("a", ["t1"])                                   # never the outside search's ranks
+    # ... unless the no-new-pin bar holds
+    done = [("pin", "Topstep", "F-13"), ("go", "Topstep", "F-13"), ("finalists", "Topstep", "F-13", ["t1"])]
+    with pytest.raises(Refused, match="no new search"):
+        _firm_states(done + [("pin", "Topstep", "F-14")])
+    assert _firm_states(done + [("heldout", None, None), ("pin", "Topstep", "F-14")])[2] == ["F-14"]
+    # W-1 (E-259): no withdrawal after the event, even before the member's own go row (the review's probe)
+    with pytest.raises(Refused, match="W-1"):
+        _firm_states([("pin", "Topstep", "F-13"), ("pin", "MFFU", "F-14"), ("pin", "Lucid", "F-15"),
+                      ("go", "Topstep", "F-13"), ("finalists", "Topstep", "F-13", ["t1", "t2"]),
+                      ("closed", "MFFU", "F-14", "withdrawn")])
+    # D-1 (E-259): a defect on record closes a member after the event
+    st, due, _ = _firm_states(done[:2] + [("closed", "Topstep", "F-13", "defect-on-record")])
+    assert due and st["Topstep"] == ("b", [])
     ht = _flat(_text(HT))
-    for s in ("The membership event is the first go row of any firm's design search",
+    for s in ("The membership event is the first go-row token, `go: F-NN @ <its LF sha256>`, of an NQ design search of "
+              "Topstep, My Funded Futures or Lucid (G-1; E-259)",
               "This F-HT's membership is fixed at that moment",
-              "a firm whose search has no hash row by the event is in state (c) for this F-HT, fixed at that moment, "
+              "each firm's one design search with a hash row before the event is that firm's member (at most one per "
+              "firm); a firm with no hash row before the event is in state (c) for this F-HT, fixed at that moment, "
               "before any search's search-year outcome is read",
               "`heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`",
-              "only before that search's go row; after its go row a search closes only by causes 1 to 6",
+              "only before the membership event; after it, a member closes only by causes 1 to 6 or 8 and is never "
+              "dropped by choice (W-1; E-259)",
               "A firm's finalists are never voided",
               "No successor enters this F-HT. A search pinned after the membership event, or a successor of a closed "
-              "search, is never a member of this F-HT; its candidates go to the confirmation window under its own k",
+              "search, is never a member of this F-HT; its candidates " + CW_SENTENCE,
               "This declaration is written as soon as, after the membership event, every member search is in (a) or "
               "(b)", "Before the event it is never due: an empty history is not \"all terminal\"",
               "Then no new search may be pinned until this declaration's held-out row is written",
               "A member search that is neither finalised nor closed blocks the declaration", "never waited out by choice"):
         assert s in ht, s
     for bad in ("latest pinned search counts", "are void once a successor", "no search of the firm was ever pinned",
-                "third terminal state"):
+                "third terminal state", "more than one member search", "search by search in the order of their hash "
+                "rows", "latest member search", "by the event", "go to the confirmation window under"):
         assert bad not in ht, bad
     causes = ht[ht.index("its cause one of a closed list"):ht.index("A firm's finalists are never voided")]
     assert re.findall(r"\d\. `([a-z-]+)`", causes) == list(CAUSES), causes          # exactly the closed list
     t = _flat(_text(TEMPLATE))
-    for s in ("the membership event, the first go row of any firm's design search (H-1'; E-257)",
+    for s in ("the one design search of each of Topstep, My Funded Futures and Lucid with a hash row before the "
+              "membership event, the first go-row token of an NQ design search of Topstep, My Funded Futures or Lucid "
+              "(H-1'; E-257; E-259), at most one per firm, a second hash row for a firm before the event refused at "
+              "its pin",
               "A search pinned after the membership event, or a successor of a closed search, is never a member of "
-              "this F-HT; its candidates go to the confirmation window under its own k",
+              "this F-HT; its candidates " + CW_SENTENCE,
               "written as soon as, after the membership event, every member search has a finalists' row or a closing "
               "row (H-1'; E-257", "A search pinned after the membership event is never a member of this F-HT",
               "The joint order alternates by rank across the firms (H-2; E-257), by the held-out template's rule"):
         assert s in t, s
     gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
-    for s in ("Membership (H-1'; E-257): this F-HT's members are the design searches with a hash row by the "
-              "membership event, the first go row of any firm's design search",
+    for s in ("Membership (H-1'; E-257): this F-HT's members are the design searches with a hash row before the "
+              "membership event, the first go-row token (`go: F-NN @ <its LF sha256>`) of an NQ design search of "
+              "Topstep, My Funded Futures or Lucid, at most one per firm",
+              "At most one member search per firm: refuse a design search for a pin before the membership event when "
+              "its firm already has a hash row, closed or not (R-1; E-259)",
+              "a firm's ranks its one member search's own pinned finalist order",
               "Refuse a search pinned after the membership event, or a successor of a closed search, offered as a "
               "member", "refuse a new search for a pin after every member search is in a terminal state until F-HT's "
               "held-out row is written",
               "4. Each firm's state by membership at the fixed event (H-1'; E-257)",
-              "`withdrawn` only before that search's go row",
+              "`withdrawn` only before the membership event, `defect-on-record` citing its diagnosis row",
               "5. Written only when, after the membership event, every member search is in a terminal state"):
         assert s in gk, s
+    for bad in ("search by search in the order of their hash rows", "more than one member search", "by the event",
+                "by the membership event", "go to the confirmation window under"):
+        assert bad not in gk and bad not in t, bad
 
 
 def test_h2_the_joint_order_alternates_by_rank_and_place_power_is_declared():
@@ -1319,19 +1423,26 @@ def test_h2_the_joint_order_alternates_by_rank_and_place_power_is_declared():
 RR = "E-258 (the lead's CHARTER 3.7 reading row)"
 RR_PLACEHOLDER = "E-NNN (the lead's CHARTER 3.7 reading row)"
 NO_RETRY = ("A failed limit clause or power gate is never a free retry (M-5 (c); " + RR + "): W42-R1's limits, "
-            "bankroll budgets, weights and size that matters are never changed for any search of the line after any "
-            "gate that read them; a defect found in them goes through the failure protocol as a defect on record, and "
-            "a corrected rule is a new rule under a new row whose searches never enter this F-HT. A successor search "
-            "inherits them unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh "
-            "seed block, and never enters this F-HT (its candidates go to the confirmation window under its own k); "
-            "every closed attempt of the line is counted and printed beside the verdict.")
+            "bankroll budgets, weights and size that matters are never changed for any search of the line -- every "
+            "search, of any firm, whose section 7 applies W42-R1 -- after any calibration or gate that read them; a "
+            "defect found in them goes through the failure protocol as a defect on record, and a corrected rule is a "
+            "new rule under a new row whose searches never enter this F-HT. A successor search inherits them "
+            "unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed block, "
+            "and never enters this F-HT (its candidates are tested only on data this line has never read, a later "
+            "purchase, under its own k); every closed attempt of the line is counted and printed beside the "
+            "verdict.")
 
 
-def _pin_ready(text: str, decisions: str) -> list:
+def _pin_ready(text: str, decisions: str, sha: str | None = None) -> list:
     """m-c: a design search pins only when every citation of the reading row is `E-<n> (the lead's CHARTER 3.7 reading
     row)`, at least the template's three sites, and the cited row exists in DECISIONS.md with its bolded title
-    beginning `CHARTER's "pin" read`. A bare number, a deleted citation, or any other row is refused."""
+    beginning `CHARTER's "pin" read`. A bare number, a deleted citation, or any other row is refused. With `sha` (a
+    pinned file's LF sha256), the cited row must come before the first row carrying that hash (T-1; E-259)."""
     out = []
+    rows = [line for line in decisions.splitlines() if LOG_ROW.match(line)]
+    pin_at = next((i for i, line in enumerate(rows) if sha and sha in line), None)
+    if sha is not None and pin_at is None:
+        out.append("no row of DECISIONS.md carries this file's sha256")
     if RR_PLACEHOLDER in text:
         out.append("the CHARTER 3.7 reading row is still a placeholder")
     cited = re.findall(r"(E-\d+) \(the lead's CHARTER 3\.7 reading row\)", text)
@@ -1343,6 +1454,8 @@ def _pin_ready(text: str, decisions: str) -> list:
             out.append(f"{row} cited but not in DECISIONS.md")
         elif not m.group(1).startswith('CHARTER\'s "pin" read'):
             out.append(f"{row} is not the CHARTER 3.7 reading row")
+        elif pin_at is not None and next(i for i, line in enumerate(rows) if line.startswith(f"| {row} |")) >= pin_at:
+            out.append(f"{row} does not come before the pin row")
     return sorted(set(out))
 
 
@@ -1374,10 +1487,18 @@ def test_m5_no_free_retry_and_the_reading_row_before_any_pin():
     assert _pin_ready(text.replace(RR, "the lead's ruling"), good)                    # a deleted citation
     assert _pin_ready(text.replace(RR, RR_PLACEHOLDER), good)                         # the placeholder
     log = _text(ROOT / "DECISIONS.md")
+    import hashlib
+
     for pth in sorted((ROOT / "prereg").glob("F-*.md")):
         t2 = _text(pth)
         if MARK_SEARCH in _flat(t2):
-            assert not _pin_ready(t2, log), (pth.name, _pin_ready(t2, log))
+            h = hashlib.sha256(t2.encode("utf-8")).hexdigest()
+            assert not _pin_ready(t2, log, h), (pth.name, _pin_ready(t2, log, h))
+    # T-1: the reading row must come before the pin row
+    pin = "| E-900 | d | **Search F-13 declared ...** `prereg/F-13_x.md` sha256 `" + "a" * 64 + "` |\n"
+    assert _pin_ready(t901, good + pin, "a" * 64) == []
+    assert _pin_ready(t901, pin + good, "a" * 64) == ["E-901 does not come before the pin row"]
+    assert _pin_ready(t901, good, "a" * 64) == ["no row of DECISIONS.md carries this file's sha256"]
     gk_items = gk[gk.index("1. Years and the held-out read ledger"):gk.index("2. The confirmation window")]
     assert "a bare number, a deleted citation or any other row is refused" in gk_items
     # the template's own citation: E-258 must be that row once master carries it (a visible skip until then)
@@ -1404,7 +1525,7 @@ def test_cycle2_c2_minors():
     assert "membership event" in _section(_text(TEMPLATE), "## 2. Years", "## 3. The lever space")
     for bad in ("the search's level", "the search's k"):                                              # m-e
         assert bad not in _flat(_text(TEMPLATE)), bad
-    assert "power at k = 14 and k = 15 reported beside, so a re-statement at another k is a lookup" in t
+    assert "power at every k from 14 to 20 reported beside, so a re-statement at another k is a lookup" in t
     # N-b: one closing-token form everywhere
     full = "`heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`"
     for rel in ("prereg/TEMPLATE_design_search.md", "prereg/TEMPLATE_heldout_test.md",
@@ -1422,6 +1543,8 @@ FORBIDDEN_FORMS = (
     r"\bmay (?:raise|change|re-?set|re-?order|be repeated|be extended|be re-run|be added)\b",
     r"\bcan be (?:run|read|repeated) again\b", r"\bat any time\b", r"\bif better\b", r"\bis dropped\b",
     r"\blead(?:'s row)? (?:excludes|chooses|decides)\b", r"\bafter a fail\w*,? (?:it )?(?:goes|moves|continues)\b",
+    r"\bmay set\b", r"\bunless a later\b", r"\bthe lead names\b", r"\bjudges it ready\b",     # N-1 (E-259)
+    r"\bwithout a row\b", r"\blatest member search\b",
 )
 
 
@@ -1434,7 +1557,7 @@ def test_v3_no_rule_negating_form_and_every_copy_needled():
         assert set(re.findall(r"\b\d+\.\d{2,}\b", _text(path))) <= {"0.05"}, path.name   # a 1.37 or a 1.37-fold
     t = _flat(_text(TEMPLATE))
     for s in ("n = round(sigma^2 T / s^2) (to the nearest integer, halves up, at least one)",
-              "a firm with no hash row by the event being in state (c)",
+              "a firm with no hash row before the event being in state (c)",
               "A search closed by a failed calibration, limit clause or power gate gets a closing row"):
         assert s in t, s
     ht = _flat(_text(HT))
@@ -1445,4 +1568,126 @@ def test_v3_no_rule_negating_form_and_every_copy_needled():
     gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
     for s in ("A firm's finalists are never voided; no successor and no search pinned after the event is a member",
               "a cause from the template's closed list"):
+        assert s in gk, s
+
+
+# ============================================================================================ M. E-259's pre-pin fixes
+# (the red team's full read of text v3, TEMPLATE_V3_FULL_2026-11-21: R-1, W-1, CW-1, D-1, G-1, K-1, K-2, U-1, L-1,
+# N-1, T-1, X-1), each sentence held where it lives
+
+#: D-1, N-1 (W11, W12): each closed cause with its description, the pair and not only the name
+CAUSE_TEXT = (
+    "the deciding calibration failed;", "the power gate's limit clause failed;", "the power gate failed;",
+    "every surveyed design failed a gate before its outcomes;", "the finalist order rule yielded an empty list;",
+    "every finalist failed its playbook no-harm floor;",
+    "a withdrawal under E-005 (d), its reason in the row, only before the membership event; after it, a member closes "
+    "only by causes 1 to 6 or 8 and is never dropped by choice (W-1; E-259).",
+    "a defect named by the failure protocol, cited by its diagnosis row; never a preference (D-1; E-259).",
+)
+
+
+def test_e259_the_go_token_fixes_the_event_in_the_log():
+    import pytest
+
+    a, b, c, d, z = ("a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 64)
+    scope = {"F-13": "Topstep", "F-14": "MFFU", "F-15": "Lucid", "F-16": "Lucid"}
+    rows = ["| E-899 | 2026-11-30 | go: F-12 @ " + z + " -- an ES search's go row, outside the scope | b |",
+            "| E-900 | 2026-12-01 | **Search F-13 declared.** `prereg/F-13_a.md` sha256 `" + a + "` | b |",
+            "| E-901 | 2026-12-02 | **Search F-14 declared.** `prereg/F-14_b.md` sha256 `" + b + "` | b |",
+            "| E-902 | 2026-12-03 | **A prose row** naming go: F-14 @ " + b + " -- not at the cell's start | b |",
+            "| E-903 | 2026-12-04 | go: F-13 @ " + a + " -- the go row; `prereg/F-15_c.md` sha256 `" + c + "` | b |",
+            "| E-904 | 2026-12-05 | go: F-14 @ " + b + " -- MFFU's go row | b |",
+            "| E-905 | 2026-12-06 | **Search F-16 declared.** `prereg/F-16_d.md` sha256 `" + d + "` | b |"]
+    log = "\n".join(rows) + "\n"
+    # the event is the first in-scope token at a row's third cell; a hash row in the event's own row is not before it
+    assert _log_membership(log, scope) == ("E-903", {"Topstep": "F-13", "MFFU": "F-14"})
+    assert _log_membership("\n".join(rows[:4]), scope) == (None, {"Topstep": "F-13", "MFFU": "F-14"})
+    assert _log_membership(log.replace("go: F-13 @ " + a + " --", "go: F-13 @ " + a + "--"), scope)[0] == "E-904"
+    second = rows[:2] + ["| E-901 | 2026-12-02 | **Search F-17 declared.** `prereg/F-17_t.md` sha256 `" + b + "` |"]
+    with pytest.raises(Refused, match="R-1"):
+        _log_membership("\n".join(second + rows[4:]), dict(scope, **{"F-17": "Topstep"}))
+    # the real log: every go token names an in-scope pinned search, and its membership parses without a refusal
+    log = _text(ROOT / "DECISIONS.md")
+    real = _log_scope(ROOT)
+    event, members = _log_membership(log, real)
+    for m in filter(None, map(GO_TOKEN.match, log.splitlines())):
+        assert m.group("decl") in real, (m.group("row"), m.group("decl"))
+    if event is None:
+        assert not any(GO_TOKEN.match(line) for line in log.splitlines())
+    assert set(members) <= set(FIRMS)
+    # the token's form in every copy
+    for path in (TEMPLATE, HT, CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"):
+        assert "`go: F-NN @ <its LF sha256>`" in _flat(_text(path)), path.name
+
+
+def test_e259_every_ruling_is_held_where_it_lives():
+    text = _text(TEMPLATE)
+    s1 = _section(text, "## 1. The question", "## 2. Years")
+    for s in ("The firm and account: <firm, plan> -- exactly one firm; a search naming several firms is refused (R-1; "
+              "E-259)",
+              "Each baseline's runner identity is checked on the search years only; any held-out part compares trade "
+              "times and brackets only, writes no outcome, and is entered in the held-out read ledger (L-1; E-259)"):
+        assert s in s1, s                                                              # R-1, L-1
+    s2 = _section(text, "## 2. Years", "## 3. The lever space")
+    for s in ("only if this search is a member (its hash row before the membership event)",            # W2
+              "its candidates " + CW_SENTENCE + ". A member's finalists are never voided. A later search on the same "
+              "bars reads NQ's held-out years and F-HT's results as a description only",               # W10, X-1
+              "it is read once, only for F-HT's carried designs, and a non-member search's candidates never use it "
+              "(CW-1; E-259)"):
+        assert s in s2, s
+    s5 = _section(text, "## 5. The zero-edge convention", "## 6. The survey")
+    for s in ("`EPS`: <...>, declared here, U-1", "`WALK_MAX`: <...>, declared here, U-1",
+              "| the stopped walk, T the limit known at the fill (the flatten, a scheduled window or the max hold, "
+              "whichever comes first), its share reported |"):                                         # U-1, W5
+        assert s in s5, s
+    s9 = _section(text, "## 9. Calibration", "## 10. The pass line")
+    for s in ("the R-10 estimator, `EPS` and `WALK_MAX` (section 5)",
+              "power at every k from 14 to 20 reported beside, so a re-statement at another k is a lookup, never a new "
+              "run (m-e; K-2)"):
+        assert s in s9, s                                                              # U-1, K-2
+    s13 = _section(text, "## 13. The count", "## 14.")
+    assert "(a lookup in each gate's output at k = 14 to 20, section 9)" in s13       # K-2, W7
+    s14 = _section(text, "## 14. The run order", "## 15.")
+    for s in ("At most one member search per firm: a second hash row for a firm before the membership event is refused "
+              "at its pin, whether or not the first is closed (R-1; E-259); after the event a further search of the "
+              "firm may pin, outside this F-HT, unless the no-new-pin bar holds.",
+              "4. The go row: its third cell's first text is the token `go: F-NN @ <its LF sha256>` (G-1; E-259); it "
+              "cites the calibration record's hash and names the runner commit the calibration ran on -- the survey "
+              "and every round run on that runner commit, bound by its sha; a change to deciding code after it is a "
+              "new declaration (U-1)",
+              "`withdrawn` only before the membership event, W-1; `defect-on-record` citing its diagnosis row, D-1; "
+              "E-259",                                                                                      # W1
+              "5. The survey on the search years only (one clean run, from the go row's runner commit)",
+              "6. The rounds, each one clean run from the go row's runner commit, collected",
+              "no `registered_design` read of them (of P-14, P-15, P-16) is made before F-HT's verdict row (L-1; "
+              "E-259)"):
+        assert s in s14, s
+    flat = _flat(text)
+    for bad in ("without a decision row naming it", "reads them as a description only", "after any gate that read",
+                "k = 14 and k = 15"):
+        assert bad not in flat, bad
+    ht = _flat(_text(HT))
+    for s in ("At most one member search per firm (R-1; E-259): a second hash row for a firm before the membership "
+              "event is refused at its pin, whether or not the first search is closed; a firm's ranks are its one "
+              "member search's pinned finalist order.",                                                  # R-1, W4
+              "A firm's state is its member search's, (a) or (b); (c) if it has none.",                 # W3
+              "a closing row after a search's finalists' row is refused, and no later search replaces them.",   # W9
+              "copy it to `prereg/DRAFT_F-XX_heldout_test_NQ.md` as soon as, after the membership event, every member "
+              "search is in a terminal state (section 3)",                                               # W15
+              "the full level 0.05 / (k (k + 1)) at every place -- from its own search's pinned power gate at the "
+              "size that matters;",                                                                      # W16
+              "The confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's carried designs, and "
+              "is a purchase; a non-member search's candidates never use it (CW-1; E-259)."):
+        assert s in ht, s
+    for i, (name, desc) in enumerate(zip(CAUSES, CAUSE_TEXT), 1):
+        assert f"{i}. `{name}` -- {desc}" in ht, (i, name)                           # D-1, W11, W12
+    gk = _flat(_text(CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"))
+    for s in ("is counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered "
+              "as a member.",                                                                                 # W14
+              "a draft that plans a `registered_design` read of the held-out years (P-14, P-15, P-16) before F-HT's "
+              "verdict row (L-1; E-259)",
+              "the confirmation window is read once, only for this F-HT's carried designs, CW-1",
+              "the R-10 estimator, `EPS` and `WALK_MAX`, the statistic",
+              "naming the runner commit the calibration ran on, the survey and every round run on it (G-1, U-1; "
+              "E-259)"):
         assert s in gk, s

@@ -61,17 +61,18 @@ CHARTER 3.6 (c)'s firm list and CLAUDE.md's Topstep-first line. The rule is writ
 declared, and recorded by the lead's row E-257 (E-254 records the superseded block order); this declaration applies it
 and states the resulting order. **A researcher's choice after a read is never the order.**
 
-- A firm in state (b) or (c) of section 3 contributes no finalist: it is **listed as none** and **keeps its place**
-  in the firm order; the alternation runs over the firms that have finalists. A firm with more than one member search
-  in state (a) ranks their finalists search by search, in the order of their hash rows, each in its own pinned
-  finalist order.
+- A firm in state (b) or (c) of section 3 contributes no finalist: it is **listed as none** and **keeps its place** in
+  the firm order; the alternation runs over the firms that have finalists. **At most one member search per firm**
+  (R-1; E-259): a second hash row for a firm before the membership event is refused at its pin, whether or not the
+  first search is closed; a firm's ranks are its one member search's pinned finalist order.
 
 ## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)
 
 - **The firms are fixed now:** Topstep, My Funded Futures (MFFU), Lucid.
-- **The membership event** is the first go row of any firm's design search. **This F-HT's membership is fixed at
-  that moment:** every design search with a hash row by the event is a **member**; a firm whose search has no hash
-  row by the event is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year outcome is
+- **The membership event** is the first go-row token, `go: F-NN @ <its LF sha256>`, of an NQ design search of Topstep,
+  My Funded Futures or Lucid (G-1; E-259). **This F-HT's membership is fixed at that moment:** each firm's one design
+  search with a hash row before the event is that firm's **member** (at most one per firm); a firm with no hash row
+  before the event is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year outcome is
   read.
 - **Every member search ends in one of two states:**
   - **(a) finalists:** it has a finalists' row;
@@ -84,14 +85,17 @@ and states the resulting order. **A researcher's choice after a read is never th
   4. `every-design-failed-a-gate` -- every surveyed design failed a gate before its outcomes;
   5. `empty-finalist-list` -- the finalist order rule yielded an empty list;
   6. `every-finalist-failed-no-harm` -- every finalist failed its playbook no-harm floor;
-  7. `withdrawn` -- a withdrawal under E-005 (d), its reason in the row, **only before that search's go row**; after
-     its go row a search closes only by causes 1 to 6.
+  7. `withdrawn` -- a withdrawal under E-005 (d), its reason in the row, **only before the membership event**; after it,
+     a member closes only by causes 1 to 6 or 8 and is never dropped by choice (W-1; E-259).
+  8. `defect-on-record` -- a defect named by the failure protocol, cited by its diagnosis row; never a preference
+     (D-1; E-259).
 - **A firm's finalists are never voided:** a closing row after a search's finalists' row is refused, and no later
   search replaces them.
-- **A firm's state:** (a) if any of its member searches is in (a); (b) if every member search of it is in (b); (c) as
-  above.
+- **A firm's state** is its member search's, (a) or (b); (c) if it has none.
 - **No successor enters this F-HT.** A search pinned after the membership event, or a successor of a closed search, is
-  never a member of this F-HT; its candidates go to the confirmation window under its own k.
+  never a member of this F-HT; its candidates are tested only on data this line has never read (a later purchase),
+  under its own k; the confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's carried designs
+  (CW-1; E-259).
 - **This declaration is written as soon as, after the membership event, every member search is in (a) or (b).**
   Before the event it is never due: an empty history is not "all terminal".
 - **Then no new search may be pinned until this declaration's held-out row is written.**
@@ -151,7 +155,8 @@ held-out row; the held-out years are read once per market (CHARTER 3.6 (c)).
 - **A pass at a place:** that finalist is carried -- its registration, its playbook, the auditor, and its one
   confirmation against a criterion declared at registration (CHARTER 5 (A)); the sequence goes on to the next place.
 - **A fail at a place:** the sequence stops there; every later finalist is untested; nothing is rerun; the k is spent.
-- **The confirmation window** (NQ from 2026-07-17) is read only for a carried design, and is a purchase.
+- **The confirmation window** (NQ from 2026-07-17) is read once, only for this F-HT's carried designs, and is a
+  purchase; a non-member search's candidates never use it (CW-1; E-259).
 
 ## 9. Anything chosen after seeing results
 

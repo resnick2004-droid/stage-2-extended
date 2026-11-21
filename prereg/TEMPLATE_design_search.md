@@ -40,7 +40,8 @@ named here is explained in a phrase and classed fixed / searched / dropped in th
 
 ## 1. The question, the firm and the baselines
 
-- **The firm and account:** <firm, plan>. Its rules are the verified ones only (CHARTER 3.1): Stage 2's ledger
+- **The firm and account:** <firm, plan> -- **exactly one firm**; a search naming several firms is refused
+  (R-1; E-259). Its rules are the verified ones only (CHARTER 3.1): Stage 2's ledger
   (`vendor/stage2/config/rules.yaml`) or this repository's record (`config/rules_extended.yaml` through
   `extended/firm_terms.py`), each key `verified` under its decision row. **Every key the search reads is listed here**
   with its status; an unverified, `changed` or `unstated` key is refused by the loader and cannot be a lever.
@@ -51,7 +52,9 @@ named here is explained in a phrase and classed fixed / searched / dropped in th
   seed keying, the same fill and cost mechanics, no arm shift, the same verdict settings -- **at its registered
   latency** (P-14 at five minutes; P-16 scheduled, its latency variants dropped, E-203 B-2). **Each baseline's runner
   identity:** its trade times and brackets equal its registered ones, path for path (<the identity, its file, its
-  columns, its tolerance>). The registered rows are reported beside.
+  columns, its tolerance>). **Each baseline's runner identity is checked on the search years only**; any held-out
+  part compares trade times and brackets only, writes no outcome, and is entered in the held-out read ledger (L-1;
+  E-259). The registered rows are reported beside.
 - **The measures** are `docs/MEASURES.md`'s, every one by the function that file names, each a distribution over
   start days (median, p10, p90) and over coin seeds, read on the common start set `E_h` at its horizon (MEASURES.md
   1.1). A measure the search reports that MEASURES.md does not define is defined here first, with its function, and
@@ -74,20 +77,23 @@ named here is explained in a phrase and classed fixed / searched / dropped in th
   computes is **sealed** (its hash recorded, the file unopened) until the held-out test (CHARTER 3.6 (e)).
 - **Single use per market** (CHARTER 3.6 (c); E-221, O-1): every model is
   built, tuned and chosen on the search years only (any number of internal time splits there). No firm's search spends
-  NQ's held-out years alone: they are held until every **member search** -- each design search
-of Topstep, My Funded Futures and Lucid with a hash row by **the membership event, the first go row of any firm's
-design search** (H-1'; E-257) -- has a finalists' row or a closing row, a firm with no hash row by the event being in
-state (c) of `prereg/TEMPLATE_heldout_test.md`, fixed at that moment; and every finalist across the firms is then
-tested in **one joint fixed-sequence test** at the full level of the one k it spends, the one use per market. That
-test is **the held-out test's declaration**, one declaration of its own (E-238): it lists every firm's finalists (each
-by its search declaration's hash and finalists' row), fixes the joint order, takes the k, and is
-the one family that reads NQ's held-out window, so Q-158's rule (one family per market) holds unchanged. This search's
-finalists enter it through this file's finalists' row only if this search is a member (its hash row before the
-membership event): <its firm, whether it is a member, and the held-out test's declaration when it exists>. A search
-pinned after the membership event, or a successor of a closed search, is never a member of this F-HT; its candidates
-go to the confirmation window under its own k. A member's finalists are never voided.
-A later search on the same bars reads them as a description only, or moves its held-out years to data not yet read
-(a purchase or the operator's setup).
+  NQ's held-out years alone: they are held until every **member search** -- the one design search of each of
+Topstep, My Funded Futures and Lucid with a hash row before **the membership event, the first go-row token of an NQ
+design search of Topstep, My Funded Futures or Lucid** (H-1'; E-257; E-259), at most one per firm, a second hash row
+for a firm before the event refused at its pin -- has a finalists' row or a closing row,
+a firm with no hash row before the event being in state (c) of `prereg/TEMPLATE_heldout_test.md`, fixed at that
+moment; and every finalist across the firms is then tested in **one joint fixed-sequence test** at the full level of
+the one k it spends, the one use per market. That test is **the held-out test's declaration**,
+one declaration of its own (E-238): it lists every firm's finalists (each by its search declaration's hash and
+finalists' row), fixes the joint order, takes the k, and is the one family that reads NQ's held-out window, so
+Q-158's rule (one family per market) holds unchanged. This search's finalists enter it through this file's finalists'
+row only if this search is a member (its hash row before the membership event): <its firm, whether it is a member, and
+the held-out test's declaration when it exists>. A search pinned after the membership event, or a successor of a
+closed search, is never a member of this F-HT; its candidates are tested only on data this line has never read (a
+later purchase), under its own k; the confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's
+carried designs (CW-1; E-259). A member's finalists are never voided. A later search on the same bars reads NQ's
+held-out years and F-HT's results as a description only, or moves its held-out years to data not yet read (a purchase
+or the operator's setup).
 - **The held-out read ledger** (CHARTER 3.6 (b)). Every past read of the held-out years for this search's comparators
   and trigger families, each in RD-04's leak-clause form, "written after this reading; no figure cited". CHARTER 3.6
   (b)'s list is the floor, and E-211 added Q-132 and Q-16's paired nulls; this declaration completes it:
@@ -102,7 +108,8 @@ A later search on the same bars reads them as a description only, or moves its h
   `results/variants.jsonl` (CHARTER 3.3 (f)). No guard does this yet (`VariantCounter` writes what it is given):
   **a build requirement** of this search's runner, with a test that a held-out row is refused before the survey runs.
 - **The confirmation window:** NQ from 2026-07-17, declared now, never read until a carried design is registered, and
-  a purchase, the operator's (section 15).
+  a purchase, the operator's (section 15); it is read once, only for F-HT's carried designs, and a non-member
+  search's candidates never use it (CW-1; E-259).
 
 ## 3. The lever space
 
@@ -269,9 +276,9 @@ shape.*
   form, unless this declaration replaces it with another of zero gross expectation and net = -(costs) shown by an
   exact-fraction test before the pin:
   - **Decided at the fill (N-1).** For every trade, once, from what is known at its fill:
-    **L_fill = min(l, c - max(x_stop, x_flat))**, fractional, never rounded (E-237), where x_flat is the
-    flatten-side exit cost (commission plus `flatten_slippage_ticks`); the comparison L_fill > 0 is made to the
-    runner's declared tolerance `EPS` (in dollars). The decision never reads the run's exit,
+    **L_fill = min(l, c - max(x_stop, x_flat))**, fractional, never rounded (E-237), where x_flat is the flatten-side
+    exit cost (commission plus `flatten_slippage_ticks`); the comparison L_fill > 0 is made to the runner's declared
+    tolerance `EPS` (in dollars; `EPS`: <...>, declared here, U-1). The decision never reads the run's exit,
     **whatever its later exit**: two trades identical at the fill fare alike.
     - **L_fill > 0:** the trade is raced or walked by the table below. Both laws use the floor-side barrier
       **L_race = min(l, c - x_stop) >= L_fill**, as the runner books it (m-1): a barrier loss with its stop-side cost
@@ -309,11 +316,12 @@ shape.*
       at a stop-only stress. Its output is a result file with its manifest, or labelled exploratory; it chooses no
       lever.
   - **The lattice step s is per trade (S-1):** s = max(1, ceil(sigma sqrt(T) / sqrt(`WALK_MAX`))) ticks -- the
-    smallest whole-tick step keeping the walk's step count n at or under the runner's limit `WALK_MAX`, from sigma and
-    T as fixed below and `WALK_MAX`, nothing else. It need not divide the stop or the target: fractional barriers are
-    resolved by the driftless two-point last sub-step (B-1). **A trade is never refused for its step.** **One T for
-    both s and n (s-b):** T is the limit known at the fill for every row, the table's last included
-    (the fill-time law's T); the realised exit time decides neither s nor n.
+    smallest whole-tick step keeping the walk's step count n at or under the runner's limit `WALK_MAX`
+    (`WALK_MAX`: <...>, declared here, U-1), from sigma and T as fixed below and `WALK_MAX`, nothing else.
+    It need not divide the stop or the target: fractional barriers are resolved by the driftless two-point last
+    sub-step (B-1). **A trade is never refused for its step.** **One T for both s and n (s-b):** T is the limit known
+    at the fill for every row, the table's last included (the fill-time law's T);
+    the realised exit time decides neither s nor n.
     The barriers are not moved to the lattice; the walk's last sub-step resolves them (below).
   - **Which law applies** is read from the run's terminal state on the as-walked (reflected) path, every state mapped:
 
@@ -456,9 +464,9 @@ cite the commit whose text this declaration adopts, and state every point where 
 the go row; they read only what this file fixed. H3's earlier runs are design checks only.*
 
 - **Their inputs, fixed in this file before the pin:** the seeds (section 12's `<S5>`, or the pinned H3 declaration's
-  block, cited with its owner), the R-10 estimator (section 5), the deciding statistic (section 8), J and m, the
-  plants' grid, the synthetic generator and its fitted parameters' source (search years only), and the replicate
-  counts: <...>. Nothing of them is chosen after a calibration or gate output.
+  block, cited with its owner), the R-10 estimator, `EPS` and `WALK_MAX` (section 5), the deciding statistic (section
+  8), J and m, the plants' grid, the synthetic generator and its fitted parameters' source (search years only), and
+  the replicate counts: <...>. Nothing of them is chosen after a calibration or gate output.
 - **Their outputs, pinned afterwards in E-115's calibration-plan form:** each run's result file with its manifest, and
   a record `docs/calibration/<F-NN>_calibration.md` citing those files' sha256 and the verdict, pinned by its own
   sha256 in a decision row (`tests/test_declarations_fixed.py` holds it). A failed calibration or gate is that
@@ -466,11 +474,12 @@ the go row; they read only what this file fixed. H3's earlier runs are design ch
   calibration or power gate cites that record, reports it beside, and uses a fresh seed block**; a failed seed block
   is never reused. **A failed limit clause or power gate is never a free retry** (M-5 (c);
   E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's limits, bankroll budgets, weights and size that matters are
-  never changed for any search of the line after any gate that read them; a defect found in them goes through the
-  failure protocol as a defect on record, and a corrected rule is a new rule under a new row whose searches never
-  enter this F-HT. A successor search inherits them unchanged, changes only what the failure's diagnosis names, citing
-  the record, with a fresh seed block, and never enters this F-HT (its candidates go to the confirmation window under
-  its own k); every closed attempt of the line is counted and printed beside the verdict.
+  never changed for any search of the line -- every search, of any firm, whose section 7 applies W42-R1 -- after any
+  calibration or gate that read them; a defect found in them goes through the failure protocol as a defect on record,
+  and a corrected rule is a new rule under a new row whose searches never enter this F-HT. A successor search inherits
+  them unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed block, and
+  never enters this F-HT (its candidates are tested only on data this line has never read, a later purchase, under its
+  own k); every closed attempt of the line is counted and printed beside the verdict.
 
 - **The whole pinned rule is calibrated as a whole** (E-007 (f)): the composite or the fallback, the limit checks, the
   time leg's conditions and the floors, all on the martingale-outcome reading.
@@ -483,7 +492,8 @@ the go row; they read only what this file fixed. H3's earlier runs are design ch
   as the composite's longest horizon.
 - **The power gate**, before the go row: the whole pass line's power at the level it assumes -- F-HT's level
   0.05 / (k (k + 1)) with k = 13 next, the
-  power at k = 14 and k = 15 reported beside, so a re-statement at another k is a lookup, never a new run (m-e) -- on
+  power at every k from 14 to 20 reported beside, so a re-statement at another k is a lookup, never a new run (m-e;
+  K-2) -- on
   synthetic paths carrying NQ's dependence, with design pairs drawn from H4's baselines and from synthetic plants, at
   a planted improvement of **the size that matters** (the lead's, from the baselines' search-year results; E-221,
   O-3), at the **power target**, under the horizon embargo; in the same run, a design equal to the best baseline on
@@ -589,10 +599,10 @@ reading the martingale-outcome reading for the finalist and every baseline alike
 - **F-HT's k is assigned at its held-out row** (E-204): the held-out test's declaration is not counted by the
   gatekeeper's k rule until that row exists. That row comes before the held-out run, so E-204's repeat clause (another
   declaration taking a k between a run and its row) cannot arise. If another declaration takes a k first, F-HT's k is
-  the next free one and each finalist's place power is re-stated at the new level before the held-out run (a lookup in
-  each gate's output at k = 14 and k = 15, section 9) (exit (B) cites it). F-HT withdrawn after its held-out row still
-  spends its k (E-005 (d)); **a search's withdrawal before F-HT's held-out row spends nothing** -- no search holds a
-  k.
+  the next free one and each finalist's place power is re-stated at the new level before the held-out run
+  (a lookup in each gate's output at k = 14 to 20, section 9) (exit (B) cites it). F-HT withdrawn after its held-out
+  row still spends its k (E-005 (d)); **a search's withdrawal before F-HT's held-out row spends nothing** -- no search
+  holds a k.
 - **Every design tried is counted** in `results/variants.jsonl`: the survey's N, every round's batch, every L, every
   failed-gate design. Written as a product and a number: <survey N + rounds x batch, each at its L values>.
 - The program's honesty sentence: <what Stage 2's programs and this repository have read on these bars, and that the
@@ -610,35 +620,40 @@ reading the martingale-outcome reading for the finalist and every baseline alike
    reader's held-out guard, is merged (E-222). **No search pins before E-258 (the lead's CHARTER 3.7 reading row)
    exists** in `DECISIONS.md`, its bolded title beginning `CHARTER's "pin" read`
    (`tests/test_design_search_template.py` refuses a pinned search that cites any other row, a bare number, or none).
-   **A search pinned after the membership event is never a member of this F-HT** (H-1'; E-257). Refusing before it:
+   **A search pinned after the membership event is never a member of this F-HT** (H-1';
+   E-257). **At most one member search per firm:** a second hash row for a firm before the membership event is
+   refused at its pin, whether or not the first is closed (R-1; E-259); after the event a further search of the firm
+   may pin, outside this F-HT, unless the no-new-pin bar holds. Refusing before it:
    the identities on record as holding (`identity/stage2_identity.py`, every baseline's runner identity, the search
    runner's own).
 3. **The calibration and the power gate** (section 9), each from a **clean checkout** of a named commit
    (`scripts/run_clean.py`) under **run.lock** (one heavy run on the machine, skill `run-lock`); their outputs pinned
    in E-115's form; the data question to the operator.
-4. **The go row**: cites this file's one hash and the calibration record's; from here the survey may run. Under this
-   template (E-258 (the lead's CHARTER 3.7 reading row)) CHARTER 3.7's "the search's pin", "does not pin" and
-   "before any search is pinned", and CHARTER 3.8 (a)'s "a pinning row ... does not pin", each mean **this go row**;
-   the reader's pin and every "newer than the pin" mean **the hash row** of step 2.
+4. **The go row**: its third cell's first text is the token `go: F-NN @ <its LF sha256>` (G-1; E-259); it cites the
+   calibration record's hash and names the runner commit the calibration ran on -- **the survey and every round run on
+   that runner commit, bound by its sha; a change to deciding code after it is a new declaration** (U-1); from here
+   the survey may run. Under this template (E-258 (the lead's CHARTER 3.7 reading row)) CHARTER 3.7's "the search's
+   pin", "does not pin" and "before any search is pinned", and CHARTER 3.8 (a)'s "a pinning row ... does not pin",
+   each mean **this go row**; the reader's pin and every "newer than the pin" mean **the hash row** of step 2.
    A search closed by a failed calibration, limit clause or power gate gets a closing row,
    `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>` (`prereg/TEMPLATE_heldout_test.md`'s closed list;
-   `withdrawn` only before the search's go row); no search holds a k. The data question goes to the operator with the
-   gate's result before the go row. Refusing at every later step: this file still hashing to its pin
-   (`tests/test_declarations_fixed.py`), the go row present, a clean checkout, the run lock held --
-   **Refusals first**, each refusing.
-5. **The survey** on the search years only (one clean run); its gates before its measures; logged.
-6. **The rounds**, each one clean run, collected (`/collect`), never extended.
+   `withdrawn` only before the membership event, W-1; `defect-on-record` citing its diagnosis row, D-1; E-259); no
+   search holds a k. The data question goes to the operator with the gate's result before the go row. Refusing at
+   every later step: this file still hashing to its pin (`tests/test_declarations_fixed.py`), the go row present, a
+   clean checkout, the run lock held -- **Refusals first**, each refusing.
+5. **The survey** on the search years only (one clean run, from the go row's runner commit); its gates before its
+   measures; logged.
+6. **The rounds**, each one clean run from the go row's runner commit, collected (`/collect`), never extended.
 7. **The finalists' row**: the ordered finalists, their playbooks' rules and every fitted model's hash, written as a
    finalists' list file outside `prereg/` before the row, and the row in Q-158's token form,
    `heldout-finalists: F-NN @ <sha> list <sha>` -- this file's LF sha256, then the list file's -- as the first text
    of its third cell; written before any held-out read; the scout's challenger brief and the red team on the
    finalists.
-8. **The held-out row** (k assigned, E-204),
-   written as soon as, after the membership event, every member search has a finalists' row or a closing row (H-1'; E-257;
-   E-221, O-1), for the held-out test's declaration -- one declaration of its own (E-238), drafted on
-   `prereg/TEMPLATE_heldout_test.md` (M-1), with its own F-number, pin and hash. It lists every member firm's
-   finalists by each member search declaration's hash and finalists' row, in a joint list file that cites each
-   search's finalists' list by its sha256; it fixes the joint order and takes the k;
+8. **The held-out row** (k assigned, E-204), written as soon as, after the membership event, every member search has a
+   finalists' row or a closing row (H-1'; E-257; E-221, O-1), for the held-out test's declaration --
+   one declaration of its own (E-238), drafted on `prereg/TEMPLATE_heldout_test.md` (M-1), with its own F-number, pin
+   and hash. It lists every member firm's finalists by each member search declaration's hash and finalists' row, in a
+   joint list file that cites each search's finalists' list by its sha256; it fixes the joint order and takes the k;
    it carries the `Judged-block reads:` line; and it is the one family that reads NQ's held-out window. Its own
    finalists' row **is its held-out row** (m-3):
    `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`, F-HT its F-number, which Q-158's rule 1
@@ -663,8 +678,8 @@ held by the declaration and the auditor. The rules, binding whatever the code do
   sha256s;
 - the held-out years are read **once per market**, across declarations: a re-declared search gets no fresh read; the
   market's held-out test spends them (CHARTER 3.6 (c));
-- an RD declaration never reads them before the market's verdict row, and no new `registered_design` read of them (of
-  P-14, P-15, P-16) is made without a decision row naming it.
+- an RD declaration never reads them before the market's verdict row, and no `registered_design` read of them (of
+  P-14, P-15, P-16) is made before F-HT's verdict row (L-1; E-259).
 
 What the held-out test's declaration reads, under its own line's two house purposes: `heldout_test` reads the
 finalists and every baseline on the deciding reading, the time leg's groups and regimes, the long-run gate, and the
