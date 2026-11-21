@@ -219,3 +219,4 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-20 | lead | E-246 to E-250: the whole pipeline in the queue for unprompted dispatch; a worktree collision fixed and a one-worker-per-worktree rule; reviews and rulings; MFF's and Lucid's lever spaces merged and MFF's rules read; Wave 4.2's rule built. |
 | 2026-11-20 | lead | E-251: Wave 3.4 merged; six staged builds reviewed (three stand, three to corrective cycles); W42-R1 in its first cycle; two dispatch errors recorded; Q-192 and Q-193 started. |
 | 2026-11-20 | lead | E-252: Q-174 merged (two fast-tier slots when memory allows; the cap counts only a stalled line); Wave 3.4's merge redone after it. |
+| 2026-11-20 | lead | E-253, E-254: T7 merged and run on the search years (identities held, loads); H4 and template v2 blocked and in cycle 1; a withdrawn ruling on the baselines' seats; Q-194; the lever rows built. |
