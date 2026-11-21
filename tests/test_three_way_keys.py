@@ -196,7 +196,9 @@ def test_h4s_block_and_parts_are_issued_and_role_checked() -> None:
         if status.startswith("spare"):
             with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
                 S.issue(role)
-    assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins")] == ["tests", "design check", "reading"]
+    assert [S.H4_STATUS[r] for r in ("h4_tests", "h4_0_probe", "h4b_coins", "h4s_schedule_side")] == [
+        "tests", "design check", "reading", "schedule"]
+    assert sorted(r for r, st in S.H4_STATUS.items() if st.startswith("spare")) == [f"h4_spare_{i}" for i in range(4, 10)]
 
 
 
@@ -222,3 +224,32 @@ def test_minor3_h4s_tests_seed_draws_only_in_its_own_part() -> None:
         with pytest.raises(S.ProvenanceRefused, match="m-9"):
             K.seed_key(S.issue(role), "coin", part=S.PARTS["H4-T"], **coin)
     assert S.PARTS["H4-T"] == 12
+
+
+
+def test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s() -> None:
+    """wt/wt-h4 0727615: seed 20264403 (once `h4_spare_3`) is the coin's schedule side -- issued for that role only,
+    in the block, drawing coin keys in its own part H4-S and nothing else; no other role draws in H4-S; the spares
+    4 to 9 stay refused."""
+    seed = S.issue("h4s_schedule_side")
+    assert int(seed) == 20264403 and seed.role == "h4s_schedule_side" and S.in_block(seed) and S.is_issued(seed)
+    assert S.PARTS["H4-S"] == 13 and S.PARTS["H4-T"] == 12
+    coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.SIDE)
+    K.seed_key(seed, "coin", part=S.PARTS["H4-S"], **coin)
+    for part in ("H4-0", "H4-B", "H4-T"):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(seed, "coin", part=S.PARTS[part], **coin)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(seed, "enforce", part=S.PARTS["H4-S"], history=0, seed_index=0, start=0, account=0, request=0)
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(seed, "test", test=1, replicate=0)
+    for role in ("h4_tests", "h4_0_probe", "h4b_coins"):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            K.seed_key(S.issue(role), "coin", part=S.PARTS["H4-S"], **coin)
+    with pytest.raises(S.ProvenanceRefused):
+        K.seed_key(20264403, "coin", part=S.PARTS["H4-S"], **coin)          # the literal, not the issued seed
+    with pytest.raises(S.ProvenanceRefused, match="no role"):
+        S.issue("h4_spare_3")                                                # the old spare's name is gone
+    for i in range(4, 10):
+        with pytest.raises(S.ProvenanceRefused, match="drawn by nothing"):
+            S.issue(f"h4_spare_{i}")

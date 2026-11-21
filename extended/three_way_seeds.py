@@ -62,13 +62,14 @@ STATUS: dict[str, str] = {
 }
 BLOCK = frozenset(ROLES.values())
 
-#: H4's block (the re-baseline's draft, `prereg/DRAFT_H4_rebaseline.md` section 15, wt/wt-h4 f897cd7), kept apart from
+#: H4's block (the re-baseline's draft, `prereg/DRAFT_H4_rebaseline.md` section 15, wt/wt-h4 f897cd7; 20264403 the
+#: coin's schedule side from its last cycle, wt/wt-h4 0727615), kept apart from
 #: H3's: its own roles and statuses, issued and role-checked by this module alike; the spares drawn by nothing
 H4_ROLES: dict[str, int] = {
     "h4_tests": 20264400,          # the unit tests: H4's T-0 and build (synthetic toys only; part H4-T)
     "h4_0_probe": 20264401,        # H4-0, the probe's synthetic toys (the firm path's cost)
     "h4b_coins": 20264402,         # H4-B: the coin field on the search years -- every baseline, arm and reading
-    "h4_spare_3": 20264403,
+    "h4s_schedule_side": 20264403,  # H4-S: the coin's schedule side, one draw a (session, moment) of its offers
     "h4_spare_4": 20264404,
     "h4_spare_5": 20264405,
     "h4_spare_6": 20264406,
@@ -78,7 +79,7 @@ H4_ROLES: dict[str, int] = {
 }
 H4_STATUS: dict[str, str] = {role: ("spare, drawn by nothing" if role.startswith("h4_spare") else status)
                              for role, status in (("h4_tests", "tests"), ("h4_0_probe", "design check"),
-                                                  ("h4b_coins", "reading"),
+                                                  ("h4b_coins", "reading"), ("h4s_schedule_side", "schedule"),
                                                   *((r, "") for r in H4_ROLES if r.startswith("h4_spare")))}
 H4_BLOCK = frozenset(H4_ROLES.values())
 #: every role this module issues, both blocks
@@ -87,7 +88,7 @@ _ALL_STATUS: dict[str, str] = {**STATUS, **H4_STATUS}
 
 #: the part index every key of a part carries (the note's 1.5: two parts never read one field)
 PARTS: dict[str, int] = {"tests": 1, "H3-0": 2, "A1": 3, "A2": 4, "A3": 5, "A4": 6, "D1": 7, "D2": 8, "D3": 9,
-                         "H4-0": 10, "H4-B": 11, "H4-T": 12}
+                         "H4-0": 10, "H4-B": 11, "H4-T": 12, "H4-S": 13}
 #: the `test` key kind's test ids this build's tests use (the note's own test uses id 1, never reused here)
 TEST_IDS: dict[str, int] = {"bounds_cover": 11, "power": 12, "history_null": 13, "betting": 14, "s1": 15,
                             "resample": 16, "plant": 17, "mutations": 18, "gate": 19,
@@ -112,6 +113,9 @@ ROLE_USE: dict[str, tuple[frozenset, frozenset] | None] = {
     "h4_tests": (frozenset({"test", "history", "coin", "enforce"}), frozenset({"H4-T"})),
     "h4_0_probe": (frozenset({"history", "coin", "enforce", "plant"}), frozenset({"H4-0"})),
     "h4b_coins": (frozenset({"coin", "enforce"}), frozenset({"H4-B"})),
+    # wt/wt-h4 0727615: the coin's schedule side draws coin keys in H4-S only (history 0, seed index 0, start 0 there,
+    # by H4's draft -- those fixed fields are the caller's, not checked here)
+    "h4s_schedule_side": (frozenset({"coin"}), frozenset({"H4-S"})),
 }
 
 

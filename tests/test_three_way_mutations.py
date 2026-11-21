@@ -77,6 +77,7 @@ through the same harness and check, must pass).
 | SCn | S1's steps from the realised exit, not the limit (s-c) | `test_s_c_the_walk_never_reads_the_realised_exit` |
 | SCt | S1's s and n from the time limit, not the limit capped at the flatten (MINOR-1) | `test_minor1_a_flatten_bound_walks_t_is_the_minutes_to_the_flatten` |
 | HT | H4's tests seed drawing in H4-0's and H4-B's fields again (MINOR-3) | `test_minor3_h4s_tests_seed_draws_only_in_its_own_part` |
+| HS | the coin's schedule-side seed drawing in H4-B's field too (wt/wt-h4 0727615) | `test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s` |
 
 The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
 by `_replace_accounts` whatever their flag, so no test can kill it; U here is the law-changing form.
@@ -313,6 +314,10 @@ MUTANTS = {
     "HT": (SE, '    "h4_tests": (frozenset({"test", "history", "coin", "enforce"}), frozenset({"H4-T"})),',
            '    "h4_tests": (frozenset({"test", "history", "coin", "enforce"}), frozenset({"H4-T", "H4-0", "H4-B"})),',
            ("ROLE_USE",), ("tests.test_three_way_keys", "test_minor3_h4s_tests_seed_draws_only_in_its_own_part"), ""),
+    "HS": (SE, '    "h4s_schedule_side": (frozenset({"coin"}), frozenset({"H4-S"})),',
+           '    "h4s_schedule_side": (frozenset({"coin"}), frozenset({"H4-S", "H4-B"})),',
+           ("ROLE_USE",),
+           ("tests.test_three_way_keys", "test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s"), ""),
 }
 
 
