@@ -13,8 +13,8 @@
 - The tables and the code list the same levers (layer, class, source kind, keys, the comparison with Topstep), the work
   lists name every unverified key, and no rule value is typed in the loader or in a rule row.
 
-Pure Python on the rules; reads no bar, atlas, trade or result file. S1's Topstep reading is pointed at an absent file
-(`no_s1_reading`), so the comparison with Topstep is the one before that reading exists.
+Pure Python on the rules; reads no bar, atlas, trade or result file. Every result reading (S1's, and T7's where the loader has one) is pointed at an absent file
+(`pinned_results`, the golden script's `PINNED_RESULTS`), so no outcome depends on the result files a tree holds.
 """
 from __future__ import annotations
 
@@ -50,14 +50,6 @@ _KIND = {"rule": LS.RULE, "arithmetic": LS.ARITH, "declared": LS.DECL,
 SEEDS = (20261120, 20261121, 20261122)          # Q-151b's test draws (synthetic designs; no outcome is read)
 
 
-@pytest.fixture(autouse=True)
-def no_s1_reading(tmp_path, monkeypatch):
-    monkeypatch.setattr(LS, "S1_PATH", tmp_path / "absent" / "s1_range.csv")
-
-
-# ------------------------------------------------------------------------------------------------ Topstep, unchanged
-
-
 def _golden_module():
     spec = importlib.util.spec_from_file_location("lever_space_golden", ROOT / "scripts" / "lever_space_golden.py")
     mod = importlib.util.module_from_spec(spec)
@@ -65,11 +57,58 @@ def _golden_module():
     return mod
 
 
+def _pin(monkeypatch) -> None:
+    """The declared result-file state (`scripts/lever_space_golden.py`'s `PINNED_RESULTS`): every reading the loader
+    can load pointed at an absent file -- S1's, and T7's where the loader has one (`raising=False` holds either way)."""
+    g = _golden_module()
+    for name, fname in g.PINNED_RESULTS.items():
+        monkeypatch.setattr(LS, name, g.ABSENT / fname, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def pinned_results(monkeypatch):
+    _pin(monkeypatch)
+
+
 def test_topsteps_loader_output_is_unchanged_bit_for_bit() -> None:
     old = json.loads(GOLDEN.read_text(encoding="utf-8"))
     new = _golden_module().snapshot()
     assert json.loads(json.dumps(new)) == old
     assert list(LS.LEVERS) == [k for k in old if not k.startswith("__")]
+
+
+def _outcomes() -> dict:
+    out = {"golden": _golden_module().snapshot()}
+    for firm in OTHER:
+        out[firm] = {"compare": LF.compare(firm), "refusals": LF.refusals(firm), "load": repr(LF.load(firm))}
+    return out
+
+
+def test_the_outcome_is_the_same_with_the_result_files_present_or_absent(tmp_path, monkeypatch) -> None:
+    """A tree holding both result files (here, files of junk, with junk manifests) and a tree holding neither give the
+    same outcome under the pin -- the golden snapshot and every firm's comparison, refusals and space."""
+    g = _golden_module()
+    present = tmp_path / "results"
+    present.mkdir()
+    for fname in g.PINNED_RESULTS.values():
+        (present / fname).write_text("not,a,reading" + chr(10) + "1,2,3" + chr(10), encoding="utf-8")
+        (present / (fname + ".manifest.json")).write_text("{}", encoding="utf-8")
+    got = []
+    for where in (present, tmp_path / "absent"):
+        with monkeypatch.context() as m:
+            for name, fname in g.PINNED_RESULTS.items():
+                m.setattr(LS, name, where / fname, raising=False)      # the tree's state
+            _pin(m)                                                    # the tests' declared state
+            got.append(json.loads(json.dumps(_outcomes(), default=repr)))
+    assert got[0] == got[1]
+    assert got[0]["golden"] == json.loads(GOLDEN.read_text(encoding="utf-8"))
+    with monkeypatch.context() as m:                                   # the script pins by itself, whatever is set
+        for name, fname in g.PINNED_RESULTS.items():
+            m.setattr(LS, name, present / fname, raising=False)
+        assert json.loads(json.dumps(g.snapshot())) == got[0]["golden"]
+        for name, fname in g.PINNED_RESULTS.items():
+            if hasattr(LS, name):
+                assert getattr(LS, name) == present / fname           # and restores what it found
 
 
 def test_topsteps_load_is_its_space() -> None:
