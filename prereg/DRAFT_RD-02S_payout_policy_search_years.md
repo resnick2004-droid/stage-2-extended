@@ -1,17 +1,19 @@
-# DRAFT RD-02S: payout policy in a user's first months, on the search years only (reading PP-S) -- a delta declaration of RD-02, a described reading, unnumbered (E-023 (1))
+# RD-07: payout policy in a user's first months, on the search years only (reading PP-S) -- a delta declaration of RD-02, a described reading, unnumbered (E-023 (1))
 
-**Status: a draft, not pinned (O-7, the lead's ruling in E-221); the second text.** The first text (wt/wt-firms, the
+**Status: declared before anything of it is built or read (O-7, the lead's ruling in E-221); the third text.** It is pinned by
+the sha256 of its LF text in its decision row; nothing declared is edited, a change is a new declaration under a new
+row. The first text (wt/wt-firms, the
 O-7 commit) was read by the red team (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md`, two blocking findings, B-1 and
 B-2); this text answers every finding as the lead ruled on it (section 0.4). It re-declares
 `prereg/RD-02_payout_policy.md` on the search years alone, so that no part of the reading touches NQ's held-out years
 (E-208), which E-221 (O-1) keeps for one joint fixed-sequence confirmation across firms. The parent is not edited: it
-stays on record, pinned, and is never run (section 0.3). The lead assigns its id at the pin (section 0.2). Its
-siblings state the same general replacements for RD-01, RD-03, RD-04 and RD-05's part F; each draft is complete on its
+stays on record, pinned, and is never run (section 0.3). Its id is RD-07 (section 0.2). Its
+siblings state the same general replacements for RD-01, RD-03, RD-04 and RD-05's part F; each is complete on its
 own.
 
 | field | value |
 |---|---|
-| id | proposed **`RD-07`** at the pin (section 0.2); until then `RD-02S` |
+| id | **`RD-07`** (`prereg/RD-07_payout_policy_search_years.md`); every result's `prereg_id` is `RD-07` (S-10) |
 | parent | `prereg/RD-02_payout_policy.md` sha256 `0c9dddabbc1cda0cd57787b4e8b5d34d42ee600df2d2c90e8a26178a31cb407c` (of its LF text), pinned by E-082 |
 | reading | PP-S: the parent's reading PP, every cell, run and reading as the parent declares them, on the search years |
 | kind | a **described reading** (E-023 (1)): never carried; no program family number, no level, no pass line, no pick |
@@ -40,21 +42,21 @@ section 4 lists every line the search of section 7 found that needs no change, w
 item numbers, cell names, run names and test names are the parent's. **The labels S-1 to S-16 are this file's; the
 parent's own labels (its findings F1 to F11 and N1 to N5, its tests T-0 to T-11) keep the parent's meaning.**
 
-### 0.2 The id scheme (proposed; the lead assigns at the pin)
+### 0.2 The id and the name
 
 RD-06 for RD-01's delta, **RD-07 for this file**, RD-08 for RD-03's, RD-09 for RD-05's part F, RD-10 for RD-04's, in
 the order of the parents. The pinned name is `prereg/RD-07_payout_policy_search_years.md`. **New numbers, not a
 suffix**: the reader takes a declaration's id from its path as `RD-` and digits (`extended/reader.py`'s
 `DECLARATION_ID`), so a manifest, ledger or token naming `prereg/RD-02S_...` would be attributed to RD-02; and the
-parents' T-0 globs would find a name beginning with the parent's id (the red team's m-9). **One glob to narrow at the
-pin:** the parent's T-0 (`tests/test_pp_draft.py`) finds its declaration by `RD-*payout*.md` and asserts exactly one,
-so the pinned name above matches it; the pinning commit narrows that glob to `RD-*_payout_policy.md`, nothing else
+parents' T-0 globs would find a name beginning with the parent's id (the red team's m-9). **One glob narrowed:** the
+parent's T-0 (`tests/test_pp_draft.py`) found its declaration by `RD-*payout*.md` and asserts exactly one, which the
+pinned name above would match; its glob is narrowed to `RD-*_payout_policy.md` in this text's commit, nothing else
 changed (E-200 did the same for RD-01's T-0).
 
 ### 0.3 The parent, superseded before any run
 
 No result of the parent exists: the read ledger holds no line of RD-02 and no file `results/pp_*.csv` exists at this
-draft (RD-02's build and its two-worker check are merged, E-220; its run is not). At this file's pin the parent is
+text's pin (RD-02's build and its two-worker check are merged, E-220; its run is not). At this file's pin the parent is
 **superseded, never run**: no run takes its three purposes, its result files are never written, and its id is never a
 manifest's `prereg_id`. The reader cannot see a withdrawal (the audit's R-8 registry is not built), and its held-out
 rule 4 refuses the parent's judged reads only until a market's verdict row exists; so the supersession is enforced by
@@ -69,6 +71,20 @@ the build (section 6, B-1), held now by T-0's code check (N-1), and recorded in 
 | M-1 | P-11's eras on the cut, 2023 alone | the halves, 2020-21 and 2022-23, as the eras, declared | S-5 |
 | M-2 | missed lines; the drafter's terms alone | the red team's extra terms added (section 7); the verdict arm's "registered bound" lines (D-54, D-55) and the pooled file (D-56) cited | sections 3, 4, 7 |
 | m-1 to m-9, N-1 | as in RD-06's 0.4 | the labels S-1 to S-16; the wrapper's reads and switched-off checks; the no-op guard; the verdict-arm halves labelled; T-0 rebuilt; the id reason; the code check | throughout |
+
+### 0.5 The drafter's reads (disclosed)
+
+The drafter opened: the parent (whole) and its pinning row; CHARTER 3.3 and 3.6; E-208, E-210 and E-221;
+`extended/reader.py` (at 6ce8e6a and as merged); the runners' code that names the parent; the vendored code the cut
+touches (`user_journey`, `customer_journey`, `rc150_dev_test`, `rc_dev_test`, `rc_width_screen`, `resolved_coin`,
+`atlas_a3`, `a3_brk30`, `a3_resolution_map`, `customer_slices`, `u_select`); and the red team's two reads with its
+scratch `extra_terms.py`. **Of result files the drafter opened only names and keys, no value**: the column names and
+the distinct design, arm and response keys of Q-44's per-start file `results/user_beside_starts.csv`; the column
+names and the distinct section, cell and stop keys of `vendor/stage2/results/rc_width_screen.csv` and its
+manifest's field names; the read ledger's declaration and purpose fields. No row of the gate files
+(`vendor/stage2/results/a3_brk30_cb20_gate.csv`, `vendor/stage2/results/rc_s150_all_gate.csv`) was opened, and of
+Q-121's `results/q121_vol_descriptive_a1.csv` only its presence in the main tree and E-177's sha256 are known to
+the drafter. No bar was opened.
 
 ## 1. Why, and what it does to what the reading can show (E-051)
 
@@ -204,7 +220,7 @@ the uncertainty method and the oracles are the parent's.
   on P-16's cell over the whole window; program U's nine families, which read P on the late block, and its families 6,
   7 and 8 on both blocks; U1's whole-window start rows (Stage 2 D-620) and Q-44's per-start rows, which S-8 compares and
   cites on the point arm and search-year starts only; Q-44's pooled file, never cited; Stage 2's signal search over the
-  whole window; and the parent's own pinned text, declared over the whole window and never run. Nothing here
+  whole window; the parent's registered reproduction identities (8.1 items 1 to 3 from `identity/pp_identity.py`: P-14's and P-16's registered gate paths, U1's start rows) and the shared ones it waits for (Q-05, Q-80, Q-93, Q-101), which read the whole window under the purpose `identity`, write pass or fail only and are ledgered in a clean run (S-1's one exception, S-8); and the parent's own pinned text, declared over the whole window and never run. Nothing here
   re-estimates them but S-5's constants; every result file of this reading names them.
 - **S-13. Prior exposure, re-read.** The parent's prior-exposure rows stand as records. Where a row's bearing reads "the
   late block has been read for P nine times; it is late development, not out of sample", read: those reads were of the
@@ -368,7 +384,7 @@ code and the tests T-1, T-2 and T-4 to T-11 (13), T-0 and T-3 replaced (D-45, D-
 - **B-7. The outputs** (S-10): `results/pps_*.csv` with this file's id and every field S-10 names.
 - **B-8. Tests:** T-0 (`tests/test_rd_search_years_drafts.py`, extended at the pin); T-3S (D-48) on synthetic campaigns
   under the parent's build-toys seed; the shared wrapper, marks and nested-cut tests of RD-06's B-8; the narrowed glob
-  of `tests/test_pp_draft.py` at the pin (0.2).
+  of `tests/test_pp_draft.py`, made in this text's commit (0.2).
 
 ## 7. The search that found section 3 (re-runnable)
 
@@ -442,12 +458,11 @@ To re-run: `python -m pytest -q -o addopts= tests/test_rd_search_years_drafts.py
   Appendix A's (D-50).
 - **Confirmation.** None: nothing is carried; NQ from 2026-07-17 is never read.
 
-## 9. Open before the pin
+## 9. At the pin
 
-1. **The red team's re-read** of B-1 and B-2 in full, and of this text's other answers.
-2. **The pin's edits, and only these:** the file renamed to 0.2's name; its title and status in pin-time form; its id
-   written where this draft says "RD-02S"; the narrowed glob of `tests/test_pp_draft.py`. T-0's pinned-name test
-   passes only before the pin and is replaced by its pin-time form in the pinning commit.
-3. **S-2's feasibility** is a build question; its stop-and-report clause is declared now.
-4. **The pinning row** records the parent as superseded, never run (0.3), and Appendix A as unrun and not incorporated
-   (D-50).
+1. **The reads.** The red team's read and re-read (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md` and its re-read `docs/reviews/REREADS_W32_W34_O7_2026-11-20.md`), every finding answered as the lead ruled on it (0.4,
+   rm-4, rn-5), and the gatekeeper's form findings answered in this text.
+2. **The pin** is a byte-identical rename of this text to `prereg/RD-07_payout_policy_search_years.md`; the parent's T-0
+   glob is narrowed to `RD-*_payout_policy.md` (0.2); the pinning row records the parent as superseded, never run
+   (0.3), and Appendix A as unrun and not incorporated (D-50).
+3. **S-2's feasibility** is a build question; its stop-and-report clause is declared.

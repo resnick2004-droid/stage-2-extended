@@ -1,4 +1,7 @@
-"""O-7 (E-221): T-0 of the five search-years delta declarations, written before they are pinned.
+"""O-7 (E-221): T-0 of the five search-years delta declarations (RD-06 to RD-10), in pin-time form.
+
+Each is found by either of its two names -- its draft name before the pin, its pinned name after it (the pin is a
+byte-identical rename), exactly one present -- as `tests/test_pp_draft.py` finds RD-02.
 
 Each draft re-declares a pinned reading on the search years only (E-208: NQ 2020-01-02 to 2023-12-29), so that no
 reading touches the held-out years, which E-221 (O-1) keeps for one joint confirmation. A delta incorporates its parent
@@ -23,15 +26,15 @@ For each draft:
 - **no typed result number** -- every number of the draft's own text (decimals, percentages, dollar figures and
   integers) is the parent's, the charter's, a section number of the draft, or a calendar year; no eight-digit seed of
   the program's `2026nnnn` form (seed blocks are inherited by reference, so the parents' T-0 scans hold);
-- **the id scheme** -- the proposed pinned name passes the reader's `DECLARATION_PATH` and reads as its own id through
-  `DECLARATION_ID`. **Before the pin** the file and the pin do not exist yet; the pinning commit replaces this test by
-  its pin-time form (each draft's section 9 says so);
+- **the pin-time form** (the gatekeeper's, E-075 (1)) -- the `id` row names the id and the pinned name, which passes the
+  reader's `DECLARATION_PATH` and reads as that id through `DECLARATION_ID` (never the parent's); the text's own words
+  hold no "DRAFT", "not pinned", "proposed" or "until then"; RD-09's citations of RD-06 and RD-08 by LF sha256, where
+  written, are those files' LF sha256;
 - **the parent never ran** -- no read-ledger line cites the parent and none of its result files exists. Choice-block
   and identity runs outside a clean run are not ledgered, so this cannot see them (the red team's m-7 item 5);
 - **supersession in code (N-1)** -- the files under `extended/`, `scripts/` and `identity/` that name a superseded
-  parent as a `DECLARATION`-style constant, or a superseded purpose as a string, are exactly the runners the build
-  list changes (`KNOWN`), so no new code may take them up; once a delta is pinned, none may name them but the frozen
-  module `ALLOWED_AFTER_PIN` lists.
+  parent as a `DECLARATION`-style constant, or a superseded purpose as a string, are among the runners the build lists
+  change (`KNOWN`; they name the parents until each build's B-1 lands), so no new code may take them up.
 
 Light: text only, no bar, no engine.
 """
@@ -106,15 +109,17 @@ KNOWN = {
     "RD-09": {"extended/modes_steps.py"},
     "RD-10": {"extended/vol_descriptive.py"},
 }
-#: after the pin: Q-121's frozen module keeps its authorised mode's constants (its LF sha256 ties Q-121's file; RD-10
-#: never calls that mode, and the reader's rule 4 refuses the purpose before a verdict row)
-ALLOWED_AFTER_PIN = {"RD-10": {"extended/vol_descriptive.py"}}
+#: Q-121's frozen module keeps its authorised mode's constants after the pin too (its LF sha256 ties Q-121's file;
+#: RD-10 never calls that mode, and the reader's rule 4 refuses the purpose before a verdict row)
 CODE_DIRS = ("extended", "scripts", "identity")
 
 PIN = re.compile(r"`(prereg/(?:F|RD)-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`")   # tests/test_declarations_fixed.py's
 PARENT_ROW = re.compile(r"^\| parent \| `(prereg/[^`]+\.md)` sha256 `([0-9a-f]{64})` \(of its LF text\), pinned by "
                         r"(E-\d+) \|$", re.MULTILINE)
-ID_ROW = re.compile(r"^\| id \| proposed \*\*`(RD-\d+)`\*\* at the pin", re.MULTILINE)
+ID_ROW = re.compile(r"^\| id \| \*\*`(RD-\d+)`\*\* \(`(prereg/[^`]+\.md)`\); every result's `prereg_id` is `(RD-\d+)`",
+                    re.MULTILINE)
+#: words the gatekeeper refuses in a pin-time text (E-075 (1)): "DRAFT" as written, the others in any case
+DRAFT_WORDS = re.compile(r"DRAFT|(?i:not pinned|proposed|until then)")
 DEV_ROW = re.compile(r"^\| development data \| (.*) \|$", re.MULTILINE)
 TERMS_BLOCK = re.compile(r"<!-- search-terms -->\s*```\n(.*?)\n```\s*<!-- end search-terms -->", re.DOTALL)
 ROW = re.compile(r"^\| D-(\d+) \|")
@@ -143,8 +148,15 @@ def sha256_lf(path: Path) -> str:
     return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
+def path_of(name: str) -> Path:
+    """The delta under either of its names: its draft name before the pin, its pinned name after (exactly one)."""
+    found = [p for p in (PREREG / name, ROOT / DRAFTS[name][2]) if p.is_file()]
+    assert len(found) == 1, f"exactly one of {name} and {DRAFTS[name][2]} expected, found {found}"
+    return found[0]
+
+
 def draft(name: str) -> str:
-    return lf_text(PREREG / name)
+    return lf_text(path_of(name))
 
 
 def parent_text(name: str) -> str:
@@ -312,13 +324,12 @@ def code_mentions(rid: str, root: Path = ROOT) -> set[str]:
 # ------------------------------------------------------------------------------------------------ the tests
 
 
-def test_the_five_drafts_exist_and_name_distinct_ids():
-    assert all((PREREG / n).is_file() for n in NAMES), [n for n in NAMES if not (PREREG / n).is_file()]
+def test_the_five_deltas_exist_under_one_name_each_with_distinct_ids():
+    for n in NAMES:
+        path_of(n)                                                   # exactly one of its two names
     ids = [DRAFTS[n][1] for n in NAMES]
     assert len(set(ids)) == len(ids)
-    for n in NAMES:
-        m = ID_ROW.search(draft(n))
-        assert m and m.group(1) == DRAFTS[n][1], n
+    assert len({DRAFTS[n][2] for n in NAMES}) == len(NAMES)
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -360,16 +371,49 @@ def test_no_result_number_is_typed(name):
     assert number_problems(draft(name), parent_text(name), lf_text(ROOT / "CHARTER.md")) == []
 
 
+def form_problems(text: str, rid: str, pinned: str, parent: str) -> list[str]:
+    """The pin-time form (the gatekeeper's findings; E-075 (1)): the id row, the name, no draft-form words."""
+    out = []
+    rows = ID_ROW.findall(text)
+    if rows != [(rid, pinned, rid)]:
+        out.append(f"the id row is not `{rid}` with `{pinned}`: {rows}")
+    if not reader.DECLARATION_PATH.fullmatch(pinned):
+        out.append(f"{pinned} is not a declaration path the reader admits")
+    elif reader.DECLARATION_ID.match(pinned).group(1) != rid or reader.DECLARATION_ID.match(parent).group(1) == rid:
+        out.append(f"{pinned} does not read as {rid}, or the parent does")
+    if not text.startswith(f"# {rid}: "):
+        out.append(f"the title does not begin '# {rid}: '")
+    words = sorted({m.group(0) for m in DRAFT_WORDS.finditer(own_text(text))})
+    if words:
+        out.append(f"draft-form words in the text: {words}")
+    return out
+
+
 @pytest.mark.parametrize("name", NAMES)
-def test_the_proposed_pinned_name_reads_as_its_own_id_before_the_pin(name):
-    """Before the pin only: the pinning commit replaces this test by its pin-time form (each draft's section 9)."""
+def test_the_text_is_in_pin_time_form(name):
     parent, rid, pinned, _ = DRAFTS[name]
-    assert f"`{pinned}`" in draft(name), f"{name}: the pinned name {pinned} is not stated"
-    assert reader.DECLARATION_PATH.fullmatch(pinned)
-    assert reader.DECLARATION_ID.match(pinned).group(1) == rid != reader.DECLARATION_ID.match(parent).group(1)
-    assert not (ROOT / pinned).exists(), f"{pinned} exists: the pin-time form of this test is owed"
-    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
-    assert not [p for p, _ in PIN.findall(log) if reader.DECLARATION_ID.match(p).group(1) == rid], f"{rid} is pinned"
+    assert form_problems(draft(name), rid, pinned, parent) == []
+    p = path_of(name)
+    if p.name != name:                                                # pinned: its pin, if a row carries one, holds
+        log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+        for rel, sha in PIN.findall(log):
+            if rel == pinned:
+                assert sha256_lf(p) == sha, f"{pinned} does not hash to its pin"
+
+
+def sibling_problems(text: str) -> list[str]:
+    """RD-09 cites RD-06 and RD-08 by pinned path and LF sha256 (the red team's m-2): each sha written is theirs."""
+    out = []
+    for n in ("DRAFT_RD-01S_firm_contracts_search_years.md", "DRAFT_RD-03S_contract_levers_search_years.md"):
+        pinned = DRAFTS[n][2]
+        for sha in re.findall(r"`%s`,?\s+LF sha256\s+`([0-9a-f]{64})`" % re.escape(pinned), text):
+            if sha != sha256_lf(path_of(n)):
+                out.append(f"{pinned} cited at {sha[:12]}, but its LF sha256 is {sha256_lf(path_of(n))[:12]}")
+    return out
+
+
+def test_rd09_cites_its_siblings_at_their_lf_sha256():
+    assert sibling_problems(draft("DRAFT_RD-05FS_firm_modes_part_f_search_years.md")) == []
 
 
 def test_a_suffixed_id_would_be_read_as_its_parent():
@@ -389,15 +433,11 @@ def test_the_parent_never_ran(name):
 
 @pytest.mark.parametrize("rid", sorted(SUPERSEDED))
 def test_no_new_code_takes_up_a_superseded_parent(rid):
-    """N-1. Before the pin: exactly the runners the build list changes (a new one fails). After it: none but the
-    frozen module allowed."""
+    """N-1. Only the runners the build lists change may name what the pin supersedes (they do until each build's B-1
+    lands); a new file naming it fails."""
+    assert all((ROOT / f).is_file() for f in KNOWN[rid]), "the known list names files that exist"
     found = code_mentions(rid)
-    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
-    pinned = [p for p, _ in PIN.findall(log) if reader.DECLARATION_ID.match(p).group(1) == rid]
-    if pinned:
-        assert found <= ALLOWED_AFTER_PIN.get(rid, set()), f"{rid} is pinned; code still names its parent: {found}"
-    else:
-        assert found == KNOWN[rid], f"{rid}: the code naming its parent is {sorted(found)}, not {sorted(KNOWN[rid])}"
+    assert found <= KNOWN[rid], f"{rid}: new code names its superseded parent: {sorted(found - KNOWN[rid])}"
 
 
 def test_the_checks_can_fail():
@@ -426,3 +466,10 @@ def test_the_checks_can_fail():
         assert number_problems(text + "\n" + plant + "\n", parent, charter), plant
     # the terms: one dropped
     assert coverage_problems(text.replace("\n" + EXTRA_TERMS[0] + "\n", "\n"), lines)
+    # the pin-time form: a draft-form word, a wrong id row, a wrong sibling hash
+    parent_path, rid, pinned, _ = DRAFTS[name]
+    assert form_problems(text, rid, pinned, parent_path) == []
+    for plant in ("\nthis DRAFT text\n", "\nan id proposed at the pin\n", "\nuntil then\n"):
+        assert form_problems(text + plant, rid, pinned, parent_path), plant
+    assert form_problems(text.replace(f"**`{rid}`**", "**`RD-99`**", 1), rid, pinned, parent_path)
+    assert sibling_problems("`prereg/RD-06_firm_contracts_search_years.md` LF sha256 `" + "0" * 64 + "`")

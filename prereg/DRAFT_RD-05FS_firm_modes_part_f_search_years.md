@@ -1,17 +1,19 @@
-# DRAFT RD-05FS: part F of reading FM -- the registered trades on each $50K plan, on the search years only -- a delta declaration of RD-05's part F, a described reading, unnumbered (E-023 (1))
+# RD-09: part F of reading FM -- the registered trades on each $50K plan, on the search years only -- a delta declaration of RD-05's part F, a described reading, unnumbered (E-023 (1))
 
-**Status: a draft, not pinned (O-7, the lead's ruling in E-221); the second text.** The first text (wt/wt-firms, the
+**Status: declared before anything of it is built or read (O-7, the lead's ruling in E-221); the third text.** It is pinned by
+the sha256 of its LF text in its decision row; nothing declared is edited, a change is a new declaration under a new
+row. The first text (wt/wt-firms, the
 O-7 commit) was read by the red team (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md`, two blocking findings, B-1 and
 B-2, and a pin-order finding, m-2); this text answers every finding as the lead ruled on it (section 0.4). It
 re-declares **part F** of `prereg/RD-05_firm_modes.md` on the search years alone, so that no part of the reading touches
 NQ's held-out years (E-208), which E-221 (O-1) keeps for one joint fixed-sequence confirmation across firms. RD-05's
 parts A to E read no bar (its section 6 items 1 and 2) and **stay as pinned, run under RD-05** (E-221: "RD-05's coin
 side reads no bar and runs as pinned"). The parent is not edited: it stays on record, pinned; its part F is never run
-under it (section 0.3). The lead assigns this file's id at the pin (section 0.2).
+under it (section 0.3). Its id is RD-09 (section 0.2).
 
 | field | value |
 |---|---|
-| id | proposed **`RD-09`** at the pin (section 0.2); until then `RD-05FS` |
+| id | **`RD-09`** (`prereg/RD-09_firm_modes_part_f_search_years.md`); every result's `prereg_id` is `RD-09` (S-10) |
 | parent | `prereg/RD-05_firm_modes.md` sha256 `be7f90fb56af6e09c92c0277ce83c228f2e2fbeca8fc26b87d90ccf50239659c` (of its LF text), pinned by E-200 |
 | reading | FM part F, search years: P-16's registered trades (the headline) and P-14's beside on the parent's 13 configurations beside `TS`, every cell, run and reading of the parent's part F (0.1), on the search years |
 | kind | a **described reading** (E-023 (1), E-134 (1)): never carried; no program family number, no level, no pass line, no pick |
@@ -52,7 +54,7 @@ A-0 to A-19) keep the parent's meaning** -- so RD-05's "RD-01 G-3's bracket" (in
 RD-06 keeps (the red team's m-1). RD-05's parts A to E, its seeds of part C, its steps 0 and 2, and step 1's
 `modes_coin_identity` stay RD-05's and run under it.
 
-### 0.2 The id scheme (proposed; the lead assigns at the pin)
+### 0.2 The id and the name
 
 RD-06 for RD-01's delta, RD-07 for RD-02's, RD-08 for RD-03's, **RD-09 for this file**, RD-10 for RD-04's, in the
 order of the parents. The pinned name is `prereg/RD-09_firm_modes_part_f_search_years.md`; it matches no other
@@ -64,7 +66,7 @@ red team's m-9).
 ### 0.3 The parent's part F, superseded before any run
 
 No result of the parent exists: the read ledger holds no line of RD-05 and no file `results/modes_*.csv` exists at this
-draft. At this file's pin the parent's part F is **superseded, never run**: no run takes the parent's three purposes
+text's pin. At this file's pin the parent's part F is **superseded, never run**: no run takes the parent's three purposes
 (`modes_scorecard`, `modes_ladder_beside`, `modes_gate_beside`, all part F's), its steps 3 to 5 and their files are
 never run or written under RD-05, and RD-05's id is never a part-F manifest's `prereg_id`. RD-05's steps 0 to 2 and
 its coin files run and are written under RD-05, as pinned. **What RD-05's own menu file prints for part F is the
@@ -82,9 +84,23 @@ three purposes), and recorded in the pinning row.
 | B-2 | P-16's marks re-resolved on the cut; a cut identity reading the whole window | P-16's offered marks fixed to its registered set (S-3); a nested cut inside the search years (S-4) and B-1's point-arm equality; no new identity reads 2024 or later | S-3, S-4, S-8 |
 | M-1 | P-11's eras on the cut, 2023 alone | the halves, 2020-21 and 2022-23, as the eras, declared | S-5 |
 | M-2 | missed lines; D-652 and E-125 absent from the ledger | the red team's extra terms added (section 7); L304 cited (D-45); D-652 (U2) and E-125 (Q-18) added to S-12 | sections 3, 4, 7; S-12 |
-| m-2 | the siblings cited by their draft paths | RD-06 and RD-08 cited by id and pinned path; their sha256 written into this text at the pin, after theirs are fixed (section 9) | D-07, D-08, S-2 |
+| m-2 | the siblings cited by their draft paths | RD-06 and RD-08 cited by id and pinned path; their LF sha256 written into this text after theirs were final (section 9) | D-07, D-08, S-2 |
 | m-6 | this text governed RD-05's menu file | moved to the pinning row | 0.3 |
 | m-1, m-3 to m-5, m-7 to m-9, N-1 | as in RD-06's 0.4 | the labels; the wrapper's reads and switched-off checks; the no-op guard; the verdict-arm halves labelled; T-0 rebuilt; the id reason; the code check | throughout |
+
+### 0.5 The drafter's reads (disclosed)
+
+The drafter opened: the parent (whole) and its pinning row; CHARTER 3.3 and 3.6; E-208, E-210 and E-221;
+`extended/reader.py` (at 6ce8e6a and as merged); the runners' code that names the parent; the vendored code the cut
+touches (`user_journey`, `customer_journey`, `rc150_dev_test`, `rc_dev_test`, `rc_width_screen`, `resolved_coin`,
+`atlas_a3`, `a3_brk30`, `a3_resolution_map`, `customer_slices`, `u_select`); and the red team's two reads with its
+scratch `extra_terms.py`. **Of result files the drafter opened only names and keys, no value**: the column names and
+the distinct design, arm and response keys of Q-44's per-start file `results/user_beside_starts.csv`; the column
+names and the distinct section, cell and stop keys of `vendor/stage2/results/rc_width_screen.csv` and its
+manifest's field names; the read ledger's declaration and purpose fields. No row of the gate files
+(`vendor/stage2/results/a3_brk30_cb20_gate.csv`, `vendor/stage2/results/rc_s150_all_gate.csv`) was opened, and of
+Q-121's `results/q121_vol_descriptive_a1.csv` only its presence in the main tree and E-177's sha256 are known to
+the drafter. No bar was opened.
 
 ## 1. Why, and what it does to what the reading can show (E-051)
 
@@ -113,7 +129,8 @@ changes: the configurations, corners, flips, counts, uncertainty method and chec
   window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
   are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read.** Part F runs through RD-01's runner (`extended/firms.py`'s `run_plan`) as RD-06 (the
-  search-years delta of RD-01) cuts it, its S-2 word for word in effect: no bar or atlas row after 2023-12-29 reaches
+  search-years delta of RD-01, `prereg/RD-06_firm_contracts_search_years.md`, its LF sha256
+  written here once that text is committed final) cuts it, its S-2 word for word in effect: no bar or atlas row after 2023-12-29 reaches
   any builder, replay, gate or reading; the guard is the wrapper and the runner's refusal, not the reader's no-op
   choice-block authorisation; the wrapper's four reads (`propedge.data.bars.read_bars` as `atlas_a3.bar_arrays` calls
   it, clamped; `a3_resolution_map.load_a1`'s two frames, cut, its manifest's `day_list` whole; `atlas_a3.cached_walk`'s
@@ -201,7 +218,7 @@ changes: the configurations, corners, flips, counts, uncertainty method and chec
   under `registered_design` (E-125, `results/p14_validation.csv`), on which the parent rests part F's evaluation rows**;
   program U's nine families' late-block reads of P; U1's whole-window start rows (Stage 2 D-620) and Q-44's per-start
   rows, which S-8 compares and cites on the point arm and search-year starts only; Stage 2's signal search over the
-  whole window; and the parent's own pinned text, whose part F was declared over the whole window and never run.
+  whole window; the parent's registered reproduction identities (`modes_identity`, 13.1 item 2: U1's start rows and the registered gate paths through A-14 at `TS`, `LU50`'s composition) and the shared ones it waits for (Q-05, Q-80, Q-93 with Q-100, Q-101, RD-01's `firms_identity`), which read the whole window under the purpose `identity`, write pass or fail only and are ledgered in a clean run (S-1's one exception, S-8); and the parent's own pinned text, whose part F was declared over the whole window and never run.
   Nothing here re-estimates them but S-5's constants; every result file of this reading names them.
 - **S-13. Prior exposure, re-read.** The parent's prior-exposure rows stand as records. Where a row's bearing reads "the
   late block is late development, not out of sample", read: those reads were of the held-out years; they are S-12's
@@ -231,8 +248,8 @@ text holds the quote, or a list of lines each holding the quote. The replacement
 | D-04 | L112-L113 | 1, the operator's choice | "every statement from part F is a description of the development window, in sample" | every statement from part F is a description of the search years, in sample (S-15) |
 | D-05 | L201-L204 | 2.5 | "every start day from 2020 to 2026" | for part F's replay, every start day from 2020 to 2023 (S-1, S-6); the coin has no start day (RD-05's) |
 | D-06 | L201, L260 | 2.5; 2.6 | "every start" | for part F, every search-year start (S-6) |
-| D-07 | L305 | 3, RD-01 | "`LU40`'s registered rows are RD-01's, never re-run here (12.1)" | `LU40`'s rows are RD-06's `LU` corners (`prereg/RD-06_firm_contracts_search_years.md` at its pinned sha256, written here at the pin; section 9), never re-run here |
-| D-08 | L306 | 3, RD-03 | "`TS-N`'s registered rows are RD-03's `naf` cells, never re-run here (12.1)" | `TS-N`'s rows are RD-08's `naf` cells (`prereg/RD-08_contract_levers_search_years.md` at its pinned sha256, written here at the pin; section 9), never re-run here |
+| D-07 | L305 | 3, RD-01 | "`LU40`'s registered rows are RD-01's, never re-run here (12.1)" | `LU40`'s rows are RD-06's `LU` corners (`prereg/RD-06_firm_contracts_search_years.md`, its LF sha256 written here once that text is committed final), never re-run here |
+| D-08 | L306 | 3, RD-03 | "`TS-N`'s registered rows are RD-03's `naf` cells, never re-run here (12.1)" | `TS-N`'s rows are RD-08's `naf` cells (`prereg/RD-08_contract_levers_search_years.md`, its LF sha256 written here once that text is committed final), never re-run here |
 | D-09 | L303, L307, L308 | 3, Stage 2's Lucid reads; RD-02 and RD-04; U1, Q-05 and Q-44 | "all starts" | records; the whole-window reads are S-12's entries; S-8 compares U1's and Q-44's rows on the point arm and search-year starts only; RD-02 is re-declared on the search years and none of its cells is read here |
 | D-10 | L309 | 3, program U's nine families | "the late block is late development, not out of sample" | those reads were of the held-out years; S-12's entries; none read here (S-13) |
 | D-11 | L422 | 4.4, G-6 | "rule changes over 2020-2026" | for part F, rule changes over 2020-2023 (S-1); today's terms on every search-year start |
@@ -245,7 +262,7 @@ text holds the quote, or a list of lines each holding the quote. The replacement
 | D-18 | L686 | 6 item 5, once per purpose | "a further judged read under `repeat=` (E-053)" | S-16 |
 | D-19 | L933-L935 | 10.2, on the registered trades | "`steady` replay on every start" | `steady` replay on every search-year start (S-6) |
 | D-20 | L972 | 12.1 | "Each run is both arms, every start, the long replay and U1's exact-length runs" | each run is both arms, every search-year start, the long replay and the exact-length runs stopping at the cut (S-6) |
-| D-21 | L968-L972 | 12.1, the cited cells | "until then the menu prints "not yet run by RD-01 / RD-03"" | until then the menu prints "not yet run" with RD-06's and RD-08's ids (D-07, D-08) |
+| D-21 | L968-L972 | 12.1, the cited cells | "until then the menu prints "not yet run by RD-01 / RD-03"" | while those rows are not on master the menu prints "not yet run" with RD-06's and RD-08's ids (D-07, D-08) |
 | D-22 | L977 | 12.2 | "every block of section 6" | every block of S-7 |
 | D-23 | L995-L997 | 12.3, the gates | "The references' gates are 13.1's identities." | each corner's gate paired with `TS`'s search-year gate on P-16 at the same seed (S-9), run beside as the pairs' reference; the registered paths stay 13.1's reproduction identities |
 | D-24 | L1002 | 12.4 | "Per configuration, stream and block" | per configuration, stream and S-7's block |
@@ -428,12 +445,12 @@ To re-run: `python -m pytest -q -o addopts= tests/test_rd_search_years_drafts.py
   those seeds has been drawn on the bars.
 - **Confirmation.** None: nothing is carried; NQ from 2026-07-17 is never read.
 
-## 9. Open before the pin
+## 9. At the pin
 
-1. **The red team's re-read** of B-1 and B-2 in full, and of this text's other answers.
-2. **The pin's edits, and only these:** the file renamed to 0.2's name; its title and status in pin-time form; its id
-   written where this draft says "RD-05FS"; and, in D-07, D-08 and S-2, **RD-06's and RD-08's pinned paths with their
-   sha256**, written after theirs are fixed (the red team's m-2; the lead pins the three together). T-0's pinned-name
-   test passes only before the pin and is replaced by its pin-time form in the pinning commit.
+1. **The reads.** The red team's read and re-read (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md` and its re-read `docs/reviews/REREADS_W32_W34_O7_2026-11-20.md`), every finding answered as the lead ruled on it (0.4,
+   rm-4, rn-5), and the gatekeeper's form findings answered in this text.
+2. **The pin** is a byte-identical rename of this text to `prereg/RD-09_firm_modes_part_f_search_years.md`; it cites
+   RD-06 and RD-08 by their pinned paths and LF sha256 (D-07, D-08, S-2), and the three are pinned together (the red team's
+   m-2).
 3. **The split of RD-05's run** (0.3), and what RD-05's menu file prints for part F: the pinning row's.
-4. **S-2's feasibility** is a build question (RD-06's); its stop-and-report clause is declared now.
+4. **S-2's feasibility** is a build question (RD-06's); its stop-and-report clause is declared.

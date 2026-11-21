@@ -1,17 +1,19 @@
-# DRAFT RD-04S: volatility drift on the search years only -- (a0) the gate files' search-year rows, (a2) Q-121's choice-block descriptive, and a calm-regime replay of P-14 and P-16 (reading VD-S) -- a delta declaration of RD-04, a described reading, unnumbered (E-023 (1))
+# RD-10: volatility drift on the search years only -- (a0) the gate files' search-year rows, (a2) Q-121's choice-block descriptive, and a calm-regime replay of P-14 and P-16 (reading VD-S) -- a delta declaration of RD-04, a described reading, unnumbered (E-023 (1))
 
-**Status: a draft, not pinned (O-7, as the lead extended it to RD-04 on the red team's M-3); the first text.** Drafted
+**Status: declared before anything of it is built or read (O-7, as the lead extended it to RD-04 on the red team's M-3); the second text.** It is pinned by
+the sha256 of its LF text in its decision row; nothing declared is edited, a change is a new declaration under a new
+row. Written
 on wt/wt-firms, 2026-11-19. It re-declares `prereg/RD-04_volatility_drift.md` on the search years alone, so that no
 part of the reading touches NQ's held-out years (E-208), which E-221 (O-1) keeps for one joint fixed-sequence
 confirmation across firms. The red team's read of the four sibling deltas (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md`,
 M-3) found RD-04's (c) a route to the held-out years that the reader's rule 4 does not close (its `registered_design`
 purpose falls under rule 3); this text removes it by reading no held-out day at all. The parent is not edited: it stays
-on record, pinned, and is never run (section 0.3). The lead assigns its id at the pin (section 0.2). It follows its
+on record, pinned, and is never run (section 0.3). Its id is RD-10 (section 0.2). It follows its
 siblings' rules (RD-06 to RD-09), as the lead ruled on the red team's findings; it is complete on its own.
 
 | field | value |
 |---|---|
-| id | proposed **`RD-10`** at the pin (section 0.2); until then `RD-04S` |
+| id | **`RD-10`** (`prereg/RD-10_volatility_drift_search_years.md`); every result's `prereg_id` is `RD-10` (S-10) |
 | parent | `prereg/RD-04_volatility_drift.md` sha256 `a8965e1602c5987a0f7fe4fe13f0bf3ce7448c96b38c193e8674782a25c2593b` (of its LF text), pinned by E-168 |
 | reading | VD-S: (a0) the two registered gate files' `period` and `drift` rows of the search years (S-17); (a2) Q-121's choice-block descriptive, read as it stands (S-18); (c) the parent's calm-regime replay of P-14 and P-16, every cell, on the search years (S-19) |
 | kind | a **described reading** (E-023 (1), as E-157 (c) classes the parent): never carried; no program family number, no level, no pass line, no pick, no menu |
@@ -41,7 +43,7 @@ item numbers, cell names (`k1`, `yr_act`, `yr_sc`, `tr_act`, `tr_sc`), test name
 pitfalls, its adapters A-1 to A-4, its findings M1 to M5, m1 to m7 and n1 to n12) are the parent's; **the labels S-1 to
 S-20 are this file's**.
 
-### 0.2 The id scheme (proposed; the lead assigns at the pin)
+### 0.2 The id and the name
 
 RD-06 for RD-01's delta, RD-07 for RD-02's, RD-08 for RD-03's, RD-09 for RD-05's part F, **RD-10 for this file**. The
 pinned name is `prereg/RD-10_volatility_drift_search_years.md`; it matches no other reading's T-0 glob (the parent's
@@ -52,7 +54,7 @@ token naming `prereg/RD-04S_...` would be attributed to RD-04.
 ### 0.3 The parent, superseded before any run
 
 No result of the parent exists: the read ledger holds no line of RD-04 and no file `results/rd04_*.csv` exists at this
-draft; nothing of it is built. At this file's pin the parent is **superseded, never run**: no run takes its purpose
+text's pin; nothing of it is built. At this file's pin the parent is **superseded, never run**: no run takes its purpose
 `volatility_descriptive`, no `heldout-read` row is written for `scripts/rd04_replay.py` (the red team's M-3), its
 result files are never written, and its id is never a manifest's `prereg_id`. The reader cannot see a withdrawal (the
 audit's R-8 registry is not built); its rule 4 refuses the parent's `volatility_descriptive` only until a market's
@@ -60,6 +62,20 @@ verdict row exists, and the rule-3 hole for `registered_design` is being closed 
 M-3). So the supersession is enforced by the build (section 6, B-1), held now by T-0's code check (N-1: no new code
 takes up the parent's purpose or declaration constant; Q-121's frozen module keeps its constants, never called in its
 authorised mode), and recorded in the pinning row.
+
+### 0.5 The drafter's reads (disclosed)
+
+The drafter opened: the parent (whole) and its pinning row; CHARTER 3.3 and 3.6; E-208, E-210 and E-221;
+`extended/reader.py` (at 6ce8e6a and as merged); the runners' code that names the parent; the vendored code the cut
+touches (`user_journey`, `customer_journey`, `rc150_dev_test`, `rc_dev_test`, `rc_width_screen`, `resolved_coin`,
+`atlas_a3`, `a3_brk30`, `a3_resolution_map`, `customer_slices`, `u_select`); and the red team's two reads with its
+scratch `extra_terms.py`. **Of result files the drafter opened only names and keys, no value**: the column names and
+the distinct design, arm and response keys of Q-44's per-start file `results/user_beside_starts.csv`; the column
+names and the distinct section, cell and stop keys of `vendor/stage2/results/rc_width_screen.csv` and its
+manifest's field names; the read ledger's declaration and purpose fields. No row of the gate files
+(`vendor/stage2/results/a3_brk30_cb20_gate.csv`, `vendor/stage2/results/rc_s150_all_gate.csv`) was opened, and of
+Q-121's `results/q121_vol_descriptive_a1.csv` only its presence in the main tree and E-177's sha256 are known to
+the drafter, which (a2) and (c) read through S-18's check. No bar was opened.
 
 ## 1. Why, and what it does to what the reading can show (E-051)
 
@@ -167,7 +183,7 @@ a source.
   resolution shares (E-024, E-030, F-B's M2-4); the registered state tables and protocols; **the two gate files'
   `period` and `drift` rows of the later periods**, whole-window Stage 2 rows, never loaded here (S-17); program U's
   nine families' late-block reads of P; U1's whole-window start rows and Q-44's per-start rows, compared and cited here
-  on the point arm and search-year starts only; and the parent's own pinned text, declared over the whole window and
+  on the point arm and search-year starts only; the parent's registered reproduction identities (`rd04_identity`'s items 2 to 5: the A3 cache, the registered trades and their hash, the registered gate paths, U1's start rows) and the shared ones it waits for (Q-05, Q-80, Q-93 with Q-100, Q-101), which read the whole window under the purpose `identity`, write pass or fail only and are ledgered in a clean run (S-1's one exception, S-8); and the parent's own pinned text, declared over the whole window and
   never run. Nothing here re-estimates them but S-5's constants; every result file names them.
 - **S-13. Prior exposure, re-read.** The parent's prior-exposure rows stand as records. Where a row's bearing reads "the
   late block has been read for P many times: late development, not out of sample", read: those reads were of the
@@ -192,7 +208,9 @@ a source.
   `volatility_descriptive`; on the search years that descriptive already exists: `results/q121_vol_descriptive_a1.csv`,
   sha256 `f1cbb7b88f412fa98c5c8e5fb983e6d70242a9a65b90a9cf6d296064d7a34e26`, collected from a clean run under E-177, its
   manifest verifying and both of Q-121's refusing identities held in that run. So **(a2) reads no bar and runs no
-  module**: the file is checked against that sha256, its sidecar manifest and E-177, refusing, and its `session` and
+  module**: the check hashes the file's **raw bytes** (as written, CRLF line ends, not its LF text) against that sha256
+  and checks its sidecar manifest and E-177, refusing; the file is git-ignored, so a clean run reads it in place from
+  the main tree's `results/`, never copying it, as Q-171 does; and its `session` and
   `range` rows (2020-01-02 to 2023-12-29) are what (c)'s factors read. Q-121's module is never called in its authorised
   mode; the parent's (a2)'s identity (8.2) is replaced by this check.
 - **S-19. (c) on the search years.** The parent's calm-regime replay, its map, factors, cost readings, frozen inputs,
@@ -343,7 +361,7 @@ and T-11 to T-14 (12), T-0, T-10, T-12's pin and T-15 as section 3 says; the run
   replays of `k1` against Q-44's point-arm rows.
 - **B-7. The gate** (S-9): each new cell's gate paired with its design's `k1` search-year gate, the two `k1` gates run
   first.
-- **B-8. Tests:** T-0 (`tests/test_rd_search_years_drafts.py`, extended at the pin; the parent's `tests/test_rd04_draft.py`
+- **B-8. Tests:** T-0 (`tests/test_rd_search_years_drafts.py`, in pin-time form; the parent's `tests/test_rd04_draft.py`
   stays for the parent's text); a T-10S replacing the parent's T-10 -- (a2) reads no bar, refuses a Q-121 file whose
   sha256 is not E-177's, and no RD-10 file constructs an `Authorisation` or names `volatility_descriptive`; T-12 against
   this file's pin; B-5's reader on a toy gate file (a held-out row never kept, a mistyped period refused); RD-06's
@@ -420,16 +438,15 @@ To re-run: `python -m pytest -q -o addopts= tests/test_rd_search_years_drafts.py
   declaration. The parent was never run, so none of its seeds has been drawn on the bars. Step 2 draws nothing.
 - **Confirmation.** None: nothing is carried; NQ from 2026-07-17 is never read.
 
-## 9. Open before the pin
+## 9. At the pin
 
-1. **The red team's read** of this first text, with its siblings' re-read.
-2. **The pin's edits, and only these:** the file renamed to 0.2's name; its title and status in pin-time form; its id
-   written where this draft says "RD-04S". T-0's pinned-name test passes only before the pin and is replaced by its
-   pin-time form in the pinning commit.
-3. **The pinning row names P-14 and P-16** (it is (c)'s `registered_design` declaration, S-19), records the parent as
-   superseded, never run, and records that no `heldout-read` row is written for `scripts/rd04_replay.py` before NQ's
-   verdict (the red team's M-3); CHARTER 3.6 (b)'s entry "RD-04 (c): P-14 and P-16 replayed on the late block" then
-   reads "declared, not run".
-4. **`rd04_identity`'s items 2 to 5** (S-8) keep their declared whole-window form, labelled so: the lead's ruling rn-5 reads
-   "no new identity" as only the identities these deltas introduce.
-5. **S-2's feasibility** is a build question (RD-06's); its stop-and-report clause is declared now.
+1. **The reads.** The red team's read of its siblings (M-3, which brought this text) and its re-read (`docs/reviews/O7_SEARCH_YEARS_2026-11-19.md` and its re-read `docs/reviews/REREADS_W32_W34_O7_2026-11-20.md`),
+   every finding answered as the lead ruled on it (rm-4, rn-5), and the gatekeeper's form findings answered in this
+   text.
+2. **The pin** is a byte-identical rename of this text to `prereg/RD-10_volatility_drift_search_years.md`. The pinning
+   row names P-14 and P-16 (it is (c)'s `registered_design` declaration, S-19), records the parent as superseded,
+   never run, and records that no `heldout-read` row is written for `scripts/rd04_replay.py` before NQ's verdict (the
+   red team's M-3); CHARTER 3.6 (b)'s entry "RD-04 (c): P-14 and P-16 replayed on the late block" then reads "declared,
+   not run".
+3. **`rd04_identity`'s items 2 to 5** (S-8) keep their declared whole-window form, labelled so (the lead's ruling rn-5).
+4. **S-2's feasibility** is a build question (RD-06's); its stop-and-report clause is declared.

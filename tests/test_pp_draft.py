@@ -346,7 +346,8 @@ def test_the_label_reads_the_three_regular_shapes_only_and_is_not_constant():
 
 
 def draft_path() -> Path:
-    found = sorted(PREREG.glob("DRAFT_F-P_payout_policy.md")) + sorted(PREREG.glob("RD-*payout*.md"))
+    # narrowed from RD-*payout*.md (O-7): RD-07's pinned name, RD-07_payout_policy_search_years.md, holds "payout" too
+    found = sorted(PREREG.glob("DRAFT_F-P_payout_policy.md")) + sorted(PREREG.glob("RD-*_payout_policy.md"))
     assert len(found) == 1, f"exactly one payout-policy declaration expected under prereg/, found {found}"
     return found[0]
 
