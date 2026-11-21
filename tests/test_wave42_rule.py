@@ -1138,7 +1138,9 @@ def test_the_document_states_the_pre_pin_fixes() -> None:
     """R3-1, R3-2, R3-3, n3-1, n3-3: the audit list's three items, write-once inside a checkout, the sidecar's bytes,
     the floor at both readings, the collection row pinned first, and the H7 row's wording."""
     t = _norm(DOC.read_text(encoding="utf-8"))
-    for phrase in ("extended.levers_terms.standard_prices", "extended.family_stats.MDL_POWER", "git_commit", "-dirty",
+    for phrase in ("extended.levers_terms.standard_prices", "equals section 2's table", "config/w42_r1_pin.json",
+                   "or a descendant of it whose diff from it touches none of the files the script imports",
+                   "whose `h4_result_sha256` is H4's collection file's", "by more than `DO_NOTHING_EPS`", "git_commit", "-dirty",
                    "write-once inside a checkout", "voids both", "CRLF normalised to LF", "at the held-out verdict",
                    "at the search-year screen", "H4's collection row is pinned before W42-R1 is applied"):
         assert phrase in t, phrase
@@ -1305,3 +1307,63 @@ def test_the_public_signatures_are_the_surveys() -> None:
     assert sig(R.limit_estimate) == ["values", "sessions_left", "out", "name"]
     assert sig(R.null_journeys) == ["fee_unit"] and "do_nothing" in R.null_journeys(1.0)
     assert sig(R.limit_check) == ["values", "sessions_left", "out", "name", "value", "level_"]
+
+
+# ------------------------------------------------------------------------------- the last pre-pin fixes (c3, n4)
+def _fallback_values():
+    rs = {}
+    for i, b in enumerate(R.BASELINES):
+        r = _flat(21 + i, 0.5 + 0.05 * i)
+        rs[b] = R.BaselineReading(b, r.block, r.reading, r.starts, r.seeds, r.values)
+    return _run(rs).values
+
+
+@pytest.mark.parametrize("form", ["composite", "fallback"])
+def test_pinned_inputs_are_the_outputs_values_exactly(base, form) -> None:
+    """c3-2: `pinned_inputs` returns the output's B*, caps, weights, form, floor and limits exactly, in both forms."""
+    V = json.loads(json.dumps(base[1].values if form == "composite" else _fallback_values()))
+    assert V["form"] == form
+    P = R.pinned_inputs(V)
+    assert P["B"] == V["budgets"]["primary"]
+    assert P["caps"] == {d["name"]: (d["lo"], d["hi"]) for d in V["dimensions"]}
+    assert P["weights"] == V["weights"]
+    assert (form == "fallback") == (P["weights"] == {"money": 1.0})
+    assert P["form"] == V["form"] and P["floor"] == V["null_journeys"]["floor"]["value"]
+    assert {n: x["value"] for n, x in P["limits"].items()} == {x["name"]: x["value"] for x in V["limits"]["values"]}
+
+
+def test_the_floor_tolerance_holds_a_do_nothing_design_at_100_seeds(base) -> None:
+    """c3-3: at J = 100 the mean over seeds of a do-nothing design's composite can round one unit above the floor; it
+    does not exceed the floor, which needs more than DO_NOTHING_EPS."""
+    V = json.loads(base[1].as_json())
+    floor = V["null_journeys"]["floor"]["value"]
+    J = 100
+    arm = {k: np.zeros((N, J)) for k in R.REQUIRED}
+    arm.update({k: np.full((N, J), float(x)) for k, x in R.null_journeys(FEE)["do_nothing"].items()})
+    mean = float(np.mean(R.composite_per_seed(V, _sl(), arm)))
+    assert abs(mean - floor) < 1e-12
+    assert not R.above_floor(mean, floor) and R.DO_NOTHING_EPS == 1e-9
+    assert R.above_floor(floor + 2e-9, floor) and not R.above_floor(floor + 0.5e-9, floor)
+
+
+def test_limit_checks_standard_error_is_the_per_seed_sd_over_root_j() -> None:
+    """n4-2: se = (the sample sd over seeds of each seed's statistic) / sqrt(J), computed here by hand."""
+    L = next(x for x in R.LIMITS if x.name == "first_payout_days_p50")
+    sl = np.full(10, 300)
+    x = 50.0 + np.random.default_rng(4).normal(0, 2.0, (10, 40))
+    vals = {"first_payout_days": x, "spent_before_first_payout": np.zeros((10, 40)),
+            **{f"net_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)},
+            **{f"peak_month_{m}": np.zeros((10, 40)) for m in (1, 2, 3)}}
+    per = [float(np.quantile(x[:, c], 0.5)) for c in range(40)]
+    se = float(np.std(per, ddof=1)) / math.sqrt(40)
+    got = R.limit_check({"budgets": {"primary": 100.0}}, sl, vals, L.name, 49.0)["se"]
+    assert got == pytest.approx(se, rel=1e-12)
+
+
+def test_values_from_rows_refuses_a_repeated_key(base) -> None:
+    """n4-3: a repeated row is refused, never kept silently."""
+    V = base[1].values
+    rows = [{"key": k, "value_json": json.dumps(V[k])} for k in sorted(V)]
+    assert R.values_from_rows(rows)["rule_id"] == R.RULE_ID
+    with pytest.raises(ValueError, match="repeats a key"):
+        R.values_from_rows(rows + [rows[0]])

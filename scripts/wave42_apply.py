@@ -38,6 +38,7 @@ import importlib
 import io
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,6 +54,13 @@ SCRIPT = "scripts/wave42_apply.py"
 RULE_TEXT = "docs/plans/WAVE42_SETTING_RULE.md"
 RULE_MODULE = "extended/wave42.py"
 LEDGER_FILE = "vendor/stage2/config/rules.yaml"
+#: c3-1: the file the lead writes in W42-R1's pinning commit, naming the commit whose tree holds the pinned rule
+PIN_FILE = "config/w42_r1_pin.json"
+#: c3-1: the files the script imports (with their own imports inside this repository); a run at a descendant of the
+#: pinned commit is admitted only if its diff from it touches none of them
+IMPORTED_FILES = ("extended/__init__.py", "extended/wave42.py", "scripts/wave42_apply.py", "extended/levers_terms.py",
+                  "extended/family_stats.py", "extended/lift_bound.py", "extended/search_calendar.py",
+                  "extended/day_calendar.py", "extended/h4_collect.py", "extended/results.py", "extended/reader.py")
 MANIFEST_SUFFIX = ".manifest.json"
 _ISO = re.compile(r"\d{4}-\d{2}-\d{2}")
 
@@ -96,6 +104,44 @@ def _import(dotted: str) -> Callable[..., Any]:
         return getattr(importlib.import_module(mod), attr)
     except (ImportError, AttributeError) as e:
         raise _refuse(f"{dotted} is not built on this commit ({e.__class__.__name__}: {e})") from e
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True)
+
+
+def pinned_commit(repo: Path | str) -> str | None:
+    """The commit W42-R1's pinning row names, from `PIN_FILE` (`{"commit": "<40 hex>"}`); None when it is absent."""
+    p = Path(repo) / PIN_FILE
+    if not p.is_file():
+        return None
+    c = json.loads(p.read_text(encoding="utf-8")).get("commit")
+    return c if isinstance(c, str) and re.fullmatch(r"[0-9a-f]{40}", c) else None
+
+
+def commit_problem(repo: Path | str, pin: str | None, head: str | None = None) -> str | None:
+    """c3-1: None when `head` (default HEAD) is W42-R1's pinned commit `pin`, or a descendant of it whose diff from it
+    touches none of `IMPORTED_FILES`; otherwise the reason the run is refused."""
+    repo = Path(repo)
+    if not pin:
+        return f"W42-R1's pinning commit is not named ({PIN_FILE} is missing or malformed)"
+    if head is None:
+        r = _git(repo, "rev-parse", "HEAD")
+        if r.returncode != 0:
+            return f"the run's commit cannot be read: {r.stderr.strip()}"
+        head = r.stdout.strip()
+    if head == pin:
+        return None
+    anc = _git(repo, "merge-base", "--is-ancestor", pin, head)
+    if anc.returncode != 0:
+        return f"the run's commit {head[:12]} is not the pinned commit {pin[:12]} or a descendant of it"
+    diff = _git(repo, "diff", "--name-only", pin, head, "--", *IMPORTED_FILES)
+    if diff.returncode != 0:
+        return f"the diff from the pinned commit cannot be read: {diff.stderr.strip()}"
+    changed = [x for x in diff.stdout.splitlines() if x.strip()]
+    if changed:
+        return f"the run's commit changes files the script imports since the pinned commit: {changed}"
+    return None
 
 
 def _declared_fee() -> tuple[float, str, str]:
@@ -209,6 +255,7 @@ def apply(results_dir: Path | str, sources: Sources) -> dict[str, Any]:
               "held_out_sessions": n_ho, "test_starts": {str(h): c for h, c in counts.items()},
               "fee_unit": fee, "fee_source": fee_source, "fee_via": "extended.levers_terms.standard_prices",
               "ledger_sha256": ledger_sha, "power_target": R.POWER_TARGET,
+              "pinned_commit": pinned_commit(ROOT),
               "rule_text_sha256": sha256_file(ROOT / RULE_TEXT), "rule_module_sha256": sha256_file(ROOT / RULE_MODULE),
               "script_sha256": sha256_file(ROOT / SCRIPT)}
     sources.writer(df, R.OUTPUT_NAME, script=SCRIPT, seed=None, require_seed=False, parameters=params,
@@ -224,6 +271,9 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("scripts/wave42_apply.py takes no argument: its inputs are declared names in results/")
     from extended import RESULTS_DIR
 
+    bad = commit_problem(ROOT, pinned_commit(ROOT))
+    if bad:
+        raise _refuse(bad)
     params = apply(RESULTS_DIR, declared_sources())
     print(f"W42-R1 applied: {R.OUTPUT_NAME}, values sha256 {params['values_sha256']}, "
           f"input sha256 {params['input_sha256']}")

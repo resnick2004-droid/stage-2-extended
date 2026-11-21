@@ -72,6 +72,7 @@ K_TEST = 13
 LIMIT_CHECK_LEVEL = 0.05
 J_MAX = 10 ** 7
 HELD_OUT_LEDGER = "the held-out session calendar's dates only"  # B-8, V-2: this rule's own held-out read
+DO_NOTHING_EPS = 1e-9                                          # c3-3: "exceeds the floor" means by more than this
 
 CONSTANTS: dict[str, Any] = {
     "RULE_ID": RULE_ID, "SEARCH_FIRST": SEARCH_FIRST, "SEARCH_LAST": SEARCH_LAST, "HELD_OUT_FIRST": HELD_OUT_FIRST,
@@ -85,6 +86,7 @@ CONSTANTS: dict[str, Any] = {
     "CAP_QUANTILES": list(CAP_QUANTILES), "CAP_MARGIN": CAP_MARGIN, "RESOLVE_Z": RESOLVE_Z,
     "DELTA_FRACTION": DELTA_FRACTION, "DELTA_MIN": DELTA_MIN, "DELTA_MAX": DELTA_MAX, "POWER_TARGET": POWER_TARGET,
     "K_TEST": K_TEST, "LIMIT_CHECK_LEVEL": LIMIT_CHECK_LEVEL, "J_MAX": J_MAX, "HELD_OUT_LEDGER": HELD_OUT_LEDGER,
+    "DO_NOTHING_EPS": DO_NOTHING_EPS,
 }
 
 #: the fields H4's manifest must carry for its output to be this rule's input (B-1, B-2, m-9, V-1)
@@ -502,6 +504,12 @@ def null_composites(values: Mapping[str, Any], fee_unit: float) -> dict[str, flo
     return res
 
 
+def above_floor(composite: float, floor: float) -> bool:
+    """c3-3: a composite exceeds the do-nothing floor only by more than `DO_NOTHING_EPS` (a design that does nothing
+    can score the floor plus one rounding unit when its mean is taken over seeds)."""
+    return bool(float(composite) > float(floor) + DO_NOTHING_EPS)
+
+
 def do_nothing_floor(values: Mapping[str, Any], fee_unit: float) -> float:
     """The declared floor (V-4, R3-3): the do-nothing journey's composite; a finalist's must exceed it."""
     return null_composites(values, fee_unit)["do_nothing"]
@@ -716,8 +724,10 @@ def setting_rule(readings: Mapping[str, BaselineReading] | Sequence[BaselineRead
     out["null_journeys"] = {
         "composite": nulls, "baselines": C,
         "floor": {"name": "do_nothing", "value": nulls["do_nothing"],
-                  "rule": "a finalist's composite must exceed it at the point estimate (the lead's ruling, V-4)"},
-        "baselines_at_or_below_floor": [b for b in BASELINES if C[b] <= nulls["do_nothing"]]}
+                  "rule": "a finalist's composite must exceed it by more than DO_NOTHING_EPS at the point estimate "
+                          "(the lead's ruling, V-4; c3-3)"},
+        "baselines_at_or_below_floor": [b for b in BASELINES if not above_floor(C[b], nulls["do_nothing"])],
+        "eps": DO_NOTHING_EPS}
 
     # ---- 5. delta* and the power
     resolvable = nJ >= H4_MIN_SEEDS               # m-2: below the declared seed count no gap may resolve
@@ -832,5 +842,5 @@ __all__ = ["RULE_ID", "CONSTANTS", "DIMENSIONS", "LIMITS", "BASELINES", "Dim", "
            "setting_rule", "fee_lattice", "equal_weights", "spearman", "bankroll_states", "q_factor", "pair_power",
            "conjoint_power", "limit_z", "level", "input_digest", "readings_digest", "calendar_digest", "complete_starts",
            "j_needed", "null_journeys", "unit_values", "unit_scores", "composite_per_seed", "null_composites",
-           "do_nothing_floor", "limit_estimate", "limit_per_seed_sd", "limit_check", "pinned_inputs",
+           "do_nothing_floor", "above_floor", "DO_NOTHING_EPS", "limit_estimate", "limit_per_seed_sd", "limit_check", "pinned_inputs",
            "values_from_rows"]

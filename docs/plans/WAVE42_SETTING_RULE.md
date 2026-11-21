@@ -79,6 +79,11 @@ The notes n-1 to n-4 ask for no change.
 | n3-1 the chain's root | H4's collection row is pinned before W42-R1 is applied, and the auditor checks the file's sha256 against it | 1.1 |
 | n3-3 the H7 row's wording | each start run to 252 sessions or the block's last session, whichever comes first | the three-way note 6.3; `three_way_arith.parts` |
 | C-1 (the survey's read) the survey re-implemented the composite | one public scoring path, which `setting_rule` itself uses and the survey imports; the output file's row schema documented | 9.1, 9.2 |
+| c3-1 (the diff check) the power-target item circular | the power target is checked against section 2's table, and the script refuses a run whose commit is not W42-R1's pinned commit or a descendant changing none of the files it imports | 1.1 |
+| c3-2 `pinned_inputs` untested | exact-equality tests in both forms | the tests |
+| c3-3 a do-nothing design one rounding unit above the floor | "exceeds" means by more than `DO_NOTHING_EPS`, declared in the module (the survey imports it) | 2, 4.5 |
+| n4-1 "voids both" read too widely | only outputs whose `h4_result_sha256` is H4's collection file's | 1.1 |
+| n4-2, n4-3 two untested checks | tests of `limit_check`'s standard error and of `values_from_rows`' repeated key | the tests |
 
 ---
 
@@ -124,17 +129,23 @@ the sidecar's parameters, the file's sha256 its `sha256`:
 - its `rule_text_sha256`, `rule_module_sha256` and `script_sha256` are the pinned ones;
 - **the fee unit** (`fee_unit`, `fee_via`) is the one `extended.levers_terms.standard_prices` returns, the ledger's
   `subscription_fee` at the recorded `ledger_sha256` (R3-1);
-- **the power target** (`power_target`, and `constants.POWER_TARGET`) is `extended.family_stats.MDL_POWER`'s value at
-  the run's commit (R3-1);
-- **the output manifest's `git_commit`** is the clean checkout's commit, the one the pinning row names, and is not
-  `-dirty` (R3-1).
+- **the power target** (`power_target`, and `constants.POWER_TARGET`) **equals section 2's table** (`0.8`), and the
+  output's `constants` equal section 2's table (R3-1, c3-1);
+- **the output manifest's `git_commit`** is not `-dirty`, and is **the commit W42-R1's pinning row names, or a
+  descendant of it whose diff from it touches none of the files the script imports** (`IMPORTED_FILES`: the rule, the
+  script, `extended/levers_terms.py`, `extended/family_stats.py`, `extended/lift_bound.py`,
+  `extended/search_calendar.py`, `extended/day_calendar.py`, `extended/h4_collect.py`, `extended/results.py`,
+  `extended/reader.py` and `extended/__init__.py`). **The script refuses any other run** (`commit_problem`, c3-1):
+  the pinning row's commit names the pinned commit in `config/w42_r1_pin.json` (`{"commit": "<40 hex>"}`), and while
+  that file is absent the script refuses. The output records it (`pinned_commit`).
 
 **Applied once.** The script writes its values to one fixed name, `results/w42_r1_values.csv` (`OUTPUT_NAME`),
 through `write_result`, which refuses outside a clean run and never overwrites. Before reading anything, the script
 refuses if that file, its manifest, or any other `results/w42_*` file exists. **That refusal is write-once inside a
 checkout** (R3-1): a clean run is its own checkout, so a second application is refused once the first output is
-committed, and **any second W42-R1 output found anywhere -- another checkout, another commit, another folder -- voids
-both**, under the failure protocol (diagnosed, never chosen between). Never a list a caller passes. The function
+committed, and **any second W42-R1 output whose `h4_result_sha256` is H4's collection file's, found anywhere --
+another checkout, another commit, another folder -- voids both** (n4-1: a test's output on synthetic hashes is not
+one), under the failure protocol (diagnosed, never chosen between). Never a list a caller passes. The function
 `setting_rule` stays pure, but only the script is the declared way to apply it.
 
 ### 1.2 The search calendar and sessions left (B-2, V-3)
@@ -264,6 +275,7 @@ value equal to `extended/wave42.py`'s.
 | LIMIT_CHECK_LEVEL | `0.05` | the one-sided check of crossing printed beside each limit, never deciding (3.8 (a); E-230) |
 | J_MAX | `10000000` | the search bound for J_needed, the seed count the forecast needs; beyond it, "not reachable" |
 | HELD_OUT_LEDGER | `"the held-out session calendar's dates only"` | B-8, V-2: this rule's own entry in the held-out read ledger (section 10; E-211's form) |
+| DO_NOTHING_EPS | `1e-09` | c3-3: a composite exceeds the do-nothing floor only by more than this (`above_floor`), far below delta\*'s floor of 0.01, so a design that does nothing and scores the floor plus a rounding unit (its mean over seeds) does not pass it; the survey imports it from here |
 <!-- wave42-constants:end -->
 
 ## 3. The bankroll budgets B
@@ -378,7 +390,8 @@ z = clip((x - lo) / (hi - lo), 0, 1) for a "higher" dimension, and 1 minus that 
   from the caps, B\* and the weights with no further data (`null_journeys`). In the composite form the do-nothing
   journey scores exactly bankroll's and ruin's weights (z = 1 on both, 0 on the rest), 2/6; in the fallback, 0.
 - **The do-nothing journey's composite is a declared floor** (the lead's ruling, conservative): a finalist's
-  composite must exceed it at the point estimate, **twice** (R3-3): at the search-year screen, where Wave 5's
+  composite must exceed it at the point estimate **by more than `DO_NOTHING_EPS`** (`above_floor`, c3-3), **twice**
+  (R3-3): at the search-year screen, where Wave 5's
   finalist rule applies the floors before it ranks by the composite, and again **at the held-out verdict**, where a
   finalist's held-out composite must exceed the floor (the floor's value is the one this rule pins, from the caps,
   B\* and the weights). The floor can only remove designs, never add one. The output also lists any baseline at or

@@ -307,3 +307,65 @@ def test_the_output_file_has_the_declared_row_schema_and_reads_back(env) -> None
     assert digest == params["values_sha256"]
     P = R.pinned_inputs(values)
     assert set(P) == {"B", "caps", "weights", "form", "floor", "limits"} and P["floor"] == pytest.approx(2 / 6)
+
+
+# -------------------------------------------------------------- c3-1: the run's commit, the pinned one or a clean descendant
+def _git(repo, *args):
+    out = subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", f"core.hooksPath={repo}/.nohooks",
+                          *args], cwd=repo, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    return out.stdout.strip()
+
+
+def _commit(repo, rel, text, msg):
+    p = repo / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text, encoding="utf-8")
+    _git(repo, "add", rel)
+    _git(repo, "commit", "-q", "-m", msg)
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def test_the_run_is_refused_off_the_pinned_commit(tmp_path) -> None:
+    """c3-1: the pinned commit, or a descendant changing no imported file, is admitted; a descendant changing one, a
+    commit off its line, or no named pinning commit, is refused."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    pin = _commit(repo, "extended/wave42.py", "rule\n", "the pinned rule")
+    assert A.commit_problem(repo, pin) is None
+    ok = _commit(repo, "README.md", "beside\n", "an unrelated file")
+    assert A.commit_problem(repo, pin) is None and A.commit_problem(repo, pin, ok) is None
+    for rel in ("extended/family_stats.py", "extended/levers_terms.py", "scripts/wave42_apply.py"):
+        bad = _commit(repo, rel, "edited\n", f"edit {rel}")
+        assert "changes files the script imports" in A.commit_problem(repo, pin, bad), rel
+    _git(repo, "checkout", "-q", "-b", "side", pin + "~0")
+    _git(repo, "checkout", "-q", "--orphan", "other")
+    other = _commit(repo, "x.txt", "x\n", "an unrelated line")
+    assert "not the pinned commit" in A.commit_problem(repo, pin, other)
+    assert "not named" in A.commit_problem(repo, None)
+
+
+def test_the_pin_file_names_the_commit(tmp_path) -> None:
+    (tmp_path / "config").mkdir()
+    assert A.pinned_commit(tmp_path) is None
+    (tmp_path / A.PIN_FILE).write_text(json.dumps({"commit": "a" * 40}), encoding="utf-8")
+    assert A.pinned_commit(tmp_path) == "a" * 40
+    (tmp_path / A.PIN_FILE).write_text(json.dumps({"commit": "short"}), encoding="utf-8")
+    assert A.pinned_commit(tmp_path) is None
+
+
+def test_main_refuses_without_a_pinned_commit(monkeypatch) -> None:
+    """c3-1: the declared application refuses before reading anything when the run's commit is not admitted."""
+    monkeypatch.setattr(A, "pinned_commit", lambda repo: None)
+    monkeypatch.setattr(A, "apply", lambda *a, **k: pytest.fail("apply must not run"))
+    with pytest.raises(A.ApplyRefused, match="pinning commit is not named"):
+        A.main([])
+
+
+def test_the_imported_files_cover_the_scripts_imports() -> None:
+    """The refusal's file list holds the script, the rule and every module of this repository they import."""
+    for rel in ("extended/wave42.py", "scripts/wave42_apply.py", "extended/levers_terms.py", "extended/family_stats.py",
+                "extended/search_calendar.py", "extended/h4_collect.py", "extended/results.py", "extended/reader.py",
+                "extended/lift_bound.py", "extended/__init__.py"):
+        assert rel in A.IMPORTED_FILES, rel
