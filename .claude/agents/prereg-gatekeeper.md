@@ -77,11 +77,16 @@ result of this search's own cells.
    **Q-158** (merged, E-222) makes the reader enforce the order and the market from the finalists' token row,
    `heldout-finalists: F-NN @ <sha> list <sha>` (the declaration's LF sha256, then the finalists' list file's): refuse
    a draft whose finalists' row is not in that form. Q-158 does not check the held-out row, so that condition is
-   held by the declaration and the auditor. Refuse to approve any design search for a pin
-   while E-NNN (the lead's CHARTER 3.7 reading row) is a placeholder: the lead's reading row of CHARTER 3.7 (the go
-   row as CHARTER 3.7's "pin", template 14 step 4) must exist and be cited by its number. Refuse to approve a new
-   search for a pin after the third firm's terminal state until F-HT's held-out row is written (H-1). Refuse a
-   held-out year read by any choice.
+   held by the declaration and the auditor. Refuse to approve any design search for a pin before
+   E-258 (the lead's CHARTER 3.7 reading row) exists in `DECISIONS.md`, its bolded title beginning `CHARTER's "pin" read`
+   (the go row as CHARTER 3.7's "pin", template 14 step 4):
+   a bare number, a deleted citation or any other row is refused. **Membership (H-1'; E-257):** this F-HT's members
+   are the design searches with a hash row by the membership event, the first go row of any firm's design search; a
+   firm with none by then is in state (c), fixed at that moment.
+   Refuse a search pinned after the membership event, or a successor of a closed search, offered as a member (its
+   candidates go to the confirmation window under its own k);
+   refuse a new search for a pin after every member search is in a terminal state until F-HT's held-out row is written.
+   Refuse a held-out year read by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -150,12 +155,14 @@ result of this search's own cells.
    history null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
    complete-start count; "if any fails, the search goes no further" (no go row, no survey); the data question put to
    the operator before the go row. A draft that follows one closed by a failed calibration or power gate
-   cites that record, reports it beside, and uses a fresh seed block -- refuse a failed block reused.
-   **A failed limit clause or power gate is never a free retry** (M-5 (c),
-   E-NNN (the lead's CHARTER 3.7 reading row)):
-   the successor inherits W42-R1's limits, bankroll budgets, weights and size that matters unchanged; a change comes
-   only by a decision row declared before any further search-year read, and labelled --
-   refuse a successor that re-sets them any other way.
+   cites that record, reports it beside, and uses a fresh seed block -- refuse a failed block reused. **A failed limit
+   clause or power gate is never a free retry** (M-5 (c); E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's
+   limits, bankroll budgets, weights and size that matters are never changed for any search of the line after any gate
+   that read them; a defect found in them goes through the failure protocol as a defect on record, and a corrected
+   rule is a new rule under a new row whose searches never enter this F-HT. A successor search inherits them
+   unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed block, and never
+   enters this F-HT (its candidates go to the confirmation window under its own k); every closed attempt of the line
+   is counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered as a member.
 10. **The pass line** (template 10): (a) the limits -- the point estimate governs, never a second margin (E-221,
     E-230, O-5), each limit's one-sided check reported beside and never deciding; (b) each baseline beaten,
     intersection-union, every comparison at the full level; (c) every floor, the stress floors (+1 tick, 10 % missed)
@@ -182,16 +189,21 @@ if any item is missing or set after a look:
    (m-4); the joint runner is each search's runner at that commit, or a new runner with its own identity. Every other
    input -- the statistic, J and m, `<S4>`, the limits, the composite or the fallback, the baselines, the floors, the
    time leg -- is cited unchanged from each search's pinned file. **Refuse anything new.**
-3. **The joint order by the template's fixed rule (H-2):**
+3. **The joint order by the template's fixed rule (H-2; E-257):**
    alternating by rank across the firms in the order Topstep, My Funded Futures (MFFU), Lucid -- rank 1 of each, then
-   rank 2 of each, a firm whose list is exhausted skipped -- a firm's ranks its search's own pinned finalist order.
-   Refuse any other order, and any order a researcher chose after a read.
-4. **Each firm's state from the closed list (H-1):** (a) finalists, its latest pinned search's finalists' row; (b)
-   none, its latest pinned search's closing row, `heldout-closed: F-NN @ <sha> -- <cause>` with a cause from the
-   template's closed list; (c) none, no search ever pinned. Only a firm's latest pinned search counts; a firm in (b)
+   rank 2 of each, a firm whose list is exhausted skipped -- a firm's ranks its member searches' own pinned finalist
+   orders, search by search in the order of their hash rows. Refuse any other order, and any order a researcher chose
+   after a read.
+4. **Each firm's state by membership at the fixed event (H-1'; E-257):** the members are the design searches with a
+   hash row by the membership event, the first go row of any firm's design search; each member ends in (a)
+   finalists, its finalists' row, or (b) none, its closing row,
+   `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`, a cause from the template's closed list,
+   `withdrawn` only before that search's go row; a firm with no hash row by the event is in (c), fixed at that moment.
+   A firm's finalists are never voided; no successor and no search pinned after the event is a member. A firm in (b)
    or (c) is listed as none and keeps its place.
-5. **Written only when every firm is in a terminal state**, as soon as it is; a pinned search neither finalised nor
-   closed blocks it and is never waited out by choice.
+5. **Written only when, after the membership event, every member search is in a terminal state**, as soon as it
+   is; before the event it is never due; a member search neither finalised nor closed blocks it and is never waited
+   out by choice.
 6. **The rows in order:** the pin row; the held-out row, which is its finalists' token row (m-3),
    `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`, newer than the pin; the run; the
    verdict row. Refuse a pin and a token in one row, and any repeat row for F-HT.

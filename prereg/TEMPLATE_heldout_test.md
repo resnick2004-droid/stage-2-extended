@@ -2,7 +2,8 @@
 
 **What this file is.** The house form for the one declaration that reads NQ's held-out years: the joint
 fixed-sequence test of every firm's finalists (CHARTER 3.6 (c), 3.7; E-221, O-1; E-238), the red team's full read of
-text v2, M-1, as its re-read (`TEMPLATE_V2_c1_2026-11-20.md`: H-1, H-2, m-2 to m-5) amends it. It is not a
+text v2, M-1, as its re-reads (`TEMPLATE_V2_c1_2026-11-20.md`: H-1, H-2, m-2 to m-5; `TEMPLATE_V2_c2_2026-11-21.md`:
+H-1') amend it, in text v3 with the design-search template (E-257). It is not a
 declaration: it names no search, holds no seed, no k and no figure, and its name matches neither the reader's grammar
 (`F-` or `RD-` and a number) nor any test's declaration glob (`tests/test_design_search_template.py` holds that).
 Every design search is drafted on `prereg/TEMPLATE_design_search.md` and carries no `Judged-block reads:` line; this
@@ -16,11 +17,11 @@ purpose but `heldout_test` and `heldout_stress`, a second held-out-marked `F-` f
 file without this template's section headings, and one that also carries the design-search marker. Q-194 closes the
 reader's side.
 
-**To use it:** copy it to `prereg/DRAFT_F-XX_heldout_test_NQ.md` as soon as every firm is in a terminal state
-(section 3), replace every `<...>`, and send it to the red team and the gatekeeper (its own item list,
-`.claude/agents/prereg-gatekeeper.md`, "The held-out test's declaration"). The lead pins it by the sha256 of its LF
-text; nothing declared is edited. *This declaration chooses nothing.* Every input is cited from the pinned searches;
-anything it would add is refused.
+**To use it:** copy it to `prereg/DRAFT_F-XX_heldout_test_NQ.md` as soon as, after the membership event, every member
+search is in a terminal state (section 3), replace every `<...>`, and send it to the red team and the gatekeeper (its
+own item list, `.claude/agents/prereg-gatekeeper.md`, "The held-out test's declaration"). The lead pins it by the
+sha256 of its LF text; nothing declared is edited. *This declaration chooses nothing.* Every input is cited from the
+pinned searches; anything it would add is refused.
 
 ## 0. In plain words (for the operator)
 
@@ -57,32 +58,44 @@ Its inputs come only from the pinned searches' finalists' lists, each by its sha
 skipped**. A firm's ranks are **the search's own pinned finalist order** (its finalists' row, set by the finalist
 order rule its declaration pinned before its survey). The firm order is the program's own, older than every search:
 CHARTER 3.6 (c)'s firm list and CLAUDE.md's Topstep-first line. The rule is written here, before any search is
-declared, and recorded by the lead's row (E-254, cited by number once committed); this declaration applies it and
-states the resulting order. **A researcher's choice after a read is never the order.**
+declared, and recorded by the lead's row E-257 (E-254 records the superseded block order); this declaration applies it
+and states the resulting order. **A researcher's choice after a read is never the order.**
 
 - A firm in state (b) or (c) of section 3 contributes no finalist: it is **listed as none** and **keeps its place**
-  in the firm order; the alternation runs over the firms that have finalists.
+  in the firm order; the alternation runs over the firms that have finalists. A firm with more than one member search
+  in state (a) ranks their finalists search by search, in the order of their hash rows, each in its own pinned
+  finalist order.
 
-## 3. The firms' states: a closed list, decided by rule (H-1)
+## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)
 
 - **The firms are fixed now:** Topstep, My Funded Futures (MFFU), Lucid.
-- **Only a firm's latest pinned search counts.** An earlier search's finalists are void once a successor is pinned.
-- **A firm's state is one of three, and nothing else:**
-  - **(a) finalists:** its latest pinned search has a finalists' row;
-  - **(b) none:** its latest pinned search has a closing row;
-  - **(c) none:** no search of the firm was ever pinned.
-- **The closing row's form**, the first text of the row's third cell, in the reader's positional form:
-  `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`, its cause **one of a closed list**:
+- **The membership event** is the first go row of any firm's design search. **This F-HT's membership is fixed at
+  that moment:** every design search with a hash row by the event is a **member**; a firm whose search has no hash
+  row by the event is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year outcome is
+  read.
+- **Every member search ends in one of two states:**
+  - **(a) finalists:** it has a finalists' row;
+  - **(b) none:** it has a closing row,
+    `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>` as the first text of the row's third cell, its cause
+    **one of a closed list**:
   1. `calibration-failed` -- the deciding calibration failed;
   2. `limit-clause-failed` -- the power gate's limit clause failed;
   3. `power-gate-failed` -- the power gate failed;
   4. `every-design-failed-a-gate` -- every surveyed design failed a gate before its outcomes;
   5. `empty-finalist-list` -- the finalist order rule yielded an empty list;
   6. `every-finalist-failed-no-harm` -- every finalist failed its playbook no-harm floor;
-  7. `withdrawn` -- a withdrawal under E-005 (d), its reason in the row.
-- **This declaration is written as soon as every firm is in a terminal state.** After the third terminal state, **no
-  new search may be pinned until this declaration's held-out row is written.**
-- **A pinned search that is neither finalised nor closed blocks the declaration.** It must be closed or finalised by
+  7. `withdrawn` -- a withdrawal under E-005 (d), its reason in the row, **only before that search's go row**; after
+     its go row a search closes only by causes 1 to 6.
+- **A firm's finalists are never voided:** a closing row after a search's finalists' row is refused, and no later
+  search replaces them.
+- **A firm's state:** (a) if any of its member searches is in (a); (b) if every member search of it is in (b); (c) as
+  above.
+- **No successor enters this F-HT.** A search pinned after the membership event, or a successor of a closed search, is
+  never a member of this F-HT; its candidates go to the confirmation window under its own k.
+- **This declaration is written as soon as, after the membership event, every member search is in (a) or (b).**
+  Before the event it is never due: an empty history is not "all terminal".
+- **Then no new search may be pinned until this declaration's held-out row is written.**
+- **A member search that is neither finalised nor closed blocks the declaration.** It must be closed or finalised by
   its own rules, **never waited out by choice**.
 
 ## 4. The k and the level
