@@ -77,7 +77,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-178 | O-7's five deltas RD-06 to RD-10 in pin-time form -- gatekeeper re-check, then pinned (parents superseded) | wt-firms | running (E-246) | Q-159 | light | 0 | E-246 |
 | Q-179 | Q-173 merged with the O-7 pins' SUPERSEDED fill; every shared identity re-held once at that commit | lead | queued (E-246) | Q-173, Q-178 | heavy | 0 | E-246 |
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | running (E-246) | E-232 | light | 0 | E-246 |
-| Q-183 | T7's admission forecast: build (wt-har), then the heavy search-year fit, loaded by lever_space | wt-har | running (E-246) | E-232 | light, then heavy | 0 | E-246 |
+| Q-183 | T7's admission forecast: build (wt-har), then the heavy search-year fit, loaded by lever_space | wt-har | done (E-253) | E-232 | light, then heavy | 0 | E-246 |
 | Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | running (E-246) | Q-176 | light | 0 | E-246 |
 | Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | running (E-246) | Q-167 | light | 0 | E-246 |
 | Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | running (E-246) | Q-168, Q-167 | light | 0 | E-246 |
@@ -88,6 +88,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued (E-246) | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
 | Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | running (E-251) | Q-168 | light | 0 | E-251 |
 | Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | running (E-251) | E-207 | light | 0 | E-251 |
+| Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | running (E-254) | Q-173 | light | 0 | E-254 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
