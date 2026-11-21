@@ -286,6 +286,8 @@ def test_zero_edge_under_the_race(checks):
     assert c["kinds"].get("walk", 0) > 500 and c["walk_laws"] > 1
     assert c["walks_replayed"] == c["kinds"]["walk"] and c["walk_replay_bad"] == 0, c    # C1-4: path for path
     assert c["walks_off_lattice"] > 100, c                  # the floor-side residual step is read
+    o = c["odd_step"]                                       # C1-2: replayed and inside the law check too
+    assert o["step"] > 1 and o["walks"] > 500 and o["steps"] <= J.WALK_MAX, o
     for z in ("z", "race_z", "walk_target_z", "walk_stop_z"):
         assert abs(c[z]) < 4.0, (z, c)
 
@@ -302,7 +304,7 @@ def test_rb1_a_floor_bound_lane_fails_at_the_fill(checks):
 def test_the_keys_and_the_pairing_carry_over_from_the_toy_path(checks):
     c = checks["pairing"]
     for arm in ("base", "twin", "missed", "worse", "plant", "as_walked", "floor", "rb1_race", "rb1_walk",
-                "rb1_flatten", "dll"):
+                "rb1_flatten", "dll", "odd_step", "odd_step_floor"):
         a = c[arm]
         assert a["keys_equal"] and a["n_keys"] > 0, (arm, a)
         assert a["max_balance_diff"] < 1e-6 and a["spread"] > 0, (arm, a)
@@ -310,6 +312,9 @@ def test_the_keys_and_the_pairing_carry_over_from_the_toy_path(checks):
     assert c["floor"]["fill_failures"] > 0 and c["floor"]["accounts"] > 0      # the floor is reached and replaced
     assert c["rb1_race"]["fill_failures"] > 0 and c["rb1_walk"]["fill_failures"] > 0
     assert c["dll"]["day_ends"] > 0                                    # C1-N4: the limit's day end, through the engine
+    st, n = c["odd_step"]["step"], c["odd_step"]["steps"]             # C1-2: the governing rule's step
+    assert st > 1 and 41 % st and 61 % st and n <= J.WALK_MAX
+    assert c["odd_step_floor"]["accounts"] > 10                        # the floor reached on the odd step
     assert c["starts_disjoint"] and c["keys_carry_start"]
 
 

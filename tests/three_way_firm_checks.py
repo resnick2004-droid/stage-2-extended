@@ -20,8 +20,9 @@ no result, a few engine paths per check (light). Every seed is the tests' role s
 - `pairing` -- the firm path against the toy path, lane for lane: on a deep account (every arm: base, twin, missed,
   worse fill, plant, as-walked; profit levels; distinct costs) the balances and key sets; on accounts that reach the
   floor (Topstep's MLL, the target out of reach) the balances, the ordinals and the fill failures; on RB-1's fixture
-  the same; under a daily loss limit whose room falls below a trade's costs (the day's end at the take) the same; two
-  starts read disjoint keys;
+  the same; under a daily loss limit whose room falls below a trade's costs (the day's end at the take) the same; on
+  walks whose step (the governing rule's, `walk_step`) divides neither the stop nor the target, deep and reaching the
+  floor, the same; two starts read disjoint keys;
 - `seats` -- two seats: two live accounts, the router deals each trade to one of them, both trade, no moment twice;
 - `h4` -- H4's outputs per lane, (30) and (37) in full, against the engine's ledger and day recorder: one seat,
   two seats, and a fixture reaching funded breaches whose idle sessions count;
@@ -79,6 +80,18 @@ def schedule(name: str, n: int, *, g: int = 200, l: int = 100, tick: float = 5.0
                                walked_ticks=walked, level=lev, **c))
     return J.Schedule(name, tuple(out))
 
+
+#: C1-2: a walk whose lattice step divides neither its stop nor its target, by the lead's governing rule
+#: (`three_way_redraw.walk_step`: s from the volatility at the alert and the limit known at the fill). With l = 41 and
+#: g = 61 ticks (gcd 1) the withdrawn divisor rule could only take s = 1, whose n exceeds WALK_MAX: it refused the trade.
+ODD_SIGMA, ODD_T, ODD_L, ODD_G = 10.0, 400.0, 41, 61
+
+
+def odd_step() -> tuple[int, int]:
+    from extended import three_way_redraw as RD
+
+    st = RD.walk_step(ODD_SIGMA, ODD_T, J.WALK_MAX)
+    return st, RD.walk_steps(ODD_SIGMA, ODD_T, st)
 
 def same(a, b, where: str = "") -> list[str]:
     """Field-for-field, bit-for-bit differences between two engine records."""
@@ -268,14 +281,20 @@ def zero_edge(firm: TF.Firm) -> dict:
     logs = list(run(sch, firm, plan, 0, lanes, horizon, horizon, log=True).logs)
     logs += list(run(sch, near, plan, 0, lanes, horizon, horizon, log=True).logs)
     by_moment = {t.moment: t for t in sch.trades}
+    ost, on = odd_step()                                    # C1-2: a step dividing neither the stop nor the target
+    osch = schedule("odd step", horizon, g=ODD_G, l=ODD_L, tick=5.0, costs=COSTS, per_day=1, walk_every=1,
+                    step=ost, steps=on, decision=900)
+    logs += list(run(osch, near, TF.AccountPlan(trades_per_day=1), 0, lanes, horizon, horizon, log=True).logs)
+    by_moment.update({t.moment: t for t in osch.trades})
     gross, kinds, bad, off_lattice = [], {}, 0, 0
     wins = p_sum = p_var = 0.0
     wt = ws = 0
     exp_t = exp_s = var_t = var_s = 0.0
     memo: dict = {}
     replayed = replay_bad = 0
+    odd_walks = 0
     for jj, rows in enumerate(logs):
-        j = jj % lanes                                      # lane j is seed index j of start 0 (on both firms)
+        j = jj % lanes                                      # lane j is seed index j of start 0 (on every run)
         unit = K.Unit(SEED, PART, 0, j, 0)
         for cal, slot, name, moment, room, froom, kind, L, p, G, g_, cost, out in rows:
             kinds[kind] = kinds.get(kind, 0) + 1
@@ -313,6 +332,7 @@ def zero_edge(firm: TF.Firm) -> dict:
                                      Fraction(L0 / tv), int(t.walk_step))
                 replayed += 1
                 off_lattice += int(Fraction(L0 / tv) % t.walk_step != 0)
+                odd_walks += int(t.l % t.walk_step != 0 and t.g % t.walk_step != 0)
                 replay_bad += int(k1 != ek or abs(float(v1) * tv - g_) > 1e-9)
                 key = (Fraction(G0), Fraction(L0 / tv).limit_denominator(10 ** 9), t.walk_step, t.walk_n)
                 if key not in memo:
@@ -330,7 +350,8 @@ def zero_edge(firm: TF.Firm) -> dict:
             "kinds": kinds, "race_z": float((wins - p_sum) / math.sqrt(p_var)),
             "walk_target_z": float((wt - exp_t) / math.sqrt(var_t)), "walk_stop_z": float((ws - exp_s) / math.sqrt(var_s)),
             "walk_targets": int(wt), "walk_stops": int(ws), "walk_laws": len(memo), "walks_replayed": replayed,
-            "walk_replay_bad": replay_bad, "walks_off_lattice": off_lattice}
+            "walk_replay_bad": replay_bad, "walks_off_lattice": off_lattice,
+            "odd_step": {"step": ost, "steps": on, "walks": odd_walks}}
 
 
 # ------------------------------------------------------------------------------------------------ RB-1
@@ -448,6 +469,15 @@ def pairing(firm: TF.Firm) -> dict:
     one = TF.AccountPlan(trades_per_day=1)
     for name, rsch in _rb1_schedules(float(firm.rules.mll), 5.0).items():
         out[f"rb1_{name}"] = _pair(rsch, floor, _toy_rules(firm, float(firm.rules.mll)), one, 0, 32, 3, 3)
+    # C1-2: the odd step, on a deep account (every arm's law) and on accounts that reach the floor
+    ost, on = odd_step()
+    osch = schedule("odd step", horizon + 10, g=ODD_G, l=ODD_L, tick=5.0, costs=COSTS, per_day=1, walk_every=2,
+                    step=ost, steps=on, level_every=3, level=45.0, walked=7.0, decision=900)
+    out["odd_step"] = _pair(osch, deep, _toy_rules(firm, 1e9), plan, start, lanes, horizon, horizon + 10)
+    near = dataclasses.replace(firm, rules=dataclasses.replace(firm.rules, mll=260.0, profit_target=1e9),
+                               name="TS, near the floor (a test fixture)")
+    out["odd_step_floor"] = _pair(osch, near, _toy_rules(firm, 260.0), plan, start, lanes, horizon, horizon + 10)
+    out["odd_step"]["step"], out["odd_step"]["steps"] = ost, on
     # C1-N4: the daily loss limit's day end through the engine, paired with the toy path's limit lane for lane
     dll_firm = dataclasses.replace(floor, combine_account_cls=DllCombine, name="TS, a daily loss limit (a test fixture)")
     dsch = schedule("dll", 42, g=60, l=100, tick=5.0, costs=dict(entry_cost=40.0, x_target=10.0, x_stop=60.0,
