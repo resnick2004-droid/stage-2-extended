@@ -122,8 +122,13 @@ def declare(t: Path, finalists: bool = True) -> str:
     return _git(t, "rev-parse", "HEAD")
 
 
+def is_seed(rec: dict) -> bool:
+    """Whether a ledger line is a seeded joint test's read (its run id `SEED_RUN_ID`)."""
+    return (rec.get("who") or {}).get("run_id") == SEED_RUN_ID
+
+
 def joint_read(t: Path, files, *, market: str = "NQ", start: str = "2024-01-02", end: str = "2026-07-16",
-               run_id: str = SEED_RUN_ID, purpose: str = "heldout_test"):
+               run_id: str = SEED_RUN_ID, purpose: str = "heldout_test", declaration: str = HT_PATH):
     """F-98's held-out read through the reader, inside a simulated clean run of `t` with its own run id; the
     environment and `reader.RUNS_DIR` restored."""
     from extended import reader as R
@@ -132,7 +137,7 @@ def joint_read(t: Path, files, *, market: str = "NQ", start: str = "2024-01-02",
     os.environ["S2X_CLEAN_RUN"], os.environ["S2X_RUN_ID"] = t.name, run_id
     R.RUNS_DIR = t.parent
     try:
-        return R.authorise_engine_read(start, end, purpose=purpose, declaration=HT_PATH, files=list(files),
+        return R.authorise_engine_read(start, end, purpose=purpose, declaration=declaration, files=list(files),
                                        what="the joint held-out test (a synthetic seed)", repo=t, market=market)
     finally:
         R.RUNS_DIR = saved_dir
@@ -141,6 +146,18 @@ def joint_read(t: Path, files, *, market: str = "NQ", start: str = "2024-01-02",
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+
+
+def seed_with(t: Path, files, declaration: str, text: str) -> dict:
+    """A tree's own held-out declaration (already pinned, its finalists' row in place) as the joint test: its
+    `heldout_test` read (`joint_read`), then its verdict row committed with the ledger. Returns the read's line."""
+    fid = declaration.split("/")[1].split("_")[0]
+    joint_read(t, files, declaration=declaration)
+    commit_verdict(t, verdict_row(fid=fid, sha=hashlib.sha256(text.encode("utf-8")).hexdigest()))
+    for x in (t / LEDGER).read_text(encoding="utf-8").splitlines():
+        if is_seed(json.loads(x)):
+            return json.loads(x)
+    raise AssertionError("no seeded line")
 
 
 def settle(t: Path, files, *, market: str = "NQ", verdict: bool = True, start: str = "2024-01-02",

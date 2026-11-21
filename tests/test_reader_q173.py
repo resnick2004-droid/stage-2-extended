@@ -78,7 +78,7 @@ def test_rule3_the_joint_test_reads_before_its_verdict_and_a_replay_only_after_i
     a = H.rd_read(unsettled, "E-940", "P-14")
     assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    assert VR.HT_PATH in str(H.refused(2, H.read, unsettled))           # F-13: the window is F-98's
+    assert "search years" in str(H.refused(1, H.read, unsettled))       # F-13: a family reads no held-out date
 
 
 def test_rule3_mutation_is_killed(unsettled, monkeypatch):

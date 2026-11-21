@@ -3,12 +3,11 @@ of `docs/reviews/TEMPLATE_V2_FULL_2026-11-20.md`), on Q-158's synthetic tree (`t
 helpers; nothing real is read: synthetic declarations, synthetic decision rows, stand-in data files never parsed).
 
 * **the hole closed:** a pinned family declaration whose `Judged-block reads:` line names any purpose that is not a
-  choice (`stage_Z_anything`, `stage_C_judgement`) is refused under rule 1 with no finalists' token for its own id and
-  its own sha256, newer than its pin -- also for a read of the holiday gap alone, and for a token of another
-  declaration, of other bytes, or older than the pin; each refusal names the purpose and the declaration; a refused
-  read writes no ledger line;
-* **the token honours it:** the same declaration with its token is admitted and its ledger line carries the
-  finalists' row, as a `heldout_test` read's does;
+  choice (`stage_Z_anything`, `stage_C_judgement`) is refused under rule 1 -- also for a read of the holiday gap
+  alone; each refusal names the purpose and the declaration; a refused read writes no ledger line;
+* **and its token opens nothing (Q-194e, P10):** the same declaration with its own finalists' token is still refused
+  -- only the market's held-out declaration reads a held-out date; a token placed before its pin or in the pin's row
+  is refused for the held-out declaration;
 * **`heldout_test` and `heldout_stress` exactly as before:** refused without the token, admitted with it, the same
   `heldout` field;
 * **E-247's rm-4 untouched:** a registered reproduction identity (purpose `identity`, its decision row) reads the
@@ -71,7 +70,7 @@ def test_an_arbitrary_non_choice_purpose_is_refused_without_its_token(t16, purpo
     assert not R._choice_purpose(purpose)
     assert purpose in R.declared_purposes(F16_TEXT), "the line names it: the seal's own checks pass"
     e = H.refused(1, H.read, t16, declaration=F16, purpose=purpose)
-    assert "no decision row carries a finalists' token for F-16" in str(e)
+    assert "search years" in str(e), "Q-194e (P10): a family reads no held-out date"
     names_both(e, purpose, F16)
     assert H.lines(t16) == [], "a refused read writes nothing"
 
@@ -98,7 +97,8 @@ def test_any_held_out_date_binds_rule1(t16, start, end):
      + "` -- quoted | x |",
      "no decision row carries"),
 ])
-def test_an_arbitrary_purpose_needs_its_own_token_for_its_own_hash(t16, row, why):
+def test_an_arbitrary_purpose_is_refused_whatever_its_token(t16, row, why):
+    """Q-194e (P10): a family's own token -- for another declaration, of other bytes, or its own -- opens nothing."""
     H.add_rows(t16, row)
     for purpose in OTHER:
         if R.heldout_token_problems(row):                   # Q-194d: a malformed token fails every judged read
@@ -106,7 +106,7 @@ def test_an_arbitrary_purpose_needs_its_own_token_for_its_own_hash(t16, row, why
                 H.read(t16, declaration=F16, purpose=purpose)
             continue
         e = H.refused(1, H.read, t16, declaration=F16, purpose=purpose)
-        assert why in str(e)
+        assert "search years" in str(e)
         names_both(e, purpose, F16)
     assert H.lines(t16) == []
 
@@ -114,29 +114,27 @@ def test_an_arbitrary_purpose_needs_its_own_token_for_its_own_hash(t16, row, why
 def test_a_token_placed_before_its_pin_or_in_its_row_is_refused(t16):
     """Q-194c (NOTE-2, MINOR-4's M10): "after the pin" is a later place in DECISIONS.md -- a token placed before the
     pin (whatever its number) or in the pin's own row is refused."""
-    H.prepend_rows(t16, H.finalists(999, "F-16", F16_TEXT, LIST16))
-    for purpose in OTHER:
-        assert "precede its pin" in str(H.refused(1, H.read, t16, declaration=F16, purpose=purpose))
-    # F-18's only pin is the row that also carries its finalists' token
-    f18, text18 = "prereg/F-18_same_row.md", F16_TEXT.replace("F-16", "F-18")
-    commit_file(t16, f18, text18)
-    H.add_rows(t16, f"| E-912 | 2026-11-18 | heldout-finalists: F-18 @ {H.sha_lf(text18)} list {LIST16} -- and "
-                    f"`{f18}` sha256 `{H.sha_lf(text18)}` pinned in the same row | x |")
-    e = H.refused(1, H.read, t16, declaration=f18, purpose="stage_Z_anything")
+    # NQ's held-out declaration F-98, its only pin the row that also carries its finalists' token
+    commit_file(t16, VR.HT_PATH, VR.HT_TEXT)
+    H.add_rows(t16, f"| E-912 | 2026-11-18 | heldout-finalists: F-98 @ {VR.HT_SHA} list {LIST16} -- and "
+                    f"`{VR.HT_PATH}` sha256 `{VR.HT_SHA}` pinned in the same row | x |")
+    e = H.refused(1, H.read, t16, declaration=VR.HT_PATH, purpose="heldout_test")
     assert "sit in its row" in str(e)
-    H.add_rows(t16, H.finalists(913, "F-18", text18, LIST16))                 # a row after the pin: admitted
-    assert dict(H.read(t16, declaration=f18, purpose="stage_Z_anything").heldout)["finalists"] == "E-913"
+    H.prepend_rows(t16, H.finalists(999, "F-98", VR.HT_TEXT, LIST16))           # placed before the pin
+    assert "sit in its row" in str(H.refused(1, H.read, t16, declaration=VR.HT_PATH, purpose="heldout_test"))
+    H.add_rows(t16, H.finalists(913, "F-98", VR.HT_TEXT, LIST16))                 # a row after the pin: admitted
+    assert dict(H.read(t16, declaration=VR.HT_PATH, purpose="heldout_test").heldout)["finalists"] == "E-913"
 
 
-def test_the_same_declaration_with_its_token_is_honoured(t16):
+def test_the_same_declaration_with_its_token_is_refused_too(t16):
+    """Q-194e (P10): an F-14-like family with its own finalists' token still reads no held-out date; the market's
+    held-out declaration does, under its held-out purposes."""
     H.add_rows(t16, H.finalists(920, "F-16", F16_TEXT, LIST16))
-    a = H.read(t16, declaration=F16, purpose="stage_Z_anything")
-    want = {"market": "NQ", "window": "E-208", "finalists": "E-920", "finalists_list_sha256": LIST16}
-    assert a.judged and a.ledgered and a.kind == "family" and dict(a.heldout) == want
-    H.read(t16, declaration=F16, purpose="scorecard_final")           # one run, its other purpose
-    recs = H.lines(t16)
-    assert [r["purpose"] for r in recs] == list(OTHER) and all(r["heldout"] == want for r in recs)
-    assert R.read_ledger(t16 / "results" / "read_ledger.jsonl") == recs
+    for purpose in OTHER:
+        names_both(H.refused(1, H.read, t16, declaration=F16, purpose=purpose), purpose, F16)
+    assert H.lines(t16, seed=True) == []
+    VR.declare(t16)
+    assert H.read(t16, declaration=VR.HT_PATH, purpose="heldout_test").judged
 
 
 # --------------------------------------------------------------------------------- the held-out purposes, unchanged
@@ -178,9 +176,9 @@ def test_a_registered_reproduction_identity_needs_no_finalists_token(t16, monkey
     assert a.judged and a.kind == "identity" and a.ledgered and a.heldout is None
     rec = H.lines(t16)[-1]
     assert rec["purpose"] == "identity" and rec.get("heldout") is None
-    # a later family read is not locked out by the identity's line (rule 2 counts families only)
-    H.add_rows(t16, H.finalists(920, "F-16", F16_TEXT, LIST16))
-    assert H.read(t16, declaration=F16, purpose="stage_Z_anything").judged
+    # the held-out declaration's read is not locked out by the identity's line (rule 2 counts families only)
+    VR.declare(t16)
+    assert H.read(t16, declaration=VR.HT_PATH, purpose="heldout_test").judged
 
 
 def test_a_family_file_cannot_borrow_the_identity_purpose(t16, monkeypatch):
@@ -211,23 +209,24 @@ def test_a_refused_read_does_not_spend_the_window(t16, monkeypatch):
     for purpose in OTHER:
         H.refused(1, H.read, t16, declaration=F16, purpose=purpose)
     H.refused(1, H.read, t16, purpose="stage_C_judgement")             # F-13, no token either
-    assert H.lines(t16) == []
-    H.add_rows(t16, H.finalists(921, "F-14", H.F14_TEXT, H.LIST14))
+    assert H.lines(t16, seed=True) == []
+    VR.declare(t16)
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    a = H.read(t16, declaration=H.F14)                                  # the joint test's read: not locked out
-    assert a.judged and dict(a.heldout)["finalists"] == "E-921"
-    assert [r["declaration"]["ref"] for r in H.lines(t16)] == [H.F14]
+    a = H.read(t16, declaration=VR.HT_PATH, purpose="heldout_test")     # the joint test's read: not locked out
+    assert a.judged and dict(a.heldout)["finalists"] == "E-981"
+    assert [r["declaration"]["ref"] for r in H.lines(t16, seed=True)] == [VR.HT_PATH]
 
 
 def test_rule1_refuses_before_rule2(t16, monkeypatch):
-    H.spend(t16)                                                        # F-13's held-out test spends NQ's window
+    H.put_line(t16, H.family_line())                                    # another family's read spent NQ's window
+    VR.declare(t16, finalists=False)
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    e = H.refused(1, H.read, t16, declaration=F16, purpose="stage_Z_anything")
-    names_both(e, "stage_Z_anything", F16)
-    H.add_rows(t16, H.finalists(923, "F-16", F16_TEXT, LIST16))
-    e = H.refused(2, H.read, t16, declaration=F16, purpose="stage_Z_anything")   # with its token: rule 2's
-    names_both(e, "stage_Z_anything", F16)
-    assert len(H.lines(t16)) == 1
+    e = H.refused(1, H.read, t16, declaration=VR.HT_PATH, purpose="heldout_test")   # no finalists' row: rule 1's
+    names_both(e, "heldout_test", VR.HT_PATH)
+    H.add_rows(t16, VR.FINALISTS_ROW)
+    e = H.refused(2, H.read, t16, declaration=VR.HT_PATH, purpose="heldout_test")   # with it: rule 2's
+    names_both(e, "heldout_test", VR.HT_PATH)
+    assert len(H.lines(t16, seed=True)) == 1
 
 
 def test_rule4s_refusal_names_the_purpose_and_the_declaration(tree):

@@ -235,12 +235,12 @@ def test_fenced_rows_are_no_rows_for_identity_or_repeat(tree, monkeypatch):
     text = "\n".join(("```", "| E-905 | 2026-11-18 | **The identity holds** | test |", "```"))
     assert R.decision_row(text, "E-905") is None
     assert R.decision_row("| E-905 | 2026-11-18 | **The identity holds** | test |", "E-905") is not None
-    VR.append_rows(tree, H.finalists(920, "F-13", H.F13_TEXT, H.LIST13))
-    H.read(tree)                                                        # F-13, run 1
-    VR.append_rows(tree, "~~~", f"| E-960 | 2026-11-20 | **another read of `{H.F13}`** | x |", "~~~")
+    H.settled_verdict(tree)
+    H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard")       # a described reading, run 1
+    VR.append_rows(tree, "~~~", f"| E-960 | 2026-11-20 | **another read of `{H.RD7}`** | x |", "~~~")
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    with pytest.raises(R.JudgedBlockSealed, match="does not name"):
-        H.read(tree, repeat="E-960")                                    # the fenced row names nothing
+    with pytest.raises(R.JudgedBlockSealed, match="does not name"):     # the fenced row names nothing
+        H.read(tree, declaration=H.RD7, purpose="stage_D_scorecard", repeat="E-960")
 
 
 # --------------------------------------------------------------------------------- NOTE-5: the surviving mutants
@@ -299,8 +299,9 @@ def test_an_f03_like_family_is_refused_the_held_out_purposes(tree):
     for purpose in R.HELDOUT_PURPOSES:
         e = H.refused(1, H.read, tree, declaration="prereg/F-03_opening_timing.md", purpose=purpose)
         assert "one held-out declaration of NQ" in str(e) and "marker" in str(e) and purpose in str(e)
-    assert H.read(tree, declaration="prereg/F-03_opening_timing.md").kind == "family", "its own purpose: rules 1, 2"
-    assert H.lines(tree, seed=True)[-1]["purpose"] == "stage_C_judgement"
+    e = H.refused(1, H.read, tree, declaration="prereg/F-03_opening_timing.md")   # Q-194e (P10): its own purpose too
+    assert "search years" in str(e)
+    assert H.lines(tree, seed=True) == []
 
 
 def test_the_f_ht_like_declaration_reads_both_purposes(tree):
@@ -346,9 +347,9 @@ def test_another_markets_marked_file_does_not_block_nq(tree):
 
 def test_a_read_is_recorded_under_the_newest_window_it_touches(tree):
     H.add_rows(tree, "| E-990 | 2026-11-20 | heldout-window: NQ 2025-01-02 to 2025-06-30 -- w1 | x |",
-               "| E-991 | 2026-11-20 | heldout-window: NQ 2025-07-01 to 2026-07-16 -- w2 | x |",
-               H.finalists(992, "F-13", H.F13_TEXT, H.LIST13))
-    a = H.read(tree, start="2025-03-03", end="2025-09-02")             # the red team's probe D
+               "| E-991 | 2026-11-20 | heldout-window: NQ 2025-07-01 to 2026-07-16 -- w2 | x |")
+    VR.declare(tree)
+    a = H.ht_read(tree, start="2025-03-03", end="2025-09-02")          # the red team's probe D
     assert dict(a.heldout)["window"] == "E-991" and dict(a.heldout)["windows"] == ["E-990", "E-991"]
 
 

@@ -141,9 +141,8 @@ def tree(tmp_path, monkeypatch) -> Path:
     """A temporary git tree at `<tmp>/runs/<RUN>`: RD-04, RD-03 and F-90 (synthetic) each naming
     `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it. Q-158, Q-194c: NQ's joint
     held-out test (the synthetic F-98) is read through the reader and ledgered, then its verdict row, so a described
-    reading's judged read is admitted (the reader's held-out rule 4). Q-194: E-961 carries F-90's finalists' token, so
-    the family's judged read below is the reader's to make (held-out rule 1 binds every family purpose; on ES, NQ's
-    window being the joint test's, rule 2) and stays this module's to refuse."""
+    reading's judged read is admitted (the reader's held-out rule 4). Q-194e (P10): a family reads no held-out date, so
+    the family's authorisation below is built by hand (as it would look), and stays this module's to refuse."""
     t = tmp_path / "runs" / RUN
     (t / "prereg").mkdir(parents=True)
     rows = []
@@ -272,8 +271,8 @@ def bad_authorisations(t: Path) -> dict[str, object]:
     a = rd04(t)
     choice = R.authorise("2020-01-02", "2023-12-29", purpose="volatility_descriptive", declaration=RD04, repo=t)
     assert not choice.judged
-    family = R.authorise("2020-01-02", "2026-07-16", purpose="volatility_descriptive", declaration=F90, repo=t,
-                         market="ES")
+    # Q-194e (P10): no family's judged read is the reader's to make any more; its authorisation, as it would look
+    family = dataclasses.replace(a, kind="family", declaration=F90, declaration_sha256=sha_lf(TEXTS[F90]))
     other_rd = R.authorise("2020-01-02", "2026-07-16", purpose="volatility_descriptive", declaration=RD03, repo=t)
     assert family.kind == "family" and other_rd.kind == "described_reading" and other_rd.declaration == RD03
     rep = dataclasses.replace

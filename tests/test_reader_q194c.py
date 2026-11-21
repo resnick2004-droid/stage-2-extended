@@ -194,28 +194,29 @@ def test_rule4_wants_a_verdict_for_every_window_a_read_touches(tree):
 
 
 def test_rule2_counts_every_window_a_read_touches(tree, monkeypatch):
-    """The red team's P1 for rule 2: F-13 spends the newer window; F-14's read straddling it and the unspent base
-    window is refused; F-14's read of the base window's days alone is admitted."""
-    H.add_rows(tree, WINDOW_2025, H.finalists(991, "F-13", H.F13_TEXT, H.LIST13),
-               H.finalists(992, "F-14", H.F14_TEXT, H.LIST14), H.finalists(993, "F-15", H.F15_TEXT, H.LIST15))
-    H.read(tree, start="2025-01-02")                                    # F-13: E-990
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    e = H.refused(2, H.read, tree, declaration=H.F14)                   # 2024-01-02..2026-07-16: E-208 and E-990
+    """The red team's P1 for rule 2: another family's read spent the newer window (a line in the ledger); NQ's
+    held-out declaration's read straddling it and the unspent base window is refused; its read of the base window's
+    days alone is admitted."""
+    H.add_rows(tree, WINDOW_2025)
+    H.put_line(tree, H.family_line(window="E-990"))                     # F-13: E-990
+    H.ht(tree)
+    e = H.refused(2, H.ht_read, tree)                                   # 2024-01-02..2026-07-16: E-208 and E-990
     assert "E-990" in str(e) and H.F13 in str(e)
-    H.refused(2, H.read, tree, declaration=H.F14, start="2024-12-31", end="2025-01-03")
-    a = H.read(tree, declaration=H.F14, end="2024-12-31")               # E-208's days alone
+    H.refused(2, H.ht_read, tree, start="2024-12-31", end="2025-01-03")
+    a = H.ht_read(tree, end="2024-12-31")                               # E-208's days alone
     assert dict(a.heldout)["window"] == "E-208" and "windows" not in dict(a.heldout)
 
 
 def test_a_straddling_family_read_records_both_windows_and_spends_both(tree, monkeypatch):
-    H.add_rows(tree, WINDOW_2025, H.finalists(991, "F-13", H.F13_TEXT, H.LIST13),
-               H.finalists(992, "F-14", H.F14_TEXT, H.LIST14))
-    a = H.read(tree)                                                    # F-13 straddles E-208 and E-990
+    H.add_rows(tree, WINDOW_2025)
+    H.ht(tree)
+    a = H.ht_read(tree)                                                 # F-98 straddles E-208 and E-990
     assert dict(a.heldout)["window"] == "E-990" and dict(a.heldout)["windows"] == ["E-208", "E-990"]   # NOTE-1
-    assert H.lines(tree)[-1]["heldout"]["windows"] == ["E-208", "E-990"]
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    H.refused(2, H.read, tree, declaration=H.F14, start="2025-01-02")   # E-990 alone: spent by F-13's straddle
-    H.refused(2, H.read, tree, declaration=H.F14, end="2024-12-31")     # E-208 alone: spent too
+    assert H.lines(tree, seed=True)[-1]["heldout"]["windows"] == ["E-208", "E-990"]
+    for w in ("E-990", "E-208"):                                        # both spent for any other family's read
+        with pytest.raises(R.HeldOutRefused) as info:
+            R._market_once(tree, H.F14, "NQ", {w}, "another family")
+        assert info.value.rule == 2 and VR.HT_PATH in str(info.value)
 
 
 def test_heldout_windows_gives_each_day_its_newest_window(tree):
