@@ -49,6 +49,9 @@ EXPECTED_FILE = "results/journey_x.csv"
 NO_HARM_FILE = "results/noharm_x.csv"
 EXPECTED_SCRIPT = "scripts/journey_expected.py"
 NO_HARM_SCRIPT = "scripts/no_harm_floor.py"
+HELDOUT_FILE = "results/heldout_x.csv"
+HELDOUT_SCRIPT = "scripts/heldout_joint.py"
+HELDOUT_FAMILY = FAMILY_JOINT = "F-joint"
 MANIFEST = ".manifest.json"
 COMMIT = "abc1234def"
 MARGIN = 0.05
@@ -74,6 +77,8 @@ NO_HARM_ROWS = (_nh("asia_brk", "with_breakout", "0.22", "0.2", "280")
                 + _nh("am_tix", "hi=fade;lo=break", "0.27", "0.29", "250")
                 + _nh("pm_brk", "against_breakout", "0.4", "0.33", "410"))
 COLUMNS = ("section", "block", "measure", "stat", "value", "n")
+HELDOUT_ROWS = [{"section": "heldout", "block": "joint", "measure": DESIGN, "stat": "verdict", "value": "accepted",
+                 "n": "1"}]
 
 
 def declaration() -> dict:
@@ -81,8 +86,8 @@ def declaration() -> dict:
         "design_id": DESIGN, "family": FAMILY, "firm": "topstep", "plan": "trading_combine", "instrument": "MNQ",
         "accounts": [{"id": "ts_a", "role": "evaluation"}, {"id": "ts_b", "role": "funded"},
                      {"id": "ts_c", "role": "evaluation"}],
-        "side": {"no_harm_row": "E-9001", "no_harm_file": NO_HARM_FILE, "no_harm_script": NO_HARM_SCRIPT,
-                 "margin": MARGIN, "margin_row": "E-9002"},
+        "side": {"no_harm_row": "E-9002", "no_harm_file": NO_HARM_FILE, "no_harm_script": NO_HARM_SCRIPT,
+                 "margin": MARGIN, "margin_row": "E-9000"},
         "components": [
             {"name": "asia_brk", "session": "asia", "first": 0, "last": 55, "stop_ticks": 50, "rr": 1.7,
              "contracts": 2, "latency": 5, "side_rule": "with_breakout",
@@ -93,7 +98,7 @@ def declaration() -> dict:
             {"name": "am_tix", "session": "ny_am", "first": 30, "last": 85, "stop_ticks": 100, "rr": 1.5,
              "contracts": 2, "latency": None, "side_rule": {"hi": "fade", "lo": "break"},
              "trigger": {"source": "rl3", "params": {"kind": "pd", "cutoff": 1020}}},
-            {"name": "pm_brk", "session": "ny_pm", "first": 150, "last": 330, "stop_ticks": 60, "rr": 2.25,
+            {"name": "pm_brk", "session": "ny_am", "first": 150, "last": 330, "stop_ticks": 60, "rr": 2.25,
              "contracts": 1, "latency": 3, "side_rule": "against_breakout",
              "trigger": {"source": "p14", "params": {"latency": 3, "entry": "limit"}}},
         ],
@@ -111,9 +116,9 @@ def declaration() -> dict:
         "research_filters": ["short_bars", "overnight_missing"],
         "void_dates": [{"date": "2021-03-19", "reason": "early_close"}],
         "session_anchors": {"asia": ["Asia/Tokyo", "09:00"], "london": ["Europe/London", "08:00"],
-                            "ny_am": ["America/New_York", "09:30"], "ny_pm": ["America/New_York", "09:30"]},
+                            "ny_am": ["America/New_York", "09:30"]},
         "dates": ["2021-03-12", "2021-03-16", "2021-04-06"],
-        "bankroll": {"budget": 1700, "row": "E-9002"},
+        "bankroll": {"budget": 1700, "row": "E-9000"},
         "expected": {"file": EXPECTED_FILE, "script": EXPECTED_SCRIPT, "rows": [
             {"label": "sessions to the first payout", "section": "journey", "block": "search", "measure": "S3b",
              "stat": "median"},
@@ -129,7 +134,8 @@ def declaration() -> dict:
 
 def record(decl_sha: str, **over: Any) -> dict:
     r = {"design_id": DESIGN, "declaration": DECL_FILE, "declaration_sha256": decl_sha, "registration": REGISTRATION,
-         "row": "E-9004"}
+         "row": "E-9004", "heldout_file": HELDOUT_FILE, "heldout_script": HELDOUT_SCRIPT,
+         "heldout_family": FAMILY_JOINT}
     r.update(over)
     return r
 
@@ -164,9 +170,10 @@ def manifest(name: str, data: bytes, rows: int, *, convention: str, sha_decl: st
               "declaration_sha256": sha_decl}
     if convention == "no_harm_real_path":
         params["margin"] = MARGIN
+    family = FAMILY_JOINT if convention == "heldout_joint_test" else FAMILY
     m = {"result_file": name, "script": script, "git_commit": COMMIT, "seed": None, "parameters": params,
          "timestamp": "2021-01-01T00:00:00", "sha256": hashlib.sha256(data).hexdigest(), "rows": rows,
-         "columns": list(COLUMNS), "description": "synthetic", "exploratory": False, "prereg_id": FAMILY,
+         "columns": list(COLUMNS), "description": "synthetic", "exploratory": False, "prereg_id": family,
          "variant_count": None, "notes": None,
          "provenance": {"clean_run": {"name": "synthetic-run", "checkout": "x", "marker": "S2X_CLEAN_RUN"}},
          "git_dirty": False}
@@ -191,16 +198,18 @@ def write_result(root: Path, rel: str, rows: list[dict], columns=COLUMNS, **kw: 
 
 
 def rows_text(h_decl: str, h_record: str, exp_rel: str, h_exp: tuple[str, str], nh_rel: str,
-              h_nh: tuple[str, str], *, margin: str = str(MARGIN)) -> dict[str, str]:
+              h_nh: tuple[str, str], *, margin: str = str(MARGIN),
+              h_ho: tuple[str, str] = ("", "")) -> dict[str, str]:
     return {
-        "E-9000": f"**{DESIGN}'s playbook declaration, pinned before its floor is read (synthetic)** `{DECL_FILE}` "
+        "E-9000": f"**The 3.9 pinning row (synthetic): the bankroll budget, and the no-harm margin `{margin}`.**",
+        "E-9001": f"**{DESIGN}'s playbook declaration, pinned before its floor is read (synthetic)** `{DECL_FILE}` "
                   f"sha256 `{h_decl}`.",
-        "E-9001": f"**{DESIGN}'s no-harm floor (synthetic)** `{nh_rel}` sha256 `{h_nh[0]}`; its manifest "
+        "E-9002": f"**{DESIGN}'s no-harm floor (synthetic)** `{nh_rel}` sha256 `{h_nh[0]}`; its manifest "
                   f"`{nh_rel}{MANIFEST}` sha256 `{h_nh[1]}`.",
-        "E-9002": f"**The 3.9 pinning row (synthetic): the bankroll budget, and the no-harm margin `{margin}`.**",
-        "E-9004": f"**{DESIGN} (synthetic)** carried: {DESIGN} @ {h_decl} -- {REGISTRATION}; its carrying record "
-                  f"`{RECORD_FILE}` sha256 `{h_record}`; its expected journey `{exp_rel}` sha256 `{h_exp[0]}`; its "
-                  f"manifest `{exp_rel}{MANIFEST}` sha256 `{h_exp[1]}`.",
+        "E-9004": f"**{DESIGN} (synthetic)** carried: {DESIGN} @ {h_decl} -- {REGISTRATION} -- {h_ho[0]}; its carrying "
+                  f"record `{RECORD_FILE}` sha256 `{h_record}`; its expected journey `{exp_rel}` sha256 `{h_exp[0]}`; "
+                  f"its manifest `{exp_rel}{MANIFEST}` sha256 `{h_exp[1]}`; the joint held-out test's accepted result "
+                  f"`{HELDOUT_FILE}` sha256 `{h_ho[0]}`; its manifest `{HELDOUT_FILE}{MANIFEST}` sha256 `{h_ho[1]}`.",
     }
 
 
@@ -215,7 +224,8 @@ def build_root(root: Path, decl: dict | None = None, *, expected_rows: list[dict
                no_harm_over: dict | None = None, bind: dict | None = None,
                edit_rows: Callable[[dict], dict] | None = None, raw: bytes | None = None,
                record_over: dict | None = None, raw_record: bytes | None = None, margin: str = str(MARGIN),
-               expected_columns=COLUMNS) -> Path:
+               expected_columns=COLUMNS, heldout_rows: list[dict] | None = None,
+               heldout_over: dict | None = None) -> Path:
     """The synthetic root (the module docstring). `bind`: the declaration the result files are bound to (default the
     declaration itself); `edit_rows` may edit the log's rows; `raw`, `raw_record`: the files' bytes as written."""
     root = Path(root)
@@ -238,7 +248,11 @@ def build_root(root: Path, decl: dict | None = None, *, expected_rows: list[dict
     h_nh = write_result(root, nh_rel, NO_HARM_ROWS if no_harm_rows is None else no_harm_rows,
                         **{"convention": "no_harm_real_path", "sha_decl": sha_bound, "script": NO_HARM_SCRIPT,
                            **(no_harm_over or {})})
-    rows = rows_text(h_decl, hashlib.sha256(rec).hexdigest(), exp_rel, h_exp, nh_rel, h_nh, margin=margin)
+    h_ho = write_result(root, HELDOUT_FILE, HELDOUT_ROWS if heldout_rows is None else heldout_rows,
+                        **{"convention": "heldout_joint_test", "sha_decl": sha_bound, "script": HELDOUT_SCRIPT,
+                           **(heldout_over or {})})
+    rows = rows_text(h_decl, hashlib.sha256(rec).hexdigest(), exp_rel, h_exp, nh_rel, h_nh, margin=margin,
+                     h_ho=h_ho)
     if edit_rows is not None:
         rows = edit_rows(rows)
     write_log(root, rows)
@@ -252,10 +266,11 @@ def _git(root: Path, *args: str) -> str:
     return p.stdout.strip()
 
 
-def git_root(root: Path, *, floor_before_pin: bool = False) -> Path:
-    """The synthetic root as a git history (C2-2): a first commit with no pin; then the declaration and its pinning
-    row; then the floor's and journey's runs, whose manifests name the run's commit -- the pin's commit (or, with
-    `floor_before_pin`, the commit before it); then the rest of the log. Returns the root."""
+def git_root(root: Path, *, floor: str = "pin", journey: str = "pin") -> Path:
+    """The synthetic root as a git history (C2-2, C3-4, N-c3-3): a first commit with no pin; then the 3.9 row and the
+    declaration's pinning row; a side branch off the pin that is never merged; then the results and the rest of the
+    log on the main line, and a later row citing the pin again. Each of the floor's and the journey's manifests names
+    its run's commit: `pin` (the pin's), `before` (the commit before it) or `side` (the unmerged branch's)."""
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     _git(root, "init", "-q")
@@ -271,12 +286,19 @@ def git_root(root: Path, *, floor_before_pin: bool = False) -> Path:
     h_decl = hashlib.sha256(data).hexdigest()
     (root / "prereg").mkdir(exist_ok=True)
     (root / DECL_FILE).write_bytes(data)
-    write_log(root, {"E-9000": rows_text(h_decl, "", "", ("", ""), "", ("", ""))["E-9000"]})
+    first_rows = rows_text(h_decl, "", "", ("", ""), "", ("", ""))
+    write_log(root, {k: first_rows[k] for k in ("E-9000", "E-9001")})
     _git(root, "add", "DECISIONS.md", DECL_FILE)
     _git(root, "commit", "-q", "-m", "pin the declaration")
     pinned = _git(root, "rev-parse", "HEAD")
-    build_root(root, expected_over={"git_commit": pinned},
-               no_harm_over={"git_commit": before if floor_before_pin else pinned})
+    _git(root, "checkout", "-q", "-b", "side")
+    (root / "SIDE").write_bytes(b"an unmerged branch\n")
+    _git(root, "add", "SIDE")
+    _git(root, "commit", "-q", "-m", "a run on a branch never merged")
+    side = _git(root, "rev-parse", "HEAD")
+    _git(root, "checkout", "-q", "-")
+    commits = {"pin": pinned, "before": before, "side": side}
+    build_root(root, expected_over={"git_commit": commits[journey]}, no_harm_over={"git_commit": commits[floor]})
     _git(root, "add", "-A")
     _git(root, "commit", "-q", "-m", "the floor, the journey and the carrying row")
     log = (root / "DECISIONS.md").read_bytes().decode()           # a later row citing the pin again: the first
@@ -462,8 +484,10 @@ def _main(argv: list[str]) -> int:
                 if tamper and rel == EXPECTED_FILE:
                     csv.write_bytes(csv.read_bytes().replace(b"37.5", b"12.5"))
             rec = (root / RECORD_FILE).read_bytes()
+            ho = Path(str(root / HELDOUT_FILE) + MANIFEST)
+            h_ho = (json.loads(ho.read_bytes())["sha256"], hashlib.sha256(ho.read_bytes()).hexdigest())
             write_log(root, rows_text(sha, hashlib.sha256(rec).hexdigest(), EXPECTED_FILE, hashes[EXPECTED_FILE],
-                                      NO_HARM_FILE, hashes[NO_HARM_FILE]))
+                                      NO_HARM_FILE, hashes[NO_HARM_FILE], h_ho=h_ho))
             return root
 
         attempt("clean", real_root("clean", clean=True))

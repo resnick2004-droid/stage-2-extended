@@ -10,7 +10,10 @@ floor read on a declaration and only then pinned (after a look at another rule) 
 pin. The run's commit must descend from the commit that pinned the declaration, so the declaration was on record in
 the run's own history before the floor was read; a `-dirty` or unknown commit never descends.
 
-Light: `git log -S` and `git merge-base --is-ancestor` on the repository's own history, each with a time limit; no
+**The runner's half** (for the no-harm and journey runners' briefs): a runner refuses to run from a commit whose
+`DECISIONS.md` does not already pin the declaration, so no read precedes the pin even off the record.
+
+Light: `git log -S`, `git cat-file -e` and `git merge-base --is-ancestor` on the repository's own history, each with a time limit; no
 file is written, nothing but `git` is run.
 """
 from __future__ import annotations
@@ -45,14 +48,17 @@ def pin_commit(repo: Path | str, text: str, log: str = LOG) -> str | None:
 
 
 def descends(repo: Path | str, ancestor: str | None, commit: str | None) -> bool:
-    """Whether `commit` is a commit of the repository (never `-dirty`, never unknown) and `ancestor` is one of its
-    ancestors or itself (`git merge-base --is-ancestor`)."""
+    """Whether `commit` is a commit of the repository (never `-dirty`, never unknown), `ancestor` is one of its
+    ancestors or itself, and `commit` is on HEAD's line (an ancestor of HEAD or HEAD: a run on a branch HEAD never
+    merged is refused, the lead's C3-4 ruling) -- each by `git merge-base --is-ancestor`."""
     if not ancestor or not commit or not SHA.match(str(ancestor)) or not SHA.match(str(commit)):
         return False
     for c in (ancestor, commit):
         if _git(repo, "cat-file", "-e", f"{c}^{{commit}}").returncode:
             return False
-    return _git(repo, "merge-base", "--is-ancestor", ancestor, commit).returncode == 0
+    if _git(repo, "merge-base", "--is-ancestor", ancestor, commit).returncode != 0:
+        return False
+    return _git(repo, "merge-base", "--is-ancestor", commit, "HEAD").returncode == 0
 
 
 __all__ = ["LOG", "PinOrderError", "pin_commit", "descends"]

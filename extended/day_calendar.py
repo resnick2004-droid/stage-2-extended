@@ -287,23 +287,38 @@ def _prior_scheduled(src: Sources, d: date) -> list[str]:
     return prior
 
 
+def _closed_all_day(src: Sources, k: date) -> bool:
+    """A weekday the calendar schedules the exchange shut all day (Q-40: a holiday without a close)."""
+    row = src.calendar.get(k)
+    return row is not None and row["kind"] == "holiday" and not row.get("close_ct")
+
+
+def prior_session(src: Sources, d: date) -> date | None:
+    """**The previous session by the calendar** (the lead's C3-1 ruling on Wave 3.5, withdrawing N-c2-2): the last
+    weekday before `d` that the calendar does not schedule shut all day, whether or not the store holds it; None when
+    it falls before the store's first day."""
+    k = d - timedelta(days=1)
+    while k.weekday() >= 5 or _closed_all_day(src, k):
+        k -= timedelta(days=1)
+    return k if src.days and k >= src.days[0] else None
+
+
 def _prior_known(src: Sources, d: date) -> list[str]:
-    """The previous-day reasons known before the day's alert (the lead's N-c2-2 ruling on Wave 3.5): the store's first
-    day, a roll, the evening after a scheduled close, and the evening after a **scheduled closure** -- a weekday between
-    the two stored days that Q-40's calendar lists as a holiday without a close (the exchange shut all day). A gap in
-    the store's day list that the calendar does not schedule is a data defect: research-only, never an alert void."""
-    prior: list[str] = []
-    prev = src.previous(d)
+    """The previous-day reasons known before the day's alert, all from the calendar (C3-1): no previous session in
+    the store's span (`first_day`), a roll, a scheduled close on the calendar's previous session (`after_abbreviated`,
+    whether or not the store holds that session), a scheduled closure between it and `d` (`after_closure`). Whether
+    the store's previous day is that session is the alert's check (`playbook`: a data mismatch, never a void)."""
+    prev = prior_session(src, d)
     if prev is None:
         return ["first_day"]
+    prior: list[str] = []
     if d in src.rolls:
         prior.append("roll")
     if _scheduled_close(src.calendar.get(prev)) is not None:
         prior.append("after_abbreviated")
     k = prev + timedelta(days=1)
     while k < d:
-        row = src.calendar.get(k)
-        if k.weekday() < 5 and row is not None and row["kind"] == "holiday" and not row.get("close_ct"):
+        if k.weekday() < 5 and _closed_all_day(src, k):
             prior.append("after_closure")
             break
         k += timedelta(days=1)
@@ -313,8 +328,7 @@ def _prior_known(src: Sources, d: date) -> list[str]:
 #: what `alert_context` leaves out: data-defect filters known only after the alert (research-only, the lead's B-5
 #: ruling on Wave 3.5): the day's own last bar, an early end of its bars, a data-defect candidate, H2's overnight
 #: counts, and the previous day's data voids
-RESEARCH_ONLY = ("no_bar_at_walk_end", "early_end", "data_defect", "h2_void", "h2_missing", "prior_day_void",
-                 "unscheduled_gap")
+RESEARCH_ONLY = ("no_bar_at_walk_end", "early_end", "data_defect", "h2_void", "h2_missing", "prior_day_void")
 
 
 def alert_context(src: Sources, market: str, d: date, session: int, *, windows: Sequence[Any] = (),

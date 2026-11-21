@@ -11,18 +11,23 @@ BUILD_W35_v2 and BUILD_W35_c2 notes, the lead's rulings).
 
 **Hand entry only** (CLAUDE.md; DIRECTIVE Part 1: no automated or API order entry, it gets prop accounts banned). The
 playbook and the alert are plain text for a person to read and act on by hand. Nothing here places, sends, schedules or
-formats an order for a machine: no network, no broker, no process, no file written. `Rendered.pieces` (where each
+formats an order for a machine: no network, no broker, no file written, no process but read-only `git` at load
+(`extended.pin_order`: `log`, `cat-file`, `merge-base`). `Rendered.pieces` (where each
 value came from) is for the tests' tracing only and is never to be exported as an order record. An RL3 kind's tickets
-are rested by hand as plain orders in one account, each with the platform's own bracket, the other cancelled by hand
-when one fills (C2-6: no Topstep page says TopstepX holds two entry orders as one-cancels-other).
+are rested by hand as plain orders in one account, each with the platform's own Auto-OCO bracket set to the
+component's stop and target, the other cancelled by hand when one fills; a double fill closes every position and
+cancels every working order at once (C2-6, C3-6: no Topstep page says TopstepX holds two entry orders as
+one-cancels-other; TopstepX articles 14434175 and 8765442, read 2026-11-21).
 
 **Two pinned files** (C2-5). The **declaration** (`prereg/<design>_playbook.json`: the design, its components, side
 rules, margin and account policy, no registration and no carrying row) is pinned as `` `<path>` sha256 `<hex>` `` in a
 row **before** the no-harm row, so the side rules are fixed before the floor is read; it needs no registration then.
 The **carrying record** (`prereg/<design>_carried.json`: the design id, the declaration's path and sha256, the
-registration id and the carrying row) is pinned in the carrying row, after the no-harm row, which also holds the
-structured token `carried: <design id> @ <declaration sha256> -- <registration>` (C2-7) and no negated or conditional
-wording. Both are JSON with duplicate keys, NaN and Infinity refused; every cited row id is looked up; a row pinning one
+registration id, the carrying row, and the joint held-out test's accepted result file with its script and family) is
+pinned in the carrying row, after the no-harm row, which also pins that held-out file and holds the structured token
+`carried: <design id> @ <declaration sha256> -- <registration> -- <held-out result sha256>` (C2-7, C3-7) and no
+negated, conditional, withdrawn or reverted wording. Exactly one row of the log states the no-harm margin, and it comes
+before the declaration's first pin (C3-5). Both are JSON with duplicate keys, NaN and Infinity refused; every cited row id is looked up; a row pinning one
 path twice refuses.
 
 **The two result files** (B-1, B-3; R-6, m-1), each accepted only when all hold: its CSV and its manifest are both
@@ -36,28 +41,37 @@ any other column refuses); every printed value is a bare finite number.
   write): `parameters.margin` is the declaration's `side.margin`, which must equal the margin its `margin_row` pins
   (`` no-harm margin `<value>` ``, C2-1); for each component the rows `no_harm|search|<component>|side_rule`,
   `|margin`, `|trigger_composite`, `|coin_composite`. The playbook **recomputes** the pass and refuses a component that
-  fails or is absent. Its run's commit must **descend from the commit that first pinned the declaration** (C2-2,
-  `extended.pin_order`): the floor read after the pin, in git, not only in the log's order.
-* **The expected journey** (`expected.file`, convention `zero_edge`).
+  fails or is absent. Its run's commit must **descend from the commit that first pinned the declaration** and lie
+  on HEAD's line (C2-2, C3-4, `extended.pin_order`): the floor read after the pin, in git, on the merged history.
+  **The no-harm runner's brief** (C3-4): it refuses to run from a commit whose `DECISIONS.md` does not already pin the
+  declaration.
+* **The expected journey** (`expected.file`, convention `zero_edge`), under the same pin-order check (N-c3-3).
+* **The joint held-out test's accepted result** (the record's `heldout_file`, convention `heldout_joint_test`): its
+  `heldout|joint|<design id>|verdict` cell reads `accepted`.
 
 **The windows** (C2-3) are what the evaluated designs' are: offsets from each session's local open, read per date by
 `search_space.Space.windows_on` (the starts of `search_space.session_spans`, anchored to their local market times,
 E-231 (3)), checked by `Space.check` (bounds over the search years, collisions, RL3's live slot, the closed window), and
-built per date as `components.Design(day=...)`; a P-14 component's alerts are its window less L on each date.
+built per date as `components.Design(day=...)`; a P-14 component's alerts are its window less L on each date,
+clipped to P-14's span (17:00 to 14:00 CT, C3-2). `ny_pm` refuses until T2b is declared (N-c3-2): the space has one
+NY session, and `ny_am` is counted from its 08:30 CT start.
 
 **The side** (R-1, B-2). The playbook offers a side only as `trigger_sides.trigger_side` computes it, from an offer the
 module **recomputes itself** from the day's bars cut at the alert, through the trigger's own `offers()`. A scheduled
 trade is the evaluation's, coin-sided by construction: `render_trade` gives it the not-offered notice.
 
 **The day** (B-5, N-c2-2). "Offered today" reads only what is known before the alert (`day_calendar.alert_context`):
-FOMC and BLS days, a scheduled close, the previous day's calendar state (a roll, a scheduled closure, a scheduled close
-the day before, the store's first day), the declaration's dated news record, and the bars closed by the alert. The
-data-defect filters are research-only. The live path (a declared live calendar, today's bars) is not built: dates after
+FOMC and BLS days, a scheduled close, the previous **session by the calendar** (`day_calendar.prior_session`, C3-1: a
+roll, a scheduled closure, a scheduled close on it, whether or not the store holds it), the declaration's dated news
+record, and the bars closed by the alert. A component reading the previous day refuses as a data mismatch when the
+bars' previous day is not that session: no role, side or void is computed from another day. The data-defect filters
+are research-only. The live path (a declared live calendar, today's bars) is not built: dates after
 the search years refuse.
 
 **The account** (m-5, N-c2-1) is the router's pick (`router.Router.peek`, the declaration's rotation) among the
 accounts alive that day. **Dates** (B-6) are strict ISO. **Bar times** (m-6) are stated by the bar's stamp; every level
-is defined by the bars it is made from (C2-9). A resting order's alert states the walker's void-at-live rule (C2-4).
+is defined by the bars it is made from (C2-9). A resting order's alert states the walker's void-at-live rule each
+time the order is placed, and under an RL3 pair per ticket (C2-4, C3-3).
 
 **Every number comes from an input, never from this file.** A rendered text is a sequence of pieces (`Piece`): a
 template literal, which holds no digit, or a value, which names its transform and the input paths it is computed from
@@ -100,7 +114,8 @@ EXPECTED_KEYS = ("label", "section", "block", "measure", "stat")
 NEWS_KEYS = ("source", "release", "before", "after", "dates")
 HASH = hashlib.sha256().name                          # the pins' and manifests' hash, by its library name
 DECL_SHA_KEY = "declaration_" + HASH
-RECORD_KEYS = ("design_id", "declaration", DECL_SHA_KEY, "registration", "row")
+RECORD_KEYS = ("design_id", "declaration", DECL_SHA_KEY, "registration", "row", "heldout_file", "heldout_script",
+               "heldout_family")
 P14_PARAMS = ("latency", "entry", "k")
 ROW_LINE = re.compile(r"^\| (E-\d\d\d+) \|.*$", re.M)
 PIN = re.compile(r"`([^`]+)` " + HASH + r" `([a-f\d]+)`")
@@ -108,14 +123,15 @@ PIN = re.compile(r"`([^`]+)` " + HASH + r" `([a-f\d]+)`")
 #: matched in full (no trailing newline)
 IDENT = re.compile(r"[A-Za-z][A-Za-z_-]*(?:_v\d)?")
 ISO = re.compile(r"\d\d\d\d-\d\d-\d\d")
-BARE = re.compile(r"-?\d+(?:\.\d+)?")
+BARE = re.compile(r"-?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")
 NUMBER_IN = re.compile(r"\d[\d,]*(?:\.\d+)?")
 DIGIT = re.compile(r"\d")
 SHA_LEN = len(hashlib.sha256().hexdigest())
 #: the carrying row's structured token (C2-7) and the wording it may not hold
-CARRIED_TOKEN = re.compile(r"carried: (\S+) @ ([a-f\d]+) -- (\S+?)(?=[\s;,.|)]|$)")
+CARRIED_TOKEN = re.compile(r"carried: (\S+) @ ([a-f\d]+) -- (\S+) -- ([a-f\d]+)(?=[\s;,.|)]|$)")
 NOT_CARRIED = re.compile(r"\bnot\s+(?:yet\s+)?carried\b|\bto be carried\b|\bcarried\s+only\b|\bcarried\s+if\b|\bif\b|"
-                         r"\bunless\b|\bpending\b|\bdraft\b|\bprovisional\b|\bconditional", re.I)
+                         r"\bunless\b|\bpending\b|\bdraft\b|\bprovisional\b|\bconditional|\bwithdrawn\b|"
+                         r"\brevert(?:ed|s)?\b|\bwould be\b|\bnot run\b", re.I)
 #: the margin's row states it (C2-1)
 MARGIN_TOKEN = re.compile(r"no-harm margin `([^`]+)`")
 MANIFEST_SUFFIX = ".manifest.json"
@@ -123,6 +139,13 @@ MANIFEST_SUFFIX = ".manifest.json"
 #: count column holds figures; no other column is accepted
 LABEL, FIGURE, COUNT = "label", "figure", "count"
 RESULT_COLUMNS = {"section": LABEL, "block": LABEL, "measure": LABEL, "stat": LABEL, "value": FIGURE, "n": COUNT}
+#: the pinned measures whose unit is dollars or a count (`docs/MEASURES.md` (6) S1, (7) S3d, (26) S5a; C3-8): only
+#: theirs may hold a `value` inside the price band, and only their ids may carry such a figure in a label; any other
+#: measure's band number refuses. Identifiers, not figures (the module test allow-lists this assignment by name).
+FIGURE_MEASURES = ("S1", "S3d", "S5a")
+#: the platform pages the RL3 hand instruction follows (C3-6; the lead's verification, read 2026-11-21): citations, not
+#: figures (the module test allow-lists this assignment by name)
+PLATFORM_SOURCES = {"auto_oco": "14434175", "title": "TopstepX", "order_types": "8765442", "read": "2026-11-21"}
 
 FIRMS = ("topstep",)
 #: each firm's plans, from its verified ledger: the plan's name parsed from the rule that states it
@@ -146,7 +169,9 @@ SOURCE_LEVER = SS.SLOT_LEVERS[0]                       # the search space's sour
 SLOT_PARAMS = ("first", "last", "cutoff", "marks")
 ANCHOR_OF = {"asia": "asia", "london": "london", "ny_am": "ny", "ny_pm": "ny"}
 #: the scheduler's session names -> the search space's (`search_space.session_spans`: one NY session until T2b)
-SPACE_SESSION = {"evening": "evening", "asia": "asia", "london": "london", "ny_am": "ny", "ny_pm": "ny"}
+SPACE_SESSION = {"evening": "evening", "asia": "asia", "london": "london", "ny_am": "ny"}
+#: sessions refused until their boundary is declared (N-c3-2: T2b, the NY AM / NY PM boundary, is to declare)
+UNDECLARED_SESSIONS = ("ny_pm",)
 BLOCKS = {"search": "search years: the years this design was chosen on, so likely better than what follows",
           "held_out": "held-out years, reported beside, never judged"}
 CONVENTIONS = {
@@ -155,7 +180,8 @@ CONVENTIONS = {
                  "journey will differ.",
     "no_harm_real_path": "the trigger's own side against the coin's on the real path, same fills, no redraw",
 }
-EXPECTED_CONVENTION, NO_HARM_CONVENTION = "zero_edge", "no_harm_real_path"
+EXPECTED_CONVENTION, NO_HARM_CONVENTION, HELDOUT_CONVENTION = "zero_edge", "no_harm_real_path", "heldout_joint_test"
+HELDOUT_ACCEPTED = "accepted"
 NO_HARM_STATS = ("side_rule", "margin", "trigger_composite", "coin_composite")
 
 TRIGGER_WORDS = {
@@ -186,6 +212,8 @@ SIDE_RULE_WORDS = {
 SIGN_WORDS = {"+": "a close above the previous completed reference bar's high",
               "-": "a close below the previous completed reference bar's low"}
 _PD, _ON, _PDC, _RN = T.RL3_KINDS                       # the library's level kinds, never retyped here
+#: RL3's kinds that read the previous session's bars (`triggers.rl3_levels`)
+PRIOR_KINDS = (_PD, _PDC)
 _L = "library"
 #: each level, defined by the bars it is made from (C2-9; `triggers.rl3_levels`); parts as `_Doc.line` takes them
 LEVEL_PARTS: dict[tuple[str, str], tuple[Any, ...]] = {
@@ -193,10 +221,10 @@ LEVEL_PARTS: dict[tuple[str, str], tuple[Any, ...]] = {
                   ("ct", (_L, "prior_last")), " CT"),
     (_PD, "lo"): ("the low of the previous day's bars stamped ", ("ct", (_L, "prior_first")), " CT to ",
                   ("ct", (_L, "prior_last")), " CT"),
-    (_ON, "hi"): ("the high of today's bars stamped ", ("ct", (_L, "reopen")), " CT to ", ("ct", (_L, "pre_open")),
-                  " CT (the overnight)"),
-    (_ON, "lo"): ("the low of today's bars stamped ", ("ct", (_L, "reopen")), " CT to ", ("ct", (_L, "pre_open")),
-                  " CT (the overnight)"),
+    (_ON, "hi"): ("the high of the bars from yesterday's ", ("ct", (_L, "reopen")), " CT reopen to the bar stamped ",
+                  ("ct", (_L, "pre_open")), " CT (the overnight)"),
+    (_ON, "lo"): ("the low of the bars from yesterday's ", ("ct", (_L, "reopen")), " CT reopen to the bar stamped ",
+                  ("ct", (_L, "pre_open")), " CT (the overnight)"),
     (_PDC, "lvl"): ("the close of the previous day's bar stamped ", ("ct", (_L, "prior_last")), " CT"),
     (_RN, "up"): ("the next round hundred above the close of the bar stamped ", ("ct", (_L, "pre_open")), " CT"),
     (_RN, "dn"): ("the next round hundred below the close of the bar stamped ", ("ct", (_L, "pre_open")), " CT"),
@@ -271,12 +299,15 @@ NO_PRICE = ("No price is printed here: every order is stated against what you re
 #: RL3's tickets by hand (C2-6): Topstep documents OCO only as exit legs around a position and Auto-OCO brackets per
 #: entry, never two entry orders as one-cancels-other
 PAIR_WORDS = ("TWO ENTRY ORDERS, ONE TRADE: before you place them, turn the platform's Auto-OCO brackets on while you "
-              "are flat (and OCO on in the DOM), so each entry carries its own bracket. Rest both tickets below as "
-              "plain stop or limit orders, by hand, in this one account. The moment one fills, cancel the other by "
-              "hand. A fast move can fill both before you cancel: if it does, flatten the second fill at once. Never "
-              "split them across accounts.")
+              "are flat (and OCO on in the DOM), and set the Auto-OCO stop and target to the ticks given below for "
+              "each ticket, so each entry carries its own bracket. Rest the tickets below as plain stop or limit "
+              "orders, by hand, in this one account. The moment one fills, cancel the other by hand. A fast move can "
+              "fill both before you cancel: if it does, close every position and cancel every working order in this "
+              "account, brackets included, at once. Never split them across accounts.")
 VOID_AT_LIVE = ("compare the market with your order: if a BUY limit is at or above the market, a SELL limit at or "
-                "below it, a BUY stop at or below it or a SELL stop at or above it, do not place it: no trade today.")
+                "below it, a BUY stop at or below it or a SELL stop at or above it, ")
+VOID_END = {False: "do not place it: no trade today.",
+            True: "do not place this ticket: the other ticket stands or falls by its own check."}
 
 
 class PlaybookRefused(ValueError):
@@ -559,6 +590,11 @@ def _margin_of(row: str, what: str) -> float:
     return _bare(found[0], f"{what}'s no-harm margin")
 
 
+def _margin_rows(rows: Mapping[str, str]) -> list[str]:
+    """The rows of the whole log that state a no-harm margin (C3-5: exactly one may)."""
+    return [r for r, text in rows.items() if MARGIN_TOKEN.search(text)]
+
+
 def _run_after_pin(root: Path, pin_text: str, commit: str) -> bool:
     """Whether `commit` descends from the commit that first pinned `pin_text` in the log (`extended.pin_order`)."""
     from extended import pin_order as PO
@@ -610,6 +646,9 @@ def window_space(decl: Mapping[str, Any]) -> SS.Space:
     b = _bounds()
     slots, dims, cons = [], [], []
     for c in decl["components"]:
+        if c["session"] in UNDECLARED_SESSIONS:
+            raise PlaybookRefused(f"component {c['name']}: session {c['session']} waits for its boundary (the NY AM / "
+                                  "NY PM split) to be declared; until then the NY session is one, ny_am")
         sess = SPACE_SESSION.get(c["session"])
         if sess is None or sess not in b:
             raise PlaybookRefused(f"component {c['name']}: unknown session {c['session']!r}")
@@ -633,8 +672,10 @@ def _trigger_on(c: Mapping[str, Any], first: int, last: int) -> Any:
     params = dict(c["trigger"]["params"])
     if c["trigger"]["source"] == P14:
         lat = int(c["latency"])
-        return T.P14Breakout(latency=lat, entry=params.get("entry", T.MARKET), first=int(first) - lat,
-                             last=int(last) - lat, k=int(params.get("k", T.P14_K)))
+        lo = min(max(int(first) - lat, 0), T.P14_LAST)            # C3-2: clipped to P-14's span, as a full-span
+        hi = max(min(int(last) - lat, T.P14_LAST), lo)            # P-14 and the window's filter give
+        return T.P14Breakout(latency=lat, entry=params.get("entry", T.MARKET), first=lo, last=hi,
+                             k=int(params.get("k", T.P14_K)))
     return TRIGGERS[c["trigger"]["source"]](**{k: (tuple(v) if isinstance(v, list) else v) for k, v in params.items()})
 
 
@@ -933,13 +974,19 @@ def _column_problem(fields: Sequence[str] | None, rows: Sequence[Mapping[str, st
         return f"its columns {off} are not on the pinned list"
     lo, hi = PL.BAND
     for r in rows:
+        listed = r.get("measure") in FIGURE_MEASURES
         for f in fields:
-            if RESULT_COLUMNS[f] != LABEL:
-                continue
-            for tok in NUMBER_IN.findall(str(r.get(f, ""))):
-                x = float(tok.replace(",", ""))
-                if lo <= x <= hi:
-                    return f"its label column {f} holds a number of the price band"
+            cell = str(r.get(f, ""))
+            if RESULT_COLUMNS[f] == LABEL:
+                if f == "measure" and listed:
+                    continue
+                for tok in NUMBER_IN.findall(cell):
+                    x = float(tok.replace(",", ""))
+                    if lo <= x <= hi:
+                        return f"its label column {f} holds a number of the price band"
+            elif RESULT_COLUMNS[f] == FIGURE and not listed and BARE.fullmatch(cell):
+                if lo <= float(cell) <= hi:
+                    return "its value column holds a number of the price band for a measure not on the pinned list"
     return None
 
 
@@ -1044,7 +1091,7 @@ _MINT = object()
 class Carried:
     """A carried design as `load_carried` accepted it: the carrying record (its path, sha256, registration and row),
     the declaration's bytes (re-read on every use), its path and pinned sha256, the cited rows, the windows' space,
-    and the two result files' picked values."""
+    and the three result files' picked values (the expected journey, the no-harm floor, the held-out acceptance)."""
 
     record_file: str
     record_sha: str
@@ -1057,11 +1104,12 @@ class Carried:
     space: SS.Space
     expected: ResultFile
     no_harm: ResultFile
+    heldout: ResultFile
     _mint: Any = field(default=None, repr=False, compare=False)
 
     def _bound(self) -> tuple:
         return (self.record_file, self.record_sha, self.registration, self.row, self.decl_file, self.decl_sha,
-                self.expected, self.no_harm)
+                self.expected, self.no_harm, self.heldout)
 
     def __post_init__(self) -> None:
         if not (isinstance(self._mint, tuple) and self._mint and self._mint[0] is _MINT
@@ -1108,10 +1156,11 @@ def load_carried(record_file: str, *, root: Path | str = ROOT) -> Carried:
     sha = hashlib.sha256(data).hexdigest()
     if record[DECL_SHA_KEY] != sha:
         raise PlaybookRefused(f"the declaration {rel} is not the one the carrying record binds (its hash {sha})")
+    ho_rel = record["heldout_file"]
     tokens = CARRIED_TOKEN.findall(carrying)
-    if tokens != [(did, sha, reg)]:
+    if not isinstance(ho_rel, str) or tokens != [(did, sha, reg, pins.get(ho_rel, ""))]:
         raise PlaybookRefused(f"the carrying row {crow} does not hold the one token `carried: {did} @ <the declaration's "
-                              f"hash> -- {reg}`")
+                              f"hash> -- {reg} -- <the held-out result's hash pinned in it>`")
     if NOT_CARRIED.search(carrying):
         raise PlaybookRefused(f"the carrying row {crow} holds negated or conditional wording: the design is not carried")
     decl = strict_json(data)
@@ -1126,6 +1175,10 @@ def load_carried(record_file: str, *, root: Path | str = ROOT) -> Carried:
     if first is None or not order.index(first) < order.index(nh_id) < order.index(crow):
         raise PlaybookRefused("the declaration is pinned in a row before its no-harm row, and that before the carrying "
                               "row (the side rules fixed before the floor is read)")
+    margins = _margin_rows(rows)
+    if margins != [decl["side"]["margin_row"]] or not order.index(margins[0]) < order.index(first):
+        raise PlaybookRefused("exactly one row of the log states the no-harm margin, the declaration's margin row, and "
+                              "it comes before the declaration's pin")
     m_row = _cited(rows, decl["side"]["margin_row"], "the no-harm margin's row")
     if _margin_of(m_row, f"the margin row {decl['side']['margin_row']}") != float(decl["side"]["margin"]):
         raise PlaybookRefused("the declaration's no-harm margin is not the one its margin row pins")
@@ -1134,17 +1187,28 @@ def load_carried(record_file: str, *, root: Path | str = ROOT) -> Carried:
     exp_rel, nh_rel = decl["expected"]["file"], decl["side"]["no_harm_file"]
     expected = accept_result(root, exp_rel, carried_pins=pins, convention=EXPECTED_CONVENTION,
                              script=decl["expected"]["script"], **bind)
+    pin_text = "`" + rel + "` " + HASH + " `" + sha + "`"
+    if not _run_after_pin(root, pin_text, expected.commit):
+        raise PlaybookRefused(f"{exp_rel}'s run commit does not descend from the commit that pinned the declaration, on "
+                              "HEAD's line: the journey was not read after the pin")
     expected = ResultFile(expected.file, expected.commit, expected.convention,
                           _picked(expected, [row_key(e) for e in decl["expected"]["rows"]]))
     no_harm = accept_result(root, nh_rel, carried_pins=_pins(nh_row), convention=NO_HARM_CONVENTION,
                             script=decl["side"]["no_harm_script"], extra={"margin": decl["side"]["margin"]}, **bind)
-    if not _run_after_pin(root, "`" + rel + "` " + HASH + " `" + sha + "`", no_harm.commit):
-        raise PlaybookRefused(f"{nh_rel}'s run commit does not descend from the commit that pinned the declaration: "
-                              "the floor was not read after the pin")
+    if not _run_after_pin(root, pin_text, no_harm.commit):
+        raise PlaybookRefused(f"{nh_rel}'s run commit does not descend from the commit that pinned the declaration, on "
+                              "HEAD's line: the floor was not read after the pin")
     no_harm = ResultFile(no_harm.file, no_harm.commit, no_harm.convention, _no_harm(no_harm, decl))
+    heldout = accept_result(root, ho_rel, carried_pins=pins, convention=HELDOUT_CONVENTION,
+                            script=record["heldout_script"], **{**bind, "family": record["heldout_family"]})
+    hk = "|".join(("heldout", "joint", did, "verdict"))
+    if heldout.values.get(hk) != HELDOUT_ACCEPTED:
+        raise PlaybookRefused(f"{ho_rel} does not record the joint held-out test as accepted for {did}: not carried")
+    heldout = ResultFile(heldout.file, heldout.commit, heldout.convention, {hk: heldout.values[hk]})
     cited = {r: rows[r] for r in (crow, nh_id, decl["side"]["margin_row"], decl["bankroll"]["row"])}
-    bound = (rrel, rsha, reg, crow, rel, sha, expected, no_harm)
-    return Carried(rrel, rsha, reg, crow, rel, sha, data, cited, space, expected, no_harm, _mint=(_MINT, bound))
+    bound = (rrel, rsha, reg, crow, rel, sha, expected, no_harm, heldout)
+    return Carried(rrel, rsha, reg, crow, rel, sha, data, cited, space, expected, no_harm, heldout,
+                   _mint=(_MINT, bound))
 
 
 def _carried(carried: Any) -> dict:
@@ -1160,7 +1224,8 @@ def _library(decl: Mapping[str, Any]) -> dict[str, Any]:
     return {"plan": plan_name(firm, decl["plan"]),
             "cap": {a["id"]: size_cap(firm, a["role"], decl["instrument"]) for a in decl["accounts"]},
             "tickets_alert": T.RTH_OPEN, "tickets_live": T.LIVE_0900, "hash": HASH,
-            "prior_first": T.PRIOR_RTH[0], "prior_last": T.PRIOR_RTH[1], "reopen": 0, "pre_open": T.RTH_OPEN - 1}
+            "prior_first": T.PRIOR_RTH[0], "prior_last": T.PRIOR_RTH[1], "reopen": 0, "pre_open": T.RTH_OPEN - 1,
+            "breakout_last": T.P14_LAST, "sources": dict(PLATFORM_SOURCES)}
 
 
 # ------------------------------------------------------------------------------------------------ the playbook
@@ -1174,7 +1239,8 @@ def render_playbook(carried: Carried) -> Rendered:
     windows = [{c.name: (int(c.first), int(c.last)) for c in design_on(decl, carried.space, d).components}
                for d in days]
     src = {"design": decl, "library": _library(decl),
-           "file": {"decl": carried.decl_file, "sha": carried.decl_sha, "record": carried.record_file},
+           "file": {"decl": carried.decl_file, "sha": carried.decl_sha, "record": carried.record_file,
+                    "heldout": carried.heldout.file, "heldout_commit": carried.heldout.commit},
            "carry": {"row": carried.row, "registration": carried.registration},
            "calc": {"windows": windows},
            "expected": {"file": exp.file, "commit": exp.commit, **exp.values},
@@ -1184,7 +1250,8 @@ def render_playbook(carried: Carried) -> Rendered:
     d.line("PLAYBOOK -- design ", _v(D, "design_id"), " (carried under ", _v("carry", "row"), ", registration ",
            _v("carry", "registration"), ")")
     d.line("The declaration: ", _v("file", "decl"), ", ", _v(L, "hash"), " ", _v("file", "sha"), "; its carrying "
-           "record: ", _v("file", "record"), " (pinned in ", _v("carry", "row"), ").")
+           "record: ", _v("file", "record"), " (pinned in ", _v("carry", "row"), "); the joint held-out test's "
+           "accepted result: ", _v("file", "heldout"), " (commit ", _v("file", "heldout_commit"), ").")
     d.line("")
     d.line(HAND_ENTRY)
     d.line(OPPOSITE)
@@ -1230,10 +1297,11 @@ def render_playbook(carried: Carried) -> Rendered:
         if cls is T.RL3Tickets:
             d.line("  Entry: ", ENTRY_WORDS[entry], ". The tickets are fixed at ", _ct(L, "tickets_alert"),
                    " CT, when the alert is sent, and go live on the bar stamped ", _ct(L, "tickets_live"), " CT.")
+            d.line(*_SOURCE_LINE)
         else:
             d.line("  Entry: ", ENTRY_WORDS[entry], ". The alert reaches you ", _v(*P, "latency"),
                    " minutes before the order goes live; the alerts run from the window's start less that to its end "
-                   "less that, on each date.")
+                   "less that, on each date, never after ", _ct(L, "breakout_last"), " CT (the breakout's last event).")
         d.line("  Side (the trigger's own, cleared by the no-harm floor under ", _v(D, "side", "no_harm_row"), "):")
         if cls is T.RL3Tickets:
             kind = c["trigger"]["params"]["kind"]
@@ -1325,6 +1393,12 @@ def render_playbook(carried: Carried) -> Rendered:
 # ------------------------------------------------------------------------------------------------ the alert
 
 
+_SOURCE_LINE = ("  (The platform steps follow Topstep's help centre: article ", ("text", (_L, "sources", "auto_oco")),
+                " (\"", ("text", (_L, "sources", "title")), "\") for the Auto-OCO brackets and the DOM's OCO switch, article ",
+                ("text", (_L, "sources", "order_types")), " for the order types; read ",
+                ("text", (_L, "sources", "read")), ".)")
+
+
 def _comp(decl: Mapping[str, Any], name: Any) -> tuple[int, Mapping[str, Any]]:
     for i, c in enumerate(decl["components"]):
         if c["name"] == name:
@@ -1395,6 +1469,11 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
     except PlaybookRefused as e:
         raise _mismatch(str(e)) from e
     trig = comp.trigger
+    if isinstance(trig, T.RL3Tickets) and trig.kind in PRIOR_KINDS and not ctx.prior_void:
+        prev = DC.prior_session(sources, day)
+        if i == 0 or prev is None or parse_day(hist.days[i - 1], "the previous day") != prev:
+            raise _mismatch(f"the bars do not hold the previous session ({prev}) by the calendar: no level, role or "
+                            "side is computed from another day")
     try:
         offers = trig.offers(cut_history(hist, i, at), i, ctx)
     except T.TriggerRefused as e:
@@ -1460,6 +1539,7 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
                _v(K, "total"), " for the tickets together (the firm's verified limit for this account: ", _v(K, "cap"),
                ").")
         d.line(PAIR_WORDS)
+        d.line(*_SOURCE_LINE)
     else:
         d.line("Instrument ", _v(D, "instrument"), ", ", _v(*Cp, "contracts"), " contracts (the firm's verified limit "
                "for this account: ", _v(K, "cap"), ").")
@@ -1485,7 +1565,6 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
             else:
                 d.line("  Order ", ("order", T_ + ("kind",)), " ", _v(*T_, "beyond"), " tick ", BEYOND_WORDS[t["side"]],
                        " the level, read on your chart.")
-            d.line("  When it goes live (the bar stamped ", _ct(K, "live"), " CT), ", VOID_AT_LIVE)
         for k, s in enumerate(t["stretches"]):
             S = T_ + ("stretches", k)
             if t["kind"] == W.MARKET:
@@ -1503,6 +1582,9 @@ def _alert(carried: Carried, component: Any, hist: Any, i: Any, at: Any, sources
                 parts += ["; a position from it is flattened by the close of the bar stamped ", _st(*S, "flatten"),
                           " CT (it ends at ", _ct(*S, "flatten"), " CT) at the latest."]
             d.line(*parts)
+            if t["kind"] != W.MARKET:
+                d.line("  Each time you place it (", ("again, " if k else ""), "the bar stamped ", _ct(*S, "live"),
+                       " CT), ", VOID_AT_LIVE, VOID_END[pair])
     for tag, why in dropped:
         kind_name = tuple(tag.split("_", maxsplit=1))
         d.line("Not offered today: the ticket at ", *LEVEL_PARTS[kind_name], " -- ", REASON_WORDS.get(why, why), ".")

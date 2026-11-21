@@ -3,8 +3,10 @@ not-offered notice (`extended/playbook.py`), on synthetic declarations, carrying
 files, calendars, bars and routers only (`tests/playbook_cases.py`) -- never a bar, never a result of this repository.
 
 What is held (the red team's BUILD_W35, BUILD_W35_v2 and BUILD_W35_c2 findings and the lead's rulings):
-* **C2-1**: the declaration's margin is the one its margin row pins; **C2-2**: the floor's run descends, in git, from
-  the commit that pinned the declaration; **C2-5**: the registration and the carrying row live in the carrying record,
+* **C2-1, C3-5**: the declaration's margin is the one the log's single margin row pins, before the declaration's pin;
+  **C2-2, C3-4, N-c3-3**: the floor's and the journey's runs descend, in git, from the commit that pinned the
+  declaration, on HEAD's line; **C3-1**: the previous session is the calendar's, and a store that lacks it refuses;
+  **C3-7**: the carrying token pins the joint held-out test's accepted result; **C2-5**: the registration and the carrying row live in the carrying record,
   not the hashed declaration; **C2-7**: "carried" is the row's structured token, no negation or condition;
 * **C2-3**: the windows are offsets from each session's local open, per date, through `search_space`'s own
   `windows_on` -- goldens for London and Asia across the daylight-saving changes;
@@ -167,12 +169,14 @@ def _library():
     # 10 micros a mini; the plan's name as `combine_mll`'s note writes it; RL3's bars (triggers.rl3_levels)
     return {"plan": "50K Trading Combine", "cap": {"ts_a": 50, "ts_b": 20, "ts_c": 50}, "tickets_alert": 930,
             "tickets_live": 960, "hash": "sha256", "prior_first": 930, "prior_last": 1319, "reopen": 0,
-            "pre_open": 929}
+            "pre_open": 929, "breakout_last": 1260,
+            "sources": {"auto_oco": "14434175", "title": "TopstepX", "order_types": "8765442", "read": "2026-11-21"}}
 
 
 def _pb_src(c):
     return {"design": PC.declaration(), "library": _library(),
-            "file": {"decl": PC.DECL_FILE, "sha": c.decl_sha, "record": PC.RECORD_FILE},
+            "file": {"decl": PC.DECL_FILE, "sha": c.decl_sha, "record": PC.RECORD_FILE, "heldout": PC.HELDOUT_FILE,
+                     "heldout_commit": PC.COMMIT},
             "carry": {"row": "E-9004", "registration": PC.REGISTRATION},
             "expected": {"file": PC.EXPECTED_FILE, "commit": PC.COMMIT,
                          **{"|".join((r["section"], r["block"], r["measure"], r["stat"])): r["value"]
@@ -256,6 +260,11 @@ def test_module_has_no_typed_number_and_no_automation_hook():
     src = MODULE.read_text(encoding="utf-8")
     tree = ast.parse(src)
     docs = set()
+    for node in ast.walk(tree):                     # citations and measure ids, not figures (C3-6, C3-8)
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id in ("FIGURE_MEASURES",
+                                                                                    "PLATFORM_SOURCES")
+                                                for t in node.targets):
+            docs.update(id(c) for c in ast.walk(node.value) if isinstance(c, ast.Constant))
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.FunctionDef, ast.ClassDef)) and node.body and isinstance(
                 node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
@@ -295,6 +304,8 @@ def test_playbook_states_the_rules(carried):
     assert "research filters, not trading rules" in text and "bar ending" not in text
     assert "would fill at once when it goes live" in text                                            # C2-4
     assert "OCO order type" not in text and "cancelled by hand the moment one fills" in text          # C2-6
+    assert "article 14434175 (\"TopstepX\")" in text and "article 8765442 for the order types" in text  # C3-6
+    assert "results/heldout_x.csv" in text and "never after 14:00 CT" in text
 
 
 def test_windows_are_the_search_spaces_offsets_per_date(carried):
@@ -319,6 +330,24 @@ def test_windows_are_the_search_spaces_offsets_per_date(carried):
     assert "on 2021-03-12 (the open at 02:00 CT): 02:00 CT to 03:00 CT" in text
     assert "on 2021-03-16 (the open at 03:00 CT): 03:00 CT to 04:00 CT" in text
     assert "on 2021-03-12 (the open at 18:00 CT): 18:00 CT to 18:55 CT" in text
+
+
+def test_design_on_equals_the_evaluations_space(carried):
+    """N-c3-1: the evaluation's own space (`search_space.from_lever_space`) puts the declaration's slots on the same
+    windows on a date of each set of session starts in the search years, and `design_on` builds that day's design."""
+    sp = SS.from_lever_space(slots={"asia": 1, "london": 1, "ny": 2})
+    decl = carried.decl
+    slot = {"asia_brk": "asia.0", "ldn_brk": "london.0", "am_tix": "ny.0", "pm_brk": "ny.1"}
+    design = {}
+    for c in decl["components"]:
+        s = slot[c["name"]]
+        design.update({SS.slot_dim(s, "on"): SS.ON, SS.slot_dim(s, "first"): c["first"], SS.slot_dim(s, "last"): c["last"]})
+    for _, day in PB._start_dates():
+        want = {name: (a, b) for name, _, a, b in sp.windows_on(design, day)}
+        d = PB.design_on(decl, carried.space, day)
+        assert d.day == day
+        assert {slot[c.name]: (c.first, c.last) for c in d.components} == want
+        assert {c.session for c in d.components} <= {"asia", "london", "ny_am"}
 
 
 @pytest.mark.parametrize("key", PB.REQUIRED)
@@ -413,6 +442,7 @@ MUTATIONS = {
     "plan-unknown": _set(("plan",), "the 50K plan"),
     "instrument": _set(("instrument",), "ES"),
     "design-id": _set(("design_id",), "two words"),
+    "ny-pm-until-the-boundary": _set(("components", 3, "session"), "ny_pm"),                     # N-c3-2
     "registration-in-the-declaration": _set(("registration",), PC.REGISTRATION),                  # C2-5
     "row-in-the-declaration": _set(("row",), "E-9004"),
 }
@@ -458,6 +488,27 @@ def test_design_id_carries_no_figure(tmp_path, ident):
         _load(tmp_path, decl, record_over={"design_id": ident})
 
 
+@pytest.mark.parametrize("comp,session,first,last", [(3, "ny_am", 150, 395), (3, "ny_am", 330, 395),
+                                                     (3, "ny_am", 340, 395), (0, "asia", 0, 415),
+                                                     (0, "evening", 0, 55)],
+                         ids=["ny-to-its-end", "ny-from-the-last-event", "ny-wholly-past-the-last-event", "asia",
+                              "evening-from-the-reopen"])
+def test_a_breakout_window_past_its_span_is_clipped(tmp_path, comp, session, first, last):
+    """C3-2: a P-14 window the search space allows past 14:00 CT plus L, or from the reopen, loads; its alerts are
+    clipped to P-14's span (17:00 to 14:00 CT), as a full-span P-14 and the window's filter give."""
+    decl = PC.declaration()
+    decl["components"][comp].update(session=session, first=first, last=last)
+    c = _load(tmp_path, decl)
+    trig = next(x for x in PB.design_on(c.decl, c.space, date(2021, 3, 16)).components
+                if x.name == decl["components"][comp]["name"]).trigger
+    assert 0 <= trig.first <= trig.last <= T.P14_LAST
+
+
+def test_ny_pm_waits_for_its_boundary(tmp_path):
+    """N-c3-2: refused as such -- not counted from 08:30 CT, not merely unknown."""
+    _refuses(tmp_path, _set(("components", 3, "session"), "ny_pm"), match="boundary")
+
+
 def test_news_none_declared_with_its_reason_loads(tmp_path):
     decl = PC.declaration()
     decl["news_windows"] = []
@@ -488,8 +539,10 @@ def test_declaration_json_strict(tmp_path, raw):
 
 @pytest.mark.parametrize("over", [{"registration": "REG-other"}, {"design_id": "X-other"}, {"row": "E-9002"},
                                   {"declaration": "prereg/other.json"}, {"declaration_sha256": "e" * 64},
-                                  {"extra": "a key off the list"}],
-                         ids=["registration", "design", "row", "declaration-path", "declaration-sha", "extra-key"])
+                                  {"extra": "a key off the list"}, {"heldout_file": "results/other.csv"},
+                                  {"heldout_script": "scratch/x.py"}, {"heldout_family": "F-other"}],
+                         ids=["registration", "design", "row", "declaration-path", "declaration-sha", "extra-key",
+                              "heldout-file", "heldout-script", "heldout-family"])
 def test_carrying_record_must_match(tmp_path, over):
     with pytest.raises(PB.PlaybookRefused):
         _load(tmp_path, record_over=over)
@@ -550,31 +603,46 @@ def _reorder(*ids):
 
 ROW_EDITS = {
     "token-another-design": _sub("E-9004", f"carried: {PC.DESIGN} @", "carried: X-other @"),            # C2-7
-    "token-another-registration": _sub("E-9004", f"-- {PC.REGISTRATION};", "-- REG-other;"),
+    "token-another-registration": _sub("E-9004", f"-- {PC.REGISTRATION} --", "-- REG-other --"),
     "token-another-hash": lambda rows: {**rows, "E-9004": re.sub(r"(carried: \S+ @ )[0-9a-f]+",
                                                                  lambda m: m.group(1) + "f" * 64, rows["E-9004"])},
-    "token-missing": lambda rows: {**rows, "E-9004": re.sub(r"carried: \S+ @ \S+ -- \S+;", "carried.",
+    "token-missing": lambda rows: {**rows, "E-9004": re.sub(r"carried: \S+ @ \S+ -- \S+ -- \S+;", "carried.",
                                                             rows["E-9004"])},
     "token-twice": lambda rows: {**rows, "E-9004": rows["E-9004"] + " " + re.search(
-        r"carried: \S+ @ \S+ -- REG-demo", rows["E-9004"]).group(0) + "."},
+        r"carried: \S+ @ \S+ -- REG-demo -- [0-9a-f]+", rows["E-9004"]).group(0) + "."},
+    "token-without-the-heldout-result": lambda rows: {**rows, "E-9004": re.sub(r"(-- REG-demo) -- [0-9a-f]+", r"\1",
+                                                                               rows["E-9004"])},          # C3-7
+    "token-another-heldout-hash": lambda rows: {**rows, "E-9004": re.sub(r"(-- REG-demo -- )[0-9a-f]+",
+                                                                         lambda m: m.group(1) + "a" * 64,
+                                                                         rows["E-9004"])},
+    "withdrawn": _sub("E-9004", "(synthetic)", "(synthetic; withdrawn after the held-out test failed)"),
+    "reverted": _sub("E-9004", "(synthetic)", "(synthetic; reverted under E-2)"),
+    "would-be": _sub("E-9004", "(synthetic)", "(synthetic; would be the record had the test passed)"),
+    "not-run": _sub("E-9004", "(synthetic)", "(synthetic; the joint held-out test was not run)"),
     "not-yet-carried": _sub("E-9004", "(synthetic)**", "(synthetic): not yet carried**"),
     "conditional": _sub("E-9004", "(synthetic)**", "(synthetic): to be carried only if the held-out test passes**"),
     "a-draft": _sub("E-9004", "(synthetic)", "(DRAFT for red-team review)"),
     "pending": _sub("E-9004", "(synthetic)", "(pending the joint test)"),
-    "no-harm-names-another-design": _sub("E-9001", PC.DESIGN, "X-demo70"),
-    "expected-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].split("; its expected")[0]},
-    "expected-manifest-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].split("; its manifest")[0]},
-    "no-harm-unpinned": lambda rows: {**rows, "E-9001": "**no pin here**"},
-    "no-harm-manifest-unpinned": lambda rows: {**rows, "E-9001": rows["E-9001"].split("; its manifest")[0]},
-    "floor-before-the-declaration": lambda rows: {k: v for k, v in rows.items() if k != "E-9000"},
-    "declaration-pinned-after-floor": _reorder("E-9001", "E-9000", "E-9002", "E-9004"),
-    "floor-after-the-carrying-row": _reorder("E-9000", "E-9002", "E-9004", "E-9001"),                    # C2-11 Y1
+    "no-harm-names-another-design": _sub("E-9002", PC.DESIGN, "X-demo70"),
+    "expected-unpinned": lambda rows: {**rows, "E-9004": re.sub(r"; its expected journey `results/journey_x\.csv` "
+                                                                r"sha256 `[0-9a-f]+`", "", rows["E-9004"])},
+    "expected-manifest-unpinned": lambda rows: {**rows, "E-9004": re.sub(
+        r"; its manifest `results/journey_x\.csv\.manifest\.json` sha256 `[0-9a-f]+`", "", rows["E-9004"])},
+    "no-harm-unpinned": lambda rows: {**rows, "E-9002": "**no pin here**"},
+    "no-harm-manifest-unpinned": lambda rows: {**rows, "E-9002": rows["E-9002"].split("; its manifest")[0]},
+    "heldout-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].split("; the joint held-out")[0]},
+    "heldout-manifest-unpinned": lambda rows: {**rows, "E-9004": rows["E-9004"].rsplit("; its manifest", 1)[0]},
+    "floor-before-the-declaration": lambda rows: {k: v for k, v in rows.items() if k != "E-9001"},
+    "declaration-pinned-after-floor": _reorder("E-9000", "E-9002", "E-9001", "E-9004"),
+    "floor-after-the-carrying-row": _reorder("E-9000", "E-9001", "E-9004", "E-9002"),                    # C2-11 Y1
+    "margin-row-after-the-pin": _reorder("E-9001", "E-9000", "E-9002", "E-9004"),                        # C3-5
+    "a-second-margin-row": lambda rows: {"E-8998": "**Another design's no-harm margin `0.05`.**", **rows},
     "a-path-pinned-twice": lambda rows: {**rows, "E-9004": rows["E-9004"].replace(
         "(synthetic)**", "(synthetic)** the reviewed record `" + PC.RECORD_FILE + "` sha256 `" + "b" * 64 + "`, revised"
                          " to")},
-    "margin-row-silent": _sub("E-9002", ", and the no-harm margin `0.05`", ""),                         # C2-1
-    "margin-row-twice": _sub("E-9002", "`0.05`.", "`0.05`, then no-harm margin `0.1`."),
-    "margin-row-not-bare": _sub("E-9002", "`0.05`", "`0.05 or so`"),
+    "margin-row-silent": _sub("E-9000", ", and the no-harm margin `0.05`", ""),                         # C2-1
+    "margin-row-twice": _sub("E-9000", "`0.05`.", "`0.05`, then no-harm margin `0.1`."),
+    "margin-row-not-bare": _sub("E-9000", "`0.05`", "`0.05 or so`"),
 }
 
 
@@ -587,7 +655,11 @@ def test_rows_must_order_name_carry_and_pin(tmp_path, edit):
 @pytest.mark.parametrize("edit,match", [
     ("floor-after-the-carrying-row", "before its no-harm row"), ("a-path-pinned-twice", "twice"),
     ("not-yet-carried", "negated or conditional"), ("conditional", "negated or conditional"),
-    ("token-twice", "one token"), ("margin-row-twice", "exactly once")])
+    ("token-twice", "one token"), ("margin-row-twice", "exactly once"), ("withdrawn", "negated or conditional"),
+    ("reverted", "negated or conditional"), ("would-be", "negated or conditional"), ("not-run", "negated or conditional"),
+    ("margin-row-after-the-pin", "comes before the declaration's pin"),
+    ("a-second-margin-row", "exactly one row of the log states the no-harm margin"),
+    ("token-without-the-heldout-result", "one token")])
 def test_row_refusals_say_why(tmp_path, edit, match):
     """The refusals that another guard could mask, each matched to its own message."""
     with pytest.raises(PB.PlaybookRefused, match=match):
@@ -610,6 +682,25 @@ def test_the_margin_is_the_one_its_row_pins(tmp_path):
                  margin="0.5")
 
 
+@pytest.mark.parametrize("verdict", ["rejected", "", "accepted "])
+def test_the_heldout_result_must_accept_the_design(tmp_path, verdict):
+    """C3-7: the joint held-out test's file, pinned in the carrying row and accepted as a result file, records this
+    design as accepted."""
+    rows = [dict(PC.HELDOUT_ROWS[0], value=verdict)]
+    with pytest.raises(PB.PlaybookRefused, match="held-out test as accepted|bare|blank"):
+        _load(tmp_path, heldout_rows=rows)
+    with pytest.raises(PB.PlaybookRefused, match="held-out test as accepted"):
+        _load(tmp_path / "other", heldout_rows=[dict(PC.HELDOUT_ROWS[0], measure="X-other")])
+
+
+@pytest.mark.parametrize("over", [dict(exploratory=True), dict(parameters_update={"declaration_sha256": "e" * 64}),
+                                  dict(script="scratch/x.py"), dict(prereg_id=PC.FAMILY), dict(git_dirty=True)],
+                         ids=["exploratory", "another-declaration", "script", "family", "dirty"])
+def test_the_heldout_result_is_a_clean_bound_result(tmp_path, over):
+    with pytest.raises(PB.PlaybookRefused):
+        _load(tmp_path, heldout_over=over)
+
+
 def test_an_unrelated_row_pinning_twice_does_not_block(tmp_path):
     rows_edit = lambda rows: {"E-8999": "`prereg/other.json` sha256 `" + "c" * 64 + "` then `prereg/other.json` "  # noqa
                               "sha256 `" + "d" * 64 + "`", **rows}
@@ -627,9 +718,9 @@ def test_a_carried_design_is_made_only_by_the_loader(carried):
     with pytest.raises(PB.PlaybookRefused):
         PB.Carried(carried.record_file, carried.record_sha, carried.registration, carried.row, carried.decl_file,
                    carried.decl_sha, carried.decl_bytes, carried.rows, carried.space, carried.expected,
-                   carried.no_harm)
+                   carried.no_harm, carried.heldout)
     for kw in (dict(decl_bytes=carried.decl_bytes + b" "), dict(expected=carried.no_harm),
-               dict(registration="REG-other")):
+               dict(registration="REG-other"), dict(heldout=carried.expected)):
         with pytest.raises(PB.PlaybookRefused):
             dataclasses.replace(carried, **kw)
     with pytest.raises(PB.PlaybookRefused):
@@ -645,13 +736,20 @@ def test_playbook_declarations_are_in_the_pin_test():
 # ------------------------------------------------------------------------------------------------ C2-2: the pin before the run, in git
 
 
-def test_the_floor_runs_after_the_pin_in_git(tmp_path, monkeypatch):
-    """C2-2: a real history -- the floor's run commit descends from the commit that pinned the declaration; a run at a
-    commit before the pin refuses."""
+@pytest.mark.parametrize("floor,journey,ok", [("pin", "pin", True), ("before", "pin", False), ("side", "pin", False),
+                                               ("pin", "before", False), ("pin", "side", False)],
+                         ids=["after-the-pin", "floor-before", "floor-on-an-unmerged-branch", "journey-before",
+                              "journey-on-an-unmerged-branch"])
+def test_the_runs_follow_the_pin_in_git(tmp_path, monkeypatch, floor, journey, ok):
+    """C2-2, C3-4, N-c3-3: a real history -- the floor's and the journey's run commits descend from the commit that
+    first pinned the declaration and lie on HEAD's line; a run before the pin, or on a branch never merged, refuses."""
     monkeypatch.setattr(PB, "_run_after_pin", REAL_RUN_AFTER_PIN)
-    assert PB.load_carried(PC.RECORD_FILE, root=PC.git_root(tmp_path / "after"))
-    with pytest.raises(PB.PlaybookRefused, match="does not descend"):
-        PB.load_carried(PC.RECORD_FILE, root=PC.git_root(tmp_path / "before", floor_before_pin=True))
+    root = PC.git_root(tmp_path, floor=floor, journey=journey)
+    if ok:
+        assert PB.load_carried(PC.RECORD_FILE, root=root)
+    else:
+        with pytest.raises(PB.PlaybookRefused, match="does not descend"):
+            PB.load_carried(PC.RECORD_FILE, root=root)
 
 
 def test_the_pin_order_needs_a_repository(tmp_path, monkeypatch):
@@ -660,8 +758,8 @@ def test_the_pin_order_needs_a_repository(tmp_path, monkeypatch):
         PB.load_carried(PC.RECORD_FILE, root=PC.build_root(tmp_path))          # no git: the order is unknown
 
 
-def test_the_pin_order_is_asked_of_the_floor_with_the_declarations_pin(carried):
-    assert PINS == [(f"`{PC.DECL_FILE}` sha256 `{carried.decl_sha}`", PC.COMMIT)]
+def test_the_pin_order_is_asked_of_both_runs_with_the_declarations_pin(carried):
+    assert PINS == [(f"`{PC.DECL_FILE}` sha256 `{carried.decl_sha}`", PC.COMMIT)] * 2
 
 
 # ------------------------------------------------------------------------------------------------ B-1, B-3: the bindings
@@ -772,16 +870,17 @@ def test_manifest_edited_after_its_pin_refuses(root):
         PB.load_carried(PC.RECORD_FILE, root=root)
 
 
-@pytest.mark.parametrize("row,name", [("E-9004", "journey_x"), ("E-9001", "noharm_x")])
+@pytest.mark.parametrize("row,name", [("E-9004", "journey_x"), ("E-9002", "noharm_x"), ("E-9004", "heldout_x")])
 def test_the_csv_pin_in_the_row_must_be_the_manifests(tmp_path, row, name):
     edit = lambda rows: {**rows, row: re.sub("(" + name + r"\.csv` sha256 `)[0-9a-f]+", lambda m: m.group(1) + "a" * 64,  # noqa
                                             rows[row])}
-    with pytest.raises(PB.PlaybookRefused, match="do not agree on its hash"):
+    with pytest.raises(PB.PlaybookRefused, match="do not agree on its hash|one token"):   # the held-out pin is the token's
         _load(tmp_path, edit_rows=edit)
 
 
 def test_result_read_from_one_resolved_path(carried, root):
-    assert sorted(CALLS) == sorted({(root / PC.EXPECTED_FILE).resolve(), (root / PC.NO_HARM_FILE).resolve()})
+    assert sorted(CALLS) == sorted({(root / f).resolve() for f in (PC.EXPECTED_FILE, PC.NO_HARM_FILE,
+                                                                       PC.HELDOUT_FILE)})
 
 
 def test_tampered_or_missing_result_refuses(root):
@@ -804,6 +903,24 @@ def test_licensed_ignored_or_misplaced_result_refuses(tmp_path, rel):
         _load(tmp_path, decl)
 
 
+@pytest.mark.parametrize("measure,value", [("mean_entry_price", "18234.75"), ("mean_entry_price", "18234.37"),
+                                           ("S3b", "6250")])
+def test_a_band_figure_in_value_needs_a_pinned_measure(tmp_path, measure, value):
+    """C3-8 (the note's probe): a price in `value` refuses, on the grid or off it, unless the measure is a pinned dollar
+    or count measure (S1 holds 6250 in the fixture)."""
+    rows = [dict(r) for r in PC.EXPECTED_ROWS]
+    rows[4].update(measure=measure, value=value)
+    with pytest.raises(PB.PlaybookRefused, match="value column"):
+        _load(tmp_path, expected_rows=rows)
+
+
+def test_an_exponent_is_a_bare_number(tmp_path):
+    """C3-8: a small probability as Python writes it (`1e-05`) is printed."""
+    rows = [dict(r) for r in PC.EXPECTED_ROWS]
+    rows[1]["value"] = "1e-05"
+    assert "chance of running out at the budget: 1e-05" in PB.render_playbook(_load(tmp_path, expected_rows=rows)).text
+
+
 def test_figures_and_counts_in_their_columns_are_printed(carried):
     """C2-8 (the note's P5, P5b): a whole-dollar figure and a count of the price band are figures, not prices."""
     text = PB.render_playbook(carried).text
@@ -811,7 +928,7 @@ def test_figures_and_counts_in_their_columns_are_printed(carried):
 
 
 @pytest.mark.parametrize("where,cell", [("measure", "level_18234.37"), ("stat", "18234.75 pts"), ("section", "18,234"),
-                                        ("block", "x 7000")])
+                                        ("block", "x 7000"), ("measure", "p_under_bankroll_6250")])
 def test_a_price_band_number_in_a_label_column_refuses(tmp_path, where, cell):
     """C2-8 (the note's P4, P4b): on the grid or off it, with or without a unit, in any label column."""
     rows = [dict(r) for r in PC.EXPECTED_ROWS]
@@ -826,7 +943,7 @@ def test_a_column_off_the_pinned_list_refuses(tmp_path):
         _load(tmp_path, expected_rows=rows, expected_columns=PC.COLUMNS + ("close",))
 
 
-@pytest.mark.parametrize("value", ["6250 pts", "$6250", "6,250", "6250.", " 6250", "inf"])
+@pytest.mark.parametrize("value", ["6250 pts", "$6250", "6,250", "6250.", " 6250", "inf", "1e5x"])
 def test_a_printed_figure_is_a_bare_number(tmp_path, value):
     rows = [dict(r) for r in PC.EXPECTED_ROWS]
     rows[2]["value"] = value
@@ -876,11 +993,13 @@ def test_resting_orders_state_the_void_at_live_rule(carried):
     """C2-4: every resting order (P-14's limit, RL3's limit and stop) carries the walker's void-at-live rule; a market
     order does not; the red team's void probe renders the same alert (the rule is the user's to apply at live)."""
     rule = ("compare the market with your order: if a BUY limit is at or above the market, a SELL limit at or below "
-            "it, a BUY stop at or below it or a SELL stop at or above it, do not place it: no trade today.")
+            "it, a BUY stop at or below it or a SELL stop at or above it, ")
     pm = _alert(carried, "pm_brk", "2021-03-16", 1101).text
-    assert "When it goes live (the bar stamped 11:24 CT), " + rule in pm
+    assert "Each time you place it (the bar stamped 11:24 CT), " + rule + "do not place it: no trade today." in pm
     assert _alert(carried, "pm_brk", "2021-03-16", 1101, hist=_void_probe_history()).text == pm
-    assert _alert(carried, "am_tix", "2021-03-16", 930).text.count(rule) == 2
+    pair = _alert(carried, "am_tix", "2021-03-16", 930).text                                   # C3-3: per ticket
+    assert pair.count(rule + "do not place this ticket: the other ticket stands or falls by its own check.") == 2
+    assert "no trade today" not in pair
     assert rule not in _alert(carried, "ldn_brk", "2021-03-16", _ldn("2021-03-16")).text
 
 
@@ -888,6 +1007,7 @@ def test_levels_are_defined_by_their_bars(carried):
     """C2-9: the alert names the bars each level is made from, and warns that the platform's own level may differ."""
     t = _alert(carried, "am_tix", "2021-03-16", 930).text
     assert "the high of the previous day's bars stamped 08:30 CT to 14:59 CT" in t
+    assert "today's bars" not in PB.render_playbook(carried).text                                # N-c3-4
     assert "the low of the previous day's bars stamped 08:30 CT to 14:59 CT" in t
     assert "(the close of the bar stamped 08:29 CT)" in t and PB.PLATFORM_LEVEL in t
 
@@ -966,7 +1086,10 @@ def test_rl3_pair_is_one_alert_in_one_account_placed_by_hand(carried, tmp_path):
     cancelled by hand, the double fill flattened; its size counted together."""
     t = _alert(carried, "am_tix", "2021-03-16", 930).text
     assert PB.PAIR_WORDS in t and "OCO order type" not in t
-    assert "The moment one fills, cancel the other by hand" in t and "flatten the second fill at once" in t
+    assert "The moment one fills, cancel the other by hand" in t
+    assert "close every position and cancel every working order in this account, brackets included, at once" in t
+    assert "set the Auto-OCO stop and target to the ticks given below for each ticket" in t
+    assert "article 14434175 (\"TopstepX\") for the Auto-OCO brackets and the DOM's OCO switch" in t
     assert "Never split them across accounts" in t and "these tickets count as one order" in t
     assert t.count("account ts_") == 1 and "Ticket 1 of 2" in t and "Ticket 2 of 2" in t
     assert "2 contracts on each ticket, 4 for the tickets together" in t
@@ -1053,6 +1176,8 @@ KNOWN_AT_ALERT = [
     ("prior-void-after-scheduled-closure", "am_tix", "2021-04-05", 930, dict(calendar=CLOSURE), "prior_void"),
     ("prior-void-after-scheduled-close", "am_tix", "2021-03-17", 930,
      dict(calendar={"2021-03-16": {"kind": "early_close", "close_ct": "12:00"}}), "prior_void"),
+    ("prior-void-after-a-scheduled-close-the-store-lacks", "am_tix", "2021-04-05", 930,                # C3-1
+     dict(calendar={"2021-04-02": {"kind": "early_close", "close_ct": "12:00"}}), "prior_void"),
     ("bls-overnight-entry", "ldn_brk", "2021-03-16", 610, dict(bls=("2021-03-16",)), "bls"),
 ]
 
@@ -1079,7 +1204,6 @@ RESEARCH_ONLY = [
     ("h2-void", "ldn_brk", "2021-03-16", 610, dict(flags={"2021-03-16": {"verdict": "VOID", "void": "synthetic"}})),
     ("h2-missing", "ldn_brk", "2021-03-16", 610, dict(flags={"2021-03-16": {"missing_after_reopen": "999"}})),
     ("prior-day-data-void", "am_tix", "2021-03-16", 930, dict(early_end=("2021-03-15",))),
-    ("unscheduled-gap-in-the-store", "am_tix", "2021-04-05", 930, {}),                                 # N-c2-2
 ]
 
 
@@ -1089,6 +1213,20 @@ def test_research_filters_never_decide_an_alert(carried, case, comp, day, at, sr
     want = _alert(carried, comp, day, at).text
     assert want.startswith("TRADE ALERT")
     assert _alert(carried, comp, day, at, src=PC.sources(**src)).text == want
+
+
+@pytest.mark.parametrize("comp,day,at", [("am_tix", "2021-04-05", 930)])
+def test_a_store_without_the_calendars_previous_session_refuses(carried, comp, day, at, tmp_path):
+    """C3-1 (the lead's ruling, withdrawing N-c2-2): the calendar's previous session of 2021-04-05 is 2021-04-02; the
+    store's previous day is 2021-03-19, so a component reading the previous day refuses as a data mismatch -- never a
+    level, role or side from another day; one reading no previous day is offered."""
+    with pytest.raises(PB.AlertRefused, match="previous session") as e:
+        _alert(carried, comp, day, at)
+    assert e.value.reason == "mismatch"
+    decl = PC.declaration()
+    decl["components"][2]["trigger"]["params"]["kind"] = "on"
+    c = _load(tmp_path, decl, no_harm_rows=_nh_rows("am_tix", "side_rule", "hi=fade;lo=break"))
+    assert _alert(c, comp, day, at).text.startswith("TRADE ALERT")
 
 
 def test_prior_void_reaches_pdc_too(tmp_path):
@@ -1125,6 +1263,7 @@ def test_rl3_ticket_rewritten_after_a_window(tmp_path):
     assert "Working on the bars stamped 09:00 CT through 09:28 CT" in t
     assert "(it ends at 09:29 CT), when a news window starts (a synthetic morning release)" in t
     assert "Working on the bars stamped 09:35 CT through 09:59 CT" in t
+    assert t.count("Each time you place it (again, the bar stamped 09:35 CT)") == 2              # C3-3: re-placed
 
 
 def test_not_offered_reasons_are_a_closed_vocabulary(carried):
