@@ -19,7 +19,7 @@ in minutes after the 17:00 CT reopen, i.e. the stamp slot of a window's first ba
 * `evening` -- the bars stamped from the reopen (slot 0) to before asia's anchor (09:00 Tokyo);
 * `asia` -- from asia's anchor to before london's (08:00 London);
 * `london` -- from london's anchor to before ny's (09:30 New York, 08:30 CT: slot 930 on every date);
-* `ny` -- the regular session; the lever table's `ny_am` and `ny_pm` (split at T2b, still to declare) both take it
+* `ny` -- the regular session; the lever table's `ny_am` and `ny_pm` (split at T2b, noon New York) both take it
   (`LEVER_SESSIONS`).
 
 **The trailing range a stop is set from** (each read from bars closed before the day's 17:00 CT reopen, so before any
