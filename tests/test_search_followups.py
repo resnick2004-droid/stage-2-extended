@@ -10,7 +10,8 @@ What is asserted:
 - **rm3-a**: the size bound under any dependence, k x P(t_{n-1} > c), is recorded beside `size_at`, with the read's
   figures (n = 16, k = 10: c about 2.80, the bound about 0.068);
 - **rm3-b**: the re-read seeds have a floor of five, refused below it by name (`TooFewRereadSeeds`); a tolerance with
-  no root in the bracket is refused by name (`PlateauRefused`), never a bare ValueError;
+  no root in the bracket is refused by name (`PlateauRefused`), never a bare ValueError (the quadrature's own test at
+  n = 3 and n = 5 with k = 30 is `tests/test_plateau.py`'s);
 - **n-1**: a row's design, latencies and library versions and a role's meta are frozen, so an edit after recording
   raises, and the ledger still deep-copies;
 - **n-2**: a role closes when its batch returns (the survey, a round, a plateau check), a cell recorded after it is

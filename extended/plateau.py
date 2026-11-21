@@ -37,7 +37,8 @@ paired differences, all k sharing the one re-read (so equicorrelated at one half
 cancels in each pair). Conditional on the re-read's per-seed vector the k statistics are independent; each is (Z +
 delta) / sqrt(X / (n - 1)) with delta ~ N(0, 1) from the re-read's mean and X noncentral chi-square on n - 1 degrees of
 freedom whose noncentrality is chi-square on n - 1, so P(all hold) = E[G^k] is a quadrature, exact under exchangeable
-Gaussian seed noise (`p_all_hold(c, k, n)`). The textbook multivariate t, with one shared denominator, under-covers here
+Gaussian seed noise (`p_all_hold(c, k, n)`; `_QM` = 1024 probability midpoints a level, the red team's rm3-b, where 128
+under-accepted at small n and large k). The textbook multivariate t, with one shared denominator, under-covers here
 (it does not see k separate se's), and a normal value much more so at small n. `critical_z(size, k)` is the normal limit
 (n infinite), kept for reference only. The verdict records the size its tolerance implies at the neighbours actually
 read (`size_at`). **The exchangeability assumption and its bound** (the red team's rm3-a, the lead's ruling: the exact
@@ -108,8 +109,10 @@ FORM = "reread-paired-se"
 #: the correlation between two neighbours' differences from one shared re-read, equal variances (exactly one half)
 RHO = 0.5
 _GH = np.polynomial.hermite_e.hermegauss(96)
-#: probability midpoints a level of the exact law's quadrature (checked against a simulation of the statistic)
-_QM = 128
+#: probability midpoints a level of the exact law's quadrature (checked against a simulation of the statistic): 1024
+#: by the red team's rm3-b (the lead's ruling), where 128 cut off enough of X's tails to under-accept at small n and
+#: large k
+_QM = 1024
 #: the coarse grid that only brackets `critical_value`'s root for the fine one (never a tolerance itself)
 _QM_BRACKET = 128
 #: Gauss-Hermite nodes for delta (64); a node whose normalised weight is below this is skipped -- the skipped weight is
