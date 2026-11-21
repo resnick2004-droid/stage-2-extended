@@ -49,6 +49,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 from extended import user_spend as US  # noqa: E402
 
 DATA = ROOT / "vendor" / "stage2" / "data"
@@ -593,7 +594,8 @@ def real_row() -> str | None:
 
 def log(rows: list[str]) -> str:
     head = "# Decisions (a temporary tree, Q-86's tests)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
-    return head + "".join(line + "\n" for line in rows)
+    # Q-194b: after the joint held-out test's verdict, so the reader's rule 3 decides each read here
+    return head + "".join(line + "\n" for line in [*rows, *VR.VERDICT_ROWS])
 
 
 def tokened(line: str, designs: str) -> str:

@@ -40,6 +40,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 
 RUN = "q158-sim"
 BARS = "vendor/stage2/data/bars/NQ/bars.parquet"
@@ -380,7 +381,10 @@ def rd_read(t: Path, declaration: str, design, start: str = "2020-01-02", end: s
 
 @pytest.fixture
 def scripted(tree, monkeypatch):
+    """The tree with a readings script as the process's, after the joint held-out test's verdict (Q-194b: a
+    registered design reads no held-out date before it; `tests/test_reader_q194b.py` holds that refusal)."""
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "replay.py")
+    add_rows(tree, *VR.VERDICT_ROWS)
     return tree
 
 
@@ -401,9 +405,9 @@ def test_rule3_the_token_admits_its_own_run_once_and_ledgers_it(scripted, monkey
                        "replayed on the held-out years | x |")
     for design in (("P-14", "P-16"), "P-16"):                               # one run may read as often as it needs
         a = rd_read(scripted, "E-940", design)
-        assert a.judged and a.ledgered and dict(a.heldout) == {"read_row": "E-940"}
+        assert a.judged and a.ledgered and dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
     recs = lines(scripted)
-    assert len(recs) == 2 and recs[0]["heldout"] == {"read_row": "E-940"}
+    assert len(recs) == 2 and recs[0]["heldout"] == {"read_row": "E-940", "test_verdict": "E-982"}
     assert recs[0]["declaration"] == {"ref": "E-940", "sha256": None, "kind": "registered_design",
                                       "designs": ["P-14", "P-16"]}
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")

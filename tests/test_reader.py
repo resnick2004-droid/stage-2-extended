@@ -48,6 +48,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402  (importing the reader touches no sys.path, imports no engine)
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 
 # ------------------------------------------------------------------------------------------------- the temp tree
 
@@ -119,7 +120,8 @@ def decisions(h90: str, h92: str, h94: str) -> str:
             f"| E-914 | 2026-11-16 | heldout-finalists: F-90 @ {h90} list {'a' * 64} -- F-90's finalists | test |\n"
             f"| E-915 | 2026-11-16 | heldout-finalists: F-94 @ {h94} list {'b' * 64} -- F-94's finalists | test |\n"
             f"| E-916 | 2026-11-16 | heldout-finalists: F-95 @ {sha_lf(RIDER_TEXT)} list {'c' * 64} -- F-95's "
-            "finalists | test |\n")
+            "finalists | test |\n"
+            + "".join(r + "\n" for r in VR.VERDICT_ROWS))   # Q-194b: after the held-out test's verdict
 
 
 def bars_frame() -> pd.DataFrame:

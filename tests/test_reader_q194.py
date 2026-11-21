@@ -170,11 +170,15 @@ def test_a_family_file_cannot_borrow_the_identity_purpose(t16, monkeypatch):
 
 
 def test_a_registered_designs_held_out_read_is_rule_3s_alone(scripted):
+    """Rule 1 never reaches it: after the held-out test's verdict (Q-194b, the `scripted` fixture's rows) rule 3's row
+    admits it, with no finalists' token of its own."""
     H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- P-14 and P-16 "
                          "replayed | x |")
-    assert not R.heldout_tokens((scripted / "DECISIONS.md").read_text(encoding="utf-8"), "finalists")
+    assert [t.get("decl") for t in R.heldout_tokens((scripted / "DECISIONS.md").read_text(encoding="utf-8"),
+                                                    "finalists")] == ["F-98"], "only the held-out test's own"
     a = H.rd_read(scripted, "E-940", ("P-14", "P-16"))
-    assert a.judged and a.kind == "registered_design" and dict(a.heldout) == {"read_row": "E-940"}
+    assert a.judged and a.kind == "registered_design"
+    assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
 
 
 # ------------------------------------------------------------------------------------ rule 2 and a refused read

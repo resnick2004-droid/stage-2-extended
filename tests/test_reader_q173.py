@@ -43,7 +43,7 @@ def test_rule3_a_described_readings_replay_waits_for_the_verdict(scripted):
     assert H.lines(scripted) == []
     H.add_rows(scripted, VERDICT)
     a = H.rd_read(scripted, "E-940", ("P-14", "P-16"))
-    assert a.ledgered and dict(a.heldout) == {"read_row": "E-940", "readings": "RD-04"}
+    assert a.ledgered and dict(a.heldout) == {"read_row": "E-940", "readings": "RD-04", "test_verdict": "E-982"}
 
 
 def test_rule3_a_reading_that_names_the_script_is_linked_without_the_row_saying_so(scripted):
@@ -59,7 +59,7 @@ def test_rule3_a_replay_for_no_reading_is_unchanged_and_the_joint_test_is_admitt
     H.add_rows(scripted, "| E-940 | 2026-11-18 | heldout-read: P-14,P-16 by scripts/replay.py -- P-14 and P-16 | x |",
                H.finalists(920, "F-13", H.F13_TEXT, H.LIST13))
     a = H.rd_read(scripted, "E-940", "P-14")
-    assert dict(a.heldout) == {"read_row": "E-940"}
+    assert dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
     j = H.read(scripted)                                       # the joint held-out test, before any verdict row
     assert j.judged and j.ledgered and j.kind == "family"
 

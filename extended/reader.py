@@ -78,7 +78,14 @@ each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins wit
 * **rule 3, a registered design's held-out read named by its own row.** A `registered_design` read touching the
   held-out years is admitted only by a row whose read token names every design read and this process's script,
   inside a clean run, one run a row; a row without the token (E-021, E-024, E-026, E-035, ...) admits no new one --
-  the reads it admitted stay valid as the ledger records them;
+  the reads it admitted stay valid as the ledger records them; **and, before any of that, only after the joint
+  held-out test's verdict (Q-194b, the lead's ruling on O-7's RD-10 C3 and the red team's L-1 of template v3):** a
+  `registered_design` read of any held-out date (the whole seal, 2023-12-30 to 2026-07-16, the holiday gap
+  included) is refused, whatever row declares it, until a decision row carries the held-out test's verdict token
+  (`heldout-verdict: F-NN @ <its LF sha256> -- ...`, below) for a declaration pinned at that sha256, newer than that
+  declaration's finalists' row (itself newer than its pin) and newer than the read's window's opening row; after it,
+  rule 3 stands as above. A search-year read is untouched, and so are E-247 rm-4's `identity` reads. The refusal
+  names the purpose and the declaration and writes no ledger line;
 * **rule 4, a described reading after the verdict.** A described reading (RD-) reads a market's held-out window only
   once a verdict token for that market exists in a row newer than the window's opening row.
 
@@ -108,13 +115,18 @@ token-like but is not exactly one):
     | E-NNN | YYYY-MM-DD | heldout-window: NQ 2026-07-17 to 2027-07-16 -- <text> |
     | E-NNN | YYYY-MM-DD | heldout-verdict: NQ F-NN -- <text> |
     | E-NNN | YYYY-MM-DD | heldout-read: P-14,P-16 by scripts/<name>.py -- <text> |
+    | E-NNN | YYYY-MM-DD | heldout-verdict: F-NN @ <the held-out test's declaration's LF sha256> -- <text> |
 
 (the shas 64 lowercase hexadecimal characters; a market a root of capitals and digits; the designs P-14, P-15, P-16
 joined by commas; the script one of `scripts/*.py`). The window a judged read falls in is the newest window row for its
 market whose days hold the read's judged part, else E-208's base window (`BASE_WINDOW_ROW`, the seal's first day to
 2026-07-16, every market); a window row cannot widen what `span` allows (the confirmation window stays refused here).
 A family's or described reading's judged line, and a registered design's held-out line, carry a `heldout` field: the
-market and window, the finalists' row and list sha256, the verdict row, or the read row.
+market and window, the finalists' row and list sha256, the verdict row, or the read row and the held-out test's
+verdict row (`test_verdict`). The last token form (kind `test_verdict`, Q-194b) is the held-out test's verdict row; the
+held-out template (`prereg/TEMPLATE_heldout_test.md` section 5 item 4) names the row and no token form yet, so this
+is the form the lead's ruling gave, until the template carries it. The market's `heldout-verdict: NQ F-NN` form stays
+rule 4's.
 
 **The read ledger** (`results/read_ledger.jsonl` of the tree whose declarations authorise the read): every family's
 or described reading's read touching the judged block, and every identity's or registered design's read inside a clean
@@ -224,6 +236,8 @@ HELDOUT_TOKENS = {
     "verdict": re.compile(_HO_HEAD + rf"heldout-verdict: (?P<market>{_HO_MARKET}) (?P<decl>F-\d+)" + _HO_TAIL),
     "read": re.compile(_HO_HEAD + r"heldout-read: (?P<designs>P-1[456](?:,P-1[456])*) "
                        r"by (?P<script>scripts/[A-Za-z0-9_]+\.py)" + _HO_TAIL),
+    #: Q-194b: the held-out test's verdict row, naming its declaration and the declaration's LF sha256
+    "test_verdict": re.compile(_HO_HEAD + r"heldout-verdict: (?P<decl>F-\d+) @ (?P<sha>[0-9a-f]{64})" + _HO_TAIL),
 }
 #: a held-out token-like string: what a hand meaning one types (any case, `-`, `_`, a space or nothing as joiners)
 HELDOUT_TOKEN_LIKE = re.compile(r"held[-_ ]?out[-_ ]?(?:finalists|window|verdict|read)\s*[:=]", re.IGNORECASE)
@@ -278,9 +292,9 @@ class HeldOutRefused(JudgedBlockSealed):
 
 @dataclass(frozen=True)
 class HeldOutToken:
-    """A held-out token of a decision row: its kind (`finalists`, `window`, `verdict`, `read`), the row's id and date,
-    and its fields (finalists: `decl`, `sha`, `list`; window: `market`, `start`, `end`; verdict: `market`, `decl`;
-    read: `designs` (a tuple), `script`)."""
+    """A held-out token of a decision row: its kind (`finalists`, `window`, `verdict`, `read`, `test_verdict`), the
+    row's id and date, and its fields (finalists: `decl`, `sha`, `list`; window: `market`, `start`, `end`; verdict:
+    `market`, `decl`; read: `designs` (a tuple), `script`; test_verdict: `decl`, `sha`)."""
     kind: str
     row: str
     date: str
@@ -320,7 +334,7 @@ class Authorisation:
     #: described reading's judged read the market and the window (`window`, the row that opened it), with the
     #: finalists' row (`finalists`, `finalists_list_sha256`) for a family's read under any purpose (Q-194) and the
     #: verdict row (`verdict`) for a described reading; for a registered design's held-out read the row naming it
-    #: (`read_row`). None otherwise
+    #: (`read_row`) and the held-out test's verdict row (`test_verdict`, Q-194b). None otherwise
     heldout: tuple[tuple[str, Any], ...] | None = None
 
 
@@ -689,7 +703,8 @@ def heldout_token_problems(decisions_text: str) -> list[str]:
             out.append(f"{r.group(1)} (line {n}): {ascii(line[p:p + 80])} is held-out token-like but not exactly a "
                        "token (heldout-finalists: F-NN @ <sha256> list <sha256> -- ...; heldout-window: NQ <first> to "
                        "<last> -- ...; heldout-verdict: NQ F-NN -- ...; heldout-read: P-14,P-16 by scripts/<x>.py -- "
-                       "..., each the first text of the row's third cell), so it authorises nothing")
+                       "...; heldout-verdict: F-NN @ <sha256> -- ..., each the first text of the row's third cell), so "
+                       "it authorises nothing")
     return out
 
 
@@ -826,6 +841,33 @@ def _registered_heldout(declaration: str, designs: tuple[str, ...], repo: Path, 
         raise HeldOutRefused(3, what, f"a registered design's held-out read runs only inside a clean run, where it is "
                                       f"ledgered ({CLEAN_RUN_ENV} is not set)")
     return t
+
+
+def _test_verdict(text: str, window: str, what: str) -> HeldOutToken:
+    """Q-194b: a registered design's read of any held-out date waits for the held-out test's verdict row -- a
+    `test_verdict` token (`heldout-verdict: F-NN @ <sha256> -- ...`) whose declaration is pinned at that sha256, newer
+    than a finalists' token for the same declaration and sha256 that is itself newer than the pin, and newer than the
+    read's window's opening row. The newest such row is returned; none refuses (rule 3), whatever row declares the
+    read."""
+    pinned = pins(text)
+    finals = heldout_tokens(text, "finalists")
+    good = []
+    for t in heldout_tokens(text, "test_verdict"):
+        fid, sha = t.get("decl"), t.get("sha")
+        at = [n for ref, shas in pinned.items() if sha in shas and (m := DECLARATION_ID.match(ref))
+              and m.group(1) == fid and (n := _pin_row(text, ref, sha)) is not None]
+        if not at or t.number <= _row_number(window):
+            continue
+        if any(f.get("decl") == fid and f.get("sha") == sha and min(at) < f.number < t.number for f in finals):
+            good.append(t)
+    if not good:
+        raise HeldOutRefused(3, what, "no decision row carries the held-out test's verdict (`heldout-verdict: F-NN @ "
+                                      "<its LF sha256> -- ...`, the first text of the row's third cell, for a "
+                                      "declaration pinned at that sha256, newer than its finalists' row and than the "
+                                      f"window's opening row {window}); a registered design reads no held-out date "
+                                      "before the joint held-out test's verdict, whatever row declares the read "
+                                      "(Q-194b)")
+    return max(good, key=lambda x: x.number)
 
 
 def _registered_heldout_once(repo: Path, declaration: str, what: str) -> None:
@@ -1001,13 +1043,16 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
         return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, "identity", repeat, inside, (), market)
     if purpose == REGISTERED_DESIGN:
         ref = _registered(declaration, designs, tree, head)
-        tok = _registered_heldout(ref, designs, tree, head)     # rule 3: a row naming this read, in a clean run
+        head = f"{head}, for {purpose!r} under {ref}"            # Q-194b: refusals name the purpose, the declaration
         text = _decisions(tree)
         window = heldout_window(text, market, first, e)[0]
+        verdict = _test_verdict(text, window, head)             # Q-194b: after the held-out test's verdict, first
+        tok = _registered_heldout(ref, designs, tree, head)     # rule 3: a row naming this read, in a clean run
         rds = _registered_reading_verdict(text, ref, tok.get("script"), tree, market, window, head)   # M-3
         _clean_run(tree, head)
         _registered_heldout_once(tree, ref, head)
-        held = (("read_row", tok.row),) + ((("readings", ",".join(rds)),) if rds else ())
+        held = ((("read_row", tok.row),) + ((("readings", ",".join(rds)),) if rds else ())
+                + (("test_verdict", verdict.row),))
         return Authorisation(s, e, blocks, True, first, e, purpose, ref, None, REGISTERED_DESIGN, repeat, True,
                              designs, market, held)
     _refuse_superseded(declaration, tree, head)             # N-1, before the pin is even looked at
