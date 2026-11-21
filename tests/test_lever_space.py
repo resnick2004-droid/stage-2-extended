@@ -16,10 +16,12 @@ import builtins
 import copy
 import io
 import re
+from datetime import date
 from pathlib import Path
 
 import pytest
 
+from extended import day_calendar as DC
 from extended import firm_terms as FT
 from extended import lever_space as LS
 from extended import modes_rules as MR
@@ -213,21 +215,30 @@ def test_the_firms_day_and_its_sessions() -> None:
     assert f"reopen_{td['reopen'] // 60:02d}:{td['reopen'] % 60:02d}_ct" in v
     assert f"flat_by_{td['flat'] // 60:02d}:{td['flat'] % 60:02d}_ct" in v
     assert 0 < td["last_entry_offset"] <= td["length"]
-    w = LS.session_windows()
-    assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
-    assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
-    assert w["ny_am"][1] is None and w["ny_pm"][0] is None          # T2b, to declare
+    for day in (date(2021, 1, 15), date(2021, 7, 15), date(2021, 3, 17)):   # winter, summer, the US/UK mismatch
+        w = LS.session_windows(day)
+        a = DC.anchored_starts(day)
+        assert w["evening"][0] == 0 and w["ny_pm"][1] == td["length"]
+        assert w["evening"][1] == w["asia"][0] and w["asia"][1] == w["london"][0] and w["london"][1] == w["ny_am"][0]
+        assert (w["asia"][0], w["london"][0], w["ny_am"][0]) == (a["asia"], a["london"], a["ny"])
+        assert w["ny_am"][1] is None and w["ny_pm"][0] is None      # T2b, to declare
+    assert LS.session_windows(date(2021, 1, 15))["asia"][0] != LS.session_windows(date(2021, 7, 15))["asia"][0]
+    with pytest.raises(TypeError):
+        LS.session_windows()                                          # a trading day's date is required
+    rng = LS.bounds("T2").detail["windows"]
+    assert rng["span"] == (DC.SEARCH_START.isoformat(), DC.SEARCH_END.isoformat())
+    assert sum(x["days"] for x in rng["distinct"]) == len(LS.trading_dates(DC.SEARCH_START, DC.SEARCH_END))
+    assert len(rng["distinct"]) > 1 and rng["range"]["asia"]["start"][0] < rng["range"]["asia"]["start"][1]
     e = LS.bounds("T3")
     assert e.lo == 0.0 and e.hi == float(td["last_entry_offset"]) and e.step == float(LS.declared("mark_step_min"))
     assert LS.bounds("T2").values == tuple(LS.declared("sessions"))
 
 
 def test_a_session_boundary_outside_the_day_is_refused(monkeypatch) -> None:
-    bad = dict(LS.DECLARED)
-    bad["windows_ct"] = LS.Declared((("asia", "18:00"), ("london", "02:00"), ("ny", "16:00")), "test")
-    monkeypatch.setattr(LS, "DECLARED", bad)
+    real = DC.anchored_starts
+    monkeypatch.setattr(DC, "anchored_starts", lambda d: dict(real(d), ny=16 * 60 - 17 * 60 + 1440))   # 16:00 CT
     with pytest.raises(LS.LeverRefused):
-        LS.session_windows()
+        LS.session_windows(date(2021, 1, 15))
 
 
 def test_flip_arithmetic_is_rd05s() -> None:
