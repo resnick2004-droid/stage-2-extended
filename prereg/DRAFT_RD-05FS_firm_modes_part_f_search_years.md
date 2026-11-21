@@ -129,8 +129,8 @@ changes: the configurations, corners, flips, counts, uncertainty method and chec
   window under the purpose `identity`; they reproduce Stage 2's registered files, write no outcome of any cell and
   are ledgered in a clean run. No other part of this reading, and no check it introduces, takes a held-out day.
 - **S-2. The cut at the read.** Part F runs through RD-01's runner (`extended/firms.py`'s `run_plan`) as RD-06 (the
-  search-years delta of RD-01, `prereg/RD-06_firm_contracts_search_years.md`, its LF sha256
-  written here once that text is committed final) cuts it, its S-2 word for word in effect: no bar or atlas row after 2023-12-29 reaches
+  search-years delta of RD-01, `prereg/RD-06_firm_contracts_search_years.md`, LF sha256
+  `cc0289828ea81e23b00c3c0744f1bf124754426a5f04c038be35ac4ff5b1abc1`) cuts it, its S-2 word for word in effect: no bar or atlas row after 2023-12-29 reaches
   any builder, replay, gate or reading; the guard is the wrapper and the runner's refusal, not the reader's no-op
   choice-block authorisation; the wrapper's four reads (`propedge.data.bars.read_bars` as `atlas_a3.bar_arrays` calls
   it, clamped; `a3_resolution_map.load_a1`'s two frames, cut, its manifest's `day_list` whole; `atlas_a3.cached_walk`'s
@@ -248,8 +248,8 @@ text holds the quote, or a list of lines each holding the quote. The replacement
 | D-04 | L112-L113 | 1, the operator's choice | "every statement from part F is a description of the development window, in sample" | every statement from part F is a description of the search years, in sample (S-15) |
 | D-05 | L201-L204 | 2.5 | "every start day from 2020 to 2026" | for part F's replay, every start day from 2020 to 2023 (S-1, S-6); the coin has no start day (RD-05's) |
 | D-06 | L201, L260 | 2.5; 2.6 | "every start" | for part F, every search-year start (S-6) |
-| D-07 | L305 | 3, RD-01 | "`LU40`'s registered rows are RD-01's, never re-run here (12.1)" | `LU40`'s rows are RD-06's `LU` corners (`prereg/RD-06_firm_contracts_search_years.md`, its LF sha256 written here once that text is committed final), never re-run here |
-| D-08 | L306 | 3, RD-03 | "`TS-N`'s registered rows are RD-03's `naf` cells, never re-run here (12.1)" | `TS-N`'s rows are RD-08's `naf` cells (`prereg/RD-08_contract_levers_search_years.md`, its LF sha256 written here once that text is committed final), never re-run here |
+| D-07 | L305 | 3, RD-01 | "`LU40`'s registered rows are RD-01's, never re-run here (12.1)" | `LU40`'s rows are RD-06's `LU` corners (`prereg/RD-06_firm_contracts_search_years.md`, LF sha256 `cc0289828ea81e23b00c3c0744f1bf124754426a5f04c038be35ac4ff5b1abc1`), never re-run here |
+| D-08 | L306 | 3, RD-03 | "`TS-N`'s registered rows are RD-03's `naf` cells, never re-run here (12.1)" | `TS-N`'s rows are RD-08's `naf` cells (`prereg/RD-08_contract_levers_search_years.md`, LF sha256 `e19bafe2562b91ea01d55a201ba968600a8796bae2fb32eff0f3582e2b5ee8ec`), never re-run here |
 | D-09 | L303, L307, L308 | 3, Stage 2's Lucid reads; RD-02 and RD-04; U1, Q-05 and Q-44 | "all starts" | records; the whole-window reads are S-12's entries; S-8 compares U1's and Q-44's rows on the point arm and search-year starts only; RD-02 is re-declared on the search years and none of its cells is read here |
 | D-10 | L309 | 3, program U's nine families | "the late block is late development, not out of sample" | those reads were of the held-out years; S-12's entries; none read here (S-13) |
 | D-11 | L422 | 4.4, G-6 | "rule changes over 2020-2026" | for part F, rule changes over 2020-2023 (S-1); today's terms on every search-year start |
