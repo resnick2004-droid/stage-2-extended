@@ -36,7 +36,7 @@ from extended import search_space as SS  # noqa: E402
 from extended import triggers as T  # noqa: E402
 
 SEED = 4242
-SLOTS = {"london": 1, "ny": 2}
+SLOTS = {"london": 1, "ny_am": 2, "ny_pm": 1}   # NY split at T2b: a searched slot never takes `ny` (m2)
 
 
 @pytest.fixture(scope="module")
@@ -82,7 +82,7 @@ def day_problems(space: SS.Space, designs, days) -> list[str]:
         for d in designs:
             ws = space.windows_on(d, day)
             for name, sess, a, z in ws:
-                lo, hi = b["ny_am" if sess == "ny" else sess]
+                lo, hi = b[sess]                        # ny_am, ny_pm strict at T2b's split (m1)
                 if not (lo <= a <= z < hi) or z > b["_last_entry"][1] or a % 5 or z % 5:
                     out.append(f"{day} {name} [{a}, {z}] leaves {sess} [{lo}, {hi})")
             out += [f"{day} collision {x[0]} {y[0]}" for x, y in zip(ws, ws[1:]) if y[2] <= x[3]]
@@ -108,7 +108,7 @@ def lever_problems(space: SS.Space, designs) -> list[str]:
                 out.append(f"latency {lat} off {src}'s cells")
             if (src == "rl3" and ent != SS.TICKET) or (src != "rl3" and ent not in LS.bounds("T5").values):
                 out.append(f"entry {ent} for {src}")
-            if s.session != "ny" and not T.overnight_allowed() and not getattr(space, "_test_overnight", False):
+            if s.session not in ("ny_am", "ny_pm") and not T.overnight_allowed() and not getattr(space, "_test_overnight", False):
                 out.append(f"overnight slot {s.name} on before H2")
     return out
 
@@ -164,11 +164,11 @@ def test_the_lever_space_loads_what_the_loader_loads_and_carries_its_refusals(le
     assert lever.dim("S3").kind == SS.REAL and (lever.dim("S3").lo, lever.dim("S3").hi) == (LS.bounds("S3").lo,
                                                                                          LS.bounds("S3").hi)
     sess = SS.session_slots()                                           # offsets from each date's session start
-    assert set(sess) == {"evening", "asia", "london", "ny"}            # T2b undeclared: NY is one session
+    assert set(sess) == {"evening", "asia", "london", "ny"}            # no boundary: the reading form, NY whole
     assert all(v[0] == 0 for v in sess.values())
     every = C.session_bounds()                                          # the bounds holding on every search-year day
     for name, (lo, hi, step) in sess.items():
-        a, b = every["ny_am" if name == "ny" else name]
+        a, b = every[name]
         assert (b - a - 1) // step * step == hi or (name == "ny" and hi == (every["_last_entry"][1] - a) // 5 * 5)
     assert lever.days == SS.search_days() and len(lever.days) == len(LS.trading_dates(DC.SEARCH_START,
                                                                                       DC.SEARCH_END))
@@ -176,27 +176,28 @@ def test_the_lever_space_loads_what_the_loader_loads_and_carries_its_refusals(le
         assert lever.dim("london.0.on").values == (SS.OFF,) and lever.refused["london.0"] == "OvernightRefused"
     else:                                                               # H2's row (E-231): overnight admitted
         assert lever.dim("london.0.on").values == (SS.OFF, SS.ON) and "london.0" not in lever.refused
-    with pytest.raises(SS.SpaceRefused):
-        SS.from_lever_space(slots={"ny_am": 1})                       # T2b is to declare
+    with pytest.raises(SS.SpaceRefused, match="whole NY"):
+        SS.from_lever_space(slots={"ny": 1})                          # T2b declared: NY is split (m2)
+    assert {s.session for s in lever.slots} == {"london", "ny_am", "ny_pm"}
     split = SS.session_slots(ny_boundary=1080)
     assert 930 + split["ny_am"][1] < 1080 and SS.session_spans(DAYS[0], ny_boundary=1080)["ny_pm"][0] == 1080
 
 
 def test_a_computed_s1_becomes_a_per_slot_lever(monkeypatch):
-    """Q-171 on master: once S1's search-year reading loads, each slot takes its own session's range of k (`ny` reads
-    `ny_am`'s, the whole NY session); while it does not, S1 is carried as refused."""
-    assert "S1" in SS.from_lever_space(slots={"ny": 1}).refused or "ny.0.S1" in SS.from_lever_space(
-        slots={"ny": 1}).names()
+    """Q-171 on master: once S1's search-year reading loads, each slot takes its own session's range of k (`ny_am`
+    and `ny_pm` each their own name's); while it does not, S1 is carried as refused."""
+    assert "S1" in SS.from_lever_space(slots={"ny_am": 1}).refused or "ny_am.0.S1" in SS.from_lever_space(
+        slots={"ny_am": 1}).names()
     real = LS.space()
     fake = dict(real, S1=LS.Range("S1", "interval", lo=0.5, hi=3.0, step=None))
     monkeypatch.setattr(LS, "space", lambda: fake)
     monkeypatch.setattr(LS, "stop_width", lambda s: LS.Range("S1", "interval", lo={"london": 0.4}.get(s, 0.6),
                                                              hi={"london": 2.0}.get(s, 2.5), step=None))
-    sp = SS.from_lever_space(slots={"london": 1, "ny": 1})
-    assert (sp.dim("ny.0.S1").lo, sp.dim("ny.0.S1").hi) == (0.6, 2.5)
+    sp = SS.from_lever_space(slots={"london": 1, "ny_am": 1})
+    assert (sp.dim("ny_am.0.S1").lo, sp.dim("ny_am.0.S1").hi) == (0.6, 2.5)
     assert (sp.dim("london.0.S1").lo, sp.dim("london.0.S1").hi) == (0.4, 2.0)
     d = SS.Sampler(sp, seed=SEED, method="sobol").survey(4, ledger=SS.CellLedger(), **TY.SV)
-    assert all(x["ny.0.S1"] is None or 0.6 <= x["ny.0.S1"] <= 2.5 for x in d)
+    assert all(x["ny_am.0.S1"] is None or 0.6 <= x["ny_am.0.S1"] <= 2.5 for x in d)
 
 
 def test_the_sampler_respects_every_constraint_on_the_lever_space(lever):
@@ -220,7 +221,7 @@ def anchored(monkeypatch_module):
     """The space with its overnight slots open (the guard patched, a construction check only: no overnight source
     runs here), so the sessions whose starts move with the dates -- asia, london -- are sampled."""
     monkeypatch_module.setattr(SS, "_overnight_allowed", lambda: True)
-    sp = SS.from_lever_space(slots={"evening": 1, "asia": 1, "london": 2, "ny": 2})
+    sp = SS.from_lever_space(slots={"evening": 1, "asia": 1, "london": 2, "ny_am": 1, "ny_pm": 1})
     object.__setattr__(sp, "_test_overnight", True)
     return sp
 
@@ -256,7 +257,7 @@ def test_mutation_bounds_from_one_date_only_is_caught(monkeypatch):
     """The offsets bounded on a winter day only (asia then runs to 475 minutes from 18:00 CT): read on a summer day,
     asia starts at 19:00 CT and such a window leaves its session."""
     monkeypatch.setattr(SS, "_overnight_allowed", lambda: True)
-    sp = SS.from_lever_space(slots={"asia": 1, "ny": 1}, days=(DAYS[0],))
+    sp = SS.from_lever_space(slots={"asia": 1, "ny_am": 1}, days=(DAYS[0],))
     object.__setattr__(sp, "_test_overnight", True)
     ds = SS.Sampler(sp, seed=SEED, method="sobol").survey(64, ledger=SS.CellLedger(), **TY.SV)
     assert day_problems(sp, ds, (DAYS[0],)) == []
@@ -547,11 +548,11 @@ def test_ny_windows_inside_the_closed_window_are_refused_and_counted(lever):
     ds = SS.Sampler(lever, seed=SEED, method="sobol").survey(64, ledger=led, **TY.SV)
     for d in ds:
         for s in lever.slots:
-            if s.session == "ny" and d[SS.slot_dim(s.name, "on")] == SS.ON:
+            if s.session == "ny_am" and d[SS.slot_dim(s.name, "on")] == SS.ON:
                 assert d[SS.slot_dim(s.name, "first")] >= 30                       # 09:00 CT and after
     closed = [r for r in led.rows if "closed window" in r["reason"]]
     assert closed and all(r["class"] == "session" for r in closed)
-    assert all(any(r["design"][f"ny.{i}.on"] == SS.ON and r["design"][f"ny.{i}.first"] < 30 for i in (0, 1))
+    assert all(any(r["design"][f"ny_am.{i}.on"] == SS.ON and r["design"][f"ny_am.{i}.first"] < 30 for i in (0, 1))
                for r in closed)
 
 
@@ -574,7 +575,9 @@ def test_to_components_gives_the_schedulers_design_on_each_date_pattern(anchored
             assert isinstance(cd, C.Design) and cd.day == day
             want = {(w[0], w[2], w[3]) for w in anchored.windows_on(d, day)}
             assert {(c.name, c.first, c.last) for c in cd.components} == want
-            assert {c.session for c in cd.components} <= {"evening", "asia", "london", "ny_am"}
+            assert {c.session for c in cd.components} <= {"evening", "asia", "london", "ny_am", "ny_pm"}
+            assert {c.session for c in cd.components} == {s.session for s in anchored.slots
+                                                         if d[SS.slot_dim(s.name, "on")] == SS.ON}   # its own (m1)
     early = [d for d in ds if d["asia.0.first"] < 60]                        # inside asia only from its own start
     if early:
         with pytest.raises(C.DesignRefused):
