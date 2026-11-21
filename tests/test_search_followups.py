@@ -16,7 +16,9 @@ What is asserted:
 - **n-2**: a role closes when its batch returns (the survey, a round, a plateau check), a cell recorded after it is
   refused (`RoleClosed`), and only the drawer that opened the role records into it (`NotTheDrawer`), the caller's
   runner inside a plateau check included;
-- **n-3**: a round's `RoundSpec` and limits are its role's meta.
+- **n-3**: a round's `RoundSpec` and limits are its role's meta;
+- **F-3** (BUILD_SURVEY_v2, the lead's ruling): a declared limit is read on the fresh re-read seeds, and the
+  plateau's verdict exposes the finalist's re-read limits; a finalist lucky on its selection seeds reads outside there.
 Each guard's mutant is run on a scratch copy of the module (the hand-back lists them); every one fails a test here.
 """
 from __future__ import annotations
@@ -26,6 +28,7 @@ import dataclasses
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 from scipy.stats import t as student_t
 
@@ -269,3 +272,44 @@ def test_n3_a_rounds_spec_and_limits_are_in_its_role():
     P.propose(sp, rs, spec=spec2, round_index=2, seed=ROUND_SEED, ledger=led)
     m2 = led.roles["round-2"]["meta"]
     assert m2["spec"] == dataclasses.asdict(spec2) and m2["spec"] != meta["spec"] and m2["limits"] == ()
+
+
+# ------------------------------------------------------------------------------------------------ F-3
+
+
+TRUE_RISK, RISK_BOUND = 0.6, 0.5
+
+
+def lucky_risk(design, *, protocol):
+    """The caller's runner of F-3's toy: the composite flat with seed noise; the risk truly TRUE_RISK, above
+    RISK_BOUND, but 0.3 lower on each selection seed (the lucky draw that selected the design)."""
+    if protocol.measure == "risk":
+        ps = [TRUE_RISK - 0.3 if s in TY.SEEDS else TRUE_RISK + 0.05 * TY.seed_noise(design, s)
+              for s in protocol.seeds]
+    else:
+        ps = [0.2 * TY.seed_noise(design, s) for s in protocol.seeds]
+    return TY.reading(design, float(np.mean(ps)), protocol=protocol, per_seed=ps,
+                      se=float(np.std(ps, ddof=1) / np.sqrt(len(ps))))
+
+
+def test_f3_a_limit_is_read_on_the_reread_seeds_and_the_reread_value_is_exposed():
+    """BUILD_SURVEY_v2 F-3 (the lead's ruling): a toy finalist whose true risk sits above its bound reads inside on the
+    selection seeds and outside on the fresh re-read seeds, and the verdict exposes the re-read's value. The selection
+    reading is left as it was."""
+    ds, led = survey(**TY.sv(measures=("risk",)))
+    fin = ds[0]
+    assert led.protocol_for("risk", reread=True) == TY.REREAD.with_measure("risk")
+    sel = SS.admit_one(lucky_risk(fin, protocol=led.protocol_for("risk")), ledger=led, measure="risk")
+    assert sel.value <= RISK_BOUND                                       # inside on the selection seeds
+    v = PL.check(lucky_risk(fin, protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led,
+                 ledger_seed=LSEED)
+    want = lucky_risk(fin, protocol=TY.REREAD.with_measure("risk"))
+    assert set(v.reread_limits) == {"risk"}
+    assert v.reread_limits["risk"]["value"] == want.value and want.value > RISK_BOUND     # outside on the re-read
+    assert v.reread_limits["risk"]["se"] == pytest.approx(want.se)
+    with pytest.raises(SS.OffProtocol):
+        led.protocol_for("ruin", reread=True)                            # an undeclared measure stays refused
+    _, led0 = survey()
+    v0 = PL.check(lucky_risk(fin, protocol=TY.PROTOCOL), TY.toy_space(), RULE, lucky_risk, ledger=led0,
+                  ledger_seed=LSEED)
+    assert v0.reread_limits == {}                                        # no limit declared, none reported

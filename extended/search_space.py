@@ -94,7 +94,8 @@ roles=)` is the one door. It refuses:
 - a block or an outcome session past 2023-12-29 (CHARTER 3.6 (a), (d); E-208), the confirmation window, or a day before
   2020-01-02;
 - a reading off the ledger's protocol (another measure, blocks, seeds, horizon or library versions), on the
-  declared re-read seeds only where the plateau asks for them, under a measure the survey did not declare;
+  declared re-read seeds only where the plateau asks for them (the composite and every declared limit, F-3), under a
+  measure the survey did not declare;
 - **a design that is not a counted ``proposed`` cell of the ledger in one of the allowed roles**.
 Every reading the surrogate, the proposer or the plateau check sees comes through this door, so **within one ledger** a
 design read outside the count, or on a protocol picked after a look, never reaches a fit or a finalist. Across ledgers
@@ -687,11 +688,12 @@ class CellLedger:
 
     def protocol_for(self, measure: str | None = None, *, reread: bool = False) -> "Protocol":
         """The declared protocol for `measure` (its own measure, or a declared limit's), on the re-read seeds when
-        `reread`; anything else is refused."""
+        `reread` -- a declared limit included (BUILD_SURVEY_v2 F-3, the lead's ruling: a limit decided on the
+        selection reading, the luckiest, is biased toward inside); anything else is refused."""
         base = self.reread if reread else self.protocol
         if measure is None or measure == base.measure:
             return base
-        if reread or measure not in self._measures:
+        if measure not in self._measures:
             raise OffProtocol(f"REFUSED: measure {measure!r} is not declared on this ledger's protocol (the survey "
                               f"declared {base.measure!r} and limits {self._measures})")
         return base.with_measure(measure)
