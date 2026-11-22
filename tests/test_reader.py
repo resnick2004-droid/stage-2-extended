@@ -15,8 +15,10 @@ What is asserted (the brief's item 4, and what the mechanism needs to be one):
   a ledger that was tampered with refuses the next read; a committed line removed or rewritten later is reported by
   the history check, here on a temporary repository and on this repository's own history;
 * Q-158 (`tests/test_reader_heldout.py` holds the held-out rules' own cases): the synthetic log's E-906 and E-907
-  carry read tokens naming `scripts/probe.py`, and E-913 a verdict token for NQ, so the reads below that touch the
-  held-out years are the ones those rules admit; outside a clean run a registered design's held-out read is refused;
+  carry read tokens naming `scripts/probe.py`, and the `settled` fixture NQ's joint test with its verdict (Q-194c),
+  so the reads below that touch the
+  held-out years are the ones those rules admit (E-914 to E-916 the families' finalists' tokens, Q-194); outside a
+  clean run a registered design's held-out read is refused;
 * Q-58 (E-037, E-038): the purpose `registered_design` re-reads only P-14, P-15 and P-16, from `scripts/` only, under
   a decision row naming each design (never a family's or a reading's file), ledgered only inside a clean run; a pinned
   described reading (`prereg/RD-nn_<slug>.md`) declares judged-block reads on exactly the rules a family file does;
@@ -47,13 +49,18 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402  (importing the reader touches no sys.path, imports no engine)
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 
 # ------------------------------------------------------------------------------------------------- the temp tree
 
-FAMILY = "prereg/F-90_seal_test.md"
-FAMILY_TEXT = ("# F-90: a synthetic family for the reader's tests (Q-32; not a declaration of this repository)\n\n"
-               "Stage A reads the choice block only (`stage_A_supply`); it never reads the judged block.\n\n"
-               "- **Judged-block reads:** `stage_C_judgement`, `stage_D_scorecard`\n")
+#: Q-194e (P10): the one F- that reads the judged block is the market's held-out declaration, in the template's form
+FAMILY = "prereg/F-90_heldout_test_NQ.md"
+#: ES's held-out declaration (Q-194e): the child's ES read reaches Stage 2's own guard under it
+ES_HT = "prereg/F-89_heldout_test_ES.md"
+ES_HT_TEXT = VR.heldout_text("F-89: a synthetic held-out declaration for ES (the reader's tests)")
+FAMILY_TEXT = VR.heldout_text("F-90: a synthetic held-out declaration for the reader's tests (Q-32; not a "
+                              "declaration of this repository)\n\nStage A reads the choice block only "
+                              "(`stage_A_supply`); it never reads the judged block.")
 UNPINNED = "prereg/F-91_unpinned.md"
 EDITED = "prereg/F-92_edited.md"
 EDITED_PINNED_TEXT = "# F-92\n\n- **Judged-block reads:** `stage_C_judgement`\n"
@@ -112,8 +119,15 @@ def decisions(h90: str, h92: str, h94: str) -> str:
             f"| E-910 | 2026-11-16 | **RD-03 declared**, `{RD_EDITED}` sha256 `{sha_lf(RD_EDITED_PINNED_TEXT)}` | test |\n"
             f"| E-911 | 2026-11-16 | **RD-04 declared**, `{RD_FITTER}` sha256 `{sha_lf(RD_FITTER_TEXT)}` | test |\n"
             "| E-912 | 2026-11-16 | **A second stage-D read of RD-01** after its run 1 crashed | test |\n"
-            "| E-913 | 2026-11-16 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict (Q-158: a "
-            "described reading reads the held-out years only after it) | test |\n")
+            # Q-194: rule 1 binds every family purpose, so each family read here has its finalists' row after its pin
+            f"| E-914 | 2026-11-16 | heldout-finalists: F-90 @ {h90} list {'a' * 64} -- F-90's finalists | test |\n"
+            f"| E-915 | 2026-11-16 | heldout-finalists: F-94 @ {h94} list {'b' * 64} -- F-94's finalists | test |\n"
+            f"| E-916 | 2026-11-16 | heldout-finalists: F-95 @ {sha_lf(RIDER_TEXT)} list {'c' * 64} -- F-95's "
+            "finalists | test |\n"
+            f"| E-917 | 2026-11-16 | **F-89 declared** (ES's held-out declaration), `{ES_HT}` sha256 "
+            f"`{sha_lf(ES_HT_TEXT)}` | test |\n"
+            f"| E-918 | 2026-11-16 | heldout-finalists: F-89 @ {sha_lf(ES_HT_TEXT)} list {'d' * 64} -- F-89's "
+            "finalists | test |\n")
 
 
 def bars_frame() -> pd.DataFrame:
@@ -139,7 +153,7 @@ def make_tree(base: Path, name: str = RUN) -> Path:
     t = base / "runs" / name
     (t / "prereg").mkdir(parents=True)
     (t / "identity").mkdir()
-    for rel, text in ((FAMILY, FAMILY_TEXT), (UNPINNED, "# F-91\n\n" + NAMED_LINE), (EDITED, EDITED_TEXT),
+    for rel, text in ((FAMILY, FAMILY_TEXT), (ES_HT, ES_HT_TEXT), (UNPINNED, "# F-91\n\n" + NAMED_LINE), (EDITED, EDITED_TEXT),
                       (DRAFT, "# DRAFT F-93\n\n" + NAMED_LINE), (FITTER, FITTER_TEXT), (RIDER, RIDER_TEXT),
                       (READING, READING_TEXT), (RD_UNPINNED, "# RD-02\n\n- **Judged-block reads:** `stage_D_scorecard`\n"),
                       (RD_EDITED, RD_EDITED_TEXT), (RD_DRAFT, "# DRAFT RD\n\n- **Judged-block reads:** `stage_D_scorecard`\n"),
@@ -179,13 +193,25 @@ def tree(tmp_path, monkeypatch) -> Path:
 
 
 def ledger_lines(t: Path) -> list[str]:
+    """The ledger's lines, the seeded joint test's read (`heldout_verdict_rows.seed_with`, F-90) left out."""
     p = t / "results" / "read_ledger.jsonl"
-    return p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    lines = p.read_text(encoding="utf-8").splitlines() if p.exists() else []
+    return [x for x in lines if not VR.is_seed(json.loads(x))]
+
+
+@pytest.fixture
+def settled(tree) -> Path:
+    """The tree after NQ's joint held-out test and its verdict (Q-158, Q-194b, Q-194c: a described reading's and a
+    registered design's held-out reads come only after a verdict row backed by that test's ledgered read; the seed's
+    line is left out of `ledger_lines`). Its window is then the joint test's: another family reads only another
+    market (rule 2)."""
+    VR.seed_with(tree, [tree / BARS], FAMILY, FAMILY_TEXT)
+    return tree
 
 
 def judged(t: Path, **kw):
     """A judged-block read recorded without data (the engine-read door), F-90's stage C by default."""
-    args = {"purpose": "stage_C_judgement", "declaration": FAMILY, "files": [t / BARS], "what": "test read",
+    args = {"purpose": "heldout_test", "declaration": FAMILY, "files": [t / BARS], "what": "test read",
             "repo": t, **kw}
     return R.authorise_engine_read("2024-01-02", "2026-07-16", **args)
 
@@ -217,7 +243,7 @@ def test_blocks_of_a_span(start, end, want):
 def test_the_confirmation_window_is_refused_whatever_the_purpose(tree, monkeypatch, start, end, who):
     monkeypatch.setattr(R, "_main_script", lambda: tree / "identity" / "probe.py")
     kw = {"untagged": {}, "identity": {"purpose": "identity", "declaration": "E-901"},
-          "family": {"purpose": "stage_C_judgement", "declaration": FAMILY}}[who]
+          "family": {"purpose": "heldout_test", "declaration": FAMILY}}[who]
     with pytest.raises(R.ConfirmationWindowRefused, match="2026-07-17"):
         R.authorise(start, end, repo=tree, **kw)
     with pytest.raises(R.ConfirmationWindowRefused):
@@ -259,7 +285,7 @@ def test_a_choice_block_read_needs_no_tag(tree):
     assert ledger_lines(tree) == [], "only judged-block reads are ledgered"
 
 
-@pytest.mark.parametrize("kw", [{}, {"purpose": "stage_C_judgement"}, {"declaration": FAMILY}])
+@pytest.mark.parametrize("kw", [{}, {"purpose": "heldout_test"}, {"declaration": FAMILY}])
 def test_an_untagged_judged_read_raises(tree, kw):
     with pytest.raises(R.JudgedBlockSealed, match="judged block"):
         R.authorise("2023-12-29", "2024-01-02", repo=tree, **kw)
@@ -284,25 +310,26 @@ def test_the_declaration_must_name_the_purpose_on_its_judged_block_line(tree):
     # named in prose only: not a declaration of a judged read
     with pytest.raises(R.JudgedBlockSealed, match="does not name"):
         R.authorise("2024-01-02", "2026-07-16", purpose="stage_A_supply", declaration=FAMILY, repo=tree)
-    for purpose in ("stage_C_judgement", "stage_D_scorecard"):
+    for purpose in ("heldout_test", "heldout_stress"):
         a = R.authorise("2024-01-02", "2026-07-16", purpose=purpose, declaration=FAMILY, repo=tree)
         assert a.judged and a.kind == "family" and a.declaration == FAMILY and a.ledgered
         assert a.declaration_sha256 == sha_lf(FAMILY_TEXT)
-    a = R.authorise("2024-01-02", "2024-01-02", purpose="stage_C_judgement", declaration="F-90", repo=tree)
+    a = R.authorise("2024-01-02", "2024-01-02", purpose="heldout_test", declaration="F-90", repo=tree)
     assert a.declaration == FAMILY, "an F-id names its one file"
 
 
 def test_crlf_on_disk_keeps_the_pin(tree):
     (tree / FAMILY).write_bytes(FAMILY_TEXT.replace("\n", "\r\n").encode("utf-8"))
     git(tree, "commit", "-q", "-am", "crlf")
-    assert R.authorise("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=FAMILY, repo=tree).judged
+    assert R.authorise("2024-01-02", "2026-07-16", purpose="heldout_test", declaration=FAMILY, repo=tree).judged
 
 
 def test_choice_and_fitting_purposes_never_read_the_judged_block(tree):
     # F-94 is pinned and names `stage_B_fit` on its line; a fitting purpose is refused there anyway (audit H-2, R-4)
     with pytest.raises(R.JudgedBlockSealed, match="choice"):
         R.authorise("2024-01-02", "2026-07-16", purpose="stage_B_fit", declaration=FITTER, repo=tree)
-    assert R.authorise("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=FITTER, repo=tree).judged
+    with pytest.raises(R.HeldOutRefused, match="search years"):         # Q-194e (P10): a family, not F-HT
+        R.authorise("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=FITTER, repo=tree)
     assert R.authorise("2020-01-02", "2023-12-29", purpose="stage_B_fit", declaration=FITTER, repo=tree).blocks == \
         ("choice",)
 
@@ -314,7 +341,7 @@ def test_a_purpose_is_a_plain_name(tree, purpose):
 
 
 def test_a_family_judged_read_needs_a_clean_run_of_a_committed_tree(tree, monkeypatch, tmp_path):
-    ok = {"purpose": "stage_C_judgement", "declaration": FAMILY, "repo": tree}
+    ok = {"purpose": "heldout_test", "declaration": FAMILY, "repo": tree}
     monkeypatch.delenv("S2X_CLEAN_RUN")
     with pytest.raises(R.JudgedBlockSealed, match="clean run"):
         R.authorise("2024-01-02", "2026-07-16", **ok)
@@ -356,9 +383,10 @@ def test_identity_reads_are_allowed_from_identity_scripts(tree, monkeypatch):
 DESIGN = dict(purpose="registered_design", declaration="E-906", what="registered design")
 
 
-def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clean_run(tree, monkeypatch):
+def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clean_run(settled, monkeypatch):
     """E-037: `registered_design` re-reads Stage 2's own judged designs from this repository's `scripts/`, under a
     decision row naming them; checked everywhere, ledgered only inside a clean run, as an identity's read is."""
+    tree = settled
     led = tree / "results" / "read_ledger.jsonl"
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "probe.py")
     monkeypatch.delenv("S2X_CLEAN_RUN")
@@ -373,7 +401,7 @@ def test_a_registered_design_is_re_read_from_scripts_ledgered_only_inside_a_clea
         with pytest.raises(R.HeldOutRefused, match="clean run"):
             R.authorise_engine_read("2020-01-02", "2026-07-16", design=design, files=[tree / BARS, tree / WALKS],
                                     repo=tree, **DESIGN)
-    assert not led.exists(), "outside a clean run no ledger file appears"
+    assert not led.exists() or ledger_lines(tree) == [], "outside a clean run no line is written"
     monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
     monkeypatch.setenv("S2X_RUN_ID", "q58-sim@run-1")
     for i in range(2):                                            # one run reads as often as it needs
@@ -418,7 +446,8 @@ def test_a_registered_design_is_refused_for_any_other_design(tree, monkeypatch, 
     assert ledger_lines(tree) == []
 
 
-def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, monkeypatch):
+def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(settled, monkeypatch):
+    tree = settled
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "probe.py")
     kw = dict(files=[tree / BARS], repo=tree, what="registered design")
     # a family -- even a pinned one naming the purpose on its line -- never declares a registered design's re-read
@@ -426,8 +455,9 @@ def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, 
         with pytest.raises(R.JudgedBlockSealed, match="decision row"):
             R.authorise_engine_read("2020-01-02", "2026-07-16", purpose="registered_design", declaration=declaration,
                                     design="P-14", **kw)
-    assert R.authorise_engine_read("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=RIDER,
-                                   **kw).kind == "family", "the control: F-95 is a valid family for its judgement"
+    with pytest.raises(R.HeldOutRefused, match="search years"):         # Q-194e (P10): no family reads a held-out
+        R.authorise_engine_read("2024-01-02", "2026-07-16", purpose="stage_C_judgement", declaration=RIDER,
+                                market="ES", **kw)                      # date, in any market, under any purpose
     for declaration, design, why in (("E-999", "P-14", "no decision row"), ("E-904", "P-14", "does not name"),
                                      ("E-907", "P-16", "does not name"), ("E-907", ("P-14", "P-15"), "does not name")):
         with pytest.raises(R.JudgedBlockSealed, match=why):
@@ -441,17 +471,18 @@ def test_a_registered_design_is_never_a_familys_and_needs_a_row_naming_it(tree, 
         with pytest.raises(ValueError, match="registered_design"):
             R.authorise("2020-01-02", "2026-07-16", purpose=purpose, declaration=declaration, design="P-14",
                         repo=tree)
-    assert [json.loads(x)["declaration"]["ref"] for x in ledger_lines(tree)] == [RIDER, "E-907"], \
-        "the control family read and E-907's re-read ledgered (the tree is a simulated clean run); nothing refused was"
+    assert [json.loads(x)["declaration"]["ref"] for x in ledger_lines(tree)] == ["E-907"], \
+        "E-907's re-read ledgered (the tree is a simulated clean run); nothing refused was"
 
 
 # --------------------------------------------------------------- Q-58: described readings (RD- files, E-023 (1))
 
 
-def test_a_pinned_described_reading_authorises_its_judged_reads_on_the_family_rules(tree, monkeypatch):
+def test_a_pinned_described_reading_authorises_its_judged_reads_on_the_family_rules(settled, monkeypatch):
     """A pinned `prereg/RD-nn_<slug>.md` declares judged-block reads exactly as a family file does: pinned in a row and
     unedited since, naming the purpose on its `Judged-block reads:` line, no choosing or fitting purpose, inside a
     clean run of committed code, once per purpose unless a row names another read."""
+    tree = settled
     for declaration in (READING, "RD-01"):
         a = R.authorise("2024-01-02", "2026-07-16", purpose="stage_D_scorecard", declaration=declaration, repo=tree)
         assert a.judged and a.ledgered and a.declaration == READING and a.kind == "described_reading"
@@ -489,7 +520,8 @@ def test_a_described_reading_that_does_not_authorise_is_refused(tree, declaratio
     assert ledger_lines(tree) == []
 
 
-def test_a_described_readings_judged_read_needs_a_clean_run_of_a_committed_tree(tree, monkeypatch):
+def test_a_described_readings_judged_read_needs_a_clean_run_of_a_committed_tree(settled, monkeypatch):
+    tree = settled
     ok = {"purpose": "stage_D_scorecard", "declaration": READING, "repo": tree}
     assert R.authorise("2024-01-02", "2026-07-16", **ok).judged
     assert R.authorise("2024-01-02", "2026-07-16", purpose="stage_D_scorecard", declaration=RD_FITTER,
@@ -534,7 +566,7 @@ def test_a_judged_read_writes_one_ledger_line(tree):
     lines = ledger_lines(tree)
     assert len(lines) == 1
     rec = json.loads(lines[0])
-    assert rec["ledger"] == 1 and rec["purpose"] == "stage_C_judgement" and rec["repeat"] is None
+    assert rec["ledger"] == 1 and rec["purpose"] == "heldout_test" and rec["repeat"] is None
     assert rec["declaration"] == {"ref": FAMILY, "sha256": sha_lf(FAMILY_TEXT), "kind": "family"}
     assert rec["dates"] == {"start": "2024-01-02", "end": "2026-07-16", "blocks": ["judged"],
                             "judged_first": "2024-01-02", "judged_last": "2026-07-16"}
@@ -555,7 +587,7 @@ def test_a_judged_read_writes_one_ledger_line(tree):
 def test_the_ledger_only_grows(tree):
     judged(tree)
     first = (tree / "results" / "read_ledger.jsonl").read_bytes()
-    judged(tree, purpose="stage_D_scorecard")
+    judged(tree, purpose="heldout_stress")
     after = (tree / "results" / "read_ledger.jsonl").read_bytes()
     assert after.startswith(first) and len(ledger_lines(tree)) == 2
 
@@ -567,14 +599,11 @@ def test_a_second_run_under_the_same_declaration_and_purpose_raises(tree, monkey
     with pytest.raises(R.JudgedBlockReadTwice, match="once"):
         judged(tree)
     assert len(ledger_lines(tree)) == 2
-    judged(tree, purpose="stage_D_scorecard")                     # another declared purpose: its own first read
-    with pytest.raises(R.JudgedBlockSealed, match="does not name"):
-        judged(tree, repeat="E-904")                              # a row that does not name the declaration
-    judged(tree, repeat="E-903")                                  # the row that authorises the second read
-    assert json.loads(ledger_lines(tree)[-1])["repeat"] == "E-903"
-    monkeypatch.setenv("S2X_RUN_ID", "q32-sim@run-3")
-    with pytest.raises(R.JudgedBlockReadTwice, match="E-903"):
-        judged(tree, repeat="E-903")                              # one row, one more run
+    judged(tree, purpose="heldout_stress")                        # another declared purpose: its own first read
+    for row in ("E-904", "E-903"):                                # Q-194e (P9): the held-out declaration is read once:
+        with pytest.raises(R.HeldOutRefused, match="no repeat row"):   # no repeat row, naming it or not
+            judged(tree, repeat=row)
+    assert len(ledger_lines(tree)) == 3
 
 
 def test_identity_reads_are_ledgered_only_inside_a_clean_run_and_never_limited(tree, monkeypatch):
@@ -648,7 +677,7 @@ def test_a_tampered_ledger_refuses_the_next_read(tree, tamper):
             f.write(tamper)
     before = p.read_bytes()
     with pytest.raises(R.LedgerError):
-        judged(tree, purpose="stage_D_scorecard")
+        judged(tree, purpose="heldout_stress")
     assert p.read_bytes() == before, "nothing appended to a ledger that does not verify"
     with pytest.raises(R.LedgerError):
         R.read_ledger(p)
@@ -741,7 +770,7 @@ def test_reads_through_the_vendored_engine(tmp_path):
             except Exception as e:
                 out[key] = {{"error": type(e).__name__, "msg": str(e)[:300]}}
             out[key]["lines"] = len(led.read_text(encoding="utf-8").splitlines()) if led.exists() else 0
-        tag = dict(purpose="stage_C_judgement", declaration={FAMILY!r}, repo=t, what="child read")
+        tag = dict(purpose="heldout_test", declaration={FAMILY!r}, repo=t, what="child read")
         attempt("choice", lambda: R.read_bars("2023-12-28", "2023-12-29", repo=t))
         attempt("untagged", lambda: R.read_bars("2023-12-29", "2024-01-02", repo=t))
         attempt("judged", lambda: R.read_bars("2024-01-02", "2026-07-16", **tag))
@@ -757,7 +786,8 @@ def test_reads_through_the_vendored_engine(tmp_path):
         es.mkdir()
         (es / "bars.parquet").write_bytes((t / {BARS!r}).read_bytes())
         # ES's 2025-07-01 on is Stage 2's ES confirmation window: Stage 2's own guard refuses it, before any line
-        attempt("stage2_guard", lambda: R.read_bars("2025-07-01", "2025-07-02", market="ES", **tag))
+        es_tag = {{**tag, "declaration": {ES_HT!r}}}           # Q-194e: ES's own held-out declaration
+        attempt("stage2_guard", lambda: R.read_bars("2025-07-01", "2025-07-02", market="ES", **es_tag))
         attempt("walks_bad_name", lambda: R.read_walks("../A3", "walks", "2023-12-28", "2023-12-29", repo=t))
         print(json.dumps(out))
     """, ROOT, {"S2X_CLEAN_RUN": RUN, "S2X_RUN_ID": "q32-sim@child"})

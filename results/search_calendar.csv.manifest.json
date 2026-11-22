@@ -1,0 +1,130 @@
+{
+  "columns": [
+    "date",
+    "weekday",
+    "session",
+    "sessions_left",
+    "day_kind",
+    "roll",
+    "bls",
+    "fomc",
+    "void_day",
+    "void_overnight",
+    "void_overnight_0829",
+    "prior_void",
+    "why_void_day",
+    "why_void_overnight",
+    "why_void_overnight_0829",
+    "why_prior_void"
+  ],
+  "description": "Q-197: the pinned search-year session calendar -- every NQ session 2020-01-02..2023-12-29 of the bar manifest's day_list, its ordinal and sessions left (start counted), day kind and each reading class's void flags from extended.day_calendar; dates, labels and integers only; no randomness",
+  "exploratory": false,
+  "git_commit": "7b511445d4c158618ba8151bb359adbc0bee982b",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "calendar_digest": "sha256 of the ISO dates, one a line, each ended by \\n (W42-R1's calendar_digest, extended/wave42.py at wt/wt-infra 357a339)",
+    "calendar_sha256": "5f46bcad48df1fcbe47d16130cd9f9d3d56277774221cab5c4166a9819e374f8",
+    "code_sha256": {
+      "extended/calendar_early_closes.py": "cc23c3b49c1859230256982d977807d3a59c6d99d4b1cbc72fd2f75a480a9092",
+      "extended/day_calendar.py": "12cd35947a6c463c0c0d8e951cded770db81e424c1557f69f6a5739e907e3fd2",
+      "extended/features.py": "2d4c0164bf6c95286c65ab10cced6fcc3c01646496e87136e3ce1b79667beeef",
+      "extended/search_calendar.py": "a60a491aad0eccd3a55835f3ae5a64f59de48da2d2aad7f86928e4b10b1936b7",
+      "extended/triggers.py": "cdba74b94d64af059399c3b4fa27c92391c2a20bcaec85e4dd4291e0d1c65c63",
+      "extended/walker.py": "8eb505707db2fc4e7a26cdcd24b9a99bb3697bdae54019fa40339cb983da2229",
+      "scripts/search_calendar.py": "934cd920252506fee73b56fe35eada7bfa7422dd02d5fe0c8f2c27801936b551"
+    },
+    "confirmation_window_read": false,
+    "first": "2020-01-02",
+    "held_out_read": false,
+    "identities": {
+      "I-1": {
+        "dates": 1034,
+        "h2_flags_dates": 1034,
+        "held": true
+      },
+      "I-2": {
+        "classes": [
+          "day",
+          "overnight",
+          "overnight_0829"
+        ],
+        "days": 1034,
+        "h2_void_days": 6,
+        "held": true,
+        "prior_void_days": 60,
+        "void_days": {
+          "day": 37,
+          "overnight": 46,
+          "overnight_0829": 46
+        }
+      }
+    },
+    "inputs": {
+      "a1_days": "not read",
+      "bars_manifest": {
+        "bars_read": false,
+        "file": "vendor/stage2/data/bars/NQ/manifest.json",
+        "parquet_sha256": "c391d97ad1c11db3ce0da0c65f0d0ac9df1582617666b37c00ad206c3add2041",
+        "sha256": "d0a26fe100851aa1ad60cb3d7a9f0681d835d87d56e8616483a5134ebf8561da"
+      },
+      "calendar_early_closes": {
+        "file": "config/calendar_early_closes.csv",
+        "sha256": "2596b7e0a7bef603ddc84c9c87dae815c7f4885185ed586d19fab937b8360573"
+      },
+      "h2_flags": {
+        "file": "results/h2_overnight_flags.csv",
+        "git_commit": "3cf3453c2e23198bcb1b86c2093120977023ecca",
+        "manifest_records": "c5e44e57ab4ea8766dd57f8e097857b5583b583778caafa1b8f9e584bdc4b702",
+        "manifest_sha256": "35433eb5dd3474be7199b0626c9916f5f65ab87e409a40033fe2056298a40a32",
+        "sha256": "c5e44e57ab4ea8766dd57f8e097857b5583b583778caafa1b8f9e584bdc4b702"
+      },
+      "vendored_calendars": {
+        "vendor/stage2/config/sources/fomc_statements.csv": "c027236f4941a8ba20f0a741aa6a10422f6a74596e8d5dfe524137b3801a18b9",
+        "vendor/stage2/config/sources/fomc_statements_2020_2024q1.csv": "752ee3318d10faeb0d1428e24d777daef6f574512863a967a1e4dc383e0f30be",
+        "vendor/stage2/config/sources/fomc_statements_2026q3.csv": "71e6d2f2ef7b85fff51f9c54160d538b0935209b5d03eaf542cfe5445293af69",
+        "vendor/stage2/data/release_days_0830_2009_2025.csv": "30c5c1994d11e5c42f111f6738263152cca68e180184e71f63fcdbee90878d26",
+        "vendor/stage2/data/release_days_0830_2026.csv": "e8459aa925b25fc2663d9bcf3a083cfe6ddb31ee6a29edb8b9cdf1454b2074ea"
+      }
+    },
+    "last": "2023-12-29",
+    "reading_classes": {
+      "day": {
+        "reads_0829": false,
+        "reads_overnight": false
+      },
+      "overnight": {
+        "reads_0829": false,
+        "reads_overnight": true
+      },
+      "overnight_0829": {
+        "reads_0829": true,
+        "reads_overnight": true
+      }
+    },
+    "rule2_threshold": 8,
+    "search_years": [
+      "2020-01-02",
+      "2023-12-29"
+    ],
+    "session_counting": "session 1 is the first date; sessions_left = N - session + 1, the start session counted (H4's draft, wt/wt-h4 f897cd7; W42-R1's B-2)",
+    "sessions": 1034,
+    "walk_last_stamp": "15:07"
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\q197-cal",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "q197-cal"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "search_calendar.csv",
+  "rows": 1034,
+  "script": "scripts/search_calendar.py",
+  "seed": null,
+  "sha256": "dfd75dadb697349eea547fc88c1bb18b50828a2e60ac6496366e0e5f4da9a3ba",
+  "timestamp": "2026-11-21T09:13:26+00:00",
+  "variant_count": null
+}
