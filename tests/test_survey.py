@@ -10,21 +10,31 @@ calendar: every input and output is in a temporary folder (`SV.ROOT` pointed the
 * the refusals (pins, rows, bindings, data, the space's digest, the allowlist, the spec's form, held-out first, the
   calendar, the runner's values, a second run, the engine, W42-R1's public functions, an unset limit, the process
   under a pin);
-* M-2's do-nothing floor at 10, 11, 25 and 43 seeds;
+* M-2's do-nothing floor at 10, 11, 25 and 43 seeds, decided by W42-R1's `above_floor` (Q-186 m-1);
+* Q-186's pre-pin fixes: data through the licensed data's junctions only, and the runner's data report equal to the
+  declared (M-1, a real `mklink /J` junction on synthetic files); the rows' numbers with boundaries (m-2); the values'
+  provenance under a pin (m-3); the driver and the entry script bound, the invocation exact (m-4); the once-record
+  outside the checkout (m-5); a fixture run's token read by no held-out rule (m-6); the seven guards the red team's
+  mutants passed (m-7);
 * a mutation of each step is killed by its scenario's own verdict, an exception counting only when it is the expected
-  refusal.
+  refusal -- hand-written mutants and one-line source edits (`_edit`, the red team's mutplugin form).
+
+The seeds here are small literals of these tests' own; none is a declared block.
 """
 from __future__ import annotations
 
 import contextlib
 import copy
 import dataclasses
+import inspect
 import json
 import os
 import subprocess
 import sys
 import textwrap
+from fractions import Fraction
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -164,10 +174,15 @@ def audit(out, spec=W.SPEC) -> list[str]:
         if abs(float(f["reread_value"]) - rr.get(f["id"], float("nan"))) > 1e-12:
             probs.append(f"finalist {f['id']}'s reread value is not its re-read reading")
     if out.finalists:
-        m = R.HELDOUT_TOKENS["finalists"].match(f"| E-999 | 2026-11-20 | {out.token} -- the finalists |")
+        row = f"| E-999 | 2026-11-20 | {out.token} -- the finalists |"
+        if not str(out.token).startswith(SV.FIXTURE_TOKEN + " ") or R.HELDOUT_TOKENS["finalists"].match(row) or \
+                R.heldout_tokens(row, "finalists") or R.HELDOUT_TOKEN_LIKE.search(str(out.token)):
+            probs.append("a fixture run's token is in a form a held-out rule reads (m-6)")
+        real = SV.finalists_token(spec["prereg_id"], out.declaration_sha256, out.list_sha256, fixture=False)
+        m = R.HELDOUT_TOKENS["finalists"].match(f"| E-999 | 2026-11-20 | {real} -- the finalists |")
         if not m or m.group("sha") != out.declaration_sha256 or m.group("list") != out.list_sha256 \
                 or m.group("decl") != spec["prereg_id"]:
-            probs.append("the token is not Q-158's form for this declaration and list")
+            probs.append("the pinned form of the token is not Q-158's for this declaration and list")
         vals = [float(x) for x in lst["selection_value"]]
         if vals != sorted(vals):
             probs.append("the finalists are not in the declared order")
@@ -390,11 +405,6 @@ def sc_identity(eng, tmp, roots):
     return ok
 
 
-def sc_crossing(eng, tmp, roots):
-    """The one-sided check beside a limit: a small excess within the t critical value is not shown; a large one is."""
-    return SV.crossing_check(0.5, 1.0, 0.05, 32)[1] is False and SV.crossing_check(3.0, 1.0, 0.05, 32)[1] is True
-
-
 def sc_do_nothing_exact(eng, tmp, roots):
     """M-2: a design scoring the floor (or one ulp over it) on every seed is refused at 10, 11, 25 and 43 seeds -- the
     counts at which a float mean rounds above it; one past the floor by twice the epsilon is kept."""
@@ -417,6 +427,346 @@ def sc_b5(eng, tmp, roots):
     """C-1's self-check: the survey loads only when the public composite of the do-nothing journey is W42-R1's floor."""
     with at(roots["default"]["root"]):
         return SV.load_objective(W42).floor == roots["default"]["values"]["null_journeys"]["floor"]["value"]
+
+
+# ------------------------------------------------------------------------------------------------ Q-186's scenarios
+# Each returns True when the guard behaves correctly, and checks a control that it does not refuse everything.
+
+
+def sc_floor_agrees(eng, tmp, roots):
+    """m-1: the survey's do-nothing floor is W42-R1's `above_floor`, decision for decision, on p1_floor's band (per-seed
+    values within a few ulps of floor + DO_NOTHING_EPS), where an exact-Fraction comparator disagrees with it."""
+    ctx = SimpleNamespace(W=W42)
+    with at(roots["default"]["root"]):
+        base = SV.load_objective(W42)
+    rng = np.random.default_rng(20261121)                    # this test's own seed
+    agree, frac_differs = True, 0
+    for floor in (1 / 6 + 1 / 6, base.floor):
+        ctx.obj = dataclasses.replace(base, floor=floor)
+        thr = float(floor) + W42.DO_NOTHING_EPS
+        for n in (4, 10, 11, 25, 32, 43):
+            for _ in range(400):
+                per = thr + rng.integers(-3, 4) * np.spacing(thr) + rng.integers(-4, 5, size=n) * np.spacing(thr)
+                r = SimpleNamespace(per_seed=tuple(-per), value=float(np.mean(-per)))
+                got = SV.do_nothing_floor(ctx, r)[0]
+                agree = agree and got == W42.above_floor(float(np.mean(per)), floor)
+                exact = sum(Fraction(float(x)) for x in per) / n > Fraction(floor) + Fraction(W42.DO_NOTHING_EPS)
+                frac_differs += exact != got
+    return agree and frac_differs > 0
+
+
+def sc_blocks(eng, tmp, roots):
+    """m-7 `blocks`: a start on the calendar but in a gap between the protocol's blocks refuses; one inside does not."""
+    cal = W.CAL
+    i = next(k for k, d in enumerate(cal) if d >= "2022-01-01")
+    ctx = SimpleNamespace(_pos={}, calendar=cal, protocol=SimpleNamespace(blocks=((cal[0], cal[i - 1]),
+                                                                                  (cal[i + 1], cal[-1]))),
+                          cal=SimpleNamespace(sessions_left=lambda d: len(cal) - cal.index(d)))
+    ok = list(SV.sessions_left(ctx, [cal[0], cal[i + 1]])) == [len(cal), len(cal) - i - 1]
+    try:
+        SV.sessions_left(ctx, [cal[0], cal[i]])
+    except SV.SurveyRefused as e:
+        return ok and "outside the protocol's blocks" in str(e)
+    return False
+
+
+def _rows_root(tmp: Path, text: str) -> Path:
+    root = tmp / "rows"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "DECISIONS.md").write_text(text, encoding="utf-8")
+    return root
+
+
+def _refuses(fn, cls, word) -> bool:
+    try:
+        fn()
+    except cls as e:
+        return word in str(e)
+    return False
+
+
+def sc_row_order(eng, tmp, roots):
+    """m-7 `order`: under a real pin row, the margin's and the values' rows come before it (through `check_rows`)."""
+    vsha = "ab" * 32
+    vrow = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
+    root = _rows_root(tmp, f"| E-099 | 2026-11-20 | {vrow} | t |\n| E-100 | 2026-11-20 | the no-harm margin is 0.005 | t |\n"
+                           f"| E-102 | 2026-11-20 | {vrow} again | t |\n"
+                           "| E-103 | 2026-11-20 | the no-harm margin is 0.005 again | t |\n")
+
+    def spec(m, v):
+        return SimpleNamespace(margin_row=m, no_harm_margin=0.005, values_row=v)
+    with at(root):
+        SV.check_rows(spec("E-100", "E-099"), "E-101", vsha, False)                     # the control
+        return all(_refuses(lambda a=a: SV.check_rows(spec(*a), "E-101", vsha, False), SV.NotPinned,
+                            "does not come before") for a in (("E-103", "E-099"), ("E-100", "E-102")))
+
+
+def sc_margin_exact(eng, tmp, roots):
+    """m-2: the margin's row names the no-harm margin and carries its number with numeric boundaries (p2_rows's three
+    rows refuse, and a row without the margin's name); the values' row names W42-R1 and its file and carries the
+    whole sha256. Each correct row passes."""
+    vsha = "cd" * 32
+    good_v = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
+    cases = [("the no-harm margin is 0.0055", 0.005, False), ("delta floor 0.05; no-harm margin 0.02", 0.0, False),
+             ("E-41 set the stop at 10.005 points", 0.005, False), ("the stop is 0.005 points", 0.005, False),
+             ("the no-harm margin is 0.005 composite units", 0.005, True), ("the no-harm margin 0.0 (O-4)", 0.0, True)]
+    vcases = [(good_v, True), (good_v.replace("W42-R1's", "the rule's"), False),
+              (good_v.replace("w42_r1_values.csv", "values.csv"), False), (good_v.replace(vsha, vsha + "e"), False),
+              (good_v.replace(vsha, "0" * 64), False)]
+    ok = True
+    for text, margin, want in cases:
+        root = _rows_root(tmp / f"m{len(text)}{margin}", f"| E-100 | 2026-11-21 | {text} | t |\n")
+        with at(root):
+            spec = SimpleNamespace(margin_row="E-100", no_harm_margin=margin, values_row="fixture")
+            got = not _refuses(lambda: SV.check_rows(spec, "fixture", vsha, True), SV.NotPinned, "does not carry")
+        ok = ok and got == want
+    for text, want in vcases:
+        root = _rows_root(tmp / f"v{len(text)}{want}", f"| E-101 | 2026-11-21 | {text} | t |\n")
+        with at(root):
+            spec = SimpleNamespace(margin_row="fixture", no_harm_margin=0.005, values_row="E-101")
+            got = not _refuses(lambda: SV.check_rows(spec, "fixture", vsha, True), SV.NotPinned, "does not carry")
+        ok = ok and got == want
+    return ok
+
+
+def sc_caldigest(eng, tmp, roots):
+    """m-7 `caldigest`: a calendar whose digest is not the one W42-R1's values were set on refuses."""
+    r = roots["default"]
+    with at(r["root"]):
+        SV.load_calendar(W42, r["values"])                                               # the control
+        bad = dict(r["values"], h4=dict(r["values"]["h4"], calendar_sha256="0" * 64))
+        return _refuses(lambda: SV.load_calendar(W42, bad), SV.SpecRefused, "were set on")
+
+
+def sc_paid(eng, tmp, roots):
+    """m-7 `paid`: a unit paid (first payout within W) before its first pass refuses; a world's arm does not."""
+    sl = np.array(W.STARTS_LEFT)
+    arm = W.unit_values("paid", 1.0, (1, 2, 3, 4), len(sl))
+    ctx = SimpleNamespace(W=W42)
+    SV.validate_values(ctx, "design", arm, sl)                                          # the control
+    bad = dict(arm, first_pass_days=np.full_like(arm["first_pass_days"], 20.0),
+               first_payout_days=np.full_like(arm["first_payout_days"], 10.0))
+    return 10.0 < 20.0 <= W42.W and _refuses(lambda: SV.validate_values(ctx, "design", bad, sl), SV.SurveyRefused,
+                                             "paid before its first pass")
+
+
+def _git_tmp(repo: Path, *args: str) -> None:
+    r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0, r.stderr
+
+
+def sc_untracked(eng, tmp, roots):
+    """m-7 `untracked`: `tree_problems` itself, on a temporary git repository (no commit made): an untracked
+    `extended/x.py` and a staged file count; a git-ignored file does not."""
+    repo = tmp / "git"
+    (repo / "extended").mkdir(parents=True, exist_ok=True)
+    _git_tmp(repo, "init", "-q")
+    (repo / ".git" / "info").mkdir(parents=True, exist_ok=True)
+    (repo / ".git" / "info" / "exclude").write_text("ignored/\n", encoding="utf-8")
+    (repo / "ignored").mkdir(exist_ok=True)
+    (repo / "ignored" / "y.txt").write_text("y\n", encoding="utf-8")
+    (repo / "extended" / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git_tmp(repo, "add", "extended/a.py")
+    (repo / "extended" / "x.py").write_text("X = 1\n", encoding="utf-8")
+    with at(repo):
+        return sorted(SV.tree_problems()) == ["extended/a.py", "extended/x.py"]
+
+
+def sc_offproto(eng, tmp, roots):
+    """m-7 `offproto`: a runner reporting seeds other than its protocol's -- [101, 102, 103, 105], none held-out, so
+    `_held_out_first` passes it -- refuses as off the protocol."""
+    try:
+        survey(eng, tmp, roots, runner={"kind": "plateau", "report_seeds": [101, 102, 103, 105]})
+    except Exception as e:                                  # only the survey's own refusal counts
+        return isinstance(e, SV.SurveyRefused) and "off the protocol" in str(e) and len(W.CALLS) == 1
+    return False
+
+
+def sc_check_level(eng, tmp, roots):
+    """m-7 `checklevel`, n-1: the crossing check beside each limit is W42-R1's `limit_check` at the values'
+    `check_level` (normal z), read back from every candidate's record."""
+    from scipy import stats
+    out = survey(eng, tmp, roots, "plateau")
+    level = float(roots["default"]["values"]["limits"]["check_level"])
+    z = float(stats.norm.ppf(1.0 - level))
+    recs = [c["limits"] for c in out.candidates if c.get("limits")]
+    return bool(recs) and audit(out) == [] and all(
+        x["check_level"] == level and x["check_z"] == z and x["crossing_shown"] == (x["check_beyond"] > z * x["check_se"])
+        and x["check_beyond"] == ((x["value"] - x["bound"]) if x["direction"] == "<=" else (x["bound"] - x["value"]))
+        for lims in recs for x in lims.values())
+
+
+def _junction(link: Path, target: Path) -> bool:
+    """A real directory junction (`mklink /J`) to synthetic files in a temporary folder; False where none can be
+    made."""
+    if os.name != "nt":
+        return False
+    link.parent.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True, text=True,
+                       timeout=60)
+    return r.returncode == 0 and os.path.isjunction(link)
+
+
+def _unlink(links) -> None:
+    for link in links:                                      # the link only, never through it
+        if os.path.isjunction(link) or os.path.islink(link):
+            os.rmdir(link) if os.path.isjunction(link) else os.unlink(link)
+
+
+def sc_data_junction(eng, tmp, roots):
+    """M-1: in a temporary root, the licensed data's two junctions (`vendor/stage2/data/bars`, `data/atlas`, made by
+    `mklink /J` to synthetic files outside the root) are inside it and `check_data` binds a file through them; a
+    junction anywhere else (`results/foreign`, or `data` itself above `data/atlas`) refuses, as do `..` and absolute
+    paths. `Path.resolve()` alone would have refused the bars (the red team's finding)."""
+    root, root2, lic = tmp / "jroot", tmp / "jroot2", tmp / "licensed"
+    for sub, body in (("bars/nq.parquet", b"synthetic bars\n"), ("atlas/a.csv", b"synthetic atlas\n"),
+                      ("other/x.csv", b"x\n"), ("whole/atlas/a.csv", b"synthetic atlas\n")):
+        (lic / sub).parent.mkdir(parents=True, exist_ok=True)
+        (lic / sub).write_bytes(body)
+    links = [(root / "vendor/stage2/data/bars", lic / "bars"), (root / "data/atlas", lic / "atlas"),
+             (root / "results/foreign", lic / "other"), (root2 / "data", lic / "whole")]
+    try:
+        if not all(_junction(a, b) for a, b in links):
+            return False
+        P = SV.data_path_problem
+        bars, atlas = "vendor/stage2/data/bars/nq.parquet", "data/atlas/a.csv"
+        ok = P(bars, root) is None and P(atlas, root) is None and not SV._inside(root / bars, root)
+        ok = ok and "results/foreign" in str(P("results/foreign/x.csv", root)) and "link data" in str(P(atlas, root2))
+        ok = ok and all(P(x, root) is not None for x in ("../licensed/bars/nq.parquet", str(lic / "bars/nq.parquet"),
+                                                         "vendor\\stage2\\data\\bars\\nq.parquet", "./data/atlas/a.csv"))
+
+        def spec(data):
+            return SimpleNamespace(parts={k: {"data": data if k == "runner" else {}} for k in SV.PART_NAMES})
+        with at(root):
+            ok = ok and not _refuses(lambda: SV.check_data(spec({bars: SV._raw_sha(root / bars),          # bound
+                                                                  atlas: SV._raw_sha(root / atlas)})),
+                                     SV.PartRefused, "")
+            ok = ok and _refuses(lambda: SV.check_data(spec({bars: "0" * 64})), SV.PartRefused, "declared sha256")
+            ok = ok and _refuses(lambda: SV.check_data(spec({"results/foreign/x.csv": SV._raw_sha(lic / "other/x.csv")})),
+                                 SV.PartRefused, "link")
+        return ok
+    finally:
+        _unlink([a for a, _ in links])
+
+
+def sc_data_report(eng, tmp, roots):
+    """M-1: the runner's data report equals the declared data key for key -- a declared file it does not report
+    refuses, and so does a report of another sha256 (the extra key is the `data` world)."""
+    root = roots["default"]["root"]
+    f = root / "results" / "toy_report.csv"
+    f.write_bytes(b"a\n1\n")
+    rel = "results/toy_report.csv"
+    ok = True
+    for i, (report, word) in enumerate(((None, "did not report declared data"), ({rel: "1" * 64}, "does not bind"))):
+        parts = W.parts_of(runner={"kind": "plateau", **({"report_data": report} if report else {})})
+        parts["runner"]["data"] = {rel: SV._raw_sha(f)}
+        decl = declare(eng, tmp / f"r{i}", parts=parts)
+        try:
+            run(eng, root, decl, tmp / f"r{i}" / "out")
+            ok = False
+        except Exception as e:                              # only the survey's own refusal counts
+            ok = ok and isinstance(e, SV.SurveyRefused) and word in str(e) and len(W.CALLS) == 1
+    return ok
+
+
+def sc_provenance(eng, tmp, roots):
+    """m-3: under a pin the values file is a pinned application -- each refusal on its own (pinned_commit not 40 hex,
+    git_commit `-dirty` or not a commit, W42-R1's own commit rule refusing, `verify_result` failing), the rule called
+    with (pinned_commit, head=git_commit); and W42-R1's real `commit_problem` on this repository's history."""
+    pin, head = "b" * 40, "a" * 40
+    calls = []
+
+    class Rule:
+        @staticmethod
+        def commit_problem(repo, p, head=None):
+            calls.append((p, head))
+            return None if head == "a" * 40 else "not the pinned commit"
+
+    def P(man, verify=lambda q: (True, "verified"), apply=Rule, repo=tmp):
+        return " | ".join(SV.values_provenance_problems(man, tmp / "v.csv", repo=repo, apply=apply, verify=verify))
+
+    def man(p=pin, h=head):
+        return {"git_commit": h, "parameters": {"pinned_commit": p}}
+    ok = P(man()) == "" and calls[-1] == (pin, head)
+    ok = ok and "pinned_commit" in P(man(p=None)) and "pinned_commit" in P(man(p="b" * 39))
+    ok = ok and "-dirty" in P(man(h=head + "-dirty")) and "not a commit" in P(man(h="fixture"))
+    ok = ok and "commit rule" in P(man(h="c" * 40))
+    ok = ok and "verify_result" in P(man(), verify=lambda q: (False, "modified since it was written"))
+    git = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD", "HEAD~1"], capture_output=True, text=True)
+    now, before = git.stdout.split()
+    ok = ok and P(man(p=now, h=now), apply=APPLY, repo=REPO) == ""
+    return ok and "not the pinned commit" in P(man(p=now, h=before), apply=APPLY, repo=REPO)
+
+
+def sc_invocation(eng, tmp, roots):
+    """m-4: the pinned invocation is exactly `python scripts/survey_run.py <declaration>`; `-c` (a runpy wrapper),
+    `-m`, `-i`, `-X`, another script or declaration, the interactive and inspect flags and PYTHONSTARTUP,
+    PYTHONINSPECT or PYTHONPATH each refuse (synthetic argv, flags and environment)."""
+    root = tmp / "inv"
+    decl = root / "prereg" / "F-99_x.md"
+    script, rel = str(root / SV.ENTRY_SCRIPT), "prereg/F-99_x.md"
+    calm = SimpleNamespace(interactive=0, inspect=0)
+
+    def P(argv, flags=calm, env=None):
+        return SV.invocation_problems(root, decl, argv=argv, flags=flags, env=env or {"PATH": "x"})
+    bad = [["python", "-c", "import runpy; runpy.run_path('scripts/survey_run.py', run_name='__main__')"],
+           ["python", "-X", "utf8", script, rel], ["python", "-i", script, rel], ["python", "-m", "survey_run", rel],
+           ["python", str(root / "scripts" / "other.py"), rel], ["python", script, "prereg/F-98_y.md"],
+           ["python", script], ["python", script, rel, "extra"], ["python", script, "-v"]]
+    return P(["python", script, rel]) == [] and all(P(a) for a in bad) and \
+        P(["python", script, rel], flags=SimpleNamespace(interactive=1, inspect=0)) and \
+        P(["python", script, rel], flags=SimpleNamespace(interactive=0, inspect=1)) and \
+        all(P(["python", script, rel], env={k: "1"}) == [f"{k} is set"] for k in SV.INVOCATION_ENV)
+
+
+def sc_driver_bound(eng, tmp, roots):
+    """m-4: `objective.code_sha256` binds the driver's own closure (`extended.survey`, `extended.results`,
+    `extended.reader`) and the entry script; a run whose entry script differs from the declared one (a synthetic
+    script stood in) refuses at the binding, before any cell."""
+    oc = SV.objective_code()
+    ok = {"extended.survey", "extended.results", "extended.reader"} <= set(oc["driver"]) and \
+        oc[SV.ENTRY_SCRIPT] == R.sha256_lf(REPO / SV.ENTRY_SCRIPT) and SV.W42_SCRIPT in oc
+    decl = declare(eng, tmp)
+    fake = tmp / "fake" / SV.ENTRY_SCRIPT
+    fake.parent.mkdir(parents=True, exist_ok=True)
+    fake.write_bytes((REPO / SV.ENTRY_SCRIPT).read_bytes() + b"\n# an edit after the pin\n")
+    real = SV.entry_file
+    SV.entry_file = lambda: fake
+    try:
+        return ok and _refuses(lambda: run(eng, roots["default"]["root"], decl, tmp / "out"), SV.PartRefused,
+                               "objective_code") and W.CALLS == []
+    finally:
+        SV.entry_file = real
+
+
+def sc_once(eng, tmp, roots):
+    """m-5: the once-record (injected under a fixture pin): a run appends one line before its first cell, even when it
+    then refuses; a second run of the declaration from a fresh folder refuses before any cell and appends nothing; a
+    damaged record refuses; another declaration passes; a record inside the checkout is refused; the default lies in
+    the runs folder, outside every checkout."""
+    root = roots["default"]["root"]
+    once = tmp / "runs" / "survey_once.jsonl"
+    decl = declare(eng, tmp, "noise")
+    out = run(eng, root, decl, tmp / "o1", once_file=once)
+    first = once.read_text(encoding="utf-8").splitlines()
+    if not (len(first) == 1 and json.loads(first[0])["declaration_sha256"] == out.declaration_sha256):
+        return False                                            # nothing recorded: the rest cannot be read
+    ok = _refuses(lambda: run(eng, root, decl, tmp / "o2", once_file=once), SV.RunRepeated, "once-record")
+    ok = ok and W.CALLS == [] and once.read_text(encoding="utf-8").splitlines() == first
+    held = tmp / "runs" / "held.jsonl"                         # recorded before the first cell: a refusal counts too
+    try:
+        run(eng, root, declare(eng, tmp / "h", runner={"kind": "plateau", "tag": "heldout_test"}), tmp / "h" / "out",
+            once_file=held)
+        ok = False
+    except eng.SS.HeldOutInput:
+        ok = ok and len(held.read_text(encoding="utf-8").splitlines()) == 1
+    SV.check_once_record("e" * 64, once)                        # another declaration
+    damaged = tmp / "runs" / "damaged.jsonl"
+    damaged.write_text(first[0] + "\n{not json\n", encoding="utf-8")
+    ok = ok and _refuses(lambda: SV.check_once_record("e" * 64, damaged), SV.RunRepeated, "not JSON")
+    ok = ok and SV.once_location_problem(REPO / "results" / "survey_once.jsonl", REPO) is not None
+    ok = ok and SV.once_location_problem(SV.ONCE_FILE, REPO) is None and SV.ONCE_FILE.parent == Path(SV.RUNS_DIR)
+    return ok
 
 
 SCENARIOS = {
@@ -449,13 +799,27 @@ SCENARIOS = {
     "heldout": sc_heldout_gated,
     "engine_swap": sc_engine_swap,
     "identity": sc_identity,
-    "crossing": sc_crossing,
     "nothing": sc_nothing,
     "meagre": sc_meagre,
     "unpaid": sc_unpaid,
     "mixed": sc_mixed,
     "do_nothing_exact": sc_do_nothing_exact,
     "b5": sc_b5,
+    "floor_agrees": sc_floor_agrees,
+    "blocks": sc_blocks,
+    "row_order": sc_row_order,
+    "margin_exact": sc_margin_exact,
+    "caldigest": sc_caldigest,
+    "paid": sc_paid,
+    "untracked": sc_untracked,
+    "offproto": sc_offproto,
+    "check_level": sc_check_level,
+    "data_junction": sc_data_junction,
+    "data_report": sc_data_report,
+    "provenance": sc_provenance,
+    "invocation": sc_invocation,
+    "driver_bound": sc_driver_bound,
+    "once": sc_once,
 }
 
 
@@ -539,11 +903,33 @@ def _limit_as_mean(orig):
     return m
 
 
-def _float_floor(orig):
+def _eps_dropped(orig):
     def m(ctx, r):
-        c = -float(np.mean(r.per_seed))
+        c = -float(r.value)
         return c > ctx.obj.floor, {"do_nothing": {"composite": c, "floor": ctx.obj.floor, "held": c > ctx.obj.floor}}
     return m
+
+
+def _fraction_floor(orig):
+    """v3's own comparator (the red team's m-1): an exact mean against floor + eps, not W42-R1's `above_floor`."""
+    def m(ctx, r):
+        c = -sum(Fraction(float(x)) for x in r.per_seed) / len(r.per_seed)
+        ok = c > Fraction(ctx.obj.floor) + Fraction(float(ctx.W.DO_NOTHING_EPS))
+        return ok, {"do_nothing": {"composite": float(c), "floor": ctx.obj.floor, "held": ok}}
+    return m
+
+
+def _edit(fn_name: str, old: str, new: str):
+    """A one-line source edit of `extended.survey`'s `fn_name`, compiled with the module's own globals (the red team's
+    mutplugin form): the mutant is the function with `old` replaced by `new`, exactly once."""
+    def make(orig):
+        src = textwrap.dedent(inspect.getsource(orig))
+        assert src.count(old) == 1, (fn_name, old)
+        ns: dict = {}
+        exec(compile("from __future__ import annotations\n" + src.replace(old, new), SV.__file__, "exec"),
+             SV.__dict__, ns)
+        return ns[fn_name]
+    return make
 
 
 def _no_b5(orig):
@@ -601,19 +987,20 @@ MUTANTS = {
     "limits-ignored": (SV, "limits_inside", lambda o: (lambda ctx, rr, sel: (True, o(ctx, rr, sel)[1])), "ceiling",
                        ()),
     "limit-direction-ignored": (SV, "limits_inside", lambda o: (lambda ctx, rr, sel: o(_with(ctx, limits=tuple(
-        dict(x, direction="<=") for x in ctx.obj.limits)), rr, sel)), "floor", ()),
+        dict(x, direction="<=") for x in ctx.obj.limits)), rr, sel)), "floor", ("LimitDisagrees",)),
     "limits-from-selection": (SV, "limits_inside", lambda o: (lambda ctx, rr, sel: o(ctx, {**rr, **sel}, sel)),
                               "risky", ()),
-    "limit-as-mean": (SV, "limit_value", _limit_as_mean, "tail", ()),
+    # n-1: these three are now caught earlier, by W42-R1's own limit_check disagreeing with the survey's reading
+    "limit-as-mean": (SV, "limit_value", _limit_as_mean, "tail", ("LimitDisagrees",)),
     "limit-horizon-ignored": (SV, "limit_value", lambda o: (lambda ctx, arm, sl, lim: o(
-        ctx, arm, np.full(len(sl), len(ctx.calendar)), lim)), "censor", ()),
+        ctx, arm, np.full(len(sl), len(ctx.calendar)), lim)), "censor", ("LimitDisagrees",)),
     "sessions-left-overstated": (SV, "sessions_left", _ALL_COMPLETE, "censor", ()),
     "calendar-unchecked": (SV, "sessions_left", lambda o: (lambda ctx, starts: np.array(
         [len(ctx.calendar) - ctx.calendar.index(d) if d in ctx.calendar else len(ctx.calendar) for d in starts])),
         "offcal", ()),
     "values-unchecked": (SV, "validate_values", lambda o: (lambda ctx, name, arm, sl: None), "range", ()),
-    "crossing-critical-ignored": (SV, "crossing_check", lambda o: (lambda over, se, level, n: (
-        over / se, bool(over / se > 0))), "crossing", ()),
+    "crossing-level-ignored": (SV, "limits_inside", lambda o: (lambda ctx, rr, sel: o(_with(ctx, check_level=0.5), rr,
+                                                                                      sel)), "check_level", ()),
     "no-harm-skipped": (SV, "no_harm", lambda o: (lambda ctx, out, sl: (True, o(ctx, out, sl)[1])), "harm_mid", ()),
     "no-harm-margin-x8": (SV, "no_harm", lambda o: (lambda ctx, out, sl: o(_with(
         ctx, no_harm_margin=8 * ctx.spec.no_harm_margin), out, sl)), "harm_mid", ()),
@@ -624,7 +1011,8 @@ MUTANTS = {
     "do-nothing-floor-skipped": (SV, "do_nothing_floor", lambda o: (lambda ctx, r: (True, o(ctx, r)[1])), "meagre",
                                  ()),
     "do-nothing-not-before-ranking": (SV, "passes_floors", _floors_without("the do-nothing floor"), "meagre", ()),
-    "do-nothing-by-float": (SV, "do_nothing_floor", _float_floor, "do_nothing_exact", ()),
+    "do-nothing-eps-dropped": (SV, "do_nothing_floor", _eps_dropped, "do_nothing_exact", ()),
+    "do-nothing-by-fraction": (SV, "do_nothing_floor", _fraction_floor, "floor_agrees", ()),
     "not-paid-floor-skipped": (SV, "not_paid_floor", lambda o: (lambda ctx, got: (True, o(ctx, got)[1])), "unpaid",
                                ()),
     "not-paid-not-before-ranking": (SV, "passes_floors", _floors_without("the not_paid_within_B limit"), "unpaid",
@@ -645,6 +1033,59 @@ MUTANTS = {
     "list-sha-from-declaration": (SV, "emit", lambda o: (lambda ctx, fin, **kw: {**o(ctx, fin, **kw),
                                                                                 "list_sha256": ctx.sha}), "planted",
                                   ()),
+    # Q-186 m-7: the seven the red team's mutplugin left alive, as its one-line edits
+    "blocks": (SV, "sessions_left", _edit("sessions_left", "out = [d for d in s if not any(b0 <= d <= b1 for b0, b1 in "
+                                          "ctx.protocol.blocks)]", "out = []"), "blocks", ()),
+    "order": (SV, "check_rows", _edit("check_rows", "if pin_n is not None and int(rid[2:]) >= pin_n:", "if False:"),
+              "row_order", ()),
+    "caldigest": (SV, "load_calendar", _edit("load_calendar", 'if W.calendar_digest(dates) != values["h4"]'
+                                             '["calendar_sha256"]:', "if False:"), "caldigest", ()),
+    "paid": (SV, "validate_values", _edit("validate_values", "if (first[paid] > payout[paid]).any():", "if False:"),
+             "paid", ()),
+    "untracked": (SV, "tree_problems", _edit("tree_problems", '"--untracked-files=all"', '"--untracked-files=no"'),
+                  "untracked", ()),
+    "offproto": (SV, "_check_output", _edit("_check_output", "if tuple(out.seeds) != tuple(protocol.seeds)",
+                                            "if False and tuple(out.seeds) != tuple(protocol.seeds)"), "offproto", ()),
+    "checklevel": (SV, "limits_inside", _edit("limits_inside", 'lim["name"], b, ctx.obj.check_level)',
+                                              'lim["name"], b, 0.5)'), "check_level", ()),
+    # Q-186 M-1, m-2 to m-6: each new guard's own mutant
+    "data-resolved": (SV, "data_path_problem", _edit("data_path_problem", "if not _lexically_inside(root / rel, root):",
+                                                     "if not _inside(root / rel, root):"), "data_junction", ()),
+    "data-any-link": (SV, "data_path_problem", _edit("data_path_problem", "if _is_link(root / sub) and sub not in "
+                                                     "DATA_LINKS:", "if False:"), "data_junction", ()),
+    "data-one-way": (SV, "_check_output", _edit("_check_output", "if got != declared:",
+                                                "if any(declared.get(k) != v for k, v in got.items()):"),
+                     "data_report", ()),
+    "margin-substring": (SV, "margin_row_carries", _edit("margin_row_carries", "return re.search(_MARGIN_NAME + "
+                                                         'r".*?" + num, line, re.IGNORECASE) is not None',
+                                                         "return _num_literal(margin) in line"), "margin_exact", ()),
+    "values-row-sha-only": (SV, "values_row_carries", _edit("values_row_carries", "return W42_RULE in line and "
+                                                            "values_name in line and", "return True and"),
+                            "margin_exact", ()),
+    "provenance-pin-unchecked": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", "if not (isinstance(pin, str) and _SHA40.fullmatch(pin)):", "if False:"),
+        "provenance", ()),
+    "provenance-dirty-ok": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", 'elif head.endswith("-dirty"):', "elif False:"), "provenance", ()),
+    "provenance-rule-skipped": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", "if why is not None:", "if False:"), "provenance", ()),
+    "provenance-verify-skipped": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", "if not ok:", "if False:"), "provenance", ()),
+    "invocation-argv-ignored": (SV, "invocation_problems", _edit("invocation_problems", "if bad_argv:", "if False:"),
+                                "invocation", ()),
+    "invocation-flags-ignored": (SV, "invocation_problems", _edit("invocation_problems", "if getattr(flags, f, 0):",
+                                                                  "if False:"), "invocation", ()),
+    "invocation-env-ignored": (SV, "invocation_problems", _edit("invocation_problems", "if env.get(k)]",
+                                                                "if False]"), "invocation", ()),
+    "driver-unbound": (SV, "objective_code", _edit("objective_code", '"driver": code_closure(DRIVER_MODULE),',
+                                                   '"driver": {},'), "driver_bound", ()),
+    "entry-unbound": (SV, "objective_code", _edit("objective_code", "ENTRY_SCRIPT: lf(entry_file()),",
+                                                  "ENTRY_SCRIPT: None,"), "driver_bound", ()),
+    "once-unchecked": (SV, "check_once_record", _edit("check_once_record", "if seen:", "if False:"), "once", ()),
+    "once-unrecorded": (SV, "record_once", _edit("record_once", 'fh.write(line + "\\n")', "pass"), "once", ()),
+    "once-inside-checkout": (SV, "once_location_problem", _edit(
+        "once_location_problem", "if _lexically_inside(path, root) or _inside(path, root):", "if False:"), "once", ()),
+    "fixture-token-real": (SV, "finalists_token", _edit("finalists_token", "if fixture:", "if False:"), "planted", ()),
 }
 
 
@@ -689,7 +1130,8 @@ def test_every_cell_is_counted_and_carries_its_protocol(eng, tmp_path, roots):
     detail = json.loads(csv(out.candidates_path)["detail"][0])
     assert "inactivity_guards" in detail and "vacuous_limits" in detail                                   # m-2
     lim = json.loads(csv(out.list_path)["limits"][0])
-    assert {"check_t", "check_level", "crossing_shown", "selection_value", "vacuous"} <= set(lim["taken_mean_p10"])
+    assert {"check_beyond", "check_se", "check_z", "check_level", "crossing_shown", "selection_value",
+            "vacuous"} <= set(lim["taken_mean_p10"])                                                # n-1
     pl = [c["plateau"] for c in out.candidates if "plateau" in c]                   # Q-192b's verdict, recorded
     assert pl and all(x["protocol_sha256"] == protocol_sha(eng) and set(x["reread_limits"]) ==
                       {lm.name for lm in W42.LIMITS} and {"size_at", "size_bound", "size_label"} <= set(x) for x in pl)
@@ -763,14 +1205,22 @@ def test_a_pin_comes_from_this_repository_only(eng, tmp_path, roots):
 
 
 def test_under_a_pin_the_process_is_checked(eng, tmp_path, roots, monkeypatch):
-    """M-4, each guard on its own (the entry script stood in): a clean run, untracked files counted, every bound module
-    tracked inside the repository, results only under results/."""
+    """M-4, each guard on its own (the entry script stood in): the invocation (m-4), a clean run, untracked files
+    counted, every bound module tracked inside the repository, results only under results/, the driver the
+    checkout's; then the once-record (m-5: never injected, never inside the checkout, a recorded declaration refused)
+    and the values' provenance (m-3: the fixture's values are no pinned application), each before the first cell."""
     root, mine = _pinned_root(eng, tmp_path, roots, "| E-999 | 2026-11-20 | pinned `prereg/F-99_toy.md` sha256 "
                                                     "`{sha}` | t |\n")
     untracked = SV.untracked_modules
+    stand_in = root / SV.ENTRY_SCRIPT                                   # a synthetic entry script, hashed at the end
+    stand_in.parent.mkdir(parents=True, exist_ok=True)
+    stand_in.write_bytes(b"# a stand-in entry script\n")
     try:
-        monkeypatch.setattr(SV.R, "_main_script", lambda: (root / SV.ENTRY_SCRIPT).resolve())
+        monkeypatch.setattr(SV.R, "_main_script", lambda: stand_in.resolve())
         with at(root):
+            with pytest.raises(SV.PartRefused, match="invoked as"):                  # m-4: pytest's own argv
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            monkeypatch.setattr(SV, "invocation_problems", lambda r, d: [])
             with pytest.raises(SV.PartRefused, match="clean run"):
                 SV.run_survey(mine, results_dir=root / "results", name="x")
             monkeypatch.setattr(SV.R, "_clean_run", lambda repo, what: None)
@@ -783,11 +1233,31 @@ def test_under_a_pin_the_process_is_checked(eng, tmp_path, roots, monkeypatch):
             monkeypatch.setattr(SV, "untracked_modules", lambda mods: [])
             with pytest.raises(SV.PartRefused, match="writes only under"):
                 SV.run_survey(mine, results_dir=root / "out", name="x")
+            with pytest.raises(SV.PartRefused, match="driver's tree"):             # m-4: the checkout's own driver
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            monkeypatch.setattr(SV, "driver_tree", lambda: root.resolve())
+            monkeypatch.setattr(SV.R, "_commit", lambda repo, what: "c" * 40)
+            with pytest.raises(SV.PartRefused, match="once-record"):               # m-5: never an injected record
+                SV.run_survey(mine, results_dir=root / "results", name="x", once_file=tmp_path / "o.jsonl")
+            monkeypatch.setattr(SV, "ONCE_FILE", root / "survey_once.jsonl")
+            with pytest.raises(SV.PartRefused, match="inside the checkout"):
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            once = tmp_path / "runs" / "survey_once.jsonl"
+            monkeypatch.setattr(SV, "ONCE_FILE", once)
+            SV.record_once(R.sha256_lf(mine), once, {"run_id": "an earlier run"})
+            with pytest.raises(SV.RunRepeated, match="once-record"):
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            once.unlink()
+            monkeypatch.setattr(SV, "_verify_result", lambda p: (True, "stood in"))  # the vendored one: own process
+            with pytest.raises(SV.SpecRefused, match="not a pinned application"):   # m-3: the fixture's values
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            assert not once.exists()                                    # refused before the first cell: unrecorded
         with at(root):                                                 # the toy parts lie outside this tree
             assert any("outside the repository" in x for x in untracked(["survey_world"]))
     finally:
         (root / "DECISIONS.md").write_text("", encoding="utf-8")
         mine.unlink()
+        stand_in.unlink()
 
 
 def test_the_rows_are_checked(eng, tmp_path, roots):
@@ -1091,3 +1561,104 @@ def test_the_default_writers_in_a_process_of_their_own(tmp_path):
     assert r.returncode == 0, r.stderr[-3000:]
     got = json.loads(r.stdout.strip().splitlines()[-1])
     assert got["ok"] == [True, True, True] and got["finalists"] >= 1 and got["variants"] == got["cells"]
+
+
+# ------------------------------------------------------------------------------------------------ Q-186
+
+
+def test_a_fixture_runs_token_is_refused_by_rule_1(eng, tmp_path, roots, monkeypatch):
+    """m-6: what a fixture run prints is no finalists' token -- the reader's rule 1 (`_finalists`, its declaration
+    check stood in) refuses it after the declaration's pin; the same run's pinned form is honoured (the control)."""
+    out = survey(eng, tmp_path, roots, "plateau")
+    assert out.finalists and out.token.startswith(SV.FIXTURE_TOKEN + " ")
+    ref, sha = "prereg/F-99_toy.md", out.declaration_sha256
+    pin = f"| E-900 | 2026-11-20 | pinned `{ref}` sha256 `{sha}` | t |\n"
+    monkeypatch.setattr(R, "heldout_declaration_problems", lambda ref_, repo, market: [])
+    text = pin + f"| E-901 | 2026-11-21 | {out.token} -- the finalists |\n"
+    assert R.heldout_tokens(text, "finalists") == []
+    with pytest.raises(R.HeldOutRefused, match="no decision row carries a finalists' token"):
+        R._finalists(ref, sha, text, "a test", R.HELDOUT_PURPOSES[0], repo=tmp_path)
+    real = SV.finalists_token("F-99", sha, out.list_sha256, fixture=False)
+    got = R._finalists(ref, sha, pin + f"| E-901 | 2026-11-21 | {real} -- the finalists |\n", "a test",
+                       R.HELDOUT_PURPOSES[0], repo=tmp_path)
+    assert got.get("list") == out.list_sha256 and got.get("sha") == sha
+
+
+def test_the_invocation_in_real_processes(tmp_path):
+    """m-4, on a synthetic entry script in a temporary tree: run as `python scripts/survey_run.py <declaration>` it
+    sees no problem; through `python -c "...runpy.run_path(...)"`, `-X utf8`, `-i`, `-m`, or with PYTHONSTARTUP set,
+    it sees one."""
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "prereg").mkdir()
+    (tmp_path / "prereg" / "F-99_x.md").write_text("synthetic\n", encoding="utf-8")
+    (tmp_path / SV.ENTRY_SCRIPT).write_text(textwrap.dedent(f"""
+        import json, sys
+        from pathlib import Path
+        sys.path.insert(0, {str(REPO)!r})
+        from extended import survey as SV
+        root = Path(__file__).resolve().parents[1]
+        print("PROBLEMS=" + json.dumps(SV.invocation_problems(root, root / "prereg" / "F-99_x.md")), flush=True)
+    """), encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if k not in SV.INVOCATION_ENV}
+    env.update(OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
+    py, script, decl = sys.executable, SV.ENTRY_SCRIPT, "prereg/F-99_x.md"
+    wrapper = (f"import runpy, sys; sys.argv = [{script!r}, {decl!r}]; "
+               f"runpy.run_path({script!r}, run_name='__main__')")
+
+    def problems(argv, extra_env=None):
+        r = subprocess.run(argv, cwd=tmp_path, capture_output=True, text=True, timeout=180, stdin=subprocess.DEVNULL,
+                           env={**env, **(extra_env or {})})
+        line = next((x for x in r.stdout.splitlines() if x.startswith("PROBLEMS=")), None)
+        assert line is not None, (argv, r.returncode, r.stderr[-2000:])
+        return json.loads(line[len("PROBLEMS="):])
+    assert problems([py, script, decl]) == []
+    for argv in ([py, "-c", wrapper], [py, "-X", "utf8", script, decl], [py, "-i", script, decl],
+                 [py, "-m", "scripts.survey_run", decl]):
+        assert any("invoked as" in x or "flag is set" in x for x in problems(argv)), argv
+    assert problems([py, script, decl], {"PYTHONSTARTUP": str(tmp_path / "nothing.py")}) == ["PYTHONSTARTUP is set"]
+
+
+def test_verify_result_in_a_process_of_its_own(tmp_path):
+    """m-3: the default `_verify_result` is the vendored check (its own process): a written result verifies, an edited
+    one does not, and a manifest off the vendored form fails closed (False, never an exception)."""
+    code = textwrap.dedent(f"""
+        import json, sys
+        from pathlib import Path
+        sys.path.insert(0, {str(REPO / 'tests')!r})
+        import pandas as pd
+        import survey_world as W
+        from extended import survey as SV
+        d = Path({str(tmp_path)!r})
+        p, m = W._manifest_writer(pd.DataFrame({{"key": ["a"], "value_json": ["1"]}}), "v", script="x", seed=None,
+                                  parameters={{}}, results_dir=d)
+        a = SV._verify_result(p)[0]
+        p.write_bytes(p.read_bytes() + b"b,2" + bytes([10]))
+        b = SV._verify_result(p)[0]
+        m.write_text(json.dumps({{"sha256": "0" * 64, "extra": 1}}), encoding="utf-8")
+        c = SV._verify_result(p)[0]
+        print(json.dumps([a, b, c]))
+    """)
+    env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
+    r = subprocess.run([sys.executable, "-c", code], cwd=REPO, capture_output=True, text=True, timeout=300, env=env)
+    assert r.returncode == 0, r.stderr[-3000:]
+    assert json.loads(r.stdout.strip().splitlines()[-1]) == [True, False, False]
+
+
+def test_a_malformed_sidecar_refuses_as_the_spec(tmp_path, roots):
+    """n-5: W42-R1's sidecar that is not JSON (or not an object) refuses as `SpecRefused`."""
+    import shutil
+    root = tmp_path / "root"
+    shutil.copytree(roots["default"]["root"] / "results", root / "results")
+    side = root / "results" / (W42.OUTPUT_NAME + ".manifest.json")
+    with at(root):
+        for body in ("{not json", "[1, 2]", '{"parameters": [1]}'):
+            side.write_text(body, encoding="utf-8")
+            with pytest.raises(SV.SpecRefused, match="sidecar"):
+                SV.load_objective(W42)
+
+
+def test_the_new_guards_are_in_the_suite_counts():
+    """m-7: each of the red team's seven survivors, and each new guard, has its mutant here (n-4's counts)."""
+    seven = {"blocks", "order", "caldigest", "paid", "untracked", "offproto", "checklevel"}
+    assert seven <= set(MUTANTS) and all(MUTANTS[m][3] in SCENARIOS for m in MUTANTS)
+    assert "crossing_check" not in SV.__all__ and "above_floor" in SV.W42_PUBLIC and "limit_check" in SV.W42_PUBLIC

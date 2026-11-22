@@ -25,7 +25,8 @@ the starts incomplete over W), ``harm`` and ``mixed`` (the as-traded side worse)
 ``overlap``, ``gated``, ``nothing`` (W42-R1's do-nothing journey there), ``meagre`` (a paid, cheap, poor journey: only
 the do-nothing floor fails), ``unpaid`` (good but never paid: only `not_paid_within_B` fails), ``unpaired``,
 ``realkeys``, ``range`` (a share above one), ``data`` (a data file read and not declared), ``offcal`` (a start off the
-calendar). `CALLS` logs every design run.
+calendar). Beside the kind: `report_seeds` (the seeds the runner says it ran, Q-186 m-7's ``offproto``) and
+`report_data` (the data it says it read, Q-186 M-1). `CALLS` logs every design run.
 
 The seeds here are small literals of these tests' own; none is a declared block.
 """
@@ -285,7 +286,7 @@ def q_of(kind: str, d: Mapping[str, Any], a_near: float) -> float:
 def make_runner(kind: str = "plateau", tag: str = "search", blocks: list | None = None, horizon: int | None = None,
                 shift: float = 0.0, harm: float = 0.0, steady_weight: float = 1.0, hot_tag: str | None = None,
                 base_q: float = 0.0, a_near: float = A_NEAR, meagre: dict | None = None, fee_unit: float = 50.0,
-                late_start: str | None = None):
+                late_start: str | None = None, report_seeds: list | None = None, report_data: dict | None = None):
     def runner(schedule, protocol):
         from extended import components as C
         from extended import search_space as SS
@@ -350,9 +351,9 @@ def make_runner(kind: str = "plateau", tag: str = "search", blocks: list | None 
             starts[0] = "2020-01-03" if "2020-01-03" not in CAL else "2020-01-04"
         if late_start:
             starts[-1] = late_start
-        data = {"results/undeclared.csv": "0" * 64} if (kind == "data" and hot) else {}
+        data = {"results/undeclared.csv": "0" * 64} if (kind == "data" and hot) else dict(report_data or {})
         return SV.RunOutput(starts=tuple(starts), arms=arms, real_path=real, side_source=side, positions=pos,
-                            data=data, seeds=tuple(seeds), blocks=tuple(tuple(b) for b in (blocks or protocol.blocks)),
+                            data=data, seeds=tuple(report_seeds or seeds), blocks=tuple(tuple(b) for b in (blocks or protocol.blocks)),
                             horizon=protocol.horizon if horizon is None else int(horizon),
                             tag=hot_tag if (hot_tag and hot) else tag)
     return runner

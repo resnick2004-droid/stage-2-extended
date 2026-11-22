@@ -3,8 +3,12 @@
     python scripts/run_clean.py --name <job> -- python scripts/survey_run.py prereg/F-NN_<name>.md
 
 Exactly one argument, the declaration's path relative to the repository. The survey refuses unless this script is the
-process's `__main__` inside a clean run of a clean tree, so no step can be patched in process; it writes only under
-`results/`, its outputs named `<F-NN>_survey_*`. Prints the token and the list file's sha256 (or that the search closes).
+process's `__main__`, invoked as exactly `python scripts/survey_run.py <declaration>` (no `-c`, `-m`, `-i`, `-X` or
+other flag; no PYTHONSTARTUP, PYTHONINSPECT or PYTHONPATH; Q-186 m-4), inside a clean run of a clean tree, so no step
+can be patched in process; this script's own sha256 is bound by the declaration's `objective.code_sha256`. It writes
+only under `results/`, its outputs named `<F-NN>_survey_*`, and records the run once in
+`%LOCALAPPDATA%/stage2-extended-runs/survey_once.jsonl` before its first cell (m-5). Prints the token and the list
+file's sha256 (or that the search closes).
 """
 from __future__ import annotations
 

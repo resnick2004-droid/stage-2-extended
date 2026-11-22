@@ -9,20 +9,36 @@ the three-way runner, the playbook writer -- by a factory id (`module:function`)
 it reads (each by sha256); the survey builds each part itself (`build_part`). A part is **bound** by the sha256 of its
 id, parameters, gate keys, data and code (its module and every `extended` module it imports, transitively); the
 space's built digest is compared too, and the engine (Wave 3.4 with Q-192, `search_space`, `surrogate`, `proposer`,
-`plateau`) and the objective's code (`extended.wave42`, `extended.search_calendar`) are bound the same way. **Under a
-pin** the process is the entry script `scripts/survey_run.py` inside a clean run, the tree clean counting untracked
-files (only git-ignored ones allowed), every bound module a tracked file of this repository, the results folder
-`ROOT/results`, and the commit and the entry script's sha256 recorded (M-4).
+`plateau`) and the objective's code are bound the same way: `objective.code_sha256` covers `extended.wave42` and
+`extended.search_calendar`, **the driver itself** (`extended.survey`'s closure), the entry script
+`scripts/survey_run.py` and W42-R1's application script, each compared, never only recorded (Q-186 m-4). **Under a
+pin** the process is the entry script inside a clean run, invoked as exactly `python scripts/survey_run.py
+prereg/F-NN_<name>.md` -- no `-c`, `-m`, `-i`, `-X` or any other flag, not interactive, no `PYTHONSTARTUP`,
+`PYTHONINSPECT` or `PYTHONPATH` (`invocation_problems`, so a `runpy` wrapper refuses) -- the tree clean counting
+untracked files (only git-ignored ones allowed), every bound module a tracked file of this repository, the results
+folder `ROOT/results`, and the commit and the entry script's sha256 recorded (M-4).
+
+**Data** (Q-186 M-1): a declared data file is a path inside the repository by its **unresolved** path (normalised
+lexically, `os.path.abspath`), and the only links it may pass through are the two junctions every clean checkout makes
+to the licensed data, `vendor/stage2/data/bars` and `data/atlas`; a symlink or junction anywhere else refuses. The
+runner's reported `data` equals the runner's declared data key for key (a missing key refuses, an extra key refuses).
 
 **One objective, W42-R1's as it stands** (C-1): the survey reads `results/` + `wave42.OUTPUT_NAME` (its `key` /
 `value_json` rows) by name, checks its sidecar (its file sha256, `scripts/wave42_apply.py`, the rule id, the values'
 digest, the rule module's raw-bytes sha256 equal to this tree's) and, under a pin, the decision row that pins its
 sha256. The composite and every limit are W42-R1's own public functions (`wave42.composite_per_seed`,
 `wave42.limit_estimate`, the ones `setting_rule` calls), never re-implemented here; the do-nothing floor is
-`null_journeys.floor`, self-checked at load against the public composite of `wave42.null_journeys(...)["do_nothing"]`.
-Every limit W42-R1 declares must be `set` (m-2); its `inactivity_guards` and each limit's vacuous flag are written
-beside the candidates. The no-harm margin is the declaration's (`no_harm: {margin, margin_row}`): under a pin its row
-exists, comes before the declaration's pin row and carries the number.
+`null_journeys.floor`, self-checked at load against the public composite of `wave42.null_journeys(...)["do_nothing"]`,
+and decided by W42-R1's own comparator `wave42.above_floor` (Q-186 m-1); the one-sided check beside each limit is
+`wave42.limit_check`'s (normal z, B-10's form; Q-186 n-1). Every limit W42-R1 declares must be `set` (m-2); its
+`inactivity_guards` and each limit's vacuous flag are written beside the candidates. **Under a pin the values file's
+provenance is checked** (Q-186 m-3): its `parameters.pinned_commit` is 40 hex, its `git_commit` is clean (no `-dirty`)
+and `wave42_apply.commit_problem(ROOT, pinned_commit, head=git_commit)` is None (the pinned commit, or a descendant
+touching none of W42-R1's imported files), and `extended.results.verify_result` passes. A malformed sidecar refuses as
+`SpecRefused` (n-5). The no-harm margin is the declaration's (`no_harm: {margin, margin_row}`): under a pin its row
+exists, comes before the declaration's pin row, names the no-harm margin and carries the number with numeric
+boundaries after that name (0.005 never matches 0.0055 or 10.005; Q-186 m-2); the values' row names W42-R1 and
+`w42_r1_values.csv` and carries the file's sha256.
 
 **The calendar** (M-3): the runner reports each start's date; the survey checks every one against the pinned search
 calendar (Q-197's `results/search_calendar.csv` through `extended.search_calendar.load_search_calendar`, its sha256
@@ -40,9 +56,29 @@ book per path and the gate on its declared keys before any measure; the composit
 by selection reading, each re-read on the fresh seeds and kept only if it beats each baseline by more than delta* on
 the t law (F-7), every limit's re-read point estimate inside (F-3), the no-harm and do-nothing floors hold again, and
 the plateau accepts it; `emit` (the readings, the candidates, the finalists' list, then the variants rows). **The
-do-nothing floor is strict and not passed by rounding** (M-2): the mean over seeds is taken exactly (`Fraction`) and
-must exceed the floor by more than W42-R1's `DO_NOTHING_EPS`. A refusal after the first cell writes the variants rows and then
-the failure record, each attempted (F-6). A second run of one declaration is refused (F-5, m-1).
+do-nothing floor is strict and not passed by rounding** (M-2): the composite (the float mean over seeds) must exceed
+the floor by more than W42-R1's `DO_NOTHING_EPS` (1e-9, far above one rounding unit), decided by `above_floor` itself,
+so the screen and the held-out verdict apply one comparator. A refusal after the first cell writes the variants rows
+and then the failure record, each attempted (F-6).
+
+**Once** (F-5, m-1, Q-186 m-5): a second run of one declaration is refused -- by the outputs and the variants ledger
+of its folder, by the decision log, and, under a pin, by an append-only record **outside every checkout**,
+`%LOCALAPPDATA%/stage2-extended-runs/survey_once.jsonl` (`ONCE_FILE`), one line per declaration sha256 and its run,
+checked before the first refusal that reads the objective and appended just before the first cell; `run_clean.py
+--discard` and `--remove` touch only a checkout, never it. **A fixture-pinned run prints no finalists' token**
+(Q-186 m-6): its token is `survey-fixture-finalists: ...`, which no held-out rule reads.
+
+**Requirements on the parts' builds** (the survey cannot enforce them; their own reviews must, Q-186 n-2, n-3):
+- n-2, held-out reads: the survey sees the runner's tag, blocks, horizon, starts and `data` report, never its reads.
+  The three-way runner reads bars only through `extended.reader.read_bars(start, end, ...)` with `end` at most
+  2023-12-29 (a start late in 2023 walked 252 sessions must stop there, not read 2024), should report a per-start
+  `reach` (the last bar date read) that the survey can refuse past `SEARCH_LAST`, and may, under a pin, install
+  `sys.addaudithook` on `open` refusing any file outside the declared data and code.
+- n-3, the baselines: nothing here ties the runner's naive-coin, P-14, P-15 and P-16 arms to H4's readings; the
+  runner's own identity (CLAUDE.md: every new runner has its own identity) covers every baseline arm path for path,
+  since every gap is measured against them.
+- n-7: `wave42.SEARCH_CALENDAR_SHA256` is filled at W42-R1's pin; until then a real-pin run refuses at
+  `load_calendar`, by design.
 """
 from __future__ import annotations
 
@@ -53,17 +89,18 @@ import importlib.util
 import inspect
 import json
 import math
+import os
 import re
 import subprocess
+import sys
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
-from fractions import Fraction
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 
-from extended import ROOT
+from extended import ROOT, RUN_ID_ENV, RUNS_DIR
 from extended import reader as R
 
 TASK = "Wave 5"
@@ -82,10 +119,19 @@ DELTA_STAR = "delta_star"
 NOT_PAID = "not_paid_within_B"
 DO_NOTHING = "do_nothing"
 FLOOR_SELF_CHECK = 1e-12                                 # C-1: the floor against the public composite of do_nothing
-W42_PUBLIC = ("composite_per_seed", "limit_estimate", "null_journeys", "do_nothing_floor", "values_from_rows",
-              "calendar_digest")
+W42_PUBLIC = ("composite_per_seed", "limit_estimate", "limit_check", "null_journeys", "do_nothing_floor",
+              "above_floor", "values_from_rows", "calendar_digest")
 SPEC_FENCE = re.compile(rb"^```survey-spec[ \t]*\n(.*?)^```[ \t]*$", re.MULTILINE | re.DOTALL)
 FIXTURE_PREFIX = "survey-fixture-pin:"
+FIXTURE_TOKEN = "survey-fixture-finalists:"            # m-6: a fixture run's token, which no held-out rule reads
+REAL_TOKEN = "heldout-finalists:"                      # Q-158's form, emitted under a pin only
+#: M-1: the only links a declared data file may pass through -- the clean checkout's junctions to the licensed data
+DATA_LINKS = ("vendor/stage2/data/bars", "data/atlas")
+#: m-5: the append-only once-record, outside every checkout (a module attribute, so a test points it elsewhere)
+ONCE_FILE = Path(RUNS_DIR) / "survey_once.jsonl"
+#: m-4: the environment a pinned invocation runs without
+INVOCATION_ENV = ("PYTHONSTARTUP", "PYTHONINSPECT", "PYTHONPATH")
+_HERE = Path(__file__).resolve().parents[1]           # the driver's own tree: the entry script's binding (m-4)
 FIXTURE_ROW = "fixture"
 SEARCH_DECLARATION = re.compile(r"prereg/F-\d+_[^/`]*\.md")
 PART_NAMES = ("space", "gate", "schedule_builder", "runner", "playbook")
@@ -134,6 +180,10 @@ class RunRepeated(SurveyRefused):
 
 class HeldOutRow(SurveyRefused):
     """A variants row naming the held-out years or a held-out tag (CHARTER 3.3 (f))."""
+
+
+class LimitDisagrees(SurveyRefused):
+    """W42-R1's own `limit_check` reads a limit otherwise than the survey's reading (Q-186 n-1): not one limit."""
 
 
 class _Refused(Exception):
@@ -294,10 +344,35 @@ def engine_sha(E: Engine) -> str:
 
 
 OBJECTIVE_MODULES = ("extended.wave42", "extended.search_calendar")
+DRIVER_MODULE = "extended.survey"
+
+
+def driver_tree() -> Path:
+    """The tree `extended.survey` was imported from (under a pin it must be the checkout: `check_process`)."""
+    return _HERE
+
+
+def entry_file() -> Path:
+    """The entry script of the driver's own tree."""
+    return _HERE / ENTRY_SCRIPT
+
+
+def w42_script_file() -> Path:
+    return _HERE / W42_SCRIPT
+
+
+def objective_code() -> dict[str, Any]:
+    """What `objective.code_sha256` binds (m-4): the objective's modules, the driver's own closure, the entry script
+    and W42-R1's application script, each file by its LF sha256 (the application script `None` while it is not in the
+    tree; a real pin then refuses at the values' provenance, which loads it)."""
+    def lf(p: Path) -> str | None:
+        return _lf_sha(p) if p.is_file() else None
+    return {"objective": {m: code_closure(m) for m in OBJECTIVE_MODULES}, "driver": code_closure(DRIVER_MODULE),
+            ENTRY_SCRIPT: lf(entry_file()), W42_SCRIPT: lf(w42_script_file())}
 
 
 def objective_code_sha() -> str:
-    return _digest({m: code_closure(m) for m in OBJECTIVE_MODULES})
+    return _digest(objective_code())
 
 
 def build_part(part: Mapping[str, Any], *, fixture: bool) -> Any:
@@ -312,14 +387,48 @@ def build_part(part: Mapping[str, Any], *, fixture: bool) -> Any:
     return factory(**dict(part.get("params", {})))
 
 
+def _lexically_inside(p: Path | str, d: Path | str) -> bool:
+    """`p` inside `d` by their unresolved paths, normalised lexically (`reader._under`'s convention): no link is
+    followed, so a clean checkout's junctions to the licensed data stay inside it (Q-186 M-1)."""
+    a, b = os.path.normcase(os.path.abspath(p)), os.path.normcase(os.path.abspath(d))
+    return a.startswith(b.rstrip("\\/") + os.sep)
+
+
+def _is_link(p: Path) -> bool:
+    return os.path.islink(p) or bool(getattr(os.path, "isjunction", lambda _p: False)(p))
+
+
+def data_path_problem(rel: Any, root: Path | None = None) -> str | None:
+    """Q-186 M-1: None when `rel` (a relative path, `/`-separated) names a path inside `root` by its unresolved path,
+    every link on the way one of `DATA_LINKS` where it stands; else what is wrong."""
+    root = Path(ROOT if root is None else root)
+    if not isinstance(rel, str) or not rel or "\\" in rel or os.path.isabs(rel) or Path(rel).drive:
+        return "not a relative /-separated path"
+    parts = rel.split("/")
+    if any(x in ("", ".", "..") for x in parts):
+        return "an empty, '.' or '..' component"
+    if not _lexically_inside(root / rel, root):
+        return "outside the repository"
+    for i in range(len(parts)):
+        sub = "/".join(parts[:i + 1])
+        if _is_link(root / sub) and sub not in DATA_LINKS:
+            return f"passes through the link {sub} (only {list(DATA_LINKS)} may be links)"
+    return None
+
+
 def check_data(spec: "Spec") -> None:
-    """Every data file a part declares exists inside the repository and hashes (raw bytes) to its declared sha256."""
+    """Every data file a part declares is inside the repository by its unresolved path, passes through no link but
+    the licensed data's two junctions (`data_path_problem`), exists and hashes (raw bytes) to its declared sha256."""
     for k in PART_NAMES:
         for rel, sha in spec.parts[k].get("data", {}).items():
-            p = ROOT / rel
-            if not _inside(p, ROOT) or not p.is_file() or _raw_sha(p) != sha:
-                raise PartRefused(f"REFUSED: the part {k}'s data file {rel} is missing, outside the repository or "
-                                  "not its declared sha256 (M-4)")
+            why = data_path_problem(rel)
+            p = ROOT / str(rel)
+            if why is None and not p.is_file():
+                why = "missing"
+            if why is None and _raw_sha(p) != sha:
+                why = "not its declared sha256"
+            if why is not None:
+                raise PartRefused(f"REFUSED: the part {k}'s data file {rel}: {why} (M-4, Q-186 M-1)")
 
 
 def check_bindings(spec: "Spec", E: Engine) -> dict[str, Any]:
@@ -402,13 +511,44 @@ def untracked_modules(modules: Sequence[str]) -> list[str]:
     return bad
 
 
-def check_process(results_dir: Path, modules: Sequence[str]) -> dict[str, str]:
-    """M-4: under a pin, the process is the entry script inside a clean run of a clean tree, every bound module tracked,
-    the results folder `ROOT/results`. Returns the commit and the entry script's sha256."""
+def invocation_problems(root: Path, declaration: Path, *, argv: Sequence[str] | None = None, flags: Any = None,
+                        env: Mapping[str, str] | None = None) -> list[str]:
+    """Q-186 m-4: what is wrong with the process's own invocation for a pinned survey (empty when nothing is):
+    `sys.orig_argv` is exactly `[python, scripts/survey_run.py, <the declaration>]` (each normalised: the script
+    against `root`'s entry script, the declaration as the entry script reads it, `root / arg`), so `-c` (a `runpy`
+    wrapper), `-m`, `-i`, `-X` and every other flag refuse; not interactive or inspecting; no `PYTHONSTARTUP`,
+    `PYTHONINSPECT` or `PYTHONPATH` in the environment."""
+    argv = list(sys.orig_argv if argv is None else argv)
+    flags = sys.flags if flags is None else flags
+    env = os.environ if env is None else env
+    out = []
+
+    def same(a: Path | str, b: Path | str) -> bool:
+        return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
+    bad_argv = len(argv) != 3 or argv[1].startswith("-") or argv[2].startswith("-") or \
+        not same(argv[1], Path(root) / ENTRY_SCRIPT) or not same(Path(root) / argv[2], declaration)
+    if bad_argv:
+        out.append(f"the process was invoked as {argv[1:]!r}, not exactly [{ENTRY_SCRIPT!r}, <the declaration>] "
+                   "(no -c, -m, -i, -X or other flag)")
+    for f in ("interactive", "inspect"):
+        if getattr(flags, f, 0):
+            out.append(f"the interpreter's {f} flag is set")
+    out += [f"{k} is set" for k in INVOCATION_ENV if env.get(k)]
+    return out
+
+
+def check_process(results_dir: Path, modules: Sequence[str], declaration: Path) -> dict[str, str]:
+    """M-4: under a pin, the process is the entry script, invoked exactly (`invocation_problems`), inside a clean run
+    of a clean tree, every bound module tracked, the results folder `ROOT/results`. Returns the commit and the entry
+    script's sha256."""
     main = R._main_script()
     if main is None or main != (ROOT / ENTRY_SCRIPT).resolve():
         raise PartRefused(f"REFUSED: a pinned survey runs only as {ENTRY_SCRIPT} (its __main__ is {main}): no "
                           "in-process call, so no step can be patched (M-4)")
+    inv = invocation_problems(ROOT, Path(declaration))
+    if inv:
+        raise PartRefused(f"REFUSED: a pinned survey is invoked as `python {ENTRY_SCRIPT} prereg/F-NN_<name>.md` "
+                          f"and nothing else (Q-186 m-4): {inv}")
     try:
         R._clean_run(ROOT, "a pinned survey")
     except R.ReadRefused as e:
@@ -421,6 +561,9 @@ def check_process(results_dir: Path, modules: Sequence[str]) -> dict[str, str]:
         raise PartRefused(f"REFUSED: under a pin every bound module is a tracked file of this repository: {bad[:5]}")
     if results_dir.resolve() != (ROOT / "results").resolve():
         raise PartRefused(f"REFUSED: a pinned survey writes only under {ROOT / 'results'}, not {results_dir}")
+    if os.path.normcase(str(driver_tree())) != os.path.normcase(str(ROOT.resolve())):
+        raise PartRefused(f"REFUSED: the driver's tree {driver_tree()} is not the checkout {ROOT}: the bound entry "
+                          "script and W42-R1's script are the checkout's own (m-4)")
     return {"commit": R._commit(ROOT, "a pinned survey"), "entry_sha256": _raw_sha(main)}
 
 
@@ -625,14 +768,35 @@ def _num_literal(x: float) -> str:
     return json.dumps(x)
 
 
-def check_rows(spec: Spec, pin_row: str, values_sha: str, fixture: bool) -> None:
+VALUES_NAME = "w42_r1_values.csv"                        # W42-R1's OUTPUT_NAME, which the values' row names
+_MARGIN_NAME = r"no[-_ ]harm[-_ ]margin"
+
+
+def margin_row_carries(line: str, margin: float) -> bool:
+    """Q-186 m-2: the row names the no-harm margin and, after that name, carries the margin's number exactly, with
+    numeric boundaries (0.005 never matches 0.0055 or 10.005; 0.0 never matches 0.05)."""
+    num = r"(?<![\d.])" + re.escape(_num_literal(margin)) + r"(?!\d)"
+    return re.search(_MARGIN_NAME + r".*?" + num, line, re.IGNORECASE) is not None
+
+
+def values_row_carries(line: str, values_sha: str, values_name: str = VALUES_NAME) -> bool:
+    """Q-186 m-2: the row names W42-R1 and its values file and carries the file's sha256 as a whole 64-hex word."""
+    return W42_RULE in line and values_name in line and \
+        re.search(r"(?<![0-9a-f])" + re.escape(values_sha) + r"(?![0-9a-f])", line) is not None
+
+
+def check_rows(spec: Spec, pin_row: str, values_sha: str, fixture: bool, values_name: str = VALUES_NAME) -> None:
     """The margin's row and the values' row: each a row of this repository's log before the declaration's pin row, the
-    margin's carrying its number, the values' carrying the values file's sha256. Under a fixture pin a row may be
-    `FIXTURE_ROW`; any other row is checked as under a pin."""
+    margin's naming the no-harm margin and carrying its number (`margin_row_carries`), the values' naming W42-R1 and
+    its file and carrying the file's sha256 (`values_row_carries`). Under a fixture pin a row may be `FIXTURE_ROW`;
+    any other row is checked as under a pin."""
     text = _decisions()
     pin_n = None if pin_row == FIXTURE_ROW else int(pin_row[2:])
-    for what, rid, must in (("the no-harm margin's", spec.margin_row, _num_literal(spec.no_harm_margin)),
-                            ("W42-R1's values'", spec.values_row, values_sha)):
+    for what, rid, carries, must in (
+            ("the no-harm margin's", spec.margin_row, lambda ln: margin_row_carries(ln, spec.no_harm_margin),
+             f"the no-harm margin {_num_literal(spec.no_harm_margin)}"),
+            ("W42-R1's values'", spec.values_row, lambda ln: values_row_carries(ln, values_sha, values_name),
+             f"{W42_RULE}, {values_name} and sha256 {values_sha}")):
         if rid == FIXTURE_ROW:
             if not fixture:
                 raise NotPinned(f"REFUSED: {what} row is a decision row under a pin, not {FIXTURE_ROW!r}")
@@ -642,7 +806,7 @@ def check_rows(spec: Spec, pin_row: str, values_sha: str, fixture: bool) -> None
             raise NotPinned(f"REFUSED: {what} row {rid} is not a row of DECISIONS.md")
         if pin_n is not None and int(rid[2:]) >= pin_n:
             raise NotPinned(f"REFUSED: {what} row {rid} does not come before the declaration's pin row {pin_row}")
-        if must not in line:
+        if not carries(line):
             raise NotPinned(f"REFUSED: {what} row {rid} does not carry {must!r}")
 
 
@@ -661,6 +825,54 @@ def check_once(sha: str, results_dir: Path, name: str) -> None:
         hit = [f"{name}_{o}" for o in OUTPUTS if f"{name}_{o}" in text]
         if hit:
             raise RunRepeated(f"REFUSED: the decision log already records this run ({hit[0]}): a survey is run once")
+
+
+def _once_records(path: Path) -> list[dict[str, Any]]:
+    if not path.is_file():
+        return []
+    out = []
+    for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError as e:
+            raise RunRepeated(f"REFUSED: the once-record {path} line {i} is not JSON ({e}): it is append-only and "
+                              "read whole, so a damaged record refuses every run") from e
+        if not isinstance(rec, dict) or not isinstance(rec.get("declaration_sha256"), str):
+            raise RunRepeated(f"REFUSED: the once-record {path} line {i} names no declaration_sha256")
+        out.append(rec)
+    return out
+
+
+def once_location_problem(path: Path, root: Path | None = None) -> str | None:
+    """Q-186 m-5: the once-record lies outside the checkout (by its unresolved and its resolved path), so no
+    `run_clean.py --discard` or `--remove` of a checkout can reach it."""
+    root = Path(ROOT if root is None else root)
+    if _lexically_inside(path, root) or _inside(path, root):
+        return f"the once-record {path} lies inside the checkout {root}"
+    return None
+
+
+def check_once_record(sha: str, path: Path) -> None:
+    """Q-186 m-5: no earlier run of this declaration (its LF sha256) in the append-only once-record."""
+    seen = [r for r in _once_records(Path(path)) if r["declaration_sha256"] == sha]
+    if seen:
+        raise RunRepeated(f"REFUSED: the once-record {path} already holds a run of this declaration ({sha[:12]}: run "
+                          f"{seen[0].get('run_id')!r}, commit {str(seen[0].get('commit'))[:12]!r}): a survey is run "
+                          "once, from any checkout")
+
+
+def record_once(sha: str, path: Path, record: Mapping[str, Any]) -> None:
+    """Q-186 m-5: checked again, then one line appended (never rewritten), before the first cell."""
+    path = Path(path)
+    check_once_record(sha, path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps({**dict(record), "declaration_sha256": sha}, sort_keys=True, default=str)
+    with open(path, "a", encoding="utf-8", newline="\n") as fh:
+        fh.write(line + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
 
 
 # ------------------------------------------------------------------------------------------------ the objective
@@ -701,6 +913,67 @@ def read_values(path: Path, W: Any | None = None) -> dict[str, Any]:
         raise SpecRefused(f"REFUSED: {path.name}: {e}") from e
 
 
+def _sidecar(side: Path) -> dict[str, Any]:
+    """A sidecar manifest as a JSON object, or `SpecRefused` (Q-186 n-5: a malformed sidecar refuses as the spec's)."""
+    try:
+        man = json.loads(side.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        raise SpecRefused(f"REFUSED: the sidecar {side.name} is not JSON: {e}") from e
+    if not isinstance(man, dict):
+        raise SpecRefused(f"REFUSED: the sidecar {side.name} is not a JSON object")
+    return man
+
+
+def _w42_apply() -> Any:
+    """W42-R1's application script, loaded by its path in this checkout, for its own `commit_problem` (m-3)."""
+    p = ROOT / W42_SCRIPT
+    if not p.is_file():
+        raise PartRefused(f"REFUSED: {W42_SCRIPT} is not in this checkout: the values' provenance is checked by its "
+                          "own commit rule")
+    spec = importlib.util.spec_from_file_location("_survey_wave42_apply", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _verify_result(p: Path) -> tuple[bool, str]:
+    """`extended.results.verify_result` (it puts the vendored tree on sys.path: a pinned survey's own process)."""
+    from extended.results import verify_result
+    try:
+        return verify_result(p)
+    except Exception as e:                                   # a manifest off the vendored form fails closed
+        return False, f"{type(e).__name__}: {e}"
+
+
+_SHA40 = re.compile(r"[0-9a-f]{40}")
+
+
+def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: Path | None = None,
+                               apply: Any = None, verify: Callable[[Path], tuple[bool, str]] | None = None
+                               ) -> list[str]:
+    """Q-186 m-3, under a pin: W42-R1's values file is a pinned application -- `parameters.pinned_commit` 40 hex, the
+    manifest's `git_commit` clean (no `-dirty`, 40 hex), `wave42_apply.commit_problem(repo, pinned_commit,
+    head=git_commit)` None (the pinned commit itself, or a descendant touching none of W42-R1's imported files: the
+    rule's own test) -- and `extended.results.verify_result` passes. Empty when all hold."""
+    params = man.get("parameters") if isinstance(man.get("parameters"), Mapping) else {}
+    pin, head = params.get("pinned_commit"), man.get("git_commit")
+    out = []
+    if not (isinstance(pin, str) and _SHA40.fullmatch(pin)):
+        out.append(f"its parameters.pinned_commit is {pin!r}, not a commit (40 hex): not a pinned application")
+    if not isinstance(head, str) or not _SHA40.fullmatch(head.removesuffix("-dirty")):
+        out.append(f"its git_commit is {head!r}, not a commit (40 hex)")
+    elif head.endswith("-dirty"):
+        out.append(f"its git_commit {head!r} is -dirty: written from an uncommitted tree")
+    if not out:
+        why = (apply or _w42_apply()).commit_problem(Path(ROOT if repo is None else repo), pin, head=head)
+        if why is not None:
+            out.append(f"W42-R1's commit rule refuses it: {why}")
+    ok, msg = (verify or _verify_result)(Path(csv_path))
+    if not ok:
+        out.append(f"verify_result: {msg}")
+    return out
+
+
 def load_objective(W: Any) -> Objective:
     """W42-R1's result file by name, its sidecar checked (C-1), its public functions required, its floor self-checked,
     every limit set (m-2)."""
@@ -715,8 +988,10 @@ def load_objective(W: Any) -> Objective:
     side = Path(f"{p}.manifest.json")
     if not p.is_file() or not side.is_file():
         raise SpecRefused(f"REFUSED: W42-R1's output {p.name} and its sidecar are both required")
-    man = json.loads(side.read_text(encoding="utf-8"))
+    man = _sidecar(side)
     params = man.get("parameters") or {}
+    if not isinstance(params, dict):
+        raise SpecRefused(f"REFUSED: W42-R1's sidecar {side.name}: its parameters are not a JSON object")
     values = read_values(p, W)
     rule_sha = _raw_sha(inspect.getsourcefile(W))
     for what, got, want in (("its file's sha256", man.get("sha256"), _raw_sha(p)),
@@ -806,13 +1081,6 @@ def t_threshold(z: float, n: int) -> float:
     return float(stats.t.ppf(stats.norm.cdf(z), n - 1))
 
 
-def crossing_check(over: float, se: float, level: float, n: int) -> tuple[float, bool]:
-    """The one-sided check of crossing beside a limit (E-230), never deciding: (t, shown at `level`, t law)."""
-    from scipy import stats
-    t = over / se if se > 0 else (math.inf if over > 0 else -math.inf)
-    return t, bool(t > float(stats.t.ppf(1.0 - level, n - 1)))
-
-
 # ------------------------------------------------------------------------------------------------ the context
 
 
@@ -836,6 +1104,7 @@ class Context:
     sha: str
     writer: Callable[..., Any] | None = None
     variants_writer: Callable[..., Path] | None = None
+    fixture: bool = False
     rows: list[dict[str, Any]] = field(default_factory=list)
     readings: list[Any] = field(default_factory=list)
     limit_readings: dict[str, list[Any]] = field(default_factory=dict)
@@ -943,10 +1212,12 @@ def _check_output(ctx: Context, out: Any, protocol: Any) -> np.ndarray:
     if shapes != {(len(sl), len(protocol.seeds))}:
         raise SurveyRefused(f"every arm on the same {len(sl)} starts and one column a seed (paired), got "
                             f"{sorted(shapes)}")
-    declared = ctx.spec.parts["runner"]["data"]
-    off = {k: v for k, v in dict(out.data).items() if declared.get(k) != v}
-    if off:
-        raise SurveyRefused(f"the runner read data the declaration does not bind (M-4): {sorted(off)[:3]}")
+    declared, got = dict(ctx.spec.parts["runner"]["data"]), dict(out.data)
+    if got != declared:                                     # Q-186 M-1: equal key for key, both ways
+        extra = sorted(k for k in got if k not in declared or declared[k] != got[k])
+        missing = sorted(k for k in declared if k not in got)
+        raise SurveyRefused(f"the runner's data report is not the declared data (M-4, Q-186 M-1): it read data the "
+                            f"declaration does not bind {extra[:3]}; it did not report declared data {missing[:3]}")
     if not isinstance(out.positions, Mapping):
         raise SurveyRefused("the positions are reported per (start, seed) path (n-a)")
     for name, arm in [(a, out.arms[a]) for a in (DESIGN_ARM,) + ctx.spec.baselines] + \
@@ -1117,18 +1388,25 @@ def beats_baselines(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[st
 
 
 def limits_inside(ctx: Context, reread: Mapping[str, Any], selection: Mapping[str, Any]) -> tuple[bool, dict]:
-    """F-3, E-230: each limit's **re-read** point estimate inside its bound decides; the selection reading, the
-    one-sided check of crossing (t law, W42-R1's level) and W42-R1's vacuous flag beside, never deciding."""
+    """F-3, E-230: each limit's **re-read** point estimate inside its bound decides; beside it, never deciding, the
+    selection reading, W42-R1's vacuous flag and the one-sided check of crossing -- W42-R1's own `limit_check` (normal
+    z_(1 - level) at the values' `check_level`, B-10's form; Q-186 n-1) on the re-read run, whose estimate and inside
+    verdict must equal the survey's exactly."""
     out, ok = {}, True
+    arm, sl = reread["out"].arms[DESIGN_ARM], reread["sl"]
     for lim in ctx.obj.limits:
         r, s = reread[lim["name"]], selection.get(lim["name"])
         v, b = float(r.value), float(lim["bound"])
         inside = v <= b if lim["direction"] == "<=" else v >= b
-        over = (v - b) if lim["direction"] == "<=" else (b - v)
-        t, shown = crossing_check(over, float(r.se or 0.0), ctx.obj.check_level, len(r.per_seed))
+        chk = ctx.W.limit_check(ctx.obj.values, list(sl), arm, lim["name"], b, ctx.obj.check_level)
+        if float(chk["estimate"]) != v or bool(chk["inside"]) != inside:
+            raise LimitDisagrees(f"W42-R1's limit_check reads {lim['name']} as {chk['estimate']!r} (inside "
+                                f"{chk['inside']}), the survey {v!r} (inside {inside}): not one limit")
         out[lim["name"]] = {"value": v, "bound": b, "direction": lim["direction"], "inside": inside,
-                            "selection_value": None if s is None else float(s.value), "check_t": t,
-                            "check_level": ctx.obj.check_level, "crossing_shown": shown,
+                            "selection_value": None if s is None else float(s.value),
+                            "check_beyond": float(chk["beyond"]), "check_se": float(chk["se"]),
+                            "check_z": float(chk["check_z"]), "check_level": float(chk["level"]),
+                            "crossing_shown": bool(chk["crossed_at_level"]),
                             "vacuous": lim["vacuous"], "vacuous_reason": lim["vacuous_reason"]}
         ok = ok and inside
     return ok, {"limits": out}
@@ -1145,16 +1423,13 @@ def no_harm(ctx: Context, out: RunOutput, sl: np.ndarray) -> tuple[bool, dict[st
 
 
 def do_nothing_floor(ctx: Context, r: Any) -> tuple[bool, dict[str, Any]]:
-    """V-4, M-2: the composite strictly above W42-R1's do-nothing floor -- the mean over seeds taken exactly
-    (`Fraction` of each per-seed float), above the floor by more than W42-R1's `DO_NOTHING_EPS` (the one constant
-    of the screen and the rule) -- never passed by rounding."""
-    per = r.per_seed if r.per_seed is not None else (r.value,)
-    c = -sum(Fraction(float(x)) for x in per) / len(per)
-    floor = Fraction(ctx.obj.floor)
-    eps = Fraction(float(ctx.W.DO_NOTHING_EPS))
-    ok = c > floor + eps
-    return ok, {"do_nothing": {"composite": float(c), "floor": ctx.obj.floor, "eps": float(eps),
-                               "held": bool(ok)}}
+    """V-4, M-2, Q-186 m-1: the composite (the reading's value negated: the float mean over seeds, negation exact)
+    above W42-R1's do-nothing floor by more than `DO_NOTHING_EPS`, decided by W42-R1's own `above_floor` -- the one
+    comparator of the screen and the held-out verdict, never passed by rounding (1e-9 is far above one ulp)."""
+    c = -float(r.value)
+    ok = bool(ctx.W.above_floor(c, ctx.obj.floor))
+    return ok, {"do_nothing": {"composite": c, "floor": ctx.obj.floor, "eps": float(ctx.W.DO_NOTHING_EPS),
+                               "held": ok}}
 
 
 def not_paid_floor(ctx: Context, got: Mapping[str, Any]) -> tuple[bool, dict[str, Any]]:
@@ -1338,6 +1613,14 @@ def _records_frame(ctx: Context) -> Any:
     return pd.DataFrame(rows, columns=cols)
 
 
+def finalists_token(prereg_id: str, sha: str, list_sha: str, *, fixture: bool) -> str:
+    """The finalists' token: Q-158's form (`heldout-finalists: F-NN @ <sha> list <sha>`, which `reader` rule 1 reads)
+    under a pin only; under a fixture pin a visibly distinct form that no held-out rule reads (Q-186 m-6)."""
+    if fixture:
+        return f"{FIXTURE_TOKEN} {prereg_id} @ {sha} list {list_sha} (a fixture run: it authorises no held-out read)"
+    return f"{REAL_TOKEN} {prereg_id} @ {sha} list {list_sha}"
+
+
 def emit(ctx: Context, finalists: Sequence[Mapping[str, Any]], *, params: Mapping[str, Any], results_dir: Path,
          name: str) -> dict[str, Any]:
     """Step 8: the readings, the candidates' records and the finalists' list, then the variants (the module
@@ -1371,7 +1654,7 @@ def emit(ctx: Context, finalists: Sequence[Mapping[str, Any]], *, params: Mappin
                      "order rule; empty when none)", **common)
     lsha = _lf_sha(lpath)
     vpath = vwrite(rows, results_dir)                       # last: no counted rows without their results
-    token = f"heldout-finalists: {ctx.spec.prereg_id} @ {ctx.sha} list {lsha}" if out else None
+    token = finalists_token(ctx.spec.prereg_id, ctx.sha, lsha, fixture=ctx.fixture) if out else None
     return {"variants": Path(vpath), "readings": Path(rpath), "candidates": Path(cpath), "list": Path(lpath),
             "list_sha256": lsha, "token": token, "fit_sha256": fits}
 
@@ -1422,9 +1705,10 @@ class Outcome:
 
 def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, pin_fixture: str | None = None,
                engine: Engine | None = None, writer: Callable[..., Any] | None = None,
-               variants_writer: Callable[..., Path] | None = None) -> Outcome:
-    """The whole loop (the module docstring): refusals first, then steps 2-8. `engine` and the writers are honoured
-    only under a fixture pin (and the engine is still bound)."""
+               variants_writer: Callable[..., Path] | None = None, once_file: Path | str | None = None) -> Outcome:
+    """The whole loop (the module docstring): refusals first, then steps 2-8. `engine`, the writers and `once_file`
+    are honoured only under a fixture pin (and the engine is still bound); under a pin the once-record is `ONCE_FILE`,
+    outside the checkout."""
     path, out_dir = Path(declaration), Path(results_dir)
     if not path.is_file():
         raise NotPinned(f"REFUSED: the declaration {path} does not exist")
@@ -1433,21 +1717,32 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
     spec = load_spec(raw)
     pin_row = check_pinned(path, sha, spec, results_dir=out_dir, pin_fixture=pin_fixture)
     fixture = pin_fixture is not None
-    if not fixture and any(x is not None for x in (engine, writer, variants_writer)):
-        raise PartRefused("REFUSED: under a pin the engine and the writers are this repository's own; an injected "
-                          "one is honoured only under a fixture pin")
+    if not fixture and any(x is not None for x in (engine, writer, variants_writer, once_file)):
+        raise PartRefused("REFUSED: under a pin the engine, the writers and the once-record are this repository's "
+                          "own; an injected one is honoured only under a fixture pin")
     E = engine or Engine.default()
     E.check()
     bound = check_bindings(spec, E)
     process = {"commit": FIXTURE_ROW, "entry_sha256": FIXTURE_ROW}
     if not fixture:
         mods = [spec.parts[k]["id"].partition(":")[0] for k in PART_NAMES] + \
-            [m.__name__ for m in E.modules().values()] + list(OBJECTIVE_MODULES)
-        process = check_process(out_dir, mods)
+            [m.__name__ for m in E.modules().values()] + list(OBJECTIVE_MODULES) + [DRIVER_MODULE]
+        process = check_process(out_dir, mods, path)
+    once = Path(ONCE_FILE) if not fixture else (Path(once_file) if once_file is not None else None)
+    if once is not None:
+        where = once_location_problem(once)
+        if where:
+            raise PartRefused(f"REFUSED: {where} (Q-186 m-5)")
+        check_once_record(sha, once)
     check_data(spec)
     W = _wave42()
     obj = load_objective(W)
-    check_rows(spec, pin_row, _raw_sha(ROOT / "results" / W.OUTPUT_NAME), fixture)
+    values_path = ROOT / "results" / W.OUTPUT_NAME
+    if not fixture:
+        bad = values_provenance_problems(_sidecar(Path(f"{values_path}.manifest.json")), values_path)
+        if bad:
+            raise SpecRefused(f"REFUSED: W42-R1's values file is not a pinned application (Q-186 m-3): {bad}")
+    check_rows(spec, pin_row, _raw_sha(values_path), fixture, values_name=W.OUTPUT_NAME)
     cal = load_calendar(W, obj.values)
     parts = {k: build_part(spec.parts[k], fixture=fixture) for k in PART_NAMES}
     if space_digest(parts["space"]) != spec.parts["space"]["digest"]:
@@ -1465,13 +1760,20 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
     limits = tuple(E.P.Limit(lim["name"], lim["bound"], lim["direction"]) for lim in obj.limits)
     ctx = Context(spec, E, W, obj, tuple(str(d) for d in cal.dates), cal, parts["space"], parts["gate"], tuple(spec.parts["gate"]["keys"]),
                   parts["schedule_builder"], parts["runner"], parts["playbook"], new_ledger(E), protocol, limits, sha,
-                  writer, variants_writer)
+                  writer, variants_writer, fixture)
     params = {"declaration_sha256": sha, "pin_row": pin_row, **process, "protocol_sha256": spec.protocol_sha256,
               "spec": spec.raw, "bindings": bound, "space_digest": spec.parts["space"]["digest"],
               "objective": {"values_sha256": obj.values_sha256, "values_row": spec.values_row,
                             "inactivity_guards": obj.guards},
               "no_harm": {"margin": spec.no_harm_margin, "margin_row": spec.margin_row},
               "round_spec": asdict(E.P.RoundSpec(**spec.round_kw)), "task": TASK}
+    if once is not None:                                    # m-5: recorded before the first cell, never rewritten
+        from datetime import datetime, timezone
+        record_once(sha, once, {"prereg_id": spec.prereg_id, "declaration": path.as_posix(), "pin_row": pin_row,
+                                "commit": process["commit"], "run_id": os.environ.get(RUN_ID_ENV),
+                                "results_dir": str(out_dir), "name": name,
+                                "when": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+        params["once_record"] = str(once)
     try:
         designs = draw_survey(ctx)
         if ctx.ledger.protocol_sha256 != spec.protocol_sha256:
@@ -1509,15 +1811,18 @@ def declare_parts(parts: Mapping[str, Mapping[str, Any]], engine: Engine | None 
 
 __all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "W42_SCRIPT", "ENTRY_SCRIPT", "DESIGN_ARM", "BASELINE_ROLE",
            "BASELINES", "AS_TRADED", "REFLECTED", "TRIGGER", "SEARCH_TAG", "SEARCH_LAST", "DELTA_STAR", "NOT_PAID",
-           "DO_NOTHING", "W42_PUBLIC", "FIXTURE_PREFIX", "FIXTURE_ROW", "PART_NAMES",
+           "DO_NOTHING", "W42_PUBLIC", "FIXTURE_PREFIX", "FIXTURE_ROW", "FIXTURE_TOKEN", "REAL_TOKEN", "DATA_LINKS",
+           "ONCE_FILE", "INVOCATION_ENV", "VALUES_NAME", "DRIVER_MODULE", "PART_NAMES",
            "OBJECTIVE_MODULES", "SurveyRefused", "NotPinned", "SpecRefused", "PartRefused", "RunRepeated",
-           "HeldOutRow", "RunOutput", "Engine", "Objective", "Spec", "Context", "Outcome", "closure_files",
-           "code_closure", "part_sha", "engine_sha", "objective_code_sha", "build_part", "check_data",
+           "HeldOutRow", "LimitDisagrees", "RunOutput", "Engine", "Objective", "Spec", "Context", "Outcome", "closure_files",
+           "code_closure", "part_sha", "engine_sha", "objective_code", "objective_code_sha", "driver_tree", "entry_file",
+           "w42_script_file", "build_part", "data_path_problem", "check_data",
            "check_bindings", "searched_levers", "check_levers", "space_digest", "tree_problems",
-           "untracked_modules", "check_process", "load_spec", "fixture_pin", "check_pinned", "check_rows",
-           "check_once", "read_values", "load_objective", "load_calendar", "composite", "limit_value", "t_threshold",
-           "crossing_check", "new_ledger", "sessions_left", "validate_values", "book_check", "gate_check", "screen",
+           "untracked_modules", "invocation_problems", "check_process", "load_spec", "fixture_pin", "check_pinned",
+           "margin_row_carries", "values_row_carries", "check_rows", "check_once", "once_location_problem",
+           "check_once_record", "record_once", "read_values", "values_provenance_problems", "load_objective",
+           "load_calendar", "composite", "limit_value", "t_threshold", "new_ledger", "sessions_left", "validate_values", "book_check", "gate_check", "screen",
            "read_design", "read_all", "draw_survey", "check_engine_rereads", "record_baselines", "run_rounds",
            "beats_baselines", "limits_inside", "no_harm", "do_nothing_floor", "not_paid_floor", "passes_floors",
            "finalist_candidates", "plateau_step", "choose_finalists", "heldout_problems",
-           "vendored_variants_writer", "variant_rows", "emit", "emit_failure", "run_survey", "declare_parts"]
+           "vendored_variants_writer", "variant_rows", "finalists_token", "emit", "emit_failure", "run_survey", "declare_parts"]
