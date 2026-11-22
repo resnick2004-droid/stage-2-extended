@@ -259,6 +259,16 @@ def day_flags(src: Sources, market: str, d: date, *, reads_overnight: bool = Fal
         if reads_0829 and ("no_0829_bar" in f["special"].split(";") or (close is not None and close - 1 < on_end)):
             void.append("no_0829_bar")
         noted += [f"h2:{x}" for x in f["special"].split(";") if x]
+    prior = _prior_scheduled(src, d)
+    prev = src.previous(d)
+    if prev is not None and _day_void(src, prev, last_stamp):
+        prior.append("prior_day_void")
+    return DayFlags(d, tuple(void), tuple(prior), tuple(noted), d in src.bls, d in src.fomc)
+
+
+def _prior_scheduled(src: Sources, d: date) -> list[str]:
+    """The previous-day reasons a calendar gives in advance: the store's first day, a roll, the evening after a
+    scheduled close, the evening after a closure (a weekday without a session between two stored days)."""
     prior: list[str] = []
     prev = src.previous(d)
     if prev is None:
@@ -274,9 +284,80 @@ def day_flags(src: Sources, market: str, d: date, *, reads_overnight: bool = Fal
                 prior.append("after_closure")
                 break
             k += timedelta(days=1)
-        if _day_void(src, prev, last_stamp):
-            prior.append("prior_day_void")
-    return DayFlags(d, tuple(void), tuple(prior), tuple(noted), d in src.bls, d in src.fomc)
+    return prior
+
+
+def _closed_all_day(src: Sources, k: date) -> bool:
+    """A weekday the calendar schedules the exchange shut all day (Q-40: a holiday without a close)."""
+    row = src.calendar.get(k)
+    return row is not None and row["kind"] == "holiday" and not row.get("close_ct")
+
+
+def data_void(src: Sources, d: date, *, rules: Any = None) -> tuple[str, ...]:
+    """The data voids of a stored day (`_day_void`: a data-defect candidate, an early end of its bars, a scheduled close
+    before the walk's last bar, no bar at the walk's last stamp), for the playbook's check that a previous day's bars
+    can give levels (the lead's ruling on C3-1: a prior-level alert on a data-void previous day refuses)."""
+    if rules is None:
+        from extended import triggers as T
+        rules = T.JOURNEY
+    return tuple(_day_void(src, d, _walk_last_stamp(rules)))
+
+
+def prior_session(src: Sources, d: date) -> date | None:
+    """**The previous session by the calendar** (the lead's C3-1 ruling on Wave 3.5, withdrawing N-c2-2): the last
+    weekday before `d` that the calendar does not schedule shut all day, whether or not the store holds it; None when
+    it falls before the store's first day."""
+    k = d - timedelta(days=1)
+    while k.weekday() >= 5 or _closed_all_day(src, k):
+        k -= timedelta(days=1)
+    return k if src.days and k >= src.days[0] else None
+
+
+def _prior_known(src: Sources, d: date) -> list[str]:
+    """The previous-day reasons known before the day's alert, all from the calendar (C3-1): no previous session in
+    the store's span (`first_day`), a roll, a scheduled close on the calendar's previous session (`after_abbreviated`,
+    whether or not the store holds that session), a scheduled closure between it and `d` (`after_closure`). Whether
+    the store's previous day is that session is the alert's check (`playbook`: a data mismatch, never a void)."""
+    prev = prior_session(src, d)
+    if prev is None:
+        return ["first_day"]
+    prior: list[str] = []
+    if d in src.rolls:
+        prior.append("roll")
+    if _scheduled_close(src.calendar.get(prev)) is not None:
+        prior.append("after_abbreviated")
+    k = prev + timedelta(days=1)
+    while k < d:
+        if k.weekday() < 5 and _closed_all_day(src, k):
+            prior.append("after_closure")
+            break
+        k += timedelta(days=1)
+    return prior
+
+
+#: what `alert_context` leaves out: data-defect filters known only after the alert (research-only, the lead's B-5
+#: ruling on Wave 3.5): the day's own last bar, an early end of its bars, a data-defect candidate, H2's overnight
+#: counts, and the previous day's data voids
+RESEARCH_ONLY = ("no_bar_at_walk_end", "early_end", "data_defect", "h2_void", "h2_missing", "prior_day_void")
+
+
+def alert_context(src: Sources, market: str, d: date, session: int, *, windows: Sequence[Any] = (),
+                  rules: Any = None):
+    """**The day as known before its first alert** (the lead's B-5 ruling on Wave 3.5): the `DayContext` a hand-traded
+    alert may read -- `bls` and `fomc` (published in advance), `void` for a scheduled close (Q-40's `holiday` or
+    `early_close` with a close) at or before the walk's last bar, `prior_void` from the calendar's previous-day
+    reasons (`_prior_known`: a closure only when the calendar schedules it), and the verified news `windows` the caller passes from its record. None of
+    `RESEARCH_ONLY` is read. Held-out and confirmation-window days refuse as in `day_flags`, until a live calendar is
+    declared under its own row."""
+    from extended import triggers as T
+
+    if rules is None:
+        rules = T.JOURNEY
+    _check(market, d, src)
+    close = _scheduled_close(src.calendar.get(d))
+    void = close is not None and close - 1 < _walk_last_stamp(rules)
+    return T.DayContext(int(session), d.isoformat(), bls=d in src.bls, fomc=d in src.fomc, void=bool(void),
+                        prior_void=bool(_prior_known(src, d)), windows=tuple(windows))
 
 
 def day_context(src: Sources, market: str, d: date, session: int, *, reads_overnight: bool = False,

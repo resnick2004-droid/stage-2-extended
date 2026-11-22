@@ -1,0 +1,185 @@
+{
+  "columns": [
+    "section",
+    "band",
+    "fold",
+    "bracket",
+    "bin",
+    "stat",
+    "value"
+  ],
+  "description": "T7 (E-208, E-221 O-1): the admission forecast -- F-R's HAR form of the chance a mark's bracket reaches the flatten open -- fitted on the search years 2020-01-02 to 2023-12-29 only, purged and embargoed yearly folds; coefficients, calibration and counts only",
+  "exploratory": false,
+  "git_commit": "8d3d397230f3577d4468ef8bd1483130731968dd",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "alert_lag": 5,
+    "bands": [
+      "evening",
+      "asia",
+      "london",
+      "open",
+      "day1",
+      "day"
+    ],
+    "bin_edges": [
+      0.0,
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "c_grid": [
+      0.5,
+      0.75,
+      1.0,
+      1.5,
+      2.0
+    ],
+    "calendar": {
+      "days": 1034,
+      "flags_sha256": "c5e44e57ab4ea8766dd57f8e097857b5583b583778caafa1b8f9e584bdc4b702"
+    },
+    "clip": 1e-06,
+    "decisions": [
+      "E-208",
+      "E-211",
+      "E-221"
+    ],
+    "embargo_sessions": 22,
+    "fold_years": [
+      2020,
+      2021,
+      2022,
+      2023
+    ],
+    "frame_days": 967,
+    "frozen_alert": 925,
+    "har_windows": [
+      1,
+      5,
+      22
+    ],
+    "identities": {
+      "a1_days": "HELD",
+      "rv_tod": "HELD"
+    },
+    "marks": [
+      0,
+      1325,
+      5
+    ],
+    "purge_sessions": 22,
+    "purpose": "t7_admission_forecast_fit_search_years",
+    "q": 0.05,
+    "q_source": {
+      "file": "vendor/stage2/config/fv3_corrected_portfolio.yaml",
+      "key": "selection.feasibility.flat_share_max",
+      "row": "Stage 2 D-212 (2), D-308"
+    },
+    "read_row": "E-221",
+    "rows": 257222,
+    "rows_with_forecast": 248924,
+    "rv_window": 60,
+    "span": [
+      "2020-01-02",
+      "2023-12-29"
+    ],
+    "task": "T7",
+    "terms": {
+      "asia": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "day": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "day1": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "evening": [
+        "x1",
+        "x2"
+      ],
+      "london": [
+        "x1",
+        "x2",
+        "x3"
+      ],
+      "open": [
+        "x1",
+        "x2",
+        "x3"
+      ]
+    },
+    "tick": 0.25,
+    "tod": [
+      20,
+      10
+    ],
+    "void_rule": {
+      "asia": {
+        "reads_0829": true,
+        "reads_overnight": true
+      },
+      "day": {
+        "reads_0829": false,
+        "reads_overnight": false
+      },
+      "day1": {
+        "reads_0829": false,
+        "reads_overnight": true
+      },
+      "evening": {
+        "reads_0829": true,
+        "reads_overnight": true
+      },
+      "london": {
+        "reads_0829": true,
+        "reads_overnight": true
+      },
+      "open": {
+        "reads_0829": false,
+        "reads_overnight": true
+      }
+    },
+    "w_grid": [
+      1.0,
+      1.5,
+      2.0,
+      3.0
+    ],
+    "walk_last_stamp": 1327,
+    "walked_kinds": [
+      "n",
+      "b"
+    ]
+  },
+  "prereg_id": null,
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\t7-forecast",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "t7-forecast"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "t7_forecast.csv",
+  "rows": 973,
+  "script": "scripts/t7_fit.py",
+  "seed": null,
+  "sha256": "52fc2adc10f5387bfc2141880a370d5e543524752e480ecdb98e4ff26e5d2bdd",
+  "timestamp": "2026-11-20T20:44:56+00:00",
+  "variant_count": 1
+}

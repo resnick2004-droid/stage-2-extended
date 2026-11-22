@@ -28,7 +28,15 @@ pytest through `run`, which:
    heartbeat mark (a tree without Q-199) is kept while its pid lives within the 3-hour cap by arrival (that tree's rule)
    and past it only while it was recreated within TICKET_STALE_S (its owner puts it back after each age prune).
    A waiter whose ticket was removed under it puts it back on its next poll under the same name, so at the same place.
-   The ticket is removed on every exit path; a hard kill leaves it with a dead pid;
+   The ticket is removed on every exit path; a hard kill leaves it with a dead pid. **The main tree goes first**
+   (Q-207): a waiter whose tree is the repository's main worktree (the lead's, on `master`: the top-level worktree,
+   whose `.git` is a directory; is_main_worktree reads it from the tree's own git, `--git-common-dir`'s parent being
+   `--show-toplevel`, never from an argument or an environment variable) marks its ticket TICKET_LEAD_MARK, a worker's
+   TICKET_WORKER_MARK, both before the heartbeat mark, so older code still parses the name; the line puts the lead's
+   tickets ahead of the workers', in arrival order among themselves (order_line). Only the order of the waiters
+   changes: a running job is never pre-empted, the lead takes the next free slot under the same admission and memory
+   rules. A ticket with neither mark (a tree without Q-207, which orders by arrival alone) keeps its arrival place
+   against every ticket, so a mixed set of trees never sees two heads of the line;
 3. **takes over a stale holder**, saying so: its pid is not running (a hook that crashed or was killed), or its record
    is older than 2 hours (a hung run, or a reused pid), or the file has been unreadable for over a minute (a hook killed
    between creating and writing it). A takeover is serialised by a short-lived guard file and removes the lock only if
@@ -89,6 +97,11 @@ GUARD_GRACE_S = 60               # a takeover guard older than this was left by 
 #: forever. Far under STALE_AFTER and TIMEOUT_S, so it never decides what those decide.
 TICKET_STALE_S = 10 * 60
 TICKET_HEARTBEAT_MARK = ".hb"    # ends the token field of a ticket that beats (Q-199); old code parses it unchanged
+#: Q-207: a ticket's class, written in its token field before TICKET_HEARTBEAT_MARK (so Q-199 code still reads the beat
+#: and older code still reads three fields): the main worktree's waiter (the lead) or a worker's. A ticket with neither
+#: was written by a tree without Q-207, which orders the line by arrival alone; it keeps its arrival place (line()).
+TICKET_LEAD_MARK = ".lead"
+TICKET_WORKER_MARK = ".work"
 
 LOCK_NAME = "stage2-extended-fasttier.lock"
 ENV_TOKEN = "S2X_FASTTIER_TOKEN"
@@ -326,16 +339,93 @@ def queue_dir(lock: Path) -> Path:
     return Path(str(lock) + ".queue")
 
 
-def ticket_name(arrival_ns: int, pid: int, token: str, heartbeat: bool = False) -> str:
+def ticket_name(arrival_ns: int, pid: int, token: str, heartbeat: bool = False, lead: bool | None = None) -> str:
     """Sorts by arrival time (fixed-width nanoseconds), then pid, then token. A ticket whose owner beats on every poll
-    (Q-199) carries TICKET_HEARTBEAT_MARK at the end of its token field: still three fields to an old-code tree."""
-    return f"{arrival_ns:020d}-{pid:010d}-{token}{TICKET_HEARTBEAT_MARK if heartbeat else ''}.ticket"
+    (Q-199) carries TICKET_HEARTBEAT_MARK at the end of its token field: still three fields to an old-code tree. Q-207's
+    class mark (`lead` True: TICKET_LEAD_MARK, False: TICKET_WORKER_MARK, None: none, as a tree without Q-207 writes)
+    goes before it. This only formats a name: acquire() alone decides `lead`, from the tree's git (is_main_worktree)."""
+    klass = "" if lead is None else (TICKET_LEAD_MARK if lead else TICKET_WORKER_MARK)
+    return f"{arrival_ns:020d}-{pid:010d}-{token}{klass}{TICKET_HEARTBEAT_MARK if heartbeat else ''}.ticket"
 
 
 def is_heartbeat_ticket(name: str) -> bool:
     """Whether the ticket's owner touches it on every poll (Q-199); False for an old-code tree's ticket."""
     parsed = parse_ticket(name)
     return parsed is not None and parsed[2].endswith(TICKET_HEARTBEAT_MARK)
+
+
+def ticket_class(name: str) -> str | None:
+    """Q-207: "lead" (the main worktree's waiter), "worker", or None (not a ticket, or a tree without Q-207's)."""
+    parsed = parse_ticket(name)
+    if parsed is None:
+        return None
+    field = parsed[2]
+    if field.endswith(TICKET_HEARTBEAT_MARK):
+        field = field[: -len(TICKET_HEARTBEAT_MARK)]
+    if field.endswith(TICKET_LEAD_MARK):
+        return "lead"
+    if field.endswith(TICKET_WORKER_MARK):
+        return "worker"
+    return None
+
+
+def is_lead_ticket(name: str) -> bool:
+    """Whether the ticket is the main worktree's (Q-207): first in line."""
+    return ticket_class(name) == "lead"
+
+
+def order_line(names: list[str]) -> list[str]:
+    """The line's order (Q-207): by arrival, except that a lead ticket goes ahead of every worker ticket -- in arrival
+    order among the leads, and never past a ticket without a class mark. Such a ticket was written by a tree without
+    Q-207, which orders by arrival alone and so takes the head whenever nothing older is live; it is therefore a fixed
+    point -- every older ticket stays ahead of it, every younger one behind -- and the leads go first only within each
+    stretch between two of them. With no such ticket in the queue: the leads by arrival, then the workers by arrival."""
+    out: list[str] = []
+    stretch: list[str] = []
+    for name in sorted(names):                            # arrival order (the name's fixed-width first field)
+        if ticket_class(name) is None:
+            out.extend(sorted(stretch, key=lambda n: (not is_lead_ticket(n), n)))
+            stretch = []
+            out.append(name)
+        else:
+            stretch.append(name)
+    out.extend(sorted(stretch, key=lambda n: (not is_lead_ticket(n), n)))
+    return out
+
+
+def _git_env() -> dict:
+    """The environment without git's own variables (GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR, ...): the tree is judged by
+    its path alone, so no variable can make a tree look like another."""
+    return {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+
+
+def _same_path(a: Path, b: Path) -> bool:
+    return os.path.normcase(os.path.normpath(str(a))) == os.path.normcase(os.path.normpath(str(b)))
+
+
+def is_main_worktree(tree) -> bool:
+    """Q-207: whether `tree` lies in its repository's main worktree -- the top-level worktree, whose `.git` is a
+    directory (the lead's tree on `master`), not a linked worktree (a worker's, a clean checkout's), whose `.git` is a
+    file. Read from the tree's own git with git's variables removed: `--git-common-dir`'s parent is `--show-toplevel`,
+    and that top level's `.git` is a directory and is the common dir. Anything else -- not a directory, not a
+    repository, a bare or submodule git directory, git missing or failing -- is False: a worker's ticket."""
+    try:
+        p = Path(tree)
+        if not str(tree) or not p.is_dir():
+            return False
+        out = subprocess.run(["git", "-C", str(p), "rev-parse", "--path-format=absolute", "--git-common-dir",
+                              "--show-toplevel"], capture_output=True, text=True, timeout=60, env=_git_env())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
+    lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
+    if out.returncode != 0 or len(lines) != 2:
+        return False
+    try:
+        common, top = Path(lines[0]).resolve(), Path(lines[1]).resolve()
+        dot_git = top / ".git"
+        return _same_path(common.parent, top) and dot_git.is_dir() and _same_path(dot_git.resolve(), common)
+    except OSError:
+        return False
 
 
 def _beat_age_s(t: Path) -> float | None:
@@ -381,8 +471,9 @@ def _make_ticket(q: Path, name: str) -> Path:
 
 
 def line(q: Path, mine: str, cap_s: float = TIMEOUT_S, stale_s: float = TICKET_STALE_S) -> list[str]:
-    """The live tickets, oldest first by arrival; this waiter's own ticket (`mine`) is always in it, at its arrival's
-    place, even while its file is missing (its owner puts it back). Another's ticket is removed here, never honoured,
+    """The live tickets in line order (order_line, Q-207: by arrival, the main worktree's tickets ahead of the workers');
+    this waiter's own ticket (`mine`) is always in it, at its place, even while its file is missing (its owner puts it
+    back). Another's ticket is removed here, never honoured,
     when its process is not running, or (Q-199) when it beats and its heartbeat is older than `stale_s` -- never for its
     arrival's age, since a live waiter may wait past the cap in all. A ticket that does not beat was written by a tree
     without Q-199: kept while its pid lives and its arrival is within `cap_s` (that tree's rule), and past `cap_s` only
@@ -411,8 +502,8 @@ def line(q: Path, mine: str, cap_s: float = TIMEOUT_S, stale_s: float = TICKET_S
                     continue
         live.append(name)
     if mine not in live and parse_ticket(mine) is not None:
-        live = sorted(live + [mine])
-    return live
+        live.append(mine)
+    return order_line(live)
 
 
 def slot_reserve_gb(workers: int = 1, reserve_gb: float | None = None, per_worker_gb: float = PER_WORKER_GB) -> float:
@@ -483,7 +574,9 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
     last_print: float | None = None
     token = uuid.uuid4().hex
     q = queue_dir(path)
-    mine = ticket_name(time.time_ns(), os.getpid(), token, heartbeat=True)
+    lead = is_main_worktree(tree)                         # Q-207: from the tree's own git, never from a flag
+    mine = ticket_name(time.time_ns(), os.getpid(), token, heartbeat=True, lead=lead)
+    lead_note = " (the main tree's ticket: ahead of every worker's, Q-207)" if lead else ""
     ticket = _make_ticket(q, mine)
     try:
         while True:
@@ -541,7 +634,7 @@ def acquire(path: Path, tree: str, timeout_s: float = TIMEOUT_S, poll_s: float =
                                   f"is refused. See `python scripts/fasttier_lock.py status`; commit again when it is "
                                   f"free.")
             if last_print is None or monotonic() - last_print >= PRINT_EVERY_S:
-                _say(f"fast-tier lock held by {held}; waiting, place {place} of {len(ahead)} in line "
+                _say(f"fast-tier lock held by {held}; waiting, place {place} of {len(ahead)} in line{lead_note} "
                      f"({total / 60:.0f} min in all; {still / 60:.0f} of {timeout_s / 60:.0f} min without the line "
                      f"moving)")
                 last_print = monotonic()
@@ -677,14 +770,15 @@ def status(lock: Path) -> int:
               + (f"  ** STALE: {why}; the next hook takes it over **" if why else ""))
     q = queue_dir(lock)
     names = sorted(t.name for t in q.iterdir()) if q.is_dir() else []
-    place = 0
-    for name in names:                                    # read only: the waiters themselves remove dead tickets
-        parsed = parse_ticket(name)
-        if parsed is None or not pid_alive(parsed[1]):
-            continue
-        place += 1
-        since = datetime.fromtimestamp(parsed[0] / 1e9, timezone.utc).replace(microsecond=0).isoformat()
-        print(f"  {place}. waiting since {since} (pid {parsed[1]})")
+    live = [n for n in names                              # read only: the waiters themselves remove dead tickets
+            if parse_ticket(n) is not None and pid_alive(parse_ticket(n)[1])]
+    for place, name in enumerate(order_line(live), start=1):      # the line's own order (Q-207)
+        arrival_ns, pid, _ = parse_ticket(name)
+        since = datetime.fromtimestamp(arrival_ns / 1e9, timezone.utc).replace(microsecond=0).isoformat()
+        klass = ticket_class(name)
+        kind = ("; the lead (the main tree): ahead of every worker" if klass == "lead"
+                else "" if klass == "worker" else "; a tree without Q-207: keeps its arrival place")
+        print(f"  {place}. waiting since {since} (pid {pid}{kind})")
     return 0
 
 
