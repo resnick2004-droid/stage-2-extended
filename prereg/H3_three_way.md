@@ -3,8 +3,9 @@
 H3 declares the probe (H3-0) and the design checks (H3-A) of the three-way test's deciding rule, on synthetic
 histories only. It is fixed by the sha256 of its LF text in its decision row; nothing declared here is edited -- a
 change is a new declaration under a new row. **H3-D, the deciding calibration, is not declared here: it is declared in
-its own later text under its own decision row**, once template v3 and CHARTER 3.9's pinning row are pinned and before
-H4 is read; every H3-D input -- the family level and its rule for a k that moves before H3-D runs, delta\*, J and m,
+its own later text under its own decision row** (`prereg/H3_three_way_deciding.md`, a name the pin grammar reads), once template v3 and CHARTER 3.9's pinning row are pinned and before
+H4 is read; every H3-D input -- the family level (**fixed in H3-D's text at the k current at H3-D's pin; if k moves
+before H3-D runs, H3-D's text is re-declared under a new row at the new k, never adjusted at run time**), delta\*, J and m,
 n_min, the gate's quantile and minimum, S1's fit to the search years and S2's resample, the smaller-J rule's H3-D
 model, the runner's identity and its run on the vendored engine, H3-D's parts' sizes -- is that text's. H3 is copied
 from `prereg/TEMPLATE_family.md`'s form and adapted: it is a calibration of the deciding rule, not a family of trades,
@@ -21,7 +22,7 @@ team's reads of its earlier texts and the gatekeeper's refusal, with the lead's 
 | parts | H3-0 (the probe) and H3-A (design checks, before Wave 4.2); H3-D in its own later text |
 | what it reads | no bar: synthetic S1 histories only |
 | never read | the search years' bars and every other bar; the held-out years (2024-01-02 to 2026-07-16); the confirmation window (NQ from 2026-07-17) |
-| the build | `extended/three_way_keys.py`, `three_way_fastkeys.py`, `three_way_seeds.py`, `three_way_redraw.py`, `three_way_journey.py`, `three_way_runner.py`, `three_way_s1.py`, `three_way_stats.py`, `three_way_h3a.py` (Wave 3.2, wt/wt-three) **at build commit `805978a`**: every row's code is that commit's |
+| the build | `extended/three_way_keys.py`, `three_way_fastkeys.py`, `three_way_seeds.py`, `three_way_redraw.py`, `three_way_journey.py`, `three_way_runner.py`, `three_way_s1.py`, `three_way_stats.py`, `three_way_h3a.py` (Wave 3.2, wt/wt-three) **at build commit `4c07026`**: every row's code is that commit's, and the tree's copies of these files equal that commit's (`tests/test_h3_draft.py`, the red team's 805978a finding 6) |
 | seeds | section 15: the note's block, by role |
 
 No result number is typed here. Every figure of the run plan is printed by `docs/plans/scripts/three_way/h3_plan.py`
@@ -121,14 +122,14 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 
 | parameter | what it is, in a phrase | class | value or source |
 |---|---|---|---|
-| the levels | where H3-A checks a size by count | fixed | the three feasible levels 0.05, 0.01, 0.001 (`three_way_h3a.LEVELS`; the note's 2.6). **The family level alpha = 0.05 / (k (k + 1)) is H3-D's**, declared in H3-D's text with its rule for a k that moves before H3-D runs (the lead's ruling on the gatekeeper's item 4); H3-A uses no k |
+| the levels | where H3-A checks a size by count | fixed | the three feasible levels 0.05, 0.01, 0.001 (`three_way_h3a.LEVELS`; the note's 2.6). **The family level alpha = 0.05 / (k (k + 1)) is H3-D's: fixed in H3-D's text at the k current at H3-D's pin; if k moves before H3-D runs, H3-D's text is re-declared under a new row at the new k, never adjusted at run time** (the lead's ruling on the gatekeeper's items 4 and c2-2); H3-A uses no k |
 | pi\* | the power target | fixed | **0.8** (`family_stats.MDL_POWER`), for H3-A's MDL reports; H3-D's gate reads the same constant |
 | delta\* | the size that matters | H3-D's (O-3, Wave 4.2) | declared in H3-D's text; H3-A uses none (its plants' grid is Appendix C's) |
 | the race's loss barrier | the stop exit's own cost in the race (the third read's M-4) | fixed | L = min(l, c - x_stop), c the cushion after the entry cost, x_stop the stop exit's own cost (commission plus declared stop slippage); p = L / (L + g); +g less x_target, else -L less x_stop |
 | the race's barrier | fractional, never rounded (the lead's ruling on B-1) | fixed | L = min(l, c - x_stop) as a fraction of a tick, `adapter.BinaryDraw`'s form (CHARTER 3.2; the note's 1.1); a cushion-bound loss ends exactly on the floor and the account fails and is replaced (`three_way_redraw.LATTICE` = None; inward rounding is N-4's rule for the shared path only) |
 | the take | decided at the fill (the template's N-1; its read's m-1 on the runner) | fixed | a trade is taken when L_fill = min(l, c - max(x_stop, x_flat)), unrounded, is above $1e-6 of room, for every exit law: it reads the bracket, the room after the entry cost and both exit costs, never the run's exit (`three_way_journey._l_fill`) |
 | a lane that cannot take the trade | the lead's rulings on RB-1 and on the template read's B-2 | fixed | where the floor's room binds, the account **fails at the fill** -- its balance taken to the floor, a breach, replaced at that close, **counted apart** (`Records.fill_failures`, reported beside) -- the race's own limit as its barrier goes to zero, and the vendored engine's end for it (its losing branch, held equal lane for lane by the build's test; the engine's winning branch at a cost-sized room, of probability at most the costs over the costs and the target, is not kept); **a room between e + x_stop and e + max(x_stop, x_flat) is a certain failure, though a race at L_race > 0 exists there -- the conservative choice, as E-247 rules it**; where the daily loss limit's room binds, the day ends, and a declared daily limit at or below a trade's costs (at the arm's worse fill) is refused before any draw (`three_way_journey.check_costs`). No account is left alive with room it can never trade (`three_way_journey._classes`) |
-| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | **governed by template v3's section 7 as pinned**: where this row and the template differ, the template governs (the lead's ruling on the gatekeeper's item 2). The lattice step **s = max(1, ceil(sigma sqrt(T) / sqrt(1024))) ticks**, sigma at the alert, computed with a 1e-12 guard against floating error, which never takes n past 1024 (the red team's diff check NOTE-1); **T the limit known at the fill -- the earliest of the 15:10 CT flatten, a scheduled window's start and the max hold's end -- never the realised exit, the same T for s and n**; a `flatten`, `news` (a scheduled window's start) or `max_hold` exit walks to its T; **an exit not known at the fill (`other`: an unscheduled release's flatten) only truncates the walk, to the steps completed by it -- floor(n tau / T) of the n, tau the exit's time after the fill, at least one -- and never sets s or n** (this replaces the lead's earlier wording of NOTE-3 for a scheduled window); **nothing in the runner reads T**: s and n are the schedule's (`Trade.walk_step`, `Trade.walk_n`), and S1 has no `news` or `other` exit (its T is the time limit capped at the 15:10 flatten, `three_way_s1.schedule`); **s need not divide the stop or the target**, a barrier off the lattice being reached by the two-point last sub-step, and no trade is ever refused because of its step (the lead's governing rule, s-c; the divisor rule withdrawn); **a known approximation of the walk, stated beside H3:** at the coarsest n the step's rule admits (n of about 256 once s reaches 2), the lattice's own discretisation residual in P(stop) against Brownian motion is of the order of 1e-3, the same with the barriers on or off the lattice (the red team's diff check `BUILD_W32_sc_2026-11-21` MINOR-2, measured with code of its own); the gross stays exactly zero, so the zero-edge expectation is untouched, and only the split between barrier exits and time exits moves, by that order; the floor-side barrier **the race's own, L = min(l, c - x_stop)**, **fractional** (the lead's ruling on RB-1: the red team's remedy, first form, so a cushion-bound stop ends exactly on the floor and none is left x_flat - x_stop above it), at or above L_fill; its target the as-placed G = min(g, level) (fractional under a rule's profit level); **inside the last lattice step before either barrier the walk resolves by a driftless two-point race between the barrier and the lattice point one step back** (one uniform a step, up where u < p_up: s / (s + rho) below the target, rho / (s + rho) above the floor-side barrier, rho the residual), so each barrier is reached exactly and gross stays zero; **a flatten exit whose cost would pass the floor is clipped at the floor and fails the account, as the engine clips** (the time exit lies above -L, so the clip takes at most x_flat - x_stop); at most 1024 steps a walk (`three_way_journey.WALK_MAX`, the range the generator is admitted on, which the step's rule keeps every walk within: `three_way_redraw.walk_step`); n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost; read in chunks of 32 steps for the lanes still walking (`three_way_journey.WALK_CHUNK`; the same outcome on the same uniforms) |
+| R-10's stopped walk | the redraw of a trade ending at a time limit | fixed | **governed by template v3's R-10 -- its section 5, "The zero-edge convention" -- as pinned by its hash row** (`prereg/TEMPLATE_design_search.md` sha256 in a decision row): where this row and the template differ, the template governs (the lead's rulings on the gatekeeper's items 2 and c2-1). **H3-0 and H3-A do not run until that hash row is pinned.** At that pin a test (`tests/test_h3_draft.py`, `test_the_pinned_r10_agrees_with_the_walk_at_the_build_commit`) checks that the pinned R-10 agrees with the walk at build commit `4c07026` on S1's two timed exits (`flatten`, `max_hold`): T the earlier of the max hold's end and 15:10 CT, the same T setting the step and the count; **if the two disagree, H3 is re-declared under a new row and never run on the old walk**. The lattice step **s = max(1, ceil(sigma sqrt(T) / sqrt(1024))) ticks**, sigma at the alert, computed with a 1e-12 guard against floating error, which never takes n past 1024 (the red team's diff check NOTE-1); **T the limit known at the fill -- the earliest of the 15:10 CT flatten, a scheduled window's start and the max hold's end -- never the realised exit, the same T for s and n**; a `flatten`, `news` (a scheduled window's start) or `max_hold` exit walks to its T; **an exit not known at the fill (`other`: an unscheduled release's flatten) only truncates the walk, to the steps completed by it -- floor(n tau / T) of the n, tau the exit's time after the fill, at least one -- and never sets s or n** (this replaces the lead's earlier wording of NOTE-3 for a scheduled window); **nothing in the runner reads T**: s and n are the schedule's (`Trade.walk_step`, `Trade.walk_n`), and S1 has no `news` or `other` exit (its T is the time limit capped at the 15:10 flatten, `three_way_s1.schedule`); **s need not divide the stop or the target**, a barrier off the lattice being reached by the two-point last sub-step, and no trade is ever refused because of its step (the lead's governing rule, s-c; the divisor rule withdrawn); **a known approximation of the walk, stated beside H3:** at the coarsest n the step's rule admits (n of about 256 once s reaches 2), the lattice's own discretisation residual in P(stop) against Brownian motion is of the order of 1e-3, the same with the barriers on or off the lattice (the red team's diff check `BUILD_W32_sc_2026-11-21` MINOR-2, measured with code of its own); the gross stays exactly zero, so the zero-edge expectation is untouched, and only the split between barrier exits and time exits moves, by that order; the floor-side barrier **the race's own, L = min(l, c - x_stop)**, **fractional** (the lead's ruling on RB-1: the red team's remedy, first form, so a cushion-bound stop ends exactly on the floor and none is left x_flat - x_stop above it), at or above L_fill; its target the as-placed G = min(g, level) (fractional under a rule's profit level); **inside the last lattice step before either barrier the walk resolves by a driftless two-point race between the barrier and the lattice point one step back** (one uniform a step, up where u < p_up: s / (s + rho) below the target, rho / (s + rho) above the floor-side barrier, rho the residual), so each barrier is reached exactly and gross stays zero; **a flatten exit whose cost would pass the floor is clipped at the floor and fails the account, as the engine clips** (the time exit lies above -L, so the clip takes at most x_flat - x_stop); at most 1024 steps a walk (`three_way_journey.WALK_MAX`, the range the generator is admitted on, which the step's rule keeps every walk within: `three_way_redraw.walk_step`); n = round(sigma^2 T / s^2), halves up, at least one, sigma at the alert; outcomes +g, -L or the walk's value at n, each with its exit's cost; read in chunks of 32 steps for the lanes still walking (`three_way_journey.WALK_CHUNK`; the same outcome on the same uniforms) |
 | the exit-state map | which terminal state takes which law | fixed | `three_way_redraw.EXIT_LAW` (R-10's table) with **the profit-level row** (the template read's m-2): a rule's exit at a profit level races at the as-placed target G = min(g, (level + entry + x_target) / tick dollars), **the level booked as the vendored engine books its need: the net dollars the trade must make, every cost included** (`lockstep.CombineAccount.need_to_pass`, `vendor/stage2/propedge/campaign/lockstep.py` l.408-419; the need-aware draw "settles ... at exactly the need", `sizing.py` l.380-388), so a win at the level books exactly +level; never the walk; the walk only for a real time limit; any other state refused |
 | the stress arms | CHARTER 3.8 (c)'s fill and supply stress | fixed, declared and counted | measure 29's +1 and +2 ticks on every fill (the entry and each exit), and measure 28's 10 % of signals missed (the red team's m-7), each on the design and every baseline alike: 3 arms a compared design (`three_way_runner.stress_arms`, `stress_cells`) |
 | the coin generator | the declared law, computed on arrays (Q-170) | fixed | `three_way_fastkeys`: SeedSequence's hash and numpy's Philox (4x64, 10 rounds) vectorised, admitted because its tests hold it bit for bit equal to the scalar path on 10^5 random keys of every field's range, the boundary words, every draw kind and key kind, and every output a walk reads up to 1024 steps; nothing of the law changes |
@@ -136,7 +137,7 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 | the deciding bound | by the composite's form | fixed | section 9 (2.2 (a) or (b)) |
 | J, m | seeds and seed-set size | H3-D's | declared in H3-D's text; H3-A reports both of 2.2 (b)'s bounds' J (the smaller-J report) and applies nothing; H3-A's size tests take Appendix C's `J_PRIME` |
 | the betting bound's form | WSR's one-sided capital | fixed | predictable plug-in bets truncated at c / m, c = 1/2 (`three_way_stats.bets`, a function of the earlier replicates only, tested); a grid of 2001 points on [0, 1]; the bound the largest grid point below which every point is rejected (`three_way_stats.betting_lower`) |
-| the smaller-J rule's inputs | the red team's m-14 | fixed | J on powers of two from 16 to 32768 (`three_way_stats.SMALLER_J_GRID`), 2000 simulated samples a J (`SMALLER_J_DRAWS`); H3-A's report the normal model at each pool's own sd, **its rng the one declared key `three_way_seeds.SMALLER_J_REPORT`**: the H3-A histories' role (20265872), the `plant` kind in part A1 (which nothing else of H3-A draws as a plant) at history 0, plant 0 and replicate 0, refused at any other field value and under any other seed (`three_way_h3a.smaller_j_rng`, `three_way_seeds.FIELD_RULES`; the gatekeeper's item 5); H3-D's power model and its rng are H3-D's text's; a tie goes to the empirical-Bernstein bound |
+| the smaller-J rule's inputs | the red team's m-14 | fixed | J on powers of two from 16 to 32768 (`three_way_stats.SMALLER_J_GRID`), 2000 simulated samples a J (`SMALLER_J_DRAWS`); H3-A's report the normal model at each pool's own sd, **its rng the one declared key `three_way_seeds.SMALLER_J_REPORT`**: the H3-A histories' role (20265872), the `plant` kind in part A1 (which nothing else of H3-A draws as a plant) at history 0, plant 0 and replicate 0, refused at any other field value and under any other seed (`three_way_h3a.smaller_j_rng`, `three_way_seeds.FIELD_RULES`; the gatekeeper's item 5); **one generator, made once and threaded through the report's calls of `three_way_stats.smaller_j` in a fixed order -- `P_B` alone, then the clipped toy composite, both bounds inside each call -- never a fresh generator a pool** (`smaller_j_rng`'s docstring; the red team's 805978a finding 8); H3-D's power model and its rng are H3-D's text's; a tie goes to the empirical-Bernstein bound |
 | P1's linear plant | the planted MDL's form | fixed | only for Hoeffding's, McDiarmid's on unclipped terms and the empirical-Bernstein bound (`three_way_stats.LINEAR_PLANT_BOUNDS`); refused for the betting bound and a clipped composite, which run the plant through the bound itself (`planted_rates`; m-12) |
 | the disjoint pool's variance tolerance | 2.3's guard | fixed | within 0.5 of twice the single arm's (`null_pool_guards`) |
 | n_min | (Y)'s and (R)'s group minimum | H3-D's | fixed in CHARTER 3.9's row, an input of H3-D's text |
@@ -152,14 +153,26 @@ Stage 2's `adapter.BinaryDraw` races it (D-150, D-156).
 
 ## 8. The cells and the count
 
+Every check family is written as a product and a number (the template's count form; the gatekeeper's c2-3), from
+the declared inputs (Appendix A's R, Appendix C).
+
 - **H3 takes no k** and judges no design; its counts are of checks, every one reported, none dropped after a look.
-- **The size checks:** (null classes: the antithetic twin, the disjoint sets, the exact-centred pair = 3) x (bounds:
-  2.2 (a)'s, the empirical-Bernstein, the betting = 3) x (levels: the three feasible = 3) x R histories, per part (A1,
-  A2); each history reported alone and pooled.
-- **The history null:** one rate for the stylised pair, labelled with its pair (A3).
-- **The power checks:** plants P2 to P4 x the grid of sizes, each line's pass rate and the conjoint MDL (A4).
-- **The stress:** 3 arms (+1 tick, +2 ticks, 10 % missed) x (the design and four baselines) per compared pair
-  (`three_way_runner.stress_cells`).
+- **The size checks -- the laxity stop reads only these pooled counts** (section 11): per part (A1, A2), 3 null classes
+  (the antithetic twin, the disjoint sets, the exact-centred pair) x 3 bounds (2.2 (a)'s, the empirical-Bernstein, the
+  betting) x 3 feasible levels = **27 pooled counts a part**, each pooled over the part's R = 20 histories; over the two
+  parts 2 x 27 = **54 pooled counts**. **Beside them, never stopping anything:** the per-history counts, 27 x 20 = 540 a
+  part, 2 x 540 = **1080** in all.
+- **The history null (A3), reported:** 1 stylised pair x 2 placeholder composites (`P_B` alone, the clipped toy
+  composite) x 3 feasible levels = **6 rates**, each over A3's 200 histories, the whole rule at its bound by the
+  composite's form (section 9).
+- **The power checks (A4), reported, never stopping anything** (section 10): P1, 1 composite (`P_B` alone; the clipped
+  composite refused, m-12) x 2 bounds (2.2 (a)'s and the empirical-Bernstein; the betting bound refused for P1) x 5
+  sizes x 3 levels = 30; P2, 3 lever changes x 2 composites x 3 bounds x 3 levels = 54; P3, 4 values of epsilon x 2 x 3
+  x 3 = 72; P4, 3 values of a x 5 base sizes x 2 x 3 x 3 = 270; 30 + 54 + 72 + 270 = **426 pass rates**; and the
+  conjoint MDL of each line over a size grid, P1's 1 x 2 x 3 = 6 and P4's 3 x 2 x 3 x 3 = 54, **60 MDLs**.
+- **The stress (A1), reported beside:** 3 arms (+1 tick, +2 ticks, 10 % missed) x 5 schedules (A1's design and the
+  four baselines' toys) = **15 runs** (`three_way_runner.stress_cells`).
+- **The copy-against-stagger check:** 0 until the template defines overlap (section 11).
 - The program's honesty sentence: Stage 2's programs S and U and this repository's F-01 to F-03 read the development
   window; H3 adds no read of the held-out years, and the held-out test's level stays nominal while the held-out read
   ledger is not empty (CHARTER 3.6 (b)).
@@ -250,10 +263,20 @@ LB > 0 and (Y) and (R) and (H); for the finalist, all four baselines (an interse
 
 ## 10. Power before the pin
 
-- **The plants** (the note's 4.2): P1 linear (the null terms plus delta; `family_stats.conjoint_mdl_linear`); P2
-  structural (a lower fee, a shorter payout delay, a cheaper purchase rule; its true delta from the exact program or a
-  pool of at least a hundred times J); P3 edge plants (the race's win probability raised by epsilon, the design's arm
-  only; F-04's value arm); P4 regime-varying, delta_t = delta\* (1 + a rho_t), rho_t a slow sign.
+- **The plants in H3-A** (A4; the note at its fixed LF sha256, sections 4.2 and 4.3), each size declared:
+  - **P1 runs in H3-A**: the note lists it under H3-A (its 4.3, "P1 to P4 on S1"; its 6.1's table names A4's plants P2
+    to P4, and 4.3 lists P1 with them). Linear: the null terms plus delta (`family_stats.conjoint_mdl_linear`), at
+    the five sizes of `SIZE_GRID` (Appendix C), on `P_B` alone (refused for the clipped composite and the betting
+    bound, m-12).
+  - **P2's sizes are the note's** (its 4.2): its three lever changes (`P2_LEVERS`: a fee a fifth lower, a payout lag of
+    one, the activation fee halved), each at its own true delta, from the exact program's toys or a pool of at least a
+    hundred times J.
+  - **P3's sizes are the note's** (its 4.2): the race's win probability raised by each epsilon of `P3_EPS` (four
+    values), the design's arm only, each mapped to the composite by the pool. F-04's value arm (the note's second P3)
+    has no declared input in H3-A and **is not run in H3-A** -- the declaration's choice, made before any outcome.
+  - **P4's base size is the declaration's choice, made before any outcome**: the note writes delta_t = delta\* (1 + a
+    rho_t) (its 4.2) and gives no H3-A size, and delta\* is H3-D's; in H3-A, delta_t = d (1 + a rho_t) with **d over
+    the five sizes of `SIZE_GRID`**, a over `P4_A` (three values), rho_t a slow sign switching at `P4_SWITCH`.
 - **The conjoint MDL** at each feasible level over every leg together (`family_stats.conjoint_mdl_grid`), at pi\* =
   0.8, reported (A4); the line's power at delta\* is H3-D's reading.
 - **The gate's other clauses** (the note's 4.4, with O-5 as E-230 ruled), in the form H3-D's text applies: every
@@ -272,11 +295,15 @@ LB > 0 and (Y) and (R) and (H); for the finalist, all four baselines (an interse
   records the measured c, each slot's share of walks and n-bar, and any further cut, before any part of H3-A runs.
 - **H3-A, design checks** (before Wave 4.2): A1 the same-design nulls on placeholder composites (`P_B` at a placeholder
   budget, and a clipped toy composite); A2 the exact-centred toy null (the exact program; barrier and R-10 trades);
-  A3 the history null on S1 (the stream swap); A4 the plants P2 to P4, and the copy-against-stagger check **only once
+  A3 the history null on S1 (the stream swap); A4 the plants P1 to P4 (section 10), and the copy-against-stagger check **only once
   the template defines overlap** (until then A4 runs the plants alone, and says so). **Kill:** a premise failing (a pool
   not centred -- |its mean| above 4 standard errors, two-sided, `three_way_h3a.CENTRING_Z` --, an asymmetric twin, a
-  term out of range, a key guard refusal) stops the part and goes to the failure protocol; a size count whose 95 %
-  Clopper-Pearson interval lies wholly above its feasible level is a laxity. **An H3-A laxity stops H3-D: the rule is
+  term out of range, a key guard refusal) stops the part and goes to the failure protocol. **The laxity stop reads only
+  the 54 pooled size counts** (section 8): a pooled count is a laxity when its one-sided Clopper-Pearson test rejects
+  "its rate is at most its feasible level" at **0.05 / 54** -- its one-sided lower bound at confidence 1 - 0.05 / 54
+  above the level -- a Bonferroni split across the 54 pooled counts, so that when every size is correct the chance of
+  any false stop is at most 0.05; **the per-history counts are reported beside the pooled ones and never stop
+  anything**. **An H3-A laxity stops H3-D: the rule is
   then defective**, it is diagnosed by the failure protocol, and **a new declaration follows** (of the rule, and of
   H3-D's text on it); no H3-D text is pinned on the defective rule.
 - **CHARTER 3.9's pinning row** (Wave 4.2): the composite, its caps and clips, delta\*, n_min, the gate's quantile and
@@ -330,27 +357,36 @@ so two parts never read one field. The runner reads its seeds from `extended/thr
 
 - **This build's tests** use the tests' seed with the `test` kind and test ids 11 to 23 (`three_way_seeds.TEST_IDS`),
   and every other kind in the tests' part or at a part index no part declares -- **never in a declared run's part**
-  (`three_way_seeds.ROLE_USE`, enforced; the gatekeeper's item 5); the note's own test uses test id 1 and is never
-  shared.
+  (`three_way_seeds.ROLE_USE`, enforced; the gatekeeper's item 5); a plan takes a declared part, and the tests' seed
+  only the tests' part (`three_way_runner.Plan`); the tests' seed's test ids are `TEST_IDS`' and the note's own id 1,
+  refused otherwise (the red team's 805978a finding 2); no run role draws at an undeclared index; the note's own test
+  uses test id 1 and is never shared.
+- **Every block key is built and read only as the seed module allows**: `three_way_keys.seed_key` and
+  `three_way_fastkeys.key_matrix` mark the keys they build, and the readers (`three_way_keys.uniforms`,
+  `three_way_fastkeys.uniforms`, `triggers.coin_uniform`) refuse a hand-built block key; `triggers.coin_key` builds a
+  block seed's key only through `seed_key` (the red team's 805978a finding 1).
 - **The H3-D roles** (20265875 to 20265878) are the note's block's; they draw only under H3-D's text.
 - **The row of 20265872** says, against the note's row, that A3's histories are drawn from 20265874 (the gatekeeper's
-  item 5; `ROLE_USE` holds it), and names H3-A's smaller-J report's key (section 7).
+  item 5); `ROLE_USE` holds it -- no role but A3's history null draws a history in A3
+  (`test_rt3_a3s_histories_are_a3s_roles_only`; the red team's 805978a finding 3) -- and it names H3-A's smaller-J
+  report's key (section 7).
 - **The search** (2026-11-18, before this text was committed; the house search, word-bounded on the block's ten
   values):
-  - `git grep -IlwE` over every branch, remote and tag (26 refs): the design note only;
-  - every line added or removed in every reachable commit (`git log --all -p`, 574 commits): the design note only;
+  - `git grep -IlwE` over every branch, remote and tag: the design note only;
+  - every line added or removed in every reachable commit (`git log --all -p`): the design note only;
   - `grep -rIlwE --exclude-dir=.git --exclude-dir=data` over this worktree's working files: the design note, this
     declaration and the build's seed module -- the files the note's test allows (`tests/test_three_way_design.py`,
     `DECLARED_USES`); the arithmetic fold finds the block's construction only in that test and the seed module
     (`DERIVED_USES`). Other worktrees' uncommitted files were not read by the build (a worker reads only its own
-    tree); the lead's search over them at the pin is recorded in the pin's row.
+    tree); **the pin's row carries a fresh search over every worktree**, run by the lead at the pin.
 - **Trailing zeros and split words.** numpy reads `[a, b]` and `[a, b, 0, 0]` as one stream and splits a word of 2^32
   or more; the fixed length per kind, the nonzero tag and the bound on every word make that impossible, and the guard
   compares `generate_state`, never the integers.
 
 ## 16. The run order -- refusals first
 
-1. **Refusals first**, before anything is read: this declaration pinned and unedited; the identities on record as
+1. **Refusals first**, before anything is read: this declaration pinned and unedited; **template v3's hash row pinned
+   and the R-10 agreement test passing on it** (section 7); the identities on record as
    holding for the runner's cover (the runner's own identity, below); a clean checkout of a named commit
    (`scripts/run_clean.py`); the run lock held, one heavy job on the machine; memory checked.
 2. **The journey's race step** at no cost equals `adapter.BinaryDraw`'s on the same uniforms -- held by the build's
@@ -368,7 +404,7 @@ Wave 3.2 (wt/wt-three), in this repository's package, nothing vendored edited, n
 the keys (`three_way_keys`) and the vectorised generator (`three_way_fastkeys`), the seed module
 (`three_way_seeds`), the redraw (`three_way_redraw`), the journey and its exact program (`three_way_journey`), the
 seed-paired runner (`three_way_runner`), S1 (`three_way_s1`), the statistics (`three_way_stats`) and H3-A's inputs
-(`three_way_h3a`), **at build commit `805978a`**; tests `tests/test_three_way_keys.py`, `_fastkeys.py`, `_redraw.py`,
+(`three_way_h3a`), **at build commit `4c07026`**; tests `tests/test_three_way_keys.py`, `_fastkeys.py`, `_redraw.py`,
 `_runner.py`, `_stats.py`, `_mutations.py` and `tests/test_h3_draft.py`, on synthetic data with known answers.
 
 **Declared for H3-0.**
@@ -393,8 +429,10 @@ seed-paired runner (`three_way_runner`), S1 (`three_way_s1`), the statistics (`t
 
 - H3 is pinned after the red team's reads (Appendix D) and the gatekeeper's approval, with the seed search over every
   worktree recorded in the pin's row.
-- **R-10's rows (section 7) are governed by template v3's section 7 as pinned**: where they differ, the template's
-  text governs (the lead's ruling on the gatekeeper's item 2).
+- **R-10's rows (section 7) are governed by template v3's R-10 -- its section 5, "The zero-edge convention" -- as
+  pinned by its hash row**: where they differ, the template's text governs; H3-0 and H3-A do not
+  run until that row is pinned, and a disagreement on S1's timed exits re-declares H3 under a new row (section 7; the
+  lead's rulings on the gatekeeper's items 2 and c2-1).
 - H3-A's slots are re-declared by size in the lead's row after H3-0 (the cut rule), before they run.
 
 ## 19. Anything chosen after seeing results
@@ -510,7 +548,7 @@ SMALLER_J_DRAWS = 2000
 | m-8 | the resample's dates one a value, increasing, inside the search years | `refuse_held_out`; the resample test |
 | m-9 | each block seed drawn only in its role's kinds and parts | `three_way_seeds.ROLE_USE`, `check_use`; `test_m9_...` |
 | m-10 | the runner's held-out refusal, the first held-out day included | section 2; `three_way_runner.Plan`; `test_m10_...` (kills R2) |
-| m-11 | the exact program's state carries whether it passed (0.875 on the red team's toy) | `three_way_journey._state_key`; `test_m11_...` |
+| m-11 | the exact program's state carries whether it passed (on the red team's toy, a test's known answer of 0.875, held by `test_m11_...`) | `three_way_journey._state_key`; `test_m11_...` |
 | m-12 | P1 refused for the betting bound and clipped composites; `planted_rates` for those | section 7; `planted_mdl`, `planted_rates` |
 | m-13 | a boundary test each: n_min exactly, quantiles straddling zero, a skewed g, the first held-out day, a constant added to the resample, the exact program's denial | the stats and runner tests (kill O, P, P2, R, S, U) |
 | m-14 | the smaller-J rule's grid, draws, power model and rng declared | section 7 |
@@ -580,10 +618,35 @@ declared later in its own text.
 | finding | the answer | where |
 |---|---|---|
 | gk 1 | the pin-time form: no draft status, the pinning sentences plain declarations, section 18's R-10 bullet closed | the head; sections 17, 18; `test_the_form` |
-| gk 2 | R-10 governed by template v3's section 7 as pinned: T the earliest of the flatten, a scheduled window's start and the max hold; an exit not known at the fill only truncates the walk (floor(n tau / T), at least one), never sets s or n; nothing in the runner reads T, and S1 has no such exit | section 7 (R-10's row); section 18 |
+| gk 2 | R-10 governed by template v3's R-10 (its section 5) as pinned (c2-1 corrects the section): T the earliest of the flatten, a scheduled window's start and the max hold; an exit not known at the fill only truncates the walk (floor(n tau / T), at least one), never sets s or n; nothing in the runner reads T, and S1 has no such exit | section 7 (R-10's row); section 18 |
 | gk 3 | H3-D's inputs moved to H3-D's text; pi\*'s value written beside `family_stats.MDL_POWER` | the head; sections 1, 7, 10 |
 | gk 4 | the family level moved to H3-D's text, with its rule for a k that moves before H3-D runs | the head; section 7 (the levels) |
 | gk 5 | the row of 20265872 says A3's histories are 20265874's; H3-A's smaller-J report a declared key under the H3-A histories' role, every field fixed; the tests' seed never in a run's part; H4's audit sample (`h4_sample`, part H4-U = 14) and H4-S's fields checked | section 15; section 7; `three_way_seeds.ROLE_USE`, `FIELD_RULES`, `SMALLER_J_REPORT`; `test_gk5_...`; mutants TN, FR, FM |
 | gk 6 | an H3-A laxity stops H3-D: the rule is then defective, and a new declaration follows | sections 0, 11, 14 |
 | gk 7 | the design note's version fixed by its LF sha256, held by a test | the head; `test_the_design_notes_version_is_fixed` |
 | gk pins | `prereg/H<n>_...` pins read by the declarations' test; the file renamed to `prereg/H3_three_way.md` with its knock-ons; the build commit named | `tests/test_declarations_fixed.py`; `tests/test_h3_draft.py`, `tests/test_three_way_design.py`; the head; section 17 |
+
+The gatekeeper's re-check of the text at f454d8d (`GK_H3_c2_2026-11-22`; three items), with the lead's rulings:
+corrective cycle 2.
+
+| finding | the answer | where |
+|---|---|---|
+| c2-1 | R-10 cited as template v3's section 5, "The zero-edge convention"; H3-0 and H3-A do not run until its hash row is pinned; a test at that pin holds the pinned R-10 against the walk at the build commit on S1's `flatten` and `max_hold`; a disagreement re-declares H3 under a new row | section 7 (R-10's row); sections 16, 18; `test_the_pinned_r10_agrees_with_the_walk_at_the_build_commit` |
+| c2-2 | H3-D's level fixed in H3-D's text at the k current at H3-D's pin; a moved k re-declares H3-D's text under a new row, never adjusted at run time | the head; section 7 (the levels) |
+| c2-3 | every check family a product and a number; P1 runs (the note's 4.3); P2's and P3's sizes the note's, P4's base sizes the declaration's choice; the laxity stop on the 54 pooled counts at 0.05 / 54 each, the per-history counts beside | sections 8, 10, 11; `test_the_counts_are_products_and_numbers` |
+| c2 notes | the seed search's stale counts removed (a fresh search in the pin's row); 0.875 labelled a test's known answer; the red team's figures in R-10's row kept with their citation | sections 15, 7; Appendix D (m-11) |
+
+The red team's diff check of the earlier build commit 805978a (`BUILD_H3_805978a_2026-11-22`, PASS WITH MINORS), with
+the lead's rulings: the build commit moved to the one named in the head.
+
+| finding | the answer | where |
+|---|---|---|
+| rt 1 | `triggers.coin_key` builds a block seed's key only through `seed_key`; the readers refuse a hand-built block key; Stage 2's plain seeds unchanged | section 15; `test_rt1_no_path_builds_or_reads_a_block_key_unchecked` |
+| rt 2 | a plan's part declared, the tests' seed's plan in the tests' part only, its test ids declared | section 15; `test_rt2_...` |
+| rt 3 | no run role at an undeclared index; a field-ruled use needs its fields; A3's histories held in `ROLE_USE`; mutants S1, S3, S11 killed | section 15; `test_rt3_...`; `tests/test_three_way_mutations.py` |
+| rt 4 | H4-S's rule fixes the side draw kind | `three_way_seeds.FIELD_RULE_ROWS`; `test_rt4_...` |
+| rt 5 | every pinnable declaration pinned or awaiting its row; H3-D's file named to the pin grammar; no pin path climbs out of `prereg/` | the head; `tests/test_declarations_fixed.py` |
+| rt 6 | the tree's build files held equal to the build commit's | the head; `test_the_build_commit_is_named_and_reachable` |
+| rt 7 | the field checks' value sets built only for a role a rule reads | `three_way_fastkeys.key_matrix` |
+| rt 8 | the smaller-J report's one generator threaded in a declared order | section 7; `three_way_h3a.smaller_j_rng` |
+| rt 9 | each field rule inside its role's use; a rule given twice refused | `three_way_seeds.field_rules`; `test_rt9_...` |
