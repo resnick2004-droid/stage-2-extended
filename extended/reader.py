@@ -78,8 +78,11 @@ each refusal a `HeldOutRefused` (a `JudgedBlockSealed`) whose message begins wit
   at all** (Q-194e, the red team's P10; template v3 confines every family to the search years): an F- declaration's
   judged read is honoured only for the market's one held-out declaration and only under its two held-out purposes,
   whatever other purpose its line names, with or without a finalists' token; and **no `repeat=` row is ever honoured
-  for it** (P9; the template's section 5, step 3). A described reading (RD-) never takes a held-out purpose; its other
-  purposes are rule 4's.
+  for it** (P9; the template's section 5, step 3). **One run per purpose means a crash spends the test** (the red
+  team's NOTE-6 of `READER_Q194e_2026-11-22`): the ledger line is written before any data is read, so a run that dies
+  after it and before its result has spent that purpose's held-out read; the once rule refuses another run and no
+  repeat row exists, so the test is not rerun (the line can still back a verdict row). A described reading (RD-)
+  never takes a held-out purpose; its other purposes are rule 4's.
   Each refusal names the purpose and the declaration. Outside this rule, as E-247's rm-4 rules: the registered
   reproduction identities (purpose `identity`, declared by their decision row, rule-free here) and a registered
   design's re-read (`registered_design`, rule 3) keep their documented form;
@@ -108,8 +111,10 @@ sha256 and a finalists' token for `F-NN` at that sha256 is placed after the pin 
 ledger of the checkout being run holds that family's `heldout_test` read of the window, of the verdict's market, at
 that sha256 under that finalists' row, made in a clean run from a commit whose DECISIONS.md did not yet hold the
 verdict row -- the held-out read the verdict reports, which really happened; and (d) **the order is proven**
-(Q-194d, MINOR-1; Q-194e for merges): for **every** commit of HEAD's whole history, merge commits included
-(`git log --full-history -m -S`), whose own DECISIONS.md adds the exact verdict row, the ledger as committed there
+(Q-194d, MINOR-1; Q-194e for merges; Q-194f for the exact line): for **every** commit of HEAD's whole history,
+merge commits included, that adds the exact verdict row -- its patch against some parent (`git log --full-history -m
+-p`) holds the line `+<row>`, never judged by a count of the text -- and whose own DECISIONS.md holds it, the ledger
+as committed there
 already holds that line byte for byte and the read's commit is a proper ancestor of it -- so a verdict row recorded in
 a merge commit counts when it follows its read, and one committed anywhere before its read never does; a line the
 running process appended itself, or a read made after the verdict was committed, never counts; anything git cannot
@@ -122,10 +127,18 @@ character, at least as long; an indented line is never a fence; an unclosed fenc
 inside a fence is no row, no pin and no token anywhere in this module (`decision_row`, `pins`, the tokens). **Every
 judged read is refused while the log fails its own hygiene** (`LOG_RULE`): an unclosed fence, a malformed or fenced
 held-out token -- `heldout_token_problems` not empty -- the refusal naming the problem. **The recovery** (Q-194e,
-MINOR-2; the log is append-only): a later row `heldout-void: E-NNN -- <reason>` voids row E-NNN -- a malformed row's
-problem is then ignored, and a fence left open just after row E-NNN is treated as closed at the void row's end (the
-rows between stay fenced: none is revived, and none is reported). A void can never void a verdict, finalists' or pin
-row: naming a valid token row or a pin row, it does nothing, so it never revives or removes a read.
+MINOR-2; Q-194f; the log is append-only): a later row `heldout-void: E-NNN -- <reason>` voids row E-NNN -- the
+problem of a malformed row E-NNN (one carrying a pin too: the pin is still read from the row; a void never removes
+a pin), or of a token row E-NNN inside a closed fence (it stays fenced, so it is still no row), is then ignored; every
+void naming the row counts if it is placed after it; and a fence open when a void row naming the nearest row above
+the fence's opening line appears (wherever the fence opened) is closed at the void row's end -- the rows between stay
+fenced (none is revived, and none is reported), and the first fence-like line after the void, if it is a bare closer
+of that fence, is its closer, not a new fence. **A void never removes a token or a pin**: on the malformed path it
+names a row that is no token; on the fence path it names the row the stray fence follows, whatever that row is, and
+leaves it as it is. **What the renderers show** (the red team's NOTE-3 of `READER_Q194e_2026-11-22`): a void is a
+reader's rule only -- GitHub, VS Code and every CommonMark renderer still show the rows after a stray fence as code
+until a closing fence; the lead may append one right after the void (absorbed as above, so the log stays unlocked);
+the display's recovery for a row hidden in the fence is a new, correct row after it.
 
 What a counted verdict means, stated with the rule (the red team's NOTE-2, NOTE-3, NOTE-4 of
 `READER_Q194c_2026-11-21`):
@@ -730,49 +743,56 @@ def _once(repo: Path, ref: str, purpose: str, repeat: str | None, what: str) -> 
 # ----------------------------------------------------------------------------------- the held-out rules (Q-158)
 
 
-def _fence_scan(lines: list[str], start: int, fenced: list[bool]) -> int | None:
-    """CommonMark's fence scan of `lines[start:]` into `fenced`; returns the index of a fence left open, or None."""
-    open_at, char, size = None, "", 0
-    for i in range(start, len(lines)):
-        line = lines[i]
-        if open_at is None:
-            m = _FENCE_OPEN.match(line)
-            if m and not (m["fence"][0] == "`" and "`" in m["info"]):
-                open_at, char, size = i, m["fence"][0], len(m["fence"])
-                fenced[i] = True
-            continue
-        fenced[i] = True
-        if re.fullmatch(rf" {{0,3}}{re.escape(char)}{{{size},}}[ \t]*", line):
-            open_at = None
-    return open_at
+def _fence_closer(char: str, size: int) -> re.Pattern:
+    """CommonMark's closing fence for an opening run of `size` `char`s: at most three spaces of indent, at least as
+    many of the same character, then only spaces or tabs."""
+    return re.compile(rf" {{0,3}}{re.escape(char)}{{{size},}}[ \t]*")
 
 
 def _fence_state(decisions_text: str) -> tuple[list[bool], int | None, set[int]]:
-    """(fenced, unclosed, voided): CommonMark's fences, with Q-194e's recovery -- a fence left open just after a row
-    E-NNN is closed at the end of a later void row `heldout-void: E-NNN -- ...` (the rows between stay fenced, so none
-    is revived; `voided` holds their indices, which are reported as no problem), and the scan resumes after it."""
+    """(fenced, unclosed, voided): CommonMark's fences, with the void's recovery (Q-194e, Q-194f). A fence opens on a
+    line of at most three spaces of indent and three or more backticks or tildes (a backtick fence's info string holds
+    no backtick) and closes on its own closer (`_fence_closer`); an indented line is never a fence; an unclosed fence
+    runs to the end of the file. **The recovery:** inside an open fence, a void row `heldout-void: E-NNN -- ...` naming
+    the nearest row above the fence's opening line (wherever the fence opened: after a row, prose, a blank line or an
+    earlier closed fence) closes the fence at the void row's end -- the rows between stay fenced, so none is revived;
+    and the first fence-like line after the void, if it is a bare closer of the same fence (the renderers' own close),
+    is that fence's closer, never a new fence. `voided` holds the lines of every fence so closed: their fenced tokens
+    are reported as no problem."""
     lines = decisions_text.splitlines()
-    fenced, voided = [False] * len(lines), set()
-    start = 0
-    while True:
-        open_at = _fence_scan(lines, start, fenced)
-        if open_at is None:
-            return fenced, None, voided
-        prev = next((j for j in range(open_at - 1, -1, -1) if lines[j].strip()), None)
-        target = ROW.match(lines[prev]) if prev is not None else None
-        void_at = None
-        if target:
-            for j in range(open_at + 1, len(lines)):
-                m = HELDOUT_TOKENS["void"].match(lines[j])
-                if m and m["target"] == target.group(1):
-                    void_at = j
-                    break
-        if void_at is None:
-            return fenced, open_at, voided
-        for j in range(open_at, len(lines)):
-            fenced[j] = j <= void_at
-        voided.update(range(open_at, void_at + 1))
-        start = void_at + 1
+    n = len(lines)
+    fenced, voided = [False] * n, set()
+    i = 0
+    while i < n:
+        m = _FENCE_OPEN.match(lines[i])
+        if not m or (m["fence"][0] == "`" and "`" in m["info"]):
+            i += 1
+            continue
+        opened, closer = i, _fence_closer(m["fence"][0], len(m["fence"]))
+        prev = next((j for j in range(opened - 1, -1, -1) if not fenced[j] and ROW.match(lines[j])), None)
+        target = ROW.match(lines[prev]).group(1) if prev is not None else None
+        fenced[opened] = True
+        j, closed = opened + 1, False
+        while j < n:
+            fenced[j] = True
+            if closer.fullmatch(lines[j]):
+                closed = True
+                break
+            v = HELDOUT_TOKENS["void"].match(lines[j])
+            if target is not None and v and v["target"] == target:
+                voided.update(range(opened, j + 1))
+                nxt = next((k for k in range(j + 1, n) if _FENCE_OPEN.match(lines[k])), None)
+                if nxt is not None and closer.fullmatch(lines[nxt]):
+                    fenced[nxt] = True
+                    voided.add(nxt)
+                    j = nxt
+                closed = True
+                break
+            j += 1
+        if not closed:
+            return fenced, opened, voided
+        i = j + 1
+    return fenced, None, voided
 
 
 def _fences(decisions_text: str) -> tuple[list[bool], int | None]:
@@ -828,14 +848,15 @@ def heldout_token_problems(decisions_text: str) -> list[str]:
     """The decision rows whose third cell begins (after spaces, backticks and emphasis marks) with a held-out
     token-like string (`HELDOUT_TOKEN_LIKE`) that is not exactly a token, every held-out token inside a fenced code
     block (Q-194c), and a fence never closed (Q-194d): such a row authorises nothing. [] is clean; anything else
-    refuses every judged read (`LOG_RULE`). The recovery (Q-194e): a later row `heldout-void: E-NNN -- <reason>`
-    voids a malformed row E-NNN, or closes a fence left open just after row E-NNN at the void row's end; it never
-    voids a valid token row or a pin row."""
+    refuses every judged read (`LOG_RULE`). The recovery (Q-194e, Q-194f): any later row `heldout-void: E-NNN --
+    <reason>` clears the problem of a malformed row E-NNN (a pin on it still pins) or of a fenced token row E-NNN, and
+    closes a fence whose nearest row above is E-NNN at the void row's end (`_fence_state`); it never removes a token or
+    a pin."""
     out = []
     _, unclosed, voided = _fence_state(decisions_text)
-    voids = {}                                          # Q-194e: a row id -> the position of the first void naming it
+    voids: dict[str, list[int]] = {}                    # a row id -> the places of every void naming it (Q-194f (c))
     for t in heldout_tokens(decisions_text, "void"):
-        voids.setdefault(t.get("target"), t.pos)
+        voids.setdefault(t.get("target"), []).append(t.pos)
     if unclosed is not None:
         out.append(f"line {unclosed + 1}: a fenced code block opened here is never closed, so every line after it is "
                    "fenced (CommonMark); the log is refused for every judged read until the fence is closed")
@@ -846,13 +867,14 @@ def heldout_token_problems(decisions_text: str) -> list[str]:
         if not c:
             continue
         if fenced:
-            if i not in voided and any(rx.match(line) for rx in HELDOUT_TOKENS.values()):
+            if i not in voided and not any(p > i for p in voids.get(r.group(1), ())) and \
+                    any(rx.match(line) for rx in HELDOUT_TOKENS.values()):     # Q-194f (a): voidable in a fence
                 out.append(f"{r.group(1)} (line {n}): a held-out token inside a fenced code block is never a token, "
                            "so it authorises nothing")
             continue
         p = _HO_MARKS.match(line, c.end()).end()
-        if voids.get(r.group(1), -1) > i and not heldout_tokens(line) and not PIN.search(line):
-            continue                                    # Q-194e: a malformed row voided by a later row
+        if any(p > i for p in voids.get(r.group(1), ())) and not heldout_tokens(line):
+            continue                                    # Q-194e, -f (c), (d): a malformed row voided by any later row
         if HELDOUT_TOKEN_LIKE.match(line, p) and not heldout_tokens(line):
             out.append(f"{r.group(1)} (line {n}): {ascii(line[p:p + 80])} is held-out token-like but not exactly a "
                        "token (heldout-finalists: F-NN @ <sha256> list <sha256> -- ...; heldout-window: NQ <first> to "
@@ -1084,15 +1106,22 @@ def _commit_holds_line(repo: Path, commit: str, line: str) -> bool | None:
 
 
 def _verdict_commits(repo: Path, line: str) -> list[str] | None:
-    """Every commit of HEAD's whole history, merges included (`git log --full-history -m -S`, oldest first, deduped),
-    whose own DECISIONS.md changes the count of `line` and holds it -- the commits that add the verdict row; None when
-    git cannot answer (a commit it lists and cannot show)."""
-    r = _git(repo, "log", "--reverse", "--full-history", "-m", "--format=%H", f"-S{line}", "--", "DECISIONS.md")
+    """Every commit of HEAD's whole history, merges included, that **adds the exact line** -- whose patch against some
+    parent (`git log --full-history -m -p`; a root commit against the empty tree) holds the line `+<line>` -- and whose
+    own DECISIONS.md holds it (Q-194f: by the line itself, never by a count of the text, so an edit in place that keeps
+    the count cannot hide the commit), oldest first, deduped; None when git cannot answer."""
+    r = _git(repo, "log", "--reverse", "--full-history", "-m", "-p", "--no-color", "--no-ext-diff",
+             "--format=%x00%H", "--", "DECISIONS.md")
     if r.returncode != 0:
         return None
+    want = "+" + line
     out: list[str] = []
-    for h in r.stdout.split():
-        if not re.fullmatch(r"[0-9a-f]{40}", h) or h in out:
+    for chunk in r.stdout.split("\x00")[1:]:
+        h, _, body = chunk.partition("\n")
+        h = h.strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", h):
+            return None
+        if h in out or not any(x.rstrip("\r") == want for x in body.split("\n")):
             continue
         holds = _commit_holds_line(repo, h, line)
         if holds is None:

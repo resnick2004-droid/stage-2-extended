@@ -213,12 +213,13 @@ def test_p10_the_held_out_declaration_reads_only_its_held_out_purposes(tree):
     assert H.read(tree, declaration=rel, purpose="heldout_test").judged
 
 
-def test_p9_no_repeat_row_for_the_held_out_declaration(tree, monkeypatch):
+@pytest.mark.parametrize("purpose", ["heldout_test", "heldout_stress"])      # Q-194f: Z6
+def test_p9_no_repeat_row_for_the_held_out_declaration(tree, monkeypatch, purpose):
     VR.declare(tree)
-    H.read(tree, declaration=VR.HT_PATH, purpose="heldout_test")
+    H.read(tree, declaration=VR.HT_PATH, purpose=purpose)
     VR.append_rows(tree, f"| E-970 | 2026-11-20 | **another read of `{VR.HT_PATH}`** | x |")
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    e = H.refused(1, H.read, tree, declaration=VR.HT_PATH, purpose="heldout_test", repeat="E-970")
+    e = H.refused(1, H.read, tree, declaration=VR.HT_PATH, purpose=purpose, repeat="E-970")
     assert "no repeat row" in str(e)
     assert len(H.lines(tree, seed=True)) == 1
 
@@ -242,7 +243,7 @@ def test_an_oserror_from_git_fails_closed_by_name(declared, monkeypatch):
     real = R._git
 
     def broken(repo, *args):
-        if any(str(a).startswith("-S") for a in args):
+        if "log" in args and "-p" in args:                   # Q-194f: the walk of every commit's patch
             raise OSError("the command line is too long")
         return real(repo, *args)
 
