@@ -15,14 +15,22 @@ matters: it converts a search into something that looks like a test.
 (The shell tool is `Bash` or `PowerShell`, whichever this session offers. Windows: no inline `python -c` with
 backticks.)
 
-## Step 0: the machine check -- there is none yet, so say so
+## Step 0: the machine check -- the declaration lint first
 
-Stage 2's `propedge.backtest.prereg.validate_prereg` reads a P-file's machine-checked table; **no validator exists for
-this repository's F-files.** Do not run Stage 2's on an F-file and do not report a pass from it. Check by reading the
-draft against `vendor/stage2/prereg/TEMPLATE.md` and `vendor/stage2/prereg/FAMILY_TEMPLATE.md` (both read-only), as
-this repository adapts them (below), and open every verdict with the line:
+First, run `python scripts/decl_lint.py <file>` and fix every error before any review (Q-210): the author fixes them,
+so an error it prints is a refusal, quoted as it prints it (`path:line: [rule] ...`). It is the machine check of a
+declaration's form -- the pin-time form, the cross-references (template sections and their topics, decision rows,
+commits, paths, LF sha256s), the counts as a product and a number, the seeds against their guards, the token grammar,
+the held-out and confirmation dates, typed figures (warnings only). A draft not yet renamed is linted with `--pin`
+and `--as prereg/<its pinned name>`. Its exit 0 is not an approval: it checks form, never substance.
 
-> machine check: none exists for F-files; read by hand against TEMPLATE.md and FAMILY_TEMPLATE.md (adapted)
+Stage 2's `propedge.backtest.prereg.validate_prereg` reads a P-file's machine-checked table; it is not a validator for
+this repository's F-files. Do not run Stage 2's on an F-file and do not report a pass from it. After the lint, check
+by reading the draft against `vendor/stage2/prereg/TEMPLATE.md` and `vendor/stage2/prereg/FAMILY_TEMPLATE.md` (both
+read-only), as this repository adapts them (below), and open every verdict with the line:
+
+> machine check: `scripts/decl_lint.py` -- <exit code, errors, warnings>; read by hand against TEMPLATE.md and
+> FAMILY_TEMPLATE.md (adapted)
 
 Then run what does exist: `python -m pytest -q tests/test_declarations_fixed.py` -- every family already pinned still
 matches its hash. If it fails, stop and report that first: a pinned declaration was edited.

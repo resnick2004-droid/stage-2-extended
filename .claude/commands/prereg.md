@@ -22,7 +22,9 @@ Draft a new family declaration titled: **$ARGUMENTS**
    parameter that is genuinely fixed (contract arithmetic, a verified rule, a registered rung). **Leave anything
    undecided visibly blank.** Do not invent a block, a seed or a parameter value to make the file look complete -- the
    gatekeeper will refuse it, and worse, an invented value that survives becomes a rule nobody chose.
-4. Tell the caller which sections still need decisions, as a short list.
+4. Tell the caller which sections still need decisions, as a short list. Then run
+   `python scripts/decl_lint.py <file>` and fix every error before any review (Q-210; add `--pin` for a draft about to
+   be renamed for its pin; warnings are read, never a reason to stop).
 5. Invoke the **red-team** agent on the draft, giving it the file and the templates -- not your expectation of what it
    will find. Pass its findings on unedited. **In the same step, invoke the prereg-gatekeeper for a form read of the
    same draft** (E-274): its template, counting, pin-grammar and wording items, returned as a numbered list, approving
