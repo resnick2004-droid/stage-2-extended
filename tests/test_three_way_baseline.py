@@ -5,7 +5,8 @@ refused; a move bar at or after the limit no move, C2-10); FV3's target rounding
 of a trade without an R (C2-6), a fact that does not match the trade handed out (C2-8), a trade with no fee to charge (C2-2), a stretch exit; a need-aware exit raced at the as-placed target at the
 state's R, never `rr_used` (C2-1); the fee taken from the engine at size (C2-2); the ledger's historical fields marked
 not applicable (C2-7); the volatility at the alert unchanged by any bar after it (N-6); two trades at one moment
-drawing independent outcomes (the lead's amendment to C2-9). In its own process
+drawing independent outcomes (the lead's amendment to C2-9); the rungs of one alert each on its own law, one side,
+a second on a lane refused, and overlapping positions counted beside (the lead's ruling on C3-2). In its own process
 (`tests/three_way_baseline_checks.py`): the vendored identity through passes and funded accounts, the rebooked
 identity, the reflected as-walked reading, the independent oracle re-booking every race-arm row, the daily loss limit's day end, the counts beside.
 """
@@ -24,7 +25,6 @@ import pytest
 from extended import three_way_baseline as TB
 from extended import three_way_journey as J
 from extended import three_way_keys as K
-from extended import three_way_redraw as RD
 from extended import three_way_seeds as S
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -176,22 +176,77 @@ def test_the_move_bar_is_s_plus_one():
     _facts(be_open=None)
 
 
-def test_rungs_of_one_alert_read_one_path_and_one_side():
-    """C3-2 on the draw: two rungs of one alert (sub 0 and 1) share one common path object and one side coin."""
-    facts = {(0, 0): _facts(), (0, 1): _facts(stop_ticks=80)}
-    coins = J.CoinLanes(SEED, PART, 0, 0, range(3), None, False)
+def test_rungs_of_one_alert_book_alone_on_one_side_and_a_second_on_a_lane_is_refused():
+    """The lead's ruling on C3-2: an alert is (block day, alert minute, market), the market the key's underlying code
+    (NQ and MNQ are one; N-2); every rung books on its own single-trade law at its own sub; the side at the alert's
+    sub 0; a lane handed a second rung of one alert is refused, never booked."""
+    facts = {(0, 0): _facts(), (0, 1): _facts(stop_ticks=80, underlying="MNQ")}
+    coins = J.CoinLanes(SEED, PART, 0, 0, [0], None, False)
     unit = TB._Unit(facts, [_Block()], 0, coins, J.ArmSpec())
-    p0, h0 = unit.path(0, facts[(0, 0)], 1)
-    p1, h1 = unit.path(0, facts[(0, 1)], 1)
-    assert p0 is p1 and h0 == h1 and p0 is not unit.path(0, facts[(0, 0)], 2)[0]
-    assert unit.alert_key(0, facts[(0, 1)]).moment == K.moment(0, 935, 0)
-    single = TB._Unit({(0, 0): _facts()}, [_Block()], 0, coins, J.ArmSpec())
-    assert single.path(0, _facts(), 1) == (None, None)            # a single-rung alert books as before
-    # the path's step is the step rule's at the LONGEST time any rung of the alert needs (every rung's n <= WALK_MAX)
-    two = TB._Unit({(0, 0): _facts(limit=1000, sigma=6.0), (0, 1): _facts(stop_ticks=80, sigma=6.0)}, [_Block()], 0,
-                   coins, J.ArmSpec())
-    a = (0, 935, "NQ")
-    assert two.rung_step[a] == RD.walk_step(6.0, 1330.0 - 940.0, J.WALK_MAX) != RD.walk_step(6.0, 60.0, J.WALK_MAX)
+    assert unit.alerts == {(0, 935, 1): [(0, 0), (0, 1)]} and unit.rung_alerts(0, 1) == 1 and unit.rung_alerts(1, 5) == 0
+    assert unit.alert_key(0, facts[(0, 1)]).moment == unit.alert_key(0, facts[(0, 0)]).moment == K.moment(0, 935, 0)
+    with pytest.raises(ValueError, match="no key code"):
+        TB._Unit({(0, 0): _facts(underlying="ES")}, [_Block()], 0, coins, J.ArmSpec())
+    # each rung alone on a lane: its own single-trade race at its own sub (rung 1: d = 20 / 80, G 120 ticks = $30, p 0.4)
+    log: list = []
+    out0 = TB.RaceOver(_Inner(), unit, 0, "race", log, None)(1, 0, 0, np.array([100.0]))[0]
+    out1 = TB.RaceOver(_Inner(trade_index=1, risk_per_contract=40.0), unit, 0, "race", log, None)(
+        1, 0, 0, np.array([100.0]))[0]
+    u1 = float(K.uniforms(K.Unit(SEED, PART, 0, 0, 0).coin_key(K.moment(0, 935, 1), K.RACE), 1)[0])
+    assert out0 == (30.0 if _u_race() < 0.4 else -20.0) and out1 == (30.0 if u1 < 0.4 else -20.0)
+    assert [r["law"] for r in log] == ["race", "race"] and abs(log[1]["p"] - 0.4) < 1e-12
+    # one lane's two accounts share its book: the second rung is refused before anything is booked
+    for mode in ("race", "as_walked", "rebooked", "vendored"):
+        book: dict = {"alerts": set(), "held": {}}
+        log = []
+        f2 = {k: TB.TradeFacts(**{**v.__dict__, "walked": {1.5: 10.0, 2.0: 10.0}}) for k, v in facts.items()}
+        u2 = TB._Unit(f2, [_Block()], 0, coins, J.ArmSpec())
+        TB.RaceOver(_Inner(), u2, 0, mode, log, None, book)(1, 0, 0, np.array([100.0]))
+        with pytest.raises(ValueError, match="second rung"):
+            TB.RaceOver(_Inner(trade_index=1, risk_per_contract=40.0), u2, 0, mode, log, None, book)(
+                1, 0, 0, np.array([100.0]))
+        assert len(log) == (0 if mode == "vendored" else 1), (mode, log)
+    # the second rung alone on a lane takes the alert's one side: the SIDE coin at sub 0, never its own sub's
+    log = []
+    f2 = {k: TB.TradeFacts(**{**v.__dict__, "walked": {1.5: 10.0, 2.0: 10.0}}) for k, v in facts.items()}
+    TB.RaceOver(_Inner(trade_index=1, risk_per_contract=40.0), TB._Unit(f2, [_Block()], 0, coins, J.ArmSpec()), 0,
+                "as_walked", log, None)(1, 0, 0, np.array([100.0]))
+    us = [float(K.uniforms(K.Unit(SEED, PART, 0, 0, 0).coin_key(K.moment(0, 935, b), K.SIDE), 1)[0]) for b in (0, 1)]
+    assert (us[0] < 0.5) != (us[1] < 0.5)                          # the fixture's two subs draw opposite sides
+    assert log[0]["side"] == (1.0 if us[0] < 0.5 else -1.0)
+
+
+class _Held:
+    entry_t = np.array([940.0, 950.0, 1000.0])
+    exit_by_rr = {1.5: np.array([980.0, 1001.0, 1010.0])}
+
+
+def test_overlapping_positions_are_counted_beside():
+    """N-5: per lane, a booked position entered on a market while another of the lane's there is held (to its
+    historical exit at its R) is counted; one entered after every other's exit is not."""
+    facts = {(0, 0): _facts(), (0, 1): _facts(decision=945, entry=950), (0, 2): _facts(decision=995, entry=1000)}
+    coins = J.CoinLanes(SEED, PART, 0, 0, [0], None, False)
+    unit = TB._Unit(facts, [_Held()], 0, coins, J.ArmSpec())
+    assert unit.rung_alerts(0, 1) == 0                              # three alerts of one trade each
+    for mode in ("race", "vendored"):
+        book: dict = {"alerts": set(), "held": {}}
+        counts: dict = {}
+        seen = []
+        for j in range(3):
+            TB.RaceOver(_Inner(trade_index=j), unit, 0, mode, None, counts, book)(1, 0, 0, np.array([100.0]))
+            seen.append(counts.get("overlaps", 0))
+        assert seen == [0, 1, 2], mode           # 950 inside (940, 980); 1000 inside (950, 1001)
+        counts, book = {}, {"alerts": set(), "held": {}}             # the engine's order is not the fills' order
+        for j in (2, 0, 1):
+            TB.RaceOver(_Inner(trade_index=j), unit, 0, mode, None, counts, book)(1, 0, 0, np.array([100.0]))
+        assert counts["overlaps"] == 2, (mode, counts)
+    # a trade the race leaves untaken (a missed signal) holds no position: nothing counted
+    missed = TB._Unit(facts, [_Held()], 0, coins, J.ArmSpec(missed_q=0.999999))
+    counts, book, log = {}, {"alerts": set(), "held": {}}, []
+    for j in range(3):
+        TB.RaceOver(_Inner(trade_index=j), missed, 0, "race", log, counts, book)(1, 0, 0, np.array([100.0]))
+    assert [r["law"] for r in log] == ["missed"] * 3 and counts.get("overlaps", 0) == 0, (log, counts)
+    assert unit.hold(0, 2, facts[(0, 2)], 1.5) == (1000.0, 1010.0)
 
 
 def test_a_need_aware_exit_races_at_the_as_placed_target_at_the_states_r():
@@ -257,9 +312,10 @@ def test_an_independent_oracle_rebooks_every_race_arm_row(checks):
     assert checks["opens"]                                  # FV3_OPENS is the vendored SESSION_OPENS (C3-10)
     for name in ("race", "race_rr2"):
         c = checks[name]
-        assert c["rows"] > 200 and c["bad"] == 0, (name, c)
+        assert c["rows"] > 200 and c["bad"] == 0 and c["unchecked"] == 0, (name, c)
         assert {"race", "walk", "move", "fill_fail"} <= set(c["laws"]) and c["needs"] > 0, (name, c)
         assert c["hist_fields"] == 0 and c["count_bad"] == 0 and c["overlap"] == 0, (name, c)
+        assert c["overlaps"] == 0 == c["held_overlaps"] and c["per_alert_max"] == 1, (name, c)   # the strict rule
         assert c["inputs_bad"] == 0 and c["need_stat_bad"] == 0, (name, c)   # G, L, the move's, the need (C3-5, 8)
         assert c["need_hits"] > 0, (name, c)
     assert {"move", "walk"} <= set(checks["race"]["need_by_law"]) or {"move", "walk"} <= set(
@@ -270,12 +326,26 @@ def test_an_independent_oracle_rebooks_every_race_arm_row(checks):
     assert c["move_trades"] > 0 and c["b_redrawn"] > 0 and c["b_historical"] > 0, c    # C2-4's shares beside
 
 
-def test_rungs_of_one_alert_are_booked_on_one_common_path(checks):
-    c = checks["rungs"]
-    assert c["rung_trades"] > 0 and c["rung_moments"] > 0 and c["rows"] == c["rung_trades"], c
-    assert c["bad"] == 0, c                                 # every rung row re-booked by the checks' own path
-    assert {"rung_race", "rung_walk", "rung_move"} <= set(c["laws"]), c        # every rung law reached
-    assert c["sides_bad"] == 0 and c["alerts"] > 0, c       # as_walked: one side per alert
+def test_rungs_under_the_strict_rule_book_one_a_lane_each_on_its_own_law(checks):
+    """The lead's ruling on C3-2: under the strict rule the router takes at most one rung of an alert on a lane, and the
+    oracle re-books every row on its own single-trade law; with the strict rule off the second rung is refused."""
+    c = checks["rungs_strict"]
+    assert c["rung_alerts"] > 0 and c["per_alert_max"] == 1, c
+    assert c["rows"] > 100 and c["bad"] == 0 and c["inputs_bad"] == 0 and c["unchecked"] == 0, c
+    assert c["overlaps"] == 0 and c["held_overlaps"] == 0, c
+    assert "second rung" in checks["rung_refused"], checks["rung_refused"]
+
+
+def test_overlapping_positions_off_the_strict_rule_are_counted_beside(checks):
+    c = checks["overlap"]
+    assert c["overlaps"] > 0 and c["overlaps"] == c["held_overlaps"], c       # N-5: this file's own count
+    assert c["rows"] > 100 and c["bad"] == 0 and c["unchecked"] == 0 and c["per_alert_max"] == 1, c
+
+
+def test_p16s_windows_are_held_before_its_table_loads(checks):
+    c = checks["p16_hold"]
+    assert "N-d" in c["late"] and c["late_built"] == 0, c                     # N-4: refused before the builder
+    assert "not the search calendar" in c["misaligned"] and c["misaligned_built"] == 1, c
 
 
 def test_a_daily_loss_limit_ends_the_day_at_the_take(checks):

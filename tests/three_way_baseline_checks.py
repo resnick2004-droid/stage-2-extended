@@ -18,7 +18,14 @@ loss limit (a test fixture's evaluation account). No bar, no result.
   the as-placed target; fill failures booked by the engine at the room; the ledger's historical fields marked not
   applicable; the draw's trade counts the race's own; the counts beside (the move law's trades, the redrawn and FV3's
   historical `b` exits, the move bars that differ from s + 1);
-- `dll` -- under a daily loss limit, the day ends at the take and the account takes no later trade that session.
+- `dll` -- under a daily loss limit, the day ends at the take and the account takes no later trade that session;
+- `rungs_strict` -- two rungs of one alert on the schedule, the strict rule on: the router takes at most one rung of an
+  alert on a lane, and every row is booked on its own single-trade law (the oracle above, each at its own sub);
+  `rung_refused` -- the strict rule off: the lane handed the second rung is refused, never booked (the lead's ruling
+  on C3-2);
+- `overlap` -- the strict rule off, a second alert filled while the first's position is held: the positions entered
+  while another on the market is held are counted beside (N-5), equal to this file's own count from the ledger;
+- `p16_hold` -- P-16's windows are held to the search calendar before its table loads (N-4).
 
 `p16` (argv `p16`; heavy, the lead's): the vendored identity on P-16's own job (`user_journey.BUILDERS["p16"]`), at
 starts reaching funded accounts and payouts.
@@ -85,12 +92,14 @@ def _kind(i: int, j: int, R: float) -> str:
     return "ttsfb"[(i * 3 + j + int(R * 2)) % 5]
 
 
-def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False) -> tuple[list, dict, dict]:
+def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False, strict: bool = True,
+        overlap: bool = False) -> tuple[list, dict, dict]:
     """`combine_rr` 2.0 (C3-1): the Combine's state R the table's highest, so the need-aware walk picks a lower R and the
-    history's `rr_used` differs from `rr`. `rungs` (C3-2): the session's second trade is a rung of the first's alert
-    (one alert, one fill, a wider stop; on odd days an earlier limit, so the alert's step is not the rung's own), and
-    the strict rule is off so both can be taken."""
-    rng = np.random.default_rng([int(SEED), 185, int(dll), int(combine_rr * 2), int(rungs)])
+    history's `rr_used` differs from `rr`. `rungs`: the session's second trade is a rung of the first's alert (one
+    alert, one fill, a wider stop). `strict` False: the strict rule off (`one_at_a_time` None). `overlap`: the
+    session's second trade a second alert, filled five minutes after the first (inside the first's hold)."""
+    rng = np.random.default_rng([int(SEED), 185, int(dll), int(combine_rr * 2), int(rungs)]
+                                + ([1] if overlap else []) + ([] if strict else [2]))
     blocks, facts = [], {}
     for i in range(N_DAYS):
         k = 1 + i % 3
@@ -98,6 +107,8 @@ def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False) -> tupl
         et = np.array([(1210.0 + 30.0 * j) if i % 2 else (940.0 + 70.0 * j) for j in range(k)])
         if rungs and k >= 2:
             et[1] = et[0]                                   # one alert, one fill: two rungs
+        if overlap and k >= 2:
+            et[1] = et[0] + 5.0                             # a second alert inside the first's hold
         bes, kinds_by = [], []
         for j in range(k):                                  # each trade's move bar and its kinds first (the block's
             ent = int(et[j])                                # booking below follows the kinds the facts carry)
@@ -130,7 +141,7 @@ def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False) -> tupl
             ent, be = int(et[j]), bes[j]
             facts[(i, j)] = TB.TradeFacts(
                 decision=ent - 5, entry=ent, stop_ticks=int(stops[j]), tick_value=TICK, kinds=kinds_by[j],
-                limit=(LIMIT - 40 if (rungs and j == 1 and i % 2) else LIMIT), sigma=SIGMA, be_open=be, be_vendored=(None if (be is None or (i + j) % 13 == 0) else be + (1 if (i + j) % 11 == 0 else 0)),
+                limit=LIMIT, sigma=SIGMA, be_open=be, be_vendored=(None if (be is None or (i + j) % 13 == 0) else be + (1 if (i + j) % 11 == 0 else 0)),
                 e_ticks=E_T, xt_ticks=XT_T, xs_ticks=XS_T, xf_ticks=XF_T, fee_per_contract=LOG_FEE,
                 walked={R: float(walked_by[R][j]) for R in RS})
     rules = rules_from_ledger()
@@ -149,7 +160,7 @@ def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False) -> tupl
         path.update(combine_account_cls=DllCombine, max_total_accounts=1, max_concurrent_combines=1)
     sizing = dataclasses.replace(SizingRule.from_ledger(), fee_schedule=FEES)
     args = {"draws": {"protocol": proto, "mode": "rotation", "flip": None, "sizing": sizing, "route_able": True,
-                      "one_at_a_time": (None if rungs else 5.0), "hold_to_own_exit": True},
+                      "one_at_a_time": (5.0 if strict else None), "hold_to_own_exit": True},
             "path": path, "seed": int(SEED)}
     return blocks, args, facts
 
@@ -305,8 +316,23 @@ def race(blocks, args, facts) -> dict:
     subs = _subs(facts)
     laws, rows, bad, needs, hist_fields, count_bad, overlap, inputs_bad = {}, 0, 0, 0, 0, 0, 0, 0
     need_hits, need_stat_bad, rr_differs, need_by_law = 0, 0, 0, {}
+    unchecked = per_alert_max = held_overlaps = 0
     for lane, (lg, path) in enumerate(zip(rec.logs, rec.paths)):
         led = {(int(t["day"]), int(t["trade_index"])): t for t in path.trades}
+        checked = set()
+        per_alert: dict = {}
+        for t in path.trades:                               # each alert's rungs taken on the lane
+            i = start + int(t["day"]) - 1
+            a = (i, facts[(i, int(t["trade_index"]))].decision)
+            per_alert[a] = per_alert.get(a, 0) + 1
+        per_alert_max = max([per_alert_max, *per_alert.values()])
+        held: dict = {}
+        for t in sorted(path.trades, key=lambda t: (int(t["day"]), int(t["trade_index"]))):   # N-5, this file's own
+            i, j = start + int(t["day"]) - 1, int(t["trade_index"])
+            enter = float(blocks[i].entry_t[j])
+            prev = held.setdefault(i, [])
+            held_overlaps += int(any(x > enter for x in prev))
+            prev.append(float(blocks[i].exit_by_rr[float(t["rr"])][j]))
         for t in path.trades:                               # C2-7, C3-3: no history on a race-arm row
             hist_fields += int(t.get("race_law") is not None and (
                 t.get("u") is not None or t.get("mae") is not None or t.get("rr_used") is not None
@@ -331,6 +357,7 @@ def race(blocks, args, facts) -> dict:
             if t is None:
                 bad += 1
                 continue
+            checked.add((r["i"] - start + 1, r["j"]))
             needs += int(t.get("need") is not None)
             rr_differs += int(r.get("hist_rr_used") is not None and float(r["hist_rr_used"]) != float(t["rr"]))
             want, mism, hit = oracle(r, t, facts[(r["i"], r["j"])], lane, start, subs[(r["i"], r["j"])])
@@ -341,6 +368,8 @@ def race(blocks, args, facts) -> dict:
             bad += int(not (abs(r["out"] - want) <= 1e-9 or (math.isnan(want) and math.isnan(r["out"]))))
             if r["law"] == "fill_fail":
                 bad += int(abs(float(t["pnl"]) + float(t["room"])) > 1e-9)      # the engine booked the whole room
+        unchecked += sum(1 for t in path.trades if t.get("race_law") is not None
+                         and (int(t["day"]), int(t["trade_index"])) not in checked)
         spans = sorted((int(t["day"]) * 1440 + float(blocks[start + int(t["day"]) - 1].entry_t[int(t["trade_index"])]),
                         int(t["day"]) * 1440 + float(blocks[start + int(t["day"]) - 1].exit_by_rr[float(t["rr"])][
                             int(t["trade_index"])])) for t in path.trades)
@@ -350,95 +379,9 @@ def race(blocks, args, facts) -> dict:
             "need_stat_bad": need_stat_bad, "rr_differs": rr_differs, "overlap": overlap,
             "move_trades": int(rec.move_trades.sum()), "b_redrawn": int(rec.b_redrawn.sum()),
             "b_historical": int(rec.b_historical.sum()), "be_differs": int(rec.be_differs.sum()),
-            "be_unrecorded": int(rec.be_unrecorded.sum()), "lanes": lanes}
-
-
-def _rung_path_touch(us: np.ndarray, h: float, lo: float, hi: float, start: int, stop: int | None, xs: list):
-    """This file's own common path (written from the construction's statement): step k up where its first uniform is
-    below one half; an up step's minimum (a + u c) / (1 + u), a down step's maximum (c + u a) / (1 + u)."""
-    k = start
-    while stop is None or k < stop:
-        k += 1
-        while len(xs) <= k:
-            i = len(xs) - 1
-            x0 = xs[-1][0]
-            a, c = x0 - h, x0 + h
-            v = float(us[2 * i + 1])
-            xs.append((c, (a + v * c) / (1 + v), c) if float(us[2 * i]) < 0.5 else (a, a, (c + v * a) / (1 + v)))
-        x, lo_k, hi_k = xs[k]
-        if lo_k <= lo:
-            return -1, k
-        if hi_k >= hi:
-            return 1, k
-    return 0, stop
-
-
-def rungs(blocks, args, facts) -> dict:
-    """C3-2 through the engine: the rungs of one alert booked on one common path, every rung row re-booked by this
-    file's own path; their count; `as_walked` one side per alert."""
-    h, lanes, start = 63, 8, 0
-    rec = run(blocks, args, facts, start, lanes, h, outcome="race", keep_paths=True, log=True)
-    rows = bad = 0
-    for lane, (lg, path) in enumerate(zip(rec.logs, rec.paths)):
-        led = {(int(t["day"]), int(t["trade_index"])): t for t in path.trades}
-        cache: dict = {}
-        for r in lg:
-            if not r["law"].startswith("rung_"):
-                continue
-            t = led.get((r["i"] - start + 1, r["j"]))
-            f = facts[(r["i"], r["j"])]
-            if t is None:
-                bad += 1
-                continue
-            rows += 1
-            key = (r["i"], f.decision)
-            if key not in cache:
-                us = K.uniforms(K.Unit(SEED, PART, 0, lane, start).coin_key(K.moment(r["i"], f.decision, 0), K.WALK),
-                                200000)
-                cache[key] = (us, [(0.0, 0.0, 0.0)])
-            us, xs = cache[key]
-            alert = [facts[x] for x in facts if x[0] == r["i"] and facts[x].decision == f.decision]
-            hs = float(_step(f.sigma, max(max(1, g.limit - g.entry) for g in alert)))     # this file's own step
-            bad += int(float(r["h"]) != hs)
-            d = float(t["realised_risk"]) / f.stop_ticks
-            e, xt, xsc, xf = E_T * d + _fee(int(t["contracts"])), XT_T * d, XS_T * d, XF_T * d
-            G, Lt = float(r["G"]), float(r["L_ticks"])
-            if r["law"] == "rung_race":
-                k, _ = _rung_path_touch(us, hs, -Lt, G, 0, None, xs)
-                g = G if k == 1 else -Lt
-            elif r["law"] == "rung_walk":
-                n = _steps(f.sigma, max(1, f.limit - f.entry), int(hs))
-                k, at = _rung_path_touch(us, hs, -Lt, G, 0, n, xs)
-                g = G if k == 1 else -Lt if k == -1 else xs[at][0]
-            else:
-                n1 = _steps(f.sigma, f.be_open - f.entry, int(hs))
-                n2 = _steps(f.sigma, f.limit - f.be_open, int(hs))
-                k, at = _rung_path_touch(us, hs, -Lt, G, 0, n1, xs)
-                if k == 0:
-                    x = xs[n1][0]
-                    moved = x >= 1.0
-                    k2, at2 = _rung_path_touch(us, hs, 0.0 if moved else -Lt, G, n1, n1 + n2, xs)
-                    k, g = ((1, G) if k2 == 1 else ((3, 0.0) if moved else (-1, -Lt)) if k2 == -1
-                            else (0, xs[at2][0]))
-                else:
-                    g = G if k == 1 else -Lt
-            cost = xt if k == 1 else xsc if k in (-1, 3) else xf
-            bad += int(abs(r["out"] - (-e + g * d - cost)) > 1e-9)
-    aw = run(blocks, args, facts, start, lanes, h, outcome="as_walked", log=True)
-    sides_bad = pairs = 0
-    for lg in aw.logs:
-        by_alert: dict = {}
-        for r in lg:
-            by_alert.setdefault((r["i"], facts[(r["i"], r["j"])].decision), set()).add(r.get("side"))
-        for v in by_alert.values():
-            pairs += 1
-            sides_bad += int(len(v) > 1)
-    laws = {}
-    for lg in rec.logs:
-        for r in lg:
-            laws[r["law"]] = laws.get(r["law"], 0) + 1
-    return {"rows": rows, "bad": bad, "laws": laws, "rung_trades": int(rec.rung_trades.sum()),
-            "rung_moments": int(rec.rung_moments.sum()), "lanes": lanes, "sides_bad": sides_bad, "alerts": pairs}
+            "be_unrecorded": int(rec.be_unrecorded.sum()), "lanes": lanes, "unchecked": unchecked,
+            "per_alert_max": per_alert_max, "overlaps": int(rec.overlaps.sum()), "held_overlaps": held_overlaps,
+            "rung_alerts": int(rec.rung_alerts)}
 
 
 def dll(blocks, args, facts) -> dict:
@@ -482,29 +425,74 @@ def reading(blocks, args, facts) -> dict:
             "planted_at_need": len(FR.trade_problems(need, blocks[3:45]))}
 
 
-def p16(starts=(0, 100, 250), h: int = 126) -> dict:
-    """Heavy (the lead's): the vendored identity on P-16's own job (reads its walk table)."""
-    import user_journey as UJ
-
-    from propedge import RESULTS_DIR
-
+def hold_windows(dates, starts, h: int, what: str) -> None:
+    """N-d, N-4: every window [s, s + h) lies inside `dates` and at or before `CHOICE_END`, else refused."""
     from extended import reader as RDR
 
-    jobs, _ = UJ.BUILDERS["p16"](RESULTS_DIR, ["p16"])
+    for s in starts:
+        w = [str(d)[:10] for d in list(dates)[s:s + h]]
+        if len(w) < h:
+            raise SystemExit(f"REFUSED (N-4): {what}'s window from {s} runs past its {len(list(dates))} sessions")
+        late = [d for d in w if d > RDR.CHOICE_END.isoformat()]
+        if late:
+            raise SystemExit(f"REFUSED (N-d): {what}'s window from {s} reads {late[0]}, past {RDR.CHOICE_END}")
+
+
+def p16(starts=(0, 100, 250), h: int = 126, builder=None, calendar=None) -> dict:
+    """Heavy (the lead's): the vendored identity on P-16's own job (reads its walk table). N-4: the windows are held
+    to the pinned search calendar (2020-01-02 to 2023-12-29) BEFORE P-16's table loads, and P-16's own dates must then
+    be the calendar's sessions window for window. (The vendored builder still loads P-16's whole table; only the
+    windows' sessions are replayed.)"""
+    if calendar is None:
+        from extended.search_calendar import load_search_calendar
+
+        calendar = load_search_calendar().dates
+    hold_windows(calendar, starts, h, "the search calendar")      # before anything of P-16's is read
+    if builder is None:
+        import user_journey as UJ
+
+        from propedge import RESULTS_DIR
+
+        jobs, _ = UJ.BUILDERS["p16"](RESULTS_DIR, ["p16"])
+    else:
+        jobs, _ = builder()
+    cal = [str(d)[:10] for d in calendar]
     out = {}
     for arm, job in jobs["p16"].items():
         diffs, funded, pays = [], 0, 0
-        for s in starts:                                    # N-d: every window inside the search years, else refused
-            late = [d for d in job["dates"][s:s + h] if str(d)[:10] > RDR.CHOICE_END.isoformat()]
-            if late:
-                raise SystemExit(f"REFUSED (N-d): P-16's {arm} window from {s} reads {late[0]}, past "
-                                 f"{RDR.CHOICE_END}")
+        for s in starts:
+            hold_windows(job["dates"], [s], h, f"P-16's {arm}")
+            if [str(d)[:10] for d in job["dates"][s:s + h]] != cal[s:s + h]:
+                raise SystemExit(f"REFUSED (N-4): P-16's {arm} window from {s} is not the search calendar's sessions")
             theirs = CS.replay(job["blocks"][s:s + h], job["args"], h)
             mine = TB.replay(job["blocks"][s:s + h], job["args"], h, outcome="vendored")
             diffs += FC.same(mine, theirs, f"{arm} start{s}")
             funded += len(theirs.funded)
             pays += sum(len(f.payout_days) for f in theirs.funded)
         out[arm] = {"n_diffs": len(diffs), "diffs": diffs[:5], "funded": funded, "payouts": pays}
+    return out
+
+
+def p16_hold() -> dict:
+    """N-4 on a synthetic calendar: a window past CHOICE_END is refused before the builder is called; P-16's dates not
+    the calendar's are refused."""
+    import datetime as dt
+
+    days = [(dt.date(2023, 6, 1) + dt.timedelta(days=k)).isoformat() for k in range(400)]
+    called = []
+
+    def builder():
+        called.append(1)
+        return {"p16": {"a": {"dates": days[1:], "blocks": [], "args": {}}}}, []
+
+    out = {}
+    for name, starts in (("late", (0, 200)), ("misaligned", (0,))):
+        try:
+            p16(starts=starts, h=20, builder=builder, calendar=days)
+            out[name] = ""
+        except SystemExit as exc:
+            out[name] = str(exc)
+        out[name + "_built"] = len(called)
     return out
 
 
@@ -523,8 +511,17 @@ def main() -> None:
     out["dll"] = dll(db, da, df)
     rb, ra, rf = job(combine_rr=2.0)                        # C3-1: rr_used differs from rr on the need-aware exits
     out["race_rr2"] = race(rb, ra, rf)
-    gb, ga, gf = job(rungs=True)                            # C3-2: rungs of one alert on one path
-    out["rungs"] = rungs(gb, ga, gf)
+    gb, ga, gf = job(rungs=True)                            # rungs of one alert, the strict rule on
+    out["rungs_strict"] = race(gb, ga, gf)
+    ub, ua, uf = job(rungs=True, strict=False)              # the strict rule off: the second rung refused
+    try:
+        run(ub, ua, uf, 0, 2, 63, outcome="race")
+        out["rung_refused"] = ""
+    except ValueError as exc:
+        out["rung_refused"] = str(exc)
+    ob, oa, of = job(overlap=True, strict=False)            # N-5: overlapping positions, counted beside
+    out["overlap"] = race(ob, oa, of)
+    out["p16_hold"] = p16_hold()
     print(json.dumps(out, default=str))
 
 

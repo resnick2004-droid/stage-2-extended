@@ -70,14 +70,20 @@ trade's historical exit at its R -- where the playbook frees the account at once
 any account trades, so freeing it would mean subclassing `TradeRouter.begin_day` or editing its time arrays, which the
 pass-through identity forbids.
 
-**Rungs of one alert (the lead's ruling on C3-2).** Two or more trades at one moment on one market share ONE driftless
-path (`extended.three_way_rungs`): one stream keyed at sub 0, each rung racing its own barriers on it -- exact marginal
-odds for an untimed rung (the path's first touches are Brownian motion's), the time-limited rungs within `TIMED_TOL`
-of their own law (fixed), the path's step `walk_step(sigma, T_max)` (fixed). A single-rung alert books exactly as
-before. `as_walked`'s side coin, like any side draw, is keyed at sub 0: one side per alert (tier 1). **Under Stage 2's
-strict rule (`one_at_a_time`), the vendored router takes at most one rung of an alert** -- a second is refused while
-the first is open -- so the joint law bites only where the strict rule is off; the multi-rung moments booked are
-counted beside.
+**Rungs of one alert (the lead's ruling on BUILD_FIRMPATH_c4: C3-2's common path withdrawn).** The CHARTER's
+convention governs: **each outcome is redrawn independently at its bracket's driftless odds** -- every trade, a rung
+of a multi-rung alert included, books on its own single-trade law above, keyed at its own sub. An alert is the trades
+at one moment (block day, alert minute) on one market, the market the coin key's underlying code
+(`three_way_keys.UNDERLYING`: NQ and MNQ are one; N-2). **One side per alert**: `as_walked`'s side coin is keyed at
+the alert's sub 0 (tier 1: no opposite positions). **A lane handed a second rung of one alert is refused, never
+booked**: under Stage 2's strict rule (`one_at_a_time`, every registered baseline; vendored `shared_days.py` 357-359)
+the router takes at most one rung of an alert, so this cannot happen there. The schedule's alerts with two or more
+trades in the window are counted beside (`rung_alerts`).
+
+**Overlapping positions (N-5), counted beside and never deciding.** Per lane, the positions entered on a market while
+another of the lane's positions on that market is still held (any account, any alert; held to the router's hold, the
+trade's historical exit at its R) are counted (`overlaps`): a known limit of the independent-redraw convention, which
+redraws each such position on its own path though their windows share market time. Zero under the strict rule.
 
 **Beside every reading** (`BaselineRecords`): per lane the trades given the move law, the `b` exits it redrew, FV3's
 historical `b` exits among the same trades, and the trades whose vendored move bar differs from s + 1.
@@ -100,7 +106,6 @@ from extended import three_way_journey as J
 from extended import three_way_keys as K
 from extended import three_way_move as MV
 from extended import three_way_redraw as RD
-from extended import three_way_rungs as RG
 
 TASK = "Q-185c"
 EPS = J.EPS
@@ -203,7 +208,7 @@ class _Unit:
         self.cache: dict[tuple[int, int], np.ndarray] = {}
         # two trades at one moment take sub 0, 1, ... in the schedule's index order (the lead's amendment to C2-9)
         self.subs: dict[tuple[int, int], int] = {}
-        self.alerts: dict[tuple[int, int, str], list[tuple[int, int]]] = {}
+        self.alerts: dict[tuple[int, int, int], list[tuple[int, int]]] = {}
         at: dict[tuple[int, int], int] = {}
         for (i, j) in sorted(facts):
             f = facts[(i, j)]
@@ -212,18 +217,23 @@ class _Unit:
             at[m] = at.get(m, 0) + 1
             if at[m] > K.MOMENT_SUBS:
                 raise ValueError(f"REFUSED: more than {K.MOMENT_SUBS} trades at one moment ({m})")
-            self.alerts.setdefault((int(i), int(f.decision), f.underlying), []).append((int(i), int(j)))
-        # C3-2: an alert with two or more rungs reads one common path; its step from the longest time a rung needs
-        self.rung_step: dict[tuple[int, int, str], int] = {}
-        for a, ij in self.alerts.items():
-            if len(ij) < 2:
-                continue
-            sig = {float(facts[x].sigma) for x in ij}
-            if len(sig) != 1:
-                raise ValueError(f"REFUSED: the rungs of the alert {a} carry different volatilities {sorted(sig)}")
-            t_max = max(max(1, int(facts[x].limit) - int(facts[x].entry)) for x in ij)
-            self.rung_step[a] = RD.walk_step(sig.pop(), float(t_max), J.WALK_MAX)
-        self.paths: dict[tuple[int, tuple[int, int, str]], RG.CommonPath] = {}
+            self.alerts.setdefault(self.alert(int(i), f), []).append((int(i), int(j)))
+
+    @staticmethod
+    def market(f: TradeFacts) -> int:
+        """N-2: the trade's market, the coin key's underlying code (NQ and MNQ are one)."""
+        code = K.UNDERLYING.get(f.underlying)
+        if code is None:
+            raise ValueError(f"REFUSED: the underlying {f.underlying!r} has no key code ({sorted(K.UNDERLYING)})")
+        return int(code)
+
+    def alert(self, i: int, f: TradeFacts) -> tuple[int, int, int]:
+        """The alert a trade belongs to: (block day, alert minute, market)."""
+        return int(i), int(f.decision), self.market(f)
+
+    def rung_alerts(self, start: int, horizon: int) -> int:
+        """The schedule's alerts in the window [start, start + horizon) with two or more trades (beside)."""
+        return sum(1 for (i, _, _), ij in self.alerts.items() if start <= i < start + horizon and len(ij) >= 2)
 
     def key(self, h: int, j: int, lt: Mapping[str, Any]) -> tuple[_Key, TradeFacts]:
         i = self.start + int(h)
@@ -241,26 +251,18 @@ class _Unit:
         return _Key(K.moment(i, int(f.decision), self.subs[(i, int(j))]), f.underlying), f
 
     def alert_key(self, i: int, f: TradeFacts) -> _Key:
-        """The alert's sub-0 key: its common path's stream and its one side (C3-2)."""
+        """The alert's sub-0 key: its one side (tier 1)."""
         return _Key(K.moment(int(i), int(f.decision), 0), f.underlying)
 
-    def path(self, i: int, f: TradeFacts, lane: int) -> tuple[RG.CommonPath | None, int | None]:
-        """The alert's common path on this lane, or (None, None) for a single-rung alert."""
-        a = (int(i), int(f.decision), f.underlying)
-        h = self.rung_step.get(a)
-        if h is None:
-            return None, None
-        p = self.paths.get((int(lane), a))
-        if p is None:
-            key0 = self.alert_key(i, f)
-            self.coins.record(key0, K.WALK, [int(lane)])
-
-            def read(first, count, _k=key0, _lane=int(lane)):
-                return self.coins.coin(_k, K.WALK, count, np.asarray([_lane]), first=first, record=False)[0]
-
-            p = RG.CommonPath(read, float(h))
-            self.paths[(int(lane), a)] = p
-        return p, h
+    def hold(self, i: int, j: int, f: TradeFacts, R: float | None) -> tuple[float, float]:
+        """The position's window as the router holds it: the fill, and the trade's historical exit at its R (the block's
+        `exit_by_rr`, else its `exit_t`, else the fill)."""
+        b = self.blocks[int(i)]
+        ex = getattr(b, "exit_by_rr", None)
+        if R is not None and ex is not None and float(R) in ex:
+            return float(f.entry), float(ex[float(R)][int(j)])
+        et = getattr(b, "exit_t", None)
+        return float(f.entry), (float(et[int(j)]) if et is not None else float(f.entry))
 
     def uniform(self, k: _Key, kind: int, lane: int) -> float:
         u = self.cache.get((k.moment, int(kind)))
@@ -278,7 +280,7 @@ class RaceOver:
     """A vendored per-account draw, every attribute and call its own, its returned P&L replaced (ruling 1)."""
 
     def __init__(self, inner: Any, unit: _Unit | None, lane: int, outcome: str, log: list | None,
-                 counts: dict | None):
+                 counts: dict | None, book: dict | None = None):
         object.__setattr__(self, "_inner", inner)
         object.__setattr__(self, "_unit", unit)
         object.__setattr__(self, "_lane", int(lane))
@@ -286,6 +288,8 @@ class RaceOver:
         object.__setattr__(self, "_log", log)
         object.__setattr__(self, "_counts", counts)
         object.__setattr__(self, "_state", [0.0, 0.0, False])     # the floor's room at the start, today's net, ended
+        # the lane's book, shared by its accounts' draws: the alerts handed out, the positions held by (day, market)
+        object.__setattr__(self, "_book", book if book is not None else {"alerts": set(), "held": {}})
 
     def __getattr__(self, name: str) -> Any:
         return getattr(object.__getattribute__(self, "_inner"), name)
@@ -303,6 +307,11 @@ class RaceOver:
     def __call__(self, n: int, day: int, slot: int, cushion: np.ndarray, **kw: Any) -> np.ndarray:
         out = self._inner(n, day, slot, cushion, **kw)       # the engine's own keywords: its state is the engine's
         if self._mode == "vendored":
+            if self._unit is not None and not math.isnan(float(np.asarray(out)[0])):
+                lt = getattr(self._inner, "last_trade", None)
+                if lt and not lt.get("stood_aside") and lt.get("realised_risk", lt.get("risk")):
+                    self._hand_out(lt)
+                    self._held(lt)
             return out
         if kw.get("stretch"):
             raise ValueError("REFUSED: the baseline race takes no stretch exit (D-368; no registered baseline uses it)")
@@ -312,6 +321,7 @@ class RaceOver:
         lt = getattr(self._inner, "last_trade", None)
         if not lt or lt.get("stood_aside") or not lt.get("realised_risk", lt.get("risk")):
             return out
+        self._hand_out(lt)                                    # refused before anything is booked
         st = object.__getattribute__(self, "_state")
         room = float(np.asarray(cushion)[0])
         if st[2]:
@@ -322,6 +332,7 @@ class RaceOver:
         if math.isnan(new):
             self._uncount(lt)
         else:
+            self._held(lt)
             st[1] += max(new, -room)
             stats = getattr(self._inner, "stats", None)
             if stats is not None and hasattr(stats, "need_exits"):
@@ -331,6 +342,42 @@ class RaceOver:
                    "race_u": (new / risk) if not math.isnan(new) else None,
                    "race_need": bool(info.get("need_hit", False))})
         return np.array([new])
+
+    def _hand_out(self, lt: Mapping[str, Any]) -> None:
+        """The lead's ruling on C3-2: a lane handed a second rung of one alert is refused, never booked."""
+        u = self._unit
+        i, j = u.start + int(lt["historical_day"]), int(lt["trade_index"])
+        f = u.facts.get((i, j))
+        if f is None:
+            raise ValueError(f"REFUSED: no facts for the block day {i}'s trade {j}")
+        a = u.alert(i, f)
+        alerts = object.__getattribute__(self, "_book")["alerts"]
+        if a in alerts:
+            raise ValueError(f"REFUSED (the lead's ruling on C3-2): lane {self._lane} is handed a second rung of the "
+                             f"alert {a} (trade ({i}, {j})); each outcome is redrawn independently only where a lane "
+                             "holds one rung of an alert -- the strict rule's case")
+        alerts.add(a)
+
+    def _held(self, lt: Mapping[str, Any]) -> None:
+        """N-5, beside: a booked position entered while another of the lane's on its market is held -- some other
+        position entered before it (at the same fill, the lower index) and not yet out. Independent of the order the
+        engine books the accounts in: each position is counted once, when the later of the two is booked."""
+        u = self._unit
+        i, j = u.start + int(lt["historical_day"]), int(lt["trade_index"])
+        f = u.facts[(i, j)]
+        enter, leave = u.hold(i, j, f, lt.get("rr"))
+        day = object.__getattribute__(self, "_book")["held"].setdefault((i, u.market(f)), {"pos": [], "over": set()})
+        me = (enter, j)
+        if any(o < me and x > enter for o, x in day["pos"]):
+            day["over"].add(me)
+        for o, x in day["pos"]:                           # a position booked earlier but entered after this one
+            if me < o and leave > o[0]:
+                day["over"].add(o)
+        day["pos"].append((me, leave))
+        c = object.__getattribute__(self, "_counts")
+        if c is not None:
+            c["overlaps"] = c.get("overlaps", 0) - day.get("n", 0) + len(day["over"])
+        day["n"] = len(day["over"])
 
     def _uncount(self, lt: Mapping[str, Any]) -> None:
         """A trade the race leaves untaken, taken back out of the vendored draw's statistics."""
@@ -407,9 +454,6 @@ class RaceOver:
             return math.nan, info
         L = min(f.stop_ticks * d, room - e - xs)
         info.update(L=L, L_ticks=L / d)
-        path, h_step = u.path(u.start + h, f, self._lane)
-        if path is not None:                                  # C3-2: a rung of a multi-rung alert, on the common path
-            return self._rung(path, h_step, f, kind, L, G, d, e, xt, xs, xf, capped, room, h, j, info)
         if f.has_move:
             d1 = float(int(f.be_open) - int(f.entry))
             d2 = float(int(f.limit) - int(f.be_open))
@@ -447,37 +491,6 @@ class RaceOver:
         cost = xt if kc == 1 else xs if kc == -1 else xf
         out = -e + float(v[0]) * d - cost                     # a flatten past the floor: the engine clips it
         info.update(law="walk", exit=kc, s=s, n=n, need_hit=bool(capped and kc == 1))
-        self._note(h, j, room, info, out)
-        return out, info
-
-    def _rung(self, path: RG.CommonPath, h_step: int, f: TradeFacts, kind: str, L: float, G: float, d: float,
-              e: float, xt: float, xs: float, xf: float, capped: bool, room: float, h: int, j: int,
-              info: dict) -> tuple[float, dict]:
-        """C3-2: one rung's law on its alert's common path (`three_way_rungs`): the time-limited move where its move bar
-        precedes its limit, else its kind's race or walk; the steps counted on the path's lattice."""
-        if self._unit.arm.plant_eps:
-            raise ValueError("REFUSED: P3's plant is not defined on a common path")
-        sig = float(f.sigma)
-        if f.has_move:
-            n1 = RD.walk_steps(sig, float(int(f.be_open) - int(f.entry)), h_step)
-            n2 = RD.walk_steps(sig, float(int(f.limit) - int(f.be_open)), h_step)
-            kc, g, det = RG.move(path, L / d, G, n1, n2)
-            info.update(law="rung_move", n1=n1, n2=n2, move_x=det["x"], move_moved=det["moved"])
-            self._count(f, info["R"], kc == RG.BREAKEVEN)
-        elif kind in ("t", "s"):
-            kc, g = RG.race(path, L / d, G)
-            info.update(law="rung_race")
-        else:
-            n = RD.walk_steps(sig, float(max(1, int(f.limit) - int(f.entry))), h_step)
-            kc, g = RG.walk(path, L / d, G, n)
-            info.update(law="rung_walk", n=n)
-        cost = xt if kc == RG.TARGET else xs if kc in (RG.STOP, RG.BREAKEVEN) else xf
-        out = -e + float(g) * d - cost
-        info.update(exit=kc, h=h_step, need_hit=bool(capped and kc == RG.TARGET))
-        c = object.__getattribute__(self, "_counts")
-        if c is not None:
-            c["rung_trades"] += 1
-            c.setdefault("_moments", set()).add((self._unit.start + h, int(f.decision)))
         self._note(h, j, room, info, out)
         return out, info
 
@@ -536,8 +549,9 @@ def replay(blocks: Sequence[Any], args: Mapping[str, Any], horizon: int, *, unit
     if "flip" in kw:
         raise ValueError("REFUSED: a flip stream is not read on the baseline mode")
     cf, ff = kw["combine_draw_factory"], kw["funded_draw_factory"]
-    kw["combine_draw_factory"] = lambda i, d: RaceOver(cf(i, d), unit, lane, outcome, log, counts)
-    kw["funded_draw_factory"] = lambda i, d: RaceOver(ff(i, d), unit, lane, outcome, log, counts)
+    book: dict = {"alerts": set(), "held": {}}             # the lane's: its accounts' draws share it
+    kw["combine_draw_factory"] = lambda i, d: RaceOver(cf(i, d), unit, lane, outcome, log, counts, book)
+    kw["funded_draw_factory"] = lambda i, d: RaceOver(ff(i, d), unit, lane, outcome, log, counts, book)
     return simulate_lockstep_path(args["draws"]["protocol"], seed=args["seed"], horizon_days=n + 1, **args["path"],
                                   **kw)
 
@@ -552,8 +566,9 @@ class BaselineRecords(J.Records):
     b_historical: np.ndarray | None = None    # FV3's historical `b` exits among the same trades
     be_differs: np.ndarray | None = None      # those whose vendored move bar differs from s + 1
     be_unrecorded: np.ndarray | None = None   # those with a move but no recorded vendored move bar (C3-10)
-    rung_trades: np.ndarray | None = None     # trades booked on a multi-rung alert's common path (C3-2)
-    rung_moments: np.ndarray | None = None    # the multi-rung moments they came from
+    overlaps: np.ndarray | None = None        # N-5: positions entered while another on the market was held (beside,
+    #                                           a known limit of the independent redraw; never deciding)
+    rung_alerts: int = 0                      # the window's schedule alerts with two or more trades (beside)
     paths: tuple = ()
     logs: tuple = ()
     outcome: str = "race"
@@ -582,9 +597,8 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
     path_kw = args["path"]
     bankroll, lag = float(path_kw["initial_bankroll"]), int(path_kw["payout_lag_days"])
     out = {k: [] for k in ("rel", "first_pass", "first_pay", "ahead", "accounts", "balance", "arrivals")}
-    names = ("move_trades", "b_redrawn", "b_historical", "be_differs", "be_unrecorded", "rung_trades")
+    names = ("move_trades", "b_redrawn", "b_historical", "be_differs", "be_unrecorded", "overlaps")
     side = {k: [] for k in names}
-    moments: list = []
     paths, logs, fills = [], [], []
     for j in range(len(idx)):
         lg: list = []
@@ -596,7 +610,6 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
             out[k].append(r[k])
         for k in names:
             side[k].append(cnt[k])
-        moments.append(len(cnt.get("_moments", ())))
         fills.append(sum(1 for x in lg if x["law"] == "fill_fail"))
         if keep_paths:
             paths.append(p)
@@ -610,7 +623,7 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
                            arrivals=out["arrivals"], accounts=np.asarray(out["accounts"], np.int64), budget=budget,
                            balance=np.asarray(out["balance"], float), fill_failures=np.asarray(fills, np.int64),
                            **{k: np.asarray(v, np.int64) for k, v in side.items()},
-                           rung_moments=np.asarray(moments, np.int64),
+                           rung_alerts=unit.rung_alerts(start, horizon),
                            paths=tuple(paths), logs=tuple(logs), outcome=outcome)
 
 
