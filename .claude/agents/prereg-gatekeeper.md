@@ -82,7 +82,8 @@ result of this search's own cells.
    (the go row as CHARTER 3.7's "pin", template 14 step 4):
    a bare number, a deleted citation or any other row is refused. **Membership (H-1'; E-257):** this F-HT's members
    are the design searches with a hash row before the membership event, the first go-row token
-   (`go: F-NN @ <its LF sha256> -- <text>`) of an NQ design search of Topstep, My Funded Futures or Lucid, counted
+   (`go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`) of an NQ design search of Topstep,
+   My Funded Futures or Lucid, counted
    only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
    declaration's hash row (G-2), the scope read from the declared market field, at most one per firm; a firm with none
    before then is in state (c), fixed at that moment. **At most one member search per firm:** refuse a design search
@@ -90,10 +91,10 @@ result of this search's own cells.
    search pinned after the membership event, or a successor of a closed search, offered as a member
    (its candidates are tested only on data this line has never read, a later purchase, under its own k;
    the confirmation window is read once, only for this F-HT's carried designs, CW-1; **Data this line has never read**
-   is bars after the last date any search of the line has read, as ledgered in `results/read_ledger.jsonl`; the
-   confirmation window ends at a date declared at F-HT's held-out row, and data after that end is never read for a
-   non-member (CW-2).); refuse a new search for a pin after every member search is in a terminal state until F-HT's
-   held-out row is written. Refuse a held-out year read by any choice.
+   is NQ bars after the confirmation window's end, or another market's bars that no declaration here has read; never
+   NQ's search years, held-out years or confirmation window (CW-2; B-2).); refuse a new search for a pin after every
+   member search is in a terminal state until F-HT's held-out row is written. Refuse a held-out year read by any
+   choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -158,22 +159,22 @@ result of this search's own cells.
    conditions written exactly; the held-out leg's scope; **paired** seeds and start days for design and baselines.
 9. **Calibration and the power gate** (template 9): their inputs (seeds,
    the R-10 estimator, `EPS` and `WALK_MAX`, the statistic, J and m, the plants, the generator) fixed in the file
-   before the pin; the go row's token
-   `go: F-NN @ <its LF sha256> -- <text>` naming the runner commit the calibration ran on,
-   the survey and every round run on it (G-1, U-1; E-259); their outputs pinned afterwards in E-115's form
-   (`docs/calibration/<F-NN>_calibration.md` by its sha256); the antithetic twin and disjoint seed sets; the
-   history null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
-   complete-start count; "if any fails, the search goes no further" (no go row, no survey); the data question put to
-   the operator before the go row. A draft that follows one closed by a failed calibration or power gate
-   cites that record, reports it beside, and uses a fresh seed block -- refuse a failed block reused. **A failed limit
-   clause or power gate is never a free retry** (M-5 (c); E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's
-   limits, bankroll budgets, weights and size that matters are never changed for any search of the line -- every
-   search, of any firm, whose section 7 applies W42-R1 -- after any calibration or gate that read them; a defect found
-   in them goes through the failure protocol as a defect on record, and a corrected rule is a new rule under a new row
-   whose searches never enter this F-HT. A successor search inherits them unchanged, changes only what the failure's
-   diagnosis names, citing the record, with a fresh seed block, and never enters this F-HT (its candidates are tested
-   only on data this line has never read, a later purchase, under its own k); every closed attempt of the line is
-   counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered as a member.
+   before the pin; the go row's token `go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`
+   naming the runner commit the calibration ran on, the survey and every round run on it (G-1, U-1; E-259); their
+   outputs pinned afterwards in E-115's form (`docs/calibration/<F-NN>_calibration.md` by its sha256); the
+   antithetic twin and disjoint seed sets; the history null and its false-pass rate; **the power gate** at
+   the size that matters, with its limit clause and the complete-start count; "if any fails, the search goes no
+   further" (no go row, no survey); the data question put to the operator before the go row. A draft that follows one
+   closed by a failed calibration or power gate cites that record, reports it beside, and uses a fresh seed block --
+   refuse a failed block reused. **A failed limit clause or power gate is never a free retry** (M-5 (c);
+   E-258 (the lead's CHARTER 3.7 reading row)): W42-R1's limits, bankroll budgets, weights and size that matters are
+   never changed for any search of the line -- every search, of any firm, whose section 7 applies W42-R1 -- after any
+   calibration or gate that read them; a defect found in them goes through the failure protocol as a defect on record,
+   and a corrected rule is a new rule under a new row whose searches never enter this F-HT. A successor search
+   inherits them unchanged, changes only what the failure's diagnosis names, citing the record, with a fresh seed
+   block, and never enters this F-HT (its candidates are tested only on data this line has never read, a later
+   purchase, under its own k); every closed attempt of the line is counted and printed beside the verdict. Refuse a
+   draft that changes them, or a successor offered as a member.
 10. **The pass line** (template 10): (a) the limits -- the point estimate governs, never a second margin (E-221,
     E-230, O-5), each limit's one-sided check reported beside and never deciding; (b) each baseline beaten,
     intersection-union, every comparison at the full level; (c) every floor -- the do-nothing floor among them (E-255;
@@ -216,9 +217,11 @@ if any item is missing or set after a look:
    a row strictly after that declaration's hash row (G-2), at most one per firm; each member ends in (a) finalists,
    its finalists' row, or (b) none, its closing row, `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`,
    a cause from the template's closed list, `withdrawn` only before the membership event, `defect-on-record` only with
-   a failed check on record at a named commit and the auditor's note; a firm with no hash row before the event is in
-   (c), fixed at that moment. A firm's finalists are never voided; no successor and no search pinned after the event
-   is a member. A firm in (b) or (c) is listed as none and keeps its place.
+   a failed check on record at or before the membership event's commit (or the search's own declared refusal or
+   identity) and the auditor's note that it cannot be fixed without changing a declared input, every such close
+   counted (C-4); a firm with no hash row before the event is in (c), fixed at that moment.
+   A firm's finalists are never voided; no successor and no search pinned after the event is a member. A firm in (b)
+   or (c) is listed as none and keeps its place.
 5. **Written only when, after the membership event, every member search is in a terminal state**, as soon as it
    is; before the event it is never due; a member search neither finalised nor closed blocks it and is never waited
    out by choice.
@@ -228,7 +231,7 @@ if any item is missing or set after a look:
    of its third cell, one row, newer by position than the finalists' token, counted only once the ledger holds that
    family's `heldout_test` read of the same window, sha256 and market; the read's commit a proper ancestor of every
    commit that adds the verdict row, merges included; a malformed row or fence voided by `heldout-void: E-NNN --
-   <reason>`, never a verdict, finalists or pin row (Q-194e).
+   <reason>`, never a valid verdict, finalists or pin row, a void of a valid row a no-op (Q-194e; B-3).
    Refuse a pin and a token in one row, and any repeat row for F-HT.
 7. **The k** at its held-out row (E-204), 0.05 / (k (k + 1)); no search takes one.
 8. **Each finalist's power re-stated at its place** in the joint sequence by the template's declared formula (H-2:
@@ -241,12 +244,13 @@ if any item is missing or set after a look:
   confirmation spends none. The program's numbering continues Stage 2's program U in declaration order across both
   repositories (E-001): F-01 (k = 10) withdrawn and spent (E-007), F-02's k = 11 retired unspent (E-094, E-095), F-03
   spent k = 12 (E-192); the next is k = 13.
-- **A search assigns no k.** Its pin row states "no k (F-HT's, k = 13 next)". **F-HT's k is assigned at its held-out
-  row**, which is its finalists' token row (E-204's rule, with "held-out test" in place of "stage B"); F-HT is not
-  counted by this rule until that row exists. Check the level's arithmetic (k = 13: 0.05 / 182). If another
-  declaration takes a k first, each finalist's place power is re-stated at the new level by a lookup in its gate's
-  output at k = 14 to 20 (K-2), never a new run; a k beyond 20 needs a re-statement run of the gate (n-1);
-  exit (B) cites it.
+- **A search assigns no k.** Its pin row states "no k (F-HT's, k = 13 next)".
+  **F-HT's k is assigned at its held-out row**, which is its finalists' token row (E-204's rule, with "held-out test"
+  in place of "stage B"); F-HT is not counted by this rule until that row exists. Check the level's arithmetic (k =
+  13: 0.05 / 182). If another declaration takes a k first, each finalist's place power is re-stated at the new level
+  by a lookup in its gate's output at k = 14 to 20 (K-2), never a new run; a k beyond 20 needs a re-statement run of
+  the gate, from the go row's runner commit at the gate's pinned seeds -- a re-statement only, closing nothing, exit
+  (B) citing it; without it the pass line is refused (n-c); exit (B) cites it.
 - **No repeat row for F-HT, ever**: its held-out test runs once.
 - **E-005 (d), restated:** F-HT withdrawn after its held-out row still spends its k, unless a decision row releases
   it; a search's withdrawal before F-HT's held-out row spends nothing.

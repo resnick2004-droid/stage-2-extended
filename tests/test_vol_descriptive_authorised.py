@@ -51,6 +51,7 @@ if str(ROOT) not in sys.path:
 
 from extended import reader as R  # noqa: E402
 from extended import vol_descriptive as V  # noqa: E402
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194c: the joint held-out test, ledgered, and its verdict)
 
 SEED_STUB_PATHS = 4231
 BEFORE = ROOT / "tests" / "q121_module_a0cb1ce.py"
@@ -138,23 +139,28 @@ TEXTS = {
 @pytest.fixture
 def tree(tmp_path, monkeypatch) -> Path:
     """A temporary git tree at `<tmp>/runs/<RUN>`: RD-04, RD-03 and F-90 (synthetic) each naming
-    `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it. Q-158: E-960 carries NQ's
-    held-out verdict token, so a described reading's judged read is admitted (the reader's held-out rule 4)."""
+    `volatility_descriptive` and each pinned in DECISIONS.md; a simulated clean run of it. Q-158, Q-194c: NQ's joint
+    held-out test (the synthetic F-98) is read through the reader and ledgered, then its verdict row, so a described
+    reading's judged read is admitted (the reader's held-out rule 4). Q-194e (P10): a family reads no held-out date, so
+    the family's authorisation below is built by hand (as it would look), and stays this module's to refuse."""
     t = tmp_path / "runs" / RUN
     (t / "prereg").mkdir(parents=True)
     rows = []
     for i, (rel, text) in enumerate(TEXTS.items()):
         (t / rel).write_bytes(text.encode("utf-8"))
         rows.append(f"| E-{950 + i} | 2026-11-17 | **{rel} declared**, `{rel}` sha256 `{sha_lf(text)}` | test |")
-    rows.append("| E-960 | 2026-11-17 | heldout-verdict: NQ F-90 -- NQ's held-out test has its verdict | test |")
+    rows.append(f"| E-961 | 2026-11-17 | heldout-finalists: F-90 @ {sha_lf(TEXTS[F90])} list {'9' * 64} -- F-90's "
+                "finalists | test |")
     (t / "DECISIONS.md").write_bytes(("# Decisions (synthetic)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
                                       + "\n".join(rows) + "\n").encode("utf-8"))
     git(t, "init", "-q", "-b", "master")
     git(t, "config", "user.email", "t@example.invalid")
     git(t, "config", "user.name", "t")
     git(t, "config", "core.autocrlf", "false")
+    (t / "stand_in.bin").write_bytes(b"a stand-in for the seed's read, never parsed\n")
     git(t, "add", "-A")
     git(t, "commit", "-q", "-m", "the synthetic tree")
+    VR.settle(t, [t / "stand_in.bin"])
     monkeypatch.setattr(R, "RUNS_DIR", tmp_path / "runs")
     monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
     monkeypatch.setenv("S2X_RUN_ID", "q121b-sim@run-1")
@@ -265,7 +271,8 @@ def bad_authorisations(t: Path) -> dict[str, object]:
     a = rd04(t)
     choice = R.authorise("2020-01-02", "2023-12-29", purpose="volatility_descriptive", declaration=RD04, repo=t)
     assert not choice.judged
-    family = R.authorise("2020-01-02", "2026-07-16", purpose="volatility_descriptive", declaration=F90, repo=t)
+    # Q-194e (P10): no family's judged read is the reader's to make any more; its authorisation, as it would look
+    family = dataclasses.replace(a, kind="family", declaration=F90, declaration_sha256=sha_lf(TEXTS[F90]))
     other_rd = R.authorise("2020-01-02", "2026-07-16", purpose="volatility_descriptive", declaration=RD03, repo=t)
     assert family.kind == "family" and other_rd.kind == "described_reading" and other_rd.declaration == RD03
     rep = dataclasses.replace

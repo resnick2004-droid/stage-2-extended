@@ -54,6 +54,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date as Date
+from types import SimpleNamespace
 from typing import Any, Mapping, Sequence
 
 from extended import components as C
@@ -156,21 +157,25 @@ class Router:
             for a in accs:
                 self.opened.setdefault((firm, a), self.day_no)
 
-    def dealt_pools(self, firm: str, accounts: Sequence[str]) -> dict[str, tuple[str, ...]]:
-        """A16: `by_component`'s pools of `firm` over `accounts`, dealt in opening order (index, then account id)."""
+    def dealt_pools(self, firm: str, accounts: Sequence[str], *,
+                    opened: Mapping[str, int] | None = None) -> dict[str, tuple[str, ...]]:
+        """A16: `by_component`'s pools of `firm` over `accounts`, dealt in opening order (index, then account id);
+        `opened` (account -> index), when given, is used instead of this router's own (`peek`'s: nothing is written)."""
         routing = self._routing(firm)
         if routing.rotation != "by_component":
             raise RoutingRefused("pools are by_component's")
-        unseen = [a for a in accounts if (firm, a) not in self.opened]
+        index = {a: self.opened[(firm, a)] for a in accounts if (firm, a) in self.opened} if opened is None             else dict(opened)
+        unseen = [a for a in accounts if a not in index]
         if unseen:
             raise RoutingRefused(f"accounts {unseen} of {firm} were never passed to route: no opening index")
         try:
             return LS.deal_pools(routing.components, accounts, firm=routing.firm,
-                                 opened={a: self.opened[(firm, a)] for a in accounts})
+                                 opened={a: index[a] for a in accounts})
         except LS.LeverRefused as exc:
             raise RoutingRefused(str(exc)) from None
 
-    def _pick(self, tr: C.ScheduledTrade, accounts: Sequence[str]) -> str:
+    def _pick(self, tr: C.ScheduledTrade, accounts: Sequence[str], *,
+              opened: Mapping[str, int] | None = None) -> str:
         routing = self._routing(tr.firm)
         rot = routing.rotation
         if rot == "round_robin":
@@ -180,12 +185,22 @@ class Router:
             return accounts[0]
         pool = list(accounts)
         if rot == "by_component":
-            pools = self.dealt_pools(tr.firm, accounts)
+            pools = self.dealt_pools(tr.firm, accounts, opened=opened)
             if tr.component not in pools:
                 raise RoutingRefused(f"component {tr.component} is not one of by_component's {routing.components}")
             pool = list(pools[tr.component])
         order = {a: k for k, a in enumerate(accounts)}
         return min(pool, key=lambda a: (self.last_busy.get((tr.firm, a), -1), order[a]))
+
+    def peek(self, firm: str, component: str, accounts: Sequence[str]) -> str:
+        """The account the next trade of `component` at `firm` would take now, among `accounts` (those alive today),
+        by the rotation and this router's state, **changing nothing** (the playbook's alert, Wave 3.5's m-5 and N-c2-1):
+        an account this router has not yet seen is given the opening index `route` would give it today."""
+        accs = tuple(accounts)
+        if not accs or len(set(accs)) != len(accs):
+            raise RoutingRefused(f"{firm}'s accounts are empty or repeat: {accs}")
+        opened = {a: self.opened.get((firm, a), self.day_no) for a in accs}
+        return self._pick(SimpleNamespace(firm=firm, component=component), accs, opened=opened)
 
     def route(self, days: Sequence[C.DaySchedule], accounts: Mapping[str, Sequence[str]], *,
               date: str | Date) -> list[RoutedTrade]:

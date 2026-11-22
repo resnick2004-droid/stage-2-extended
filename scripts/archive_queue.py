@@ -46,10 +46,29 @@ TABLE_HEAD = ("| id | task | owner | state | depends on | weight | retries | row
               "|---|---|---|---|---|---|---|---|")
 
 
-def _status():
-    import status as S  # noqa: PLC0415 -- status.py puts the repository on sys.path for its own imports
+#: the sibling `scripts/status.py`, loaded once by its path (Q-204); see `_status`
+STATUS_FILE = HERE / "status.py"
+_STATUS_MODULE_NAME = "s2x_archive_queue_status"
+_S = None
 
-    return S
+
+def _status():
+    """This tree's `scripts/status.py`, loaded by its path under a name of its own, once.
+
+    Never `import status`: that bare name is ambiguous in a process that has imported the vendored engine
+    (`extended.use_vendored_stage2()` puts `vendor/stage2/scripts`, which holds a `status.py` of its own, first on
+    `sys.path`), so the parser would depend on what ran before in the process -- under pytest-xdist, on the files an
+    earlier test put on the same worker (Q-204). `status.py` still puts the repository on `sys.path` for its own
+    imports when it loads."""
+    global _S
+    if _S is None:
+        import importlib.util  # noqa: PLC0415
+
+        spec = importlib.util.spec_from_file_location(_STATUS_MODULE_NAME, STATUS_FILE)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _S = mod
+    return _S
 
 
 def _is_done_row(line: str) -> bool:

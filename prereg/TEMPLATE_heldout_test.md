@@ -75,13 +75,15 @@ and states the resulting order. **A researcher's choice after a read is never th
 ## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)
 
 - **The firms are fixed now:** Topstep, My Funded Futures (MFFU), Lucid.
-- **The membership event** is the first go-row token, `go: F-NN @ <its LF sha256> -- <text>`,
-  of an NQ design search of Topstep, My Funded Futures or Lucid (G-1; E-259), counted only outside any fenced block,
-  in that exact form, at its declaration's pinned sha256, in a row strictly after that declaration's hash row (G-2);
-  the scope is read from each declaration's declared market field and firm line, never from its text
-  (`extended/go_token.py`). **This F-HT's membership is fixed at that moment:** each firm's one design search with a
-  hash row before the event is that firm's **member** (at most one per firm); a firm with no hash row before the event
-  is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year outcome is read.
+- **The membership event** is the first go-row token,
+  `go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`, of an NQ design search of Topstep,
+  My Funded Futures or Lucid (G-1; E-259),
+  counted only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly
+  after that declaration's hash row (G-2); the scope is read from each declaration's declared market field and firm
+  line, never from its text (`extended/go_token.py`). **This F-HT's membership is fixed at that moment:** each firm's
+  one design search with a hash row before the event is that firm's **member** (at most one per firm); a firm with no
+  hash row before the event is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year
+  outcome is read.
 - **Every member search ends in one of two states:**
   - **(a) finalists:** it has a finalists' row;
   - **(b) none:** it has a closing row,
@@ -95,18 +97,19 @@ and states the resulting order. **A researcher's choice after a read is never th
   6. `every-finalist-failed-no-harm` -- every finalist failed its playbook no-harm floor;
   7. `withdrawn` -- a withdrawal under E-005 (d), its reason in the row, **only before the membership event**; after it,
      a member closes only by causes 1 to 6 or 8 and is never dropped by choice (W-1; E-259).
-  8. `defect-on-record` -- a failed check on record at a named commit (a test or an identity failing, or a firm key
-     the loader now refuses), cited by its file and sha256 and by its diagnosis row, with the auditor's note
-     confirming it; without them it is refused; never a preference (D-1; E-259).
+  8. `defect-on-record` -- a failed check on record (a test or an identity failing, or a firm key the loader now
+     refuses), committed at or before the membership event's commit, or one of the search's own declared refusals or
+     identities, cited by its file and sha256 and by its diagnosis row, with the auditor's note confirming that it
+     cannot be fixed without changing a declared input, and every such close counted in the line's record beside the
+     verdict; without all of these it is refused; never a preference (D-1, C-4; E-259).
 - **A firm's finalists are never voided:** a closing row after a search's finalists' row is refused, and no later
   search replaces them.
 - **A firm's state** is its member search's, (a) or (b); (c) if it has none.
 - **No successor enters this F-HT.** A search pinned after the membership event, or a successor of a closed search, is
   never a member of this F-HT; its candidates are tested only on data this line has never read (a later purchase),
   under its own k; the confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's carried designs
-  (CW-1; E-259). **Data this line has never read** is bars after the last date any search of the line has read, as
-  ledgered in `results/read_ledger.jsonl`; the confirmation window ends at a date declared at F-HT's held-out row, and
-  data after that end is never read for a non-member (CW-2).
+  (CW-1; E-259). **Data this line has never read** is NQ bars after the confirmation window's end, or another market's
+  bars that no declaration here has read; never NQ's search years, held-out years or confirmation window (CW-2; B-2).
 - **This declaration is written as soon as, after the membership event, every member search is in (a) or (b).**
   Before the event it is never due: an empty history is not "all terminal".
 - **Then no new search may be pinned until this declaration's held-out row is written.**
@@ -126,7 +129,9 @@ and states the resulting order. **A researcher's choice after a read is never th
 2. **The held-out row, which is its finalists' token row (m-3), newer than the pin row:**
    `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>` as the first text of the row's third
    cell, F-HT this declaration's F-number, k assigned in the row's text (E-204), citing every firm's finalists' or
-   closing row, and declaring the confirmation window's end date (CW-2). Q-158's rule 1 (`extended/reader.py`) honours
+   closing row; the confirmation window's end is not declared here: it is fixed by rule, the last complete NQ
+   session in the confirmation data as purchased, recorded in a `heldout-window: NQ 2026-07-17 to <last> -- <text>`
+   row before any member's finalists' token (C-5). Q-158's rule 1 (`extended/reader.py`) honours
    a held-out purpose only after a finalists' token for this declaration's own hash in a row newer than its pin, so
    the reader itself enforces "after the held-out row"; the pin and the token in one row are refused.
 3. **The held-out test**, once, from a clean checkout of the held-out row's commit (`scripts/run_clean.py`), under
@@ -141,16 +146,19 @@ and states the resulting order. **A researcher's choice after a read is never th
    joint test's ledger lines are committed with or before the verdict row, and the read's commit is a proper ancestor
    of every commit that adds the verdict row, merges included (Q-194e); a read whose commit cannot be found backs
    nothing. A malformed row or fence is voided by a later row `heldout-void: E-NNN -- <reason>`; a void never voids a
-   verdict, finalists or pin row (Q-194e).
+   valid verdict, finalists or pin row, and a void of a valid row is a no-op (Q-194e; B-3).
 
 ## 6. Power at each place in the joint sequence
 
 A finalist at place i is tested only if every finalist before it passed. **The place-power formula, declared now
 (H-2):** pi_j is the three-way design note's power for finalist j at the level the sequence assigns to its place --
-the full level 0.05 / (k (k + 1)) at every place -- from its own search's pinned power gate at the size that
-matters; under the stated dependence assumption, **independence across finalists**, the power at place i is the
-product of pi_1 to pi_i. Beside it, never deciding, the Frechet lower bound, which needs no dependence model:
-max(0, pi_1 + ... + pi_i - (i - 1)). Re-state each finalist's power at its place:
+the full level 0.05 / (k (k + 1)) at every place -- from its own search's pinned power gate at the size that matters;
+under the stated dependence assumption, **independence across finalists**,
+the power at place i is the product of pi_1 to pi_i. Beside it, never deciding, the Frechet lower bound, which needs
+no dependence model: max(0, pi_1 + ... + pi_i - (i - 1)).
+For a k beyond 20, each finalist's search needs a re-statement run of the gate, from the go row's runner commit at the
+gate's pinned seeds -- a re-statement only, closing nothing, exit (B) citing it; without it the pass line is refused
+(n-c). Re-state each finalist's power at its place:
 
 | place | firm | rank | finalist | pi (its search's power at the level) | its power at this place (independence) | the Frechet lower bound |
 |---|---|---|---|---|---|---|
@@ -184,8 +192,10 @@ declaration's `heldout_test` read of the same window, sha256 and market (section
 - **A pass at a place:** that finalist is carried -- its registration, its playbook, the auditor, and its one
   confirmation against a criterion declared at registration (CHARTER 5 (A)); the sequence goes on to the next place.
 - **A fail at a place:** the sequence stops there; every later finalist is untested; nothing is rerun; the k is spent.
-- **The confirmation window** (NQ from 2026-07-17 to the end date declared at the held-out row) is read once, only for
-  this F-HT's carried designs, and is a purchase; a non-member search's candidates never use it (CW-1; E-259).
+- **The confirmation window** (NQ from 2026-07-17 to the last complete NQ session in the confirmation data as
+  purchased, recorded in a `heldout-window: NQ 2026-07-17 to <last> -- <text>` row before any member's finalists'
+  token and never chosen with a finalist known (C-5)) is read once, only for this F-HT's carried designs, and is
+  a purchase; a non-member search's candidates never use it (CW-1; E-259).
 
 ## 9. Anything chosen after seeing results
 
