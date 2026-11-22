@@ -26,9 +26,12 @@ from __future__ import annotations
 import contextlib
 import copy
 import dataclasses
+import importlib.util
 import inspect
+import io
 import json
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -49,6 +52,9 @@ W42, APPLY = W.load_w42()
 from extended import survey as SV  # noqa: E402
 
 RARE_Q = -8.0       # payouts rare: almost no unit passes by W, so B-5 puts every cost z at 0
+_entry_spec = importlib.util.spec_from_file_location("survey_run_entry", REPO / SV.ENTRY_SCRIPT)
+ENTRY = importlib.util.module_from_spec(_entry_spec)   # scripts/survey_run.py, loaded by its path (its `main`)
+_entry_spec.loader.exec_module(ENTRY)
 
 
 @pytest.fixture(scope="module")
@@ -626,11 +632,13 @@ def _carries(fn, *a):
 
 
 def sc_margin_exact(eng, tmp, roots):
-    """m-2, Q-186b F-3: the margin's row names the no-harm margin and its first number after the name (directly or
-    after is/of/at/=/:) is the margin -- the red team's six rows refuse (0.0055 then 0.005; 0.02 then 0.005; -0.005;
-    0.005e-3; 0.005%; "not 0.005"), as do p2_rows's three, 10.005, +0.005, 5e-3, 0.0.5 and 0.0,05; a correct row passes
-    (0.0050 and .005 now too). The values' row names `W42-R1` (not `W42-R10`), the file as a whole word (not
-    `old_w42_r1_values.csv.bak`) and the whole sha256 (no hex prefix or suffix). Two rows also go through `check_rows`."""
+    """m-2, Q-186b F-3, Q-186c: the margin's row names the no-harm margin once and its first number after the name
+    (directly or after is/of/at/=/:) is the margin, followed by no operator or unit and by nothing but the end,
+    whitespace then a letter or `(`, or closing punctuation. Refused: the v3b red team's six rows, p2_rows's three,
+    10.005, +0.005, 5e-3, 0.0.5, 0.0,05; the v3c rows (the margin named twice, "0.01 -> 0.005" both ways, 0.005/2,
+    0.005 * 2, 0.005^2, 0.005x10, 0.005-0.01, the en dash and minus sign, 0.005 %, per cent, permille, bp, 0.005:1);
+    the near miss 0.0051; full-width digits. Passed: correct rows, 0.0050 and .005 included. The values' row names
+    `W42-R1` (not `W42-R10`), the file as a whole word and the whole sha256. Two rows also go through `check_rows`."""
     vsha = "cd" * 32
     good_v = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
     cases = [("the no-harm margin is 0.0055 (was 0.005 in the draft)", 0.005, False),
@@ -642,9 +650,24 @@ def sc_margin_exact(eng, tmp, roots):
              ("the no-harm margin is 10.005", 0.005, False), ("the no-harm margin is +0.005", 0.005, False),
              ("the no-harm margin is 5e-3", 0.005, False), ("the no-harm margin is 0.0.5", 0.0, False),
              ("the no-harm margin is 0.0,05", 0.0, False),
+             ("no-harm margin 0.01 replaced: the no-harm margin is now 0.005", 0.01, False),
+             ("no-harm margin 0.01 replaced: the no-harm margin is now 0.005", 0.005, False),
+             ("the no-harm margin 0.01 -> 0.005", 0.01, False), ("the no-harm margin 0.01 -> 0.005", 0.005, False),
+             ("the no-harm margin is 0.005/2", 0.005, False), ("the no-harm margin is 0.005 * 2", 0.005, False),
+             ("the no-harm margin is 0.005^2", 0.005, False), ("the no-harm margin is 0.005×10", 0.005, False),
+             ("the no-harm margin is 0.005-0.01 (a range)", 0.005, False),
+             ("the no-harm margin is 0.005–0.01", 0.005, False),
+             ("the no-harm margin is 0.005 − 0.001", 0.005, False),
+             ("the no-harm margin is 0.005 %", 0.005, False), ("the no-harm margin is 0.005 per cent", 0.005, False),
+             ("the no-harm margin is 0.005‰", 0.005, False), ("the no-harm margin is 0.005 bp", 0.005, False),
+             ("the no-harm margin is 0.005:1", 0.005, False), ("the no-harm margin is 0.005~", 0.005, False),
+             ("the no-harm margin is 0.0051", 0.005, False), ("the no-harm margin is 0.00505", 0.005, False),
+             ("the no-harm margin is 0.005x", 0.005, False),
+             ("the no-harm margin is ０.００５", 0.005, False),
              ("the no-harm margin is 0.005 composite units", 0.005, True), ("the no-harm margin 0.0 (O-4)", 0.0, True),
              ("the no-harm margin is 0.0050", 0.005, True), ("the no-harm margin: `0.005`.", 0.005, True),
-             ("the No-Harm margin = .005", 0.005, True)]
+             ("the No-Harm margin = .005", 0.005, True), ("the no-harm margin is 0.005 | t |", 0.005, True),
+             ("the no-harm margin is 0.005; see O-4", 0.005, True), ("the no-harm margin is 0.005", 0.005, True)]
     vcases = [(good_v, True), (good_v.replace("W42-R1's", "the rule's"), False),
               (good_v.replace("W42-R1's", "W42-R10's"), False),
               (good_v.replace("results/w42_r1_values.csv", "old_w42_r1_values.csv.bak"), False),
@@ -717,19 +740,25 @@ def sc_data_layout(eng, tmp, roots):
     return ok
 
 
-def _git_commits(repo: Path) -> tuple[str, str, str]:
-    """A temporary repository holding commits A, B (child of A, HEAD) and C (unrelated), made by `git commit-tree`
-    (no hook runs, nothing of this repository is touched)."""
-    repo.mkdir(parents=True, exist_ok=True)
+def _git_runner(repo: Path):
+    """`git -C repo ...` with a fixed identity and dates (a temporary repository's objects only; no hook runs)."""
     env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
                GIT_COMMITTER_EMAIL="t@t", GIT_AUTHOR_DATE="2026-11-21T00:00:00Z",
                GIT_COMMITTER_DATE="2026-11-21T00:00:00Z")
 
-    def git(*args, stdin=""):
-        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, input=stdin, env=env,
+    def git(*args, stdin=""):                               # bytes in: text mode would send CRLF to mktree
+        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, input=stdin.encode("utf-8"), env=env,
                            timeout=60)
-        assert r.returncode == 0, r.stderr
-        return r.stdout.strip()
+        assert r.returncode == 0, r.stderr.decode("utf-8", "replace")
+        return r.stdout.decode("utf-8").strip()
+    return git
+
+
+def _git_commits(repo: Path) -> tuple[str, str, str]:
+    """A temporary repository holding commits A, B (child of A, HEAD) and C (unrelated), made by `git commit-tree`
+    (no hook runs, nothing of this repository is touched)."""
+    repo.mkdir(parents=True, exist_ok=True)
+    git = _git_runner(repo)
     git("init", "-q")
     tree = git("mktree")
     a = git("commit-tree", tree, "-m", "A")
@@ -740,21 +769,42 @@ def _git_commits(repo: Path) -> tuple[str, str, str]:
     return a, b, c
 
 
+def _head_pin(repo: Path, content: str | None) -> str:
+    """A new HEAD, child of HEAD, whose tree holds `config/w42_r1_pin.json` with `content` (no pin file for None)."""
+    git = _git_runner(repo)
+    if content is None:
+        tree = git("mktree")
+    else:
+        blob = git("hash-object", "-w", "--stdin", stdin=content)
+        sub = git("mktree", stdin=f"100644 blob {blob}\tw42_r1_pin.json\n")
+        tree = git("mktree", stdin=f"040000 tree {sub}\tconfig\n")
+    new = git("commit-tree", tree, "-p", git("rev-parse", "HEAD"), "-m", "pin")
+    git("update-ref", "refs/heads/main", new)
+    return new
+
+
+def _worktree_pin(repo):
+    """The mutant `pin-from-worktree`: W42-R1's own reading of the pin file, from the working tree."""
+    p = Path(repo) / "config" / "w42_r1_pin.json"
+    return json.loads(p.read_text(encoding="utf-8")).get("commit") if p.is_file() else None
+
+
 def sc_provenance(eng, tmp, roots):
-    """m-3, Q-186b F-2: under a pin the values file is a pinned application -- each refusal on its own: pinned_commit
-    not 40 hex (39, 41, None), git_commit not 40 hex (41, "fixture") or `-dirty`, pinned_commit not the checkout's pin,
-    git_commit no commit (a fabricated sha), not an ancestor of HEAD (an unrelated commit), W42-R1's commit rule
-    refusing, `verify_result` failing; and W42-R1's real `pinned_commit` and `commit_problem` on a temporary
+    """m-3, Q-186b F-2, Q-186c n-1: under a pin the values file is a pinned application -- each refusal on its own:
+    pinned_commit not 40 hex (39, 41, None), git_commit not 40 hex (41, "fixture") or `-dirty`, pinned_commit not the
+    pin of the run's commit (HEAD's `config/w42_r1_pin.json`, never the working tree's; none at HEAD refuses; a
+    malformed one raises SpecRefused), git_commit no commit (a fabricated sha), not an ancestor of HEAD (an unrelated
+    commit), W42-R1's commit rule refusing, `verify_result` failing; and W42-R1's real `commit_problem` on a temporary
     repository's commits."""
     repo = tmp / "git"
     a, b, c = _git_commits(repo)
     calls = []
 
-    def rule(pin_file=a, refuse=None):
+    def rule(refuse=None):
         def commit_problem(r, p, head=None):
             calls.append((p, head))
             return "the rule refuses" if head == refuse else None
-        return SimpleNamespace(pinned_commit=lambda r: pin_file, commit_problem=commit_problem)
+        return SimpleNamespace(commit_problem=commit_problem)
 
     def P(man, verify=lambda q: (True, "verified"), apply=None):
         return SV.values_provenance_problems(man, tmp / "v.csv", repo=repo, apply=apply or rule(), verify=verify)
@@ -764,23 +814,32 @@ def sc_provenance(eng, tmp, roots):
 
     def says(problems, start, word):
         return any(x.startswith(start) and word in x for x in problems)
-    ok = P(man()) == [] and calls[-1] == (a, a)
+
+    def pin(commit):
+        _head_pin(repo, json.dumps({"commit": commit}))
+    ok = says(P(man()), "its pinned_commit", "not this checkout's pin")              # HEAD holds no pin file yet
+    pin(a)
+    (repo / "config").mkdir(exist_ok=True)
+    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": b}), encoding="utf-8")  # the tree's: ignored
+    ok = ok and P(man()) == [] and calls[-1] == (a, a)
     ok = ok and all(says(P(man(p=x)), "its parameters.pinned_commit", "40 hex") for x in (None, a[:39], a + "0"))
     ok = ok and all(says(P(man(h=x)), "its git_commit", "40 hex") for x in (a + "0", "fixture"))
     ok = ok and says(P(man(h=a + "-dirty")), "its git_commit", "-dirty")
-    ok = ok and says(P(man(), apply=rule(pin_file=b)), "its pinned_commit", "not this checkout's pin")
-    ok = ok and says(P(man(p="f" * 40, h="f" * 40), apply=rule(pin_file="f" * 40)), "its git_commit", "no commit")
-    ok = ok and says(P(man(p=c, h=c), apply=rule(pin_file=c)), "its git_commit", "not an ancestor")
     ok = ok and says(P(man(), apply=rule(refuse=a)), "W42-R1's commit rule", "refuses")
     ok = ok and says(P(man(), verify=lambda q: (False, "modified since it was written")), "verify_result", "modified")
-    ok = ok and says(P(man()), "", "") is False                                     # the control holds every check
-    real = SimpleNamespace(pinned_commit=APPLY.pinned_commit, commit_problem=APPLY.commit_problem)
-    ok = ok and says(P(man(), apply=real), "its pinned_commit", "not this checkout's pin")     # no pin file yet
-    (repo / "config").mkdir(exist_ok=True)
-    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": a}), encoding="utf-8")
+    real = SimpleNamespace(commit_problem=APPLY.commit_problem)
     ok = ok and P(man(), apply=real) == []
-    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": b}), encoding="utf-8")
-    return ok and says(P(man(p=b, h=a), apply=real), "W42-R1's commit rule", "not the pinned commit")
+    pin(b)
+    ok = ok and says(P(man()), "its pinned_commit", "not this checkout's pin")
+    ok = ok and says(P(man(p=b, h=a), apply=real), "W42-R1's commit rule", "not the pinned commit")
+    pin("f" * 40)
+    ok = ok and says(P(man(p="f" * 40, h="f" * 40)), "its git_commit", "no commit")
+    pin(c)
+    ok = ok and says(P(man(p=c, h=c)), "its git_commit", "not an ancestor")
+    _head_pin(repo, "{not json")
+    ok = ok and _refuses(lambda: P(man()), SV.SpecRefused, "not JSON")
+    _head_pin(repo, json.dumps({"commit": "xyz"}))
+    return ok and _refuses(lambda: P(man()), SV.SpecRefused, "names no commit")
 
 
 def sc_invocation(eng, tmp, roots):
@@ -841,13 +900,16 @@ def sc_once(eng, tmp, roots):
     fresh folder refuses before any cell and adds nothing. Each half refuses alone: a log line without a marker, a
     marker without a line. `record_once` re-checks the log, and its marker is exclusive even when the check is passed
     (a race's window). A damaged log refuses; another declaration passes; a record inside the checkout -- by its
-    resolved path, or only by its unresolved one (a junction out of it) -- is refused; the default lies in the runs
-    folder."""
+    resolved path, or only by its unresolved one (a junction out of it) -- is refused, and so is a markers' folder that
+    is a junction or a git checkout (Q-186c n-3); the run printed `survey-once: <line>` when it recorded it (Q-186c);
+    the default lies in the runs folder."""
     root = roots["default"]["root"]
     once = tmp / "runs" / "survey_once.jsonl"
     decl = declare(eng, tmp, runner={"kind": "plateau", "tag": "heldout_test"})   # refuses at its first design
+    printed = io.StringIO()
     try:
-        run(eng, root, decl, tmp / "o1", once_file=once)
+        with contextlib.redirect_stdout(printed):
+            run(eng, root, decl, tmp / "o1", once_file=once)
         return False
     except eng.SS.HeldOutInput:
         pass
@@ -857,6 +919,7 @@ def sc_once(eng, tmp, roots):
         return False                                            # nothing recorded: the rest cannot be read
     marker = SV.once_marker(once, sha)
     ok = marker.is_file() and marker.read_text(encoding="utf-8").strip() == first[0]
+    ok = ok and f"survey-once: {first[0]}" in printed.getvalue().splitlines()     # Q-186c: printed when recorded
     ok = ok and _refuses(lambda: run(eng, root, decl, tmp / "o2", once_file=once), SV.RunRepeated, "once-")
     ok = ok and W.CALLS == [] and once.read_text(encoding="utf-8").splitlines() == first
     x, y, z = "1" * 64, "2" * 64, "3" * 64
@@ -890,6 +953,18 @@ def sc_once(eng, tmp, roots):
             SV.once_location_problem(ckout / "lnk" / "survey_once.jsonl", ckout) is not None
     finally:
         _unlink([ckout / "lnk"])
+    away2, runs2 = tmp / "away2", tmp / "runs2"                 # Q-186c n-3: the markers' folder
+    away2.mkdir(parents=True, exist_ok=True)
+    runs2.mkdir(parents=True, exist_ok=True)
+    try:
+        ok = ok and SV.once_location_problem(runs2 / "survey_once.jsonl", ckout) is None
+        ok = ok and _junction(runs2 / "survey_once", away2) and \
+            "is a link" in str(SV.once_location_problem(runs2 / "survey_once.jsonl", ckout))
+    finally:
+        _unlink([runs2 / "survey_once"])
+    (runs2 / "survey_once").mkdir(parents=True, exist_ok=True)
+    (runs2 / "survey_once" / ".git").write_text("gitdir: elsewhere\n", encoding="utf-8")   # a clean run of that name
+    ok = ok and "git checkout" in str(SV.once_location_problem(runs2 / "survey_once.jsonl", ckout))
     ok = ok and SV.once_location_problem(SV.ONCE_FILE, REPO) is None and SV.ONCE_FILE.parent == Path(SV.RUNS_DIR)
     return ok
 
@@ -922,20 +997,28 @@ def sc_limit_disagrees(eng, tmp, roots):
 
 
 def sc_lock(eng, tmp, roots):
-    """Q-186b F-4: `lock_problem` on a temporary git repository (no commit): no run.lock refuses; a lock held by
-    another job, or this run's holder unset, refuses; an unreadable lock refuses; the lock held by this run passes."""
+    """Q-186b F-4, Q-186c: `lock_problem` on a temporary git repository (no commit). No run.lock refuses; the lock held
+    by this run (its job the holder and the clean run's name) passes; a holder typed by hand to the lock's job while
+    the clean run is another (a spoofed holder) refuses; another holder refuses; no holder refuses; an unreadable lock
+    refuses, with an empty environment too; a folder that is not a git repository refuses."""
     repo = tmp / "lockrepo"
     repo.mkdir(parents=True, exist_ok=True)
     _git_tmp(repo, "init", "-q")
 
-    def P(env):
-        return SV.lock_problem(repo, env)
-    ok = "not held" in str(P({"S2X_LOCK_HOLDER": "sv-run"}))
+    def P(env, start=repo):
+        return SV.lock_problem(start, env)
+    mine = {"S2X_LOCK_HOLDER": "sv-run", "S2X_CLEAN_RUN": "sv-run"}
+    ok = "not held" in str(P(mine))
     (repo / "run.lock").write_text(json.dumps({"job": "sv-run"}), encoding="utf-8")
-    ok = ok and P({"S2X_LOCK_HOLDER": "sv-run"}) is None
-    ok = ok and "held by sv-run" in str(P({"S2X_LOCK_HOLDER": "another-job"})) and P({}) is not None
+    ok = ok and P(mine) is None
+    ok = ok and "typed by hand" in str(P({"S2X_LOCK_HOLDER": "sv-run", "S2X_CLEAN_RUN": "sv-other"}))
+    ok = ok and "held by sv-run" in str(P({"S2X_LOCK_HOLDER": "another-job", "S2X_CLEAN_RUN": "sv-run"}))
+    ok = ok and P({"S2X_CLEAN_RUN": "sv-run"}) is not None and P({}) is not None
     (repo / "run.lock").write_text("{unreadable", encoding="utf-8")
-    return ok and P({"S2X_LOCK_HOLDER": "sv-run"}) is not None
+    ok = ok and P(mine) is not None and P({}) is not None
+    plain = tmp / "not_a_repo"
+    plain.mkdir(parents=True, exist_ok=True)
+    return ok and "cannot be found" in str(P(mine, plain))
 
 
 def sc_localappdata(eng, tmp, roots):
@@ -979,17 +1062,50 @@ def sc_process_guards(eng, tmp, roots):
 
 
 def sc_fixture_extended(eng, tmp, roots):
-    """Q-186b F-5: a fixture pin builds no `extended.` part -- refused before the binding, any part, no cell, no
-    folder; the suite's `survey_world:` parts run (every other scenario)."""
+    """Q-186b F-5, Q-186c: a fixture pin builds no `extended.` part -- each of the five parts, under two `extended.`
+    modules, refused before the binding: no cell, no folder. The suite's `survey_world:` parts run (every other
+    scenario)."""
+    decl = declare(eng, tmp / "base")
+    base = SV._block(decl.read_bytes())
     ok = True
-    for k in ("runner", "space"):
-        decl = declare(eng, tmp / k)
-        s = SV._block(decl.read_bytes())
-        s["parts"][k]["id"] = "extended.components:UserBook"
-        decl.write_bytes(W.declaration(s).encode("utf-8"))
-        ok = ok and _refuses(lambda: run(eng, roots["default"]["root"], decl, tmp / k / "out"), SV.PartRefused,
-                             "builds no extended. part") and W.CALLS == [] and not (tmp / k / "out").exists()
+    for k in SV.PART_NAMES:
+        for mod in ("extended.components:UserBook", "extended.plateau:check"):
+            s = copy.deepcopy(base)
+            s["parts"][k]["id"] = mod
+            decl.write_bytes(W.declaration(s).encode("utf-8"))
+            out = tmp / "out" / k
+            ok = ok and _refuses(lambda: run(eng, roots["default"]["root"], decl, out), SV.PartRefused,
+                                 "builds no extended. part") and W.CALLS == [] and not out.exists()
     return ok
+
+
+def sc_known_folder(eng, tmp, roots):
+    """Q-186c: the known folder is read from Windows, not from the `LOCALAPPDATA` variable -- with the variable
+    changed in this process, `known_local_appdata()` is unchanged and `localappdata_problem()` refuses (restored after;
+    `test_the_known_folder_in_a_process_of_its_own` does the same in a child)."""
+    real = SV.known_local_appdata()
+    old = os.environ.get("LOCALAPPDATA")
+    os.environ["LOCALAPPDATA"] = str(tmp / "fake_local")
+    try:
+        return real is not None and SV.known_local_appdata() == real and SV.localappdata_problem() is not None
+    finally:
+        if old is None:
+            os.environ.pop("LOCALAPPDATA", None)
+        else:
+            os.environ["LOCALAPPDATA"] = old
+
+
+def sc_entry_prints(eng, tmp, roots):
+    """Q-186c: `scripts/survey_run.py`'s `main` prints the run's once-line in its final JSON (the survey itself stood
+    in by a finished outcome)."""
+    decl = declare(eng, tmp)
+    done = SimpleNamespace(token=None, list_path=REPO / "results" / "F-99_survey_finalists.csv", list_sha256="0" * 64,
+                           finalists=[], counts={"cells": 3}, once_line='{"declaration_sha256": "q"}')
+    buf = io.StringIO()
+    with _set(SV, run_survey=lambda *a, **k: done), contextlib.redirect_stdout(buf):
+        rc = ENTRY.main([str(decl)])
+    got = json.loads(buf.getvalue().strip().splitlines()[-1])
+    return rc == 0 and got.get("once_line") == done.once_line and got["cells"] == 3
 
 
 SCENARIOS = {
@@ -1049,6 +1165,8 @@ SCENARIOS = {
     "localappdata": sc_localappdata,
     "process_guards": sc_process_guards,
     "fixture_extended": sc_fixture_extended,
+    "known_folder": sc_known_folder,
+    "entry_prints": sc_entry_prints,
 }
 
 
@@ -1148,15 +1266,17 @@ def _fraction_floor(orig):
     return m
 
 
-def _edit(fn_name: str, old: str, new: str):
-    """A one-line source edit of `extended.survey`'s `fn_name`, compiled with the module's own globals (the red team's
-    mutplugin form): the mutant is the function with `old` replaced by `new`, exactly once."""
+def _edit(fn_name: str, old: str, new: str, module=None):
+    """A one-line source edit of `fn_name` in `module` (default `extended.survey`), compiled with that module's own
+    globals (the red team's mutplugin form): the mutant is the function with `old` replaced by `new`, exactly once."""
+    mod = SV if module is None else module
+
     def make(orig):
         src = textwrap.dedent(inspect.getsource(orig))
         assert src.count(old) == 1, (fn_name, old)
         ns: dict = {}
-        exec(compile("from __future__ import annotations\n" + src.replace(old, new), SV.__file__, "exec"),
-             SV.__dict__, ns)
+        exec(compile("from __future__ import annotations\n" + src.replace(old, new), mod.__file__, "exec"),
+             mod.__dict__, ns)
         return ns[fn_name]
     return make
 
@@ -1295,11 +1415,19 @@ MUTANTS = {
                           "margin_exact", ()),
     "margin-exponent-ok": (SV, "margin_row_carries", _edit("margin_row_carries", 'if "e" in t.lower():', "if False:"),
                            "margin_exact", ()),
-    "margin-run-on-ok": (SV, "margin_row_carries", _edit(
-        "margin_row_carries", r'if re.match(r"\w|[.,]\d", line[tok.end():tok.end() + 2]):', "if False:"),
-        "margin_exact", ()),
     "margin-number-unchecked": (SV, "margin_row_carries", _edit(
         "margin_row_carries", "return float(t) == float(margin)", "return True"), "margin_exact", ()),
+    # Q-186c: the margin's name once, the operator or unit after it, what may follow, ASCII digits, exact equality
+    "margin-named-twice-ok": (SV, "margin_row_carries", _edit("margin_row_carries", "if len(names) != 1:",
+                                                              "if not names:"), "margin_exact", ()),
+    "margin-operator-ok": (SV, "margin_row_carries", _edit("margin_row_carries", "if _AFTER_OPERATOR.match(rest):",
+                                                           "if False:"), "margin_exact", ()),
+    "margin-after-any": (SV, "margin_row_carries", _edit("margin_row_carries", "if not _AFTER_ALLOWED.match(rest):",
+                                                         "if False:"), "margin_exact", ()),
+    "margin-unicode-digits": (SV, "_NUM_TOKEN", lambda o: re.compile(o.pattern), "margin_exact", ()),
+    "margin-tolerance": (SV, "margin_row_carries", _edit(
+        "margin_row_carries", "return float(t) == float(margin)", "return abs(float(t) - float(margin)) < 1e-4"),
+        "margin_exact", ()),
     "values-rule-suffix": (SV, "values_row_carries", _edit(
         "values_row_carries", r're.escape(W42_RULE) + r"(?!\d)"', "re.escape(W42_RULE)"), "margin_exact", ()),
     "values-name-boundary": (SV, "values_row_carries", _edit(
@@ -1359,6 +1487,36 @@ MUTANTS = {
                              ()),
     "lock-holder-unchecked": (SV, "lock_problem", _edit("lock_problem", "if job is None or holder != job:",
                                                         "if job is None:"), "lock", ()),
+    # Q-186c: the lock's clean-run name, an unreadable lock, no main root
+    "lock-clean-run-unchecked": (SV, "lock_problem", _edit("lock_problem", "if env.get(CLEAN_RUN_ENV) != job:",
+                                                           "if False:"), "lock", ()),
+    "lock-unreadable-unset-passes": (SV, "lock_problem", _edit("lock_problem", "if job is None or holder != job:",
+                                                               "if holder != job:"), "lock", ()),
+    "lock-no-root-passes": (SV, "lock_problem", _edit(
+        "lock_problem", 'return "the main repository\'s root cannot be found, so run.lock cannot be checked"',
+        "return None"), "lock", ()),
+    "known-from-env": (SV, "known_local_appdata", lambda o: (lambda: Path(os.environ["LOCALAPPDATA"])),
+                       "known_folder", ()),
+    "once-line-unprinted": (SV, "run_survey", _edit("run_survey", 'print(f"survey-once: {once_line}", flush=True)',
+                                                    "pass"), "once", ()),
+    "entry-once-line-dropped": (ENTRY, "main", _edit("main", '"once_line": out.once_line}', "}", module=ENTRY),
+                                "entry_prints", ()),
+    "markers-link-ok": (SV, "once_location_problem", _edit("once_location_problem", "if _is_link(markers):",
+                                                           "if False:"), "once", ()),
+    "markers-checkout-ok": (SV, "once_location_problem", _edit(
+        "once_location_problem", 'if os.path.lexists(markers / ".git"):', "if False:"), "once", ()),
+    "fixture-own-two-parts": (SV, "run_survey", _edit(
+        "run_survey", 'own = [k for k in PART_NAMES if str(spec.parts[k]["id"]).startswith("extended.")]',
+        'own = [k for k in ("runner", "space") if str(spec.parts[k]["id"]).startswith("extended.")]'),
+        "fixture_extended", ()),
+    "fixture-own-one-module": (SV, "run_survey", _edit(
+        "run_survey", 'own = [k for k in PART_NAMES if str(spec.parts[k]["id"]).startswith("extended.")]',
+        'own = [k for k in PART_NAMES if str(spec.parts[k]["id"]).startswith("extended.components")]'),
+        "fixture_extended", ()),
+    "pin-from-worktree": (SV, "head_pinned_commit", lambda o: _worktree_pin, "provenance", ()),
+    "pin-malformed-ok": (SV, "head_pinned_commit", _edit(
+        "head_pinned_commit", 'raise SpecRefused(f"REFUSED: HEAD\'s {W42_PIN_FILE} is not JSON: {e}") from e',
+        "return None"), "provenance", ()),
     "process-lock-unrequired": (SV, "check_process", _edit("check_process", "if held:", "if False:"),
                                 "process_guards", ()),
     "process-localappdata-unrequired": (SV, "check_process", _edit("check_process", "if where:", "if False:"),
@@ -2013,3 +2171,20 @@ def test_a_completed_run_prints_its_once_line(eng, tmp_path, roots):
     lines = once.read_text(encoding="utf-8").splitlines()
     assert lines == [out.once_line] and json.loads(out.once_line)["declaration_sha256"] == out.declaration_sha256
     assert SV.once_marker(once, out.declaration_sha256).read_text(encoding="utf-8").strip() == out.once_line
+
+
+def test_the_known_folder_in_a_process_of_its_own(tmp_path):
+    """Q-186c: a child process started with `LOCALAPPDATA` pointed at a temporary folder still reads the Windows known
+    folder (the parent's), and its pinned-run check refuses the mismatch."""
+    code = textwrap.dedent(f"""
+        import json, sys
+        sys.path.insert(0, {str(REPO)!r})
+        from extended import survey as SV
+        print(json.dumps([str(SV.known_local_appdata()), SV.localappdata_problem()]))
+    """)
+    env = dict(os.environ, LOCALAPPDATA=str(tmp_path), OMP_NUM_THREADS="1")
+    r = subprocess.run([sys.executable, "-c", code], cwd=REPO, capture_output=True, text=True, timeout=180, env=env)
+    assert r.returncode == 0, r.stderr[-2000:]
+    known, problem = json.loads(r.stdout.strip().splitlines()[-1])
+    assert known == str(SV.known_local_appdata()) and known != str(tmp_path)
+    assert problem is not None and "not the Windows known folder" in problem

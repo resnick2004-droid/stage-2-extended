@@ -74,8 +74,9 @@ variants ledger of its folder, by the decision log, and, under a pin, by a recor
 exclusive marker `%LOCALAPPDATA%/stage2-extended-runs/survey_once/<sha256>.json`, created with `O_CREAT | O_EXCL`
 (atomic: of two runs started together exactly one creates it), and beside it the append-only log `survey_once.jsonl`
 (`ONCE_FILE`), one line per run. Both are checked before the first refusal that reads the objective; the marker is
-created and the line appended just before the first cell, and the line is printed (the lead's row quotes it: a deleted
-record cannot be prevented, only made visible). Under a pin the runs folder is the Windows known folder (the
+created and the line appended just before the first cell, and the line is printed at once, flushed, as
+`survey-once: <line>` (so the clean run's log holds it even when the run then refuses or crashes; the lead's row quotes
+it: a deleted record cannot be prevented, only made visible). Under a pin the runs folder is the Windows known folder (the
 `LOCALAPPDATA` variable must equal `SHGetKnownFolderPath(FOLDERID_LocalAppData)`) and `run.lock` is held by this run
 (`S2X_LOCK_HOLDER` equal to the lock's job). `run_clean.py --discard` and `--remove` touch only a checkout, never the
 record. **A fixture-pinned run prints no finalists' token** (Q-186 m-6): its token is `survey-fixture-finalists: ...`,
@@ -114,7 +115,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 
-from extended import ROOT, RUN_ID_ENV, RUNS_DIR
+from extended import CLEAN_RUN_ENV, ROOT, RUN_ID_ENV, RUNS_DIR
 from extended import reader as R
 
 TASK = "Wave 5"
@@ -796,7 +797,13 @@ _MARGIN_NAME = r"no[-_ ]harm[-_ ]margin"
 
 #: the first numeric token after the margin's name, matched in full (sign, exponent and percent included, so each can
 #: be refused)
-_NUM_TOKEN = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?%?")
+_NUM_TOKEN = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?%?", re.ASCII)
+#: Q-186c: an operator or a unit after the number, after optional whitespace -- the number is not the margin then
+_AFTER_OPERATOR = re.compile(r"\s*(?:[/*^\u00d7\-\u2013\u2212:%\u2030]|per\s*cent\b|percent\b|bp\b)",
+                             re.IGNORECASE)
+#: Q-186c: all that may follow the number -- the end of the line, whitespace then a letter or `(`, or closing
+#: punctuation (`` ` ``, `)`, `|`, `;` after optional whitespace; `.` or `,` before whitespace or the end)
+_AFTER_ALLOWED = re.compile(r"\s*$|\s+[A-Za-z(]|\s*[`)|;]|[.,](?:\s|$)", re.ASCII)
 #: what may stand between the margin's name and its number: spaces, backticks or asterisks, and one `is`, `of`, `at`,
 #: `=` or `:`
 _MARGIN_GAP = re.compile(r"[\s`*]*(?:(?:is|of|at|=|:)[\s`*]*)?", re.IGNORECASE)
@@ -804,12 +811,16 @@ _MARGIN_GAP = re.compile(r"[\s`*]*(?:(?:is|of|at|=|:)[\s`*]*)?", re.IGNORECASE)
 
 def margin_row_carries(line: str, margin: float) -> bool:
     """Q-186 m-2, Q-186b F-3: the row names the no-harm margin, and the first number after that name (directly, or
-    after `is`, `of`, `at`, `=` or `:`) is the margin: a plain decimal -- no sign, exponent or percent, not run on into
-    another number (`0.0.5`, `0.0,05`) or a word -- whose float equals it. So 0.0055, 10.005, -0.005, 0.005e-3, 0.005%
-    and "not 0.005" never stand for 0.005."""
-    name = re.search(_MARGIN_NAME, line, re.IGNORECASE)
-    if name is None:
+    after `is`, `of`, `at`, `=` or `:`) is the margin: a plain ASCII decimal -- no sign, exponent or percent, not run on
+    into another number (`0.0.5`, `0.0,05`) or a word, followed by no operator or unit (`/ * ^ x - : % per cent bp`,
+    whitespace allowed before them) and by nothing but the end, whitespace then a letter or `(`, or closing
+    punctuation -- whose float equals it exactly; and the name occurs once in the row. So 0.0055, 0.0051, 10.005,
+    -0.005, 0.005e-3, 0.005 %, 0.005/2, 0.005-0.01, "not 0.005" and "0.01 replaced: ... now 0.005" never stand for
+    0.005 (Q-186c)."""
+    names = list(re.finditer(_MARGIN_NAME, line, re.IGNORECASE))
+    if len(names) != 1:                                     # Q-186c: named twice ("0.01 replaced: ... now 0.005")
         return False
+    name = names[0]
     tok = _NUM_TOKEN.search(line, name.end())
     if tok is None or not _MARGIN_GAP.fullmatch(line[name.end():tok.start()]):
         return False
@@ -820,7 +831,10 @@ def margin_row_carries(line: str, margin: float) -> bool:
         return False
     if "e" in t.lower():
         return False
-    if re.match(r"\w|[.,]\d", line[tok.end():tok.end() + 2]):
+    rest = line[tok.end():]                                 # a run-on (0.0.5, 0.0,05, 0.005x) fails _AFTER_ALLOWED
+    if _AFTER_OPERATOR.match(rest):
+        return False
+    if not _AFTER_ALLOWED.match(rest):
         return False
     return float(t) == float(margin)
 
@@ -894,11 +908,17 @@ def _once_records(path: Path) -> list[dict[str, Any]]:
 
 
 def once_location_problem(path: Path, root: Path | None = None) -> str | None:
-    """Q-186 m-5: the once-record lies outside the checkout (by its unresolved and its resolved path), so no
-    `run_clean.py --discard` or `--remove` of a checkout can reach it."""
+    """Q-186 m-5, Q-186c n-3: the once-record lies outside the checkout (by its unresolved and its resolved path), and
+    its markers' folder beside it is neither a link nor a git checkout (a clean run of that name), so no
+    `run_clean.py --discard` or `--remove` of a checkout can reach either."""
     root = Path(ROOT if root is None else root)
     if _lexically_inside(path, root) or _inside(path, root):
         return f"the once-record {path} lies inside the checkout {root}"
+    markers = Path(path).parent / Path(path).stem           # beside the log: only a link or a checkout moves it
+    if _is_link(markers):
+        return f"the once-markers' folder {markers} is a link (a junction could lead it into a checkout)"
+    if os.path.lexists(markers / ".git"):
+        return f"the once-markers' folder {markers} is a git checkout (a clean run of that name): --remove would drop it"
     return None
 
 
@@ -987,8 +1007,9 @@ def localappdata_problem(env: Mapping[str, str] | None = None, known: Any = _UNS
 
 
 def lock_problem(start: Path | None = None, env: Mapping[str, str] | None = None) -> str | None:
-    """Q-186b F-4, under a pin: `run.lock` at the main repository's root is held, and by this run (`S2X_LOCK_HOLDER`
-    equal to the lock's job, as `run_clean.py --hours --mem-gb` sets it); else what is wrong."""
+    """Q-186b F-4, Q-186c, under a pin: `run.lock` at the main repository's root is held, and by this run -- the
+    lock's job equal to `S2X_LOCK_HOLDER` and to this clean run's name (`S2X_CLEAN_RUN`), as `run_clean.py --hours
+    --mem-gb` sets both to its `--name` (no pid is checked: `set-pid` follows the launch); else what is wrong."""
     from extended import lock_guard as LG
     env = os.environ if env is None else env
     root = LG.main_root(ROOT if start is None else start)
@@ -1001,6 +1022,9 @@ def lock_problem(start: Path | None = None, env: Mapping[str, str] | None = None
     holder = env.get(LG.LOCK_HOLDER_ENV)
     if job is None or holder != job:
         return f"run.lock is held by {shown}, and this run's {LG.LOCK_HOLDER_ENV} is {holder!r}"
+    if env.get(CLEAN_RUN_ENV) != job:                       # Q-186c: run_clean takes the lock under its own --name
+        return (f"run.lock is held by {shown}, and this clean run is {env.get(CLEAN_RUN_ENV)!r}: a holder name typed "
+                "by hand is not this run's lock")
     return None
 
 
@@ -1082,11 +1106,28 @@ def _git_in(repo: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
 
 
+def head_pinned_commit(repo: Path) -> str | None:
+    """Q-186c n-1: W42-R1's pinned commit as the run's commit holds it (`git show HEAD:config/w42_r1_pin.json`, never
+    the working tree, which `--skip-worktree` could hide from `git status`); None when HEAD has no pin file;
+    `SpecRefused` when it is malformed (not JSON, not an object, its `commit` not 40 hex)."""
+    r = _git_in(Path(repo), "show", f"HEAD:{W42_PIN_FILE}")
+    if r.returncode:
+        return None
+    try:
+        got = json.loads(r.stdout)
+    except ValueError as e:
+        raise SpecRefused(f"REFUSED: HEAD's {W42_PIN_FILE} is not JSON: {e}") from e
+    c = got.get("commit") if isinstance(got, dict) else None
+    if not (isinstance(c, str) and _SHA40.fullmatch(c)):
+        raise SpecRefused(f"REFUSED: HEAD's {W42_PIN_FILE} names no commit (40 hex): {r.stdout[:120]!r}")
+    return c
+
+
 def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: Path | None = None,
                                apply: Any = None, verify: Callable[[Path], tuple[bool, str]] | None = None
                                ) -> list[str]:
     """Q-186 m-3, Q-186b F-2, under a pin: W42-R1's values file is a pinned application -- `parameters.pinned_commit`
-    40 hex and equal to this checkout's pin (`wave42_apply.pinned_commit(repo)`, `config/w42_r1_pin.json`); the
+    40 hex and equal to the run's commit's pin (`head_pinned_commit`: HEAD's `config/w42_r1_pin.json`); the
     manifest's `git_commit` 40 hex and clean (no `-dirty`), a commit of this repository (`git cat-file -e`) and an
     ancestor of the run's HEAD (`git merge-base --is-ancestor`); `wave42_apply.commit_problem(repo, pinned_commit,
     head=git_commit)` None (the pinned commit itself, or a descendant touching none of W42-R1's imported files: the
@@ -1103,7 +1144,7 @@ def values_provenance_problems(man: Mapping[str, Any], csv_path: Path, *, repo: 
     if not out:
         repo_ = Path(ROOT if repo is None else repo)
         A = apply or _w42_apply()
-        mine = A.pinned_commit(repo_)
+        mine = head_pinned_commit(repo_)
         if pin != mine:
             out.append(f"its pinned_commit {str(pin)[:12]} is not this checkout's pin ({W42_PIN_FILE}: {mine!r})")
         elif _git_in(repo_, "cat-file", "-e", f"{head}^{{commit}}").returncode:
@@ -1926,6 +1967,7 @@ def run_survey(declaration: Path | str, *, results_dir: Path | str, name: str, p
                                 "results_dir": str(out_dir), "name": name,
                                 "when": datetime.now(timezone.utc).isoformat(timespec="seconds")})
         params["once_record"] = str(once)
+        print(f"survey-once: {once_line}", flush=True)       # Q-186c: in the clean run's log, whatever follows
     try:
         designs = draw_survey(ctx)
         if ctx.ledger.protocol_sha256 != spec.protocol_sha256:
@@ -1972,7 +2014,7 @@ __all__ = ["TASK", "ENGINE_COMMIT", "W42_RULE", "W42_SCRIPT", "ENTRY_SCRIPT", "D
            "check_bindings", "searched_levers", "check_levers", "space_digest", "tree_problems",
            "untracked_modules", "invocation_problems", "check_process", "load_spec", "fixture_pin", "check_pinned",
            "margin_row_carries", "values_row_carries", "check_rows", "check_once", "once_location_problem",
-           "once_marker", "check_once_record", "record_once", "known_local_appdata",
+           "head_pinned_commit", "once_marker", "check_once_record", "record_once", "known_local_appdata",
            "localappdata_problem", "lock_problem", "read_values", "values_provenance_problems", "load_objective",
            "load_calendar", "composite", "limit_value", "t_threshold", "new_ledger", "sessions_left", "validate_values", "book_check", "gate_check", "screen",
            "read_design", "read_all", "draw_survey", "check_engine_rereads", "record_baselines", "run_rounds",
