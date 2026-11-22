@@ -23,10 +23,14 @@ Draft a new family declaration titled: **$ARGUMENTS**
 4. Tell the caller which sections still need decisions, as a short list.
 5. Invoke the **scout** agent for its standing challenger brief (Q-150) and the **red-team** agent on the draft, giving
    each the file and the template -- not your expectation of what it will find. Pass their findings on unedited, each
-   labelled blocking or minor (E-207 (2)).
-6. Invoke the **prereg-gatekeeper** agent on the draft with both reads. Report its verdict verbatim: on
-   approval, the assigned F-id, the k it would take at its held-out row and its level, the sha256 of the file's LF
-   text and the proposed pinning row
+   labelled blocking or minor (E-207 (2)). **In the same step, invoke the prereg-gatekeeper for a form read of the
+   same draft** (E-274): its template, counting, pin-grammar and wording items, returned as a numbered list, approving
+   nothing. Both lists go to the author in one cycle, so a form refusal no longer costs a cycle after the red team's
+   (H3 lost one this way on 2026-11-22). The gatekeeper does not see the red team's findings in this read, so the two
+   stay independent.
+6. Invoke the **prereg-gatekeeper** agent on the corrected draft with both reads, for its approval. Report its verdict
+   verbatim: on approval, the assigned F-id, the sha256 of the file's LF text and the proposed pinning row (a design
+   search assigns no k; F-HT's k is assigned at F-HT's held-out row, E-204)
    (one finished line, for the lead to number and append with `/decide`); on refusal, the numbered list of what is
    missing.
 

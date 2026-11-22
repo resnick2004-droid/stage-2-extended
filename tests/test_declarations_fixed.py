@@ -50,11 +50,13 @@ def test_every_pinned_playbook_declaration_matches_its_hash():
         assert hashlib.sha256(data).hexdigest() == want, rel
 
 
-#: the templates' pin (n-a, n-b of the red team's TEMPLATE_V3_DF7AB29 note; findings 8 and 9 of TEMPLATE_V3_DAFF8CC):
-#: the row pinning `prereg/TEMPLATE_design_search.md` or `prereg/TEMPLATE_heldout_test.md` also pins
-#: `extended/reader.py` (the log's one parser, the go token's rules among them, Q-212) by its LF sha256; W42-R1's pin
-#: row -- an unfenced decision row carrying `docs/plans/WAVE42_SETTING_RULE.md` or `extended/wave42.py` at the file's
-#: own LF sha256 -- comes before it; and once a template is pinned, `extended/wave42.py` declares `DO_NOTHING_EPS`
+#: the templates' pin (n-a, n-b of the red team's TEMPLATE_V3_DF7AB29 note; findings 8 and 9 of TEMPLATE_V3_DAFF8CC;
+#: F1 of READER_Q212_TEMPLATE): the row pinning `prereg/TEMPLATE_design_search.md` or `prereg/TEMPLATE_heldout_test.md`
+#: also pins `extended/reader.py` by its LF sha256, checked against the reader **as committed at that row's own commit**
+#: (`git show <the row's commit>:extended/reader.py`), never today's file -- a later reader change never fails an old
+#: pin; each search's reader is bound by its deciding files at its go row's runner commit. W42-R1's pin row -- an
+#: unfenced decision row carrying `docs/plans/WAVE42_SETTING_RULE.md` or `extended/wave42.py` at the file's own LF
+#: sha256 -- comes before it; and once a template is pinned, `extended/wave42.py` declares `DO_NOTHING_EPS`
 _TEMPLATE_PIN = re.compile(r"`(prereg/TEMPLATE_(?:design_search|heldout_test)\.md)` sha256 `([0-9a-f]{64})`")
 _READER_PIN = re.compile(r"`(extended/reader\.py)` sha256 `([0-9a-f]{64})`")
 _W42_PIN = re.compile(r"`(docs/plans/WAVE42_SETTING_RULE\.md|extended/wave42\.py)` sha256 `([0-9a-f]{64})`")
@@ -63,6 +65,10 @@ _ROW = re.compile(r"\|\s*E-\d+\s*\|")
 
 def _lf(p: Path) -> str:
     return hashlib.sha256(p.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _lf_bytes(b: bytes) -> str:
+    return hashlib.sha256(b.replace(b"\r\n", b"\n")).hexdigest()
 
 
 def _unfenced(log: str) -> list[bool]:
@@ -75,6 +81,22 @@ def _unfenced(log: str) -> list[bool]:
 
     fenced, _ = RD._fences(log)
     return [not f for f in fenced]
+
+
+def _git(root: Path, *args: str):
+    import subprocess
+
+    return subprocess.run(["git", "-C", str(root), *args], capture_output=True)
+
+
+def _reader_at_row(root: Path, line: str) -> bytes | None:
+    """`extended/reader.py` as committed at the first commit whose DECISIONS.md adds `line`, or None (fail closed)."""
+    r = _git(root, "log", "--format=%H", "--reverse", "-S", line, "--", "DECISIONS.md")
+    commits = r.stdout.decode().split() if r.returncode == 0 else []
+    if not commits:
+        return None
+    b = _git(root, "show", f"{commits[0]}:extended/reader.py")
+    return b.stdout if b.returncode == 0 else None
 
 
 def _template_pin_problems(log: str, root: Path) -> list[str]:
@@ -91,9 +113,10 @@ def _template_pin_problems(log: str, root: Path) -> list[str]:
         rd = _READER_PIN.findall(lines[i])
         if not rd:
             out.append(f"line {i + 1}: a template pin row without `extended/reader.py`'s sha256 (n-a)")
-        for rel, want in rd:
-            if _lf(root / rel) != want:
-                out.append(f"line {i + 1}: extended/reader.py does not hash to its pin (n-a)")
+        for _rel, want in rd:
+            at = _reader_at_row(root, lines[i])
+            if at is None or _lf_bytes(at) != want:
+                out.append(f"line {i + 1}: extended/reader.py at the row's own commit does not hash to its pin (F1)")
         if not any(j < i for j in w42):
             out.append(f"line {i + 1}: a template pin row before W42-R1's pin row (n-b)")
     if rows:
@@ -106,19 +129,40 @@ def _template_pin_problems(log: str, root: Path) -> list[str]:
 def test_the_templates_pin_row_carries_the_reader_and_follows_w42r1(tmp_path):
     log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
     assert _template_pin_problems(log, ROOT) == [], _template_pin_problems(log, ROOT)
-    # synthetic controls
-    files = {"prereg/TEMPLATE_design_search.md": "t\n", "prereg/TEMPLATE_heldout_test.md": "h\n",
-             "extended/reader.py": "r\n", "docs/plans/WAVE42_SETTING_RULE.md": "w\n",
-             "extended/wave42.py": "DO_NOTHING_EPS = 1\n"}
+    # synthetic controls, in a git repository of their own
+    nl = chr(10)
+    files = {"prereg/TEMPLATE_design_search.md": "t" + nl, "prereg/TEMPLATE_heldout_test.md": "h" + nl,
+             "extended/reader.py": "r1" + nl, "docs/plans/WAVE42_SETTING_RULE.md": "w" + nl,
+             "extended/wave42.py": "DO_NOTHING_EPS = 1" + nl}
     for rel, body in files.items():
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / rel).write_text(body, encoding="utf-8", newline="\n")
+        (tmp_path / rel).write_text(body, encoding="utf-8", newline=nl)
     t, h, r, w = (_lf(tmp_path / rel) for rel in list(files)[:4])
     w42 = f"| E-900 | d | **W42-R1 pinned.** `docs/plans/WAVE42_SETTING_RULE.md` sha256 `{w}` | b |"
     pin = (f"| E-901 | d | **Templates pinned.** `prereg/TEMPLATE_design_search.md` sha256 `{t}`, "
            f"`prereg/TEMPLATE_heldout_test.md` sha256 `{h}`, `extended/reader.py` sha256 `{r}` | b |")
-    nl = chr(10)
+
+    def commit(log_lines, msg):
+        (tmp_path / "DECISIONS.md").write_text(nl.join(log_lines) + nl, encoding="utf-8", newline=nl)
+        _git(tmp_path, "add", "-A")
+        hooks = tmp_path / ".nohooks"                                    # a synthetic repository runs no hook
+        hooks.mkdir(exist_ok=True)
+        assert _git(tmp_path, "-c", "user.name=t", "-c", "user.email=t@t", "-c", f"core.hooksPath={hooks}", "commit",
+                    "-q", "-m", msg).returncode == 0
+
+    assert _git(tmp_path, "init", "-q").returncode == 0
+    commit([w42, pin], "the pins")
     assert _template_pin_problems(nl.join([w42, pin]), tmp_path) == []
+    # F1: a later reader change never fails the old pin
+    (tmp_path / "extended" / "reader.py").write_text("r2" + nl, encoding="utf-8", newline=nl)
+    commit([w42, pin, "| E-902 | d | a later reader | b |"], "a later reader")
+    assert _template_pin_problems(nl.join([w42, pin]), tmp_path) == []
+    # a pin row whose reader sha matches no reader at its own commit fails
+    bad = pin.replace(r, "0" * 64).replace("E-901", "E-903")
+    commit([w42, pin, "| E-902 | d | a later reader | b |", bad], "a bad pin")
+    assert _template_pin_problems(nl.join([w42, bad]), tmp_path)
+    assert _template_pin_problems(nl.join([w42, pin.replace("E-901", "E-909")]), tmp_path)   # a row never committed
+    # n-a, n-b
     assert _template_pin_problems(nl.join([pin, w42]), tmp_path)                          # n-b: W42-R1 first
     assert _template_pin_problems(pin, tmp_path)
     assert _template_pin_problems(nl.join(["```", w42, "```", pin]), tmp_path)             # a fenced W42 pin
@@ -126,7 +170,6 @@ def test_the_templates_pin_row_carries_the_reader_and_follows_w42r1(tmp_path):
     assert _template_pin_problems(nl.join([w42.replace(w, "0" * 64), pin]), tmp_path)     # a draft's sha
     assert _template_pin_problems(nl.join([w42, pin.replace(f", `extended/reader.py` sha256 `{r}`", "")]),
                                   tmp_path)                                               # n-a: the reader's sha
-    assert _template_pin_problems(nl.join([w42, pin.replace(r, "0" * 64)]), tmp_path)     # the reader edited
     assert _template_pin_problems(nl.join([w42, pin.replace(t, "0" * 64)]), tmp_path)     # a template edited
     assert _template_pin_problems(nl.join(["```", pin, "```"]), tmp_path) == []           # a fenced pin row: none
     (tmp_path / "extended" / "wave42.py").write_text("x = 1" + nl, encoding="utf-8")

@@ -69,8 +69,9 @@ and states the resulting order. **A researcher's choice after a read is never th
 
 - A firm in state (b) or (c) of section 3 contributes no finalist: it is **listed as none** and **keeps its place** in
   the firm order; the alternation runs over the firms that have finalists. **At most one member search per firm**
-  (R-1; E-259): a second hash row for a firm before the membership event is refused at its pin, whether or not the
-  first search is closed; a firm's ranks are its one member search's pinned finalist order.
+  (R-1; E-259): a second hash row for a firm before the membership event is refused by the gatekeeper at its pin and
+  by the reader at the go row (n2), whether or not the first search is closed; a firm's ranks are its one member
+  search's pinned finalist order.
 
 ## 3. The firms' states: membership fixed by an event, states decided by rule (H-1'; E-257)
 
@@ -80,11 +81,12 @@ and states the resulting order. **A researcher's choice after a read is never th
   My Funded Futures or Lucid (G-1; E-259), counted
   only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
   declaration's hash row (G-2); the scope is read from each declaration's declared market field and firm line, never
-  from its text (the reader's `membership_event`,
-  `extended/reader.py` at its pinning row's sha256). **This F-HT's membership is fixed at that moment:** each firm's
-  one design search with a hash row before the event is that firm's **member** (at most one per firm); a firm with no
-  hash row before the event is in **state (c)** for this F-HT, fixed at that moment, before any search's search-year
-  outcome is read.
+  from its text (the reader's `membership_event`, `extended/reader.py` at its pinning row's sha256). The lead freezes
+  the event in the row right after the first counted go row, `membership: F-NN @ <its LF sha256> -- E-NNN` (the first
+  go row's declaration, its pin's LF sha256, then the go row's id), which the reader enforces (F3).
+  **This F-HT's membership is fixed at that moment:** each firm's one design search with a hash row before the event
+  is that firm's **member** (at most one per firm); a firm with no hash row before the event is in **state (c)** for
+  this F-HT, fixed at that moment, before any search's search-year outcome is read.
 - **Every member search ends in one of two states:**
   - **(a) finalists:** it has a finalists' row;
   - **(b) none:** it has a closing row,
@@ -112,7 +114,9 @@ and states the resulting order. **A researcher's choice after a read is never th
   under its own k; the confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's carried designs
   (CW-1; E-259). **Data this line has never read** is NQ bars after the confirmation window's end, or another
   underlying's bars that no declaration of this repository has read (NQ and MNQ are one underlying); never NQ's
-  search years, held-out years or confirmation window (CW-2; B-2; finding 7).
+  search years, held-out years or confirmation window (CW-2; B-2; finding 7). A successor search on another underlying
+  first needs a new decision row and a reader rule that extends the market allow-list; until both exist, its go row is
+  a refused problem (F9).
 - **This declaration is written as soon as, after the membership event, every member search is in (a) or (b).**
   Before the event it is never due: an empty history is not "all terminal".
 - **Then no new search may be pinned until this declaration's held-out row is written.**
@@ -135,8 +139,9 @@ and states the resulting order. **A researcher's choice after a read is never th
    closing row; the confirmation window's end is not declared here: it is fixed by rule, the last session in the
    purchase order's stated range, never read from bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last>
    -- <text>` row, which states that it opens the confirmation window, not a second held-out test, and governs; any
-   later NQ window row from 2026-07-17 on is refused; the purchase and that row come before the first finalists' row
-   of any member (C-5; finding 5). Q-158's rule 1 (`extended/reader.py`) honours a held-out purpose only after a
+   later NQ or MNQ window row from 2026-07-17 on is refused by the reader (`extended/reader.py`; n1), this
+   repository's `_cw_problems` only a cross-check; the purchase and that row come before the first finalists' row of
+   any member (C-5; finding 5). Q-158's rule 1 (`extended/reader.py`) honours a held-out purpose only after a
    finalists' token for this declaration's own hash in a row newer than its pin, so the reader itself enforces "after
    the held-out row"; the pin and the token in one row are refused.
 3. **The held-out test**, once, from a clean checkout of the held-out row's commit (`scripts/run_clean.py`), under
@@ -199,8 +204,9 @@ declaration's `heldout_test` read of the same window, sha256 and market (section
 - **A fail at a place:** the sequence stops there; every later finalist is untested; nothing is rerun; the k is spent.
 - **The confirmation window** (NQ from 2026-07-17 to the last session in the purchase order's stated range, never read
   from bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it
-  opens the confirmation window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on
-  is refused; the purchase and that row come before the first finalists' row of any member (C-5; finding 5)) is read
+  opens the confirmation window, not a second held-out test, and governs; any later NQ or MNQ window row from
+  2026-07-17 on is refused by the reader (`extended/reader.py`; n1), this repository's `_cw_problems` only a
+  cross-check; the purchase and that row come before the first finalists' row of any member (C-5; finding 5)) is read
   once, only for this F-HT's carried designs, and is a purchase; a non-member search's candidates never use it (CW-1;
   E-259).
 

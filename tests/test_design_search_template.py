@@ -1364,8 +1364,8 @@ def test_h1_membership_is_fixed_by_an_event_and_states_by_rule():
     t = _flat(_text(TEMPLATE))
     for s in ("the one design search of each of Topstep, My Funded Futures and Lucid with a hash row before the "
               "membership event, the first go-row token of an NQ design search of Topstep, My Funded Futures or Lucid "
-              "(H-1'; E-257; E-259), at most one per firm, a second hash row for a firm before the event refused at "
-              "its pin",
+              "(H-1'; E-257; E-259), at most one per firm, a second hash row for a firm before the event refused by "
+              "the gatekeeper at its pin and by the reader at the go row (n2)",
               "A search pinned after the membership event, or a successor of a closed search, is never a member of "
               "this F-HT; its candidates " + CW_SENTENCE,
               "written as soon as, after the membership event, every member search has a finalists' row or a closing "
@@ -1589,13 +1589,14 @@ def test_e259_the_go_token_fixes_the_event_in_the_log():
 def test_e259_every_ruling_is_held_where_it_lives():
     text = _text(TEMPLATE)
     s1 = _section(text, "## 1. The question", "## 2. Years")
-    for s in ("The firm and account: <firm, plan> -- exactly one firm; a search naming several firms is refused (R-1; "
+    for s in ("The firm and account: <`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the plan> -- exactly one firm; "
+              "a search naming several firms is refused (R-1; "
               "E-259)",
               "Each baseline's runner identity reads the search years only; it has no held-out part (L-1; E-259)"):
         assert s in s1, s                                                              # R-1, L-1
     s2 = _section(text, "## 2. Years", "## 3. The lever space")
     for s in ("only if this search is a member (its hash row before the membership event)",            # W2
-              "its candidates " + CW_SENTENCE + ". " + DEF_NEVER_READ + " A member's finalists are never voided. A "
+              "its candidates " + CW_SENTENCE + ". " + DEF_NEVER_READ + F9_TEXT + " A member's finalists are never voided. A "
               "later search on the same bars reads NQ's held-out years and F-HT's results as a description only",               # W10, X-1
               "it is read once, only for F-HT's carried designs, and a non-member search's candidates never use it "
               "(CW-1; E-259)"):
@@ -1632,7 +1633,8 @@ def test_e259_every_ruling_is_held_where_it_lives():
         assert bad not in flat, bad
     ht = _flat(_text(HT))
     for s in ("At most one member search per firm (R-1; E-259): a second hash row for a firm before the membership "
-              "event is refused at its pin, whether or not the first search is closed; a firm's ranks are its one "
+              "event is refused by the gatekeeper at its pin and by the reader at the go row (n2), whether or not the "
+              "first search is closed; a firm's ranks are its one "
               "member search's pinned finalist order.",                                                  # R-1, W4
               "A firm's state is its member search's, (a) or (b); (c) if it has none.",                 # W3
               "a closing row after a search's finalists' row is refused, and no later search replaces them.",   # W9
@@ -1834,9 +1836,16 @@ DEF_NEVER_READ = ("Data this line has never read is NQ bars after the confirmati
 #: C-5: the confirmation window's end, fixed by rule, in every copy
 CW_RULE = ("the last session in the purchase order's stated range, never read from bars, recorded in the first "
            "`heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it opens the confirmation "
-           "window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on is refused; "
+           "window, not a second held-out test, and governs; any later NQ or MNQ window row from 2026-07-17 on is "
+           "refused by the reader (`extended/reader.py`; n1), this repository's `_cw_problems` only a cross-check; "
            "the purchase and that row come before the first finalists' row of any member (C-5; finding 5)")
 CW_END = "NQ from 2026-07-17 to " + CW_RULE
+#: F9 and F3 (READER_Q212_TEMPLATE): the successor route on another underlying; the membership row
+F9_TEXT = (" A successor search on another underlying first needs a new decision row and a reader rule that extends "
+           "the market allow-list; until both exist, its go row is a refused problem (F9).")
+F3_TEXT = ("The lead freezes the event in the row right after the first counted go row, `membership: F-NN @ <its LF "
+           "sha256> -- E-NNN` (the first go row's declaration, its pin's LF sha256, then the go row's id), which the "
+           "reader enforces (F3).")
 RDPIN = "`extended/reader.py` at its pinning row's sha256"
 #: C-3: the go token's one form, the runner sub-form included
 GO_FORM = "`go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`"
@@ -1899,7 +1908,7 @@ def _cw_problems(log: str) -> list:
 
     start = date(2026, 7, 17)
     lines = log.splitlines()
-    wins = [w for w in RD.heldout_tokens(log, "window") if w.get("market") == "NQ" and w.get("end") >= start]
+    wins = [w for w in RD.heldout_tokens(log, "window") if w.get("market") in ("NQ", "MNQ") and w.get("end") >= start]
     finals = RD.heldout_tokens(log, "finalists")
     out = []
     if wins:
@@ -1928,7 +1937,8 @@ def test_c5_the_confirmation_windows_end_is_fixed_by_rule_before_any_finalist():
     assert _cw_problems(win) == [] and _cw_problems("") == []                            # no finalist yet
     assert _cw_problems("\n".join([win.replace("NQ 2026-07-17 to", "NQ 2026-07-20 to"), fin]))   # not its start
     assert _cw_problems("\n".join([win.replace("opens the confirmation window, the", "the"), fin]))   # n2
-    for later in (recut, overlap):                                                       # the first governs
+    mnq = recut.replace("heldout-window: NQ", "heldout-window: MNQ")                      # one underlying (n1)
+    for later in (recut, overlap, mnq):                                                  # the first governs
         assert _cw_problems("\n".join([win, fin, later])), later[:40]
         assert _cw_problems("\n".join([win, later, fin])), later[:40]
     early = "| E-899 | 2026-11-30 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- the held-out years | b |"
@@ -1938,7 +1948,8 @@ def test_c5_the_confirmation_windows_end_is_fixed_by_rule_before_any_finalist():
         assert CW_END in _flat(_text(path)), path.name
     gk = _flat(_text(GK_FILE))
     assert ("2. The confirmation window, declared now. Its end is " + CW_RULE + ": refuse a finalists' row of any member "
-            "before the purchase and that row, and any later NQ window row from 2026-07-17 on.") in gk
+            "before the purchase and that row, and any later NQ or MNQ window row from 2026-07-17 on (the reader's "
+            "rule, n1).") in gk
     ht = _flat(_text(HT))
     assert "the confirmation window's end is not declared here: it is fixed by rule, " + CW_RULE + "." in ht
 
@@ -1969,13 +1980,17 @@ def test_na_nd_go_token_cited_by_its_pinned_sha_and_html_comments_as_the_reader(
     t = _flat(_text(TEMPLATE))
     assert "(the reader's `go_problems`, " + RDPIN + ", n-a)" in t
     assert ("the survey reads its own checkout's log, at a commit after the go row, bound as the reader binds it: HEAD "
-            "descends from the runner commit and every deciding file is byte-identical at HEAD and at the runner "
-            "commit (the reader's `go_runner` and `go_row_present`; finding 2);") in t
+            "descends from (or is) the runner commit, and every file of section 1's `- The deciding files:` line is "
+            "byte-identical at HEAD and at the runner commit and unchanged in the working tree (the reader's "
+            "`go_runner` and `go_row_present`; finding 2; Q-212);") in t
     assert ("The field is written exactly `- The market: NQ -- ...` or `- The market: MNQ -- ...`: the allowed market "
             "codes are exactly `NQ` and `MNQ` (one underlying), and the firm line begins with exactly one of the "
-            "allowed firm names `Topstep`, `MFFU` or `Lucid`; any other market code or firm name, or a field not in "
-            "this exact form once, is refused at the pin and by the reader's `membership_event` (" + RDPIN
-            + "; C-1; finding 4).") in t
+            "allowed firm names `Topstep`, `MFFU` or `Lucid`, in that exact case (`- The firm and account: MFFU, "
+            "<plan> -- ...`, never MFFU's long name), with no second firm named in the field; any other market code or "
+            "firm name, or a field not in "
+            "this exact form once, is refused by the gatekeeper at the pin and by the reader at the go row (the "
+            "reader's `membership_event`, " + RDPIN + "; C-1; finding 4; n2). The free text after the market's ` -- ` "
+            "names no other market code (n3).") in t
     assert ("reads NQ's held-out years and F-HT's results as a description only, after F-HT's verdict row (reader rule "
             "4; n4),") in t
     for path in (TEMPLATE, HT, GK_FILE):
@@ -2085,3 +2100,62 @@ def test_n6_the_held_out_file_agrees_with_the_reader_once_it_carries_it():
                     "assertion fails, not skips, once it does")
     assert tuple(RD.HELDOUT_HEADINGS) == HT_HEADINGS_13DF998
     assert RD.HELDOUT_MARKER == HT_MARKER_LINE and RD.HELDOUT_PATH.pattern == HT_PATH.pattern
+
+
+#: Q-212 (wt/wt-verify 51384fe's reader): the deciding-files line, exactly as the reader's `_DECIDING_LINE` reads it
+DECIDING_LINE = re.compile(r"- \*\*The deciding files:\*\* (?P<paths>`[^`]+`(?:, `[^`]+`)*)")
+
+
+def test_q212_the_deciding_files_field_and_mffus_exact_form():
+    import pytest
+    from extended import reader as RD
+
+    text = _text(TEMPLATE)
+    lines = [ln for ln in text.splitlines() if ln.startswith("- **The deciding files:**")]
+    assert lines == ["- **The deciding files:** `extended/reader.py`, `<path>`"], lines       # one line, nothing after
+    assert DECIDING_LINE.fullmatch(lines[0])
+    s1 = _section(text, "## 1. The question", "## 2. Years")
+    assert ("*The line above is written exactly so (Q-212): one unfenced line, each path in backticks and "
+            "repo-relative, no path twice, `extended/reader.py` among them, nothing after the last path.* It lists every file whose "
+            "content decides an outcome of this search -- the survey runner, the engine adapters it calls, the reader "
+            "-- and the reader's `go_row_present` (" + RDPIN + ") holds each byte-identical at HEAD and at the go "
+            "row's runner commit and unchanged in the working tree (U-1; section 14 step 4). A draft without this "
+            "line, or with it in another form, is refused.") in s1
+    assert ("the firm line begins with exactly one of the allowed firm names `Topstep`, `MFFU` or `Lucid`, in that "
+            "exact case (`- The firm and account: MFFU, <plan> -- ...`, never MFFU's long name), with no second firm "
+            "named in the field;") in s1
+    assert "`My Funded Futures (MFFU)`" not in _flat(text)                                 # MFFU's exact form only
+    gk = _flat(_text(GK_FILE))
+    assert ("0. The market, the firm and the deciding files (template 1; Q-212). Exactly one unfenced line each: "
+            "`- The market: NQ` or `MNQ`; `- The firm and account:` beginning with exactly `Topstep`, `MFFU` or "
+            "`Lucid` (that case, no second firm in the field); and `- The deciding files: `path`, ...` -- each path "
+            "in backticks and repo-relative, none twice, `extended/reader.py` among them, nothing after the last path "
+            "-- listing every file whose content decides an outcome, which the reader's `go_row_present` (" + RDPIN
+            + ") holds byte-identical at HEAD and at the go row's runner commit. Refuse a draft missing any of the "
+            "three, or with one in another form.") in gk
+    # once the reader carries Q-212, a draft filled from the template must read as a design search in scope
+    if not hasattr(RD, "design_search_problems"):
+        pytest.skip("this tree's reader carries no design_search_problems yet (Q-212, wt/wt-verify 51384fe); the "
+                    "assertion fails, not skips, once it does")
+    assert RD._DECIDING_LINE.pattern == DECIDING_LINE.pattern
+    assert tuple(RD.SCOPE_FIRMS) == ("Topstep", "MFFU", "Lucid") and tuple(RD.SCOPE_MARKETS) == ("NQ", "MNQ")
+    draft = (text.replace("<MARKET, the reader's market code, here NQ>", "NQ")
+             .replace("<`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the plan>", "MFFU, Rapid 50K")
+             .replace("`extended/reader.py`, `<path>`", "`extended/reader.py`, `scripts/survey.py`"))
+    assert RD.design_search_problems(draft) == [], RD.design_search_problems(draft)
+
+
+def test_rq212_template_side_f3_f9_n2_n3():
+    """The combined review READER_Q212_TEMPLATE_2026-11-22, template side."""
+    t, ht, gk = (_flat(_text(p)) for p in (TEMPLATE, HT, GK_FILE))
+    for path, f in (("T", t), ("HT", ht), ("GK", gk)):
+        assert DEF_NEVER_READ + F9_TEXT in f, path                                      # F9, in all three copies
+    assert "from here the survey may run. " + F3_TEXT in t                               # F3, T step 4
+    assert F3_TEXT + " This F-HT's membership is fixed at that moment:" in ht           # F3, HT section 3
+    assert ("a second hash row for a firm before the membership event is refused by the gatekeeper at its pin and by "
+            "the reader at the go row (n2), whether or not the") in ht
+    assert "refused at the pin and" not in t and "is refused at its pin," not in ht      # n2's old wording
+    assert "The free text after the market's ` -- ` names no other market code (n3)." in t
+    for path, f in (("T", t), ("HT", ht), ("GK", gk)):
+        assert "any later NQ window row" not in f, path                                 # n1: NQ and MNQ both
+

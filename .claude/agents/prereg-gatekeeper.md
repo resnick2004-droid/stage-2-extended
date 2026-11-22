@@ -52,6 +52,13 @@ longer decide (CHARTER 3.10): a draft that judges by any of them is refused.
 Each item names the template's section. "Set after a look" means set from a held-out read, or from a search-year
 result of this search's own cells.
 
+0. **The market, the firm and the deciding files** (template 1; Q-212). Exactly one unfenced line each: `- **The
+   market:** NQ` or `MNQ`; `- **The firm and account:**` beginning with exactly `Topstep`, `MFFU` or `Lucid` (that
+   case, no second firm in the field); and `- **The deciding files:** `path`, ...` -- each path in backticks and
+   repo-relative, none twice, `extended/reader.py` among them, nothing after the last path -- listing every file whose
+   content decides an outcome, which the reader's `go_row_present` (`extended/reader.py` at its pinning row's sha256)
+   holds byte-identical at HEAD and at the go row's runner commit. Refuse a draft missing any of the three, or with
+   one in another form.
 1. **Years and the held-out read ledger** (template 2). The search years (2020-01-02 to 2023-12-29) and the held-out
    years (2024-01-02 to 2026-07-16 on `results/q82_judged_sessions.csv`) written as dates (E-208). **The held-out read
    ledger** complete: CHARTER 3.6 (b)'s floor and E-211's additions at least, each entry in the leak-clause form, and
@@ -95,16 +102,19 @@ result of this search's own cells.
    the confirmation window is read once, only for this F-HT's carried designs, CW-1; **Data this line has never read**
    is NQ bars after the confirmation window's end, or another underlying's bars that no declaration of this repository
    has read (NQ and MNQ are one underlying); never NQ's search years, held-out years or confirmation window (CW-2;
-   B-2; finding 7).); refuse a new search for a pin after every member search is in a terminal state until F-HT's
-   held-out row is written. Refuse a held-out year read by any choice.
+   B-2; finding 7). A successor search on another underlying first needs a new decision row and a reader rule that
+   extends the market allow-list; until both exist, its go row is a refused problem (F9).); refuse a new search for a
+   pin after every member search is in a terminal state until F-HT's held-out row is written. Refuse a held-out year
+   read by any choice.
 2. **The confirmation window, declared now.** Its end is the last session in the purchase order's stated range, never
    read from bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it
-   opens the confirmation window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on
-   is refused; the purchase and that row come before the first finalists' row of any member (C-5; finding 5): refuse a
-   finalists' row of any member before the purchase and that row, and any later NQ window row from 2026-07-17 on. NQ
-   from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk, never read until a carried design is
-   registered, a purchase. Count the confirmation tests already spent on the market (Stage 2 D-107:
-   at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
+   opens the confirmation window, not a second held-out test, and governs; any later NQ or MNQ window row from
+   2026-07-17 on is refused by the reader (`extended/reader.py`; n1), this repository's `_cw_problems` only a
+   cross-check; the purchase and that row come before the first finalists' row of any member (C-5; finding 5): refuse
+   a finalists' row of any member before the purchase and that row, and any later NQ or MNQ window row from 2026-07-17
+   on (the reader's rule, n1). NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk, never read until
+   a carried design is registered, a purchase. Count the confirmation tests already spent on the market (Stage 2
+   D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
    `vendor/stage2/prereg/REGISTRY.md`), and state in the verdict that NQ's reserve becomes a confirmation window
    only by the operator's decision (Stage 2 D-107; Stage 2's operator item 6). That is reported, not a refusal: the
    confirmation is read only after a design is carried, and it is a purchase anyway.
