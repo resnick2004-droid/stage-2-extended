@@ -43,6 +43,8 @@ def test_the_five_kinds_are_the_notes() -> None:
             f = dict(zip(names, vals))
             if f.get("part") == 7:
                 f["part"] = 70                              # the tests' seed never draws in a run's part (D1 is 7)
+            if kind == "test":
+                f["test"] = {0: 11, 1: 1, 7: 17}[f["test"]]  # the tests' seed's declared test ids only
             assert K.seed_key(SEED, kind, **f) == arith.seed_key(int(SEED), kind, **f)
     assert K.KEY_KINDS["enforce"][0] not in {t for t, _ in arith.KEY_KINDS.values()}
 
@@ -52,7 +54,7 @@ def test_the_coin_key_and_uniform_are_the_trigger_librarys() -> None:
 
     for session, decision, sub, start, c in itertools.product((0, 5, 900), (930, 1259), (0, 3), (0, 41), (0, 9)):
         off = T.Offer("p16", session, decision, sub, decision - 5, decision, "market")
-        unit = T.CoinUnit(int(SEED), 1, 2, c, start)
+        unit = T.CoinUnit(SEED, 1, 2, c, start)                       # the issued seed: built through seed_key
         u = K.Unit(SEED, 1, 2, c, start)
         mine = u.coin_key(K.moment(session, decision, sub), K.SIDE)
         assert mine == T.coin_key(unit, off)
@@ -328,3 +330,114 @@ def test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report() -> None:
     K.seed_key(S.issue("h3a_histories"), "plant", part=S.PARTS["A4"], history=0, plant=5, replicate=2)  # A4's plants
     with pytest.raises(S.ProvenanceRefused, match="m-9"):
         K.seed_key(S.issue("h3a_coins"), "plant", part=S.PARTS["A1"], **rep["fields"])
+
+
+
+# ------------------------------------------------------------------- the red team's diff check of 805978a
+
+
+def test_rt1_no_path_builds_or_reads_a_block_key_unchecked() -> None:
+    """Finding 1: `triggers.coin_key` builds a block seed's key only through `seed_key` (refused as `seed_key` refuses:
+    the schedule side at history 1, seed index 5, start 7; the tests' seed in D1; an unissued block value), with the
+    same words as `seed_key` for an issued use; `K.uniforms`, `F.uniforms` and `triggers.coin_uniform` read a block
+    seed's key only as `seed_key` / `key_matrix` built it. A plain seed's key is built and read exactly as before."""
+    from extended import three_way_fastkeys as F
+    from extended import triggers as T
+
+    off = T.Offer("p16", 3, 930, 0, 925, 930, "market")
+    side = S.issue("h4s_schedule_side")
+    for hist, c, start in ((1, 0, 0), (0, 5, 0), (0, 0, 7), (1, 5, 7)):
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            T.coin_key(T.CoinUnit(side, S.PARTS["H4-S"], hist, c, start), off)
+        with pytest.raises(S.ProvenanceRefused, match="m-9"):
+            T.coin_side(T.CoinUnit(side, S.PARTS["H4-S"], hist, c, start), off)
+    ok = T.CoinUnit(side, S.PARTS["H4-S"], 0, 0, 0)
+    key = T.coin_key(ok, off)
+    assert key == K.Unit(side, S.PARTS["H4-S"], 0, 0, 0).coin_key(T.moment(off), K.SIDE) and isinstance(key, K.Key)
+    assert T.coin_uniform(key) == K.uniforms(key)[0]
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        T.coin_key(T.CoinUnit(SEED, S.PARTS["D1"], 0, 0, 0), off)              # the tests' seed in D1
+    with pytest.raises(S.ProvenanceRefused, match="not issued"):
+        T.coin_key(T.CoinUnit(int(S.issue("h3d_coins")), S.PARTS["D1"], 0, 0, 0), off)   # an unissued block value
+    hand = [int(side), 3, S.PARTS["H4-S"], 1, 5, 7, 1, T.moment(off), K.SIDE]   # a hand-built block key
+    for read in (lambda: K.uniforms(hand), lambda: K.grid_indices(hand), lambda: T.coin_uniform(hand),
+                 lambda: F.uniforms(np.array([hand], dtype=np.uint64)), lambda: F.raw_outputs(np.array([hand], np.uint64))):
+        with pytest.raises(S.ProvenanceRefused, match="no provenance"):
+            read()
+    plain = T.CoinUnit(12345, 1, 2, 3, 4)                                     # Stage 2's plain seeds: as before
+    pk = T.coin_key(plain, off)
+    assert type(pk) is list and pk == [12345, T.COIN_TAG, 1, 2, 3, 4, T.UNDERLYING["NQ"], T.moment(off), T.DRAW_SIDE]
+    raw = int(np.random.Philox(np.random.SeedSequence(pk)).random_raw())
+    assert T.coin_uniform(pk) == (2 * (raw >> 12) + 1) * 2.0 ** -53 == K.uniforms(pk)[0]
+    assert F.uniforms(np.array([pk], dtype=np.uint64))[0, 0] == K.uniforms(pk)[0]
+
+
+def test_rt3_no_run_role_draws_at_an_undeclared_index() -> None:
+    """Finding 3 (S1): only the tests' seed may draw at a part index no part declares; every issued run role is refused
+    there (0, one past the last part, the last word), through `seed_key`."""
+    free = (0, max(S.PARTS.values()) + 1, 2 ** 32 - 1)
+    probe = {"history": dict(history=0), "symmetry": dict(history=0, block=0),
+             "coin": dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.SIDE),
+             "plant": dict(history=0, plant=0, replicate=0),
+             "enforce": dict(history=0, seed_index=0, start=0, account=0, request=0)}
+    n = 0
+    for role, (kinds, _) in S.ROLE_USE.items():
+        if role == "tests":
+            continue
+        for kind in sorted(kinds - {"test"}):
+            for pt in free:
+                with pytest.raises(S.ProvenanceRefused, match="m-9"):
+                    K.seed_key(S.issue(role), kind, part=pt, **probe[kind])
+                n += 1
+    assert n >= 3 * (len(S.ROLE_USE) - 1)
+
+
+def test_rt3_a_field_ruled_use_needs_its_fields() -> None:
+    """Finding 3 (S3): a use `FIELD_RULES` fixes is refused when its fields are not given."""
+    with pytest.raises(S.ProvenanceRefused, match="no fields were given"):
+        S.check_use(S.issue("h4s_schedule_side"), "coin", S.PARTS["H4-S"])
+    with pytest.raises(S.ProvenanceRefused, match="no fields were given"):
+        S.check_use(S.issue("h4_sample"), "plant", S.PARTS["H4-U"], None)
+
+
+def test_rt3_a3s_histories_are_a3s_roles_only() -> None:
+    """Finding 3 (S11): A3's histories are drawn under A3's own role (the history null's), held in `ROLE_USE`: no other
+    role draws a history in A3, and the H3-A histories' role is refused there."""
+    with_a3 = [r for r, (kinds, parts) in S.ROLE_USE.items() if "history" in kinds and "A3" in parts]
+    assert with_a3 == ["h3a3_history_null"]
+    with pytest.raises(S.ProvenanceRefused, match="m-9"):
+        K.seed_key(S.issue("h3a_histories"), "history", part=S.PARTS["A3"], history=0)
+    K.seed_key(S.issue("h3a3_history_null"), "history", part=S.PARTS["A3"], history=0)
+
+
+def test_rt4_the_schedule_side_is_a_side_draw_only() -> None:
+    """Finding 4: H4-S's rule fixes the draw kind to the side; a race draw under the schedule side is refused."""
+    assert S.SIDE_DRAW == K.SIDE and S.FIELD_RULES["h4s_schedule_side"][("coin", "H4-S")]["draw_kind"] == K.SIDE
+    u = K.Unit(S.issue("h4s_schedule_side"), S.PARTS["H4-S"], 0, 0, 0)
+    u.coin_key(5, K.SIDE)
+    for dk in (K.RACE, K.WALK, K.MISSED):
+        with pytest.raises(S.ProvenanceRefused, match="only at draw_kind = 1"):
+            u.coin_key(5, dk)
+
+
+def test_rt9_every_field_rule_lies_inside_its_roles_use() -> None:
+    """Finding 9: each rule's role issues, its kind and part lie in the role's `ROLE_USE`, every field is its kind's;
+    a rule given twice is refused, never silently replaced."""
+    for role, rules in S.FIELD_RULES.items():
+        kinds, parts = S.ROLE_USE[role]
+        S.issue(role)
+        for (kind, part), fields in rules.items():
+            assert kind in kinds and part in parts, (role, kind, part)
+            assert set(fields) <= set(K.KEY_KINDS[kind][1]) - {"part"}, (role, fields)
+    assert len(S.FIELD_RULE_ROWS) == sum(len(v) for v in S.FIELD_RULES.values())
+    with pytest.raises(ValueError, match="given twice"):
+        S.field_rules(S.FIELD_RULE_ROWS + (("h3a_histories", "plant", "A1", {"history": 1}),))
+
+
+def test_rt2_the_tests_seeds_test_ids_are_declared() -> None:
+    """Finding 2: the tests' seed draws the `test` kind only at `TEST_IDS`' ids and the note's own id 1."""
+    for tid in (1, *S.TEST_IDS.values()):
+        K.seed_key(SEED, "test", test=tid, replicate=0)
+    for tid in (0, 2, 99, max(S.TEST_IDS.values()) + 1):
+        with pytest.raises(S.ProvenanceRefused, match="test ids"):
+            K.seed_key(SEED, "test", test=tid, replicate=0)

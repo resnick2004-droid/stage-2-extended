@@ -94,7 +94,13 @@ SMALLER_J_KEY = (S.SMALLER_J_REPORT["role"], S.SMALLER_J_REPORT["kind"], S.SMALL
 
 def smaller_j_rng() -> np.random.Generator:
     """H3-A's smaller-J report's one generator: `default_rng` of its declared key (`SMALLER_J_KEY`), drawn through
-    the seed module's role check, which holds every field."""
+    the seed module's role check, which holds every field.
+
+    **How the report threads it** (declared before any outcome; the red team's 805978a finding 8): the report makes
+    **one** generator by one call of this function and threads it through its calls of `three_way_stats.smaller_j` in
+    this fixed order -- the placeholder composites as `declared()` lists them (`P_B` alone, then `TOY_COMPOSITE`), one
+    call a composite, both bounds inside each call in `smaller_j`'s own order -- never a fresh generator a pool, so no
+    two pools share common random numbers and the order above fixes every draw."""
     rep = S.SMALLER_J_REPORT
     return np.random.default_rng(K.seed_key(S.issue(rep["role"]), rep["kind"], part=S.PARTS[rep["part"]],
                                             **rep["fields"]))

@@ -81,6 +81,9 @@ through the same harness and check, must pass).
 | TN | the tests' seed unrestricted again (the gatekeeper's item 5) | `test_gk5_the_tests_seed_draws_in_the_tests_part_only` |
 | FR | the field rules not applied (H4-S, H4-U, the smaller-J report) | `test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report` |
 | FM | `key_matrix` checking a part's fields on its first row only | `test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report` |
+| S1 | every role exempt at an undeclared part index (the red team's 805978a) | `test_rt3_no_run_role_draws_at_an_undeclared_index` |
+| S3 | a field-ruled use given no fields passes | `test_rt3_a_field_ruled_use_needs_its_fields` |
+| S11 | the H3-A histories' role drawing A3's histories too | `test_rt3_a3s_histories_are_a3s_roles_only` |
 
 The red team's U as its driver wrote it (`d.dead` left False) is **an equivalent mutant**: the denied copies are replaced
 by `_replace_accounts` whatever their flag, so no test can kill it; U here is the law-changing form.
@@ -103,6 +106,11 @@ from extended import three_way_seeds as SE
 from extended import three_way_stats as ST
 
 
+#: the provenance marker classes (`three_way_keys.Key`, `three_way_fastkeys.KeyMatrix`): bound to the real module's
+#: like its exception classes, so a mutant's keys are the real readers' (the red team's 805978a finding 1)
+MARKERS = ("Key", "KeyMatrix")
+
+
 def _mutant(module: types.ModuleType, old: str, new: str) -> types.ModuleType:
     src = open(module.__file__, encoding="utf-8").read()
     assert src.count(old) == 1, f"the mutation's text must match exactly once in {module.__name__}: {old!r}"
@@ -116,6 +124,9 @@ def _mutant(module: types.ModuleType, old: str, new: str) -> types.ModuleType:
     for name, obj in vars(module).items():                 # rm-1: the real module's exception classes
         if isinstance(obj, type) and issubclass(obj, BaseException) and obj.__module__ == module.__name__:
             m.__dict__[name] = obj
+    for name in MARKERS:                                   # the real key markers, so the real readers accept them
+        if name in vars(module):
+            m.__dict__[name] = vars(module)[name]
     return m
 
 
@@ -331,6 +342,15 @@ MUTANTS = {
     "FM": (F, "                S.check_use(seed, kind, int(pt), {nm: set(np.unique(c.ravel()[rows]).tolist())",
            "                S.check_use(seed, kind, int(pt), {nm: {int(c.ravel()[rows][0])}", ("key_matrix",),
            ("tests.test_three_way_keys", "test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report"), ""),
+    "S1": (SE, '    if part is not None and seed.role == "tests" and int(part) not in names:',
+           "    if part is not None and int(part) not in names:", ("check_use",),
+           ("tests.test_three_way_keys", "test_rt3_no_run_role_draws_at_an_undeclared_index"), ""),
+    "S3": (SE, "    if fields is None:\n        raise ProvenanceRefused(",
+           "    if fields is None:\n        return\n        raise ProvenanceRefused(", ("check_use",),
+           ("tests.test_three_way_keys", "test_rt3_a_field_ruled_use_needs_its_fields"), ""),
+    "S11": (SE, '    "h3a_histories": (frozenset({"history", "symmetry", "plant"}), frozenset({"A1", "A2", "A4"})),',
+            '    "h3a_histories": (frozenset({"history", "symmetry", "plant"}), frozenset({"A1", "A2", "A3", "A4"})),',
+            ("ROLE_USE",), ("tests.test_three_way_keys", "test_rt3_a3s_histories_are_a3s_roles_only"), ""),
 }
 
 

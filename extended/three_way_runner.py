@@ -44,6 +44,7 @@ import numpy as np
 from extended import three_way_journey as J
 from extended import three_way_keys as K
 from extended import three_way_redraw as RD
+from extended import three_way_seeds as S
 
 BASELINES = ("naive_coin", "p14", "p15", "p16")
 
@@ -82,6 +83,11 @@ class Plan:
     held_out_declaration: str | None = None
 
     def __post_init__(self) -> None:
+        if int(self.part) not in S.PARTS.values():          # the red team's 805978a finding 2
+            raise S.ProvenanceRefused(f"REFUSED (m-9): a plan's part is a declared part (three_way_seeds.PARTS), "
+                                      f"not {self.part}")
+        if getattr(self.seed, "role", None) == "tests" and int(self.part) != S.PARTS["tests"]:
+            raise S.ProvenanceRefused("REFUSED (m-9): the tests' seed plans only in the tests' part")
         object.__setattr__(self, "starts", tuple(int(s) for s in self.starts))
         object.__setattr__(self, "seed_indices", tuple(int(c) for c in self.seed_indices))
         if len(set(self.starts)) != len(self.starts) or len(set(self.seed_indices)) != len(self.seed_indices):

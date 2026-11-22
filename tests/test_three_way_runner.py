@@ -1048,3 +1048,17 @@ def test_note4_baselines_alone_with_a_design_sharing_a_moment() -> None:
         assert side_b[name] == side_p[name], name
     assert g_p.keys() == g_b.keys() | g_d.keys()
     assert g_b.keys() & g_d.keys()                                     # the shared moments drew the same keys
+
+
+
+def test_rt2_a_plan_takes_a_declared_part_and_the_tests_seed_its_own() -> None:
+    """The red team's 805978a finding 2: a plan refuses a part `PARTS` does not declare, and the tests' seed in any
+    part but the tests'."""
+    for bad in (0, max(S.PARTS.values()) + 1, 2 ** 20):
+        with pytest.raises(S.ProvenanceRefused, match="declared part"):
+            plan(part=bad)
+    for part in ("A1", "D1", "H4-T"):
+        with pytest.raises(S.ProvenanceRefused, match="tests' part"):
+            plan(part=S.PARTS[part])
+    plan(seed=S.issue("h3a_coins"), part=S.PARTS["A1"])
+    plan()

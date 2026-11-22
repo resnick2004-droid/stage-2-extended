@@ -8,7 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 #: a pinned declaration: a family (`F-nn`), from E-025 a described reading (`RD-nn`, E-023 (1): declared and pinned,
 #: never carried), and a heavy-queue declaration (`H<n>_<name>`, H3's text on, the gatekeeper's pin condition)
-PIN = re.compile(r"`(prereg/(?:(?:F|RD)-\d+|H\d+_)[^`]*\.md)` sha256 `([0-9a-f]{64})`")
+PIN = re.compile(r"`(prereg/(?:(?:F|RD)-\d+|H\d+_)[^`/]*\.md)` sha256 `([0-9a-f]{64})`")
+#: a declaration awaiting its pin row (its text final on a branch, its row the lead's): listed here until pinned
+AWAITING_PIN = ("prereg/H3_three_way.md",)
 
 
 def test_the_pin_grammar_reads_every_kind_of_declaration():
@@ -60,3 +62,25 @@ def test_every_pinned_playbook_declaration_matches_its_hash():
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == want, rel
+
+
+
+def test_every_pinnable_declaration_is_pinned_or_awaiting_its_row():
+    """The red team's 805978a finding 5: every `prereg/*.md` that is not a draft (`DRAFT_`) or a template
+    (`TEMPLATE_`) is pinned in DECISIONS.md by the grammar above, or listed in `AWAITING_PIN`; every pinnable name
+    matches the grammar (so H3-D's later text, `prereg/H3_three_way_deciding.md`, is read when pinned); and no pin
+    path climbs out of `prereg/`."""
+    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    pinned = {rel for rel, _ in PIN.findall(log)}
+    for rel in pinned:
+        assert ".." not in rel and rel.count("/") == 1, rel
+    files = sorted(f"prereg/{p.name}" for p in (ROOT / "prereg").glob("*.md")
+                   if not p.name.startswith(("DRAFT_", "TEMPLATE_")))
+    for rel in files:
+        assert PIN.fullmatch(f"`{rel}` sha256 `{'0' * 64}`"), f"{rel} is not a name the pin grammar reads"
+    missing = [rel for rel in files if rel not in pinned and rel not in AWAITING_PIN]
+    assert not missing, f"declarations neither pinned nor awaiting their row: {missing}"
+    h = "0" * 64
+    assert PIN.fullmatch(f"`prereg/H3_three_way_deciding.md` sha256 `{h}`")
+    for bad in ("prereg/H3_x/../F-01_y.md", "prereg/F-01_a/b.md", "prereg/H3_../x.md"):
+        assert not PIN.fullmatch(f"`{bad}` sha256 `{h}`"), bad

@@ -103,6 +103,8 @@ import numpy as np
 import pandas as pd
 
 from extended import lever_space as LS
+from extended import three_way_keys as TK
+from extended import three_way_seeds as TS
 from extended import walker as W
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -922,9 +924,16 @@ def moment(offer: Offer) -> int:
 
 def coin_key(unit: CoinUnit, offer: Offer, draw_kind: int = DRAW_SIDE) -> list[int]:
     """[seed, 3, part, history, seed index, start, underlying, moment, draw kind]: refused when the seed is not
-    positive, an index is negative, or any word is at or above 2^32."""
+    positive, an index is negative, or any word is at or above 2^32. **A seed of the three-way seed module's blocks**
+    (`three_way_seeds.in_block`) is built only through `three_way_keys.seed_key` -- provenance, role and field rules
+    checked, the same words -- so no block stream is drawn here unchecked (the red team's 805978a finding 1); every
+    other seed (Stage 2's P-16 path) is built exactly as before."""
     if unit.underlying not in UNDERLYING:
         raise ValueError(f"unknown underlying {unit.underlying!r}")
+    if TS.in_block(unit.seed):
+        return TK.seed_key(unit.seed, "coin", part=int(unit.part), history=int(unit.history),
+                           seed_index=int(unit.seed_index), start=int(unit.start),
+                           underlying=UNDERLYING[unit.underlying], moment=moment(offer), draw_kind=int(draw_kind))
     vals = [int(unit.part), int(unit.history), int(unit.seed_index), int(unit.start), UNDERLYING[unit.underlying],
             moment(offer), int(draw_kind)]
     if int(unit.seed) <= 0 or any(v < 0 for v in vals):
@@ -940,7 +949,9 @@ def key_state(key: Sequence[int], words: int = 4) -> tuple[int, ...]:
 
 
 def coin_uniform(key: Sequence[int]) -> float:
-    """The key's uniform on the symmetric grid (2 i + 1) 2^-53: i the top 52 bits of Philox's first raw output."""
+    """The key's uniform on the symmetric grid (2 i + 1) 2^-53: i the top 52 bits of Philox's first raw output; a
+    block seed's key only as `three_way_keys.seed_key` built it."""
+    TK.check_built(key)
     raw = int(np.random.Philox(np.random.SeedSequence(list(key))).random_raw())
     return (2 * (raw >> 12) + 1) * 2.0 ** -53
 

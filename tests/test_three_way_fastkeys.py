@@ -39,6 +39,17 @@ def _scalar_raw(M: np.ndarray, n: int) -> np.ndarray:
                     dtype=np.uint64)
 
 
+#: a seed outside every block, for the `test` kind's whole word range (the tests' seed draws only its declared test
+#: ids; the generator's law does not read the seed's provenance)
+PLAIN_SEED = 4242
+
+
+def _key(M: np.ndarray, j: int, kind: str = "coin"):
+    """Row j of a block seed's matrix, rebuilt through `seed_key` (a block key is read only as `seed_key` built it)."""
+    names = K.KEY_KINDS[kind][1]
+    return K.seed_key(SEED, kind, **dict(zip(names, (int(x) for x in M[j][2:]))))
+
+
 def _fields(rng: np.random.Generator, kind: str, n: int) -> dict[str, np.ndarray]:
     _, names = K.KEY_KINDS[kind]
     f = {nm: rng.integers(0, W, n, dtype=np.int64) for nm in names}
@@ -57,14 +68,15 @@ def test_1e5_random_coin_keys_every_draw_kind() -> None:
     assert np.array_equal(u, K.to_uniform(raw >> np.uint64(12))) and np.all(u + ut == 1.0)
     assert set(np.unique(M[:, 8]).tolist()) == set(K.DRAW_KINDS.values())
     for j in range(0, N, 997):                                         # the scalar wrapper itself, key by key
-        assert np.array_equal(u[j], K.uniforms([int(x) for x in M[j]], 4))
-        assert np.array_equal(ut[j], K.uniforms([int(x) for x in M[j]], 4, twin=True))
+        assert np.array_equal(u[j], K.uniforms(_key(M, j), 4)) and _key(M, j) == [int(x) for x in M[j]]
+        assert np.array_equal(ut[j], K.uniforms(_key(M, j), 4, twin=True))
 
 
 @pytest.mark.parametrize("kind", ["enforce", "history", "symmetry", "plant", "test"])
 def test_1e5_random_keys_of_every_other_kind(kind: str) -> None:
     n = N if kind == "enforce" else N // 10
-    M = F.key_matrix(SEED, kind, **_fields(_rng(1 + list(K.KEY_KINDS).index(kind)), kind, n))
+    M = F.key_matrix(PLAIN_SEED if kind == "test" else SEED, kind,
+                     **_fields(_rng(1 + list(K.KEY_KINDS).index(kind)), kind, n))
     assert np.array_equal(F.raw_outputs(M, 1), _scalar_raw(M, 1))
     if kind == "enforce":
         assert int(M[0, 1]) == 6
@@ -100,7 +112,7 @@ def test_every_output_a_walk_reads() -> None:
     for n in (5, 64, 1024):
         u = F.uniforms(M, n)
         for j in range(0, 600, 29):
-            key = [int(x) for x in M[j]]
+            key = _key(M, j)
             assert np.array_equal(u[j], K.uniforms(key, n)) and np.array_equal(F.uniforms(M[j:j + 1], n, True)[0],
                                                                             K.uniforms(key, n, True))
     assert np.array_equal(F.raw_outputs(M[:200], 1024), _scalar_raw(M[:200], 1024))

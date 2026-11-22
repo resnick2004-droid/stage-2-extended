@@ -84,7 +84,20 @@ def seed_key(seed: int, kind: str, **fields: int) -> list[int]:
                                       f"H4's) but was not issued by "
                                       "extended.three_way_seeds (a literal or a derived value)")
         S.check_use(seed, kind, fields.get("part"), fields)            # m-9: each seed draws only its role
-    return [int(seed), tag, *vals]
+    return Key([int(seed), tag, *vals])
+
+
+class Key(list):
+    """A key `seed_key` built (provenance, role and fields checked): the one form in which a block seed's key is read
+    (`uniforms`, `grid_indices`; the red team's 805978a finding 1). Equal to the plain list of its words."""
+
+
+def check_built(key: Sequence[int]) -> None:
+    """Refused (`ProvenanceRefused`) when a key whose first word is a block seed was not built by `seed_key` -- a
+    hand-built list reads no block stream."""
+    if len(key) and S.in_block(int(key[0])) and not isinstance(key, Key):
+        raise S.ProvenanceRefused("REFUSED: a key of a block seed is read only as `three_way_keys.seed_key` built it "
+                                  "(a hand-built key list has no provenance)")
 
 
 def key_state(key: Sequence[int], words: int = 4) -> tuple[int, ...]:
@@ -93,7 +106,9 @@ def key_state(key: Sequence[int], words: int = 4) -> tuple[int, ...]:
 
 
 def grid_indices(key: Sequence[int], n: int = 1) -> np.ndarray:
-    """The first n grid indices i of the key's stream (the top 52 bits of Philox's raw outputs)."""
+    """The first n grid indices i of the key's stream (the top 52 bits of Philox's raw outputs); a block seed's key
+    only as `seed_key` built it (`check_built`)."""
+    check_built(key)
     raw = np.random.Philox(np.random.SeedSequence([int(k) for k in key])).random_raw(int(n))
     return np.asarray(raw, dtype=np.uint64) >> np.uint64(12)
 

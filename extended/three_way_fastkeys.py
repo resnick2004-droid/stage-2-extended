@@ -160,10 +160,25 @@ def philox4x64(ctr: np.ndarray, key: np.ndarray) -> np.ndarray:
     return np.stack([c0, c1, c2, c3], axis=1)
 
 
+class KeyMatrix(np.ndarray):
+    """A key matrix `key_matrix` built (provenance, role and fields checked): the one form in which block seeds' keys
+    are read (`raw_outputs`; the red team's 805978a finding 1)."""
+
+
+def check_built(keys: np.ndarray) -> None:
+    """Refused (`ProvenanceRefused`) when a matrix holding a block seed in its first column was not built by
+    `key_matrix`."""
+    a = np.asarray(keys)
+    if a.size and not isinstance(keys, KeyMatrix) and any(S.in_block(int(v)) for v in np.unique(a.reshape(-1, a.shape[-1])[:, 0])):
+        raise S.ProvenanceRefused("REFUSED: a block seed's key matrix is read only as `three_way_fastkeys.key_matrix` "
+                                  "built it (a hand-built matrix has no provenance)")
+
+
 def raw_outputs(keys: np.ndarray, n: int = 1, first: int = 0) -> np.ndarray:
     """Raw 64-bit outputs first .. first + n - 1 of `Philox(SeedSequence(row))` for every row (n_keys x n uint64):
     output j is word j mod 4 of the block at counter 1 + j // 4 (the generator is counter-based, so any range is read
-    directly; `first = 0` is numpy's own stream from its start)."""
+    directly; `first = 0` is numpy's own stream from its start). A block seed's matrix only as `key_matrix` built it."""
+    check_built(keys)
     st = seed_state32(keys, 4)
     pk = st.view(U64) if st.flags.c_contiguous else np.ascontiguousarray(st).view(U64)   # generate_state(2, uint64)
     rows = pk.shape[0]
@@ -200,15 +215,20 @@ def key_matrix(seed: int, kind: str, **fields) -> np.ndarray:
                                   f"H4's) but was not issued by "
                                   "extended.three_way_seeds")
     cols = np.broadcast_arrays(*[np.asarray(fields[nm], dtype=np.int64) for nm in names])
+    for c in cols:                                                     # the words first, then the role (as seed_key)
+        if (c < 0).any() or (c >= K.WORD).any():
+            raise ValueError("every index is non-negative and every word below 2^32")
     if S.in_block(seed):                                               # m-9: each seed draws only its role
+        ruled = seed.role in S.FIELD_RULES or seed.role == "tests"      # the value sets only where a rule reads them
         if "part" in fields:
             part_col = cols[names.index("part")].ravel()
             for pt in np.unique(part_col):
                 rows = part_col == pt
                 S.check_use(seed, kind, int(pt), {nm: set(np.unique(c.ravel()[rows]).tolist())
-                                                  for nm, c in zip(names, cols)})
+                                                  for nm, c in zip(names, cols)} if ruled else None)
         else:
-            S.check_use(seed, kind, None, {nm: set(np.unique(c).tolist()) for nm, c in zip(names, cols)})
+            S.check_use(seed, kind, None, {nm: set(np.unique(c).tolist()) for nm, c in zip(names, cols)}
+                        if ruled else None)
     n = cols[0].size
     M = np.empty((n, 2 + len(names)), np.int64)
     M[:, 0], M[:, 1] = int(seed), tag
@@ -216,7 +236,7 @@ def key_matrix(seed: int, kind: str, **fields) -> np.ndarray:
         M[:, 2 + j] = c.ravel()
     if (M[:, 2:] < 0).any() or (M[:, 2:] >= K.WORD).any():
         raise ValueError("every index is non-negative and every word below 2^32")
-    return M.astype(U64)
+    return M.astype(U64).view(KeyMatrix)
 
 
 def coin_uniforms(seed: int, part: int, history: int, seed_index, start, moment, draw_kind, n: int = 1,

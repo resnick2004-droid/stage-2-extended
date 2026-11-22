@@ -134,13 +134,30 @@ ROLE_USE: dict[str, tuple[frozenset, frozenset] | None] = {
 SMALLER_J_REPORT: dict = {"role": "h3a_histories", "kind": "plant", "part": "A1",
                           "fields": {"history": 0, "plant": 0, "replicate": 0}}
 
-#: the uses whose fields are fixed: role -> {(kind, part): {field: its one value}}; a key of that role, kind and part
-#: with any other value is refused (`check_use`)
-FIELD_RULES: dict[str, dict[tuple[str, str], dict[str, int]]] = {
-    "h4s_schedule_side": {("coin", "H4-S"): {"history": 0, "seed_index": 0, "start": 0}},
-    "h4_sample": {("plant", "H4-U"): {"history": 0}},
-    SMALLER_J_REPORT["role"]: {(SMALLER_J_REPORT["kind"], SMALLER_J_REPORT["part"]): dict(SMALLER_J_REPORT["fields"])},
-}
+#: the side draw kind's integer (`three_way_keys.SIDE`; this module imports nothing)
+SIDE_DRAW = 1
+#: the uses whose fields are fixed, one row each: (role, kind, part, {field: its one value}); a key of that role, kind
+#: and part at any other value is refused (`check_use`). H4-S's schedule side is one **side** draw a (session, moment)
+#: (the red team's 805978a finding 4)
+FIELD_RULE_ROWS: tuple[tuple[str, str, str, dict[str, int]], ...] = (
+    ("h4s_schedule_side", "coin", "H4-S", {"history": 0, "seed_index": 0, "start": 0, "draw_kind": SIDE_DRAW}),
+    ("h4_sample", "plant", "H4-U", {"history": 0}),
+    (SMALLER_J_REPORT["role"], SMALLER_J_REPORT["kind"], SMALLER_J_REPORT["part"], dict(SMALLER_J_REPORT["fields"])),
+)
+
+
+def field_rules(rows) -> dict[str, dict[tuple[str, str], dict[str, int]]]:
+    """role -> {(kind, part): {field: value}} from the rows; a (role, kind, part) given twice is refused, so no later
+    row silently replaces an earlier one (the red team's 805978a finding 9)."""
+    out: dict[str, dict[tuple[str, str], dict[str, int]]] = {}
+    for role, kind, part, fields in rows:
+        if (kind, part) in out.get(role, {}):
+            raise ValueError(f"REFUSED: a field rule for ({role}, {kind}, {part}) given twice")
+        out.setdefault(role, {})[(kind, part)] = dict(fields)
+    return out
+
+
+FIELD_RULES: dict[str, dict[tuple[str, str], dict[str, int]]] = field_rules(FIELD_RULE_ROWS)
 
 
 class ProvenanceRefused(RuntimeError):
@@ -187,6 +204,13 @@ def check_use(seed: "RoleSeed", kind: str, part: int | None, fields: dict | None
     if kind not in kinds:
         raise ProvenanceRefused(f"REFUSED (m-9): the {seed.role} seed draws {sorted(kinds)} keys, not {kind!r}")
     if kind == "test":                                      # the one kind with no part: its role's kinds decide
+        if seed.role == "tests" and fields is not None and "test" in fields:
+            ids = fields["test"]
+            got = set(int(x) for x in ids) if isinstance(ids, (set, frozenset, list, tuple)) else {int(ids)}
+            allowed = set(TEST_IDS.values()) | {1}          # this build's ids, and the note's own test's id 1
+            if not got <= allowed:
+                raise ProvenanceRefused(f"REFUSED (m-9): the tests seed's test ids are TEST_IDS' and the note's 1, "
+                                        f"not {sorted(got - allowed)}")
         return
     names = {v: k for k, v in PARTS.items()}
     if part is not None and seed.role == "tests" and int(part) not in names:
@@ -222,5 +246,6 @@ def is_issued(seed: object) -> bool:
 
 __all__ = ["TESTS", "H3_0", "H3A_HISTORIES", "H3A_COINS", "H3A3_HISTORY_NULL", "H3D_HISTORIES", "H3D_COINS",
            "H3D2_HISTORY_NULL", "H3D3_PLANTS", "SPARE", "ROLES", "STATUS", "BLOCK", "H4_ROLES", "H4_STATUS",
-           "H4_BLOCK", "PARTS", "TEST_IDS", "ALL_KINDS", "SMALLER_J_REPORT", "FIELD_RULES",
+           "H4_BLOCK", "PARTS", "TEST_IDS", "ALL_KINDS", "SMALLER_J_REPORT", "SIDE_DRAW", "FIELD_RULE_ROWS",
+           "field_rules", "FIELD_RULES",
            "ROLE_USE", "ProvenanceRefused", "RoleSeed", "issue", "check_use", "in_block", "is_issued"]
