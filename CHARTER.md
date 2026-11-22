@@ -228,7 +228,7 @@ Known entries today:
 - Stage 2 D-626: P-14 fixed as R\* from the whole window.
 - E-203 S-2: P-14's rung map and P-16's mark cutoff resolved on the whole window.
 - Stage 2 D-554: P-16's stop chosen on each block.
-- RD-04 (c): P-14 and P-16 replayed on the late block.
+- RD-04 (c): P-14 and P-16 replayed on the late block -- declared, not run (RD-04 is superseded by RD-10 on the search years, E-272; no `heldout-read` row for any RD runner before NQ's verdict row).
 - RD-05: the late block read as late development.
 - Q-17 and E-201: every user measure read beside the baselines.
 - Stage 2's signal search over the whole window.

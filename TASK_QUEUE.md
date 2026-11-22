@@ -85,15 +85,21 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | queued (E-246) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
-| Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued (E-246) | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
+| Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
 | Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | running (E-251) | Q-168 | light | 0 | E-251 |
-| Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | running (E-251) | E-207 | light | 0 | E-251 |
+| Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | done (E-260) | E-207 | light | 0 | E-251 |
 | Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | running (E-254) | Q-173 | light | 0 | E-254 |
-| Q-195 | T7's label identity (the audit's C1): the admission label re-derived from Stage 2's records on the search years, refusing | wt-har | running (E-255) | E-255 | light, then heavy | 0 | E-255 |
-| Q-196 | Q-172's planted check (the audit's C2): a known exact-run difference planted on synthetic and cut data is found by the count; then the heavy run | wt-user | running (E-256) | E-256 | light, then heavy | 0 | E-256 |
-| Q-197 | The pinned search-year calendar (`results/search_calendar.csv`), bound by sha256 in W42-R1 and H4 | wt-cal | running (E-255) | E-254 | light, then heavy | 0 | E-255 |
+| Q-195 | T7's label identity (the audit's C1): the admission label re-derived from Stage 2's records on the search years, refusing | wt-har | done (E-262) | E-255 | light, then heavy | 0 | E-255 |
+| Q-196 | Q-172's planted check (the audit's C2): a known exact-run difference planted on synthetic and cut data is found by the count; then the heavy run | wt-user | done (E-264) | E-256 | light, then heavy | 0 | E-256 |
+| Q-197 | The pinned search-year calendar (`results/search_calendar.csv`), bound by sha256 in W42-R1 and H4 | wt-cal | done (E-266) | E-254 | light, then heavy | 0 | E-255 |
 | Q-198 | The sizing experiment on the three-way runner (after its follow-up) | wt-three | queued (E-255) | Q-187 | light | 0 | E-255 |
-| Q-199 | The commit line keeps a live waiter's ticket by heartbeat and pid, never drops it by age | wt-report | running (E-255) | Q-174 | light | 0 | E-255 |
+| Q-199 | The commit line keeps a live waiter's ticket by heartbeat and pid, never drops it by age | wt-report | done (E-260) | Q-174 | light | 0 | E-255 |
+| Q-200 | Topstep's lever rows on the per-date sessions (the branch's Q-188b/c) | wt-levels | done (E-261) | E-254 | light | 0 | E-261 |
+| Q-201 | Narrow the reader's `identity` route to the seal (the red team's NOTE-1, READER_Q194): a ruling on the existing identity rows first | lead | queued (E-267) | Q-194 | light | 0 | E-267 |
+| Q-202 | Two heavy pipeline tests red since Q-158 at the latest (`test_q35_openings`, `test_user_spend::test_the_pipeline_on_four_starts`): a failure on record, diagnosed | wt-verify | queued (E-267) | Q-194 | light | 0 | E-267 |
+| Q-203 | Wire A15 (Routing from a design) and A17 (`state_risk`) into the executor, then release the hold | wt-levels | queued (E-261) | Q-200 | light | 0 | E-261 |
+| Q-204 | The isolation defect of `tests/test_archive_queue.py` under xdist | wt-report | running (E-260) | Q-193 | light | 0 | E-260 |
+| Q-205 | The playbook's live path: a declared live calendar and a caller that passes the day's bars | wt-play | queued (E-267) | Q-175 | light | 0 | E-267 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |

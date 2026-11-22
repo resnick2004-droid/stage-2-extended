@@ -107,3 +107,14 @@ def test_every_pinned_calibration_plan_matches_its_hash():
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == want, rel
+
+
+def test_every_pinned_playbook_declaration_matches_its_hash():
+    """From Wave 3.5's corrective cycle 2 (the red team's m-9): a carried design's playbook declaration
+    (`prereg/<design>_playbook.json`, `extended/playbook.py`) is pinned by its sha256 (of its bytes, line ends as LF)
+    in a decision row like a family, and an edit fails here, in the fast tier, not only when it is loaded."""
+    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    pins = re.findall(r"`(prereg/[^`]*_playbook\.json)` sha256 `([0-9a-f]{64})`", log)
+    for rel, want in pins:
+        data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(data).hexdigest() == want, rel
