@@ -1,0 +1,99 @@
+#!/bin/sh
+# Stage 2 Extended's git pre-merge-commit hook (Q-208). Install with `python scripts/install_hooks.py`, which copies
+# this into the hooks directory of `git rev-parse --git-common-dir`, so the main tree and every worktree share it.
+#
+# A clean `git merge` runs no pre-commit, so without this a merge could bring in, untested, a decision log that breaks
+# the reader's hygiene (an unclosed fence, a malformed held-out token) or a changed vendored file. Git runs this hook
+# after the merge is computed and before the merge commit is written, with the work tree and the index holding the
+# merge result. It runs `scripts/premerge_check.py` from the merged tree's root -- a short, deterministic check set,
+# never the fast tier: vendor integrity, the decision log's hygiene (held-out tokens, fences), the pinned declarations
+# and the identity tokens on the real log. Any failure refuses the merge commit, naming the check; the merge is left
+# in progress (fix and `git commit`, which runs pre-commit, or `git merge --abort`).
+#
+# LIGHT: seconds, at most 5 minutes in all (premerge_check.BUDGET_S). It takes no fast-tier slot and no run lock; the
+# next commit's pre-commit fast tier still tests the merged tree in full. A merge with conflicts runs no
+# pre-merge-commit (its `git commit` runs pre-commit); a fast-forward writes no merge commit, so runs no hook.
+#
+# Signals: HUP, INT, QUIT and TERM are trapped -- the check is killed and the hook exits 128+N, which git reads as a
+# refusal (Git for Windows reads a shell killed by a signal as exit 0, Q-161). SIGKILL cannot be trapped: a hook killed
+# outright lets the merge commit through, and only the next commit's fast tier then tests that tree.
+#
+# A tree whose merge result has no scripts/premerge_check.py is refused (merge master), never checked by less.
+# Bypass with `git merge --no-verify` only when you know why, and say so in the merge message.
+
+trap '' PIPE
+CHILD=
+
+kill_tree() {
+    _pid=$1
+    _wp=
+    if [ -r "/proc/$_pid/winpid" ]; then
+        _wp=$(cat "/proc/$_pid/winpid" 2>/dev/null) || _wp=
+    fi
+    if [ -n "$_wp" ] && command -v taskkill >/dev/null 2>&1; then
+        MSYS2_ARG_CONV_EXCL='*' taskkill /T /F /PID "$_wp" >/dev/null 2>&1 || :
+    fi
+    kill -TERM "$_pid" 2>/dev/null || :
+}
+
+on_signal() {
+    trap '' HUP INT QUIT TERM
+    echo "pre-merge-commit: killed by SIG$1 before the checks returned; the merge commit is REFUSED (exit $2)." >&2 || :
+    if [ -n "$CHILD" ]; then
+        kill_tree "$CHILD"
+    fi
+    exit "$2"
+}
+
+trap 'on_signal HUP 129' HUP
+trap 'on_signal INT 130' INT
+trap 'on_signal QUIT 131' QUIT
+trap 'on_signal TERM 143' TERM
+
+run_child() {
+    "$@" &
+    CHILD=$!
+    _rc=0
+    wait "$CHILD" || _rc=$?
+    CHILD=
+    return "$_rc"
+}
+
+TOP=$(git rev-parse --show-toplevel) || {
+    echo "pre-merge-commit: cannot find the work tree this merge is made in; the merge commit is REFUSED." >&2
+    exit 1
+}
+# Inherited, git's variables would point a nested git (a check's) at this merge's index; the checks see a shell's.
+unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+cd "$TOP" || exit 1
+
+pick_python() {
+    for candidate in "$PYTHON" python3 python py; do
+        [ -n "$candidate" ] || continue
+        if "$candidate" -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PYTHON=$(pick_python) || {
+    echo "pre-merge-commit: no working python interpreter found (tried \$PYTHON, python3, python, py); REFUSED." >&2
+    exit 1
+}
+export PYTHONDONTWRITEBYTECODE=1
+
+if [ ! -f scripts/premerge_check.py ]; then
+    echo "pre-merge-commit: scripts/premerge_check.py is missing from the merge result; merge master (Q-208) and merge again." >&2
+    exit 1
+fi
+
+echo "pre-merge-commit: the merge result's checks (light, no fast-tier slot), tree = $TOP, python = $PYTHON"
+run_child "$PYTHON" scripts/premerge_check.py
+RC=$?
+if [ "$RC" -ne 0 ]; then
+    echo "pre-merge-commit: REFUSED (exit $RC)." >&2
+    exit 1
+fi
+exit 0

@@ -42,7 +42,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
-HOOK_NAMES = ("pre-commit", "commit-msg", "post-commit")
+HOOK_NAMES = ("pre-commit", "commit-msg", "post-commit", "pre-merge-commit")   # Q-208 added the last
 LIMIT = 120                                     # every subprocess here is time-limited
 
 

@@ -14,6 +14,7 @@ results/*.csv -text
 scripts/pre-commit text eol=lf
 scripts/commit-msg text eol=lf
 scripts/post-commit text eol=lf
+scripts/pre-merge-commit text eol=lf
 
 # The read ledger of the judged block (Q-32) is append-only and compared line by line across commits: LF everywhere,
 # so a checkout never rewrites its lines.

@@ -1,4 +1,5 @@
-"""Install `scripts/pre-commit`, `scripts/commit-msg` and `scripts/post-commit` as the repository's git hooks.
+"""Install `scripts/pre-commit`, `scripts/commit-msg`, `scripts/post-commit` and `scripts/pre-merge-commit` as the
+repository's git hooks.
 
     python scripts/install_hooks.py
 
@@ -7,7 +8,10 @@ one at a time on the machine under the fast-tier lock (`scripts/fasttier_lock.py
 by the commit's tree only after the fast tier itself returned 0; the commit-msg hook refuses a commit whose pre-commit
 started for that tree and recorded no verdict (a hook killed outright, which git on Windows reads as a pass; Q-161); the
 post-commit hook warns about a commit without a verdict (`NO VERDICT`, also `scripts/check_verdicts.py <range>`) and
-pushes each commit to the private remote `origin` in the background (E-004).
+pushes each commit to the private remote `origin` in the background (E-004). The pre-merge-commit hook (Q-208) runs
+`scripts/premerge_check.py` on a clean merge's result before its commit is written -- vendor integrity, the decision
+log's hygiene, the pinned declarations, the identity tokens on the real log -- light (seconds, at most 5 minutes, no
+fast-tier slot) and refusing on any failure, naming the check.
 
 **Where.** Into `<git rev-parse --git-common-dir>/hooks/` -- the main repository's `.git/hooks/` -- which every linked
 worktree (`%LOCALAPPDATA%\\stage2-extended-wt\\<name>`) and detached clean-run checkout shares, so one install covers
@@ -34,7 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 #: The hooks installed, each copied from `scripts/<name>` into the common git directory's `hooks/`.
-HOOKS = ("pre-commit", "commit-msg", "post-commit")
+HOOKS = ("pre-commit", "commit-msg", "post-commit", "pre-merge-commit")
 
 
 def _git(*args: str) -> str | None:
@@ -170,6 +174,9 @@ def main() -> int:
     print("  inside its slot the fast tier runs in parallel (scripts/fasttier_xdist.py, Q-193): 1 to 4 pytest-xdist "
           "workers from the memory free at that moment, the count checked against the serial collection, the tests "
           "that failed in parallel rerun serially; S2X_FASTTIER_WORKERS=1 runs it serially")
+    print("  before every merge commit (a clean `git merge`): scripts/premerge_check.py on the merge result -- vendor "
+          "integrity, the decision log's hygiene, the pinned declarations, the identity tokens on the real log; light "
+          "(no fast-tier slot, at most 5 min), refusing on any failure (Q-208)")
     print(f"  after every commit on a branch: a background push to `origin` (log: {gd / 'push.log'})")
     print("bypass with `git commit --no-verify` only when you know why, and say so in the message")
     return 0
