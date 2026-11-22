@@ -85,7 +85,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | queued (E-246) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
-| Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued (E-246) | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
+| Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
 | Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | running (E-251) | Q-168 | light | 0 | E-251 |
 | Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | done (E-260) | E-207 | light | 0 | E-251 |
 | Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | running (E-254) | Q-173 | light | 0 | E-254 |
