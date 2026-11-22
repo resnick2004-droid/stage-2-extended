@@ -98,8 +98,15 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-201 | Narrow the reader's `identity` route to the seal (the red team's NOTE-1, READER_Q194): a ruling on the existing identity rows first | lead | queued (E-267) | Q-194 | light | 0 | E-267 |
 | Q-202 | Two heavy pipeline tests red since Q-158 at the latest (`test_q35_openings`, `test_user_spend::test_the_pipeline_on_four_starts`): a failure on record, diagnosed | wt-verify | queued (E-267) | Q-194 | light | 0 | E-267 |
 | Q-203 | Wire A15 (Routing from a design) and A17 (`state_risk`) into the executor, then release the hold | wt-levels | queued (E-261) | Q-200 | light | 0 | E-261 |
-| Q-204 | The isolation defect of `tests/test_archive_queue.py` under xdist | wt-report | running (E-260) | Q-193 | light | 0 | E-260 |
+| Q-204 | The isolation defect of `tests/test_archive_queue.py` under xdist | wt-report | done (E-273) | Q-193 | light | 0 | E-260 |
 | Q-205 | The playbook's live path: a declared live calendar and a caller that passes the day's bars | wt-play | queued (E-267) | Q-175 | light | 0 | E-267 |
+| Q-206 | A guard on bare-name imports of the four shared script names (the Q-204 root cause) | wt-report | queued (E-273) | Q-204 | light | 0 | E-273 |
+| Q-207 | The main tree's tickets first in the fast-tier line | wt-report | done (E-273) | Q-199 | light | 0 | E-273 |
+| Q-208 | The pre-merge-commit hook (a merge commit verified like any other) | wt-report | running (E-273) | Q-207 | light | 0 | E-273 |
+| Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | queued (E-274) | Q-208 | light | 0 | E-274 |
+| Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | running (E-274) | - | light | 0 | E-274 |
+| Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | running (E-274) | - | light | 0 | E-274 |
+| Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | queued (E-275) | Q-179 | light | 0 | E-275 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |

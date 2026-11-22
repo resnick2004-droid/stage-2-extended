@@ -56,9 +56,25 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
    held by ..." is the guard working, not a pass.
 3. Light work runs freely. Heavy work takes the run lock (skill `run-lock`) after checking memory, is watched to its
    exit, and releases the lock whatever the outcome.
-4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; small commits; **never `--no-verify`,
+4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; **never `--no-verify`,
    for any reason** (E-060): if memory is short for the hook's fast tier, wait (`python scripts/run_lock.py status`
    shows what is free) and commit when it can run. The post-commit hook pushes the branch to the private remote.
+   **One hook commit per hand-back** (E-274): every commit costs the machine's shared line about 40 minutes, so
+   iterate on your own targeted tests and commit once, when the item is done -- not after each fix. A clean
+   `git merge master` runs no hook and is free; merge master at the start, and again just before the one commit.
+   **Commit-message and log files live outside the worktree** (under your own name in the scratchpad): files in the
+   tree are scanned by the seed guard and the typed-figure checks, and a message naming a seed refuses a 40-minute run.
+   **Never end your turn while your commit is in the line**: wait on it in the background to its exit, then hand back.
+   **Pre-flight before the one commit** (E-274): run your own tests AND the always-on guards with a time limit --
+   `timeout 900 python -m pytest -q -o addopts= -p no:cacheprovider tests/test_heavy_marker_guard.py
+   tests/test_heavy_guard.py tests/test_seed_derivation_guard.py tests/test_identity_tokens.py
+   tests/test_declarations_fixed.py tests/test_git_scan.py tests/test_trace_check.py tests/test_vendor_integrity.py
+   tests/test_reader*.py <your test files>` -- and commit only when it is green. Every refusal on 2026-11-21/22 (the
+   seed guard twice, the identity tokens, the heavy marker guard, a worker's own new test) was one of these, each
+   costing a 40-minute run of the shared line for a check that takes a minute or two.
+   **Never watch a log with `tail -f`** (E-274): on Windows it outlives its shell -- 187 orphaned `tail`/`grep` pairs
+   from 11-14 on were found holding memory on 2026-11-22. Wait with a loop that exits:
+   `until grep -q "PATTERN" "$LOG"; do sleep 30; done`.
 5. Two corrective cycles at most on one failure (diagnosed by the failure protocol). A third is the lead's decision:
    stop and hand back.
 
