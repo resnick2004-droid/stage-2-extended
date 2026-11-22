@@ -46,6 +46,7 @@ import pytest
 from scipy import stats
 
 from extended import reader
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194c: the joint held-out test, ledgered, and its verdict)
 
 ROOT = Path(__file__).resolve().parent.parent
 PREREG = ROOT / "prereg"
@@ -346,7 +347,8 @@ def test_the_label_reads_the_three_regular_shapes_only_and_is_not_constant():
 
 
 def draft_path() -> Path:
-    found = sorted(PREREG.glob("DRAFT_F-P_payout_policy.md")) + sorted(PREREG.glob("RD-*payout*.md"))
+    # narrowed from RD-*payout*.md (O-7): RD-07's pinned name, RD-07_payout_policy_search_years.md, holds "payout" too
+    found = sorted(PREREG.glob("DRAFT_F-P_payout_policy.md")) + sorted(PREREG.glob("RD-*_payout_policy.md"))
     assert len(found) == 1, f"exactly one payout-policy declaration expected under prereg/, found {found}"
     return found[0]
 
@@ -442,8 +444,9 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
     """Section 5 item 6 and section 14 (E-041, E-053): this draft's own text, pinned as `prereg/RD-02_payout_policy.md`
     by a synthetic row in a temporary tree, authorises the engine's whole-window reads under each purpose of its line,
     inside a (simulated) clean run, ledgered as a described reading; another run under the same purpose is refused,
-    unless `repeat=` names a row naming the file -- one row, one more run. Q-158: the synthetic log's E-992 carries
-    NQ's held-out verdict token, which a described reading's judged read now needs (the reader's held-out rule 4)."""
+    unless `repeat=` names a row naming the file -- one row, one more run. Q-158, Q-194c: the tree carries NQ's
+    joint held-out test, its read ledgered, and its verdict row, which a described reading's judged read needs (the
+    reader's held-out rule 4)."""
     rel = "prereg/RD-02_payout_policy.md"
     body = text()
     pin = hashlib.sha256(body.encode("utf-8")).hexdigest()
@@ -454,8 +457,7 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
     (t / "DECISIONS.md").write_text(
         "# Decisions (synthetic, Q-92)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
         f"| E-990 | 2026-11-16 | **RD-02 declared**, `{rel}` sha256 `{pin}` | test |\n"
-        f"| E-991 | 2026-11-16 | **A rerun of RD-02** (`{rel}`) after a synthetic restart | test |\n"
-        "| E-992 | 2026-11-16 | heldout-verdict: NQ F-13 -- NQ's held-out test has its verdict | test |\n",
+        f"| E-991 | 2026-11-16 | **A rerun of RD-02** (`{rel}`) after a synthetic restart | test |\n",
         encoding="utf-8")
     (t / ".gitignore").write_text("vendor/stage2/data/\nresults/\n", encoding="utf-8")
     for f in ENGINE_FILES:
@@ -465,6 +467,9 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
                  ("config", "user.name", "t"), ("config", "core.autocrlf", "false"), ("add", "-A"),
                  ("commit", "-q", "-m", "the pinned reading")):
         _git(t, *args)
+    # Q-194c: NQ's joint held-out test read through the reader (ledgered) and its verdict row, which a described
+    # reading's judged read needs (rule 4)
+    VR.settle(t, [t / ENGINE_FILES[0]])
     monkeypatch.setattr(reader, "RUNS_DIR", runs)
     monkeypatch.setenv(reader.CLEAN_RUN_ENV, t.name)
     monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@1")

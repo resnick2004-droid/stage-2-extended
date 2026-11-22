@@ -66,7 +66,10 @@ DECLARED_USES = ("prereg/DRAFT_H4_rebaseline.md", "extended/three_way_seeds.py")
 #: H4's declared result files (section 16's outputs): only their sidecar manifests, whose seed maps record the block
 _B = r"(naive_coin|p14|p15|p16)"
 DECLARED_PATTERNS = (re.compile(rf"^results/h4_(units_{_B}|readings_{_B}|trades_{_B}|w42_input|supply|as_traded|identities)"
-                                r"\.csv\.manifest\.json$"),)
+                                r"\.csv\.manifest\.json$"),
+                     # the review notes on the record (`docs/reviews/`), which cite the declared block when they read
+                     # it; prose that draws nothing (the runtime guard refuses any seed the module did not issue)
+                     re.compile(r"^docs/reviews/[A-Za-z0-9_.\-]+\.md$"))
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
@@ -104,7 +107,7 @@ UNREAD_WORDS = ("never read", "refus", "unread", "held-out years", "confirmation
 FINDINGS = tuple(f"B-{i}" for i in range(1, 8)) + tuple(f"m-{i}" for i in range(1, 8))
 FINDINGS_C2 = ("RB-1", "RB-2") + tuple(f"rm-{i}" for i in range(1, 7)) + tuple(f"rn-{i}" for i in range(1, 5))
 FINDINGS_C3 = ("RC-1", "RC-2") + tuple(f"rc-{i}" for i in range(3, 14)) + ("rn-a to rn-e",)
-FINDINGS_T4 = tuple(f"F4-{i}" for i in range(1, 15)) + ("N4-1 to N4-3",)
+FINDINGS_T4 = tuple(f"F4-{i}" for i in range(1, 15)) + ("N4-1 to N4-3", "C3-2 (the firm path's review)")
 
 
 def _lf(p: Path) -> str:
@@ -226,7 +229,7 @@ def test_the_seed_table(text: str) -> None:
     assert "never the seed plus an offset (E-171)" in flat
     assert ('`PARTS["H4-0"] == 10`, `PARTS["H4-B"] == 11`, `PARTS["H4-T"] == 12` (H4\'s tests), '
             '`PARTS["H4-S"] == 13` (the coin\'s schedule side) and `PARTS["H4-U"] == 14` (the audit sample)') in flat
-    assert "**as registered at wt/wt-three 805978a**" in flat and "**`h4_sample`** (status `audit sample`" in flat
+    assert "**as registered at wt/wt-three f454d8d**" in flat and "**`h4_sample`** (status `audit sample`" in flat
     assert "**The scans are a guard, not the defence** (m-7)" in flat and "`ProvenanceRefused`" in flat
 
 
@@ -1263,7 +1266,7 @@ def test_appendix_f_answers_every_finding(text: str) -> None:
     assert ids == FINDINGS_C3
 
 
-SEED_MODULE_COMMIT = "805978a"
+SEED_MODULE_COMMIT = "f454d8d"
 
 
 def test_the_seed_block_is_the_seed_modules() -> None:
@@ -1285,6 +1288,8 @@ def test_the_seed_block_is_the_seed_modules() -> None:
     assert roles["h4_tests"] == H4_BLOCK[0] and roles["h4_0_probe"] == H4_BLOCK[1]
     assert roles["h4b_coins"] == H4_BLOCK[2] and roles["h4s_schedule_side"] == H4_BLOCK[3]
     assert roles["h4_sample"] == H4_BLOCK[4] and "h4_spare_4" not in roles, "the audit sample registered (F4-7)"
+    assert '"h4_sample": (frozenset({"plant"}), frozenset({"H4-U"}))' in src, "its own part, never H4-B"
+    assert "never H4-B, so tests and a run never share a part" in _lf(DRAFT)
     text = _lf(DRAFT)
     table = _section(text, 15)
     for role, i in (("h4_tests", 0), ("h4_0_probe", 1), ("h4b_coins", 2), ("h4s_schedule_side", 3),
@@ -1418,6 +1423,13 @@ def test_f4_7_to_f4_14(text: str) -> None:
     assert "**never from the day's last bar**" in b
     assert "numbered `sub` = 0, 1, ... in the schedule's index order" in flat                           # F4-14
     assert "**they are never refused**" in flat
+    row = _flat(_row(text, "several rungs from one alert"))                                             # C3-2
+    for phrase in ("**one driftless path for every rung of one alert**", "each rung races its own barriers on that one "
+                   "path", "**each rung's marginal stays at its bracket's driftless odds**", "**one side per alert, "
+                   "keyed at `sub` 0**, so no two rungs take opposite sides (conduct tier 1)",
+                   "a single-rung alert is unchanged", "the ledger counts the multi-rung moments",
+                   "`<the firm path's C3-2 build commit, filled when it lands>`"):
+        assert phrase in row, phrase
 
 
 def test_n4_notes(text: str) -> None:
@@ -1429,5 +1441,5 @@ def test_n4_notes(text: str) -> None:
 
 def test_appendix_g_answers_every_finding(text: str) -> None:
     table = _between(text, "<!-- h4_findings_t4: begin -->", "<!-- h4_findings_t4: end -->")
-    ids = tuple(re.findall(r"^\| (F4-\d+|N4-1 to N4-3) \|", table, re.MULTILINE))
+    ids = tuple(re.findall(r"^\| (F4-\d+|N4-1 to N4-3|C3-2 \(the firm path's review\)) \|", table, re.MULTILINE))
     assert ids == FINDINGS_T4

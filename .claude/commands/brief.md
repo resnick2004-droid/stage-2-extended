@@ -1,57 +1,47 @@
 ---
-description: Brief the operator in plain English -- where the work stands, the designs inside the limits, the trade-offs, each baseline, what is theirs to decide -- built only on traced results
-argument-hint: [optional focus, e.g. a search id or "baselines"]
+description: Give the operator's short brief -- what is running, what has come back, the decisions that are theirs, and the blockers -- in plain language, with no typed result number
 allowed-tools: Read, Bash, PowerShell, Glob, Grep
 ---
 
-Brief the operator: **$ARGUMENTS** (or the whole picture, if no focus is given).
+Give the operator's short brief (CLAUDE.md "Silence": the operator hears only a result, a decision that is theirs, or a
+blocker). The operator is not a quant: write for a reader who knows trading accounts, not statistics. Read-only: this
+command writes nothing (only the lead edits `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md`, `DECISIONS.md`); the shell
+is for the two status scripts below and read-only `git` only -- never a command that writes a file, takes the run
+lock, starts a run or sends anything.
 
-The operator is not a quant (CLAUDE.md). Write in **plain English**: short sentences, no symbols a reader must decode,
-every term explained the first time it is used (a "baseline" is a way of trading already known, which a new design
-must beat; "P" is the share of users ahead in cash at months 1-3, not a p-value; a "limit" is the operator's own line
-on what a user can bear). Every parameter named is explained in a phrase and classed fixed / searched / dropped.
+**Read first:** `STATUS.md` (the board: phase, running now, `NEEDS_OPERATOR`, the run lock, the machine), the last
+entries of `PROGRESS.md`, the newest rows of `DECISIONS.md`, the top of `TASK_QUEUE.md`, `docs/OPERATOR_SETUP.md`
+(their manual tasks), and `python scripts/run_lock.py status` and `python scripts/status.py` for the live state (if a
+script is missing, read its sources directly and say so).
 
-## The one rule: only traced results
+**Write the brief in four short parts, in this order, each a few plain sentences or bullets:**
 
-**Every number in the brief comes from a result file with a manifest, read now, and is cited beside it** (the file
-and the column or row). No number from memory, from a document, from a hand-back, from a decision row's prose, or from
-an earlier brief.
+1. **What is running.** The heavy run under the lock (its job, when it started, when it should end, and what it is
+   for in one line), and the lanes at work (which worktree builds what, in words). Say "nothing heavy is running" when
+   the lock is free.
+2. **What has come back.** Each result collected since the last brief: what question it answered and what it means for
+   the user's journey, in words ("passed its check", "did not beat the coin baseline", "held"), with its decision row
+   and its result file named. **Never type a result number.** A figure appears only if quoted from a result file with
+   a manifest, with the file named beside it (`results/<file>.csv`, the row and column); if it cannot be traced, leave
+   it out and say "see `<file>`". **Never quote anything from a licensed-price derivative** -- a result file that is
+   git-ignored or on the licence list (`.gitignore`'s "Licensed-price derivatives" block: E-179, E-245, e.g.
+   `results/s1_range.csv`, `results/q121_vol_descriptive_a1.csv`): name the file and its row in `DECISIONS.md`, never a
+   value, a level or a row of it. A figure from the search years is said to be from the years the design was chosen
+   on, with its held-out reading beside when one exists. A failed check is reported as failed, with what is being
+   diagnosed -- never softened.
+3. **Decisions that are theirs.** Only what CLAUDE.md reserves to the operator: a payment (state the cost and what it
+   buys, and that nothing is bought until they say so -- e.g. the confirmation-window data), a change to the objective,
+   and anything `STATUS.md` lists under `NEEDS_OPERATOR`. Each as a question they can answer in a line, with the safe
+   default the work keeps meanwhile. A research question is never theirs: do not put one here.
+4. **Blockers.** Anything stopping the work: a stale or held run lock, memory too short for a heavy run, a failing
+   identity or test, a result whose manifest does not verify, a declaration whose pinned hash no longer matches, an
+   operator setup task outstanding in `docs/OPERATOR_SETUP.md`. Say "none" when there are none.
 
-1. List the result files the brief will use (`python scripts/status.py`, or `extended.results.list_results`), and
-   verify each one's manifest (`extended.results.verify_result`). A file whose manifest does not verify, or whose
-   `git_commit` is `-dirty` or `unknown`, is not used; say so.
-2. Read each number from its file with a small scratch script in the scratchpad (never `python -c` with backticks),
-   and print the file, the column and the value together. Run `python scripts/trace_check.py` when it exists; a number
-   it cannot trace is left out of the brief, and the brief says one was left out.
-3. A result with `exploratory=True` in its manifest is said to be exploratory where it appears, and kept apart from
-   the declared readings.
-4. **No held-out figure before its verdict row.** A held-out test's numbers appear only after the lead's verdict row
-   records them; until then the brief says only that the test is pending. A sealed file (CHARTER 3.6 (e)) is never
-   opened.
-5. If nothing traced exists yet for a part, say "no result yet" for that part. Never fill a gap with an estimate.
-
-## What the brief says, in this order (keep it under a page)
-
-1. **Where the work stands** -- in two or three sentences: the wave of the restart plan, the search under way and its
-   round, what has finished since the last brief (from `PROGRESS.md`'s dates; facts, not numbers).
-2. **The designs inside the limits** -- the menu: each design that stays inside every operator limit, with the
-   measures that matter most to a user (the bankroll needed, the time to a first payout, P, the chance of running out
-   before the first payout, the monthly income after), each a range over start days, each traced.
-3. **The trade-offs** -- what each step on one measure costs on another (the frontier), in the operator's own terms
-   ("a faster first payout costs this much more bankroll"), traced.
-4. **Against each baseline** -- the naive coin and P-14, P-15, P-16, under the same rules, on the same years; whether a
-   design is ahead on the composite or the fallback the operator approved, at the level the test uses, and that the
-   level bounds coin luck on those years, not a lucky stretch of history (CHARTER 3.8 (b)).
-5. **What the data cannot show** -- the held-out years' size, the test's power from its power gate, that the level is
-   nominal while the held-out read ledger is not empty, that the money comes from the firm's rules (a funded loss
-   costs only fees), not from predicting the market, and what is not modelled (the user's time, taxes).
-6. **What is the operator's** -- any NEEDS_OPERATOR on the board, each in one sentence with its consequence (O-1 and
-   O-3 to O-7 were ruled at E-221, O-5's governing form at E-230, the data purchase held); any purchase stated with its cost, **never authorised
-   here**.
-7. **The next round** -- the next three to five items in the queue, one line each.
-
-## Limits
-
-Read-only: this command writes nothing (only the lead edits `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md`), runs nothing
-heavy, reads no bar and no NQ from 2026-07-17. It is a report, not a recommendation to trade: no playbook, no side, no
-size is advised to a user from it.
+**Rules for the text.**
+- Plain words; every term a quant would use is explained in passing (e.g. "the held-out years -- the data kept aside
+  for the final check").
+- No result number typed from memory or from a document; only quoted from a result file, named.
+- Hand entry only: never suggest automating orders; a playbook (`extended/playbook.py`) is described as what the user
+  trades by hand, and never quoted for a price (it prints none).
+- Short: the whole brief fits on one screen. Lead with anything that needs the operator's answer.
+- In plain English (the template's text v2 on wt/wt-lit): a design is shown against the operator's limits in the form in force -- the point estimate governs, the one-sided check beside (E-230) -- and every number is traced to its result file.

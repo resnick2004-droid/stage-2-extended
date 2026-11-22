@@ -4,14 +4,16 @@
 What is asserted, one case for each refusal and each pass, every refusal naming its rule (`HeldOutRefused.rule` and
 the rule's name at the start of its message):
 
-* **rule 1** -- `heldout_test` and `heldout_stress` are honoured only under a finalists' token for exactly the pinned
-  declaration (its id and its sha256), in a row newer than the pin; refused with no such row, a row for another
-  declaration, another sha, a row older than the pin, a malformed or misplaced token; a described reading never takes a
-  held-out purpose; a family's other purposes are not gated by it (unchanged);
-* **rule 2** -- a market's held-out window is read by one declaration: once one family's judged read of it is
-  ledgered, another family's (a near-copy, other bytes, its own finalists' row) is refused under every purpose, also
-  when the earlier line is in the old format or names no market; another market, or a row opening a new window that
-  holds the read's days, admits it; a described reading's or an identity's line spends nothing;
+* **rule 1** -- `heldout_test` and `heldout_stress` of the market's one held-out declaration (F-98,
+  `heldout_verdict_rows`) are honoured only under a finalists' token for exactly it (its id and its sha256), placed
+  after the pin; refused with no such row, a row for another declaration, another sha, a row placed before the pin, a
+  malformed or misplaced token; a described reading never takes a held-out purpose; **an F-14-like family reads no
+  held-out date at all** (Q-194e, P10), whatever its purpose and its token;
+* **rule 2** -- a market's held-out window is read by one declaration: once another family's judged read of it is in
+  the ledger (a line made before Q-194e confined families to the search years, here written by hand), the held-out
+  declaration is refused under both purposes, also when the earlier line is in the old format or names no market;
+  another market's held-out declaration, or a row opening a new window that owns the read's days, is admitted; a
+  described reading's or an identity's line spends nothing;
 * **rule 3** -- a `registered_design` read of the held-out years is refused under a row without a read token (the rows
   that admitted earlier reads), a token not naming every design or naming another script, outside a clean run, and by
   a second run under the same row; the token's own run is admitted and ledgered; earlier ledger lines stay;
@@ -40,12 +42,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 
 RUN = "q158-sim"
 BARS = "vendor/stage2/data/bars/NQ/bars.parquet"
 BARS_ES = "vendor/stage2/data/bars/ES/bars.parquet"
 WALKS = "vendor/stage2/data/atlas/A3/walks.parquet"
-LINE = "- **Judged-block reads:** `heldout_test`, `heldout_stress`, `stage_C_judgement`\n"
+#: the families' line (Q-194d: these F- files are no held-out declaration, so their held-out purposes are refused --
+#: `heldout_verdict_rows`'s F-98 is NQ's held-out declaration; their other purposes are rules 1 and 2's)
+LINE = "- **Judged-block reads:** `heldout_test`, `heldout_stress`, `stage_C_judgement`, `stage_D_scorecard`\n"
 F13, F13_TEXT = "prereg/F-13_search.md", "# F-13: a synthetic design search (Q-158's tests)\n\n" + LINE
 #: a near-copy re-declared: one byte changed, the house line kept (the red team's B-3)
 F14, F14_TEXT = "prereg/F-14_search.md", "# F-14: a synthetic design search (Q-158's tests).\n\n" + LINE
@@ -109,6 +114,25 @@ def add_rows(t: Path, *rows: str) -> None:
     git(t, "commit", "-q", "-am", "rows")
 
 
+def prepend_rows(t: Path, *rows: str) -> None:
+    """Insert decision rows before every other row (just after the table's head) and commit them (Q-194c: a row's
+    place, not its number, decides "newer")."""
+    lines_ = (t / "DECISIONS.md").read_text(encoding="utf-8").splitlines()
+    at = next(i for i, x in enumerate(lines_) if x.startswith("|---")) + 1
+    (t / "DECISIONS.md").write_bytes(("\n".join(lines_[:at] + list(rows) + lines_[at:]) + "\n").encode("utf-8"))
+    git(t, "commit", "-q", "-am", "rows placed first")
+
+
+def verdict_line(row: int, fid: str = "F-13", text: str = F13_TEXT, market: str = "NQ") -> str:
+    return f"| E-{row} | 2026-11-18 | heldout-verdict: {market} {fid} @ {sha_lf(text)} -- {fid}'s held-out verdict | x |"
+
+
+def settled_verdict(t: Path) -> dict:
+    """NQ's held-out test and its verdict (Q-194c, Q-194d): F-98, NQ's one held-out declaration, read through the
+    reader and its verdict row committed with the ledger (`heldout_verdict_rows.settle`)."""
+    return VR.settle(t, [t / BARS])
+
+
 @pytest.fixture
 def tree(tmp_path, monkeypatch) -> Path:
     t = make_tree(tmp_path)
@@ -118,12 +142,15 @@ def tree(tmp_path, monkeypatch) -> Path:
     return t
 
 
-def lines(t: Path) -> list[dict]:
+def lines(t: Path, seed: bool = False) -> list[dict]:
+    """The ledger's lines; the synthetic joint test's seeded read (`heldout_verdict_rows.settle`, F-98) left out
+    unless `seed`."""
     p = t / "results" / "read_ledger.jsonl"
-    return [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines()] if p.exists() else []
+    recs = [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines()] if p.exists() else []
+    return recs if seed else [r for r in recs if (r.get("declaration") or {}).get("ref") != VR.HT_PATH]
 
 
-def read(t: Path, declaration: str = F13, purpose: str = "heldout_test", market: str = "NQ",
+def read(t: Path, declaration: str = F13, purpose: str = "stage_C_judgement", market: str = "NQ",
          start: str = "2024-01-02", end: str = "2026-07-16", **kw):
     files = [t / (BARS_ES if market == "ES" else BARS)]
     return R.authorise_engine_read(start, end, purpose=purpose, declaration=declaration, files=files, what="q158",
@@ -155,7 +182,7 @@ def test_the_tokens_are_read_exactly_and_positionally():
     text = "\n".join((
         f"| E-950 | 2026-11-18 | heldout-finalists: F-13 @ {h} list {g} -- the list | x |",
         "| E-951 | 2026-11-18 | heldout-window: NQ 2026-07-17 to 2027-07-16 -- bought data | x |",
-        "| E-952 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13 failed its held-out test | x |",
+        f"| E-952 | 2026-11-18 | heldout-verdict: NQ F-13 @ {h} -- F-13 failed its held-out test | x |",
         "| E-953 | 2026-11-18 | heldout-read: P-16,P-14 by scripts/rd04_replay.py -- RD-04 (c)'s replay | x |",
         # never tokens: quoted, emphasised, later in the cell, another cell, short sha, bad market, bad design, a
         # window ending before it starts, a bad day, no text, prose
@@ -172,6 +199,9 @@ def test_the_tokens_are_read_exactly_and_positionally():
         "| E-970 | 2026-11-18 | Held-out verdict: NQ F-13 -- prose | x |",
         "|E-971| 2026-11-18 | heldout-verdict: NQ F-13 -- the row's start not exact | x |",
         "| E-972 | 2026-11-18 | heldout-read: P-14 by identity/x.py -- not a readings script | x |",
+        # Q-194c: the old unbound verdict forms are malformed
+        "| E-973 | 2026-11-18 | heldout-verdict: NQ F-13 -- the market form without the sha | x |",
+        f"| E-974 | 2026-11-18 | heldout-verdict: F-13 @ {h} -- the sha form without the market | x |",
     ))
     toks = R.heldout_tokens(text)
     assert [(t.kind, t.row) for t in toks] == [("finalists", "E-950"), ("window", "E-951"), ("verdict", "E-952"),
@@ -179,13 +209,14 @@ def test_the_tokens_are_read_exactly_and_positionally():
     f, w, v, r = toks
     assert (f.get("decl"), f.get("sha"), f.get("list"), f.number) == ("F-13", h, g, 950)
     assert (w.get("market"), str(w.get("start")), str(w.get("end"))) == ("NQ", "2026-07-17", "2027-07-16")
-    assert (v.get("market"), v.get("decl")) == ("NQ", "F-13")
+    assert (v.get("market"), v.get("decl"), v.get("sha")) == ("NQ", "F-13", h)
+    assert [t.pos for t in toks] == [0, 1, 2, 3], "each token carries its line's place in the log"
     assert r.get("designs") == ("P-14", "P-16") and r.get("script") == "scripts/rd04_replay.py"
     assert [t.row for t in R.heldout_tokens(text, "verdict")] == ["E-952"]
     probs = R.heldout_token_problems(text)
     flagged = sorted({p.split(" ")[0] for p in probs})
     assert flagged == ["E-960", "E-961", "E-964", "E-965", "E-966", "E-967", "E-968", "E-969", "E-970", "E-971",
-                       "E-972"], probs
+                       "E-972", "E-973", "E-974"], probs
     assert R.heldout_token_problems("\n".join(text.splitlines()[:4])) == []
 
 
@@ -196,59 +227,102 @@ def test_this_repositorys_decision_log_holds_no_malformed_heldout_token():
 # --------------------------------------------------------------------------------- rule 1: the finalists' row first
 
 
+def ht(t: Path, finalists: bool = True) -> str:
+    """NQ's one held-out declaration (F-98, `heldout_verdict_rows`), pinned, with its finalists' row if `finalists`."""
+    return VR.declare(t, finalists=finalists)
+
+
+def ht_read(t: Path, purpose: str = "heldout_test", **kw):
+    return read(t, declaration=VR.HT_PATH, purpose=purpose, **kw)
+
+
+#: ES's one held-out declaration (Q-194e: only a market's held-out declaration reads its held-out years)
+ES_HT = "prereg/F-97_heldout_test_ES.md"
+ES_HT_TEXT = VR.heldout_text("F-97: a synthetic held-out declaration for ES (Q-194e's tests)")
+
+
+def declare_es(t: Path) -> None:
+    (t / ES_HT).write_bytes(ES_HT_TEXT.encode("utf-8"))
+    git(t, "add", ES_HT)
+    add_rows(t, f"| E-970 | 2026-11-18 | **F-97 declared**, `{ES_HT}` sha256 `{sha_lf(ES_HT_TEXT)}` | test |",
+             finalists(971, "F-97", ES_HT_TEXT, "5" * 64))
+
+
 @pytest.mark.parametrize("purpose", ["heldout_test", "heldout_stress"])
 def test_rule1_a_held_out_purpose_is_refused_without_a_finalists_row(tree, purpose):
-    e = refused(1, read, tree, purpose=purpose)
-    assert "no decision row carries a finalists' token for F-13" in str(e)
-    assert lines(tree) == []
+    ht(tree, finalists=False)
+    e = refused(1, ht_read, tree, purpose=purpose)
+    assert "no decision row carries a finalists' token for F-98" in str(e)
+    assert lines(tree, seed=True) == []
 
 
 @pytest.mark.parametrize("row,why", [
-    (finalists(920, "F-14", F14_TEXT, LIST14), "no decision row carries a finalists' token for F-13"),   # another's
-    (finalists(920, "F-13", F14_TEXT, LIST13), "not prereg/F-13_search.md's sha256"),                   # other bytes
-    (finalists(899, "F-13", F13_TEXT, LIST13), "precede its pin"),                                       # before pin
-    ("| E-920 | 2026-11-18 | `heldout-finalists: F-13 @ " + sha_lf(F13_TEXT) + " list " + LIST13 + "` -- quoted | x |",
+    (finalists(920, "F-14", F14_TEXT, LIST14), "no decision row carries a finalists' token for F-98"),   # another's
+    (finalists(920, "F-98", F14_TEXT, LIST13), f"not {VR.HT_PATH}'s sha256"),                            # other bytes
+    ("| E-920 | 2026-11-18 | `heldout-finalists: F-98 @ " + VR.HT_SHA + " list " + LIST13 + "` -- quoted | x |",
      "no decision row carries"),                                                                           # malformed
-    ("| E-920 | 2026-11-18 | the finalists; heldout-finalists: F-13 @ " + sha_lf(F13_TEXT) + " list " + LIST13
+    ("| E-920 | 2026-11-18 | the finalists; heldout-finalists: F-98 @ " + VR.HT_SHA + " list " + LIST13
      + " -- later in the cell | x |", "no decision row carries"),                                          # misplaced
 ])
 def test_rule1_refuses_a_finalists_row_that_is_not_this_declarations(tree, row, why):
+    ht(tree, finalists=False)
     add_rows(tree, row)
     for purpose in R.HELDOUT_PURPOSES:
-        assert why in str(refused(1, read, tree, purpose=purpose))
-    assert lines(tree) == []
+        if R.heldout_token_problems(row):                   # Q-194d: a malformed token fails every judged read
+            with pytest.raises(R.JudgedBlockSealed, match="hygiene"):
+                ht_read(tree, purpose=purpose)
+        else:
+            assert why in str(refused(1, ht_read, tree, purpose=purpose))
+    assert lines(tree, seed=True) == []
+
+
+def test_rule1_a_finalists_row_placed_before_the_pin_is_refused_whatever_its_number(tree):
+    """Q-194c (NOTE-2): "after the pin" is a later place in DECISIONS.md, never a higher E-number."""
+    ht(tree, finalists=False)
+    prepend_rows(tree, finalists(999, "F-98", VR.HT_TEXT, LIST13))         # a high number, placed before the pin
+    for purpose in R.HELDOUT_PURPOSES:
+        assert "precede its pin" in str(refused(1, ht_read, tree, purpose=purpose))
+    add_rows(tree, finalists(899, "F-98", VR.HT_TEXT, LIST13))             # a low number, placed after the pin
+    assert dict(ht_read(tree).heldout)["finalists"] == "E-899"
 
 
 def test_rule1_admits_both_purposes_after_the_finalists_row_and_ledgers_it(tree):
-    add_rows(tree, finalists(920, "F-13", F13_TEXT, LIST13))
-    a = read(tree)
+    ht(tree)                                                                # F-98, NQ's held-out declaration
+    a = ht_read(tree)
     assert a.judged and a.kind == "family" and a.market == "NQ"
-    assert dict(a.heldout) == {"market": "NQ", "window": "E-208", "finalists": "E-920",
-                               "finalists_list_sha256": LIST13}
-    read(tree, purpose="heldout_stress")
-    recs = lines(tree)
+    assert dict(a.heldout) == {"market": "NQ", "window": "E-208", "finalists": "E-981",
+                               "finalists_list_sha256": VR.HT_LIST}
+    ht_read(tree, purpose="heldout_stress")
+    recs = lines(tree, seed=True)
     assert [r["purpose"] for r in recs] == ["heldout_test", "heldout_stress"]
-    assert recs[0]["heldout"] == {"market": "NQ", "window": "E-208", "finalists": "E-920",
-                                  "finalists_list_sha256": LIST13}
+    assert recs[0]["heldout"] == {"market": "NQ", "window": "E-208", "finalists": "E-981",
+                                  "finalists_list_sha256": VR.HT_LIST}
     assert R.read_ledger(tree / "results" / "read_ledger.jsonl") == recs, "the line verifies as a ledger line"
 
 
 def test_rule1_the_newest_finalists_row_after_the_pin_is_recorded(tree):
-    add_rows(tree, finalists(920, "F-13", F13_TEXT, LIST13), finalists(921, "F-13", F13_TEXT, "4" * 64))
-    assert dict(read(tree).heldout)["finalists"] == "E-921"
+    ht(tree, finalists=False)
+    add_rows(tree, finalists(921, "F-98", VR.HT_TEXT, "4" * 64), finalists(920, "F-98", VR.HT_TEXT, LIST13))
+    assert dict(ht_read(tree).heldout)["finalists"] == "E-920", "the newest by place, not by number"
 
 
 def test_rule1_a_described_reading_never_takes_a_held_out_purpose(tree):
-    add_rows(tree, "| E-920 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13's verdict | x |")
-    assert "described reading" in str(refused(1, read, tree, declaration=RD7))
+    settled_verdict(tree)
+    assert "described reading" in str(refused(1, read, tree, declaration=RD7, purpose="heldout_test"))
     assert read(tree, declaration=RD7, purpose="stage_D_scorecard").kind == "described_reading", \
         "the control: after the verdict its other purpose is admitted"
 
 
-def test_rule1_does_not_gate_a_familys_other_purposes(tree):
-    a = read(tree, purpose="stage_C_judgement")
-    assert a.kind == "family" and dict(a.heldout) == {"market": "NQ", "window": "E-208"}
-    assert lines(tree)[0]["heldout"] == {"market": "NQ", "window": "E-208"}
+@pytest.mark.parametrize("purpose,why", [("stage_C_judgement", "search years"), ("stage_D_scorecard", "search years"),
+                                         ("heldout_test", "one held-out declaration")])
+def test_rule1_a_family_reads_no_held_out_date(tree, purpose, why):
+    """Q-194e (the red team's P10; template v3): an F-14-like family -- pinned, its line naming stage and held-out
+    purposes, its own finalists' token -- reads no held-out date under any purpose; the search years are its."""
+    add_rows(tree, finalists(920, "F-13", F13_TEXT, LIST13))
+    e = refused(1, read, tree, purpose=purpose)
+    assert why in str(e) and repr(purpose) in str(e) and F13 in str(e)
+    assert lines(tree, seed=True) == []
+    assert not read(tree, purpose=purpose, start="2020-01-02", end="2023-12-29").judged
 
 
 def test_the_existing_rules_still_come_first(tree):
@@ -262,62 +336,6 @@ def test_the_existing_rules_still_come_first(tree):
 
 
 # ------------------------------------------------------------------------------------------ rule 2: once per market
-
-
-def spend(t: Path) -> None:
-    """F-13's finalists' row and its held-out test, run 1: NQ's base window spent."""
-    add_rows(t, finalists(920, "F-13", F13_TEXT, LIST13), finalists(921, "F-14", F14_TEXT, LIST14),
-             finalists(922, "F-15", F15_TEXT, LIST15))
-    read(t)
-
-
-@pytest.mark.parametrize("purpose", ["heldout_test", "heldout_stress", "stage_C_judgement"])
-def test_rule2_a_second_declaration_is_refused_on_the_same_markets_window(tree, monkeypatch, purpose):
-    spend(tree)
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    e = refused(2, read, tree, declaration=F14, purpose=purpose)
-    assert "prereg/F-13_search.md" in str(e) and "E-208" in str(e)
-    assert len(lines(tree)) == 1, "a refused read writes nothing"
-
-
-def test_rule2_counts_a_read_in_the_same_run_too(tree):
-    spend(tree)
-    refused(2, read, tree, declaration=F14)          # the same run id: still another declaration
-
-
-def test_rule2_leaves_the_same_declaration_to_the_once_rule(tree, monkeypatch):
-    spend(tree)
-    read(tree, purpose="heldout_stress")             # its other purpose, the same run
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    with pytest.raises(R.JudgedBlockReadTwice) as info:
-        read(tree)
-    assert not isinstance(info.value, R.HeldOutRefused)
-
-
-def test_rule2_another_market_is_its_own(tree, monkeypatch):
-    spend(tree)
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    a = read(tree, declaration=F14, market="ES")
-    assert dict(a.heldout)["market"] == "ES" and lines(tree)[-1]["heldout"]["market"] == "ES"
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-3")
-    refused(2, read, tree, declaration=F15, market="ES")      # and ES's window is now F-14's
-
-
-def test_rule2_a_row_opening_a_new_window_admits_the_next_declaration(tree, monkeypatch):
-    spend(tree)
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
-    add_rows(tree, "| E-930 | 2026-11-18 | heldout-window: ES 2024-01-02 to 2026-07-16 -- another market's | x |",
-             "| E-931 | 2026-11-18 | heldout-window: NQ 2025-01-02 to 2026-07-16 -- does not hold 2024 | x |")
-    refused(2, read, tree, declaration=F14)                    # neither row's window holds the read's days
-    a = read(tree, declaration=F14, start="2025-01-02")        # E-931's window holds this read's
-    assert dict(a.heldout)["window"] == "E-931"
-    add_rows(tree, "| E-932 | 2026-11-18 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- the operator re-opens | x |")
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-3")
-    a = read(tree, declaration=F15)
-    assert dict(a.heldout)["window"] == "E-932" and lines(tree)[-1]["heldout"]["window"] == "E-932"
-    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-4")
-    e = refused(2, read, tree, declaration=F14, purpose="heldout_stress")   # E-932's window is F-15's now
-    assert "F-15" in str(e)
 
 
 def put_line(t: Path, rec: dict) -> None:
@@ -337,15 +355,82 @@ def old_line(ref: str, kind: str, files: list[str], purpose: str = "stage_C_judg
             "declaration": {"ref": ref, "sha256": "f" * 64, "kind": kind}, "purpose": purpose, "repeat": None}
 
 
+def family_line(ref: str = F13, market: str = "NQ", window: str = "E-208", run_id: str = "earlier@run") -> dict:
+    """Another family's judged read as the ledger holds it (made before Q-194e confined families to the search years,
+    or by another market's held-out declaration): it spends its window under rule 2."""
+    rec = old_line(ref, "family", [BARS_ES if market == "ES" else BARS])
+    rec["who"]["run_id"] = run_id
+    rec["heldout"] = {"market": market, "window": window}
+    return rec
+
+
+def spend(t: Path) -> None:
+    """F-13's read of NQ's base window in the ledger, and NQ's held-out declaration F-98 with its finalists' row."""
+    put_line(t, family_line())
+    ht(t)
+
+
+@pytest.mark.parametrize("purpose", ["heldout_test", "heldout_stress"])
+def test_rule2_a_second_declaration_is_refused_on_the_same_markets_window(tree, monkeypatch, purpose):
+    spend(tree)
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
+    e = refused(2, ht_read, tree, purpose=purpose)
+    assert F13 in str(e) and "E-208" in str(e)
+    assert len(lines(tree, seed=True)) == 1, "a refused read writes nothing"
+
+
+def test_rule2_counts_a_read_in_the_same_run_too(tree):
+    put_line(tree, family_line(run_id="q158-sim@run-1"))     # the same run id: still another declaration
+    ht(tree)
+    refused(2, ht_read, tree)
+
+
+def test_rule2_leaves_the_same_declaration_to_the_once_rule(tree, monkeypatch):
+    ht(tree)
+    ht_read(tree)
+    ht_read(tree, purpose="heldout_stress")         # its other purpose, the same run
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
+    with pytest.raises(R.JudgedBlockReadTwice) as info:
+        ht_read(tree)
+    assert not isinstance(info.value, R.HeldOutRefused)
+
+
+def test_rule2_another_market_is_its_own(tree, monkeypatch):
+    spend(tree)
+    declare_es(tree)
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
+    a = read(tree, declaration=ES_HT, purpose="heldout_test", market="ES")
+    assert dict(a.heldout)["market"] == "ES" and lines(tree)[-1]["heldout"]["market"] == "ES"
+    put_line(tree, family_line(F15, market="ES"))              # and once another family's read spends ES's window
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-3")
+    assert F15 in str(refused(2, read, tree, declaration=ES_HT, purpose="heldout_stress", market="ES"))
+
+
+def test_rule2_a_row_opening_a_new_window_admits_the_next_declaration(tree, monkeypatch):
+    spend(tree)
+    monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
+    add_rows(tree, "| E-930 | 2026-11-18 | heldout-window: ES 2024-01-02 to 2026-07-16 -- another market's | x |",
+             "| E-931 | 2026-11-18 | heldout-window: NQ 2025-01-02 to 2026-07-16 -- does not hold 2024 | x |")
+    refused(2, ht_read, tree)                                   # its 2024 days are E-208's, which F-13 spent
+    a = ht_read(tree, start="2025-01-02")                       # E-931's days alone
+    assert dict(a.heldout)["window"] == "E-931"
+    add_rows(tree, "| E-932 | 2026-11-18 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- the operator re-opens | x |")
+    a = ht_read(tree, purpose="heldout_stress")                 # every day now E-932's, which nobody else spent
+    assert dict(a.heldout)["window"] == "E-932" and lines(tree, seed=True)[-1]["heldout"]["window"] == "E-932"
+    put_line(tree, family_line(F15, window="E-932"))
+    assert "F-15" in str(refused(2, ht_read, tree, purpose="heldout_stress"))   # E-932 spent by F-15 as well
+
+
 @pytest.mark.parametrize("files,spent_es", [([BARS], False), ([WALKS], True)])
 def test_rule2_an_old_format_line_spends_its_market_and_an_unknown_market_every_one(tree, files, spent_es):
-    add_rows(tree, finalists(921, "F-14", F14_TEXT, LIST14))
+    ht(tree)
+    declare_es(tree)
     put_line(tree, old_line("prereg/F-12_old.md", "family", files))
-    refused(2, read, tree, declaration=F14)
+    refused(2, ht_read, tree)
     if spent_es:
-        refused(2, read, tree, declaration=F14, market="ES")      # a line naming no market counts for every market
+        refused(2, read, tree, declaration=ES_HT, purpose="heldout_test", market="ES")   # no market: every market
     else:
-        assert read(tree, declaration=F14, market="ES").judged
+        assert read(tree, declaration=ES_HT, purpose="heldout_test", market="ES").judged
 
 
 @pytest.mark.parametrize("line", [
@@ -357,9 +442,9 @@ def test_rule2_an_old_format_line_spends_its_market_and_an_unknown_market_every_
      "repeat": None},                                                       # a line with every field empty
 ])
 def test_rule2_only_a_familys_judged_line_spends_the_window(tree, line):
-    add_rows(tree, finalists(920, "F-13", F13_TEXT, LIST13))
+    ht(tree)
     put_line(tree, line)
-    assert read(tree).judged
+    assert ht_read(tree).judged
 
 
 # --------------------------------------------------------- rule 3: a registered design's held-out read, named by its row
@@ -374,13 +459,17 @@ def rd_read(t: Path, declaration: str, design, start: str = "2020-01-02", end: s
 
 @pytest.fixture
 def scripted(tree, monkeypatch):
+    """The tree with a readings script as the process's, after the joint held-out test's verdict -- F-98's read
+    ledgered, then its verdict row (Q-194b, Q-194c: a registered design reads no held-out date before it;
+    `tests/test_reader_q194b.py` and `tests/test_reader_q194c.py` hold those refusals)."""
     monkeypatch.setattr(R, "_main_script", lambda: tree / "scripts" / "replay.py")
+    VR.settle(tree, [tree / BARS])
     return tree
 
 
 def test_rule3_a_row_without_the_token_admits_no_new_held_out_read(scripted, monkeypatch):
     put_line(scripted, old_line("E-904", "registered_design", [BARS], purpose="registered_design"))
-    before = (scripted / "results" / "read_ledger.jsonl").read_bytes()
+    before = (scripted / "results" / "read_ledger.jsonl").read_bytes()          # the seed's line, then the old one
     e = refused(3, rd_read, scripted, "E-904", ("P-14", "P-16"))
     assert "earlier reads stay valid" in str(e)
     monkeypatch.delenv("S2X_CLEAN_RUN")
@@ -395,9 +484,9 @@ def test_rule3_the_token_admits_its_own_run_once_and_ledgers_it(scripted, monkey
                        "replayed on the held-out years | x |")
     for design in (("P-14", "P-16"), "P-16"):                               # one run may read as often as it needs
         a = rd_read(scripted, "E-940", design)
-        assert a.judged and a.ledgered and dict(a.heldout) == {"read_row": "E-940"}
+        assert a.judged and a.ledgered and dict(a.heldout) == {"read_row": "E-940", "test_verdict": "E-982"}
     recs = lines(scripted)
-    assert len(recs) == 2 and recs[0]["heldout"] == {"read_row": "E-940"}
+    assert len(recs) == 2 and recs[0]["heldout"] == {"read_row": "E-940", "test_verdict": "E-982"}
     assert recs[0]["declaration"] == {"ref": "E-940", "sha256": None, "kind": "registered_design",
                                       "designs": ["P-14", "P-16"]}
     monkeypatch.setenv("S2X_RUN_ID", "q158-sim@run-2")
@@ -420,7 +509,7 @@ def test_rule3_a_held_out_read_runs_only_inside_a_clean_run(scripted, monkeypatc
     monkeypatch.delenv("S2X_CLEAN_RUN")
     monkeypatch.delenv("S2X_RUN_ID")
     assert "clean run" in str(refused(3, rd_read, scripted, "E-940", "P-14"))
-    assert not (scripted / "results" / "read_ledger.jsonl").exists()
+    assert lines(scripted) == [] and len(lines(scripted, seed=True)) == 1, "only the seeded joint test's line"
 
 
 def test_rule3_the_existing_registered_design_checks_still_come_first(scripted):
@@ -440,22 +529,38 @@ def test_rule4_a_described_reading_is_refused_before_the_verdict_row(tree):
 
 
 @pytest.mark.parametrize("rows", [
-    ("| E-920 | 2026-11-18 | heldout-verdict: ES F-13 -- another market's verdict | x |",),
-    ("| E-920 | 2026-11-18 | the verdict: heldout-verdict: NQ F-13 -- not at the token's place | x |",),
-    ("| E-920 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13's verdict | x |",
-     "| E-921 | 2026-11-18 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- opened after the verdict | x |"),
+    (VR.verdict_row(market="ES"),),                                                          # another market's
+    ("| E-982 | 2026-11-19 | the verdict: " + VR.VERDICT_ROW[23:],),                         # not at the token's place
+    (VR.VERDICT_ROW,
+     "| E-983 | 2026-11-19 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- opened after the verdict | x |"),
+    (f"| E-982 | 2026-11-19 | heldout-verdict: NQ {VR.HT_ID} -- the old unbound form | x |",),  # Q-194c: malformed
 ])
 def test_rule4_a_verdict_for_another_market_misplaced_or_older_than_the_window_is_refused(tree, rows):
-    add_rows(tree, *rows)
+    VR.settle(tree, [tree / BARS], verdict=False)                                            # F-98's held-out read
+    VR.commit_verdict(tree, *rows)
+    if "unbound" in rows[0]:                                 # Q-194d: a malformed token fails every judged read
+        with pytest.raises(R.JudgedBlockSealed, match="hygiene") as info:
+            read(tree, declaration=RD7, purpose="stage_D_scorecard")
+        assert not isinstance(info.value, R.HeldOutRefused)
+    else:
+        refused(4, read, tree, declaration=RD7, purpose="stage_D_scorecard")
+
+
+def test_rule4_a_verdict_whose_test_never_read_is_refused(tree):
+    """Q-194c (MINOR-1): F-98's pin, its finalists' row and a verdict row in the one form, and no held-out read of F-98
+    in the ledger -- the verdict reports nothing that happened."""
+    VR.declare(tree)
+    VR.commit_verdict(tree, VR.VERDICT_ROW)
     refused(4, read, tree, declaration=RD7, purpose="stage_D_scorecard")
+    assert lines(tree, seed=True) == []
 
 
 def test_rule4_admits_after_the_verdict_row_and_ledgers_it(tree):
-    add_rows(tree, "| E-920 | 2026-11-18 | heldout-verdict: NQ F-13 -- F-13's held-out verdict | x |")
+    settled_verdict(tree)
     a = read(tree, declaration=RD7, purpose="stage_D_scorecard")
     assert a.kind == "described_reading" and dict(a.heldout) == {"market": "NQ", "window": "E-208",
-                                                                  "verdict": "E-920"}
-    assert lines(tree)[0]["heldout"] == {"market": "NQ", "window": "E-208", "verdict": "E-920"}
+                                                                  "verdict": "E-982"}
+    assert lines(tree)[-1]["heldout"] == {"market": "NQ", "window": "E-208", "verdict": "E-982"}
     refused(4, read, tree, declaration=RD7, purpose="stage_D_scorecard", market="ES")   # ES has no verdict
 
 
