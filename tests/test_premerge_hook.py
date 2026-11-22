@@ -31,7 +31,8 @@ import premerge_check as P  # noqa: E402
 
 LIMIT = 600
 #: the files the throwaway clone takes from this tree's work tree (the code under test, committed or not)
-HOOK_FILES = ("scripts/pre-merge-commit", "scripts/premerge_check.py", "scripts/install_hooks.py", ".gitattributes")
+HOOK_FILES = ("scripts/pre-merge-commit", "scripts/premerge_check.py", "scripts/install_hooks.py", ".gitattributes",
+              "scripts/check_verdicts.py", "scripts/fasttier_lock.py")
 MALFORMED_ROW = "| E-9997 | 2026-11-21 | heldout-window: NQ soon -- a malformed held-out token | Q-208's test |"
 UNCLOSED_FENCE = "| E-9998 | 2026-11-21 | **Q-208's test row**, an unclosed fence follows | Q-208's test |\n```\nopen\n"
 
@@ -114,7 +115,7 @@ def _repo(tmp_path: Path) -> Path:
 
 def test_every_check_runs_and_every_failure_is_named(tmp_path, capsys):
     r = _repo(tmp_path)
-    rc = P.run_checks(r, [_stub("first ok", "pass"), _stub("second bad", "import sys; print('boom'); sys.exit(3)"),
+    rc = P.run_checks(r, main_tree=False, the_checks=[_stub("first ok", "pass"), _stub("second bad", "import sys; print('boom'); sys.exit(3)"),
                           _stub("third bad", "raise SystemExit(4)"), _stub("fourth ok", "pass")])
     out = capsys.readouterr()
     assert rc == 1
@@ -124,14 +125,14 @@ def test_every_check_runs_and_every_failure_is_named(tmp_path, capsys):
 
 
 def test_all_checks_passing_passes(tmp_path, capsys):
-    assert P.run_checks(_repo(tmp_path), [_stub("a", "pass"), _stub("b", "print('SKIPPED: a note')")]) == 0
+    assert P.run_checks(_repo(tmp_path), main_tree=False, the_checks=[_stub("a", "pass"), _stub("b", "print('SKIPPED: a note')")]) == 0
     out = capsys.readouterr().out
     assert "OK: 2 checks" in out and "SKIPPED: a note" in out
 
 
 def test_the_budget_kills_a_check_and_refuses_naming_it(tmp_path, capsys):
     t0 = time.monotonic()
-    rc = P.run_checks(_repo(tmp_path), [_stub("slow one", "import time; time.sleep(60)"), _stub("after", "pass")],
+    rc = P.run_checks(_repo(tmp_path), main_tree=False, the_checks=[_stub("slow one", "import time; time.sleep(60)"), _stub("after", "pass")],
                       budget_s=2)
     assert rc == 1 and time.monotonic() - t0 < 30
     err = capsys.readouterr().err
@@ -149,12 +150,12 @@ def test_the_declared_budget_is_five_minutes_and_the_hook_takes_no_slot():
 def test_an_unstaged_edit_of_a_checked_file_refuses(tmp_path, capsys):
     r = _repo(tmp_path)
     (r / "DECISIONS.md").write_text("edited after the merge\n", encoding="utf-8")
-    assert P.run_checks(r, [_stub("never reached", "pass")]) == 1
+    assert P.run_checks(r, main_tree=False, the_checks=[_stub("never reached", "pass")]) == 1
     err = capsys.readouterr().err
     assert "DECISIONS.md" in err and "differ from the merge result" in err
     (r / "DECISIONS.md").write_text("log\n", encoding="utf-8")
     (r / "other.txt").write_text("an edit outside the checked paths\n", encoding="utf-8")
-    assert P.run_checks(r, [_stub("reached", "pass")]) == 0
+    assert P.run_checks(r, main_tree=False, the_checks=[_stub("reached", "pass")]) == 0
 
 
 def test_the_check_set_is_the_declared_one():
@@ -230,7 +231,14 @@ def clone(tmp_path_factory):
     side("side-vendor", lambda: (c / "vendor" / "stage2" / vendored).write_bytes(
         (c / "vendor" / "stage2" / vendored).read_bytes() + b"\n# changed by a merge\n"))
     side("side-nocheck", lambda: (c / "scripts" / "premerge_check.py").unlink())
+    side("side-unverified", lambda: ((c / "q209_note.txt").write_text("a tip with no T2 verdict\n", encoding="utf-8")))
     git(c, "checkout", "-q", "base")
+    # Q-209: the clone is a main worktree, whose merges need a T2 verdict on each merged tip; every side but
+    # side-unverified has one (its tree recorded as the full fast tier's)
+    with open(c / ".git" / "fasttier-verdicts.log", "a", encoding="utf-8", newline="\n") as f:
+        for b in ("side-clean", "side-fence", "side-token", "side-vendor", "side-nocheck"):
+            tree = git(c, "rev-parse", f"{b}^{{tree}}").stdout.strip()
+            f.write(f"{tree}\t2026-11-21T00:00:00Z\t{c.as_posix()}\t1 passed in 0.01s\ttier=T2\n")
     # the real installer, run in the clone: its common dir is the clone's own .git
     inst = subprocess.run([sys.executable, "scripts/install_hooks.py"], cwd=c, capture_output=True, text=True,
                           timeout=LIMIT, env=clean_env())
@@ -304,3 +312,38 @@ def test_a_merge_result_without_the_check_script_is_refused(clone):
     out = p.stdout + p.stderr
     assert p.returncode != 0 and not merged, out
     assert "premerge_check.py is missing" in out and "merge master" in out, out
+
+
+# ------------------------------------------------------------------------------------------------ Q-209: the main tree's merge gate
+
+def test_the_main_tree_refuses_a_merge_of_a_tip_without_a_t2_verdict(clone):
+    c, base, _ = clone
+    p, merged = _merge(c, base, "side-unverified")
+    out = p.stdout + p.stderr
+    assert p.returncode != 0 and not merged, out
+    assert "no T2 verdict" in out and "side-unverified" in out and "fasttier_full.py" in out, out
+
+
+def test_the_merge_gate_reads_the_merged_names_and_fails_closed(clone):
+    c, _, _ = clone
+    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-clean"}, main_tree=True) is None
+    why = P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-clean side-unverified"}, main_tree=True)
+    assert why and "side-unverified" in why and "side-clean" not in why.split("have no T2")[0].split("tip(s)")[1]
+    for action in ("", "pull origin master", "merge"):
+        why = P.merge_gate(c, {"GIT_REFLOG_ACTION": action}, main_tree=True)
+        assert why and "cannot be read" in why, action
+    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge no-such-branch"}, main_tree=True)
+    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": ""}, main_tree=False) is None   # a worker's merge is not gated
+
+
+def test_a_t1_verdict_on_the_tip_does_not_open_the_gate(clone):
+    c, _, _ = clone
+    tree = git(c, "rev-parse", "side-unverified^{tree}").stdout.strip()
+    log = c / ".git" / "fasttier-verdicts.log"
+    before = log.read_bytes()
+    try:
+        with open(log, "a", encoding="utf-8", newline="\n") as f:
+            f.write(f"{tree}\t2026-11-21T00:00:00Z\t{c.as_posix()}\t1 passed in 0.01s\ttier=T1\n")
+        assert "no T2 verdict" in P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-unverified"}, main_tree=True)
+    finally:
+        log.write_bytes(before)

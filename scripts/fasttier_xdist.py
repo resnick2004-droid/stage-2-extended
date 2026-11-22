@@ -139,9 +139,15 @@ def xdist_available() -> bool:
 
 # ------------------------------------------------------------------------------------------------ the commands
 
+#: Q-209: the test files of a T0 or T1 selection, as pytest's `@<file>` (main's `--select`); empty for the full tier.
+#: They narrow the serial command, the collection and the parallel run alike, so the parallel run must still hold
+#: exactly the serial collection's tests; the rerun names its failed tests and takes no file list.
+EXTRA: list[str] = []
+
+
 def serial_command(selection: str, python: str = sys.executable) -> list[str]:
-    """Today's fast tier, exactly."""
-    return [python, *BASE, "-m", selection]
+    """Today's fast tier, exactly (narrowed to a selection's files when EXTRA holds one)."""
+    return [python, *BASE, "-m", selection, *EXTRA]
 
 
 def collect_command(selection: str, report: Path, python: str = sys.executable) -> list[str]:
@@ -154,7 +160,7 @@ def parallel_command(selection: str, n: int, report: Path, python: str = sys.exe
 
 
 def rerun_command(selection: str, args_file: Path, report: Path, python: str = sys.executable) -> list[str]:
-    return [*serial_command(selection, python), "-p", PLUGIN, REPORT_OPTION, str(report), f"@{args_file}"]
+    return [python, *BASE, "-m", selection, "-p", PLUGIN, REPORT_OPTION, str(report), f"@{args_file}"]
 
 
 # ------------------------------------------------------------------------------------------------ the rule
@@ -372,15 +378,17 @@ def fast_tiers_beside(env: dict | None = None, lock: Path | None = None) -> list
     counted. [] when the lock cannot be read."""
     env = os.environ if env is None else env
     try:
-        lock = L.default_lock_path() if lock is None else lock
+        # Q-209: both lanes -- the full tier's slots and the T0 lane's -- share the one memory
+        locks = [L.default_lock_path(), L.default_lock_path("t0")] if lock is None else [lock]
         mine = env.get(L.ENV_TOKEN)
         out = []
-        for sp in L._slot_files(lock, L.MAX_SLOTS):
-            raw = L._read_raw(sp)
-            rec = L._parse(raw) if raw else None
-            if rec is None or rec.get("token") == mine or L.stale_reason(sp, raw) is not None:
-                continue
-            out.append(L.workers_of(rec))
+        for lk in locks:
+            for sp in L._slot_files(lk, L.MAX_SLOTS if lk == locks[0] else L.T0_SLOTS):
+                raw = L._read_raw(sp)
+                rec = L._parse(raw) if raw else None
+                if rec is None or rec.get("token") == mine or L.stale_reason(sp, raw) is not None:
+                    continue
+                out.append(L.workers_of(rec))
         return out
     except (OSError, SystemExit, ValueError):
         return []
@@ -394,7 +402,11 @@ def record_own_workers(n: int, env: dict | None = None, lock: Path | None = None
     if not token:
         return False
     try:
-        return L.record_workers(L.default_lock_path() if lock is None else lock, token, n) is not None
+        if lock is not None:
+            return L.record_workers(lock, token, n) is not None
+        # Q-209: the slot is in the full tier's lane or in the T0 lane's (one slot)
+        return (L.record_workers(L.default_lock_path(), token, n) is not None
+                or L.record_workers(L.default_lock_path("t0"), token, n, n_slots=L.T0_SLOTS) is not None)
     except (OSError, SystemExit, ValueError):
         return False
 
@@ -512,7 +524,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--work", type=Path, default=None, help="the folder for each run's report and log")
     ap.add_argument("--workers", type=int, default=None,
                     help=f"n outright, 1 to {MAX_WORKERS} (tests and diagnosis; the hook never passes it)")
+    ap.add_argument("--select", type=Path, default=None,
+                    help="a T0/T1 selection's test files, one per line (Q-209; scripts/fasttier_select.py writes it)")
     a = ap.parse_args(argv)
+    if a.select is not None:
+        if not a.select.is_file() or not a.select.read_text(encoding="utf-8").strip():
+            _say(f"fast tier REFUSED: the selection file {a.select} is missing or empty")
+            return EXIT_REFUSED
+        EXTRA[:] = [f"@{a.select}"]
     if not join_kill_on_close_job():
         _say("no kill-on-close job (not Windows, or refused): a killed runner may leave its pytest running")
     work = a.work if a.work is not None else Path(tempfile.mkdtemp(prefix="s2x-fasttier-xdist-"))

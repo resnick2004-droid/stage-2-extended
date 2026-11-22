@@ -598,7 +598,7 @@ def test_hook_records_the_parallel_verdict_line(hook_repo):
     assert p.returncode == 0, p.stdout + p.stderr
     tree = git(hook_repo, "rev-parse", "HEAD^{tree}").stdout.strip()
     rec = [v for v in _verdicts(hook_repo) if v[0] == tree]
-    assert rec and len(rec[-1]) == 4, _verdicts(hook_repo)
+    assert rec and len(rec[-1]) == 5 and rec[-1][4] == "tier=T2", _verdicts(hook_repo)   # Q-209's tier field
     assert rec[-1][3].startswith(f"fast tier: 9 passed of {N_SELECTED} selected") and "n=2" in rec[-1][3]
     gd = Path(git(hook_repo, "rev-parse", "--absolute-git-dir").stdout.strip())
     assert (gd / "fasttier-xdist" / "parallel.json").is_file()
@@ -632,12 +632,18 @@ def test_the_hook_runs_the_parallel_runner_inside_the_lock_after_the_checks():
            '"$GITDIR/fasttier-xdist" -m "$FAST_TIER"\n')
     ser = 'run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"\n'
     assert par in text and ser in text
-    i_if = text.index("if [ -f scripts/fasttier_xdist.py ]; then\n")
-    assert i_if < text.index(par) < text.index("else\n", i_if) < text.index(ser) < text.index("fi\nFT_RC=$?", i_if)
+    # Q-209: the T2 branch closes the tier's if-chain, after the T0 and T1 branches
+    i_if = text.index('if [ "$TIER" = "T0" ] && [ -f scripts/fasttier_xdist.py ]; then\n')
+    i_t2 = text.index("elif [ -f scripts/fasttier_xdist.py ]; then\n", i_if)
+    assert i_t2 < text.index(par) < text.index("else\n", i_t2) < text.index(ser) < text.index("fi\nFT_RC=$?", i_t2)
     assert text.index("scripts/vendor_stage2.py --verify || vendor_failed") < i_if
     assert text.index('scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed') < i_if
     code = [ln.strip() for ln in text.splitlines() if "fasttier_xdist.py" in ln and not ln.lstrip().startswith("#")]
-    assert code == ["if [ -f scripts/fasttier_xdist.py ]; then", par.strip()]   # run once, nowhere else
+    runs = [ln for ln in code if ln.startswith("run_child")]
+    assert runs.count(par.strip()) == 1 and len(runs) == 4, runs   # T2 once; the pre-flight, T0 and T1 with --select
+    assert all('--select "$SEL"' in ln or '--select "$PRE"' in ln for ln in runs if ln != par.strip())
+    assert sum('--select "$PRE"' in ln for ln in runs) == 1
+    assert all(ln.index("scripts/fasttier_lock.py") < ln.index("fasttier_xdist.py") for ln in runs)
     assert "| tr -d '\\r' | tr '\\t' ' ')" in text                              # no tab can split the verdict record
     assert b"\r\n" not in (SCRIPTS / "pre-commit").read_bytes()
 
@@ -944,3 +950,37 @@ def test_a_runner_and_a_later_slot_never_count_the_same_memory_twice_or_not_at_a
     # and the slot let in beside it sees this one at 3 workers when it, in turn, chooses its n
     assert X.fast_tiers_beside({L.ENV_TOKEN: h.token}, lock) == [3]
     L.release(h.path, h)
+
+
+# ------------------------------------------------------------------------------------------------ Q-209: a selection's files
+
+def test_a_selection_narrows_the_serial_collection_and_parallel_commands_but_never_the_rerun(tmp_path, monkeypatch):
+    sel = tmp_path / "sel.txt"
+    monkeypatch.setattr(X, "EXTRA", [f"@{sel}"])
+    rep, ids = tmp_path / "r.json", tmp_path / "ids.txt"
+    base = X.serial_command(SEL, python="PY")
+    assert base[-1] == f"@{sel}" and base[:-1] == [*base[:-1]]
+    assert X.collect_command(SEL, rep, python="PY")[:len(base)] == base
+    assert X.parallel_command(SEL, 2, rep, python="PY")[:len(base)] == base
+    rer = X.rerun_command(SEL, ids, rep, python="PY")
+    assert f"@{sel}" not in rer and rer[-1] == f"@{ids}"               # the rerun runs exactly the failed tests
+
+
+def test_the_cli_refuses_a_missing_or_empty_selection(tmp_path, monkeypatch):
+    monkeypatch.setattr(X, "EXTRA", [])
+    empty = tmp_path / "empty.txt"
+    empty.write_text("", encoding="utf-8")
+    for p in (tmp_path / "missing.txt", empty):
+        assert X.main(["-m", SEL, "--select", str(p), "--work", str(tmp_path / "w")]) == X.EXIT_REFUSED
+    assert X.EXTRA == []
+
+
+def test_both_lanes_count_as_slots_beside(tmp_path, monkeypatch):
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    import fasttier_lock as L
+    rec = {"tree": "T", "pid": os.getpid(), "start": L.now().isoformat(), "updated": L.now().isoformat(),
+           "phase": "fast-tier", "token": "t0-holder", "workers": 2}
+    L.default_lock_path("t0").write_text(json.dumps(rec), encoding="utf-8")
+    assert X.fast_tiers_beside(env={}) == [2]
+    assert X.record_own_workers(3, env={L.ENV_TOKEN: "t0-holder"})
+    assert json.loads(L.default_lock_path("t0").read_text(encoding="utf-8"))["workers"] == 3

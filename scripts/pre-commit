@@ -218,20 +218,82 @@ if [ ! -f scripts/fasttier_lock.py ]; then
     echo "pre-commit: scripts/fasttier_lock.py is missing from this tree; merge master (Q-155) and commit again." >&2
     exit 1
 fi
-# The wrapper copies pytest's output into this tree's own git directory (never a shared scratch file), for the
-# verdict's pass line and for reading afterwards (S2X_FASTTIER_TEE; it is not passed on to pytest).
-FT_OUT="$GITDIR/fasttier-last.log"
-rm -f "$FT_OUT"
-S2X_FASTTIER_TEE=$FT_OUT
-export S2X_FASTTIER_TEE
 # Q-193: inside its slot the fast tier runs in parallel (pytest-xdist), with n workers chosen from the memory free at
 # the moment the slot is taken: scripts/fasttier_xdist.py. n = 1 runs the very command below; n >= 2 checks that the
 # parallel run held exactly the serial collection's tests, reruns only the tests that failed in parallel, serially, and
 # passes only if each passed in one or the other (a test that passed only serially is named in the verdict as an
 # isolation defect). The selection is the same either way. A tree without the script runs the serial command, as
 # before (not checked by less: it is the command that tree always ran).
+#
+# THE TIER (Q-209). scripts/fasttier_select.py reads this commit's staged paths and says which tests run, with the same
+# -m selection inside each: T0 (records only: the tests that read the records, in the one-slot `--lane t0`, never behind
+# a full run), T1 (a worker tree's code commit: the tests its change reaches by the import graph, plus the always-run
+# guards), T2 (the full fast tier: the main tree's code commits, every merge commit, every fallback). Anything else --
+# a tree without the selector, a selector that fails or prints no tier -- is T2, never less. The verdict line records
+# its tier; scripts/check_verdicts.py requires T2 on a branch's tip (scripts/fasttier_full.py runs it before a hand-back).
+TIER=T2
+TIER_WHY="the full fast tier (no selector in this tree)"
+SEL="$GITDIR/fasttier-selection.txt"
+PRE="$GITDIR/fasttier-preflight.txt"
+rm -f "$SEL" "$PRE"
+if [ -f scripts/fasttier_select.py ]; then
+    set +e
+    TIER_OUT=$("$PYTHON" scripts/fasttier_select.py --hook --out "$SEL" --preflight-out "$PRE" --index "$COMMIT_INDEX" 2>&1)
+    SEL_RC=$?
+    set -e
+    TIER=$(printf '%s\n' "$TIER_OUT" | sed -n 1p | tr -d '\r')
+    TIER_WHY=$(printf '%s\n' "$TIER_OUT" | sed -n 2p | tr -d '\r')
+    if [ "$SEL_RC" -ne 0 ]; then
+        TIER=T2
+        TIER_WHY="the selector exited $SEL_RC: the full fast tier"
+    fi
+fi
+case "$TIER" in
+    T0 | T1) [ -s "$SEL" ] || { TIER=T2; TIER_WHY="the selection file is empty: the full fast tier"; } ;;
+    T2) ;;
+    *) TIER=T2; TIER_WHY="the selector printed no tier: the full fast tier" ;;
+esac
+echo "pre-commit: tier $TIER -- $TIER_WHY"
+
+# THE PRE-FLIGHT (Q-209, E-274): the always-on guards (PREFLIGHT_GUARDS: the heavy-marker and heavy guards, the seed
+# guard, the identity tokens, the declarations, the git scan, the trace check, vendor integrity, reader*) and the tests
+# nearest the staged paths -- the staged test files, and the tests that import or name a staged file directly when
+# there are few -- run first, in the T0 lane (short runs only, never behind a full fast tier), through the same parallel
+# runner. A failure refuses the commit there, before the main stage takes a slot of the shared line. Nothing is
+# skipped by it: the tier's own stage below still runs every test it selects, these included.
+if [ -s "$PRE" ]; then
+    echo "--- pre-flight: the always-on guards and the nearest tests ($(wc -l < "$PRE" | tr -d ' ') files; the T0 lane) ---"
+    set +e
+    if [ -f scripts/fasttier_xdist.py ]; then
+        run_child "$PYTHON" scripts/fasttier_lock.py --lane t0 run -- "$PYTHON" scripts/fasttier_xdist.py --work "$GITDIR/fasttier-preflight" --select "$PRE" -m "$FAST_TIER"
+    else
+        run_child "$PYTHON" scripts/fasttier_lock.py --lane t0 run -- "$PYTHON" -m pytest -o addopts= -q -p no:cacheprovider -m "$FAST_TIER" "@$PRE"
+    fi
+    PF_RC=$?
+    set -e
+    if [ "$PF_RC" -ne 0 ]; then
+        refuse "the pre-flight FAILED (exit $PF_RC): the commit is refused before its $TIER stage took a slot of the line."
+    fi
+fi
+
+# The wrapper copies pytest's output into this tree's own git directory (never a shared scratch file), for the
+# verdict's pass line and for reading afterwards (S2X_FASTTIER_TEE; it is not passed on to pytest).
+FT_OUT="$GITDIR/fasttier-last.log"
+rm -f "$FT_OUT"
+S2X_FASTTIER_TEE=$FT_OUT
+export S2X_FASTTIER_TEE
+# T0 and T1 run their files through the same parallel runner as T2 (its collection matched, its failures rerun
+# serially), narrowed by --select; a tree without the runner runs them serially.
 set +e
-if [ -f scripts/fasttier_xdist.py ]; then
+if [ "$TIER" = "T0" ] && [ -f scripts/fasttier_xdist.py ]; then
+    run_child "$PYTHON" scripts/fasttier_lock.py --lane t0 run -- "$PYTHON" scripts/fasttier_xdist.py --work "$GITDIR/fasttier-xdist" --select "$SEL" -m "$FAST_TIER"
+elif [ "$TIER" = "T0" ]; then
+    run_child "$PYTHON" scripts/fasttier_lock.py --lane t0 run -- "$PYTHON" -m pytest -o addopts= -q -p no:cacheprovider -m "$FAST_TIER" "@$SEL"
+elif [ "$TIER" = "T1" ] && [ -f scripts/fasttier_xdist.py ]; then
+    run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" scripts/fasttier_xdist.py --work "$GITDIR/fasttier-xdist" --select "$SEL" -m "$FAST_TIER"
+elif [ "$TIER" = "T1" ]; then
+    run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -p no:cacheprovider -m "$FAST_TIER" "@$SEL"
+elif [ -f scripts/fasttier_xdist.py ]; then
     run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" scripts/fasttier_xdist.py --work "$GITDIR/fasttier-xdist" -m "$FAST_TIER"
 else
     run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"
@@ -249,8 +311,11 @@ fi
 SUMMARY=$(grep -E '[0-9]+ passed' "$FT_OUT" 2>/dev/null | tail -n 1 | tr -d '\r' | tr '\t' ' ') || SUMMARY=
 [ -n "$SUMMARY" ] || SUMMARY="-"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-printf '%s\t%s\t%s\t%s\n' "$TREE" "$NOW" "$REPO_ROOT" "$SUMMARY" >> "$COMMON/fasttier-verdicts.log" ||
+printf '%s\t%s\t%s\t%s\ttier=%s\n' "$TREE" "$NOW" "$REPO_ROOT" "$SUMMARY" "$TIER" >> "$COMMON/fasttier-verdicts.log" ||
     refuse "the fast tier passed but its verdict could not be recorded in $COMMON/fasttier-verdicts.log; the commit is refused."
 
-echo "pre-commit: OK (fast tier; the identity, the heavy tier and the vendored stage-one suite run in /validate)"
-echo "pre-commit: verdict recorded for tree $TREE ($SUMMARY) in $COMMON/fasttier-verdicts.log; full output $FT_OUT"
+echo "pre-commit: OK (fast tier, $TIER; the identity, the heavy tier and the vendored stage-one suite run in /validate)"
+echo "pre-commit: verdict recorded for tree $TREE ($SUMMARY; tier=$TIER) in $COMMON/fasttier-verdicts.log; full output $FT_OUT"
+if [ "$TIER" != "T2" ]; then
+    echo "pre-commit: this branch's tip needs T2 before its hand-back: python scripts/fasttier_full.py (scripts/check_verdicts.py)"
+fi

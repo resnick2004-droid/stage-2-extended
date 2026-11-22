@@ -219,7 +219,8 @@ def test_a_passing_fast_tier_commits_and_records_its_verdict(repo, tmp_path):
     lines = [ln.split("\t") for ln in verdicts(repo).splitlines() if ln.startswith(tree)]
     assert lines, f"no verdict for {tree}: {verdicts(repo)!r}"
     rec = lines[-1]
-    assert len(rec) == 4, rec                                     # tree, UTC time, worktree, the pass line
+    assert len(rec) == 5, rec                     # tree, UTC time, worktree, the pass line, the tier (Q-209)
+    assert rec[4] == "tier=T2", rec               # a tree without the selector runs the full fast tier
     assert rec[1].endswith("Z") and "T" in rec[1]
     assert Path(rec[2]).resolve() == repo.resolve()
     assert rec[3] == "3 passed in 0.01s"
@@ -477,10 +478,10 @@ def _check(repo: Path, *rng: str) -> subprocess.CompletedProcess:
                           text=True, timeout=LIMIT, env=clean_env())
 
 
-def _record(repo: Path, rev: str) -> None:
+def _record(repo: Path, rev: str, tier: str | None = None) -> None:
     tree = head(repo, f"{rev}^{{tree}}")
     with (common_dir(repo) / "fasttier-verdicts.log").open("a", encoding="utf-8") as f:
-        f.write(f"{tree}\t2026-11-18T00:00:00Z\t{repo}\t1 passed in 0.01s\n")
+        f.write(f"{tree}\t2026-11-18T00:00:00Z\t{repo}\t1 passed in 0.01s" + (f"\ttier={tier}" if tier else "") + "\n")
 
 
 def _commit_file(repo: Path, name: str, msg: str) -> str:
@@ -506,15 +507,20 @@ def test_check_verdicts_lists_exactly_the_unverified_commits_and_exempts_clean_m
     listed = {ln.split()[0] for ln in p.stdout.splitlines() if ln and not ln.startswith(("#", " "))}
     # c2 has no verdict; the merge's first parent c2 is not clean, so the merge is not exempt either
     assert listed == {c2, m}, p.stdout
-    # with c2 verified, the merge of two clean parents is exempt and the range is clean
+    # with c2 verified, the merge is still the range's tip, which needs a T2 verdict on its own tree (Q-209)
     _record(repo, c2)
     p = _check(repo, f"{base}..{m}")
+    assert p.returncode == 1 and m in p.stdout and "tip needs a T2" in p.stdout, p.stdout + p.stderr
+    # below a verified tip, the merge of two clean parents is exempt and the range is clean
+    t = _commit_file(repo, "t.txt", "t")
+    _record(repo, t)
+    p = _check(repo, f"{base}..{t}")
     assert p.returncode == 0, p.stdout + p.stderr
 
 
 def test_check_verdicts_exempts_a_merge_whose_other_parent_is_outside_the_range(repo):
     """A worker merging master: master's commits are outside `master..wt/x` (accepted there), so the merge is exempt
-    when the branch's own parent is clean."""
+    when the branch's own parent is clean -- below the tip; the tip itself needs T2 on its own tree (Q-209)."""
     git(repo, "checkout", "-q", "-b", "wt/x")
     w1 = _commit_file(repo, "w1.txt", "w1")
     _record(repo, w1)
@@ -522,11 +528,33 @@ def test_check_verdicts_exempts_a_merge_whose_other_parent_is_outside_the_range(
     _commit_file(repo, "m1.txt", "m1")                            # master moves on, no verdict needed here
     git(repo, "checkout", "-q", "wt/x")
     git(repo, "merge", "-q", "--no-ff", "--no-verify", "-m", "merge master", "main")
+    merge = head(repo)
+    p = _check(repo, "main..wt/x")
+    assert p.returncode == 1 and merge in p.stdout and "tip needs a T2" in p.stdout, p.stdout + p.stderr
+    _record(repo, merge)                                          # fasttier_full.py on the merged tip
     p = _check(repo, "main..wt/x")
     assert p.returncode == 0, p.stdout + p.stderr
     w2 = _commit_file(repo, "w2.txt", "w2")
     p = _check(repo, "main..wt/x")
     assert p.returncode == 1 and w2 in p.stdout and p.stdout.count("\n") >= 1
+
+
+def test_check_verdicts_needs_t2_on_the_tip_and_any_tier_below_it(repo):
+    """Q-209: a T1 (or T0) verdict covers a commit below the tip, never the tip; a line without a tier field is T2."""
+    base = head(repo)
+    c1 = _commit_file(repo, "c1.txt", "c1")
+    _record(repo, c1, tier="T1")
+    c2 = _commit_file(repo, "c2.txt", "c2")
+    _record(repo, c2, tier="T1")
+    p = _check(repo, f"{base}..{c2}")
+    assert p.returncode == 1 and c2 in p.stdout and c1 not in p.stdout and "(has: T1)" in p.stdout, p.stdout
+    _record(repo, c2, tier="T0")
+    assert _check(repo, f"{base}..{c2}").returncode == 1
+    _record(repo, c2, tier="T2")
+    assert _check(repo, f"{base}..{c2}").returncode == 0
+    c3 = _commit_file(repo, "c3.txt", "c3")
+    _record(repo, c3)                                             # no tier field: a pre-Q-209 line, the full tier
+    assert _check(repo, f"{base}..{c3}").returncode == 0
 
 
 def test_check_verdicts_fails_loudly_on_a_bad_range(repo):

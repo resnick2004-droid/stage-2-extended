@@ -134,15 +134,59 @@ def dirty_checked_files(root: Path = ROOT, paths: tuple[str, ...] = CHECKED_PATH
     return [ln for ln in out.stdout.splitlines() if ln.strip()]
 
 
+def _git_out(root: Path, *args: str) -> str:
+    p = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=120, env=clean_env())
+    if p.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args)}: {p.stderr.strip()}")
+    return p.stdout.strip()
+
+
+def merge_gate(root: Path = ROOT, environ: dict | None = None, main_tree: bool | None = None) -> str | None:
+    """Q-209: in the main tree a merge commit is written only over merged tips that each have a T2 verdict (the full
+    fast tier on the tip's own tree). The merged commits are the names git puts in GIT_REFLOG_ACTION (`merge <name>
+    ...`; MERGE_HEAD is not yet written when pre-merge-commit runs). None when the merge may go on, else why not --
+    including when the names cannot be read (fail closed). A worker tree's merge (of master) is not gated here."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from check_verdicts import LOG_NAME, tree_has_t2
+    from fasttier_lock import is_main_worktree
+    if not (is_main_worktree(root) if main_tree is None else main_tree):
+        return None
+    env = os.environ if environ is None else environ
+    action = env.get("GIT_REFLOG_ACTION", "")
+    names = action.split()[1:] if action.split()[:1] == ["merge"] else []
+    how = ("run `python scripts/fasttier_full.py` in the merged branch's tree (its tip's T2 verdict), or merge with "
+           "`--no-commit` and then `git commit`, whose pre-commit hook runs T2 on the merge itself")
+    if not names:
+        return (f"the main tree merges only tips with a T2 verdict, and the merged commits cannot be read from "
+                f"GIT_REFLOG_ACTION={action!r}: {how}")
+    try:
+        log = Path(_git_out(root, "rev-parse", "--path-format=absolute", "--git-common-dir")) / LOG_NAME
+        missing = []
+        for n in names:
+            sha = _git_out(root, "rev-parse", "--verify", f"{n}^{{commit}}")
+            tree = _git_out(root, "rev-parse", f"{sha}^{{tree}}")
+            if not tree_has_t2(tree, log):
+                missing.append(f"{n} ({sha[:10]}, tree {tree[:12]})")
+    except (OSError, RuntimeError, subprocess.SubprocessError) as e:
+        return f"the merged tips' verdicts cannot be read ({e}): {how}"
+    if missing:
+        return f"the merged tip(s) {', '.join(missing)} have no T2 verdict: {how}"
+    return None
+
+
 def _tail(text: str, n: int = TAIL_LINES) -> str:
     return "\n".join(text.splitlines()[-n:])
 
 
 def run_checks(root: Path = ROOT, the_checks: list[Check] | None = None, budget_s: float = BUDGET_S,
-               monotonic: Callable[[], float] = time.monotonic) -> int:
+               monotonic: Callable[[], float] = time.monotonic, main_tree: bool | None = None) -> int:
     """Run every check from `root` within `budget_s` in all; 0 if each passed, else 1, every failure named."""
     the_checks = checks() if the_checks is None else the_checks
     t0 = monotonic()
+    gate = merge_gate(root, main_tree=main_tree)
+    if gate is not None:
+        _say(f"REFUSED: {gate}", err=True)
+        return 1
     dirty = dirty_checked_files(root)
     if dirty is None:
         _say("REFUSED: cannot compare the work tree with the merge's index (git diff failed)", err=True)
