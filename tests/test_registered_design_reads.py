@@ -42,6 +42,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from extended import reader as R  # noqa: E402
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194b: the held-out test's verdict rows)
 
 A1E, A1D = "vendor/stage2/data/atlas/A1/events.parquet", "vendor/stage2/data/atlas/A1/days.parquet"
 A3W = "vendor/stage2/data/atlas/A3/walks.parquet"
@@ -161,7 +162,8 @@ for phase in cfg["phases"]:
             rec["error"] = type(e).__name__ + ": " + str(e)[:600]
         after = lines()
         rec.update(stdout=buf.getvalue()[-3000:], events=list(events), ledger_exists=LEDGER.exists(),
-                   new=[json.loads(x) for x in after[len(before):]], prefix_kept=after[:len(before)] == before)
+                   new=[json.loads(x) for x in after[len(before):]], prefix_kept=after[:len(before)] == before,
+                   ledger_refs=[(json.loads(x).get('declaration') or {}).get('ref') for x in after])
         out.append(rec)
 print(json.dumps(out))
 '''
@@ -178,7 +180,9 @@ def real_rows() -> dict[str, str | None]:
 
 def log(rows: dict[str, str]) -> str:
     head = "# Decisions (a temporary tree, Q-58's tests)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
-    return head + "".join(line + "\n" for line in rows.values())
+    # Q-194c: F-98's pin, finalists' and verdict rows end every log a phase writes, so the verdict stays; the
+    # tree's first log is written without them and `VR.settle` adds them around F-98's ledgered read
+    return head + "".join(line + "\n" for line in [*rows.values(), *VR.ROWS])
 
 
 def tokened(rows: dict[str, str | None]) -> dict[str, str]:
@@ -200,7 +204,7 @@ def make_tree(base: Path, name: str, where: str, decisions: str) -> Path:
     t = base / "runs" / name
     (t / where).mkdir(parents=True)
     (t / where / "q58_driver.py").write_text(DRIVER, encoding="utf-8")
-    (t / "DECISIONS.md").write_bytes(decisions.encode("utf-8"))
+    (t / "DECISIONS.md").write_bytes(VR.without_rows(decisions).encode("utf-8"))
     manifest = []
     for rel in ALL4:
         p = t / rel
@@ -215,6 +219,9 @@ def make_tree(base: Path, name: str, where: str, decisions: str) -> Path:
     git(t, "config", "core.autocrlf", "false")
     git(t, "add", "-A")
     git(t, "commit", "-q", "-m", "the temporary tree")
+    # Q-194b, Q-194c: NQ's joint held-out test read (ledgered) and its verdict row, so the reader's rule 3
+    # decides each registered read here
+    VR.settle(t, [t / BARS])
     return t
 
 
@@ -303,7 +310,7 @@ def test_outside_a_clean_run_the_read_is_checked_refused_and_nothing_is_ledgered
         assert len(a) == 1 and r["events"].index(a[0]) == 0, "one authorisation, before any of the engine's work"
         assert a[0]["purpose"] == "registered_design" and a[0]["declaration"] == row
         assert tuple(a[0]["design"]) == designs and (a[0]["start"], a[0]["end"]) == ("2020-01-02", "2026-07-16")
-    assert not r["ledger_exists"] and r["new"] == [], "no ledger file outside a clean run"
+    assert r["new"] == [] and VR.only_seed(r), "no line outside a clean run (the seeded joint test's alone)"
 
 
 @pytest.mark.parametrize("script", SCRIPTS)
@@ -349,7 +356,8 @@ def test_inside_a_clean_run_the_lines_are_one_per_run_in_order(results):
     want = [row for _, _, row, *_ in RUNS if row]
     got = [line["declaration"]["ref"] for r in phase(results, "scripts", "inside") for line in r["new"]]
     assert got == want
-    assert len(R.read_ledger(results["tree"] / R.LEDGER_REL)) == len(want)
+    led = R.read_ledger(results["tree"] / R.LEDGER_REL)       # Q-194c: the seeded joint test's line first
+    assert led[0]["declaration"]["ref"] == VR.HT_PATH and len(led) == 1 + len(want)
 
 
 @pytest.mark.parametrize("name", ["no_design_outside", "no_design_inside", "missing_outside", "missing_inside"])
@@ -369,4 +377,4 @@ def test_the_reading_from_a_script_under_identity_is_refused(results, name, scri
     r = next(x for x in phase(results, "identity", name) if x["script"] == script)
     assert r.get("rc") == 3 and "error" not in r and "stopped" not in r, explain(r)
     assert "REFUSED" in r["stdout"] and "scripts/" in r["stdout"], explain(r)
-    assert work(r) == [] and not r["ledger_exists"], "nothing starts; no ledger file"
+    assert work(r) == [] and VR.only_seed(r), "nothing starts; no line (the seeded joint test's alone)"

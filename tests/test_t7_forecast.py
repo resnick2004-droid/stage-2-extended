@@ -54,8 +54,17 @@ In a child process (`tests/t7_synthetic.py`, synthetic bars, the reader stood in
 * `test_child_script_end_to_end` -- `main` writes the file and manifest to a temporary folder only, both identities
   hold, every read is inside the search years under the declared purpose and row, the frame passes `output_problems`
   and the licence guard, and the loader refuses it for exactly the toy's reasons (no clean run, not the whole span);
-* `test_child_script_refuses` -- `--end 2024-01-02` or `2026-07-17` and `results/` outside a clean run exit 2 with no
-  read; a failed a1_days identity exits 4 with nothing written.
+  the manifest's description and notes name the diagnostics "diagnostics, not a forward test" and carry the labels
+  (C3, C7), its `data_manifest` holds the three inputs' sha256 (C4), and a re-run under `--name t7_forecast_v2`
+  beside it writes a new file whose CSV bytes are identical;
+* `test_child_script_refuses` -- `--end 2024-01-02` or `2026-07-17`, `results/` outside a clean run and a `--name` not
+  starting `t7_forecast` exit 2 with no read; a failed a1_days identity exits 4 with nothing written;
+* `test_child_label_identity_on_synthetic_days_and_its_mutants` -- Q-195's label identity (`identity/
+  t7_label_identity.py`, the audit's C1) holds on ten synthetic days through Stage 2's own day arrays and this
+  repository's walker (no breakeven), at fixed stops of 10, 25 and 50 points, and fails on five mutations of T7's
+  label, IV and entry;
+* `test_label_identity_synthetic_mode_exits_zero` -- its `--synthetic` mode exits 0;
+* `test_label_identity_on_the_declared_days` (**heavy**) -- the identity on the six declared search-year days' bars.
 
 Seeds (named by role, outside the 2026xxxx range): `SEED_BARS` 4731 (the synthetic bars), `SEED_SHIFT` 4732 (the
 replacements; the k-th cut takes the k-th child), `SEED_PLANT` 4733 (the planted tables), `SEED_BM` 4734 (the
@@ -542,7 +551,10 @@ def test_the_loader_refuses_then_loads(tmp_path, monkeypatch):
     q = T.admission_line()[0]
     assert r.kind == "choices" and r.values == ("off", "admit") and r.detail["q"] == q
     assert r.detail["sha256"] == hashlib.sha256(p.read_bytes()).hexdigest()
-    assert len(r.detail["labels"]) == 2 and "D-306" in r.detail["labels"][0] and "market entry" in r.detail["labels"][1]
+    assert r.detail["labels"] == T.LABELS and r.detail["model"]["labels"] == T.LABELS and len(T.LABELS) == 4
+    for word in ("D-306", "per-mark", "market entry only", "not rounded to the tick", "never admitted"):
+        assert any(word in lab for lab in T.LABELS), word
+    assert r.read == {"D-212's line (q)": q}
     frame = pd.read_csv(p)
     sel = (frame["section"] == "coef") & (frame["band"] == "day") & (frame["stat"] == "x3")
     model = r.detail["model"]
@@ -803,3 +815,26 @@ def test_child_script_end_to_end():
 def test_child_script_refuses():
     got = _child("refuse")
     assert got["ok"], got
+
+
+def test_child_label_identity_on_synthetic_days_and_its_mutants():
+    """Q-195 (the audit's C1): the label identity holds on synthetic days through Stage 2's own day arrays, is not
+    vacuous (sides open and resolved at the fixed stops), and fails on five mutations of T7's label, IV and entry."""
+    got = _child("label")
+    assert got["ok"], got
+    assert got["days"] == 10 and got["filled"] == got["marks"] and all(got["caught"].values()), got
+
+
+def test_label_identity_synthetic_mode_exits_zero():
+    r = subprocess.run([sys.executable, str(ROOT / "identity" / "t7_label_identity.py"), "--synthetic"],
+                       capture_output=True, text=True, timeout=900, cwd=str(ROOT))
+    assert r.returncode == 0 and r.stdout.strip().splitlines()[-1] == "EXIT 0", (r.stdout[-2000:], r.stderr[-2000:])
+    assert "identity t7_label (synthetic): 10 days -- HELD" in r.stdout
+
+
+@pytest.mark.heavy
+def test_label_identity_on_the_declared_days():
+    """Reads the six declared search-year days' bars (the lead runs it under the lock)."""
+    r = subprocess.run([sys.executable, str(ROOT / "identity" / "t7_label_identity.py")], capture_output=True,
+                       text=True, timeout=1800, cwd=str(ROOT))
+    assert r.returncode == 0 and r.stdout.strip().splitlines()[-1] == "EXIT 0", (r.stdout[-3000:], r.stderr[-2000:])

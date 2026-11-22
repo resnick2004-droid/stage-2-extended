@@ -32,6 +32,7 @@ import pytest
 import yaml
 
 from extended import reader
+import heldout_verdict_rows as VR  # noqa: E402  (Q-194c: the joint held-out test, ledgered, and its verdict)
 
 ROOT = Path(__file__).resolve().parent.parent
 PREREG = ROOT / "prereg"
@@ -218,9 +219,9 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     engine reads over the whole development window under each purpose of its `Judged-block reads:` line -- judged,
     ledgered inside a (simulated) clean run as a described reading with its pin's sha256 -- and is refused where a
     family's file would be: outside a clean run, by another run under the same purpose with no decision row naming
-    it, and once edited after its pin; and, as a family's, never for the purpose `registered_design` (E-037). Q-158:
-    the synthetic log's E-991 carries NQ's held-out verdict token, which a described reading's judged read now needs
-    (the reader's held-out rule 4)."""
+    it, and once edited after its pin; and, as a family's, never for the purpose `registered_design` (E-037). Q-158,
+    Q-194c: the tree carries NQ's joint held-out test, its read ledgered, and its verdict row, which a described
+    reading's judged read needs (the reader's held-out rule 4); the seed's line is left out of the counts."""
     rel = "prereg/RD-01_firm_contracts.md"
     body = text()                                                      # LF, as the pins are taken
     pin = hashlib.sha256(body.encode("utf-8")).hexdigest()
@@ -229,9 +230,7 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     (t / "prereg").mkdir(parents=True)
     (t / rel).write_bytes(body.encode("utf-8"))
     (t / "DECISIONS.md").write_text("# Decisions (synthetic, Q-74)\n\n| id | date | decision | basis |\n|---|---|---|---|\n"
-                                    f"| E-990 | 2026-11-16 | **RD-01 declared**, `{rel}` sha256 `{pin}` | test |\n"
-                                    "| E-991 | 2026-11-16 | heldout-verdict: NQ F-13 -- NQ's held-out test has its "
-                                    "verdict | test |\n",
+                                    f"| E-990 | 2026-11-16 | **RD-01 declared**, `{rel}` sha256 `{pin}` | test |\n",
                                     encoding="utf-8")
     (t / ".gitignore").write_text("vendor/stage2/data/\nresults/\n", encoding="utf-8")
     for f in ENGINE_FILES:
@@ -241,6 +240,9 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
                  ("config", "user.name", "t"), ("config", "core.autocrlf", "false"), ("add", "-A"),
                  ("commit", "-q", "-m", "the pinned reading")):
         _git(t, *args)
+    # Q-194c: NQ's joint held-out test read through the reader (ledgered) and its verdict row, which a described
+    # reading's judged read needs (rule 4)
+    VR.settle(t, [t / ENGINE_FILES[0]])
     monkeypatch.setattr(reader, "RUNS_DIR", runs)
     monkeypatch.setenv(reader.CLEAN_RUN_ENV, t.name)
     monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@1")
@@ -253,7 +255,7 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
             a = reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=p, declaration=declaration, **kw)
             assert (a.judged, a.ledgered, a.kind, a.declaration, a.declaration_sha256) == \
                 (True, True, "described_reading", rel, pin), (p, declaration, a)
-    recs = reader.read_ledger(led)
+    recs = [r for r in reader.read_ledger(led) if r["declaration"]["ref"] != VR.HT_PATH]
     assert sorted(r["purpose"] for r in recs) == sorted(purposes * 2)
     assert all(r["declaration"] == {"ref": rel, "sha256": pin, "kind": "described_reading"} for r in recs)
     assert all([f["path"] for f in r["what"]["files"]] == list(ENGINE_FILES) for r in recs)
@@ -276,4 +278,4 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@3")
     with pytest.raises(reader.JudgedBlockSealed, match="edited since"):
         reader.authorise_engine_read("2020-01-02", "2026-07-16", **one)
-    assert len(reader.read_ledger(led)) == len(recs), "a refused read writes no line"
+    assert len(reader.read_ledger(led)) == 1 + len(recs), "a refused read writes no line"

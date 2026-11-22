@@ -6605,3 +6605,148 @@ rules:
       H8528346 once each, all silent. Silence is not a permission: the record does not say that no rule limits
       starts, which A11 needs. The Terms (myfundedfutures.com/terms) were not re-read (this read was confined to the
       help centre).
+
+  # ==== Platform fact (2026-11-21): can a hand-entry user rest two entries as one OCO pair on TopstepX? ==============
+  # The playbook's alert tells the user to enter the pair "as the platform's OCO order type", each entry with its own
+  # stop and target. Four entries: the OCO order type (verified), the entry pair with brackets (unstated), the Auto-OCO
+  # brackets and their limits (verified), and the platforms Topstep offers (verified). Public pages only; no sign-in,
+  # no order placed or simulated. Read 2026-11-21 as the lead instructed; the machine's local date was 2026-11-20.
+  - key: topstepx_oco_order_type
+    firm: topstep
+    value: "TopstepX's Order Ticket offers an OCO (One Cancels the Other) order type: 2 linked orders, when 1 executes the other cancels automatically; the order-types article lists it as available on TopstepX and describes its use as a bracket (a stop and a limit wrapping a position, 1 side profit target, 1 side stop loss); which order types may be its legs, whether both legs may be entries, and any interface other than the Order Ticket are not stated"
+    units: text
+    status: verified
+    article_id: "14434175; 8765442"
+    url: https://help.topstep.com/en/articles/14434175-topstepx
+    date_read: 2026-11-21
+    verified_by: rules-verifier (stage2-extended, main tree, platform-fact session 2026-11-21)
+    quote: |
+      14434175, "TopstepX™" ("Updated this week"), order types table:
+      "OCO (One Cancels the Other)" | "2 linked orders — when 1 executes, the other cancels automatically"
+      Order Ticket: "pick your order type (Market, Limit, Stop Market, Trailing Stop, or OCO)"
+      8765442, "Order Types, Fills, and Slippage" ("September 16, 2026"):
+      "All order types below are available on TopstepX™."
+      OCO row: "2 orders linked. When 1 fills, the other cancels."
+      OCO section: "Primarily used as bracket orders — a stop and a limit wrapping your position."
+      FAQ: "You place 2 orders simultaneously." / "Traders use it as a bracket — 1 side for profit target, 1 for stop loss."
+      OSO section: "Combine with OCO to fully automate your exit once the entry fills."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD (Stage 2's ledger has no OCO or order-type row). FETCHES: 14434175 read four times on
+      2026-11-21 with differently worded prompts. The OCO row's description came back verbatim in three, its label
+      "OCO (One Cancels the Other)" in two (the first gave "OCO"), and the Order Ticket excerpt in two. That
+      sentence is longer than the fetch tool's quote limit, so only the excerpt is recorded. 8765442 read three
+      times; every line in `quote` came back verbatim in two of them. Its OSO row ("When 1 fills, it sends the
+      other.") came back in one only and stays out of `quote`. WHAT THE PAGES DO NOT SAY (asked directly in each
+      fetch): which order types may be the legs of an OCO order; whether both legs may be entry orders (no example
+      pairs a buy stop with a sell stop, or a buy limit with a sell stop); whether an OCO order may be placed from
+      the chart, the DOM or mobile (14434175's only sentence placing OCO is the Order Ticket one; its mobile chart
+      list is "Market, Limit, Stop, and Trailing Stop", one fetch); and how Auto-OCO brackets apply to an order
+      placed as the OCO order type ("doesn't explain how the two interact", fourth fetch). Every example on both
+      pages is an exit bracket around a position. OTHER PAGES READ, silent on OCO: the TopstepX collection
+      19404054 (eight articles, none on orders or OCO); 8284136 "General Platform Troubleshooting" ("Updated this
+      week"); topstep.com/blog/topstepx-platform-guide (March 23, 2026; "Drag-and-Drop Brackets" link a target and
+      a stop; no OCO, no entry pair). The entry-pair question is its own entry,
+      topstepx_entry_oco_pair_with_brackets.
+
+  - key: topstepx_entry_oco_pair_with_brackets
+    firm: topstep
+    value: unstated
+    units: text
+    status: unstated
+    article_id: "14434175; 8765442"
+    url: https://help.topstep.com/en/articles/14434175-topstepx
+    date_read: 2026-11-21
+    verified_by: rules-verifier (stage2-extended, main tree, platform-fact session 2026-11-21)
+    quote: |
+      No official page read says that the two legs of TopstepX's OCO order may both be entry orders, or that each entry leg then carries its own stop and target. Nor does any page say that this is impossible.
+      What the pages do say: 14434175 "OCO (One Cancels the Other)" | "2 linked orders — when 1 executes, the other cancels automatically"; 8765442 "You place 2 orders simultaneously." and "Primarily used as bracket orders — a stop and a limit wrapping your position."
+      The per-entry bracket is a separate feature (14434175, "Auto-OCO Brackets"): "Every entry gets its own take-profit and stop-loss — no manual placement needed." / "Brackets apply per entry, not across the full position". No page says whether it attaches to a leg of an OCO order.
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD. Asked directly in every fetch of 14434175 (four) and 8765442 (three): absent each time.
+      "Unstated" is NOT a permission and NOT a prohibition. The only OCO TopstepX documents is a pair of exit legs
+      around a position: Auto-OCO brackets, or the OCO order type in its stated use as a bracket. The playbook's
+      alert, "enter the pair as the platform's OCO order type", therefore rests on a use the help centre does not
+      document. An alert must not assume that the OCO order type will accept two entries and give each its own
+      bracket. A READING, NOT A RULING, ON WHAT A HAND-ENTRY USER CAN DO ON THE DOCUMENTED FEATURES: turn on Auto-OCO
+      brackets (Settings → Risk Settings, while flat, and also on the interface traded from: with OCO off in the DOM
+      they do not apply). Rest the two entry orders as ordinary Stop Market or Limit orders, so each gets its own
+      bracket when it fills. When one fills, cancel the other entry by hand at once. The documented features carry
+      a risk: until the cancel, the second entry is live. A move that fills both before the cancel leaves two
+      opposite fills on one account, and "Brackets apply per entry", so two brackets can be working. The pages do
+      not say how TopstepX nets the opposite fills or what happens to the brackets. The alert should say this
+      plainly. Two ways to remove the risk: rest one side only, or arm the second side only after the first is
+      cancelled. Whether the OCO order type in fact accepts two entry legs could be settled by a manual check on a
+      Practice account (8284134; not read here) by the operator, or by asking Topstep support. This reader
+      placed no order. 16948328 "TopstepX: Price Alerts" (in the collection) was not read.
+
+  - key: topstepx_auto_oco_brackets
+    firm: topstep
+    value: "Auto-OCO brackets: every entry gets its own take-profit and stop-loss, OCO between them (when one fills, the other cancels automatically); per entry, not across the full position; must be flat to enable or switch bracket types; must be enabled on the specific interface(s) traded from, and if OCO is off in the DOM they do not apply even if enabled in Risk Settings; a value in ticks must exceed 5 ticks; a dollar value that does not place the brackets at least 4 ticks away is rejected"
+    units: text
+    status: verified
+    article_id: "14434175"
+    url: https://help.topstep.com/en/articles/14434175-topstepx
+    date_read: 2026-11-21
+    verified_by: rules-verifier (stage2-extended, main tree, platform-fact session 2026-11-21)
+    quote: |
+      14434175, "TopstepX™" ("Updated this week"), section "Auto-OCO Brackets":
+      "Every entry gets its own take-profit and stop-loss — no manual placement needed." "(OCO = One Cancels Other)"
+      "When one fills, the other cancels automatically"
+      "Brackets apply per entry, not across the full position"
+      "Must be flat to enable or switch bracket types"
+      "Using the DOM? OCO must also be enabled there."
+      "Enable Auto-OCO brackets directly on the specific interface(s) you trade from" ...
+      "If OCO is off in the DOM, Auto-OCO Brackets won't apply — even if enabled in Risk Settings."
+      "If you use ticks, TopstepX requires you to enter a value greater than 5 ticks."
+      "TopstepX will reject your orders if the dollar value entered does not place your brackets at least 4 ticks away" ...
+      Section on Position Brackets: "Attach predefined stop-loss and take-profit levels to every position automatically." / "The minimum distance Position Brackets can be placed is 4 ticks from the entry price."
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD. Four fetches of 14434175 on 2026-11-21. Every line in `quote` came back verbatim in at
+      least two. ONE FETCH ONLY, so kept out of `quote`: the setup path "Settings → Risk Settings → Switch to
+      Auto-OCO → set values → Save." (fourth; also in a web-search snippet, which does not count); the interface
+      sentence's ending "whether that is the Chart, Order Panel, DOM, or a combination of them." (third); and the
+      dollar-value sentence's lead-in "If you use a dollar value," (fourth). That sentence's ending is longer than
+      the tool's quote limit and came back in paraphrase as measured from the entry price. Position Brackets (per
+      position) and Auto-OCO brackets (per entry) read as the two bracket types a flat trader switches between ("switch
+      bracket types"); that pairing is this reader's, not the page's words. The page does not
+      say whether either attaches to a leg of the OCO order type (asked; absent). LIMITS THAT TOUCH THE DESIGNS: both bracket modes have a 4-tick floor, and a tick value must exceed
+      5 ticks. The designs' stops are far wider (P-16's 150 ticks). The breakeven move at a session open is by
+      hand (prohibited_strategy_auto_breakeven_sim_fills' note).
+
+  - key: topstep_platforms_offered
+    firm: topstep
+    value: "TopstepX is the only available trading platform; Quantower connects through TopstepX credentials, for the Trading Combine and Express Funded Account only; TopstepX cannot connect to external platforms like TradingView; NinjaTrader and Tradovate are named on no page read, so no OCO behaviour is stated for them"
+    units: text
+    status: verified
+    article_id: "8284199; 8284179; 14434175"
+    url: https://help.topstep.com/en/articles/8284199-new-to-topstep-start-here
+    date_read: 2026-11-21
+    verified_by: rules-verifier (stage2-extended, main tree, platform-fact session 2026-11-21)
+    quote: |
+      8284199, "New to Topstep? Start here." ("July 20, 2026"), FAQ "What trading platform does Topstep use?":
+      "TopstepX™ is the only available trading platform."
+      8284179, "Quantower Connection Instructions" ("June 18, 2026"):
+      "Quantower via TopstepX is available for the Trading Combine® and Express Funded Account® (XFA) only."
+      "Quantower connects through TopstepX credentials."
+      14434175, "TopstepX™", Charting: "Cannot connect to external platforms like TradingView"
+    stage2_key: null
+    stage2_value: null
+    note: >
+      NEW TO THIS RECORD. Two fetches each of 8284199 and 8284179, and two of 14434175 for the TradingView line.
+      Every line in `quote` came back verbatim in both. NinjaTrader and Tradovate: absent from 8284199 (asked by
+      name), 8284179, 14434175, 8765442, 8284136 and the TopstepX collection's titles; Rithmic, absent from 8284199,
+      14434175, 8765442 and 8284136 (asked by name). Three searches restricted to
+      help.topstep.com (and, in one, topstep.com), for NinjaTrader, Tradovate or Quantower with OCO or as platforms,
+      found no official page naming NinjaTrader or Tradovate. So the
+      help centre states no OCO behaviour for any other platform. It presents TopstepX as the only platform, and
+      Quantower as a front end on the TopstepX connection. Quantower's own OCO behaviour is not on 8284179 (asked;
+      absent) and was not read elsewhere: Quantower's site is not Topstep's official domain. One search summary
+      also cited a help-centre article saying Topstep covers platform fees "for many supported platforms" in the
+      Combine. That page was not fetched, and the claim is not part of this entry. The old platform article
+      8284139 returned HTTP 404 (one fetch); the search index now titles that URL "TopstepX™".
