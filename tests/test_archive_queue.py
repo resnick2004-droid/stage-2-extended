@@ -9,6 +9,8 @@ from __future__ import annotations
 import importlib.util
 import io
 import shutil
+import sys
+import types
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -181,6 +183,35 @@ def test_crlf_line_endings_are_kept(tmp_path):
     assert b"\r\n" in live and b"\n" not in live.replace(b"\r\n", b"")
     assert _ids(q.read_text(encoding="utf-8")) == ["Q-02", "Q-11", "Q-12", "Q-13", "Q-14"]
     assert _ids(a.read_text(encoding="utf-8")) == ["Q-01", "Q-03", "Q-10"]
+
+
+def _shadow_status(monkeypatch) -> None:
+    """What an earlier test in the same process can leave behind (Q-204): `extended.use_vendored_stage2()` (the reader
+    calls it in-process) puts `vendor/stage2/scripts`, whose own `status.py` has no `queue_rows`, at the front of
+    `sys.path`, and the bare name `status` may already be bound to that module. Both undone by monkeypatch."""
+    monkeypatch.syspath_prepend(str(ROOT / "vendor" / "stage2" / "scripts"))
+    monkeypatch.setitem(sys.modules, "status", types.ModuleType("status"))   # a `status` with no queue_rows
+
+
+def test_the_script_reads_its_own_status_parser_however_the_name_is_bound(files, monkeypatch):
+    """Q-204: the script's `status.py` is its sibling file, loaded by path, never whatever module the bare name `status`
+    resolves to in the process (under pytest-xdist, the vendored `scripts/status.py`, put first by an earlier test file
+    on the same worker): the move succeeds, and the parser it used is this tree's `scripts/status.py`."""
+    _shadow_status(monkeypatch)
+    mod = _load("s2x_archive_queue_shadowed", "scripts/archive_queue.py")
+    q, a = files
+    assert mod.main(["--queue", str(q), "--archive", str(a), "--date", "2026-11-18"]) == 0
+    assert _ids(a.read_text(encoding="utf-8")) == ["Q-01", "Q-03", "Q-10"]
+    assert Path(mod._status().__file__).resolve() == (ROOT / "scripts" / "status.py").resolve()
+    assert not hasattr(sys.modules["status"], "queue_rows"), "the bare name is left as the process had it"
+
+
+def test_the_already_loaded_script_is_not_moved_by_a_later_shadow(files, monkeypatch):
+    """The module loaded at this file's import (`A`) keeps reading its own parser after the shadow appears."""
+    _shadow_status(monkeypatch)
+    q, a = files
+    assert _run(q, a) == 0
+    assert Path(A._status().__file__).resolve() == (ROOT / "scripts" / "status.py").resolve()
 
 
 def test_on_a_copy_of_this_trees_queue(tmp_path, monkeypatch):
