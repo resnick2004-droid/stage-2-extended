@@ -222,3 +222,5 @@ Append-only, newest last; one entry per tick or event. Routine progress is logge
 | 2026-11-20 | lead | E-253, E-254: T7 merged and run on the search years (identities held, loads); H4 and template v2 blocked and in cycle 1; a withdrawn ruling on the baselines' seats; Q-194; the lever rows built. |
 | 2026-11-21 | lead | E-255 to E-258: the T7 and Q-172 audits recorded (clean with caveats); MEASURES section 6 narrowed to the point arm; the template's rulings and its re-declaration as v3; the CHARTER 3.7 reading row; Q-195 to Q-199 queued. |
 | 2026-11-21 | lead | E-259 to E-267: the template v3 rulings; Q-193 and Q-199 merged; the lever rows merged; Q-195, Q-196 and Q-197 run and merged; the reviews and rulings since E-258; Q-200 to Q-205 queued. |
+| 2026-11-21 | lead | E-268 to E-272: O-7's five search-years deltas RD-06 to RD-10 pinned (the gatekeeper's approval; wt/wt-firms 4e03225 merged and renamed byte for byte); CHARTER 3.6 (b)'s RD-04 (c) declared, not run. |
+| 2026-11-22 | lead | E-273: today's merges recorded (Q-204, Q-207, Q-175, Q-173 and Q-194 to Q-194e, O-7); Q-179's re-hold next. |
