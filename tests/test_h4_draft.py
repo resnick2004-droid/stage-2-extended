@@ -35,6 +35,7 @@ here (m-1).
 from __future__ import annotations
 
 import ast
+import hashlib
 import importlib.util
 import math
 import re
@@ -69,7 +70,7 @@ DECLARED_PATTERNS = (re.compile(rf"^results/h4_(units_{_B}|readings_{_B}|trades_
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
-PROVISIONAL_W42, RUNNER_COMMIT = "c014d0a", "adedf7f"
+PROVISIONAL_W42, RUNNER_COMMIT = "01e896a", "adedf7f"
 SKIP_DIRS = {".git", "data", "__pycache__", ".pytest_cache", "node_modules"}
 W42_PLACEHOLDER = "`<W42-R1's pinning row and the LF sha256 of its three files, filled at W42-R1's pin>`"
 NESTED_CUTS = ("2022-12-30", "2023-06-30", "2023-09-29")
@@ -81,6 +82,7 @@ ALLOWED_NUMBERS = {
     "20": "measure (28)'s other level, 20 %, named as not read",
     "21": "a month is 21 sessions (CHARTER 2); measures (4) and (8) at session 21; a batch of a month of starts",
     "63": "months 1-3, P_B's horizon (MEASURES section 2)",
+    "60": "the volatility window, 60 bars by the alert (the lead's ruling on F4-1)",
     "90": "D-212's 90 % of trades (CHARTER section 4)",
     "126": "W, W42-R1's window (U1's and Q-44's ledger constant)",
     "252": "twelve months, the observation window's cap (MEASURES 1.1)",
@@ -102,6 +104,7 @@ UNREAD_WORDS = ("never read", "refus", "unread", "held-out years", "confirmation
 FINDINGS = tuple(f"B-{i}" for i in range(1, 8)) + tuple(f"m-{i}" for i in range(1, 8))
 FINDINGS_C2 = ("RB-1", "RB-2") + tuple(f"rm-{i}" for i in range(1, 7)) + tuple(f"rn-{i}" for i in range(1, 5))
 FINDINGS_C3 = ("RC-1", "RC-2") + tuple(f"rc-{i}" for i in range(3, 14)) + ("rn-a to rn-e",)
+FINDINGS_T4 = tuple(f"F4-{i}" for i in range(1, 15)) + ("N4-1 to N4-3",)
 
 
 def _lf(p: Path) -> str:
@@ -171,7 +174,7 @@ def test_the_form(text: str) -> None:
         "cycles.**" in _flat(text)
     assert "Under the failure protocol this text is a new declaration" in _flat(text)
     assert "`prereg/TEMPLATE_family.md`'s form\n(sections 0 to 19)" in text
-    heads = [f"\n## {n}. " for n in range(20)] + [f"\n## Appendix {a}. " for a in "ABCDEF"]
+    heads = [f"\n## {n}. " for n in range(20)] + [f"\n## Appendix {a}. " for a in "ABCDEFG"]
     pos = [text.find(h) for h in heads]
     assert all(p >= 0 for p in pos), [h for h, p in zip(heads, pos) if p < 0]
     assert pos == sorted(pos)
@@ -212,8 +215,7 @@ def test_the_seed_table(text: str) -> None:
     assert status[:5] == ["tests", "design check", "reading", "schedule", "audit sample"]
     assert roles[5:] == ["spare"] * 5 and status[5:] == ["spare, drawn by nothing"] * 5
     assert len(set(roles[:5])) == 5, "one role each"
-    assert roles[4].startswith("`h4b_audit_sample` (the spare `h4_spare_4`, to register): H4-B, the audit sample of "
-                               "units -- one draw a unit (start, seed index)")                              # rc-3
+    assert roles[4].startswith("`h4_sample`: H4-U, the audit sample of units -- one draw a unit (start, seed index)")
     assert "a unit sampled when its draw is below 1 % (section 7)" in roles[4]
     assert roles[3].startswith("`h4s_schedule_side`: H4-S, the coin's schedule side -- one draw a (session, moment)")
     assert "so independent of every seed index" in roles[3]
@@ -222,9 +224,9 @@ def test_the_seed_table(text: str) -> None:
     assert not re.search(r"\b2026587\d\b", text), "H3's block is named by role only"
     flat = _flat(sec)
     assert "never the seed plus an offset (E-171)" in flat
-    assert ('`PARTS["H4-0"] == 10`, `PARTS["H4-B"] == 11`, `PARTS["H4-T"] == 12` (H4\'s tests) and '
-            '`PARTS["H4-S"] == 13`') in flat
-    assert "**The audit sample's seed takes the spare `h4_spare_4`** and is named here `h4b_audit_sample`" in flat
+    assert ('`PARTS["H4-0"] == 10`, `PARTS["H4-B"] == 11`, `PARTS["H4-T"] == 12` (H4\'s tests), '
+            '`PARTS["H4-S"] == 13` (the coin\'s schedule side) and `PARTS["H4-U"] == 14` (the audit sample)') in flat
+    assert "**as registered at wt/wt-three 805978a**" in flat and "**`h4_sample`** (status `audit sample`" in flat
     assert "**The scans are a guard, not the defence** (m-7)" in flat and "`ProvenanceRefused`" in flat
 
 
@@ -466,7 +468,8 @@ def _stripped(t: str) -> str:
     for a, b in (("<!-- h4_measures: begin -->", "<!-- h4_measures: end -->"),
                  ("<!-- h4_findings: begin -->", "<!-- h4_findings: end -->"),
                  ("<!-- h4_findings_c2: begin -->", "<!-- h4_findings_c2: end -->"),
-                 ("<!-- h4_findings_c3: begin -->", "<!-- h4_findings_c3: end -->")):
+                 ("<!-- h4_findings_c3: begin -->", "<!-- h4_findings_c3: end -->"),
+                 ("<!-- h4_findings_t4: begin -->", "<!-- h4_findings_t4: end -->")):
         t = t.replace(_between(t, a, b), " ")
     t = re.sub(r"`([^`\n]*)`", _code_span, t)
     t = re.sub(r"^\| \d{8} \|.*$", " ", t, flags=re.M)
@@ -556,7 +559,7 @@ def test_the_refusals_and_kills_are_held_exactly(text: str) -> None:
             "H4.") in s11
     assert "**The floors, each refusing" in s9, "the oracle and the overlap count are floors, not beside"
     floors = s9[s9.index("**The floors, each refusing"):]
-    assert "**the zero-edge oracle, exactly, per trade:**" in floors
+    assert "**the zero-edge oracle, exactly, per trade** (F4-5)" in floors
     assert "**the overlap count, per unit, on the taken trades** is 0 for every baseline and arm" in floors
     assert "equal to the code's count on every sampled unit" in floors
     bullets = [ln for ln in _section(text, 13).splitlines() if ln.startswith("- ")]
@@ -915,13 +918,17 @@ def test_the_appendixs_figures_recomputed(text: str, plan) -> None:
     exact = (21, 63, 90, 126)
     every = 1 + sum(exact) / 252
     stress = 1 + sum(exact) / 252 / 21
-    work = J * up * 252 * 4 * (2 * every + 2 * stress)
+    replays = J * up * (2 * every + 2 * stress)                       # F4-4: one vendored replay a unit
+    rs = plan.REPLAY_S_MEASURED * plan.REPLAY_MARGIN
+    hours = replays * rs / 2 / 3600
+    k = math.ceil(hours / 8)
     for b in ("naive_coin", "p14", "p15", "p16"):
         line = next(ln for ln in app.splitlines() if ln.startswith(f"  H4-B {b}"))
-        assert f"| {work:.3e} lane-trades |" in line, line
-        hours = [float(x) for x in line.split("lane-trades |")[1].split("|")[0].split()]
-        assert hours == [round(work * c * 1e-6 / 2 / 3600, 1) for c in (0.05, 0.5, 5.0)]
-        assert work * 5.0e-6 / 2 / 3600 <= 8, "each part fits its cap at the largest assumed cost"
+        assert f"| {replays:.4g} long-run replays | {hours:.1f} h over 2 workers | {k} parts" in line, line
+        assert f"{hours / k:.1f} h each, every seed in every part" in line
+        assert hours / k <= 8, "each part fits its cap"
+    assert plan.REPLAY_MARGIN >= 1 and plan.ORACLE_FACTOR >= 1
+    assert (ROOT / "docs" / "plans" / "scripts" / "h4" / "h4_replay_cost.py").is_file()
     assert J * 21 <= plan.A.max_lanes()
     assert len(plan.ARM_RUNS) == 4 and {a for a, _, _ in plan.ARM_RUNS} == {"off", "worse_1", "missed_0.1"}
 
@@ -1126,6 +1133,7 @@ def test_rc1_the_breakeven_law_and_the_coins_walk(text: str) -> None:
     assert "it walks as P-16 does (`walker.STAGE2`, the breakeven move on)" in s7
     s5 = _flat(_section(text, 5))
     assert "**by P-16's walk**, `walker.STAGE2`, FV3's breakeven move on" in s5 and "**the breakeven exits**" in s5
+    assert ("FV3's breakeven move on (the lead's ruling on RC-1), never `triggers.JOURNEY`'s move-off walk;") in s5  # T14
     dep = _deps(text)
     assert "**the `b` state to build** (RC-1)" in dep["the seed-paired runner"]
     assert "**the breakeven state carried** -- `EXIT_LAW` gains `b`" in dep["the seed-paired runner"]
@@ -1210,9 +1218,11 @@ def test_rc9_to_rc13(text: str, plan) -> None:
 
     dep = _deps(text)
     assert "**its pre-pin fix at c72526d**, merged as 75ff709" in dep["W42-R1"]
-    assert ("**its final commit c014d0a**, where the public `composite_per_seed`, `limit_estimate` and `null_journeys` "
-            "have landed and `DO_NOTHING_EPS` is to be declared") in dep["W42-R1"]
-    assert plan.PROVISIONAL_W42_COMMIT == "c014d0a"
+    assert "its commit c014d0a, where the public `composite_per_seed`, `limit_estimate` and `null_journeys` " \
+        "landed" in dep["W42-R1"]
+    assert "**its last pre-pin fix at 01e896a**, where `DO_NOTHING_EPS` and `above_floor` are declared" in dep["W42-R1"]
+    assert plan.PROVISIONAL_W42_COMMIT == "01e896a"
+    assert "DO_NOTHING_EPS" in _show("01e896a", "extended/wave42.py")
     w = _show("c014d0a", "extended/wave42.py")
     for fn in ("def composite_per_seed(", "def limit_estimate(", "def null_journeys("):
         assert fn in w, fn
@@ -1253,7 +1263,7 @@ def test_appendix_f_answers_every_finding(text: str) -> None:
     assert ids == FINDINGS_C3
 
 
-SEED_MODULE_COMMIT = "cb1ff6c"
+SEED_MODULE_COMMIT = "805978a"
 
 
 def test_the_seed_block_is_the_seed_modules() -> None:
@@ -1270,15 +1280,15 @@ def test_the_seed_block_is_the_seed_modules() -> None:
     roles = ast.literal_eval(env["H4_ROLES"])
     assert sorted(roles.values()) == list(H4_BLOCK), "the module's H4 block is this draft's"
     parts_src = ast.get_source_segment(src, env["PARTS"])
-    for name, pid in (("H4-0", 10), ("H4-B", 11), ("H4-T", 12), ("H4-S", 13)):
+    for name, pid in (("H4-0", 10), ("H4-B", 11), ("H4-T", 12), ("H4-S", 13), ("H4-U", 14)):
         assert f'"{name}": {pid}' in parts_src, name
     assert roles["h4_tests"] == H4_BLOCK[0] and roles["h4_0_probe"] == H4_BLOCK[1]
     assert roles["h4b_coins"] == H4_BLOCK[2] and roles["h4s_schedule_side"] == H4_BLOCK[3]
-    assert roles["h4_spare_4"] == H4_BLOCK[4] and "h4b_audit_sample" not in roles, "to register by wt-three"
+    assert roles["h4_sample"] == H4_BLOCK[4] and "h4_spare_4" not in roles, "the audit sample registered (F4-7)"
     text = _lf(DRAFT)
     table = _section(text, 15)
     for role, i in (("h4_tests", 0), ("h4_0_probe", 1), ("h4b_coins", 2), ("h4s_schedule_side", 3),
-                    ("h4b_audit_sample", 4)):
+                    ("h4_sample", 4)):
         assert re.search(rf"^\| {H4_BLOCK[i]} \| `{role}`", table, re.MULTILINE), role
 
 
@@ -1290,9 +1300,7 @@ def test_the_firm_paths_baseline_laws(text: str) -> None:
             "**(3) from x to the trade's time limit, bounded by it**",                                     # 1
             "**Beside:** both breakeven shares, the redrawn one and FV3's historical one",                  # 1
             "**its step count taken from the time to the move bar**",                                      # 2
-            "a need-aware exit drawn by the `profit_level` race at min(G, need), the consistency-cap exit by the "
-            "same race at its cap level, **both at R = the R the trade was read at** (`lt[\"rr\"]`), **never "
-            "`rr_used` on that path**",                                                                    # 3
+            "**both at R = the R the trade was read at** (`lt[\"rr\"]`), **never `rr_used` on that path**",  # 3
             "**at the contracts held, as the engine charges them** (D-324",                                # 4
             "`be_open` is the move bar's **end** index, s + 1 on Stage 2's bar-end clock",                  # 5
             "a missing bar is voided only by Q-197's pinned calendar, never by data",                       # 5
@@ -1307,3 +1315,119 @@ def test_the_firm_paths_baseline_laws(text: str) -> None:
     fp = _deps(text)["the firm path"]
     assert "**the firm path's baseline-mode laws as `BUILD_FIRMPATH_c2_2026-11-21` rules them**" in fp
     assert "**both breakeven\n  shares**" in text or "**both breakeven shares**" in _flat(_section(text, 12))
+
+
+
+# ------------------------------------------------------------------------------- text 4, cycle 1: F4-1 to N4-3
+
+#: F4-6: the cells that carry the rulings, each held whole (its LF text's sha256), so an edit beside a held phrase is
+#: seen; a deliberate change re-pins the cell here, in the same commit, under the red team's eye
+HELD_CELLS = {
+    "the breakeven move's law": "356c2c32028947893d5986ccafd9fa42f58ac93129d1a284119144b22e0ccb09",
+    "the need-aware and consistency-cap exits": "90156552993594700c77ee9d7db567b1d75d0b37f9727c988201e2736423104d",
+    "the fees": "12d453b7e9fc004f28f3147ffaa5e85ad8b3b1232bf0e59478d570e0f5dd7e08",
+    "the volatility at the alert": "1f9201e4a0c96015a850332675bec972d5fcb812a821d33838f2e41bd5ff14f2",
+    "the audit sample": "e01aef7b9f067d3ec0ea606ac0568a6e082056dcd8852812100b67990cb64a5d",
+    "positions open at once": "d6f1935e389013f070f1bb65457f0eaddee7c6779eeb3a1418cce0239f12abe1",
+}
+
+
+def _row(text: str, name: str) -> str:
+    sec = _section(text, 7)
+    rows = [ln for ln in sec.splitlines() if ln.startswith(f"| {name} |") or ln.startswith(f"| **{name}** |")]
+    assert len(rows) == 1, name
+    return rows[0]
+
+
+def _sha(s: str) -> str:
+    return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+
+def test_f4_6_the_ruling_cells_are_held_whole(text: str) -> None:
+    for name, sha in HELD_CELLS.items():
+        assert _sha(_row(text, name)) == sha, f"section 7's {name!r} row changed: re-pin it deliberately"
+    s9 = _section(text, 9)
+    oracle = s9[s9.index("  - **the zero-edge oracle"):s9.index("  - **the overlap count, per unit")]
+    assert _sha(oracle) == "833934cdc57de7cb681df745344ae9d228aec20d5ac29d0a95a194b92a84c167", "section 9's oracle changed"
+    assert _sha(_deps(text)["the firm path"]) == "e96daba20f93dc87ea98ace80a3b8d03510324c16958dea467e7c77cb62cda48", "Appendix C's firm-path cell changed"
+    s5 = _section(text, 5)
+    walk = s5[s5.index("- **The walk** is"):s5.index("- **Two trades at one moment**")]
+    assert _sha(walk) == "55aedd2288462398e09c217edb31b5632466c626cdff1bada75dbc1233404b8d", "section 5's walk sentence changed"
+
+
+def test_f4_1_the_volatility_estimator(text: str) -> None:
+    row = _flat(_row(text, "the volatility at the alert"))
+    for phrase in ("**the standard deviation of one-minute close-to-close changes, in ticks per root minute, over the "
+                   "last 60 bars closed at or before the alert**",
+                   "the window **crosses session breaks** (the daily break, weekends and holidays) into the previous "
+                   "session's bars, **the break's gap return excluded**", "so a 17:00 CT alert is never refused",
+                   "`three_way_journey.EPS` and `three_way_journey.WALK_MAX`, cited by key",
+                   "H3's draft at wt/wt-three 9e371d7"):
+        assert phrase in row, phrase
+    j = _show("9e371d7", "extended/three_way_journey.py")
+    assert re.search(r"^EPS = ", j, re.MULTILINE) and re.search(r"^WALK_MAX = ", j, re.MULTILINE)
+
+
+def test_f4_2_the_need_capped_law(text: str) -> None:
+    row = _flat(_row(text, "the need-aware and consistency-cap exits"))
+    assert ("**a need-bound Combine trade whose move bar comes before its limit takes the move law at the capped target "
+            "G' = min(G, need) (the cap exit's at its cap level), as the vendored engine and the staged build do, and "
+            "only a trade with no move bar takes the plain `profit_level` race at G'**") in row
+    assert "this replaces `EXIT_LAW`'s `profit_level` row for H4" in row
+
+
+def test_f4_3_the_order_of_the_pins(text: str) -> None:
+    s16 = _flat(_section(text, 16))
+    assert ("**H4's collection adapter `extended/h4_collect.py`** (built on this text's interface and tested on its "
+            "synthetic file), **Q-194's reader changes and the results writer merge to master before W42-R1 is "
+            "pinned**") in s16
+    assert "**from W42-R1's pin to H4-C no commit touches W42-R1's `IMPORTED_FILES`**" in s16
+    assert "no commit since W42-R1's pin touching its `IMPORTED_FILES` (F4-3)" in s16
+    assert "`extended/h4_collect.py` merged before W42-R1's pin (F4-3)" in _flat(_section(text, 18))
+    apply = _show("01e896a", "scripts/wave42_apply.py")
+    assert "IMPORTED_FILES" in apply and '"extended/h4_collect.py"' in apply
+
+
+def test_f4_4_and_f4_5_the_cost_and_the_oracle(text: str, plan) -> None:
+    row = _flat(_row(text, "the part cap"))
+    assert "**H4-B sized as the baseline mode runs it** (F4-4): one vendored replay a unit (start, seed index)" in row
+    assert "**never fewer seeds than J**" in row
+    assert "**one vendored replay a unit** (start, seed index)" in _deps(text)["the firm path"]
+    s9 = _flat(_section(text, 9))
+    assert ("on the 1 % audit sample, **an independent scalar replay of the same uniforms, matched bit for bit** (as "
+            "the firm path's C1-4 does)") in s9
+    assert "**the move law's inputs logged**: x, the step counts (s1, n1, s2, n2), the barriers" in s9
+    assert "the move law's x, s1, n1, s2, n2, barriers and G' (F4-5)" in _flat(_section(text, 16))
+    assert plan.parts_b(plan.j_provisional()) * plan.A.PART_CAP_H * plan.A.WORKERS * 3600 >= \
+        plan.replays_b(plan.j_provisional()) * plan.replay_s()
+
+
+def test_f4_7_to_f4_14(text: str) -> None:
+    flat = _flat(text)
+    b = _flat(_row(text, "the breakeven move's law"))
+    assert ("**its step taken from the time from the move bar to the limit** (T2: s2 = max(1, ceil(sigma sqrt(T2) / "
+            "sqrt(`WALK_MAX`))), n2 = round(sigma^2 T2 / s2^2), F4-8)") in b
+    assert "**The two-step law departs from v3's one step per trade** (S-1) **and its one T for both s and n** (s-b)" in b
+    assert "**its exact-fraction test runs before the pin** (section 18)" in b
+    assert "**The move law's and the need-capped law's exact-fraction tests passing on synthetic cases**" in flat
+    assert "**The arming threshold's lattice bias, beside** (F4-9)" in b                                # F4-9
+    assert "**and so are `at_need`, `rr_used` and `exit_kind`** (F4-10" in flat                         # F4-10
+    assert "**its kind read from the run's terminal state on the as-walked (reflected) path**" in flat  # F4-11
+    assert "**s the first FV3 session open strictly after the fill bar's end** (`s > u`" in b            # F4-13
+    assert "**the time limit comes from the clock and the pinned calendars**" in b
+    assert "**never from the day's last bar**" in b
+    assert "numbered `sub` = 0, 1, ... in the schedule's index order" in flat                           # F4-14
+    assert "**they are never refused**" in flat
+
+
+def test_n4_notes(text: str) -> None:
+    flat = _flat(text)
+    assert "**not** the staged build's `outcome=\"as_walked\"`" in flat                                  # N4-1
+    assert "**a missed signal frees its account at once** (N4-2)" in flat                               # N4-2
+    assert "**the convention beside** (N4-3)" in flat                                                   # N4-3
+
+
+def test_appendix_g_answers_every_finding(text: str) -> None:
+    table = _between(text, "<!-- h4_findings_t4: begin -->", "<!-- h4_findings_t4: end -->")
+    ids = tuple(re.findall(r"^\| (F4-\d+|N4-1 to N4-3) \|", table, re.MULTILINE))
+    assert ids == FINDINGS_T4

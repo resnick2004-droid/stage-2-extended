@@ -70,9 +70,9 @@ class W42NotPinned(RuntimeError):
 #: until the lead's pinning row exists (B-6; W42-R1 at 34ee968 pins all three files); `tests/test_h4_draft.py` then
 #: reads the constants from that commit
 W42_PIN: dict | None = None
-#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's final commit
-#: c014d0a on wt/wt-infra (its public functions landed; the constants J reads unchanged since 357a339)
-PROVISIONAL_W42_COMMIT = "c014d0a"
+#: the commit whose constants the provisional derivation reads (sizing only, never J_H4): W42-R1's last pre-pin fix
+#: 01e896a on wt/wt-infra (`DO_NOTHING_EPS` and `above_floor` added; the constants J reads unchanged since 357a339)
+PROVISIONAL_W42_COMMIT = "01e896a"
 #: W42-R1's floor on H4's seeds (its `H4_MIN_SEEDS`, m-2: below it no gap resolves) and the held-out test's J (its
 #: `TEST_SEEDS`, B-3), printed beside H4's J; the test holds both to `extended/wave42.py` at the provisional commit
 H4_MIN_SEEDS = 62
@@ -109,6 +109,14 @@ BATCH_STARTS = 21
 #: the log's row at an assumed 16 typed fields of 8 bytes (H4-0 measures the real size); the run refuses unless this
 #: many times the printed total is free on disk
 SAMPLE_SHARE = 0.01
+#: H4-B's cost as the firm path's baseline mode runs it (F4-4): one vendored replay a unit (start, seed index). The
+#: replay's seconds measured by `h4_replay_cost.py` on a synthetic campaign (2026-11-22, this machine, one BLAS
+#: thread), and the margin the plan sizes at: the baseline mode's wrapped draws, the move law's walks and real supply
+#: (H4-0 measures the real cost on P-14's real starts, and the cut rule re-sizes before any part runs)
+REPLAY_S_MEASURED = 0.0378
+REPLAY_MARGIN = 4.0
+#: the oracle's scalar replay of the sample's units (F4-5), at this many times a vectorised replay's cost
+ORACLE_FACTOR = 4.0
 LOG_ROW_BYTES = 16 * 8
 DISK_FACTOR = 2
 
@@ -158,15 +166,26 @@ def exact_factor(every_start: bool) -> float:
     return 1.0 + (share if every_start else share / EXACT_EVERY)
 
 
-def part_work(J: int) -> int:
-    """One baseline's H4-B part: every arm-run, every start (the weekday bound), the largest window, the toys' supply."""
-    T, h = sessions_upper(), max(WINDOWS)
-    return int(round(sum(A.lane_trades(1, 1, J, T, h) * exact_factor(every) for _, _, every in ARM_RUNS)))
-
-
 def replays_a() -> int:
     """H4-A's vendored replays, in long-run units: every start of every registered design, with every exact run."""
     return int(round(len(AS_TRADED) * sessions_upper() * exact_factor(True)))
+
+
+def replay_s() -> float:
+    """The seconds a long replay H4-B is sized at."""
+    return REPLAY_S_MEASURED * REPLAY_MARGIN
+
+
+def replays_b(J: int) -> float:
+    """One baseline's H4-B replays, in long-run units: every start (the weekday bound) under every seed index, every
+    arm-run, with U1's exact runs on every start of the `off` arm-runs and every `EXACT_EVERY`-th of the stress arms."""
+    return J * sessions_upper() * sum(exact_factor(every) for _, _, every in ARM_RUNS)
+
+
+def parts_b(J: int) -> int:
+    """One baseline's H4-B parts: disjoint start ranges, each inside the part cap at `replay_s()`; never fewer seeds."""
+    hours = replays_b(J) * replay_s() / A.WORKERS / 3600.0
+    return max(1, math.ceil(hours / A.PART_CAP_H))
 
 
 def sample_log_rows(J: int) -> int:
@@ -226,11 +245,19 @@ def report() -> str:
     out.append(f"  H4-A as traded    | {', '.join(AS_TRADED)} by user_beside.run_starts, arm {AS_TRADED_ARM}, "
                f"journey_block search | {ra} long-run replays | c_max={A.PART_CAP_H * 3600.0 * A.WORKERS / ra:.2f} s "
                "a replay")
-    w = part_work(J)
+    rb, k = replays_b(J), parts_b(J)
+    hours = rb * replay_s() / A.WORKERS / 3600.0
+    out.append(f"H4-B as the baseline mode runs it (F4-4): one vendored replay a unit; a replay measured at "
+               f"{REPLAY_S_MEASURED:g} s on a synthetic campaign (h4_replay_cost.py), sized at x{REPLAY_MARGIN:g}: "
+               f"{replay_s():.4f} s")
     for b in BASELINES:
         out.append(f"  H4-B {b:<12} | the firm path, J={J} seeds, {len(ARM_RUNS)} arm-runs "
-                   f"({'; '.join(f'{n} {r}' for n, r, _ in ARM_RUNS)}) | {w:.3e} lane-trades | "
-                   + "  ".join(f"{A.hours(w, c):.1f}" for c in A.COSTS_US) + f" | c_max={c_max_us(w):.2f} us")
+                   f"({'; '.join(f'{n} {r}' for n, r, _ in ARM_RUNS)}) | {rb:.4g} long-run replays | {hours:.1f} h "
+                   f"over {A.WORKERS} workers | {k} parts of disjoint start ranges, {hours / k:.1f} h each, every "
+                   f"seed in every part")
+    orc = SAMPLE_SHARE * rb * replay_s() * ORACLE_FACTOR / A.WORKERS / 3600.0
+    out.append(f"  the oracle (F4-5): the {SAMPLE_SHARE:.0%} sample's units replayed by the scalar path at "
+               f"x{ORACLE_FACTOR:g} a replay: {orc:.1f} h a baseline, inside its parts")
     out.append("  H4-C collection   | the four units files by sha256 into one result for W42-R1 | no lane-trades")
     rows = sample_log_rows(J)
     total = rows * LOG_ROW_BYTES * len(BASELINES)
