@@ -20,8 +20,9 @@ The checks, each derived from a refusal or a review on record (the hand-back of 
    template (section 14 item 4)", "§5") exists in that template, holds the item cited, holds the label the text names
    with it (R-10 cited at section 7 fails when R-10 is defined in section 5: the gatekeeper's refusal item 1 on H3), and a
    template cited "as pinned" has its pin row; every `E-NNN` is a row of master's `DECISIONS.md`; every commit sha names
-   a commit reachable from HEAD (or from `--rev`); every cited path exists; every LF sha256 cited beside a path is that
-   file's.
+   a commit reachable from HEAD (or from `--rev`); every cited path exists; every sha256 cited beside a path is that
+   file's -- its LF text for a declaration, a config or code; its raw bytes for a result file (as the results writer
+   and its manifest hash it; the LF text only where the citation names it), a missing result file a warning.
 3. `count.*` -- **counts written as a product and a number** (the template's "`k_cells` = <the product of the cells'
    factors, written as a product and a number>"; the gatekeeper's refusal item 3 on H3): in the count sections and on
    every `k_cells` line, a product with no number, a product whose factor is not a number written there, a product
@@ -48,6 +49,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -56,12 +58,48 @@ from datetime import date
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+#: the token grammar and the judged-block line are the repository's own (`extended/identity_tokens.py`, Q-110;
+#: `extended/reader.py`): imported from the path as it stands, else from the repository being linted (`_load`). The
+#: repository root is never taken from this file's location -- a copy run from %TEMP% would treat %TEMP% as the root
+IT = RD = None
+try:
+    from extended import identity_tokens as IT  # noqa: E402
+    from extended import reader as RD  # noqa: E402
+except ImportError:
+    pass
 
-from extended import identity_tokens as IT  # noqa: E402  (the one parser of the identity tokens, Q-110)
-from extended import reader as RD  # noqa: E402            (the held-out token grammar and the judged-block line)
+
+def repo_root(start: Path) -> Path | None:
+    """The git work tree holding `start` (`git rev-parse --show-toplevel`), or None."""
+    d = start if start.is_dir() else start.parent
+    try:
+        r = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(d), capture_output=True, text=True,
+                           timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else None
+
+
+def _load(root: Path) -> None:
+    """Import the token grammar from `root` when the path as it stood held none."""
+    global IT, RD
+    if IT is not None and RD is not None:
+        return
+    # the linted repository's grammar first; else the grammar of the repository this script sits in (found by git,
+    # for the grammar only -- the root of the citations stays the linted one)
+    own = repo_root(Path(__file__).resolve().parent)
+    for cand in [root] + ([own] if own is not None else []):
+        if not (cand / "extended" / "reader.py").is_file():
+            continue
+        if str(cand) not in sys.path:
+            sys.path.insert(0, str(cand))
+        try:
+            from extended import identity_tokens as it, reader as rd
+        except ImportError:
+            continue
+        IT, RD = it, rd
+        return
+    raise RuntimeError(f"cannot import the token grammar (extended.identity_tokens, extended.reader) from {root}")
 
 ERROR, WARNING = "error", "warning"
 
@@ -118,6 +156,10 @@ MADE_LATER = re.compile(r"\b(?:writ\w*|wrote|build\w*|built|creat\w*|adds?|added
 SHA256_CITE = re.compile(r"`(?P<path>[^`\s]+)`(?P<mid>[^`]{0,80}?)sha256[^`]{0,24}?"
                          r"`(?P<hex>[0-9a-f]{64}|[0-9a-f]{6,}(?:\.\.\.|…)[0-9a-f]{3,})`", re.DOTALL)
 TEMPLATE_PIN = r"`prereg/{name}` sha256 `([0-9a-f]{{64}})`"
+#: result files: hashed raw (as written) by the results writer and recorded so in their manifests
+RESULT_DIRS = ("results/", "vendor/stage2/results/")
+#: a citation that says it hashes the LF text ("LF sha256", "sha256 ... (of its LF text)")
+LF_NAMED = re.compile(r"\bLF\b")
 
 # --- 3. counts -------------------------------------------------------------------------------------------------------
 COUNT_HEADING = re.compile(r"^#{2,4} .*\b(?:count|counting|cells)\b", re.IGNORECASE)
@@ -721,23 +763,58 @@ class Lint:
         body = "\n".join("" if f else line for line, f in zip(self.text.lines, self.text.fenced))
         for m in SHA256_CITE.finditer(body):
             rel, shaped = self._resolve(m.group("path"))
-            if not shaped or rel is None:
+            if not shaped:
                 continue
-            commit = SHA.search(m.group("mid"))
-            data = self.tree.read_at(commit.group(1), rel) if commit else self.tree.read(rel)
-            if data is None:
-                continue
-            got, want = sha256_lf(data), m.group("hex")
             line = self.text.line_of(m.start("hex"))
-            if "." in want or "…" in want:
-                head, tail = re.split(r"\.\.\.|…", want)
-                ok = got.startswith(head) and got.endswith(tail)
+            want = m.group("hex")
+            token = re.sub(r"^[\w./-]+:(?=[\w.-]+/)", "", m.group("path").strip().rstrip(".,;:)"))
+            result = (rel or token).startswith(RESULT_DIRS)
+            commit = SHA.search(m.group("mid"))
+            data = None
+            if rel is not None:
+                data = self.tree.read_at(commit.group(1), rel) if commit else self.tree.read(rel)
+            if data is None:
+                if result or token.startswith(DATA_PATHS):
+                    self.add(WARNING, line, "xref.sha256", f"`{m.group('path')}` is not present to check its cited "
+                             f"sha256 {want[:16]}... (a result file or licensed data is never in a worktree)")
+                continue
+            lf_named = bool(LF_NAMED.search(m.group("mid") + body[m.end():m.end() + 60]))
+            if result:
+                # a result file is hashed as written, its raw bytes, by the results writer and its manifest; its LF
+                # text is accepted only where the citation names it
+                forms = {"raw": hashlib.sha256(data).hexdigest()}
+                if lf_named:
+                    forms["LF"] = sha256_lf(data)
             else:
-                ok = got == want
-            if not ok:
-                at = f" at {commit.group(1)}" if commit else ""
-                self.add(ERROR, line, "xref.sha256", f"`{m.group('path')}`{at} has LF sha256 {got[:16]}..., not the "
-                         f"cited {want[:16]}...")
+                forms = {"LF": sha256_lf(data)}                 # a declaration, a config or code: its LF text, always
+            at = f" at {commit.group(1)}" if commit else ""
+            if not any(self._sha_match(got, want) for got in forms.values()):
+                shown = ", ".join(f"{k} sha256 {v[:16]}..." for k, v in forms.items())
+                self.add(ERROR, line, "xref.sha256", f"`{m.group('path')}`{at} has {shown}, not the cited "
+                         f"{want[:16]}...")
+            elif result and not commit and "raw" in forms and self._sha_match(forms["raw"], want):
+                recorded = self._manifest_sha(rel)
+                if recorded is not None and recorded != forms["raw"]:
+                    self.add(ERROR, line, "xref.sha256", f"`{m.group('path')}`'s manifest records sha256 "
+                             f"{recorded[:16]}..., not the file's and the cited {want[:16]}...")
+
+    @staticmethod
+    def _sha_match(got: str, want: str) -> bool:
+        if "." in want or "…" in want:
+            head, tail = re.split(r"\.\.\.|…", want)
+            return got.startswith(head) and got.endswith(tail)
+        return got == want
+
+    def _manifest_sha(self, rel: str) -> str | None:
+        """The `sha256` its sidecar manifest (`<file>.manifest.json`, the results writer's) records, if one exists."""
+        raw = self.tree.read(rel + ".manifest.json")
+        if raw is None:
+            return None
+        try:
+            v = json.loads(raw.decode("utf-8")).get("sha256")
+        except (ValueError, AttributeError):
+            return None
+        return v if isinstance(v, str) and re.fullmatch(r"[0-9a-f]{64}", v) else None
 
     # ------------------------------------------------------------------------------------------ 3. counts
     def _count_lines(self) -> set[int]:
@@ -764,6 +841,8 @@ class Lint:
             line_no = a + 1
             checked: list[tuple[int, int]] = []
             for m in NUMERIC_EXPR.finditer(plain):
+                if re.search(r"\s[x×]\s*$", plain[:m.start(1)]):
+                    continue                        # "4 values of epsilon x 2 x 3 = 72": a word factor leads it
                 expr, want = m.group(1), int(m.group(2).replace(",", ""))
                 try:
                     got = eval(re.sub(r"[x×]", "*", expr.replace(",", "")), {"__builtins__": {}}, {})
@@ -817,8 +896,8 @@ class Lint:
             chain = [ops[k]]
             while k + 1 < len(ops):
                 between = unit[chain[-1].end():ops[k + 1].start()]
-                if re.search(r"[,;:.](?:\s|$)", Lint._strip_parens(between)):
-                    break
+                if re.search(r"[,;:.](?:\s|$)|=", Lint._strip_parens(between)):
+                    break                           # a clause ends, or a product's number is written
                 chain.append(ops[k + 1])
                 k += 1
             k += 1
@@ -923,8 +1002,11 @@ class Lint:
                 return total
             return None
         lead = re.match(r"(\d[\d,]*)(?!\d|\.\d)", f)
-        if lead:
+        if lead:                                    # "N <noun>": "4 values of epsilon", "3 arms"
             return int(lead.group(1).replace(",", ""))
+        trail = re.search(r"(?<![\w.-])(\d[\d,]*)$", f)
+        if trail:                                   # "<words> N" next to the operator: "over the two parts 2"
+            return int(trail.group(1).replace(",", ""))
         w = re.match(r"([a-z]+)\b", f.lower())
         if w and w.group(1) in SPELLED:
             return SPELLED[w.group(1)]
@@ -1245,9 +1327,23 @@ def guard_constants(src: str, rel: str) -> dict | None:
 
 # =================================================================================================== the command
 
-def lint(decl: Path, repo: Path = ROOT, rev: str | None = None, rel: str | None = None,
+def resolve_root(decl: Path, root: Path | None = None) -> Path:
+    """The repository the declaration's citations resolve in: `root` if given, else the git work tree holding the
+    declaration, else the one holding the working directory -- never this script's own folder."""
+    if root is not None:
+        return Path(root).resolve()
+    for start in (Path(decl).resolve().parent, Path.cwd()):
+        found = repo_root(start)
+        if found is not None:
+            return found.resolve()
+    raise RuntimeError(f"{decl} is in no git repository and neither is the working directory: pass --root")
+
+
+def lint(decl: Path, repo: Path | None = None, rev: str | None = None, rel: str | None = None,
          templates: Iterable[Path] = (), decisions: str | None = None, pin: bool | None = None) -> list[Problem]:
-    return Lint(decl, Tree(repo, rev), rel=rel, templates=templates, decisions=decisions, pin=pin).run()
+    root = resolve_root(decl, repo)
+    _load(root)
+    return Lint(decl, Tree(root, rev), rel=rel, templates=templates, decisions=decisions, pin=pin).run()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1258,7 +1354,9 @@ def main(argv: list[str] | None = None) -> int:
             pass
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0], formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("path", type=Path, help="the declaration to lint")
-    ap.add_argument("--repo", type=Path, default=ROOT, help="the repository its citations resolve in (default: this)")
+    ap.add_argument("--root", "--repo", dest="root", type=Path, default=None,
+                    help="the repository its citations resolve in (default: the git work tree holding the "
+                         "declaration, else the working directory's; never this script's folder)")
     ap.add_argument("--rev", help="resolve cited files and templates in this commit's tree, and commits from it")
     ap.add_argument("--as", dest="rel", help="the declaration's repository path, when the file lives elsewhere")
     ap.add_argument("--template", type=Path, action="append", default=[], help="a template file to add or replace")
@@ -1269,7 +1367,9 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     try:
         dec = a.decisions.read_text(encoding="utf-8").replace("\r\n", "\n") if a.decisions else None
-        found = lint(a.path, a.repo.resolve(), a.rev, a.rel, a.template, dec, a.pin)
+        if not a.path.is_file():
+            raise OSError(f"no such declaration: {a.path}")
+        found = lint(a.path, a.root, a.rev, a.rel, a.template, dec, a.pin)
     except (OSError, RuntimeError) as e:
         print(f"decl_lint: cannot run: {e}", file=sys.stderr)
         return 2

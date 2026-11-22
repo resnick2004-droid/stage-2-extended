@@ -262,6 +262,47 @@ def test_xref_sha256(repo):
     crlf = (repo / "docs" / "note.md")
     crlf.write_bytes(b"A cited note.\r\n")              # the LF text is hashed, as the pin test reads it
     assert "xref.sha256" not in rules(run(repo, CLEAN + f"\nThe note `docs/note.md` at LF sha256 `{good}`.\n"))
+    raw = hashlib.sha256(b"A cited note.\r\n").hexdigest()       # a declaration, config or code: never its raw bytes
+    assert "xref.sha256" in rules(run(repo, CLEAN + f"\nThe note `docs/note.md` sha256 `{raw}`.\n"), L.ERROR)
+
+
+RESULT = b"a,b\r\n1,2\r\n"                              # a result file as the writer leaves it on Windows: CRLF
+
+
+def _result(repo: Path, data: bytes = RESULT, manifest: bytes | None = RESULT) -> None:
+    (repo / "results").mkdir(exist_ok=True)
+    (repo / "results" / "out.csv").write_bytes(data)
+    if manifest is not None:
+        (repo / "results" / "out.csv.manifest.json").write_text(
+            '{"sha256": "%s"}' % hashlib.sha256(manifest).hexdigest(), encoding="utf-8")
+
+
+def test_xref_sha256_a_result_file_is_cited_at_its_raw_bytes(repo):
+    """The results writer and its manifest hash a result file raw (RD-10 l.209's citation, which the LF-only check
+    refused on master): raw passes; its LF sha passes only where the text names LF; a changed file fails."""
+    _result(repo)
+    raw, lf = hashlib.sha256(RESULT).hexdigest(), hashlib.sha256(RESULT.replace(b"\r\n", b"\n")).hexdigest()
+    assert raw != lf
+    cite = CLEAN + "\nRead as it stands: `results/out.csv`, sha256 `{}`.\n"
+    assert "xref.sha256" not in rules(run(repo, cite.format(raw)))
+    assert "xref.sha256" in rules(run(repo, cite.format(lf)), L.ERROR)
+    assert "xref.sha256" not in rules(run(repo, CLEAN + f"\nThe file `results/out.csv` at LF sha256 `{lf}`.\n"))
+    _result(repo, data=b"a,b\r\n1,3\r\n", manifest=b"a,b\r\n1,3\r\n")           # changed since it was cited
+    assert "xref.sha256" in rules(run(repo, cite.format(raw)), L.ERROR)
+
+
+def test_xref_sha256_a_result_files_manifest_must_record_it(repo):
+    _result(repo, manifest=b"something else")
+    raw = hashlib.sha256(RESULT).hexdigest()
+    found = [p for p in run(repo, CLEAN + f"\nRead as it stands: `results/out.csv`, sha256 `{raw}`.\n")
+             if p.rule == "xref.sha256"]
+    assert found and found[0].severity == L.ERROR and "manifest" in found[0].message
+
+
+def test_xref_sha256_an_absent_result_file_is_not_present_to_check(repo):
+    found = run(repo, CLEAN + "\nRead as it stands: `results/absent.csv`, sha256 `" + "1" * 64 + "`.\n")
+    sha = [p for p in found if p.rule == "xref.sha256"]
+    assert sha and all(p.severity == L.WARNING for p in sha) and "not present to check" in sha[0].message
 
 
 # ------------------------------------------------------------------------------------------------ 3. counts
@@ -291,6 +332,24 @@ def test_counts_a_product_and_its_number_pass(repo, line):
 ])
 def test_counts_fail(repo, line, rule):
     assert rule in rules(run(repo, COUNT.format(line=line)), L.ERROR)
+
+
+@pytest.mark.parametrize("line", [
+    # H3 at wt/wt-three 148dd76 l.168, which the lint misread (`2 x 3 x 3 is 18, not 72`): "N <noun>" factors are N
+    "P3, 4 values of epsilon x 2 x 3 x 3 = 72; P4, 3 values of a x 5 base sizes x 2 x 3 x 3 = 270.",
+    "over the two parts 2 x 27 = **54 pooled counts**.",
+    "the conjoint MDL, P1's 1 x 2 x 3 = 6 and P4's 3 x 2 x 3 x 3 = 54, **60 MDLs**.",
+])
+def test_counts_word_factors_are_read_as_their_numbers(repo, line):
+    found = run(repo, COUNT.format(line=line))
+    assert not {p.rule for p in found if p.rule.startswith("count.")}, [p.render() for p in found]
+
+
+def test_counts_a_word_led_product_is_still_checked_and_a_numberless_factor_only_warns(repo):
+    assert "count.mismatch" in rules(run(repo, COUNT.format(line="P3, 4 values of epsilon x 2 x 3 = 25.")),
+                                     L.ERROR)
+    found = run(repo, COUNT.format(line="The checks: the plants x 3 levels = 12."))
+    assert "count.symbolic" in rules(found, L.WARNING) and not rules(found, L.ERROR) & {"count.mismatch"}
 
 
 def test_counts_a_formula_outside_the_count_sections_is_not_a_count(repo):
@@ -435,6 +494,32 @@ def test_the_command_exit_codes_and_list(repo):
     lines = [x for x in r.stdout.splitlines() if x.strip()[:1].isdigit()]
     assert lines and lines[0].strip().startswith("1. ") and ":9: [" in lines[0]
     assert _cli(str(repo / "prereg" / "nothing.md"), "--repo", str(repo)).returncode == 2
+
+
+def test_the_root_is_the_declarations_repository_never_the_scripts_folder(repo, tmp_path):
+    """A copy of the script run from a folder outside any repository (the gatekeeper's copy in %TEMP% took %TEMP% as
+    the root and reported 24 false errors) resolves the root from the declaration's work tree, or from --root."""
+    copy = tmp_path / "elsewhere" / "decl_lint.py"
+    copy.parent.mkdir()
+    shutil.copy(SCRIPT, copy)
+    body = CLEAN + "\nThe note `docs/note.md`, the code `extended/uses.py`; as E-999 rules.\n"
+    p = repo / "prereg" / "F-20_mine.md"
+    p.write_text(body, encoding="utf-8")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONPATH=str(ROOT))    # the grammar only, not the root
+
+    def cli(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(copy), *args], capture_output=True, text=True, encoding="utf-8",
+                              env=env, cwd=str(copy.parent), timeout=300)
+
+    r = cli(str(p))
+    assert r.returncode == 1, r.stdout + r.stderr
+    assert "[xref.row]" in r.stdout and "[xref.path]" not in r.stdout, r.stdout
+    outside = tmp_path / "F-20_mine.md"                       # a declaration in no repository
+    outside.write_text(body, encoding="utf-8")
+    assert cli(str(outside)).returncode == 2                  # no root to find: it says so, never guesses
+    r = cli(str(outside), "--root", str(repo), "--as", "prereg/F-20_mine.md")
+    assert r.returncode == 1 and "[xref.row]" in r.stdout and "[xref.path]" not in r.stdout, r.stdout
+    assert L.resolve_root(p) == repo.resolve()
 
 
 # ------------------------------------------------------------------------------------------------ mutations
