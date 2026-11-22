@@ -1,16 +1,17 @@
-"""The full fast tier (T2) on this tree's committed tip, recorded as its verdict (Q-209): run before a hand-back.
+"""The full fast tier on this tree's committed tip, recorded as its verdict (Q-209): for a tip no pre-commit tested.
 
     python scripts/fasttier_full.py           # T2 on HEAD's tree, under the machine-wide fast-tier lock
     python scripts/fasttier_full.py --force   # run it again even if HEAD's tree already has a T2 verdict
 
-A worker's commits pass T1 (the tests their change reaches, scripts/fasttier_select.py); the branch's tip needs the full
-fast tier on its own tree before the lead merges it (`scripts/check_verdicts.py master..wt/<name>` lists a tip without
-a T2 verdict). This runs exactly the hook's T2 command -- `scripts/fasttier_lock.py run -- scripts/fasttier_xdist.py
+Every commit's pre-commit runs the full fast tier on its own tree, but a clean merge runs no pre-commit: a worker whose
+last commit merged master has a tip no fast tier tested, and the lead's merge gate (commit-msg) and
+`scripts/check_verdicts.py master..wt/<name>` refuse such a tip. Run this in that tree before the hand-back. This runs exactly the hook's T2 command -- `scripts/fasttier_lock.py run -- scripts/fasttier_xdist.py
 -m "not slow and not heavy"` (the serial pytest command where the xdist runner is absent) -- and, only when it returned
 0, appends HEAD's tree to `<git-common-dir>/fasttier-verdicts.log` with `tier=T2`, as the hook would have.
 
-**The tree must be HEAD**: no tracked change, staged or not, and no untracked file a test could collect or read (any
-`.py`, anything under tests/, extended/, scripts/, identity/, config/, prereg/, vendor/). It is checked before and again
+**The tree must be HEAD** (the red team's F12): no tracked change, staged or not, and no untracked file that .gitignore
+does not ignore -- anywhere, since a test may read any file -- but the log files at the tree's top level (the commit
+logs the worker protocol keeps inside the worktree), as the pre-commit hook allows. It is checked before and again
 after the run (a change during it, or a moved HEAD, records nothing). Exit codes: the fast tier's own when it failed;
 0 passed (or already verified); 3 the tree is not clean; 75/76 the lock's.
 """
@@ -28,7 +29,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_verdicts import LOG_NAME, tree_has_t2  # noqa: E402
 
 FAST_TIER = "not slow and not heavy"
-WATCHED = ("tests/", "extended/", "scripts/", "identity/", "config/", "prereg/", "vendor/")
 EXIT_DIRTY = 3
 
 
@@ -46,12 +46,13 @@ def _git(*args: str, root: Path = ROOT) -> str:
 
 
 def dirt(root: Path = ROOT) -> list[str]:
-    """What makes the work tree differ from HEAD for a test run: tracked changes, and untracked files it could read."""
+    """What makes the work tree differ from HEAD for a test run: tracked changes, and every untracked file .gitignore
+    does not ignore, but top-level logs (F12)."""
     out = []
     for line in _git("status", "--porcelain", "--untracked-files=all", root=root).splitlines():
         code, path = line[:2], line[3:].strip().strip('"')
         if code == "??":
-            if path.endswith(".py") or path.startswith(WATCHED):
+            if not ("/" not in path and path.endswith(".log")):
                 out.append(f"untracked {path}")
         elif code.strip():
             out.append(f"changed {path}")

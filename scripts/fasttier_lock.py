@@ -104,10 +104,6 @@ TICKET_LEAD_MARK = ".lead"
 TICKET_WORKER_MARK = ".work"
 
 LOCK_NAME = "stage2-extended-fasttier.lock"
-#: Q-209: the records-only tier's own lane -- one slot, its own queue, the same memory wait -- so a T0 run never waits
-#: behind a full fast tier (scripts/fasttier_select.py; the pre-commit hook passes `--lane t0`)
-LOCK_T0_NAME = "stage2-extended-fasttier-t0.lock"
-T0_SLOTS = 1
 ENV_TOKEN = "S2X_FASTTIER_TOKEN"
 ENV_TEE = "S2X_FASTTIER_TEE"     # Q-161: a file the command's output is copied into (the hook's verdict reads its pass line)
 ENV_SLOTS = "S2X_FASTTIER_SLOTS"  # Q-174: how many fast tiers may run at once (default DEFAULT_SLOTS, at least 1)
@@ -202,11 +198,10 @@ def _refuse_onedrive(p: Path) -> Path:
     return p
 
 
-def default_lock_path(lane: str = "full") -> Path:
-    """`%LOCALAPPDATA%\\stage2-extended-fasttier.lock`: one file for every tree on this machine; the T0 lane's is
-    LOCK_T0_NAME beside it (Q-209)."""
+def default_lock_path() -> Path:
+    """`%LOCALAPPDATA%\\stage2-extended-fasttier.lock`: one file for every tree on this machine."""
     base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
-    return _refuse_onedrive(Path(base) / (LOCK_T0_NAME if lane == "t0" else LOCK_NAME))
+    return _refuse_onedrive(Path(base) / LOCK_NAME)
 
 
 # ------------------------------------------------------------------------------------------------ the file
@@ -797,15 +792,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--timeout-s", type=float, default=TIMEOUT_S)
     ap.add_argument("--poll-s", type=float, default=POLL_S)
     ap.add_argument("--min-free-gb", type=float, default=MIN_FREE_GB)
-    ap.add_argument("--lane", choices=("full", "t0"), default="full",
-                    help="t0: the records-only tier's own one-slot lane (Q-209)")
     sub = ap.add_subparsers(dest="action", required=True)
     r = sub.add_parser("run", help="run a command under the lock")
     r.add_argument("cmd", nargs=argparse.REMAINDER)
     sub.add_parser("status")
     a = ap.parse_args(argv)
-    lock = _refuse_onedrive(a.lock) if a.lock else default_lock_path(a.lane)
-    lane_slots = T0_SLOTS if a.lane == "t0" else None
+    lock = _refuse_onedrive(a.lock) if a.lock else default_lock_path()
     if a.action == "status":
         return status(lock)
     cmd = a.cmd[1:] if a.cmd[:1] == ["--"] else a.cmd
@@ -815,8 +807,7 @@ def main(argv: list[str] | None = None) -> int:
         if hasattr(signal, name):
             signal.signal(getattr(signal, name), _exit_on_signal)
     try:
-        return run(cmd, lock, tree=os.getcwd(), min_free_gb=a.min_free_gb, timeout_s=a.timeout_s, poll_s=a.poll_s,
-                   max_slots=lane_slots)
+        return run(cmd, lock, tree=os.getcwd(), min_free_gb=a.min_free_gb, timeout_s=a.timeout_s, poll_s=a.poll_s)
     except WaitTimeout as e:
         print(f"pre-commit: {e}", file=sys.stderr, flush=True)
         return EXIT_TIMEOUT

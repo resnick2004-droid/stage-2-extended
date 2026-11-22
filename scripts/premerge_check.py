@@ -24,8 +24,15 @@ differs from the index (an unstaged edit kept through the merge) refuses the mer
 
 **Light.** Seconds in all (no data read beyond hashing the vendored tree, no engine), so it takes no fast-tier slot and
 no run lock; the whole set is bounded by BUDGET_S (5 minutes) -- a check still running then is killed and the merge
-refused, naming it. The next commit's pre-commit fast tier still tests the merged tree in full. A merge with conflicts
-runs no pre-merge-commit (its commit runs pre-commit), and a fast-forward writes no merge commit.
+refused, naming it. The next commit's pre-commit fast tier -- the full fast tier, on every commit -- still tests the
+merged tree in full. A merge with conflicts runs no pre-merge-commit (its commit runs pre-commit), and a fast-forward
+writes no merge commit (the installer sets `merge.ff=false` in the main tree).
+
+**Whose code judges** (Q-209, the red team's F11). The hook runs HEAD's copy of this file -- the branch merged in never
+judges its own merge -- with `--root` the merge's work tree, so the checks read the merge result. A HEAD without this
+file (the merge that brings it in) runs the merge result's copy, said. The merge gate (a main-tree merge needs a full
+fast tier on each merged tip or on the merge itself) is in the commit-msg hook, which sees MERGE_HEAD (Q-209, F4, F13;
+`scripts/check_verdicts.py --merge-gate`).
 """
 from __future__ import annotations
 
@@ -59,11 +66,12 @@ class Check:
     cmd: tuple[str, ...]
 
 
-def checks(python: str = sys.executable) -> list[Check]:
+def checks(python: str = sys.executable, root: Path = ROOT) -> list[Check]:
+    """The check set. The log's check runs through this very file (the hook runs HEAD's copy, Q-209 / F11), on `root`."""
     pytest = (python, "-m", "pytest", "-q", "-o", "addopts=", "-p", "no:cacheprovider")
     return [
         Check("vendor integrity", (python, "scripts/vendor_stage2.py", "--verify")),
-        Check("the decision log's hygiene", (python, "scripts/premerge_check.py", "--log")),
+        Check("the decision log's hygiene", (python, str(Path(__file__).resolve()), "--log", "--root", str(root))),
         Check("pinned declarations", (*pytest, "tests/test_declarations_fixed.py")),
         Check("identity tokens on the real log", (*pytest, LOG_TEST)),
     ]
@@ -134,59 +142,15 @@ def dirty_checked_files(root: Path = ROOT, paths: tuple[str, ...] = CHECKED_PATH
     return [ln for ln in out.stdout.splitlines() if ln.strip()]
 
 
-def _git_out(root: Path, *args: str) -> str:
-    p = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=120, env=clean_env())
-    if p.returncode != 0:
-        raise RuntimeError(f"git {' '.join(args)}: {p.stderr.strip()}")
-    return p.stdout.strip()
-
-
-def merge_gate(root: Path = ROOT, environ: dict | None = None, main_tree: bool | None = None) -> str | None:
-    """Q-209: in the main tree a merge commit is written only over merged tips that each have a T2 verdict (the full
-    fast tier on the tip's own tree). The merged commits are the names git puts in GIT_REFLOG_ACTION (`merge <name>
-    ...`; MERGE_HEAD is not yet written when pre-merge-commit runs). None when the merge may go on, else why not --
-    including when the names cannot be read (fail closed). A worker tree's merge (of master) is not gated here."""
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from check_verdicts import LOG_NAME, tree_has_t2
-    from fasttier_lock import is_main_worktree
-    if not (is_main_worktree(root) if main_tree is None else main_tree):
-        return None
-    env = os.environ if environ is None else environ
-    action = env.get("GIT_REFLOG_ACTION", "")
-    names = action.split()[1:] if action.split()[:1] == ["merge"] else []
-    how = ("run `python scripts/fasttier_full.py` in the merged branch's tree (its tip's T2 verdict), or merge with "
-           "`--no-commit` and then `git commit`, whose pre-commit hook runs T2 on the merge itself")
-    if not names:
-        return (f"the main tree merges only tips with a T2 verdict, and the merged commits cannot be read from "
-                f"GIT_REFLOG_ACTION={action!r}: {how}")
-    try:
-        log = Path(_git_out(root, "rev-parse", "--path-format=absolute", "--git-common-dir")) / LOG_NAME
-        missing = []
-        for n in names:
-            sha = _git_out(root, "rev-parse", "--verify", f"{n}^{{commit}}")
-            tree = _git_out(root, "rev-parse", f"{sha}^{{tree}}")
-            if not tree_has_t2(tree, log):
-                missing.append(f"{n} ({sha[:10]}, tree {tree[:12]})")
-    except (OSError, RuntimeError, subprocess.SubprocessError) as e:
-        return f"the merged tips' verdicts cannot be read ({e}): {how}"
-    if missing:
-        return f"the merged tip(s) {', '.join(missing)} have no T2 verdict: {how}"
-    return None
-
-
 def _tail(text: str, n: int = TAIL_LINES) -> str:
     return "\n".join(text.splitlines()[-n:])
 
 
 def run_checks(root: Path = ROOT, the_checks: list[Check] | None = None, budget_s: float = BUDGET_S,
-               monotonic: Callable[[], float] = time.monotonic, main_tree: bool | None = None) -> int:
+               monotonic: Callable[[], float] = time.monotonic) -> int:
     """Run every check from `root` within `budget_s` in all; 0 if each passed, else 1, every failure named."""
-    the_checks = checks() if the_checks is None else the_checks
+    the_checks = checks(root=root) if the_checks is None else the_checks
     t0 = monotonic()
-    gate = merge_gate(root, main_tree=main_tree)
-    if gate is not None:
-        _say(f"REFUSED: {gate}", err=True)
-        return 1
     dirty = dirty_checked_files(root)
     if dirty is None:
         _say("REFUSED: cannot compare the work tree with the merge's index (git diff failed)", err=True)
@@ -237,10 +201,13 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--log", action="store_true", help="only the decision log's hygiene")
     ap.add_argument("--budget-s", type=float, default=BUDGET_S)
+    ap.add_argument("--root", type=Path, default=ROOT,
+                    help="the merged tree to check (the hook runs HEAD's copy of this file on the merge's work tree)")
     a = ap.parse_args(argv)
+    root = a.root.resolve()
     if a.log:
-        return check_log(ROOT)
-    return run_checks(ROOT, budget_s=a.budget_s)
+        return check_log(root)
+    return run_checks(root, budget_s=a.budget_s)
 
 
 if __name__ == "__main__":

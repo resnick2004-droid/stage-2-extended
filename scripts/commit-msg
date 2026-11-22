@@ -10,8 +10,9 @@
 # tree, with no verdict for that tree, means the pre-commit was killed: the commit is refused.
 #
 # Narrow on purpose: a commit whose pre-commit did not run for this tree (a merge, which runs pre-merge-commit instead;
-# a marker left by another tree's attempt) is not judged here -- the post-commit hook and scripts/check_verdicts.py
-# report a commit without a verdict. Skipped, like the pre-commit, by --no-verify.
+# a marker left by another tree's attempt) is not judged by that check -- the post-commit hook and
+# scripts/check_verdicts.py report a commit without a verdict. A main-tree merge is judged by the merge gate below
+# (Q-209). Skipped, like the pre-commit, by --no-verify; `check_verdicts.py --first-parent` shows such a merge.
 
 trap '' PIPE
 trap 'exit 129' HUP
@@ -20,6 +21,36 @@ trap 'exit 131' QUIT
 trap 'exit 143' TERM
 
 gitdir=$(git rev-parse --absolute-git-dir 2>/dev/null) || exit 0
+
+# THE MERGE GATE (Q-209; the red team's F4, F11, F13). In the main tree (its git directory is the common one), a merge
+# commit -- MERGE_HEAD present -- is written only when the merge result's tree has a full-fast-tier verdict (merged with
+# `--no-commit`, then committed: pre-commit ran it) or every commit in MERGE_HEAD has one on its own tree. MERGE_HEAD's
+# exact shas are read, never branch names. The gate is HEAD's copy of scripts/check_verdicts.py (the code being merged
+# never judges its own merge); a HEAD without it uses the work tree's, said. On a pass it appends a gate line, which
+# `scripts/check_verdicts.py --first-parent` reads. A worker tree's merge of master is not gated here: its next commit,
+# or fasttier_full.py on its tip, runs the full fast tier on the merged tree.
+common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || common_dir=
+if [ -f "$gitdir/MERGE_HEAD" ] && [ -n "$common_dir" ] && [ "$gitdir" -ef "$common_dir" ]; then
+    gate_py=
+    for candidate in "$PYTHON" python3 python py; do
+        [ -n "$candidate" ] || continue
+        if "$candidate" -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+            gate_py=$candidate
+            break
+        fi
+    done
+    [ -n "$gate_py" ] || { echo "commit-msg: REFUSED -- no working python for the merge gate." >&2; exit 1; }
+    gate_src="$gitdir/check_verdicts.head.py"
+    if git show HEAD:scripts/check_verdicts.py > "$gate_src" 2>/dev/null && grep -q -- '--merge-gate' "$gate_src"; then
+        :
+    else
+        top=$(git rev-parse --show-toplevel 2>/dev/null) || top=.
+        gate_src="$top/scripts/check_verdicts.py"
+        echo "commit-msg: HEAD has no merge gate; the gate is the merge result's own copy ($gate_src)" >&2 || :
+    fi
+    [ -f "$gate_src" ] || { echo "commit-msg: REFUSED -- no merge gate (scripts/check_verdicts.py) to judge this merge." >&2; exit 1; }
+    "$gate_py" "$gate_src" --merge-gate || exit 1
+fi
 pending="$gitdir/fasttier-pending"
 [ -f "$pending" ] || exit 0
 

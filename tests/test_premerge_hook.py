@@ -32,7 +32,7 @@ import premerge_check as P  # noqa: E402
 LIMIT = 600
 #: the files the throwaway clone takes from this tree's work tree (the code under test, committed or not)
 HOOK_FILES = ("scripts/pre-merge-commit", "scripts/premerge_check.py", "scripts/install_hooks.py", ".gitattributes",
-              "scripts/check_verdicts.py", "scripts/fasttier_lock.py")
+              "scripts/commit-msg", "scripts/check_verdicts.py", "scripts/pre-commit")
 MALFORMED_ROW = "| E-9997 | 2026-11-21 | heldout-window: NQ soon -- a malformed held-out token | Q-208's test |"
 UNCLOSED_FENCE = "| E-9998 | 2026-11-21 | **Q-208's test row**, an unclosed fence follows | Q-208's test |\n```\nopen\n"
 
@@ -115,7 +115,7 @@ def _repo(tmp_path: Path) -> Path:
 
 def test_every_check_runs_and_every_failure_is_named(tmp_path, capsys):
     r = _repo(tmp_path)
-    rc = P.run_checks(r, main_tree=False, the_checks=[_stub("first ok", "pass"), _stub("second bad", "import sys; print('boom'); sys.exit(3)"),
+    rc = P.run_checks(r, [_stub("first ok", "pass"), _stub("second bad", "import sys; print('boom'); sys.exit(3)"),
                           _stub("third bad", "raise SystemExit(4)"), _stub("fourth ok", "pass")])
     out = capsys.readouterr()
     assert rc == 1
@@ -125,14 +125,14 @@ def test_every_check_runs_and_every_failure_is_named(tmp_path, capsys):
 
 
 def test_all_checks_passing_passes(tmp_path, capsys):
-    assert P.run_checks(_repo(tmp_path), main_tree=False, the_checks=[_stub("a", "pass"), _stub("b", "print('SKIPPED: a note')")]) == 0
+    assert P.run_checks(_repo(tmp_path), [_stub("a", "pass"), _stub("b", "print('SKIPPED: a note')")]) == 0
     out = capsys.readouterr().out
     assert "OK: 2 checks" in out and "SKIPPED: a note" in out
 
 
 def test_the_budget_kills_a_check_and_refuses_naming_it(tmp_path, capsys):
     t0 = time.monotonic()
-    rc = P.run_checks(_repo(tmp_path), main_tree=False, the_checks=[_stub("slow one", "import time; time.sleep(60)"), _stub("after", "pass")],
+    rc = P.run_checks(_repo(tmp_path), [_stub("slow one", "import time; time.sleep(60)"), _stub("after", "pass")],
                       budget_s=2)
     assert rc == 1 and time.monotonic() - t0 < 30
     err = capsys.readouterr().err
@@ -150,12 +150,12 @@ def test_the_declared_budget_is_five_minutes_and_the_hook_takes_no_slot():
 def test_an_unstaged_edit_of_a_checked_file_refuses(tmp_path, capsys):
     r = _repo(tmp_path)
     (r / "DECISIONS.md").write_text("edited after the merge\n", encoding="utf-8")
-    assert P.run_checks(r, main_tree=False, the_checks=[_stub("never reached", "pass")]) == 1
+    assert P.run_checks(r, [_stub("never reached", "pass")]) == 1
     err = capsys.readouterr().err
     assert "DECISIONS.md" in err and "differ from the merge result" in err
     (r / "DECISIONS.md").write_text("log\n", encoding="utf-8")
     (r / "other.txt").write_text("an edit outside the checked paths\n", encoding="utf-8")
-    assert P.run_checks(r, main_tree=False, the_checks=[_stub("reached", "pass")]) == 0
+    assert P.run_checks(r, [_stub("reached", "pass")]) == 0
 
 
 def test_the_check_set_is_the_declared_one():
@@ -163,7 +163,9 @@ def test_the_check_set_is_the_declared_one():
     assert names == ["vendor integrity", "the decision log's hygiene", "pinned declarations",
                      "identity tokens on the real log"]
     cmds = [" ".join(c.cmd[1:]) for c in P.checks()]
-    assert cmds[0] == "scripts/vendor_stage2.py --verify" and cmds[1] == "scripts/premerge_check.py --log"
+    assert cmds[0] == "scripts/vendor_stage2.py --verify"
+    log_cmd = P.checks()[1].cmd                                # Q-209 (F11): this very file, on the tree checked
+    assert Path(log_cmd[1]) == Path(P.__file__).resolve() and log_cmd[2:4] == ("--log", "--root")
     assert cmds[2].endswith("tests/test_declarations_fixed.py") and cmds[3].endswith(P.LOG_TEST)
     test_file, test_name = P.LOG_TEST.split("::")
     assert f"def {test_name}(" in (ROOT / test_file).read_text(encoding="utf-8")
@@ -231,14 +233,22 @@ def clone(tmp_path_factory):
     side("side-vendor", lambda: (c / "vendor" / "stage2" / vendored).write_bytes(
         (c / "vendor" / "stage2" / vendored).read_bytes() + b"\n# changed by a merge\n"))
     side("side-nocheck", lambda: (c / "scripts" / "premerge_check.py").unlink())
-    side("side-unverified", lambda: ((c / "q209_note.txt").write_text("a tip with no T2 verdict\n", encoding="utf-8")))
+
+    def weaken():                                             # the branch disarms its own checker, and changes vendor
+        pc = c / "scripts" / "premerge_check.py"
+        pc.write_text(pc.read_text(encoding="utf-8").replace(
+            "    the_checks = checks(root=root) if the_checks is None else the_checks",
+            "    the_checks = []"), encoding="utf-8", newline="\n")
+        (c / "vendor" / "stage2" / vendored).write_bytes((c / "vendor" / "stage2" / vendored).read_bytes() + b"\n#\n")
+    side("side-weaken", weaken)
+    side("side-unverified", lambda: ((c / "q209_note.txt").write_text("a tip with no verdict\n", encoding="utf-8")))
     git(c, "checkout", "-q", "base")
-    # Q-209: the clone is a main worktree, whose merges need a T2 verdict on each merged tip; every side but
-    # side-unverified has one (its tree recorded as the full fast tier's)
+    # Q-209: the clone is a main worktree, whose merges pass the commit-msg gate only over a merged tip with a full
+    # fast tier verdict; every side but side-unverified has one
     with open(c / ".git" / "fasttier-verdicts.log", "a", encoding="utf-8", newline="\n") as f:
-        for b in ("side-clean", "side-fence", "side-token", "side-vendor", "side-nocheck"):
+        for b in ("side-clean", "side-fence", "side-token", "side-vendor", "side-nocheck", "side-weaken"):
             tree = git(c, "rev-parse", f"{b}^{{tree}}").stdout.strip()
-            f.write(f"{tree}\t2026-11-21T00:00:00Z\t{c.as_posix()}\t1 passed in 0.01s\ttier=T2\n")
+            f.write(f"{tree}\t2026-11-22T00:00:00Z\t{c.as_posix()}\t1 passed in 0.01s\ttier=T2\n")
     # the real installer, run in the clone: its common dir is the clone's own .git
     inst = subprocess.run([sys.executable, "scripts/install_hooks.py"], cwd=c, capture_output=True, text=True,
                           timeout=LIMIT, env=clean_env())
@@ -306,44 +316,84 @@ def test_a_merge_changing_a_vendored_file_is_refused(clone):
     assert "FAIL vendor integrity" in out and "failed: vendor integrity" in out, out
 
 
-def test_a_merge_result_without_the_check_script_is_refused(clone):
+def test_heads_checker_judges_a_merge_that_removes_the_checker(clone):
+    """Q-209 (the red team's F11): HEAD's copy of the checker runs, so a branch deleting it is still checked."""
     c, base, _ = clone
     p, merged = _merge(c, base, "side-nocheck")
     out = p.stdout + p.stderr
-    assert p.returncode != 0 and not merged, out
-    assert "premerge_check.py is missing" in out and "merge master" in out, out
+    assert p.returncode == 0 and merged and "by HEAD's copy" in out and "OK: 4 checks" in out, out
 
 
-# ------------------------------------------------------------------------------------------------ Q-209: the main tree's merge gate
-
-def test_the_main_tree_refuses_a_merge_of_a_tip_without_a_t2_verdict(clone):
+def test_heads_checker_judges_a_merge_that_disarms_the_checker(clone):
     c, base, _ = clone
+    p, merged = _merge(c, base, "side-weaken")
+    out = p.stdout + p.stderr
+    assert p.returncode != 0 and not merged and "FAIL vendor integrity" in out and "by HEAD's copy" in out, out
+
+
+def test_the_main_tree_refuses_a_merge_of_a_tip_without_a_verdict(clone):
+    """Q-209 (F4, F13): the commit-msg gate reads MERGE_HEAD; the merged tip has no full-fast-tier verdict."""
+    c, base, _ = clone
+    tip = git(c, "rev-parse", "side-unverified").stdout.strip()
     p, merged = _merge(c, base, "side-unverified")
     out = p.stdout + p.stderr
-    assert p.returncode != 0 and not merged, out
-    assert "no T2 verdict" in out and "side-unverified" in out and "fasttier_full.py" in out, out
+    assert p.returncode != 0 and not merged and "commit-msg: REFUSED" in out and tip[:10] in out, out
+    assert "ok   vendor integrity" in out                        # pre-merge-commit's checks passed first
 
 
-def test_the_merge_gate_reads_the_merged_names_and_fails_closed(clone):
-    c, _, _ = clone
-    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-clean"}, main_tree=True) is None
-    why = P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-clean side-unverified"}, main_tree=True)
-    assert why and "side-unverified" in why and "side-clean" not in why.split("have no T2")[0].split("tip(s)")[1]
-    for action in ("", "pull origin master", "merge"):
-        why = P.merge_gate(c, {"GIT_REFLOG_ACTION": action}, main_tree=True)
-        assert why and "cannot be read" in why, action
-    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge no-such-branch"}, main_tree=True)
-    assert P.merge_gate(c, {"GIT_REFLOG_ACTION": ""}, main_tree=False) is None   # a worker's merge is not gated
+def test_a_passed_main_tree_merge_leaves_a_gate_line(clone):
+    c, base, _ = clone
+    p, merged = _merge(c, base, "side-clean")
+    assert p.returncode == 0 and merged, p.stdout + p.stderr
+    tree = git(c, "rev-parse", "HEAD^{tree}").stdout.strip()
+    tip = git(c, "rev-parse", "side-clean").stdout.strip()
+    log = (c / ".git" / "fasttier-verdicts.log").read_text(encoding="utf-8")
+    assert f"gate\t{tree}\t" in log and f"tips={tip}" in log
 
 
-def test_a_t1_verdict_on_the_tip_does_not_open_the_gate(clone):
-    c, _, _ = clone
-    tree = git(c, "rev-parse", "side-unverified^{tree}").stdout.strip()
-    log = c / ".git" / "fasttier-verdicts.log"
-    before = log.read_bytes()
+def test_the_installer_makes_merges_into_master_never_fast_forward(clone):
+    c, _, out = clone
+    assert git(c, "config", I.NO_FF_KEY).stdout.strip() == "--no-ff" and I.NO_FF_KEY in out
+
+
+def test_a_merge_into_master_is_a_merge_commit_and_a_workers_merge_of_master_still_fast_forwards(tmp_path):
+    """Q-209 (F4): with the installer's setting, a fast-forwardable merge into master writes a merge commit (so its
+    hooks run); a worker tree merging master (fast-forwardable too) keeps git's default and fast-forwards."""
+    r = tmp_path / "r"
+    r.mkdir()
+    git(r, "init", "-q", "-b", "master")
+    git(r, "commit", "-q", "--allow-empty", "--no-verify", "-m", "base")
+    assert I.set_main_merge_ff(r / ".git") == 0
+    git(r, "checkout", "-q", "-b", "side")
+    git(r, "commit", "-q", "--allow-empty", "--no-verify", "-m", "side")
+    git(r, "checkout", "-q", "master")
+    git(r, "merge", "-q", "--no-verify", "-m", "merge side", "side")
+    assert len(git(r, "rev-list", "--parents", "-n", "1", "HEAD").stdout.split()) == 3, "master fast-forwarded"
+    wt = tmp_path / "wt"
+    git(r, "worktree", "add", "-q", "-b", "wt/x", str(wt), "side")
+    git(wt, "merge", "-q", "--no-verify", "master")
+    assert git(wt, "rev-parse", "HEAD").stdout.strip() == git(r, "rev-parse", "master").stdout.strip()
+    assert git(wt, "config", "merge.ff", check=False).stdout.strip() == ""
+
+
+def _git_sh() -> str | None:
     try:
-        with open(log, "a", encoding="utf-8", newline="\n") as f:
-            f.write(f"{tree}\t2026-11-21T00:00:00Z\t{c.as_posix()}\t1 passed in 0.01s\ttier=T1\n")
-        assert "no T2 verdict" in P.merge_gate(c, {"GIT_REFLOG_ACTION": "merge side-unverified"}, main_tree=True)
-    finally:
-        log.write_bytes(before)
+        out = subprocess.run(["git", "var", "GIT_SHELL_PATH"], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    sh = out.stdout.strip()
+    return sh if out.returncode == 0 and sh and Path(sh).exists() else None
+
+
+def test_the_hook_refuses_when_inherited_variables_point_at_another_tree(clone, tmp_path):
+    """Q-209 (F11): pre-commit's cross-tree guard, copied -- GIT_DIR the clone's, GIT_WORK_TREE another folder."""
+    sh = _git_sh()
+    if sh is None:
+        pytest.skip("git's own sh not found")
+    c, _, _ = clone
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    env = {**clean_env(), "GIT_DIR": str(c / ".git"), "GIT_WORK_TREE": str(other)}
+    p = subprocess.run([sh, str(c / ".git" / "hooks" / "pre-merge-commit")], cwd=other, capture_output=True,
+                       text=True, timeout=LIMIT, env=env)
+    assert p.returncode != 0 and "REFUSED: git is merging into" in p.stderr, p.stdout + p.stderr

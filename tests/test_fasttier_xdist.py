@@ -631,19 +631,22 @@ def test_the_hook_runs_the_parallel_runner_inside_the_lock_after_the_checks():
     par = ('run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" scripts/fasttier_xdist.py --work '
            '"$GITDIR/fasttier-xdist" -m "$FAST_TIER"\n')
     ser = 'run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" -m pytest -o addopts= -q -m "$FAST_TIER"\n'
-    assert par in text and ser in text
-    # Q-209: the T2 branch closes the tier's if-chain, after the T0 and T1 branches
-    i_if = text.index('if [ "$TIER" = "T0" ] && [ -f scripts/fasttier_xdist.py ]; then\n')
-    i_t2 = text.index("elif [ -f scripts/fasttier_xdist.py ]; then\n", i_if)
-    assert i_t2 < text.index(par) < text.index("else\n", i_t2) < text.index(ser) < text.index("fi\nFT_RC=$?", i_t2)
+    # Q-209 (reworked): the runner with its pre-flight when the list was written, else without; the full fast tier
+    # either way -- never a selection of the tier itself
+    pre = ('run_child "$PYTHON" scripts/fasttier_lock.py run -- "$PYTHON" scripts/fasttier_xdist.py --work '
+           '"$GITDIR/fasttier-xdist" --preflight "$PRE" -m "$FAST_TIER"\n')
+    assert par in text and ser in text and pre in text
+    i_if = text.index('if [ -s "$PRE" ]; then\n')
+    i_x = text.index("elif [ -f scripts/fasttier_xdist.py ]; then\n", i_if)
+    assert (i_if < text.index(pre) < i_x < text.index(par) < text.index("else\n", i_x) < text.index(ser)
+            < text.index("fi\nFT_RC=$?", i_x))
     assert text.index("scripts/vendor_stage2.py --verify || vendor_failed") < i_if
     assert text.index('scripts/check_price_levels.py --index "$COMMIT_INDEX" || price_level_failed') < i_if
+    assert text.index("the work tree is the commit") < i_if                   # F5's check comes before the run
     code = [ln.strip() for ln in text.splitlines() if "fasttier_xdist.py" in ln and not ln.lstrip().startswith("#")]
     runs = [ln for ln in code if ln.startswith("run_child")]
-    assert runs.count(par.strip()) == 1 and len(runs) == 4, runs   # T2 once; the pre-flight, T0 and T1 with --select
-    assert all('--select "$SEL"' in ln or '--select "$PRE"' in ln for ln in runs if ln != par.strip())
-    assert sum('--select "$PRE"' in ln for ln in runs) == 1
-    assert all(ln.index("scripts/fasttier_lock.py") < ln.index("fasttier_xdist.py") for ln in runs)
+    assert runs == [pre.strip(), par.strip()], runs                          # the full tier, with or without it
+    assert not any("--select" in ln or '"@' in ln for ln in code)             # no selection of the tier, anywhere
     assert "| tr -d '\\r' | tr '\\t' ' ')" in text                              # no tab can split the verdict record
     assert b"\r\n" not in (SCRIPTS / "pre-commit").read_bytes()
 
@@ -952,35 +955,38 @@ def test_a_runner_and_a_later_slot_never_count_the_same_memory_twice_or_not_at_a
     L.release(h.path, h)
 
 
-# ------------------------------------------------------------------------------------------------ Q-209: a selection's files
+# ------------------------------------------------------------------------------------------------ Q-209: the pre-flight
 
-def test_a_selection_narrows_the_serial_collection_and_parallel_commands_but_never_the_rerun(tmp_path, monkeypatch):
-    sel = tmp_path / "sel.txt"
-    monkeypatch.setattr(X, "EXTRA", [f"@{sel}"])
-    rep, ids = tmp_path / "r.json", tmp_path / "ids.txt"
-    base = X.serial_command(SEL, python="PY")
-    assert base[-1] == f"@{sel}" and base[:-1] == [*base[:-1]]
-    assert X.collect_command(SEL, rep, python="PY")[:len(base)] == base
-    assert X.parallel_command(SEL, 2, rep, python="PY")[:len(base)] == base
-    rer = X.rerun_command(SEL, ids, rep, python="PY")
-    assert f"@{sel}" not in rer and rer[-1] == f"@{ids}"               # the rerun runs exactly the failed tests
+def test_the_preflight_command_is_the_serial_command_over_its_files(tmp_path):
+    files = tmp_path / "pre.txt"
+    cmd = X.preflight_command(SEL, files, python="PY")
+    assert cmd[:len(X.serial_command(SEL, python="PY"))] == X.serial_command(SEL, python="PY")
+    assert cmd[-1] == f"@{files}" and cmd.count("-m") == 2 and cmd[cmd.index("-m", 2) + 1] == SEL
 
 
-def test_the_cli_refuses_a_missing_or_empty_selection(tmp_path, monkeypatch):
-    monkeypatch.setattr(X, "EXTRA", [])
+def test_a_failed_preflight_stops_before_the_full_tier(tmp_path, monkeypatch, capsys):
+    calls, recorded = [], []
+    files = tmp_path / "pre.txt"
+    monkeypatch.setattr(X, "_run", lambda cmd, log=None: calls.append(cmd) or (1 if cmd[-1] == f"@{files}" else 0))
+    rc = X.run(SEL, tmp_path / "w", 64.0, None, python="PY", has_xdist=False, preflight=files,
+               record=recorded.append)
+    assert rc == 1 and calls == [X.preflight_command(SEL, files, python="PY")] and recorded == []
+    assert "pre-flight FAILED (exit 1): the full fast tier did not start" in capsys.readouterr().out
+
+
+def test_a_passed_preflight_runs_the_full_tier_unchanged(tmp_path, monkeypatch):
+    calls = []
+    files = tmp_path / "pre.txt"
+    monkeypatch.setattr(X, "_run", lambda cmd, log=None: calls.append(cmd) or 0)
+    assert X.run(SEL, tmp_path / "w", 64.0, None, python="PY", has_xdist=False, preflight=files) == 0
+    assert calls == [X.preflight_command(SEL, files, python="PY"), X.serial_command(SEL, python="PY")]
+    calls.clear()
+    assert X.run(SEL, tmp_path / "w", 64.0, None, python="PY", has_xdist=False) == 0
+    assert calls == [X.serial_command(SEL, python="PY")]                       # without one: today's command
+
+
+def test_the_cli_refuses_a_missing_or_empty_preflight_file(tmp_path):
     empty = tmp_path / "empty.txt"
     empty.write_text("", encoding="utf-8")
     for p in (tmp_path / "missing.txt", empty):
-        assert X.main(["-m", SEL, "--select", str(p), "--work", str(tmp_path / "w")]) == X.EXIT_REFUSED
-    assert X.EXTRA == []
-
-
-def test_both_lanes_count_as_slots_beside(tmp_path, monkeypatch):
-    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    import fasttier_lock as L
-    rec = {"tree": "T", "pid": os.getpid(), "start": L.now().isoformat(), "updated": L.now().isoformat(),
-           "phase": "fast-tier", "token": "t0-holder", "workers": 2}
-    L.default_lock_path("t0").write_text(json.dumps(rec), encoding="utf-8")
-    assert X.fast_tiers_beside(env={}) == [2]
-    assert X.record_own_workers(3, env={L.ENV_TOKEN: "t0-holder"})
-    assert json.loads(L.default_lock_path("t0").read_text(encoding="utf-8"))["workers"] == 3
+        assert X.main(["-m", SEL, "--preflight", str(p), "--work", str(tmp_path / "w")]) == X.EXIT_REFUSED

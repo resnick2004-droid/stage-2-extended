@@ -151,6 +151,31 @@ def install_all(hooks: Path, root: Path = ROOT) -> int:
     return 0
 
 
+#: Q-209 (the red team's F4): merges into master -- which only the main tree has checked out -- never fast-forward
+MASTER = "master"
+NO_FF_KEY = f"branch.{MASTER}.mergeOptions"
+
+
+def set_main_merge_ff(common: Path) -> int:
+    """Q-209 (the red team's F4), "merge.ff=false for the main tree": `branch.master.mergeOptions=--no-ff`, so every
+    merge into master (the main tree's branch) writes a merge commit, which runs pre-merge-commit and the commit-msg
+    merge gate -- a fast-forward runs neither. Not `merge.ff=false` in the main tree's `config.worktree`: `git worktree
+    add` copies that file into every new worktree, so each new worker tree would inherit it. A worker's `git merge
+    master` keeps git's default. 0, or 1 said on stderr."""
+    try:
+        p = subprocess.run(["git", "--git-dir", str(common), "config", NO_FF_KEY, "--no-ff"], capture_output=True,
+                           text=True, timeout=30, env={k: v for k, v in os.environ.items() if not k.startswith("GIT_")})
+        ok = p.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ok = False
+    if not ok:
+        print(f"{NO_FF_KEY}=--no-ff could not be set in {common}; set it by hand: git config {NO_FF_KEY} --no-ff",
+              file=sys.stderr)
+        return 1
+    print(f"set {NO_FF_KEY}=--no-ff (merges into {MASTER} never fast-forward; the worktrees' branches keep git's default)")
+    return 0
+
+
 def main() -> int:
     gd = common_dir()
     if gd is None:
@@ -164,7 +189,14 @@ def main() -> int:
 
     if install_all(gd / "hooks") != 0:
         return 1
+    if set_main_merge_ff(gd) != 0:
+        return 1
 
+    print("  merges into master (the main tree's branch) never fast-forward (branch.master.mergeOptions=--no-ff), so "
+          "each runs pre-merge-commit and the commit-msg merge gate (Q-209, the red team's F4)")
+    print("  before every commit, inside the fast tier's slot: the pre-flight (scripts/fasttier_preflight.py: the "
+          "always-on guards and the nearest tests, serially), then the full fast tier; a work tree that differs from "
+          "the commit (an unstaged hunk, an untracked file) is refused (Q-209)")
     print("  before every commit (main tree or worktree): `scripts/vendor_stage2.py --verify` and the fast tier "
           '(-m "not slow and not heavy"), one tree at a time under the machine-wide fast-tier lock '
           '(scripts/fasttier_lock.py: waits for a live holder and for 1.5 GB free, at most 3 h); the identity, the heavy tier and the vendored stage-one suite run in /validate')

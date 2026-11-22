@@ -11,14 +11,16 @@
 # in progress (fix and `git commit`, which runs pre-commit, or `git merge --abort`).
 #
 # LIGHT: seconds, at most 5 minutes in all (premerge_check.BUDGET_S). It takes no fast-tier slot and no run lock; the
-# next commit's pre-commit fast tier still tests the merged tree in full. A merge with conflicts runs no
-# pre-merge-commit (its `git commit` runs pre-commit); a fast-forward writes no merge commit, so runs no hook.
+# next commit's pre-commit fast tier -- the full fast tier, on every commit -- still tests the merged tree in full. A
+# merge with conflicts runs no pre-merge-commit (its `git commit` runs pre-commit); a fast-forward writes no merge
+# commit, so runs no hook (the installer sets merge.ff=false in the main tree). The main tree's merge gate -- a full
+# fast tier on each merged tip, or on the merge itself -- is in the commit-msg hook, which sees MERGE_HEAD.
 #
 # Signals: HUP, INT, QUIT and TERM are trapped -- the check is killed and the hook exits 128+N, which git reads as a
 # refusal (Git for Windows reads a shell killed by a signal as exit 0, Q-161). SIGKILL cannot be trapped: a hook killed
 # outright lets the merge commit through, and only the next commit's fast tier then tests that tree.
 #
-# A tree whose merge result has no scripts/premerge_check.py is refused (merge master), never checked by less.
+# The checker is HEAD's copy (else the merge result's); with neither, the merge is refused, never checked by less.
 # Bypass with `git merge --no-verify` only when you know why, and say so in the merge message.
 
 trap '' PIPE
@@ -59,10 +61,37 @@ run_child() {
     return "$_rc"
 }
 
-TOP=$(git rev-parse --show-toplevel) || {
-    echo "pre-merge-commit: cannot find the work tree this merge is made in; the merge commit is REFUSED." >&2
+refuse() {
+    echo "pre-merge-commit: $1" >&2 || :
+    shift
+    for _line in "$@"; do
+        echo "pre-merge-commit: $_line" >&2 || :
+    done
     exit 1
 }
+
+# THE TREE (as pre-commit's, Q-209 / the red team's F11): resolved with the environment git gave this hook -- the git
+# directory the merge is committed into and that directory's own work tree. If inherited GIT_DIR / GIT_WORK_TREE make
+# them disagree (git merging into one tree while this hook would check another), the merge is refused.
+GITDIR=$(git rev-parse --absolute-git-dir) || refuse "cannot find the git directory this merge is made in; REFUSED."
+TOP=$(git rev-parse --show-toplevel) || refuse "cannot find the work tree this merge is made in; the merge commit is REFUSED."
+OWN=
+if [ -f "$GITDIR/gitdir" ]; then
+    OWN=$(sed -n 1p "$GITDIR/gitdir")
+    OWN=${OWN%/.git}
+elif _wt=$(git config --get core.worktree 2>/dev/null) && [ -n "$_wt" ]; then
+    case "$_wt" in
+        /* | [A-Za-z]:*) OWN=$_wt ;;
+        *) OWN="$GITDIR/$_wt" ;;
+    esac
+elif [ "${GITDIR##*/}" = ".git" ]; then
+    OWN=${GITDIR%/.git}
+fi
+if [ -z "$OWN" ] || ! [ "$TOP" -ef "$OWN" ]; then
+    refuse "REFUSED: git is merging into $GITDIR, whose work tree is ${OWN:-unknown}, but this hook would check $TOP." \
+        "The inherited GIT_DIR='${GIT_DIR:-}' GIT_WORK_TREE='${GIT_WORK_TREE:-}' point the merge and the checked tree at different trees." \
+        "Unset them (unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE) and merge from the tree you mean."
+fi
 # Inherited, git's variables would point a nested git (a check's) at this merge's index; the checks see a shell's.
 unset GIT_INDEX_FILE GIT_DIR GIT_WORK_TREE GIT_PREFIX GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
 cd "$TOP" || exit 1
@@ -84,13 +113,21 @@ PYTHON=$(pick_python) || {
 }
 export PYTHONDONTWRITEBYTECODE=1
 
-if [ ! -f scripts/premerge_check.py ]; then
-    echo "pre-merge-commit: scripts/premerge_check.py is missing from the merge result; merge master (Q-208) and merge again." >&2
-    exit 1
+# WHOSE CODE JUDGES (Q-209, F11): HEAD's copy of the checker -- the branch being merged never judges its own merge --
+# run with --root on this work tree, which holds the merge result. A HEAD without it (the merge that brings it in) runs
+# the merge result's copy, said; neither is a refusal, never a pass by less.
+CHECKER="$GITDIR/premerge_check.head.py"
+if git show HEAD:scripts/premerge_check.py > "$CHECKER" 2>/dev/null && [ -s "$CHECKER" ]; then
+    WHOSE="HEAD's copy"
+elif [ -f scripts/premerge_check.py ]; then
+    CHECKER="$TOP/scripts/premerge_check.py"
+    WHOSE="the merge result's copy (HEAD has none)"
+else
+    refuse "scripts/premerge_check.py is in neither HEAD nor the merge result; merge master (Q-208) and merge again."
 fi
 
-echo "pre-merge-commit: the merge result's checks (light, no fast-tier slot), tree = $TOP, python = $PYTHON"
-run_child "$PYTHON" scripts/premerge_check.py
+echo "pre-merge-commit: the merge result's checks (light, no fast-tier slot) by $WHOSE, tree = $TOP, python = $PYTHON"
+run_child "$PYTHON" "$CHECKER" --root "$TOP"
 RC=$?
 if [ "$RC" -ne 0 ]; then
     echo "pre-merge-commit: REFUSED (exit $RC)." >&2

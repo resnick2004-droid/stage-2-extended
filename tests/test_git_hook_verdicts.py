@@ -510,7 +510,7 @@ def test_check_verdicts_lists_exactly_the_unverified_commits_and_exempts_clean_m
     # with c2 verified, the merge is still the range's tip, which needs a T2 verdict on its own tree (Q-209)
     _record(repo, c2)
     p = _check(repo, f"{base}..{m}")
-    assert p.returncode == 1 and m in p.stdout and "tip needs a T2" in p.stdout, p.stdout + p.stderr
+    assert p.returncode == 1 and m in p.stdout and "tip has no verdict" in p.stdout, p.stdout + p.stderr
     # below a verified tip, the merge of two clean parents is exempt and the range is clean
     t = _commit_file(repo, "t.txt", "t")
     _record(repo, t)
@@ -530,7 +530,7 @@ def test_check_verdicts_exempts_a_merge_whose_other_parent_is_outside_the_range(
     git(repo, "merge", "-q", "--no-ff", "--no-verify", "-m", "merge master", "main")
     merge = head(repo)
     p = _check(repo, "main..wt/x")
-    assert p.returncode == 1 and merge in p.stdout and "tip needs a T2" in p.stdout, p.stdout + p.stderr
+    assert p.returncode == 1 and merge in p.stdout and "tip has no verdict" in p.stdout, p.stdout + p.stderr
     _record(repo, merge)                                          # fasttier_full.py on the merged tip
     p = _check(repo, "main..wt/x")
     assert p.returncode == 0, p.stdout + p.stderr
@@ -539,22 +539,133 @@ def test_check_verdicts_exempts_a_merge_whose_other_parent_is_outside_the_range(
     assert p.returncode == 1 and w2 in p.stdout and p.stdout.count("\n") >= 1
 
 
-def test_check_verdicts_needs_t2_on_the_tip_and_any_tier_below_it(repo):
-    """Q-209: a T1 (or T0) verdict covers a commit below the tip, never the tip; a line without a tier field is T2."""
+@pytest.mark.parametrize("tier", ["T0", "T1", "T3", "t2", "T2x", ""])
+def test_a_verdict_line_with_any_tier_but_t2_is_no_verdict(repo, tier):
+    """Q-209 (the red team's F9): `tier=T2`, or no tier field (a line the full fast tier wrote before Q-209), is a
+    verdict; any other tier field -- a dropped tier, an unparsed one -- is none, below the tip or at it."""
     base = head(repo)
     c1 = _commit_file(repo, "c1.txt", "c1")
-    _record(repo, c1, tier="T1")
+    if tier:
+        _record(repo, c1, tier=tier)
+    else:                                                  # an empty tier field: `tier=`
+        tree = head(repo, f"{c1}^{{tree}}")
+        with (common_dir(repo) / "fasttier-verdicts.log").open("a", encoding="utf-8") as f:
+            f.write(f"{tree}\t2026-11-18T00:00:00Z\t{repo}\t1 passed in 0.01s\ttier=\n")
     c2 = _commit_file(repo, "c2.txt", "c2")
-    _record(repo, c2, tier="T1")
-    p = _check(repo, f"{base}..{c2}")
-    assert p.returncode == 1 and c2 in p.stdout and c1 not in p.stdout and "(has: T1)" in p.stdout, p.stdout
-    _record(repo, c2, tier="T0")
-    assert _check(repo, f"{base}..{c2}").returncode == 1
     _record(repo, c2, tier="T2")
+    p = _check(repo, f"{base}..{c2}")
+    listed = {ln.split()[0] for ln in p.stdout.splitlines() if ln and not ln.startswith(("#", " "))}
+    assert p.returncode == 1 and listed == {c1}, p.stdout
+    _record(repo, c1)                                             # no tier field: the full tier's pre-Q-209 line
     assert _check(repo, f"{base}..{c2}").returncode == 0
-    c3 = _commit_file(repo, "c3.txt", "c3")
-    _record(repo, c3)                                             # no tier field: a pre-Q-209 line, the full tier
-    assert _check(repo, f"{base}..{c3}").returncode == 0
+
+
+def test_a_second_parent_inside_the_range_is_no_tip(repo):
+    """The red team's F10: a branch that merges its own sub-branch -- the sub-branch's commit is the merge's second
+    parent, inside the range -- has one tip, the merge; the sub-branch commit is judged as a commit below it."""
+    base = head(repo)
+    git(repo, "checkout", "-q", "-b", "sub")
+    s1 = _commit_file(repo, "s1.txt", "s1")                       # no verdict: listed as a commit, not as a tip
+    git(repo, "checkout", "-q", "main")
+    c1 = _commit_file(repo, "c1.txt", "c1")
+    _record(repo, c1)
+    git(repo, "merge", "-q", "--no-ff", "--no-verify", "-m", "merge sub", "sub")
+    m = head(repo)
+    _record(repo, m)
+    p = _check(repo, f"{base}..{m}")
+    assert p.returncode == 1 and s1 in p.stdout and "no verdict for its tree" in p.stdout, p.stdout
+    assert "branch tip" not in p.stdout                           # s1 is no tip: it is the merge's second parent
+    _record(repo, s1)
+    assert _check(repo, f"{base}..{m}").returncode == 0
+
+
+def test_first_parent_mode_lists_masters_unverified_commits_and_ungated_merges(repo):
+    """The red team's F4: walking master's first parents, a commit needs a verdict and a merge needs a verdict or the
+    commit-msg gate's line; a `--no-verify` merge has neither and is listed."""
+    base = head(repo)
+    c1 = _commit_file(repo, "c1.txt", "c1")
+    _record(repo, c1)
+    git(repo, "checkout", "-q", "-b", "wt/a")
+    a1 = _commit_file(repo, "a1.txt", "a1")
+    _record(repo, a1)
+    git(repo, "checkout", "-q", "main")
+    c1b = _commit_file(repo, "c1b.txt", "c1b")                    # master moves on: the merge's tree is its own
+    _record(repo, c1b)
+    git(repo, "merge", "-q", "--no-ff", "--no-verify", "-m", "merge a, ungated", "wt/a")
+    m = head(repo)
+    c2 = _commit_file(repo, "c2.txt", "c2")                       # no verdict
+    p = _check(repo, "--first-parent", f"{base}..main")
+    listed = {ln.split()[0] for ln in p.stdout.splitlines() if ln and not ln.startswith(("#", " "))}
+    assert p.returncode == 1 and listed == {m, c2}, p.stdout
+    assert "no gate line" in p.stdout and "(first parents)" in p.stdout
+    tree = head(repo, f"{m}^{{tree}}")
+    with (common_dir(repo) / "fasttier-verdicts.log").open("a", encoding="utf-8") as f:
+        f.write(f"gate\t{tree}\t2026-11-22T00:00:00Z\ttips={a1}\n")
+    _record(repo, c2)
+    assert _check(repo, "--first-parent", f"{base}..main").returncode == 0
+    p = _check(repo, f"{c1}..{m}")                                # a gate line is no verdict for the branch rule
+    assert p.returncode == 1 and m in p.stdout, p.stdout
+
+
+def _gate_repo(repo: Path) -> None:
+    """Put this tree's check_verdicts.py in the stub repository's HEAD: the commit-msg gate runs HEAD's copy."""
+    (repo / "scripts" / "check_verdicts.py").write_bytes((SCRIPTS / "check_verdicts.py").read_bytes())
+    git(repo, "add", "scripts/check_verdicts.py")
+    git(repo, "commit", "-q", "--no-verify", "-m", "the gate")
+
+
+def _merge(repo: Path, branch: str) -> subprocess.CompletedProcess:
+    """A merge with every hook but pre-merge-commit (the stub repository has no premerge_check.py to run)."""
+    pmc = common_dir(repo) / "hooks" / "pre-merge-commit"
+    pmc.unlink(missing_ok=True)
+    return git(repo, "merge", "--no-ff", "-m", f"merge {branch}", branch, check=False)
+
+
+def test_the_commit_msg_gate_refuses_a_main_tree_merge_of_an_unverified_tip(repo):
+    """Q-209 (F4, F13): the merged commit is read from MERGE_HEAD; without a verdict on it (or on the merge result)
+    the main tree's merge commit is refused, and the merge is left in progress."""
+    _gate_repo(repo)
+    git(repo, "checkout", "-q", "-b", "wt/a")
+    a1 = _commit_file(repo, "a1.txt", "a1")
+    git(repo, "checkout", "-q", "main")
+    before = head(repo)
+    p = _merge(repo, "wt/a")
+    assert p.returncode != 0 and "commit-msg: REFUSED" in p.stderr and a1[:10] in p.stderr, p.stdout + p.stderr
+    assert head(repo) == before and (Path(git(repo, "rev-parse", "--absolute-git-dir").stdout.strip())
+                                      / "MERGE_HEAD").is_file()
+    git(repo, "merge", "--abort")
+    _record(repo, a1)                                             # the tip's full fast tier (fasttier_full.py)
+    p = _merge(repo, "wt/a")
+    assert p.returncode == 0 and head(repo) != before, p.stdout + p.stderr
+    tree = head(repo, "HEAD^{tree}")
+    assert f"gate\t{tree}\t" in verdicts(repo) and f"tips={a1}" in verdicts(repo)
+
+
+def test_the_commit_msg_gate_judges_with_heads_copy_not_the_branchs(repo):
+    """The red team's F11: a branch that disarms the gate in its own check_verdicts.py is still judged by HEAD's."""
+    _gate_repo(repo)
+    git(repo, "checkout", "-q", "-b", "wt/a")
+    weak = (SCRIPTS / "check_verdicts.py").read_text(encoding="utf-8").replace(
+        "    if not merge_head.is_file():\n        return None", "    return None\n    if not merge_head.is_file():\n"
+        "        return None")
+    assert weak != (SCRIPTS / "check_verdicts.py").read_text(encoding="utf-8")
+    (repo / "scripts" / "check_verdicts.py").write_text(weak, encoding="utf-8")
+    git(repo, "add", "scripts/check_verdicts.py")
+    git(repo, "commit", "-q", "--no-verify", "-m", "a disarmed gate")
+    git(repo, "checkout", "-q", "main")
+    p = _merge(repo, "wt/a")
+    assert p.returncode != 0 and "commit-msg: REFUSED" in p.stderr, p.stdout + p.stderr
+    git(repo, "merge", "--abort")
+
+
+def test_a_worker_trees_merge_is_not_gated(repo, tmp_path):
+    _gate_repo(repo)
+    wt = tmp_path / "wt-x"
+    git(repo, "worktree", "add", "-q", "-b", "wt/x", str(wt))
+    _commit_file(repo, "m1.txt", "m1")                            # master moves on, unverified
+    _commit_file(wt, "w1.txt", "w1")
+    p = _merge(wt, "main")
+    assert p.returncode == 0, p.stdout + p.stderr
 
 
 def test_check_verdicts_fails_loudly_on_a_bad_range(repo):
@@ -587,3 +698,43 @@ def test_every_git_hook_is_installed_and_kept_lf():
     for name in HOOK_NAMES:
         assert b"\r\n" not in (SCRIPTS / name).read_bytes(), f"scripts/{name} has CRLF"
         assert f"scripts/{name} text eol=lf" in attrs
+
+
+def test_the_merge_gate_needs_every_merged_tip_or_the_result(repo):
+    """An octopus merge: one verified tip of two is not enough; the merge result's own verdict is."""
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        import check_verdicts as CV
+    finally:
+        sys.path.pop(0)
+    base = head(repo)
+    git(repo, "checkout", "-q", "-b", "a")
+    a1 = _commit_file(repo, "a1.txt", "a1")
+    git(repo, "checkout", "-q", "-b", "b", base)
+    b1 = _commit_file(repo, "b1.txt", "b1")
+    git(repo, "checkout", "-q", "main")
+    gitdir = Path(git(repo, "rev-parse", "--absolute-git-dir").stdout.strip())
+    log = common_dir(repo) / "fasttier-verdicts.log"
+    assert CV.merge_gate(repo, log) is None                       # not a merge: nothing to judge
+    (gitdir / "MERGE_HEAD").write_text(f"{a1}\n{b1}\n", encoding="utf-8")
+    try:
+        _record(repo, a1)
+        why = CV.merge_gate(repo, log)
+        assert why and b1[:10] in why and a1[:10] not in why, why
+        _record(repo, b1)
+        assert CV.merge_gate(repo, log, now="2026-11-22T00:00:00Z") is None
+        assert f"tips={a1},{b1}" in verdicts(repo)
+        # neither tip verified, but the merge result is (merged with --no-commit, pre-commit's full tier): it passes
+        a1_tree = head(repo, f"{a1}^{{tree}}")
+        log.write_text("".join(ln + "\n" for ln in log.read_text(encoding="utf-8").splitlines()
+                               if not ln.startswith(a1_tree)), encoding="utf-8")
+        (gitdir / "MERGE_HEAD").write_text(f"{a1}\n", encoding="utf-8")
+        assert CV.merge_gate(repo, log)                            # a1 alone, unverified: refused
+        result = git(repo, "write-tree").stdout.strip()
+        with log.open("a", encoding="utf-8") as f:
+            f.write(f"{result}\t2026-11-22T00:00:00Z\t{repo}\t3 passed in 0.01s\ttier=T2\n")
+        assert CV.merge_gate(repo, log) is None
+        (gitdir / "MERGE_HEAD").write_text("not-a-sha\n", encoding="utf-8")
+        assert "holds no commit ids" in CV.merge_gate(repo, log)
+    finally:
+        (gitdir / "MERGE_HEAD").unlink(missing_ok=True)
