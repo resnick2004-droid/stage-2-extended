@@ -38,7 +38,8 @@ git diff --name-only master...$B -- prereg/            # only a new draft the br
 
 ```
 python scripts/check_verdicts.py master..wt/<name>                        # the tip's fast-tier verdict covers "not slow and not heavy"
-cd $W && timeout 1800 python -m pytest -q -o addopts= -m "slow and not heavy"   # only what the hook does not run: the identity at 4 paths and the other slow tests (E-274)
+cd $W && python identity/stage2_identity.py --paths 4                       # the identity at 4 paths: its tests are marked heavy, so no -m filter runs them (about 75 s; take run.lock)
+cd $W && timeout 3600 python -m pytest -q -o addopts= -m "slow and not heavy"   # the other slow tests the hook skips (about 40 tests, over 30 min; E-274)
 cd $W && python scripts/vendor_stage2.py --verify
 ```
 

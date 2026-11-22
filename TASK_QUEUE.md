@@ -66,7 +66,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-151 | Lever-space extraction: F-04's 6.1/6.3, RL3's 6.1, RD-03's and RD-05's levers and F-R's range forecast as one lever table (ranges from verified rules; volatility units from the search years only) for the design-search template | wt-features | queued (E-208) | E-208 | light | 0 | E-208 |
 | Q-153 | The three-way test's design note and build (E-208's brief): the antithetic and disjoint-seed nulls, the planted-shift power check, the per-horizon overlap calibration, the time legs as consistency conditions; red team before H3 | wt-verify | queued (E-208) | E-208 | light | 0 | E-208 |
 | Q-159 | O-7: RD-01, RD-02, RD-03 and RD-05's part F re-declared on the search years as delta declarations (each parent incorporated by its pinned sha256, every window dependency listed and replaced), red team, gatekeeper | wt-firms | running (E-221) | E-221 | light | 0 | E-221 |
-| Q-167 | Wave 3.2: the three-way test's seed-paired runner, nulls, time legs, deciding statistic, planted-shift power, worse-fill stress, and H3's draft declaration (synthetic) | wt-three | stands, follow-up (E-251) | E-213 | light | 0 | E-230 |
+| Q-167 | Wave 3.2: the three-way test's seed-paired runner, nulls, time legs, deciding statistic, planted-shift power, worse-fill stress, and H3's draft declaration (synthetic) | wt-three | done (E-279) | E-213 | light | 0 | E-230 |
 | Q-168 | Wave 3.4: the lever-space sampler, the surrogate, the round proposer and the plateau check (synthetic objectives) | wt-features | done (E-251) | E-211 | light | 0 | E-230 |
 | Q-170 | The declared generator vectorised, bit-identical to the scalar law; with Wave 3.2's corrective cycle 1 | wt-three | running (E-237) | E-237 | light | 1 | E-237 |
 | Q-172 | The exact-run difference count on P-14's search years (MEASURES section 6), a clean run, counts only | lead | queued (E-232) | E-232 | heavy | 0 | E-232 |
@@ -81,7 +81,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | running (E-246) | Q-176 | light | 0 | E-246 |
 | Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | running (E-246) | Q-167 | light | 0 | E-246 |
 | Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | running (E-246) | Q-168, Q-167 | light | 0 | E-246 |
-| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | queued (E-246) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
+| Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | queued (E-279: after template v3's row) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | queued (E-246) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
@@ -103,10 +103,10 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-206 | A guard on bare-name imports of the four shared script names (the Q-204 root cause) | wt-report | queued (E-273) | Q-204 | light | 0 | E-273 |
 | Q-207 | The main tree's tickets first in the fast-tier line | wt-report | done (E-273) | Q-199 | light | 0 | E-273 |
 | Q-208 | The pre-merge-commit hook (a merge commit verified like any other) | wt-report | running (E-273) | Q-207 | light | 0 | E-273 |
-| Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | queued (E-274) | Q-208 | light | 0 | E-274 |
-| Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | running (E-274) | - | light | 0 | E-274 |
+| Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | running (E-280: pre-flight kept, selection dropped) | Q-208 | light | 0 | E-274 |
+| Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | done (E-277) | - | light | 0 | E-274 |
 | Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | running (E-274) | - | light | 0 | E-274 |
-| Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | queued (E-275) | Q-179 | light | 0 | E-275 |
+| Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | running (E-280) | Q-179 | light | 0 | E-275 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |
 | Q-15 | Stress checks of Stage 2 D-663 on any candidate; the audit's engine fixes | wt-verify | blocked | a candidate; Q-08 | heavy | 0 | -- |
