@@ -37,15 +37,24 @@ git diff --name-only master...$B -- prereg/            # only a new draft the br
 ## 3. It works
 
 ```
-cd $W && timeout 5400 python -m pytest -q -o addopts= -m "not heavy"      # the suite, the identity at 4 paths included (about 49 min under load, E-174)
+python scripts/check_verdicts.py master..wt/<name>                        # the tip's fast-tier verdict covers "not slow and not heavy"
+cd $W && timeout 1800 python -m pytest -q -o addopts= -m "slow and not heavy"   # only what the hook does not run: the identity at 4 paths and the other slow tests (E-274)
 cd $W && python scripts/vendor_stage2.py --verify
 ```
+
+The fast part of the suite is not rerun at merge when the tip's verdict names the tip's exact commit and the worktree
+is clean (E-274: it ran the same tests on the same bytes, about 49 minutes duplicated per merge); a tip with no passing
+verdict of its own runs the whole `-m "not heavy"` suite here as before.
 
 - [ ] the tests pass in the worktree, with a time limit, and the count matches the hand-back
 - [ ] the tests the item needs exist and assert the right thing (read them: a test that cannot fail is no test)
 - [ ] **every commit of the branch has a fast-tier verdict** (Q-161, E-223): `python scripts/check_verdicts.py master..wt/<name>` exits 0; a listed commit (`--no-verify`, a rebase, a killed hook, or one made before the hooks of a3db3aa were installed) is covered by a verdict at the branch tip or rerun through the fast tier there, and named in the row -- otherwise the branch is not merged
 - [ ] **the identities hold** on the branch (E-002's gate rows at 4 paths in the suite; U1's start rows once Q-05
       lands); a branch that touches anything the engine or a walker uses runs them again
+- [ ] **the reader holds against the real log** (E-273): on the merge result, before it is committed,
+      `timeout 900 python -m pytest -q -o addopts= tests/test_reader*.py tests/test_identity_tokens.py tests/test_declarations_fixed.py`
+      passes. A row, a review note or a renamed declaration that breaks the identity tokens, the seed guard or the
+      held-out seal is fixed in the merge, never by weakening the check.
 
 ## 4. It does not lie
 
@@ -75,6 +84,11 @@ cd $W && python scripts/vendor_stage2.py --verify
 git merge --no-ff $B -m "Q-xx: <what> (E-nnn)"
 python -m pytest -q -o addopts= -m "not slow and not heavy"
 ```
+
+**One hook run per merge (E-274).** A conflicted merge runs the fast tier, and so does a records commit. When a
+branch merges with its own decision row, resolve the conflict and add the row, STATUS, queue and progress lines in the
+same merge commit, so the hook runs once. Never ask a worker to commit a conflicted merge of master only to stay current.
+A worker merges master once, just before its single commit, and resolves the conflict there.
 
 Then: append the decision row (numbered by the lead), update `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md`; commit;
 push (the post-commit hook does it); `python scripts/worktrees.py sync <each other worktree>`; dispatch the next item.

@@ -24,8 +24,12 @@ Draft a new family declaration titled: **$ARGUMENTS**
    gatekeeper will refuse it, and worse, an invented value that survives becomes a rule nobody chose.
 4. Tell the caller which sections still need decisions, as a short list.
 5. Invoke the **red-team** agent on the draft, giving it the file and the templates -- not your expectation of what it
-   will find. Pass its findings on unedited.
-6. Invoke the **prereg-gatekeeper** agent on the draft with the red-team's findings. Report its verdict verbatim: on
+   will find. Pass its findings on unedited. **In the same step, invoke the prereg-gatekeeper for a form read of the
+   same draft** (E-274): its template, counting, pin-grammar and wording items, returned as a numbered list, approving
+   nothing. Both lists go to the author in one cycle, so a form refusal no longer costs a cycle after the red team's
+   (H3 lost one this way on 2026-11-22). The gatekeeper does not see the red team's findings in this read, so the two
+   stay independent.
+6. Invoke the **prereg-gatekeeper** agent on the corrected draft with the red-team's findings, for its approval. Report its verdict verbatim: on
    approval, the assigned F-id, the family's k and level, the sha256 of the file's LF text and the proposed pinning row
    (one finished line, for the lead to number and append with `/decide`); on refusal, the numbered list of what is
    missing.
