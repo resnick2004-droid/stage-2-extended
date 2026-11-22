@@ -82,14 +82,18 @@ result of this search's own cells.
    (the go row as CHARTER 3.7's "pin", template 14 step 4):
    a bare number, a deleted citation or any other row is refused. **Membership (H-1'; E-257):** this F-HT's members
    are the design searches with a hash row before the membership event, the first go-row token
-   (`go: F-NN @ <its LF sha256>`) of an NQ design search of Topstep, My Funded Futures or Lucid, at most one per firm;
-   a firm with none before then is in state (c), fixed at that moment. **At most one member search per firm:** refuse
-   a design search for a pin before the membership event when its firm already has a hash row, closed or not (R-1;
-   E-259). Refuse a search pinned after the membership event, or a successor of a closed search, offered as a member
+   (`go: F-NN @ <its LF sha256> -- <text>`) of an NQ design search of Topstep, My Funded Futures or Lucid, counted
+   only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
+   declaration's hash row (G-2), the scope read from the declared market field, at most one per firm; a firm with none
+   before then is in state (c), fixed at that moment. **At most one member search per firm:** refuse a design search
+   for a pin before the membership event when its firm already has a hash row, closed or not (R-1; E-259). Refuse a
+   search pinned after the membership event, or a successor of a closed search, offered as a member
    (its candidates are tested only on data this line has never read, a later purchase, under its own k;
-   the confirmation window is read once, only for this F-HT's carried designs, CW-1); refuse a new search for a pin
-   after every member search is in a terminal state until F-HT's held-out row is written. Refuse a held-out year read
-   by any choice.
+   the confirmation window is read once, only for this F-HT's carried designs, CW-1; **Data this line has never read**
+   is bars after the last date any search of the line has read, as ledgered in `results/read_ledger.jsonl`; the
+   confirmation window ends at a date declared at F-HT's held-out row, and data after that end is never read for a
+   non-member (CW-2).); refuse a new search for a pin after every member search is in a terminal state until F-HT's
+   held-out row is written. Refuse a held-out year read by any choice.
 2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
    never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
    market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
@@ -154,7 +158,8 @@ result of this search's own cells.
    conditions written exactly; the held-out leg's scope; **paired** seeds and start days for design and baselines.
 9. **Calibration and the power gate** (template 9): their inputs (seeds,
    the R-10 estimator, `EPS` and `WALK_MAX`, the statistic, J and m, the plants, the generator) fixed in the file
-   before the pin; the go row's token `go: F-NN @ <its LF sha256>` naming the runner commit the calibration ran on,
+   before the pin; the go row's token
+   `go: F-NN @ <its LF sha256> -- <text>` naming the runner commit the calibration ran on,
    the survey and every round run on it (G-1, U-1; E-259); their outputs pinned afterwards in E-115's form
    (`docs/calibration/<F-NN>_calibration.md` by its sha256); the antithetic twin and disjoint seed sets; the
    history null and its false-pass rate; **the power gate** at the size that matters, with its limit clause and the
@@ -171,11 +176,13 @@ result of this search's own cells.
    counted and printed beside the verdict. Refuse a draft that changes them, or a successor offered as a member.
 10. **The pass line** (template 10): (a) the limits -- the point estimate governs, never a second margin (E-221,
     E-230, O-5), each limit's one-sided check reported beside and never deciding; (b) each baseline beaten,
-    intersection-union, every comparison at the full level; (c) every floor, the stress floors (+1 tick, 10 % missed)
-    and the as-traded floors read on the real path (N-1); the verdict at 0 % denial, the placement off, the Focused
-    Trader Program off; the level printed nominal while the ledger is not empty; the history-level false-pass rate
-    beside. Refuse anything weaker -- a looser level, a point reading in place of the bound, a dropped floor, a limit
-    loosened, a judgement on the search years -- or a fail with no consequence: **a fail closes the search**.
+    intersection-union, every comparison at the full level; (c) every floor -- the do-nothing floor among them (E-255;
+    W42-R1 at its pinning row), at the search-year screen before ranking and at the held-out verdict, and refuse a
+    draft whose section 7 lacks its row -- the stress floors (+1 tick, 10 % missed) and the as-traded floors read on
+    the real path (N-1); the verdict at 0 % denial, the placement off, the Focused Trader Program off; the level
+    printed nominal while the ledger is not empty; the history-level false-pass rate beside. Refuse anything weaker --
+    a looser level, a point reading in place of the bound, a dropped floor, a limit loosened, a judgement
+    on the search years -- or a fail with no consequence: **a fail closes the search**.
 11. **Seeds by role, written now** (template 12): every seed an integer with one role, found nowhere else (grep the
     vendored snapshot, every worktree and every ref; the arithmetic fold); the held-out test's seeds disjoint from
     every search-year seed; fixed-length keys. Refuse "a fixed seed" or "seeded".
@@ -188,25 +195,30 @@ The one declaration that reads NQ's held-out years has its own item list. Read i
 if any item is missing or set after a look:
 
 1. **Declaration kind: held-out test**, kept from its template, written from `prereg/TEMPLATE_heldout_test.md` and
-   pinned as F-HT, the market's only held-out-marked file, without the design-search marker (m-2); it carries the
+   pinned as F-HT, the market's only held-out-marked file, without the design-search marker (m-2), named
+   `prereg/F-NN_heldout_test_<MARKET>.md`, its marker `**Declaration kind: held-out test.**` at a line's start, every
+   one of the template's ten section headings word for word (Q-194d); it carries the
    `Judged-block reads:` line with `heldout_test` and `heldout_stress` only.
 2. **Its inputs come only from the pinned searches' finalists' lists**, each by its sha256, each search by its pin's
    hash, its go row, its calibration record's sha256, its finalists' row (newer than its go row) and its runner commit
    (m-4); the joint runner is each search's runner at that commit, or a new runner with its own identity. Every other
-   input -- the statistic, J and m, `<S4>`, the limits, the composite or the fallback, the baselines, the floors, the
-   time leg -- is cited unchanged from each search's pinned file. **Refuse anything new.**
+   input -- the statistic, J and m, `<S4>`, the limits, the composite or the fallback, the baselines, the floors (the
+   do-nothing floor among them, declared by W42-R1 at its pinning row and cited from each member's section 7 --
+   declared, not new), the time leg -- is cited unchanged from each search's pinned file. **Refuse anything new.**
 3. **The joint order by the template's fixed rule (H-2; E-257):**
    alternating by rank across the firms in the order Topstep, My Funded Futures (MFFU), Lucid -- rank 1 of each, then
    rank 2 of each, a firm whose list is exhausted skipped --
    a firm's ranks its one member search's own pinned finalist order. Refuse any other order, and any order a
    researcher chose after a read.
 4. **Each firm's state by membership at the fixed event (H-1'; E-257):** the members are the design searches with a
-   hash row before the membership event, the first go-row token of an NQ design search of Topstep, My Funded Futures
-   or Lucid, at most one per firm; each member ends in (a) finalists, its finalists' row, or (b) none, its closing
-   row, `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`, a cause from the template's closed list,
-   `withdrawn` only before the membership event, `defect-on-record` citing its diagnosis row; a firm with no hash row
-   before the event is in (c), fixed at that moment. A firm's finalists are never voided; no successor and no search
-   pinned after the event is a member. A firm in (b) or (c) is listed as none and keeps its place.
+   hash row before the membership event, the first counted go-row token of an NQ design search of Topstep, My Funded
+   Futures or Lucid, counted only outside any fenced block, in that exact form, at its declaration's pinned sha256, in
+   a row strictly after that declaration's hash row (G-2), at most one per firm; each member ends in (a) finalists,
+   its finalists' row, or (b) none, its closing row, `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`,
+   a cause from the template's closed list, `withdrawn` only before the membership event, `defect-on-record` only with
+   a failed check on record at a named commit and the auditor's note; a firm with no hash row before the event is in
+   (c), fixed at that moment. A firm's finalists are never voided; no successor and no search pinned after the event
+   is a member. A firm in (b) or (c) is listed as none and keeps its place.
 5. **Written only when, after the membership event, every member search is in a terminal state**, as soon as it
    is; before the event it is never due; a member search neither finalised nor closed blocks it and is never waited
    out by choice.
@@ -214,7 +226,9 @@ if any item is missing or set after a look:
    `heldout-finalists: F-HT @ <its LF sha256> list <the joint list's sha256>`, newer than the pin; the run; the
    verdict row, `heldout-verdict: <MARKET> F-NN @ <its LF sha256> -- <text>`, the only verdict form, as the first text
    of its third cell, one row, newer by position than the finalists' token, counted only once the ledger holds that
-   family's `heldout_test` read of the same window, sha256 and market.
+   family's `heldout_test` read of the same window, sha256 and market; the read's commit a proper ancestor of every
+   commit that adds the verdict row, merges included; a malformed row or fence voided by `heldout-void: E-NNN --
+   <reason>`, never a verdict, finalists or pin row (Q-194e).
    Refuse a pin and a token in one row, and any repeat row for F-HT.
 7. **The k** at its held-out row (E-204), 0.05 / (k (k + 1)); no search takes one.
 8. **Each finalist's power re-stated at its place** in the joint sequence by the template's declared formula (H-2:
@@ -231,7 +245,8 @@ if any item is missing or set after a look:
   row**, which is its finalists' token row (E-204's rule, with "held-out test" in place of "stage B"); F-HT is not
   counted by this rule until that row exists. Check the level's arithmetic (k = 13: 0.05 / 182). If another
   declaration takes a k first, each finalist's place power is re-stated at the new level by a lookup in its gate's
-  output at k = 14 to 20 (K-2), never a new run; exit (B) cites it.
+  output at k = 14 to 20 (K-2), never a new run; a k beyond 20 needs a re-statement run of the gate (n-1);
+  exit (B) cites it.
 - **No repeat row for F-HT, ever**: its held-out test runs once.
 - **E-005 (d), restated:** F-HT withdrawn after its held-out row still spends its k, unless a decision row releases
   it; a search's withdrawal before F-HT's held-out row spends nothing.
