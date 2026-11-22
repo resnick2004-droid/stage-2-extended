@@ -43,9 +43,10 @@ in the sections below.>
 
 - **The market:** <MARKET, the reader's market code, here NQ> -- the one market this search reads; the
   membership event's scope is read from this field, never from the file's text (G-2; E-259). The field is written
-  exactly `- **The market:** NQ -- ...` (a bare upper-case market code, no backticks, bold or second code), and the
-  firm line begins with exactly one of `Topstep`, `My Funded Futures (MFFU)`, `MFFU` or `Lucid`; a design-search file
-  whose fields are not each in this exact form, once, is refused at the pin and by `extended/go_token.py` (C-1).
+  exactly `- **The market:** NQ -- ...` or `- **The market:** MNQ -- ...`: the allowed market codes are exactly `NQ`
+  and `MNQ` (one underlying), and the firm line begins with exactly one of the allowed firm names `Topstep`, `MFFU` or
+  `Lucid`; any other market code or firm name, or a field not in this exact form once, is refused at the pin and by
+  the reader's `membership_event` (`extended/reader.py` at its pinning row's sha256; C-1; finding 4).
 - **The firm and account:** <firm, plan> -- **exactly one firm**; a search naming several firms is refused
   (R-1; E-259). Its rules are the verified ones only (CHARTER 3.1): Stage 2's ledger
   (`vendor/stage2/config/rules.yaml`) or this repository's record (`config/rules_extended.yaml` through
@@ -97,10 +98,10 @@ the held-out test's declaration when it exists>. A search pinned after the membe
 closed search, is never a member of this F-HT; its candidates are tested only on data this line has never read (a
 later purchase), under its own k; the confirmation window (NQ from 2026-07-17) is read once, only for this F-HT's
 carried designs (CW-1; E-259). **Data this line has never read** is NQ bars after the confirmation window's end, or
-another market's bars that no declaration here has read; never NQ's search years, held-out years or confirmation
-window (CW-2; B-2). A member's finalists are never voided. A later search on the same bars reads NQ's held-out years
-and F-HT's results as a description only, or moves its held-out years to data not yet read (a purchase or the
-operator's setup).
+another underlying's bars that no declaration of this repository has read (NQ and MNQ are one underlying); never NQ's
+search years, held-out years or confirmation window (CW-2; B-2; finding 7). A member's finalists are never voided. A
+later search on the same bars reads NQ's held-out years and F-HT's results as a description only, after F-HT's verdict
+row (reader rule 4; n4), or moves its held-out years to data not yet read (a purchase or the operator's setup).
 - **The held-out read ledger** (CHARTER 3.6 (b)). Every past read of the held-out years for this search's comparators
   and trigger families, each in RD-04's leak-clause form, "written after this reading; no figure cited". CHARTER 3.6
   (b)'s list is the floor, and E-211 added Q-132 and Q-16's paired nulls; this declaration completes it:
@@ -114,11 +115,12 @@ operator's setup).
 - **No held-out result is ever written where a later search can read it** -- not in the lever map, not in
   `results/variants.jsonl` (CHARTER 3.3 (f)). No guard does this yet (`VariantCounter` writes what it is given):
   **a build requirement** of this search's runner, with a test that a held-out row is refused before the survey runs.
-- **The confirmation window:** NQ from 2026-07-17 to the last complete NQ session in the confirmation data as
-  purchased, recorded in a `heldout-window: NQ 2026-07-17 to <last> -- <text>` row before any member's finalists'
-  token and never chosen with a finalist known (C-5), declared now, never read until a carried design is registered,
-  and a purchase, the operator's (section 15); it is read once, only for F-HT's carried designs, and a non-member
-  search's candidates never use it (CW-1; E-259).
+- **The confirmation window:** NQ from 2026-07-17 to the last session in the purchase order's stated range, never read
+  from bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it
+  opens the confirmation window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on
+  is refused; the purchase and that row come before the first finalists' row of any member (C-5; finding
+  5), declared now, never read until a carried design is registered, and a purchase, the operator's (section 15); it
+  is read once, only for F-HT's carried designs, and a non-member search's candidates never use it (CW-1; E-259).
 
 ## 3. The lever space
 
@@ -501,7 +503,8 @@ the go row; they read only what this file fixed. H3's earlier runs are design ch
   histories is **the history-level false-pass rate**, printed beside every verdict. History blocks are at least as long
   as the composite's longest horizon.
 - **The power gate**, before the go row: the whole pass line's power at the level it assumes, **the do-nothing floor
-  included: a planted design not above the floor counts as a fail and never leaves the count** (E-255; section 7; B-1)
+  included: a planted design not above the floor, at the search-year screen or at the held-out verdict (section 10
+  (c)'s two points), counts as a fail and never leaves the count** (E-255; section 7; B-1; n6)
   -- F-HT's level 0.05 / (k (k + 1)) with k = 13 next, the
   power at every k from 14 to 20 reported beside, so a re-statement at another k is a lookup, never a new run (m-e;
   K-2), and a k beyond 20 needs a re-statement run of the gate, from the go row's runner commit at the gate's pinned
@@ -616,7 +619,7 @@ reading the martingale-outcome reading for the finalist and every baseline alike
   gatekeeper's k rule until that row exists. That row comes before the held-out run, so E-204's repeat clause (another
   declaration taking a k between a run and its row) cannot arise. If another declaration takes a k first, F-HT's k is
   the next free one and each finalist's place power is re-stated at the new level before the held-out run
-  (a lookup in each gate's output at k = 14 to 20, section 9) (exit (B) cites it); A k beyond 20 needs a re-statement
+  (a lookup in each gate's output at k = 14 to 20, section 9) (exit (B) cites it); a k beyond 20 needs a re-statement
   run of the gate, from the go row's runner commit at the gate's pinned seeds -- a re-statement only, closing nothing,
   exit (B) citing it; without it the pass line is refused (n-c). F-HT withdrawn after its held-out row still spends
   its k (E-005 (d)); **a search's withdrawal before F-HT's held-out row spends nothing** -- no search holds a k.
@@ -653,23 +656,26 @@ reading the martingale-outcome reading for the finalist and every baseline alike
    membership reading until a later `heldout-void: E-NNN -- <reason>` row voids it, a void of a valid row being a
    no-op, fences and voids read by the reader's own rules; so are a go row for a closed search and a second go row for
    one declaration; an HTML comment in `DECISIONS.md` is read exactly as `extended/reader.py` reads it, with no rule
-   of its own (n-d) (`extended/go_token.py`, at its pinning row's sha256, n-a); it cites the calibration record's hash
-   and names, in its `runner <40 hex>` sub-form, the runner commit the calibration ran on -- **the survey and every
-   round run on that runner commit, bound by its sha; a change to deciding code after it is a new declaration** (U-1);
-   from here the survey may run. Under this template (E-258 (the lead's CHARTER 3.7 reading row)) CHARTER 3.7's "the
-   search's pin", "does not pin" and "before any search is pinned", and
-   CHARTER 3.8 (a)'s "a pinning row ... does not pin", each mean **this go row**; the reader's pin and every "newer
-   than the pin" mean **the hash row** of step 2.
+   of its own (n-d) (the reader's `go_problems`, `extended/reader.py` at its pinning row's sha256, n-a); it cites the
+   calibration record's hash and names, in its `runner <40 hex>` sub-form, the runner commit the calibration ran on --
+   **the survey and every round run on that runner commit, bound by its sha; a change to deciding code after it is a
+   new declaration** (U-1); the survey reads its own checkout's log, at a commit after the go row, bound as the reader
+   binds it: HEAD descends from the runner commit and every deciding file is byte-identical at HEAD and at the runner
+   commit (the reader's `go_runner` and `go_row_present`; finding 2); from here the survey may run. Under this
+   template (E-258 (the lead's CHARTER 3.7 reading row)) CHARTER 3.7's "the search's pin", "does not pin" and
+   "before any search is pinned", and CHARTER 3.8 (a)'s "a pinning row ... does not pin", each mean **this go row**;
+   the reader's pin and every "newer than the pin" mean **the hash row** of step 2.
    A search closed by a failed calibration, limit clause or power gate gets a closing row,
    `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>` (`prereg/TEMPLATE_heldout_test.md`'s closed list;
    `withdrawn` only before the membership event, W-1; `defect-on-record` only with a failed check on record at or
-   before the membership event's commit (or the search's own declared refusal or identity) and the auditor's note that
-   it cannot be fixed without changing a declared input, every such close counted (C-4), D-1; E-259); no search holds
-   a k. The data question goes to the operator with the gate's result before the go row. Refusing at every later step:
-   this file still hashing to its pin (`tests/test_declarations_fixed.py`), the go row present (checked by code: the
-   survey runner refuses to start unless `extended/go_token.py`'s `go_row_present` holds for this file's pinned
-   sha256; it is False once this search has a finalists' or closing row), a clean checkout, the run lock held --
-   **Refusals first**, each refusing.
+   before the membership event's commit (or the search's own declared refusal or identity), failing when run at the
+   search's go-row runner commit, and the auditor's note that it cannot be fixed without changing a declared input,
+   every such close counted (C-4), D-1; E-259); no search holds a k. The data question goes to the operator with the
+   gate's result before the go row. Refusing at every later step: this file still hashing to its pin
+   (`tests/test_declarations_fixed.py`), the go row present (checked by code: the survey runner refuses to start
+   unless the reader's `go_row_present` (`extended/reader.py` at its pinning row's sha256) holds for this file's
+   pinned sha256; it is False once this search has a finalists' or closing row), a clean checkout, the run lock held
+   -- **Refusals first**, each refusing.
 5. **The survey** on the search years only (one clean run, from the go row's runner commit); its gates before its
    measures; logged.
 6. **The rounds**, each one clean run from the go row's runner commit, collected (`/collect`), never extended.
@@ -725,10 +731,12 @@ the denial ladder, the playbook trigger side's held-out reading and the fill-tim
   baseline at +1 tick of worse fills.
 - **A fail -- what a fail means:** <the search closes (a closing row); it spends no k; nothing of it is rerun; a new
   question is a new declaration citing this one; exit (B) states the line's power from the power gate>.
-- **The confirmation:** NQ from 2026-07-17 to the last complete NQ session in the confirmation data as purchased,
-  recorded in a `heldout-window: NQ 2026-07-17 to <last> -- <text>` row before any member's finalists' token and never
-  chosen with a finalist known (C-5), read once, only for F-HT's carried designs; a non-member search's candidates
-  never use it (CW-1, CW-2; E-259); **a purchase**, the operator's.
+- **The confirmation:** NQ from 2026-07-17 to the last session in the purchase order's stated range, never read from
+  bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it
+  opens the confirmation window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on
+  is refused; the purchase and that row come before the first finalists' row of any member (C-5; finding 5), read
+  once, only for F-HT's carried designs; a non-member search's candidates never use it (CW-1, CW-2; E-259);
+  **a purchase**, the operator's.
 
 ## 16. Anything chosen after seeing results
 

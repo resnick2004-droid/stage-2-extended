@@ -85,19 +85,26 @@ result of this search's own cells.
    (`go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`) of an NQ design search of Topstep,
    My Funded Futures or Lucid, counted
    only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
-   declaration's hash row (G-2), the scope read from the declared market field, at most one per firm; a firm with none
-   before then is in state (c), fixed at that moment. **At most one member search per firm:** refuse a design search
-   for a pin before the membership event when its firm already has a hash row, closed or not (R-1; E-259). Refuse a
-   search pinned after the membership event, or a successor of a closed search, offered as a member
-   (its candidates are tested only on data this line has never read, a later purchase, under its own k;
+   declaration's hash row (G-2), the scope read from the declared market field (market `NQ` or `MNQ`; firm `Topstep`,
+   `MFFU` or `Lucid`; any other value refused), by the reader's `membership_event`
+   (`extended/reader.py` at its pinning row's sha256), at most one per firm; a firm with none before then is in state
+   (c), fixed at that moment. **At most one member search per firm:** refuse a design search for a pin before the
+   membership event when its firm already has a hash row, closed or not (R-1; E-259). Refuse a search pinned after the
+   membership event, or a successor of a closed search, offered as a member (its candidates are tested only on data
+   this line has never read, a later purchase, under its own k;
    the confirmation window is read once, only for this F-HT's carried designs, CW-1; **Data this line has never read**
-   is NQ bars after the confirmation window's end, or another market's bars that no declaration here has read; never
-   NQ's search years, held-out years or confirmation window (CW-2; B-2).); refuse a new search for a pin after every
-   member search is in a terminal state until F-HT's held-out row is written. Refuse a held-out year read by any
-   choice.
-2. **The confirmation window, declared now.** NQ from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk,
-   never read until a carried design is registered, a purchase. Count the confirmation tests already spent on the
-   market (Stage 2 D-107: at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
+   is NQ bars after the confirmation window's end, or another underlying's bars that no declaration of this repository
+   has read (NQ and MNQ are one underlying); never NQ's search years, held-out years or confirmation window (CW-2;
+   B-2; finding 7).); refuse a new search for a pin after every member search is in a terminal state until F-HT's
+   held-out row is written. Refuse a held-out year read by any choice.
+2. **The confirmation window, declared now.** Its end is the last session in the purchase order's stated range, never
+   read from bars, recorded in the first `heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it
+   opens the confirmation window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on
+   is refused; the purchase and that row come before the first finalists' row of any member (C-5; finding 5): refuse a
+   finalists' row of any member before the purchase and that row, and any later NQ window row from 2026-07-17 on. NQ
+   from 2026-07-17 (`vendor/stage2/config/windows.yaml`): not on disk, never read until a carried design is
+   registered, a purchase. Count the confirmation tests already spent on the market (Stage 2 D-107:
+   at most three a market; NQ's held-back window was spent by Stage 2's P-05, P-06 and P-10 --
    `vendor/stage2/prereg/REGISTRY.md`), and state in the verdict that NQ's reserve becomes a confirmation window
    only by the operator's decision (Stage 2 D-107; Stage 2's operator item 6). That is reported, not a refusal: the
    confirmation is read only after a design is carried, and it is a purchase anyway.
@@ -218,10 +225,10 @@ if any item is missing or set after a look:
    its finalists' row, or (b) none, its closing row, `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>`,
    a cause from the template's closed list, `withdrawn` only before the membership event, `defect-on-record` only with
    a failed check on record at or before the membership event's commit (or the search's own declared refusal or
-   identity) and the auditor's note that it cannot be fixed without changing a declared input, every such close
-   counted (C-4); a firm with no hash row before the event is in (c), fixed at that moment.
-   A firm's finalists are never voided; no successor and no search pinned after the event is a member. A firm in (b)
-   or (c) is listed as none and keeps its place.
+   identity), failing when run at the search's go-row runner commit, and the auditor's note that it cannot be fixed
+   without changing a declared input, every such close counted (C-4); a firm with no hash row before the event is in
+   (c), fixed at that moment. A firm's finalists are never voided; no successor and no search pinned after the event
+   is a member. A firm in (b) or (c) is listed as none and keeps its place.
 5. **Written only when, after the membership event, every member search is in a terminal state**, as soon as it
    is; before the event it is never due; a member search neither finalised nor closed blocks it and is never waited
    out by choice.
@@ -250,7 +257,7 @@ if any item is missing or set after a look:
   13: 0.05 / 182). If another declaration takes a k first, each finalist's place power is re-stated at the new level
   by a lookup in its gate's output at k = 14 to 20 (K-2), never a new run; a k beyond 20 needs a re-statement run of
   the gate, from the go row's runner commit at the gate's pinned seeds -- a re-statement only, closing nothing, exit
-  (B) citing it; without it the pass line is refused (n-c); exit (B) cites it.
+  (B) citing it; without it the pass line is refused (n-c).
 - **No repeat row for F-HT, ever**: its held-out test runs once.
 - **E-005 (d), restated:** F-HT withdrawn after its held-out row still spends its k, unless a decision row releases
   it; a search's withdrawal before F-HT's held-out row spends nothing.

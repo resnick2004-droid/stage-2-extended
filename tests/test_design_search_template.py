@@ -1232,25 +1232,10 @@ def _firm_states(events):
     return states, terminal(), outside
 
 
-#: G-1, G-2, n-5: the go token and its validity live in `extended/go_token.py` (the survey runner's check); one form,
-#: `go: F-NN @ <its LF sha256> -- <text>`, in the text and here
-from extended import go_token as GT
-
-GO_TOKEN = GT.GO_TOKEN
+#: the decision log's row (the reader's form, for the order checks below); the go token's rules are the reader's
+#: (`extended/reader.py`'s `go_problems`, `go_row_present`, `go_runner`, `membership_event`; Q-212, wt/wt-verify), and
+#: their code tests live there
 LOG_ROW = re.compile(r"^\| E-\d+ \|")
-
-
-def _log_membership(decisions: str, scope: dict) -> tuple:
-    """G-1, G-2 on a decision log (`extended/go_token.py`'s `membership`), its refusals as `Refused`."""
-    try:
-        return GT.membership(decisions, scope)
-    except GT.GoRefused as e:
-        raise Refused(str(e)) from None
-
-
-def _log_scope(root: Path) -> dict:
-    """The real scope by each declaration's declared market field and firm line (`declared_scope`)."""
-    return GT.declared_scope(root)
 
 
 def _joint_order(states):
@@ -1391,7 +1376,8 @@ def test_h1_membership_is_fixed_by_an_event_and_states_by_rule():
     for s in ("Membership (H-1'; E-257): this F-HT's members are the design searches with a hash row before the "
               "membership event, the first go-row token (" + GO_FORM + ") of an NQ design "
               "search of Topstep, My Funded Futures or Lucid, " + VALID_GO + ", the scope read from the declared "
-              "market field, at most one per firm",
+              "market field (market `NQ` or `MNQ`; firm `Topstep`, `MFFU` or `Lucid`; any other value refused), by "
+              "the reader's `membership_event` (" + RDPIN + "), at most one per firm",
               "At most one member search per firm: refuse a design search for a pin before the membership event when "
               "its firm already has a hash row, closed or not (R-1; E-259)",
               "a firm's ranks its one member search's own pinned finalist order",
@@ -1584,44 +1570,14 @@ CAUSE_TEXT = (
     "a withdrawal under E-005 (d), its reason in the row, only before the membership event; after it, a member closes "
     "only by causes 1 to 6 or 8 and is never dropped by choice (W-1; E-259).",
     "a failed check on record (a test or an identity failing, or a firm key the loader now refuses), committed at or "
-    "before the membership event's commit, or one of the search's own declared refusals or identities, cited by its "
-    "file and sha256 and by its diagnosis row, with the auditor's note confirming that it cannot be fixed without "
+    "before the membership event's commit, or one of the search's own declared refusals or identities, and failing "
+    "when run at the search's go-row runner commit, cited by its file and sha256 and by its diagnosis row, with the auditor's note confirming that it cannot be fixed without "
     "changing a declared input, and every such close counted in the line's record beside the verdict; without all of "
     "these it is refused; never a preference (D-1, C-4; E-259).",
 )
 
 
 def test_e259_the_go_token_fixes_the_event_in_the_log():
-    import pytest
-
-    a, b, c, d, z = ("a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 64)
-    scope = {"F-13": "Topstep", "F-14": "MFFU", "F-15": "Lucid", "F-16": "Lucid"}
-    rows = ["| E-898 | 2026-11-29 | **Search F-12 declared.** `prereg/F-12_es.md` sha256 `" + z + "` | b |",
-            "| E-899 | 2026-11-30 | go: F-12 @ " + z + " -- runner " + RUN + " -- an ES search's go row, outside the scope | b |",
-            "| E-900 | 2026-12-01 | **Search F-13 declared.** `prereg/F-13_a.md` sha256 `" + a + "` | b |",
-            "| E-901 | 2026-12-02 | **Search F-14 declared.** `prereg/F-14_b.md` sha256 `" + b + "` | b |",
-            "| E-902 | 2026-12-03 | **A prose row** naming go: F-14 @ " + b + " -- runner " + RUN + " -- not at the cell's start | b |",
-            "| E-903 | 2026-12-04 | go: F-13 @ " + a + " -- runner " + RUN + " -- the go row; `prereg/F-15_c.md` sha256 `" + c + "` | b |",
-            "| E-904 | 2026-12-05 | go: F-14 @ " + b + " -- runner " + RUN + " -- MFFU's go row | b |",
-            "| E-905 | 2026-12-06 | **Search F-16 declared.** `prereg/F-16_d.md` sha256 `" + d + "` | b |"]
-    log = "\n".join(rows) + "\n"
-    # the event is the first in-scope token at a row's third cell; a hash row in the event's own row is not before it
-    assert _log_membership(log, scope) == ("E-903", {"Topstep": "F-13", "MFFU": "F-14"})
-    assert _log_membership("\n".join(rows[:5]), scope) == (None, {"Topstep": "F-13", "MFFU": "F-14"})
-    with pytest.raises(Refused, match="go-like but not exactly"):                       # a malformed tail refuses
-        _log_membership(log.replace("go: F-13 @ " + a + " --", "go: F-13 @ " + a + "--"), scope)
-    second = rows[:3] + ["| E-901 | 2026-12-02 | **Search F-17 declared.** `prereg/F-17_t.md` sha256 `" + b + "` |"]
-    with pytest.raises(Refused, match="R-1"):
-        _log_membership("\n".join(second + rows[5:6]), dict(scope, **{"F-17": "Topstep"}))
-    # the real log: every go token names an in-scope pinned search, and its membership parses without a refusal
-    log = _text(ROOT / "DECISIONS.md")
-    real = _log_scope(ROOT)
-    event, members = _log_membership(log, real)
-    for m in filter(None, map(GO_TOKEN.match, log.splitlines())):
-        assert m.group("decl") in real, (m.group("row"), m.group("decl"))
-    if event is None:
-        assert not any(GO_TOKEN.match(line) for line in log.splitlines())
-    assert set(members) <= set(FIRMS)
     # the token's form in every copy
     for path in (TEMPLATE, HT, CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"):
         f = _flat(_text(path))
@@ -1660,7 +1616,7 @@ def test_e259_every_ruling_is_held_where_it_lives():
     for s in ("At most one member search per firm: a second hash row for a firm before the membership event is refused "
               "at its pin, whether or not the first is closed (R-1; E-259); after the event a further search of the "
               "firm may pin, outside this F-HT, unless the no-new-pin bar holds.",
-              "(`extended/go_token.py`, at its pinning row's sha256, n-a); it cites the calibration record's hash and "
+              "(the reader's `go_problems`, " + RDPIN + ", n-a); it cites the calibration record's hash and "
               "names, in its `runner <40 hex>` sub-form, the runner commit the calibration ran on -- the survey "
               "and every round run on that runner commit, bound by its sha; a change to deciding code after it is a "
               "new declaration (U-1)",
@@ -1873,17 +1829,21 @@ GK_FILE = CLAUDE_DIR / "agents" / "prereg-gatekeeper.md"
 VALID_GO = ("counted only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row "
             "strictly after that declaration's hash row (G-2)")
 DEF_NEVER_READ = ("Data this line has never read is NQ bars after the confirmation window's end, or another "
-                  "market's bars that no declaration here has read; never NQ's search years, held-out years or "
-                  "confirmation window (CW-2; B-2).")
+                  "underlying's bars that no declaration of this repository has read (NQ and MNQ are one underlying); "
+                  "never NQ's search years, held-out years or confirmation window (CW-2; B-2; finding 7).")
 #: C-5: the confirmation window's end, fixed by rule, in every copy
-CW_END = ("NQ from 2026-07-17 to the last complete NQ session in the confirmation data as purchased, recorded in a "
-          "`heldout-window: NQ 2026-07-17 to <last> -- <text>` row before any member's finalists' token and never "
-          "chosen with a finalist known (C-5)")
+CW_RULE = ("the last session in the purchase order's stated range, never read from bars, recorded in the first "
+           "`heldout-window: NQ 2026-07-17 to <last> -- <text>` row, which states that it opens the confirmation "
+           "window, not a second held-out test, and governs; any later NQ window row from 2026-07-17 on is refused; "
+           "the purchase and that row come before the first finalists' row of any member (C-5; finding 5)")
+CW_END = "NQ from 2026-07-17 to " + CW_RULE
+RDPIN = "`extended/reader.py` at its pinning row's sha256"
 #: C-3: the go token's one form, the runner sub-form included
 GO_FORM = "`go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`"
 C4_SHORT = ("`defect-on-record` only with a failed check on record at or before the membership event's commit (or the "
-            "search's own declared refusal or identity) and the auditor's note that it cannot be fixed without "
-            "changing a declared input, every such close counted (C-4)")
+            "search's own declared refusal or identity), failing when run at the search's go-row runner commit, and "
+            "the auditor's note that it cannot be fixed without changing a declared input, every such close counted "
+            "(C-4)")
 NC_TEXT = ("a k beyond 20 needs a re-statement run of the gate, from the go row's runner commit at the gate's pinned "
            "seeds -- a re-statement only, closing nothing, exit (B) citing it; without it the pass line is refused "
            "(n-c)")
@@ -1908,7 +1868,8 @@ def test_dn1_the_do_nothing_floor_at_the_screen_and_at_the_verdict():
             assert not _dn_row_missing(_text(pth)), pth.name
     s9 = _section(text, "## 9. Calibration", "## 10. The pass line")
     assert ("the whole pass line's power at the level it assumes, the do-nothing floor included: a planted design "
-            "not above the floor counts as a fail and never leaves the count (E-255; section 7; B-1)") in s9
+            "not above the floor, at the search-year screen or at the held-out verdict (section 10 (c)'s two points), "
+            "counts as a fail and never leaves the count (E-255; section 7; B-1; n6)") in s9
     for path in (TEMPLATE, HT, GK_FILE):
         assert "counted only over" not in _flat(_text(path)), path.name                   # B-1's bad needle
     s10 = _section(text, "## 10. The pass line", "## 11.")
@@ -1928,211 +1889,99 @@ def test_dn1_the_do_nothing_floor_at_the_screen_and_at_the_verdict():
         assert "which `extended/wave42.py` declares" not in _flat(_text(path)), path.name
 
 
-def _go_row(row, decl, sha, text="the go row", date="2026-12-03"):
-    """A go row in the one form (C-3's runner sub-form included)."""
-    return f"| {row} | {date} | go: {decl} @ {sha} -- runner {RUN} -- {text} | b |"
-
-
-def _pin_row(row, decl, sha, date="2026-12-01", head="| "):
-    return f"{head}{row} | {date} | **Search {decl}.** `prereg/{decl}_x.md` sha256 `{sha}` | b |"
-
-
-def _draft(market="NQ", firm="Topstep, 50K Combine"):
-    """A design-search draft made from the template by filling its two scope fields only."""
-    return (_text(TEMPLATE).replace("<MARKET, the reader's market code, here NQ>", market)
-            .replace("<firm, plan>", firm))
-
-
-def _root_with(tmp, files):
-    (tmp / "prereg").mkdir(exist_ok=True)
-    for name, body in files.items():
-        (tmp / "prereg" / name).write_text(body, encoding="utf-8", newline="\n")
-    return tmp
-
-
-def _lf_sha(path):
-    import hashlib
-
-    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-
-
-def test_g2_a_go_token_counts_only_when_valid_and_the_runner_checks_it(tmp_path):
-    import pytest
-    from extended import reader as RD
-
-    root = _root_with(tmp_path, {"F-13_x.md": _draft(), "F-14_x.md": _draft(firm="MFFU, Rapid 50K"),
-                                 "F-15_x.md": _draft(firm="Lucid, LucidFlex 50K")})
-    a, b, c = (_lf_sha(root / "prereg" / f"F-1{k}_x.md") for k in (3, 4, 5))
-    f = "f" * 64
-    assert GT.declared_scope(root) == {"F-13": "Topstep", "F-14": "MFFU", "F-15": "Lucid"}
-    scope = GT.declared_scope(root)
-    pin13, pin14 = _pin_row("E-900", "F-13", a), _pin_row("E-901", "F-14", b, "2026-12-02")
-    pin15 = _pin_row("E-903", "F-15", c, "2026-12-04")
-    go13 = _go_row("E-902", "F-13", a)
-    good = "\n".join([pin13, pin14, go13, pin15])
-    assert _log_membership(good, scope) == ("E-902", {"Topstep": "F-13", "MFFU": "F-14"})
-    assert GT.go_row_present(good, "F-13", a, root) and GT.go_runner(good, "F-13", a) == RUN
-    assert not GT.go_row_present(good, "F-13", b, root) and not GT.go_row_present(good, "F-14", b, root)
-    # the file and the token are both checked: a file at another sha, or a token at another sha, refuses
-    (tmp_path / "other").mkdir()
-    other = _root_with(tmp_path / "other", {"F-13_x.md": _draft() + chr(10) + "edited" + chr(10)})
-    a2 = _lf_sha(other / "prereg" / "F-13_x.md")
-    assert not GT.go_row_present(good, "F-13", a, other)                                 # the file was edited
-    assert not GT.go_row_present(good, "F-13", a2, other)                                # no go token at its sha
-    # each probe refuses: no shifted event, no survey
-    fenced_go = _go_row("E-899", "F-13", a, "quoted draft", "2026-12-01")
-    probes = {
-        "P1 fenced": [pin13, pin14, "```", fenced_go, "```", pin15, go13],
-        "P2 before its pin": [fenced_go.replace("2026-12-01", "2026-11-30"), pin13, pin14, pin15],
-        "G3 in its own pin's row": [go13.replace(" -- the go row", " -- the go row, pinned here `prereg/F-13_x.md` "
-                                                 "sha256 `" + a + "`"), pin14],
-        "P3 wrong sha": [pin13, pin14, go13.replace(a, f), pin15],
-        "P4 bold": [pin13, go13.replace("go: F-13", "**go: F-13").replace(" | b |", "** | b |")],
-        "P4 backticks": [pin13, go13.replace("go: F-13", "`go: F-13").replace(" -- runner", "` -- runner")],
-        "no tail": [pin13, go13.replace(" -- the go row", "")],
-        "no runner": [pin13, go13.replace(" -- runner " + RUN, "")],
-        "short runner": [pin13, go13.replace(RUN, RUN[:39])],
-        "G6 Go:": [pin13, go13.replace("go: F-13", "Go: F-13")],
-        "G26 bad date": [pin13, go13.replace("2026-12-03", "2026-12-3")],
-        "C-2 spacing": [pin13, go13.replace("| E-902 |", "|  E-902 |")],
-        "G16 re-pin": [pin13, _pin_row("E-901", "F-13", f), go13.replace(a, f)],
-        "C-3 closed": [pin13, f"| E-901 | 2026-12-02 | heldout-closed: F-13 @ {a} -- calibration-failed -- x | b |",
-                       go13],
-        "C-3 second go": [pin13, go13, _go_row("E-903", "F-13", a, "again", "2026-12-04")],
-        "unclosed fence": [pin13, go13, "```", pin14],
-    }
-    for name, rows in probes.items():
-        log = "\n".join(rows)
-        assert GT.go_problems(log), name
-        with pytest.raises(Refused):
-            _log_membership(log, scope)
-        assert not GT.go_row_present(log, "F-13", a, root), name
-    # C-2: a pin with the reader's looser row spacing is a pin here too (R-1 and membership see it)
-    odd = "\n".join([pin13, _pin_row("E-901", "F-14", b, "2026-12-02", head="|"), go13])
-    assert _log_membership(odd, scope) == ("E-902", {"Topstep": "F-13", "MFFU": "F-14"})
-    # C-3: no survey after the search's finalists' row or its closing row
-    fin = f"| E-904 | 2026-12-05 | heldout-finalists: F-13 @ {a} list {b} -- the list | b |"
-    close = f"| E-904 | 2026-12-05 | heldout-closed: F-13 @ {a} -- power-gate-failed -- x | b |"
-    for tail in (fin, close):
-        assert not GT.go_row_present(good + "\n" + tail, "F-13", a, root), tail[:40]
-    # B-3: voids and fences by the reader's rules; a void of a valid row is a no-op; nothing deadlocks
-    void = lambda row, target, date="2026-12-09": f"| {row} | {date} | heldout-void: {target} -- recovery | b |"
-    bold = probes["P4 bold"] + [pin14, _go_row("E-904", "F-14", b, "MFFU", "2026-12-05")]
-    assert _log_membership("\n".join(bold + [void("E-905", "E-902")]), scope)[0] == "E-904"
-    assert GT.go_problems("\n".join([void("E-899", "E-902", "2026-11-30")] + bold))      # a void before its target
-    battery = {
-        "stray fence after E-901, voided": [pin13, pin14, "```", go13, pin15, void("E-905", "E-901")],
-        "a void of the counted go row": [pin13, pin14, go13, pin15, void("E-905", "E-902")],
-        "a void of that void": [pin13, pin14, go13, void("E-905", "E-902"), void("E-906", "E-905")],
-        "a void of a pin row": [pin13, go13, void("E-905", "E-900")],
-        "a malformed finalists row, voided": [pin13, go13, f"| E-904 | 2026-12-05 | heldout-finalists: F-13 @ {a[:63]} "
-                                              f"list {b} -- short | b |", void("E-905", "E-904")],
-        "a void of a valid finalists row (G20)": [pin13, go13, fin, void("E-905", "E-904")],
-        "a fenced quotation of the go row, voided": [pin13, go13, "```", go13, "```", void("E-905", "E-902")],
-        "a tilde fence": [pin13, "~~~", "x", "~~~", go13],
-        "a backtick info string": [pin13, "``` a`b", go13],
-        "a four-space indent": [pin13, "    ```", go13],
-        "CRLF": [pin13 + "\r", go13 + "\r"],
-    }
-    for name, rows in battery.items():
-        log = "\n".join(rows)
-        assert GT.fences(log)[0] == RD._fence_state(log)[0], name                         # the reader's fences
-        assert RD.heldout_token_problems(log) == [] and GT.go_problems(log) == [], (name, GT.go_problems(log))
-        revived = name not in ("a void of a valid finalists row (G20)", "stray fence after E-901, voided")
-        assert GT.go_row_present(log, "F-13", a, root) == revived, name                 # the reader revives no row
-    import inspect
-
-    src = inspect.getsource(GT)
-    assert "RD._fence_state" in src and "RD.ROW" in src and "RD.PIN" in src and 'RD.heldout_tokens(text, "void")' in src
-    assert not hasattr(GT, "_FENCE_OPEN") and "_fence_scan" not in src                     # nothing re-implemented
-    # P5: a go row for a search never pinned is refused (no deadlock behind an F-HT with no finalists)
-    for ev in ([("go", "MFFU", "F-99")], [("pin", "Topstep", "F-13"), ("go", "MFFU", "F-99")]):
-        with pytest.raises(Refused, match="G-2"):
-            _firm_states(ev)
-    # the real log is clean
-    assert GT.go_problems(_text(ROOT / "DECISIONS.md")) == []
-
-
-def test_c1_the_scope_fails_closed_on_any_form_but_the_exact_one(tmp_path):
-    import pytest
-
-    tpl = _text(TEMPLATE)
-    assert sum(ln.startswith("- **The market:**") for ln in tpl.splitlines()) == 1
-    assert sum(ln.startswith("- **The firm and account:**") for ln in tpl.splitlines()) == 1
-    fenced_es = _draft().replace("- **The market:** NQ", "```\n- **The market:** ES\n```\n- **The market:** NQ", 1)
-    cases = {   # body -> the scope, or None for a refusal
-        "plain": (_draft(), {"F-20": "Topstep"}),
-        "MNQ, one underlying with NQ": (_draft("MNQ"), {"F-20": "Topstep"}),
-        "MFFU's long name": (_draft(firm="My Funded Futures (MFFU), Rapid 50K"), {"F-20": "MFFU"}),
-        "a fenced ES field above the real one": (fenced_es, {"F-20": "Topstep"}),
-        "another market": (_draft("ES"), {}),
-        "another firm": (_draft(firm="Apex, 50K"), {}),
-        "no design search (G13)": ("# a note\n\n- **The market:** `NQ`\n", {}),
-        "backticks": (_draft("`NQ`"), None), "bold": (_draft("**NQ**"), None), "lower case": (_draft("nq"), None),
-        "two codes": (_draft("NQ, ES"), None), "bold firm": (_draft(firm="**Topstep**, 50K"), None),
-        "TopstepX": (_draft(firm="TopstepX, 50K"), None), "Lucid Trading": (_draft(firm="Lucid Trading, 50K"), None),
-        "two firms": (_draft(firm="Topstep and Lucid, 50K"), None), "Topstep: 50K": (_draft(firm="Topstep: 50K"), None),
-        "unfilled": (_text(TEMPLATE).replace("<firm, plan>", "Topstep, 50K"), None),
-        "renamed field": (_draft().replace("- **The market:** NQ", "- **Market:** NQ", 1), None),
-        "two market lines": (_draft().replace("- **The market:** NQ", "- **The market:** NQ\n- **The market:** NQ", 1),
-                             None),
-        "marker rewritten": (_draft().replace("**Declaration kind: design search.**",
-                                              "**Declaration kind:** design search."), None),
-    }
-    for name, (body, want) in cases.items():
-        d = tmp_path / name.replace(" ", "_").replace(":", "").replace(",", "").replace("(", "").replace(")", "")
-        d.mkdir()
-        root = _root_with(d, {"F-20_x.md": body})
-        if want is None:
-            with pytest.raises(GT.GoRefused):
-                GT.declared_scope(root)
-            assert GT.scope_problems(body), name
-            sha = _lf_sha(root / "prereg" / "F-20_x.md")
-            log = "\n".join([_pin_row("E-900", "F-20", sha), _go_row("E-902", "F-20", sha)])
-            assert not GT.go_row_present(log, "F-20", sha, root), name                    # the runner refuses too
-        else:
-            assert GT.declared_scope(root) == want, name
-    # the real tree's scope parses (no design search is pinned yet)
-    assert isinstance(GT.declared_scope(ROOT), dict)
-    t = _flat(_text(TEMPLATE))
-    assert ("The field is written exactly `- The market: NQ -- ...` (a bare upper-case market code, no backticks, bold "
-            "or second code), and the firm line begins with exactly one of `Topstep`, `My Funded Futures (MFFU)`, "
-            "`MFFU` or `Lucid`; a design-search file whose fields are not each in this exact form, once, is refused at "
-            "the pin and by `extended/go_token.py` (C-1).") in t
-
-
 def _cw_problems(log: str) -> list:
-    """C-5: the confirmation window's end is recorded, in the reader's `heldout-window` form for NQ from 2026-07-17,
-    in a row before any finalists' token."""
+    """C-5 (finding 5): the first `heldout-window` row for NQ from 2026-07-17 governs the confirmation window; it
+    states that it opens the confirmation window, and it comes before the first finalists' token of any member; any
+    later NQ window row reaching 2026-07-17 or after is refused (the reader takes the newest, so a re-cut end is never
+    let stand)."""
     from datetime import date
     from extended import reader as RD
 
+    start = date(2026, 7, 17)
+    lines = log.splitlines()
+    wins = [w for w in RD.heldout_tokens(log, "window") if w.get("market") == "NQ" and w.get("end") >= start]
     finals = RD.heldout_tokens(log, "finalists")
-    if not finals:
-        return []
-    wins = [w for w in RD.heldout_tokens(log, "window")
-            if w.get("market") == "NQ" and w.get("start") == date(2026, 7, 17)]
-    first = min(t.pos for t in finals)
-    return [] if any(w.pos < first for w in wins) else ["no confirmation-window row before the first finalists' token"]
+    out = []
+    if wins:
+        first, later = wins[0], wins[1:]
+        if first.get("start") != start:
+            out.append(f"{first.row}: the first NQ window from the confirmation's days does not start 2026-07-17")
+        if "opens the confirmation window" not in lines[first.pos]:
+            out.append(f"{first.row}: the window row does not state that it opens the confirmation window (n2)")
+        out += [f"{w.row}: a later NQ window row from 2026-07-17 on (the first governs)" for w in later]
+    if finals:
+        if not wins or wins[0].pos > min(t.pos for t in finals):
+            out.append("no confirmation-window row before the first finalists' token")
+    return out
 
 
 def test_c5_the_confirmation_windows_end_is_fixed_by_rule_before_any_finalist():
     a, b = "a" * 64, "b" * 64
-    win = "| E-900 | 2026-12-01 | heldout-window: NQ 2026-07-17 to 2027-07-16 -- the data as purchased | b |"
+    win = ("| E-900 | 2026-12-01 | heldout-window: NQ 2026-07-17 to 2027-07-16 -- opens the confirmation window, the "
+           "purchase order's stated range | b |")
     fin = f"| E-905 | 2026-12-05 | heldout-finalists: F-13 @ {a} list {b} -- the list | b |"
+    recut = "| E-907 | 2026-12-07 | heldout-window: NQ 2026-07-17 to 2026-10-30 -- opens the confirmation window | b |"
+    overlap = "| E-907 | 2026-12-07 | heldout-window: NQ 2026-07-20 to 2026-08-01 -- a later cut | b |"
     assert _cw_problems("\n".join([win, fin])) == []
     assert _cw_problems("\n".join([fin, win]))                                           # after a finalist
     assert _cw_problems(fin)                                                             # none
     assert _cw_problems(win) == [] and _cw_problems("") == []                            # no finalist yet
-    assert _cw_problems("\n".join([win.replace("NQ 2026-07-17", "NQ 2026-07-20"), fin]))   # not the window's start
+    assert _cw_problems("\n".join([win.replace("NQ 2026-07-17 to", "NQ 2026-07-20 to"), fin]))   # not its start
+    assert _cw_problems("\n".join([win.replace("opens the confirmation window, the", "the"), fin]))   # n2
+    for later in (recut, overlap):                                                       # the first governs
+        assert _cw_problems("\n".join([win, fin, later])), later[:40]
+        assert _cw_problems("\n".join([win, later, fin])), later[:40]
+    early = "| E-899 | 2026-11-30 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- the held-out years | b |"
+    assert _cw_problems("\n".join([early, win, fin])) == []                              # an earlier window is not it
     assert _cw_problems(_text(ROOT / "DECISIONS.md")) == []
     for path in (TEMPLATE, HT):
         assert CW_END in _flat(_text(path)), path.name
+    gk = _flat(_text(GK_FILE))
+    assert ("2. The confirmation window, declared now. Its end is " + CW_RULE + ": refuse a finalists' row of any member "
+            "before the purchase and that row, and any later NQ window row from 2026-07-17 on.") in gk
+    ht = _flat(_text(HT))
+    assert "the confirmation window's end is not declared here: it is fixed by rule, " + CW_RULE + "." in ht
+
+
+def test_q212_the_reader_carries_the_go_token_rules():
+    """The lead's structural ruling: one parser for the log. `extended/go_token.py` is gone from this branch; the go
+    token's rules are the reader's public functions (Q-212, wt/wt-verify), which the templates cite. Until the reader
+    on this tree carries them this test skips visibly; once it does, it fails, not skips, if one is missing."""
+    import pytest
+    from extended import reader as RD
+
+    assert not (ROOT / "extended" / "go_token.py").exists()
+    names = ("go_problems", "go_row_present", "go_runner", "membership_event")
+    for path in (TEMPLATE, HT, GK_FILE):
+        f = _flat(_text(path))
+        assert RDPIN in f, path.name
+    t = _flat(_text(TEMPLATE))
+    for n in names:
+        assert f"`{n}`" in t + _flat(_text(HT)) + _flat(_text(GK_FILE)), n
+    if not any(hasattr(RD, n) for n in names):
+        pytest.skip("this tree's reader carries no go-token functions yet (Q-212, wt/wt-verify); the assertion fails, "
+                    "not skips, once it carries any")
+    for n in names:
+        assert callable(getattr(RD, n, None)), n
 
 
 def test_na_nd_go_token_cited_by_its_pinned_sha_and_html_comments_as_the_reader():
     t = _flat(_text(TEMPLATE))
-    assert "(`extended/go_token.py`, at its pinning row's sha256, n-a)" in t
+    assert "(the reader's `go_problems`, " + RDPIN + ", n-a)" in t
+    assert ("the survey reads its own checkout's log, at a commit after the go row, bound as the reader binds it: HEAD "
+            "descends from the runner commit and every deciding file is byte-identical at HEAD and at the runner "
+            "commit (the reader's `go_runner` and `go_row_present`; finding 2);") in t
+    assert ("The field is written exactly `- The market: NQ -- ...` or `- The market: MNQ -- ...`: the allowed market "
+            "codes are exactly `NQ` and `MNQ` (one underlying), and the firm line begins with exactly one of the "
+            "allowed firm names `Topstep`, `MFFU` or `Lucid`; any other market code or firm name, or a field not in "
+            "this exact form once, is refused at the pin and by the reader's `membership_event` (" + RDPIN
+            + "; C-1; finding 4).") in t
+    assert ("reads NQ's held-out years and F-HT's results as a description only, after F-HT's verdict row (reader rule "
+            "4; n4),") in t
+    for path in (TEMPLATE, HT, GK_FILE):
+        f = _flat(_text(path))
+        for bad in ("go_token", "the last complete NQ session", "another market's bars", "no declaration here has"):
+            assert bad not in f, (path.name, bad)
     assert ("an HTML comment in `DECISIONS.md` is read exactly as `extended/reader.py` reads it, with no rule of its "
             "own (n-d)") in t
     assert ("a void of a valid row being a no-op, fences and voids read by the reader's own rules; so are a go row for "
@@ -2148,20 +1997,22 @@ def test_na_nd_go_token_cited_by_its_pinned_sha_and_html_comments_as_the_reader(
     # the G-2 and C-3 sentences in every copy (the red team's T7, T12 and the step-4 copies)
     for s in ("4. The go row: its third cell's first text is the token " + GO_FORM + " (G-1, C-3; E-259), " + VALID_GO
               + "; a go-like row that is not exactly the token is a hygiene problem",
-              "the go row present (checked by code: the survey runner refuses to start unless `extended/go_token.py`'s "
-              "`go_row_present` holds for this file's pinned sha256; it is False once this search has a finalists' or "
-              "closing row)",
+              "the go row present (checked by code: the survey runner refuses to start unless the reader's "
+              "`go_row_present` (" + RDPIN + ") holds for this file's pinned sha256; it is False once this search has "
+              "a finalists' or closing row)",
               "The market: <MARKET, the reader's market code, here NQ> -- the one market this search reads; the "
               "membership event's scope is read from this field, never from the file's text (G-2; E-259)."):
         assert s in t, s
     assert ("of an NQ design search of Topstep, My Funded Futures or Lucid (G-1; E-259), " + VALID_GO + "; the scope is "
-            "read from each declaration's declared market field and firm line, never from its text "
-            "(`extended/go_token.py`).") in ht
+            "read from each declaration's declared market field and firm line, never from its text (the reader's "
+            "`membership_event`, " + RDPIN + ").") in ht
     for s in ("4. Each firm's state by membership at the fixed event (H-1'; E-257): the members are the design searches "
               "with a hash row before the membership event, the first counted go-row token of an NQ design search of "
               "Topstep, My Funded Futures or Lucid, " + VALID_GO + ", at most one per firm;",
               "(" + GO_FORM + ") of an NQ design search of Topstep, My Funded Futures or Lucid, " + VALID_GO
-              + ", the scope read from the declared market field, at most one per firm;"):
+              + ", the scope read from the declared market field (market `NQ` or `MNQ`; firm `Topstep`, `MFFU` or "
+              "`Lucid`; any other value refused), by the reader's `membership_event` (" + RDPIN + "), at most one per "
+              "firm;"):
         assert s in gk, s
 
 
@@ -2181,8 +2032,7 @@ def test_cw2_k1r_gk1_l1r_and_the_notes():
             "the confirmation window is read once, only for this F-HT's carried designs, CW-1;") in gk   # item 1
     ht = _flat(_text(HT))
     assert ("citing every firm's finalists' or closing row; the confirmation window's end is not declared here: it is "
-            "fixed by rule, the last complete NQ session in the confirmation data as purchased, recorded in a "
-            "`heldout-window: NQ 2026-07-17 to <last> -- <text>` row before any member's finalists' token (C-5).") in ht
+            "fixed by rule, " + CW_RULE + ".") in ht
     for path in (TEMPLATE, HT, GK_FILE):
         f = _flat(_text(path))
         for bad in ("end date declared", "as ledgered", "never read for a non-member"):
@@ -2204,8 +2054,9 @@ def test_cw2_k1r_gk1_l1r_and_the_notes():
     # L-1r: one rule, no held-out part
     assert "any held-out part" not in t and "it has no held-out part" in t
     # n-1: a k beyond 20
-    assert "and " + NC_TEXT in t and NC_TEXT[0].upper() + NC_TEXT[1:] + "." in t        # T section 9, section 13
-    assert NC_TEXT + ";" in gk
+    assert "and " + NC_TEXT in t and "(exit (B) cites it); " + NC_TEXT + "." in t        # T section 9, section 13
+    assert "exit (B) cites it." not in gk[gk.index("k beyond 20"):gk.index("k beyond 20") + 400]   # n3: once
+    assert NC_TEXT + "." in gk
     assert "For a k beyond 20, " + NC_TEXT.replace("a k beyond 20 needs", "each finalist's search needs") in ht
     # n-2: H4's sealed rule is moot; only its statement remains, for CHARTER 3.6 (e)
     assert ("The re-baseline (H4) reads the search years only, its runner refusing held-out sessions (CHARTER 3.6 "
