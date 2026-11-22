@@ -50,7 +50,7 @@ _PREFIX = 2026 * 1000 + 587
 SEED_BLOCK = tuple(_PREFIX * 10 + i for i in range(10))
 #: the repository files allowed to hold a seed of the block besides the note: H3's draft declaration (its section 15)
 #: and H3's seed module, the one module the build reads its seeds from (Wave 3.2)
-DECLARED_USES: tuple[str, ...] = ("prereg/DRAFT_H3_three_way.md", "extended/three_way_seeds.py")
+DECLARED_USES: tuple[str, ...] = ("prereg/H3_three_way.md", "extended/three_way_seeds.py")
 #: the files allowed to construct the block by arithmetic: this test, and H3's seed module (whose literals the fold
 #: binds)
 DERIVED_USES: tuple[str, ...] = (THIS, "extended/three_way_seeds.py")
