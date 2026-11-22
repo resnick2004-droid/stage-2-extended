@@ -475,6 +475,10 @@ def test_once_pinned_its_line_authorises_one_run_per_purpose_and_a_rerun_needs_a
     monkeypatch.setenv(reader.RUN_ID_ENV, f"{t.name}@1")
     kw = dict(files=[t / f for f in ENGINE_FILES], what="reading PP (Q-92's check)", repo=t)
     purposes = sorted(reader.declared_purposes(body))
+    # Q-179: RD-07 supersedes this reading (E-268 to E-272), so the reader refuses its reads, by path and by bytes
+    with pytest.raises(reader.SupersededRefused):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=purposes[0], declaration=rel, **kw)
+    monkeypatch.setattr(reader, "SUPERSEDED", ())   # the pinned text's own mechanics, as declared before
     for p in purposes:
         a = reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=p, declaration=rel, **kw)
         assert (a.judged, a.ledgered, a.kind, a.declaration_sha256) == (True, True, "described_reading", pin), (p, a)

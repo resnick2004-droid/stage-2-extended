@@ -340,8 +340,19 @@ class LedgerError(ReadRefused):
     """The read ledger does not verify or cannot be written, or the commit cannot be named: no judged read."""
 
 
-#: Q-173 (N-1): each superseded declaration as (its path, its LF sha256); filled by the lead's row at the O-7 pins
-SUPERSEDED: tuple[tuple[str, str], ...] = ()
+#: Q-173 (N-1): each superseded declaration as (its path, its LF sha256); filled by Q-179 at the O-7 pins (E-268 to
+#: E-272: RD-06 to RD-10 supersede RD-01 to RD-04; RD-05 is not superseded, its steps 0 to 2 keep it), each sha256
+#: computed from master's (cfdaa54) file by script, never typed
+SUPERSEDED: tuple[tuple[str, str], ...] = (
+    ("prereg/RD-01_firm_contracts.md",
+     "f6df144da5ea706e88c3e8f84549b4492f78802fe84cdf506d7754c3cf5c9bcb"),
+    ("prereg/RD-02_payout_policy.md",
+     "0c9dddabbc1cda0cd57787b4e8b5d34d42ee600df2d2c90e8a26178a31cb407c"),
+    ("prereg/RD-03_contract_levers.md",
+     "9a22532d3a32eebf412afccd5b0e0f47a0479cb3699e9e0d76a6629d9d8fb803"),
+    ("prereg/RD-04_volatility_drift.md",
+     "a8965e1602c5987a0f7fe4fe13f0bf3ce7448c96b38c193e8674782a25c2593b"),
+)
 SUPERSESSION_RULE = "the supersession rule, a superseded declaration authorises no read (N-1)"
 IDENTITY_WRITE_RULE = "the identity rule, an identity writes nothing to results/ (N-2)"
 RD_ID = re.compile(r"(?<![\w-])RD-\d+(?!\d)")

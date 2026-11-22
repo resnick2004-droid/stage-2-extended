@@ -162,6 +162,9 @@ def tree(tmp_path, monkeypatch) -> Path:
     git(t, "commit", "-q", "-m", "the synthetic tree")
     VR.settle(t, [t / "stand_in.bin"])
     monkeypatch.setattr(R, "RUNS_DIR", tmp_path / "runs")
+    # Q-179: RD-10 supersedes RD-04 (E-272), so the reader refuses RD-04's reads (tests/test_reader_superseded.py);
+    # this module is unchanged until RD-10's delta, and its checks are tested on the list as it was declared
+    monkeypatch.setattr(R, "SUPERSEDED", ())
     monkeypatch.setenv("S2X_CLEAN_RUN", RUN)
     monkeypatch.setenv("S2X_RUN_ID", "q121b-sim@run-1")
     return t

@@ -250,6 +250,10 @@ def test_once_pinned_this_reading_authorises_its_declared_engine_reads(tmp_path,
     kw = dict(files=[t / f for f in ENGINE_FILES], what="the U1 replay (Q-74's check)", repo=t)
     purposes = sorted(reader.declared_purposes(body))
     assert purposes
+    # Q-179: RD-06 supersedes this reading (E-268 to E-272), so the reader refuses its reads, by path and by bytes
+    with pytest.raises(reader.SupersededRefused):
+        reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=purposes[0], declaration=rel, **kw)
+    monkeypatch.setattr(reader, "SUPERSEDED", ())   # the pinned text's own mechanics, as declared before
     for p in purposes:
         for declaration in (rel, "RD-01"):
             a = reader.authorise_engine_read("2020-01-02", "2026-07-16", purpose=p, declaration=declaration, **kw)
