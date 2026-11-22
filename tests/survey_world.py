@@ -8,8 +8,7 @@ is `extended.`'s.
 rule text unedited from `WAVE42_COMMIT` on `wt/wt-infra` (`git show`) into a temporary root whose `extended/` is put
 on `extended.__path__`, until W42-R1 merges. Q-197's loader is this tree's (`extended/search_calendar.py`, master
 990d874). The two calendar shas W42-R1 has not pinned yet (`SEARCH_CALENDAR_SHA256` until Q-197's file is pinned;
-the held-out calendar is never read here) are set to this world's synthetic calendars. **One labelled stand-in**:
-`DO_NOTHING_EPS_STANDIN`, W42-R1's `DO_NOTHING_EPS` (1e-9) until its next commit declares it.
+the held-out calendar is never read here) are set to this world's synthetic calendars. No stand-in remains.
 
 **The fixture** is W42-R1's own application: `w42_root(path, spread, base_q)` writes a synthetic H4 collection result
 and sidecar, the two synthetic calendars, and runs `wave42_apply.apply` with synthetic `Sources` (the adapter returns
@@ -49,7 +48,7 @@ import numpy as np
 
 from extended import ROOT
 
-WAVE42_COMMIT = "c014d0a"          # wt/wt-infra: W42-R1 with its public scoring functions
+WAVE42_COMMIT = "01e896a"          # wt/wt-infra: W42-R1 with its public scoring functions and DO_NOTHING_EPS
 A = 2.0
 A_NEAR = 0.45                      # on the spread fixture: a gap past delta*, short of delta* + t se
 A_NEAR6 = 1.1                      # at 6 re-read seeds: every t past the normal 3, one short of t(5)'s 5.51
@@ -103,8 +102,8 @@ def calendar_file(path: Path) -> str:
 
 
 def load_w42():
-    """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), the stand-in
-    attached (the module docstring). Returns (wave42, wave42_apply)."""
+    """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), its two
+    unpinned calendar shas set to this world's (the module docstring). Returns (wave42, wave42_apply)."""
     global _W42
     if _W42 is not None:
         return _W42
@@ -132,22 +131,12 @@ def load_w42():
     W = importlib.import_module("extended.wave42")
     W.SEARCH_CALENDAR_SHA256 = calendar_file(root / "search_calendar.csv")
     W.HELD_OUT_CALENDAR_SHA256 = hashlib.sha256(_csv(held_out_calendar())).hexdigest()
-    if not hasattr(W, "DO_NOTHING_EPS"):
-        W.DO_NOTHING_EPS = DO_NOTHING_EPS_STANDIN
     spec = importlib.util.spec_from_file_location("wave42_apply", root / "scripts" / "wave42_apply.py")
     apply = importlib.util.module_from_spec(spec)
     sys.modules["wave42_apply"] = apply
     spec.loader.exec_module(apply)
     _W42 = (W, apply)
     return _W42
-
-
-# ------------------------------------------------------------------------------------------------ the stand-in
-
-
-#: STAND-IN for W42-R1's `DO_NOTHING_EPS` (its next commit after c014d0a declares it; the survey imports it
-#: from there): attached only when the module lacks it; removed when it lands.
-DO_NOTHING_EPS_STANDIN = 1e-9
 
 
 # ------------------------------------------------------------------------------------------------ the units

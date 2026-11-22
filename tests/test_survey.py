@@ -1,6 +1,6 @@
 """Wave 5's survey runner (`extended/survey.py`), build v3, end to end on the synthetic worlds of
 `tests/survey_world.py`: Wave 3.4's engine with Q-192, Q-192b and rm3-b (wt/wt-features 3452952), W42-R1 as it
-stands (c014d0a: its module and public scoring functions, its application script, its real output file made by
+stands (01e896a: its module, public scoring functions and DO_NOTHING_EPS, its application script, its real output file made by
 `wave42_apply.apply`), Q-197's calendar loader (master 990d874). No bar, no result file of the repository, no held-out
 calendar: every input and output is in a temporary folder (`SV.ROOT` pointed there).
 
