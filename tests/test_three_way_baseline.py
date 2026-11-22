@@ -1,15 +1,18 @@
 """Q-185c: the firm path's baseline mode (`extended/three_way_baseline.py`). Synthetic; no bar, no result.
 
-In this process (no engine): the trade facts' refusals and admissions (a same-bar fill at the limit, a breakeven kind
-without its move bar, an unknown kind), FV3's target rounding, `RaceOver`'s delegation (every attribute and setting the
-vendored draw's), a missing fact refused, and the declared log R. In its own process
-(`tests/three_way_baseline_checks.py`): the identity -- the vendored P&L passed through equals `customer_slices.replay`
-bit for bit, at three starts, the race arm differing -- and the race arm's laws by kind at each account's R, both Rs
-used, same-bar exits taken, the strict rule held across accounts.
+In this process (no engine): the facts' refusals and admissions (a same-bar fill at its limit; a move bar at the fill
+refused; a move bar at or after the limit no move, C2-10); FV3's target rounding; the wrapper's delegation; the refusals
+of a trade without an R (C2-6), a fact that does not match the trade handed out (C2-8), two facts at one moment
+(C2-9), a trade with no fee to charge (C2-2), a stretch exit; a need-aware exit raced at the as-placed target at the
+state's R, never `rr_used` (C2-1); the fee taken from the engine at size (C2-2); the ledger's historical fields marked
+not applicable (C2-7); the volatility at the alert unchanged by any bar after it (N-6). In its own process
+(`tests/three_way_baseline_checks.py`): the vendored identity through passes and funded accounts, the as-walked
+identity, the independent oracle re-booking every race-arm row, the daily loss limit's day end, the counts beside.
 """
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
 import sys
@@ -20,32 +23,37 @@ import pytest
 
 from extended import three_way_baseline as TB
 from extended import three_way_journey as J
+from extended import three_way_keys as K
 from extended import three_way_seeds as S
 
 ROOT = Path(__file__).resolve().parent.parent
 SEED = S.issue("tests")
+PART = S.PARTS["tests"]
 
 
 def _facts(**kw):
     base = dict(decision=935, entry=940, stop_ticks=40, tick_value=0.5, kinds={1.5: "t", 2.0: "s"}, limit=1330,
-                sigma=1.5)
+                sigma=1.5, fee_per_contract=0.0)
     base.update(kw)
     return TB.TradeFacts(**base)
 
 
 def test_the_facts_refuse_and_admit():
     _facts(entry=1330, limit=1330)                                 # a fill at its own limit: a same-bar exit admitted
-    with pytest.raises(ValueError, match="at or before its time limit"):
+    with pytest.raises(ValueError, match="in order"):
         _facts(entry=1331)
-    with pytest.raises(ValueError, match="be_open"):
+    with pytest.raises(ValueError, match="in order"):
+        _facts(decision=941)                                       # the alert after the fill
+    with pytest.raises(ValueError, match="move bar comes after"):
+        _facts(be_open=940)                                        # C2-3's B14: a move bar at the fill
+    with pytest.raises(ValueError, match="historical breakeven"):
         _facts(kinds={2.0: "b"})                                   # a breakeven needs its move bar
-    with pytest.raises(ValueError, match="be_open"):
-        _facts(kinds={2.0: "b"}, be_open=900)                      # ... after its fill
-    _facts(kinds={2.0: "b"}, be_open=1201)
+    with pytest.raises(ValueError, match="historical breakeven"):
+        _facts(kinds={2.0: "b"}, be_open=1330)                     # C2-10: at the limit is no move
+    assert not _facts(be_open=1400).has_move and not _facts(be_open=1330).has_move
+    assert _facts(kinds={2.0: "b"}, be_open=1201).has_move
     with pytest.raises(ValueError, match="not in"):
         _facts(kinds={2.0: "x"})
-    with pytest.raises(ValueError, match="positive"):
-        _facts(sigma=0.0)
 
 
 def test_fv3s_target_rounding():
@@ -55,45 +63,105 @@ def test_fv3s_target_rounding():
 class _Inner:
     settlement = "mae"
 
-    def __init__(self):
-        self.last_trade = {"historical_day": 0, "trade_index": 0, "realised_risk": 20.0}
-        self.seen = []
+    def __init__(self, **lt):
+        self.last_trade = {"historical_day": 0, "trade_index": 0, "realised_risk": 20.0, "rr": 1.5, "contracts": 1,
+                           "risk_per_contract": 20.0, "u": 0.7, "mae": 0.2, **lt}
+        self.key = ("combine", 0)
 
     def can_take(self, *a):
         return "inner"
 
-    def __call__(self, n, day, slot, cushion):
+    def __call__(self, n, day, slot, cushion, **kw):
+        self.kw = kw
         return np.array([5.0])
+
+
+class _Block:
+    entry_t = np.array([940.0])
+
+
+def _unit(facts, arm=J.ArmSpec()):
+    coins = J.CoinLanes(SEED, PART, 0, 0, [0], None, False)
+    return TB._Unit(facts, [_Block()], 0, coins, arm)
+
+
+def _u_race(decision=935):
+    return float(K.uniforms(K.Unit(SEED, PART, 0, 0, 0).coin_key(K.moment(0, decision, 0), K.RACE), 1)[0])
 
 
 def test_raceover_is_the_vendored_draw_but_its_pnl():
     inner = _Inner()
-    coins = J.CoinLanes(SEED, S.PARTS["tests"], 0, 0, [0], None, False)
-    unit = TB._Unit({}, 0, coins, J.ArmSpec(), None)
-    w = TB.RaceOver(inner, unit, 0, "vendored", None)
+    w = TB.RaceOver(inner, None, 0, "vendored", None, None)
     assert w.settlement == "mae" and w.can_take() == "inner" and w(1, 0, 0, np.array([100.0]))[0] == 5.0
     w.target_risk = 7.0
     assert inner.target_risk == 7.0                                # a setting reaches the vendored draw
-    r = TB.RaceOver(inner, unit, 0, "race", None)
     with pytest.raises(ValueError, match="no facts"):
-        r(1, 0, 0, np.array([100.0]))                              # a trade without facts is refused
-    unit2 = TB._Unit({(0, 0): _facts()}, 0, coins, J.ArmSpec(), None)
-    with pytest.raises(ValueError, match="log_rr"):
-        TB.RaceOver(inner, unit2, 0, "race", None)(1, 0, 0, np.array([100.0]))   # no R reported, none declared
-    out = TB.RaceOver(inner, TB._Unit({(0, 0): _facts()}, 0, coins, J.ArmSpec(), 1.5), 0, "race", None)(
-        1, 0, 0, np.array([100.0]))[0]
+        TB.RaceOver(_Inner(), _unit({}), 0, "race", None, None)(1, 0, 0, np.array([100.0]))
     # no costs, $0.50 a tick of the position (20 / 40): G = 60 ticks ($30), L = min($20, the room $100) = $20, p = 0.4
-    from extended import three_way_keys as K
+    inner = _Inner()
+    out = TB.RaceOver(inner, _unit({(0, 0): _facts()}), 0, "race", None, None)(1, 0, 0, np.array([100.0]))[0]
+    assert out == (30.0 if _u_race() < 0.4 else -20.0)
+    lt = inner.last_trade                                          # C2-7: the historical fields not applicable
+    assert lt["u"] is None and lt["mae"] is None and lt["race_law"] == "race" and lt["race_R"] == 1.5
 
-    u = float(K.uniforms(K.Unit(SEED, S.PARTS["tests"], 0, 0, 0).coin_key(K.moment(0, 935, 0), K.RACE), 1)[0])
-    assert out == (30.0 if u < 0.4 else -20.0)
+
+def test_the_refusals():
+    with pytest.raises(ValueError, match="C2-6"):                  # no R: refused, no fallback
+        TB.RaceOver(_Inner(rr=None), _unit({(0, 0): _facts()}), 0, "race", None, None)(1, 0, 0, np.array([100.0]))
+    with pytest.raises(ValueError, match="C2-8"):                  # the stop is not the trade's
+        TB.RaceOver(_Inner(risk_per_contract=25.0), _unit({(0, 0): _facts()}), 0, "race", None, None)(
+            1, 0, 0, np.array([100.0]))
+    with pytest.raises(ValueError, match="C2-8"):                  # the fill is not the trade's
+        TB.RaceOver(_Inner(), _unit({(0, 0): _facts(entry=941, decision=936)}), 0, "race", None, None)(
+            1, 0, 0, np.array([100.0]))
+    with pytest.raises(ValueError, match="C2-9"):                  # two facts at one coin moment
+        _unit({(0, 0): _facts(), (0, 1): _facts(entry=990)})
+    with pytest.raises(ValueError, match="C2-2"):                  # no fee reported and none a contract
+        TB.RaceOver(_Inner(), _unit({(0, 0): _facts(fee_per_contract=None)}), 0, "race", None, None)(
+            1, 0, 0, np.array([100.0]))
+    with pytest.raises(ValueError, match="stretch"):
+        TB.RaceOver(_Inner(), _unit({(0, 0): _facts()}), 0, "race", None, None)(
+            1, 0, 0, np.array([100.0]), need=5.0, stretch=True)
+
+
+def test_a_need_aware_exit_races_at_the_as_placed_target_at_the_states_r():
+    # the state's R 2.0 (G 80 ticks) but rr_used 1.5 chosen by the historical outcomes: the race reads rr, and the need
+    # of $12 caps the target at (12 + 0 + 0) / 0.5 = 24 ticks
+    inner = _Inner(rr=2.0, rr_used=1.5, need=12.0, at_need=True)
+    w = TB.RaceOver(inner, _unit({(0, 0): _facts(kinds={1.5: "s", 2.0: "t"})}), 0, "race", [], None)
+    out = w(1, 0, 0, np.array([100.0]), need=12.0)[0]
+    assert inner.kw == {"need": 12.0}                              # the engine's keyword reaches the vendored draw
+    p = 20.0 / (20.0 + 12.0)
+    assert out == (12.0 if _u_race() < p else -20.0)               # a win nets exactly the need
+    assert inner.last_trade["race_R"] == 2.0 and inner.last_trade["race_need"] == (out == 12.0)
+
+
+def test_the_fee_is_the_engines_at_size():
+    inner = _Inner(fee=3.78, contracts=10)
+    log: list = []
+    TB.RaceOver(inner, _unit({(0, 0): _facts(e_ticks=1.0)}), 0, "race", log, None)(1, 0, 0, np.array([100.0]))
+    assert log[0]["fee"] == 3.78                                    # never 10 x a micro's fee
+
+
+def test_the_volatility_at_the_alert_reads_no_bar_after_it():
+    rng = np.random.default_rng([int(SEED), 46])
+    end = np.arange(900, 1000)
+    close = np.cumsum(rng.normal(0, 2.0, end.size))
+    a = TB.alert_sigma(end, close, 950, 30, 0.25)
+    for _ in range(5):
+        c2 = close.copy()
+        c2[end > 950] = rng.normal(0, 50.0, int((end > 950).sum()))   # every bar after the alert scrambled
+        assert TB.alert_sigma(end, c2, 950, 30, 0.25) == a
+    c3 = close.copy()
+    c3[end == 950] += 7.0                                          # the bar closing at the alert is read
+    assert TB.alert_sigma(end, c3, 950, 30, 0.25) != a
 
 
 @pytest.fixture(scope="module")
 def checks() -> dict:
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     r = subprocess.run([sys.executable, str(ROOT / "tests" / "three_way_baseline_checks.py")], cwd=ROOT,
-                       capture_output=True, text=True, encoding="utf-8", timeout=850, env=env)
+                       capture_output=True, text=True, encoding="utf-8", timeout=1500, env=env)
     assert r.returncode == 0, r.stderr[-3000:]
     return json.loads(r.stdout.strip().splitlines()[-1])
 
@@ -101,12 +169,42 @@ def checks() -> dict:
 def test_identity_the_vendored_pnl_passed_through_is_customer_slices_replay_bit_for_bit(checks):
     c = checks["identity"]
     assert c["n_diffs"] == 0, c["diffs"]
-    assert c["cross_diffs"] > 0 and c["trades"] > 0                # the comparison can fail; trades were made
+    assert c["cross_diffs"] > 0 and c["passes"] > 0 and c["funded"] > 0, c    # through passes and funded accounts
 
 
-def test_the_race_arm_books_each_kinds_law_at_its_accounts_r(checks):
+def test_as_walked_the_race_arms_costs_rebook_the_vendored_pnl(checks):
+    c = checks["as_walked"]
+    assert c["compared"] > 50 and c["bad"] == 0, c
+
+
+def test_an_independent_oracle_rebooks_every_race_arm_row(checks):
     c = checks["race"]
-    assert c["bad"] == 0 and c["overlap"] == 0, c
-    assert set(c["kinds"]) == {"t", "s", "f", "b"} and {"race", "walk", "move"} <= set(c["laws"]), c
-    assert c["rs"] == [1.5, 2.0] and c["same_bar"] > 0, c
-    assert c["laws"].get("fill_fail", 0) > 0, c                     # floor-bound lanes occur, each booked the room
+    assert c["rows"] > 200 and c["bad"] == 0, c
+    assert {"race", "walk", "move", "fill_fail"} <= set(c["laws"]) and c["needs"] > 0, c
+    assert c["hist_fields"] == 0 and c["count_bad"] == 0 and c["overlap"] == 0, c
+    assert c["move_trades"] > 0 and c["b_redrawn"] > 0 and c["b_historical"] > 0 and c["be_differs"] > 0, c
+
+
+def test_a_daily_loss_limit_ends_the_day_at_the_take(checks):
+    c = checks["dll"]
+    assert c["day_ends"] > 0 and c["later"] == 0 and c["count_bad"] == 0, c
+
+
+def test_firm_reading_refuses_a_historical_outcome_on_a_race_arm_row(checks):
+    c = checks["reading"]
+    assert c["rows"] > 0 and c["clean"] == 0 and c["planted"] == 1, c
+
+
+@pytest.mark.slow
+@pytest.mark.heavy         # N-5: reads P-16's walk table (the atlas): the lead's, under run.lock
+def test_p16s_own_job_vendored_identity():
+    data = ROOT / "vendor" / "stage2" / "data"
+    if not ((data / "bars").is_dir() and (data / "atlas").is_dir()):
+        pytest.skip("bars and atlas not copied (scripts/vendor_stage2.py --data)")
+    env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    r = subprocess.run([sys.executable, str(ROOT / "tests" / "three_way_baseline_checks.py"), "p16"], cwd=ROOT,
+                       capture_output=True, text=True, encoding="utf-8", timeout=3600, env=env)
+    assert r.returncode == 0, r.stderr[-3000:]
+    c = json.loads(r.stdout.strip().splitlines()[-1])["p16"]
+    for arm, v in c.items():
+        assert v["n_diffs"] == 0 and v["funded"] > 0 and v["payouts"] > 0, (arm, v)

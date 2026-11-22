@@ -766,6 +766,10 @@ def trade_problems(ledger: Sequence[dict[str, Any]], blocks: Sequence[Any]) -> l
         if not (0 <= h < len(blocks)) or not (0 <= j < len(blocks[h].pnl)):
             probs.append(f"a trade at day {h} index {j} is not in the design's blocks")
             continue
+        if r.get("race_law") is not None:                 # Q-185c (C2-7): a race-arm row books the race, not the log
+            if r.get("u") is not None or r.get("mae") is not None:
+                probs.append(f"the race-arm trade at day {h} index {j} carries a historical outcome (u or mae)")
+            continue
         R = r.get("rr_used", r.get("rr"))
         if R is None or blocks[h].r_by_rr is None or r.get("at_need") or r.get("stretch") or r.get("u") is None:
             continue

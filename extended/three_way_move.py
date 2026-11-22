@@ -1,26 +1,28 @@
-"""Q-185c (H4's RC-1, rc-4): the law of a `b` exit -- FV3's breakeven move -- under the move-aware sequential race,
-for the firm path's baseline mode. Pure: fractions and numpy, no engine, no bar, no draw of its own (the uniforms are
-the caller's).
+"""Q-185c: FV3's breakeven move under the **time-limited** move-aware sequential race -- one law for every trade whose
+move bar comes before its time limit, whatever its historical exit (the lead's rulings on BUILD_FIRMPATH_c2's C2-4,
+C2-5 and N-3). Pure: fractions and numpy, no engine, no bar, no draw of its own (the uniforms are the caller's).
 
-**The law** (the red team's RC-1 remedy, item 3; the overlap row's exact form, one driftless path):
-1. **To the move bar.** R-10's stopped walk from the fill (`three_way_redraw.walk_run`, lattice step s, the floor-side
-   barrier L and the target G in ticks, a barrier off the lattice reached by the two-point last sub-step) for
-   `n_move` steps -- the steps from the fill to the move bar's open, from the volatility at the alert and that time,
-   both known at the fill. Absorbed at +G: the target; at -L: the stop.
-2. **At the move bar**, the walk at x ticks:
-   - **x at least one tick in favour (x >= `favour` ticks): the stop moves to the entry.** A driftless race between the
-     entry (0) and +G from x: the target with probability x / G, else the moved stop at the entry -- the `b` exit,
-     gross 0 (its exit cost the stop side's).
-   - **otherwise** the race continues between -L and +G from x: the target with probability (x + L) / (G + L), else
-     the stop.
-Its gross expectation is zero exactly: each phase is a martingale move stopped at its barriers (optional stopping at a
-bounded time, then a fair race). `move_law` is the exact law (fractions in, fractions out), `move_outcomes` the
-sampler on given uniforms (the walk's, one a step, then one race uniform a lane).
+**The law**, every input known at the fill (the steps by `three_way_redraw.walk_step` and `walk_steps` from the
+volatility at the alert and the time of each phase):
+1. **To the move bar.** R-10's stopped walk from the fill between -L and +G (ticks; a barrier off the lattice reached by
+   the two-point last sub-step), on its own lattice `s1` -- the step from the **time to the move bar** (C2-5), not the
+   whole limit, so the one-tick test below is resolved finely -- for `n1` steps. Absorbed at +G: the target; at -L:
+   the stop.
+2. **From the move bar to the limit**, the walk at x ticks: R-10's stopped walk from x on its own lattice `s2` (the
+   step from the time left to the limit), for `n2` steps, between
+   - **0 and +G when x is at least one tick in favour** (x >= `favour`): the stop moved to the entry -- a touch of 0 is
+     the `b` exit, gross 0, at the stop side's cost;
+   - **-L and +G otherwise**: the stop where it was.
+   Not absorbed by the limit: the flatten at the walk's value (N-3: phase 2 is bounded by the limit, as FV3 flattens a
+   moved, untouched trade at 15:10, `bop`).
+Its gross expectation is zero exactly: each phase is a martingale stopped at its barriers at a bounded time (optional
+stopping). `move_law` is the exact law (fractions in, fractions out), `move_outcomes` the sampler on given uniforms
+(one walk stream a lane: phase 1 reads its first `n1` uniforms, phase 2 the next `n2`).
 
-**What the runner must add for it** (`three_way_journey`, `three_way_redraw`; wt/wt-three): an exit state for the move
-in `EXIT_LAW` (`"breakeven": "move"`), and on the trade the steps to the move bar (`move_n`, from the volatility at the
-alert and the move bar's open as the walk's `be_open` names it, never a later bar) beside its step; the firm path's
-law then reads the walk's uniforms (`K.WALK`) for phase 1 and the race uniform (`K.RACE`) for phase 2, keyed as now.
+**What the runner (wt/wt-three) must add for the design mode**: `EXIT_LAW["breakeven"] = "move"` -- read for every
+trade carrying a move bar before its limit, whatever its exit -- and on the trade the move bar's end index `be_open`
+(s + 1 on the bar-end clock), the volatility at the alert and the time limit, with the phases' steps and step counts
+from them; `_trade_mc` / `_trade_dp` dispatching to `move_outcomes` / `move_law`.
 """
 from __future__ import annotations
 
@@ -31,61 +33,74 @@ import numpy as np
 
 from extended import three_way_redraw as RD
 
-TARGET, STOP, BREAKEVEN = 1, -1, 3
-#: the walk must stand at least this many ticks in favour at the move bar for the stop to move (FV3's "a tick or more")
+TARGET, STOP, TIME, BREAKEVEN = 1, -1, 0, 3
+#: the walk must stand at least this many ticks in favour at the move bar for the stop to move (FV3's `be_fav > 0`,
+#: on whole ticks: "a tick or more")
 FAVOUR = 1
 
 
-def move_law(G, L, s, n_move: int, favour=FAVOUR) -> dict[tuple[str, object], object]:
-    """The exact law of the move-aware sequential race: {(kind, gross ticks): probability}, kinds "target" (+G),
-    "stop" (-L) and "breakeven" (0). Fractions in, fractions out."""
-    exact = all(isinstance(v, Fraction) for v in (G, L))
-    one = Fraction(1) if exact else 1.0
-    G = Fraction(G) if exact else float(G)
-    L = Fraction(L) if exact else float(L)
-    law = RD.walk_law(G, L, Fraction(s) if exact else float(s), int(n_move))
+def move_law(G, L, s1, n1: int, s2, n2: int, favour=FAVOUR) -> dict[tuple[str, object], object]:
+    """The exact law: {(kind, gross ticks): probability}, kinds "target" (+G), "stop" (-L), "breakeven" (0) and
+    "time" (the walk's value at the limit). Fractions in (G and L as Fractions), fractions out."""
+    exact = isinstance(G, Fraction) and isinstance(L, Fraction)
+    cast = Fraction if exact else float
+    G, L, s1, s2 = cast(G), cast(L), cast(s1), cast(s2)
+    if int(n1) < 1 or int(n2) < 1:
+        raise ValueError("each phase takes at least one step")
     out: dict[tuple[str, object], object] = {}
 
     def add(k, pr):
         out[k] = out.get(k, 0) + pr
 
-    for (kind, v), pr in law.items():
+    for (kind, v), pr in RD.walk_law(G, L, s1, int(n1)).items():
         if kind == "target":
             add(("target", G), pr)
-        elif kind == "stop":
+            continue
+        if kind == "stop":
             add(("stop", -L), pr)
-        elif v >= favour:                                   # the stop moves to the entry: race 0 against +G from v
-            q = (Fraction(v) if exact else float(v)) / G
-            add(("target", G), pr * q)
-            add(("breakeven", 0 * one), pr * (one - q))
-        else:                                               # the race continues: -L against +G from v
-            q = ((Fraction(v) if exact else float(v)) + L) / (G + L)
-            add(("target", G), pr * q)
-            add(("stop", -L), pr * (one - q))
+            continue
+        x = cast(v)
+        moved = x >= favour
+        down = x if moved else x + L                        # the distance to the floor side from x
+        for (k2, v2), p2 in RD.walk_law(G - x, down, s2, int(n2)).items():
+            if k2 == "target":
+                add(("target", G), pr * p2)
+            elif k2 == "stop":
+                add(("breakeven", 0 * G) if moved else ("stop", -L), pr * p2)
+            else:
+                add(("time", x + cast(v2)), pr * p2)
     return out
 
 
-def move_outcomes(read: Callable, lanes: int, G, L: np.ndarray, s: int, n_move: int, u_race: np.ndarray,
-                  chunk: int = 32, favour=FAVOUR) -> tuple[np.ndarray, np.ndarray]:
-    """The law on given uniforms: phase 1 by `three_way_redraw.walk_run` (`read(rows, first, count)` the walk's),
-    phase 2 on `u_race` (one a lane): the target where u < its probability. Returns (gross ticks, kinds 1 / -1 / 3)."""
-    L = np.asarray(L, float)
-    v, k = RD.walk_run(read, int(lanes), G, L, int(s), int(n_move), int(chunk))
-    u = np.asarray(u_race, float)
-    G = np.broadcast_to(np.asarray(G, float), (int(lanes),))
-    live = k == 0
-    moved = live & (v >= favour)
-    q = np.where(moved, v / G, (v + L) / (G + L))
-    hit = live & (u < q)
-    kind = np.where(k == 1, TARGET, np.where(k == -1, STOP,
-                    np.where(hit, TARGET, np.where(moved, BREAKEVEN, STOP))))
-    gross = np.where(kind == TARGET, G, np.where(kind == STOP, -L, 0.0)).astype(float)
+def move_gross(G, L, s1, n1, s2, n2, favour=FAVOUR):
+    """The law's gross expectation (zero exactly in fractions)."""
+    return sum(pr * v for (_, v), pr in move_law(G, L, s1, n1, s2, n2, favour).items())
+
+
+def move_outcomes(read: Callable, lanes: int, G, L, s1: int, n1: int, s2: int, n2: int, chunk: int = 32,
+                  favour=FAVOUR) -> tuple[np.ndarray, np.ndarray]:
+    """The law on given uniforms, `read(rows, first, count)` the lanes' walk stream (phase 1 its uniforms 0 .. n1 - 1,
+    phase 2 its uniforms n1 .. n1 + n2 - 1). Returns (gross ticks, kinds 1 target / -1 stop / 3 breakeven / 0 time)."""
+    lanes = int(lanes)
+    G = np.broadcast_to(np.asarray(G, float), (lanes,)).astype(float)
+    L = np.broadcast_to(np.asarray(L, float), (lanes,)).astype(float)
+    v, k = RD.walk_run(read, lanes, G, L, int(s1), int(n1), int(chunk))
+    gross = np.where(k == 1, G, np.where(k == -1, -L, 0.0)).astype(float)
+    kind = np.where(k == 1, TARGET, np.where(k == -1, STOP, TIME)).astype(np.int64)
+    live = np.flatnonzero(k == 0)
+    if live.size:
+        x = v[live]
+        moved = x >= favour
+        down = np.where(moved, x, x + L[live])
+
+        def read2(rows, first, count):
+            return read(live[rows], int(n1) + first, count)
+
+        v2, k2 = RD.walk_run(read2, live.size, G[live] - x, down, int(s2), int(n2), int(chunk))
+        g2 = np.where(k2 == 1, G[live], np.where(k2 == -1, np.where(moved, 0.0, -L[live]), x + v2))
+        c2 = np.where(k2 == 1, TARGET, np.where(k2 == -1, np.where(moved, BREAKEVEN, STOP), TIME))
+        gross[live], kind[live] = g2, c2
     return gross, kind
 
 
-def move_gross(G, L, s, n_move: int, favour=FAVOUR):
-    """The law's gross expectation (zero exactly in fractions)."""
-    return sum(pr * v for (_, v), pr in move_law(G, L, s, n_move, favour).items())
-
-
-__all__ = ["TARGET", "STOP", "BREAKEVEN", "FAVOUR", "move_law", "move_outcomes", "move_gross"]
+__all__ = ["TARGET", "STOP", "TIME", "BREAKEVEN", "FAVOUR", "move_law", "move_gross", "move_outcomes"]

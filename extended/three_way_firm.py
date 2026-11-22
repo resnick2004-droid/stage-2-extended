@@ -107,7 +107,9 @@ OUTCOMES = ("race", "engine_binary")
 PATH_SEED = 0
 #: the seed roles whose histories are synthetic by declaration (`three_way_seeds.STATUS`): only these run undated
 SYNTHETIC_STATUS = ("tests", "design check")
-FIRM = "firm"                   # the router's firm name for the one firm a lane holds
+#: the router's firm (`extended.router.Routing(firm=...)`, Q-188c's n4: the firm's lever rows must be declared) -- the
+#: design mode admits Topstep only, whose lever firm is "topstep"
+FIRM = "topstep"
 MANIFEST = VENDOR_STAGE2 / "data" / "bars" / "NQ" / "manifest.json"
 
 
@@ -183,7 +185,10 @@ class AccountPlan:
     latency: float = 5.0             # minutes from alert to order, for (30)'s screen hours (R4, D-266)
 
     def __post_init__(self) -> None:
-        RT.Routing(self.rotation)                            # refused unless one of A15's declared values
+        if self.rotation not in RT.ROTATIONS:                # refused unless one of A15's declared values
+            raise RT.RoutingRefused(f"rotation {self.rotation!r} is not one of the declared values {RT.ROTATIONS}")
+        if self.rotation == "by_component":                  # A16's pools need the Design, which this path carries not
+            raise RT.RoutingRefused("by_component deals over a Design's components: not on the firm path")
         if int(self.trades_per_day) < 1:
             raise ValueError("a plan has at least one slot a session")
         if not (float(self.strict_gap) >= 0 and float(self.latency) >= 0):
@@ -316,12 +321,19 @@ def scheduled(t: J.Trade, name: str) -> C.ScheduledTrade:
     """The router's view of a scheduled trade: its session, fill and exit (its busy interval); the side is the
     martingale reading's, one side for every trade (the outcome is the redraw's)."""
     return C.ScheduledTrade(
-        firm=FIRM, component=name, source="schedule", session=int(t.session), date="", decision=int(t.decision),
+        firm=FIRM, component=name, source="schedule", session=int(t.session), date=_label(int(t.session)),
+        decision=int(t.decision),
         alert=int(t.decision), live=int(t.entry), tag="", order_kind="market", ticket_rule="", side=1,
         side_source="martingale", fill_slot=int(t.entry), fill_price=0.0, resting=False, stop_ticks=int(t.l),
         target_ticks=int(t.g), rr=float(t.g) / float(t.l), exit_slot=int(t.exit), exit_kind=str(t.exit_reason),
         flatten_slot=int(t.exit), window_flatten=False, instrument=str(t.underlying), underlying=str(t.underlying),
         gross_ticks=0, net_r=None, busy_until=int(t.exit))
+
+
+def _label(session: int) -> str:
+    """The router's one-call-per-day key for a schedule session (Q-188c's n5): the session's index, never a date (the
+    window's dates are checked apart, `check_dates`)."""
+    return f"session-{int(session)}"
 
 
 def _name(key: tuple[str, int]) -> str:
@@ -383,7 +395,7 @@ class Lane:
 
     def __init__(self, sim: "_Start", j: int):
         self.sim, self.j = sim, int(j)
-        self.router = RT.Router(RT.Routing(sim.plan.rotation))
+        self.router = RT.Router(RT.Routing(sim.plan.rotation, firm=FIRM))
         self.dealt: dict[int, dict[str, list[J.Trade]]] = {}
         self.taken: set = set()
         self.state: dict[str, list] = {}
@@ -404,7 +416,9 @@ class Lane:
         if trades and names:
             sts = [scheduled(t, s.name) for t in trades]
             back = {id(x): t for x, t in zip(sts, trades)}
-            for rt in self.router.route([C.DaySchedule(FIRM, int(trades[0].session), "", sts)], {FIRM: names}):
+            ses = int(trades[0].session)
+            for rt in self.router.route([C.DaySchedule(FIRM, ses, _label(ses), sts)], {FIRM: names},
+                                        date=_label(ses)):
                 dealt[rt.account].append(back[id(rt.trade)])
             for n, lst in dealt.items():
                 if len(lst) > s.plan.trades_per_day:
