@@ -41,8 +41,9 @@ Every walk's steps are at most `WALK_MAX` by the step rule, and refused otherwis
 the admission boundary is the vendored router's, untouched.
 
 **The ledger and the draw's statistics (C2-7).** On a replaced trade the report's historical `u` and `mae` are set to
-None (not applicable) and the race's own fields added: `race_law`, `race_kind`, `race_R`, `race_u` (the booked P&L
-over the risk), `race_need` (whether it closed at the need). A trade the race leaves untaken (a missed signal, a day
+None (not applicable), the history's `rr_used` set to None and `at_need` to the race's own (so the engine's `exit_kind` is the
+race's; C3-3), and the race's own fields added: `race_law`, `race_kind`, `race_R`, `race_u` (the booked P&L over the
+risk), `race_need` (whether it closed at the need). A trade the race leaves untaken (a missed signal, a day
 ended) is taken back out of the draw's statistics; its need exits count the race's. `extended.firm_reading`'s trade
 check refuses a historical outcome on a race-arm row.
 
@@ -51,7 +52,8 @@ stop, the tick value, the costs' ticks and the fee a contract (used only where t
 every R (the dispatch of trades without a move, and FV3's historical `b` share beside), the time limit known at the
 fill, **the volatility at the alert -- from bars closed at or before it: bar end index <= the alert, open stamp <= the
 alert - 1** (N-6; `alert_sigma`), and **`be_open`, the move bar's END index on Stage 2's bar-end clock: s + 1, s FV3's
-next session open (17:00, 19:00, 08:30, 13:00 CT) after the fill bar** (N-1). A missing bar is voided only by Q-197's
+next session open (17:00, 19:00, 08:30, 13:00 CT; `FV3_OPENS`, held equal to the vendored `fv3_rung_walk.SESSION_OPENS`)
+after the fill bar** (N-1) -- **refused otherwise** (C3-10); None only for a trade whose walk has no move. A missing bar is voided only by Q-197's
 pinned calendar (`extended/search_calendar.py`), never by data; the vendored move bar (`be_vendored`, the first
 recorded bar within five minutes) is counted beside where it differs from s + 1. `be_open` at or after the limit: no
 move (C2-10).
@@ -67,6 +69,15 @@ on every exit (n-5), as the design mode reads it -- beside only, never deciding.
 trade's historical exit at its R -- where the playbook frees the account at once. The router routes the session before
 any account trades, so freeing it would mean subclassing `TradeRouter.begin_day` or editing its time arrays, which the
 pass-through identity forbids.
+
+**Rungs of one alert (the lead's ruling on C3-2).** Two or more trades at one moment on one market share ONE driftless
+path (`extended.three_way_rungs`): one stream keyed at sub 0, each rung racing its own barriers on it -- exact marginal
+odds for an untimed rung (the path's first touches are Brownian motion's), the time-limited rungs within `TIMED_TOL`
+of their own law (fixed), the path's step `walk_step(sigma, T_max)` (fixed). A single-rung alert books exactly as
+before. `as_walked`'s side coin, like any side draw, is keyed at sub 0: one side per alert (tier 1). **Under Stage 2's
+strict rule (`one_at_a_time`), the vendored router takes at most one rung of an alert** -- a second is refused while
+the first is open -- so the joint law bites only where the strict rule is off; the multi-rung moments booked are
+counted beside.
 
 **Beside every reading** (`BaselineRecords`): per lane the trades given the move law, the `b` exits it redrew, FV3's
 historical `b` exits among the same trades, and the trades whose vendored move bar differs from s + 1.
@@ -89,11 +100,21 @@ from extended import three_way_journey as J
 from extended import three_way_keys as K
 from extended import three_way_move as MV
 from extended import three_way_redraw as RD
+from extended import three_way_rungs as RG
 
 TASK = "Q-185c"
 EPS = J.EPS
 OUTCOMES = ("race", "vendored", "rebooked", "as_walked")
 KINDS = ("t", "s", "f", "b")
+#: FV3's session opens on the bar-end clock (17:00, 19:00, 08:30, 13:00 CT) -- the vendored `fv3_rung_walk.SESSION_OPENS`,
+#: held equal by `tests/three_way_baseline_checks.py`
+FV3_OPENS = (0, 120, 930, 1200)
+
+
+def move_bar(entry: int) -> int | None:
+    """N-1: the move bar's end index for a fill bar ending at `entry` -- s + 1, s the next FV3 open after it."""
+    s = next((o for o in FV3_OPENS if o > int(entry)), None)
+    return None if s is None else s + 1
 
 
 @dataclass(frozen=True)
@@ -116,7 +137,6 @@ class TradeFacts:
     xf_ticks: float = 0.0                 # a flatten's
     fee_per_contract: float | None = None  # the round turn a contract, only where the draw reports no fee
     walked: Mapping[float, float] | None = None   # the historical gross ticks at every R (the as-walked arm, beside)
-    sub: int = 0
     underlying: str = "NQ"
 
     def __post_init__(self) -> None:
@@ -129,6 +149,9 @@ class TradeFacts:
             raise ValueError(f"REFUSED: exit kinds {bad} are not in {KINDS}")
         if self.be_open is not None and not self.entry < self.be_open:
             raise ValueError("the move bar comes after the fill bar")
+        if self.be_open is not None and int(self.be_open) != move_bar(self.entry):
+            raise ValueError(f"REFUSED (C3-10): the move bar {self.be_open} is not s + 1 for the fill at {self.entry} "
+                             f"({move_bar(self.entry)})")
         if any(k == "b" for k in self.kinds.values()) and not self.has_move:
             raise ValueError("a historical breakeven exit has a move bar before its limit")
         if min(self.e_ticks, self.xt_ticks, self.xs_ticks, self.xf_ticks) < 0 or (
@@ -180,6 +203,7 @@ class _Unit:
         self.cache: dict[tuple[int, int], np.ndarray] = {}
         # two trades at one moment take sub 0, 1, ... in the schedule's index order (the lead's amendment to C2-9)
         self.subs: dict[tuple[int, int], int] = {}
+        self.alerts: dict[tuple[int, int, str], list[tuple[int, int]]] = {}
         at: dict[tuple[int, int], int] = {}
         for (i, j) in sorted(facts):
             f = facts[(i, j)]
@@ -188,6 +212,18 @@ class _Unit:
             at[m] = at.get(m, 0) + 1
             if at[m] > K.MOMENT_SUBS:
                 raise ValueError(f"REFUSED: more than {K.MOMENT_SUBS} trades at one moment ({m})")
+            self.alerts.setdefault((int(i), int(f.decision), f.underlying), []).append((int(i), int(j)))
+        # C3-2: an alert with two or more rungs reads one common path; its step from the longest time a rung needs
+        self.rung_step: dict[tuple[int, int, str], int] = {}
+        for a, ij in self.alerts.items():
+            if len(ij) < 2:
+                continue
+            sig = {float(facts[x].sigma) for x in ij}
+            if len(sig) != 1:
+                raise ValueError(f"REFUSED: the rungs of the alert {a} carry different volatilities {sorted(sig)}")
+            t_max = max(max(1, int(facts[x].limit) - int(facts[x].entry)) for x in ij)
+            self.rung_step[a] = RD.walk_step(sig.pop(), float(t_max), J.WALK_MAX)
+        self.paths: dict[tuple[int, tuple[int, int, str]], RG.CommonPath] = {}
 
     def key(self, h: int, j: int, lt: Mapping[str, Any]) -> tuple[_Key, TradeFacts]:
         i = self.start + int(h)
@@ -203,6 +239,28 @@ class _Unit:
             raise ValueError(f"REFUSED (C2-8): the trade ({i}, {j}) fills at {float(et[int(j)])}, its facts at "
                              f"{f.entry}")
         return _Key(K.moment(i, int(f.decision), self.subs[(i, int(j))]), f.underlying), f
+
+    def alert_key(self, i: int, f: TradeFacts) -> _Key:
+        """The alert's sub-0 key: its common path's stream and its one side (C3-2)."""
+        return _Key(K.moment(int(i), int(f.decision), 0), f.underlying)
+
+    def path(self, i: int, f: TradeFacts, lane: int) -> tuple[RG.CommonPath | None, int | None]:
+        """The alert's common path on this lane, or (None, None) for a single-rung alert."""
+        a = (int(i), int(f.decision), f.underlying)
+        h = self.rung_step.get(a)
+        if h is None:
+            return None, None
+        p = self.paths.get((int(lane), a))
+        if p is None:
+            key0 = self.alert_key(i, f)
+            self.coins.record(key0, K.WALK, [int(lane)])
+
+            def read(first, count, _k=key0, _lane=int(lane)):
+                return self.coins.coin(_k, K.WALK, count, np.asarray([_lane]), first=first, record=False)[0]
+
+            p = RG.CommonPath(read, float(h))
+            self.paths[(int(lane), a)] = p
+        return p, h
 
     def uniform(self, k: _Key, kind: int, lane: int) -> float:
         u = self.cache.get((k.moment, int(kind)))
@@ -224,7 +282,7 @@ class RaceOver:
         object.__setattr__(self, "_inner", inner)
         object.__setattr__(self, "_unit", unit)
         object.__setattr__(self, "_lane", int(lane))
-        object.__setattr__(self, "_outcome", outcome)
+        object.__setattr__(self, "_mode", outcome)
         object.__setattr__(self, "_log", log)
         object.__setattr__(self, "_counts", counts)
         object.__setattr__(self, "_state", [0.0, 0.0, False])     # the floor's room at the start, today's net, ended
@@ -244,7 +302,7 @@ class RaceOver:
 
     def __call__(self, n: int, day: int, slot: int, cushion: np.ndarray, **kw: Any) -> np.ndarray:
         out = self._inner(n, day, slot, cushion, **kw)       # the engine's own keywords: its state is the engine's
-        if self._outcome == "vendored":
+        if self._mode == "vendored":
             return out
         if kw.get("stretch"):
             raise ValueError("REFUSED: the baseline race takes no stretch exit (D-368; no registered baseline uses it)")
@@ -268,7 +326,8 @@ class RaceOver:
             stats = getattr(self._inner, "stats", None)
             if stats is not None and hasattr(stats, "need_exits"):
                 stats.need_exits += int(info.get("need_hit", False)) - int(bool(lt.get("at_need")))
-        lt.update({"u": None, "mae": None, "race_law": info["law"], "race_kind": info["kind"], "race_R": info["R"],
+        lt.update({"u": None, "mae": None, "rr_used": None, "at_need": bool(info.get("need_hit", False)),
+                   "race_law": info["law"], "race_kind": info["kind"], "race_R": info["R"],
                    "race_u": (new / risk) if not math.isnan(new) else None,
                    "race_need": bool(info.get("need_hit", False))})
         return np.array([new])
@@ -312,19 +371,21 @@ class RaceOver:
         xt, xs, xf = f.xt_ticks * d + extra, f.xs_ticks * d + extra, f.xf_ticks * d + extra
         need = lt.get("need")
         G = float(target_ticks(R, f.stop_ticks))
-        capped = need is not None and np.isfinite(float(need)) and (float(need) + e + xt) / d < G
+        capped = (need is not None and np.isfinite(float(need)) and float(need) > EPS
+                  and (float(need) + e + xt) / d < G)
         if capped:
             G = (float(need) + e + xt) / d                    # the profit_level race: a win nets exactly the need
-        info: dict[str, Any] = {"R": R, "kind": kind, "G": G, "fee": fee, "d": d, "need": need, "vendored": vend}
-        if self._outcome == "rebooked":
+        info: dict[str, Any] = {"R": R, "kind": kind, "G": G, "fee": fee, "d": d, "need": need, "hist_pnl": vend,
+                                "hist_rr_used": lt.get("rr_used"), "hist_at_need": bool(lt.get("at_need"))}
+        if self._mode == "rebooked":
             out = self._rebooked(f, R, kind, d, fee, lt)
             info["law"] = "rebooked"
             self._note(h, j, room, info, out)
             return out, info
-        if self._outcome == "as_walked":
+        if self._mode == "as_walked":
             if f.walked is None or R not in f.walked:
                 raise ValueError("the as-walked reading needs each trade's historical gross at its R")
-            side = 1.0 if u.uniform(key, K.SIDE, self._lane) < 0.5 else -1.0
+            side = 1.0 if u.uniform(u.alert_key(u.start + h, f), K.SIDE, self._lane) < 0.5 else -1.0  # sub 0
             out = -e + side * float(f.walked[R]) * d - xs     # the reflected path; the stop side's cost (n-5)
             info.update(law="as_walked", side=side)
             self._note(h, j, room, info, out)
@@ -345,7 +406,10 @@ class RaceOver:
             self._note(h, j, room, info, math.nan)
             return math.nan, info
         L = min(f.stop_ticks * d, room - e - xs)
-        info["L"] = L
+        info.update(L=L, L_ticks=L / d)
+        path, h_step = u.path(u.start + h, f, self._lane)
+        if path is not None:                                  # C3-2: a rung of a multi-rung alert, on the common path
+            return self._rung(path, h_step, f, kind, L, G, d, e, xt, xs, xf, capped, room, h, j, info)
         if f.has_move:
             d1 = float(int(f.be_open) - int(f.entry))
             d2 = float(int(f.limit) - int(f.be_open))
@@ -359,7 +423,7 @@ class RaceOver:
             g, k, det = MV.move_outcomes(read, 1, G, L / d, s1, n1, s2, n2, J.WALK_CHUNK, detail=True)
             kc = int(k[0])
             info.update(move_x=float(det["x"][0]), move_moved=bool(det["moved"][0]), move_G2=float(det["G2"][0]),
-                        move_down2=float(det["down2"][0]), L_ticks=L / d)
+                        move_down2=float(det["down2"][0]))
             cost = xt if kc == MV.TARGET else xs if kc in (MV.STOP, MV.BREAKEVEN) else xf
             out = -e + float(g[0]) * d - cost
             info.update(law="move", exit=kc, s1=s1, n1=n1, s2=s2, n2=n2, need_hit=bool(capped and kc == MV.TARGET))
@@ -383,6 +447,37 @@ class RaceOver:
         cost = xt if kc == 1 else xs if kc == -1 else xf
         out = -e + float(v[0]) * d - cost                     # a flatten past the floor: the engine clips it
         info.update(law="walk", exit=kc, s=s, n=n, need_hit=bool(capped and kc == 1))
+        self._note(h, j, room, info, out)
+        return out, info
+
+    def _rung(self, path: RG.CommonPath, h_step: int, f: TradeFacts, kind: str, L: float, G: float, d: float,
+              e: float, xt: float, xs: float, xf: float, capped: bool, room: float, h: int, j: int,
+              info: dict) -> tuple[float, dict]:
+        """C3-2: one rung's law on its alert's common path (`three_way_rungs`): the time-limited move where its move bar
+        precedes its limit, else its kind's race or walk; the steps counted on the path's lattice."""
+        if self._unit.arm.plant_eps:
+            raise ValueError("REFUSED: P3's plant is not defined on a common path")
+        sig = float(f.sigma)
+        if f.has_move:
+            n1 = RD.walk_steps(sig, float(int(f.be_open) - int(f.entry)), h_step)
+            n2 = RD.walk_steps(sig, float(int(f.limit) - int(f.be_open)), h_step)
+            kc, g, det = RG.move(path, L / d, G, n1, n2)
+            info.update(law="rung_move", n1=n1, n2=n2, move_x=det["x"], move_moved=det["moved"])
+            self._count(f, info["R"], kc == RG.BREAKEVEN)
+        elif kind in ("t", "s"):
+            kc, g = RG.race(path, L / d, G)
+            info.update(law="rung_race")
+        else:
+            n = RD.walk_steps(sig, float(max(1, int(f.limit) - int(f.entry))), h_step)
+            kc, g = RG.walk(path, L / d, G, n)
+            info.update(law="rung_walk", n=n)
+        cost = xt if kc == RG.TARGET else xs if kc in (RG.STOP, RG.BREAKEVEN) else xf
+        out = -e + float(g) * d - cost
+        info.update(exit=kc, h=h_step, need_hit=bool(capped and kc == RG.TARGET))
+        c = object.__getattribute__(self, "_counts")
+        if c is not None:
+            c["rung_trades"] += 1
+            c.setdefault("_moments", set()).add((self._unit.start + h, int(f.decision)))
         self._note(h, j, room, info, out)
         return out, info
 
@@ -412,6 +507,7 @@ class RaceOver:
         c["b_redrawn"] += int(redrawn_b)
         c["b_historical"] += int(f.kinds.get(R) == "b")
         c["be_differs"] += int(f.be_vendored is not None and int(f.be_vendored) != int(f.be_open))
+        c["be_unrecorded"] += int(f.be_vendored is None)         # a move, but no recorded vendored move bar
 
     def _note(self, h, j, room, info, out) -> None:
         log = object.__getattribute__(self, "_log")
@@ -455,6 +551,9 @@ class BaselineRecords(J.Records):
     b_redrawn: np.ndarray | None = None       # the `b` exits the move law redrew among them
     b_historical: np.ndarray | None = None    # FV3's historical `b` exits among the same trades
     be_differs: np.ndarray | None = None      # those whose vendored move bar differs from s + 1
+    be_unrecorded: np.ndarray | None = None   # those with a move but no recorded vendored move bar (C3-10)
+    rung_trades: np.ndarray | None = None     # trades booked on a multi-rung alert's common path (C3-2)
+    rung_moments: np.ndarray | None = None    # the multi-rung moments they came from
     paths: tuple = ()
     logs: tuple = ()
     outcome: str = "race"
@@ -483,8 +582,9 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
     path_kw = args["path"]
     bankroll, lag = float(path_kw["initial_bankroll"]), int(path_kw["payout_lag_days"])
     out = {k: [] for k in ("rel", "first_pass", "first_pay", "ahead", "accounts", "balance", "arrivals")}
-    names = ("move_trades", "b_redrawn", "b_historical", "be_differs")
+    names = ("move_trades", "b_redrawn", "b_historical", "be_differs", "be_unrecorded", "rung_trades")
     side = {k: [] for k in names}
+    moments: list = []
     paths, logs, fills = [], [], []
     for j in range(len(idx)):
         lg: list = []
@@ -496,6 +596,7 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
             out[k].append(r[k])
         for k in names:
             side[k].append(cnt[k])
+        moments.append(len(cnt.get("_moments", ())))
         fills.append(sum(1 for x in lg if x["law"] == "fill_fail"))
         if keep_paths:
             paths.append(p)
@@ -509,8 +610,9 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
                            arrivals=out["arrivals"], accounts=np.asarray(out["accounts"], np.int64), budget=budget,
                            balance=np.asarray(out["balance"], float), fill_failures=np.asarray(fills, np.int64),
                            **{k: np.asarray(v, np.int64) for k, v in side.items()},
+                           rung_moments=np.asarray(moments, np.int64),
                            paths=tuple(paths), logs=tuple(logs), outcome=outcome)
 
 
-__all__ = ["TASK", "EPS", "OUTCOMES", "KINDS", "TradeFacts", "target_ticks", "alert_sigma", "RaceOver", "replay",
+__all__ = ["TASK", "EPS", "OUTCOMES", "KINDS", "FV3_OPENS", "move_bar", "TradeFacts", "target_ticks", "alert_sigma", "RaceOver", "replay",
            "BaselineRecords", "simulate"]

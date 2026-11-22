@@ -127,6 +127,12 @@ def test_refusals_before_the_engine():
         TF.firm_for("LU")
     with pytest.raises(ValueError):
         TF.AccountPlan(rotation="every_account")                       # not one of A15's declared values
+    from extended import router as RT
+
+    with pytest.raises(RT.RoutingRefused, match="by_component"):
+        TF.AccountPlan(rotation="by_component")                        # C3-9: it needs a Design the path carries not
+    lane = _lane(_toy(per_day=2), TF.AccountPlan(trades_per_day=2, max_total_accounts=2, rotation="round_robin"))
+    assert lane.router.routings[TF.FIRM].rotation == "round_robin" and TF.FIRM == "topstep"
 
 
 def test_every_money_carrying_choice_is_labelled():

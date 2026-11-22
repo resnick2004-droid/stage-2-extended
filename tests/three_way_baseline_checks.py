@@ -85,13 +85,19 @@ def _kind(i: int, j: int, R: float) -> str:
     return "ttsfb"[(i * 3 + j + int(R * 2)) % 5]
 
 
-def job(dll: bool = False) -> tuple[list, dict, dict]:
-    rng = np.random.default_rng([int(SEED), 185, int(dll)])
+def job(dll: bool = False, combine_rr: float = 1.5, rungs: bool = False) -> tuple[list, dict, dict]:
+    """`combine_rr` 2.0 (C3-1): the Combine's state R the table's highest, so the need-aware walk picks a lower R and the
+    history's `rr_used` differs from `rr`. `rungs` (C3-2): the session's second trade is a rung of the first's alert
+    (one alert, one fill, a wider stop; on odd days an earlier limit, so the alert's step is not the rung's own), and
+    the strict rule is off so both can be taken."""
+    rng = np.random.default_rng([int(SEED), 185, int(dll), int(combine_rr * 2), int(rungs)])
     blocks, facts = [], {}
     for i in range(N_DAYS):
         k = 1 + i % 3
         # odd days fill after 13:00 CT (no move bar before 15:10: the race and the walk by kind), even days before it
         et = np.array([(1210.0 + 30.0 * j) if i % 2 else (940.0 + 70.0 * j) for j in range(k)])
+        if rungs and k >= 2:
+            et[1] = et[0]                                   # one alert, one fill: two rungs
         bes, kinds_by = [], []
         for j in range(k):                                  # each trade's move bar and its kinds first (the block's
             ent = int(et[j])                                # booking below follows the kinds the facts carry)
@@ -104,7 +110,7 @@ def job(dll: bool = False) -> tuple[list, dict, dict]:
             kinds_by.append(kinds)
         # under the limit's job the session's third trade has a wider stop (cheaper a tick): a day ended at the take
         # must still refuse it (C2-3's B6)
-        stops = np.array([(2 * STOP if (dll and j == 2) else STOP) for j in range(k)])
+        stops = np.array([(2 * STOP if ((dll and j == 2) or (rungs and j == 1)) else STOP) for j in range(k)])
         r_by, ex_by, walked_by = {}, {}, {}
         for R in RS:
             Gs = [TB.target_ticks(R, int(stops[j])) for j in range(k)]
@@ -124,11 +130,12 @@ def job(dll: bool = False) -> tuple[list, dict, dict]:
             ent, be = int(et[j]), bes[j]
             facts[(i, j)] = TB.TradeFacts(
                 decision=ent - 5, entry=ent, stop_ticks=int(stops[j]), tick_value=TICK, kinds=kinds_by[j],
-                limit=LIMIT, sigma=SIGMA, be_open=be, be_vendored=(None if be is None else be + (1 if (i + j) % 11 == 0 else 0)),
+                limit=(LIMIT - 40 if (rungs and j == 1 and i % 2) else LIMIT), sigma=SIGMA, be_open=be, be_vendored=(None if (be is None or (i + j) % 13 == 0) else be + (1 if (i + j) % 11 == 0 else 0)),
                 e_ticks=E_T, xt_ticks=XT_T, xs_ticks=XS_T, xf_ticks=XF_T, fee_per_contract=LOG_FEE,
                 walked={R: float(walked_by[R][j]) for R in RS})
     rules = rules_from_ledger()
-    proto = Protocol(name="q185c_synthetic", combine_rr=1.5, combine_risk=500.0, funded_rr=2.0, funded_risk=400.0,
+    proto = Protocol(name="q185c_synthetic", combine_rr=float(combine_rr), combine_risk=500.0, funded_rr=2.0,
+                     funded_risk=400.0,
                      trades_per_day=4, max_concurrent_accounts=5,
                      params={"need_aware_exits": True, "consistency_cap_exits": True})     # FV3-C's switches (C2-1)
     lag = int(payout_method_terms("aeropay", ledger=load_rules()).lag_days)
@@ -142,7 +149,7 @@ def job(dll: bool = False) -> tuple[list, dict, dict]:
         path.update(combine_account_cls=DllCombine, max_total_accounts=1, max_concurrent_combines=1)
     sizing = dataclasses.replace(SizingRule.from_ledger(), fee_schedule=FEES)
     args = {"draws": {"protocol": proto, "mode": "rotation", "flip": None, "sizing": sizing, "route_able": True,
-                      "one_at_a_time": 5.0, "hold_to_own_exit": True},
+                      "one_at_a_time": (None if rungs else 5.0), "hold_to_own_exit": True},
             "path": path, "seed": int(SEED)}
     return blocks, args, facts
 
@@ -194,13 +201,13 @@ def rebooked(blocks, args, facts) -> dict:
     rec = run(blocks, args, facts, 3, 1, 63, outcome="rebooked", log=True)
     compared = bad = 0
     for r in rec.logs[0]:
-        if r["law"] != "rebooked" or r.get("need") is not None:
+        if r["law"] != "rebooked" or r.get("hist_at_need"):    # N-f: Combine rows too, unless closed at the need
             continue
         cost = 2 * (facts[(r["i"], r["j"])].stop_ticks * r["d"] + r["fee"] + 10 * r["d"])
         if r["room"] < cost:
             continue                                         # the room binds: the vendored settlement, not the walk
         compared += 1
-        bad += int(abs(r["out"] - r["vendored"]) > 1e-9)
+        bad += int(abs(r["out"] - r["hist_pnl"]) > 1e-9)
     return {"compared": compared, "bad": bad}
 
 
@@ -217,31 +224,51 @@ def _steps(sigma: float, T: float, s: int) -> int:
     return max(1, int(math.floor(sigma * sigma * T / (s * s) + 0.5)))
 
 
-def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lane: int, start: int
-           ) -> tuple[float, int]:
-    """This file's own re-booking of one logged trade (independent of `three_way_baseline`): (the booking, the move's
-    logged inputs that differ from this file's -- the steps, x at the move bar, the barriers G' and the floor side's)."""
+def _target(R: float, stop: int) -> int:
+    return int(math.floor(float(R) * int(stop) + 1e-9))
+
+
+def _subs(facts: dict) -> dict:
+    """This file's own count: two trades at one moment take sub 0, 1, ... in index order."""
+    at: dict = {}
+    out = {}
+    for (i, j) in sorted(facts):
+        m = (i, facts[(i, j)].decision)
+        out[(i, j)] = at.get(m, 0)
+        at[m] = at.get(m, 0) + 1
+    return out
+
+
+def oracle(r: dict, t: dict, f: TB.TradeFacts, lane: int, start: int, sub: int) -> tuple[float, int, bool]:
+    """This file's own re-booking of one engine ledger row (independent of `three_way_baseline`): the need, the room,
+    the R, the risk, the contracts and the floor's room from the engine's own report; its own take, target, move bar,
+    fee, steps and walker. Returns (the booking, the logged inputs that differ from this file's -- G, L and the move's,
+    the need hit --, whether the need was hit)."""
+    R, risk, contracts = float(t["rr"]), float(t["realised_risk"]), int(t["contracts"])
+    need, room = t.get("need"), float(t["room"])
+    floor_room = float(t["balance_before"]) - float(t["floor"])
     d = risk / f.stop_ticks
     fee = _fee(contracts)
     e, xt, xs, xf = E_T * d + fee, XT_T * d, XS_T * d, XF_T * d
-    G = Fraction(TB.target_ticks(R, f.stop_ticks))
-    need = r.get("need")
-    if need is not None and (need + e + xt) / d < float(G):
-        G = Fraction((need + e + xt) / d)
-    room = r["room"]
+    G = Fraction(_target(R, f.stop_ticks))
+    capped = need is not None and float(need) > 1e-6 and (float(need) + e + xt) / d < float(G)
+    if capped:
+        G = Fraction((float(need) + e + xt) / d)
     if not min(f.stop_ticks * d, room - e - max(xs, xf)) > 1e-6:
-        return (-room if r["law"] == "fill_fail" else float("nan")), 0
+        return (-room if floor_room <= room + 1e-6 else float("nan")), 0, False
     L = min(f.stop_ticks * d, room - e - xs)
+    mism = int(abs(float(r.get("G", math.nan)) - float(G)) > 1e-9 or abs(float(r.get("L_ticks", math.nan)) - L / d) > 1e-9)
     unit = K.Unit(SEED, PART, 0, lane, start)
-    moment = K.moment(r["i"], f.decision, f.sub)
-    if f.has_move:
+    moment = K.moment(r["i"], f.decision, sub)
+    has_move = f.be_open is not None and f.entry < f.be_open < f.limit
+    if has_move:
         d1, d2 = f.be_open - f.entry, f.limit - f.be_open
         s1, s2 = _step(f.sigma, d1), _step(f.sigma, d2)
         n1, n2 = _steps(f.sigma, d1, s1), _steps(f.sigma, d2, s2)
         us = K.uniforms(unit.coin_key(moment, K.WALK), n1 + n2)
         Lt = Fraction(L / d)
         v, k = FC.walk_scalar(us[:n1], G, Lt, s1)
-        mism = int((r.get("s1"), r.get("n1"), r.get("s2"), r.get("n2")) != (s1, n1, s2, n2))
+        mism += int((r.get("s1"), r.get("n1"), r.get("s2"), r.get("n2")) != (s1, n1, s2, n2))
         if k == 0:
             moved = v >= 1
             down = v if moved else v + Lt
@@ -254,60 +281,164 @@ def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lan
         else:
             mism += int(not math.isnan(r.get("move_x", 0.0)))   # phase 1 ended it: no x logged
         cost = xt if k == 1 else xs if k in (-1, 3) else xf
-        return -e + float(v) * d - cost, mism
+        hit = bool(capped and k == 1)
+        return -e + float(v) * d - cost, mism + int(bool(r.get("need_hit")) != hit), hit
     kind = f.kinds[R]
     if kind in ("t", "s"):
         u = float(K.uniforms(unit.coin_key(moment, K.RACE), 1)[0])
         p = L / (L + float(G) * d)
-        return ((-e + float(G) * d - xt) if u < p else (-e - L - xs)), 0
+        w = u < p
+        hit = bool(capped and w)
+        return ((-e + float(G) * d - xt) if w else (-e - L - xs)), mism + int(bool(r.get("need_hit")) != hit), hit
     T = max(1, f.limit - f.entry)
     s = _step(f.sigma, T)
     n = _steps(f.sigma, T, s)
     v, k = FC.walk_scalar(K.uniforms(unit.coin_key(moment, K.WALK), n), G, Fraction(L / d), s)
-    return -e + float(v) * d - (xt if k == 1 else xs if k == -1 else xf), 0
+    hit = bool(capped and k == 1)
+    return (-e + float(v) * d - (xt if k == 1 else xs if k == -1 else xf), mism + int(bool(r.get("need_hit")) != hit),
+            hit)
 
 
 def race(blocks, args, facts) -> dict:
     h, lanes, start = 63, 12, 3
     rec = run(blocks, args, facts, start, lanes, h, outcome="race", keep_paths=True, log=True)
-    laws, rows, bad, needs, hist_fields, count_bad, overlap, move_inputs_bad = {}, 0, 0, 0, 0, 0, 0, 0
+    subs = _subs(facts)
+    laws, rows, bad, needs, hist_fields, count_bad, overlap, inputs_bad = {}, 0, 0, 0, 0, 0, 0, 0
+    need_hits, need_stat_bad, rr_differs, need_by_law = 0, 0, 0, {}
     for lane, (lg, path) in enumerate(zip(rec.logs, rec.paths)):
-        ledger = {(int(t["day"]), int(t["trade_index"]), t["kind"], int(t["index"])): t for t in path.trades}
-        for t in path.trades:                               # C2-7: no historical outcome on a race-arm row
-            hist_fields += int(t.get("race_law") is not None and (t.get("u") is not None or t.get("mae") is not None))
+        led = {(int(t["day"]), int(t["trade_index"])): t for t in path.trades}
+        for t in path.trades:                               # C2-7, C3-3: no history on a race-arm row
+            hist_fields += int(t.get("race_law") is not None and (
+                t.get("u") is not None or t.get("mae") is not None or t.get("rr_used") is not None
+                or bool(t.get("at_need")) != bool(t.get("race_need"))))
         by_acct: dict = {}
+        need_acct: dict = {}
         for t in path.trades:
-            by_acct[(t["kind"], int(t["index"]))] = by_acct.get((t["kind"], int(t["index"])), 0) + 1
-        for kind, recs in (("combine", path.combines), ("funded", path.funded)):   # the draw's trades: the race's own
+            a = (t["kind"], int(t["index"]))
+            by_acct[a] = by_acct.get(a, 0) + 1
+            need_acct[a] = need_acct.get(a, 0) + int(bool(t.get("race_need")))
+        for kind, recs in (("combine", path.combines), ("funded", path.funded)):   # the draw's statistics: the race's
             for c in recs:
                 if c.sizing is not None:
                     count_bad += int(int(c.sizing["trades"]) != by_acct.get((kind, int(c.index)), 0))
+                    need_stat_bad += int(int(c.sizing["need_exits"]) != need_acct.get((kind, int(c.index)), 0))
         for r in lg:
             laws[r["law"]] = laws.get(r["law"], 0) + 1
             if r["law"] in ("day_end", "missed"):
                 continue
             rows += 1
-            day = r["i"] - start + 1
-            t = next((v for (dd, jj, _, _), v in ledger.items() if dd == day and jj == r["j"]), None)
+            t = led.get((r["i"] - start + 1, r["j"]))
             if t is None:
                 bad += 1
                 continue
-            R = float(t["rr"])                              # the R the engine read it at (C2-1): never rr_used
-            needs += int(r.get("need") is not None)
-            want, mism = oracle(r, facts[(r["i"], r["j"])], R, float(t["realised_risk"]), int(t["contracts"]), lane,
-                                start)
-            move_inputs_bad += mism
+            needs += int(t.get("need") is not None)
+            rr_differs += int(r.get("hist_rr_used") is not None and float(r["hist_rr_used"]) != float(t["rr"]))
+            want, mism, hit = oracle(r, t, facts[(r["i"], r["j"])], lane, start, subs[(r["i"], r["j"])])
+            inputs_bad += mism
+            need_hits += int(hit)
+            if hit:
+                need_by_law[r["law"]] = need_by_law.get(r["law"], 0) + 1
             bad += int(not (abs(r["out"] - want) <= 1e-9 or (math.isnan(want) and math.isnan(r["out"]))))
             if r["law"] == "fill_fail":
-                bad += int(abs(float(t["pnl"]) + r["room"]) > 1e-9)      # the engine booked the whole room
+                bad += int(abs(float(t["pnl"]) + float(t["room"])) > 1e-9)      # the engine booked the whole room
         spans = sorted((int(t["day"]) * 1440 + float(blocks[start + int(t["day"]) - 1].entry_t[int(t["trade_index"])]),
                         int(t["day"]) * 1440 + float(blocks[start + int(t["day"]) - 1].exit_by_rr[float(t["rr"])][
                             int(t["trade_index"])])) for t in path.trades)
         overlap += sum(1 for a, b in zip(spans, spans[1:]) if b[0] < a[1] + 5.0)
     return {"rows": rows, "bad": bad, "laws": laws, "needs": needs, "hist_fields": hist_fields, "count_bad": count_bad,
-            "move_inputs_bad": move_inputs_bad,
-            "overlap": overlap, "move_trades": int(rec.move_trades.sum()), "b_redrawn": int(rec.b_redrawn.sum()),
-            "b_historical": int(rec.b_historical.sum()), "be_differs": int(rec.be_differs.sum()), "lanes": lanes}
+            "inputs_bad": inputs_bad, "need_hits": need_hits, "need_by_law": need_by_law,
+            "need_stat_bad": need_stat_bad, "rr_differs": rr_differs, "overlap": overlap,
+            "move_trades": int(rec.move_trades.sum()), "b_redrawn": int(rec.b_redrawn.sum()),
+            "b_historical": int(rec.b_historical.sum()), "be_differs": int(rec.be_differs.sum()),
+            "be_unrecorded": int(rec.be_unrecorded.sum()), "lanes": lanes}
+
+
+def _rung_path_touch(us: np.ndarray, h: float, lo: float, hi: float, start: int, stop: int | None, xs: list):
+    """This file's own common path (written from the construction's statement): step k up where its first uniform is
+    below one half; an up step's minimum (a + u c) / (1 + u), a down step's maximum (c + u a) / (1 + u)."""
+    k = start
+    while stop is None or k < stop:
+        k += 1
+        while len(xs) <= k:
+            i = len(xs) - 1
+            x0 = xs[-1][0]
+            a, c = x0 - h, x0 + h
+            v = float(us[2 * i + 1])
+            xs.append((c, (a + v * c) / (1 + v), c) if float(us[2 * i]) < 0.5 else (a, a, (c + v * a) / (1 + v)))
+        x, lo_k, hi_k = xs[k]
+        if lo_k <= lo:
+            return -1, k
+        if hi_k >= hi:
+            return 1, k
+    return 0, stop
+
+
+def rungs(blocks, args, facts) -> dict:
+    """C3-2 through the engine: the rungs of one alert booked on one common path, every rung row re-booked by this
+    file's own path; their count; `as_walked` one side per alert."""
+    h, lanes, start = 63, 8, 0
+    rec = run(blocks, args, facts, start, lanes, h, outcome="race", keep_paths=True, log=True)
+    rows = bad = 0
+    for lane, (lg, path) in enumerate(zip(rec.logs, rec.paths)):
+        led = {(int(t["day"]), int(t["trade_index"])): t for t in path.trades}
+        cache: dict = {}
+        for r in lg:
+            if not r["law"].startswith("rung_"):
+                continue
+            t = led.get((r["i"] - start + 1, r["j"]))
+            f = facts[(r["i"], r["j"])]
+            if t is None:
+                bad += 1
+                continue
+            rows += 1
+            key = (r["i"], f.decision)
+            if key not in cache:
+                us = K.uniforms(K.Unit(SEED, PART, 0, lane, start).coin_key(K.moment(r["i"], f.decision, 0), K.WALK),
+                                200000)
+                cache[key] = (us, [(0.0, 0.0, 0.0)])
+            us, xs = cache[key]
+            alert = [facts[x] for x in facts if x[0] == r["i"] and facts[x].decision == f.decision]
+            hs = float(_step(f.sigma, max(max(1, g.limit - g.entry) for g in alert)))     # this file's own step
+            bad += int(float(r["h"]) != hs)
+            d = float(t["realised_risk"]) / f.stop_ticks
+            e, xt, xsc, xf = E_T * d + _fee(int(t["contracts"])), XT_T * d, XS_T * d, XF_T * d
+            G, Lt = float(r["G"]), float(r["L_ticks"])
+            if r["law"] == "rung_race":
+                k, _ = _rung_path_touch(us, hs, -Lt, G, 0, None, xs)
+                g = G if k == 1 else -Lt
+            elif r["law"] == "rung_walk":
+                n = _steps(f.sigma, max(1, f.limit - f.entry), int(hs))
+                k, at = _rung_path_touch(us, hs, -Lt, G, 0, n, xs)
+                g = G if k == 1 else -Lt if k == -1 else xs[at][0]
+            else:
+                n1 = _steps(f.sigma, f.be_open - f.entry, int(hs))
+                n2 = _steps(f.sigma, f.limit - f.be_open, int(hs))
+                k, at = _rung_path_touch(us, hs, -Lt, G, 0, n1, xs)
+                if k == 0:
+                    x = xs[n1][0]
+                    moved = x >= 1.0
+                    k2, at2 = _rung_path_touch(us, hs, 0.0 if moved else -Lt, G, n1, n1 + n2, xs)
+                    k, g = ((1, G) if k2 == 1 else ((3, 0.0) if moved else (-1, -Lt)) if k2 == -1
+                            else (0, xs[at2][0]))
+                else:
+                    g = G if k == 1 else -Lt
+            cost = xt if k == 1 else xsc if k in (-1, 3) else xf
+            bad += int(abs(r["out"] - (-e + g * d - cost)) > 1e-9)
+    aw = run(blocks, args, facts, start, lanes, h, outcome="as_walked", log=True)
+    sides_bad = pairs = 0
+    for lg in aw.logs:
+        by_alert: dict = {}
+        for r in lg:
+            by_alert.setdefault((r["i"], facts[(r["i"], r["j"])].decision), set()).add(r.get("side"))
+        for v in by_alert.values():
+            pairs += 1
+            sides_bad += int(len(v) > 1)
+    laws = {}
+    for lg in rec.logs:
+        for r in lg:
+            laws[r["law"]] = laws.get(r["law"], 0) + 1
+    return {"rows": rows, "bad": bad, "laws": laws, "rung_trades": int(rec.rung_trades.sum()),
+            "rung_moments": int(rec.rung_moments.sum()), "lanes": lanes, "sides_bad": sides_bad, "alerts": pairs}
 
 
 def dll(blocks, args, facts) -> dict:
@@ -344,7 +475,11 @@ def reading(blocks, args, facts) -> dict:
     ledger = [dict(t) for t in rec.paths[0].trades]
     clean = FR.trade_problems(ledger, blocks[3:45])
     planted = [dict(ledger[0], u=0.5)] + ledger[1:]
-    return {"rows": len(ledger), "clean": len(clean), "planted": len(FR.trade_problems(planted, blocks[3:45]))}
+    rr = [dict(ledger[0], rr_used=1.5)] + ledger[1:]
+    need = [dict(ledger[0], at_need=not bool(ledger[0].get("race_need")))] + ledger[1:]
+    return {"rows": len(ledger), "clean": len(clean), "planted": len(FR.trade_problems(planted, blocks[3:45])),
+            "planted_rr_used": len(FR.trade_problems(rr, blocks[3:45])),
+            "planted_at_need": len(FR.trade_problems(need, blocks[3:45]))}
 
 
 def p16(starts=(0, 100, 250), h: int = 126) -> dict:
@@ -353,11 +488,17 @@ def p16(starts=(0, 100, 250), h: int = 126) -> dict:
 
     from propedge import RESULTS_DIR
 
+    from extended import reader as RDR
+
     jobs, _ = UJ.BUILDERS["p16"](RESULTS_DIR, ["p16"])
     out = {}
     for arm, job in jobs["p16"].items():
         diffs, funded, pays = [], 0, 0
-        for s in starts:
+        for s in starts:                                    # N-d: every window inside the search years, else refused
+            late = [d for d in job["dates"][s:s + h] if str(d)[:10] > RDR.CHOICE_END.isoformat()]
+            if late:
+                raise SystemExit(f"REFUSED (N-d): P-16's {arm} window from {s} reads {late[0]}, past "
+                                 f"{RDR.CHOICE_END}")
             theirs = CS.replay(job["blocks"][s:s + h], job["args"], h)
             mine = TB.replay(job["blocks"][s:s + h], job["args"], h, outcome="vendored")
             diffs += FC.same(mine, theirs, f"{arm} start{s}")
@@ -372,11 +513,18 @@ def main() -> None:
         print(json.dumps({"p16": p16()}, default=str))
         return
     blocks, args, facts = job()
-    out = {"identity": identity(blocks, args, facts), "rebooked": rebooked(blocks, args, facts),
+    from propedge.research.fv3_rung_walk import SESSION_OPENS
+
+    out = {"opens": list(SESSION_OPENS) == list(TB.FV3_OPENS),
+           "identity": identity(blocks, args, facts), "rebooked": rebooked(blocks, args, facts),
            "as_walked": as_walked(blocks, args, facts),
            "race": race(blocks, args, facts), "reading": reading(blocks, args, facts)}
     db, da, df = job(dll=True)
     out["dll"] = dll(db, da, df)
+    rb, ra, rf = job(combine_rr=2.0)                        # C3-1: rr_used differs from rr on the need-aware exits
+    out["race_rr2"] = race(rb, ra, rf)
+    gb, ga, gf = job(rungs=True)                            # C3-2: rungs of one alert on one path
+    out["rungs"] = rungs(gb, ga, gf)
     print(json.dumps(out, default=str))
 
 
