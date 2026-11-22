@@ -66,10 +66,7 @@ DECLARED_USES = ("prereg/DRAFT_H4_rebaseline.md", "extended/three_way_seeds.py")
 #: H4's declared result files (section 16's outputs): only their sidecar manifests, whose seed maps record the block
 _B = r"(naive_coin|p14|p15|p16)"
 DECLARED_PATTERNS = (re.compile(rf"^results/h4_(units_{_B}|readings_{_B}|trades_{_B}|w42_input|supply|as_traded|identities)"
-                                r"\.csv\.manifest\.json$"),
-                     # the review notes on the record (`docs/reviews/`), which cite the declared block when they read
-                     # it; prose that draws nothing (the runtime guard refuses any seed the module did not issue)
-                     re.compile(r"^docs/reviews/[A-Za-z0-9_.\-]+\.md$"))
+                                r"\.csv\.manifest\.json$"),)
 #: the files allowed to construct it by arithmetic: this test, and the seed module
 DERIVED_USES = (THIS, "extended/three_way_seeds.py")
 #: the commit whose W42-R1 constants the provisional J reads, and the runner's
@@ -1435,7 +1432,10 @@ def test_f4_7_to_f4_14(text: str) -> None:
 def test_n4_notes(text: str) -> None:
     flat = _flat(text)
     assert "**not** the staged build's `outcome=\"as_walked\"`" in flat                                  # N4-1
-    assert "**a missed signal frees its account at once** (N4-2)" in flat                               # N4-2
+    assert "**in baseline mode a missed signal keeps the vendored router's hold** (N4-2, the lead's ruling)" in flat
+    assert "**a labelled difference from the playbook**, where a missed signal frees its account at once, and it " \
+        "applies to every baseline alike" in flat                                                       # N4-2
+    assert "the firm path is asked" not in flat
     assert "**the convention beside** (N4-3)" in flat                                                   # N4-3
 
 
