@@ -501,32 +501,6 @@ def sc_row_order(eng, tmp, roots):
                             "does not come before") for a in (("E-103", "E-099"), ("E-100", "E-102")))
 
 
-def sc_margin_exact(eng, tmp, roots):
-    """m-2: the margin's row names the no-harm margin and carries its number with numeric boundaries (p2_rows's three
-    rows refuse, and a row without the margin's name); the values' row names W42-R1 and its file and carries the
-    whole sha256. Each correct row passes."""
-    vsha = "cd" * 32
-    good_v = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
-    cases = [("the no-harm margin is 0.0055", 0.005, False), ("delta floor 0.05; no-harm margin 0.02", 0.0, False),
-             ("E-41 set the stop at 10.005 points", 0.005, False), ("the stop is 0.005 points", 0.005, False),
-             ("the no-harm margin is 0.005 composite units", 0.005, True), ("the no-harm margin 0.0 (O-4)", 0.0, True)]
-    vcases = [(good_v, True), (good_v.replace("W42-R1's", "the rule's"), False),
-              (good_v.replace("w42_r1_values.csv", "values.csv"), False), (good_v.replace(vsha, vsha + "e"), False),
-              (good_v.replace(vsha, "0" * 64), False)]
-    ok = True
-    for text, margin, want in cases:
-        root = _rows_root(tmp / f"m{len(text)}{margin}", f"| E-100 | 2026-11-21 | {text} | t |\n")
-        with at(root):
-            spec = SimpleNamespace(margin_row="E-100", no_harm_margin=margin, values_row="fixture")
-            got = not _refuses(lambda: SV.check_rows(spec, "fixture", vsha, True), SV.NotPinned, "does not carry")
-        ok = ok and got == want
-    for text, want in vcases:
-        root = _rows_root(tmp / f"v{len(text)}{want}", f"| E-101 | 2026-11-21 | {text} | t |\n")
-        with at(root):
-            spec = SimpleNamespace(margin_row="fixture", no_harm_margin=0.005, values_row="E-101")
-            got = not _refuses(lambda: SV.check_rows(spec, "fixture", vsha, True), SV.NotPinned, "does not carry")
-        ok = ok and got == want
-    return ok
 
 
 def sc_caldigest(eng, tmp, roots):
@@ -613,40 +587,6 @@ def _unlink(links) -> None:
             os.rmdir(link) if os.path.isjunction(link) else os.unlink(link)
 
 
-def sc_data_junction(eng, tmp, roots):
-    """M-1: in a temporary root, the licensed data's two junctions (`vendor/stage2/data/bars`, `data/atlas`, made by
-    `mklink /J` to synthetic files outside the root) are inside it and `check_data` binds a file through them; a
-    junction anywhere else (`results/foreign`, or `data` itself above `data/atlas`) refuses, as do `..` and absolute
-    paths. `Path.resolve()` alone would have refused the bars (the red team's finding)."""
-    root, root2, lic = tmp / "jroot", tmp / "jroot2", tmp / "licensed"
-    for sub, body in (("bars/nq.parquet", b"synthetic bars\n"), ("atlas/a.csv", b"synthetic atlas\n"),
-                      ("other/x.csv", b"x\n"), ("whole/atlas/a.csv", b"synthetic atlas\n")):
-        (lic / sub).parent.mkdir(parents=True, exist_ok=True)
-        (lic / sub).write_bytes(body)
-    links = [(root / "vendor/stage2/data/bars", lic / "bars"), (root / "data/atlas", lic / "atlas"),
-             (root / "results/foreign", lic / "other"), (root2 / "data", lic / "whole")]
-    try:
-        if not all(_junction(a, b) for a, b in links):
-            return False
-        P = SV.data_path_problem
-        bars, atlas = "vendor/stage2/data/bars/nq.parquet", "data/atlas/a.csv"
-        ok = P(bars, root) is None and P(atlas, root) is None and not SV._inside(root / bars, root)
-        ok = ok and "results/foreign" in str(P("results/foreign/x.csv", root)) and "link data" in str(P(atlas, root2))
-        ok = ok and all(P(x, root) is not None for x in ("../licensed/bars/nq.parquet", str(lic / "bars/nq.parquet"),
-                                                         "vendor\\stage2\\data\\bars\\nq.parquet", "./data/atlas/a.csv"))
-
-        def spec(data):
-            return SimpleNamespace(parts={k: {"data": data if k == "runner" else {}} for k in SV.PART_NAMES})
-        with at(root):
-            ok = ok and not _refuses(lambda: SV.check_data(spec({bars: SV._raw_sha(root / bars),          # bound
-                                                                  atlas: SV._raw_sha(root / atlas)})),
-                                     SV.PartRefused, "")
-            ok = ok and _refuses(lambda: SV.check_data(spec({bars: "0" * 64})), SV.PartRefused, "declared sha256")
-            ok = ok and _refuses(lambda: SV.check_data(spec({"results/foreign/x.csv": SV._raw_sha(lic / "other/x.csv")})),
-                                 SV.PartRefused, "link")
-        return ok
-    finally:
-        _unlink([a for a, _ in links])
 
 
 def sc_data_report(eng, tmp, roots):
@@ -669,39 +609,184 @@ def sc_data_report(eng, tmp, roots):
     return ok
 
 
+
+
+
+
+
+
+
+
+def _carries(fn, *a):
+    """A row matcher's verdict, or "error" when it raises (a mutant that crashes is a wrong verdict, not a refusal)."""
+    try:
+        return bool(fn(*a))
+    except Exception:
+        return "error"
+
+
+def sc_margin_exact(eng, tmp, roots):
+    """m-2, Q-186b F-3: the margin's row names the no-harm margin and its first number after the name (directly or
+    after is/of/at/=/:) is the margin -- the red team's six rows refuse (0.0055 then 0.005; 0.02 then 0.005; -0.005;
+    0.005e-3; 0.005%; "not 0.005"), as do p2_rows's three, 10.005, +0.005, 5e-3, 0.0.5 and 0.0,05; a correct row passes
+    (0.0050 and .005 now too). The values' row names `W42-R1` (not `W42-R10`), the file as a whole word (not
+    `old_w42_r1_values.csv.bak`) and the whole sha256 (no hex prefix or suffix). Two rows also go through `check_rows`."""
+    vsha = "cd" * 32
+    good_v = f"W42-R1's values `results/w42_r1_values.csv` sha256 `{vsha}`"
+    cases = [("the no-harm margin is 0.0055 (was 0.005 in the draft)", 0.005, False),
+             ("the no-harm margin is 0.02; the stop at 0.005 points", 0.005, False),
+             ("the no-harm margin is -0.005", 0.005, False), ("the no-harm margin is 0.005e-3", 0.005, False),
+             ("the no-harm margin is 0.005%", 0.005, False), ("no harm margin: not 0.005 (rejected)", 0.005, False),
+             ("the no-harm margin is 0.0055", 0.005, False), ("delta floor 0.05; no-harm margin 0.02", 0.0, False),
+             ("E-41 set the stop at 10.005 points", 0.005, False), ("the stop is 0.005 points", 0.005, False),
+             ("the no-harm margin is 10.005", 0.005, False), ("the no-harm margin is +0.005", 0.005, False),
+             ("the no-harm margin is 5e-3", 0.005, False), ("the no-harm margin is 0.0.5", 0.0, False),
+             ("the no-harm margin is 0.0,05", 0.0, False),
+             ("the no-harm margin is 0.005 composite units", 0.005, True), ("the no-harm margin 0.0 (O-4)", 0.0, True),
+             ("the no-harm margin is 0.0050", 0.005, True), ("the no-harm margin: `0.005`.", 0.005, True),
+             ("the No-Harm margin = .005", 0.005, True)]
+    vcases = [(good_v, True), (good_v.replace("W42-R1's", "the rule's"), False),
+              (good_v.replace("W42-R1's", "W42-R10's"), False),
+              (good_v.replace("results/w42_r1_values.csv", "old_w42_r1_values.csv.bak"), False),
+              (good_v.replace("w42_r1_values.csv", "values.csv"), False), (good_v.replace(vsha, vsha + "e"), False),
+              (good_v.replace(vsha, "a" + vsha), False), (good_v.replace(vsha, "0" * 64), False)]
+    ok = all(_carries(SV.margin_row_carries, t, m) == want for t, m, want in cases)
+    ok = ok and all(_carries(SV.values_row_carries, t, vsha) == want for t, want in vcases)
+    for text, want in (("the no-harm margin is 0.005 composite units", True), ("the no-harm margin is 0.0055", False)):
+        root = _rows_root(tmp / f"m{want}", f"| E-100 | 2026-11-21 | {text} | t |\n")
+        with at(root):
+            spec = SimpleNamespace(margin_row="E-100", no_harm_margin=0.005, values_row="fixture")
+            ok = ok and (not _refuses(lambda: SV.check_rows(spec, "fixture", vsha, True), SV.NotPinned,
+                                      "does not carry")) == want
+    return ok
+
+
+def sc_data_junction(eng, tmp, roots):
+    """M-1, Q-186b F-1: in a temporary root, the licensed data's two junctions where every checkout makes them
+    (`vendor/stage2/data/bars`, `vendor/stage2/data/atlas`; `mklink /J` to synthetic files outside the root) are inside
+    it and `check_data` binds a file through each; a junction anywhere else (`results/foreign`, or `vendor/stage2/data`
+    itself above the stores) refuses, as do `..`, absolute and backslash paths and a `:` (an NTFS stream, n-a).
+    `Path.resolve()` alone would have refused the stores (the red team's finding)."""
+    root, root2, lic = tmp / "jroot", tmp / "jroot2", tmp / "licensed"
+    for sub, body in (("bars/nq.parquet", b"synthetic bars\n"), ("atlas/a.csv", b"synthetic atlas\n"),
+                      ("other/x.csv", b"x\n"), ("whole/atlas/a.csv", b"synthetic atlas\n")):
+        (lic / sub).parent.mkdir(parents=True, exist_ok=True)
+        (lic / sub).write_bytes(body)
+    links = [(root / "vendor/stage2/data/bars", lic / "bars"), (root / "vendor/stage2/data/atlas", lic / "atlas"),
+             (root / "results/foreign", lic / "other"), (root2 / "vendor/stage2/data", lic / "whole")]
+    try:
+        if not all(_junction(a, b) for a, b in links):
+            return False
+        P = SV.data_path_problem
+        bars, atlas = "vendor/stage2/data/bars/nq.parquet", "vendor/stage2/data/atlas/a.csv"
+        ok = P(bars, root) is None and P(atlas, root) is None
+        ok = ok and not SV._inside(root / bars, root) and not SV._inside(root / atlas, root)
+        ok = ok and "results/foreign" in str(P("results/foreign/x.csv", root))
+        ok = ok and "the link vendor/stage2/data (" in str(P(atlas, root2))
+        ok = ok and all(P(x, root) is not None for x in ("../licensed/bars/nq.parquet", str(lic / "bars/nq.parquet"),
+                                                         "vendor\\stage2\\data\\bars\\nq.parquet", "./" + atlas))
+        ok = ok and all("':'" in str(P(x, root)) for x in ("results/x.csv:s", bars + ":zone.identifier"))
+
+        def spec(data):
+            return SimpleNamespace(parts={k: {"data": data if k == "runner" else {}} for k in SV.PART_NAMES})
+        with at(root):
+            ok = ok and not _refuses(lambda: SV.check_data(spec({bars: SV._raw_sha(root / bars),         # bound
+                                                                 atlas: SV._raw_sha(root / atlas)})),
+                                     SV.PartRefused, "")
+            ok = ok and _refuses(lambda: SV.check_data(spec({bars: "0" * 64})), SV.PartRefused, "declared sha256")
+            ok = ok and _refuses(lambda: SV.check_data(spec({"results/foreign/x.csv": SV._raw_sha(lic / "other/x.csv")})),
+                                 SV.PartRefused, "link")
+        return ok
+    finally:
+        _unlink([a for a, _ in links])
+
+
+def sc_data_layout(eng, tmp, roots):
+    """Q-186b F-1: `DATA_LINKS` is `scripts/worktrees.py`'s `STORES` (read from its source, not imported), and in this
+    repository's own tree -- whose stores are junctions, as in every checkout -- a file under each store is admitted
+    (path metadata only: the names probed do not exist, so no store file is opened)."""
+    import ast as _ast
+    tree = _ast.parse((REPO / "scripts" / "worktrees.py").read_text(encoding="utf-8"))
+    stores = next(_ast.literal_eval(n.value) for n in tree.body if isinstance(n, _ast.Assign)
+                  and any(getattr(t, "id", "") == "STORES" for t in n.targets))
+    ok = tuple(SV.DATA_LINKS) == tuple(stores) == ("vendor/stage2/data/bars", "vendor/stage2/data/atlas")
+    for s in stores:
+        probe = f"{s}/q186b_no_such_file.csv"
+        ok = ok and os.path.isjunction(REPO / s) and not os.path.lexists(REPO / probe) and \
+            SV.data_path_problem(probe, REPO) is None
+    return ok
+
+
+def _git_commits(repo: Path) -> tuple[str, str, str]:
+    """A temporary repository holding commits A, B (child of A, HEAD) and C (unrelated), made by `git commit-tree`
+    (no hook runs, nothing of this repository is touched)."""
+    repo.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t",
+               GIT_COMMITTER_EMAIL="t@t", GIT_AUTHOR_DATE="2026-11-21T00:00:00Z",
+               GIT_COMMITTER_DATE="2026-11-21T00:00:00Z")
+
+    def git(*args, stdin=""):
+        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, input=stdin, env=env,
+                           timeout=60)
+        assert r.returncode == 0, r.stderr
+        return r.stdout.strip()
+    git("init", "-q")
+    tree = git("mktree")
+    a = git("commit-tree", tree, "-m", "A")
+    b = git("commit-tree", tree, "-p", a, "-m", "B")
+    c = git("commit-tree", tree, "-m", "C")
+    git("update-ref", "refs/heads/main", b)
+    git("symbolic-ref", "HEAD", "refs/heads/main")
+    return a, b, c
+
+
 def sc_provenance(eng, tmp, roots):
-    """m-3: under a pin the values file is a pinned application -- each refusal on its own (pinned_commit not 40 hex,
-    git_commit `-dirty` or not a commit, W42-R1's own commit rule refusing, `verify_result` failing), the rule called
-    with (pinned_commit, head=git_commit); and W42-R1's real `commit_problem` on this repository's history."""
-    pin, head = "b" * 40, "a" * 40
+    """m-3, Q-186b F-2: under a pin the values file is a pinned application -- each refusal on its own: pinned_commit
+    not 40 hex (39, 41, None), git_commit not 40 hex (41, "fixture") or `-dirty`, pinned_commit not the checkout's pin,
+    git_commit no commit (a fabricated sha), not an ancestor of HEAD (an unrelated commit), W42-R1's commit rule
+    refusing, `verify_result` failing; and W42-R1's real `pinned_commit` and `commit_problem` on a temporary
+    repository's commits."""
+    repo = tmp / "git"
+    a, b, c = _git_commits(repo)
     calls = []
 
-    class Rule:
-        @staticmethod
-        def commit_problem(repo, p, head=None):
+    def rule(pin_file=a, refuse=None):
+        def commit_problem(r, p, head=None):
             calls.append((p, head))
-            return None if head == "a" * 40 else "not the pinned commit"
+            return "the rule refuses" if head == refuse else None
+        return SimpleNamespace(pinned_commit=lambda r: pin_file, commit_problem=commit_problem)
 
-    def P(man, verify=lambda q: (True, "verified"), apply=Rule, repo=tmp):
-        return " | ".join(SV.values_provenance_problems(man, tmp / "v.csv", repo=repo, apply=apply, verify=verify))
+    def P(man, verify=lambda q: (True, "verified"), apply=None):
+        return SV.values_provenance_problems(man, tmp / "v.csv", repo=repo, apply=apply or rule(), verify=verify)
 
-    def man(p=pin, h=head):
+    def man(p=a, h=a):
         return {"git_commit": h, "parameters": {"pinned_commit": p}}
-    ok = P(man()) == "" and calls[-1] == (pin, head)
-    ok = ok and "pinned_commit" in P(man(p=None)) and "pinned_commit" in P(man(p="b" * 39))
-    ok = ok and "-dirty" in P(man(h=head + "-dirty")) and "not a commit" in P(man(h="fixture"))
-    ok = ok and "commit rule" in P(man(h="c" * 40))
-    ok = ok and "verify_result" in P(man(), verify=lambda q: (False, "modified since it was written"))
-    git = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD", "HEAD~1"], capture_output=True, text=True)
-    now, before = git.stdout.split()
-    ok = ok and P(man(p=now, h=now), apply=APPLY, repo=REPO) == ""
-    return ok and "not the pinned commit" in P(man(p=now, h=before), apply=APPLY, repo=REPO)
+
+    def says(problems, start, word):
+        return any(x.startswith(start) and word in x for x in problems)
+    ok = P(man()) == [] and calls[-1] == (a, a)
+    ok = ok and all(says(P(man(p=x)), "its parameters.pinned_commit", "40 hex") for x in (None, a[:39], a + "0"))
+    ok = ok and all(says(P(man(h=x)), "its git_commit", "40 hex") for x in (a + "0", "fixture"))
+    ok = ok and says(P(man(h=a + "-dirty")), "its git_commit", "-dirty")
+    ok = ok and says(P(man(), apply=rule(pin_file=b)), "its pinned_commit", "not this checkout's pin")
+    ok = ok and says(P(man(p="f" * 40, h="f" * 40), apply=rule(pin_file="f" * 40)), "its git_commit", "no commit")
+    ok = ok and says(P(man(p=c, h=c), apply=rule(pin_file=c)), "its git_commit", "not an ancestor")
+    ok = ok and says(P(man(), apply=rule(refuse=a)), "W42-R1's commit rule", "refuses")
+    ok = ok and says(P(man(), verify=lambda q: (False, "modified since it was written")), "verify_result", "modified")
+    ok = ok and says(P(man()), "", "") is False                                     # the control holds every check
+    real = SimpleNamespace(pinned_commit=APPLY.pinned_commit, commit_problem=APPLY.commit_problem)
+    ok = ok and says(P(man(), apply=real), "its pinned_commit", "not this checkout's pin")     # no pin file yet
+    (repo / "config").mkdir(exist_ok=True)
+    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": a}), encoding="utf-8")
+    ok = ok and P(man(), apply=real) == []
+    (repo / "config" / "w42_r1_pin.json").write_text(json.dumps({"commit": b}), encoding="utf-8")
+    return ok and says(P(man(p=b, h=a), apply=real), "W42-R1's commit rule", "not the pinned commit")
 
 
 def sc_invocation(eng, tmp, roots):
     """m-4: the pinned invocation is exactly `python scripts/survey_run.py <declaration>`; `-c` (a runpy wrapper),
-    `-m`, `-i`, `-X`, another script or declaration, the interactive and inspect flags and PYTHONSTARTUP,
-    PYTHONINSPECT or PYTHONPATH each refuse (synthetic argv, flags and environment)."""
+    `-m`, `-i`, `-X`, another script or declaration, the interactive and inspect flags and each of PYTHONSTARTUP,
+    PYTHONINSPECT and PYTHONPATH (listed here, not read from the module) refuse."""
     root = tmp / "inv"
     decl = root / "prereg" / "F-99_x.md"
     script, rel = str(root / SV.ENTRY_SCRIPT), "prereg/F-99_x.md"
@@ -716,56 +801,194 @@ def sc_invocation(eng, tmp, roots):
     return P(["python", script, rel]) == [] and all(P(a) for a in bad) and \
         P(["python", script, rel], flags=SimpleNamespace(interactive=1, inspect=0)) and \
         P(["python", script, rel], flags=SimpleNamespace(interactive=0, inspect=1)) and \
-        all(P(["python", script, rel], env={k: "1"}) == [f"{k} is set"] for k in SV.INVOCATION_ENV)
+        all(P(["python", script, rel], env={k: "1"}) == [f"{k} is set"]
+            for k in ("PYTHONSTARTUP", "PYTHONINSPECT", "PYTHONPATH"))
 
 
 def sc_driver_bound(eng, tmp, roots):
     """m-4: `objective.code_sha256` binds the driver's own closure (`extended.survey`, `extended.results`,
-    `extended.reader`) and the entry script; a run whose entry script differs from the declared one (a synthetic
-    script stood in) refuses at the binding, before any cell."""
+    `extended.reader`), the entry script and W42-R1's application script (a synthetic one stood in: its LF sha256 is
+    bound; absent, None); a run whose entry script differs from the declared one refuses at the binding."""
     oc = SV.objective_code()
     ok = {"extended.survey", "extended.results", "extended.reader"} <= set(oc["driver"]) and \
-        oc[SV.ENTRY_SCRIPT] == R.sha256_lf(REPO / SV.ENTRY_SCRIPT) and SV.W42_SCRIPT in oc
+        oc[SV.ENTRY_SCRIPT] == R.sha256_lf(REPO / SV.ENTRY_SCRIPT)
+    w42s = tmp / "w42" / SV.W42_SCRIPT
+    w42s.parent.mkdir(parents=True, exist_ok=True)
+    w42s.write_bytes(b"# a synthetic application script\r\n")
+    real_w, real_e = SV.w42_script_file, SV.entry_file
+    try:
+        SV.w42_script_file = lambda: w42s
+        ok = ok and SV.objective_code()[SV.W42_SCRIPT] == R.sha256_lf(w42s)
+        SV.w42_script_file = lambda: tmp / "absent.py"
+        ok = ok and SV.objective_code()[SV.W42_SCRIPT] is None
+    finally:
+        SV.w42_script_file = real_w
     decl = declare(eng, tmp)
     fake = tmp / "fake" / SV.ENTRY_SCRIPT
     fake.parent.mkdir(parents=True, exist_ok=True)
     fake.write_bytes((REPO / SV.ENTRY_SCRIPT).read_bytes() + b"\n# an edit after the pin\n")
-    real = SV.entry_file
     SV.entry_file = lambda: fake
     try:
         return ok and _refuses(lambda: run(eng, roots["default"]["root"], decl, tmp / "out"), SV.PartRefused,
                                "objective_code") and W.CALLS == []
     finally:
-        SV.entry_file = real
+        SV.entry_file = real_e
 
 
 def sc_once(eng, tmp, roots):
-    """m-5: the once-record (injected under a fixture pin): a run appends one line before its first cell, even when it
-    then refuses; a second run of the declaration from a fresh folder refuses before any cell and appends nothing; a
-    damaged record refuses; another declaration passes; a record inside the checkout is refused; the default lies in
-    the runs folder, outside every checkout."""
+    """m-5, Q-186b F-4: the once-record (injected under a fixture pin). A run creates its marker and appends one line
+    before its first cell, even when it then refuses at that cell (here a held-out tag); a second run of the declaration from a
+    fresh folder refuses before any cell and adds nothing. Each half refuses alone: a log line without a marker, a
+    marker without a line. `record_once` re-checks the log, and its marker is exclusive even when the check is passed
+    (a race's window). A damaged log refuses; another declaration passes; a record inside the checkout -- by its
+    resolved path, or only by its unresolved one (a junction out of it) -- is refused; the default lies in the runs
+    folder."""
     root = roots["default"]["root"]
     once = tmp / "runs" / "survey_once.jsonl"
-    decl = declare(eng, tmp, "noise")
-    out = run(eng, root, decl, tmp / "o1", once_file=once)
-    first = once.read_text(encoding="utf-8").splitlines()
-    if not (len(first) == 1 and json.loads(first[0])["declaration_sha256"] == out.declaration_sha256):
-        return False                                            # nothing recorded: the rest cannot be read
-    ok = _refuses(lambda: run(eng, root, decl, tmp / "o2", once_file=once), SV.RunRepeated, "once-record")
-    ok = ok and W.CALLS == [] and once.read_text(encoding="utf-8").splitlines() == first
-    held = tmp / "runs" / "held.jsonl"                         # recorded before the first cell: a refusal counts too
+    decl = declare(eng, tmp, runner={"kind": "plateau", "tag": "heldout_test"})   # refuses at its first design
     try:
-        run(eng, root, declare(eng, tmp / "h", runner={"kind": "plateau", "tag": "heldout_test"}), tmp / "h" / "out",
-            once_file=held)
-        ok = False
+        run(eng, root, decl, tmp / "o1", once_file=once)
+        return False
     except eng.SS.HeldOutInput:
-        ok = ok and len(held.read_text(encoding="utf-8").splitlines()) == 1
+        pass
+    first = once.read_text(encoding="utf-8").splitlines() if once.is_file() else []
+    sha = R.sha256_lf(decl)
+    if not (len(first) == 1 and json.loads(first[0])["declaration_sha256"] == sha):
+        return False                                            # nothing recorded: the rest cannot be read
+    marker = SV.once_marker(once, sha)
+    ok = marker.is_file() and marker.read_text(encoding="utf-8").strip() == first[0]
+    ok = ok and _refuses(lambda: run(eng, root, decl, tmp / "o2", once_file=once), SV.RunRepeated, "once-")
+    ok = ok and W.CALLS == [] and once.read_text(encoding="utf-8").splitlines() == first
+    x, y, z = "1" * 64, "2" * 64, "3" * 64
+    log_only = tmp / "runs" / "log_only.jsonl"
+    log_only.write_text(json.dumps({"declaration_sha256": x}) + "\n", encoding="utf-8")
+    ok = ok and _refuses(lambda: SV.check_once_record(x, log_only), SV.RunRepeated, "already holds")
+    ok = ok and _refuses(lambda: SV.record_once(x, log_only, {}), SV.RunRepeated, "already holds")
+    ok = ok and not SV.once_marker(log_only, x).exists()
+    marker_only = tmp / "runs" / "marker_only.jsonl"
+    SV.once_marker(marker_only, y).parent.mkdir(parents=True, exist_ok=True)
+    SV.once_marker(marker_only, y).write_text("{}\n", encoding="utf-8")
+    ok = ok and _refuses(lambda: SV.check_once_record(y, marker_only), SV.RunRepeated, "once-marker")
+    window = tmp / "runs" / "window.jsonl"
+    real_check = SV.check_once_record
+    try:
+        SV.check_once_record = lambda sha, path: None           # both runs passed the check: only O_EXCL is left
+        SV.record_once(z, window, {"run": 1})
+        ok = ok and _refuses(lambda: SV.record_once(z, window, {"run": 2}), SV.RunRepeated, "created the once-marker")
+    finally:
+        SV.check_once_record = real_check
+    ok = ok and len(window.read_text(encoding="utf-8").splitlines()) == 1
     SV.check_once_record("e" * 64, once)                        # another declaration
     damaged = tmp / "runs" / "damaged.jsonl"
     damaged.write_text(first[0] + "\n{not json\n", encoding="utf-8")
     ok = ok and _refuses(lambda: SV.check_once_record("e" * 64, damaged), SV.RunRepeated, "not JSON")
     ok = ok and SV.once_location_problem(REPO / "results" / "survey_once.jsonl", REPO) is not None
+    ckout, away = tmp / "ckout", tmp / "away"
+    away.mkdir(parents=True, exist_ok=True)
+    try:
+        ok = ok and _junction(ckout / "lnk", away) and \
+            SV.once_location_problem(ckout / "lnk" / "survey_once.jsonl", ckout) is not None
+    finally:
+        _unlink([ckout / "lnk"])
     ok = ok and SV.once_location_problem(SV.ONCE_FILE, REPO) is None and SV.ONCE_FILE.parent == Path(SV.RUNS_DIR)
+    return ok
+
+
+def sc_limit_disagrees(eng, tmp, roots):
+    """n-1, Q-186b F-6: `limits_inside` refuses as `LimitDisagrees` when W42-R1's `limit_check` (a stand-in) reads a
+    limit's estimate one ulp off, or flips its inside verdict; the real `limit_check` agrees (the control)."""
+    with at(roots["default"]["root"]):
+        obj = SV.load_objective(W42)
+    sl = np.array(W.STARTS_LEFT)
+    arm = W.unit_values("limits", 1.0, (1, 2, 3, 4), len(sl))
+    real = SimpleNamespace(W=W42, obj=obj)
+    reread = {"out": SimpleNamespace(arms={SV.DESIGN_ARM: arm}), "sl": sl}
+    for lim in obj.limits:
+        v, per = SV.limit_value(real, arm, sl, lim)
+        reread[lim["name"]] = SimpleNamespace(value=v, se=0.0, per_seed=tuple(per))
+    ok = not _refuses(lambda: SV.limits_inside(real, reread, {}), SV.SurveyRefused, "")
+
+    def stand_in(shift=False, flip=False):
+        def limit_check(*a, **k):
+            got = dict(W42.limit_check(*a, **k))
+            if shift:
+                got["estimate"] = float(np.nextafter(got["estimate"], np.inf))
+            if flip:
+                got["inside"] = not got["inside"]
+            return got
+        return SimpleNamespace(W=SimpleNamespace(limit_check=limit_check), obj=obj)
+    return ok and all(_refuses(lambda c=c: SV.limits_inside(c, reread, {}), SV.LimitDisagrees, "not one limit")
+                      for c in (stand_in(shift=True), stand_in(flip=True)))
+
+
+def sc_lock(eng, tmp, roots):
+    """Q-186b F-4: `lock_problem` on a temporary git repository (no commit): no run.lock refuses; a lock held by
+    another job, or this run's holder unset, refuses; an unreadable lock refuses; the lock held by this run passes."""
+    repo = tmp / "lockrepo"
+    repo.mkdir(parents=True, exist_ok=True)
+    _git_tmp(repo, "init", "-q")
+
+    def P(env):
+        return SV.lock_problem(repo, env)
+    ok = "not held" in str(P({"S2X_LOCK_HOLDER": "sv-run"}))
+    (repo / "run.lock").write_text(json.dumps({"job": "sv-run"}), encoding="utf-8")
+    ok = ok and P({"S2X_LOCK_HOLDER": "sv-run"}) is None
+    ok = ok and "held by sv-run" in str(P({"S2X_LOCK_HOLDER": "another-job"})) and P({}) is not None
+    (repo / "run.lock").write_text("{unreadable", encoding="utf-8")
+    return ok and P({"S2X_LOCK_HOLDER": "sv-run"}) is not None
+
+
+def sc_localappdata(eng, tmp, roots):
+    """Q-186b F-4: the `LOCALAPPDATA` variable must be the Windows known folder (read through ctypes; on this machine
+    they agree) and the runs folder must lie in it: another variable, an unset one, an unreadable known folder, or
+    another runs folder each refuse."""
+    k = SV.known_local_appdata()
+    if k is None or SV.localappdata_problem() is not None:
+        return False
+    P = SV.localappdata_problem
+    runs = Path(k) / "stage2-extended-runs"
+    return P(env={"LOCALAPPDATA": str(k)}, known=k, runs_dir=runs) is None and \
+        "not the Windows known folder" in str(P(env={"LOCALAPPDATA": str(tmp / "elsewhere")}, known=k, runs_dir=runs)) \
+        and P(env={}, known=k, runs_dir=runs) is not None and P(known=None) is not None and \
+        "runs folder" in str(P(env={"LOCALAPPDATA": str(k)}, known=k, runs_dir=tmp / "runs"))
+
+
+@contextlib.contextmanager
+def _set(obj, **attrs):
+    old = {k: getattr(obj, k) for k in attrs}
+    for k, v in attrs.items():
+        setattr(obj, k, v)
+    try:
+        yield
+    finally:
+        for k, v in old.items():
+            setattr(obj, k, v)
+
+
+def sc_process_guards(eng, tmp, roots):
+    """Q-186b F-4: `check_process` itself refuses a pinned run not holding run.lock, then one whose runs folder is not
+    the known folder's (the earlier guards stood in)."""
+    root = roots["default"]["root"]
+    decl = root / "prereg" / "F-99_toy.md"
+    with at(root), _set(SV.R, _main_script=lambda: (root / SV.ENTRY_SCRIPT).resolve(),
+                        _clean_run=lambda repo, what: None), _set(SV, invocation_problems=lambda r, d: []):
+        ok = _refuses(lambda: SV.check_process(root / "results", [], decl), SV.PartRefused, "run.lock")
+        with _set(SV, lock_problem=lambda: None, localappdata_problem=lambda: "LOCALAPPDATA is 'x'"):
+            ok = ok and _refuses(lambda: SV.check_process(root / "results", [], decl), SV.PartRefused, "known folder")
+    return ok
+
+
+def sc_fixture_extended(eng, tmp, roots):
+    """Q-186b F-5: a fixture pin builds no `extended.` part -- refused before the binding, any part, no cell, no
+    folder; the suite's `survey_world:` parts run (every other scenario)."""
+    ok = True
+    for k in ("runner", "space"):
+        decl = declare(eng, tmp / k)
+        s = SV._block(decl.read_bytes())
+        s["parts"][k]["id"] = "extended.components:UserBook"
+        decl.write_bytes(W.declaration(s).encode("utf-8"))
+        ok = ok and _refuses(lambda: run(eng, roots["default"]["root"], decl, tmp / k / "out"), SV.PartRefused,
+                             "builds no extended. part") and W.CALLS == [] and not (tmp / k / "out").exists()
     return ok
 
 
@@ -820,6 +1043,12 @@ SCENARIOS = {
     "invocation": sc_invocation,
     "driver_bound": sc_driver_bound,
     "once": sc_once,
+    "data_layout": sc_data_layout,
+    "limit_disagrees": sc_limit_disagrees,
+    "lock": sc_lock,
+    "localappdata": sc_localappdata,
+    "process_guards": sc_process_guards,
+    "fixture_extended": sc_fixture_extended,
 }
 
 
@@ -1056,12 +1285,29 @@ MUTANTS = {
     "data-one-way": (SV, "_check_output", _edit("_check_output", "if got != declared:",
                                                 "if any(declared.get(k) != v for k, v in got.items()):"),
                      "data_report", ()),
-    "margin-substring": (SV, "margin_row_carries", _edit("margin_row_carries", "return re.search(_MARGIN_NAME + "
-                                                         'r".*?" + num, line, re.IGNORECASE) is not None',
-                                                         "return _num_literal(margin) in line"), "margin_exact", ()),
-    "values-row-sha-only": (SV, "values_row_carries", _edit("values_row_carries", "return W42_RULE in line and "
-                                                            "values_name in line and", "return True and"),
-                            "margin_exact", ()),
+    # Q-186b F-3: the rows
+    "margin-gap-unchecked": (SV, "margin_row_carries", _edit(
+        "margin_row_carries", "if tok is None or not _MARGIN_GAP.fullmatch(line[name.end():tok.start()]):",
+        "if tok is None:"), "margin_exact", ()),
+    "margin-sign-ok": (SV, "margin_row_carries", _edit("margin_row_carries", 'if t[0] in "+-":', "if False:"),
+                       "margin_exact", ()),
+    "margin-percent-ok": (SV, "margin_row_carries", _edit("margin_row_carries", 'if t.endswith("%"):', "if False:"),
+                          "margin_exact", ()),
+    "margin-exponent-ok": (SV, "margin_row_carries", _edit("margin_row_carries", 'if "e" in t.lower():', "if False:"),
+                           "margin_exact", ()),
+    "margin-run-on-ok": (SV, "margin_row_carries", _edit(
+        "margin_row_carries", r'if re.match(r"\w|[.,]\d", line[tok.end():tok.end() + 2]):', "if False:"),
+        "margin_exact", ()),
+    "margin-number-unchecked": (SV, "margin_row_carries", _edit(
+        "margin_row_carries", "return float(t) == float(margin)", "return True"), "margin_exact", ()),
+    "values-rule-suffix": (SV, "values_row_carries", _edit(
+        "values_row_carries", r're.escape(W42_RULE) + r"(?!\d)"', "re.escape(W42_RULE)"), "margin_exact", ()),
+    "values-name-boundary": (SV, "values_row_carries", _edit(
+        "values_row_carries", r'r"(?<![\w.])" + re.escape(values_name) + r"(?![\w.])"', "re.escape(values_name)"),
+        "margin_exact", ()),
+    "values-sha-lookbehind": (SV, "values_row_carries", _edit(
+        "values_row_carries", 'r"(?<![0-9a-f])" + re.escape(values_sha)', "re.escape(values_sha)"),
+        "margin_exact", ()),
     "provenance-pin-unchecked": (SV, "values_provenance_problems", _edit(
         "values_provenance_problems", "if not (isinstance(pin, str) and _SHA40.fullmatch(pin)):", "if False:"),
         "provenance", ()),
@@ -1071,6 +1317,20 @@ MUTANTS = {
         "values_provenance_problems", "if why is not None:", "if False:"), "provenance", ()),
     "provenance-verify-skipped": (SV, "values_provenance_problems", _edit(
         "values_provenance_problems", "if not ok:", "if False:"), "provenance", ()),
+    # Q-186b F-2, F-6: the provenance's new checks and the prefix mutants
+    "provenance-pin-prefix": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", "_SHA40.fullmatch(pin)", "_SHA40.match(pin)"), "provenance", ()),
+    "provenance-head-prefix": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", '_SHA40.fullmatch(head.removesuffix("-dirty"))',
+        '_SHA40.match(head.removesuffix("-dirty"))'), "provenance", ()),
+    "provenance-pin-file-unchecked": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", "if pin != mine:", "if False:"), "provenance", ()),
+    "provenance-commit-unchecked": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", '_git_in(repo_, "cat-file", "-e", f"{head}^{{commit}}").returncode', "False"),
+        "provenance", ()),
+    "provenance-ancestor-unchecked": (SV, "values_provenance_problems", _edit(
+        "values_provenance_problems", '_git_in(repo_, "merge-base", "--is-ancestor", head, "HEAD").returncode',
+        "False"), "provenance", ()),
     "invocation-argv-ignored": (SV, "invocation_problems", _edit("invocation_problems", "if bad_argv:", "if False:"),
                                 "invocation", ()),
     "invocation-flags-ignored": (SV, "invocation_problems", _edit("invocation_problems", "if getattr(flags, f, 0):",
@@ -1081,10 +1341,45 @@ MUTANTS = {
                                                    '"driver": {},'), "driver_bound", ()),
     "entry-unbound": (SV, "objective_code", _edit("objective_code", "ENTRY_SCRIPT: lf(entry_file()),",
                                                   "ENTRY_SCRIPT: None,"), "driver_bound", ()),
+    "w42-script-unbound": (SV, "objective_code", _edit("objective_code", "W42_SCRIPT: lf(w42_script_file())}",
+                                                       "W42_SCRIPT: None}"), "driver_bound", ()),
+    "env-tuple-short": (SV, "INVOCATION_ENV", lambda o: o[:2], "invocation", ()),
     "once-unchecked": (SV, "check_once_record", _edit("check_once_record", "if seen:", "if False:"), "once", ()),
     "once-unrecorded": (SV, "record_once", _edit("record_once", 'fh.write(line + "\\n")', "pass"), "once", ()),
     "once-inside-checkout": (SV, "once_location_problem", _edit(
         "once_location_problem", "if _lexically_inside(path, root) or _inside(path, root):", "if False:"), "once", ()),
+    # Q-186b F-4, F-6: the marker, the re-check, the unresolved half; the lock and the known folder
+    "once-resolved-only": (SV, "once_location_problem", _edit(
+        "once_location_problem", "_lexically_inside(path, root) or ", ""), "once", ()),
+    "once-marker-unchecked": (SV, "check_once_record", _edit("check_once_record", "if os.path.lexists(marker):",
+                                                             "if False:"), "once", ()),
+    "once-marker-not-exclusive": (SV, "record_once", _edit("record_once", "os.O_CREAT | os.O_EXCL | os.O_WRONLY",
+                                                           "os.O_CREAT | os.O_WRONLY"), "once", ()),
+    "once-recheck-dropped": (SV, "record_once", _edit("record_once", "check_once_record(sha, path)", "None"), "once",
+                             ()),
+    "lock-holder-unchecked": (SV, "lock_problem", _edit("lock_problem", "if job is None or holder != job:",
+                                                        "if job is None:"), "lock", ()),
+    "process-lock-unrequired": (SV, "check_process", _edit("check_process", "if held:", "if False:"),
+                                "process_guards", ()),
+    "process-localappdata-unrequired": (SV, "check_process", _edit("check_process", "if where:", "if False:"),
+                                        "process_guards", ()),
+    "localappdata-unchecked": (SV, "localappdata_problem", _edit(
+        "localappdata_problem", "if not v or norm(v) != norm(k):", "if False:"), "localappdata", ()),
+    "runs-dir-unchecked": (SV, "localappdata_problem", _edit(
+        "localappdata_problem", 'if norm(runs) != norm(Path(k) / "stage2-extended-runs"):', "if False:"),
+        "localappdata", ()),
+    # Q-186b F-1, n-a, F-5, F-6 (n-1)
+    "data-links-old": (SV, "DATA_LINKS", lambda o: ("vendor/stage2/data/bars", "data/atlas"), "data_layout", ()),
+    "data-colon-ok": (SV, "data_path_problem", _edit("data_path_problem", 'if ":" in rel:', "if False:"),
+                      "data_junction", ()),
+    "fixture-extended-allowed": (SV, "run_survey", _edit("run_survey", "if fixture and own:", "if False:"),
+                                 "fixture_extended", ()),
+    "limit-estimate-unchecked": (SV, "limits_inside", _edit(
+        "limits_inside", 'if float(chk["estimate"]) != v or bool(chk["inside"]) != inside:',
+        'if bool(chk["inside"]) != inside:'), "limit_disagrees", ()),
+    "limit-inside-unchecked": (SV, "limits_inside", _edit(
+        "limits_inside", 'if float(chk["estimate"]) != v or bool(chk["inside"]) != inside:',
+        'if float(chk["estimate"]) != v:'), "limit_disagrees", ()),
     "fixture-token-real": (SV, "finalists_token", _edit("finalists_token", "if fixture:", "if False:"), "planted", ()),
 }
 
@@ -1224,6 +1519,10 @@ def test_under_a_pin_the_process_is_checked(eng, tmp_path, roots, monkeypatch):
             with pytest.raises(SV.PartRefused, match="clean run"):
                 SV.run_survey(mine, results_dir=root / "results", name="x")
             monkeypatch.setattr(SV.R, "_clean_run", lambda repo, what: None)
+            with pytest.raises(SV.PartRefused, match="run.lock"):                  # F-4: under the lock
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            monkeypatch.setattr(SV, "lock_problem", lambda: None)
+            monkeypatch.setattr(SV, "localappdata_problem", lambda: None)
             monkeypatch.setattr(SV, "tree_problems", lambda: ["extended/my_runner.py"])
             with pytest.raises(SV.PartRefused, match="untracked files counted"):
                 SV.run_survey(mine, results_dir=root / "results", name="x")
@@ -1245,13 +1544,16 @@ def test_under_a_pin_the_process_is_checked(eng, tmp_path, roots, monkeypatch):
             once = tmp_path / "runs" / "survey_once.jsonl"
             monkeypatch.setattr(SV, "ONCE_FILE", once)
             SV.record_once(R.sha256_lf(mine), once, {"run_id": "an earlier run"})
-            with pytest.raises(SV.RunRepeated, match="once-record"):
+            with pytest.raises(SV.RunRepeated, match="once-marker"):
+                SV.run_survey(mine, results_dir=root / "results", name="x")
+            SV.once_marker(once, R.sha256_lf(mine)).unlink()
+            with pytest.raises(SV.RunRepeated, match="once-record"):             # the log alone refuses too
                 SV.run_survey(mine, results_dir=root / "results", name="x")
             once.unlink()
             monkeypatch.setattr(SV, "_verify_result", lambda p: (True, "stood in"))  # the vendored one: own process
             with pytest.raises(SV.SpecRefused, match="not a pinned application"):   # m-3: the fixture's values
                 SV.run_survey(mine, results_dir=root / "results", name="x")
-            assert not once.exists()                                    # refused before the first cell: unrecorded
+            assert not once.exists() and not SV.once_marker(once, R.sha256_lf(mine)).exists()   # unrecorded
         with at(root):                                                 # the toy parts lie outside this tree
             assert any("outside the repository" in x for x in untracked(["survey_world"]))
     finally:
@@ -1662,3 +1964,52 @@ def test_the_new_guards_are_in_the_suite_counts():
     seven = {"blocks", "order", "caldigest", "paid", "untracked", "offproto", "checklevel"}
     assert seven <= set(MUTANTS) and all(MUTANTS[m][3] in SCENARIOS for m in MUTANTS)
     assert "crossing_check" not in SV.__all__ and "above_floor" in SV.W42_PUBLIC and "limit_check" in SV.W42_PUBLIC
+
+
+
+def test_two_runs_started_together_record_once(tmp_path):
+    """Q-186b F-4: two processes released together into `record_once` for one declaration -- in each of three trials
+    exactly one creates the marker and appends its line, the other refuses (the marker is `O_CREAT | O_EXCL`)."""
+    code = textwrap.dedent(f"""
+        import sys, time
+        from pathlib import Path
+        sys.path.insert(0, {str(REPO)!r})
+        from extended import survey as SV
+        log, sha, ready, go = Path(sys.argv[1]), sys.argv[2], Path(sys.argv[3]), Path(sys.argv[4])
+        ready.write_text("1", encoding="utf-8")
+        t0 = time.time()
+        while not go.exists() and time.time() - t0 < 120:
+            pass
+        try:
+            SV.record_once(sha, log, {{"who": ready.name}})
+            print("WON")
+        except SV.RunRepeated:
+            print("REFUSED")
+    """)
+    env = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
+    import time
+    for trial in range(3):
+        d = tmp_path / f"t{trial}"
+        d.mkdir()
+        log, go, sha = d / "survey_once.jsonl", d / "go", f"{trial + 10:064x}"
+        procs = [subprocess.Popen([sys.executable, "-c", code, str(log), sha, str(d / f"ready{i}"), str(go)],
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+                 for i in range(2)]
+        t0 = time.time()
+        while not all((d / f"ready{i}").exists() for i in range(2)) and time.time() - t0 < 180:
+            time.sleep(0.05)
+        go.write_text("go", encoding="utf-8")
+        outs = [pr.communicate(timeout=180) for pr in procs]
+        assert all(pr.returncode == 0 for pr in procs), [o[1][-1500:] for o in outs]
+        assert sorted(o[0].strip() for o in outs) == ["REFUSED", "WON"], outs
+        assert len(log.read_text(encoding="utf-8").splitlines()) == 1 and SV.once_marker(log, sha).is_file()
+
+
+def test_a_completed_run_prints_its_once_line(eng, tmp_path, roots):
+    """Q-186b F-4: a run that completes returns the once-line it recorded -- the log's one line and the marker's
+    content -- which the entry script prints for the lead's row."""
+    once = tmp_path / "runs" / "survey_once.jsonl"
+    out = run(eng, roots["default"]["root"], declare(eng, tmp_path, "noise"), tmp_path / "out", once_file=once)
+    lines = once.read_text(encoding="utf-8").splitlines()
+    assert lines == [out.once_line] and json.loads(out.once_line)["declaration_sha256"] == out.declaration_sha256
+    assert SV.once_marker(once, out.declaration_sha256).read_text(encoding="utf-8").strip() == out.once_line
