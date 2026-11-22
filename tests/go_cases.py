@@ -14,7 +14,7 @@ RUNNER, RUNNER2 = "1" * 40, "2" * 40
 DECIDING = "`extended/reader.py`, `scripts/survey.py`"
 
 
-def search(title: str = "F-NN", market: str = "NQ", firm: str = "Topstep, 50K Combine", deciding: str = DECIDING,
+def search(title: str = "F-NN", market: str = "NQ", firm: str = "Topstep, combine50k", deciding: str = DECIDING,
            marker: str = MARKER, extra: str = "") -> str:
     """A design search's text with the fields the go token reads."""
     return (f"# {title}: a synthetic design search (Q-212's tests)\n\n{marker} A synthetic declaration.\n\n"
@@ -26,7 +26,7 @@ def sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-F13, F14, F15 = search("F-13"), search("F-14", firm="MFFU, Rapid 50K"), search("F-15", firm="Lucid, LucidFlex 50K")
+F13, F14, F15 = search("F-13"), search("F-14", firm="MFFU, rapid50k"), search("F-15", firm="Lucid, flex50k")
 A, B, C = sha(F13), sha(F14), sha(F15)
 OTHER = "f" * 64
 FILES = {"F-13_x.md": F13, "F-14_x.md": F14, "F-15_x.md": F15}
@@ -141,7 +141,51 @@ CASES: dict[str, tuple[list[str], dict[str, str], list, str | None]] = {
     "a fenced go row": ([P13, "```", go("E-950", "F-13", A), "```", G13], {}, ["E-950"], None),
     # the declaration's file and scope (Q-212 (c))
     "two files for one F-number (g31)": ([P13, G13], {"F-13_x.md": F13, "F-13_y.md": F13}, ["E-902"], None),
+    # F10 (the red team's surviving mutants of READER_Q212_TEMPLATE)
+    "two files: a closing row has no pin (m10)": ([P13, closed("E-901", "F-13", A)],
+                                                  {"F-13_x.md": F13, "F-13_y.md": F13}, ["E-901"], None),
+    "a closing row in its own pin's row (m12)": ([closed("E-900", "F-13", A).replace(" -- x | b |", f" -- pinned "
+                                                  f"`prereg/F-13_x.md` sha256 `{A}` | b |")], {}, ["E-900"], None),
+    "a closing row's impossible date (m20)": ([P13, closed("E-901", "F-13", A, day="2026-13-45")], {}, ["E-901"], None),
+    "a closing row with no pin at all (m59)": ([closed("E-901", "F-13", A)], {}, ["E-901"], None),
+    "a go row without its tail (m55)": ([P13, f"| E-902 | 2026-12-03 | go: F-13 @ {A} -- runner {RUNNER} | b |"], {},
+                                        ["E-902"], None),
+    "after a void, a fence with an info string opens (m60)": ([P13, "```", void("E-903", "E-900"), "```python",
+                                                               G13, "```"], {}, ["E-902"], None),
+    # F5: a hidden line break is a problem, cleared by a void of its row; a token after one is no row
+    **{f"a hidden break U+{ord(ch):04X}": ([P13, "| E-901 | 2026-12-02 | prose" + ch + G13 + " | b |"], {},
+                                           ["E-901"], None)
+       for ch in ("\u2028", "\x85", "\x0c", "\x0b", "\x1c", "\x1d", "\x1e")},
+    "a hidden break, voided": ([P13, "| E-901 | 2026-12-02 | prose\u2028" + G13 + " | b |", void("E-903", "E-901")],
+                               {}, [], None),
+    "a hidden break in prose, voided by the row above": ([P13, "notes\u2028more", void("E-903", "E-900")], {}, [],
+                                                         None),
 }
+
+def member(row: str, decl: str, s: str, go_row: str, day: str = "2026-12-04") -> str:
+    return f"| {row} | {day} | membership: {decl} @ {s} -- {go_row} -- the membership event, frozen | b |"
+
+
+#: Q-212 (F3): the frozen membership event -- name -> (rows, files, problem rows, the event, refused?)
+FROZEN: dict[str, tuple[list[str], dict[str, str], list, str | None, bool]] = {
+    "frozen, agreeing": ([P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05")], {},
+                         [], "E-902", False),
+    "frozen, the computation moved: a problem, the event kept": (
+        [P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05")],
+        {**FILES, "F-13_y.md": F13}, ["E-902", "E-903"], "E-902", False),
+    "frozen, the problem voided, the event still kept": (
+        [P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05"),
+         void("E-905", "E-902"), void("E-906", "E-903")], {**FILES, "F-13_y.md": F13}, [], "E-902", False),
+    "a membership row naming no go row": ([P13, G13, member("E-903", "F-13", A, "E-950")], {}, ["E-903"], None, True),
+    "a membership row before its go row": ([P13, member("E-901", "F-13", A, "E-902"), G13], {}, ["E-901"], None, True),
+    "a malformed membership row": ([P13, G13, f"| E-903 | 2026-12-04 | Membership: F-13 -- E-902 -- x | b |"], {},
+                                   ["E-903"], None, True),
+    "a second membership row": ([P13, G13, member("E-903", "F-13", A, "E-902"), member("E-904", "F-13", A, "E-902")],
+                                {}, ["E-904"], "E-902", False),
+    "a fenced membership row": ([P13, G13, "```", member("E-903", "F-13", A, "E-902"), "```"], {}, ["E-903"], None,
+                                True),
+}
+
 
 #: the scope's refusals: a declaration F-20 in each form, its pin and go row; the expectation is a problem at E-902
 SCOPE_REFUSED = {
@@ -172,14 +216,32 @@ SCOPE_REFUSED = {
                                 "- **The firm and account:** Topstep, 50K\n- **The deciding files:** " + DECIDING + "\n",
     "no marker, a search's headings": "# F-20\n\n## 5. The zero-edge convention\n\n- **The market:** NQ -- x\n",
     "both markers": search("F-20", extra=HT_MARKER + " also\n"),
+    # Q-212's second round (F4): the plan part is an allow-list of the verified record's plans for the firm
+    "no plan": search("F-20", firm="Topstep -- the 50K Combine"),
+    "a plan's prose name": search("F-20", firm="Topstep, 50K Combine"),
+    "a plan the record lacks": search("F-20", firm="Topstep, combine25k"),
+    "another firm's plan": search("F-20", firm="MFFU, flex50k"),
+    "and a second firm": search("F-20", firm="Topstep, 50K Combine and Alpha Futures 50K"),
+    "via another firm": search("F-20", firm="Topstep, 50K (via MFF)"),
+    "a plan then a second firm": search("F-20", firm="Topstep, combine50k; Elite Trader Funding"),
+    "text naming a second firm": search("F-20", firm="Topstep -- also FundedNext"),
+    "Lucid's prose plan": search("F-20", firm="Lucid, LucidFlex 50K -- shared with Earn2Trade"),
+    "a plan, its text naming a second firm": search("F-20", firm="Topstep, combine50k -- shared with an Apex account"),
+    "a plan, its text naming MFFU's long name": search("F-20", firm="Lucid, flex50k -- or My Funded Futures"),
+    # F10: the variant rule (m29), alone: a correct marker and a second, mid-line or blockquoted
+    "a second marker mid-line (m29)": search("F-20", extra="x " + MARKER + "\n"),
+    "a second marker blockquoted (m29)": search("F-20", extra="> " + MARKER + "\n"),
+    "a deciding path twice (m32)": search("F-20", deciding="`extended/reader.py`, `extended/reader.py`"),
+    "two deciding-files lines (m53)": search("F-20", extra="- **The deciding files:** " + DECIDING + "\n"),
 }
 SCOPE_ALLOWED = {
-    "Topstep": search("F-20"), "MFFU": search("F-20", firm="MFFU, Rapid 50K"),
-    "Lucid": search("F-20", firm="Lucid, LucidFlex 50K"), "MNQ": search("F-20", "MNQ"),
+    "Topstep": search("F-20"), "MFFU": search("F-20", firm="MFFU, rapid50k"),
+    "Lucid": search("F-20", firm="Lucid, flex50k"), "MNQ": search("F-20", "MNQ"),
+    "Topstep Labs": search("F-20", firm="Topstep, 006_50k_static"),
     "a fenced ES field above the real one": search("F-20").replace("- **The market:** NQ",
                                                                    "```\n- **The market:** ES\n```\n- **The market:** NQ",
                                                                    1),
-    "firm then em text": search("F-20", firm="Topstep -- the 50K Combine"),
+    "a plan then text": search("F-20", firm="Topstep, combine50k -- the 50K Trading Combine"),
 }
 
 
@@ -192,15 +254,18 @@ def golden() -> list[dict]:
     out = []
     for name, (rows, files, probs, event) in CASES.items():
         out.append({"name": name, "log": "\n".join(rows), "files": files or FILES, "problem_rows": probs,
-                    "event": event})
+                    "event": event, "refused": bool(probs)})
+    for name, (rows, files, probs, event, refused) in FROZEN.items():
+        out.append({"name": name, "log": "\n".join(rows), "files": files or FILES, "problem_rows": probs,
+                    "event": event, "refused": refused})
     for name, body in SCOPE_REFUSED.items():
         rows, files = scope_case(body)
         out.append({"name": "scope refused: " + name, "log": "\n".join(rows), "files": files, "problem_rows": ["E-902"],
-                    "event": None})
+                    "event": None, "refused": True})
     for name, body in SCOPE_ALLOWED.items():
         rows, files = scope_case(body)
         out.append({"name": "scope allowed: " + name, "log": "\n".join(rows), "files": files, "problem_rows": [],
-                    "event": "E-902"})
+                    "event": "E-902", "refused": False})
     return out
 
 

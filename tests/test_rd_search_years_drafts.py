@@ -316,9 +316,16 @@ def code_mentions(rid: str, root: Path = ROOT) -> set[str]:
     for d in CODE_DIRS:
         for p in sorted((root / d).rglob("*.py")):
             t = p.read_text(encoding="utf-8", errors="replace")
+            if p.relative_to(root).as_posix() == "extended/reader.py":
+                t = SUPERSEDED_LIST.sub("", t, count=1)      # the rule's own list (Q-212, F7), and nothing else
             if any(x.search(t) for x in pats):
                 found.add(p.relative_to(root).as_posix())
     return found
+
+
+#: the reader's `SUPERSEDED` assignment, the supersession rule's own list: it names RD-05's part-F purposes because
+#: it refuses them (Q-212, F7); the rest of the reader is searched as any other file
+SUPERSEDED_LIST = re.compile(r"^SUPERSEDED: [^\n]*= \(\n(?: {4,}[^\n]*\n)*\)\n", re.MULTILINE)
 
 
 # ------------------------------------------------------------------------------------------------ the tests
