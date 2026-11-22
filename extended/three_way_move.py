@@ -78,9 +78,11 @@ def move_gross(G, L, s1, n1, s2, n2, favour=FAVOUR):
 
 
 def move_outcomes(read: Callable, lanes: int, G, L, s1: int, n1: int, s2: int, n2: int, chunk: int = 32,
-                  favour=FAVOUR) -> tuple[np.ndarray, np.ndarray]:
+                  favour=FAVOUR, detail: bool = False):
     """The law on given uniforms, `read(rows, first, count)` the lanes' walk stream (phase 1 its uniforms 0 .. n1 - 1,
-    phase 2 its uniforms n1 .. n1 + n2 - 1). Returns (gross ticks, kinds 1 target / -1 stop / 3 breakeven / 0 time)."""
+    phase 2 its uniforms n1 .. n1 + n2 - 1). Returns (gross ticks, kinds 1 target / -1 stop / 3 breakeven / 0 time),
+    and with `detail` the inputs phase 2 read, for an auditor's replay: `x` (the walk at the move bar; NaN where phase
+    1 ended it), `moved`, `G2` (the target's distance from x) and `down2` (the floor side's: x moved, x + L not)."""
     lanes = int(lanes)
     G = np.broadcast_to(np.asarray(G, float), (lanes,)).astype(float)
     L = np.broadcast_to(np.asarray(L, float), (lanes,)).astype(float)
@@ -88,6 +90,8 @@ def move_outcomes(read: Callable, lanes: int, G, L, s1: int, n1: int, s2: int, n
     gross = np.where(k == 1, G, np.where(k == -1, -L, 0.0)).astype(float)
     kind = np.where(k == 1, TARGET, np.where(k == -1, STOP, TIME)).astype(np.int64)
     live = np.flatnonzero(k == 0)
+    det = {"x": np.full(lanes, np.nan), "moved": np.zeros(lanes, bool), "G2": np.full(lanes, np.nan),
+           "down2": np.full(lanes, np.nan)}
     if live.size:
         x = v[live]
         moved = x >= favour
@@ -100,7 +104,8 @@ def move_outcomes(read: Callable, lanes: int, G, L, s1: int, n1: int, s2: int, n
         g2 = np.where(k2 == 1, G[live], np.where(k2 == -1, np.where(moved, 0.0, -L[live]), x + v2))
         c2 = np.where(k2 == 1, TARGET, np.where(k2 == -1, np.where(moved, BREAKEVEN, STOP), TIME))
         gross[live], kind[live] = g2, c2
-    return gross, kind
+        det["x"][live], det["moved"][live], det["G2"][live], det["down2"][live] = x, moved, G[live] - x, down
+    return (gross, kind, det) if detail else (gross, kind)
 
 
 __all__ = ["TARGET", "STOP", "TIME", "BREAKEVEN", "FAVOUR", "move_law", "move_gross", "move_outcomes"]

@@ -2,12 +2,12 @@
 
 In this process (no engine): the facts' refusals and admissions (a same-bar fill at its limit; a move bar at the fill
 refused; a move bar at or after the limit no move, C2-10); FV3's target rounding; the wrapper's delegation; the refusals
-of a trade without an R (C2-6), a fact that does not match the trade handed out (C2-8), two facts at one moment
-(C2-9), a trade with no fee to charge (C2-2), a stretch exit; a need-aware exit raced at the as-placed target at the
+of a trade without an R (C2-6), a fact that does not match the trade handed out (C2-8), a trade with no fee to charge (C2-2), a stretch exit; a need-aware exit raced at the as-placed target at the
 state's R, never `rr_used` (C2-1); the fee taken from the engine at size (C2-2); the ledger's historical fields marked
-not applicable (C2-7); the volatility at the alert unchanged by any bar after it (N-6). In its own process
-(`tests/three_way_baseline_checks.py`): the vendored identity through passes and funded accounts, the as-walked
-identity, the independent oracle re-booking every race-arm row, the daily loss limit's day end, the counts beside.
+not applicable (C2-7); the volatility at the alert unchanged by any bar after it (N-6); two trades at one moment
+drawing independent outcomes (the lead's amendment to C2-9). In its own process
+(`tests/three_way_baseline_checks.py`): the vendored identity through passes and funded accounts, the rebooked
+identity, the reflected as-walked reading, the independent oracle re-booking every race-arm row, the daily loss limit's day end, the counts beside.
 """
 from __future__ import annotations
 
@@ -77,7 +77,7 @@ class _Inner:
 
 
 class _Block:
-    entry_t = np.array([940.0])
+    entry_t = np.array([940.0, 940.0])
 
 
 def _unit(facts, arm=J.ArmSpec()):
@@ -114,14 +114,32 @@ def test_the_refusals():
     with pytest.raises(ValueError, match="C2-8"):                  # the fill is not the trade's
         TB.RaceOver(_Inner(), _unit({(0, 0): _facts(entry=941, decision=936)}), 0, "race", None, None)(
             1, 0, 0, np.array([100.0]))
-    with pytest.raises(ValueError, match="C2-9"):                  # two facts at one coin moment
-        _unit({(0, 0): _facts(), (0, 1): _facts(entry=990)})
     with pytest.raises(ValueError, match="C2-2"):                  # no fee reported and none a contract
         TB.RaceOver(_Inner(), _unit({(0, 0): _facts(fee_per_contract=None)}), 0, "race", None, None)(
             1, 0, 0, np.array([100.0]))
     with pytest.raises(ValueError, match="stretch"):
         TB.RaceOver(_Inner(), _unit({(0, 0): _facts()}), 0, "race", None, None)(
             1, 0, 0, np.array([100.0]), need=5.0, stretch=True)
+
+
+def test_two_trades_at_one_moment_draw_independent_outcomes():
+    """The lead's amendment to C2-9: P-14's two rungs from one alert take sub 0 and 1 in index order, so each reads its
+    own uniform -- here on 64 lanes the two trades' race uniforms differ lane for lane and are not one stream."""
+    facts = {(0, 0): _facts(), (0, 1): _facts()}                       # one alert, one fill: one moment
+    lanes = 64
+    coins = J.CoinLanes(SEED, PART, 0, 0, range(lanes), None, False)
+    unit = TB._Unit(facts, [_Block()], 0, coins, J.ArmSpec())
+    assert unit.subs == {(0, 0): 0, (0, 1): 1}
+    lt = {"risk_per_contract": 20.0}
+    k0, k1 = unit.key(0, 0, lt)[0], unit.key(0, 1, lt)[0]
+    assert k0.moment != k1.moment and k1.moment == K.moment(0, 935, 1)
+    u0 = np.array([unit.uniform(k0, K.RACE, j) for j in range(lanes)])
+    u1 = np.array([unit.uniform(k1, K.RACE, j) for j in range(lanes)])
+    assert not np.any(u0 == u1)
+    assert abs(float(np.corrcoef(u0, u1)[0, 1])) < 0.5                # no shared stream
+    w0 = u0 < 0.4
+    w1 = u1 < 0.4
+    assert np.any(w0 != w1)                                            # the outcomes differ on some lanes
 
 
 def test_a_need_aware_exit_races_at_the_as_placed_target_at_the_states_r():
@@ -172,9 +190,15 @@ def test_identity_the_vendored_pnl_passed_through_is_customer_slices_replay_bit_
     assert c["cross_diffs"] > 0 and c["passes"] > 0 and c["funded"] > 0, c    # through passes and funded accounts
 
 
-def test_as_walked_the_race_arms_costs_rebook_the_vendored_pnl(checks):
-    c = checks["as_walked"]
+def test_rebooked_the_race_arms_costs_rebook_the_vendored_pnl(checks):
+    c = checks["rebooked"]
     assert c["compared"] > 50 and c["bad"] == 0, c
+
+
+def test_as_walked_is_the_reflected_path_on_each_units_side_coin(checks):
+    c = checks["as_walked"]
+    assert c["rows"] > 100 and c["bad"] == 0, c
+    assert c["lanes_differ"] > 0 and 0 < c["long_share"] < 1, c         # it moves with the seed: a reflection
 
 
 def test_an_independent_oracle_rebooks_every_race_arm_row(checks):
@@ -182,6 +206,7 @@ def test_an_independent_oracle_rebooks_every_race_arm_row(checks):
     assert c["rows"] > 200 and c["bad"] == 0, c
     assert {"race", "walk", "move", "fill_fail"} <= set(c["laws"]) and c["needs"] > 0, c
     assert c["hist_fields"] == 0 and c["count_bad"] == 0 and c["overlap"] == 0, c
+    assert c["move_inputs_bad"] == 0, c                     # the move's logged inputs are this file's own
     assert c["move_trades"] > 0 and c["b_redrawn"] > 0 and c["b_historical"] > 0 and c["be_differs"] > 0, c
 
 

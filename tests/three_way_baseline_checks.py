@@ -7,7 +7,10 @@ loss limit (a test fixture's evaluation account). No bar, no result.
 
 - `identity` -- the vendored P&L passed through equals `customer_slices.replay` bit for bit at several starts, through
   passes and funded accounts; the race arm differs;
-- `as_walked` -- each trade's historical gross at its R re-booked with the race arm's costs (the fee from the engine
+- `as_walked` -- H4's as-walked reading, the reflected path: each trade's historical gross at its R on the unit's side
+  coin, the stop side's cost (n-5), every row against this file's own booking on the scalar key path; it moves with
+  the seed;
+- `rebooked` -- each trade's historical gross at its R re-booked with the race arm's costs (the fee from the engine
   at size) equals the vendored P&L wherever the room does not bind (C2-2);
 - `race` -- **an independent oracle re-books every logged row** from the trade's facts, the R the engine read it at
   (its ledger's `rr`), the room, the fee at size from the fee schedule, and the unit's own uniforms (the scalar key
@@ -163,10 +166,35 @@ def identity(blocks, args, facts) -> dict:
 
 
 def as_walked(blocks, args, facts) -> dict:
-    rec = run(blocks, args, facts, 3, 1, 63, outcome="as_walked", log=True)
+    """The reflected path, every row against this file's own booking: -e + side x the historical gross x d - x_s, the
+    side +1 where the unit's side uniform (the scalar key path) lies below one half."""
+    start, lanes = 3, 6
+    rec = run(blocks, args, facts, start, lanes, 63, outcome="as_walked", log=True)
+    rows = bad = longs = 0
+    by_trade: dict = {}
+    for lane, lg in enumerate(rec.logs):
+        for r in lg:
+            if r["law"] != "as_walked":
+                continue
+            f = facts[(r["i"], r["j"])]
+            u = float(K.uniforms(K.Unit(SEED, PART, 0, lane, start).coin_key(K.moment(r["i"], f.decision, 0), K.SIDE),
+                                 1)[0])
+            side = 1.0 if u < 0.5 else -1.0
+            e = E_T * r["d"] + r["fee"]
+            want = -e + side * f.walked[r["R"]] * r["d"] - XS_T * r["d"]
+            rows += 1
+            longs += int(side > 0)
+            bad += int(abs(r["out"] - want) > 1e-9)
+            by_trade.setdefault((r["i"], r["j"]), set()).add(side)
+    return {"rows": rows, "bad": bad, "long_share": longs / max(rows, 1),
+            "lanes_differ": sum(1 for v in by_trade.values() if len(v) > 1)}
+
+
+def rebooked(blocks, args, facts) -> dict:
+    rec = run(blocks, args, facts, 3, 1, 63, outcome="rebooked", log=True)
     compared = bad = 0
     for r in rec.logs[0]:
-        if r["law"] != "as_walked" or r.get("need") is not None:
+        if r["law"] != "rebooked" or r.get("need") is not None:
             continue
         cost = 2 * (facts[(r["i"], r["j"])].stop_ticks * r["d"] + r["fee"] + 10 * r["d"])
         if r["room"] < cost:
@@ -189,8 +217,10 @@ def _steps(sigma: float, T: float, s: int) -> int:
     return max(1, int(math.floor(sigma * sigma * T / (s * s) + 0.5)))
 
 
-def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lane: int, start: int) -> float:
-    """This file's own re-booking of one logged trade (independent of `three_way_baseline`)."""
+def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lane: int, start: int
+           ) -> tuple[float, int]:
+    """This file's own re-booking of one logged trade (independent of `three_way_baseline`): (the booking, the move's
+    logged inputs that differ from this file's -- the steps, x at the move bar, the barriers G' and the floor side's)."""
     d = risk / f.stop_ticks
     fee = _fee(contracts)
     e, xt, xs, xf = E_T * d + fee, XT_T * d, XS_T * d, XF_T * d
@@ -200,7 +230,7 @@ def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lan
         G = Fraction((need + e + xt) / d)
     room = r["room"]
     if not min(f.stop_ticks * d, room - e - max(xs, xf)) > 1e-6:
-        return -room if r["law"] == "fill_fail" else float("nan")
+        return (-room if r["law"] == "fill_fail" else float("nan")), 0
     L = min(f.stop_ticks * d, room - e - xs)
     unit = K.Unit(SEED, PART, 0, lane, start)
     moment = K.moment(r["i"], f.decision, f.sub)
@@ -211,28 +241,36 @@ def oracle(r: dict, f: TB.TradeFacts, R: float, risk: float, contracts: int, lan
         us = K.uniforms(unit.coin_key(moment, K.WALK), n1 + n2)
         Lt = Fraction(L / d)
         v, k = FC.walk_scalar(us[:n1], G, Lt, s1)
+        mism = int((r.get("s1"), r.get("n1"), r.get("s2"), r.get("n2")) != (s1, n1, s2, n2))
         if k == 0:
             moved = v >= 1
-            v2, k2 = FC.walk_scalar(us[n1:n1 + n2], G - v, v if moved else v + Lt, s2)
+            down = v if moved else v + Lt
+            mism += int(not (abs(r.get("move_x", math.nan) - float(v)) < 1e-9
+                             and abs(r.get("move_G2", math.nan) - float(G - v)) < 1e-9
+                             and abs(r.get("move_down2", math.nan) - float(down)) < 1e-9
+                             and bool(r.get("move_moved")) == bool(moved)))
+            v2, k2 = FC.walk_scalar(us[n1:n1 + n2], G - v, down, s2)
             v, k = (G, 1) if k2 == 1 else ((0, 3) if moved else (-Lt, -1)) if k2 == -1 else (v + v2, 0)
+        else:
+            mism += int(not math.isnan(r.get("move_x", 0.0)))   # phase 1 ended it: no x logged
         cost = xt if k == 1 else xs if k in (-1, 3) else xf
-        return -e + float(v) * d - cost
+        return -e + float(v) * d - cost, mism
     kind = f.kinds[R]
     if kind in ("t", "s"):
         u = float(K.uniforms(unit.coin_key(moment, K.RACE), 1)[0])
         p = L / (L + float(G) * d)
-        return (-e + float(G) * d - xt) if u < p else (-e - L - xs)
+        return ((-e + float(G) * d - xt) if u < p else (-e - L - xs)), 0
     T = max(1, f.limit - f.entry)
     s = _step(f.sigma, T)
     n = _steps(f.sigma, T, s)
     v, k = FC.walk_scalar(K.uniforms(unit.coin_key(moment, K.WALK), n), G, Fraction(L / d), s)
-    return -e + float(v) * d - (xt if k == 1 else xs if k == -1 else xf)
+    return -e + float(v) * d - (xt if k == 1 else xs if k == -1 else xf), 0
 
 
 def race(blocks, args, facts) -> dict:
     h, lanes, start = 63, 12, 3
     rec = run(blocks, args, facts, start, lanes, h, outcome="race", keep_paths=True, log=True)
-    laws, rows, bad, needs, hist_fields, count_bad, overlap = {}, 0, 0, 0, 0, 0, 0
+    laws, rows, bad, needs, hist_fields, count_bad, overlap, move_inputs_bad = {}, 0, 0, 0, 0, 0, 0, 0
     for lane, (lg, path) in enumerate(zip(rec.logs, rec.paths)):
         ledger = {(int(t["day"]), int(t["trade_index"]), t["kind"], int(t["index"])): t for t in path.trades}
         for t in path.trades:                               # C2-7: no historical outcome on a race-arm row
@@ -256,7 +294,9 @@ def race(blocks, args, facts) -> dict:
                 continue
             R = float(t["rr"])                              # the R the engine read it at (C2-1): never rr_used
             needs += int(r.get("need") is not None)
-            want = oracle(r, facts[(r["i"], r["j"])], R, float(t["realised_risk"]), int(t["contracts"]), lane, start)
+            want, mism = oracle(r, facts[(r["i"], r["j"])], R, float(t["realised_risk"]), int(t["contracts"]), lane,
+                                start)
+            move_inputs_bad += mism
             bad += int(not (abs(r["out"] - want) <= 1e-9 or (math.isnan(want) and math.isnan(r["out"]))))
             if r["law"] == "fill_fail":
                 bad += int(abs(float(t["pnl"]) + r["room"]) > 1e-9)      # the engine booked the whole room
@@ -265,6 +305,7 @@ def race(blocks, args, facts) -> dict:
                             int(t["trade_index"])])) for t in path.trades)
         overlap += sum(1 for a, b in zip(spans, spans[1:]) if b[0] < a[1] + 5.0)
     return {"rows": rows, "bad": bad, "laws": laws, "needs": needs, "hist_fields": hist_fields, "count_bad": count_bad,
+            "move_inputs_bad": move_inputs_bad,
             "overlap": overlap, "move_trades": int(rec.move_trades.sum()), "b_redrawn": int(rec.b_redrawn.sum()),
             "b_historical": int(rec.b_historical.sum()), "be_differs": int(rec.be_differs.sum()), "lanes": lanes}
 
@@ -331,7 +372,8 @@ def main() -> None:
         print(json.dumps({"p16": p16()}, default=str))
         return
     blocks, args, facts = job()
-    out = {"identity": identity(blocks, args, facts), "as_walked": as_walked(blocks, args, facts),
+    out = {"identity": identity(blocks, args, facts), "rebooked": rebooked(blocks, args, facts),
+           "as_walked": as_walked(blocks, args, facts),
            "race": race(blocks, args, facts), "reading": reading(blocks, args, facts)}
     db, da, df = job(dll=True)
     out["dll"] = dll(db, da, df)

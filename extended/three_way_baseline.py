@@ -5,7 +5,8 @@ the martingale-outcome reading, everything but each trade's outcome the vendored
 
     from extended import three_way_baseline as TB
     rec = TB.simulate(job_blocks, job_args, facts, start, seed_indices, horizon, seed=..., part=..., history=...,
-                      block_sessions=..., dates=..., outcome="race")   # "vendored": the identity; "as_walked": beside
+                      block_sessions=..., dates=..., outcome="race")
+    # outcome="vendored": the identity; "rebooked": the costs' identity; "as_walked": the reflected path, beside
 
 **Where the outcome is replaced (ruling 1).** A unit is U1's start replay (`customer_slices.replay`'s call, ruling 2):
 the vendored `SharedDayDraws` over the job's blocks in replay with the job's draw arguments -- its sizing
@@ -21,7 +22,8 @@ C2-2) and **the R it was read at, `rr`: the state's R** (C2-1, C2-6). Never `rr_
 fallback; the registered tables' leaves without an R are abandon leaves, which take no trade). Its facts
 (`TradeFacts`, the schedule builder's) are checked against it: the stop's dollars a micro against the draw's
 `risk_per_contract`, the fill against the block's `entry_t`, the alert at or before the fill (C2-8); a mismatch is
-refused. Two facts at one coin moment are refused (C2-9).
+refused. **Two trades at one moment** (P-14's rungs from one alert; the lead's amendment replacing C2-9) take
+`sub` 0, 1, ... in the schedule's index order, and the coin key carries it: each trade draws its own uniform.
 
 **The law at R**, in dollars, `d` = realised risk / stop ticks the position's dollars a tick:
 - the costs: the entry e = its spread ticks x d + the fee; the exits' ticks x d by kind (`xt`, `xs` for a stop or a
@@ -54,6 +56,18 @@ pinned calendar (`extended/search_calendar.py`), never by data; the vendored mov
 recorded bar within five minutes) is counted beside where it differs from s + 1. `be_open` at or after the limit: no
 move (C2-10).
 
+**The outcomes beside the race.** `vendored` passes the vendored P&L through (the identity). `rebooked` books each
+trade's historical gross at its R with the race arm's costs, deterministic (C2-2's identity: it equals the vendored
+P&L wherever the room does not bind). `as_walked` is H4's as-walked reading, **the reflected path**: the trade's
+historical gross at its R on the side the unit's side coin draws (`K.SIDE`, +1 below one half), the stop side's cost
+on every exit (n-5), as the design mode reads it -- beside only, never deciding.
+
+**A known difference from the playbook (the lead's ruling, applying to every baseline alike):** a missed signal
+(measure 28's `missed` response) keeps the vendored router's hold -- the account it was dealt to stays busy to the
+trade's historical exit at its R -- where the playbook frees the account at once. The router routes the session before
+any account trades, so freeing it would mean subclassing `TradeRouter.begin_day` or editing its time arrays, which the
+pass-through identity forbids.
+
 **Beside every reading** (`BaselineRecords`): per lane the trades given the move law, the `b` exits it redrew, FV3's
 historical `b` exits among the same trades, and the trades whose vendored move bar differs from s + 1.
 
@@ -78,7 +92,7 @@ from extended import three_way_redraw as RD
 
 TASK = "Q-185c"
 EPS = J.EPS
-OUTCOMES = ("race", "vendored", "as_walked")
+OUTCOMES = ("race", "vendored", "rebooked", "as_walked")
 KINDS = ("t", "s", "f", "b")
 
 
@@ -164,12 +178,16 @@ class _Unit:
                  arm: J.ArmSpec):
         self.facts, self.blocks, self.start, self.coins, self.arm = facts, blocks, int(start), coins, arm
         self.cache: dict[tuple[int, int], np.ndarray] = {}
-        seen: dict[int, tuple[int, int]] = {}
-        for (i, j), f in facts.items():                  # C2-9: two trades at one moment would read one uniform
-            m = K.moment(int(i), int(f.decision), int(f.sub))
-            if m in seen:
-                raise ValueError(f"REFUSED (C2-9): the trades {seen[m]} and {(i, j)} share the coin moment {m}")
-            seen[m] = (int(i), int(j))
+        # two trades at one moment take sub 0, 1, ... in the schedule's index order (the lead's amendment to C2-9)
+        self.subs: dict[tuple[int, int], int] = {}
+        at: dict[tuple[int, int], int] = {}
+        for (i, j) in sorted(facts):
+            f = facts[(i, j)]
+            m = (int(i), int(f.decision))
+            self.subs[(int(i), int(j))] = at.get(m, 0)
+            at[m] = at.get(m, 0) + 1
+            if at[m] > K.MOMENT_SUBS:
+                raise ValueError(f"REFUSED: more than {K.MOMENT_SUBS} trades at one moment ({m})")
 
     def key(self, h: int, j: int, lt: Mapping[str, Any]) -> tuple[_Key, TradeFacts]:
         i = self.start + int(h)
@@ -184,7 +202,7 @@ class _Unit:
         if et is not None and abs(float(et[int(j)]) - float(f.entry)) > 1e-9:
             raise ValueError(f"REFUSED (C2-8): the trade ({i}, {j}) fills at {float(et[int(j)])}, its facts at "
                              f"{f.entry}")
-        return _Key(K.moment(i, int(f.decision), int(f.sub)), f.underlying), f
+        return _Key(K.moment(i, int(f.decision), self.subs[(i, int(j))]), f.underlying), f
 
     def uniform(self, k: _Key, kind: int, lane: int) -> float:
         u = self.cache.get((k.moment, int(kind)))
@@ -298,9 +316,17 @@ class RaceOver:
         if capped:
             G = (float(need) + e + xt) / d                    # the profit_level race: a win nets exactly the need
         info: dict[str, Any] = {"R": R, "kind": kind, "G": G, "fee": fee, "d": d, "need": need, "vendored": vend}
+        if self._outcome == "rebooked":
+            out = self._rebooked(f, R, kind, d, fee, lt)
+            info["law"] = "rebooked"
+            self._note(h, j, room, info, out)
+            return out, info
         if self._outcome == "as_walked":
-            out = self._as_walked(f, R, kind, d, fee, lt)
-            info["law"] = "as_walked"
+            if f.walked is None or R not in f.walked:
+                raise ValueError("the as-walked reading needs each trade's historical gross at its R")
+            side = 1.0 if u.uniform(key, K.SIDE, self._lane) < 0.5 else -1.0
+            out = -e + side * float(f.walked[R]) * d - xs     # the reflected path; the stop side's cost (n-5)
+            info.update(law="as_walked", side=side)
             self._note(h, j, room, info, out)
             return out, info
         floor_room = st[0] + st[1]
@@ -330,8 +356,10 @@ class RaceOver:
             if max(n1, n2) > J.WALK_MAX:
                 raise ValueError("REFUSED (C2-10): a phase of the move reads past WALK_MAX")
             read = self._reader(key)
-            g, k = MV.move_outcomes(read, 1, G, L / d, s1, n1, s2, n2, J.WALK_CHUNK)
+            g, k, det = MV.move_outcomes(read, 1, G, L / d, s1, n1, s2, n2, J.WALK_CHUNK, detail=True)
             kc = int(k[0])
+            info.update(move_x=float(det["x"][0]), move_moved=bool(det["moved"][0]), move_G2=float(det["G2"][0]),
+                        move_down2=float(det["down2"][0]), L_ticks=L / d)
             cost = xt if kc == MV.TARGET else xs if kc in (MV.STOP, MV.BREAKEVEN) else xf
             out = -e + float(g[0]) * d - cost
             info.update(law="move", exit=kc, s1=s1, n1=n1, s2=s2, n2=n2, need_hit=bool(capped and kc == MV.TARGET))
@@ -367,12 +395,12 @@ class RaceOver:
 
         return read
 
-    def _as_walked(self, f: TradeFacts, R: float, kind: str, d: float, fee: float, lt: Mapping[str, Any]) -> float:
-        """Beside only: the trade's historical gross at R re-booked with the race arm's costs (C2-2's test)."""
+    def _rebooked(self, f: TradeFacts, R: float, kind: str, d: float, fee: float, lt: Mapping[str, Any]) -> float:
+        """The costs' identity: the trade's historical gross at R re-booked with the race arm's costs (C2-2's test)."""
         if lt.get("at_need"):
             return float(lt["need"])
         if f.walked is None or R not in f.walked:
-            raise ValueError("the as-walked arm needs each trade's historical gross at its R")
+            raise ValueError("the rebooked arm needs each trade's historical gross at its R")
         ex = {"t": f.xt_ticks, "s": f.xs_ticks, "b": f.xs_ticks, "f": f.xf_ticks}[kind]
         return float(f.walked[R]) * d - f.e_ticks * d - fee - ex * d
 
@@ -439,7 +467,7 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
              calendar: frozenset | None = None) -> BaselineRecords:
     """The units (start, c), c in `seed_indices`: each U1's replay of the job's blocks from `start` for `horizon`
     sessions, its trades' outcomes redrawn on the unit's coin field (`outcome="race"`), passed through (`"vendored"`,
-    the identity) or re-booked as walked (`"as_walked"`, beside)."""
+    the identity), re-booked as walked (`"rebooked"`, the costs' identity) or reflected (`"as_walked"`, beside)."""
     J.check_window(start, horizon, block_sessions)
     TF.check_dates(dates, start, horizon, block_sessions, seed=seed, calendar=calendar)
     idx = [int(c) for c in seed_indices]
@@ -447,7 +475,7 @@ def simulate(blocks: Sequence[Any], args: Mapping[str, Any], facts: Mapping[tupl
         raise ValueError("REFUSED: a seed index repeats (two lanes would read one coin field)")
     if arm.enforcement_q > 0 or arm.reading != "martingale":
         raise ValueError("REFUSED: the baseline mode reads the martingale outcome at 0 % denial (the vendored outcome "
-                         "is `outcome='vendored'`, the historical one `outcome='as_walked'`)")
+                         "is `outcome='vendored'`, the reflected one `outcome='as_walked'`)")
     if len(blocks) < start + horizon:
         raise ValueError("the job's blocks end before the window")
     coins = J.CoinLanes(seed, part, history, start, idx, guard, arm.twin)
