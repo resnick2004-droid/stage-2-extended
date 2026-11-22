@@ -1,5 +1,10 @@
 # H3: the three-way test's probe and design checks (H3-0, H3-A), declared
 
+**Text 2, re-declared after the gatekeeper's GK_H3_c3 (cycles exhausted)**: the same file and name as text 1 (LF sha256
+`5cdd9d57cff017544150ff5333f7961af58ea42e057964dc5cb2f1dacba12bac`, wt/wt-three 148dd76), carrying only its three fixes
+of form -- section 8's size count, section 11's stop and the code that computes it (with section 17's build list), and
+section 14's pass.
+
 H3 declares the probe (H3-0) and the design checks (H3-A) of the three-way test's deciding rule, on synthetic
 histories only. It is fixed by the sha256 of its LF text in its decision row; nothing declared here is edited -- a
 change is a new declaration under a new row. **H3-D, the deciding calibration, is not declared here: it is declared in
@@ -157,11 +162,18 @@ Every check family is written as a product and a number (the template's count fo
 the declared inputs (Appendix A's R, Appendix C).
 
 - **H3 takes no k** and judges no design; its counts are of checks, every one reported, none dropped after a look.
-- **The size checks -- the laxity stop reads only these pooled counts** (section 11): per part (A1, A2), 3 null classes
-  (the antithetic twin, the disjoint sets, the exact-centred pair) x 3 bounds (2.2 (a)'s, the empirical-Bernstein, the
-  betting) x 3 feasible levels = **27 pooled counts a part**, each pooled over the part's R = 20 histories; over the two
-  parts 2 x 27 = **54 pooled counts**. **Beside them, never stopping anything:** the per-history counts, 27 x 20 = 540 a
-  part, 2 x 540 = **1080** in all.
+- **The size checks -- the laxity stop reads only these 54 pooled counts** (section 11), each cell counted as it runs
+  (`three_way_h3a`'s parts; Appendix A's rows `A1 same-design nulls ... R=20` and `A2 exact-centred toy null ... R=20`):
+  - **A1**, the same-design nulls on A1's design (`A1_DESIGN`; the baselines' toys, `BASELINES`, enter A1's stress
+    only): 2 null classes (the antithetic twin, the disjoint sets, `DISJOINT`) x 2 composites (`P_B` alone at `BUDGET`,
+    and the clipped `TOY_COMPOSITE`) x 3 bounds (2.2 (a)'s, the empirical-Bernstein, the betting) x 3 feasible levels
+    (`LEVELS`) = **36 pooled counts**;
+  - **A2**, the exact-centred toy null on its pair (`A2_PAIR`): 1 null class x 2 composites (`P_B` alone and the clipped
+    `TOY_COMPOSITE` -- **both, the declaration's choice, made before any outcome**) x 3 bounds x 3 feasible levels =
+    **18 pooled counts**;
+  - **the pooled total 36 + 18 = 54** -- the 54 pooled counts the stop reads, each pooled over its part's R = 20
+    histories. **Beside them, never stopping anything:** the per-history counts, 36 x 20 = 720 (A1) and 18 x 20 = 360
+    (A2), 720 + 360 = **1080** in all.
 - **The history null (A3), reported:** 1 stylised pair x 2 placeholder composites (`P_B` alone, the clipped toy
   composite) x 3 feasible levels = **6 rates**, each over A3's 200 histories, the whole rule at its bound by the
   composite's form (section 9).
@@ -299,11 +311,14 @@ LB > 0 and (Y) and (R) and (H); for the finalist, all four baselines (an interse
   the template defines overlap** (until then A4 runs the plants alone, and says so). **Kill:** a premise failing (a pool
   not centred -- |its mean| above 4 standard errors, two-sided, `three_way_h3a.CENTRING_Z` --, an asymmetric twin, a
   term out of range, a key guard refusal) stops the part and goes to the failure protocol. **The laxity stop reads only
-  the 54 pooled size counts** (section 8): a pooled count is a laxity when its one-sided Clopper-Pearson test rejects
+  the 54 pooled size counts** (section 8: A1's 36 and A2's 18): a pooled count is a laxity when its one-sided Clopper-Pearson test rejects
   "its rate is at most its feasible level" at **0.05 / 54** -- its one-sided lower bound at confidence 1 - 0.05 / 54
   above the level -- a Bonferroni split across the 54 pooled counts, so that when every size is correct the chance of
   any false stop is at most 0.05; **the per-history counts are reported beside the pooled ones and never stop
-  anything**. **An H3-A laxity stops H3-D: the rule is
+  anything**. **The stop's code:** H3-A's report code is built after the pin; it applies this one-sided limit,
+  1 - 0.05 / 54, to the 54 pooled counts only; `three_way_stats.size_label` (E-052's two-sided label) is at most a
+  label reported beside the stop and never decides; the report code has its own tests and a red-team diff check before
+  H3-A runs. **An H3-A laxity stops H3-D: the rule is
   then defective**, it is diagnosed by the failure protocol, and **a new declaration follows** (of the rule, and of
   H3-D's text on it); no H3-D text is pinned on the defective rule.
 - **CHARTER 3.9's pinning row** (Wave 4.2): the composite, its caps and clips, delta\*, n_min, the gate's quantile and
@@ -326,7 +341,8 @@ H3 reads no session of the held-out years in any part.
 
 ## 14. What a pass and a fail mean
 
-- **A pass:** every size count shows no laxity at the feasible levels, every premise holds, the history null's rate is
+- **A pass:** every **pooled** size count shows no laxity at its one-sided limit 1 - 0.05 / 54 (section 11); the
+  per-history counts are reported beside and stop nothing; every premise holds, the history null's rate is
   printed with its label, and the plants' lines and conjoint MDL are printed: the deciding rule goes unchanged to H3-D's
   text, which alone decides whether it may judge the search's finalists in H7.
 - **A fail:** a laxity or a failed premise stops H3-D (section 11). It is diagnosed by the failure protocol (terminal
@@ -406,6 +422,10 @@ the keys (`three_way_keys`) and the vectorised generator (`three_way_fastkeys`),
 seed-paired runner (`three_way_runner`), S1 (`three_way_s1`), the statistics (`three_way_stats`) and H3-A's inputs
 (`three_way_h3a`), **at build commit `4c07026`**; tests `tests/test_three_way_keys.py`, `_fastkeys.py`, `_redraw.py`,
 `_runner.py`, `_stats.py`, `_mutations.py` and `tests/test_h3_draft.py`, on synthetic data with known answers.
+**H3-A's report code** -- the code that computes section 11's stop -- **is not in this build**: it is built after the
+pin, applies section 11's one-sided limit 1 - 0.05 / 54 to the 54 pooled counts only, uses `three_way_stats.size_label`
+(E-052's two-sided label) at most as a label reported beside the stop, never deciding, and has its own tests and a
+red-team diff check before H3-A runs.
 
 **Declared for H3-0.**
 - **The generator** is the vectorised implementation of the declared law (section 7), admitted by its tests; the

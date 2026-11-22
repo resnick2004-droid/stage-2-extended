@@ -288,13 +288,29 @@ def test_the_counts_are_products_and_numbers(text: str) -> None:
     assert R["A1 same-design nulls"] == R["A2 exact-centred toy null"]
     r = R["A1 same-design nulls"]
     flat = _flat(text)
-    nulls, bounds, levels, composites = 3, 3, len(H.LEVELS), 2
-    per_part = nulls * bounds * levels
-    pooled = 2 * per_part
-    hist = per_part * r
-    assert f"= **{per_part} pooled counts a part**" in flat and f"over the part's R = {r} histories" in flat
-    assert f"2 x {per_part} = **{pooled} pooled counts**" in flat
-    assert f"{per_part} x {r} = {hist} a part, 2 x {hist} = **{2 * hist}** in all" in flat
+    # the factors as the checks run them (GK_H3_c3 item 1): A1's two same-design nulls (the antithetic twin, the
+    # disjoint sets) on A1's design; A2's one exact-centred null on its pair; both on the two placeholder composites
+    comps = ("P_B", H.TOY_COMPOSITE)                                    # the two placeholder composites
+    composites = len(comps)
+    bounds_fns = (ST.mcdiarmid, ST.eb_lower, ST.betting_lower)
+    a1_nulls = ("antithetic", H.DISJOINT)
+    a2_nulls = (H.A2_PAIR,)
+    levels, bounds = len(H.LEVELS), len(bounds_fns)
+    assert len(H.DISJOINT) == 2 and len(H.A2_PAIR) == 2
+    a1 = len(a1_nulls) * composites * bounds * levels
+    a2 = len(a2_nulls) * composites * bounds * levels
+    pooled = a1 + a2
+    assert (a1, a2, pooled) == (36, 18, 54)
+    assert (f"{len(a1_nulls)} null classes (the antithetic twin, the disjoint sets, `DISJOINT`) x {composites} "
+            f"composites") in flat and f"x {levels} feasible levels (`LEVELS`) = **{a1} pooled counts**" in flat
+    assert (f"1 null class x {composites} composites (`P_B` alone and the clipped `TOY_COMPOSITE` -- **both, the "
+            f"declaration's choice, made before any outcome**) x {bounds} bounds x {levels} feasible levels = "
+            f"**{a2} pooled counts**") in flat
+    assert f"**the pooled total {a1} + {a2} = {pooled}** -- the {pooled} pooled counts the stop reads" in flat
+    assert f"over its part's R = {r} histories" in flat
+    assert (f"{a1} x {r} = {a1 * r} (A1) and {a2} x {r} = {a2 * r} (A2), {a1 * r} + {a2 * r} = "
+            f"**{(a1 + a2) * r}** in all") in flat
+    assert "pooled counts a part" not in flat
     assert f"x {levels} feasible levels = **{1 * composites * levels} rates**, each over A3's {H.A3_HISTORIES}" in flat
     sizes, lev, eps, a = len(H.SIZE_GRID), len(H.P2_LEVERS), len(H.P3_EPS), len(H.P4_A)
     p1_bounds = len({"hoeffding", "eb"} & set(ST.LINEAR_PLANT_BOUNDS))    # 2.2 (a)'s (unclipped) and the EB
@@ -312,7 +328,20 @@ def test_the_counts_are_products_and_numbers(text: str) -> None:
     arms = len(RU.stress_arms())
     assert f"{arms} arms (+1 tick, +2 ticks, 10 % missed) x 5 schedules" in flat and f"= **{arms * 5} runs**" in flat
     sec11 = _flat(text[text.index("\n## 11. "):text.index("\n## 12. ")])
-    assert f"**The laxity stop reads only the {pooled} pooled size counts**" in sec11
+    assert f"**The laxity stop reads only the {pooled} pooled size counts** (section 8: A1's {a1} and A2's {a2})" in sec11
+    assert (f"**The stop's code:** H3-A's report code is built after the pin; it applies this one-sided limit, 1 - 0.05 "
+            f"/ {pooled}, to the {pooled} pooled counts only; `three_way_stats.size_label` (E-052's two-sided label) is "
+            "at most a label reported beside the stop and never decides; the report code has its own tests and a "
+            "red-team diff check before H3-A runs") in sec11
+    sec14 = _flat(text[text.index("\n## 14. "):text.index("\n## 15. ")])
+    assert (f"every **pooled** size count shows no laxity at its one-sided limit 1 - 0.05 / {pooled} (section 11); the "
+            "per-history counts are reported beside and stop nothing") in sec14
+    assert "every size count shows no laxity at the feasible levels" not in flat
+    sec17 = _flat(text[text.index("\n## 17. "):text.index("\n## 18. ")])
+    assert ("**H3-A's report code** -- the code that computes section 11's stop -- **is not in this build**" in sec17
+            and f"applies section 11's one-sided limit 1 - 0.05 / {pooled} to the {pooled} pooled counts only" in sec17
+            and "never deciding, and has its own tests and a red-team diff check before H3-A runs" in sec17)
+    assert "**Text 2, re-declared after the gatekeeper's GK_H3_c3 (cycles exhausted)**" in text[:600]
     assert f"at **0.05 / {pooled}**" in sec11 and f"a Bonferroni split across the {pooled} pooled counts" in sec11
     assert "**the per-history counts are reported beside the pooled ones and never stop anything**" in sec11
     assert pooled * (0.05 / pooled) <= 0.05 + 1e-15                    # the union bound: the family-wise rate
