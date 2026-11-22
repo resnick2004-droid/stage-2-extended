@@ -1750,6 +1750,307 @@ def authorise_engine_read(start: Any, end: Any, *, files: Sequence[Path | str], 
     return a
 
 
+# ----------------------------------------------------------------------------- the go token (Q-212; template v3)
+#
+# The decision log has one parser: the design search's go row, its closing row and the membership event they fix
+# are read here, by the reader's own rows, pins, fences and voids (the lead's Q-212 rulings on the red team's
+# `TEMPLATE_V3_DAFF8CC_2026-11-22`, findings 1, 3, 4, 8, 10 and n1; `extended/go_token.py` on wt/wt-lit daff8cc is
+# folded in here). The forms, each the first text of a decision row's third cell in the reader's positional form:
+#
+#     | E-NNN | YYYY-MM-DD | go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text> |
+#     | E-NNN | YYYY-MM-DD | heldout-closed: F-NN @ <its LF sha256> -- <one of the eight causes> -- <text> |
+#
+# **Every problem row is clearable** by any later `heldout-void: E-NNN -- <reason>` row naming it (a void placed
+# before its row does nothing); a void of a valid row -- a counted go row, a valid closing row, a pin, a verdict or a
+# finalists' row -- is a no-op, so a void never revives, removes or unpins anything. **A pin counts** only as an
+# unfenced decision row carrying `` `prereg/F-NN_<slug>.md` sha256 `<64 lowercase hex>` `` whose sha256 is the LF
+# sha256 of that one file. **The scope is an allow-list:** a design search (an unfenced line starting with the
+# design-search marker) names the market `NQ` or `MNQ` (one underlying) and exactly one firm, `Topstep`, `MFFU` or
+# `Lucid` in exact case, and its deciding files; anything else in it is a problem, never out of scope. **The runner is
+# bound:** `go_row_present` holds only on a checkout whose HEAD descends from the go row's runner commit, every
+# declared deciding file byte-identical at both (the hold-commit pattern of `extended/cl_reading.py`).
+
+#: the go token and the closing token (the held-out template's closed list of eight causes)
+GO_TOKEN = re.compile(_HO_HEAD + r"go: (?P<decl>F-\d+) @ (?P<sha>[0-9a-f]{64}) -- runner (?P<runner>[0-9a-f]{40})"
+                      + _HO_TAIL)
+CLOSING_CAUSES = ("calibration-failed", "limit-clause-failed", "power-gate-failed", "every-design-failed-a-gate",
+                  "empty-finalist-list", "every-finalist-failed-no-harm", "withdrawn", "defect-on-record")
+CLOSED_TOKEN = re.compile(_HO_HEAD + r"heldout-closed: (?P<decl>F-\d+) @ (?P<sha>[0-9a-f]{64}) -- (?P<cause>"
+                          + "|".join(re.escape(c) for c in CLOSING_CAUSES) + ")" + _HO_TAIL)
+#: what a hand meaning one types (any case; after the reader's marks): a go-like and a closing-like third cell
+_GO_LIKE = re.compile(r"go\s*[:=]", re.IGNORECASE)
+_CLOSED_LIKE = re.compile(r"held[-_ ]?out[-_ ]?closed", re.IGNORECASE)
+#: the scope's allow-list (Q-212 (c)): NQ and MNQ are one underlying; the three firms in exact case
+SCOPE_MARKETS = ("NQ", "MNQ")
+SCOPE_FIRMS = ("Topstep", "MFFU", "Lucid")
+_MARKET_FIELD, _FIRM_FIELD, _DECIDING_FIELD = "- **The market:**", "- **The firm and account:**", \
+    "- **The deciding files:**"
+_MARKET_LINE = re.compile(r"- \*\*The market:\*\* (?P<market>NQ|MNQ)(?: -- .*)?")
+_FIRM_LINE = re.compile(r"- \*\*The firm and account:\*\* (?P<firm>Topstep|MFFU|Lucid)(?P<rest>(?:, | -- ).*)?")
+_FIRM_NAMES = re.compile(r"topstep|mffu|lucid|funded\s*futures|apex|tradeify|take\s*profit|bulenox", re.IGNORECASE)
+def _firm_of(name: str) -> str:
+    """A firm name found in a firm field, normalised: the three firms' own names (MFFU's long name too), else itself."""
+    low = re.sub(r"\s+", " ", name.lower())
+    return {"topstep": "Topstep", "mffu": "MFFU", "funded futures": "MFFU", "lucid": "Lucid"}.get(low, name)
+
+
+_DECIDING_LINE = re.compile(r"- \*\*The deciding files:\*\* (?P<paths>`[^`]+`(?:, `[^`]+`)*)")
+_REPO_PATH = re.compile(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*")
+_SEARCH_HEADINGS = ("## 5. The zero-edge convention", "## 6. The survey", "## 7. The pinning row")
+_GO_DECL = re.compile(r"prereg/(F-\d+)_[^/`]*\.md")
+
+
+class GoRefused(ReadRefused):
+    """The log fails the go token's hygiene: no membership reading is made from it."""
+
+
+def _valid_day(s: str) -> bool:
+    try:
+        date.fromisoformat(s)
+        return True
+    except ValueError:
+        return False
+
+
+def _lf_sha_bytes(data: bytes) -> str:
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()
+
+
+def _unfenced(text: str) -> list[str]:
+    fenced = _fence_state(text)[0]
+    return [ln for i, ln in enumerate(text.splitlines()) if not fenced[i]]
+
+
+def _deciding_files(text: str) -> list[str] | None:
+    """A design search's declared deciding files (its one unfenced `- **The deciding files:**` line, each path in
+    backticks, repo-relative, `extended/reader.py` among them), or None when the line is not exactly that."""
+    lines = [ln for ln in _unfenced(text) if ln.startswith(_DECIDING_FIELD)]
+    if len(lines) != 1 or not (m := _DECIDING_LINE.fullmatch(lines[0].rstrip())):
+        return None
+    paths = re.findall(r"`([^`]+)`", m["paths"])
+    if not paths or len(set(paths)) != len(paths) or "extended/reader.py" not in paths:
+        return None
+    if any(not _REPO_PATH.fullmatch(p) or ".." in p.split("/") for p in paths):
+        return None
+    return paths
+
+
+def design_search_problems(text: str) -> list[str]:
+    """Why a `prereg/F-NN_*.md` text is not a design search whose scope and deciding files can be read ([] when it
+    is): the design-search marker at an unfenced line's start and no other `Declaration kind` line; exactly one
+    unfenced market line naming `NQ` or `MNQ`; exactly one unfenced firm line naming exactly one of `Topstep`, `MFFU`,
+    `Lucid` (exact case, no second firm in it); exactly one deciding-files line (`_deciding_files`)."""
+    live = _unfenced(text)
+    out = []
+    marked = any(ln.startswith(DESIGN_SEARCH_MARKER) for ln in live)
+    for ln in live:
+        if "declaration kind" in ln.lower() and not (ln.startswith(DESIGN_SEARCH_MARKER) or
+                                                     ln.startswith(HELDOUT_MARKER)):
+            out.append(f"a 'Declaration kind' line that is not exactly a known marker at its start: {ln[:60]!r}")
+    if not marked:
+        why = "no design-search marker at an unfenced line's start"
+        if any(h in ln for ln in live for h in _SEARCH_HEADINGS):
+            why += " (a design search's headings without it)"
+        return out + [why]
+    if any(ln.startswith(HELDOUT_MARKER) for ln in live):
+        out.append("it also carries the held-out marker")
+    markets = [ln for ln in live if ln.startswith(_MARKET_FIELD)]
+    if len(markets) != 1 or not _MARKET_LINE.fullmatch(markets[0].rstrip()):
+        out.append(f"the market field is not exactly one line `{_MARKET_FIELD} NQ` or `MNQ` ({len(markets)} found)")
+    firms = [ln for ln in live if ln.startswith(_FIRM_FIELD)]
+    if len(firms) != 1:
+        out.append(f"the firm field is not exactly one line ({len(firms)} found)")
+    else:
+        m = _FIRM_LINE.fullmatch(firms[0].rstrip())
+        if not m:
+            out.append(f"the firm field does not begin with exactly one of {', '.join(SCOPE_FIRMS)}: {firms[0][:60]!r}")
+        elif any(_firm_of(x.group(0)) != m["firm"] for x in _FIRM_NAMES.finditer(m["rest"] or "")):
+            out.append(f"the firm field names a second firm: {firms[0][:60]!r}")
+    if _deciding_files(text) is None:
+        out.append(f"the deciding files are not exactly one line `{_DECIDING_FIELD} `path`, ...` naming "
+                   "`extended/reader.py`")
+    return out
+
+
+def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
+    """The log read for the go token: its problems ([(row or None, why)]), the counted go rows [(i, row, decl, sha,
+    runner)], the valid closing rows {decl: i}, the counted pins {decl: (i, row, sha)}, the lines."""
+    lines = log_text.splitlines()
+    fenced, unclosed, voided = _fence_state(log_text)
+    voids: dict[str, list[int]] = {}
+    for t in heldout_tokens(log_text, "void"):
+        voids.setdefault(t.get("target"), []).append(t.pos)
+
+    def later_void(row: str, i: int) -> bool:
+        return any(p > i for p in voids.get(row, ()))
+
+    files: dict[str, list[Path]] = {}
+    pins_at: dict[str, tuple[int, str, str]] = {}
+    for i, line in enumerate(lines):
+        r = ROW.match(line)
+        if fenced[i] or not r:
+            continue
+        for rel, sha in PIN.findall(line):
+            m = _GO_DECL.fullmatch(rel)
+            if not m or m.group(1) in pins_at:
+                continue
+            decl = m.group(1)
+            if decl not in files:
+                files[decl] = sorted(Path(prereg_dir).glob(f"{decl}_*.md"))
+            p = Path(prereg_dir) / rel.split("/", 1)[1]
+            if files[decl] == [p] and _lf_sha_bytes(p.read_bytes()) == sha:
+                pins_at[decl] = (i, r.group(1), sha)
+    finals = {}
+    for t in heldout_tokens(log_text, "finalists"):
+        finals.setdefault(t.get("decl"), t.pos)
+    problems: list[tuple[str | None, str]] = []
+    if unclosed is not None:
+        problems.append((None, f"line {unclosed + 1}: a fenced block opened here is never closed"))
+    tokens: list[tuple[int, str, str, str, str]] = []
+    closed: dict[str, int] = {}
+    scope_cache: dict[str, list[str]] = {}
+
+    def file_problems(decl: str) -> list[str]:
+        if decl not in scope_cache:
+            hits = sorted(Path(prereg_dir).glob(f"{decl}_*.md"))
+            if len(hits) != 1:
+                scope_cache[decl] = [f"{len(hits)} files prereg/{decl}_*.md, not one"]
+            else:
+                scope_cache[decl] = design_search_problems(hits[0].read_text(encoding="utf-8"))
+        return scope_cache[decl]
+
+    for i, line in enumerate(lines):
+        r = ROW.match(line)
+        c = _HO_THIRD_CELL.match(line) if r else None
+        if not c:
+            continue
+        row = r.group(1)
+        at = _HO_MARKS.match(line, c.end()).end()
+        go_like, closed_like = bool(_GO_LIKE.match(line, at)), bool(_CLOSED_LIKE.match(line, at))
+        if fenced[i]:
+            if (GO_TOKEN.match(line) or CLOSED_TOKEN.match(line)) and i not in voided and not later_void(row, i):
+                problems.append((row, f"{row} (line {i + 1}): a go or closing token inside a fenced block is never one"))
+            continue
+        if not (go_like or closed_like):
+            continue
+        why = None
+        if closed_like:
+            m = CLOSED_TOKEN.match(line)
+            if not m or not _valid_day(m["date"]):
+                why = (f"closing-like but not exactly `heldout-closed: F-NN @ <its LF sha256> -- <cause> -- <text>` "
+                       f"with one of the eight causes ({', '.join(CLOSING_CAUSES)})")
+            else:
+                decl, pin = m["decl"], pins_at.get(m["decl"])
+                if pin is None or pin[0] >= i:
+                    why = f"a closing row for {decl} with no counted pin strictly before it"
+                elif pin[2] != m["sha"]:
+                    why = f"a closing row for {decl} at a sha256 that is not its pinned file's"
+                elif decl in closed:
+                    why = f"a second closing row for {decl}"
+                elif finals.get(decl, len(lines)) < i:
+                    why = f"a closing row for {decl} after its finalists' row (a firm's finalists are never voided)"
+                elif m["cause"] == "withdrawn" and tokens and tokens[0][0] < i:
+                    why = f"`withdrawn` for {decl} after the membership event ({tokens[0][1]})"
+                else:
+                    closed[decl] = i
+        else:
+            m = GO_TOKEN.match(line)
+            if not m or not _valid_day(m["date"]):
+                why = ("go-like but not exactly `go: F-NN @ <its LF sha256> -- runner <40 hex> -- <text>` at the third "
+                       "cell's start")
+            else:
+                decl, pin = m["decl"], pins_at.get(m["decl"])
+                fp = file_problems(decl)
+                if fp:
+                    why = f"a go row for {decl}, which is no design search in scope: {'; '.join(fp)}"
+                elif pin is None or pin[0] >= i:
+                    why = f"a go row for {decl} with no counted pin strictly before it"
+                elif pin[2] != m["sha"]:
+                    why = f"a go row for {decl} at a sha256 that is not its pinned file's"
+                elif closed.get(decl, len(lines)) < i:
+                    why = f"a go row for {decl} after its closing row"
+                elif any(t[2] == decl for t in tokens):
+                    why = f"a second go row for {decl}"
+                else:
+                    tokens.append((i, row, decl, m["sha"], m["runner"]))
+        if why and not later_void(row, i):
+            problems.append((row, f"{row} (line {i + 1}): {why}"))
+    return {"lines": lines, "problems": problems, "tokens": tokens, "closed": closed, "pins": pins_at,
+            "finals": finals}
+
+
+def go_problems(log_text: str, prereg_dir: Path | str) -> list[str]:
+    """The go token's hygiene problems of a decision log, its declarations read from `prereg_dir` ([] is clean): a
+    fence left open (the reader's rule); a go or closing token inside a fence; a go-like or closing-like row that is
+    not exactly its token (an impossible date included); a go row whose declaration is not one design search in scope
+    (`design_search_problems`), has no counted pin strictly before it, names another sha256, follows its closing row or
+    a first go row; a closing row with no counted pin before it, at another sha256, a second one, one after the
+    declaration's finalists' row, or `withdrawn` after the membership event. Each is cleared by any later
+    `heldout-void: E-NNN -- <reason>` naming its row."""
+    return [why for _, why in _go_scan(log_text, Path(prereg_dir))["problems"]]
+
+
+def go_runner(row: str) -> str | None:
+    """The runner commit (40 hex) a go row names in its sub-form `go: F-NN @ <LF sha256> -- runner <40 hex> --
+    <text>`, or None when the row is not exactly a go token."""
+    m = GO_TOKEN.match(row)
+    return m["runner"] if m and _valid_day(m["date"]) else None
+
+
+def membership_event(log_text: str, prereg_dir: Path | str | None = None) -> str | None:
+    """The membership event (H-1'; E-257): the first counted go row of the log (its whole line), or None when there is
+    none yet; its declarations read from `prereg_dir` (this repository's `prereg/` by default). Refuses (`GoRefused`) a
+    log with a go problem: no event is read from it."""
+    s = _go_scan(log_text, Path(prereg_dir) if prereg_dir is not None else ROOT / "prereg")
+    if s["problems"]:
+        raise GoRefused("; ".join(why for _, why in s["problems"]))
+    return s["lines"][s["tokens"][0][0]] if s["tokens"] else None
+
+
+def _blob(repo: Path, commit: str, path: str) -> str | None:
+    r = _git(repo, "rev-parse", "--verify", "--quiet", f"{commit}:{path}")
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
+def go_row_present(declaration_path: Path | str, log_text: str) -> bool:
+    """The survey runner's check before it starts and before every round (template section 14, step 4): True only
+    when the log has no go problem; the declaration (its file at `declaration_path`, in a checkout's `prereg/`) is a
+    design search in scope with exactly one counted go row at its file's LF sha256; the search is open (no finalists'
+    row and no closing row of it); and the runner is bound -- the checkout's HEAD descends from (or is) the go row's
+    runner commit, and every declared deciding file is byte-identical at both and unchanged in the working tree.
+    Anything git cannot answer is False."""
+    try:
+        p = Path(declaration_path).resolve()
+        prereg, root = p.parent, p.parent.parent
+        m = re.match(r"(F-\d+)_", p.name)
+        if not m or not p.is_file():
+            return False
+        decl, sha = m.group(1), _lf_sha_bytes(p.read_bytes())
+        s = _go_scan(log_text, prereg)
+        if s["problems"]:
+            return False
+        mine = [t for t in s["tokens"] if t[2] == decl]
+        if len(mine) != 1 or mine[0][3] != sha or decl in s["closed"] or decl in s["finals"]:
+            return False
+        runner = mine[0][4]
+        deciding = _deciding_files(p.read_text(encoding="utf-8"))
+        if not deciding:
+            return False
+        h = _git(root, "rev-parse", "--verify", "HEAD")
+        head = h.stdout.strip() if h.returncode == 0 else ""
+        if not re.fullmatch(r"[0-9a-f]{40}", head):
+            return False
+        if head != runner and _git(root, "merge-base", "--is-ancestor", runner, head).returncode != 0:
+            return False
+        for path in deciding:
+            a, b = _blob(root, runner, path), _blob(root, head, path)
+            if a is None or a != b:
+                return False
+        return _git(root, "diff", "--quiet", "HEAD", "--", *deciding).returncode == 0
+    except OSError:
+        return False
+
+
 __all__ = ["CHOICE_START", "CHOICE_END", "JUDGED_START", "JUDGED_END", "CONFIRMATION_START", "SEAL_START", "IDENTITY",
            "LEDGER_REL", "Authorisation", "ReadRefused", "ConfirmationWindowRefused", "JudgedBlockSealed",
            "JudgedBlockReadTwice", "LedgerError", "span", "blocks_of", "check_returned", "declared_purposes", "pins",
@@ -1758,4 +2059,6 @@ __all__ = ["CHOICE_START", "CHOICE_END", "JUDGED_START", "JUDGED_END", "CONFIRMA
            "read_ledger", "missing_lines", "ledger_history_problems",
            "HELDOUT_TEST", "HELDOUT_STRESS", "HELDOUT_PURPOSES", "BASE_WINDOW_ROW", "RULES", "HELDOUT_TOKENS",
            "heldout_windows",
-           "HeldOutRefused", "HeldOutToken", "heldout_tokens", "heldout_token_problems", "heldout_window"]
+           "HeldOutRefused", "HeldOutToken", "heldout_tokens", "heldout_token_problems", "heldout_window",
+           "GO_TOKEN", "CLOSED_TOKEN", "CLOSING_CAUSES", "SCOPE_MARKETS", "SCOPE_FIRMS", "GoRefused",
+           "design_search_problems", "go_problems", "go_runner", "membership_event", "go_row_present"]
