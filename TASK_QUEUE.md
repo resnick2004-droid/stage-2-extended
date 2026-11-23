@@ -79,14 +79,14 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | running (E-246) | E-232 | light | 0 | E-246 |
 | Q-183 | T7's admission forecast: build (wt-har), then the heavy search-year fit, loaded by lever_space | wt-har | done (E-253) | E-232 | light, then heavy | 0 | E-246 |
 | Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | running (E-246) | Q-176 | light | 0 | E-246 |
-| Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | running (E-246) | Q-167 | light | 0 | E-246 |
-| Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | running (E-246) | Q-168, Q-167 | light | 0 | E-246 |
+| Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | done (E-281) | Q-167 | light | 0 | E-246 |
+| Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | done (E-281) | Q-168, Q-167 | light | 0 | E-246 |
 | Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | queued (E-279: after template v3's row) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
 | Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | queued (E-246) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |
-| Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | running (E-251) | Q-168 | light | 0 | E-251 |
+| Q-192 | Wave 3.4's minor findings (BUILD_W34_v3): protocol sha256 on verdicts, re-read floor, quadrature, frozen views, closing roles, round specs | wt-features | done (E-281) | Q-168 | light | 0 | E-251 |
 | Q-193 | The fast tier in parallel inside its slot (pytest-xdist; workers from available memory; every test run, a failure rerun serially and both recorded) | wt-xdist | done (E-260) | E-207 | light | 0 | E-251 |
 | Q-194 | The reader's rule 1 binds every purpose that reads the held-out window (template v2's M-2) | wt-verify | running (E-254) | Q-173 | light | 0 | E-254 |
 | Q-195 | T7's label identity (the audit's C1): the admission label re-derived from Stage 2's records on the search years, refusing | wt-har | done (E-262) | E-255 | light, then heavy | 0 | E-255 |
@@ -105,7 +105,7 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-208 | The pre-merge-commit hook (a merge commit verified like any other) | wt-report | running (E-273) | Q-207 | light | 0 | E-273 |
 | Q-209 | A tiered fast tier: records-only, changed-file selection with the always-on guards, the full tier at merges and a branch tip; the guards' pre-flight as its first stage | wt-report | running (E-280: pre-flight kept, selection dropped) | Q-208 | light | 0 | E-274 |
 | Q-210 | `scripts/decl_lint.py`, a mechanical form check of a declaration before any review | wt-lint | done (E-277) | - | light | 0 | E-274 |
-| Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | running (E-274) | - | light | 0 | E-274 |
+| Q-211 | The fast tier's memory per process, cut quality-neutral; PER_WORKER_GB and the slots from the measurement | wt-mem | done (E-281) | - | light | 0 | E-274 |
 | Q-212 | One parser for the log: the go-token rules in `extended/reader.py` (go_problems, go_row_present, go_runner, membership_event) | wt-verify | running (E-280) | Q-179 | light | 0 | E-275 |
 | Q-121c | A bars spot-check of a few choice-block sessions' ranges against Q-121's file (C2), before RD-04 uses its reference | lead | queued (E-179) | E-179 | heavy | 0 | E-179 |
 | Q-14 | Family B declared (one pre-registered classifier, purged walk-forward, judged out of fold against the coin) | wt-features | blocked | Q-08, Q-11 | light | 0 | -- |

@@ -733,9 +733,11 @@ def sc_data_layout(eng, tmp, roots):
     stores = next(_ast.literal_eval(n.value) for n in tree.body if isinstance(n, _ast.Assign)
                   and any(getattr(t, "id", "") == "STORES" for t in n.targets))
     ok = tuple(SV.DATA_LINKS) == tuple(stores) == ("vendor/stage2/data/bars", "vendor/stage2/data/atlas")
+    is_wt = (REPO / ".git").is_file()
     for s in stores:
         probe = f"{s}/q186b_no_such_file.csv"
-        ok = ok and os.path.isjunction(REPO / s) and not os.path.lexists(REPO / probe) and \
+        has_store = os.path.isjunction(REPO / s) if is_wt else (REPO / s).is_dir()
+        ok = ok and has_store and not os.path.lexists(REPO / probe) and \
             SV.data_path_problem(probe, REPO) is None
     return ok
 

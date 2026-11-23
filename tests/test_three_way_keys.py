@@ -236,11 +236,12 @@ def test_minor3_h4s_tests_seed_draws_only_in_its_own_part() -> None:
 
 
 def test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s() -> None:
-    """wt/wt-h4 0727615: seed 20264403 (once `h4_spare_3`) is the coin's schedule side -- issued for that role only,
-    in the block, drawing coin keys in its own part H4-S and nothing else; no other role draws in H4-S; the spares
-    4 to 9 stay refused."""
+    """wt/wt-h4 0727615: the `h4s_schedule_side` seed (once `h4_spare_3`) is the coin's schedule side -- issued for that
+    role only, in the block, drawing coin keys in its own part H4-S and nothing else; no other role draws in H4-S; the
+    spares 4 to 9 stay refused."""
     seed = S.issue("h4s_schedule_side")
-    assert int(seed) == 20264403 and seed.role == "h4s_schedule_side" and S.in_block(seed) and S.is_issued(seed)
+    raw = S.H4_ROLES["h4s_schedule_side"]
+    assert int(seed) == raw and seed.role == "h4s_schedule_side" and S.in_block(seed) and S.is_issued(seed)
     assert S.PARTS["H4-S"] == 13 and S.PARTS["H4-T"] == 12
     coin = dict(history=0, seed_index=0, start=0, underlying=1, moment=0, draw_kind=K.SIDE)
     K.seed_key(seed, "coin", part=S.PARTS["H4-S"], **coin)
@@ -255,7 +256,7 @@ def test_h4s_schedule_side_seed_draws_only_coin_keys_in_h4_s() -> None:
         with pytest.raises(S.ProvenanceRefused, match="m-9"):
             K.seed_key(S.issue(role), "coin", part=S.PARTS["H4-S"], **coin)
     with pytest.raises(S.ProvenanceRefused):
-        K.seed_key(20264403, "coin", part=S.PARTS["H4-S"], **coin)          # the literal, not the issued seed
+        K.seed_key(raw, "coin", part=S.PARTS["H4-S"], **coin)               # the bare int, not the issued seed
     with pytest.raises(S.ProvenanceRefused, match="no role"):
         S.issue("h4_spare_3")                                                # the old spare's name is gone
     for i in range(5, 10):
@@ -288,7 +289,7 @@ def test_gk5_the_tests_seed_draws_in_the_tests_part_only() -> None:
 
 def test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report() -> None:
     """The lead's ruling on the gatekeeper's item 5: H4-S's schedule side draws only at history 0, seed index 0 and
-    start 0; H4's audit sample (20264404, part H4-U = 14) only at history 0; H3-A's smaller-J report's one key is its
+    start 0; H4's audit sample (`h4_sample`, part H4-U = 14) only at history 0; H3-A's smaller-J report's one key is its
     declared key -- any other value refused, through `seed_key` and `key_matrix` (one bad row refuses the matrix)."""
     from extended import three_way_fastkeys as F
     from extended import three_way_h3a as H
@@ -305,7 +306,7 @@ def test_gk5_the_field_rules_hold_h4s_h4u_and_the_smaller_j_report() -> None:
             F.key_matrix(side, "coin", part=S.PARTS["H4-S"], **{**ok, name: np.array([0, 0, 1])})
 
     sample = S.issue("h4_sample")
-    assert int(sample) == 20264404 and S.PARTS["H4-U"] == 14 and S.H4_STATUS["h4_sample"] == "audit sample"
+    assert int(sample) == S.H4_ROLES["h4_sample"] and S.PARTS["H4-U"] == 14 and S.H4_STATUS["h4_sample"] == "audit sample"
     K.seed_key(sample, "plant", part=S.PARTS["H4-U"], history=0, plant=11, replicate=5)   # start 11, seed index 5
     with pytest.raises(S.ProvenanceRefused, match="only at history = 0"):
         K.seed_key(sample, "plant", part=S.PARTS["H4-U"], history=1, plant=11, replicate=5)
