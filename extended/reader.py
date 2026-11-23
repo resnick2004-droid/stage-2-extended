@@ -1208,14 +1208,13 @@ def _verdict_commits(repo: Path, line: str) -> list[str] | None:
     shallow = _git(repo, "rev-parse", "--is-shallow-repository")
     if shallow.returncode != 0 or shallow.stdout.strip() != "false":
         return None                                     # Q-212, F8: a shallow history proves no order
-    sep = "\x00S2X_VERDICT_COMMIT:"
     r = _gitnr(repo, "log", "--reverse", "--full-history", "-m", "-p", "--text", "--no-textconv", "--root",
                "--no-color", "--no-ext-diff", "--format=%x00S2X_VERDICT_COMMIT:%H%x00", "--", "DECISIONS.md")
     if r.returncode != 0:
         return None
     key = _verdict_key(line)
     out: list[str] = []
-    chunks = list(re.finditer(r"\x00S2X_VERDICT_COMMIT:([0-9a-f]{40})\x00(?:\r?\n|$)", r.stdout))
+    chunks = list(re.finditer(r"(?m)^\x00S2X_VERDICT_COMMIT:([0-9a-f]{40})\x00(?:\r?$)", r.stdout))
     for idx, cm in enumerate(chunks):
         h = cm.group(1)
         end = chunks[idx + 1].start() if idx + 1 < len(chunks) else len(r.stdout)
@@ -1550,14 +1549,23 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
     if "judged" not in blocks:
         if declaration is not None and not _exists(declaration, tree):
             raise ReadRefused(f"REFUSED: {what}: the declaration {declaration!r} does not exist in {tree}")
+        if declaration is not None and not E_ID.fullmatch(str(declaration)):
+            _refuse_superseded(declaration, tree, what, purpose)
         if (purpose is not None and purpose not in (IDENTITY, REGISTERED_DESIGN) and SUPERSEDED
-                and purpose in _superseded_purposes(tree)
-                and (declaration is None or E_ID.fullmatch(str(declaration))
-                     or not re.fullmatch(r"(?:prereg/)?(?:F|RD)-\d+(?:_[^/\\]+\.md)?",
-                                         str(declaration).replace("\\", "/")))):    # Q-212, F7 / c2 F9
-            raise SupersededRefused(what, f"{purpose!r} is a purpose a superseded declaration names, so a read under it "
-                                          "names its own pinned declaration (an F- or RD- file), never none or a "
-                                          "decision row")
+                and purpose in _superseded_purposes(tree)):    # Q-212, F7 / c2 F9 / c4 #1
+            pinned = pins(_decisions(tree))
+            dfiles = ([] if (declaration is None or E_ID.fullmatch(str(declaration)))
+                      else _declaration_files(declaration, tree))
+            ok_decl = bool(dfiles) and all(
+                (rel := _rel(f, tree)) is not None
+                and rel in pinned
+                and sha256_lf(f) in pinned[rel]
+                for f in dfiles
+            )
+            if not ok_decl:
+                raise SupersededRefused(what, f"{purpose!r} is a purpose a superseded declaration names, so a read under it "
+                                              "names its own pinned declaration (an F- or RD- file), never none or a "
+                                              "decision row")
         _refuse_superseded(declaration, tree, what, purpose)
         return Authorisation(s, e, blocks, False, None, None, purpose,
                              str(declaration) if declaration is not None else None, None, None, repeat, False,
@@ -2071,17 +2079,24 @@ def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
     def later_void(row: str, i: int) -> bool:
         return any(p > i for p in voids.get(row, ()))
 
+    def voided_before(row: str, i: int, before: int) -> bool:
+        return any(i < p < before for p in voids.get(row, ()))
+
     files: dict[str, list[Path]] = {}
     pins_at: dict[str, tuple[int, str, str]] = {}
+    log_pins: dict[tuple[str, str], int] = {}
     for i, line in enumerate(lines):
         r = ROW.match(line)
         if fenced[i] or not r:
             continue
         for rel, sha in PIN.findall(line):
             m = _GO_DECL.fullmatch(rel)
-            if not m or m.group(1) in pins_at:
+            if not m:
                 continue
             decl = m.group(1)
+            log_pins.setdefault((decl, sha), i)
+            if decl in pins_at:
+                continue
             if decl not in files:
                 files[decl] = sorted(Path(prereg_dir).glob(f"{decl}_*.md"))
             p = Path(prereg_dir) / rel.split("/", 1)[1]
@@ -2132,9 +2147,23 @@ def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
             m = MEMBERSHIP_TOKEN.match(line)
             named = None
             if m and _valid_day(m["date"]):
-                named = next((j for j in range(i) if not fenced[j] and (g := GO_TOKEN.match(lines[j]))
-                              and _valid_day(g["date"]) and not later_void(g["row"], j)
-                              and g["row"] == m["go"] and g["decl"] == m["decl"] and g["sha"] == m["sha"]), None)
+                tok_pos = {t[0] for t in tokens}
+                def _go_matches_member(j: int) -> bool:
+                    if fenced[j]:
+                        return False
+                    g = GO_TOKEN.match(lines[j])
+                    if not (g and _valid_day(g["date"]) and g["row"] == m["go"]
+                            and g["decl"] == m["decl"] and g["sha"] == m["sha"]):
+                        return False
+                    if j in tok_pos:
+                        return True
+                    if voided_before(g["row"], j, i) or closed.get(g["decl"], len(lines)) < j:
+                        return False
+                    pin_cur = pins_at.get(g["decl"])
+                    if pin_cur is not None and (pin_cur[0] >= j or pin_cur[2] != g["sha"]):
+                        return False
+                    return log_pins.get((g["decl"], g["sha"]), i) < j
+                named = next((j for j in range(i) if _go_matches_member(j)), None)
             if not m or not _valid_day(m["date"]):
                 why = ("membership-like but not exactly `membership: F-NN @ <its LF sha256> -- E-NNN` at the third "
                        "cell's start")
@@ -2194,10 +2223,9 @@ def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
     if frozen is not None:                              # Q-212 (F3): the computation must agree with the record
         first = tokens[0] if tokens else None
         if first is None or (first[1], first[2], first[3]) != (frozen[2]["go"], frozen[2]["decl"], frozen[2]["sha"]):
-            if not later_void(frozen[1], frozen[0]):
-                problems.append((frozen[1], f"{frozen[1]} (line {frozen[0] + 1}): the membership event recorded here "
-                                            f"({frozen[2]['go']}, {frozen[2]['decl']}) is not the first counted go row "
-                                            f"computed now ({first[1] + ', ' + first[2] if first else 'none'})"))
+            problems.append((frozen[1], f"{frozen[1]} (line {frozen[0] + 1}): the membership event recorded here "
+                                        f"({frozen[2]['go']}, {frozen[2]['decl']}) is not the first counted go row "
+                                        f"computed now ({first[1] + ', ' + first[2] if first else 'none'})"))
     return {"lines": lines, "problems": problems, "tokens": tokens, "closed": closed, "pins": pins_at,
             "finals": finals, "frozen": frozen}
 

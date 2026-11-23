@@ -251,19 +251,32 @@ def test_c2_f2_mistaken_membership_row_never_hijacks_or_locks_out(tmp_path):
                        G.P14, G.closed("E-905", "F-14", G.B, cause="withdrawn")])
     probs6 = R.go_problems(log6, prereg)
     assert any("withdrawn" in p for p in probs6), probs6
+    # 7. c3 F2: under prereg drift, voiding BOTH E-902 and E-903 must NEVER clear disagreement or shift event to E-904
+    log7 = "\n".join([G.P13, G.G13, G.P14, G.member("E-903", "F-13", G.A, "E-902"), g14,
+                       G.void("E-905", "E-902"), G.void("E-906", "E-903")])
+    assert R.go_problems(log7, prereg), "voiding frozen membership under prereg drift must not clear disagreement"
+    with pytest.raises(R.GoRefused):
+        R.membership_event(log7, prereg)
+    # 8. c3 F2: on clean prereg/, a later no-op void naming E-902 keeps M1 valid and event at E-902
+    (prereg / "F-13_dup.md").unlink()
+    log8 = "\n".join([G.P13, G.G13, G.P14, G.member("E-903", "F-13", G.A, "E-902"), g14,
+                       G.void("E-905", "E-902")])
+    assert R.go_problems(log8, prereg) == []
+    assert R.membership_event(log8, prereg) == G.G13
 
 
 def test_c2_f6_verdict_commits_survives_literal_nul(declared):
     t = declared
     p = t / "DECISIONS.md"
-    # Literal NUL in an earlier historical row does not break _verdict_commits
+    # Literal NUL in an earlier row AND a standalone spoofed separator line in the same commit right above v1
     p.write_bytes(p.read_bytes() + b"| E-950 | 2026-11-22 | a note with\x00nul | b |\n")
     g(t, "add", "DECISIONS.md")
     g(t, "commit", "-q", "-m", "historical nul")
     v1 = VR.VERDICT_ROW
-    p.write_bytes(p.read_bytes() + (v1 + "\n").encode("utf-8"))
+    spoof = b"\x00S2X_VERDICT_COMMIT:" + b"a" * 40 + b"\x00\n"
+    p.write_bytes(p.read_bytes() + spoof + (v1 + "\n").encode("utf-8"))
     g(t, "add", "DECISIONS.md")
-    g(t, "commit", "-q", "-m", "v1")
+    g(t, "commit", "-q", "-m", "v1 with spoof line above")
     c1 = g(t, "rev-parse", "HEAD")
     hits = R._verdict_commits(t, v1)
     assert hits == [c1], hits
@@ -293,10 +306,37 @@ def test_c2_f7_go_row_present_ignores_replace_refs_and_dirty_decisions(tmp_path,
     assert not R.go_row_present(decl), "git replace must not spoof runner blob"
 
 
-def test_c2_f9_superseded_purpose_rejects_non_prereg_file():
+def test_c2_f9_superseded_purpose_rejects_non_prereg_file(tmp_path):
+    import shutil
     with pytest.raises(R.SupersededRefused):
         R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard", declaration="CHARTER.md",
                     repo=ROOT, what="c2-f9")
+    # Shorthand "RD-06" and absolute Path to pinned RD-06 both accepted
+    assert R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard", declaration="RD-06",
+                       repo=ROOT, what="c4-f9-short-ok").purpose == "firm_scorecard"
+    abs_rd06 = (ROOT / "prereg" / "RD-06_firm_contracts_search_years.md").resolve()
+    assert R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard", declaration=str(abs_rd06),
+                       repo=ROOT, what="c4-f9-abs-ok").purpose == "firm_scorecard"
+    # Unpinned file on disk (even named prereg/RD-01_bogus.md or F-99_bogus.md) AND tampered pinned RD-06 refused
+    (tmp_path / "prereg").mkdir()
+    shutil.copy(ROOT / "DECISIONS.md", tmp_path / "DECISIONS.md")
+    for rel, _, _ in R.SUPERSEDED:
+        shutil.copy(ROOT / rel, tmp_path / rel)
+    (tmp_path / "prereg" / "RD-01_bogus.md").write_text("# unpinned\n", encoding="utf-8")
+    (tmp_path / "prereg" / "F-99_bogus.md").write_text("# unpinned\n", encoding="utf-8")
+    shutil.copy(ROOT / "prereg" / "RD-06_firm_contracts_search_years.md",
+                tmp_path / "prereg" / "RD-06_firm_contracts_search_years.md")
+    for bad in ("prereg/RD-01_bogus.md", "prereg/F-99_bogus.md"):
+        with pytest.raises(R.SupersededRefused):
+            R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard", declaration=bad,
+                        repo=tmp_path, what="c4-f9-unpinned")
+    # Tamper pinned RD-06 bytes -> sha256 mismatch refused
+    rd06_tmp = tmp_path / "prereg" / "RD-06_firm_contracts_search_years.md"
+    rd06_tmp.write_text(rd06_tmp.read_text(encoding="utf-8") + "\ntampered\n", encoding="utf-8")
+    with pytest.raises(R.SupersededRefused):
+        R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard",
+                    declaration="prereg/RD-06_firm_contracts_search_years.md",
+                    repo=tmp_path, what="c4-f9-tampered")
 
 
 def test_c2_f10_bare_midline_cr_is_flagged():
