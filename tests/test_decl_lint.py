@@ -83,15 +83,21 @@ NOTE = ROOT / "docs" / "note.md"
 """
 
 
-def _git(repo: Path, *args: str) -> str:
-    r = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
+#: the fixture's commits are deterministic: a fixed author, committer and time, so every sha is the same on every run
+#: (the commit time once made `side`'s abbreviation all digits in about 4 % of runs, and line 241 failed on master)
+GIT_ENV = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t",
+           "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+0000", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+0000"}
+
+
+def _git(repo: Path, *args: str, env: dict | None = None) -> str:
+    r = subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True,
+                       env={**os.environ, **GIT_ENV, **(env or {})})
     return r.stdout.strip()
 
 
 def _commit(repo: Path, msg: str) -> str:
     _git(repo, "add", "-A")
-    _git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", "commit", "-q",
-         "--no-verify", "-m", msg)
+    _git(repo, "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "-m", msg)
     return _git(repo, "rev-parse", "HEAD")
 
 
@@ -243,8 +249,54 @@ def test_xref_commits(repo):
     # calls it a commit, and an all-letter word elsewhere is not read as one
     assert "xref.commit" in rules(run(repo, CLEAN + "\nThe build commit `deadbee`.\n"), L.ERROR)
     assert "xref.commit" not in rules(run(repo, CLEAN + "\nThe wall was defaced again.\n"))
-    named = run(repo, CLEAN + f"\nThe text at side `{side}`.\n")
+    named = run(repo, CLEAN + f"\nThe text at the side branch's commit `{side}`.\n")
     assert "xref.commit" in rules(named, L.WARNING) and "xref.commit" not in rules(named, L.ERROR)
+
+
+def test_xref_commits_the_fixtures_shas_are_deterministic(repo, base_repo):
+    assert _git(repo, "rev-parse", "side") == _git(base_repo, "rev-parse", "side")
+    t = repo.parent / "again"
+    t.mkdir()
+    _git(t, "init", "-q", "-b", "master")
+    (t / "a.txt").write_text("a\n", encoding="utf-8")
+    first = _commit(t, "one")
+    t2 = repo.parent / "again2"
+    t2.mkdir()
+    _git(t2, "init", "-q", "-b", "master")
+    (t2 / "a.txt").write_text("a\n", encoding="utf-8")
+    assert _commit(t2, "one") == first
+
+
+def _crafted(repo: Path, want) -> str:
+    """A commit on master whose 7-character abbreviation satisfies `want`: master's tree re-committed at successive
+    fixed times until one does (deterministic: the same times, the same shas)."""
+    tree = _git(repo, "rev-parse", "master^{tree}")
+    for k in range(1, 4000):
+        when = f"@{1767225600 + k} +0000"
+        sha = _git(repo, "commit-tree", tree, "-p", "master", "-m", f"crafted {k}",
+                   env={"GIT_AUTHOR_DATE": when, "GIT_COMMITTER_DATE": when})
+        if want(sha[:7]):
+            _git(repo, "update-ref", "refs/heads/master", sha)
+            return sha[:7]
+    raise AssertionError("no crafted commit found")
+
+
+def test_xref_commits_an_all_digit_abbreviation_named_as_a_commit_is_checked(repo):
+    """The lint's gap the lead found on master: an all-digit abbreviation the text calls a commit went unchecked."""
+    digits = _crafted(repo, str.isdigit)
+    assert "xref.commit" not in rules(run(repo, CLEAN + f"\nThe build commit `{digits}`.\n"))       # real: passes
+    assert "xref.commit" in rules(run(repo, CLEAN + "\nThe build commit `1234567`.\n"), L.ERROR)     # crafted: no such
+    assert "xref.commit" in rules(run(repo, CLEAN + "\nThe build commit 1234567.\n"), L.ERROR)
+    # an all-digit number elsewhere -- a count, a size, a seed -- is never read as a sha
+    assert "xref.commit" not in rules(run(repo, CLEAN + "\nAt 1048576 lanes a worker, at most 1500000 steps.\n"))
+    s0 = BLOCK[0]
+    assert "xref.commit" not in rules(run(repo, CLEAN + f"\nThe commit seed `{s0}` and the build `{s0}`.\n"))
+
+
+def test_xref_commits_an_all_letter_abbreviation_named_as_a_commit_is_checked(repo):
+    assert "xref.commit" in rules(run(repo, CLEAN + "\nThe build commit `deadbee`.\n"), L.ERROR)
+    assert "xref.commit" in rules(run(repo, CLEAN + "\nMerged at cafebab.\n"), L.ERROR)
+    assert "xref.commit" not in rules(run(repo, CLEAN + "\nThe wall was defaced again.\n"))
 
 
 def test_xref_paths(repo):

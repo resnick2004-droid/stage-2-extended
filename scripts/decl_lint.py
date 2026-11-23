@@ -140,6 +140,10 @@ NOT_LABEL = re.compile(r"^(?:E|D|Q|F|P|RD|H|U|S|T|L|A|C|R|W|K)-\d+$")     # rows
 TOPIC_LABEL = re.compile(r"^[A-Za-z]{1,2}-\d{1,2}'?$")
 E_ROW = re.compile(r"(?<![\w-])E-(\d{3})(?![\w-])")
 #: words before a sha that say it is one (an abbreviation may be all letters: `ceedcbb`)
+#: an abbreviation may be all digits too (about 4 % of 7-character ones); a number is read as one only after a word
+#: that names a commit -- not after "at" or "of" or a lone backtick, which precede counts, sizes and seeds
+DIGIT_COMMIT_CONTEXT = re.compile(r"(?:\bcommits?|\bsha|\bbuild|\bmerged?(?: at)?|\bbranch|wt/[\w-]+(?: at)?)\s*`?$",
+                                  re.IGNORECASE)
 COMMIT_CONTEXT = re.compile(r"(?:\bcommits?|\bat|\bsha|\bbuild|\bmerged?|\bof|wt/[\w-]+|`)\s*`?$", re.IGNORECASE)
 SHA = re.compile(r"(?<![\w./+-])([0-9a-f]{7,40})(?![\w+-])")
 BACKTICK = re.compile(r"`([^`\n]+)`")
@@ -643,8 +647,8 @@ class Lint:
                 pre = line[max(0, m.start() - 24):m.start()]
                 if not re.search(r"\d", s) and not COMMIT_CONTEXT.search(pre):
                     continue                    # an all-letter word is a sha only where the text calls it one
-                if not re.search(r"[a-f]", s):
-                    continue
+                if not re.search(r"[a-f]", s) and (not DIGIT_COMMIT_CONTEXT.search(pre) or SEED_LIT.fullmatch(s)):
+                    continue                    # an all-digit number likewise, by a commit word only; never a seed
                 post = line[m.end():m.end() + 3]
                 if re.search(r"sha256|sha-256|hash\b", pre, re.IGNORECASE) or post.startswith(("...", "…")) \
                         or pre.endswith(("...", "…")):
