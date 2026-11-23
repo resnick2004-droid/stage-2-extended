@@ -13,7 +13,8 @@ What is asserted:
 - the finalist must be a counted survey or round cell on the declared protocol; neighbours and the re-read are read
   on the re-read protocol, whose seeds must be fresh; a held-out finalist or reading, a prediction, an uncounted
   finalist and a finalist on another protocol are all refused;
-- a categorical's cells and a drawn box work, and the box is reproducible from its seed.
+- a categorical's cells and a drawn box work, and the box is reproducible from its seed;
+- the exact law at few re-read seeds and many neighbours (rm3-b: n = 3 and 5, k = 30) against a seeded simulation.
 **Mutations**: the tolerance test always true, the side ignored, the echo check removed, `<=` made `<`, inactive
 levers stepped.
 """
@@ -66,10 +67,12 @@ def counted(design, space=None, role="survey", protocol=TY.PROTOCOL, reread_seed
     """A ledger holding `design` as a counted cell of `role` (the test's own survey of one, which declares the
     protocol and the re-read seeds)."""
     led = SS.CellLedger()
-    led.begin("survey", SURVEY_SEED, protocol=protocol, reread_seeds=reread_seeds)
+    pen = led.begin("survey", SURVEY_SEED, **TY.sv(protocol, reread_seeds))
     if role != "survey":
-        led.begin(role, SURVEY_SEED)
-    led.record(space or TY.toy_space(), design, role=role, seed=SURVEY_SEED, refusal=None)
+        pen.close()
+        pen = led.begin(role, SURVEY_SEED)
+    pen.record(space or TY.toy_space(), design, refusal=None)              # the test is this role's drawer
+    pen.close()
     return led
 
 
@@ -113,8 +116,8 @@ def size_and_power():
     flat_ok = spike_refused = 0
     for s in np.random.SeedSequence(POWER_SEED).generate_state(REPS):
         led = SS.CellLedger()
-        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led, protocol=sel,
-                                                                            reread_seeds=POWER_REREAD)
+        ds = SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led,
+                                                                            **TY.sv(sel, POWER_REREAD))
         rs = [_fast(lambda d: 0.0)(d, protocol=sel) for d in ds]
         fin = min(rs, key=lambda x: x.value)
         spike_id = fin.id
@@ -123,8 +126,8 @@ def size_and_power():
             return -SPIKE if SS.design_id(d) == spike_id else 0.0
 
         led2 = SS.CellLedger()
-        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2, protocol=sel,
-                                                                       reread_seeds=POWER_REREAD)
+        SS.Sampler(TY.toy_space(), seed=int(s), method="sobol").survey(64, ledger=led2,
+                                                                       **TY.sv(sel, POWER_REREAD))
         flat = PL.check(fin, TY.toy_space(), r, _fast(lambda d: 0.0), ledger=led,
                         ledger_seed=LSEED)
         fin_s = _fast(spiky)(fin.design, protocol=sel)
@@ -193,6 +196,37 @@ def test_the_exact_law_matches_the_statistic():
         if n <= 32:
             assert float(np.mean(z <= PL.critical_z(0.05, 10))) < 0.94, n
     assert PL.critical_value(0.05, 10, 8) > PL.critical_value(0.05, 10, 64) > PL.critical_z(0.05, 10)
+
+
+#: rm3-b's law test (the lead's ruling): k = 30 at n = 3 and n = 5, a seeded simulation of the statistic, seeds fixed
+#: here before the run. The band, 0.002, is more than five binomial standard errors at LAW_REPS; the read's
+#: 128-midpoint law under-accepted here by 0.004 to 0.007 (the read's table, rm3-b), outside it
+LAW_K, LAW_REPS, LAW_BAND = 30, 400_000, 0.002
+LAW_SEEDS = {3: 3030, 5: 5050}
+
+
+def _simulated_acceptance(c: float, k: int, n: int, reps: int, seed: int, chunk: int = 20_000) -> float:
+    """P(max of k paired t-statistics <= c), simulated as computed (each on its own se, all sharing one re-read)."""
+    rng = np.random.default_rng(seed)
+    ok = 0
+    for i in range(0, reps, chunk):
+        m = min(chunk, reps - i)
+        f = rng.standard_normal((m, n))
+        diff = rng.standard_normal((m, k, n)) - f[:, None, :]
+        z = (diff.mean(2) / (diff.std(2, ddof=1) / np.sqrt(n))).max(1)
+        ok += int(np.sum(z <= c))
+    return ok / reps
+
+
+def test_rm3b_the_exact_law_at_few_seeds_and_many_neighbours():
+    """rm3-b: at n = 3 (below the ledger's floor of five: the law itself, not a declarable rule) and n = 5 with k = 30,
+    the tolerance's acceptance in a seeded simulation of the statistic is 0.95 within LAW_BAND."""
+    assert 5 * (0.05 * 0.95 / LAW_REPS) ** 0.5 < LAW_BAND
+    for n, seed in LAW_SEEDS.items():
+        c = PL.critical_value(0.05, LAW_K, n)
+        assert PL.p_all_hold(c, LAW_K, n) == pytest.approx(0.95, abs=1e-6)
+        got = _simulated_acceptance(c, LAW_K, n, LAW_REPS, seed)
+        assert abs(got - 0.95) <= LAW_BAND, (n, c, got)
 
 
 def test_critical_z_is_the_normal_limit():
@@ -452,8 +486,9 @@ def test_mutation_echo_check_removed_is_caught(monkeypatch):
         return TY.evaluator(plateau_fn, SD)(CENTRE, protocol=protocol)
 
     led = counted(CENTRE)
-    led.begin("round-1", 1)
-    led.record(TY.toy_space(), dict(CENTRE, x1=0.55), role="round-1", seed=1, refusal=None)
+    pen = led.begin("round-1", 1)
+    pen.record(TY.toy_space(), dict(CENTRE, x1=0.55), refusal=None)
+    pen.close()
     f = TY.evaluator(plateau_fn, SD)(dict(CENTRE, x1=0.55), protocol=TY.PROTOCOL)
     v = PL.check(f, TY.toy_space(), rule(), other_design, ledger=led,
                  ledger_seed=LSEED)                         # the re-read of another design passes: the test would fail

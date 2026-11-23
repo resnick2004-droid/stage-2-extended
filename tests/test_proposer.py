@@ -45,8 +45,8 @@ def search(fn, spec=SPEC, rounds=6, **kw):
 
 def survey_ledger(n=16, seed=SURVEY_SEED, space=None, measures=()):
     led = SS.CellLedger()
-    ds = SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led, measures=measures,
-                                                                             **TY.SV)
+    ds = SS.Sampler(space or TY.toy_space(), seed=seed, method="sobol").survey(n, ledger=led,
+                                                                             **TY.sv(measures=measures))
     return ds, led
 
 
@@ -243,10 +243,10 @@ def test_mutation_proposals_uncounted_is_caught(monkeypatch):
     """Round proposals left out of the ledger: the next round's door refuses their readings as uncounted."""
     real = SS.CellLedger.record
 
-    def survey_only(self, space, design, *, role, seed, refusal, round_index=None):
+    def survey_only(self, space, design, *, role, seed, refusal, round_index=None, pen=None):
         if role.startswith("round-"):
             return None
-        return real(self, space, design, role=role, seed=seed, refusal=refusal, round_index=round_index)
+        return real(self, space, design, role=role, seed=seed, refusal=refusal, round_index=round_index, pen=pen)
 
     monkeypatch.setattr(SS.CellLedger, "record", survey_only)
     with pytest.raises(SS.Uncounted):

@@ -502,13 +502,14 @@ def test_the_survey_declares_the_protocol_and_the_ledger_holds_it_read_only():
     led = SS.CellLedger()
     with pytest.raises(SS.LedgerRefused):
         led.protocol                                                       # nothing declared yet
-    SS.Sampler(sp, seed=SEED, method="sobol").survey(4, ledger=led, measures=("reach",), **TY.SV)
+    SS.Sampler(sp, seed=SEED, method="sobol").survey(4, ledger=led, **TY.sv(measures=("reach",)))
     assert led.protocol == TY.PROTOCOL and led.reread == TY.REREAD and led.measures == ("reach",)
     assert led.protocol_for("reach") == TY.PROTOCOL.with_measure("reach")
     with pytest.raises(SS.OffProtocol):
         led.protocol_for("ruin")
+    assert led.protocol_for("reach", reread=True) == TY.REREAD.with_measure("reach")   # F-3: a declared limit
     with pytest.raises(SS.OffProtocol):
-        led.protocol_for("reach", reread=True)
+        led.protocol_for("ruin", reread=True)                                             # an undeclared one
     with pytest.raises(SS.LedgerRefused):
         led.begin("round-1", 5, protocol=TY.PROTOCOL.with_seeds((7, 8)))  # only the survey declares
     with pytest.raises(TypeError):
@@ -598,9 +599,9 @@ def test_mutation_collision_check_removed_is_caught(monkeypatch):
 def test_mutation_refused_cells_unrecorded_is_caught(monkeypatch):
     real = SS.CellLedger.record
 
-    def skip_refused(self, space, design, *, role, seed, refusal, round_index=None):
+    def skip_refused(self, space, design, *, role, seed, refusal, round_index=None, pen=None):
         if refusal is None:
-            return real(self, space, design, role=role, seed=seed, refusal=refusal, round_index=round_index)
+            return real(self, space, design, role=role, seed=seed, refusal=refusal, round_index=round_index, pen=pen)
         return None
 
     monkeypatch.setattr(SS.CellLedger, "record", skip_refused)
