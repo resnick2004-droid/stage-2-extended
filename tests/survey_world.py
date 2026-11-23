@@ -102,11 +102,19 @@ def calendar_file(path: Path) -> str:
     return sha
 
 
-def load_w42():
+_WORLD_SHAS: tuple[str, str] | None = None
+
+
+def load_w42(*, patch_shas: bool = True):
     """W42-R1's module and application script, unedited from `WAVE42_COMMIT` (or this tree once merged), its two
-    unpinned calendar shas set to this world's (the module docstring). Returns (wave42, wave42_apply)."""
-    global _W42
+    unpinned calendar shas set to this world's (the module docstring). When `patch_shas=False` (used during pytest
+    collection of `test_survey.py` so `extended.wave42` is not mutated before `test_wave42_rule.py` imports it), the
+    world SHAs are cached for `world_w42_shas()` instead of mutating module globals immediately.
+    Returns (wave42, wave42_apply)."""
+    global _W42, _WORLD_SHAS
     if _W42 is not None:
+        if patch_shas and _WORLD_SHAS is not None:
+            _W42[0].SEARCH_CALENDAR_SHA256, _W42[0].HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
         return _W42
     import extended
 
@@ -130,14 +138,34 @@ def load_w42():
     if not (ROOT / "extended" / "wave42.py").is_file():
         extended.__path__.append(str(root / "extended"))
     W = importlib.import_module("extended.wave42")
-    W.SEARCH_CALENDAR_SHA256 = calendar_file(root / "search_calendar.csv")
-    W.HELD_OUT_CALENDAR_SHA256 = hashlib.sha256(_csv(held_out_calendar())).hexdigest()
+    _WORLD_SHAS = (calendar_file(root / "search_calendar.csv"),
+                   hashlib.sha256(_csv(held_out_calendar())).hexdigest())
+    if patch_shas:
+        W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
     spec = importlib.util.spec_from_file_location("wave42_apply", root / "scripts" / "wave42_apply.py")
     apply = importlib.util.module_from_spec(spec)
     sys.modules["wave42_apply"] = apply
     spec.loader.exec_module(apply)
     _W42 = (W, apply)
     return _W42
+
+
+def world_w42_shas():
+    """Context manager setting `extended.wave42`'s two calendar SHAs to this synthetic world's and restoring them."""
+    import contextlib
+
+    @contextlib.contextmanager
+    def _cm():
+        W, _ = load_w42(patch_shas=False)
+        old = (W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256)
+        assert _WORLD_SHAS is not None
+        W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = _WORLD_SHAS
+        try:
+            yield
+        finally:
+            W.SEARCH_CALENDAR_SHA256, W.HELD_OUT_CALENDAR_SHA256 = old
+
+    return _cm()
 
 
 # ------------------------------------------------------------------------------------------------ the units

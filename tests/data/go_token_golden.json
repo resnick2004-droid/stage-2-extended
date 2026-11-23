@@ -1,0 +1,1668 @@
+[
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-01 | **Search F-15.** `prereg/F-15_x.md` sha256 `2644e4e46750e4fcd4180c8169d221697a2b82919f6533b872cacadfbbce1688` | b |",
+  "name": "good",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R1 wrong sha",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R1 wrong sha, voided, correct go",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-31 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R2 unpinned F-31",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-31 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R2 voided, correct go",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- again | b |",
+  "name": "R3 second go",
+  "problem_rows": [
+   "E-903"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- again | b |\n| E-904 | 2026-12-09 | heldout-void: E-903 -- recovery | b |",
+  "name": "R3 second go voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R4 go after closing",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 -- recovery | b |",
+  "name": "R4 voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- pinned `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |",
+  "name": "R5 go in its own pin's row",
+  "problem_rows": [
+   "E-900"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- pinned `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-09 | heldout-void: E-900 -- recovery | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R5 voided, then a correct go",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 111111111111111111111111111111111111111 -- with `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |",
+  "name": "R6 malformed go carrying a pin",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 111111111111111111111111111111111111111 -- with `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R6 voided, F-14 still pinned",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-899 | 2026-11-30 | heldout-void: E-902 -- recovery | b |\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R7 a premature void, then malformed, then a void",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-899 | 2026-11-30 | heldout-void: E-902 -- recovery | b |\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "R7 the premature void alone",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n\n### notes\n```\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-900 -- recovery | b |",
+  "name": "R8 stray fence after a heading, voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n```\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |",
+  "name": "unclosed fence",
+  "problem_rows": [
+   null
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power gate failed -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C1 cause with spaces",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power gate failed -- x | b |\n| E-903 | 2026-12-09 | heldout-void: E-901 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C1 voided: the go counts",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- preference -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C2 a cause outside the eight",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- preference -- x | b |\n| E-902 | 2026-12-09 | heldout-void: E-901 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C2 voided: the go counts (g27)",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff -- power-gate-failed -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C3 closing at another sha",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | Heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "C4 Heldout-closed capitalised",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n| E-902 | 2026-12-09 | heldout-void: E-901 -- recovery | b |\n| E-904 | 2026-12-10 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a valid closing row, its void a no-op",
+  "problem_rows": [
+   "E-904"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n```\n| E-905 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n```\n| E-906 | 2026-12-09 | heldout-void: E-905 -- recovery | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a fenced closing row, voided, does not close (g29)",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-904 | 2026-12-05 | heldout-finalists: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c list 9999999999999999999999999999999999999999999999999999999999999999 -- the list | b |\n| E-905 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |",
+  "name": "a closing row after the finalists",
+  "problem_rows": [
+   "E-905"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-904 | 2026-12-02 | heldout-closed: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- withdrawn -- x | b |",
+  "name": "withdrawn after the event",
+  "problem_rows": [
+   "E-904"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-904",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-02 | heldout-closed: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- withdrawn -- x | b |\n| E-904 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "withdrawn before the event",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |\n| E-902 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- withdrawn -- x | b |",
+  "name": "a second closing row",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-01 | **Search F-15.** `prereg/F-15_x.md` sha256 `2644e4e46750e4fcd4180c8169d221697a2b82919f6533b872cacadfbbce1688` | b |\n| E-905 | 2026-12-09 | heldout-void: E-902 -- recovery | b |",
+  "name": "a void of the counted go row is a no-op",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-905 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-906 | 2026-12-09 | heldout-void: E-905 -- recovery | b |",
+  "name": "a void of that void",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-905 | 2026-12-09 | heldout-void: E-900 -- recovery | b |",
+  "name": "a void of a pin row is a no-op",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-09 | heldout-void: E-902 | b |",
+  "name": "a void without its tail is no void (r07)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "```\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n```\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-04 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |",
+  "name": "a fenced pin is no pin (g30)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5F838017F5F2E6F9DC13A1E5EC917007C8B13D7C68FE545C3ACC9490DFFC6A7C` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "an upper-case-hex pin is no pin (r06)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-899 | 2026-11-30 | **Search F-13.** `prereg/F-13_x.md` sha256 `ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff` | b |\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "an early citation at another sha is no pin",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "cited: `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c`\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a pin in a non-row line is no pin",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "|E-900| 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "the reader's looser row spacing pins",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-13-45 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "M1 an impossible date",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n<!--\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n-->",
+  "name": "M2 an HTML comment, read as the reader reads it",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\r\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\r\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\r",
+  "name": "M3 CRLF",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go:\u00a0F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "M6 NBSP after go:",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go : F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "M7 go spaced",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | Go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "Go: capital",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | **go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row** | b |",
+  "name": "bold",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n|  E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "row start not exact",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- the go row | b |",
+  "name": "no runner",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n```\n| E-950 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n```\n| E-951 | 2026-12-09 | heldout-void: E-950 -- recovery | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a fenced go row, voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n```\n| E-950 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n```\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a fenced go row",
+  "problem_rows": [
+   "E-950"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-13_y.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "two files for one F-number (g31)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-13_y.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |",
+  "name": "two files: a closing row has no pin (m10)",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- pinned `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |",
+  "name": "a closing row in its own pin's row (m12)",
+  "problem_rows": [
+   "E-900"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-13-45 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |",
+  "name": "a closing row's impossible date (m20)",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-901 | 2026-12-02 | heldout-closed: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- power-gate-failed -- x | b |",
+  "name": "a closing row with no pin at all (m59)",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 | b |",
+  "name": "a go row without its tail (m55)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n```\n| E-903 | 2026-12-09 | heldout-void: E-900 -- recovery | b |\n```python\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n```",
+  "name": "after a void, a fence with an info string opens (m60)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u2028| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+2028",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u0085| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+0085",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\f| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+000C",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u000b| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+000B",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u001c| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+001C",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u001d| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+001D",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u001e| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |",
+  "name": "a hidden break U+001E",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-02 | prose\u2028| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b | | b |\n| E-903 | 2026-12-09 | heldout-void: E-901 -- recovery | b |",
+  "name": "a hidden break, voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\nnotes\u2028more\n| E-903 | 2026-12-09 | heldout-void: E-900 -- recovery | b |",
+  "name": "a hidden break in prose, voided by the row above",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "frozen, agreeing",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-13_y.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "frozen, the computation moved: a problem, refused until fixed",
+  "problem_rows": [
+   "E-902",
+   "E-903"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-905 | 2026-12-04 | membership: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- E-904 -- the membership event, frozen | b |\n| E-906 | 2026-12-09 | heldout-void: E-905 -- recovery | b |\n| E-907 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |",
+  "name": "frozen, mistaken second-go membership row voided, then replaced",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-09 | heldout-void: E-900 -- recovery | b |\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-904 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-900 -- the membership event, frozen | b |\n| E-905 | 2026-12-09 | heldout-void: E-904 -- recovery | b |",
+  "name": "frozen, mistaken membership row on voided go row, voided",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-950 -- the membership event, frozen | b |",
+  "name": "a membership row naming no go row",
+  "problem_rows": [
+   "E-903"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-901 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "a membership row before its go row",
+  "problem_rows": [
+   "E-901"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-04 | Membership: F-13 -- E-902 -- x | b |",
+  "name": "a malformed membership row",
+  "problem_rows": [
+   "E-903"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-904 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |",
+  "name": "a second membership row",
+  "problem_rows": [
+   "E-904"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n```\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n```",
+  "name": "a fenced membership row",
+  "problem_rows": [
+   "E-903"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** ES -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `18d04489d4d08f03a4ff9ac7d6a19b150dbc35a03e82b0e07688637be1b53dac` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 18d04489d4d08f03a4ff9ac7d6a19b150dbc35a03e82b0e07688637be1b53dac -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market ES",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQZ6 -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `8ca81cd217c7c7357b898e694cebbaf26765c8f5037f0bc1242569879bba1456` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 8ca81cd217c7c7357b898e694cebbaf26765c8f5037f0bc1242569879bba1456 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market NQZ6",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQH26 -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `9c92a7f7e69b1b5b657141f60f2223a93083ec54adaba5f794595f60da33aa26` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 9c92a7f7e69b1b5b657141f60f2223a93083ec54adaba5f794595f60da33aa26 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market NQH26",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** ENQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `45d75827e4caed4b016aa49865584b9364ba26d0c1c7ba60b99587866ea66cfc` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 45d75827e4caed4b016aa49865584b9364ba26d0c1c7ba60b99587866ea66cfc -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market ENQ",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `a1c0dc66fa04b2f10438b18ae8f21ecc2c7c1a9754de38c90439b53555543f35` | b |\n| E-902 | 2026-12-03 | go: F-20 @ a1c0dc66fa04b2f10438b18ae8f21ecc2c7c1a9754de38c90439b53555543f35 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market NQQ",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** `NQ` -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `c1712ffa3f9a9342a0e8f04ccb1687ba0977ac8a14169c9027495fe8abea509d` | b |\n| E-902 | 2026-12-03 | go: F-20 @ c1712ffa3f9a9342a0e8f04ccb1687ba0977ac8a14169c9027495fe8abea509d -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market `NQ`",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** **NQ** -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `c1f24b225d801b6e2363abe34361139a7b3ed6673bf4d7cdf681180c6fc11c35` | b |\n| E-902 | 2026-12-03 | go: F-20 @ c1f24b225d801b6e2363abe34361139a7b3ed6673bf4d7cdf681180c6fc11c35 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market **NQ**",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** nq -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `f6191150d563dff4f719e1a552720e99e2bb03f48a8e3f8f64480b158c0aa710` | b |\n| E-902 | 2026-12-03 | go: F-20 @ f6191150d563dff4f719e1a552720e99e2bb03f48a8e3f8f64480b158c0aa710 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market nq",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ, ES -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `309dd40b6b83509478fa0188c5c3c108572c02644e9fe6f251e38089a1ce02fa` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 309dd40b6b83509478fa0188c5c3c108572c02644e9fe6f251e38089a1ce02fa -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: market NQ, ES",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFF, Rapid 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `92cf8780c7ed55286070dccc4a830ac5fb1e7e03ce27866151b4358cbb2428c6` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 92cf8780c7ed55286070dccc4a830ac5fb1e7e03ce27866151b4358cbb2428c6 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm MFF",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Top step, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `3bddc3f0ed28d6ba65cecb266e6d455b9e1f98539ab021c852f68b6b9e98ee3a` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 3bddc3f0ed28d6ba65cecb266e6d455b9e1f98539ab021c852f68b6b9e98ee3a -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm Top step",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MyFundedFutures, Rapid 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `738e5e4eac02cae947ab23a744850d0adb09a816fc53f8512a9b2d83b530393f` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 738e5e4eac02cae947ab23a744850d0adb09a816fc53f8512a9b2d83b530393f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm MyFundedFutures",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** My Funded Futures (MFFU), Rapid 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `633c5308a481a47a3c54ced4d6a2ca71d91ea9acb27ce31a0e83d3ede13795fd` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 633c5308a481a47a3c54ced4d6a2ca71d91ea9acb27ce31a0e83d3ede13795fd -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm My Funded Futures (MFFU)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** TS, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `63f3339cbbcfae0dd491a14977b30fff36e4dfbb1de123576a306ec1c8faece2` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 63f3339cbbcfae0dd491a14977b30fff36e4dfbb1de123576a306ec1c8faece2 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm TS",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep. 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `e7ab6429a888674f119ef07701de58ef73511e869148ee23569dd354e0bd12f9` | b |\n| E-902 | 2026-12-03 | go: F-20 @ e7ab6429a888674f119ef07701de58ef73511e869148ee23569dd354e0bd12f9 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm Topstep.",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** topstep, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `a5cca8e3e537d53e49a1011ef688bb9b046d9f88cb997d68a92eefdae388f267` | b |\n| E-902 | 2026-12-03 | go: F-20 @ a5cca8e3e537d53e49a1011ef688bb9b046d9f88cb997d68a92eefdae388f267 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm topstep",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** TopstepX, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `f9b565d6cbd6391690fdca6a0ae36f003ac1d330880de85090afc1cfa8075244` | b |\n| E-902 | 2026-12-03 | go: F-20 @ f9b565d6cbd6391690fdca6a0ae36f003ac1d330880de85090afc1cfa8075244 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm TopstepX",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid Trading, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `1780abe2ecf103af2dc2c7955898e5f3e1af85d8ab388a331c4659ea6854e6da` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 1780abe2ecf103af2dc2c7955898e5f3e1af85d8ab388a331c4659ea6854e6da -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm Lucid Trading",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** **Topstep**, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `81d2801d68dda8886a095151736fd3a091f7654f39f6f59a3ce222fb57f0374c` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 81d2801d68dda8886a095151736fd3a091f7654f39f6f59a3ce222fb57f0374c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm **Topstep**",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Apex, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `94f7f6890d25861347fa3e4549159015cbd0589b4f0eee296e50535e2fed971b` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 94f7f6890d25861347fa3e4549159015cbd0589b4f0eee296e50535e2fed971b -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm Apex",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, Topstep 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `43c92c0fbe3587dc2d328018e614c4138bee0368a851d95dc90718fa66c31621` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 43c92c0fbe3587dc2d328018e614c4138bee0368a851d95dc90718fa66c31621 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: two firms Lucid, Topstep",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep -- and MFFU 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `b3f384d1358513597febce2dcde0cd1ffafa3cf9aaea235796816579884b9ae7` | b |\n| E-902 | 2026-12-03 | go: F-20 @ b3f384d1358513597febce2dcde0cd1ffafa3cf9aaea235796816579884b9ae7 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: two firms Topstep -- and MFFU",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** <firm, plan>\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `32844d1d67b30069eae5767e95454c2d48f0ebeee7e37ca76791dd40c3edcb35` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 32844d1d67b30069eae5767e95454c2d48f0ebeee7e37ca76791dd40c3edcb35 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: firm placeholder",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n- **The firm and account:** Topstep, 50K\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `5b2e924d039cdd4c4989f3e6a46f7e3b6b4324f52b8d480aebf08cb5e701cd82` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 5b2e924d039cdd4c4989f3e6a46f7e3b6b4324f52b8d480aebf08cb5e701cd82 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: two firm lines (g11)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n- **The market:** NQ -- again\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `fccec5add22473765afbd195b7cb555091e93478e4741d5881ce3247e702dea0` | b |\n| E-902 | 2026-12-03 | go: F-20 @ fccec5add22473765afbd195b7cb555091e93478e4741d5881ce3247e702dea0 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: two market lines",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **Market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `f14a9e1b98e0fb77790e39428323ddedb0a8a7948f4afe26ba0d99010577202f` | b |\n| E-902 | 2026-12-03 | go: F-20 @ f14a9e1b98e0fb77790e39428323ddedb0a8a7948f4afe26ba0d99010577202f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: renamed market field",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `7d58ebc2a21ad02fd202bccb2d7319196988d69084fa98adcccb4ecf2799abe2` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 7d58ebc2a21ad02fd202bccb2d7319196988d69084fa98adcccb4ecf2799abe2 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: no deciding files",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `c638fbb048b88b8b1d19820d31d5feef3f0022cc04307db447930831a96e038d` | b |\n| E-902 | 2026-12-03 | go: F-20 @ c638fbb048b88b8b1d19820d31d5feef3f0022cc04307db447930831a96e038d -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: deciding files without the reader",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `../x.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `a19f7f10bee455da4342eceb44f79b46583a58fa3cf2691ec6621e7952bbf876` | b |\n| E-902 | 2026-12-03 | go: F-20 @ a19f7f10bee455da4342eceb44f79b46583a58fa3cf2691ec6621e7952bbf876 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a deciding path outside",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n> **Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `8e35a24379ca30beafbf642526ad6d8555c500510dcd4c8e53b9923e07dd6fed` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 8e35a24379ca30beafbf642526ad6d8555c500510dcd4c8e53b9923e07dd6fed -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: marker in a blockquote",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search**. A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `a94fbf85804d623c6144139a2a29f61176f78d1548e6beff5b65f3466fbd7b8c` | b |\n| E-902 | 2026-12-03 | go: F-20 @ a94fbf85804d623c6144139a2a29f61176f78d1548e6beff5b65f3466fbd7b8c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: marker period outside bold",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind:** design search. A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `820f81cdf870cb5398114fd1bf2dabe98395dd4a3fe770de72f03211d7ab40bb` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 820f81cdf870cb5398114fd1bf2dabe98395dd4a3fe770de72f03211d7ab40bb -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: marker rewritten",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\nIt says **Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `e8109bd2d79181a4c0a08cd838d57e436596958efb9314da40fd1d4e347fab4d` | b |\n| E-902 | 2026-12-03 | go: F-20 @ e8109bd2d79181a4c0a08cd838d57e436596958efb9314da40fd1d4e347fab4d -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: marker mid-line (g33)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20\n\n```\n**Declaration kind: design search.**\n```\n\n- **The market:** NQ -- x\n- **The firm and account:** Topstep, 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `41688404f388c36c2bb2532edc2c55db17b90367660e211e536d11ef62bb3e2f` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 41688404f388c36c2bb2532edc2c55db17b90367660e211e536d11ef62bb3e2f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: marker only fenced (g24)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20\n\n## 5. The zero-edge convention\n\n- **The market:** NQ -- x\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `e390cc070df443f71ae7227cbcc1211e1541f0b3a88e96f4533c5aefa020cf4a` | b |\n| E-902 | 2026-12-03 | go: F-20 @ e390cc070df443f71ae7227cbcc1211e1541f0b3a88e96f4533c5aefa020cf4a -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: no marker, a search's headings",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n**Declaration kind: held-out test.** also\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `831c3797c3a8265471815d72a295849e7533ed84bd518cf961619ed7d2dc4b24` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 831c3797c3a8265471815d72a295849e7533ed84bd518cf961619ed7d2dc4b24 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: both markers",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep -- the 50K Combine\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `b628da7a357131c5ffa46fb8205fe52c81b506fbecb132b937a1ff57c68d5997` | b |\n| E-902 | 2026-12-03 | go: F-20 @ b628da7a357131c5ffa46fb8205fe52c81b506fbecb132b937a1ff57c68d5997 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: no plan",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, 50K Combine\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `618d2917406b15a4963aa769e19e05abeeab3e74e004d6a431da47c97cb597ad` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 618d2917406b15a4963aa769e19e05abeeab3e74e004d6a431da47c97cb597ad -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a plan's prose name",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine25k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `de6348853537e5813f5d9057e12e40cdd62b412c8fe6f3214e6247657394d139` | b |\n| E-902 | 2026-12-03 | go: F-20 @ de6348853537e5813f5d9057e12e40cdd62b412c8fe6f3214e6247657394d139 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a plan the record lacks",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `566885c08424c74643e577bfaf04531b2a7273c9477e520444e59dcab3327b24` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 566885c08424c74643e577bfaf04531b2a7273c9477e520444e59dcab3327b24 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: another firm's plan",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, 50K Combine and Alpha Futures 50K\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `566accc5c712e3aada613864e2aaaaeac267ff60ec0fa4969f9b126a4c46eca0` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 566accc5c712e3aada613864e2aaaaeac267ff60ec0fa4969f9b126a4c46eca0 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: and a second firm",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, 50K (via MFF)\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `6952cba90de147b2f29d3405823bfd1f44bcc62105fd819152d16842f433d306` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 6952cba90de147b2f29d3405823bfd1f44bcc62105fd819152d16842f433d306 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: via another firm",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k; Elite Trader Funding\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `062b07e9616b4045ee0c251cec839770cd6ef4055b8f2de20c6805fbba1585f9` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 062b07e9616b4045ee0c251cec839770cd6ef4055b8f2de20c6805fbba1585f9 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a plan then a second firm",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep -- also FundedNext\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `e37f49ad01a6c5059e11a4e03f324cfdc6a14848f59b7b1ddf5deb5dcd978978` | b |\n| E-902 | 2026-12-03 | go: F-20 @ e37f49ad01a6c5059e11a4e03f324cfdc6a14848f59b7b1ddf5deb5dcd978978 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: text naming a second firm",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, LucidFlex 50K -- shared with Earn2Trade\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `8db9c9078a0aeb532ed1f00cae6b662f1ffcbdedd4c27717f82bee3d90c27353` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 8db9c9078a0aeb532ed1f00cae6b662f1ffcbdedd4c27717f82bee3d90c27353 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: Lucid's prose plan",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k -- shared with an Apex account\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `0235a8f0484b27c7f480b062ebcc1ef4a4d4b26fad0e07c9951ee4fb9eeda13e` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 0235a8f0484b27c7f480b062ebcc1ef4a4d4b26fad0e07c9951ee4fb9eeda13e -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a plan, its text naming a second firm",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k -- or My Funded Futures\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `d8ceca5db6394d942d34c2712de854b9f6202a15ff4ddd8e92a5030b812fb689` | b |\n| E-902 | 2026-12-03 | go: F-20 @ d8ceca5db6394d942d34c2712de854b9f6202a15ff4ddd8e92a5030b812fb689 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a plan, its text naming MFFU's long name",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\nx **Declaration kind: design search.**\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `bc076291cd0997e36b176af98670957ba4eac433846bd1ce10a3fa0ed3766ad2` | b |\n| E-902 | 2026-12-03 | go: F-20 @ bc076291cd0997e36b176af98670957ba4eac433846bd1ce10a3fa0ed3766ad2 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a second marker mid-line (m29)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n> **Declaration kind: design search.**\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `5972d837ccd80f24d1ba9cb2dea7c0741b5efc7efebc09d37d79cb12085cd375` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 5972d837ccd80f24d1ba9cb2dea7c0741b5efc7efebc09d37d79cb12085cd375 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a second marker blockquoted (m29)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `extended/reader.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `99b14587dc33c97bfb59d921b881a7eeee78224d032e1931047c42137ccd9443` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 99b14587dc33c97bfb59d921b881a7eeee78224d032e1931047c42137ccd9443 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: a deciding path twice (m32)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": null,
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `5a324bbd51871bc1bf3e38001ae2504c8582b1b35c3c46e598365c10571a6b19` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 5a324bbd51871bc1bf3e38001ae2504c8582b1b35c3c46e598365c10571a6b19 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope refused: two deciding-files lines (m53)",
+  "problem_rows": [
+   "E-902"
+  ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `5ea6bdbb256034822fa68081ef6cb5c000f9016103656c8264c7a3a47ff8dba2` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 5ea6bdbb256034822fa68081ef6cb5c000f9016103656c8264c7a3a47ff8dba2 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: Topstep",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `7362a59a4615f292a00dd1b351b119e0ee93398d252ade7035af0030f1e4da3f` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 7362a59a4615f292a00dd1b351b119e0ee93398d252ade7035af0030f1e4da3f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: MFFU",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `ced094bed853e698aebab202fb58b0a041d2f7f320f7af30f0c0d1a947ad9032` | b |\n| E-902 | 2026-12-03 | go: F-20 @ ced094bed853e698aebab202fb58b0a041d2f7f320f7af30f0c0d1a947ad9032 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: Lucid",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** MNQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `cb29d7bf02520e938a2a9394edcfa979da0342d960fac77c95a459bb973ad9ed` | b |\n| E-902 | 2026-12-03 | go: F-20 @ cb29d7bf02520e938a2a9394edcfa979da0342d960fac77c95a459bb973ad9ed -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: MNQ",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, 006_50k_static\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `72b1e76f81f7a53d5a9eb56b1cb2a3cdce87965e6049dd055eab2a918449627c` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 72b1e76f81f7a53d5a9eb56b1cb2a3cdce87965e6049dd055eab2a918449627c -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: Topstep Labs",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n```\n- **The market:** ES\n```\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `ea2d6bbab8e73122a687a69d26877f0e63fbd5c1ea906fcbedb4982096e6ffb6` | b |\n| E-902 | 2026-12-03 | go: F-20 @ ea2d6bbab8e73122a687a69d26877f0e63fbd5c1ea906fcbedb4982096e6ffb6 -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: a fenced ES field above the real one",
+  "problem_rows": [],
+  "refused": false
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-20_x.md": "# F-20: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k -- the 50K Trading Combine\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-20.** `prereg/F-20_x.md` sha256 `104ed75e50fe0dd9382ee6e0ba07a73b19d8cb9a54d507fbdc41c04a83ec590b` | b |\n| E-902 | 2026-12-03 | go: F-20 @ 104ed75e50fe0dd9382ee6e0ba07a73b19d8cb9a54d507fbdc41c04a83ec590b -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
+  "name": "scope allowed: a plan then text",
+  "problem_rows": [],
+  "refused": false
+ }
+]

@@ -95,7 +95,7 @@ def test_rule3_mutation_is_killed(unsettled, monkeypatch):
 
 
 def superseded(t: Path, rel: str = H.RD7, text: str = H.RD7_TEXT):
-    return ((rel, H.sha_lf(text)),)
+    return ((rel, H.sha_lf(text), "*"),)
 
 
 def refused_superseded(fn, *a, **kw) -> R.SupersededRefused:
@@ -135,8 +135,10 @@ def test_a_replay_made_for_a_superseded_reading_is_refused(scripted, monkeypatch
     refused_superseded(H.rd_read, scripted, "E-940", "P-14")
 
 
-def test_the_supersession_list_is_empty_until_the_lead_fills_it_and_its_mutation_is_killed(tree, monkeypatch):
-    assert R.SUPERSEDED == ()
+def test_the_supersession_list_is_filled_by_q179_and_its_mutation_is_killed(tree, monkeypatch):
+    assert [e[0] for e in R.SUPERSEDED] == ["prereg/RD-01_firm_contracts.md", "prereg/RD-02_payout_policy.md",
+                                            "prereg/RD-03_contract_levers.md", "prereg/RD-04_volatility_drift.md",
+                                            "prereg/RD-05_firm_modes.md"],         "Q-179 filled it at the O-7 pins (tests/test_reader_superseded.py holds it hash for hash)"
     H.settled_verdict(tree)
     monkeypatch.setattr(R, "SUPERSEDED", superseded(tree))
     refused_superseded(H.read, tree, declaration=H.RD7, purpose="stage_D_scorecard")

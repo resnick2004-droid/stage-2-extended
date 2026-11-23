@@ -48,8 +48,14 @@ from extended import reader as R
 
 import survey_world as W   # noqa: E402  (tests/ is on sys.path under pytest's rootdir)
 
-W42, APPLY = W.load_w42()
+W42, APPLY = W.load_w42(patch_shas=False)
 from extended import survey as SV  # noqa: E402
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _survey_world_w42_shas():
+    with W.world_w42_shas():
+        yield
 
 RARE_Q = -8.0       # payouts rare: almost no unit passes by W, so B-5 puts every cost z at 0
 _entry_spec = importlib.util.spec_from_file_location("survey_run_entry", REPO / SV.ENTRY_SCRIPT)

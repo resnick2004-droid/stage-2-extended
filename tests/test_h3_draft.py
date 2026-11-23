@@ -67,6 +67,15 @@ def _lf(p: Path) -> str:
     return p.read_bytes().decode("utf-8").replace("\r\n", "\n")
 
 
+def _note_at_build(text: str) -> bytes:
+    """The design note at H3's declared build commit (the exact version H3 copied before W42-R1 updated the living
+    design note's E-230 / H7-row sections)."""
+    commit = re.findall(r"\*\*at build commit `([0-9a-f]{7,40})`\*\*", text)[0]
+    r = subprocess.run(["git", "-C", str(ROOT), "show", f"{commit}:docs/plans/THREE_WAY_TEST_design.md"],
+                       capture_output=True, check=True)
+    return r.stdout.replace(b"\r\n", b"\n")
+
+
 @pytest.fixture(scope="module")
 def text() -> str:
     return _lf(DECL)
@@ -102,7 +111,7 @@ def test_the_form(text: str) -> None:
 
 def test_the_admission_paragraph_is_the_notes_with_the_minors(text: str) -> None:
     mine = _between(text, DRAFT_MARKS).strip("\n").split("\n")
-    theirs = _between(_lf(NOTE), NOTE_MARKS).strip("\n").split("\n")
+    theirs = _between(_note_at_build(text).decode("utf-8"), NOTE_MARKS).strip("\n").split("\n")
     replaced = {"     [0, h_d]; a dollar amount within the limits that the firm's verified rules and the design's declared purchase cap"}
     it = iter(mine)
     extra = []
@@ -169,7 +178,13 @@ def test_the_run_plan_is_the_scripts(text: str) -> None:
     spec.loader.exec_module(mod)
     block = _between(text, PLAN_MARKS).strip()
     assert block.startswith("```text\n") and block.endswith("\n```")
-    assert block[len("```text\n"):-len("\n```")] == mod.report()
+    got_lines = block[len("```text\n"):-len("\n```")].splitlines()
+    cur_lines = mod.report().splitlines()
+    assert len(got_lines) == len(cur_lines)
+    # Every H3 row (and every non-H7-Hoeffding line) matches current h3_plan.py verbatim; W42-R1's merged
+    # three_way_arith.py updates only the non-H3 Wave-6 "H7 held-out, Hoeffding" row from M=100 h=63 to W42_TEST_SEEDS.
+    diffs = [(i, a, b) for i, (a, b) in enumerate(zip(got_lines, cur_lines)) if a != b]
+    assert all("H7 held-out, Hoeffding" in a and "H7 held-out, Hoeffding" in b for _, a, b in diffs), diffs
     for roles in mod.ROLES.values():
         for r in roles:
             assert r in S.ROLES or r == "the search declaration's own", r
@@ -247,10 +262,11 @@ def test_pi_stars_value_is_written_beside_its_constant(text: str) -> None:
 
 
 def test_the_design_notes_version_is_fixed(text: str) -> None:
-    """The gatekeeper's item 7: the text names the design note's version by its LF sha256, and the note is that file."""
+    """The gatekeeper's item 7: the text names the design note's version by its LF sha256, and the note at H3's
+    declared build commit is that exact file."""
     shas = re.findall(r"`docs/plans/THREE_WAY_TEST_design\.md` \*\*at LF sha256 `([0-9a-f]{64})`\*\*", text)
     assert len(shas) == 1
-    assert hashlib.sha256(NOTE.read_bytes().replace(b"\r\n", b"\n")).hexdigest() == shas[0]
+    assert hashlib.sha256(_note_at_build(text)).hexdigest() == shas[0]
 
 
 def test_the_build_commit_is_named_and_reachable(text: str) -> None:
