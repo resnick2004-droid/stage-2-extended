@@ -58,7 +58,7 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
    exit, and releases the lock whatever the outcome.
 4. Commit on the branch with a message `Q-xx: <what>` and the attribution line; **never `--no-verify`,
    for any reason** (E-060): if memory is short for the hook's fast tier, wait (`python scripts/run_lock.py status`
-   shows what is free) and commit when it can run. The post-commit hook pushes the branch to the private remote.
+   shows what is free) and commit only when more than 1.75 GB is free. The post-commit hook pushes the branch to the private remote.
    **One hook commit per hand-back** (E-274): every commit costs the machine's shared line about 40 minutes, so
    iterate on your own targeted tests and commit once, when the item is done -- not after each fix. A clean
    `git merge master` runs no hook and is free; merge master at the start, and again just before the one commit.
@@ -78,12 +78,56 @@ The lead saves each brief as `docs/briefs/<Q-id>_<YYYY-MM-DD>.md` on `master` wh
 5. Two corrective cycles at most on one failure (diagnosed by the failure protocol). A third is the lead's decision:
    stop and hand back.
 
+## 3a. The pre-hand-back checklist (E-207 (2); the restart plan's Wave 1.4)
+
+Run it before the hand-back, and put each line's answer in the hand-back (section 4, item 4). It is drawn from the
+review notes under `docs/reviews/`: the findings reviewers raised most often, most frequent first, each with a note that
+shows it. A line that does not apply is answered "n/a" with the reason.
+
+0. **The never lines.** No read of NQ from 2026-07-17; nothing under `vendor/` changed; the licence guard holds (no
+   committed result from which a bar price can be recovered, `tests/test_results_no_price_levels.py`); no result file
+   and no record file (`DECISIONS.md`, `STATUS.md`, `TASK_QUEUE.md`, `PROGRESS.md`) written on the branch -- results
+   come only from a clean run; every journey measure is the function `docs/MEASURES.md` names; the redraw's oracle is
+   the cost-aware one (the loss barrier min(l, c - x_stop), net = -(costs), no exit past the floor), not a cost-free
+   zero-gross check alone.
+1. **Seeds.** Every seed an integer with one role, written before the run; searched as a literal and as arithmetic
+   over every worktree, every ref and the vendored snapshot; no seed shared between roles, declarations, or the search
+   years and the held-out test; keys of fixed length per kind (numpy's trailing-zero trap).
+   *(Q-108_plan_v2_2026-11-16 MATERIAL 3; the three-way design note's section 7.)*
+2. **No typed figure.** Every number in a document is a rule cited by its key, a declared parameter, a date, a row or
+   section id, or computed from a result file named beside it. *(Most review notes check it; CLAUDE.md "Results".)*
+3. **The count.** Every cell, design, variant and L counted once and only once; nested populations named as such, not
+   counted as separate delays or cells; k and the level's arithmetic written out. *(DRAFT_F-RL3_2026-11-18 B-2.)*
+4. **Look-ahead.** Every input at a decision time known at that time: bar stamps are open times; a calendar as
+   published in advance; an unscheduled release not known before it happens; a chain that picks its trade only among
+   fills already made; a redraw's inputs read from bars closed at or before the alert. *(DRAFT_F-04_2026-11-18 B-3;
+   DRAFT_RD-05_v2_2026-11-18 B-1; DRAFT_F-RL3_2026-11-18 B-4.)*
+5. **The same convention, paired.** A design and every baseline under one convention (reflection, martingale-outcome
+   redraw, fills, costs, latency as registered) on the same seeds and start days. *(MEASURES_2026-11-18 B-5;
+   AMENDMENTS_2026-11-18 B-5.)*
+6. **Citations current.** Every row id, `path:line`, sha256, quoted sentence and commit checked against the file as it
+   is now on your branch after `git merge master` -- a stale citation is the commonest minor finding.
+7. **The held-out years and the horizon.** Nothing chosen, fitted or ranged reads 2024-01-02 on; no start's window
+   runs past its own years; every held-out read named for the ledger. *(MEASURES_2026-11-18 B-1; AMENDMENTS_2026-11-18
+   B-1 to B-3.)*
+8. **A check that can fail.** Every oracle and test shown to fail on a planted defect (a positive control), and computed
+   from something other than the output it checks. *(BUILD_RD-05_coin_2026-11-18 B-1; AMENDMENTS_2026-11-18 B-4.)*
+9. **Every declared corner run.** The grid's edges and the costed corners exercised by a test, not only its centre.
+   *(BUILD_RD-05_coin_2026-11-18 B-2.)*
+10. **Execution rules.** Verified news windows (no entry or fill inside; flatten at the start), L minutes from alert to
+    order, one position per firm, never opposing positions, the 15:10 CT flatten, only verified rules loaded.
+11. **Unlabelled choices.** Every parameter classed fixed / searched / dropped with its source; a strictness choice
+    shows its size and power; anything chosen after a look labelled exploratory.
+12. **Commit hygiene.** The commit-message file and logs live outside the worktree (E-274 (3)); free memory above 1.75 GB checked before each
+    commit; the hook run, never skipped; nothing staged outside the brief's scope.
+
 ## 4. The hand-back (the worker's final reply)
 
 1. Branch, commits (hash + one line each), files changed.
 2. Tests: each one's assertion, the command, the result with counts and time.
 3. Identities: which registered file, which columns, how many paths or starts, the tolerance, held or not.
-4. **Every interpretation made** where the brief or declaration was silent or ambiguous.
+4. **Every interpretation made** where the brief or declaration was silent or ambiguous; the pre-hand-back checklist
+   (section 3a), each line answered.
 5. Timings and peak memory of heavy work; the lock's take and release times.
 6. Not done, and why; anything the lead should know.
 7. The proposed decision row, one finished line `| E-NNN | <date> | **...** | <basis> |`.

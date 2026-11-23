@@ -1,5 +1,11 @@
 # TEMPLATE: a family declaration of this repository -- copy it, never pin it
 
+> **Superseded for new work** by `prereg/TEMPLATE_design_search.md` (the restart plan's Wave 2.1). From E-210 a design
+> is judged on the user's journey under zero edge (`CHARTER.md` sections 2-3), not on its trades' lift over the coin
+> twin; the deciding lines below (C1, C1', C2, the value-map bar, `R* = P-14`, the stages A-C on the choice and judged
+> blocks) are on record and no longer decide (CHARTER 3.10). This file is kept for the record, unchanged below this
+> note, because the families drafted on it cite it; a new declaration is drafted on the design-search template.
+
 **What this file is.** The house form for a new family's draft, carrying the program rules every declaration must
 meet (the rows cited in each section). It is not a declaration: it names no family, holds no seed, no k, no cell
 count and no figure, and its name matches neither the reader's grammar (`F-` or `RD-` and a number) nor any test's
