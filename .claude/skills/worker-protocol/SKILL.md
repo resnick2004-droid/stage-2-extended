@@ -118,7 +118,7 @@ shows it. A line that does not apply is answered "n/a" with the reason.
     order, one position per firm, never opposing positions, the 15:10 CT flatten, only verified rules loaded.
 11. **Unlabelled choices.** Every parameter classed fixed / searched / dropped with its source; a strictness choice
     shows its size and power; anything chosen after a look labelled exploratory.
-12. **Commit hygiene.** The commit-message file in your own worktree; free memory above 1.75 GB checked before each
+12. **Commit hygiene.** The commit-message file and logs live outside the worktree (E-274 (3)); free memory above 1.75 GB checked before each
     commit; the hook run, never skipped; nothing staged outside the brief's scope.
 
 ## 4. The hand-back (the worker's final reply)

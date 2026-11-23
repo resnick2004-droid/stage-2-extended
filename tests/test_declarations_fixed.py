@@ -6,12 +6,26 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+#: a pinned declaration: a family (`F-nn`), from E-025 a described reading (`RD-nn`, E-023 (1): declared and pinned,
+#: never carried), and a heavy-queue declaration (`H<n>_<name>`, H3's text on, the gatekeeper's pin condition)
+PIN = re.compile(r"`(prereg/(?:(?:F|RD)-\d+|H\d+_)[^`/]*\.md)` sha256 `([0-9a-f]{64})`")
+#: a declaration awaiting its pin row (its text final on a branch, its row the lead's): listed here until pinned
+AWAITING_PIN = ("prereg/H3_three_way.md",)
+
+
+def test_the_pin_grammar_reads_every_kind_of_declaration():
+    """A family's, a described reading's and a heavy-queue declaration's pin are read; a draft's and a template's are
+    not (they are never pinned)."""
+    h = "0" * 64
+    log = (f"| E-1 | `prereg/F-01_x.md` sha256 `{h}` | `prereg/RD-02_y.md` sha256 `{h}` | "
+           f"`prereg/H3_three_way.md` sha256 `{h}` | `prereg/DRAFT_H3_three_way.md` sha256 `{h}` | "
+           f"`prereg/TEMPLATE_family.md` sha256 `{h}` | `prereg/H_x.md` sha256 `{h}` |")
+    assert [p for p, _ in PIN.findall(log)] == ["prereg/F-01_x.md", "prereg/RD-02_y.md", "prereg/H3_three_way.md"]
 
 
 def test_every_declared_family_matches_its_pinned_hash():
     log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
-    # Families (`F-nn`) and, from E-025, described readings (`RD-nn`, E-023 (1): declared and pinned, never carried).
-    pins = re.findall(r"`(prereg/(?:F|RD)-\d+[^`]*\.md)` sha256 `([0-9a-f]{64})`", log)
+    pins = PIN.findall(log)
     assert pins, "no family pinned in DECISIONS.md"
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
@@ -48,6 +62,30 @@ def test_every_pinned_playbook_declaration_matches_its_hash():
     for rel, want in pins:
         data = (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
         assert hashlib.sha256(data).hexdigest() == want, rel
+
+
+
+def test_every_pinnable_declaration_is_pinned_or_awaiting_its_row():
+    """The red team's 805978a finding 5: every `prereg/*.md` that is not a draft (`DRAFT_`) or a template
+    (`TEMPLATE_`) is pinned in DECISIONS.md by the grammar above, or listed in `AWAITING_PIN`; every pinnable name
+    matches the grammar (so H3-D's later text, `prereg/H3_three_way_deciding.md`, is read when pinned); and no pin
+    path climbs out of `prereg/`."""
+    log = (ROOT / "DECISIONS.md").read_text(encoding="utf-8")
+    pinned = {rel for rel, _ in PIN.findall(log)}
+    for rel in pinned:
+        assert ".." not in rel and rel.count("/") == 1, rel
+    files = sorted(f"prereg/{p.name}" for p in (ROOT / "prereg").glob("*.md")
+                   if not p.name.startswith(("DRAFT_", "TEMPLATE_")))
+    for rel in files:
+        assert PIN.fullmatch(f"`{rel}` sha256 `{'0' * 64}`"), f"{rel} is not a name the pin grammar reads"
+    missing = [rel for rel in files if rel not in pinned and rel not in AWAITING_PIN]
+    assert not missing, f"declarations neither pinned nor awaiting their row: {missing}"
+    h = "0" * 64
+    assert PIN.fullmatch(f"`prereg/H3_three_way_deciding.md` sha256 `{h}`")
+    for bad in ("prereg/H3_x/../F-01_y.md", "prereg/F-01_a/b.md", "prereg/H3_../x.md"):
+        assert not PIN.fullmatch(f"`{bad}` sha256 `{h}`"), bad
+
+
 
 
 #: the templates' pin (n-a, n-b of the red team's TEMPLATE_V3_DF7AB29 note; findings 8 and 9 of TEMPLATE_V3_DAFF8CC;
@@ -89,19 +127,44 @@ def _git(root: Path, *args: str):
     return subprocess.run(["git", "-C", str(root), *args], capture_output=True)
 
 
+def _split_lines(log: str) -> list[str]:
+    """Newline-only split matching extended.reader._split (Q-212, F5; avoids IndexError against RD._fences on U+2028)."""
+    if not log:
+        return []
+    parts = log.split("\n")
+    if parts[-1] == "":
+        parts.pop()
+    return [p[:-1] if p.endswith("\r") else p for p in parts]
+
+
 def _reader_at_row(root: Path, line: str) -> bytes | None:
-    """`extended/reader.py` as committed at the first commit whose DECISIONS.md adds `line`, or None (fail closed)."""
-    r = _git(root, "log", "--format=%H", "--reverse", "-S", line, "--", "DECISIONS.md")
+    """`extended/reader.py` at the commit introducing `line` (including merge commits via -m), or -- if `line` is not
+    yet in HEAD:DECISIONS.md (e.g. during the template pin commit's own pre-commit hook) -- the staged/working-tree
+    `extended/reader.py`. Returns None (fail closed) on git errors or missing reader."""
+    head_log = _git(root, "--no-replace-objects", "show", "HEAD:DECISIONS.md")
+    head_lines = _split_lines(head_log.stdout.decode("utf-8", errors="replace")) if head_log.returncode == 0 else []
+    if line not in head_lines:
+        # Uncommitted pin row being introduced in the current commit (pre-commit hook): check staged then working tree.
+        staged = _git(root, "show", ":extended/reader.py")
+        if staged.returncode == 0:
+            return staged.stdout
+        p = root / "extended" / "reader.py"
+        return p.read_bytes() if p.is_file() else None
+    r = _git(root, "--no-replace-objects", "log", "--format=%H", "--reverse", "--full-history", "-m",
+             "--text", "--no-textconv", "--root", "-S", line, "--", "DECISIONS.md")
     commits = r.stdout.decode().split() if r.returncode == 0 else []
-    if not commits:
-        return None
-    b = _git(root, "show", f"{commits[0]}:extended/reader.py")
-    return b.stdout if b.returncode == 0 else None
+    for c in commits:
+        dec = _git(root, "--no-replace-objects", "show", f"{c}:DECISIONS.md")
+        if dec.returncode != 0 or line not in _split_lines(dec.stdout.decode("utf-8", errors="replace")):
+            continue
+        b = _git(root, "--no-replace-objects", "show", f"{c}:extended/reader.py")
+        return b.stdout if b.returncode == 0 else None
+    return None
 
 
 def _template_pin_problems(log: str, root: Path) -> list[str]:
     out = []
-    lines = log.splitlines()
+    lines = _split_lines(log)
     live = _unfenced(log)
     rows = [i for i, ln in enumerate(lines) if live[i] and _ROW.match(ln) and _TEMPLATE_PIN.search(ln)]
     w42 = [i for i, ln in enumerate(lines) if live[i] and _ROW.match(ln)
@@ -161,7 +224,29 @@ def test_the_templates_pin_row_carries_the_reader_and_follows_w42r1(tmp_path):
     bad = pin.replace(r, "0" * 64).replace("E-901", "E-903")
     commit([w42, pin, "| E-902 | d | a later reader | b |", bad], "a bad pin")
     assert _template_pin_problems(nl.join([w42, bad]), tmp_path)
-    assert _template_pin_problems(nl.join([w42, pin.replace("E-901", "E-909")]), tmp_path)   # a row never committed
+    assert _template_pin_problems(nl.join([w42, pin.replace("E-901", "E-909")]), tmp_path)   # uncommitted wrong reader sha
+    # c2 F1: a staged uncommitted pin row whose reader matches the staged reader PASSES (no pre-commit deadlock)
+    r2 = _lf(tmp_path / "extended" / "reader.py")
+    pin_new = pin.replace("E-901", "E-909").replace(r, r2)
+    (tmp_path / "DECISIONS.md").write_text(nl.join([w42, pin_new]) + nl, encoding="utf-8", newline=nl)
+    _git(tmp_path, "add", "DECISIONS.md")
+    assert _template_pin_problems(nl.join([w42, pin_new]), tmp_path) == []
+    # c2 F1: a pin row introduced inside a --no-ff merge commit survives a later reader change
+    commit([w42], "base before branch")
+    _git(tmp_path, "checkout", "-q", "-b", "side")
+    (tmp_path / "side.txt").write_text("s" + nl, encoding="utf-8", newline=nl)
+    commit([w42], "side branch")
+    _git(tmp_path, "checkout", "-q", "-")
+    (tmp_path / "other.txt").write_text("x" + nl, encoding="utf-8", newline=nl)
+    commit([w42], "main move")
+    hooks = tmp_path / ".nohooks"
+    assert _git(tmp_path, "-c", "user.name=t", "-c", "user.email=t@t", "-c", f"core.hooksPath={hooks}",
+                "merge", "--no-ff", "--no-commit", "side").returncode == 0
+    pin_m = pin.replace("E-901", "E-910").replace(r, r2)
+    commit([w42, pin_m], "merge with pin row")
+    (tmp_path / "extended" / "reader.py").write_text("r3" + nl, encoding="utf-8", newline=nl)
+    commit([w42, pin_m, "| E-911 | d | r3 | b |"], "later r3")
+    assert _template_pin_problems(nl.join([w42, pin_m]), tmp_path) == []
     # n-a, n-b
     assert _template_pin_problems(nl.join([pin, w42]), tmp_path)                          # n-b: W42-R1 first
     assert _template_pin_problems(pin, tmp_path)

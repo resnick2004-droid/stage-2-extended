@@ -32,7 +32,7 @@ In this repository that is mechanical, not a matter of good intentions:
   then registered, audited and confirmed once on data never read.
 
 Stage 2's harness gate (`propedge.backtest.harness`, which refuses an id not in Stage 2's `prereg/REGISTRY.md`) reads
-Stage 2's registry, not this repository's, and there is no validator for this repository's declarations: the pin, the
+Stage 2's registry, not this repository's; this repository's mechanical form check is `scripts/decl_lint.py` (Q-210), and the pin, the
 challenger brief, the red team, the gatekeeper's reading and the template's test
 (`tests/test_design_search_template.py`) are the gate here.
 

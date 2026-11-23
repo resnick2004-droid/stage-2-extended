@@ -15,13 +15,20 @@ matters: it converts a search into something that looks like a test.
 (The shell tool is `Bash` or `PowerShell`, whichever this session offers. Windows: no inline `python -c` with
 backticks.)
 
-## Step 0: the machine checks
+## Step 0: the machine checks -- the declaration lint first
 
-No validator reads this repository's declarations field by field. Read the draft against
-**`prereg/TEMPLATE_design_search.md`** (the house form from E-210; `prereg/TEMPLATE_family.md` is superseded for new
-work and kept for the record), and open every verdict with the line:
+First, run `python scripts/decl_lint.py <file>` and fix every error before any review (Q-210): the author fixes them,
+so an error it prints is a refusal, quoted as it prints it (`path:line: [rule] ...`). It is the machine check of a
+declaration's form -- the pin-time form, the cross-references (template sections and their topics, decision rows,
+commits, paths, LF sha256s), the counts as a product and a number, the seeds against their guards, the token grammar,
+the held-out and confirmation dates, typed figures (warnings only). A draft not yet renamed is linted with `--pin`
+and `--as prereg/<its pinned name>`. Its exit 0 is not an approval: it checks form, never substance.
 
-> machine check: none exists for declarations; read by hand against prereg/TEMPLATE_design_search.md
+After the lint, read the draft against **`prereg/TEMPLATE_design_search.md`** (the house form from E-210;
+`prereg/TEMPLATE_family.md` is superseded for new work and kept for the record), and open every verdict with the line:
+
+> machine check: `scripts/decl_lint.py` -- <exit code, errors, warnings>; read by hand against
+> prereg/TEMPLATE_design_search.md
 
 Then run what does exist, each with a time limit:
 - `python -m pytest -q -o addopts= tests/test_declarations_fixed.py` -- every declaration already pinned still matches
@@ -54,9 +61,9 @@ result of this search's own cells.
 
 0. **The market, the firm and the deciding files** (template 1; Q-212). Exactly one unfenced line each: `- **The
    market:** NQ` or `MNQ`; `- **The firm and account:**` beginning with exactly `Topstep`, `MFFU` or `Lucid` (that
-   case, no second firm in the field); and `- **The deciding files:** `path`, ...` -- each path in backticks and
+   case, followed by `, <plan>` where `<plan>` is a verified rules-record key from `firm_plans()`, e.g. `combine50k`, `rapid50k`, `flex50k`, no second firm in the field); and `- **The deciding files:** `path`, ...` -- each path in backticks and
    repo-relative, none twice, `extended/reader.py` among them, nothing after the last path -- listing every file whose
-   content decides an outcome, which the reader's `go_row_present` (`extended/reader.py` at its pinning row's sha256)
+   content decides an outcome, which the reader's `go_row_present` (`extended/reader.py` at the run's commit (pinned at its template pin row))
    holds byte-identical at HEAD and at the go row's runner commit. Refuse a draft missing any of the three, or with
    one in another form.
 1. **Years and the held-out read ledger** (template 2). The search years (2020-01-02 to 2023-12-29) and the held-out
@@ -94,7 +101,7 @@ result of this search's own cells.
    only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
    declaration's hash row (G-2), the scope read from the declared market field (market `NQ` or `MNQ`; firm `Topstep`,
    `MFFU` or `Lucid`; any other value refused), by the reader's `membership_event`
-   (`extended/reader.py` at its pinning row's sha256), at most one per firm; a firm with none before then is in state
+   (`extended/reader.py` at the run's commit (pinned at its template pin row)), at most one per firm; a firm with none before then is in state
    (c), fixed at that moment. **At most one member search per firm:** refuse a design search for a pin before the
    membership event when its firm already has a hash row, closed or not (R-1; E-259). Refuse a search pinned after the
    membership event, or a successor of a closed search, offered as a member (its candidates are tested only on data

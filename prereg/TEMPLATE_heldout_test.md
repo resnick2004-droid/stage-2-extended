@@ -81,7 +81,7 @@ and states the resulting order. **A researcher's choice after a read is never th
   My Funded Futures or Lucid (G-1; E-259), counted
   only outside any fenced block, in that exact form, at its declaration's pinned sha256, in a row strictly after that
   declaration's hash row (G-2); the scope is read from each declaration's declared market field and firm line, never
-  from its text (the reader's `membership_event`, `extended/reader.py` at its pinning row's sha256). The lead freezes
+  from its text (the reader's `membership_event`, `extended/reader.py` at the run's commit (pinned at its template pin row)). The lead freezes
   the event in the row right after the first counted go row, `membership: F-NN @ <its LF sha256> -- E-NNN` (the first
   go row's declaration, its pin's LF sha256, then the go row's id), which the reader enforces (F3).
   **This F-HT's membership is fixed at that moment:** each firm's one design search with a hash row before the event

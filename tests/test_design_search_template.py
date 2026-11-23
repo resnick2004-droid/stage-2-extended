@@ -1589,7 +1589,7 @@ def test_e259_the_go_token_fixes_the_event_in_the_log():
 def test_e259_every_ruling_is_held_where_it_lives():
     text = _text(TEMPLATE)
     s1 = _section(text, "## 1. The question", "## 2. Years")
-    for s in ("The firm and account: <`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the plan> -- exactly one firm; "
+    for s in ("The firm and account: <`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the verified rules-record plan key from `firm_plans()`, e.g. `combine50k`, `rapid50k`, `flex50k`> -- exactly one firm; "
               "a search naming several firms is refused (R-1; "
               "E-259)",
               "Each baseline's runner identity reads the search years only; it has no held-out part (L-1; E-259)"):
@@ -1846,7 +1846,7 @@ F9_TEXT = (" A successor search on another underlying first needs a new decision
 F3_TEXT = ("The lead freezes the event in the row right after the first counted go row, `membership: F-NN @ <its LF "
            "sha256> -- E-NNN` (the first go row's declaration, its pin's LF sha256, then the go row's id), which the "
            "reader enforces (F3).")
-RDPIN = "`extended/reader.py` at its pinning row's sha256"
+RDPIN = "`extended/reader.py` at the run's commit (pinned at its template pin row)"
 #: C-3: the go token's one form, the runner sub-form included
 GO_FORM = "`go: F-NN @ <its LF sha256> -- runner <the runner commit, 40 hex> -- <text>`"
 C4_SHORT = ("`defect-on-record` only with a failed check on record at or before the membership event's commit (or the "
@@ -1907,7 +1907,13 @@ def _cw_problems(log: str) -> list:
     from extended import reader as RD
 
     start = date(2026, 7, 17)
-    lines = log.splitlines()
+    lines = log.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    lines = [ln[:-1] if ln.endswith("\r") else ln for ln in lines]
+    voids: dict[str, list[int]] = {}
+    for v in RD.heldout_tokens(log, "void"):
+        voids.setdefault(v.get("target") or "", []).append(v.pos)
     wins = [w for w in RD.heldout_tokens(log, "window") if w.get("market") in ("NQ", "MNQ") and w.get("end") >= start]
     finals = RD.heldout_tokens(log, "finalists")
     out = []
@@ -1917,7 +1923,10 @@ def _cw_problems(log: str) -> list:
             out.append(f"{first.row}: the first NQ window from the confirmation's days does not start 2026-07-17")
         if "opens the confirmation window" not in lines[first.pos]:
             out.append(f"{first.row}: the window row does not state that it opens the confirmation window (n2)")
-        out += [f"{w.row}: a later NQ window row from 2026-07-17 on (the first governs)" for w in later]
+        for w in later:
+            if any(vp > w.pos for vp in voids.get(w.row, ())):
+                continue
+            out.append(f"{w.row}: a later NQ window row from 2026-07-17 on (the first governs)")
     if finals:
         if not wins or wins[0].pos > min(t.pos for t in finals):
             out.append("no confirmation-window row before the first finalists' token")
@@ -1938,9 +1947,11 @@ def test_c5_the_confirmation_windows_end_is_fixed_by_rule_before_any_finalist():
     assert _cw_problems("\n".join([win.replace("NQ 2026-07-17 to", "NQ 2026-07-20 to"), fin]))   # not its start
     assert _cw_problems("\n".join([win.replace("opens the confirmation window, the", "the"), fin]))   # n2
     mnq = recut.replace("heldout-window: NQ", "heldout-window: MNQ")                      # one underlying (n1)
+    void_later = "| E-908 | 2026-12-08 | heldout-void: E-907 -- accidental duplicate window | b |"
     for later in (recut, overlap, mnq):                                                  # the first governs
         assert _cw_problems("\n".join([win, fin, later])), later[:40]
         assert _cw_problems("\n".join([win, later, fin])), later[:40]
+        assert _cw_problems("\n".join([win, fin, later, void_later])) == [], "voided later window clears (c2 F4)"
     early = "| E-899 | 2026-11-30 | heldout-window: NQ 2024-01-02 to 2026-07-16 -- the held-out years | b |"
     assert _cw_problems("\n".join([early, win, fin])) == []                              # an earlier window is not it
     assert _cw_problems(_text(ROOT / "DECISIONS.md")) == []
@@ -2128,7 +2139,7 @@ def test_q212_the_deciding_files_field_and_mffus_exact_form():
     gk = _flat(_text(GK_FILE))
     assert ("0. The market, the firm and the deciding files (template 1; Q-212). Exactly one unfenced line each: "
             "`- The market: NQ` or `MNQ`; `- The firm and account:` beginning with exactly `Topstep`, `MFFU` or "
-            "`Lucid` (that case, no second firm in the field); and `- The deciding files: `path`, ...` -- each path "
+            "`Lucid` (that case, followed by `, <plan>` where `<plan>` is a verified rules-record key from `firm_plans()`, e.g. `combine50k`, `rapid50k`, `flex50k`, no second firm in the field); and `- The deciding files: `path`, ...` -- each path "
             "in backticks and repo-relative, none twice, `extended/reader.py` among them, nothing after the last path "
             "-- listing every file whose content decides an outcome, which the reader's `go_row_present` (" + RDPIN
             + ") holds byte-identical at HEAD and at the go row's runner commit. Refuse a draft missing any of the "
@@ -2140,7 +2151,7 @@ def test_q212_the_deciding_files_field_and_mffus_exact_form():
     assert RD._DECIDING_LINE.pattern == DECIDING_LINE.pattern
     assert tuple(RD.SCOPE_FIRMS) == ("Topstep", "MFFU", "Lucid") and tuple(RD.SCOPE_MARKETS) == ("NQ", "MNQ")
     draft = (text.replace("<MARKET, the reader's market code, here NQ>", "NQ")
-             .replace("<`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the plan>", "MFFU, Rapid 50K")
+             .replace("<`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the verified rules-record plan key from `firm_plans()`, e.g. `combine50k`, `rapid50k`, `flex50k`>", "MFFU, rapid50k")
              .replace("`extended/reader.py`, `<path>`", "`extended/reader.py`, `scripts/survey.py`"))
     assert RD.design_search_problems(draft) == [], RD.design_search_problems(draft)
 

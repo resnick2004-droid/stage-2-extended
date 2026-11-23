@@ -48,9 +48,9 @@ in the sections below.>
   `Lucid`, in that exact case (`- **The firm and account:** MFFU, <plan> -- ...`, never MFFU's long name), with no
   second firm named in the field; any other market code or firm name, or a field not in this exact form once, is
   refused by the gatekeeper at the pin and by the reader at the go row (the reader's `membership_event`,
-  `extended/reader.py` at its pinning row's sha256; C-1; finding 4; n2). The free text after the market's ` -- ` names
+  `extended/reader.py` at the run's commit (pinned at its template pin row); C-1; finding 4; n2). The free text after the market's ` -- ` names
   no other market code (n3).
-- **The firm and account:** <`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the plan> -- **exactly one firm**; a
+- **The firm and account:** <`Topstep`, `MFFU` or `Lucid`, exactly; then `, ` and the verified rules-record plan key from `firm_plans()`, e.g. `combine50k`, `rapid50k`, `flex50k`> -- **exactly one firm**; a
   search naming several firms is refused (R-1; E-259). Its rules are the verified ones only (CHARTER 3.1): Stage 2's
   ledger (`vendor/stage2/config/rules.yaml`) or this repository's record (`config/rules_extended.yaml` through
   `extended/firm_terms.py`), each key `verified` under its decision row. **Every key the search reads is listed here**
@@ -59,7 +59,7 @@ in the sections below.>
 - *The line above is written exactly so (Q-212): one unfenced line, each path in backticks and repo-relative, no path
   twice, `extended/reader.py` among them, nothing after the last path.* It lists every file whose content decides an
   outcome of this search -- the survey runner, the engine adapters it calls, the reader -- and the reader's
-  `go_row_present` (`extended/reader.py` at its pinning row's sha256) holds each byte-identical at HEAD and at the go
+  `go_row_present` (`extended/reader.py` at the run's commit (pinned at its template pin row)) holds each byte-identical at HEAD and at the go
   row's runner commit and unchanged in the working tree (U-1; section 14 step 4). A draft without this line, or with
   it in another form, is refused.
 - **Its own execution protocol** (E-202; never another firm's reused): <the protocol's file and row>.
@@ -670,7 +670,7 @@ reading the martingale-outcome reading for the finalist and every baseline alike
    membership reading until a later `heldout-void: E-NNN -- <reason>` row voids it, a void of a valid row being a
    no-op, fences and voids read by the reader's own rules; so are a go row for a closed search and a second go row for
    one declaration; an HTML comment in `DECISIONS.md` is read exactly as `extended/reader.py` reads it, with no rule
-   of its own (n-d) (the reader's `go_problems`, `extended/reader.py` at its pinning row's sha256, n-a); it cites the
+   of its own (n-d) (the reader's `go_problems`, `extended/reader.py` at the run's commit (pinned at its template pin row), n-a); it cites the
    calibration record's hash and names, in its `runner <40 hex>` sub-form, the runner commit the calibration ran on --
    **the survey and every round run on that runner commit, bound by its sha; a change to deciding code after it is a
    new declaration** (U-1); the survey reads its own checkout's log, at a commit after the go row, bound as the reader
@@ -690,7 +690,7 @@ reading the martingale-outcome reading for the finalist and every baseline alike
    every such close counted (C-4), D-1; E-259); no search holds a k. The data question goes to the operator with the
    gate's result before the go row. Refusing at every later step: this file still hashing to its pin
    (`tests/test_declarations_fixed.py`), the go row present (checked by code: the survey runner refuses to start
-   unless the reader's `go_row_present` (`extended/reader.py` at its pinning row's sha256) holds for this file's
+   unless the reader's `go_row_present` (`extended/reader.py` at the run's commit (pinned at its template pin row)) holds for this file's
    pinned sha256; it is False once this search has a finalists' or closing row), a clean checkout, the run lock held
    -- **Refusals first**, each refusing.
 5. **The survey** on the search years only (one clean run, from the go row's runner commit); its gates before its
