@@ -170,18 +170,21 @@ def member(row: str, decl: str, s: str, go_row: str, day: str = "2026-12-04") ->
 FROZEN: dict[str, tuple[list[str], dict[str, str], list, str | None, bool]] = {
     "frozen, agreeing": ([P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05")], {},
                          [], "E-902", False),
-    "frozen, the computation moved: a problem, the event kept": (
+    "frozen, the computation moved: a problem, refused until fixed": (
         [P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05")],
-        {**FILES, "F-13_y.md": F13}, ["E-902", "E-903"], "E-902", False),
-    "frozen, the problem voided, the event still kept": (
-        [P13, G13, P14, member("E-903", "F-13", A, "E-902"), go("E-904", "F-14", B, "2026-12-05"),
-         void("E-905", "E-902"), void("E-906", "E-903")], {**FILES, "F-13_y.md": F13}, [], "E-902", False),
+        {**FILES, "F-13_y.md": F13}, ["E-902", "E-903"], None, True),
+    "frozen, mistaken second-go membership row voided, then replaced": (
+        [P13, G13, P14, go("E-904", "F-14", B, "2026-12-05"), member("E-905", "F-14", B, "E-904"),
+         void("E-906", "E-905"), member("E-907", "F-13", A, "E-902")], {}, [], "E-902", False),
+    "frozen, mistaken membership row on voided go row, voided": (
+        [go("E-900", "F-13", A), void("E-901", "E-900"), P13, G13, member("E-904", "F-13", A, "E-900"),
+         void("E-905", "E-904")], {}, [], "E-902", False),
     "a membership row naming no go row": ([P13, G13, member("E-903", "F-13", A, "E-950")], {}, ["E-903"], None, True),
     "a membership row before its go row": ([P13, member("E-901", "F-13", A, "E-902"), G13], {}, ["E-901"], None, True),
     "a malformed membership row": ([P13, G13, f"| E-903 | 2026-12-04 | Membership: F-13 -- E-902 -- x | b |"], {},
                                    ["E-903"], None, True),
     "a second membership row": ([P13, G13, member("E-903", "F-13", A, "E-902"), member("E-904", "F-13", A, "E-902")],
-                                {}, ["E-904"], "E-902", False),
+                                {}, ["E-904"], None, True),
     "a fenced membership row": ([P13, G13, "```", member("E-903", "F-13", A, "E-902"), "```"], {}, ["E-903"], None,
                                 True),
 }

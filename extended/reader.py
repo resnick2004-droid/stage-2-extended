@@ -774,7 +774,7 @@ def _split(text: str) -> list[str]:
 
 
 #: the characters `str.splitlines` breaks a line on and git and CommonMark do not (Q-212, F5): each a log problem
-_HIDDEN_BREAKS = re.compile("[\u2028\u2029\x85\x0b\x0c\x1c\x1d\x1e]")
+_HIDDEN_BREAKS = re.compile("[\r\u2028\u2029\x85\x0b\x0c\x1c\x1d\x1e]")
 
 
 def _break_problems(text: str, voids: dict[str, list[int]]) -> list[tuple[str | None, str]]:
@@ -1208,17 +1208,18 @@ def _verdict_commits(repo: Path, line: str) -> list[str] | None:
     shallow = _git(repo, "rev-parse", "--is-shallow-repository")
     if shallow.returncode != 0 or shallow.stdout.strip() != "false":
         return None                                     # Q-212, F8: a shallow history proves no order
+    sep = "\x00S2X_VERDICT_COMMIT:"
     r = _gitnr(repo, "log", "--reverse", "--full-history", "-m", "-p", "--text", "--no-textconv", "--root",
-               "--no-color", "--no-ext-diff", "--format=%x00%H", "--", "DECISIONS.md")
+               "--no-color", "--no-ext-diff", "--format=%x00S2X_VERDICT_COMMIT:%H%x00", "--", "DECISIONS.md")
     if r.returncode != 0:
         return None
     key = _verdict_key(line)
     out: list[str] = []
-    for chunk in r.stdout.split("\x00")[1:]:
-        h, _, body = chunk.partition("\n")
-        h = h.strip()
-        if not re.fullmatch(r"[0-9a-f]{40}", h):
-            return None
+    chunks = list(re.finditer(r"\x00S2X_VERDICT_COMMIT:([0-9a-f]{40})\x00(?:\r?\n|$)", r.stdout))
+    for idx, cm in enumerate(chunks):
+        h = cm.group(1)
+        end = chunks[idx + 1].start() if idx + 1 < len(chunks) else len(r.stdout)
+        body = r.stdout[cm.end():end]
         added = [x[1:].rstrip("\r") for x in body.split("\n") if x.startswith("+") and not x.startswith("+++")]
         if h in out or not any((_verdict_key(a) == key) if key else (a == line) for a in added):
             continue
@@ -1551,7 +1552,9 @@ def authorise(start: Any, end: Any, *, purpose: str | None = None, declaration: 
             raise ReadRefused(f"REFUSED: {what}: the declaration {declaration!r} does not exist in {tree}")
         if (purpose is not None and purpose not in (IDENTITY, REGISTERED_DESIGN) and SUPERSEDED
                 and purpose in _superseded_purposes(tree)
-                and (declaration is None or E_ID.fullmatch(str(declaration)))):    # Q-212, F7
+                and (declaration is None or E_ID.fullmatch(str(declaration))
+                     or not re.fullmatch(r"(?:prereg/)?(?:F|RD)-\d+(?:_[^/\\]+\.md)?",
+                                         str(declaration).replace("\\", "/")))):    # Q-212, F7 / c2 F9
             raise SupersededRefused(what, f"{purpose!r} is a purpose a superseded declaration names, so a read under it "
                                           "names its own pinned declaration (an F- or RD- file), never none or a "
                                           "decision row")
@@ -2130,12 +2133,16 @@ def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
             named = None
             if m and _valid_day(m["date"]):
                 named = next((j for j in range(i) if not fenced[j] and (g := GO_TOKEN.match(lines[j]))
+                              and _valid_day(g["date"]) and not later_void(g["row"], j)
                               and g["row"] == m["go"] and g["decl"] == m["decl"] and g["sha"] == m["sha"]), None)
             if not m or not _valid_day(m["date"]):
                 why = ("membership-like but not exactly `membership: F-NN @ <its LF sha256> -- E-NNN` at the third "
                        "cell's start")
             elif named is None:
-                why = f"a membership row naming no go row {m['go']} for {m['decl']} at that sha256 above it"
+                why = f"a membership row naming no unvoided go row {m['go']} for {m['decl']} at that sha256 above it"
+            elif tokens and tokens[0][0] < named:
+                why = (f"a membership row naming {m['go']} ({m['decl']}), which is not the first counted go row "
+                       f"({tokens[0][1]}, {tokens[0][2]})")
             elif memberships:
                 why = f"a second membership row (the first, {memberships[0][1]}, governs)"
             else:
@@ -2155,8 +2162,10 @@ def _go_scan(log_text: str, prereg_dir: Path) -> dict[str, Any]:
                     why = f"a second closing row for {decl}"
                 elif finals.get(decl, len(lines)) < i:
                     why = f"a closing row for {decl} after its finalists' row (a firm's finalists are never voided)"
-                elif m["cause"] == "withdrawn" and tokens and tokens[0][0] < i:
-                    why = f"`withdrawn` for {decl} after the membership event ({tokens[0][1]})"
+                elif m["cause"] == "withdrawn" and (
+                        (memberships and memberships[0][3] < i) or (tokens and tokens[0][0] < i)):
+                    ev = (memberships[0][2]["go"] if (memberships and memberships[0][3] < i) else tokens[0][1])
+                    why = f"`withdrawn` for {decl} after the membership event ({ev})"
                 else:
                     closed[decl] = i
         else:
@@ -2229,21 +2238,21 @@ def membership_event(log_text: str | Path, prereg_dir: Path | str | None = None)
                                 "the path of its DECISIONS.md")
             tree = ROOT
     s = _go_scan(text, Path(prereg_dir) if prereg_dir is not None else tree / "prereg")
-    if s["frozen"] is not None:
-        return s["lines"][s["frozen"][3]]
     if s["problems"]:
         raise GoRefused("; ".join(why for _, why in s["problems"]))
+    if s["frozen"] is not None:
+        return s["lines"][s["frozen"][3]]
     return s["lines"][s["tokens"][0][0]] if s["tokens"] else None
 
 
 def _blob(repo: Path, commit: str, path: str) -> str | None:
-    r = _git(repo, "rev-parse", "--verify", "--quiet", f"{commit}:{path}")
+    r = _gitnr(repo, "rev-parse", "--verify", "--quiet", f"{commit}:{path}")
     return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
 
 
 def _git_bytes(repo: Path, *args: str) -> bytes | None:
     try:
-        r = subprocess.run(["git", "-C", str(repo), *args], capture_output=True)
+        r = subprocess.run(["git", "-C", str(repo), "--no-replace-objects", *args], capture_output=True)
     except OSError:
         return None
     return r.stdout if r.returncode == 0 else None
@@ -2266,9 +2275,12 @@ def go_row_present(declaration_path: Path | str, log_text: str | None = None) ->
             return False
         decl, sha = m.group(1), _lf_sha_bytes(p.read_bytes())
         committed = _git_bytes(root, "show", "HEAD:DECISIONS.md")
-        if committed is None:
+        wt_log = root / "DECISIONS.md"
+        if committed is None or not wt_log.is_file():
             return False
         log = committed.decode("utf-8").replace("\r\n", "\n")
+        if wt_log.read_bytes().replace(b"\r\n", b"\n") != committed.replace(b"\r\n", b"\n"):
+            return False
         if log_text is not None and log_text.replace("\r\n", "\n") != log:
             return False
         if heldout_token_problems(log):
@@ -2283,11 +2295,11 @@ def go_row_present(declaration_path: Path | str, log_text: str | None = None) ->
         deciding = _deciding_files(p.read_text(encoding="utf-8"))
         if not deciding:
             return False
-        h = _git(root, "rev-parse", "--verify", "HEAD")
+        h = _gitnr(root, "rev-parse", "--verify", "HEAD")
         head = h.stdout.strip() if h.returncode == 0 else ""
         if not re.fullmatch(r"[0-9a-f]{40}", head):
             return False
-        if head != runner and _git(root, "merge-base", "--is-ancestor", runner, head).returncode != 0:
+        if head != runner and _gitnr(root, "merge-base", "--is-ancestor", runner, head).returncode != 0:
             return False
         for path in deciding:
             a, b = _blob(root, runner, path), _blob(root, head, path)

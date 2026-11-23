@@ -208,3 +208,99 @@ def test_f8_the_root_commits_patch_is_read(tmp_path):
     g(t, "add", "DECISIONS.md")
     g(t, "commit", "-q", "-m", "the first commit")
     assert R._verdict_commits(t, VR.VERDICT_ROW) == [g(t, "rev-parse", "HEAD")]
+
+
+# --- c2 regression tests (READER_Q212_TEMPLATE_c2) ---
+
+
+def test_c2_f2_mistaken_membership_row_never_hijacks_or_locks_out(tmp_path):
+    import go_cases as G
+
+    prereg = tmp_path / "prereg"
+    prereg.mkdir()
+    for name, body in G.FILES.items():
+        (prereg / name).write_text(body, encoding="utf-8")
+    g14 = G.go("E-904", "F-14", G.B, "2026-12-05")
+    m_wrong = G.member("E-905", "F-14", G.B, "E-904")
+    # 1. Unvoided wrong membership row -> problem + GoRefused (not E-904)
+    log1 = "\n".join([G.P13, G.G13, G.P14, g14, m_wrong])
+    assert R.go_problems(log1, prereg)
+    with pytest.raises(R.GoRefused):
+        R.membership_event(log1, prereg)
+    # 2. Voided wrong membership row -> clean, returns E-902 (never E-904)
+    log2 = log1 + "\n" + G.void("E-906", "E-905")
+    assert R.go_problems(log2, prereg) == []
+    assert R.membership_event(log2, prereg) == G.G13
+    # 3. Replacement valid membership row succeeds
+    log3 = log2 + "\n" + G.member("E-907", "F-13", G.A, "E-902")
+    assert R.go_problems(log3, prereg) == []
+    assert R.membership_event(log3, prereg) == G.G13
+    # 4. Impossible-date go row cannot be frozen
+    bad_date = G.go("E-901", "F-13", G.A, "2026-13-45")
+    log4 = "\n".join([bad_date, G.void("E-902", "E-901"), G.P13, G.go("E-903", "F-13", G.A),
+                       G.member("E-904", "F-13", G.A, "E-901"), G.void("E-905", "E-904")])
+    assert R.go_problems(log4, prereg) == []
+    assert R.membership_event(log4, prereg) == G.go("E-903", "F-13", G.A)
+    # 5. Valid freeze + unclosed fence refuses instead of swallowing
+    log5 = "\n".join([G.P13, G.G13, G.member("E-903", "F-13", G.A, "E-902"), "```"])
+    with pytest.raises(R.GoRefused):
+        R.membership_event(log5, prereg)
+    # 6. Withdrawn after frozen event refused even when prereg drift empties tokens
+    (prereg / "F-13_dup.md").write_text(G.F13, encoding="utf-8")
+    log6 = "\n".join([G.P13, G.G13, G.member("E-903", "F-13", G.A, "E-902"),
+                       G.P14, G.closed("E-905", "F-14", G.B, cause="withdrawn")])
+    probs6 = R.go_problems(log6, prereg)
+    assert any("withdrawn" in p for p in probs6), probs6
+
+
+def test_c2_f6_verdict_commits_survives_literal_nul(declared):
+    t = declared
+    p = t / "DECISIONS.md"
+    # Literal NUL in an earlier historical row does not break _verdict_commits
+    p.write_bytes(p.read_bytes() + b"| E-950 | 2026-11-22 | a note with\x00nul | b |\n")
+    g(t, "add", "DECISIONS.md")
+    g(t, "commit", "-q", "-m", "historical nul")
+    v1 = VR.VERDICT_ROW
+    p.write_bytes(p.read_bytes() + (v1 + "\n").encode("utf-8"))
+    g(t, "add", "DECISIONS.md")
+    g(t, "commit", "-q", "-m", "v1")
+    c1 = g(t, "rev-parse", "HEAD")
+    hits = R._verdict_commits(t, v1)
+    assert hits == [c1], hits
+
+
+def test_c2_f7_go_row_present_ignores_replace_refs_and_dirty_decisions(tmp_path, monkeypatch):
+    import go_cases as G
+    import test_reader_go as TRG
+
+    t, runner = TRG.runner_tree(tmp_path)
+    monkeypatch.setattr(R, "ROOT", t.resolve())
+    decl = t / "prereg" / "F-13_x.md"
+    log = TRG.with_log(t, [G.P13, G.go("E-902", "F-13", G.A, run=runner)])
+    assert R.go_row_present(decl)
+    # Dirty working-tree DECISIONS.md fails even with log_text=None
+    (t / "DECISIONS.md").write_text(log + G.fin("E-904", "F-13", G.A) + "\n", encoding="utf-8")
+    assert not R.go_row_present(decl)
+    TRG.git(t, "checkout", "--", "DECISIONS.md")
+    assert R.go_row_present(decl)
+    # git replace hiding a modified deciding file at runner fails
+    (t / "scripts" / "survey.py").write_text("# tampered\n", encoding="utf-8")
+    TRG.git(t, "add", "scripts/survey.py")
+    TRG.git(t, "commit", "-q", "-m", "tamper")
+    tampered = TRG.git(t, "rev-parse", "HEAD")
+    assert not R.go_row_present(decl)
+    TRG.git(t, "replace", runner, tampered)
+    assert not R.go_row_present(decl), "git replace must not spoof runner blob"
+
+
+def test_c2_f9_superseded_purpose_rejects_non_prereg_file():
+    with pytest.raises(R.SupersededRefused):
+        R.authorise("2020-01-02", "2023-12-29", purpose="firm_scorecard", declaration="CHARTER.md",
+                    repo=ROOT, what="c2-f9")
+
+
+def test_c2_f10_bare_midline_cr_is_flagged():
+    log = "\n".join([row(900), row(901, "prose\rmore")])
+    probs = R.heldout_token_problems(log)
+    assert len(probs) == 1 and "U+000D" in probs[0] and probs[0].startswith("E-901"), probs
+    assert R.heldout_token_problems(log + "\n" + void(902, "E-901")) == []

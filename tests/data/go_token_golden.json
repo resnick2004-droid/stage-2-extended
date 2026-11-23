@@ -874,7 +874,7 @@
   "refused": false
  },
  {
-  "event": "E-902",
+  "event": null,
   "files": {
    "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
    "F-13_y.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
@@ -882,23 +882,34 @@
    "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
   },
   "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |",
-  "name": "frozen, the computation moved: a problem, the event kept",
+  "name": "frozen, the computation moved: a problem, refused until fixed",
   "problem_rows": [
    "E-902",
    "E-903"
   ],
+  "refused": true
+ },
+ {
+  "event": "E-902",
+  "files": {
+   "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
+   "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
+  },
+  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-905 | 2026-12-04 | membership: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- E-904 -- the membership event, frozen | b |\n| E-906 | 2026-12-09 | heldout-void: E-905 -- recovery | b |\n| E-907 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |",
+  "name": "frozen, mistaken second-go membership row voided, then replaced",
+  "problem_rows": [],
   "refused": false
  },
  {
   "event": "E-902",
   "files": {
    "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
-   "F-13_y.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
    "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
    "F-15_x.md": "# F-15: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Lucid, flex50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n"
   },
-  "log": "| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-01 | **Search F-14.** `prereg/F-14_x.md` sha256 `fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f` | b |\n| E-903 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-902 -- the membership event, frozen | b |\n| E-904 | 2026-12-05 | go: F-14 @ fa4d45bfca9c14a09e497ba4c994e239a238bc7b445c1abada6c7ab642866e7f -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-905 | 2026-12-09 | heldout-void: E-902 -- recovery | b |\n| E-906 | 2026-12-09 | heldout-void: E-903 -- recovery | b |",
-  "name": "frozen, the problem voided, the event still kept",
+  "log": "| E-900 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-901 | 2026-12-09 | heldout-void: E-900 -- recovery | b |\n| E-900 | 2026-12-01 | **Search F-13.** `prereg/F-13_x.md` sha256 `5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c` | b |\n| E-902 | 2026-12-03 | go: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- runner 1111111111111111111111111111111111111111 -- the go row | b |\n| E-904 | 2026-12-04 | membership: F-13 @ 5f838017f5f2e6f9dc13a1e5ec917007c8b13d7c68fe545c3acc9490dffc6a7c -- E-900 -- the membership event, frozen | b |\n| E-905 | 2026-12-09 | heldout-void: E-904 -- recovery | b |",
+  "name": "frozen, mistaken membership row on voided go row, voided",
   "problem_rows": [],
   "refused": false
  },
@@ -945,7 +956,7 @@
   "refused": true
  },
  {
-  "event": "E-902",
+  "event": null,
   "files": {
    "F-13_x.md": "# F-13: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** Topstep, combine50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
    "F-14_x.md": "# F-14: a synthetic design search (Q-212's tests)\n\n**Declaration kind: design search.** A synthetic declaration.\n\n- **The market:** NQ -- the one market this search reads\n- **The firm and account:** MFFU, rapid50k\n- **The deciding files:** `extended/reader.py`, `scripts/survey.py`\n",
@@ -956,7 +967,7 @@
   "problem_rows": [
    "E-904"
   ],
-  "refused": false
+  "refused": true
  },
  {
   "event": null,
