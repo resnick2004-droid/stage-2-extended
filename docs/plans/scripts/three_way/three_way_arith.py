@@ -53,6 +53,9 @@ BLOCKS = tuple(range(1, 11))
 #: operator's (O-3), so these only show the formulas
 DELTA = (0.01, 0.02, 0.05)
 RANGE_SHARE = 0.1
+#: the held-out test's seed count, W42-R1's declared TEST_SEEDS (`extended/wave42.py`; the lead's choice), which the H7
+#: Hoeffding row runs (W42-R1's B-3 and its second read's m2-2)
+W42_TEST_SEEDS = 1000
 #: the composite's half-range R after clipping (section 2.2: every dimension clipped into [0, 1], weights summing to one)
 R_HALF = 1.0
 
@@ -408,12 +411,13 @@ def max_lanes(cap_gb: float = MEM_CAP_GB, workers: int = WORKERS, base_gb: float
 
 def parts() -> tuple[tuple[str, int, int, int, int, int], ...]:
     """H3's parts and the held-out test, proposed sizes for H3's declaration: (part, histories R, arm-runs per history,
-    seed replicates per arm M, starts per history |T|, horizon in sessions). The held-out test's J is the formulas' at
-    delta = 0.02: Hoeffding's for a mean-type composite, the empirical-Bernstein range term's for a quantile one."""
+    seed replicates per arm M, starts per history |T|, horizon in sessions). The held-out test's J under Hoeffding is
+    W42-R1's declared TEST_SEEDS, each start run to 252 sessions or the block's last session, whichever comes first
+    (never past 2026-07-16; the row's work is an upper bound); the empirical-Bernstein range term's J at delta = 0.02
+    is shown for a quantile-type composite."""
     wh = weekdays(*HELD_OUT)
     t63, t252 = complete_starts(wh, 63), complete_starts(wh, 252)
     a = level(13)
-    j_h = -(-hoeffding_units(0.02, a) // t63)
     j_eb = eb_range_replicates(0.02, a)
     arms = FINALISTS + BASELINES
     return (
@@ -425,7 +429,7 @@ def parts() -> tuple[tuple[str, int, int, int, int, int], ...]:
         ("D2 history null", 200, 2, 500, t252, 252),
         ("D3 power gate plants", 10, 6, 2_000, t252, 252),
         ("D3 full-J check (EB)", 5, 2, j_eb, t252, 252),
-        ("H7 held-out, Hoeffding", 1, arms, j_h, t63, 63),
+        ("H7 held-out, Hoeffding", 1, arms, W42_TEST_SEEDS, t63, 252),
         ("H7 held-out, EB sets", 1, arms, j_eb, t252, 252),
     )
 

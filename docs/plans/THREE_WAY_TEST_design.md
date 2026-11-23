@@ -356,7 +356,9 @@ paragraph between the markers is written to be copied verbatim into H3's declara
    - (ii) a per-unit clip written into the dimension's own definition, x_d(u) = clip(y_d(u), a_d, a_d + r_d), pinned
      in CHARTER 3.9's row and shown to the operator with the composite's caps.
 
-   **No bound is ever estimated from data, on any years.**
+   **No bound is ever claimed from data as a source-(i) range, on any years;** a declared clip under (ii) may take
+   its endpoints from the search years (1.3's caps), fixed before the held-out read: the held-out coin field is
+   independent of them, so the bound is not estimated from the data it bounds (W42-R1 4.2).
 3. **What it does not admit.** These are decided by 2.2 (b) whenever the composite holds one:
    - a conditional share or mean, whose denominator is a random subset of E_{h_d} (the share falling back among those
      who reached break-even, for example);
@@ -679,7 +681,7 @@ lower bound, and the history null's figure); and each condition's label, vacuous
 | delta\*, "the size that matters", on the composite's scale | fixed, the operator's (O-3, Wave 4.2) | **a parameter here** |
 | pi\*, the power target | fixed in 3.9's pinning row | proposed: `family_stats.MDL_POWER` (the test checks the script's value against it) |
 | alpha | fixed | 0.05 / (k (k + 1)) at the search's k |
-| J, m, the deciding bound | J and m set by 2.5's formulas so that power at delta\* reaches pi\*; the bound by 2.2's rule | H3's declaration, before the read |
+| J, m, the deciding bound | J fixed by W42-R1 (`TEST_SEEDS`, declared before H4 is read and never set from its output; if 2.5's formulas need more seeds, the gate fails); m and the bound by 2.2's rule | J: W42-R1, copied by H3's declaration; m and the bound: H3's declaration, before the read |
 
 ### 4.2 The plants
 
@@ -712,13 +714,18 @@ together. **The line has power at delta\* when that MDL is at most delta\*.**
 
 ### 4.4 The gate's other clauses (CHARTER 3.7; m-11, m-12)
 
-**The limit clause (E-015's condition).** A ceiling L passes when M-hat + w <= L; a floor is the mirror image.
-- **"Its noise" is coin noise** (m-12): w is the coin-seed half-width at the margin's pinned level, given H. This
-  matches the level's scope, which is conditional on H, and keeps power.
+**The limit clause (E-015's condition; E-221, E-230).** **The point estimate governs:** a ceiling L passes when the
+finalist's point estimate M-hat is at or below L, and fails when it is above; a floor is the mirror image. The one-sided
+check of crossing (CHARTER 3.8 (a), at the level pinned with 3.9's inputs) is printed beside each limit, never as a
+second margin and never deciding.
+- **"Its noise" is coin noise** (m-12): the headroom is sized on the coin-seed spread of the point estimate, given H.
+  This matches the level's scope, which is conditional on H, and keeps power.
   - The history-variation reading (3.1's per-horizon variance) is printed beside, with FPR_hist.
-  - The choice is the operator's under O-5. It is fixed in the pinning row before any read.
-- A design equal to the best baseline passes with probability at least pi\* only if the headroom L - M_best is at least
-  about (c_L + z_pi) sigma_M / sqrt(J). The gate prints the headroom per limit and fails if a pinned limit lacks it.
+- A design equal to the best baseline passes every limit together with probability at least pi\* only if each
+  limit's headroom L - M_best is at least about z_n se_test: L the limit's value, se_test the coin-seed standard error
+  of the best baseline's estimate at the test's J and complete starts, and z_n the normal quantile at
+  1 - (1 - pi\*) / n_L, n_L the number of limits set. W42-R1 sets each limit so (`docs/plans/WAVE42_SETTING_RULE.md`
+  section 6). The gate prints the headroom per limit and fails if a pinned limit lacks it.
 
 **The gate's quantile at H_g = 504 sessions.**
 - The held-out years hold at most W_H - 503 complete starts (Appendix A), and they overlap almost entirely. They hold
@@ -803,8 +810,9 @@ Otherwise the search does not pin, and the data question (E-007 (2)) goes to the
 - **A part's work** is R x arms x M x |T| x h x tau lane-trades. **Its wall time** is that work x c / 2, where c is the
   cost of one lane-trade, which **H3-0 measures**.
 - Appendix A prints each part's work, and its hours at three assumed costs. The rows include:
-  - **H7, the held-out test**, under (a) Hoeffding at Appendix A's J and under (b) the empirical-Bernstein range term's
-    J, with three finalists assumed and four baselines;
+  - **H7, the held-out test**, under (a) Hoeffding at Appendix A's J (W42-R1's `TEST_SEEDS`, each start run to 252
+    sessions or the block's last session, whichever comes first, never past 2026-07-16) and under (b) the
+    empirical-Bernstein range term's J, with three finalists assumed and four baselines;
   - **D3's full-J check.**
 
   The gap between the two H7 rows is the compute that choice 3 and 2.2 (a) save (m-1).
@@ -968,7 +976,7 @@ run plan (trades a session <= 4; 3 finalists + 4 baselines in H7; hours over 2 w
   D2 history null            R=200 arms=2 M=500    T=412 h=252 lane-trades=8.306e+10  h: 0.6  5.8  57.7
   D3 power gate plants       R=10  arms=6 M=2000   T=412 h=252 lane-trades=4.984e+10  h: 0.3  3.5  34.6
   D3 full-J check (EB)       R=5   arms=2 M=20752  T=412 h=252 lane-trades=8.618e+10  h: 0.6  6.0  59.8
-  H7 held-out, Hoeffding     R=1   arms=7 M=100    T=601 h=63  lane-trades=1.060e+08  h: 0.0  0.0  0.1
+  H7 held-out, Hoeffding     R=1   arms=7 M=1000   T=601 h=252 lane-trades=4.241e+09  h: 0.0  0.3  2.9
   H7 held-out, EB sets       R=1   arms=7 M=20752  T=412 h=252 lane-trades=6.033e+10  h: 0.4  4.2  41.9
 ```
 <!-- three_way_arith: end -->
