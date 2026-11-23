@@ -9,6 +9,11 @@ Q-118 (E-145): the collection hook below skips every test marked `heavy` while `
 repository's root by a job other than this process's (`extended.lock_guard`): a heavy test never runs outside the
 lock, whatever `-m` selection was given. Only the command `scripts/run_clean.py` runs under the lock (it sets
 `S2X_LOCK_HOLDER=<job>`) may run them while the lock is held; when the main root cannot be found they are skipped.
+
+Q-211: once each test's protocol has ended (its reports logged, its teardown done) the hook below drops the last
+raised exception pytest keeps in `sys.last_*` (an expected failure's frames and locals) and, when the test was its
+file's last, runs one `gc.collect()` (`extended.suite_memory`). It releases memory no test uses any more; it changes
+no test, report or outcome.
 """
 from __future__ import annotations
 
@@ -34,3 +39,13 @@ def pytest_collection_modifyitems(config, items):
     skip = pytest.mark.skip(reason=reason)
     for item in heavy:
         item.add_marker(skip)
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_protocol(item, nextitem):
+    try:
+        return (yield)       # the whole test: its reports, its teardown (its file's too at its end), funcargs dropped
+    finally:
+        from extended import suite_memory
+
+        suite_memory.after_test(item, nextitem)

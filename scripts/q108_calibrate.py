@@ -334,21 +334,20 @@ def literal_problems(repo: Path | str = ROOT) -> tuple[list[str], list[str]]:
     or this run's own result file, is a note; anything else a problem."""
     repo = Path(repo)
     hits: dict[tuple[str, str], int] = {}
-    r = _git(repo, "grep", "--untracked", "-n", "-I", "-w", "-E", SEED_PATTERN)
+    r = _git(repo, "grep", "--untracked", "-l", "-I", "-w", "-E", SEED_PATTERN)
     if r.returncode not in (0, 1):
         return [f"git grep failed in the working tree: {r.stderr.strip()[:200]}"], []
     for line in r.stdout.splitlines():
-        parts = line.split(":", 2)
-        if len(parts) == 3:
-            hits[("working tree", parts[0])] = 1
+        if line:
+            hits[("working tree", line)] = 1
     names = _refs(repo)
     for i in range(0, len(names), 40):
-        r = _git(repo, "grep", "-n", "-I", "-w", "-E", SEED_PATTERN, *names[i:i + 40], "--")
+        r = _git(repo, "grep", "-l", "-I", "-w", "-E", SEED_PATTERN, *names[i:i + 40], "--")
         if r.returncode not in (0, 1):
             return [f"git grep failed on {names[i:i + 40][:3]}: {r.stderr.strip()[:200]}"], []
         for line in r.stdout.splitlines():
-            parts = line.split(":", 3)
-            if len(parts) == 4:
+            parts = line.split(":", 1)
+            if len(parts) == 2:
                 hits[(parts[0], parts[1])] = 1
     problems, notes = set(), set()
     for (where, path) in hits:
