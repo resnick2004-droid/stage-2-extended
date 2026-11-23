@@ -146,7 +146,7 @@ VALIDATED_BLOBS = {
     "extended/lift_bound.py": "984f3467a4a05aa790d3ea43e94ac7761f0725b2",
     "extended/lift_one_sample.py": "36df2c6f82a60b63213528d5907db082b23c9d6e",
     "extended/count_nulls.py": "c4ceee8ffb243bb8dc07cb51be5397daae906c02",
-    "scripts/q108_calibrate.py": "30ce697f04010b802b93d0685386d8fdc17141ee",
+    "scripts/q108_calibrate.py": "8508a84695166e33645b1624528c4aead7874c30",     # Q-211: re-pinned (git grep -l, the same hits)
     "scripts/q108_validate.py": "01158b34943a69aca16cb74138297824bb0b79be",       # its criterion, imported (4.3)
     "scripts/q16_calibrate.py": "677d6a738283a2c44d3ffa6b6650e131d99088f4",
     "scripts/q16_p16_pairs.py": "1bdd21a3b654ea01b1e7a9d0d0bea142a6aa0db6",

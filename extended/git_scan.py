@@ -22,7 +22,8 @@ duplicate. Measured on a synthetic repository (Q-156's hand-back): the work fall
 `--threads=1` or `=2` changed nothing measurable, and one ref per call was slower.
 
 **The pinned scripts.** `scripts/q108_calibrate.py` and `scripts/q82_validation.py` hold their own seed scans, and
-their files are pinned by blob (Q-126's `VALIDATED_BLOBS`; Q-108's validation manifests) -- never edited. Their tests
+their files are pinned by blob (Q-126's `VALIDATED_BLOBS`; Q-108's validation manifests) -- edited only under a re-pin
+(Q-211: Q-108's literal scan asks `git grep -l`, file names only, re-pinned by the lead's ruling). Their tests
 route them here without touching them: `route_scans(monkeypatch, module)` replaces the `subprocess` name of the module
 and of every repository module it imports (to depth) with `PROXY`, which sends a scan (`is_scan`) through `run` and
 everything else to `subprocess` itself. Their own runs outside the tests keep the plain call.

@@ -272,6 +272,140 @@ def test_the_guard_on_literals(C, tmp_path):
     assert any("uses.py" in p and "working tree" in p for p in probs)
 
 
+# Q-211 (the lead's ruling): the literal scan asks `git grep -l` -- file names, never every matching line. The -n scan it
+# replaced held all of its output at once: the q108 result files' seed lines once per ref, about 4 GB at the fast
+# tier's peak. Only the (where, path) keys were ever read, so the hits -- and the verdicts -- are the same.
+
+#: the blob of scripts/q108_calibrate.py before Q-211 (the -n scan the calibration ran); read from this clone's history
+PRE_Q211_BLOB = "30ce697f04010b802b93d0685386d8fdc17141ee"
+
+
+def _planted_refs(C, tmp_path):
+    """A repository with seeds of both blocks in several files on several refs (a branch, a tag, a third branch),
+    many matching lines per file, and an untracked file: returns the repository and its ref names."""
+    t = _repo(tmp_path)
+    cal, val = C.CAL_BLOCK, C.VAL_BLOCK
+    _write(t, "docs/notes.md", f"the blocks {cal[0]} and {val[-1]}\n")
+    _write(t, "extended/a.py", "".join(f"x{i} = {cal[i % len(cal)]}\n" for i in range(30)))
+    _write(t, "other.py", f"SEED = {cal[1]}1\n")                            # not word-bounded: no hit
+    _git(t, "add", "-A")
+    _git(t, "commit", "-q", "-m", "base")
+    _git(t, "tag", "v1")
+    _git(t, "checkout", "-q", "-b", "side")
+    _write(t, "results/q108_x.csv", "".join(f"{val[i % len(val)]},{i}\n" for i in range(40)))
+    _write(t, "prereg/F-97_z.md", f"seeds {val[3]}\n")
+    _git(t, "add", "-A")
+    _git(t, "commit", "-q", "-m", "side")
+    _git(t, "checkout", "-q", "-b", "third")
+    _write(t, "extended/deep/b.py", f"r = default_rng([{cal[5]}, 1])\nq = {val[0]}\n")
+    _git(t, "add", "-A")
+    _git(t, "commit", "-q", "-m", "third")
+    _git(t, "checkout", "-q", "master")
+    _write(t, "uses.py", f"rng = default_rng({val[7]})\n")                  # untracked, the working tree
+    refs = [x for x in _git(t, "for-each-ref", "--format=%(refname)").split() if x]
+    return t, refs
+
+
+def _hits(t, refs, flag, pattern):
+    """(where, path) of `git grep <flag>` over the working tree and the refs, parsed as each flag prints them."""
+    out = set()
+    wt = GS.git("grep", "--untracked", flag, "-I", "-w", "-E", pattern, cwd=t, text=True)
+    assert wt.returncode in (0, 1), wt.stderr
+    for line in wt.stdout.splitlines():
+        if flag == "-n":
+            parts = line.split(":", 2)
+            if len(parts) == 3:
+                out.add(("working tree", parts[0]))
+        elif line:
+            out.add(("working tree", line))
+    r = GS.git("grep", flag, "-I", "-w", "-E", pattern, *refs, "--", cwd=t, text=True)
+    assert r.returncode in (0, 1), r.stderr
+    for line in r.stdout.splitlines():
+        parts = line.split(":", 3) if flag == "-n" else line.split(":", 1)
+        if len(parts) == (4 if flag == "-n" else 2):
+            out.add((parts[0], parts[1]))
+    return out
+
+
+def test_names_only_finds_the_same_files_as_every_line_on_planted_refs(C, tmp_path):
+    t, refs = _planted_refs(C, tmp_path)
+    by_line, by_name = _hits(t, refs, "-n", C.SEED_PATTERN), _hits(t, refs, "-l", C.SEED_PATTERN)
+    assert by_name == by_line
+    assert len({w for w, _ in by_name}) >= 4 and len(by_name) >= 10        # four refs and the working tree, not vacuous
+    assert not any(p == "other.py" for _, p in by_name)
+
+
+def _load_source(name: str, src: str):
+    """A module from source text, as if it were the runner's own file (its imports resolve from this repository)."""
+    import types
+
+    mod = types.ModuleType(name)
+    mod.__file__ = str(ENTRY)
+    sys.modules[name] = mod
+    exec(compile(src, str(ENTRY), "exec"), mod.__dict__)
+    return mod
+
+
+def test_the_literal_scan_gives_the_pre_q211_verdicts(C, tmp_path):
+    """The re-pinned scan against the code the calibration ran (its blob, from history), on the planted refs."""
+    have = subprocess.run(["git", "cat-file", "blob", PRE_Q211_BLOB], cwd=ROOT, capture_output=True)
+    if have.returncode:
+        pytest.skip(f"{PRE_Q211_BLOB[:12]} is not in this clone's history")
+    old = _load_source("q108_calibrate_pre_q211_t", have.stdout.decode("utf-8"))
+    t, _ = _planted_refs(C, tmp_path)
+    with pytest.MonkeyPatch.context() as mp:
+        GS.route_scans(mp, old)
+        before = old.literal_problems(t)
+    after = C.literal_problems(t)
+    assert after == before
+    assert any("extended/deep/b.py" in p and "third" in p for p in after[0])
+    assert any("uses.py" in p and "working tree" in p for p in after[0])
+
+
+def names_only_problems(mod, repo) -> list[str]:
+    """Every `git grep` the literal scan runs on `repo`, checked: asked with `-l` (never `-n`), and every output line a
+    bare name (`<path>` or `<ref>:<path>`), never a matching line's text. Empty: names only."""
+    calls = []
+    real = mod._git
+
+    def spy(r, *a, **kw):
+        res = real(r, *a, **kw)
+        if a and a[0] == "grep":
+            calls.append((a, res.stdout))
+        return res
+
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(mod, "_git", spy)
+        mod.literal_problems(repo)
+    out = [] if calls else ["the scan ran no git grep"]
+    for a, stdout in calls:
+        if "-l" not in a or "-n" in a:
+            out.append(f"git {' '.join(a[:3])}...: not names only")
+        for line in stdout.splitlines():
+            if line.count(":") > 1:
+                out.append(f"a matching line held: {line[:60]}")
+                break
+    return out
+
+
+def test_the_literal_scan_holds_names_never_lines(C, tmp_path):
+    t, _ = _planted_refs(C, tmp_path)
+    assert names_only_problems(C, t) == []
+
+
+def test_a_mutant_scanning_every_line_again_is_caught(C, tmp_path):
+    src = ENTRY.read_text(encoding="utf-8")
+    mutant = src.replace('"grep", "--untracked", "-l"', '"grep", "--untracked", "-n"').replace(
+        '"grep", "-l", "-I"', '"grep", "-n", "-I"')
+    assert mutant.count('"-n"') == src.count('"-n"') + 2                       # both scans mutated
+    mod = _load_source("q108_calibrate_mutant_n_t", mutant)
+    t, _ = _planted_refs(C, tmp_path)
+    with pytest.MonkeyPatch.context() as mp:
+        GS.route_scans(mp, mod)
+        probs = names_only_problems(mod, t)
+    assert any("not names only" in p for p in probs) and any("matching line held" in p for p in probs)
+
+
 def _result(d: Path, name: str, script: str, result_file: str | None = None) -> None:
     _write(d, f"results/{name}.csv", "null,seed\nx,20262111\n")
     _write(d, f"results/{name}.csv.manifest.json", json.dumps(

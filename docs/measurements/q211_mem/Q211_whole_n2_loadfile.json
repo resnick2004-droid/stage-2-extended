@@ -1,0 +1,38 @@
+{
+  "command": [
+    "python",
+    "-m",
+    "pytest",
+    "-o",
+    "addopts=",
+    "-q",
+    "-m",
+    "not slow and not heavy",
+    "-p",
+    "no:cacheprovider",
+    "-n",
+    "2",
+    "--dist",
+    "loadfile",
+    "-p",
+    "extended.fasttier_report",
+    "--s2x-report",
+    "C:/Users/resni/AppData/Local/Temp/claude/197752aa8b2362c7/9862c1b3-c57d-4498-a2d7-44492c7a25e6/scratchpad/wt-mem/xdist_meas_report.json"
+  ],
+  "exit": 0,
+  "aborted": null,
+  "seconds": 1696.7,
+  "every_s": 1.0,
+  "floor_gb": 2.0,
+  "samples": 1676,
+  "peak_tree_working_set_gb": 1.627,
+  "peak_controller_gb": 0.063,
+  "peak_tree_processes": 13,
+  "max_concurrent_children": 2,
+  "peak_per_child_gb": [
+    0.933,
+    0.923
+  ],
+  "peak_worker_gb": 0.933,
+  "min_available_gb": 3.782
+}

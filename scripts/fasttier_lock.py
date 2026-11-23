@@ -14,7 +14,7 @@ pytest through `run`, which:
    token. **Up to MAX_SLOTS fast tiers run at once** (Q-174; `S2X_FASTTIER_SLOTS`, default 2): slot 0 is that file
    (the one a tree without Q-174 contends for), slot i is `<lock>.slot<i>`, each with its own record, heartbeat,
    takeover and release. The head of the line takes a free slot when none is running, or when available memory is at
-   least 1.5 GB plus SLOT_RESERVE_GB (2.5 GB, a measured fast tier's peak with a margin; SLOT_RESERVE_SOURCE) for every
+   least 1.5 GB plus SLOT_RESERVE_GB (1.2 GB, a measured fast tier's peak with a margin; SLOT_RESERVE_SOURCE) for every
    slot running -- otherwise it keeps its place and waits, so with one slot's worth of memory nothing changes. **A
    slot running n xdist workers** (Q-193, scripts/fasttier_xdist.py, which writes its n into its record as `workers`)
    **counts at its own reserve**, slot_reserve_gb(n) = SLOT_RESERVE_GB + (n - 1) * PER_WORKER_GB: slots and workers
@@ -108,15 +108,17 @@ ENV_TOKEN = "S2X_FASTTIER_TOKEN"
 ENV_TEE = "S2X_FASTTIER_TEE"     # Q-161: a file the command's output is copied into (the hook's verdict reads its pass line)
 ENV_SLOTS = "S2X_FASTTIER_SLOTS"  # Q-174: how many fast tiers may run at once (default DEFAULT_SLOTS, at least 1)
 DEFAULT_SLOTS = 2
-#: Q-174: a running fast tier's peak memory, and the reserve declared from it. A further slot opens only while available
-#: memory >= MIN_FREE_GB + SLOT_RESERVE_GB for every slot already running (so a second slot needs 4.0 GB beside one).
-MEASURED_PEAK_GB = 2.26
-SLOT_RESERVE_GB = 2.5
+#: Q-174 / Q-211: a running fast tier's peak memory, and the reserve declared from it. A further slot opens only while
+#: available memory >= MIN_FREE_GB + SLOT_RESERVE_GB for every slot already running (2.7 GB beside a serial slot; 3.9 GB
+#: beside an n = 2 slot via slot_reserve_gb(2) = 2.4 GB).
+MEASURED_PEAK_GB = 1.00
+SLOT_RESERVE_GB = 1.2
 SLOT_RESERVE_SOURCE = (
-    "scripts/tree_peak_memory.py --attach on the main tree's own pre-commit fast tier, 2026-11-20 11:07:54-11:45:55Z "
-    "(2230 samples at 1 s over the wrapper, pytest and every child): peak tree working set 2.257 GB (private commit "
-    "5.385 GB, up to 91 processes; machine-wide available memory fell to 0.018 GB). The reserve is that peak rounded up "
-    "with about 10 % for spikes between samples; one full run measured (a second, partial, peaked lower)."
+    "Q-211 whole-tier re-measurement after re-pinning q108's literal scan to git grep -l "
+    "(docs/measurements/q211_mem/Q211_whole_n2_loadfile.json, 2026-11-22, n = 2 --dist loadfile, 3837 passed in 1696.7 s, "
+    "1676 samples at 1 s): peak tree working set 1.627 GB, peak worker 0.933 GB, peak controller 0.063 GB "
+    "(single-worker sum 0.996 GB -> MEASURED_PEAK_GB 1.00 GB, SLOT_RESERVE_GB 1.2 GB; min available 3.782 GB). "
+    "Supersedes Q-174's pre-Q-211 scripts/tree_peak_memory.py --attach measurement (2.257 GB peak, 2.5 GB reserve)."
 )
 #: Q-193: a further xdist worker's peak inside a slot -- the largest worker subtree measured on the fast tier's slices,
 #: with its margin (scripts/fasttier_xdist.py's MEASURE_SOURCE; tests/test_fasttier_xdist.py traces it to the records in
