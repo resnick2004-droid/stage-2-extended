@@ -251,7 +251,7 @@ value equal to `extended/wave42.py`'s.
 | COLLECTION_RESULT | `"h4_w42_input.csv"` | V-3: H4-C's one collection result, by name (H4's draft section 9) |
 | ADAPTER | `"extended.h4_collect:w42_readings"` | V-1: the one adapter from the collection to the readings (H4's) |
 | SEARCH_CALENDAR | `"search_calendar.csv"` | V-3: Q-197's pinned search calendar |
-| SEARCH_CALENDAR_SHA256 | `null` | V-3: that file's sha256, **filled from Q-197's result manifest before the pin**; the script refuses while it is unset |
+| SEARCH_CALENDAR_SHA256 | `"dfd75dadb697349eea547fc88c1bb18b50828a2e60ac6496366e0e5f4da9a3ba"` | V-3: Q-197's `results/search_calendar.csv` sha256 (E-266, from its manifest) |
 | HELD_OUT_CALENDAR | `"q82_judged_sessions.csv"` | V-2: the pinned held-out session calendar (E-208), its dates only |
 | HELD_OUT_CALENDAR_SHA256 | `"59a698623d951772c1ea19439200762026855eb696e859a544597041e0ffbdea"` | V-2: that file's sha256, as its sidecar manifest records it |
 | OUTPUT_NAME | `"w42_r1_values.csv"` | V-1: the one output, written once |
