@@ -1,0 +1,2 @@
+part,synthetic_lane_trades,synthetic_seconds,us_per_lane_trade,tb_race_seeds,tb_race_horizon,tb_race_trades,tb_race_seconds,tb_race_ms_per_trade,tb_race_sec_per_seed_252_est,real_p14_starts,real_p14_seconds,real_p14_sec_per_start,rss_base_mb,rss_after_syn_mb,rss_after_real_mb,sealed_p14_first21_sha256,p14_trades_sha256
+H4-0,9792,14.9783,1529.6448,16,63,2911,1.1093,0.3811,0.2773,21,4.6191,0.22,,,,4cd2193aa1f6ec87591fedb678d4e1b436e2665f9b99fb36cb8566a195235926,a4dd2e60847c72b07e5eb57df684bc70b72ad25cf3c64623574df61af50a72dc

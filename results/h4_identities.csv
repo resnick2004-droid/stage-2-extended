@@ -1,0 +1,15 @@
+identity,baseline,compared,differing,tolerance,holds,note
+I-1,p14,27516,0,0.0,True,search_trades_sha256=a4dd2e60847c72b07e5eb57df684bc70b72ad25cf3c64623574df61af50a72dc
+I-1,p15,180804,0,0.0,True,search_trades_sha256=0955f360f299cf119358ce534757454ab15a0153335c1e686753bd3c8558d919
+I-1,p16,146731,0,0.0,True,search_trades_sha256=4be59e9e9bc53bc316368efae4aa8de2b4d27c5ae7c72fefcd7a24f61d67659a
+I-2@2022-12-30,p14,776,0,0.0,True,"nested cut 2022-12-30 vs 2023-12-29 (776 days, raw DayBlocks)"
+I-2@2022-12-30,p15,776,0,0.0,True,"nested cut 2022-12-30 vs 2023-12-29 (776 days, raw DayBlocks)"
+I-2@2022-12-30,p16,776,0,0.0,True,"nested cut 2022-12-30 vs 2023-12-29 (776 days, raw DayBlocks)"
+I-2@2023-06-30,p14,905,0,0.0,True,"nested cut 2023-06-30 vs 2023-12-29 (905 days, raw DayBlocks)"
+I-2@2023-06-30,p15,905,0,0.0,True,"nested cut 2023-06-30 vs 2023-12-29 (905 days, raw DayBlocks)"
+I-2@2023-06-30,p16,905,0,0.0,True,"nested cut 2023-06-30 vs 2023-12-29 (905 days, raw DayBlocks)"
+I-2@2023-09-29,p14,970,0,0.0,True,"nested cut 2023-09-29 vs 2023-12-29 (970 days, raw DayBlocks)"
+I-2@2023-09-29,p15,970,0,0.0,True,"nested cut 2023-09-29 vs 2023-12-29 (970 days, raw DayBlocks)"
+I-2@2023-09-29,p16,970,0,0.0,True,"nested cut 2023-09-29 vs 2023-12-29 (970 days, raw DayBlocks)"
+I-3,all,768,0,1e-09,True,firm-path race (RD + zero-cost RaceOver) vs adapter.BinaryDraw across deep & cushion-bound rooms
+I-5,naive_coin_vs_p16,146731,0,0.0,True,coin_p16_hash=4be59e9e9bc53bc3 vs p16_reg=4be59e9e9bc53bc3 (n=146731 vs 146731)

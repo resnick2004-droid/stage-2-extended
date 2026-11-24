@@ -1,0 +1,91 @@
+{
+  "columns": [
+    "identity",
+    "baseline",
+    "compared",
+    "differing",
+    "tolerance",
+    "holds",
+    "note"
+  ],
+  "description": "H4-S pre-outcome identities I-1 (search sub-hashes), I-2 (nested cuts), I-3 (race vs BinaryDraw), and I-5 (coin source vs P-16).",
+  "exploratory": false,
+  "git_commit": "31c507e2cf2eaf742bd4dde7e58d5be5ce9aa077",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "coin_counts": {
+      "days_data_defect_lookahead": 37,
+      "days_total": 1034,
+      "days_voided": 77,
+      "limit_differs_from_last_bar": 0,
+      "multi_moment_alerts": 0,
+      "offers_admitted": 209270,
+      "offers_clock_grid": 275044,
+      "offers_dropped_sigma_lt_2": 1,
+      "offers_filled": 208312,
+      "offers_unfilled": 957,
+      "refused_by_reason": {
+        "bls": 39550,
+        "calendar": 12236,
+        "closed": 5742,
+        "fomc": 8246
+      }
+    },
+    "nested_cuts": [
+      "2022-12-30",
+      "2023-06-30",
+      "2023-09-29"
+    ],
+    "nq_stop_band": {
+      "combine_hi": 3000.0,
+      "combine_lo": 82.0,
+      "cost_drag_floor_ticks": 45.0,
+      "funded_below_2000_hi": 2000.0,
+      "funded_below_2000_lo": 134.0,
+      "funded_ge_2000_hi": 600.0,
+      "funded_ge_2000_lo": 45.0
+    },
+    "part": "H4-S",
+    "preconditions": {
+      "free_disk_bytes": 53654364160,
+      "h4_decl_sha256": "a2c1408e8f22a3d4926248a3bf53f311f65234ce1e15399dc378ed35d4aa913c",
+      "lock_holder": "h4-s",
+      "reg_constants_sha256": "7c3884f5445f37be09a09dd838150d34ff468636775a24f96e894e76de1dc413",
+      "reg_designs": [
+        "p14",
+        "p15",
+        "p16"
+      ],
+      "search_calendar_digest": "5f46bcad48df1fcbe47d16130cd9f9d3d56277774221cab5c4166a9819e374f8",
+      "search_calendar_sha256": "dfd75dadb697349eea547fc88c1bb18b50828a2e60ac6496366e0e5f4da9a3ba",
+      "search_sessions": 1034,
+      "w42_pin_commit": "5e6da6e8c99e6cf2284af19781c2116549cb28e4"
+    },
+    "schedules_sha256": {
+      "naive_coin": "86e3363ec236c2fafa6cd6318b0623fc02196402efac648e87b571572742407c",
+      "p14": "a4dd2e60847c72b07e5eb57df684bc70b72ad25cf3c64623574df61af50a72dc",
+      "p15": "0955f360f299cf119358ce534757454ab15a0153335c1e686753bd3c8558d919",
+      "p16": "4be59e9e9bc53bc316368efae4aa8de2b4d27c5ae7c72fefcd7a24f61d67659a"
+    },
+    "seed_roles": [
+      "h4s_schedule_side"
+    ]
+  },
+  "prereg_id": "H4",
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\h4-s",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "h4-s"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "h4_identities.csv",
+  "rows": 14,
+  "script": "scripts/h4_rebaseline.py",
+  "seed": null,
+  "sha256": "c13b73d15dd8a73e7c333a49fa2f7710e976dd2d3ff7ca8d9a1efddc03b29d04",
+  "timestamp": "2026-11-24T13:54:01+00:00",
+  "variant_count": null
+}

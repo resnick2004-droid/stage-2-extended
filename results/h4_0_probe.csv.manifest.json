@@ -1,0 +1,89 @@
+{
+  "columns": [
+    "part",
+    "synthetic_lane_trades",
+    "synthetic_seconds",
+    "us_per_lane_trade",
+    "tb_race_seeds",
+    "tb_race_horizon",
+    "tb_race_trades",
+    "tb_race_seconds",
+    "tb_race_ms_per_trade",
+    "tb_race_sec_per_seed_252_est",
+    "real_p14_starts",
+    "real_p14_seconds",
+    "real_p14_sec_per_start",
+    "rss_base_mb",
+    "rss_after_syn_mb",
+    "rss_after_real_mb",
+    "sealed_p14_first21_sha256",
+    "p14_trades_sha256"
+  ],
+  "description": "H4-0 probe (E-287): synthetic R.run & TB.simulate cost/memory probe and sealed P-14 first-21-starts replay timing.",
+  "exploratory": false,
+  "git_commit": "31c507e2cf2eaf742bd4dde7e58d5be5ce9aa077",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "cut": {
+      "computed_from_cut": [
+        "search_year_trades_and_bounds"
+      ],
+      "constants_file": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\h4-0\\results\\h4_registered_constants.csv",
+      "constants_sha256": "7c3884f5445f37be09a09dd838150d34ff468636775a24f96e894e76de1dc413",
+      "files_cut": [
+        "data/atlas/A1/days.parquet",
+        "data/atlas/A1/events.parquet",
+        "data/atlas/A3/walks.parquet"
+      ],
+      "files_passthrough": [
+        "data/atlas/A1/manifest.json",
+        "data/atlas/A3/manifest.json",
+        "data/bars/NQ/manifest.json"
+      ],
+      "files_sha256": {},
+      "last_day": "2023-12-29",
+      "passed_through": [
+        "p14.capacity=44"
+      ],
+      "switched_off_used": []
+    },
+    "part": "H4-0",
+    "preconditions": {
+      "free_disk_bytes": 53663703040,
+      "h4_decl_sha256": "a2c1408e8f22a3d4926248a3bf53f311f65234ce1e15399dc378ed35d4aa913c",
+      "lock_holder": "h4-0",
+      "reg_constants_sha256": "7c3884f5445f37be09a09dd838150d34ff468636775a24f96e894e76de1dc413",
+      "reg_designs": [
+        "p14",
+        "p15",
+        "p16"
+      ],
+      "search_calendar_digest": "5f46bcad48df1fcbe47d16130cd9f9d3d56277774221cab5c4166a9819e374f8",
+      "search_calendar_sha256": "dfd75dadb697349eea547fc88c1bb18b50828a2e60ac6496366e0e5f4da9a3ba",
+      "search_sessions": 1034,
+      "w42_pin_commit": "5e6da6e8c99e6cf2284af19781c2116549cb28e4"
+    },
+    "sealed_note": "outputs written sealed (hash recorded, file unopened); H4-A must reproduce this hash",
+    "sealed_p14_first21_sha256": "4cd2193aa1f6ec87591fedb678d4e1b436e2665f9b99fb36cb8566a195235926",
+    "seed_roles": [
+      "h4_0_probe"
+    ]
+  },
+  "prereg_id": "H4",
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\h4-0",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "h4-0"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "h4_0_probe.csv",
+  "rows": 1,
+  "script": "scripts/h4_rebaseline.py",
+  "seed": null,
+  "sha256": "0ea9d68d905d7b3866290b6ae785aab8cd723af30e14b596dc2936413218aa3f",
+  "timestamp": "2026-11-24T13:40:36+00:00",
+  "variant_count": null
+}
