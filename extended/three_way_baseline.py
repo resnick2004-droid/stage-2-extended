@@ -142,6 +142,7 @@ class TradeFacts:
     xf_ticks: float = 0.0                 # a flatten's
     fee_per_contract: float | None = None  # the round turn a contract, only where the draw reports no fee
     walked: Mapping[float, float] | None = None   # the historical gross ticks at every R (the as-walked arm, beside)
+    walked_mirror: Mapping[float, float] | None = None  # rc-11: mirror walk gross ticks at every R, bounded in [-S, +G]
     underlying: str = "NQ"
 
     def __post_init__(self) -> None:
@@ -260,7 +261,9 @@ class _Unit:
         b = self.blocks[int(i)]
         ex = getattr(b, "exit_by_rr", None)
         if R is not None and ex is not None and float(R) in ex:
-            return float(f.entry), float(ex[float(R)][int(j)])
+            val = float(ex[float(R)][int(j)])
+            if math.isfinite(val):
+                return float(f.entry), val
         et = getattr(b, "exit_t", None)
         return float(f.entry), (float(et[int(j)]) if et is not None else float(f.entry))
 
@@ -274,6 +277,40 @@ class _Unit:
 
 _STATS = (("trades", None), ("intended_risk", "intended_risk"), ("intended_capped_risk", "intended_capped_risk"),
           ("realised_risk", "realised_risk"))
+
+
+def _walk_one(us: np.ndarray, first: int, n: int, G: float, L: float, s: float) -> tuple[float, int]:
+    """Single-lane R-10 stopped walk bit-for-bit identical to `RD.walk_run` / `RD.walk_outcome` without per-step
+    1-element NumPy array dispatch overhead."""
+    G_f, L_f, s_f = float(G), float(L), float(s)
+    d = max(int(math.ceil(L_f / s_f - RD.SNAP)) - 1, 0)
+    rho_d = L_f - d * s_f
+    u_ = max(int(math.ceil(G_f / s_f - RD.SNAP)) - 1, 0)
+    rho_u = G_f - u_ * s_f
+    qt = s_f / (s_f + rho_u)
+    qb = rho_d / (s_f + rho_d)
+    qbb = rho_d / (rho_u + rho_d)
+    i = 0
+    for u in us[int(first):int(first) + int(n)].tolist():
+        top = i == u_
+        bot = i == -d
+        if top:
+            if bot:
+                return (G_f, 1) if u < qbb else (-L_f, -1)
+            if u < qt:
+                return G_f, 1
+            i -= 1
+        elif bot:
+            if u < qb:
+                i += 1
+            else:
+                return -L_f, -1
+        else:
+            if u < 0.5:
+                i += 1
+            else:
+                i -= 1
+    return i * s_f, 0
 
 
 class RaceOver:
@@ -433,8 +470,16 @@ class RaceOver:
             if f.walked is None or R not in f.walked:
                 raise ValueError("the as-walked reading needs each trade's historical gross at its R")
             side = 1.0 if u.uniform(u.alert_key(u.start + h, f), K.SIDE, self._lane) < 0.5 else -1.0  # sub 0
-            out = -e + side * float(f.walked[R]) * d - xs     # the reflected path; the stop side's cost (n-5)
-            info.update(law="as_walked", side=side)
+            if side > 0:
+                gross_t = float(f.walked[R])
+            elif f.walked_mirror is not None and R in f.walked_mirror:
+                gross_t = float(f.walked_mirror[R])
+            else:
+                gross_t = -float(f.walked[R])
+            if f.walked_mirror is not None:
+                gross_t = max(-float(f.stop_ticks), min(float(G), gross_t))  # rc-11: bounded within [-stop, +target]
+            out = -e + gross_t * d - xs     # the reflected path; the stop side's cost (n-5)
+            info.update(law="as_walked", side=side, gross_ticks=gross_t)
             self._note(h, j, room, info, out)
             return out, info
         floor_room = st[0] + st[1]
@@ -463,13 +508,28 @@ class RaceOver:
             n2 = RD.walk_steps(float(f.sigma), d2, s2)
             if max(n1, n2) > J.WALK_MAX:
                 raise ValueError("REFUSED (C2-10): a phase of the move reads past WALK_MAX")
-            read = self._reader(key)
-            g, k, det = MV.move_outcomes(read, 1, G, L / d, s1, n1, s2, n2, J.WALK_CHUNK, detail=True)
-            kc = int(k[0])
-            info.update(move_x=float(det["x"][0]), move_moved=bool(det["moved"][0]), move_G2=float(det["G2"][0]),
-                        move_down2=float(det["down2"][0]))
+            L_t = L / d
+            us = self._walk_uniforms(key, n1 + n2)
+            v1, k1 = _walk_one(us, 0, n1, G, L_t, float(s1))
+            if k1 == 0:
+                x = float(v1)
+                moved = x >= MV.FAVOUR
+                down2 = x if moved else (x + L_t)
+                G2 = G - x
+                v2, k2 = _walk_one(us, n1, n2, G2, down2, float(s2))
+                if k2 == 1:
+                    gross_t, kc = G, MV.TARGET
+                elif k2 == -1:
+                    gross_t, kc = (0.0, MV.BREAKEVEN) if moved else (-L_t, MV.STOP)
+                else:
+                    gross_t, kc = x + v2, MV.TIME
+                info.update(move_x=x, move_moved=bool(moved), move_G2=float(G2), move_down2=float(down2))
+            else:
+                gross_t = G if k1 == 1 else -L_t
+                kc = MV.TARGET if k1 == 1 else MV.STOP
+                info.update(move_x=float("nan"), move_moved=False, move_G2=float("nan"), move_down2=float("nan"))
             cost = xt if kc == MV.TARGET else xs if kc in (MV.STOP, MV.BREAKEVEN) else xf
-            out = -e + float(g[0]) * d - cost
+            out = -e + float(gross_t) * d - cost
             info.update(law="move", exit=kc, s1=s1, n1=n1, s2=s2, n2=n2, need_hit=bool(capped and kc == MV.TARGET))
             self._count(f, R, kc == MV.BREAKEVEN)
             self._note(h, j, room, info, out)
@@ -486,13 +546,23 @@ class RaceOver:
         n = RD.walk_steps(float(f.sigma), T, s)
         if n > J.WALK_MAX:
             raise ValueError("REFUSED (C2-10): the walk reads past WALK_MAX")
-        v, k = RD.walk_run(self._reader(key), 1, G, np.array([L / d]), s, int(n), J.WALK_CHUNK)
-        kc = int(k[0])
+        us = self._walk_uniforms(key, n)
+        v_t, kc = _walk_one(us, 0, n, G, L / d, float(s))
         cost = xt if kc == 1 else xs if kc == -1 else xf
-        out = -e + float(v[0]) * d - cost                     # a flatten past the floor: the engine clips it
+        out = -e + float(v_t) * d - cost                     # a flatten past the floor: the engine clips it
         info.update(law="walk", exit=kc, s=s, n=n, need_hit=bool(capped and kc == 1))
         self._note(h, j, room, info, out)
         return out, info
+
+    def _walk_uniforms(self, key: _Key, total: int) -> np.ndarray:
+        """Draw `total` walk uniforms for this single lane in one C-level Philox call (bit-for-bit identical to
+        `coins.coin(key, K.WALK, ...)` while recording the key in `KeyGuard`)."""
+        coins, lane = self._unit.coins, self._lane
+        coins.record(key, K.WALK, [lane])
+        if hasattr(coins, "units") and hasattr(coins, "twin"):
+            ukey = coins.units[lane].coin_key(key.moment, K.WALK, key.underlying)
+            return K.uniforms(ukey, int(total), twin=coins.twin)
+        return coins.coin(key, K.WALK, int(total), np.asarray([lane]), first=0, record=False)[0]
 
     def _reader(self, key: _Key):
         coins, lane = self._unit.coins, self._lane
