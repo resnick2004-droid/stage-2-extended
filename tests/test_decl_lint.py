@@ -667,14 +667,19 @@ def _have(*commits: str) -> bool:
 @pytest.mark.skipif(not _have("f454d8d", "a611a65"), reason="wt/wt-three f454d8d or wt/wt-lit a611a65 not in this clone")
 def test_h3_at_f454d8d_is_flagged_for_the_gatekeepers_items_1_and_3(tmp_path):
     """`docs/reviews/GK_H3_c2_2026-11-22.md`: item 1 (R-10 cited at template v3's section 7, which holds no R-10, and
-    "as pinned" with no pin row) at l.131, l.396-397 and Appendix D's l.583; item 3 (the counts not written as a
-    product and a number) at l.156-162."""
+    "as pinned" with no pin row at the time of GK_H3_c2, before E-284 pinned template v3) at l.131, l.396-397 and
+    Appendix D's l.583; item 3 (the counts not written as a product and a number) at l.156-162."""
     def show(spec: str, dest: Path) -> Path:
         dest.write_bytes(subprocess.run(["git", "show", spec], cwd=ROOT, capture_output=True, check=True).stdout)
         return dest
     decl = show("f454d8d:prereg/H3_three_way.md", tmp_path / "H3_three_way.md")
     tpl = show("a611a65:prereg/TEMPLATE_design_search.md", tmp_path / "TEMPLATE_design_search.md")
-    found = L.lint(decl, repo=ROOT, rev="f454d8d", rel="prereg/H3_three_way.md", templates=[tpl])
+    # Use DECISIONS.md at f454d8d's merge ancestor (before E-284 pinned TEMPLATE_design_search.md) so the historical
+    # GK_H3_c2 check stays faithful after E-284 lands on master.
+    dec_rev = "7e13006" if _have("7e13006") else "f454d8d"
+    dec = subprocess.run(["git", "show", f"{dec_rev}:DECISIONS.md"], cwd=ROOT, capture_output=True, check=True).stdout
+    found = L.lint(decl, repo=ROOT, rev="f454d8d", rel="prereg/H3_three_way.md", templates=[tpl],
+                   decisions=dec.decode("utf-8").replace("\r\n", "\n"))
     e = errs(found)
     for line in (131, 396, 583):
         assert (line, "xref.template-topic") in e and (line, "xref.template-unpinned") in e, sorted(e)

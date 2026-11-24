@@ -1,0 +1,110 @@
+{
+  "columns": [
+    "slot",
+    "R",
+    "arms",
+    "M",
+    "T",
+    "h",
+    "lane_trades",
+    "c_max_us",
+    "c_s1_us",
+    "hours_s1",
+    "fits_s1",
+    "c_ceil_us",
+    "hours_ceil",
+    "fits_ceil",
+    "mem_gb_2w",
+    "fits_mem"
+  ],
+  "description": "H3-0 probe (E-279): measured lane-trade costs, S1 walk mix, M_0, and H3 slot fits",
+  "exploratory": false,
+  "git_commit": "7d1d3b9860a4044dbbfbf8e76e85eee9f6bd7cf0",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "c_ceil_us": 14.36788910719943,
+    "c_s1_us": 2.6306955645409578,
+    "declaration": "H3",
+    "guard_key_bytes": 403.033,
+    "key_kinds": [
+      "history",
+      "coin"
+    ],
+    "omp_num_threads": "1",
+    "part": "H3-0",
+    "peak_working_set_mb": 200.6171875,
+    "preconditions": {
+      "h3_sha256": "98c5bb94a4f3d0a921c47e683999db0577c65c78c360003ef25072238f5bc2fc",
+      "template_path": "prereg/TEMPLATE_design_search.md",
+      "template_sha256": "876be096402fc7d024037a9a81a2bef1fd2852f7ba1714c3389c23007b4ddc09"
+    },
+    "probe_arms": 5,
+    "probe_elapsed_s": 123.10779719986022,
+    "probe_fill_failures": {
+      "a1_design": {
+        "fill_failures": 204.0,
+        "fill_failures_per_unit": 0.0796875,
+        "share_of_units_with_one": 0.077734375
+      },
+      "naive_coin": {
+        "fill_failures": 456.0,
+        "fill_failures_per_unit": 0.178125,
+        "share_of_units_with_one": 0.16328125
+      },
+      "p14": {
+        "fill_failures": 114.0,
+        "fill_failures_per_unit": 0.04453125,
+        "share_of_units_with_one": 0.04296875
+      },
+      "p15": {
+        "fill_failures": 92.0,
+        "fill_failures_per_unit": 0.0359375,
+        "share_of_units_with_one": 0.0359375
+      },
+      "p16": {
+        "fill_failures": 75.0,
+        "fill_failures_per_unit": 0.029296875,
+        "share_of_units_with_one": 0.029296875
+      }
+    },
+    "probe_guard_checked": 995377,
+    "probe_guard_collision_bound": 1.455812103514311e-27,
+    "probe_guard_states": 25342,
+    "probe_supply_counts": {
+      "a1_design": 231,
+      "naive_coin": 400,
+      "p14": 200,
+      "p15": 200,
+      "p16": 200
+    },
+    "race_us": 0.8633146829356159,
+    "s1_max_n": 1019.0,
+    "s1_mean_n": 622.8615384615384,
+    "s1_share_walk": 0.05345394736842105,
+    "scalar_key_us": 33.60756665157775,
+    "seed_map": {
+      "h3_0_probe": "extended.three_way_seeds.issue('h3_0_probe')"
+    },
+    "seed_role": "h3_0_probe",
+    "vector_key_us": 0.6557814998086542,
+    "walk_16_us": 2.2256857150101235,
+    "walk_256_us": 14.762811111434111
+  },
+  "prereg_id": "H3",
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\h3-0-probe",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "h3-0-probe"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "h3_0_probe.csv",
+  "rows": 22,
+  "script": "scripts/h3_probe.py",
+  "seed": null,
+  "sha256": "d2e1aaffb7a267373045b20e1d871d10367148ba075bc5cc66f016d76deedbb8",
+  "timestamp": "2026-11-24T01:10:15+00:00",
+  "variant_count": null
+}

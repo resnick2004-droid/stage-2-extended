@@ -132,12 +132,99 @@ def test_check_dates_is_the_backstop():
         SC.check_dates(["2022-12-30", "2023-01-03"], date(2022, 12, 30))
 
 
-def test_the_wrapped_set_and_nothing_switched_off():
-    assert SC.switched_off() == {}
+def test_the_wrapped_set_and_e286_switched_off():
+    sw = SC.switched_off()
+    assert set(sw) == {"rc_dev_test.trade_problems"}
+    assert "E-286" in sw["rc_dev_test.trade_problems"]
     assert SC.LAST_DAY == R.CHOICE_END
     assert SC.wrapped_key("data/bars/NQ/bars.parquet") == "day"
     assert SC.wrapped_key("data/atlas/A1/events.parquet") == "date" and SC.wrapped_key("data/atlas/A2/x.parquet") is None
     assert SC.is_passthrough("data/bars/NQ/manifest.json") and not SC.is_passthrough("data/bars/NQ/bars.parquet")
+
+
+def _write_synthetic_constants(tmp_path: Path, trades_p15: pd.DataFrame) -> tuple[Path, str]:
+    import csv
+    import hashlib
+
+    p = tmp_path / "h4_registered_constants.csv"
+    sub_h = SC.trades_subhash(trades_p15)
+    cols = ["design", "cell", "stop_ticks", "busiest_day", "capacity", "marks_count", "offered_marks_slots",
+            "search_trades", "search_first_date", "search_last_date", "search_trades_sha256",
+            "source_file", "source_sha256"]
+    rows = [
+        ["p14", "a3_brk30_cb20", 0, 44, 44, 0, "", 10, "2020-01-02", "2023-12-29", "a" * 64, "m.json", "b" * 64],
+        ["p15", "rc_s100_all", 100, 228, 228, 3, "0 5 10", len(trades_p15), "2020-01-02", "2023-12-29", sub_h, "s1.csv", "c" * 64],
+        ["p16", "rc_s150_all", 150, 210, 210, 2, "0 15", 20, "2020-01-02", "2023-12-29", "d" * 64, "s2.csv", "e" * 64],
+    ]
+    with p.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(cols)
+        w.writerows(rows)
+    sha = hashlib.sha256(p.read_bytes()).hexdigest()
+    Path(str(p) + ".manifest.json").write_text(json.dumps({"sha256": sha}), encoding="utf-8")
+    return p, sha
+
+
+def test_pass_through_mode_replaces_registered_constants_and_restores(tmp_path, rp):
+    import types
+
+    root = toy_tree(tmp_path / "v")
+    trades_p15 = pd.DataFrame({"date": ["2020-01-02", "2023-12-29"], "slot": [0, 5], "side": ["long", "short"]})
+    cpath, csha = _write_synthetic_constants(tmp_path, trades_p15)
+
+    mod_b = types.SimpleNamespace(capacity=lambda t, fcfg: 12)
+    mod_rc = types.SimpleNamespace(offered_marks=lambda table, stop: [999])
+    mod_d = types.SimpleNamespace(trade_problems=lambda *a, **k: ["whole-window hash mismatch"])
+
+    with SC.pass_through(
+        "p15", cpath, expected_sha256=csha, root=root,
+        modules={"a3_brk30": mod_b, "resolved_coin": mod_rc, "rc_dev_test": mod_d},
+    ) as log:
+        assert mod_b.capacity(trades_p15, {}) == 228
+        assert mod_rc.offered_marks(None, 100) == [0, 5, 10]
+        assert mod_rc.offered_marks(None, 50) == [999]
+        assert mod_d.trade_problems() == []
+        df = rp(root / "data/atlas/A1/days.parquet")
+        assert df["date"].max() <= "2023-12-29"
+
+    # Restored after exit
+    assert mod_b.capacity(trades_p15, {}) == 12
+    assert mod_rc.offered_marks(None, 100) == [999]
+    assert mod_d.trade_problems() == ["whole-window hash mismatch"]
+
+    # Manifest summary records pass-through and switched-off usage
+    ms = log.manifest_summary()
+    assert ms["constants_sha256"] == csha
+    assert "p15.capacity=228" in ms["passed_through"]
+    assert "p15.offered_marks(stop=100,n=3)" in ms["passed_through"]
+    assert ms["switched_off_used"] == ["rc_dev_test.trade_problems"]
+
+    # Hash mismatch refused before entering cut
+    with pytest.raises(SC.ConstantsMismatch):
+        with SC.pass_through("p15", cpath, expected_sha256="0" * 64, root=root, modules={"a3_brk30": mod_b}):
+            pass
+
+    # I-1 sub-hash check holds on matching trades and refuses on mutated or late trades
+    consts = SC.load_constants(cpath, expected_sha256=csha)
+    assert SC.verify_subhash("p15", trades_p15, consts) == consts["p15"]["search_trades_sha256"]
+    bad_t = trades_p15.copy()
+    bad_t.loc[0, "side"] = "short"
+    with pytest.raises(SC.ConstantsMismatch, match="I-1"):
+        SC.verify_subhash("p15", bad_t, consts)
+    late_t = pd.concat([trades_p15, pd.DataFrame({"date": ["2024-01-02"], "slot": [0], "side": ["long"]})], ignore_index=True)
+    with pytest.raises(SC.LateRow):
+        SC.verify_subhash("p15", late_t, consts)
+
+
+def test_check_calendar_enforces_exact_date_match():
+    from extended import search_calendar as SCAL
+
+    cal = SCAL.load_search_calendar()
+    assert SC.check_calendar(cal.dates) == list(cal.dates)
+    with pytest.raises(SC.CalendarMismatch):
+        SC.check_calendar(cal.dates[:-1])
+    with pytest.raises(SC.LateRow):
+        SC.check_calendar(cal.dates, last=date(2024, 1, 2))
 
 
 def _junction(link: Path, target: Path) -> bool:

@@ -87,3 +87,5 @@ results/user_beside_starts.csv,pair,*,"every column of the per-start file is a c
 results/user_beside.csv,pair,n/enforcement_p,"n (a sample count of starts) over the tier-3 denial probability (a declared ladder rung in [0, 1]): a count over a probability (Q-44, E-201)"
 results/breakeven_fidelity_2_starts.csv,level,fees_month_*,"cumulative fees the user has paid by each month's close: whole dollars of the user's own cash satisfying the fee identity, not a price (Q-132 audit C6, E-211)"
 results/breakeven_fidelity_2_starts.csv,pair,*,"every column of the per-start file is a count, a session index, a flag, a share or dollars of the user's own cash (fees, payouts, nets), as the Q-132 audit read them (C6, docs/audits/Q-132_breakeven_fidelity_2_2026-11-18.md); none is or derives from a bar price, so no ratio of two is one (E-211)"
+results/h3_0_probe.csv,level,M,"H3 declared seed-set count M (64 to 20752) on synthetic S1 histories only; zero market bars read (E-285)"
+results/h3_0_probe.csv,pair,*,"every column of H3-0 probe is a synthetic slot sizing integer (R, arms, M, T, h, lane_trades) or wall-clock/memory benchmark (us, hours, GB); zero market bars read (E-285)"

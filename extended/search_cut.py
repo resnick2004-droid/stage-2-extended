@@ -71,7 +71,7 @@ import threading
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Iterator, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 from extended import VENDOR_STAGE2
 from extended import reader as R
@@ -92,8 +92,13 @@ WRAPPED: dict[str, str] = {
 PASSTHROUGH = ("data/bars/*/manifest.json", "data/atlas/*/manifest.json")
 #: the guarded data folders: any other file opened under these is refused
 GUARDED = ("data/bars", "data/atlas")
-#: vendored checks switched off under the cut, each `name: reason (row)`; none at this commit
-SWITCHED_OFF: dict[str, str] = {}
+#: vendored checks switched off under the cut, each `name: reason (row)`
+SWITCHED_OFF: dict[str, str] = {
+    "rc_dev_test.trade_problems": (
+        "screen-row and whole-window hash check replaced on cut rows only by I-1 search-year sub-hash comparison; "
+        "whole-window builds keep it (E-286)"
+    ),
+}
 
 
 class UnwrappedRead(RuntimeError):
@@ -102,6 +107,14 @@ class UnwrappedRead(RuntimeError):
 
 class LateRow(RuntimeError):
     """A row or a date past the cut's last day."""
+
+
+class ConstantsMismatch(RuntimeError):
+    """Registered-constants file hash, schema, or I-1 sub-hash check failed."""
+
+
+class CalendarMismatch(RuntimeError):
+    """The cut's A1 day list does not equal Q-197's pinned search calendar date for date (rm-6)."""
 
 
 def _day(x: Any) -> date:
@@ -122,14 +135,34 @@ class Read:
 
 @dataclass
 class CutLog:
-    """What a cut saw: every data read (cut or passed through) and every refusal."""
+    """What a cut saw: every data read (cut or passed through), every refusal, and pass-through audit fields."""
     last: date
     root: Path
     reads: list[Read] = field(default_factory=list)
     refused: list[str] = field(default_factory=list)
+    passed_through: list[str] = field(default_factory=list)
+    computed_from_cut: list[str] = field(default_factory=list)
+    switched_off_used: list[str] = field(default_factory=list)
+    constants_file: str | None = None
+    constants_sha256: str | None = None
+    files_sha256: dict[str, str] = field(default_factory=dict)
 
     def files_read(self, kind: str | None = None) -> list[str]:
         return sorted({r.file for r in self.reads if kind is None or r.kind == kind})
+
+    def manifest_summary(self) -> dict[str, Any]:
+        """Audit record for manifests: passed-through statistics, cut-computed statistics, switched-off checks, files."""
+        return {
+            "last_day": self.last.isoformat(),
+            "passed_through": sorted(set(self.passed_through)),
+            "computed_from_cut": sorted(set(self.computed_from_cut)),
+            "switched_off_used": sorted(set(self.switched_off_used)),
+            "constants_file": self.constants_file,
+            "constants_sha256": self.constants_sha256,
+            "files_cut": self.files_read("cut"),
+            "files_passthrough": self.files_read("passthrough"),
+            "files_sha256": dict(sorted(self.files_sha256.items())),
+        }
 
     def problems(self, want: Sequence[str] = ()) -> list[str]:
         """Refusals seen; a late key kept; a wanted file (a `WRAPPED` pattern or path) never read through the cut."""
@@ -196,8 +229,199 @@ def _with_cut(filters: Any, key: str, last: str) -> list:
 
 
 def switched_off() -> dict[str, str]:
-    """What a manifest prints: every vendored check switched off under the cut (none at this commit)."""
+    """What a manifest prints: every vendored check switched off under the cut."""
     return dict(SWITCHED_OFF)
+
+
+def load_constants(path: Path | str, *, expected_sha256: str) -> dict[str, dict[str, Any]]:
+    """Load H4's registered-constants CSV, refusing unless its raw sha256 equals BOTH its manifest and `expected_sha256`."""
+    import csv
+    import hashlib
+    import json
+
+    p = Path(path)
+    if not p.is_file():
+        raise ConstantsMismatch(f"REFUSED ({TASK}): missing registered-constants file {p}")
+    raw = p.read_bytes()
+    file_sha = hashlib.sha256(raw).hexdigest()
+    if file_sha != expected_sha256:
+        raise ConstantsMismatch(f"REFUSED ({TASK}): {p.name} sha256 {file_sha} != expected {expected_sha256}")
+    side = Path(str(p) + ".manifest.json")
+    if not side.is_file():
+        raise ConstantsMismatch(f"REFUSED ({TASK}): {p.name} missing sidecar manifest")
+    man = json.loads(side.read_text(encoding="utf-8"))
+    if man.get("sha256") != file_sha:
+        raise ConstantsMismatch(f"REFUSED ({TASK}): {p.name} sha256 {file_sha} != manifest {man.get('sha256')}")
+    with p.open("r", encoding="utf-8", newline="") as fh:
+        rd = csv.DictReader(fh)
+        rows = list(rd)
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        d = str(r["design"])
+        slots_txt = str(r.get("offered_marks_slots", "")).strip()
+        slots = tuple(int(tok) for tok in slots_txt.split()) if slots_txt else ()
+        if len(slots) != int(r["marks_count"]):
+            raise ConstantsMismatch(f"REFUSED ({TASK}): {d} marks_count != parsed slots")
+        if str(r["search_last_date"]) > LAST_DAY.isoformat():
+            raise ConstantsMismatch(f"REFUSED ({TASK}): {d} search_last_date passes {LAST_DAY}")
+        out[d] = {
+            "design": d,
+            "cell": str(r["cell"]),
+            "stop_ticks": int(r["stop_ticks"]),
+            "busiest_day": int(r["busiest_day"]),
+            "capacity": int(r["capacity"]),
+            "marks_count": int(r["marks_count"]),
+            "offered_marks": slots,
+            "search_trades": int(r["search_trades"]),
+            "search_first_date": str(r["search_first_date"]),
+            "search_last_date": str(r["search_last_date"]),
+            "search_trades_sha256": str(r["search_trades_sha256"]),
+            "source_file": str(r["source_file"]),
+            "source_sha256": str(r["source_sha256"]),
+            "file_sha256": file_sha,
+        }
+    for req in ("p14", "p15", "p16"):
+        if req not in out:
+            raise ConstantsMismatch(f"REFUSED ({TASK}): registered constants missing design {req!r}")
+    return out
+
+
+def trades_subhash(trades: Any, *, last: Any = LAST_DAY) -> str:
+    """Exact `rc_dev_test.trades_hash` form on cut trades, refusing any trading day past `last`."""
+    import hashlib
+    import pandas as pd
+
+    if not isinstance(trades, pd.DataFrame) or "date" not in trades.columns:
+        raise ConstantsMismatch(f"REFUSED ({TASK}): trades must be a DataFrame with a 'date' column")
+    last_iso = _day(last).isoformat()
+    if len(trades):
+        late = trades["date"].astype(str) > last_iso
+        if late.any():
+            raise LateRow(f"REFUSED ({TASK}): trades hold {int(late.sum())} row(s) past {last_iso}")
+    cols = sorted(trades.columns)
+    h = pd.util.hash_pandas_object(trades[cols].reset_index(drop=True), index=False).to_numpy()
+    return hashlib.sha256(h.tobytes() + "|".join(cols).encode()).hexdigest()
+
+
+def verify_subhash(design: str, trades: Any, constants: Mapping[str, Mapping[str, Any]], *, last: Any = LAST_DAY) -> str:
+    """I-1: check cut trades against the registered-constants search-year sub-hash and count (refuses on mismatch)."""
+    if design not in constants:
+        raise ConstantsMismatch(f"REFUSED ({TASK}): unknown design {design!r} for I-1 sub-hash check")
+    got_hash = trades_subhash(trades, last=last)
+    reg = constants[design]
+    if int(len(trades)) != int(reg["search_trades"]):
+        raise ConstantsMismatch(
+            f"REFUSED (I-1): {design} cut trade count {len(trades)} != registered {reg['search_trades']}"
+        )
+    if got_hash != str(reg["search_trades_sha256"]):
+        raise ConstantsMismatch(
+            f"REFUSED (I-1): {design} cut trades sub-hash {got_hash} != registered {reg['search_trades_sha256']}"
+        )
+    return got_hash
+
+
+def check_calendar(dates: Sequence[Any], *, calendar_path: Path | str | None = None, last: Any = LAST_DAY) -> list[str]:
+    """rm-6: refuse unless `dates` (the cut's A1 day list) equals Q-197's pinned search calendar date for date up to `last`."""
+    from extended import search_calendar as SCAL
+
+    last_d = _day(last)
+    if last_d > LAST_DAY:
+        raise LateRow(f"REFUSED ({TASK}): calendar check at {last_d} passes {LAST_DAY}")
+    cal = SCAL.load_search_calendar(calendar_path)
+    want = [d for d in cal.dates if d <= last_d.isoformat()]
+    got = [_day(d).isoformat() for d in dates]
+    if got != want:
+        raise CalendarMismatch(
+            f"REFUSED (rm-6): cut A1 day list ({len(got)} days) != pinned search calendar ({len(want)} days) "
+            f"up to {last_d}"
+        )
+    return got
+
+
+@contextlib.contextmanager
+def pass_through(
+    design: str,
+    constants_path: Path | str,
+    *,
+    expected_sha256: str,
+    last: Any = LAST_DAY,
+    root: Path | str = VENDOR_STAGE2,
+    switch_off_trade_problems: bool = True,
+    modules: Mapping[str, Any] | None = None,
+) -> Iterator[CutLog]:
+    """Pass-through mode of the search cut (H4 Appendix C, B-2, E-286): inside `cut(last, root)`, replaces whole-window
+    statistics a registered builder would otherwise re-resolve on cut rows (`a3_brk30.capacity`, and for P-15/P-16
+    `resolved_coin.offered_marks`) with the pinned values from `constants_path` (checked against `expected_sha256`),
+    and optionally switches off `rc_dev_test.trade_problems` (recorded in `SWITCHED_OFF` under E-286) on cut rows only.
+
+    `modules` may supply synthetic stand-in modules (`a3_brk30`, `resolved_coin`, `rc_dev_test`) for unit testing
+    without importing the vendored engine.
+    """
+    if design not in ("p14", "p15", "p16"):
+        raise ConstantsMismatch(f"REFUSED ({TASK}): pass_through design must be p14, p15, or p16, got {design!r}")
+    constants = load_constants(constants_path, expected_sha256=expected_sha256)
+    reg = constants[design]
+
+    if modules is not None:
+        mod_b = modules.get("a3_brk30")
+        mod_rc = modules.get("resolved_coin")
+        mod_d = modules.get("rc_dev_test")
+    else:
+        import a3_brk30 as mod_b
+        import rc_dev_test as mod_d
+        from propedge.research import resolved_coin as mod_rc
+
+    with cut(last=last, root=root) as log:
+        log.constants_file = str(Path(constants_path))
+        log.constants_sha256 = str(reg["file_sha256"])
+        log.computed_from_cut.append("search_year_trades_and_bounds")
+        saved: list[tuple[Any, str, Any]] = []
+
+        try:
+            if mod_b is not None and hasattr(mod_b, "capacity"):
+                real_cap = mod_b.capacity
+                saved.append((mod_b, "capacity", real_cap))
+                reg_cap = int(reg["capacity"])
+
+                def _pt_capacity(t, fcfg):
+                    cut_cap = int(real_cap(t, fcfg))
+                    if cut_cap > reg_cap:
+                        raise ConstantsMismatch(
+                            f"REFUSED ({TASK}): {design} cut capacity {cut_cap} > registered capacity {reg_cap}"
+                        )
+                    log.passed_through.append(f"{design}.capacity={reg_cap}")
+                    return reg_cap
+
+                mod_b.capacity = _pt_capacity
+
+            if design in ("p15", "p16") and mod_rc is not None and hasattr(mod_rc, "offered_marks"):
+                real_marks = mod_rc.offered_marks
+                saved.append((mod_rc, "offered_marks", real_marks))
+                reg_stop = int(reg["stop_ticks"])
+                reg_marks = list(reg["offered_marks"])
+
+                def _pt_offered_marks(table, stop_ticks):
+                    if int(stop_ticks) == reg_stop:
+                        log.passed_through.append(f"{design}.offered_marks(stop={reg_stop},n={len(reg_marks)})")
+                        return list(reg_marks)
+                    return real_marks(table, stop_ticks)
+
+                mod_rc.offered_marks = _pt_offered_marks
+
+            if design in ("p15", "p16") and switch_off_trade_problems and mod_d is not None and hasattr(mod_d, "trade_problems"):
+                real_tp = mod_d.trade_problems
+                saved.append((mod_d, "trade_problems", real_tp))
+
+                def _pt_trade_problems(*args, **kwargs):
+                    log.switched_off_used.append("rc_dev_test.trade_problems")
+                    return []
+
+                mod_d.trade_problems = _pt_trade_problems
+
+            yield log
+        finally:
+            for mod, attr, orig in reversed(saved):
+                setattr(mod, attr, orig)
 
 
 @contextlib.contextmanager
@@ -310,5 +534,6 @@ def authorise(*, purpose: str, declaration: str, what: str, last: Any = LAST_DAY
 
 
 __all__ = ["TASK", "LAST_DAY", "FIRST_DAY", "WRAPPED", "PASSTHROUGH", "GUARDED", "SWITCHED_OFF", "UnwrappedRead",
-           "LateRow", "Read", "CutLog", "wrapped_key", "is_passthrough", "is_guarded", "switched_off", "cut",
-           "check_dates", "wrapped_files", "authorise"]
+           "LateRow", "ConstantsMismatch", "CalendarMismatch", "Read", "CutLog", "wrapped_key", "is_passthrough",
+           "is_guarded", "switched_off", "load_constants", "trades_subhash", "verify_subhash", "check_calendar",
+           "cut", "pass_through", "check_dates", "wrapped_files", "authorise"]
