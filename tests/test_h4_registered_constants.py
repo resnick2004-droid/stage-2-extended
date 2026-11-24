@@ -142,3 +142,36 @@ def test_identity_script_obeys_identity_write_rule_and_refuses_results_payload(t
         HRC._ensure_outside_results(tmp_path / "results" / "payload.json")
     assert HRC._ensure_outside_results(tmp_path / "scratch" / "payload.json") == tmp_path / "scratch" / "payload.json"
 
+
+def test_identity_main_lock_check_and_mocked_run(tmp_path, monkeypatch):
+    from extended import lock_guard as LG
+    from extended import reader as R
+
+    # Missing env refused
+    monkeypatch.delenv(LG.LOCK_HOLDER_ENV, raising=False)
+    with pytest.raises(HRC.ConstantsError, match=LG.LOCK_HOLDER_ENV):
+        HRC._require_run_lock(tmp_path)
+
+    # Matching run.lock at main_root passes and main() writes JSON payload
+    (tmp_path / LG.LOCK_NAME).write_text(json.dumps({"job": "test-job"}), encoding="utf-8")
+    monkeypatch.setenv(LG.LOCK_HOLDER_ENV, "test-job")
+    monkeypatch.setattr(LG, "main_root", lambda _start=None: tmp_path)
+    monkeypatch.setattr(R, "authorise_engine_read", lambda *a, **k: None)
+    sample_rows = [
+        {"design": "p14", "cell": "a3_brk30_cb20", "stop_ticks": 0, "busiest_day": 44, "capacity": 44,
+         "marks_count": 0, "offered_marks_slots": "", "search_trades": 10, "search_first_date": "2020-01-02",
+         "search_last_date": "2023-12-29", "search_trades_sha256": "1" * 64, "source_file": "m", "source_sha256": "2" * 64},
+        {"design": "p15", "cell": "rc_s100_all", "stop_ticks": 100, "busiest_day": 228, "capacity": 228,
+         "marks_count": 1, "offered_marks_slots": "0", "search_trades": 20, "search_first_date": "2020-01-02",
+         "search_last_date": "2023-12-29", "search_trades_sha256": "3" * 64, "source_file": "s1", "source_sha256": "4" * 64},
+        {"design": "p16", "cell": "rc_s150_all", "stop_ticks": 150, "busiest_day": 210, "capacity": 210,
+         "marks_count": 1, "offered_marks_slots": "5", "search_trades": 30, "search_first_date": "2020-01-02",
+         "search_last_date": "2023-12-29", "search_trades_sha256": "5" * 64, "source_file": "s2", "source_sha256": "6" * 64},
+    ]
+    monkeypatch.setattr(HRC, "collect_from_vendor", lambda _vroot: (sample_rows, {"p14": {"ok": True}}))
+    payload_path = tmp_path / "scratch" / "payload.json"
+    rc = HRC.main(["--vendor-root", str(tmp_path), "--out-payload", str(payload_path)])
+    assert rc == 0 and payload_path.is_file()
+    data = json.loads(payload_path.read_text(encoding="utf-8"))
+    assert len(data["rows"]) == 3 and data["declaration"] == HRC.DECLARATION_ROW
+

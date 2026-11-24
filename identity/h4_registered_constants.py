@@ -349,17 +349,42 @@ def _ensure_outside_results(path: Path) -> Path:
     return path
 
 
+def _require_run_lock(root: Path) -> None:
+    """Verify run.lock exists at main_root(root) and matches S2X_LOCK_HOLDER (scripts/run_clean.py --hours/--mem-gb)."""
+    from extended import lock_guard as LG
+
+    holder = os.environ.get(LG.LOCK_HOLDER_ENV, "").strip()
+    if not holder:
+        raise ConstantsError(
+            f"REFUSED: {LG.LOCK_HOLDER_ENV} is unset (run under run.lock via scripts/run_clean.py --hours --mem-gb --task)"
+        )
+    mroot = LG.main_root(root)
+    if mroot is None:
+        raise ConstantsError(f"REFUSED: cannot resolve main repository root for run.lock from {root}")
+    lock_file = mroot / LG.LOCK_NAME
+    if not lock_file.is_file():
+        raise ConstantsError(f"REFUSED: run.lock not found at {lock_file}")
+    try:
+        lock_data = json.loads(lock_file.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ConstantsError(f"REFUSED: cannot read run.lock: {exc}") from exc
+    if not isinstance(lock_data, dict) or lock_data.get("job") != holder:
+        raise ConstantsError(
+            f"REFUSED: run.lock job {lock_data.get('job') if isinstance(lock_data, dict) else None!r} != {holder!r}"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--vendor-root", type=Path, default=ROOT / "vendor" / "stage2")
     ap.add_argument("--out-payload", type=Path, required=True, help="JSON payload path outside results/")
     args = ap.parse_args(argv)
 
-    from extended import lock_guard, reader
+    from extended import reader
     from identity import stage2_identity as S2I
 
     out_path = _ensure_outside_results(args.out_payload)
-    lock_guard.require_lock(ROOT)
+    _require_run_lock(ROOT)
     vroot = args.vendor_root.resolve()
     files = S2I.engine_files(vroot, a3=True, bars=True)
     reader.authorise_engine_read(
