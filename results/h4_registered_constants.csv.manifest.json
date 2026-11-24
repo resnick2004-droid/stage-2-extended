@@ -1,0 +1,69 @@
+{
+  "columns": [
+    "design",
+    "cell",
+    "stop_ticks",
+    "busiest_day",
+    "capacity",
+    "marks_count",
+    "offered_marks_slots",
+    "search_trades",
+    "search_first_date",
+    "search_last_date",
+    "search_trades_sha256",
+    "source_file",
+    "source_sha256"
+  ],
+  "description": "H4 registered constants (E-286, E-247 rm-4): P-14/P-15/P-16 capacities, offered marks, and search-year trade sub-hashes (<= 2023-12-29)",
+  "exploratory": false,
+  "git_commit": "d85ba258269b9dcd3b369fd1403951d03bab4e70",
+  "git_dirty": false,
+  "notes": null,
+  "parameters": {
+    "declaration": "E-286",
+    "identities": {
+      "p14": {
+        "capacity_matched": true,
+        "p13_trade_problems": 0,
+        "whole_days": 1691,
+        "whole_trades": 45191
+      },
+      "p15": {
+        "capacity_matched": true,
+        "marks_matched": true,
+        "trade_problems": 0,
+        "whole_days": 1691,
+        "whole_trades": 295296
+      },
+      "p16": {
+        "capacity_matched": true,
+        "marks_matched": true,
+        "trade_problems": 0,
+        "whole_days": 1691,
+        "whole_trades": 239768
+      }
+    },
+    "identity_script": "identity/h4_registered_constants.py",
+    "p14_manifest_sha256": "c9c3356760f33fa3bb5aaff8e59175bff5fd9824d004086398ed529993d003e1",
+    "p15_screen_sha256": "dfd93c46deca5651e125ba63a8616b3b6f627beea87097593dbac27df4c37df1",
+    "p16_screen_sha256": "7b4b65d1130c524874de874ff242dbe3cb74fe3aa456ccd3d9fef2e9758c855d",
+    "payload_sha256": "2714fd01c3e4f5f324b232d4a5224086809562c4ce3a3ac96e6347e853bae259",
+    "search_end": "2023-12-29"
+  },
+  "prereg_id": "E-286",
+  "provenance": {
+    "clean_run": {
+      "checkout": "C:\\Users\\resni\\AppData\\Local\\stage2-extended-runs\\h4-reg-write",
+      "marker": "S2X_CLEAN_RUN",
+      "name": "h4-reg-write"
+    },
+    "read_ledger": "results/read_ledger.jsonl: the ledger is HEAD's"
+  },
+  "result_file": "h4_registered_constants.csv",
+  "rows": 3,
+  "script": "scripts/h4_write_registered_constants.py",
+  "seed": null,
+  "sha256": "7c3884f5445f37be09a09dd838150d34ff468636775a24f96e894e76de1dc413",
+  "timestamp": "2026-11-24T04:43:54+00:00",
+  "variant_count": null
+}

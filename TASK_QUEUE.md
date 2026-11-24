@@ -78,11 +78,11 @@ Rows whose state begins with `done` are moved, verbatim and under their section,
 | Q-179 | Q-173 merged with the O-7 pins' SUPERSEDED fill; every shared identity re-held once at that commit | lead | queued (E-246) | Q-173, Q-178 | heavy | 0 | E-246 |
 | Q-182 | The lever rows T2b, A15, A16 and A17 declared and loaded -- then red team | wt-levels | running (E-246) | E-232 | light | 0 | E-246 |
 | Q-183 | T7's admission forecast: build (wt-har), then the heavy search-year fit, loaded by lever_space | wt-har | done (E-253) | E-232 | light, then heavy | 0 | E-246 |
-| Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | running (E-246) | Q-176 | light | 0 | E-246 |
+| Q-184 | H4's declaration (the re-baseline) -- red team, then pinned | wt-lit | done (E-287) | Q-176 | light | 0 | E-246 |
 | Q-185 | The three-way runner's firm path: the vendored lockstep with the race as its draw | wt-firmpath | done (E-281) | Q-167 | light | 0 | E-246 |
 | Q-186 | The Wave 5 survey runner, end to end on synthetic worlds | wt-survey | done (E-281) | Q-168, Q-167 | light | 0 | E-246 |
 | Q-187 | H3: the three-way test's null calibration and power runs (heavy, parts of 8 h at most) | lead | running (E-285: H3-0 done; H3-A 6 slots next) | Q-167 stands, Q-170, H3's pin | heavy | 0 | E-246 |
-| Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | queued (E-246) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
+| Q-188 | H4: the re-baseline -- the four baselines through the journey scorecard on the search years (the first real reading) | lead | running (E-287: pinned; building H4 runner next) | Q-184 pinned, Q-185, Q-187, Q-172's search_cut | heavy | 0 | E-246 |
 | Q-189 | W42-R1 applied to H4's readings; the limits, budgets, weights and delta* pinned in one row before the survey | lead | queued (E-246) | Q-188, Q-176 | light | 0 | E-246 |
 | Q-190 | The Wave 5 Topstep design survey, then the MFFU and Lucid surveys | lead | queued (E-246) | Q-186, Q-189, Q-168 stands, Q-177, Q-180, Q-181 | heavy | 0 | E-246 |
 | Q-191 | O-7's builds RD-06 to RD-10 on the search years (each with its own identity), then their readings | wt-firms | queued: pinned (E-268 to E-272), builds next | Q-178, Q-172's search_cut | light, then heavy | 0 | E-246 |

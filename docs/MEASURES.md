@@ -976,9 +976,10 @@ The baselines are comparators: every measure above is read on each of them, unde
 design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe runs, not definitions (m-3).
 
 ### (35) Naive coin harvesting
-- **Definition (B-5):** the comparator whose signal source is the naive coin, with **its levers fixed in the search
-  declaration** (CHARTER 2, terms). They are not copied from each design: a comparator that moves with the design
-  would be a different hypothesis from the one pinned.
+- **Definition (B-5):** the comparator whose signal source is the naive coin, with **its levers fixed in H4's
+  declaration** (`prereg/H4_rebaseline.md` section 7; CHARTER 2, terms), which Wave 5's search declaration adopts by
+  citing H4's pinned sha256 (H4's red-team read, m-6). They are not copied from each design: a comparator that moves
+  with the design would be a different hypothesis from the one pinned.
   - It is read on the same units and the same seeds as the designs, under CHARTER 3.2's reflection and
     martingale-outcome reading, with the same fill and cost mechanics, no arm shift and the same verdict settings.
   - Its source (timing, shape, sessions) is built by `wt-levels` (plan Wave 3.3).
@@ -986,7 +987,7 @@ design must beat **each** of them (CHARTER 3.8 (b)). Their statuses describe run
 - **Per unit; never blank:** each measure's own forms.
 - **Status:** comparator. Its run is to build (`wt-levels`' naive coin source, at H4).
 - **Where:** nothing computes it. Stage 2's coin designs P-15 and P-16 are in (36), not this one.
-- **Parameters:** the levers fixed in the search declaration (Wave 5), H4's seeds.
+- **Parameters:** the levers fixed in H4's declaration and adopted by the search declaration (Wave 5), H4's seeds.
 
 ### (36) P-14, P-15 and P-16
 - **Definition (B-5):** the three registered Stage 2 designs, each run **under the design's convention**:
