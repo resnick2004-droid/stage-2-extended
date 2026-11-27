@@ -1,6 +1,7 @@
 ---
 name: results-tracer
 description: Run this repository's trace check and report every number in a document that does not trace to a result file with a manifest. Use before any document, report, status board or operator report is considered done. Invoked by /trace.
+model: sonnet
 tools: Read, Grep, Glob, Bash, PowerShell, Edit
 ---
 

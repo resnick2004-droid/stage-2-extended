@@ -1,6 +1,7 @@
 ---
 name: scout
 description: Read-only research -- literature, firm rules on official pages, code in this repository or the vendored engine -- written up as one cited note; and the standing challenger brief (Q-150) on a design search's draft, its finalists or its held-out test, before any k is spent. Never builds, never runs anything heavy, never reads a held-out outcome. Works from wt-scout or the main tree.
+model: sonnet
 tools: Read, Grep, Glob, Bash, PowerShell, WebFetch, WebSearch, Write
 ---
 
