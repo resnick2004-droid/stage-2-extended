@@ -1,4 +1,4 @@
-"""W42-R2's one application (`docs/plans/WAVE42_SETTING_RULE_R2.md` section 4): W42-R1's application, step for step,
+"""W42-R2's one application (`docs/plans/WAVE42_SETTING_RULE_R2.md` section 6): W42-R1's application, step for step,
 with `net_month_12` read beside H4's collection from H4-B's units files, and W42-R2's rule in place of W42-R1's.
 
     python scripts/run_clean.py --name w42-r2 -- python scripts/wave42_r2_apply.py

@@ -1,4 +1,5 @@
-"""W42-R2: W42-R1 with one added limit, a floor on the median 12-month net cash (`docs/plans/WAVE42_SETTING_RULE_R2.md`).
+"""W42-R2: W42-R1 with one added limit (a floor on the median 12-month net cash) and a corrected headroom
+(`docs/plans/WAVE42_SETTING_RULE_R2.md`; Q-221, E-296).
 
 W42-R1 (`extended/wave42.py`, pinned by E-283 and never edited) has no dollar magnitude of profit among its limits or
 its composite: its "money" dimension is P_B, a share. W42-R2 adds **one limit in W42-R1's own `LimitSpec` form**:
@@ -6,21 +7,29 @@ its composite: its "money" dimension is P_B, a share. W42-R2 adds **one limit in
     net_month_12_p50: measure (12) at m = 12, key `net_month_12`, a floor, horizon 252, statistic p50
 
 and adds `net_month_12` to the required inputs, with its a priori range (-inf, inf) (W42-R1's own range for
-`net_month_1` to `net_month_3`). Nothing else changes: the six dimensions, their weights, the budgets, delta*, the
-power and the limits' formula are W42-R1's.
+`net_month_1` to `net_month_3`). And (E-296) every limit's headroom counts M_best's own search-year noise beside the
+held-out test's (`headroom`). Nothing else changes: the six dimensions, their weights, the budgets, delta*, the power
+and the rest of the limits' formula are W42-R1's.
 
 **One code path.** The rule is not re-implemented. `setting_rule` runs **W42-R1's own function objects** -- the same
 code objects, byte for byte -- over a fresh copy of W42-R1's module namespace in which only the tables named in
-`OVERRIDES` differ (`rebind`). W42-R1's module is never mutated. So the added limit's value comes from W42-R1's limit
-formula as written (section 6 of W42-R1: the worst baseline's estimate, or the best's minus z_L times its test
-standard error when that is stricter, z_L joint over the limits set), and every other output from W42-R1's code.
+`OVERRIDES` differ (`rebind`). W42-R1's module is never mutated. Every output but the limits' headroom comes from
+W42-R1's code; the limits' estimates and per-seed sds too (section 6 of W42-R1: the worst baseline's estimate, or the
+best's minus z_L times the headroom's error when that is stricter, z_L joint over the limits set).
 
-After W42-R1's code has run, three named steps complete the output (the declaration's section 3):
+After W42-R1's code has run, three named steps complete the output (the declaration's sections 3 and 4):
 1. the application record names W42-R2's script and output;
-2. the added limit's vacuity is read against its own a priori range (W42-R1's code reads "a floor at 0" as the end
-   of a range, which holds for its counts but not for net cash, which runs below zero); the value is not touched;
+2. **the corrected headroom, for every one of the seven limits (E-296):** W42-R1's headroom counts only the held-out
+   test's coin noise (`extended/wave42.py` lines 809-810); W42-R2's (`headroom`) also counts M_best's own search-year
+   estimate noise at H4's seed count, the two combined as independent errors. Each limit's value, which term binds and
+   its vacuity are then re-selected by W42-R1's section 6 steps 3-4 (`limit_value`; the added limit's vacuity read
+   against its own a priori range, (-inf, inf)), and its baseline checks re-read at the new value through W42-R1's
+   `limit_check`; W42-R1's own value is kept beside (`value_w42_r1_headroom`);
 3. the block `r2`: the parent rule and its pin, the added limit's value, where `net_month_12` came from, and whether
    the floor refuses the do-nothing journey (it does exactly when its value is above zero).
+
+This is the one place W42-R2 does not run W42-R1's code unchanged: W42-R1's inline headroom is computed and then
+replaced. Everything else is W42-R1's code.
 
 `net_floor=False` runs W42-R1's tables through the same mechanism and returns W42-R1's output unchanged; it exists for
 the identity test only (`tests/test_wave42_r2.py`). The declared application, `scripts/wave42_r2_apply.py`, never
@@ -64,10 +73,16 @@ LIMITS = R.LIMITS + (NET12_LIMIT,)
 REQUIRED = {**R.REQUIRED, NET12_KEY: (YEAR, -math.inf, math.inf)}
 HORIZONS = tuple(sorted({d.horizon for d in R.DIMENSIONS} | {lim.horizon for lim in LIMITS}))
 
+#: E-296: the headroom's error term, the held-out test's coin noise and M_best's own search-year noise combined
+HEADROOM_FORM = "sqrt(se_test^2 + se_search^2); se_search = sd_best / sqrt(J_H4)"
+_VACUOUS_END = "at or beyond the a priori end of its range"
+_VACUOUS_UNITS = "beyond every baseline unit (no baseline's unit distribution crosses it)"
+
 #: W42-R2's constants: W42-R1's, with these replaced or added (the doc's delta table)
 CONSTANTS_DELTA: dict[str, Any] = {
     "RULE_ID": RULE_ID, "OUTPUT_NAME": OUTPUT_NAME, "PARENT_RULE_ID": PARENT_RULE_ID, "PARENT_ROW": PARENT_ROW,
     "PARENT_PIN_COMMIT": PARENT_PIN_COMMIT, "YEAR": YEAR, "NET12_KEY": NET12_KEY, "NET12_KIND": NET12_KIND,
+    "HEADROOM_FORM": HEADROOM_FORM,
 }
 CONSTANTS: dict[str, Any] = {**R.CONSTANTS, **CONSTANTS_DELTA}
 
@@ -145,6 +160,51 @@ def null_net12(fee_unit: float) -> dict[str, float]:
     return {k: float(v["net_month_3"]) for k, v in R.null_journeys(fee_unit).items()}
 
 
+# ----------------------------------------------------------------------------- the corrected headroom (E-296)
+def headroom(m_best: float, sd_best: float, n_search: int, n_test: int, j_test: int, j_h4: int, z: float,
+             direction: str) -> dict[str, float]:
+    """The needed value of a limit (the declaration's section 4.2). A design equal to the best baseline is read at the
+    held-out test with error se_test = sd_best sqrt(n_search / (j_test n_test)) (W42-R1's term: the per-seed
+    statistic's sd, scaled from one seed's n_search starts to the test's j_test x n_test units), and M_best itself,
+    pooled over H4's j_h4 seeds, carries se_search = sd_best / sqrt(j_h4). The two are independent (other coins, other
+    days), so the design's estimate minus M_best has sd se = sqrt(se_test^2 + se_search^2), and the needed value is
+    M_best + z se (a ceiling) or M_best - z se (a floor): the design passes it with probability Phi(z)."""
+    if direction not in ("ceiling", "floor"):
+        raise ValueError(f"a limit is a ceiling or a floor, not {direction!r}")
+    if min(n_search, n_test, j_test, j_h4) < 1 or not math.isfinite(sd_best) or sd_best < 0:
+        raise ValueError("the headroom needs positive counts and a finite, non-negative per-seed sd")
+    se_test = sd_best * math.sqrt(n_search / (j_test * n_test))
+    se_search = sd_best / math.sqrt(j_h4)
+    se = math.sqrt(se_test * se_test + se_search * se_search)
+    sign = 1.0 if direction == "ceiling" else -1.0
+    return {"se_test": se_test, "se_search": se_search, "se": se, "needed": m_best + sign * z * se,
+            "needed_w42_r1": m_best + sign * z * se_test}
+
+
+def limit_value(direction: str, kind: str, m_worst: float, needed: float, pooled: np.ndarray) -> dict[str, Any]:
+    """W42-R1's section 6 steps 3-4, as written: the limit is the worst baseline's estimate unless that is inside the
+    needed value (a tie is the worst's), then its vacuity -- at or beyond the a priori end of its range (a share
+    ceiling at 1, a days ceiling at W + 1, a floor at 0; net cash has no end), or beyond every pooled baseline unit."""
+    ceil_ = direction == "ceiling"
+    if (ceil_ and m_worst >= needed) or (not ceil_ and m_worst <= needed):
+        val, binds = float(m_worst), "worst_baseline"
+    else:
+        val, binds = float(needed), "headroom"
+    top = {"share": 1.0, "days": R.W + 1.0}.get(kind, math.inf)
+    bottom = -math.inf if kind == NET12_KIND else 0.0
+    if (ceil_ and val >= top) or (not ceil_ and val <= bottom):
+        vac = _VACUOUS_END
+    elif (ceil_ and val >= float(pooled.max())) or (not ceil_ and val <= float(pooled.min())):
+        vac = _VACUOUS_UNITS
+    else:
+        vac = None
+    return {"value": val, "binds": binds, "vacuous": vac is not None, "vacuous_reason": vac}
+
+
+def _spec(name: str) -> R.LimitSpec:
+    return next(L for L in LIMITS if L.name == name)
+
+
 # ------------------------------------------------------------------------------------------------------- the rule
 def _refuse(msg: str) -> R.Wave42Refused:
     return R.Wave42Refused(f"W42-R2 refuses its input: {msg}")
@@ -196,17 +256,39 @@ def setting_rule(readings: Mapping[str, R.BaselineReading] | Sequence[R.Baseline
     out["application"] = {"script": APPLY_SCRIPT, "output": OUTPUT_NAME,
                           "rule": "applied once: the script refuses when any Wave 4.2 output exists"}
 
-    # step 2: the added floor's vacuity against its own a priori range (-inf, inf): only "beyond every unit" applies
-    vals = {b: np.asarray(readings[b].values[NET12_KEY], dtype=float) for b in R.BASELINES}
+    # step 2: the corrected headroom for every limit (E-296), then W42-R1's steps 3-4 at it
     sl = np.asarray(_sessions_left(readings[R.BASELINES[0]].starts, search_calendar))
-    pooled = np.concatenate([vals[b][sl >= YEAR].ravel() for b in R.BASELINES])
-    lims = [dict(x) for x in out["limits"]["values"]]
+    vals = {b: readings[b].values for b in R.BASELINES}
+    B = float(out["budgets"]["primary"])
+    per = {b: ns["unit_values"](vals[b], B) for b in R.BASELINES}
+    j_h4 = int(out["seeds"])
+    lims = []
+    for x in out["limits"]["values"]:
+        x = dict(x)
+        if x.get("status") != "set":
+            lims.append(x)
+            continue
+        L = _spec(x["name"])
+        rows = sl >= L.horizon
+        sd_best = ns["limit_per_seed_sd"](out, sl, vals[x["best"]], L.name)
+        hr = headroom(x["baseline_values"][x["best"]], sd_best, int(rows.sum()), int(test_starts[L.horizon]),
+                      R.TEST_SEEDS, j_h4, float(x["headroom_z"]), L.direction)
+        pooled = np.concatenate([per[b][L.key][rows].ravel() for b in R.BASELINES])
+        sel = limit_value(L.direction, L.kind, x["baseline_values"][x["worst"]], hr["needed"], pooled)
+        x.update({"value_w42_r1_headroom": x["value"], "binds_w42_r1_headroom": x["binds"],
+                  "headroom_needed_w42_r1": x["headroom_needed"], **sel, "headroom_needed": hr["needed"],
+                  "best_se_test": hr["se_test"], "best_se_search": hr["se_search"], "headroom_se": hr["se"],
+                  "best_sd_per_seed": sd_best, "headroom_form": HEADROOM_FORM})
+        x["baseline_checks"] = {b: ns["limit_check"](out, sl, vals[b], L.name, sel["value"]) for b in R.BASELINES}
+        if L.kind == NET12_KIND:
+            x["a_priori_range"] = ["-inf", "inf"]
+        lims.append(x)
+    out["limits"] = {**out["limits"], "values": lims, "headroom_form": HEADROOM_FORM, "h4_seeds": j_h4}
     net = next(x for x in lims if x["name"] == NET12_LIMIT.name)
-    beyond = bool(net["value"] <= float(pooled.min()))
-    net["vacuous"] = beyond
-    net["vacuous_reason"] = "beyond every baseline unit (no baseline's unit distribution crosses it)" if beyond else None
-    net["a_priori_range"] = ["-inf", "inf"]
-    out["limits"] = {**out["limits"], "values": lims}
+    npw = next(x for x in lims if x["name"] == "not_paid_within_B")
+    out["inactivity_guards"] = {**out["inactivity_guards"], "not_paid_within_B":
+                                "vacuous: only CHARTER 3.8 (c)'s long-run gate stops a quitter" if npw["vacuous"]
+                                else "live"}
 
     # step 3: the r2 block
     nn = null_net12(fee_unit)
@@ -225,6 +307,7 @@ def setting_rule(readings: Mapping[str, R.BaselineReading] | Sequence[R.Baseline
                                        "sha256": dict(PARENT_SHA256)},
         "added_limit": NET12_LIMIT.name, "key": NET12_KEY, "horizon": YEAR, "stat": NET12_LIMIT.stat,
         "direction": NET12_LIMIT.direction, "value": net["value"], "binds": net["binds"],
+        "value_w42_r1_headroom": net["value_w42_r1_headroom"], "headroom_form": HEADROOM_FORM,
         "limits_set": out["limits"]["limits_set"], "headroom_z": out["limits"]["headroom_z"],
         "net12_source": ("the collection (its readings_sha256 covers it)" if net12_source is None
                          else {"units_files_sha256": dict(sorted(net12_source.items()))}),
@@ -247,6 +330,6 @@ def _sessions_left(starts: Sequence[str], calendar: Sequence[str]) -> list[int]:
 
 __all__ = ["RULE_ID", "PARENT_RULE_ID", "PARENT_ROW", "PARENT_SHA256", "PARENT_PIN_COMMIT", "OUTPUT_NAME",
            "APPLY_SCRIPT", "YEAR", "NET12_KEY", "NET12_KIND", "NET12_LIMIT", "LIMITS", "REQUIRED", "HORIZONS",
-           "CONSTANTS", "CONSTANTS_DELTA", "OVERRIDES", "rebind", "tables", "namespace", "setting_rule",
+           "CONSTANTS", "CONSTANTS_DELTA", "OVERRIDES", "HEADROOM_FORM", "headroom", "limit_value", "rebind", "tables", "namespace", "setting_rule",
            "limit_estimate", "limit_per_seed_sd", "limit_check", "composite_per_seed", "null_composites",
            "do_nothing_floor", "above_floor", "pinned_inputs", "values_from_rows", "null_net12"]
