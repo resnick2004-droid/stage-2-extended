@@ -7,7 +7,7 @@
 
 The lock is `run.lock` at the **main** repository's root (found from `git rev-parse --git-common-dir`, so every
 worktree and clean checkout sees the same file); git-ignored. `take` refuses (exit 3) when the lock is held, and
-(exit 4) when the machine's available physical memory is below `--mem-gb` -- a heavy run never starts short of the
+(exit 4) when the machine's available physical memory is below `--mem-gb`, or cannot be read (Q-229) -- a heavy run never starts short of the
 memory it needs. The file is created atomically (`open(..., "x")`), so two takers cannot both win. `release` removes
 it only for the job that holds it. A lock older than its expected end plus one hour is reported **STALE**: it is
 investigated (is its process alive, is its log growing?) and reported to the lead -- never stolen; `release --force`
@@ -54,6 +54,8 @@ def available_gb() -> float | None:
         if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
             return m.ullAvailPhys / 2**30
         return None
+    if sys.platform == "darwin":
+        return _darwin_available_gb()
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemAvailable:"):
@@ -90,13 +92,38 @@ def describe(lock: dict) -> str:
     return "HELD: " + ", ".join(f"{k}={lock.get(k)}" for k in keys if lock.get(k) is not None) + stale
 
 
+def _darwin_available_gb(vm_stat: str | None = None) -> float | None:
+    """macOS (Q-229): free + inactive + speculative pages from `vm_stat`, times its page size -- the memory a new
+    process can have without the system swapping. None when `vm_stat` cannot be read (the lock then refuses)."""
+    import re
+    import subprocess
+    if vm_stat is None:
+        try:
+            vm_stat = subprocess.run(["vm_stat"], capture_output=True, text=True, check=True, timeout=30).stdout
+        except (OSError, subprocess.SubprocessError):
+            return None
+    m = re.search(r"page size of (\d+) bytes", vm_stat)
+    if not m:
+        return None
+    pages = 0
+    for key in ("Pages free", "Pages inactive", "Pages speculative"):
+        k = re.search(re.escape(key) + r":\s+(\d+)", vm_stat)
+        if not k:
+            return None
+        pages += int(k.group(1))
+    return pages * int(m.group(1)) / 2**30
+
+
 def take(a) -> int:
     held = read()
     if held is not None:
         print(f"REFUSED: {describe(held)}")
         return 3
     gb = available_gb()
-    if gb is not None and gb < a.mem_gb:
+    if gb is None:
+        print("REFUSED: this machine's available memory cannot be read; a heavy run never starts unchecked (Q-229)")
+        return 4
+    if gb < a.mem_gb:
         print(f"REFUSED: {gb:.1f} GB available, the job needs {a.mem_gb:.1f} GB; it waits (STATUS.md, OPERATOR_SETUP item 9)")
         return 4
     start = now()
